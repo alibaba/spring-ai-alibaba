@@ -48,7 +48,6 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
-import { EVENTS } from '@/constants/events'
 
 interface Props {
   placeholder?: string

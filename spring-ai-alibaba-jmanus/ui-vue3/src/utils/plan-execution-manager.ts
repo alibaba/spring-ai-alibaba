@@ -18,7 +18,6 @@ import { ref, reactive } from 'vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { CommonApiService } from '@/api/common-api-service'
-import { EVENTS } from '@/constants/events'
 
 // 定义事件回调接口
 interface EventCallbacks {

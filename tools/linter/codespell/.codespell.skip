@@ -1,2 +1,5 @@
 .git
 .idea
+spring-ai-alibaba-jmanus/src/main/resources/static
+*/target/*
+*/node_modules/*
