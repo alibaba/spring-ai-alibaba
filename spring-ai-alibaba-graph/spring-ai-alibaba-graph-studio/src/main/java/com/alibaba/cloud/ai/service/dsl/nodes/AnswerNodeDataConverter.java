@@ -37,8 +37,8 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 	@Override
 	protected List<DialectConverter<AnswerNodeData>> getDialectConverters() {
 		return Stream.of(AnswerNodeDialectConverter.values())
-				.map(AnswerNodeDialectConverter::dialectConverter)
-				.toList();
+			.map(AnswerNodeDialectConverter::dialectConverter)
+			.toList();
 	}
 
 	private enum AnswerNodeDialectConverter {
