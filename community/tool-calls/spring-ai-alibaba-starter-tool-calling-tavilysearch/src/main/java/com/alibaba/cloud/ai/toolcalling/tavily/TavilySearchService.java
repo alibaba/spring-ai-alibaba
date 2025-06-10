@@ -18,11 +18,18 @@ package com.alibaba.cloud.ai.toolcalling.tavily;
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.function.Function;
@@ -111,8 +118,8 @@ public class TavilySearchService implements Function<TavilySearchService.Request
 			@JsonProperty("images") List<ImageInfo> images, @JsonProperty("results") List<ResultInfo> results,
 			@JsonProperty("response_time") String responseTime) {
 		@JsonIgnoreProperties(ignoreUnknown = true)
+		@JsonDeserialize(using = ImageInfoDeserializer.class)
 		public record ImageInfo(@JsonProperty("url") String url, @JsonProperty("description") String description) {
-
 		}
 
 		@JsonIgnoreProperties(ignoreUnknown = true)
@@ -130,4 +137,22 @@ public class TavilySearchService implements Function<TavilySearchService.Request
 
 	}
 
+}
+
+class ImageInfoDeserializer extends JsonDeserializer<TavilySearchService.Response.ImageInfo> {
+	@Override
+	public TavilySearchService.Response.ImageInfo deserialize(JsonParser p, DeserializationContext ctxt)
+			throws IOException, JsonProcessingException {
+		JsonNode node = p.getCodec().readTree(p);
+		
+		if (node.isTextual()) {
+			return new TavilySearchService.Response.ImageInfo(node.asText(), null);
+		} else if (node.isObject()) {
+			String url = node.has("url") ? node.get("url").asText() : null;
+			String description = node.has("description") ? node.get("description").asText() : null;
+			return new TavilySearchService.Response.ImageInfo(url, description);
+		}
+		
+		return null;
+	}
 }
