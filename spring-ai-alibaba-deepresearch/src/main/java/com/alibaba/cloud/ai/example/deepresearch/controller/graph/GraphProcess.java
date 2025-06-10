@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller.graph;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.ChatRequest;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;

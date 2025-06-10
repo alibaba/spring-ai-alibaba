@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -52,25 +51,20 @@ public class HumanFeedbackNode implements NodeAction {
 			interrupt(state);
 
 			Map<String, Object> feedBackData = state.humanFeedback().data();
-			String feedback = feedBackData.getOrDefault("feed_back", "n").toString();
+			boolean feedback = (boolean) feedBackData.getOrDefault("feed_back", true);
 
-			if (StringUtils.hasLength(feedback) && "n".equals(feedback)) {
-				nextStep = "llm_stream";
+			if (!feedback) {
+				nextStep = "planner";
 				updated.put("human_next_node", nextStep);
 
 				String feedbackContent = feedBackData.getOrDefault("feed_back_content", "").toString();
-				updated.put("feed_back_content", feedbackContent);
-
-				logger.info("Human feedback content: {}", feedbackContent);
+				if (StringUtils.hasLength(feedbackContent)) {
+					updated.put("feed_back_content", feedbackContent);
+					logger.info("Human feedback content: {}", feedbackContent);
+				}
 				state.withoutResume();
 				logger.info("human_feedback node -> {} node", nextStep);
 				return updated;
-			}
-			else if (StringUtils.hasLength(feedback) && "y".equals(feedback)) {
-				logger.info("Plan is accepted by user.");
-			}
-			else {
-				throw new Exception(String.format("Interrupt value of %s is not supported", feedback));
 			}
 		}
 

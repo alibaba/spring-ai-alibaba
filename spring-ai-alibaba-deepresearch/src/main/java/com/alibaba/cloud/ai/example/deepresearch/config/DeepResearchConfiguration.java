@@ -85,10 +85,10 @@ public class DeepResearchConfiguration {
 			state.registerKeyAndStrategy("thread_id", new ReplaceStrategy());
 			state.registerKeyAndStrategy("enable_background_investigation", new ReplaceStrategy());
 			state.registerKeyAndStrategy("auto_accepted_plan", new ReplaceStrategy());
+			state.registerKeyAndStrategy("plan_max_iterations", new ReplaceStrategy());
 			state.registerKeyAndStrategy("max_step_num", new ReplaceStrategy());
 			state.registerKeyAndStrategy("mcp_settings", new ReplaceStrategy());
 
-			state.registerKeyAndStrategy("feed_back", new ReplaceStrategy());
 			state.registerKeyAndStrategy("feed_back_content", new ReplaceStrategy());
 
 			// 节点输出
