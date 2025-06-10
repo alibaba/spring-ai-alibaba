@@ -49,7 +49,7 @@ public class ChatRequestProcess {
 					chatRequest.enableBackgroundInvestigation() == null || chatRequest.enableBackgroundInvestigation(),
 					chatRequest.debug() != null && chatRequest.debug(),
 					chatRequest.mcpSettings() == null ? Collections.emptyMap() : chatRequest.mcpSettings(),
-					StringUtils.hasText(chatRequest.query()) ? chatRequest.query() : "草莓蛋糕怎么做呀。");
+					StringUtils.hasText(chatRequest.query()) ? chatRequest.query() : "草莓蛋糕怎么做呀");
 		}
 	}
 
@@ -57,11 +57,8 @@ public class ChatRequestProcess {
 		objectMap.put("thread_id", chatRequest.threadId());
 		objectMap.put("enable_background_investigation", chatRequest.enableBackgroundInvestigation());
 		objectMap.put("auto_accepted_plan", chatRequest.autoAcceptPlan());
-		objectMap.put("messages", List.of(new UserMessage(chatRequest.query())));
-		objectMap.put("plan_iterations", 0);
+		objectMap.put("query", chatRequest.query());
 		objectMap.put("max_step_num", chatRequest.maxStepNum());
-		objectMap.put("current_plan", null);
-		objectMap.put("final_report", "");
 		objectMap.put("mcp_settings", chatRequest.mcpSettings());
 	}
 
