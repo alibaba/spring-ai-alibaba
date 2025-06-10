@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.model;
+package com.alibaba.cloud.ai.example.deepresearch.model.req;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.ai.chat.messages.Message;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,11 +26,6 @@ import java.util.Map;
  */
 
 public record ChatRequest(
-
-		/**
-		 * 历史消息聊天列表，包含用户和系统
-		 */
-		@JsonProperty(value = "messages") List<Message> messages,
 
 		/**
 		 * 线程 ID，用于标识当前对话的唯一性。 默认值为 "__default__"，表示使用默认线程。
@@ -60,13 +53,9 @@ public record ChatRequest(
 		@JsonProperty(value = "enable_background_investigation",
 				defaultValue = "true") Boolean enableBackgroundInvestigation,
 		/**
-		 * 是否调试模式，用于控制是否开启调试模式。 默认值为 false，表示关闭调试模式。
-		 */
-		@JsonProperty(value = "debug", defaultValue = "false") Boolean debug,
-		/**
 		 * MCP 设置
 		 */
 		@JsonProperty(value = "mcp_settings") Map<String, Object> mcpSettings,
 
-		@JsonProperty(value = "query", defaultValue = "如何制造火箭。") String query) {
+		@JsonProperty(value = "query", defaultValue = "草莓蛋糕怎么做呀") String query) {
 }

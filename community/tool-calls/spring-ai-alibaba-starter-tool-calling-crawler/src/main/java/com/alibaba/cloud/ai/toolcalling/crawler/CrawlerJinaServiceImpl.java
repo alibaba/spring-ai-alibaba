@@ -22,7 +22,10 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
+import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -35,7 +38,8 @@ import org.slf4j.LoggerFactory;
  * Reference: https://jina.ai/reader/
  */
 
-public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
+public class CrawlerJinaServiceImpl extends AbstractCrawlerService
+		implements Function<CrawlerJinaServiceImpl.Request, CrawlerJinaServiceImpl.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(CrawlerJinaServiceImpl.class);
 
@@ -140,6 +144,18 @@ public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
 		}
 
 		return response;
+	}
+
+	@Override
+	public Response apply(Request request) {
+		return new Response(this.run(request.url));
+	}
+
+	@JsonClassDescription("get response from Jina Reader API")
+	public record Request(@JsonPropertyDescription("url") String url) {
+	}
+
+	public record Response(String content) {
 	}
 
 }

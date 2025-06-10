@@ -21,7 +21,10 @@ import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
+import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +36,8 @@ import org.slf4j.LoggerFactory;
  * https://jina.ai/reader/
  */
 
-public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
+public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService
+		implements Function<CrawlerFirecrawlServiceImpl.Request, CrawlerFirecrawlServiceImpl.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(CrawlerFirecrawlServiceImpl.class);
 
@@ -132,6 +136,18 @@ public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
 		}
 
 		return map;
+	}
+
+	@Override
+	public Response apply(Request request) {
+		return new Response(this.run(request.url()));
+	}
+
+	@JsonClassDescription("Firecrawl request body")
+	public record Request(@JsonPropertyDescription("url") String url) {
+	}
+
+	public record Response(String content) {
 	}
 
 }
