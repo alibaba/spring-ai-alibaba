@@ -140,19 +140,22 @@ public class TavilySearchService implements Function<TavilySearchService.Request
 }
 
 class ImageInfoDeserializer extends JsonDeserializer<TavilySearchService.Response.ImageInfo> {
+
 	@Override
 	public TavilySearchService.Response.ImageInfo deserialize(JsonParser p, DeserializationContext ctxt)
 			throws IOException, JsonProcessingException {
 		JsonNode node = p.getCodec().readTree(p);
-		
+
 		if (node.isTextual()) {
 			return new TavilySearchService.Response.ImageInfo(node.asText(), null);
-		} else if (node.isObject()) {
+		}
+		else if (node.isObject()) {
 			String url = node.has("url") ? node.get("url").asText() : null;
 			String description = node.has("description") ? node.get("description").asText() : null;
 			return new TavilySearchService.Response.ImageInfo(url, description);
 		}
-		
+
 		return null;
 	}
+
 }
