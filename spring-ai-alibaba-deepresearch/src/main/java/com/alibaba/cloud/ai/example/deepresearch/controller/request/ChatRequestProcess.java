@@ -34,12 +34,10 @@ public class ChatRequestProcess {
 	 */
 	public static ChatRequest getDefaultChatRequest(ChatRequest chatRequest) {
 		if (chatRequest == null) {
-			return new ChatRequest( "__default__", 1, 3, true, null, true, Collections.emptyMap(),
-					"草莓蛋糕怎么做呀。");
+			return new ChatRequest("__default__", 1, 3, true, null, true, Collections.emptyMap(), "草莓蛋糕怎么做呀。");
 		}
 		else {
-			return new ChatRequest(
-					StringUtils.hasText(chatRequest.threadId()) ? chatRequest.threadId() : "__default__",
+			return new ChatRequest(StringUtils.hasText(chatRequest.threadId()) ? chatRequest.threadId() : "__default__",
 					chatRequest.maxPlanIterations() == null ? 1 : chatRequest.maxPlanIterations(),
 					chatRequest.maxStepNum() == null ? 3 : chatRequest.maxStepNum(),
 					chatRequest.autoAcceptPlan() == null || chatRequest.autoAcceptPlan(),

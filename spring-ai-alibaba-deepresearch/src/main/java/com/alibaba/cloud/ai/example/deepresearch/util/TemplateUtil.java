@@ -58,4 +58,5 @@ public class TemplateUtil {
 		SystemMessage systemMessage = new SystemMessage(systemPrompt);
 		return systemMessage;
 	}
+
 }
