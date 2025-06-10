@@ -751,6 +751,8 @@ public class CompiledGraph {
 
 				var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
 
+				overAllState.updateState(command.update());
+
 				return new Command(result, currentState);
 			}
 			throw StateGraph.RunnableErrors.executionError
