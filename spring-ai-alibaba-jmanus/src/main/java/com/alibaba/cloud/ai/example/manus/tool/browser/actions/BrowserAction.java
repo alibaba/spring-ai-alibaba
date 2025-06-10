@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2025 the original author or authors.
  *
@@ -47,6 +46,24 @@ public abstract class BrowserAction {
 
 	public BrowserUseTool getBrowserUseTool() {
 		return browserUseTool;
+	}
+
+	/**
+	 * 获取浏览器操作的超时时间配置
+	 * @return 超时时间（毫秒），如果未配置则返回默认值30秒
+	 */
+	protected Integer getBrowserTimeoutMs() {
+		Integer timeout = getBrowserUseTool().getManusProperties().getBrowserRequestTimeout();
+		return (timeout != null ? timeout : 30) * 1000; // 转换为毫秒
+	}
+
+	/**
+	 * 获取浏览器操作的超时时间配置
+	 * @return 超时时间（秒），如果未配置则返回默认值30秒
+	 */
+	protected Integer getBrowserTimeoutSec() {
+		Integer timeout = getBrowserUseTool().getManusProperties().getBrowserRequestTimeout();
+		return timeout != null ? timeout : 30; // 默认超时时间为 30 秒
 	}
 
 	/**
@@ -99,7 +116,7 @@ public abstract class BrowserAction {
 		Set<String> urlsBeforeClick = pagesBeforeClick.stream().map(Page::url).collect(Collectors.toSet());
 
 		try {
-			Integer timeout = getBrowserUseTool().getManusProperties().getBrowserRequestTimeout();
+			Integer timeout = getBrowserTimeoutMs();
 			Page.WaitForPopupOptions popupOptions = new Page.WaitForPopupOptions().setTimeout(timeout);
 
 			newPageFromPopup = pageToClickOn.waitForPopup(popupOptions, clickLambda);
