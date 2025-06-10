@@ -32,10 +32,11 @@ import org.springframework.http.HttpHeaders;
 @Configuration
 @EnableConfigurationProperties(GithubToolKitProperties.class)
 @ConditionalOnClass(GithubToolKitProperties.class)
-@ConditionalOnProperty(prefix = GithubToolKitProperties.GITHUB_TOOLKIT_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = GithubToolKitConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class GithubToolKitAutoConfiguration {
 
-	@Bean
+	@Bean(name = GithubToolKitConstants.GET_ISSUE_TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("implement the function of get a GitHub issue operation")
 	public GetIssueService getIssue(GithubToolKitProperties properties, JsonParseTool jsonParseTool) {
@@ -43,7 +44,7 @@ public class GithubToolKitAutoConfiguration {
 		return new GetIssueService(properties, githubWebClientTool, jsonParseTool);
 	}
 
-	@Bean
+	@Bean(name = GithubToolKitConstants.CREATE_PR_TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("implement the function of create GitHub pull request operation")
 	public CreatePullRequestService createPullRequest(GithubToolKitProperties properties, JsonParseTool jsonParseTool) {
@@ -51,15 +52,15 @@ public class GithubToolKitAutoConfiguration {
 		return new CreatePullRequestService(properties, githubWebClientTool, jsonParseTool);
 	}
 
-	@Bean
+	@Bean(name = GithubToolKitConstants.SEARCH_REPOSITORY_TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("implement the function of search the list of repositories operation")
-	public SearchRepositoryService SearchRepository(GithubToolKitProperties properties, JsonParseTool jsonParseTool) {
+	public SearchRepositoryService searchRepository(GithubToolKitProperties properties, JsonParseTool jsonParseTool) {
 		WebClientTool githubWebClientTool = githubWebClientTool(properties, jsonParseTool);
 		return new SearchRepositoryService(githubWebClientTool, jsonParseTool);
 	}
 
-	public WebClientTool githubWebClientTool(GithubToolKitProperties properties, JsonParseTool jsonParseTool) {
+	private WebClientTool githubWebClientTool(GithubToolKitProperties properties, JsonParseTool jsonParseTool) {
 		return WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(headers -> {
 			headers.set(HttpHeaders.USER_AGENT, HttpHeaders.USER_AGENT);
 			headers.set(HttpHeaders.ACCEPT, "application/vnd.github.v3+json");
