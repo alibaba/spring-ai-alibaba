@@ -27,8 +27,10 @@ spring:
         tavilysearch:
           enabled: true
           api-key: ${TAVILY_API_KEY}
-      deepreserch:
-#        background-investigation-type: tool_calls
+        crawler:
+          jina:
+            enabled: false
+            api-key: ${JINA_API_KEY}
 
 logging:
   level:
