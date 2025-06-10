@@ -148,7 +148,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 		// conditional edge set: sourceId -> List<Edge>
 		Map<String, List<Edge>> conditionalEdgesMap = edges.stream()
-			.filter(e -> e.getSourceHandle() != null && !e.getSourceHandle().equals("source"))
+			.filter(e -> e.getSourceHandle() != null && !"source".equals(e.getSourceHandle()))
 			.collect(Collectors.groupingBy(Edge::getSource));
 
 		// Set to track rendered edges to avoid duplicates
@@ -163,12 +163,14 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			String targetType = data != null ? (String) data.get("targetType") : null;
 
 			// Skip if already rendered as conditional
-			if (edge.getSourceHandle() != null && !edge.getSourceHandle().equals("source"))
+			if (edge.getSourceHandle() != null && !"source".equals(edge.getSourceHandle())) {
 				continue;
+			}
 
 			String key = sourceId + "->" + targetId;
-			if (renderedEdges.contains(key))
+			if (renderedEdges.contains(key)) {
 				continue;
+			}
 			renderedEdges.add(key);
 
 			// START and END special handling
@@ -190,18 +192,19 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			Node sourceNode = nodeMap.get(sourceId);
 			NodeData sourceData = sourceNode.getData();
 
-            List<String> conditions = new ArrayList<>();
-            List<String> mappings = new ArrayList<>();
+			List<String> conditions = new ArrayList<>();
+			List<String> mappings = new ArrayList<>();
 
-            for (Edge e : condEdges) {
-                String conditionKey = resolveConditionKey(sourceData, e.getSourceHandle());
-                String targetId = e.getTarget();
-                conditions.add(String.format("            	if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
-                mappings.add(String.format("\"%s\", \"%s\"", conditionKey, targetId));
-            }
+			for (Edge e : condEdges) {
+				String conditionKey = resolveConditionKey(sourceData, e.getSourceHandle());
+				String targetId = e.getTarget();
+				conditions.add(String.format("            	if (value.contains(\"%s\")) return \"%s\";", conditionKey,
+						conditionKey));
+				mappings.add(String.format("\"%s\", \"%s\"", conditionKey, targetId));
+			}
 
-            String lambdaContent = String.join("\n", conditions);
-            String mapContent = String.join(", ", mappings);
+			String lambdaContent = String.join("\n", conditions);
+			String mapContent = String.join(", ", mappings);
 
 			sb.append(String.format(
 					"        stateGraph.addConditionalEdges(\"%s\",%n" + "            edge_async(state -> {%n"
@@ -229,6 +232,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
 			ProjectDescription projectDescription) {
+		// todo: may to standardize the code format via the IdentifierGeneratorFactory
 		Path fileRoot = createDirectory(projectRoot, projectDescription);
 		for (int i = 0; i < templateNames.size(); i++) {
 			String templateName = templateNames.get(i);
