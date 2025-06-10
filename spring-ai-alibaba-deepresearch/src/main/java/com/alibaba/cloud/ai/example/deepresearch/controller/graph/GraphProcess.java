@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller.graph;
 
-import com.alibaba.cloud.ai.example.deepresearch.controller.DeepResearchController;
 import com.alibaba.cloud.ai.example.deepresearch.model.ChatRequest;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
@@ -25,6 +24,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import org.bsc.async.AsyncGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,17 +69,18 @@ public class GraphProcess {
 			generator.forEachAsync(output -> {
 				try {
 					logger.info("output = {}", output);
-					if (output instanceof StreamingOutput) {
-						String nodeName = output.node();
-						StreamingOutput streamingOutput = (StreamingOutput) output;
-						sink.tryEmitNext(
-								ServerSentEvent.builder(JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk())))
-									.build());
+					String nodeName = output.node();
+					String content;
+					if (output instanceof StreamingOutput streamingOutput) {
+						content = JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk()));
 					}
 					else {
-						Map<String, Object> data = output.state().data();
-						sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(data)).build());
+						JSONObject nodeOutput = new JSONObject();
+						nodeOutput.put("data", output.state().data());
+						nodeOutput.put("node", nodeName);
+						content = JSON.toJSONString(nodeOutput);
 					}
+					sink.tryEmitNext(ServerSentEvent.builder(content).build());
 				}
 				catch (Exception e) {
 					throw new CompletionException(e);
