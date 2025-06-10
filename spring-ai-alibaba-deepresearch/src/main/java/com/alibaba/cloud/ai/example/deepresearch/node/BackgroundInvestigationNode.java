@@ -49,35 +49,50 @@ public class BackgroundInvestigationNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("background investigation node is running.");
 		String query = StateUtil.getQuery(state);
-		TavilySearchService.Response response = tavilySearchService
-			.apply(TavilySearchService.Request.simpleQuery(query));
-
+		
 		List<Map<String, String>> results = new ArrayList<>();
-		if (response.results() != null) {
-			results = response.results().stream().map(info -> {
-				Map<String, String> result = new HashMap<>();
-				result.put("title", info.title());
-				result.put("content", info.content());
-				logger.info("处理搜索结果: {}", result);
-				return result;
-			}).collect(Collectors.toList());
+		
+		// Retry logic
+		for (int i = 0; i < 2; i++) {
+			try {
+				TavilySearchService.Response response = tavilySearchService
+					.apply(TavilySearchService.Request.simpleQuery(query));
+				
+				if (response != null && response.results() != null && !response.results().isEmpty()) {
+					results = response.results().stream().map(info -> {
+						Map<String, String> result = new HashMap<>();
+						result.put("title", info.title());
+						result.put("content", info.content());
+						return result;
+					}).collect(Collectors.toList());
+					break;
+				}
+				
+			} catch (Exception e) {
+				logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
+			}
+			
+			// Wait 0.5 seconds before retrying if the first attempt fails
+			if (i == 0) {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException ie) {
+					Thread.currentThread().interrupt();
+					break;
+				}
+			}
 		}
-		else {
-			logger.warn("⚠️ Tavily搜索返回空结果，query: {}, response: {}", query, response);
-			// 如果搜索失败，添加默认结果以确保后续流程正常进行
-			Map<String, String> defaultResult = new HashMap<>();
-			defaultResult.put("title", "搜索服务暂时不可用");
-			defaultResult.put("content", "由于搜索服务暂时不可用，无法获取相关背景信息。建议稍后重试或使用其他信息源。");
-			results.add(defaultResult);
-		}
-
-		logger.info("✅ 搜索结果: {}", results);
 
 		Map<String, Object> resultMap = new HashMap<>();
-
-		String prompt = "background investigation results of user query:\n" + results + "\n";
-		resultMap.put("background_investigation_results", prompt);
+		if (!results.isEmpty()) {
+			String prompt = "background investigation results of user query:\n" + results + "\n";
+			resultMap.put("background_investigation_results", prompt);
+			logger.info("✅ 搜索结果: {} 条", results.size());
+		} else {
+			logger.warn("⚠️ 搜索失败");
+			resultMap.put("background_investigation_results", "");
+		}
+		
 		return resultMap;
 	}
-
 }
