@@ -1,2 +1,5 @@
 .git
 .idea
+*/resources/static/*
+*/target/*
+*/node_modules/*
