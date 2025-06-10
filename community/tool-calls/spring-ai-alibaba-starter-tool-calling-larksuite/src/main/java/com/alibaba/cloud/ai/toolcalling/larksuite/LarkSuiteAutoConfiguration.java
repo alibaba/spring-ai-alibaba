@@ -46,4 +46,12 @@ public class LarkSuiteAutoConfiguration {
 	public LarkSuiteChatService larksuiteChatFunction(LarkSuiteProperties properties) {
 		return new LarkSuiteChatService(properties);
 	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("It calls the document api to invoke a method to create a larksuite sheet")
+	public LarkSuiteCreateSheetService larksuiteCreateSheetFunction(LarkSuiteProperties properties) {
+		return new LarkSuiteCreateSheetService(properties);
+	}
+
 }
