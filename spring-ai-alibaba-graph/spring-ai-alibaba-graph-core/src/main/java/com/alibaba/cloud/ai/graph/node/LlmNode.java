@@ -63,7 +63,7 @@ public class LlmNode implements NodeAction {
 	}
 
 	public LlmNode(String systemPrompt, String prompt, Map<String, Object> params, List<Message> messages,
-			List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient,boolean stream) {
+			List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient, boolean stream) {
 		this.systemPrompt = systemPrompt;
 		this.userPrompt = prompt;
 		this.params = params;
@@ -79,18 +79,17 @@ public class LlmNode implements NodeAction {
 		initNodeWithState(state);
 
 		// add streaming support
-		if (Boolean.TRUE.equals(stream)){
+		if (Boolean.TRUE.equals(stream)) {
 			Flux<ChatResponse> chatResponseFlux = stream();
 			var generator = StreamingChatGenerator.builder()
-					.startingNode("llmNode")
-					.startingState(state)
-					.mapResult(
-							response -> Map.of(StringUtils.hasLength(this.outputKey) ?
-									this.outputKey : "messages", Objects.requireNonNull(response.getResult().getOutput().getText())))
-					.build(chatResponseFlux);
-			return Map.of(StringUtils.hasLength(this.outputKey) ?
-					this.outputKey : "messages", generator);
-		}else{
+				.startingNode("llmNode")
+				.startingState(state)
+				.mapResult(response -> Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages",
+						Objects.requireNonNull(response.getResult().getOutput().getText())))
+				.build(chatResponseFlux);
+			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", generator);
+		}
+		else {
 			ChatResponse response = call();
 
 			Map<String, Object> updatedState = new HashMap<>();
@@ -299,7 +298,6 @@ public class LlmNode implements NodeAction {
 			this.chatClient = chatClient;
 			return this;
 		}
-
 
 		public Builder stream(Boolean stream) {
 			this.stream = stream;

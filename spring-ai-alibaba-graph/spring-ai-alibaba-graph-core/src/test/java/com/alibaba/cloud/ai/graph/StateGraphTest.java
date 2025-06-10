@@ -680,8 +680,6 @@ public class StateGraphTest {
 				(NamedExecutable) () -> app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1")));
 	}
 
-
-
 	@Test
 	public void testCommandEdgeGraph() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
@@ -689,27 +687,26 @@ public class StateGraphTest {
 			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
 			keyStrategyHashMap.put("input", new ReplaceStrategy());
 			return keyStrategyHashMap;
-		})
-				.addNode("agent_1", node_async(state -> {
-					log.info("agent_1\n{}", state);
+		}).addNode("agent_1", node_async(state -> {
+			log.info("agent_1\n{}", state);
 
-					return Map.of("prop1", "agent_1");
-				}))
-				.addNode("agent_2", node_async(state -> {
-					log.info("agent_2\n{}", state);
+			return Map.of("prop1", "agent_1");
+		})).addNode("agent_2", node_async(state -> {
+			log.info("agent_2\n{}", state);
 
-					return Map.of("prop1", "agent_2");
-				}))
-				.addNode("agent_3", node_async(state -> {
-					log.info("agent_3\n{}", state);
-					assertEquals("command content", state.value("prop1",String.class).get());
-					return Map.of("prop1", "agent_3");
-				}))
-				.addConditionalEdges("agent_2", AsyncCommandAction.node_async((state, config) -> new Command("agent_2", Map.of("prop1", "command content")))
-						, Map.of("agent_2", "agent_3"))
-				.addEdge(START, "agent_1")
-				.addEdge( "agent_3",END)
-				.addEdge("agent_1", "agent_2");
+			return Map.of("prop1", "agent_2");
+		})).addNode("agent_3", node_async(state -> {
+			log.info("agent_3\n{}", state);
+			assertEquals("command content", state.value("prop1", String.class).get());
+			return Map.of("prop1", "agent_3");
+		}))
+			.addConditionalEdges("agent_2",
+					AsyncCommandAction
+						.node_async((state, config) -> new Command("agent_2", Map.of("prop1", "command content"))),
+					Map.of("agent_2", "agent_3"))
+			.addEdge(START, "agent_1")
+			.addEdge("agent_3", END)
+			.addEdge("agent_1", "agent_2");
 		CompiledGraph compile = workflow.compile();
 		compile.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 	}
