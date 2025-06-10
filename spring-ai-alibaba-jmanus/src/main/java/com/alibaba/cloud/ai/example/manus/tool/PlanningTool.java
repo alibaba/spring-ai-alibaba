@@ -137,7 +137,7 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 	}
 
 	public ToolExecuteResult createPlan(String planId, String title, List<String> steps) {
-		if (planId == null || title == null || steps == null || steps.isEmpty()) {
+		if ( title == null || steps == null || steps.isEmpty()) {
 			log.info("创建计划时缺少必要参数: planId={}, title={}, steps={}", planId, title, steps);
 			return new ToolExecuteResult("Required parameters missing");
 		}
