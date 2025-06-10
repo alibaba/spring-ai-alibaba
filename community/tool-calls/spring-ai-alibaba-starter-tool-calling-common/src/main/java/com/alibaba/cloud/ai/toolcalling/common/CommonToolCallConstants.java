@@ -53,6 +53,8 @@ public final class CommonToolCallConstants {
 	// Default response timeout in seconds
 	public static final int DEFAULT_RESPONSE_TIMEOUT_SECONDS = 10;
 
+	public static final String NOT_BLANK_REGEX = "\\S+";
+
 	// Default Agents
 	public static final String[] DEFAULT_USER_AGENTS = {
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",

@@ -669,10 +669,10 @@ public class CompiledGraph {
 						if (data != null) {
 
 							if (data instanceof Map<?, ?>) {
-								// FIX #102
+								// FIX
 								// Assume that the whatever used appender channel doesn't
 								// accept duplicates
-								// FIX #104: remove generator
+								// FIX : remove generator
 								var partialStateWithoutGenerator = partialState.entrySet()
 									.stream()
 									.filter(e -> !Objects.equals(e.getKey(), generatorEntry.getKey()))
@@ -684,6 +684,8 @@ public class CompiledGraph {
 								currentState = OverAllState.updateState(intermediateState, (Map<String, Object>) data,
 										keyStrategyMap);
 
+								// update for overallstate
+								overAllState.updateState(partialStateWithoutGenerator);
 								overAllState.updateState((Map<String, Object>) data);
 							}
 							else {
@@ -748,6 +750,8 @@ public class CompiledGraph {
 				}
 
 				var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
+
+				overAllState.updateState(command.update());
 
 				return new Command(result, currentState);
 			}

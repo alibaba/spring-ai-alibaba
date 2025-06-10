@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
@@ -24,7 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author yingzi
@@ -37,18 +39,14 @@ public class HumanFeedbackNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("HumanFeedback node is running.");
+		logger.info("human_feedback node is running.");
 		String nextStep = "research_team";
 		Map<String, Object> updated = new HashMap<>();
 
 		// auto_accepted、yes、no 迭代次数都+1
-		Integer planIterations = state.value("plan_iterations", 0);
-		planIterations += 1;
-		updated.put("plan_iterations", planIterations);
+		updated.put("plan_iterations", StateUtil.getPlanIterations(state) + 1);
 
-		boolean autoAcceptedPlan = state.value("auto_accepted_plan", false);
-
-		if (!autoAcceptedPlan) {
+		if (!StateUtil.getAutoAcceptedPlan(state)) {
 			// todo 这里改为接口形式
 			logger.info("Do you accept the plan? [y/n]：");
 			interrupt(state);
@@ -65,6 +63,7 @@ public class HumanFeedbackNode implements NodeAction {
 
 				logger.info("Human feedback content: {}", feedbackContent);
 				state.withoutResume();
+				logger.info("human_feedback node -> {} node", nextStep);
 				return updated;
 			}
 			else if (StringUtils.hasLength(feedback) && "y".equals(feedback)) {
@@ -75,12 +74,8 @@ public class HumanFeedbackNode implements NodeAction {
 			}
 		}
 
-		Plan currentPlan = state.value("current_plan", Plan.class).get();
-		if (currentPlan.isHasEnoughContext()) {
-			nextStep = "reporter";
-		}
-
 		updated.put("human_next_node", nextStep);
+		logger.info("human_feedback node -> {} node", nextStep);
 		return updated;
 	}
 
