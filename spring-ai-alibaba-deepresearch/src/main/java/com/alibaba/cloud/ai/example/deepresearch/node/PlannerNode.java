@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -28,7 +28,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
@@ -64,7 +63,7 @@ public class PlannerNode implements NodeAction {
 		List<Message> messages = new ArrayList<>();
 		// 1. 添加消息
 		// 1.1 添加预置提示消息
-		messages.add(TemplateUtil.getMessage("planner"));
+		messages.add(TemplateUtil.getMessage("planner", state));
 		// 1.2 添加用户提问
 		messages.add(new UserMessage(state.value("query", "")));
 		// 1.3 添加背景调查消息
@@ -73,8 +72,9 @@ public class PlannerNode implements NodeAction {
 			messages.add(new UserMessage(backgroundInvestigationResults));
 		}
 		// 1.4 添加用户反馈消息
-		if (StringUtils.hasText(state.data().getOrDefault("feed_back_content", "").toString())) {
-			messages.add(new UserMessage(state.data().getOrDefault("feed_back_content", "").toString()));
+		String feedBackContent = state.value("feed_back_content", "").toString();
+		if (StringUtils.hasText(feedBackContent)) {
+			messages.add(new UserMessage(feedBackContent));
 		}
 		// 1.5 添加观察的消息(Researcher、Coder返回的消息)
 		for (String observation : StateUtil.getMessagesByType(state, "observations")) {
