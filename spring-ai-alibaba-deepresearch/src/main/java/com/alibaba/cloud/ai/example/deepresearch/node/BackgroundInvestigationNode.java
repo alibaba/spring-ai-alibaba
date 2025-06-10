@@ -51,13 +51,25 @@ public class BackgroundInvestigationNode implements NodeAction {
 		String query = StateUtil.getQuery(state);
 		TavilySearchService.Response response = tavilySearchService
 			.apply(TavilySearchService.Request.simpleQuery(query));
-		List<Map<String, String>> results = response.results().stream().map(info -> {
-			Map<String, String> result = new HashMap<>();
-			result.put("title", info.title());
-			result.put("content", info.content());
-			logger.info("处理搜索结果: {}", result);
-			return result;
-		}).collect(Collectors.toList());
+		
+		List<Map<String, String>> results = new ArrayList<>();
+		if (response.results() != null) {
+			results = response.results().stream().map(info -> {
+				Map<String, String> result = new HashMap<>();
+				result.put("title", info.title());
+				result.put("content", info.content());
+				logger.info("处理搜索结果: {}", result);
+				return result;
+			}).collect(Collectors.toList());
+		} else {
+			logger.warn("⚠️ Tavily搜索返回空结果，query: {}, response: {}", query, response);
+			// 如果搜索失败，添加默认结果以确保后续流程正常进行
+			Map<String, String> defaultResult = new HashMap<>();
+			defaultResult.put("title", "搜索服务暂时不可用");
+			defaultResult.put("content", "由于搜索服务暂时不可用，无法获取相关背景信息。建议稍后重试或使用其他信息源。");
+			results.add(defaultResult);
+		}
+		
 		logger.info("✅ 搜索结果: {}", results);
 
 		Map<String, Object> resultMap = new HashMap<>();
