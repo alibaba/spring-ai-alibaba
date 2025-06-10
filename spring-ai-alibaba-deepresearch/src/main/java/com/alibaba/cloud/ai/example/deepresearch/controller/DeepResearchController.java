@@ -18,7 +18,8 @@ package com.alibaba.cloud.ai.example.deepresearch.controller;
 
 import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
 import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
-import com.alibaba.cloud.ai.example.deepresearch.model.ChatRequest;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -103,14 +104,13 @@ public class DeepResearchController {
 		return resultFuture.get().data();
 	}
 
-	@GetMapping("/chat/resume")
-	public Map<String, Object> resume(
-			@RequestParam(value = "thread_id", required = false, defaultValue = "__default__") String threadId,
-			@RequestParam(value = "feed_back", required = true) String feedBack,
-			@RequestParam(value = "feed_back_content", required = false) String feedBackContent) {
+	@PostMapping("/chat/resume")
+	public Map<String, Object> resume(@RequestBody(required = false) FeedbackRequest humanFeedback) {
 
-		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(threadId).build();
-		Map<String, Object> objectMap = ChatRequestProcess.getStringObjectMap(feedBack, feedBackContent);
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(humanFeedback.threadId()).build();
+		Map<String, Object> objectMap = new HashMap<>();
+		objectMap.put("feedback", humanFeedback.feedBack());
+		objectMap.put("feed_back_content", humanFeedback.feedBackContent());
 
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
 		OverAllState state = stateSnapshot.state();

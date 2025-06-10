@@ -72,7 +72,6 @@ public class PythonReplTool {
 		this.coderProperties = coderProperties;
 	}
 
-	@SneakyThrows
 	@Tool(description = "Execute Python code and return the result.")
 	public String executePythonCode(@ToolParam(description = "python code") String code,
 			@ToolParam(description = "requirements.txt", required = false) String requirements) {
