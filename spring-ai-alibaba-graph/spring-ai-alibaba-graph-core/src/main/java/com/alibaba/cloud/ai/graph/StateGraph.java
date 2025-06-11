@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
+import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import com.alibaba.cloud.ai.graph.internal.node.SubStateGraphNode;
@@ -39,7 +40,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -50,263 +50,35 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import static java.lang.String.format;
-
-/**
- * Represents a state graph with nodes and edges.
- */
+/** Represents a state graph with nodes and edges. */
 public class StateGraph {
 
-	/**
-	 * Enum representing various error messages related to graph state.
-	 */
-	public enum Errors {
-
-		/**
-		 * Invalid node identifier.
-		 */
-		invalidNodeIdentifier("END is not a valid node id!"),
-		/**
-		 * Invalid edge identifier.
-		 */
-		invalidEdgeIdentifier("END is not a valid edge sourceId!"),
-		/**
-		 * Duplicate node error.
-		 */
-		duplicateNodeError("node with id: %s already exists!"),
-		/**
-		 * Duplicate edge error.
-		 */
-		duplicateEdgeError("edge with id: %s already exists!"),
-		/**
-		 * Duplicate conditional edge error.
-		 */
-		duplicateConditionalEdgeError("conditional edge from '%s' already exists!"),
-		/**
-		 * Edge mapping is empty.
-		 */
-		edgeMappingIsEmpty("edge mapping is empty!"),
-		/**
-		 * Missing entry point.
-		 */
-		missingEntryPoint("missing Entry Point"),
-		/**
-		 * Entry point does not exist.
-		 */
-		entryPointNotExist("entryPoint: %s does not exist!"),
-		/**
-		 * Finish point does not exist.
-		 */
-		finishPointNotExist("finishPoint: %s does not exist!"),
-		/**
-		 * Missing node referenced by edge.
-		 */
-		missingNodeReferencedByEdge("edge sourceId '%s' refers to undefined node!"),
-		/**
-		 * Missing node in edge mapping.
-		 */
-		missingNodeInEdgeMapping("edge mapping for sourceId: %s contains a non-existent nodeId %s!"),
-		/**
-		 * Invalid edge target.
-		 */
-		invalidEdgeTarget("edge sourceId: %s has an initialized target value!"),
-		/**
-		 * Duplicate edge target error.
-		 */
-		duplicateEdgeTargetError("edge [%s] has duplicate targets %s!"),
-		/**
-		 * Unsupported conditional edge on parallel node.
-		 */
-		unsupportedConditionalEdgeOnParallelNode(
-				"parallel node does not support conditional branch, but on [%s] a conditional branch on %s has been found!"),
-		/**
-		 * Illegal multiple targets on parallel node.
-		 */
-		illegalMultipleTargetsOnParallelNode("parallel node [%s] must have only one target, but %s have been found!"),
-		/**
-		 * Interruption node does not exist.
-		 */
-		interruptionNodeNotExist("node '%s' configured as interruption does not exist!");
-
-		private final String errorMessage;
-
-		Errors(String errorMessage) {
-			this.errorMessage = errorMessage;
-		}
-
-		/**
-		 * Creates a new GraphStateException with the formatted error message.
-		 * @param args the arguments to format the error message
-		 * @return a new GraphStateException
-		 */
-		public GraphStateException exception(Object... args) {
-			return new GraphStateException(String.format(errorMessage, args));
-		}
-
-	}
-
-	/**
-	 * Enum representing various error messages related to graph runner.
-	 */
-	enum RunnableErrors {
-
-		/**
-		 * Missing node in edge mapping.
-		 */
-		missingNodeInEdgeMapping("cannot find edge mapping for id: '%s' in conditional edge with sourceId: '%s' "),
-		/**
-		 * Missing node.
-		 */
-		missingNode("node with id: '%s' does not exist!"),
-		/**
-		 * Missing edge.
-		 */
-		missingEdge("edge with sourceId: '%s' does not exist!"),
-		/**
-		 * Execution error.
-		 */
-		executionError("%s");
-
-		private final String errorMessage;
-
-		RunnableErrors(String errorMessage) {
-			this.errorMessage = errorMessage;
-		}
-
-		/**
-		 * Creates a new GraphRunnerException with the formatted error message.
-		 * @param args the arguments to format the error message
-		 * @return a new GraphRunnerException
-		 */
-		GraphRunnerException exception(String... args) {
-			return new GraphRunnerException(String.format(errorMessage, args));
-		}
-
-	}
-
-	/**
-	 * Constant representing the END of the graph.
-	 */
+	/** Constant representing the END of the graph. */
 	public static final String END = "__END__";
 
-	/**
-	 * Constant representing the START of the graph.
-	 */
+	/** Constant representing the START of the graph. */
 	public static final String START = "__START__";
 
-	/**
-	 * Constant representing the ERROR of the graph.
-	 */
+	/** Constant representing the ERROR of the graph. */
 	public static final String ERROR = "__ERROR__";
 
-	/**
-	 * Collection of nodes in the graph.
-	 */
+	/** Collection of nodes in the graph. */
 	final Nodes nodes = new Nodes();
 
-	/**
-	 * Collection of edges in the graph.
-	 */
+	/** Collection of edges in the graph. */
 	final Edges edges = new Edges();
 
-	/**
-	 * Factory for creating overall state instances.
-	 */
-	private OverAllStateFactory overAllStateFactory;
-
-	/**
-	 * Factory for providing key strategies.
-	 */
-	private KeyStrategyFactory keyStrategyFactory;
-
-	/**
-	 * Name of the graph.
-	 */
-	private String name;
-
-	/**
-	 * Serializer for the state.
-	 */
+	/** Serializer for the state. */
 	private final PlainTextStateSerializer stateSerializer;
 
-	/**
-	 * Jackson-based serializer for state.
-	 */
-	static class JacksonSerializer extends JacksonStateSerializer {
+	/** Factory for creating overall state instances. */
+	private OverAllStateFactory overAllStateFactory;
 
-		/**
-		 * Instantiates a new Jackson serializer.
-		 */
-		public JacksonSerializer() {
-			super(OverAllState::new);
-		}
+	/** Factory for providing key strategies. */
+	private KeyStrategyFactory keyStrategyFactory;
 
-		/**
-		 * Gets object mapper.
-		 * @return the object mapper
-		 */
-		ObjectMapper getObjectMapper() {
-			return objectMapper;
-		}
-
-	}
-
-	/**
-	 * Gson-based serializer for state.
-	 */
-	static class GsonSerializer extends GsonStateSerializer {
-
-		/**
-		 * Instantiates a new Gson serializer.
-		 */
-		public GsonSerializer() {
-			super(OverAllState::new,
-					new GsonBuilder().enableComplexMapKeySerialization()
-						.setLenient()
-						.registerTypeAdapter(Double.TYPE,
-								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
-						.serializeNulls()
-						.create());
-		}
-
-		/**
-		 * Gets gson.
-		 * @return the gson
-		 */
-		Gson getGson() {
-			return gson;
-		}
-
-	}
-
-	/**
-	 * Alternative Gson-based serializer for state.
-	 */
-	static class GsonSerializer2 extends GsonStateSerializer {
-
-		/**
-		 * Instantiates a new Gson serializer 2.
-		 * @param stateFactory the state factory
-		 */
-		public GsonSerializer2(AgentStateFactory<OverAllState> stateFactory) {
-			super(stateFactory,
-					new GsonBuilder().enableComplexMapKeySerialization()
-						.registerTypeAdapter(Double.TYPE,
-								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
-						.setLenient()
-						.serializeNulls()
-						.create());
-		}
-
-		/**
-		 * Gets gson.
-		 * @return the gson
-		 */
-		Gson getGson() {
-			return gson;
-		}
-
-	}
+	/** Name of the graph. */
+	private String name;
 
 	/**
 	 * Constructs a StateGraph with the specified name, key strategy factory, and state
@@ -691,14 +463,168 @@ public class StateGraph {
 		return new GraphRepresentation(type, content);
 	}
 
-	/**
-	 * Container for nodes in the graph.
-	 */
-	public static class Nodes {
+	public StateGraph addNode(String id, AsyncCommandAction asyncCommandAction, Map<String, String> mappings)
+			throws GraphStateException {
+
+		return addNode(id, new CommandNode(id, asyncCommandAction, mappings));
+	}
+
+	/** Enum representing various error messages related to graph state. */
+	public enum Errors {
+
+		/** Invalid node identifier. */
+		invalidNodeIdentifier("END is not a valid node id!"),
+		/** Invalid edge identifier. */
+		invalidEdgeIdentifier("END is not a valid edge sourceId!"),
+		/** Duplicate node error. */
+		duplicateNodeError("node with id: %s already exists!"),
+		/** Duplicate edge error. */
+		duplicateEdgeError("edge with id: %s already exists!"),
+		/** Duplicate conditional edge error. */
+		duplicateConditionalEdgeError("conditional edge from '%s' already exists!"),
+		/** Edge mapping is empty. */
+		edgeMappingIsEmpty("edge mapping is empty!"),
+		/** Missing entry point. */
+		missingEntryPoint("missing Entry Point"),
+		/** Entry point does not exist. */
+		entryPointNotExist("entryPoint: %s does not exist!"),
+		/** Finish point does not exist. */
+		finishPointNotExist("finishPoint: %s does not exist!"),
+		/** Missing node referenced by edge. */
+		missingNodeReferencedByEdge("edge sourceId '%s' refers to undefined node!"),
+		/** Missing node in edge mapping. */
+		missingNodeInEdgeMapping("edge mapping for sourceId: %s contains a non-existent nodeId %s!"),
+		/** Invalid edge target. */
+		invalidEdgeTarget("edge sourceId: %s has an initialized target value!"),
+		/** Duplicate edge target error. */
+		duplicateEdgeTargetError("edge [%s] has duplicate targets %s!"),
+		/** Unsupported conditional edge on parallel node. */
+		unsupportedConditionalEdgeOnParallelNode(
+				"parallel node does not support conditional branch, but on [%s] a conditional branch on %s has been found!"),
+		/** Illegal multiple targets on parallel node. */
+		illegalMultipleTargetsOnParallelNode("parallel node [%s] must have only one target, but %s have been found!"),
+		/** Interruption node does not exist. */
+		interruptionNodeNotExist("node '%s' configured as interruption does not exist!");
+
+		private final String errorMessage;
+
+		Errors(String errorMessage) {
+			this.errorMessage = errorMessage;
+		}
 
 		/**
-		 * The collection of nodes.
+		 * Creates a new GraphStateException with the formatted error message.
+		 * @param args the arguments to format the error message
+		 * @return a new GraphStateException
 		 */
+		public GraphStateException exception(Object... args) {
+			return new GraphStateException(String.format(errorMessage, args));
+		}
+
+	}
+
+	/** Enum representing various error messages related to graph runner. */
+	enum RunnableErrors {
+
+		/** Missing node in edge mapping. */
+		missingNodeInEdgeMapping("cannot find edge mapping for id: '%s' in conditional edge with sourceId: '%s' "),
+		/** Missing node. */
+		missingNode("node with id: '%s' does not exist!"),
+		/** Missing edge. */
+		missingEdge("edge with sourceId: '%s' does not exist!"),
+		/** Execution error. */
+		executionError("%s");
+
+		private final String errorMessage;
+
+		RunnableErrors(String errorMessage) {
+			this.errorMessage = errorMessage;
+		}
+
+		/**
+		 * Creates a new GraphRunnerException with the formatted error message.
+		 * @param args the arguments to format the error message
+		 * @return a new GraphRunnerException
+		 */
+		GraphRunnerException exception(String... args) {
+			return new GraphRunnerException(String.format(errorMessage, args));
+		}
+
+	}
+
+	/** Jackson-based serializer for state. */
+	static class JacksonSerializer extends JacksonStateSerializer {
+
+		/** Instantiates a new Jackson serializer. */
+		public JacksonSerializer() {
+			super(OverAllState::new);
+		}
+
+		/**
+		 * Gets object mapper.
+		 * @return the object mapper
+		 */
+		ObjectMapper getObjectMapper() {
+			return objectMapper;
+		}
+
+	}
+
+	/** Gson-based serializer for state. */
+	static class GsonSerializer extends GsonStateSerializer {
+
+		/** Instantiates a new Gson serializer. */
+		public GsonSerializer() {
+			super(OverAllState::new,
+					new GsonBuilder().enableComplexMapKeySerialization()
+						.setLenient()
+						.registerTypeAdapter(Double.TYPE,
+								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
+						.serializeNulls()
+						.create());
+		}
+
+		/**
+		 * Gets gson.
+		 * @return the gson
+		 */
+		Gson getGson() {
+			return gson;
+		}
+
+	}
+
+	/** Alternative Gson-based serializer for state. */
+	static class GsonSerializer2 extends GsonStateSerializer {
+
+		/**
+		 * Instantiates a new Gson serializer 2.
+		 * @param stateFactory the state factory
+		 */
+		public GsonSerializer2(AgentStateFactory<OverAllState> stateFactory) {
+			super(stateFactory,
+					new GsonBuilder().enableComplexMapKeySerialization()
+						.registerTypeAdapter(Double.TYPE,
+								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
+						.setLenient()
+						.serializeNulls()
+						.create());
+		}
+
+		/**
+		 * Gets gson.
+		 * @return the gson
+		 */
+		Gson getGson() {
+			return gson;
+		}
+
+	}
+
+	/** Container for nodes in the graph. */
+	public static class Nodes {
+
+		/** The collection of nodes. */
 		public final Set<Node> elements;
 
 		/**
@@ -709,9 +635,7 @@ public class StateGraph {
 			this.elements = new LinkedHashSet<>(elements);
 		}
 
-		/**
-		 * Instantiates a new empty Nodes container.
-		 */
+		/** Instantiates a new empty Nodes container. */
 		public Nodes() {
 			this.elements = new LinkedHashSet<>();
 		}
@@ -746,14 +670,10 @@ public class StateGraph {
 
 	}
 
-	/**
-	 * Container for edges in the graph.
-	 */
+	/** Container for edges in the graph. */
 	public static class Edges {
 
-		/**
-		 * The collection of edges.
-		 */
+		/** The collection of edges. */
 		public final List<Edge> elements;
 
 		/**
@@ -764,9 +684,7 @@ public class StateGraph {
 			this.elements = new LinkedList<>(elements);
 		}
 
-		/**
-		 * Instantiates a new empty Edges container.
-		 */
+		/** Instantiates a new empty Edges container. */
 		public Edges() {
 			this.elements = new LinkedList<>();
 		}

@@ -15,27 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.Command;
-import com.alibaba.cloud.ai.graph.action.CommandAction;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
-import com.alibaba.cloud.ai.graph.state.AppenderChannel;
-import com.alibaba.cloud.ai.graph.state.RemoveByHash;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import org.bsc.async.AsyncGenerator;
-import org.junit.jupiter.api.NamedExecutable;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.CompletionException;
-import java.util.stream.Collectors;
-
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
@@ -45,6 +24,21 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.alibaba.cloud.ai.graph.action.*;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
+import com.alibaba.cloud.ai.graph.state.AppenderChannel;
+import com.alibaba.cloud.ai.graph.state.RemoveByHash;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import java.util.*;
+import java.util.concurrent.CompletionException;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.NamedExecutable;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StateGraphTest {
 
@@ -57,6 +51,37 @@ public class StateGraphTest {
 	 */
 	public static <T> List<Map.Entry<String, T>> sortMap(Map<String, T> map) {
 		return map.entrySet().stream().sorted(Map.Entry.comparingByKey()).collect(Collectors.toList());
+	}
+
+	/** Removes an element from the list based on the provided RemoveIdentifier. */
+	private static void removeFromList(List<Object> result, AppenderChannel.RemoveIdentifier<Object> removeIdentifier) {
+		for (int i = 0; i < result.size(); i++) {
+			if (removeIdentifier.compareTo(result.get(i), i) == 0) {
+				result.remove(i);
+				break;
+			}
+		}
+	}
+
+	/** Evaluates removal operations on a list based on RemoveIdentifiers in newValues. */
+	private static AppenderChannel.RemoveData<Object> evaluateRemoval(List<Object> oldValues, List<?> newValues) {
+
+		final var result = new AppenderChannel.RemoveData<>(oldValues, newValues);
+
+		newValues.stream().filter(value -> value instanceof AppenderChannel.RemoveIdentifier<?>).forEach(value -> {
+			result.newValues().remove(value);
+			var removeIdentifier = (AppenderChannel.RemoveIdentifier<Object>) value;
+			removeFromList(result.oldValues(), removeIdentifier);
+		});
+		return result;
+	}
+
+	/**
+	 * Creates an OverAllState instance with predefined strategies for testing purposes.
+	 */
+	private static OverAllStateFactory createOverAllStateFactory() {
+		return () -> new OverAllState().registerKeyAndStrategy("steps", (o, o2) -> o2)
+			.registerKeyAndStrategy("messages", new AppendStrategy());
 	}
 
 	/**
@@ -103,12 +128,9 @@ public class StateGraphTest {
 		exception = assertThrows(GraphStateException.class,
 				() -> workflow.addConditionalEdges("agent_1", edge_async(state -> "agent_3"), Map.of()));
 		log.info("{}", exception.getMessage());
-
 	}
 
-	/**
-	 * Tests a simple graph with one node that updates the state.
-	 */
+	/** Tests a simple graph with one node that updates the state. */
 	@Test
 	public void testRunningOneNode() throws Exception {
 		StateGraph workflow = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("prop1", (o, o2) -> o2))
@@ -129,9 +151,7 @@ public class StateGraphTest {
 		assertIterableEquals(sortMap(expected), sortMap(result.get().data()));
 	}
 
-	/**
-	 * Tests a graph where nodes append messages to a shared list.
-	 */
+	/** Tests a graph where nodes append messages to a shared list. */
 	@Test
 	void testWithAppender() throws Exception {
 		StateGraph workflow = new StateGraph(createOverAllStateFactory()).addNode("agent_1", node_async(state -> {
@@ -164,40 +184,9 @@ public class StateGraphTest {
 		System.out.println(result.get().data());
 		List<String> listResult = (List<String>) result.get().value("messages").get();
 		assertIterableEquals(List.of("message1", "message2", "message3"), listResult);
-
 	}
 
-	/**
-	 * Removes an element from the list based on the provided RemoveIdentifier.
-	 */
-	private static void removeFromList(List<Object> result, AppenderChannel.RemoveIdentifier<Object> removeIdentifier) {
-		for (int i = 0; i < result.size(); i++) {
-			if (removeIdentifier.compareTo(result.get(i), i) == 0) {
-				result.remove(i);
-				break;
-			}
-		}
-	}
-
-	/**
-	 * Evaluates removal operations on a list based on RemoveIdentifiers in newValues.
-	 */
-	private static AppenderChannel.RemoveData<Object> evaluateRemoval(List<Object> oldValues, List<?> newValues) {
-
-		final var result = new AppenderChannel.RemoveData<>(oldValues, newValues);
-
-		newValues.stream().filter(value -> value instanceof AppenderChannel.RemoveIdentifier<?>).forEach(value -> {
-			result.newValues().remove(value);
-			var removeIdentifier = (AppenderChannel.RemoveIdentifier<Object>) value;
-			removeFromList(result.oldValues(), removeIdentifier);
-		});
-		return result;
-
-	}
-
-	/**
-	 * Tests message appending and single message removal in a graph flow.
-	 */
+	/** Tests message appending and single message removal in a graph flow. */
 	@Test
 	void testWithAppenderOneRemove() throws Exception {
 		StateGraph workflow = new StateGraph(createOverAllStateFactory()).addNode("agent_1", node_async(state -> {
@@ -231,7 +220,6 @@ public class StateGraphTest {
 		assertEquals(3, result.get().value("steps").get());
 		assertEquals(1, messages.size());
 		assertIterableEquals(List.of("message1"), messages);
-
 	}
 
 	/**
@@ -271,20 +259,9 @@ public class StateGraphTest {
 		assertEquals(3, result.get().value("steps").get());
 		assertEquals(3, messages.size());
 		assertIterableEquals(List.of("message1", "message3", "message4"), messages);
-
 	}
 
-	/**
-	 * Creates an OverAllState instance with predefined strategies for testing purposes.
-	 */
-	private static OverAllStateFactory createOverAllStateFactory() {
-		return () -> new OverAllState().registerKeyAndStrategy("steps", (o, o2) -> o2)
-			.registerKeyAndStrategy("messages", new AppendStrategy());
-	}
-
-	/**
-	 * Tests subgraph functionality where one graph is embedded within another.
-	 */
+	/** Tests subgraph functionality where one graph is embedded within another. */
 	@Test
 	public void testWithSubgraph() throws Exception {
 
@@ -328,12 +305,9 @@ public class StateGraphTest {
 		assertTrue(result.isPresent());
 		assertIterableEquals(List.of("step1", "step2", "child:step1", "child:step2", "child:step3", "step3"),
 				(List<Object>) result.get().value("messages").get());
-
 	}
 
-	/**
-	 * Helper method to create a node action with logging functionality.
-	 */
+	/** Helper method to create a node action with logging functionality. */
 	private AsyncNodeAction makeNode(String id) {
 		return node_async(state -> {
 			log.info("call node {}", id);
@@ -341,9 +315,7 @@ public class StateGraphTest {
 		});
 	}
 
-	/**
-	 * Tests parallel branch execution in a graph.
-	 */
+	/** Tests parallel branch execution in a graph. */
 	@Test
 	void testWithParallelBranch() throws Exception {
 		var workflow = new StateGraph(createOverAllStateFactory()).addNode("A", makeNode("A"))
@@ -390,12 +362,9 @@ public class StateGraphTest {
 
 		assertTrue(result.isPresent());
 		assertIterableEquals(List.of("A1", "A2", "A3", "B", "C"), (List<String>) result.get().value("messages").get());
-
 	}
 
-	/**
-	 * Tests error conditions related to parallel branches in graph configuration.
-	 */
+	/** Tests error conditions related to parallel branches in graph configuration. */
 	@Test
 	void testWithParallelBranchWithErrors() throws Exception {
 		var onlyOneTarget = new StateGraph(createOverAllStateFactory()).addNode("A", makeNode("A"))
@@ -477,12 +446,9 @@ public class StateGraphTest {
 
 		exception = assertThrows(GraphStateException.class, noDuplicateTarget::compile);
 		assertEquals("edge [A] has duplicate targets [A2]!", exception.getMessage());
-
 	}
 
-	/**
-	 * Tests serialization capabilities of the StateGraph using different serializers.
-	 */
+	/** Tests serialization capabilities of the StateGraph using different serializers. */
 	@Test
 	public void testWithSubSerialize() throws Exception {
 		OverAllStateFactory overAllStateFactory = () -> {
@@ -520,9 +486,7 @@ public class StateGraphTest {
 		return () -> new OverAllState().registerKeyAndStrategy("prop1", (o, o2) -> o2);
 	}
 
-	/**
-	 * Tests creation of a StateGraph using a custom OverAllStateFactory.
-	 */
+	/** Tests creation of a StateGraph using a custom OverAllStateFactory. */
 	@Test
 	public void testCreateStateGraph() throws Exception {
 		StateGraph workflow = new StateGraph(overAllStateFactory()).addEdge(START, "agent_1")
@@ -709,6 +673,33 @@ public class StateGraphTest {
 			.addEdge("agent_1", "agent_2");
 		CompiledGraph compile = workflow.compile();
 		compile.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+	}
+
+	@Test
+	public void testCommandNodeGraph() throws Exception {
+		StateGraph graph = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+			stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+			return stringKeyStrategyHashMap;
+		});
+
+		CommandAction commandAction = (state, config) -> new Command("node1", state.data());
+		graph.addNode("testCommandNode", AsyncCommandAction.node_async(commandAction),
+				Map.of("node1", "node1", "node2", "node2"));
+
+		graph.addNode("node1", makeNode("node1"));
+		graph.addNode("node2", makeNode("node2"));
+
+		graph.addEdge(START, "testCommandNode");
+		graph.addEdge("node1", "node2");
+		graph.addEdge("node2", END);
+
+		CompiledGraph compile = graph.compile();
+		// GraphRepresentation graph1 =
+		// compile.getGraph(GraphRepresentation.Type.PLANTUML);
+		GraphRepresentation graph2 = compile.getGraph(GraphRepresentation.Type.MERMAID);
+		// System.out.println(graph1.content());
+		System.out.println(graph2.content());
 	}
 
 }
