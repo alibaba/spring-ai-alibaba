@@ -32,6 +32,8 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 
 import java.util.List;
 
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
+
 /**
  * 负责创建执行计划的类
  */
@@ -81,6 +83,7 @@ public class PlanCreator {
 				.prompt(prompt)
 				.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
 			if (useMemory) {
+                requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
 				requestSpec.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
 			}
 			ChatClient.CallResponseSpec response = requestSpec.call();
