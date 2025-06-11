@@ -52,11 +52,11 @@ public class PluginController {
 		// 执行图：weather_plugin_node -> transform_node -> nacos_plugin_node
 		// transform_node会自动将天气结果转换为Nacos配置并发布
 		return stateGraph.compile()
-				.invoke(Map.of("weather_params", weatherParams))
-				.get()
-				.value("result")
-				.get()
-				.toString();
+			.invoke(Map.of("weather_params", weatherParams))
+			.get()
+			.value("result")
+			.get()
+			.toString();
 	}
 
 }
