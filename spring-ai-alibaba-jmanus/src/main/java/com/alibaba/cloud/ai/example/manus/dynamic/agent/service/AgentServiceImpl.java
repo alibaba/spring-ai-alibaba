@@ -155,7 +155,8 @@ public class AgentServiceImpl implements AgentService {
 				tool.setServiceGroup(entry.getValue().getFunctionInstance().getServiceGroup());
 				return tool;
 			}).collect(Collectors.toList());
-		} finally {
+		}
+		finally {
 			mcpService.close(uuid);
 		}
 	}
