@@ -43,6 +43,8 @@ spring-ai-alibaba-examples/playground-flight-booking/src/main/bundles/
 **/venv/*
 **/spring-ai-alibaba-jmanus/h2-data/*
 **/playwright/*
+spring-ai-alibaba-jmanus/ui-vue3/pnpm-lock.yaml
+
 
 # windows os
 /extensions/
