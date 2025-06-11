@@ -49,6 +49,8 @@ public class ResearcherNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("researcher node is running.");
 		Plan currentPlan = StateUtil.getPlan(state);
+		List<String> observations = StateUtil.getMessagesByType(state, "observations");
+		Map<String, Object> updated = new HashMap<>();
 
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
@@ -56,6 +58,10 @@ public class ResearcherNode implements NodeAction {
 				unexecutedStep = step;
 				break;
 			}
+		}
+		if (unexecutedStep == null) {
+			logger.info("all researcher node is finished.");
+			return updated;
 		}
 
 		// 添加任务消息

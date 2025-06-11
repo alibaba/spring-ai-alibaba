@@ -55,6 +55,7 @@ public class CoderNode implements NodeAction {
 		logger.info("coder node is running.");
 		Plan currentPlan = StateUtil.getPlan(state);
 		List<String> observations = StateUtil.getMessagesByType(state, "observations");
+		Map<String, Object> updated = new HashMap<>();
 
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
@@ -62,6 +63,11 @@ public class CoderNode implements NodeAction {
 				unexecutedStep = step;
 				break;
 			}
+		}
+
+		if (unexecutedStep == null) {
+			logger.info("all coder node is finished.");
+			return updated;
 		}
 
 		List<Message> messages = new ArrayList<>();
