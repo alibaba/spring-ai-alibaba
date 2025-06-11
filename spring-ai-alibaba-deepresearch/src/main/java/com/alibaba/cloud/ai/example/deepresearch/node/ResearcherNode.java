@@ -73,11 +73,11 @@ public class ResearcherNode implements NodeAction {
 		// 调用agent
 		var streamResult = researchAgent.prompt().messages(messages).stream().chatResponse();
 		var generator = StreamingChatGenerator.builder()
-				.startingNode("researcher_llm_stream")
-				.startingState(state)
-				.mapResult(response -> Map.of("researcher_content",
-						Objects.requireNonNull(response.getResult().getOutput().getText())))
-				.build(streamResult);
+			.startingNode("researcher_llm_stream")
+			.startingState(state)
+			.mapResult(response -> Map.of("researcher_content",
+					Objects.requireNonNull(response.getResult().getOutput().getText())))
+			.build(streamResult);
 
 		return Map.of("researcher_content", generator);
 	}

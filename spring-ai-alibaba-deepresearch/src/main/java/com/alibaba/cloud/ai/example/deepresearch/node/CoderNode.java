@@ -80,11 +80,11 @@ public class CoderNode implements NodeAction {
 			.chatResponse();
 
 		var generator = StreamingChatGenerator.builder()
-				.startingNode("coder_llm_stream")
-				.startingState(state)
-				.mapResult(response -> Map.of("coder_content",
-						Objects.requireNonNull(response.getResult().getOutput().getText())))
-				.build(streamResult);
+			.startingNode("coder_llm_stream")
+			.startingState(state)
+			.mapResult(response -> Map.of("coder_content",
+					Objects.requireNonNull(response.getResult().getOutput().getText())))
+			.build(streamResult);
 
 		return Map.of("coder_content", generator);
 	}
