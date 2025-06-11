@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.util;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.graph.OverAllState;
 
 import java.util.ArrayList;
@@ -46,7 +46,11 @@ public class StateUtil {
 	}
 
 	public static Integer getPlanMaxIterations(OverAllState state) {
-		return state.value("plan_max_iterations", 3);
+		return state.value("plan_max_iterations", 1);
+	}
+
+	public static Integer getMaxStepNum(OverAllState state) {
+		return state.value("max_step_num", 3);
 	}
 
 	public static String getThreadId(OverAllState state) {
