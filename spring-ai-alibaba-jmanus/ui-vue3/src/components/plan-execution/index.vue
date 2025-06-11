@@ -280,6 +280,15 @@ const handlePlanCompleted = (result: any) => {
 
 const handleStepSelected = (planId: string, stepIndex: number) => {
   console.log('[PlanExecutionComponent] Step selected:', planId, stepIndex)
+  
+  // 立即触发进度刷新
+  if (planExecutionManager.getActivePlanId() === planId) {
+    console.log('[PlanExecutionComponent] Triggering immediate progress refresh for selected step')
+    planExecutionManager.pollPlanStatusImmediately().catch((error) => {
+      console.warn('[PlanExecutionComponent] Failed to refresh progress immediately:', error)
+    })
+  }
+  
   emit('step-selected', planId, stepIndex)
 }
 

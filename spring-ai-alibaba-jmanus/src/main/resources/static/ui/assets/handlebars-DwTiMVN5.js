@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:spring-ai-alibaba-jmanus/src/main/resources/static/ui/assets/handlebars-DwTiMVN5.js
 import{m as i}from"./index-BPmckBPa.js";import"./index-CmDg-RgC.js";import"./_plugin-vue_export-helper-CrSfAc-5.js";import"./task-BH9wwcSn.js";/*!-----------------------------------------------------------------------------
+========
+import{m as i}from"./index-EhPpXa3j.js";import"./index-CJ0yKxkG.js";import"./_plugin-vue_export-helper-DpQjQhkp.js";import"./task-Bm6oXdU2.js";/*!-----------------------------------------------------------------------------
+>>>>>>>> upstream/main:spring-ai-alibaba-jmanus/src/main/resources/static/ui/assets/handlebars-BWtATXyS.js
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Version: 0.45.0(5e5af013f8d295555a7210df0d5f2cea0bf5dd56)
  * Released under the MIT license

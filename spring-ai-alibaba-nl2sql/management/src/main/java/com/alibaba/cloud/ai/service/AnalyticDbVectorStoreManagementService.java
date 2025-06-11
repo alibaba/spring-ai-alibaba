@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStoreProperties;
 import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.request.*;
 import com.aliyun.gpdb20160503.Client;
 import com.aliyun.gpdb20160503.models.*;
@@ -30,9 +29,11 @@ import com.alibaba.cloud.ai.dbconnector.bo.ColumnInfoBO;
 import com.alibaba.cloud.ai.dbconnector.bo.ForeignKeyInfoBO;
 import com.alibaba.cloud.ai.dbconnector.bo.TableInfoBO;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -42,7 +43,9 @@ import java.util.stream.Collectors;
  * 核心向量数据库操作服务，提供向量写入、查询、删除、Schema 初始化等功能。
  */
 @Service
-public class VectorStoreService {
+@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
+public class AnalyticDbVectorStoreManagementService implements VectorStoreManagementService {
 
 	private static final String CONTENT_FIELD_NAME = "content";
 
@@ -50,7 +53,7 @@ public class VectorStoreService {
 
 	@Autowired
 	@Qualifier("dashscopeEmbeddingModel")
-	private DashScopeEmbeddingModel embeddingModel;
+	private EmbeddingModel embeddingModel;
 
 	@Autowired
 	private VectorStore vectorStore;
@@ -72,6 +75,7 @@ public class VectorStoreService {
 	 * @param evidenceRequests 证据请求列表
 	 * @return 是否成功
 	 */
+	@Override
 	public Boolean addEvidence(List<EvidenceRequest> evidenceRequests) {
 		List<Document> evidences = new ArrayList<>();
 		for (EvidenceRequest req : evidenceRequests) {
@@ -153,6 +157,7 @@ public class VectorStoreService {
 	 * @param deleteRequest 删除请求
 	 * @return 是否删除成功
 	 */
+	@Override
 	public Boolean deleteDocuments(DeleteRequest deleteRequest) throws Exception {
 		try {
 			String filterExpression;
@@ -191,6 +196,7 @@ public class VectorStoreService {
 	 * @param schemaInitRequest schema 初始化请求
 	 * @throws Exception 如果发生错误
 	 */
+	@Override
 	public Boolean schema(SchemaInitRequest schemaInitRequest) throws Exception {
 		DbConfig dbConfig = schemaInitRequest.getDbConfig();
 		DbQueryParameter dqp = DbQueryParameter.from(dbConfig)
