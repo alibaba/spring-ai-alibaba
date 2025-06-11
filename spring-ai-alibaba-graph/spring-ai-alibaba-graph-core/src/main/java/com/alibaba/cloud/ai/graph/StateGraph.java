@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import org.commonmark.node.Nodes;
 
 /** Represents a state graph with nodes and edges. */
 public class StateGraph {
@@ -392,11 +393,25 @@ public class StateGraph {
 	 */
 	void validateGraph() throws GraphStateException {
 		var edgeStart = edges.edgeBySourceId(START).orElseThrow(Errors.missingEntryPoint::exception);
-
 		edgeStart.validate(nodes);
+
+		validateNode(nodes);
 
 		for (Edge edge : edges.elements) {
 			edge.validate(nodes);
+		}
+	}
+
+	private void validateNode(Nodes nodes) throws GraphStateException {
+		List<CommandNode> commandNodeList = nodes.elements.stream().filter(node -> {
+			return node instanceof CommandNode commandNode;
+		}).map(node -> (CommandNode) node).toList();
+		for (CommandNode commandNode : commandNodeList) {
+			for (String key : commandNode.getMappings().keySet()) {
+				if (!nodes.anyMatchById(key)) {
+					throw Errors.missingNodeInEdgeMapping.exception(commandNode.id(), key);
+				}
+			}
 		}
 	}
 
