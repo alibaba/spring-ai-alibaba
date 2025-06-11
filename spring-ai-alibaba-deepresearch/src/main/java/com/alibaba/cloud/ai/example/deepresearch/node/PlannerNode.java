@@ -122,8 +122,15 @@ public class PlannerNode implements NodeAction {
 				return updated;
 			}
 		}
-		// 2.3 上下文不足，跳转到human_feedback节点
-		nextStep = "human_feedback";
+		// 2.3 上下文不足
+		if (StateUtil.getAutoAcceptedPlan(state)) {
+			// 自动接受，直接跳转research_team节点
+			nextStep = "research_team";
+		}
+		else {
+			// 需要人类反馈，跳转human_feedback节点
+			nextStep = "human_feedback";
+		}
 		updated.put("current_plan", curPlan);
 		updated.put("planner_next_node", nextStep);
 		logger.info("planner node -> {} node", nextStep);

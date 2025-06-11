@@ -45,31 +45,28 @@ public class HumanFeedbackNode implements NodeAction {
 		// auto_accepted、yes、no 迭代次数都+1
 		updated.put("plan_iterations", StateUtil.getPlanIterations(state) + 1);
 
-		if (!StateUtil.getAutoAcceptedPlan(state)) {
-			// todo 这里改为接口形式
-			logger.info("Do you accept the plan? [y/n]：");
-			interrupt(state);
+		// todo 这里改为接口形式
+		logger.info("Do you accept the plan? [y/n]：");
+		interrupt(state);
 
-			Map<String, Object> feedBackData = state.humanFeedback().data();
-			boolean feedback = (boolean) feedBackData.getOrDefault("feed_back", true);
+		Map<String, Object> feedBackData = state.humanFeedback().data();
+		boolean feedback = (boolean) feedBackData.getOrDefault("feed_back", true);
 
-			if (!feedback) {
-				nextStep = "planner";
-				updated.put("human_next_node", nextStep);
+		if (!feedback) {
+			nextStep = "planner";
+			updated.put("human_next_node", nextStep);
 
-				String feedbackContent = feedBackData.getOrDefault("feed_back_content", "").toString();
-				if (StringUtils.hasLength(feedbackContent)) {
-					updated.put("feed_back_content", feedbackContent);
-					logger.info("Human feedback content: {}", feedbackContent);
-				}
-				state.withoutResume();
-				logger.info("human_feedback node -> {} node", nextStep);
-				return updated;
+			String feedbackContent = feedBackData.getOrDefault("feed_back_content", "").toString();
+			if (StringUtils.hasLength(feedbackContent)) {
+				updated.put("feed_back_content", feedbackContent);
+				logger.info("Human feedback content: {}", feedbackContent);
 			}
+			state.withoutResume();
+			logger.info("human_feedback node -> {} node", nextStep);
+			return updated;
 		}
 
 		updated.put("human_next_node", nextStep);
-		logger.info("human_feedback node -> {} node", nextStep);
 		return updated;
 	}
 

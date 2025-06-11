@@ -53,6 +53,7 @@ public class CoderNode implements NodeAction {
 		logger.info("coder node is running.");
 		Plan currentPlan = StateUtil.getPlan(state);
 		List<String> observations = StateUtil.getMessagesByType(state, "observations");
+		Map<String, Object> updated = new HashMap<>();
 
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
@@ -62,25 +63,27 @@ public class CoderNode implements NodeAction {
 			}
 		}
 
+		if (unexecutedStep == null) {
+			logger.info("all coder node is finished.");
+			return updated;
+		}
+
 		List<Message> messages = new ArrayList<>();
 		// 添加任务消息
 		Message taskMessage = new UserMessage(
 				String.format("#Task\n\n##title\n\n%s\n\n##description\n\n%s\n\n##locale\n\n%s",
 						unexecutedStep.getTitle(), unexecutedStep.getDescription(), state.value("locale", "en-US")));
 		messages.add(taskMessage);
+		// 添加已被观测到的数据
+		messages.add(new UserMessage(observations.toString()));
 
 		logger.debug("coder Node message: {}", messages);
 		// 调用agent
-		Flux<String> StreamResult = coderAgent.prompt()
-			.options(ToolCallingChatOptions.builder().build())
-			.messages(messages)
-			.stream()
-			.content();
+		Flux<String> StreamResult = coderAgent.prompt().messages(messages).stream().content();
 		String result = StreamResult.reduce((acc, next) -> acc + next).block();
 		unexecutedStep.setExecutionRes(result);
 
 		logger.info("coder Node result: {}", result);
-		Map<String, Object> updated = new HashMap<>();
 		observations.add(result);
 		updated.put("observations", observations);
 
