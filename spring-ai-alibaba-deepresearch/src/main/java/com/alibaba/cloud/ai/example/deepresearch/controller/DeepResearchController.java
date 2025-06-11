@@ -20,11 +20,10 @@ import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
 import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import org.bsc.async.AsyncGenerator;
@@ -56,7 +55,9 @@ public class DeepResearchController {
 
 	@Autowired
 	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph) throws GraphStateException {
-		this.compiledGraph = stateGraph.compile();
+		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+		this.compiledGraph = stateGraph
+			.compile(CompileConfig.builder().saverConfig(saverConfig).interruptBefore("human_feedback").build());
 	}
 
 	/**
@@ -109,7 +110,7 @@ public class DeepResearchController {
 
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(humanFeedback.threadId()).build();
 		Map<String, Object> objectMap = new HashMap<>();
-		objectMap.put("feedback", humanFeedback.feedBack());
+		objectMap.put("feed_back", humanFeedback.feedBack());
 		objectMap.put("feed_back_content", humanFeedback.feedBackContent());
 
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
