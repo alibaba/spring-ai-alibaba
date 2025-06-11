@@ -53,6 +53,9 @@ public class ResearchTeamNode implements NodeAction {
 
 		// todo 异步 + 并行执行Step
 		for (Plan.Step step : curPlan.getSteps()) {
+			if (StringUtils.hasText(step.getExecutionRes())) {
+				continue;
+			}
 			if (step.getStepType() == Plan.StepType.RESEARCH) {
 				nextStep = "researcher";
 				updated.put("research_team_next_node", nextStep);
