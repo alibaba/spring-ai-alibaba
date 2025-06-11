@@ -48,7 +48,7 @@ public class CoderDispatcher implements EdgeAction {
 				break;
 			}
 		}
-		if (unexecutedStep == null || StringUtils.hasText(coderContent)) {
+		if (unexecutedStep == null) {
 			logger.info("all coder node is finished.");
 			return "research_team";
 		}
