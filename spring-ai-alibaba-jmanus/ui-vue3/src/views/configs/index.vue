@@ -46,7 +46,7 @@
       <div class="config-details">
         <BasicConfig v-if="activeCategory === 'basic'" />
         <AgentConfig v-if="activeCategory === 'agent'" />
-        <ToolsConfig v-if="activeCategory === 'mcp'" />
+        <McpConfig v-if="activeCategory === 'mcp'" />
       </div>
     </div>
   </div>
@@ -57,7 +57,7 @@ import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import BasicConfig from './basicConfig.vue'
 import AgentConfig from './agentConfig.vue'
-import ToolsConfig from './toolsConfig.vue'
+import McpConfig from './mcpConfig.vue'
 
 const activeCategory = ref('basic')
 const categories = [
@@ -84,6 +84,7 @@ const categories = [
 
 .config-header h1 {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   font-size: 24px;

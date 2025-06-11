@@ -16,7 +16,9 @@
 package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStoreProperties;
+import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.request.SearchRequest;
+import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
 import com.aliyun.gpdb20160503.Client;
 import com.aliyun.gpdb20160503.models.*;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -25,14 +27,16 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
+@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @Service
-public class VectorStoreService {
+public class VectorStoreService extends BaseVectorStoreService {
 
 	private static final String CONTENT_FIELD_NAME = "content";
 
@@ -50,34 +54,15 @@ public class VectorStoreService {
 	@Autowired
 	private Client client;
 
-	/**
-	 * 将文本转换为 Double 类型的向量
-	 */
-	public List<Double> embedDouble(String text) {
-		return convertToDoubleList(embeddingModel.embed(text));
-	}
-
-	/**
-	 * 将文本转换为 Float 类型的向量
-	 */
-	public List<Float> embedFloat(String text) {
-		return convertToFloatList(embeddingModel.embed(text));
-	}
-
-	/**
-	 * 获取向量库中的文档
-	 */
-	public List<Document> getDocuments(String query, String vectorType) {
-		SearchRequest request = new SearchRequest();
-		request.setQuery(query);
-		request.setVectorType(vectorType);
-		request.setTopK(100);
-		return searchWithVectorType(request);
+	@Override
+	protected EmbeddingModel getEmbeddingModel() {
+		return embeddingModel;
 	}
 
 	/**
 	 * 默认 filter 的搜索接口
 	 */
+	@Override
 	public List<Document> searchWithVectorType(SearchRequest searchRequestDTO) {
 		String filter = String.format("jsonb_extract_path_text(metadata, 'vectorType') = '%s'",
 				searchRequestDTO.getVectorType());
@@ -90,6 +75,7 @@ public class VectorStoreService {
 	/**
 	 * 自定义 filter 的搜索接口
 	 */
+	@Override
 	public List<Document> searchWithFilter(SearchRequest searchRequestDTO) {
 		QueryCollectionDataRequest request = buildBaseRequest(searchRequestDTO)
 			.setFilter(searchRequestDTO.getFilterFormatted());
@@ -127,23 +113,6 @@ public class VectorStoreService {
 		catch (Exception e) {
 			throw new RuntimeException("向量数据库查询失败: " + e.getMessage(), e);
 		}
-	}
-
-	/**
-	 * 将 float[] 转换为 List<Double>
-	 */
-	private List<Double> convertToDoubleList(float[] array) {
-		return IntStream.range(0, array.length)
-			.mapToDouble(i -> (double) array[i])
-			.boxed()
-			.collect(Collectors.toList());
-	}
-
-	/**
-	 * 将 float[] 转换为 List<Float>
-	 */
-	private List<Float> convertToFloatList(float[] array) {
-		return IntStream.range(0, array.length).mapToObj(i -> array[i]).collect(Collectors.toList());
 	}
 
 	/**
