@@ -130,8 +130,7 @@ public class DeepResearchConfiguration {
 					Map.of("reporter", "reporter", "researcher", "researcher", "coder", "coder"))
 			.addConditionalEdges("researcher", edge_async(new ResearcherDispatcher()),
 					Map.of("research_team", "research_team"))
-			.addConditionalEdges("coder", edge_async(new CoderDispatcher()),
-					Map.of("research_team", "research_team"))
+			.addConditionalEdges("coder", edge_async(new CoderDispatcher()), Map.of("research_team", "research_team"))
 			.addEdge("reporter", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
