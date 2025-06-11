@@ -1,2 +1,4 @@
 .git
 .idea
+./spring-ai-alibaba-jmanus/src/main/resources/static
+./spring-ai-alibaba-jmanus/src/main/resources/static_legacy

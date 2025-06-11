@@ -90,18 +90,16 @@ pnpm run dev
 ```bash
 # 使用 pnpm 构建生产版本
 pnpm run build
+
+然后复制build后的文件到 resources目录（有可能需要先删除老的所有文件）
+例如 mac下，在spring-ai-alibaba-jmanus 下运行：
+
+cp -r ui-vue3/ui src/main/resources/static/
+
+然后java spring boot 启动就行了 , java会自动开启对应的页面。
+
 ```
 
-## 🔧 配置
-
-UI 可以通过环境变量进行配置：
-
-```env
-# API 配置
-VITE_API_BASE_URL=http://localhost:8080
-
-# 其他配置...
-```
 
 ## 📖 文档
 

@@ -15,6 +15,7 @@
  */
 
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import Antd from 'ant-design-vue'
 
 import router from './router'
@@ -29,5 +30,6 @@ import 'nprogress/nprogress.css'
 import _ from 'lodash'
 
 const app = createApp(App)
+const pinia = createPinia()
 
-app.use(Antd).use(Vue3ColorPicker).use(i18n).use(router).mount('#app')
+app.use(pinia).use(Antd).use(Vue3ColorPicker).use(i18n).use(router).mount('#app')
