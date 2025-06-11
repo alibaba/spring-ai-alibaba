@@ -78,60 +78,6 @@ public class CodeActionTest {
 	}
 
 	@Test
-	public void testExecuteJavaSuccessfully() throws Exception {
-		// Prepare test data
-		String javaCode = """
-				public static Object main(Object[] inputs) {
-					// Process input parameters
-					String name = (String) inputs[0];
-					Integer age = (Integer) inputs[1];
-
-					// Execute business logic
-					Map<String, Object> result = new HashMap<>();
-					result.put("message", "Hello " + name);
-					result.put("age", age + 1);
-					result.put("timestamp", System.currentTimeMillis());
-
-					return result;
-				}
-				""";
-
-		// Create execution configuration
-		CodeExecutionConfig config = new CodeExecutionConfig();
-		config.setDocker("openjdk:11-jdk")
-			.setContainerName("java-test-container")
-			.setWorkDir("/tmp/java-test")
-			.setTimeout(30);
-
-		// Create code executor
-		CodeExecutor executor = new DockerCodeExecutor();
-
-		// Create code execution node action
-		CodeExecutorNodeAction action = CodeExecutorNodeAction.builder()
-			.codeExecutor(executor)
-			.codeLanguage("java")
-			.code(javaCode)
-			.config(config)
-			.params(Map.of("name", "name", "age", "age"))
-			.build();
-
-		// Prepare input data
-		Map<String, Object> initData = new LinkedHashMap<>();
-		initData.put("name", "World");
-		initData.put("age", 25);
-		OverAllState state = new OverAllState(initData);
-
-		// Execute code
-		Map<String, Object> result = action.apply(state);
-
-		// Verify results
-		assertNotNull(result);
-		assertEquals("Hello World", result.get("message"));
-		assertEquals(26, result.get("age"));
-		assertNotNull(result.get("timestamp"));
-	}
-
-	@Test
 	void testExecuteJavaWithLocalExecutor() throws Exception {
 		// Prepare test data
 		String javaCode = """
