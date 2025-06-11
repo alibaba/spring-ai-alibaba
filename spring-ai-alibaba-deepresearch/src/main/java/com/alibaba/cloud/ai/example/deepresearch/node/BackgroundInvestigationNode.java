@@ -22,7 +22,6 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.Message;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +40,10 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final TavilySearchService tavilySearchService;
 
+	private final Integer MAX_RETRY_COUNT = 3;
+
+	private final Long RETRY_DELAY_MS = 500L;
+
 	public BackgroundInvestigationNode(TavilySearchService tavilySearchService) {
 		this.tavilySearchService = tavilySearchService;
 	}
@@ -49,21 +52,42 @@ public class BackgroundInvestigationNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("background investigation node is running.");
 		String query = StateUtil.getQuery(state);
-		TavilySearchService.Response response = tavilySearchService
-			.apply(TavilySearchService.Request.simpleQuery(query));
-		List<Map<String, String>> results = response.results().stream().map(info -> {
-			Map<String, String> result = new HashMap<>();
-			result.put("title", info.title());
-			result.put("content", info.content());
-			logger.info("处理搜索结果: {}", result);
-			return result;
-		}).collect(Collectors.toList());
-		logger.info("✅ 搜索结果: {}", results);
+
+		List<Map<String, String>> results = new ArrayList<>();
+
+		// Retry logic
+		for (int i = 0; i < MAX_RETRY_COUNT; i++) {
+			try {
+				TavilySearchService.Response response = tavilySearchService
+					.apply(TavilySearchService.Request.simpleQuery(query));
+
+				if (response != null && response.results() != null && !response.results().isEmpty()) {
+					results = response.results().stream().map(info -> {
+						Map<String, String> result = new HashMap<>();
+						result.put("title", info.title());
+						result.put("content", info.content());
+						return result;
+					}).collect(Collectors.toList());
+					break;
+				}
+
+			}
+			catch (Exception e) {
+				logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
+			}
+			Thread.sleep(RETRY_DELAY_MS);
+		}
 
 		Map<String, Object> resultMap = new HashMap<>();
+		if (!results.isEmpty()) {
+			String prompt = "background investigation results of user query:\n" + results + "\n";
+			resultMap.put("background_investigation_results", prompt);
+			logger.info("✅ 搜索结果: {} 条", results.size());
+		}
+		else {
+			logger.warn("⚠️ 搜索失败");
+		}
 
-		String prompt = "background investigation results of user query:\n" + results + "\n";
-		resultMap.put("background_investigation_results", prompt);
 		return resultMap;
 	}
 

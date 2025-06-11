@@ -1,3 +1,46 @@
+/**
+ * 计划执行管理控制器
+ * 负责与后端API通信并管理计划执行状态
+ */
+// 引入DirectApiService
+const DirectApiService = {
+    BASE_URL: '/api/executor',
+    
+    async sendMessage(query) {
+        try {
+            const response = await fetch(`${this.BASE_URL}/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`API请求失败: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error("[DirectApiService] sendMessage error:", error);
+            throw error;
+        }
+    },
+    
+    async getDetails(planId) {
+        try {
+            const response = await fetch(`${this.BASE_URL}/details/${planId}`);
+            
+            if (!response.ok) {
+                throw new Error(`获取计划详情失败: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error("[DirectApiService] getDetails error:", error);
+            throw error;
+        }
+    }
+};
+
 class PlanExecutionManagerController {
     constructor() {
         this.activePlanId = null;
@@ -131,10 +174,15 @@ class PlanExecutionManagerController {
      * @returns {Promise<object|null>} - The API response containing planId, or null if an error occurs or planId is missing.
      */
     async _sendUserMessageAndSetPlanId(query) {
-        const response = await ManusAPI.sendMessage(query);
-        if (response && response.planId) { // Corrected: Added parentheses for the if condition
+        // 使用DirectApiService而不是ManusAPI
+        const response = await DirectApiService.sendMessage(query);
+        if (response && response.planId) {
             this.activePlanId = response.planId;
             return response; // Return the full response as it might be useful
+        } else if (response && response.planTemplateId) {
+            // 如果响应中有planTemplateId而不是planId
+            this.activePlanId = response.planTemplateId;
+            return { ...response, planId: response.planTemplateId };
         }
         console.error("[PlanExecutionManager] _sendUserMessageAndSetPlanId: Failed to get planId from response.", response);
         throw new Error("未能从API响应中获取有效的 planId");
@@ -196,7 +244,7 @@ class PlanExecutionManagerController {
         try {
             setTimeout(async () => {
                 if (!this.activePlanId) return; 
-                await fetch(`${ManusAPI.BASE_URL}/details/${this.activePlanId}`, {
+                await fetch(`${DirectApiService.BASE_URL}/details/${this.activePlanId}`, {
                     method: 'DELETE'
                 });
                 console.log(`已删除已完成的计划执行记录: ${this.activePlanId}`);
@@ -222,7 +270,7 @@ class PlanExecutionManagerController {
         }
         try {
             this.isPolling = true;
-            const details = await ManusAPI.getDetails(this.activePlanId);
+            const details = await DirectApiService.getDetails(this.activePlanId);
             if (!details) {
                 console.log(`无法获取计划 ${this.activePlanId} 的详情`);
                 this.isPolling = false;
