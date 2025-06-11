@@ -83,9 +83,19 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 		// write the code string to a file specified by the filename.
 		FileUtils.writeCodeToFile(workDir, filename, code);
 
+		// Copy required JAR files to workDir if language is Java
+		if ("java".equals(language)) {
+			FileUtils.copyResourceJarToWorkDir(workDir);
+		}
+
 		CodeExecutionResult executionResult = executeCodeLocally(language, workDir, filename, config);
 
 		FileUtils.deleteFile(workDir, filename);
+		
+		// Delete JAR files if language is Java
+		if ("java".equals(language)) {
+			FileUtils.deleteResourceJarFromWorkDir(workDir);
+		}
 		return executionResult;
 	}
 
@@ -97,7 +107,7 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 
 		if ("java".equals(language)) {
 			commandLine.addArgument("-cp")
-				.addArgument(workDir + File.pathSeparator + config.getClassPath())
+				.addArgument("." + File.pathSeparator + workDir + File.pathSeparator + config.getClassPath())
 				.addArgument(filename);
 		}
 		else {
