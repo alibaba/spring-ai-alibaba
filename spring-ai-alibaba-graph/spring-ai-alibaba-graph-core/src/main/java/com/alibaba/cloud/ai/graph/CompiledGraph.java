@@ -15,6 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import static com.alibaba.cloud.ai.graph.StateGraph.*;
+import static java.lang.String.format;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.stream.Collectors.toList;
+
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
@@ -24,78 +29,45 @@ import com.alibaba.cloud.ai.graph.exception.GraphInitKeyErrorException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
+import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import org.apache.commons.lang3.StringUtils;
-import org.bsc.async.AsyncGenerator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.CollectionUtils;
-
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.bsc.async.AsyncGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.*;
-import static java.lang.String.format;
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static java.util.stream.Collectors.toList;
-
-/**
- * The type Compiled graph.
- */
+/** The type Compiled graph. */
 public class CompiledGraph {
 
 	private static final Logger log = LoggerFactory.getLogger(CompiledGraph.class);
 
-	/**
-	 * The enum Stream mode.
-	 */
-	public enum StreamMode {
-
-		/**
-		 * Values stream mode.
-		 */
-		VALUES,
-		/**
-		 * Snapshots stream mode.
-		 */
-		SNAPSHOTS
-
-	}
-
-	/**
-	 * The State graph.
-	 */
+	/** The State graph. */
 	public final StateGraph stateGraph;
 
-	private final Map<String, KeyStrategy> keyStrategyMap;
+	/** The Compile config. */
+	public final CompileConfig compileConfig;
 
-	/**
-	 * The Nodes.
-	 */
+	/** The Nodes. */
 	final Map<String, AsyncNodeActionWithConfig> nodes = new LinkedHashMap<>();
 
-	/**
-	 * The Edges.
-	 */
+	/** The Edges. */
 	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
+
+	private final Map<String, KeyStrategy> keyStrategyMap;
 
 	private final ProcessedNodesEdgesAndConfig processedData;
 
 	private int maxIterations = 25;
-
-	/**
-	 * The Compile config.
-	 */
-	public final CompileConfig compileConfig;
 
 	/**
 	 * Constructs a CompiledGraph with the given StateGraph.
@@ -182,9 +154,7 @@ public class CompiledGraph {
 				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
 
 				edges.put(parallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
-
 			}
-
 		}
 	}
 
@@ -222,7 +192,6 @@ public class CompiledGraph {
 
 		return saver.get(config)
 			.map(checkpoint -> StateSnapshot.of(keyStrategyMap, checkpoint, config, stateGraph.getStateFactory()));
-
 	}
 
 	/**
@@ -252,7 +221,6 @@ public class CompiledGraph {
 
 			nextNodeId = nextNodeCommand.gotoNode();
 			branchCheckpoint = branchCheckpoint.updateState(nextNodeCommand.update(), keyStrategyMap);
-
 		}
 		// update checkpoint in saver
 		RunnableConfig newConfig = saver.put(config, branchCheckpoint);
@@ -321,7 +289,6 @@ public class CompiledGraph {
 	 */
 	private Command nextNodeId(String nodeId, Map<String, Object> state, RunnableConfig config) throws Exception {
 		return nextNodeId(edges.get(nodeId), state, nodeId, config);
-
 	}
 
 	private Command getEntryPoint(Map<String, Object> state, RunnableConfig config) throws Exception {
@@ -351,7 +318,6 @@ public class CompiledGraph {
 			return Optional.of(cp);
 		}
 		return Optional.empty();
-
 	}
 
 	/**
@@ -530,6 +496,16 @@ public class CompiledGraph {
 		return getGraph(type, "Graph Diagram", true);
 	}
 
+	/** The enum Stream mode. */
+	public enum StreamMode {
+
+		/** Values stream mode. */
+		VALUES,
+		/** Snapshots stream mode. */
+		SNAPSHOTS
+
+	}
+
 	/**
 	 * Async Generator for streaming outputs.
 	 *
@@ -537,39 +513,25 @@ public class CompiledGraph {
 	 */
 	public class AsyncNodeGenerator<Output extends NodeOutput> implements AsyncGenerator<Output> {
 
-		/**
-		 * The Current state.
-		 */
+		/** The Current state. */
 		Map<String, Object> currentState;
 
-		/**
-		 * The Current node id.
-		 */
+		/** The Current node id. */
 		String currentNodeId;
 
-		/**
-		 * The Next node id.
-		 */
+		/** The Next node id. */
 		String nextNodeId;
 
-		/**
-		 * The Over all state.
-		 */
+		/** The Over all state. */
 		OverAllState overAllState;
 
-		/**
-		 * The Iteration.
-		 */
+		/** The Iteration. */
 		int iteration = 0;
 
-		/**
-		 * The Config.
-		 */
+		/** The Config. */
 		RunnableConfig config;
 
-		/**
-		 * The Resumed from embed.
-		 */
+		/** The Resumed from embed. */
 		boolean resumedFromEmbed = false;
 
 		/**
@@ -665,7 +627,6 @@ public class CompiledGraph {
 						n.setSubGraph(true);
 						return n;
 					}), data -> {
-
 						if (data != null) {
 
 							if (data instanceof Map<?, ?>) {
@@ -708,6 +669,14 @@ public class CompiledGraph {
 
 			return action.apply(withState, config).thenApply(updateState -> {
 				try {
+					if (action instanceof CommandNode.AsyncCommandNodeActionWithConfig) {
+						Command command = (Command) updateState.get("command");
+
+						this.currentState = OverAllState.updateState(currentState, command.update(), keyStrategyMap);
+						this.overAllState.updateState(command.update());
+						nextNodeId = command.gotoNode();
+						return Data.of(getNodeOutput());
+					}
 
 					Optional<Data<Output>> embed = getEmbedGenerator(updateState);
 					if (embed.isPresent()) {
@@ -725,7 +694,6 @@ public class CompiledGraph {
 				catch (Exception e) {
 					throw new CompletionException(e);
 				}
-
 			});
 		}
 
@@ -759,9 +727,7 @@ public class CompiledGraph {
 				.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 		}
 
-		/**
-		 * evaluate Action without nested support
-		 */
+		/** evaluate Action without nested support */
 		private CompletableFuture<Output> evaluateActionWithoutNested(AsyncNodeAction action, OverAllState withState) {
 
 			return action.apply(withState).thenApply(partialState -> {
@@ -781,7 +747,6 @@ public class CompiledGraph {
 					throw new CompletionException(e);
 				}
 			});
-
 		}
 
 		private CompletableFuture<Output> getNodeOutput() throws Exception {
@@ -859,7 +824,6 @@ public class CompiledGraph {
 				log.error(e.getMessage(), e);
 				return Data.error(e);
 			}
-
 		}
 
 		private void doListeners(String scene, Exception e) {
@@ -897,9 +861,7 @@ public class CompiledGraph {
 
 }
 
-/**
- * The type Processed nodes edges and config.
- */
+/** The type Processed nodes edges and config. */
 record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edges, Set<String> interruptsBefore,
 		Set<String> interruptsAfter) {
 
@@ -973,7 +935,6 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 								? subgraphNode.formatId(sgEdgeStartTarget.id()) : id)));
 				edges.elements.remove(edgeWithSubgraphTargetId);
 				edges.elements.add(newEdge);
-
 			}
 			//
 			// Process END Nodes
@@ -994,7 +955,6 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 							"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: '%s'",
 							edgeWithSubgraphSourceId.target().id());
 				throw new GraphStateException(exceptionMessage);
-
 			}
 
 			sgEdgesEnd.stream()
@@ -1020,11 +980,8 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 			sgWorkflow.nodes.elements.stream()
 				.map(n -> n.withIdUpdated(subgraphNode::formatId))
 				.forEach(nodes.elements::add);
-
 		}
 
 		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter);
-
 	}
-
 }
