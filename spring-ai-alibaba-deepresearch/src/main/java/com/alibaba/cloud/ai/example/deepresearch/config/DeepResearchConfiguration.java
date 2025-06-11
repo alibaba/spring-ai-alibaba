@@ -117,7 +117,8 @@ public class DeepResearchConfiguration {
 					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 			.addEdge("background_investigator", "planner")
 			.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
-					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner", END, END))
+					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
+							"research_team", "research_team", END, END))
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
 					Map.of("planner", "planner", "research_team", "research_team", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
