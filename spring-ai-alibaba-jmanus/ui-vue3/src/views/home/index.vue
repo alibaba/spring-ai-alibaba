@@ -101,7 +101,7 @@ const examples = [
     title: '生成一个中篇小说',
     description: '帮我生成一个中篇小说（Agent可以生成更长的内容）',
     icon: 'carbon:book',
-    prompt: '请帮我写一个关于时间旅行的中篇小说',
+    prompt: '请帮我写一个关于机器人取代人类的小说。20000字。 使用TEXT_FILE_AGENT ，先生成提纲，然后，完善和丰满整个提纲的内容为一篇通顺的小说，最后再全局通顺一下语法',
   },
   {
     title: '查询天气',

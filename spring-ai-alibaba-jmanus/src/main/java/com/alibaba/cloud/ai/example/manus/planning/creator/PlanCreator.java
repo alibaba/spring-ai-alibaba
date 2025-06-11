@@ -74,13 +74,13 @@ public class PlanCreator {
 
 			ExecutionPlan executionPlan = null;
 			String outputText = null;
-			
+
 			// 重试机制：最多尝试3次直到获取到有效的执行计划
 			int maxRetries = 3;
 			for (int attempt = 1; attempt <= maxRetries; attempt++) {
 				try {
 					log.info("Attempting to create plan, attempt: {}/{}", attempt, maxRetries);
-					
+
 					// 使用 LLM 生成计划
 					PromptTemplate promptTemplate = new PromptTemplate(planPrompt);
 					Prompt prompt = promptTemplate.create();
@@ -89,41 +89,46 @@ public class PlanCreator {
 						.prompt(prompt)
 						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
 					if (useMemory) {
-						requestSpec.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
+						requestSpec
+							.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
 					}
 					ChatClient.CallResponseSpec response = requestSpec.call();
 					outputText = response.chatResponse().getResult().getOutput().getText();
 
 					executionPlan = planningTool.getCurrentPlan();
-					
+
 					if (executionPlan != null) {
 						log.info("Plan created successfully on attempt {}: {}", attempt, executionPlan);
 						break;
-					} else {
-						log.warn("Plan creation attempt {} failed: planningTool.getCurrentPlan() returned null", attempt);
+					}
+					else {
+						log.warn("Plan creation attempt {} failed: planningTool.getCurrentPlan() returned null",
+								attempt);
 						if (attempt == maxRetries) {
 							log.error("Failed to create plan after {} attempts", maxRetries);
 						}
 					}
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					log.warn("Exception during plan creation attempt {}: {}", attempt, e.getMessage());
 					if (attempt == maxRetries) {
 						throw e;
 					}
 				}
 			}
-			
+
 			ExecutionPlan currentPlan;
 			// 检查计划是否创建成功
 			if (executionPlan != null) {
 				currentPlan = planningTool.getCurrentPlan();
 				currentPlan.setPlanId(planId);
 				currentPlan.setPlanningThinking(outputText);
-			} else {
+			}
+			else {
 				log.warn("Creating fallback plan for planId: {}", planId);
 				currentPlan = new ExecutionPlan(planId, "answer question without plan");
 			}
-			
+
 			context.setPlan(currentPlan);
 
 		}

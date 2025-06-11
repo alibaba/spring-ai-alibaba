@@ -34,7 +34,6 @@
       @clear="handleInputClear"
       @focus="handleInputFocus"
       @update-state="handleInputUpdateState"
-      @message-sent="handleInputMessageSent"
       @plan-mode-clicked="handlePlanModeClicked"
     />
   </div>
@@ -232,8 +231,12 @@ const cleanup = (): void => {
 
 // Input Area 事件处理
 const handleSendMessage = (message: string) => {
-  console.log('[PlanExecutionComponent] Send message:', message)
-  handleUserMessageSendRequested(message)
+  console.log('[PlanExecutionComponent] Send message from input:', message)
+  // 不直接调用 handleUserMessageSendRequested，而是通过 ChatContainer 来处理
+  // 这样可以避免重复调用
+  if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
+    chatRef.value.handleSendMessage(message)
+  }
 }
 
 const handleInputClear = () => {
@@ -252,11 +255,6 @@ const handleInputUpdateState = (enabled: boolean, placeholder?: string) => {
   isLoading.value = !enabled
 }
 
-const handleInputMessageSent = (message: string) => {
-  console.log('[PlanExecutionComponent] Input message sent:', message)
-  handleUserMessageSendRequested(message)
-}
-
 const handlePlanModeClicked = () => {
   console.log('[PlanExecutionComponent] Plan mode button clicked')
   emit('plan-mode-clicked')
@@ -266,6 +264,8 @@ const handlePlanModeClicked = () => {
 const handleMessageSent = (message: string) => {
   console.log('[PlanExecutionComponent] Message sent from chat container:', message)
   emit('message-sent', message)
+  // 处理来自ChatContainer的用户消息发送请求
+  handleUserMessageSendRequested(message)
 }
 
 const handlePlanUpdate = (planData: any) => {
