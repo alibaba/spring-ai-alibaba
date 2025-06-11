@@ -56,11 +56,32 @@ public class NacosPlugin implements GraphPlugin {
 			this.configService = NacosFactory.createConfigService(properties);
 			this.objectMapper = new ObjectMapper();
 			logger.info("NacosPlugin initialized with properties: {}", properties);
-		}
-		catch (NacosException e) {
+		} catch (NacosException e) {
 			logger.error("Failed to initialize NacosPlugin:", e);
 			throw new RuntimeException("Failed to initialize NacosPlugin: " + e.getMessage(), e);
 		}
+	}
+
+	/**
+	 * Constructor with configuration parameters for flexible multi-node scenarios.
+	 * 
+	 * @param serverAddr Nacos server address (e.g., "127.0.0.1:8848")
+	 * @param namespace  Nacos namespace (can be null for default)
+	 * @param username   Username for authentication (can be null)
+	 * @param password   Password for authentication (can be null)
+	 */
+	public NacosPlugin(String serverAddr, String namespace, String username, String password) {
+		this(createProperties(serverAddr, namespace, username, password));
+	}
+
+	/**
+	 * Constructor with server address only, using default namespace and no
+	 * authentication.
+	 * 
+	 * @param serverAddr Nacos server address (e.g., "127.0.0.1:8848")
+	 */
+	public NacosPlugin(String serverAddr) {
+		this(serverAddr, null, null, null);
 	}
 
 	private static Properties createDefaultProperties() {
@@ -76,6 +97,44 @@ public class NacosPlugin implements GraphPlugin {
 		if (username != null && password != null) {
 			properties.put("username", username);
 			properties.put("password", password);
+		}
+
+		return properties;
+	}
+
+	/**
+	 * Creates Properties with specified parameters, falling back to environment
+	 * variables
+	 * or defaults when parameters are null.
+	 * 
+	 * @param serverAddr Nacos server address
+	 * @param namespace  Nacos namespace
+	 * @param username   Username for authentication
+	 * @param password   Password for authentication
+	 * @return Properties object with specified configuration
+	 */
+	private static Properties createProperties(String serverAddr, String namespace, String username, String password) {
+		Properties properties = new Properties();
+
+		// Server address - use parameter, then env var, then default
+		properties.put("serverAddr", serverAddr != null ? serverAddr
+				: (System.getenv("NACOS_SERVER_ADDR") != null ? System.getenv("NACOS_SERVER_ADDR") : DEFAULT_SERVER_ADDR));
+
+		// Namespace - use parameter, then env var, then default
+		properties.put("namespace", namespace != null ? namespace
+				: (System.getenv("NACOS_NAMESPACE") != null ? System.getenv("NACOS_NAMESPACE") : DEFAULT_NAMESPACE));
+
+		// Authentication - use parameters if both provided, otherwise try env vars
+		if (username != null && password != null) {
+			properties.put("username", username);
+			properties.put("password", password);
+		} else {
+			String envUsername = System.getenv("NACOS_USERNAME");
+			String envPassword = System.getenv("NACOS_PASSWORD");
+			if (envUsername != null && envPassword != null) {
+				properties.put("username", envUsername);
+				properties.put("password", envPassword);
+			}
 		}
 
 		return properties;
@@ -185,8 +244,7 @@ public class NacosPlugin implements GraphPlugin {
 					content != null);
 
 			return result;
-		}
-		catch (NacosException e) {
+		} catch (NacosException e) {
 			logger.error("Failed to get config: dataId={}, group={}, error={}", dataId, group, e.getMessage());
 			throw new RuntimeException("Failed to retrieve configuration: " + e.getMessage(), e);
 		}
@@ -216,14 +274,12 @@ public class NacosPlugin implements GraphPlugin {
 			if (success) {
 				logger.info("Successfully published config: dataId={}, group={}, type={}, length={}", dataId, group,
 						type, content.length());
-			}
-			else {
+			} else {
 				logger.warn("Failed to publish config: dataId={}, group={}", dataId, group);
 			}
 
 			return result;
-		}
-		catch (NacosException e) {
+		} catch (NacosException e) {
 			logger.error("Failed to publish config: dataId={}, group={}, error={}", dataId, group, e.getMessage());
 			throw new RuntimeException("Failed to publish configuration: " + e.getMessage(), e);
 		}
@@ -241,14 +297,12 @@ public class NacosPlugin implements GraphPlugin {
 
 			if (success) {
 				logger.info("Successfully removed config: dataId={}, group={}", dataId, group);
-			}
-			else {
+			} else {
 				logger.warn("Failed to remove config: dataId={}, group={}", dataId, group);
 			}
 
 			return result;
-		}
-		catch (NacosException e) {
+		} catch (NacosException e) {
 			logger.error("Failed to remove config: dataId={}, group={}, error={}", dataId, group, e.getMessage());
 			throw new RuntimeException("Failed to remove configuration: " + e.getMessage(), e);
 		}
@@ -279,8 +333,7 @@ public class NacosPlugin implements GraphPlugin {
 			logger.info("Successfully added listener for config: dataId={}, group={}", dataId, group);
 
 			return result;
-		}
-		catch (NacosException e) {
+		} catch (NacosException e) {
 			logger.error("Failed to add listener: dataId={}, group={}, error={}", dataId, group, e.getMessage());
 			throw new RuntimeException("Failed to add configuration listener: " + e.getMessage(), e);
 		}
@@ -294,20 +347,15 @@ public class NacosPlugin implements GraphPlugin {
 		String trimmed = content.trim();
 		if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
 			return "json";
-		}
-		else if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+		} else if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
 			return "json";
-		}
-		else if (trimmed.contains("---") || trimmed.matches(".*:\\s*.*")) {
+		} else if (trimmed.contains("---") || trimmed.matches(".*:\\s*.*")) {
 			return "yaml";
-		}
-		else if (trimmed.contains("=") && trimmed.matches(".*=.*")) {
+		} else if (trimmed.contains("=") && trimmed.matches(".*=.*")) {
 			return "properties";
-		}
-		else if (trimmed.startsWith("<") && trimmed.endsWith(">")) {
+		} else if (trimmed.startsWith("<") && trimmed.endsWith(">")) {
 			return "xml";
-		}
-		else {
+		} else {
 			return "text";
 		}
 	}

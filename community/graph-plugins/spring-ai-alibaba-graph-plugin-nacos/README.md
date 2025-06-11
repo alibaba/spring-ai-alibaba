@@ -58,21 +58,47 @@ export NACOS_PASSWORD=nacos
 
 ### 使用插件
 
+#### 创建插件实例
+
 ```java
-@Autowired
-private NacosPlugin nacosPlugin;
+// 方式1：使用默认构造函数（从环境变量获取配置）
+NacosPlugin plugin1 = new NacosPlugin();
+
+// 方式2：指定服务器地址（适用于多节点场景）
+NacosPlugin plugin2 = new NacosPlugin("192.168.1.100:8848");
+
+// 方式3：完整配置（推荐用于生产环境）
+NacosPlugin plugin3 = new NacosPlugin("192.168.1.100:8848", "dev", "nacos", "nacos123");
+
+// 方式4：使用Properties对象（最灵活）
+Properties props = new Properties();
+props.put("serverAddr", "192.168.1.100:8848");
+props.put("namespace", "test");
+props.put("username", "admin");
+props.put("password", "password123");
+NacosPlugin plugin4 = new NacosPlugin(props);
+```
+
+#### 在多节点场景中使用
+
+```java
+// 开发环境Nacos
+NacosPlugin devPlugin = new NacosPlugin("dev-nacos:8848", "dev", "dev-user", "dev-pass");
+
+// 生产环境Nacos
+NacosPlugin prodPlugin = new NacosPlugin("prod-nacos:8848", "prod", "prod-user", "prod-pass");
 
 public void manageConfig() {
-    // 读取配置
+    // 使用开发环境插件读取配置
     Map<String, Object> getParams = new HashMap<>();
     getParams.put("operation", "get");
     getParams.put("dataId", "application.properties");
     getParams.put("group", "DEFAULT_GROUP");
 
-    Map<String, Object> result = nacosPlugin.execute(getParams);
+    Map<String, Object> result = devPlugin.execute(getParams);
     System.out.println("配置内容: " + result.get("content"));
 
-    // 发布配置
+    // 发布配置到生产环境
     Map<String, Object> publishParams = new HashMap<>();
     publishParams.put("operation", "publish");
     publishParams.put("dataId", "new-config");
@@ -80,8 +106,15 @@ public void manageConfig() {
     publishParams.put("content", "key=value");
     publishParams.put("type", "properties");
 
-    nacosPlugin.execute(publishParams);
+    prodPlugin.execute(publishParams);
 }
+```
+
+#### Spring Boot 自动配置
+
+```java
+@Autowired
+private NacosPlugin nacosPlugin; // 使用默认配置
 ```
 
 ## API 参考

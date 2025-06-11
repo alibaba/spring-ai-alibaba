@@ -54,7 +54,8 @@ public class PluginController {
 		return stateGraph.compile()
 				.invoke(Map.of("weather_params", weatherParams))
 				.get()
-				.data()
+				.value("result")
+				.get()
 				.toString();
 	}
 

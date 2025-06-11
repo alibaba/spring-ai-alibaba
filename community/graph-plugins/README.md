@@ -29,8 +29,10 @@ Nacos 配置管理插件，提供与 Nacos 配置中心的交互功能。
 ```
 
 ```java
-// 创建插件实例
-NacosPlugin plugin = new NacosPlugin();
+// 创建插件实例 - 支持多种配置方式
+NacosPlugin plugin1 = new NacosPlugin(); // 使用环境变量配置
+NacosPlugin plugin2 = new NacosPlugin("192.168.1.100:8848"); // 指定服务器地址
+NacosPlugin plugin3 = new NacosPlugin("192.168.1.100:8848", "dev", "user", "pass"); // 完整配置
 
 // 读取配置
 Map<String, Object> params = new HashMap<>();
@@ -38,7 +40,7 @@ params.put("operation", "get");
 params.put("dataId", "application.properties");
 params.put("group", "DEFAULT_GROUP");
 
-Map<String, Object> result = plugin.execute(params);
+Map<String, Object> result = plugin1.execute(params);
 ```
 
 详细文档请参考：[Nacos Plugin README](spring-ai-alibaba-graph-plugin-nacos/README.md)

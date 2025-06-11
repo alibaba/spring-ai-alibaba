@@ -83,7 +83,7 @@ public class PluginAutoConfiguration {
 		});
 
 		PluginNode nacosPluginNode = PluginNode.builder()
-				.plugin(new NacosPlugin()) // 使用 NacosPlugin 插件
+				.plugin(new NacosPlugin("127.0.0.1:8848", "public", "nacos", "8pIbc9JPtw")) // 使用配置参数创建 NacosPlugin
 				.paramsKey("nacos_params") // 输入参数键
 				.outputKey("nacos_result") // 输出参数键
 				.build();
