@@ -47,8 +47,8 @@ public class PlannerDispatcher implements EdgeAction {
 
 	@Override
 	public String apply(OverAllState state) {
-		String result = state.value("plannerNode_content", "");
-		logger.info("plannerNode_content: {}", result);
+		String result = state.value("planner_content", "");
+		logger.info("planner_content: {}", result);
 		assert Strings.isBlank(result);
 
 		String nextStep = "reporter";

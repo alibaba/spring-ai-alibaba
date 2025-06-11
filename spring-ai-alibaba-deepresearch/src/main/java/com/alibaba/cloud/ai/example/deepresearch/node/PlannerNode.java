@@ -86,11 +86,11 @@ public class PlannerNode implements NodeAction {
 		var generator = StreamingChatGenerator.builder()
 			.startingNode("planner_llm_stream")
 			.startingState(state)
-			.mapResult(response -> Map.of("plannerNode_content",
+			.mapResult(response -> Map.of("planner_content",
 					Objects.requireNonNull(response.getResult().getOutput().getText())))
 			.build(streamResult);
 
-		return Map.of("plannerNode_content", generator);
+		return Map.of("planner_content", generator);
 	}
 
 }

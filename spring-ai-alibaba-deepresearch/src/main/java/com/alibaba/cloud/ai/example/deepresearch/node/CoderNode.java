@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author yingzi
@@ -68,23 +70,23 @@ public class CoderNode implements NodeAction {
 				String.format("#Task\n\n##title\n\n%s\n\n##description\n\n%s\n\n##locale\n\n%s",
 						unexecutedStep.getTitle(), unexecutedStep.getDescription(), state.value("locale", "en-US")));
 		messages.add(taskMessage);
-
 		logger.debug("coder Node message: {}", messages);
+
 		// 调用agent
-		Flux<String> StreamResult = coderAgent.prompt()
+		var streamResult = coderAgent.prompt()
 			.options(ToolCallingChatOptions.builder().build())
 			.messages(messages)
 			.stream()
-			.content();
-		String result = StreamResult.reduce((acc, next) -> acc + next).block();
-		unexecutedStep.setExecutionRes(result);
+			.chatResponse();
 
-		logger.info("coder Node result: {}", result);
-		Map<String, Object> updated = new HashMap<>();
-		observations.add(result);
-		updated.put("observations", observations);
+		var generator = StreamingChatGenerator.builder()
+				.startingNode("coder_llm_stream")
+				.startingState(state)
+				.mapResult(response -> Map.of("coder_content",
+						Objects.requireNonNull(response.getResult().getOutput().getText())))
+				.build(streamResult);
 
-		return updated;
+		return Map.of("coder_content", generator);
 	}
 
 }
