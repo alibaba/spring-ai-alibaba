@@ -88,7 +88,13 @@ public class PlannerDispatcher implements EdgeAction {
 			}
 		}
 		// 2.3 上下文不足，跳转到human_feedback节点
-		nextStep = "human_feedback";
+		if (!StateUtil.getAutoAcceptedPlan(state)) {
+			nextStep = "human_feedback";
+		}
+		else {
+			nextStep = "research_team";
+			updated.put("plan_iterations", StateUtil.getPlanIterations(state) + 1);
+		}
 		updated.put("current_plan", curPlan);
 		updated.put("planner_next_node", nextStep);
 		logger.info("planner node -> {} node", nextStep);
