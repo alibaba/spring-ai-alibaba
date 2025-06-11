@@ -46,14 +46,14 @@ public class PluginAutoConfiguration {
 
 		// 创建一个插件节点，使用 WeatherPlugin 插件
 		PluginNode pluginNode = PluginNode.builder()
-			.plugin(new WeatherPlugin()) // 使用 WeatherPlugin 插件
-			.paramsKey("weather_params") // 输入参数键
-			.outputKey("weather_result") // 输出参数键
-			.build();
+				.plugin(new WeatherPlugin()) // 使用 WeatherPlugin 插件
+				.paramsKey("weather_params") // 输入参数键
+				.outputKey("weather_result") // 输出参数键
+				.build();
 
 		StateGraph stateGraph = new StateGraph(stateFactory).addNode("plugin_node", node_async(pluginNode))
-			.addEdge(START, "plugin_node")
-			.addEdge("plugin_node", END);
+				.addEdge(START, "plugin_node")
+				.addEdge("plugin_node", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
 				"plugin graph");

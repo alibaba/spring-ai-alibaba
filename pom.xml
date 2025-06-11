@@ -135,6 +135,7 @@
 
         <!-- Spring AI Alibaba Graph Plugin -->
         <module>community/graph-plugins/spring-ai-alibaba-graph-plugin-weather</module>
+        <module>community/graph-plugins/spring-ai-alibaba-graph-plugin-nacos</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
