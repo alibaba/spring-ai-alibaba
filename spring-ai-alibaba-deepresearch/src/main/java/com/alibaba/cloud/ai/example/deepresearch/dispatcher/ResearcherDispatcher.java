@@ -48,6 +48,10 @@ public class ResearcherDispatcher implements EdgeAction {
 				break;
 			}
 		}
+		if (unexecutedStep == null || StringUtils.hasText(result)) {
+			logger.info("all researcher node is finished.");
+			return "research_team";
+		}
 		unexecutedStep.setExecutionRes(result);
 
 		logger.info("researcher Node response: {}", result);

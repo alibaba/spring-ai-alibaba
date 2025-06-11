@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +47,10 @@ public class CoderDispatcher implements EdgeAction {
 				unexecutedStep = step;
 				break;
 			}
+		}
+		if (unexecutedStep == null || StringUtils.hasText(coderContent)) {
+			logger.info("all coder node is finished.");
+			return "research_team";
 		}
 		unexecutedStep.setExecutionRes(coderContent);
 

@@ -54,7 +54,6 @@ public class CoderNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("coder node is running.");
 		Plan currentPlan = StateUtil.getPlan(state);
-		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Map<String, Object> updated = new HashMap<>();
 
 		Plan.Step unexecutedStep = null;
