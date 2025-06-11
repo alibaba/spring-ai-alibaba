@@ -282,12 +282,12 @@ public class DashScopeChatModel implements ChatModel {
 		});
 	}
 
-    private String finishReasonToMetadataValue(DashScopeApi.ChatCompletionFinishReason finishReason) {
-        if (finishReason == null || finishReason == DashScopeApi.ChatCompletionFinishReason.NULL) {
-            return "";
-        }
-        return finishReason.name();
-    }
+	private static String finishReasonToMetadataValue(DashScopeApi.ChatCompletionFinishReason finishReason) {
+		if (finishReason == null || finishReason == DashScopeApi.ChatCompletionFinishReason.NULL) {
+			return "";
+		}
+		return finishReason.name();
+	}
 
 	private ChatResponse toChatResponse(ChatCompletion chatCompletion, ChatResponse previousChatResponse,
 			ChatCompletionRequest request, ConcurrentHashMap<String, String> roleMap) {
@@ -346,7 +346,7 @@ public class DashScopeChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
+		String finishReason = finishReasonToMetadataValue(choice.finishReason());
 		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason);
 
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
