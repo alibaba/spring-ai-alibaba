@@ -282,6 +282,13 @@ public class DashScopeChatModel implements ChatModel {
 		});
 	}
 
+    private String finishReasonToMetadataValue(DashScopeApi.ChatCompletionFinishReason finishReason) {
+        if (finishReason == null || finishReason == DashScopeApi.ChatCompletionFinishReason.NULL) {
+            return "";
+        }
+        return finishReason.name();
+    }
+
 	private ChatResponse toChatResponse(ChatCompletion chatCompletion, ChatResponse previousChatResponse,
 			ChatCompletionRequest request, ConcurrentHashMap<String, String> roleMap) {
 
@@ -308,7 +315,7 @@ public class DashScopeChatModel implements ChatModel {
 			Map<String, Object> metadata = Map.of(
 					"id", chatCompletion.requestId(),
 					"role", finalRoleMap.getOrDefault(chatCompletion.requestId(), ""),
-					"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+					"finishReason", finishReasonToMetadataValue(choice.finishReason()),
 					"reasoningContent", StringUtils.hasText(choice.message().reasoningContent()) ? choice.message().reasoningContent() : "");
 			// @formatter:on
 			return buildGeneration(choice, metadata, request);
