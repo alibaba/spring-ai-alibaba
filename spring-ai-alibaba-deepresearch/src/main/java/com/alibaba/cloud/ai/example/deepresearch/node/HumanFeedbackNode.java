@@ -34,7 +34,7 @@ import java.util.Map;
 
 public class HumanFeedbackNode implements NodeAction {
 
-	private static final Logger logger = LoggerFactory.getLogger(PlannerNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(HumanFeedbackNode.class);
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {

@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.dbconnector.bo.ForeignKeyInfoBO;
 import com.alibaba.cloud.ai.dbconnector.bo.TableInfoBO;
 import com.alibaba.cloud.ai.request.DeleteRequest;
+import com.alibaba.cloud.ai.request.EvidenceRequest;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.google.gson.Gson;
 import org.springframework.ai.document.Document;
@@ -41,7 +42,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class SimpleVectorStoreService {
+public class SimpleVectorStoreManagementService implements VectorStoreManagementService {
 
 	private final SimpleVectorStore vectorStore;
 
@@ -52,8 +53,8 @@ public class SimpleVectorStoreService {
 	private final DbConfig dbConfig;
 
 	@Autowired
-	public SimpleVectorStoreService(@Value("${spring.ai.dashscope.api-key:default_api_key}") String apiKey, Gson gson,
-			DbAccessor dbAccessor, DbConfig dbConfig) {
+	public SimpleVectorStoreManagementService(@Value("${spring.ai.dashscope.api-key:default_api_key}") String apiKey,
+			Gson gson, DbAccessor dbAccessor, DbConfig dbConfig) {
 		this.gson = gson;
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
@@ -69,6 +70,7 @@ public class SimpleVectorStoreService {
 	 * @param schemaInitRequest schema 初始化请求
 	 * @throws Exception 如果发生错误
 	 */
+	@Override
 	public Boolean schema(SchemaInitRequest schemaInitRequest) throws Exception {
 		DbConfig dbConfig = schemaInitRequest.getDbConfig();
 		DbQueryParameter dqp = DbQueryParameter.from(dbConfig)
@@ -106,6 +108,23 @@ public class SimpleVectorStoreService {
 
 		vectorStore.add(tableDocuments);
 
+		return true;
+	}
+
+	/**
+	 * 将证据内容添加到向量库中
+	 * @param evidenceRequests 证据请求列表
+	 * @return 是否成功
+	 */
+	@Override
+	public Boolean addEvidence(List<EvidenceRequest> evidenceRequests) {
+		List<Document> evidences = new ArrayList<>();
+		for (EvidenceRequest req : evidenceRequests) {
+			Document doc = new Document(UUID.randomUUID().toString(), req.getContent(),
+					Map.of("evidenceType", req.getType(), "vectorType", "evidence"));
+			evidences.add(doc);
+		}
+		vectorStore.add(evidences);
 		return true;
 	}
 
@@ -179,10 +198,11 @@ public class SimpleVectorStoreService {
 	 * @param deleteRequest 删除请求
 	 * @return 是否删除成功
 	 */
+	@Override
 	public Boolean deleteDocuments(DeleteRequest deleteRequest) throws Exception {
 		try {
 			if (deleteRequest.getId() != null && !deleteRequest.getId().isEmpty()) {
-				vectorStore.delete(Arrays.asList("comment_count"));
+				vectorStore.delete(Arrays.asList(deleteRequest.getId()));
 			}
 			else if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
 				FilterExpressionBuilder b = new FilterExpressionBuilder();
@@ -198,6 +218,24 @@ public class SimpleVectorStoreService {
 		}
 		catch (Exception e) {
 			throw new Exception("Failed to delete collection data by filterExpression: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * 根据搜索请求在向量库中检索文档
+	 * @param searchRequest 搜索请求
+	 * @return 匹配的文档列表
+	 * @throws Exception 检索异常
+	 */
+	public List<Document> search(SearchRequest searchRequest) throws Exception {
+		try {
+			return vectorStore.similaritySearch(searchRequest)
+				.stream()
+				.filter(document -> document.getScore() > 0.2)
+				.toList();
+		}
+		catch (Exception e) {
+			throw new Exception("Failed to search vector store: " + e.getMessage(), e);
 		}
 	}
 
