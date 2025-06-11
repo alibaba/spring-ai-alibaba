@@ -27,6 +27,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import reactor.core.publisher.Flux;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,8 @@ import java.util.Map;
 /**
  * @author yingzi
  * @since 2025/5/18 17:07
+ * @author sixiyida
+ * @since 2025/6/11 16:04
  */
 
 public class CoderNode implements NodeAction {
@@ -44,35 +47,44 @@ public class CoderNode implements NodeAction {
 
 	private final ChatClient coderAgent;
 
-	public CoderNode(ChatClient coderAgent) {
+	private final String executorNodeId;
+
+	public CoderNode(ChatClient coderAgent, String executorNodeId) {
 		this.coderAgent = coderAgent;
+		this.executorNodeId = executorNodeId;
+
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("coder node is running.");
+		logger.info("coder node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
 		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Map<String, Object> updated = new HashMap<>();
 
-		Plan.Step unexecutedStep = null;
+		Plan.Step assignedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
-			if (step.getStepType().equals(Plan.StepType.PROCESSING) && step.getExecutionRes() == null) {
-				unexecutedStep = step;
+			if (Plan.StepType.PROCESSING.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())
+					&& step.getExecutionStatus().equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + executorNodeId)) {
+				assignedStep = step;
 				break;
 			}
 		}
 
-		if (unexecutedStep == null) {
+		// 如果没有找到分配的步骤，直接返回
+		if (assignedStep == null) {
 			logger.info("all coder node is finished.");
 			return updated;
 		}
+
+		// 标记步骤为正在执行
+		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + executorNodeId);
 
 		List<Message> messages = new ArrayList<>();
 		// 添加任务消息
 		Message taskMessage = new UserMessage(
 				String.format("#Task\n\n##title\n\n%s\n\n##description\n\n%s\n\n##locale\n\n%s",
-						unexecutedStep.getTitle(), unexecutedStep.getDescription(), state.value("locale", "en-US")));
+						assignedStep.getTitle(), assignedStep.getDescription(), state.value("locale", "en-US")));
 		messages.add(taskMessage);
 		// 添加已被观测到的数据
 		messages.add(new UserMessage(observations.toString()));
@@ -80,10 +92,12 @@ public class CoderNode implements NodeAction {
 		logger.debug("coder Node message: {}", messages);
 		// 调用agent
 		Flux<String> StreamResult = coderAgent.prompt().messages(messages).stream().content();
-		String result = StreamResult.reduce((acc, next) -> acc + next).block();
-		unexecutedStep.setExecutionRes(result);
 
+		String result = StreamResult.reduce((acc, next) -> acc + next).block();
+		assignedStep.setExecutionRes(result);
+		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
 		logger.info("coder Node result: {}", result);
+
 		observations.add(result);
 		updated.put("observations", observations);
 

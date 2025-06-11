@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -69,6 +70,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private TavilySearchService tavilySearchService;
+
+	@Autowired
+	private ApplicationContext applicationContext;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
@@ -100,16 +104,13 @@ public class DeepResearchConfiguration {
 			state.registerKeyAndStrategy("final_report", new ReplaceStrategy());
 			return state;
 		};
-
 		StateGraph stateGraph = new StateGraph("deep research", stateFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
 			.addNode("background_investigator", node_async(new BackgroundInvestigationNode(tavilySearchService)))
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
-			.addNode("research_team", node_async(new ResearchTeamNode()))
-			.addNode("researcher", node_async(new ResearcherNode(researchAgent)))
-			.addNode("coder", node_async(new CoderNode(coderAgent)))
+			.addNode("research_team", node_async(new ResearchTeamNode(applicationContext)))
 			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))))
 
 			.addEdge(START, "coordinator")
@@ -122,9 +123,7 @@ public class DeepResearchConfiguration {
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
 					Map.of("planner", "planner", "research_team", "research_team", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
-					Map.of("reporter", "reporter", "researcher", "researcher", "coder", "coder"))
-			.addEdge("researcher", "research_team")
-			.addEdge("coder", "research_team")
+					Map.of("reporter", "reporter", "research_team", "research_team"))
 			.addEdge("reporter", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
