@@ -426,4 +426,7 @@ public class McpService {
 		}
 	}
 
+	public void close(String planId) {
+		toolCallbackMapCache.invalidate(Optional.ofNullable(planId).orElse("DEFAULT"));
+	}
 }
