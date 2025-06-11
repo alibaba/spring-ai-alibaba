@@ -31,10 +31,11 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(YoudaoTranslateService.class)
 @EnableConfigurationProperties(YoudaoTranslateProperties.class)
-@ConditionalOnProperty(prefix = YoudaoTranslateProperties.PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = YoudaoTranslateConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class YoudaoTranslateAutoConfiguration {
 
-	@Bean
+	@Bean(name = YoudaoTranslateConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("use youdao translation to achieve translation")
 	public YoudaoTranslateService youdaoTranslate(YoudaoTranslateProperties properties, JsonParseTool jsonParseTool) {
