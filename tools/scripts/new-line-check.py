@@ -33,7 +33,7 @@ ignore_suffix = [
     ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico",
     ".webp", ".pdf", ".word", ".docx", ".doc", ".ppt",
     ".xlsx", ".xls", ".exe", "chromedriver", ".pptx", ".jar",
-    ".wav", ".bib", ".cmd", "mvnw", ".bin", ".pcm", ".flac"
+    ".wav", ".bib", ".cmd", "mvnw", ".bin", ".pcm", ".flac", ".ttf"
 ]
 
 # Check if the incoming file ends with a blank line
