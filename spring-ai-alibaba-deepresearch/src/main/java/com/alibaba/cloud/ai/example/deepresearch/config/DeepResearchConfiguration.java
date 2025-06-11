@@ -85,10 +85,10 @@ public class DeepResearchConfiguration {
 			state.registerKeyAndStrategy("thread_id", new ReplaceStrategy());
 			state.registerKeyAndStrategy("enable_background_investigation", new ReplaceStrategy());
 			state.registerKeyAndStrategy("auto_accepted_plan", new ReplaceStrategy());
+			state.registerKeyAndStrategy("plan_max_iterations", new ReplaceStrategy());
 			state.registerKeyAndStrategy("max_step_num", new ReplaceStrategy());
 			state.registerKeyAndStrategy("mcp_settings", new ReplaceStrategy());
 
-			state.registerKeyAndStrategy("feed_back", new ReplaceStrategy());
 			state.registerKeyAndStrategy("feed_back_content", new ReplaceStrategy());
 
 			// 节点输出
@@ -117,7 +117,8 @@ public class DeepResearchConfiguration {
 					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 			.addEdge("background_investigator", "planner")
 			.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
-					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner", END, END))
+					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
+							"research_team", "research_team", END, END))
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
 					Map.of("planner", "planner", "research_team", "research_team", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
