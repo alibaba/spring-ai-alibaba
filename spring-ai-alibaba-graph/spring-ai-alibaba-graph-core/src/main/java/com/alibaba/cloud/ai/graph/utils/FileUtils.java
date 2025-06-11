@@ -64,4 +64,49 @@ public class FileUtils {
 		}
 	}
 
+	/**
+	 * Copies the spring-ai-alibaba-graph-core JAR file to the specified working directory.
+	 * @param workDir The target working directory where the JAR file will be copied.
+	 */
+	public static void copyResourceJarToWorkDir(String workDir) {
+		try {
+			// Get the path of the current JAR file
+			String jarPath = FileUtils.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+			Path sourcePath = Path.of(jarPath);
+			
+			// Create target directory if it doesn't exist
+			Path targetDir = Path.of(workDir);
+			if (!Files.exists(targetDir)) {
+				Files.createDirectories(targetDir);
+			}
+			
+			// Copy the JAR file to the working directory
+			Path targetPath = targetDir.resolve(sourcePath.getFileName());
+			Files.copy(sourcePath, targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Failed to copy JAR file to working directory", e);
+		}
+	}
+
+	/**
+	 * Deletes the spring-ai-alibaba-graph-core JAR file from the specified working directory.
+	 * @param workDir The working directory from which the JAR file will be deleted.
+	 */
+	public static void deleteResourceJarFromWorkDir(String workDir) {
+		try {
+			// Get the name of the current JAR file
+			String jarPath = FileUtils.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+			Path sourcePath = Path.of(jarPath);
+			String jarFileName = sourcePath.getFileName().toString();
+			
+			// Delete the JAR file from the working directory
+			Path targetPath = Path.of(workDir, jarFileName);
+			Files.deleteIfExists(targetPath);
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Failed to delete JAR file from working directory", e);
+		}
+	}
+
 }

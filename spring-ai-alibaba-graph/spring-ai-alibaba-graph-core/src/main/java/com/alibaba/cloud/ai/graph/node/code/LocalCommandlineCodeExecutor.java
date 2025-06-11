@@ -106,8 +106,12 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 		CommandLine commandLine = new CommandLine(executable);
 
 		if ("java".equals(language)) {
-			commandLine.addArgument("-cp")
-				.addArgument("." + File.pathSeparator + workDir + File.pathSeparator + config.getClassPath())
+			commandLine.addArgument("-cp");
+			String classPath = "." + File.pathSeparator + workDir;
+			if (config.getClassPath() != null && !config.getClassPath().isEmpty()) {
+				classPath += File.pathSeparator + config.getClassPath();
+			}
+			commandLine.addArgument(classPath)
 				.addArgument(filename);
 		}
 		else {

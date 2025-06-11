@@ -83,9 +83,12 @@ public class DockerCodeExecutor implements CodeExecutor {
 					.withHostConfig(newHostConfig().withBinds(volumeBind));
 
 				if ("java".equals(language)) {
-					createContainerCmd.withCmd(CodeUtils.getExecutableForLanguage(language), "-cp", "/workspace"
-							+ File.pathSeparator + "." + File.pathSeparator + codeExecutionConfig.getClassPath(),
-							filename);
+					String classPath = codeExecutionConfig.getClassPath();
+					String cpArg = "/workspace" + File.pathSeparator + ".";
+					if (classPath != null && !classPath.isEmpty()) {
+						cpArg += File.pathSeparator + classPath;
+					}
+					createContainerCmd.withCmd(CodeUtils.getExecutableForLanguage(language), "-cp", cpArg, filename);
 				}
 				else {
 					createContainerCmd.withCmd(CodeUtils.getExecutableForLanguage(language), filename);
