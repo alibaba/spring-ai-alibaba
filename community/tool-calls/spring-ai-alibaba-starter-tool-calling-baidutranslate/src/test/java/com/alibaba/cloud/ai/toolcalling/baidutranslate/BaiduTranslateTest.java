@@ -3,6 +3,7 @@ package com.alibaba.cloud.ai.toolcalling.baidutranslate;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -32,8 +33,11 @@ public class BaiduTranslateTest {
     @EnabledIfEnvironmentVariable(named =  BaiduTranslateConstants.SECRET_KEY_ENV,
             matches = CommonToolCallConstants.NOT_BLANK_REGEX)
     public void testBaiduTranslate() {
-        BaiduTranslateService.Response resp = baiduTranslateService.apply(new BaiduTranslateService.Request("你好", "zh", "en"));
-        log.info(resp.toString());
+        BaiduTranslateService.Response resp = baiduTranslateService.apply(new BaiduTranslateService.Request("你好", BaiduTranslateConstants.LANGUAGE_CODE_AUTO, BaiduTranslateConstants.LANGUAGE_CODE_EN));
+        log.info("Baidu translate service response {}", resp.toString());
+        Assertions.assertNotNull(resp,"response body should not be null!");
+        Assertions.assertNotNull(resp.translatedTexts(),"translated message should not be null!");
+
 
     }
 }
