@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
@@ -107,10 +108,30 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 
 		if ("java".equals(language)) {
 			commandLine.addArgument("-cp");
-			String classPath = "." + File.pathSeparator + workDir + File.pathSeparator + "jackson-databind-2.18.3.jar";
-			if (config.getClassPath() != null && !config.getClassPath().isEmpty()) {
-				classPath += File.pathSeparator + config.getClassPath();
+			StringBuilder classPathBuilder = new StringBuilder();
+			classPathBuilder.append(".").append(File.pathSeparator).append(workDir);
+			
+			// Add all JAR files in workDir to classpath
+			try {
+				Path workDirPath = Path.of(workDir);
+				if (Files.exists(workDirPath)) {
+					try (var stream = Files.walk(workDirPath)) {
+						stream.filter(path -> path.toString().endsWith(".jar"))
+							.forEach(jarPath -> {
+								classPathBuilder.append(File.pathSeparator).append(jarPath.toString());
+							});
+					}
+				}
 			}
+			catch (IOException e) {
+				logger.warn("Failed to scan JAR files in work directory", e);
+			}
+			
+			if (config.getClassPath() != null && !config.getClassPath().isEmpty()) {
+				classPathBuilder.append(File.pathSeparator).append(config.getClassPath());
+			}
+			
+			String classPath = classPathBuilder.toString();
 			commandLine.addArgument(classPath)
 				.addArgument(filename);
 		}
