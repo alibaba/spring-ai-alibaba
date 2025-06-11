@@ -39,7 +39,9 @@ const props = defineProps<{
 const emit = defineEmits(['clickCard'])
 
 const handleClick = () => {
+  console.log('[BlurCard] handleClick called with content:', props.content)
   emit('clickCard', props.content)
+  console.log('[BlurCard] clickCard event emitted')
 }
 </script>
 

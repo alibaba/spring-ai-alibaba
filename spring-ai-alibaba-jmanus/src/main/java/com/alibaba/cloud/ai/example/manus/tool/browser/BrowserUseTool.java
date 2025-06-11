@@ -66,6 +66,15 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return chromeDriverService.getDriver(planId);
 	}
 
+	/**
+	 * 获取浏览器操作的超时时间配置
+	 * @return 超时时间（秒），如果未配置则返回默认值30秒
+	 */
+	private Integer getBrowserTimeout() {
+		Integer timeout = getManusProperties().getBrowserRequestTimeout();
+		return timeout != null ? timeout : 30; // 默认超时时间为 30 秒
+	}
+
 	private final String PARAMETERS = """
 			{
 			    "type": "object",
@@ -300,6 +309,16 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		Map<String, Object> state = new HashMap<>();
 
 		try {
+			// 等待页面加载完成，避免在导航过程中获取信息时出现上下文销毁错误
+			try {
+				Integer timeout = getBrowserTimeout();
+				page.waitForLoadState(com.microsoft.playwright.options.LoadState.DOMCONTENTLOADED,
+						new Page.WaitForLoadStateOptions().setTimeout(timeout * 1000));
+			}
+			catch (Exception loadException) {
+				log.warn("Page load state wait timeout or failed, continuing anyway: {}", loadException.getMessage());
+			}
+
 			// 获取基本信息
 			String currentUrl = page.url();
 			String title = page.title();
