@@ -87,17 +87,18 @@ public class FileUtils {
 
 			// Get all JAR files from lib directory
 			Path libPath = Path.of(libUrl.toURI());
-			Files.walk(libPath)
-				.filter(path -> path.toString().endsWith(".jar"))
-				.forEach(jarPath -> {
-					try {
-						Path targetPath = targetDir.resolve(jarPath.getFileName());
-						Files.copy(jarPath, targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-					}
-					catch (IOException e) {
-						throw new RuntimeException("Failed to copy JAR file: " + jarPath, e);
-					}
-				});
+			try (var stream = Files.walk(libPath)) {
+				stream.filter(path -> path.toString().endsWith(".jar"))
+					.forEach(jarPath -> {
+						try {
+							Path targetPath = targetDir.resolve(jarPath.getFileName());
+							Files.copy(jarPath, targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+						}
+						catch (IOException e) {
+							throw new RuntimeException("Failed to copy JAR file: " + jarPath, e);
+						}
+					});
+			}
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to copy JAR files to working directory", e);
@@ -112,16 +113,17 @@ public class FileUtils {
 		try {
 			Path workDirPath = Path.of(workDir);
 			if (Files.exists(workDirPath)) {
-				Files.walk(workDirPath)
-					.filter(path -> path.toString().endsWith(".jar"))
-					.forEach(jarPath -> {
-						try {
-							Files.deleteIfExists(jarPath);
-						}
-						catch (IOException e) {
-							throw new RuntimeException("Failed to delete JAR file: " + jarPath, e);
-						}
-					});
+				try (var stream = Files.walk(workDirPath)) {
+					stream.filter(path -> path.toString().endsWith(".jar"))
+						.forEach(jarPath -> {
+							try {
+								Files.deleteIfExists(jarPath);
+							}
+							catch (IOException e) {
+								throw new RuntimeException("Failed to delete JAR file: " + jarPath, e);
+							}
+						});
+				}
 			}
 		}
 		catch (IOException e) {

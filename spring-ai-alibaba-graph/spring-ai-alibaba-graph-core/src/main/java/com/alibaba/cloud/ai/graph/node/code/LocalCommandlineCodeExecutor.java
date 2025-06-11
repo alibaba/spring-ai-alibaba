@@ -107,7 +107,7 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 
 		if ("java".equals(language)) {
 			commandLine.addArgument("-cp");
-			String classPath = "." + File.pathSeparator + workDir;
+			String classPath = "." + File.pathSeparator + workDir + File.pathSeparator + "jackson-databind-2.18.3.jar";
 			if (config.getClassPath() != null && !config.getClassPath().isEmpty()) {
 				classPath += File.pathSeparator + config.getClassPath();
 			}
