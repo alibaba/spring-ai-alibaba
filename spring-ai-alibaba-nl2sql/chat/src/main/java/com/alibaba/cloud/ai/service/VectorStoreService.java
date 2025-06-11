@@ -46,7 +46,7 @@ public class VectorStoreService extends BaseVectorStoreService {
 
 	@Autowired
 	@Qualifier("dashscopeEmbeddingModel")
-	private DashScopeEmbeddingModel embeddingModel;
+	private EmbeddingModel embeddingModel;
 
 	@Autowired
 	private AnalyticDbVectorStoreProperties analyticDbVectorStoreProperties;
