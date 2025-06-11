@@ -18,22 +18,13 @@ package com.alibaba.cloud.ai.toolcalling.larksuite.param.resp;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Objects;
-
 /**
  * @author NewGK
  * @author huaiziqing
  */
 
-public class ValuesAppendRespBody {
-
-	private final int revision;
-
-	private final String spreadsheetToken;
-
-	private final String tableRange;
-
-	private final ValuesAppendRespBodyUpdates updates;
+public record ValuesAppendRespBody(int revision, String spreadsheetToken, String tableRange,
+		ValuesAppendRespBodyUpdates updates) {
 
 	@JsonCreator
 	public ValuesAppendRespBody(@JsonProperty("revision") int revision,
@@ -43,22 +34,6 @@ public class ValuesAppendRespBody {
 		this.spreadsheetToken = spreadsheetToken;
 		this.tableRange = tableRange;
 		this.updates = updates;
-	}
-
-	public int getRevision() {
-		return revision;
-	}
-
-	public String getSpreadsheetToken() {
-		return spreadsheetToken;
-	}
-
-	public String getTableRange() {
-		return tableRange;
-	}
-
-	public ValuesAppendRespBodyUpdates getUpdates() {
-		return updates;
 	}
 
 	@Override
@@ -75,11 +50,6 @@ public class ValuesAppendRespBody {
 			return false;
 		return revision == that.revision && spreadsheetToken.equals(that.spreadsheetToken)
 				&& tableRange.equals(that.tableRange) && updates.equals(that.updates);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(revision, spreadsheetToken, tableRange, updates);
 	}
 
 	public static class Builder {

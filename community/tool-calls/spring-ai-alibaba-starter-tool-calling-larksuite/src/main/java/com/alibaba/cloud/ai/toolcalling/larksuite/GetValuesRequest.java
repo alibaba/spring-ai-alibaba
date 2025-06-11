@@ -24,4 +24,5 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record GetValuesRequest(@JsonProperty("spreadsheetToken") String spreadsheetToken,
 		@JsonProperty("range") String range) {
+
 }

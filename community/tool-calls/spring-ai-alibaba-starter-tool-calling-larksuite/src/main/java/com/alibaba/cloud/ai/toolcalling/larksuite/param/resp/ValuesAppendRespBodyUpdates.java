@@ -18,26 +18,13 @@ package com.alibaba.cloud.ai.toolcalling.larksuite.param.resp;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Objects;
-
 /**
  * @author NewGK
  * @author huaiziqing
  */
 
-public class ValuesAppendRespBodyUpdates {
-
-	private final int revision;
-
-	private final String spreadsheetToken;
-
-	private final int updatedCells;
-
-	private final int updatedColumns;
-
-	private final String updatedRange;
-
-	private final int updatedRows;
+public record ValuesAppendRespBodyUpdates(int revision, String spreadsheetToken, int updatedCells, int updatedColumns,
+		String updatedRange, int updatedRows) {
 
 	@JsonCreator
 	public ValuesAppendRespBodyUpdates(@JsonProperty("revision") int revision,
@@ -50,30 +37,6 @@ public class ValuesAppendRespBodyUpdates {
 		this.updatedColumns = updatedColumns;
 		this.updatedRange = updatedRange;
 		this.updatedRows = updatedRows;
-	}
-
-	public int getRevision() {
-		return revision;
-	}
-
-	public String getSpreadsheetToken() {
-		return spreadsheetToken;
-	}
-
-	public int getUpdatedCells() {
-		return updatedCells;
-	}
-
-	public int getUpdatedColumns() {
-		return updatedColumns;
-	}
-
-	public String getUpdatedRange() {
-		return updatedRange;
-	}
-
-	public int getUpdatedRows() {
-		return updatedRows;
 	}
 
 	@Override
@@ -92,11 +55,6 @@ public class ValuesAppendRespBodyUpdates {
 		return revision == that.revision && updatedCells == that.updatedCells && updatedColumns == that.updatedColumns
 				&& updatedRows == that.updatedRows && spreadsheetToken.equals(that.spreadsheetToken)
 				&& updatedRange.equals(that.updatedRange);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(revision, spreadsheetToken, updatedCells, updatedColumns, updatedRange, updatedRows);
 	}
 
 	public static class Builder {

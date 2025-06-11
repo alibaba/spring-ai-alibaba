@@ -35,15 +35,15 @@ public class ValuesAppendResp extends BaseResponse<ValuesAppendRespBody> {
 		if (data == null) {
 			throw new IllegalStateException("Data is null");
 		}
-		return data.getSpreadsheetToken();
+		return data.spreadsheetToken();
 	}
 
 	public ValuesAppendRespBodyUpdates getUpdates() {
 		ValuesAppendRespBody data = getData();
-		if (data == null || data.getUpdates() == null) {
+		if (data == null || data.updates() == null) {
 			throw new IllegalStateException("Updates data is null");
 		}
-		return data.getUpdates();
+		return data.updates();
 	}
 
 	@Override
