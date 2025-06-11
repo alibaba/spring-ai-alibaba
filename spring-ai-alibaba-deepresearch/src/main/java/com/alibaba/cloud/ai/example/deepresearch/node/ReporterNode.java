@@ -37,7 +37,8 @@ import java.util.*;
  * @since 2025/5/18 15:58
  */
 
-public class ReporterNode implements NodeAction {
+public class
+ReporterNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(ReporterNode.class);
 

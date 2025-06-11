@@ -22,13 +22,17 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.ApplicationContext;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.HashMap;
+
 
 /**
  * @author yingzi
@@ -43,11 +47,13 @@ public class ResearchTeamNode implements NodeAction {
 
 	private final ApplicationContext applicationContext;
 
-	private final ExecutorService executorService;
+	private final ThreadPoolTaskExecutor executorService;
 
-	public ResearchTeamNode(ApplicationContext applicationContext) {
+	private final static Long TIME_SLEEP = 20000L;
+
+	public ResearchTeamNode(ApplicationContext applicationContext, ThreadPoolTaskExecutor executorService) {
 		this.applicationContext = applicationContext;
-		this.executorService = Executors.newFixedThreadPool(10);
+		this.executorService = executorService;
 	}
 
 	@Override
@@ -67,6 +73,11 @@ public class ResearchTeamNode implements NodeAction {
 
 			// 检查步骤是否未完成且未分配
 			if (!StringUtils.hasText(step.getExecutionRes()) && !StringUtils.hasText(step.getExecutionStatus())) {
+				// 如果是处理步骤，先检查所有研究步骤是否完成
+				if (step.getStepType() == Plan.StepType.PROCESSING && !areAllResearchStepsCompleted(curPlan)) {
+					continue;  // 如果研究步骤未完成，跳过这个处理步骤
+				}
+
 				// 为步骤分配一个研究者节点，使用step的索引作为节点ID
 				String executorNodeId = String.valueOf(stepIndex);
 				String assignedStatus = StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + executorNodeId;
@@ -106,7 +117,7 @@ public class ResearchTeamNode implements NodeAction {
 			logger.info("Some steps are still pending, continuing execution");
 			// 在TeamNode这里自旋等待
 			try {
-				Thread.sleep(20000);
+				Thread.sleep(TIME_SLEEP);
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -116,9 +127,19 @@ public class ResearchTeamNode implements NodeAction {
 		return updated;
 	}
 
+	private boolean areAllResearchStepsCompleted(Plan plan) {
+		if (CollectionUtils.isEmpty(plan.getSteps())) {
+			return true;
+		}
+		
+		return plan.getSteps().stream()
+			.filter(step -> step.getStepType() == Plan.StepType.RESEARCH)
+			.allMatch(step -> step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX));
+	}
+
 	public boolean areAllExecutionResultsPresent(Plan plan) {
 		if (CollectionUtils.isEmpty(plan.getSteps())) {
-			return false;
+			return true;
 		}
 
 		return plan.getSteps().stream().allMatch(step -> StringUtils.hasLength(step.getExecutionRes()));

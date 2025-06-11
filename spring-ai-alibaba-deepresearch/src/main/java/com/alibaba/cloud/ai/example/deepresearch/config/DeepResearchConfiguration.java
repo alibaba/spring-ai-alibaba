@@ -25,8 +25,6 @@ import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNod
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
@@ -44,6 +42,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.Map;
 
@@ -73,6 +72,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private ApplicationContext applicationContext;
+
+	@Autowired
+	private ThreadPoolTaskExecutor executorNodeTaskExecutor;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
@@ -110,7 +112,7 @@ public class DeepResearchConfiguration {
 			.addNode("background_investigator", node_async(new BackgroundInvestigationNode(tavilySearchService)))
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
-			.addNode("research_team", node_async(new ResearchTeamNode(applicationContext)))
+			.addNode("research_team", node_async(new ResearchTeamNode(applicationContext, executorNodeTaskExecutor)))
 			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))))
 
 			.addEdge(START, "coordinator")
