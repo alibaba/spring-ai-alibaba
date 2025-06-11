@@ -33,6 +33,7 @@ public class JavaTemplateTransformer extends TemplateTransformer {
 				import com.fasterxml.jackson.databind.ObjectMapper;
 				import com.fasterxml.jackson.databind.node.ArrayNode;
 				import com.fasterxml.jackson.databind.node.ObjectNode;
+				import com.fasterxml.jackson.databind.JsonNode;
 
 				class Main {
 				    public static void main(String[] args) throws Exception {
@@ -40,13 +41,23 @@ public class JavaTemplateTransformer extends TemplateTransformer {
 				        String inputsBase64 = "%s";
 				        String inputsJson = new String(Base64.getDecoder().decode(inputsBase64));
 				        ObjectMapper mapper = new ObjectMapper();
-				        ArrayNode inputsArray = (ArrayNode) mapper.readTree(inputsJson);
+				        JsonNode rootNode = mapper.readTree(inputsJson);
 				        List<Object> inputs = new ArrayList<>();
-				        for (var element : inputsArray) {
-				            if (element.isTextual() || element.isNumber()) {
-				                inputs.add(element.asText());
-				            } else if (element.isObject()) {
-				                inputs.add(mapper.treeToValue(element, Map.class));
+				        
+				        if (rootNode.isArray()) {
+				            for (JsonNode element : rootNode) {
+				                if (element.isTextual() || element.isNumber()) {
+				                    inputs.add(element.asText());
+				                } else if (element.isObject()) {
+				                    inputs.add(mapper.treeToValue(element, Map.class));
+				                }
+				            }
+				        } else {
+				            // Handle single value case
+				            if (rootNode.isTextual() || rootNode.isNumber()) {
+				                inputs.add(rootNode.asText());
+				            } else if (rootNode.isObject()) {
+				                inputs.add(mapper.treeToValue(rootNode, Map.class));
 				            }
 				        }
 
