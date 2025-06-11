@@ -43,22 +43,19 @@ public class PluginController {
 
 	@GetMapping("/weather")
 	public String simpleChat(@RequestParam String location) throws GraphStateException {
-		// 在状态中设置参数
+		logger.info("Getting weather for location: {}", location);
+
+		// 只需要设置天气查询参数，Nacos参数将由transform_node自动生成
 		Map<String, Object> weatherParams = new HashMap<>();
 		weatherParams.put("location", location);
-		
-		Map<String, Object> nacosParams = new HashMap<>();
-		nacosParams.put("operation", "publish");
-		nacosParams.put("dataId", "example-app.properties");
-		nacosParams.put("group", "EXAMPLE_GROUP");
-		nacosParams.put("content", "server.port=8080\napp.name=nacos-example\napp.version=1.0.0\nfeature.enabled=true");
-		nacosParams.put("type", "properties");
-		
+
+		// 执行图：weather_plugin_node -> transform_node -> nacos_plugin_node
+		// transform_node会自动将天气结果转换为Nacos配置并发布
 		return stateGraph.compile()
-			.invoke(Map.of("weather_params", weatherParams, "nacos_params", nacosParams))
-			.get()
-			.data()
-			.toString();
+				.invoke(Map.of("weather_params", weatherParams))
+				.get()
+				.data()
+				.toString();
 	}
 
 }

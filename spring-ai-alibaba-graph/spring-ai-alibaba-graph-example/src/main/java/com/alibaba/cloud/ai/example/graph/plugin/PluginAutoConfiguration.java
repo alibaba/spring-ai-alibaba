@@ -25,8 +25,12 @@ import com.alibaba.cloud.ai.graph.node.PluginNode;
 import com.alibaba.cloud.ai.graph.plugin.nacos.NacosPlugin;
 import com.alibaba.cloud.ai.graph.plugin.weather.WeatherPlugin;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -53,6 +57,31 @@ public class PluginAutoConfiguration {
 				.paramsKey("weather_params") // 输入参数键
 				.outputKey("weather_result") // 输出参数键
 				.build();
+
+		// 创建数据转换节点，将天气结果转换为 Nacos 输入参数
+		var transformNode = node_async(state -> {
+			// 从 weather_result 中获取天气数据
+			Map<String, Object> weatherResult = (Map<String, Object>) state.value("weather_result").orElse(new HashMap<>());
+
+			// 将天气结果转换为 JSON 字符串作为 Nacos 的 content
+			ObjectMapper mapper = new ObjectMapper();
+			try {
+				String weatherJson = mapper.writeValueAsString(weatherResult);
+
+				// 构建 Nacos 插件的输入参数
+				Map<String, Object> nacosParams = new HashMap<>();
+				nacosParams.put("operation", "publish");
+				nacosParams.put("dataId", "weather-data");
+				nacosParams.put("group", "DEFAULT_GROUP");
+				nacosParams.put("content", weatherJson);
+				nacosParams.put("type", "json");
+
+				return Map.of("nacos_params", nacosParams);
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to transform weather result to nacos params", e);
+			}
+		});
+
 		PluginNode nacosPluginNode = PluginNode.builder()
 				.plugin(new NacosPlugin()) // 使用 NacosPlugin 插件
 				.paramsKey("nacos_params") // 输入参数键
@@ -61,9 +90,11 @@ public class PluginAutoConfiguration {
 
 		StateGraph stateGraph = new StateGraph(stateFactory)
 				.addNode("weather_plugin_node", node_async(weatherPluginNode))
+				.addNode("transform_node", transformNode)
 				.addNode("nacos_plugin_node", node_async(nacosPluginNode))
 				.addEdge(START, "weather_plugin_node")
-				.addEdge("weather_plugin_node", "nacos_plugin_node")
+				.addEdge("weather_plugin_node", "transform_node")
+				.addEdge("transform_node", "nacos_plugin_node")
 				.addEdge("nacos_plugin_node", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
