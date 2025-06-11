@@ -18,8 +18,10 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -29,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -54,9 +57,6 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 public class DynamicAgent extends ReActAgent {
 
@@ -143,16 +143,15 @@ public class DynamicAgent extends ReActAgent {
 			thinkActRecord.startThinking(messages.toString());
 
 			log.debug("Messages prepared for the prompt: {}", messages);
-
-			userPrompt = new Prompt(messages, chatOptions);
+			ChatMemory chatMemory = llmService.getAgentMemory();
+			List<Message> historyMem = chatMemory.get(getPlanId());
+			List<Message> conversationHistory = new ArrayList<>(historyMem);
+			conversationHistory.addAll(messages);
+			userPrompt = new Prompt(conversationHistory, chatOptions);
 
 			List<ToolCallback> callbacks = getToolCallList();
 			ChatClient chatClient = llmService.getAgentChatClient();
-			response = chatClient.prompt(userPrompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, getPlanId()))
-				.toolCallbacks(callbacks)
-				.call()
-				.chatResponse();
+			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
 
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
@@ -181,17 +180,19 @@ public class DynamicAgent extends ReActAgent {
 
 	@Override
 	protected AgentExecResult act() {
+		ToolExecutionResult toolExecutionResult = null;
 		try {
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			ToolCall toolCall = toolCalls.get(0);
 
 			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
-			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 
+			toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
+
+			processMemory(toolExecutionResult);
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
 
-			llmService.getAgentMemory().add(getPlanId(), toolResponseMessage);
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
 
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
@@ -217,18 +218,23 @@ public class DynamicAgent extends ReActAgent {
 							// The UserInputService.submitUserInputs would have updated
 							// the tool's internal state.
 							// We can now get the updated state string for the LLM.
+
+							UserMessage userMessage = UserMessage.builder()
+								.text("User input received for form: " + formInputTool.getCurrentToolStateString())
+								.build();
+							processUserInputToMemory(userMessage); // Process user input
+																	// to memory
 							llmCallResponse = formInputTool.getCurrentToolStateString();
-							// Update the toolResponseMessage in memory for the next LLM
-							// call
-							ToolResponseMessage.ToolResponse updatedToolResponse = new ToolResponseMessage.ToolResponse(
-									toolCall.id(), toolCall.name(), llmCallResponse);
-							ToolResponseMessage updatedToolResponseMessage = new ToolResponseMessage(
-									List.of(updatedToolResponse), Map.of());
-							llmService.getAgentMemory().add(getPlanId(), updatedToolResponseMessage);
 
 						}
 						else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
 							log.warn("Input timeout occurred for FormInputTool for planId: {}", getPlanId());
+							// Handle input timeout
+
+							UserMessage userMessage = UserMessage.builder()
+								.text("Input timeout occurred for form: ")
+								.build();
+							processUserInputToMemory(userMessage);
 							userInputService.removeFormInputTool(getPlanId()); // Clean up
 							return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS); // Or
 																											// FAILED
@@ -247,18 +253,50 @@ public class DynamicAgent extends ReActAgent {
 			return new AgentExecResult(llmCallResponse, AgentState.IN_PROGRESS);
 		}
 		catch (Exception e) {
-			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
-			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
-					toolCall.name(), "Error: " + e.getMessage());
-			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List.of(toolResponse), Map.of());
-			llmService.getAgentMemory().add(getPlanId(), toolResponseMessage);
+
 			log.error(e.getMessage());
 
 			thinkActRecord.recordError(e.getMessage());
 			userInputService.removeFormInputTool(getPlanId()); // Clean up on error
-
+			processMemory(toolExecutionResult); // Process memory even on error
 			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
 		}
+	}
+
+	private void processUserInputToMemory(UserMessage userMessage) {
+		if (userMessage != null && userMessage.getText() != null) {
+			// Process the user message to update memory
+			String userInput = userMessage.getText();
+
+			if (!StringUtils.isBlank(userInput)) {
+				// 将用户输入添加到内存中
+
+				llmService.getAgentMemory().add(getPlanId(), userMessage);
+
+			}
+		}
+	}
+
+	private void processMemory(ToolExecutionResult toolExecutionResult) {
+
+		if (toolExecutionResult != null && toolExecutionResult.conversationHistory() != null) {
+			// Process the conversation history to update memory
+			List<Message> messages = toolExecutionResult.conversationHistory();
+
+			if (!messages.isEmpty()) {
+
+				// 先清空记忆，因为执行结果里有所有的记忆。
+
+				llmService.getAgentMemory().clear(getPlanId()); // 清除当前计划的内存，避免重复添加
+				for (Message message : messages) {
+					// 排除所有的SystemMessage
+					if (!(message instanceof org.springframework.ai.chat.messages.SystemMessage)) {
+						llmService.getAgentMemory().add(getPlanId(), message);
+					}
+				}
+			}
+		}
+
 	}
 
 	@Override

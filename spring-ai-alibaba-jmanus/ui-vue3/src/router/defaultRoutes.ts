@@ -30,7 +30,11 @@ export const routes: Readonly<RouteRecordType[]> = [
   {
     path: '/',
     name: 'Root',
-    redirect: '/home',
+    redirect: () => {
+      // 检查用户是否已经访问过首页
+      const hasVisited = localStorage.getItem('hasVisitedHome') === 'true'
+      return hasVisited ? '/direct' : '/home'
+    },
     meta: {
       skip: true,
     },
@@ -45,11 +49,11 @@ export const routes: Readonly<RouteRecordType[]> = [
         },
       },
       {
-        path: '/plan/:id?',
-        name: 'plan',
-        component: () => import('../views/plan/index.vue'),
+        path: '/direct/:id?',
+        name: 'direct',
+        component: () => import('../views/direct/index.vue'),
         meta: {
-          icon: 'carbon:plan',
+          icon: 'carbon:chat',
           fullscreen: true,
         },
       },
@@ -86,7 +90,7 @@ function handleRoutes(
     if (parent) {
       route.path = handlePath(parent?.path, route.path)
     }
-    if (route.redirect) {
+    if (route.redirect && typeof route.redirect === 'string') {
       route.redirect = handlePath(route.path, route.redirect || '')
     }
 

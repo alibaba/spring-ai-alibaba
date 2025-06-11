@@ -20,10 +20,10 @@
         <img src="/Java-AI.svg" alt="Java-AI" width="96" height="96" class="java-logo" />
       </div>
       <h1 class="error-code">404</h1>
-      <p class="error-message">{{ $t('noPageTip') }}</p>
+      <p class="error-message">页面未找到</p>
       <button class="back-button" @click="backHome">
         <Icon icon="carbon:arrow-left" />
-        {{ $t('backHome') }}
+        返回首页
       </button>
     </div>
   </div>
@@ -82,6 +82,7 @@ const backHome = () => {
   font-weight: 700;
   margin: 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
