@@ -22,7 +22,6 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.Message;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +40,10 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final TavilySearchService tavilySearchService;
 
+	private final Integer MAX_RETRY_COUNT = 3;
+
+	private final Long RETRY_DELAY_MS = 500L;
+
 	public BackgroundInvestigationNode(TavilySearchService tavilySearchService) {
 		this.tavilySearchService = tavilySearchService;
 	}
@@ -53,7 +56,7 @@ public class BackgroundInvestigationNode implements NodeAction {
 		List<Map<String, String>> results = new ArrayList<>();
 
 		// Retry logic
-		for (int i = 0; i < 2; i++) {
+		for (int i = 0; i < MAX_RETRY_COUNT; i++) {
 			try {
 				TavilySearchService.Response response = tavilySearchService
 					.apply(TavilySearchService.Request.simpleQuery(query));
@@ -72,17 +75,7 @@ public class BackgroundInvestigationNode implements NodeAction {
 			catch (Exception e) {
 				logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
 			}
-
-			// Wait 0.5 seconds before retrying if the first attempt fails
-			if (i == 0) {
-				try {
-					Thread.sleep(500);
-				}
-				catch (InterruptedException ie) {
-					Thread.currentThread().interrupt();
-					break;
-				}
-			}
+			Thread.sleep(RETRY_DELAY_MS);
 		}
 
 		Map<String, Object> resultMap = new HashMap<>();
@@ -93,7 +86,6 @@ public class BackgroundInvestigationNode implements NodeAction {
 		}
 		else {
 			logger.warn("⚠️ 搜索失败");
-			resultMap.put("background_investigation_results", "");
 		}
 
 		return resultMap;
