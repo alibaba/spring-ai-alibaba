@@ -93,30 +93,29 @@ public class DockerCodeExecutor implements CodeExecutor {
 				if ("java".equals(language)) {
 					StringBuilder classPathBuilder = new StringBuilder();
 					classPathBuilder.append("/workspace").append(File.pathSeparator).append(".");
-					
+
 					// Add all JAR files in workDir to classpath
 					try {
 						Path workDirPath = Path.of(hostWorkDir);
 						if (Files.exists(workDirPath)) {
 							try (var stream = Files.walk(workDirPath)) {
-								stream.filter(path -> path.toString().endsWith(".jar"))
-									.forEach(jarPath -> {
-										// Use container path for JAR files
-										String containerJarPath = "/workspace/" + jarPath.getFileName().toString();
-										classPathBuilder.append(File.pathSeparator).append(containerJarPath);
-									});
+								stream.filter(path -> path.toString().endsWith(".jar")).forEach(jarPath -> {
+									// Use container path for JAR files
+									String containerJarPath = "/workspace/" + jarPath.getFileName().toString();
+									classPathBuilder.append(File.pathSeparator).append(containerJarPath);
+								});
 							}
 						}
 					}
 					catch (IOException e) {
 						logger.warn("Failed to scan JAR files in work directory", e);
 					}
-					
+
 					String classPath = codeExecutionConfig.getClassPath();
 					if (classPath != null && !classPath.isEmpty()) {
 						classPathBuilder.append(File.pathSeparator).append(classPath);
 					}
-					
+
 					String cpArg = classPathBuilder.toString();
 					createContainerCmd.withCmd(CodeUtils.getExecutableForLanguage(language), "-cp", cpArg, filename);
 				}
@@ -159,7 +158,7 @@ public class DockerCodeExecutor implements CodeExecutor {
 					dockerClient.removeContainerCmd(container.getId()).withForce(true).exec();
 					// Delete temporary file
 					FileUtils.deleteFile(codeExecutionConfig.getWorkDir(), filename);
-					
+
 					// Delete JAR files if language is Java
 					if ("java".equals(language)) {
 						FileUtils.deleteResourceJarFromWorkDir(hostWorkDir);

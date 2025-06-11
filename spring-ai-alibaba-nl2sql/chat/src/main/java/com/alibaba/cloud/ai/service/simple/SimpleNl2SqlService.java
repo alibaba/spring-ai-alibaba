@@ -13,27 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service;
+package com.alibaba.cloud.ai.service.simple;
 
-import com.alibaba.cloud.ai.dbconnector.DbAccessor;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.dbconnector.*;
+import com.alibaba.cloud.ai.service.LlmService;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
-		matchIfMissing = true)
 @Service
-public class Nl2SqlService extends BaseNl2SqlService {
+public class SimpleNl2SqlService extends BaseNl2SqlService {
 
 	@Autowired
-	public Nl2SqlService(@Qualifier("vectorStoreService") BaseVectorStoreService vectorStoreService,
-			@Qualifier("schemaService") BaseSchemaService schemaService, LlmService aiService, DbAccessor dbAccessor,
-			DbConfig dbConfig) {
+	public SimpleNl2SqlService(@Qualifier("simpleVectorStoreService") BaseVectorStoreService vectorStoreService,
+			@Qualifier("simpleSchemaService") BaseSchemaService schemaService, LlmService aiService,
+			DbAccessor dbAccessor, DbConfig dbConfig) {
 		super(vectorStoreService, schemaService, aiService, dbAccessor, dbConfig);
 	}
 

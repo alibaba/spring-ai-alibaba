@@ -105,7 +105,6 @@ public class CodeActionTest {
 		Map<String, String> params = new LinkedHashMap<>();
 		params.put("text", "text");
 		params.put("count", "count");
-		config.setClassPath("D:\\repository\\com\\alibaba\\fastjson\\1.2.78\\fastjson-1.2.78.jar");
 		// Create code execution node action
 		NodeAction codeNode = CodeExecutorNodeAction.builder()
 			.codeExecutor(new LocalCommandlineCodeExecutor())
