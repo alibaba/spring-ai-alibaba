@@ -25,13 +25,12 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.advisor.AgentSystemPromptAdvisor;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -134,9 +133,13 @@ public class DynamicAgent extends ReActAgent {
 		int attempt = 0;
 		while (attempt < maxRetries) {
 			attempt++;
-			List<Message> messages = new ArrayList<>();
-			addThinkPrompt(messages);
+			List<Message> thinkMessageList = new ArrayList<>();
+			addThinkPrompt(thinkMessageList);
+			Message currentStepEnvMessage = currentStepEnvMessage();
+			thinkMessageList.add(currentStepEnvMessage);
+			thinkActRecord.startThinking(thinkMessageList.toString());
 
+			log.debug("Messages prepared for the prompt: {}", thinkMessageList);
 			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
 			Message nextStepMessage = getNextStepWithEnvMessage();
 			messages.add(nextStepMessage);
@@ -314,7 +317,7 @@ public class DynamicAgent extends ReActAgent {
 		if (StringUtils.isBlank(this.nextStepPrompt)) {
 			return new UserMessage("");
 		}
-		PromptTemplate promptTemplate = new PromptTemplate(this.nextStepPrompt);
+		PromptTemplate promptTemplate = new SystemPromptTemplate(this.nextStepPrompt);
 		Message userMessage = promptTemplate.createMessage(getMergedData());
 		return userMessage;
 	}
@@ -329,17 +332,24 @@ public class DynamicAgent extends ReActAgent {
 	@Override
 	protected Message addThinkPrompt(List<Message> messages) {
 		super.addThinkPrompt(messages);
+		Message nextStepWithEnvMessage = getNextStepWithEnvMessage();
+		messages.add(nextStepWithEnvMessage);
+		return nextStepWithEnvMessage;
+	}
+
+	/**
+	 * Current step env data
+	 * @return User message for current step environment data
+	 */
+	private Message currentStepEnvMessage() {
 		String envPrompt = """
 
 				当前步骤的环境信息是:
 				{current_step_env_data}
 
 				""";
-
-		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(envPrompt);
-		Message systemMessage = promptTemplate.createMessage(getMergedData());
-		messages.add(systemMessage);
-		return systemMessage;
+		PromptTemplate promptTemplate = new PromptTemplate(envPrompt);
+		return promptTemplate.createMessage(getMergedData());
 	}
 
 	private ToolCallBackContext getToolCallBackContext(String toolKey) {
