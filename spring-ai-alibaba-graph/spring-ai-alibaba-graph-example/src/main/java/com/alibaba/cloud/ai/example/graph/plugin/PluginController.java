@@ -44,13 +44,20 @@ public class PluginController {
 	@GetMapping("/weather")
 	public String simpleChat(@RequestParam String location) throws GraphStateException {
 		// 在状态中设置参数
-		Map<String, Object> params = new HashMap<>();
-		params.put("location", location);
+		Map<String, Object> weatherParams = new HashMap<>();
+		weatherParams.put("location", location);
+		
+		Map<String, Object> nacosParams = new HashMap<>();
+		nacosParams.put("operation", "publish");
+		nacosParams.put("dataId", "example-app.properties");
+		nacosParams.put("group", "EXAMPLE_GROUP");
+		nacosParams.put("content", "server.port=8080\napp.name=nacos-example\napp.version=1.0.0\nfeature.enabled=true");
+		nacosParams.put("type", "properties");
+		
 		return stateGraph.compile()
-			.invoke(Map.of("weather_params", params))
+			.invoke(Map.of("weather_params", weatherParams, "nacos_params", nacosParams))
 			.get()
-			.value("weather_result")
-			.get()
+			.data()
 			.toString();
 	}
 

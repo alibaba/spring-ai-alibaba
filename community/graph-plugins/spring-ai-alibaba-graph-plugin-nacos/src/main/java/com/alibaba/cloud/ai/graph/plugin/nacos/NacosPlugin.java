@@ -47,13 +47,20 @@ public class NacosPlugin implements GraphPlugin {
 
 	private final ObjectMapper objectMapper;
 
-	public NacosPlugin() throws NacosException {
+	public NacosPlugin() {
 		this(createDefaultProperties());
 	}
 
-	public NacosPlugin(Properties properties) throws NacosException {
-		this.configService = NacosFactory.createConfigService(properties);
-		this.objectMapper = new ObjectMapper();
+	public NacosPlugin(Properties properties) {
+		try {
+			this.configService = NacosFactory.createConfigService(properties);
+			this.objectMapper = new ObjectMapper();
+			logger.info("NacosPlugin initialized with properties: {}", properties);
+		}
+		catch (NacosException e) {
+			logger.error("Failed to initialize NacosPlugin:", e);
+			throw new RuntimeException("Failed to initialize NacosPlugin: " + e.getMessage(), e);
+		}
 	}
 
 	private static Properties createDefaultProperties() {

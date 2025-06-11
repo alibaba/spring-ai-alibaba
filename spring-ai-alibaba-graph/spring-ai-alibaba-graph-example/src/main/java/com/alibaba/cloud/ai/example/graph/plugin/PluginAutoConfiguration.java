@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.PluginNode;
+import com.alibaba.cloud.ai.graph.plugin.nacos.NacosPlugin;
 import com.alibaba.cloud.ai.graph.plugin.weather.WeatherPlugin;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.springframework.context.annotation.Bean;
@@ -40,20 +41,30 @@ public class PluginAutoConfiguration {
 		OverAllStateFactory stateFactory = () -> {
 			OverAllState state = new OverAllState();
 			state.registerKeyAndStrategy("weather_params", new ReplaceStrategy());
-			state.registerKeyAndStrategy("plugin_result", new ReplaceStrategy());
+			state.registerKeyAndStrategy("nacos_params", new ReplaceStrategy());
+			state.registerKeyAndStrategy("weather_result", new ReplaceStrategy());
+			state.registerKeyAndStrategy("nacos_result", new ReplaceStrategy());
 			return state;
 		};
 
 		// 创建一个插件节点，使用 WeatherPlugin 插件
-		PluginNode pluginNode = PluginNode.builder()
+		PluginNode weatherPluginNode = PluginNode.builder()
 				.plugin(new WeatherPlugin()) // 使用 WeatherPlugin 插件
 				.paramsKey("weather_params") // 输入参数键
 				.outputKey("weather_result") // 输出参数键
 				.build();
+		PluginNode nacosPluginNode = PluginNode.builder()
+				.plugin(new NacosPlugin()) // 使用 NacosPlugin 插件
+				.paramsKey("nacos_params") // 输入参数键
+				.outputKey("nacos_result") // 输出参数键
+				.build();
 
-		StateGraph stateGraph = new StateGraph(stateFactory).addNode("plugin_node", node_async(pluginNode))
-				.addEdge(START, "plugin_node")
-				.addEdge("plugin_node", END);
+		StateGraph stateGraph = new StateGraph(stateFactory)
+				.addNode("weather_plugin_node", node_async(weatherPluginNode))
+				.addNode("nacos_plugin_node", node_async(nacosPluginNode))
+				.addEdge(START, "weather_plugin_node")
+				.addEdge("weather_plugin_node", "nacos_plugin_node")
+				.addEdge("nacos_plugin_node", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
 				"plugin graph");

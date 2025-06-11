@@ -188,6 +188,12 @@
             <artifactId>spring-ai-alibaba-graph-plugin-weather</artifactId>
             <version>${revision}</version>
         </dependency>
+        
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+            <version>${nacos3.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
