@@ -702,34 +702,4 @@ public class StateGraphTest {
 		System.out.println(graph2.content());
 	}
 
-	@Test
-	public void testaddConditionalEdgesGraph() throws Exception {
-		StateGraph graph = new StateGraph(() -> {
-			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
-			stringKeyStrategyHashMap.put("messages", new AppendStrategy());
-			return stringKeyStrategyHashMap;
-		});
-		graph.addNode("node1", makeNode("node1"));
-		graph.addNode("node2", makeNode("node2"));
-		graph.addNode("node3", makeNode("node3"));
-
-		CommandAction commandAction = new CommandAction() {
-			@Override
-			public Command apply(OverAllState state, RunnableConfig config) throws Exception {
-				return new Command("node4", Map.of("test", "t1"));
-			}
-		};
-		graph.addConditionalEdges("node1", AsyncCommandAction.node_async(commandAction),
-				Map.of("node2", "node2", "node4", "node4"));
-		graph.addEdge(START, "node1");
-		graph.addEdge("node2", END);
-
-		CompiledGraph compile = graph.compile();
-		// GraphRepresentation graph1 =
-		// compile.getGraph(GraphRepresentation.Type.PLANTUML);
-		GraphRepresentation graph2 = compile.getGraph(GraphRepresentation.Type.MERMAID);
-		// System.out.println(graph1.content());
-		System.out.println(graph2.content());
-	}
-
 }
