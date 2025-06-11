@@ -15,20 +15,21 @@
 -->
 <template>
   <div class="home-page">
-    <Sidebar />
-    <div class="conversation">
+    <!-- 简化的 Hello World 主页 -->
+    <div class="welcome-container">
       <!-- Background effects -->
       <div class="background-effects">
         <div class="gradient-orb orb-1"></div>
         <div class="gradient-orb orb-2"></div>
         <div class="gradient-orb orb-3"></div>
       </div>
+      
       <!-- Header -->
       <header class="header">
         <div class="logo-container">
           <div class="logo">
-            <img src="/Java-AI.svg" alt="JManus" class="java-logo" />
-            <h1>JManus</h1>
+            <img src="/Java-AI.svg" alt="JTaskPoilot" class="java-logo" />
+            <h1>JTaskPoilot</h1>
           </div>
           <span class="tagline">Java AI 智能体</span>
         </div>
@@ -39,8 +40,8 @@
         <div class="conversation-container">
           <!-- Welcome section -->
           <div class="welcome-section">
-            <h2 class="welcome-title">今天我能帮你构建什么？</h2>
-            <p class="welcome-subtitle">描述您的任务或项目，我将帮助您逐步规划和执行。</p>
+            <h2 class="welcome-title">欢迎使用 JTaskPoilot！</h2>
+            <p class="welcome-subtitle">您的 Java AI 智能助手，帮助您构建和完成各种任务。</p>
           </div>
 
           <!-- Input section -->
@@ -78,42 +79,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
-import Sidebar from '@/components/sidebar/index.vue'
 import BlurCard from '@/components/blurCard/index.vue'
+import { useTaskStore } from '@/stores/task'
 
 const router = useRouter()
+const taskStore = useTaskStore()
 const userInput = ref('')
 const textareaRef = ref<HTMLTextAreaElement>()
 
 const examples = [
   {
     title: '查询股价',
-    description: '获取今天阿里巴巴的最新股价',
+    description: '获取今天阿里巴巴的最新股价（Agent可以使用浏览器工具）',
     icon: 'carbon:chart-line-data',
-    prompt: '查询今天阿里巴巴的股价',
+    prompt: '用浏览器基于百度，查询今天阿里巴巴的股价，并返回最新股价',
   },
   {
-    title: '预订机票',
-    description: '帮我查找并预订从上海到北京的机票',
-    icon: 'carbon:plane',
-    prompt: '帮忙预定一下从上海到北京的机票',
+    title: '生成一个中篇小说',
+    description: '帮我生成一个中篇小说（Agent可以生成更长的内容）',
+    icon: 'carbon:book',
+    prompt: '请帮我写一个关于机器人取代人类的小说。20000字。 使用TEXT_FILE_AGENT ，先生成提纲，然后，完善和丰满整个提纲的内容为一篇通顺的小说，最后再全局通顺一下语法',
   },
   {
     title: '查询天气',
-    description: '获取北京今天的天气情况',
+    description: '获取北京今天的天气情况（Agent可以使用MCP工具服务）',
     icon: 'carbon:partly-cloudy',
-    prompt: '查询北京今天的天气',
-  },
-  {
-    title: '设置提醒',
-    description: '提醒我明天下午三点开会',
-    icon: 'carbon:alarm',
-    prompt: '提醒我明天下午三点开会',
+    prompt: '用浏览器，基于百度，查询北京今天的天气',
   },
 ]
+
+onMounted(() => {
+  console.log('[Home] onMounted called')
+  console.log('[Home] taskStore:', taskStore)
+  console.log('[Home] examples:', examples)
+  
+  // 标记已访问过 home 页面
+  taskStore.markHomeVisited()
+  console.log('[Home] Home visited marked')
+})
 
 const adjustTextareaHeight = () => {
   nextTick(() => {
@@ -125,37 +131,73 @@ const adjustTextareaHeight = () => {
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
+  console.log('[Home] handleKeydown called, key:', event.key)
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
+    console.log('[Home] Enter key pressed, calling handleSend')
     handleSend()
   }
 }
 
 const handleSend = () => {
-  if (!userInput.value.trim()) return
+  console.log('[Home] handleSend called, userInput:', userInput.value)
+  if (!userInput.value.trim()) {
+    console.log('[Home] handleSend aborted - empty input')
+    return
+  }
 
-  // Navigate to plan page with the user input
-  const planId = Date.now().toString()
+  const taskContent = userInput.value.trim()
+  console.log('[Home] Setting task to store:', taskContent)
+  
+  // 使用 store 传递任务数据
+  taskStore.setTask(taskContent)
+  console.log('[Home] Task set to store, current task:', taskStore.currentTask)
+  
+  // 导航到 direct 页面
+  const chatId = Date.now().toString()
+  console.log('[Home] Navigating to direct page with chatId:', chatId)
+  
   router.push({
-    name: 'plan',
-    params: { id: planId },
-    query: { prompt: userInput.value },
+    name: 'direct',
+    params: { id: chatId },
+  }).then(() => {
+    console.log('[Home] Navigation to direct page completed')
+  }).catch((error) => {
+    console.error('[Home] Navigation error:', error)
   })
 }
 
 const selectExample = (example: any) => {
-  userInput.value = example.prompt
-  adjustTextareaHeight()
+  console.log('[Home] selectExample called with example:', example)
+  console.log('[Home] Example prompt:', example.prompt)
+  
+  // 直接使用示例的 prompt 发送任务
+  taskStore.setTask(example.prompt)
+  console.log('[Home] Task set to store from example, current task:', taskStore.currentTask)
+  
+  // 导航到 direct 页面
+  const chatId = Date.now().toString()
+  console.log('[Home] Navigating to direct page with chatId:', chatId)
+  
+  router.push({
+    name: 'direct',
+    params: { id: chatId },
+  }).then(() => {
+    console.log('[Home] Navigation to direct page completed (from example)')
+  }).catch((error) => {
+    console.error('[Home] Navigation error (from example):', error)
+  })
 }
 </script>
 
 <style lang="less" scoped>
 .home-page {
   width: 100%;
-  display: flex;
+  height: 100vh;
   position: relative;
 }
-.conversation {
+
+.welcome-container {
   flex: 1;
   height: 100vh;
   background: #0a0a0a;
@@ -416,4 +458,53 @@ const selectExample = (example: any) => {
 //     line-height: 1.4;
 //   }
 // }
+
+/* Config View Styles */
+.config-view {
+  flex: 1;
+  height: 100vh;
+  background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.config-header-bar {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 16px;
+
+  .back-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+  }
+
+  .config-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
 </style>

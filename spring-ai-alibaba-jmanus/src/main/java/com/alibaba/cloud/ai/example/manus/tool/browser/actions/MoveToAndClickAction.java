@@ -46,15 +46,7 @@ public class MoveToAndClickAction extends BrowserAction {
 			try {
 				// 1. 滚动到目标位置（让目标点尽量在视窗中央）
 
-				Object result = page.evaluate(
-						"(args) => window.scrollTo({left: args[0], top: args[1], behavior: 'instant'})",
-						new Object[] { x, y });
-				if (result != null) {
-					log.info("Scroll to position ({}, {}) ,result <{}>", x, y, result);
-				}
-				else {
-					log.warn("Failed to scroll to position ({}, {})", x, y);
-				}
+				Object result = null;
 				String markerId = "__move_click_marker__";
 				if (isDebug) {
 					// 2. 注入大红点（仅debug模式）
@@ -76,19 +68,6 @@ public class MoveToAndClickAction extends BrowserAction {
 					else {
 						log.warn("Debug: Failed to create red dot at position ({}, {}) , result <{}>", x, y, result);
 					}
-
-					// 监听点击事件
-					// page.evaluate(
-					// "(id) => { const dot = document.getElementById(id); if (dot) {
-					// dot.addEventListener('click', () => console.log('Debug: Dot was
-					// clicked!')); } }",
-					// markerId);
-
-					// 获取鼠标移动后的对应元素并打印
-					// String elementInfo = (String) page.evaluate(
-					// "(args) => { const el = document.elementFromPoint(args[0],
-					// args[1]); return el ? el.outerHTML : 'No element'; }",
-					// new Object[] { x, y });
 					log.info("Element at position ({}, {}): {}", x, y);
 				}
 

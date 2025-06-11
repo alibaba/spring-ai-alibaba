@@ -42,7 +42,7 @@ public record ChatRequest(
 		/**
 		 * 是否自动接受计划，用于控制是否自动接受生成的计划。 默认值为 true，表示自动接受计划。
 		 */
-		@JsonProperty(value = "auto_accept_plan", defaultValue = "true") Boolean autoAcceptPlan,
+		@JsonProperty(value = "auto_accepted_plan", defaultValue = "true") Boolean autoAcceptPlan,
 		/**
 		 * 中断反馈，用于控制中断后的反馈信息。
 		 */
