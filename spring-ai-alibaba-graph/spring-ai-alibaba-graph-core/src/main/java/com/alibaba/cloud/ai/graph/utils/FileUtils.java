@@ -67,7 +67,8 @@ public class FileUtils {
 	}
 
 	/**
-	 * Copies all JAR files from the resources/lib directory to the specified working directory.
+	 * Copies all JAR files from the resources/lib directory to the specified working
+	 * directory.
 	 * @param workDir The target working directory where the JAR files will be copied.
 	 */
 	public static void copyResourceJarToWorkDir(String workDir) {
@@ -88,16 +89,15 @@ public class FileUtils {
 			// Get all JAR files from lib directory
 			Path libPath = Path.of(libUrl.toURI());
 			try (var stream = Files.walk(libPath)) {
-				stream.filter(path -> path.toString().endsWith(".jar"))
-					.forEach(jarPath -> {
-						try {
-							Path targetPath = targetDir.resolve(jarPath.getFileName());
-							Files.copy(jarPath, targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-						}
-						catch (IOException e) {
-							throw new RuntimeException("Failed to copy JAR file: " + jarPath, e);
-						}
-					});
+				stream.filter(path -> path.toString().endsWith(".jar")).forEach(jarPath -> {
+					try {
+						Path targetPath = targetDir.resolve(jarPath.getFileName());
+						Files.copy(jarPath, targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+					}
+					catch (IOException e) {
+						throw new RuntimeException("Failed to copy JAR file: " + jarPath, e);
+					}
+				});
 			}
 		}
 		catch (Exception e) {
@@ -114,15 +114,14 @@ public class FileUtils {
 			Path workDirPath = Path.of(workDir);
 			if (Files.exists(workDirPath)) {
 				try (var stream = Files.walk(workDirPath)) {
-					stream.filter(path -> path.toString().endsWith(".jar"))
-						.forEach(jarPath -> {
-							try {
-								Files.deleteIfExists(jarPath);
-							}
-							catch (IOException e) {
-								throw new RuntimeException("Failed to delete JAR file: " + jarPath, e);
-							}
-						});
+					stream.filter(path -> path.toString().endsWith(".jar")).forEach(jarPath -> {
+						try {
+							Files.deleteIfExists(jarPath);
+						}
+						catch (IOException e) {
+							throw new RuntimeException("Failed to delete JAR file: " + jarPath, e);
+						}
+					});
 				}
 			}
 		}

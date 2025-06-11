@@ -92,7 +92,7 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 		CodeExecutionResult executionResult = executeCodeLocally(language, workDir, filename, config);
 
 		FileUtils.deleteFile(workDir, filename);
-		
+
 		// Delete JAR files if language is Java
 		if ("java".equals(language)) {
 			FileUtils.deleteResourceJarFromWorkDir(workDir);
@@ -110,30 +110,28 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 			commandLine.addArgument("-cp");
 			StringBuilder classPathBuilder = new StringBuilder();
 			classPathBuilder.append(".").append(File.pathSeparator).append(workDir);
-			
+
 			// Add all JAR files in workDir to classpath
 			try {
 				Path workDirPath = Path.of(workDir);
 				if (Files.exists(workDirPath)) {
 					try (var stream = Files.walk(workDirPath)) {
-						stream.filter(path -> path.toString().endsWith(".jar"))
-							.forEach(jarPath -> {
-								classPathBuilder.append(File.pathSeparator).append(jarPath.toString());
-							});
+						stream.filter(path -> path.toString().endsWith(".jar")).forEach(jarPath -> {
+							classPathBuilder.append(File.pathSeparator).append(jarPath.toString());
+						});
 					}
 				}
 			}
 			catch (IOException e) {
 				logger.warn("Failed to scan JAR files in work directory", e);
 			}
-			
+
 			if (config.getClassPath() != null && !config.getClassPath().isEmpty()) {
 				classPathBuilder.append(File.pathSeparator).append(config.getClassPath());
 			}
-			
+
 			String classPath = classPathBuilder.toString();
-			commandLine.addArgument(classPath)
-				.addArgument(filename);
+			commandLine.addArgument(classPath).addArgument(filename);
 		}
 		else {
 			commandLine.addArgument(filename);
