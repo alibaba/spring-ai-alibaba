@@ -29,11 +29,8 @@ public class JavaTemplateTransformer extends TemplateTransformer {
 	public String getRunnerScript() {
 		return """
 				import java.util.*;
-				import java.io.*;
 				import com.fasterxml.jackson.databind.ObjectMapper;
-				import com.fasterxml.jackson.databind.node.ArrayNode;
 				import com.fasterxml.jackson.databind.node.ObjectNode;
-				import com.fasterxml.jackson.databind.JsonNode;
 
 				class Main {
 				    public static void main(String[] args) throws Exception {
@@ -41,38 +38,13 @@ public class JavaTemplateTransformer extends TemplateTransformer {
 				        String inputsBase64 = "%s";
 				        String inputsJson = new String(Base64.getDecoder().decode(inputsBase64));
 				        ObjectMapper mapper = new ObjectMapper();
-				        JsonNode rootNode = mapper.readTree(inputsJson);
-				        List<Object> inputs = new ArrayList<>();
-				        
-				        if (rootNode.isArray()) {
-				            for (JsonNode element : rootNode) {
-				                if (element.isTextual() || element.isNumber()) {
-				                    inputs.add(element.asText());
-				                } else if (element.isObject()) {
-				                    inputs.add(mapper.treeToValue(element, Map.class));
-				                }
-				            }
-				        } else {
-				            // Handle single value case
-				            if (rootNode.isTextual() || rootNode.isNumber()) {
-				                inputs.add(rootNode.asText());
-				            } else if (rootNode.isObject()) {
-				                inputs.add(mapper.treeToValue(rootNode, Map.class));
-				            }
-				        }
+				        Object[] inputs = mapper.readValue(inputsJson, Object[].class);
 
 				        // Execute user code
-				        Object result = main(inputs.toArray());
+				        Object result = main(inputs);
 
 				        // Output results
-				        String output;
-				        if (result instanceof Map) {
-				            output = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
-				        } else {
-				            ObjectNode wrapper = mapper.createObjectNode();
-				            wrapper.putPOJO("result", result);
-				            output = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(wrapper);
-				        }
+				        String output = mapper.writeValueAsString(result);
 				        System.out.println("<<RESULT>>" + output + "<<RESULT>>");
 				    }
 
