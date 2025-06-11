@@ -44,7 +44,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
-@RestController
+//@RestController
 @RequestMapping("bigtool")
 public class BigToolController {
 

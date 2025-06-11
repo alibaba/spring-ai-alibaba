@@ -133,6 +133,9 @@
         <module>community/memories/spring-ai-alibaba-starter-memory-jdbc</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-elasticsearch</module>
 
+        <!-- Spring AI Alibaba Graph Plugin -->
+        <module>community/graph-plugins/spring-ai-alibaba-graph-plugin-weather</module>
+
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
         <!-- Spring AI Alibaba ARMS Extension -->
