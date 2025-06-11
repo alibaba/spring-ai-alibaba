@@ -23,7 +23,9 @@ ignore_dirs = [
     ".idea",
     ".git",
     ".vscode",
-    "target"
+    "target",
+    "static",
+    "static_legacy"
 ]
 
 # A list of ignored suffix files
