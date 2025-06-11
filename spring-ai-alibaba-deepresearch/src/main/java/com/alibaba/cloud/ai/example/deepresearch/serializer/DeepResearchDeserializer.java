@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.deepresearch.serializer;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
