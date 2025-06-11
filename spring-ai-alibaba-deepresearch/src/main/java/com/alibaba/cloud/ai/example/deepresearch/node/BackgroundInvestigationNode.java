@@ -16,8 +16,9 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
  * @since 2025/5/17 18:37
  */
 
-public class BackgroundInvestigationNode implements BackgroundInvestigationNodeAction {
+public class BackgroundInvestigationNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
 
@@ -45,18 +46,9 @@ public class BackgroundInvestigationNode implements BackgroundInvestigationNodeA
 	}
 
 	@Override
-	public BackgroundInvestigationType of() {
-		return BackgroundInvestigationType.JUST_WEB_SEARCH;
-	}
-
-	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("background investigation node is running.");
-		List<Message> messages = state.value("messages", List.class)
-			.map(obj -> new ArrayList<>((List<Message>) obj))
-			.orElseGet(ArrayList::new);
-		Message lastMessage = messages.isEmpty() ? null : messages.get(messages.size() - 1);
-		String query = lastMessage.getText();
+		String query = StateUtil.getQuery(state);
 		TavilySearchService.Response response = tavilySearchService
 			.apply(TavilySearchService.Request.simpleQuery(query));
 		List<Map<String, String>> results = response.results().stream().map(info -> {
@@ -69,7 +61,9 @@ public class BackgroundInvestigationNode implements BackgroundInvestigationNodeA
 		logger.info("✅ 搜索结果: {}", results);
 
 		Map<String, Object> resultMap = new HashMap<>();
-		resultMap.put("background_investigation_results", results);
+
+		String prompt = "background investigation results of user query:\n" + results + "\n";
+		resultMap.put("background_investigation_results", prompt);
 		return resultMap;
 	}
 

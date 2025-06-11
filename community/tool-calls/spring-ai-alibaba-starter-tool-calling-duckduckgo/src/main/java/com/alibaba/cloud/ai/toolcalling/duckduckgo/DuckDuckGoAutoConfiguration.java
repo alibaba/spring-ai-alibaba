@@ -37,10 +37,11 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DE
 
 @Configuration
 @EnableConfigurationProperties(DuckDuckGoProperties.class)
-@ConditionalOnProperty(prefix = DuckDuckGoProperties.DUCKDUCKGO_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = DuckDuckGoConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class DuckDuckGoAutoConfiguration {
 
-	@Bean
+	@Bean(name = DuckDuckGoConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Use DuckDuckGo search to query for the latest news.")
 	public DuckDuckGoQueryNewsService duckDuckGoQueryNews(JsonParseTool jsonParseTool,
