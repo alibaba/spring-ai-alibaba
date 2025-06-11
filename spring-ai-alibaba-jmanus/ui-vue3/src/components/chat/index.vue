@@ -652,7 +652,16 @@ const handleSendMessage = (message: string) => {
 
 // 处理步骤点击事件
 const handleStepClick = (message: Message, stepIndex: number) => {
-  if (!message.planId) return
+  if (!message.planId) {
+    console.warn('[ChatComponent] Cannot handle step click: missing planId')
+    return
+  }
+  
+  console.log('[ChatComponent] Step clicked:', {
+    planId: message.planId,
+    stepIndex: stepIndex,
+    stepTitle: message.steps?.[stepIndex]?.title || message.steps?.[stepIndex]
+  })
   
   // 通过 emit 通知父组件显示步骤详情
   emit('step-selected', message.planId, stepIndex)

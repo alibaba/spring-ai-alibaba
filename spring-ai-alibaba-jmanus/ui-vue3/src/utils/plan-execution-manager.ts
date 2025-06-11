@@ -303,6 +303,14 @@ export class PlanExecutionManager {
   }
 
   /**
+   * 立即轮询计划执行状态（用于手动触发刷新）
+   */
+  public async pollPlanStatusImmediately(): Promise<void> {
+    console.log('[PlanExecutionManager] Polling plan status immediately')
+    await this.pollPlanStatus()
+  }
+
+  /**
    * 停止轮询
    */
   public stopPolling(): void {
