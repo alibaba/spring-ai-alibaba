@@ -24,9 +24,11 @@ export default defineConfig({
     outDir: './ui',
   },
   server: {
+    open: true, // 启动时自动打开浏览器
+    host: true, // 允许外部访问
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8888',
+        target: 'http://localhost:18080',
         changeOrigin: true,
       },
     },
