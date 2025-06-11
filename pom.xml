@@ -52,6 +52,7 @@
         <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-core</module>
+        <module>spring-ai-alibaba-prompt</module>
         <module>spring-ai-alibaba-graph</module>
         <module>spring-ai-alibaba-nl2sql</module>
         <module>spring-ai-alibaba-studio</module>
@@ -64,7 +65,6 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidutranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidumap</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-bingsearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-dingtalk</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-sensitivefilter</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-amap</module>
@@ -128,9 +128,9 @@
         <module>community/vector-stores/spring-ai-alibaba-starter-oceanbase-store</module>
 
         <!-- Spring AI Alibaba Chat Memory Support -->
-        <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
-        <module>community/memories/spring-ai-alibaba-redis-memory</module>
-        <module>community/memories/spring-ai-alibaba-elasticsearch-memory</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-redis</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-jdbc</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-elasticsearch</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
@@ -180,7 +180,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0.1</revision>
+        <revision>1.0.0.3-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -225,6 +225,8 @@
         <jedis.version>5.2.0</jedis.version>
 
         <mysql.version>8.0.32</mysql.version>
+
+        <mcp.version>0.10.0</mcp.version>
 
         <!-- CheckStyle Plugin -->
         <disable.checks>true</disable.checks>
@@ -291,6 +293,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 

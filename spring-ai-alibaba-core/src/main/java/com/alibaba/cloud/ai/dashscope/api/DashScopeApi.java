@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -33,11 +34,15 @@ import com.alibaba.cloud.ai.dashscope.common.ErrorCodeEnum;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentTransformerOptions;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeStoreOptions;
-import com.alibaba.nacos.common.utils.StringUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -59,14 +64,13 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_PARSER_NAME;
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.HEADER_WORK_SPACE_ID;
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.*;
 
 /**
  * @author nuocheng.lxm
@@ -98,8 +102,6 @@ public class DashScopeApi {
 	private final WebClient webClient;
 
 	private final ResponseErrorHandler responseErrorHandler;
-
-	private DashScopeAiStreamFunctionCallingHelper chunkMerger = new DashScopeAiStreamFunctionCallingHelper();
 
 	/**
 	 * Returns a builder pre-populated with the current configuration for mutation.
@@ -500,26 +502,37 @@ public class DashScopeApi {
 	private void uploadFile(File file, UploadLeaseResponse uploadLeaseResponse) {
 		try {
 			UploadLeaseResponse.UploadLeaseParamData uploadParam = uploadLeaseResponse.data.param;
-			RestTemplate restTemplate = new RestTemplate();
-			HttpHeaders headers = new HttpHeaders();
-			String contentType = uploadParam.header.remove("Content-Type");
-			headers.setContentType(MediaType.parseMediaType(contentType));
-			for (String key : uploadParam.header.keySet()) {
-				headers.set(key, uploadParam.header.get(key));
-			}
-			InputStreamResource resource = new InputStreamResource(new FileInputStream(file)) {
-				@Override
-				public long contentLength() {
-					return file.length();
-				}
+			OkHttpClient client = new OkHttpClient.Builder().connectTimeout(60, TimeUnit.SECONDS)
+				.writeTimeout(60, TimeUnit.SECONDS)
+				.readTimeout(60, TimeUnit.SECONDS)
+				.build();
 
-				@Override
-				public String getFilename() {
-					return file.getName();
+			okhttp3.Headers.Builder headersBuilder = new okhttp3.Headers.Builder();
+			String contentType = uploadParam.header.remove("Content-Type");
+
+			for (String key : uploadParam.header.keySet()) {
+				headersBuilder.add(key, uploadParam.header.get(key));
+			}
+
+			RequestBody requestBody;
+			if (StringUtils.hasLength(contentType)) {
+				requestBody = RequestBody.create(file, okhttp3.MediaType.parse(contentType));
+			}
+			else {
+				requestBody = RequestBody.create(file, null);
+				headersBuilder.add("Content-Type", "");
+			}
+
+			Request request = new Request.Builder().url(uploadParam.url)
+				.headers(headersBuilder.build())
+				.put(requestBody)
+				.build();
+
+			try (Response response = client.newCall(request).execute()) {
+				if (!response.isSuccessful()) {
+					throw new Exception("Unexpected response code: " + response.code());
 				}
-			};
-			HttpEntity<InputStreamResource> requestEntity = new HttpEntity<>(resource, headers);
-			restTemplate.exchange(new URI(uploadParam.url), HttpMethod.PUT, requestEntity, Void.class);
+			}
 		}
 		catch (Exception ex) {
 			throw new DashScopeException("Upload File Failed", ex);
@@ -750,7 +763,7 @@ public class DashScopeApi {
 				Arrays.asList(embeddingConfig, parserConfig, retrieverConfig),
 				Arrays.asList(new UpsertPipelineRequest.DataSourcesConfig("DATA_CENTER_FILE",
 						new UpsertPipelineRequest.DataSourcesConfig.DataSourcesComponent(documentIdList))),
-				Arrays.asList(new UpsertPipelineRequest.DataSinksConfig("ES", null))
+				Arrays.asList(new UpsertPipelineRequest.DataSinksConfig("BUILT_IN", null))
 
 		);
 		ResponseEntity<UpsertPipelineResponse> upsertPipelineResponse = this.restClient.put()
@@ -1416,7 +1429,8 @@ public class DashScopeApi {
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 		boolean incrementalOutput = chatRequest.parameters() != null
 				&& chatRequest.parameters().incrementalOutput != null && chatRequest.parameters().incrementalOutput;
-
+		DashScopeAiStreamFunctionCallingHelper chunkMerger = new DashScopeAiStreamFunctionCallingHelper(
+				incrementalOutput);
 		String uri = "/api/v1/services/aigc/text-generation/generation";
 		if (chatRequest.multiModel()) {
 			uri = "/api/v1/services/aigc/multimodal-generation/generation";

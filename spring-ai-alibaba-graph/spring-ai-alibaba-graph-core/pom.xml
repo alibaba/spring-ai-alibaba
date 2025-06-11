@@ -37,11 +37,6 @@
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
 
-
-    <properties>
-        <openai.version>0.22.92</openai.version>
-    </properties>
-
     <dependencies>
         <!--
             <dependency>
@@ -50,13 +45,6 @@
               <version>0.6.3</version>
             </dependency>
         -->
-
-        <dependency>
-            <groupId>io.github.lambdua</groupId>
-            <artifactId>service</artifactId>
-            <version>${openai.version}</version>
-            <scope>test</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
@@ -107,6 +95,24 @@
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>${fastjson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java</artifactId>
+            <version>3.3.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-core</artifactId>
+            <version>3.3.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-httpclient5</artifactId>
+            <version>3.3.3</version>
         </dependency>
 
         <dependency>
@@ -175,6 +181,12 @@
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp</artifactId>
+            <version>${mcp.version}</version>
         </dependency>
 
         <dependency>

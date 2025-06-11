@@ -16,26 +16,30 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import com.alibaba.cloud.ai.example.deepresearch.model.ChatRequest;
+import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
+import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
 import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.bsc.async.AsyncGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author yingzi
@@ -51,88 +55,70 @@ public class DeepResearchController {
 
 	@Autowired
 	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph) throws GraphStateException {
-		this.compiledGraph = stateGraph.compile();
+		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+		this.compiledGraph = stateGraph
+			.compile(CompileConfig.builder().saverConfig(saverConfig).interruptBefore("human_feedback").build());
 	}
 
-	@PostMapping("/chat/stream")
-	public Flux<Map<String, Object>> chatStream(@RequestBody ChatRequest chatRequest) {
-		RunnableConfig runnableConfig = RunnableConfig.builder()
-			.threadId(String.valueOf(chatRequest.threadId()))
-			.build();
+	/**
+	 * SSE (Server-Sent Events) endpoint for chat streaming.
+	 *
+	 * Accepts a ChatRequest and returns a Flux that streams chat responses as
+	 * ServerSentEvent<String>. Supports both initial questions and human feedback
+	 * handling.
+	 */
+	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest) {
+		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
+
 		Map<String, Object> objectMap = new HashMap<>();
-		// 人类反馈消息
+		// Create a unicast sink to emit ServerSentEvents
+		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
+
+		GraphProcess graphProcess = new GraphProcess(this.compiledGraph);
+		// Handle human feedback if auto-accept is disabled and feedback is provided
 		if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
-			objectMap.put("feed_back", chatRequest.interruptFeedback());
-			StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
-			OverAllState state = stateSnapshot.state();
-			state.withResume();
-			state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
-			AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(state, runnableConfig);
-			Stream<OverAllState> overAllStateStream = resultFuture.stream().map(NodeOutput::state);
-			return Flux.fromStream(overAllStateStream).map(overAllState -> {
-				Map<String, Object> result = new HashMap<>();
-				result.put("thread_id", chatRequest.threadId());
-				result.put("data", overAllState.data());
-				return result;
-			});
+			graphProcess.handleHumanFeedback(chatRequest, objectMap, runnableConfig, sink);
 		}
-		// 首次提问
-		objectMap.put("thread_id", chatRequest.threadId());
-		objectMap.put("enable_background_investigation", chatRequest.enableBackgroundInvestigation());
-		objectMap.put("auto_accepted_plan", chatRequest.autoAcceptPlan());
-		objectMap.put("messages", chatRequest.messages());
-		objectMap.put("plan_iterations", 0);
-		objectMap.put("max_step_num", chatRequest.maxStepNum());
-		objectMap.put("current_plan", null);
-		objectMap.put("final_report", "");
-		logger.info("init inputs: {}", objectMap);
-
-		objectMap.put("mcp_settings", chatRequest.mcpSettings());
-		Stream<OverAllState> overAllStateStream = compiledGraph.stream(objectMap, runnableConfig)
-			.stream()
-			.map(NodeOutput::state);
-		return Flux.fromStream(overAllStateStream).map(overAllState -> {
-			Map<String, Object> result = new HashMap<>();
-			result.put("thread_id", chatRequest.threadId());
-			result.put("data", overAllState.data());
-			return result;
-		});
-	}
-
-	@GetMapping("/chat")
-	public Map<String, Object> chat(@RequestParam(value = "query", defaultValue = "草莓蛋糕怎么做呀") String query,
-			@RequestParam(value = "enable_background_investigation",
-					defaultValue = "true") boolean enableBackgroundInvestigation,
-			@RequestParam(value = "auto_accepted_plan", defaultValue = "true") boolean autoAcceptedPlan,
-			@RequestParam(value = "thread_id", required = false, defaultValue = "0") Integer threadId) {
-		UserMessage userMessage = new UserMessage(query);
-		Map<String, Object> objectMap = Map.of("enable_background_investigation", enableBackgroundInvestigation,
-				"auto_accepted_plan", autoAcceptedPlan, "messages", List.of(userMessage));
-
-		if (threadId != 0) {
-			RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(threadId)).build();
-			var resultFuture = compiledGraph.invoke(objectMap, runnableConfig);
-			return resultFuture.get().data();
-		}
+		// First question
 		else {
-			var resultFuture = compiledGraph.invoke(objectMap);
-			return resultFuture.get().data();
+			ChatRequestProcess.initializeObjectMap(chatRequest, objectMap);
+			logger.info("init inputs: {}", objectMap);
+			AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(objectMap, runnableConfig);
+			graphProcess.processStream(resultFuture, sink);
 		}
+
+		return sink.asFlux()
+			.doOnCancel(() -> logger.info("Client disconnected from stream"))
+			.doOnError(e -> logger.error("Error occurred during streaming", e));
 	}
 
-	@GetMapping("/chat/resume")
-	public Map<String, Object> resume(@RequestParam(value = "thread_id", required = true) int threadId,
-			@RequestParam(value = "feed_back", required = true) String feedBack) {
-		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(threadId)).build();
-		Map<String, Object> objectMap = Map.of("feed_back", feedBack);
+	@PostMapping("/chat")
+	public Map<String, Object> chat(@RequestBody(required = false) ChatRequest chatRequest) {
+		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
+		Map<String, Object> objectMap = new HashMap<>();
+		ChatRequestProcess.initializeObjectMap(chatRequest, objectMap);
+
+		var resultFuture = compiledGraph.invoke(objectMap, runnableConfig);
+		return resultFuture.get().data();
+	}
+
+	@PostMapping("/chat/resume")
+	public Map<String, Object> resume(@RequestBody(required = false) FeedbackRequest humanFeedback) {
+
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(humanFeedback.threadId()).build();
+		Map<String, Object> objectMap = new HashMap<>();
+		objectMap.put("feed_back", humanFeedback.feedBack());
+		objectMap.put("feed_back_content", humanFeedback.feedBackContent());
 
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
 		OverAllState state = stateSnapshot.state();
 		state.withResume();
 		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
 
-		var resultFuture = compiledGraph.invoke(objectMap, runnableConfig);
-
+		var resultFuture = compiledGraph.invoke(state, runnableConfig);
 		return resultFuture.get().data();
 	}
 

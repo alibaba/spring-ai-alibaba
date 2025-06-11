@@ -33,18 +33,18 @@ import java.util.Map;
  */
 public class LoadbalancedAsyncMcpToolCallback implements ToolCallback {
 
-	private final LoadbalancedMcpAsyncClient mcpClients;
+	private final LoadbalancedMcpAsyncClient mcpClient;
 
 	private final McpSchema.Tool tool;
 
 	public LoadbalancedAsyncMcpToolCallback(LoadbalancedMcpAsyncClient mcpClient, McpSchema.Tool tool) {
-		this.mcpClients = mcpClient;
+		this.mcpClient = mcpClient;
 		this.tool = tool;
 	}
 
 	public ToolDefinition getToolDefinition() {
 		return ToolDefinition.builder()
-			.name(McpToolUtils.prefixedToolName(this.mcpClients.getClientInfo().name(), this.tool.name()))
+			.name(McpToolUtils.prefixedToolName(this.mcpClient.getServiceName(), this.tool.name()))
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();
@@ -52,7 +52,7 @@ public class LoadbalancedAsyncMcpToolCallback implements ToolCallback {
 
 	public String call(String functionInput) {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-		return (String) this.mcpClients.callTool(new McpSchema.CallToolRequest(this.tool.name(), arguments))
+		return (String) this.mcpClient.callTool(new McpSchema.CallToolRequest(this.tool.name(), arguments))
 			.map((response) -> {
 				if (response.isError() != null && response.isError()) {
 					throw new IllegalStateException("Error calling tool: " + String.valueOf(response.content()));

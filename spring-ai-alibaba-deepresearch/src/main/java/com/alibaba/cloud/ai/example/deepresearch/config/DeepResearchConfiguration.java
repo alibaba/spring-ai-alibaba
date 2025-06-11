@@ -20,29 +20,30 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatche
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
-import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
-import com.alibaba.cloud.ai.example.deepresearch.node.*;
-import com.alibaba.cloud.ai.example.deepresearch.tool.tavily.TavilySearchApi;
+import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
+import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.google.common.collect.Lists;
+import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -55,16 +56,10 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * @since 2025/5/17 17:10
  */
 @Configuration
-@EnableConfigurationProperties(DeepResearchProperties.class)
+@EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class })
 public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
-
-	@Autowired
-	private TavilySearchApi tavilySearchApi;
-
-	@Autowired
-	private ChatClient backgroundInvestigationAgent;
 
 	@Autowired
 	private ChatClient researchAgent;
@@ -73,59 +68,61 @@ public class DeepResearchConfiguration {
 	private ChatClient coderAgent;
 
 	@Autowired
-	private DeepResearchProperties deepResearchProperties;
+	private TavilySearchService tavilySearchService;
 
 	@Bean
-	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder,
-			ObjectProvider<List<ToolCallbackProvider>> listObjectProvider) throws GraphStateException {
-		// TODO Different Tools can be set for different Nodes.
-		ToolCallback[] toolCallbacks = convert2ToolCallbacks(listObjectProvider.getIfAvailable());
+	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
 
 		OverAllStateFactory stateFactory = () -> {
 			OverAllState state = new OverAllState();
+			// 条件边控制：跳转下一个节点
 			state.registerKeyAndStrategy("coordinator_next_node", new ReplaceStrategy());
 			state.registerKeyAndStrategy("planner_next_node", new ReplaceStrategy());
 			state.registerKeyAndStrategy("human_next_node", new ReplaceStrategy());
 			state.registerKeyAndStrategy("research_team_next_node", new ReplaceStrategy());
-
+			// 用户输入
+			state.registerKeyAndStrategy("query", new ReplaceStrategy());
 			state.registerKeyAndStrategy("thread_id", new ReplaceStrategy());
-			state.registerKeyAndStrategy("messages", new ReplaceStrategy());
-			state.registerKeyAndStrategy("output", new ReplaceStrategy());
-			state.registerKeyAndStrategy("background_investigation_results", new ReplaceStrategy());
 			state.registerKeyAndStrategy("enable_background_investigation", new ReplaceStrategy());
-			state.registerKeyAndStrategy("plan_iterations", new ReplaceStrategy());
-			state.registerKeyAndStrategy("max_step_num", new ReplaceStrategy());
-			state.registerKeyAndStrategy("current_plan", new ReplaceStrategy());
 			state.registerKeyAndStrategy("auto_accepted_plan", new ReplaceStrategy());
-			state.registerKeyAndStrategy("feed_back", new ReplaceStrategy());
+			state.registerKeyAndStrategy("plan_max_iterations", new ReplaceStrategy());
+			state.registerKeyAndStrategy("max_step_num", new ReplaceStrategy());
+			state.registerKeyAndStrategy("mcp_settings", new ReplaceStrategy());
+
+			state.registerKeyAndStrategy("feed_back_content", new ReplaceStrategy());
+
+			// 节点输出
+			state.registerKeyAndStrategy("background_investigation_results", new ReplaceStrategy());
+			state.registerKeyAndStrategy("output", new ReplaceStrategy());
+			state.registerKeyAndStrategy("plan_iterations", new ReplaceStrategy());
+			state.registerKeyAndStrategy("current_plan", new ReplaceStrategy());
 			state.registerKeyAndStrategy("observations", new ReplaceStrategy());
 			state.registerKeyAndStrategy("final_report", new ReplaceStrategy());
 			return state;
 		};
 
-		BackgroundInvestigationNodeAction backgroundInvestigationNodeAction = createBackgroundInvestigationNodeAction(
-				deepResearchProperties.getBackgroundInvestigationType(), toolCallbacks);
-
-		StateGraph stateGraph = new StateGraph("deep research", stateFactory)
+		StateGraph stateGraph = new StateGraph("deep research", stateFactory,
+				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
-			.addNode("background_investigator", node_async(backgroundInvestigationNodeAction))
-			.addNode("planner", node_async((new PlannerNode(chatClientBuilder, toolCallbacks))))
+			.addNode("background_investigator", node_async(new BackgroundInvestigationNode(tavilySearchService)))
+			.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
-			.addNode("researcher", node_async(new ResearcherNode(researchAgent, toolCallbacks)))
-			.addNode("coder", node_async(new CoderNode(coderAgent, toolCallbacks)))
-			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder, toolCallbacks))))
+			.addNode("researcher", node_async(new ResearcherNode(researchAgent)))
+			.addNode("coder", node_async(new CoderNode(coderAgent)))
+			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))))
 
 			.addEdge(START, "coordinator")
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
-					Map.of("background_investigator", "background_investigator", END, END))
+					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 			.addEdge("background_investigator", "planner")
 			.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
-					Map.of("reporter", "reporter", "human_feedback", "human_feedback", END, END))
+					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
+							"research_team", "research_team", END, END))
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
-					Map.of("planner", "planner", "research_team", "research_team", "reporter", "reporter", END, END))
+					Map.of("planner", "planner", "research_team", "research_team", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
-					Map.of("planner", "planner", "researcher", "researcher", "coder", "coder"))
+					Map.of("reporter", "reporter", "researcher", "researcher", "coder", "coder"))
 			.addEdge("researcher", "research_team")
 			.addEdge("coder", "research_team")
 			.addEdge("reporter", END);
@@ -138,27 +135,6 @@ public class DeepResearchConfiguration {
 		logger.info("\n\n");
 
 		return stateGraph;
-	}
-
-	private ToolCallback[] convert2ToolCallbacks(List<ToolCallbackProvider> toolCallbackProviders) {
-		List<ToolCallback> res = Lists.newArrayList();
-		toolCallbackProviders
-			.forEach(toolCallbackProvider -> Collections.addAll(res, toolCallbackProvider.getToolCallbacks()));
-		return res.toArray(new ToolCallback[0]);
-	}
-
-	/**
-	 * Create background investigation node action by type.
-	 * @param backgroundInvestigationType background investigation type
-	 * @param toolCallbacks tool callbacks
-	 * @return background investigation instance
-	 */
-	private BackgroundInvestigationNodeAction createBackgroundInvestigationNodeAction(
-			BackgroundInvestigationType backgroundInvestigationType, ToolCallback[] toolCallbacks) {
-		return switch (backgroundInvestigationType) {
-			case JUST_WEB_SEARCH -> new BackgroundInvestigationNode(tavilySearchApi);
-			case TOOL_CALLS -> new BackgroundInvestigationToolCallsNode(backgroundInvestigationAgent, toolCallbacks);
-		};
 	}
 
 }

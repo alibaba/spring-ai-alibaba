@@ -161,7 +161,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			}
 			else {
 				ServiceRefInfo serviceRefInfo = new ServiceRefInfo();
-				serviceRefInfo.setNamespaceId(nacosMcpRegistryProperties.getServiceNamespace());
+				serviceRefInfo.setNamespaceId(nacosMcpProperties.getNamespace());
 				serviceRefInfo.setServiceName(this.serverInfo.name() + McpNacosConstant.SERVER_NAME_SUFFIX);
 				serviceRefInfo.setGroupName(nacosMcpRegistryProperties.getServiceGroup());
 				RemoteServerConfigInfo remoteServerConfigInfo = new RemoteServerConfigInfo();
@@ -280,7 +280,6 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		try {
 			int port = event.getWebServer().getPort();
 			Properties nacosProperties = nacosMcpProperties.getNacosProperties();
-			nacosProperties.put(PropertyKeyConst.NAMESPACE, nacosMcpRegistryProperties.getServiceNamespace());
 			NamingService namingService = new NacosNamingService(nacosProperties);
 			Instance instance = new Instance();
 

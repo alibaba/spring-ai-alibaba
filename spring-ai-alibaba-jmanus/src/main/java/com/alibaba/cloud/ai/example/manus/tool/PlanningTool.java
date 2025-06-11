@@ -18,8 +18,9 @@ package com.alibaba.cloud.ai.example.manus.tool;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -53,10 +54,6 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 			            ],
 			            "type": "string"
 			        },
-			        "plan_id": {
-			            "description": "Unique identifier for the plan",
-			            "type": "string"
-			        },
 			        "title": {
 			            "description": "Title for the plan",
 			            "type": "string"
@@ -67,22 +64,13 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 			            "items": {
 			                "type": "string"
 			            }
-			        },
-			        "step_index": {
-			            "description": "Index of step to update",
-			            "type": "integer"
-			        },
-			        "step_status": {
-			            "description": "Status to set for step",
-			            "enum": ["not_started", "in_progress", "completed", "blocked"],
-			            "type": "string"
-			        },
-			        "step_notes": {
-			            "description": "Additional notes for step",
-			            "type": "string"
 			        }
 			    },
-			    "required": ["command"]
+			    "required": [
+			    	"command",
+			    	"title",
+			    	"steps"
+			    ]
 			}
 			""";
 
@@ -94,7 +82,9 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 		return new FunctionTool(new FunctionTool.Function(description, name, PARAMETERS));
 	}
 
-	public FunctionToolCallback getFunctionToolCallback() {
+	// Parameterized FunctionToolCallback with appropriate types.
+
+	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback() {
 		return FunctionToolCallback.builder(name, this)
 			.description(description)
 			.inputSchema(PARAMETERS)
@@ -103,16 +93,17 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 			.build();
 	}
 
+	private static final ObjectMapper objectMapper = new ObjectMapper();
+
 	public ToolExecuteResult run(String toolInput) {
 		try {
-			Map<String, Object> input = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
+			Map<String, Object> input = objectMapper.readValue(toolInput, new TypeReference<Map<String, Object>>() {
 			});
 			String command = (String) input.get("command");
 			String planId = (String) input.get("plan_id");
 			String title = (String) input.get("title");
-			List<String> steps = JSON.parseObject(JSON.toJSONString(input.get("steps")),
-					new TypeReference<List<String>>() {
-					});
+			List<String> steps = objectMapper.convertValue(input.get("steps"), new TypeReference<List<String>>() {
+			});
 
 			return switch (command) {
 				case "create" -> createPlan(planId, title, steps);
@@ -126,7 +117,7 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 				}
 			};
 		}
-		catch (Exception e) {
+		catch (JsonProcessingException e) {
 			log.info("执行计划工具时发生错误", e);
 			return new ToolExecuteResult("Error executing planning tool: " + e.getMessage());
 		}
@@ -146,7 +137,7 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 	}
 
 	public ToolExecuteResult createPlan(String planId, String title, List<String> steps) {
-		if (planId == null || title == null || steps == null || steps.isEmpty()) {
+		if (title == null || steps == null || steps.isEmpty()) {
 			log.info("创建计划时缺少必要参数: planId={}, title={}, steps={}", planId, title, steps);
 			return new ToolExecuteResult("Required parameters missing");
 		}
@@ -161,128 +152,6 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 		this.currentPlan = plan;
 		return new ToolExecuteResult("Plan created: " + planId + "\n" + plan.getPlanExecutionStateStringFormat(false));
 	}
-
-	// public ToolExecuteResult updatePlan(String planId, String title, List<String>
-	// steps) {
-	// if (planId == null) {
-	// log.info("更新计划时缺少planId");
-	// return new ToolExecuteResult("plan_id required");
-	// }
-
-	// if (currentPlan == null || !currentPlan.getPlanId().equals(planId)) {
-	// return new ToolExecuteResult("Plan not found: " + planId);
-	// }
-
-	// if (title != null) {
-	// currentPlan.setTitle(title);
-	// }
-
-	// if (steps != null) {
-	// List<ExecutionStep> oldSteps = new ArrayList<>(currentPlan.getSteps());
-	// currentPlan.setSteps(new ArrayList<>());
-	// for (String step : steps) {
-	// currentPlan.addStep(createExecutionStep(step, currentPlan.getStepCount() + 1));
-	// }
-	// //TODO 以后这里要优化的，目前update不会替代原有的步骤的执行结果，这个本身有点问题，但目前阶段可以不管，因为目前只用到create ，其他都没有用。
-	// // // 保持原有步骤的状态和备注
-	// // for (int i = 0; i < Math.min(oldSteps.size(), steps.size()); i++) {
-	// // if (oldSteps.get(i).getStepRequirement().equals(steps.get(i))) {
-	// // currentPlan.getSteps().get(i).setStatus(oldSteps.get(i).getStatus());
-	// // currentPlan.getSteps().get(i).setResult();(oldSteps.get(i).getResult());
-	// // } else {
-	// // currentPlan.getSteps().get(i).setStatus(PlanStepStatus.NOT_STARTED);
-	// // currentPlan.getSteps().get(i).setNotes(null);
-	// // }
-	// // }
-	// }
-
-	// return new ToolExecuteResult("Plan updated: " + planId + "\n" +
-	// formatPlan(currentPlan));
-	// }
-
-	// public ToolExecuteResult getPlan(String planId) {
-	// if (currentPlan == null) {
-	// log.info("没有活动的计划");
-	// return new ToolExecuteResult("No active plan");
-	// }
-
-	// if (planId != null && !currentPlan.getPlanId().equals(planId)) {
-	// return new ToolExecuteResult("Plan not found: " + planId);
-	// }
-
-	// return new ToolExecuteResult(formatPlan(currentPlan));
-	// }
-
-	// public ToolExecuteResult markStep(String planId, Integer stepIndex, String
-	// stepStatus, String stepNotes) {
-	// if (currentPlan == null) {
-	// return new ToolExecuteResult("No active plan");
-	// }
-
-	// if (planId != null && !currentPlan.getPlanId().equals(planId)) {
-	// return new ToolExecuteResult("Plan not found: " + planId);
-	// }
-
-	// if (stepIndex == null || stepIndex < 0 || stepIndex >= currentPlan.getStepCount())
-	// {
-	// log.info("无效的步骤索引: {}, 总步骤数: {}", stepIndex, currentPlan.getStepCount());
-	// return new ToolExecuteResult("Invalid step index");
-	// }
-
-	// currentPlan.updateStep(stepIndex, stepStatus, stepNotes);
-	// return new ToolExecuteResult("Step " + stepIndex + " updated\n" +
-	// formatPlan(currentPlan));
-	// }
-
-	// public ToolExecuteResult deletePlan(String planId) {
-	// if (currentPlan == null) {
-	// log.info("没有活动的计划");
-	// return new ToolExecuteResult("No active plan");
-	// }
-
-	// if (planId != null && !currentPlan.getPlanId().equals(planId)) {
-	// return new ToolExecuteResult("Plan not found: " + planId);
-	// }
-
-	// currentPlan = null;
-	// return new ToolExecuteResult("Plan deleted: " + planId);
-	// }
-
-	// private String formatPlan(ExecutionPlan plan) {
-	// StringBuilder out = new StringBuilder();
-	// out.append("Plan: ").append(plan.getTitle()).append(" (ID:
-	// ").append(plan.getPlanId()).append(")\n");
-	// out.append("=".repeat(out.length())).append("\n\n");
-
-	// long completed = plan.getStepCount();
-	// int total = plan.getStepCount();
-	// double progress = total > 0 ? (completed * 100.0 / total) : 0;
-
-	// out.append(String.format("Progress: %d/%d steps (%.1f%%)\n\n", completed, total,
-	// progress));
-
-	// List<String> steps = plan.getSteps();
-	// List<String> statuses = plan.getStepStatuses();
-	// List<String> notes = plan.getStepNotes();
-
-	// for (int i = 0; i < steps.size(); i++) {
-	// String status = statuses.get(i);
-	// String symbol = switch(status) {
-	// case "completed" -> "[completed]";
-	// case "in_progress" -> "[in_progress]";
-	// case "blocked" -> "[blocked]";
-	// default -> "[ ]";
-	// };
-
-	// out.append(i).append(". ").append(symbol).append("
-	// ").append(steps.get(i)).append("\n");
-	// String note = notes.get(i);
-	// if (note != null && !note.isEmpty()) {
-	// out.append(" Notes: ").append(note).append("\n");
-	// }
-	// }
-	// return out.toString();
-	// }
 
 	@Override
 	public ToolExecuteResult apply(String input) {

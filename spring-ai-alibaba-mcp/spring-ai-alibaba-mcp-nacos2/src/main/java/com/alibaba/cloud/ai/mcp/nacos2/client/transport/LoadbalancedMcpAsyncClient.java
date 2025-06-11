@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.mcp.nacos2.client.transport;
 
-import com.alibaba.cloud.ai.mcp.nacos2.client.utils.ApplicationContextHolder;
 import com.alibaba.cloud.ai.mcp.nacos2.registry.model.McpNacosConstant;
 import com.alibaba.cloud.ai.mcp.nacos2.registry.model.McpToolsInfo;
 import com.alibaba.nacos.api.exception.NacosException;
@@ -38,12 +37,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.autoconfigure.configurer.McpAsyncClientConfigurer;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -70,23 +71,27 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 
 	private final ObjectMapper objectMapper;
 
+	private final ApplicationContext applicationContext;
+
+	private final AtomicInteger index = new AtomicInteger(0);
+
 	private Map<String, List<String>> md5ToToolsMap;
 
 	private Map<String, List<McpAsyncClient>> md5ToClientMap;
 
-	private Map<String, Integer> client2CountMap;
-
 	private List<Instance> instances;
 
 	public LoadbalancedMcpAsyncClient(String serviceName, String serviceGroup, NamingService namingService,
-			NacosConfigService nacosConfigService) {
+			NacosConfigService nacosConfigService, ApplicationContext applicationContext) {
 		Assert.notNull(serviceName, "serviceName cannot be null");
 		Assert.notNull(serviceGroup, "serviceGroup cannot be null");
 		Assert.notNull(namingService, "namingService cannot be null");
 		Assert.notNull(nacosConfigService, "nacosConfigService cannot be null");
+		Assert.notNull(applicationContext, "applicationContext cannot be null");
 
 		this.serviceName = serviceName;
 		this.nacosConfigService = nacosConfigService;
+		this.applicationContext = applicationContext;
 
 		try {
 			this.namingService = namingService;
@@ -96,17 +101,15 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 		catch (NacosException e) {
 			throw new RuntimeException(String.format("Failed to get instances for service: %s", serviceName));
 		}
-		commonProperties = ApplicationContextHolder.getBean(McpClientCommonProperties.class);
-		mcpAsyncClientConfigurer = ApplicationContextHolder.getBean(McpAsyncClientConfigurer.class);
-		objectMapper = ApplicationContextHolder.getBean(ObjectMapper.class);
-		webClientBuilderTemplate = ApplicationContextHolder.getBean(WebClient.Builder.class);
+		commonProperties = this.applicationContext.getBean(McpClientCommonProperties.class);
+		mcpAsyncClientConfigurer = this.applicationContext.getBean(McpAsyncClientConfigurer.class);
+		objectMapper = this.applicationContext.getBean(ObjectMapper.class);
+		webClientBuilderTemplate = this.applicationContext.getBean(WebClient.Builder.class);
 	}
 
 	public void init() {
 		md5ToToolsMap = new ConcurrentHashMap<>();
 		md5ToClientMap = new ConcurrentHashMap<>();
-
-		client2CountMap = new ConcurrentHashMap<>();
 
 		for (Instance instance : instances) {
 			updateByAddInstace(instance);
@@ -128,19 +131,9 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 		if (asynClients.isEmpty()) {
 			throw new IllegalStateException("No McpAsyncClient available");
 		}
-		// 从client2CountMap中挑选value最小的键是哪个
-		String clientInfoName = client2CountMap.entrySet()
-			.stream()
-			.min(Map.Entry.comparingByValue())
-			.map(Map.Entry::getKey)
-			.get();
+		int currentIndex = index.getAndUpdate(index -> (index + 1) % asynClients.size());
 
-		client2CountMap.put(clientInfoName, client2CountMap.get(clientInfoName) + 1);
-		// 从clients中找到clientInfoName对应的client
-		return asynClients.stream()
-			.filter(aysnClient -> aysnClient.getClientInfo().name().equals(clientInfoName))
-			.findFirst()
-			.get();
+		return asynClients.get(currentIndex);
 	}
 
 	public List<McpAsyncClient> getMcpAsyncClientList() {
@@ -162,23 +155,19 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 	// ------------------------------------------------------------------------------------------------------------------------------------------------
 
 	public McpSchema.ServerCapabilities getServerCapabilities() {
-		return getMcpAsyncClient().getServerCapabilities();
+		return getMcpAsyncClientList().get(0).getServerCapabilities();
 	}
 
 	public McpSchema.Implementation getServerInfo() {
-		return getMcpAsyncClient().getServerInfo();
-	}
-
-	public boolean isInitialized() {
-		return getMcpAsyncClient().isInitialized();
+		return getMcpAsyncClientList().get(0).getServerInfo();
 	}
 
 	public McpSchema.ClientCapabilities getClientCapabilities() {
-		return getMcpAsyncClient().getClientCapabilities();
+		return getMcpAsyncClientList().get(0).getClientCapabilities();
 	}
 
 	public McpSchema.Implementation getClientInfo() {
-		return getMcpAsyncClient().getClientInfo();
+		return getMcpAsyncClientList().get(0).getClientInfo();
 	}
 
 	public void close() {
@@ -235,20 +224,9 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 				asyncClients.addAll(md5ToClientMap.get(md5));
 			}
 		});
-		Set<String> clientInfos = asyncClients.stream()
-			.map(client -> client.getClientInfo().name())
-			.collect(Collectors.toSet());
+		int currentIndex = index.getAndUpdate(index -> (index + 1) % asyncClients.size());
 
-		String minClientInfoName = clientInfos.stream()
-			.min(Comparator.comparingInt(clientInfo -> client2CountMap.getOrDefault(clientInfo, 0)))
-			.get();
-		client2CountMap.put(minClientInfoName, client2CountMap.get(minClientInfoName) + 1);
-
-		McpAsyncClient mcpAsyncClient = asyncClients.stream()
-			.filter(asyncClient -> asyncClient.getClientInfo().name().equals(minClientInfoName))
-			.findFirst()
-			.get();
-		return mcpAsyncClient.callTool(callToolRequest);
+		return asyncClients.get(currentIndex).callTool(callToolRequest);
 	}
 
 	public Mono<McpSchema.ListToolsResult> listTools() {
@@ -423,7 +401,6 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 		assert serverMd5 != null;
 		McpAsyncClient mcpAsyncClient = clientByInstance(instance);
 		md5ToClientMap.computeIfAbsent(serverMd5, k -> new ArrayList<>()).add(mcpAsyncClient);
-		client2CountMap.put(mcpAsyncClient.getClientInfo().name(), 0);
 
 		if (!md5ToToolsMap.containsKey(serverMd5)) {
 			String tools = metadata.get("tools.names");
@@ -447,7 +424,6 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 				asyncClient.closeGracefully().block();
 				// 安全地移除
 				md5ToClientMap.get(serverMd5).remove(asyncClient);
-				client2CountMap.remove(asyncClient.getClientInfo().name());
 
 				if (md5ToClientMap.get(serverMd5).isEmpty()) {
 					md5ToClientMap.remove(serverMd5);
@@ -477,6 +453,8 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 
 		private NacosConfigService nacosConfigService;
 
+		private ApplicationContext applicationContext;
+
 		public Builder serviceName(String serviceName) {
 			this.serviceName = serviceName;
 			return this;
@@ -497,9 +475,14 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 			return this;
 		}
 
+		public Builder applicationContext(ApplicationContext applicationContext) {
+			this.applicationContext = applicationContext;
+			return this;
+		}
+
 		public LoadbalancedMcpAsyncClient build() {
 			return new LoadbalancedMcpAsyncClient(this.serviceName, this.serviceGroup, this.namingService,
-					this.nacosConfigService);
+					this.nacosConfigService, this.applicationContext);
 		}
 
 	}

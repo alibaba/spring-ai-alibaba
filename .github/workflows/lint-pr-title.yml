@@ -1,0 +1,76 @@
+#
+# Copyright 2024-2025 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+name: 🤔 Lint PR
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - reopened
+jobs:
+  main:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            fix
+            feat
+            refactor
+            docs
+            chore
+            perf
+            infra
+            revert
+            release
+            test
+            style
+          scopes: |
+            core
+            vector-stores
+            document-readers
+            document-parsers
+            deepresearch
+            docs
+            memories
+            tool-calls
+            graph
+            jmanus
+            mcp
+            prompt
+            studio
+            autoconf
+            ci
+            nl2sql
+          # e.g. feat(core): add new feature
+          # if false: feat: add new feature
+          requireScope: true
+          disallowScopes: |
+            [A-Z]+
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            didn't match the configured pattern. Please ensure that the subject
+            doesn't start with an uppercase character.
+          # if true, the PR title must match the commit message
+          validateSingleCommit: false
+          # if true, the PR title must match the single commit message
+          validateSingleCommitMatchesPrTitle: false

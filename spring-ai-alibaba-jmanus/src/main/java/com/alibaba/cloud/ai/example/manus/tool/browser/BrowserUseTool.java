@@ -34,7 +34,7 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,12 +55,24 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 	private String planId;
 
+	// Initialize ObjectMapper instance
+	private static final ObjectMapper objectMapper = new ObjectMapper();
+
 	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
 	}
 
 	public DriverWrapper getDriver() {
 		return chromeDriverService.getDriver(planId);
+	}
+
+	/**
+	 * 获取浏览器操作的超时时间配置
+	 * @return 超时时间（秒），如果未配置则返回默认值30秒
+	 */
+	private Integer getBrowserTimeout() {
+		Integer timeout = getManusProperties().getBrowserRequestTimeout();
+		return timeout != null ? timeout : 30; // 默认超时时间为 30 秒
 	}
 
 	private final String PARAMETERS = """
@@ -211,7 +223,15 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		log.info("BrowserUseTool toolInput:" + toolInput);
 
 		// 直接将JSON字符串解析为BrowserRequestVO对象
-		BrowserRequestVO requestVO = JSON.parseObject(toolInput, BrowserRequestVO.class);
+		BrowserRequestVO requestVO;
+		// Add exception handling for JSON deserialization
+		try {
+			requestVO = objectMapper.readValue(toolInput, BrowserRequestVO.class);
+		}
+		catch (Exception e) {
+			log.error("Error deserializing JSON", e);
+			return new ToolExecuteResult("Error deserializing JSON: " + e.getMessage());
+		}
 
 		// 从RequestVO中获取参数
 		String action = requestVO.getAction();
@@ -289,6 +309,16 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		Map<String, Object> state = new HashMap<>();
 
 		try {
+			// 等待页面加载完成，避免在导航过程中获取信息时出现上下文销毁错误
+			try {
+				Integer timeout = getBrowserTimeout();
+				page.waitForLoadState(com.microsoft.playwright.options.LoadState.DOMCONTENTLOADED,
+						new Page.WaitForLoadStateOptions().setTimeout(timeout * 1000));
+			}
+			catch (Exception loadException) {
+				log.warn("Page load state wait timeout or failed, continuing anyway: {}", loadException.getMessage());
+			}
+
 			// 获取基本信息
 			String currentUrl = page.url();
 			String title = page.title();
