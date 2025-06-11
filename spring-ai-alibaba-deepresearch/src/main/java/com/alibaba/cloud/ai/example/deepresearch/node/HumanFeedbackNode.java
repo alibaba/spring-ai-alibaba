@@ -45,10 +45,6 @@ public class HumanFeedbackNode implements NodeAction {
 		// auto_accepted、yes、no 迭代次数都+1
 		updated.put("plan_iterations", StateUtil.getPlanIterations(state) + 1);
 
-		// todo 这里改为接口形式
-		logger.info("Do you accept the plan? [y/n]：");
-		interrupt(state);
-
 		Map<String, Object> feedBackData = state.humanFeedback().data();
 		boolean feedback = (boolean) feedBackData.getOrDefault("feed_back", true);
 
@@ -62,18 +58,12 @@ public class HumanFeedbackNode implements NodeAction {
 				logger.info("Human feedback content: {}", feedbackContent);
 			}
 			state.withoutResume();
-			logger.info("human_feedback node -> {} node", nextStep);
-			return updated;
 		}
-
-		updated.put("human_next_node", nextStep);
+		else {
+			updated.put("human_next_node", nextStep);
+		}
+		logger.info("human_feedback node -> {} node", nextStep);
 		return updated;
-	}
-
-	private void interrupt(OverAllState state) throws GraphInterruptException {
-		if (state.humanFeedback() == null || !state.isResume()) {
-			throw new GraphInterruptException("interrupt");
-		}
 	}
 
 }
