@@ -15,24 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.state.AppenderChannel;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.LogManager;
-
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
@@ -42,43 +24,33 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.alibaba.cloud.ai.graph.action.*;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.state.AppenderChannel;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.LogManager;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SubGraphTest {
 
 	private static final Logger log = LoggerFactory.getLogger(SubGraphTest.class);
 
-	/**
-	 * Initialize logging configuration before all tests.
-	 */
+	/** Initialize logging configuration before all tests. */
 	@BeforeAll
 	public static void initLogging() throws IOException {
 		try (var is = SubGraphTest.class.getResourceAsStream("/logging.properties")) {
 			LogManager.getLogManager().readConfiguration(is);
 		}
-	}
-
-	/**
-	 * Create an AsyncNodeAction that returns a map with the given ID as value for
-	 * "messages".
-	 * @param id The identifier for the node action.
-	 * @return An AsyncNodeAction producing a map with the message ID.
-	 */
-	private AsyncNodeAction _makeNode(String id) {
-		return node_async(state -> Map.of("messages", id));
-	}
-
-	/**
-	 * Execute the workflow and extract the names of processed nodes.
-	 * @param workflow Compiled graph to execute.
-	 * @param input Initial input data for execution.
-	 * @return A list containing the names of executed nodes in order.
-	 * @throws Exception If an error occurs during execution.
-	 */
-	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
-		return workflow.stream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
-			.stream()
-			.peek(System.out::println)
-			.map(NodeOutput::node)
-			.toList();
 	}
 
 	/**
@@ -109,10 +81,8 @@ public class SubGraphTest {
 			result.newValues().remove(value);
 			var removeIdentifier = (AppenderChannel.RemoveIdentifier<Object>) value;
 			removeFromList(result.oldValues(), removeIdentifier);
-
 		});
 		return result;
-
 	}
 
 	/**
@@ -129,8 +99,31 @@ public class SubGraphTest {
 	}
 
 	/**
-	 * Test basic subgraph merging functionality without conditional edges.
+	 * Create an AsyncNodeAction that returns a map with the given ID as value for
+	 * "messages".
+	 * @param id The identifier for the node action.
+	 * @return An AsyncNodeAction producing a map with the message ID.
 	 */
+	private AsyncNodeAction _makeNode(String id) {
+		return node_async(state -> Map.of("messages", id));
+	}
+
+	/**
+	 * Execute the workflow and extract the names of processed nodes.
+	 * @param workflow Compiled graph to execute.
+	 * @param input Initial input data for execution.
+	 * @return A list containing the names of executed nodes in order.
+	 * @throws Exception If an error occurs during execution.
+	 */
+	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
+		return workflow.stream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
+			.stream()
+			.peek(System.out::println)
+			.map(NodeOutput::node)
+			.toList();
+	}
+
+	/** Test basic subgraph merging functionality without conditional edges. */
 	@Test
 	public void testMergeSubgraph01() throws Exception {
 
@@ -154,12 +147,9 @@ public class SubGraphTest {
 		var app = workflowParent.compile();
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, "C", END), _execute(app, Map.of()));
-
 	}
 
-	/**
-	 * Test subgraph merging with conditional edge handling.
-	 */
+	/** Test subgraph merging with conditional edge handling. */
 	@Test
 	public void testMergeSubgraph02() throws Exception {
 
@@ -190,12 +180,9 @@ public class SubGraphTest {
 		var app = workflowParent.compile();
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, "C", END), _execute(app, Map.of()));
-
 	}
 
-	/**
-	 * Test subgraph merging with nested conditional edges.
-	 */
+	/** Test subgraph merging with nested conditional edges. */
 	@Test
 	public void testMergeSubgraph03() throws Exception {
 
@@ -229,12 +216,9 @@ public class SubGraphTest {
 		var app = workflowParent.compile();
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C", END), _execute(app, Map.of()));
-
 	}
 
-	/**
-	 * Test subgraph merging with interruption handling at different points.
-	 */
+	/** Test subgraph merging with interruption handling at different points. */
 	@Test
 	public void testMergeSubgraph03WithInterruption() throws Exception {
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
@@ -304,12 +288,9 @@ public class SubGraphTest {
 		assertEquals(
 				"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: 'C'",
 				exception.getMessage());
-
 	}
 
-	/**
-	 * Test more complex subgraph merging with multiple conditional branches.
-	 */
+	/** Test more complex subgraph merging with multiple conditional branches. */
 	@Test
 	public void testMergeSubgraph04() throws Exception {
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
@@ -342,12 +323,9 @@ public class SubGraphTest {
 		var app = workflowParent.compile();
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C", END), _execute(app, Map.of()));
-
 	}
 
-	/**
-	 * Test complex subgraph merging with multiple interruptions at various points.
-	 */
+	/** Test complex subgraph merging with multiple interruptions at various points. */
 	@Test
 	public void testMergeSubgraph04WithInterruption() throws Exception {
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
@@ -417,12 +395,9 @@ public class SubGraphTest {
 				() -> workflowParent.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build()));
 
 		assertEquals("'interruption after' on subgraph is not supported yet!", exception.getMessage());
-
 	}
 
-	/**
-	 * Test checkpointing behavior with subgraphs involved.
-	 */
+	/** Test checkpointing behavior with subgraphs involved. */
 	@Test
 	public void testCheckpointWithSubgraph() throws Exception {
 
@@ -457,12 +432,9 @@ public class SubGraphTest {
 		assertTrue(result.isPresent());
 		assertIterableEquals(List.of("step1", "step2", "child:step1", "child:step2", "child:step3", "step3"),
 				(List<String>) result.get().value("messages").get());
-
 	}
 
-	/**
-	 * Test alternative methods for creating and integrating subgraphs.
-	 */
+	/** Test alternative methods for creating and integrating subgraphs. */
 	@Test
 	public void testOtherCreateSubgraph2() throws Exception {
 		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
@@ -497,6 +469,59 @@ public class SubGraphTest {
 			.map(NodeOutput::state);
 
 		assertTrue(result.isPresent());
+	}
+
+	@Test
+	public void testCommandNodeSubGraph() throws GraphStateException {
+		StateGraph childGraph = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+			stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+			return stringKeyStrategyHashMap;
+		});
+		childGraph.addNode("node1", _makeNode("node1"));
+		childGraph.addNode("node2", _makeNode("node2"));
+		CommandAction commandAction = new CommandAction() {
+			@Override
+			public Command apply(OverAllState state, RunnableConfig config) throws Exception {
+				return new Command("node1", Map.of("messages", "go to node 1"));
+			}
+		};
+		childGraph.addNode("commandNode", AsyncCommandAction.node_async(commandAction),
+				Map.of("node1", "node1", "node2", "node2"));
+
+		childGraph.addEdge(START, "commandNode");
+		childGraph.addEdge("node1", "node2");
+		childGraph.addEdge("node2", END);
+
+		StateGraph parentGraph = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+			stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+			return stringKeyStrategyHashMap;
+		});
+
+		parentGraph.addNode("p_node1", _makeNode("p_node1"));
+		parentGraph.addNode("p_node2", _makeNode("p_node2"));
+
+		parentGraph.addNode("c_graph", childGraph);
+
+		parentGraph.addNode("p_command_node", AsyncCommandAction.node_async(new CommandAction() {
+			@Override
+			public Command apply(OverAllState state, RunnableConfig config) throws Exception {
+				return new Command("p_node1", Map.of("messages", "go to p_node1"));
+			}
+		}), Map.of("p_node1", "p_node1", "p_node2", "p_node2"));
+
+		parentGraph.addEdge(START, "p_command_node");
+		parentGraph.addEdge("p_node1", "p_node2");
+		parentGraph.addEdge("p_node2", "c_graph");
+		parentGraph.addEdge("c_graph", END);
+
+		CompiledGraph compile = parentGraph.compile();
+		System.out.println(compile.getGraph(GraphRepresentation.Type.PLANTUML).content());
+		OverAllState state = compile.invoke(Map.of()).orElseThrow();
+		assertEquals(
+				Map.of("messages", List.of("go to p_node1", "p_node1", "p_node2", "go to node 1", "node1", "node2")),
+				state.data());
 	}
 
 }
