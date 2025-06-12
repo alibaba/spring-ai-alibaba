@@ -476,7 +476,7 @@ const handleBooleanUpdate = (item: ExtendedConfigItem, newValue: string | boolea
 }
 
 // 更新配置值
-const updateConfigValue = (item: ExtendedConfigItem, value: any) => {
+const updateConfigValue = (item: ExtendedConfigItem, value: any, autoSave: boolean = false) => {
   let stringValue: string
   
   // 根据输入类型处理值
@@ -489,6 +489,11 @@ const updateConfigValue = (item: ExtendedConfigItem, value: any) => {
   if (item.configValue !== stringValue) {
     item.configValue = stringValue
     item._modified = true
+    
+    // 如果是非文本输入类型（如switch、select），自动保存
+    if (autoSave || item.inputType === 'BOOLEAN' || item.inputType === 'CHECKBOX' || item.inputType === 'SELECT') {
+      debouncedSave()
+    }
   }
 }
 
