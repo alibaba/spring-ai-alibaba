@@ -132,6 +132,7 @@ public class BaseNl2SqlService {
 	}
 
 	public SchemaDTO fineSelect(SchemaDTO schemaDTO, String query, List<String> evidenceList) {
+		// 提取出想要的表名
 		String prompt = buildMixSelectorPrompt(evidenceList, query, schemaDTO);
 		String content = aiService.call(prompt);
 

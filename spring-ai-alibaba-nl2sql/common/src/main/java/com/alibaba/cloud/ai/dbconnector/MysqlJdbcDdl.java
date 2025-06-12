@@ -160,6 +160,40 @@ public class MysqlJdbcDdl extends AbstractJdbcDdl {
 	}
 
 	@Override
+	public List<ColumnInfoBO> fetchColumns(Connection connection, String schema, List<String> tables) {
+		String sql = "SELECT column_name, column_comment, data_type, "
+				+ "IF(column_key='PRI','true','false') AS '主键唯一', \n" + "IF(IS_NULLABLE='NO','true','false') AS '非空' \n"
+				+ "FROM information_schema.COLUMNS " + "WHERE table_schema='%s' " + "and table_name in (%s);";
+		List<ColumnInfoBO> columnInfoList = Lists.newArrayList();
+		String tableListStr = String.join(", ", tables.stream().map(x -> "'" + x + "'").collect(Collectors.toList()));
+		try {
+			String[][] resultArr = SqlExecutor.executeSqlAndReturnArr(connection, "INFORMATION_SCHEMA",
+					String.format(sql, connection.getCatalog(), tableListStr));
+			if (resultArr.length <= 1) {
+				return Lists.newArrayList();
+			}
+
+			for (int i = 1; i < resultArr.length; i++) {
+				if (resultArr[i].length == 0) {
+					continue;
+				}
+				columnInfoList.add(ColumnInfoBO.builder()
+					.name(resultArr[i][0])
+					.description(resultArr[i][1])
+					.type(wrapType(resultArr[i][2]))
+					.primary(BooleanUtils.toBoolean(resultArr[i][3]))
+					.notnull(BooleanUtils.toBoolean(resultArr[i][4]))
+					.build());
+			}
+		}
+		catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+
+		return columnInfoList;
+	}
+
+	@Override
 	public List<ForeignKeyInfoBO> showForeignKeys(Connection connection, String schema, List<String> tables) {
 		String sql = "SELECT \n" + "    TABLE_NAME AS '表名',\n" + "    COLUMN_NAME AS '列名',\n"
 				+ "    CONSTRAINT_NAME AS '约束名',\n" + "    REFERENCED_TABLE_NAME AS '引用表名',\n"

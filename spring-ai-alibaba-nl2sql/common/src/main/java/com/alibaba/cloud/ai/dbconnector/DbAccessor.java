@@ -72,6 +72,10 @@ public class DbAccessor {
 		return (List<ColumnInfoBO>) accessDb(dbConfig, "showColumns", param);
 	}
 
+	public List<ColumnInfoBO> fetchColumns(DbConfig dbConfig, DbQueryParameter param) throws Exception {
+		return (List<ColumnInfoBO>) accessDb(dbConfig, "fetchColumns", param);
+	}
+
 	public List<ForeignKeyInfoBO> showForeignKeys(DbConfig dbConfig, DbQueryParameter param) throws Exception {
 		return (List<ForeignKeyInfoBO>) accessDb(dbConfig, "showForeignKeys", param);
 	}
@@ -107,6 +111,8 @@ public class DbAccessor {
 						return ddlExecutor.fetchTables(connection, param.getSchema(), param.getTables());
 					case "showColumns":
 						return ddlExecutor.showColumns(connection, param.getSchema(), param.getTable());
+					case "fetchColumns":
+						return ddlExecutor.fetchColumns(connection, param.getSchema(), param.getTables());
 					case "showForeignKeys":
 						return ddlExecutor.showForeignKeys(connection, param.getSchema(), param.getTables());
 					case "sampleColumn":
