@@ -15,26 +15,42 @@
  */
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
 /**
  * @author 北极星
  */
-public class JsonParseService implements Function<JsonParseService.JsonParseRequest, Object> {
+public class JsonProcessorParseService implements Function<JsonProcessorParseService.JsonParseRequest, Object> {
 
-	@Override
-	public Object apply(JsonParseRequest request) throws JsonParseException {
-		String content = request.content;
-		String field = request.field;
-		JsonElement jsonElement = JsonParser.parseString(content);
-		return jsonElement.getAsJsonObject().get(field).getAsString();
+	private final JsonParseTool jsonParseTool;
+
+	private static final Logger logger = LoggerFactory.getLogger(JsonProcessorParseService.class);
+
+	public JsonProcessorParseService(JsonParseTool jsonParseTool) {
+		this.jsonParseTool = jsonParseTool;
 	}
 
+	@Override
+	public Object apply(JsonParseRequest request) {
+		String content = request.content;
+		String field = request.field;
+		try {
+			return jsonParseTool.getFieldValueAsText(content, field);
+		}
+		catch (JsonProcessingException e) {
+			logger.error("Error occurred while json processing: {}", e.getMessage());
+			throw new RuntimeException(e);
+		}
+	}
+
+	@JsonClassDescription("JsonProcessorParseService request")
 	record JsonParseRequest(@JsonProperty("content") String content, @JsonProperty("value") String field) {
 	}
 
