@@ -39,8 +39,6 @@ public abstract class AbstractJdbcDdl extends AbstractDdl implements Initializin
 
 	public abstract List<ColumnInfoBO> showColumns(Connection connection, String schema, String table);
 
-	public abstract List<ColumnInfoBO> fetchColumns(Connection connection, String schema, List<String> tables);
-
 	public abstract List<ForeignKeyInfoBO> showForeignKeys(Connection connection, String schema, List<String> tables);
 
 	public abstract List<String> sampleColumn(Connection connection, String schema, String table, String column);

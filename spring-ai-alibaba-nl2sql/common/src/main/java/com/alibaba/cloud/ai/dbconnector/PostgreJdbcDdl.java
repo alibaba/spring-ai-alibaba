@@ -160,15 +160,6 @@ public class PostgreJdbcDdl extends AbstractJdbcDdl {
 	}
 
 	@Override
-	public List<ColumnInfoBO> fetchColumns(Connection connection, String schema, List<String> tables) {
-		List<ColumnInfoBO> columnInfoBOS = Lists.newArrayList();
-		for (String table : tables) {
-			columnInfoBOS.addAll(this.showColumns(connection, schema, table));
-		}
-		return columnInfoBOS;
-	}
-
-	@Override
 	public List<ColumnInfoBO> showColumns(Connection connection, String schema, String table) {
 		String sql = "\n" + "SELECT\n" + "    a.attname as column_name,\n"
 				+ "    col_description(a.attrelid, a.attnum) as column_description,\n"

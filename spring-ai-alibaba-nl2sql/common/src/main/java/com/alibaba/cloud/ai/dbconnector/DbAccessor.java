@@ -111,8 +111,6 @@ public class DbAccessor {
 						return ddlExecutor.fetchTables(connection, param.getSchema(), param.getTables());
 					case "showColumns":
 						return ddlExecutor.showColumns(connection, param.getSchema(), param.getTable());
-					case "fetchColumns":
-						return ddlExecutor.fetchColumns(connection, param.getSchema(), param.getTables());
 					case "showForeignKeys":
 						return ddlExecutor.showForeignKeys(connection, param.getSchema(), param.getTables());
 					case "sampleColumn":
