@@ -72,10 +72,6 @@ public class DbAccessor {
 		return (List<ColumnInfoBO>) accessDb(dbConfig, "showColumns", param);
 	}
 
-	public List<ColumnInfoBO> fetchColumns(DbConfig dbConfig, DbQueryParameter param) throws Exception {
-		return (List<ColumnInfoBO>) accessDb(dbConfig, "fetchColumns", param);
-	}
-
 	public List<ForeignKeyInfoBO> showForeignKeys(DbConfig dbConfig, DbQueryParameter param) throws Exception {
 		return (List<ForeignKeyInfoBO>) accessDb(dbConfig, "showForeignKeys", param);
 	}
