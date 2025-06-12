@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,11 +77,13 @@ public class StateGraphMemorySaverTest {
 		return messages.get(messages.size() - 1).equals("tool_calls") ? "tools" : END;
 	};
 
-	private OverAllStateFactory overAllStateFactory = () -> OverAllStateBuilder.builder()
-		.withKeyStrategy("agent_1:prop1", new ReplaceStrategy())
-		.withKeyStrategy("messages", new AppendStrategy())
-		.withKeyStrategy("steps", new ReplaceStrategy())
-		.build();
+	private KeyStrategyFactory keyStrategyFactory = () -> {
+		Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+		keyStrategyMap.put("agent_1:prop1", new ReplaceStrategy());
+		keyStrategyMap.put("messages", new AppendStrategy());
+		keyStrategyMap.put("steps", new ReplaceStrategy());
+		return keyStrategyMap;
+	};
 
 	@BeforeAll
 	public static void initLogging() throws IOException {
@@ -96,7 +99,7 @@ public class StateGraphMemorySaverTest {
 			return Map.of("agent_1:prop1", "agent_1:test");
 		};
 
-		var workflow = new StateGraph(overAllStateFactory).addNode("agent_1", node_async(agent_1))
+		var workflow = new StateGraph(keyStrategyFactory).addNode("agent_1", node_async(agent_1))
 			.addEdge(START, "agent_1")
 			.addEdge("agent_1", END);
 
@@ -179,7 +182,7 @@ public class StateGraphMemorySaverTest {
 			return "next";
 		};
 
-		var workflow = new StateGraph(overAllStateFactory).addEdge(START, "agent_1")
+		var workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
 			.addNode("agent_1", node_async(agent_1))
 			.addConditionalEdges("agent_1", edge_async(shouldContinue), Map.of("next", "agent_1", "exit", END));
 
@@ -249,7 +252,7 @@ public class StateGraphMemorySaverTest {
 	@Test
 	public void testViewAndUpdatePastGraphState() throws Exception {
 
-		var workflow = new StateGraph(overAllStateFactory).addNode("agent", node_async(agent_whether))
+		var workflow = new StateGraph(keyStrategyFactory).addNode("agent", node_async(agent_whether))
 			.addNode("tools", node_async(tool_whether))
 			.addEdge(START, "agent")
 			.addConditionalEdges("agent", edge_async(shouldContinue_whether), Map.of("tools", "tools", END, END))
@@ -329,7 +332,7 @@ public class StateGraphMemorySaverTest {
 	@Test
 	public void testPauseAndUpdatePastGraphState() throws Exception {
 
-		var workflow = new StateGraph(overAllStateFactory).addNode("agent", node_async(agent_whether))
+		var workflow = new StateGraph(keyStrategyFactory).addNode("agent", node_async(agent_whether))
 			.addNode("tools", node_async(tool_whether))
 			.addEdge(START, "agent")
 			.addConditionalEdges("agent", edge_async(shouldContinue_whether), Map.of("tools", "tools", END, END))
