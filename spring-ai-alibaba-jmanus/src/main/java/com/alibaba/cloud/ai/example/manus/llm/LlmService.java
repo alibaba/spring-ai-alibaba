@@ -354,7 +354,7 @@ public class LlmService {
 		// // 每个agent执行过程中，用独立的memroy
 
 		this.agentExecutionClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
+			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();

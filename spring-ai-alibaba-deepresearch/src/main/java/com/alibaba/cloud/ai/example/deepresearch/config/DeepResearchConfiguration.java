@@ -16,10 +16,12 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoderDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearcherDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
@@ -85,10 +87,10 @@ public class DeepResearchConfiguration {
 			state.registerKeyAndStrategy("thread_id", new ReplaceStrategy());
 			state.registerKeyAndStrategy("enable_background_investigation", new ReplaceStrategy());
 			state.registerKeyAndStrategy("auto_accepted_plan", new ReplaceStrategy());
+			state.registerKeyAndStrategy("plan_max_iterations", new ReplaceStrategy());
 			state.registerKeyAndStrategy("max_step_num", new ReplaceStrategy());
 			state.registerKeyAndStrategy("mcp_settings", new ReplaceStrategy());
 
-			state.registerKeyAndStrategy("feed_back", new ReplaceStrategy());
 			state.registerKeyAndStrategy("feed_back_content", new ReplaceStrategy());
 
 			// 节点输出
@@ -98,6 +100,9 @@ public class DeepResearchConfiguration {
 			state.registerKeyAndStrategy("current_plan", new ReplaceStrategy());
 			state.registerKeyAndStrategy("observations", new ReplaceStrategy());
 			state.registerKeyAndStrategy("final_report", new ReplaceStrategy());
+			state.registerKeyAndStrategy("planner_content", new ReplaceStrategy());
+			state.registerKeyAndStrategy("coder_content", new ReplaceStrategy());
+			state.registerKeyAndStrategy("researcher_content", new ReplaceStrategy());
 			return state;
 		};
 
@@ -117,13 +122,15 @@ public class DeepResearchConfiguration {
 					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 			.addEdge("background_investigator", "planner")
 			.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
-					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner", END, END))
+					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
+							"research_team", "research_team", END, END))
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
 					Map.of("planner", "planner", "research_team", "research_team", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
 					Map.of("reporter", "reporter", "researcher", "researcher", "coder", "coder"))
-			.addEdge("researcher", "research_team")
-			.addEdge("coder", "research_team")
+			.addConditionalEdges("researcher", edge_async(new ResearcherDispatcher()),
+					Map.of("research_team", "research_team"))
+			.addConditionalEdges("coder", edge_async(new CoderDispatcher()), Map.of("research_team", "research_team"))
 			.addEdge("reporter", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
