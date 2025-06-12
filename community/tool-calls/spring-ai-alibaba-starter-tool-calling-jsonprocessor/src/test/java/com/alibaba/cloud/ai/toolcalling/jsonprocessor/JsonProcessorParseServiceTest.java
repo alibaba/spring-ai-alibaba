@@ -16,6 +16,10 @@
 
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,9 +27,9 @@ import org.junit.jupiter.api.Test;
 /**
  * JsonParseService Test Class
  */
-public class JsonParseServiceTest {
+public class JsonProcessorParseServiceTest {
 
-	private JsonParseService jsonParseService;
+	private JsonProcessorParseService jsonProcessorParseService;
 
 	private String jsonContent;
 
@@ -33,45 +37,51 @@ public class JsonParseServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		jsonParseService = new JsonParseService();
+		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+		JsonParseTool jsonParseTool = new JsonParseTool(objectMapper);
+		jsonProcessorParseService = new JsonProcessorParseService(jsonParseTool);
 		jsonContent = "{\"name\":\"John\",\"age\":\"30\",\"city\":\"Beijing\",\"isActive\":\"true\"}";
 		complexJsonContent = "{\"person\":{\"name\":\"John\",\"contact\":{\"email\":\"john@example.com\",\"phone\":\"12345678\"}},\"items\":[\"item1\",\"item2\"]}";
 	}
 
 	@Test
 	void testParseStringValue() {
-		JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(jsonContent, "name");
+		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(jsonContent,
+				"name");
 
-		String result = (String) jsonParseService.apply(request);
+		String result = (String) jsonProcessorParseService.apply(request);
 
 		Assertions.assertEquals("John", result);
 	}
 
 	@Test
 	void testParseNumberAsString() {
-		JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(jsonContent, "age");
+		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(jsonContent,
+				"age");
 
-		String result = (String) jsonParseService.apply(request);
+		String result = (String) jsonProcessorParseService.apply(request);
 
 		Assertions.assertEquals("30", result);
 	}
 
 	@Test
 	void testParseBooleanAsString() {
-		JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(jsonContent, "isActive");
+		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(jsonContent,
+				"isActive");
 
-		String result = (String) jsonParseService.apply(request);
+		String result = (String) jsonProcessorParseService.apply(request);
 
 		Assertions.assertEquals("true", result);
 	}
 
 	@Test
 	void testParseNonExistentField() {
-		JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(jsonContent,
+		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(jsonContent,
 				"nonExistentField");
 
 		Assertions.assertThrows(NullPointerException.class, () -> {
-			jsonParseService.apply(request);
+			jsonProcessorParseService.apply(request);
 		});
 	}
 
@@ -80,11 +90,11 @@ public class JsonParseServiceTest {
 		// Note: Current implementation does not support nested field parsing, this test
 		// is expected to fail
 		// This test case demonstrates the limitation of the current implementation
-		JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(complexJsonContent,
-				"person.name");
+		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(
+				complexJsonContent, "person.name");
 
 		Assertions.assertThrows(NullPointerException.class, () -> {
-			jsonParseService.apply(request);
+			jsonProcessorParseService.apply(request);
 		});
 	}
 

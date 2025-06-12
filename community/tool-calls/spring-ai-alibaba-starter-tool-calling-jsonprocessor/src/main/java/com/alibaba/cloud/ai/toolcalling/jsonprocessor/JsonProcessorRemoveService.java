@@ -15,31 +15,42 @@
  */
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
 /**
  * @author 北极星
  */
-public class JsonRemoveService implements Function<JsonRemoveService.JsonRemoveRequest, Object> {
+public class JsonProcessorRemoveService implements Function<JsonProcessorRemoveService.JsonRemoveRequest, Object> {
 
-	@Override
-	public Object apply(JsonRemoveRequest request) throws JsonParseException {
-		String content = request.content;
-		String field = request.field;
-		JsonElement jsonElement = JsonParser.parseString(content);
-		if (!jsonElement.isJsonObject()) {
-			throw new IllegalArgumentException("Content is not a valid JSON object .");
-		}
-		JsonObject jsonObject = jsonElement.getAsJsonObject();
-		return jsonObject.remove(field);
+	private final JsonParseTool jsonParseTool;
+
+	private static final Logger logger = LoggerFactory.getLogger(JsonProcessorRemoveService.class);
+
+	public JsonProcessorRemoveService(JsonParseTool jsonParseTool) {
+		this.jsonParseTool = jsonParseTool;
 	}
 
+	@Override
+	public Object apply(JsonRemoveRequest request) {
+		String content = request.content;
+		String field = request.field;
+		try {
+			return jsonParseTool.removeFieldValue(content, field);
+		}
+		catch (JsonProcessingException e) {
+			logger.error("Error occurred while json processing: {}", e.getMessage());
+			throw new RuntimeException(e);
+		}
+	}
+
+	@JsonClassDescription("JsonProcessorRemoveService request")
 	record JsonRemoveRequest(@JsonProperty("content") String content, @JsonProperty("value") String field) {
 	}
 

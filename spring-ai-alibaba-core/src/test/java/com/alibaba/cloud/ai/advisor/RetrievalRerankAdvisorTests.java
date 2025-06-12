@@ -15,11 +15,6 @@
  */
 package com.alibaba.cloud.ai.advisor;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.document.DocumentWithScore;
 import com.alibaba.cloud.ai.model.RerankModel;
@@ -31,9 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Flux;
-import reactor.test.StepVerifier;
-
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
@@ -47,6 +39,13 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -196,7 +195,9 @@ class RetrievalRerankAdvisorTests {
 		Map<String, Object> adviseContext = new HashMap<>();
 		adviseContext.put(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS, Collections.emptyList());
 		ChatClientResponse mockResponse = ChatClientResponse.builder()
-				.chatResponse(testResponse.chatResponse()).context(adviseContext).build();
+			.chatResponse(testResponse.chatResponse())
+			.context(adviseContext)
+			.build();
 
 		when(callChain.nextCall(any())).thenReturn(mockResponse);
 
@@ -207,9 +208,9 @@ class RetrievalRerankAdvisorTests {
 		assertThat(response).isNotNull();
 		assertThat(response.context()).containsKey(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS);
 		assertThat(response.context().get(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS)).isNotNull()
-				.isInstanceOf(List.class)
-				.asList()
-				.isEmpty();
+			.isInstanceOf(List.class)
+			.asList()
+			.isEmpty();
 	}
 
 	/**

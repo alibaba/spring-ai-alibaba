@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.toolcalling.time;
 
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-class ZoneUtilsTest {
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 
-	@Test
-	void testGetTimeByZoneId() {
-		String result = ZoneUtils.getTimeByZoneId("Asia/Shanghai");
-		assertNotNull(result);
-		assertTrue(result.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} .+"));
-	}
+/**
+ * @author fengluo
+ */
+@ConfigurationProperties(prefix = TimeProperties.TIME_PREFIX)
+public class TimeProperties extends CommonToolCallProperties {
+
+	protected static final String TIME_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".time";
 
 }
