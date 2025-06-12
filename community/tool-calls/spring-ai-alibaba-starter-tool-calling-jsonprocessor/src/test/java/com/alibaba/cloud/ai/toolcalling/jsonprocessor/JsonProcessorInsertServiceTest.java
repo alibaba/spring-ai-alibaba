@@ -44,7 +44,7 @@ public class JsonProcessorInsertServiceTest {
 	@BeforeEach
 	void setUp() {
 		objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
-				.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 		JsonParseTool jsonParseTool = new JsonParseTool(objectMapper);
 		jsonProcessorInsertService = new JsonProcessorInsertService(jsonParseTool);
 		jsonContent = "{\"name\":\"John\",\"age\":30}";
@@ -53,8 +53,8 @@ public class JsonProcessorInsertServiceTest {
 	@Test
 	void testInsertStringValue() {
 		JsonNode newValue = new TextNode("Beijing");
-		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "city",
-				newValue);
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(
+				jsonContent, "city", newValue);
 
 		JsonNode result = (JsonNode) jsonProcessorInsertService.apply(request);
 
@@ -66,8 +66,8 @@ public class JsonProcessorInsertServiceTest {
 	@Test
 	void testInsertNumberValue() {
 		JsonNode newValue = TRUE;
-		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "isActive",
-				newValue);
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(
+				jsonContent, "isActive", newValue);
 
 		JsonNode result = (JsonNode) jsonProcessorInsertService.apply(request);
 
@@ -82,8 +82,8 @@ public class JsonProcessorInsertServiceTest {
 		addressObject.put("street", "Chang'an Street");
 		addressObject.put("zipCode", "100000");
 
-		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "address",
-				addressObject);
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(
+				jsonContent, "address", addressObject);
 
 		JsonNode result = (JsonNode) jsonProcessorInsertService.apply(request);
 
@@ -100,8 +100,8 @@ public class JsonProcessorInsertServiceTest {
 		hobbiesArray.add("Traveling");
 		hobbiesArray.add("Programming");
 
-		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "hobbies",
-				hobbiesArray);
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(
+				jsonContent, "hobbies", hobbiesArray);
 
 		JsonNode result = (JsonNode) jsonProcessorInsertService.apply(request);
 
@@ -116,8 +116,8 @@ public class JsonProcessorInsertServiceTest {
 	@Test
 	void testNullField() {
 		JsonNode newValue = new TextNode("Beijing");
-		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, null,
-				newValue);
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(
+				jsonContent, null, newValue);
 
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			jsonProcessorInsertService.apply(request);
@@ -126,8 +126,8 @@ public class JsonProcessorInsertServiceTest {
 
 	@Test
 	void testNullValue() {
-		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "city",
-				null);
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(
+				jsonContent, "city", null);
 
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			jsonProcessorInsertService.apply(request);
@@ -137,8 +137,8 @@ public class JsonProcessorInsertServiceTest {
 	@Test
 	void testOverwriteExistingField() {
 		JsonNode newValue = new TextNode("David");
-		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "name",
-				newValue);
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(
+				jsonContent, "name", newValue);
 
 		JsonNode result = (JsonNode) jsonProcessorInsertService.apply(request);
 

@@ -31,8 +31,7 @@ import static com.alibaba.cloud.ai.toolcalling.time.TimeProperties.TIME_PREFIX;
 @Configuration
 @EnableConfigurationProperties(TimeProperties.class)
 @ConditionalOnClass({ TimeService.class, GetTimeByZoneIdService.class })
-@ConditionalOnProperty(prefix = TIME_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(prefix = TIME_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 public class TimeAutoConfiguration {
 
 	@Bean

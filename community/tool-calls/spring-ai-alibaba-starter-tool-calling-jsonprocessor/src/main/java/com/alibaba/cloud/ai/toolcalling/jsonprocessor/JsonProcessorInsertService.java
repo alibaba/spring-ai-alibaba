@@ -48,7 +48,8 @@ public class JsonProcessorInsertService implements Function<JsonProcessorInsertS
 		Assert.notNull(value, "insert json fieldValue can not be null");
 		try {
 			return jsonParseTool.setFieldValue(content, field, value);
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			logger.error("Error occurred while json processing: {}", e.getMessage());
 			throw new RuntimeException(e);
 		}

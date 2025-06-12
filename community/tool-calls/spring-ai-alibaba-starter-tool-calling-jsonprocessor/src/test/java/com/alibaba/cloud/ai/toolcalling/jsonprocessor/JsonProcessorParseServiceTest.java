@@ -38,7 +38,7 @@ public class JsonProcessorParseServiceTest {
 	@BeforeEach
 	void setUp() {
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
-				.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 		JsonParseTool jsonParseTool = new JsonParseTool(objectMapper);
 		jsonProcessorParseService = new JsonProcessorParseService(jsonParseTool);
 		jsonContent = "{\"name\":\"John\",\"age\":\"30\",\"city\":\"Beijing\",\"isActive\":\"true\"}";
@@ -47,7 +47,8 @@ public class JsonProcessorParseServiceTest {
 
 	@Test
 	void testParseStringValue() {
-		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(jsonContent, "name");
+		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(jsonContent,
+				"name");
 
 		String result = (String) jsonProcessorParseService.apply(request);
 
@@ -56,7 +57,8 @@ public class JsonProcessorParseServiceTest {
 
 	@Test
 	void testParseNumberAsString() {
-		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(jsonContent, "age");
+		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(jsonContent,
+				"age");
 
 		String result = (String) jsonProcessorParseService.apply(request);
 
@@ -65,7 +67,8 @@ public class JsonProcessorParseServiceTest {
 
 	@Test
 	void testParseBooleanAsString() {
-		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(jsonContent, "isActive");
+		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(jsonContent,
+				"isActive");
 
 		String result = (String) jsonProcessorParseService.apply(request);
 
@@ -87,8 +90,8 @@ public class JsonProcessorParseServiceTest {
 		// Note: Current implementation does not support nested field parsing, this test
 		// is expected to fail
 		// This test case demonstrates the limitation of the current implementation
-		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(complexJsonContent,
-				"person.name");
+		JsonProcessorParseService.JsonParseRequest request = new JsonProcessorParseService.JsonParseRequest(
+				complexJsonContent, "person.name");
 
 		Assertions.assertThrows(NullPointerException.class, () -> {
 			jsonProcessorParseService.apply(request);

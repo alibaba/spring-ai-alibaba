@@ -43,7 +43,8 @@ public class JsonProcessorRemoveService implements Function<JsonProcessorRemoveS
 		String field = request.field;
 		try {
 			return jsonParseTool.removeFieldValue(content, field);
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			logger.error("Error occurred while json processing: {}", e.getMessage());
 			throw new RuntimeException(e);
 		}

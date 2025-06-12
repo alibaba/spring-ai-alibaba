@@ -31,10 +31,9 @@ import static com.alibaba.cloud.ai.toolcalling.jsonprocessor.JsonProcessorProper
  */
 @Configuration
 @EnableConfigurationProperties(JsonProcessorProperties.class)
-@ConditionalOnClass({ JsonProcessorInsertService.class, JsonProcessorRemoveService.class, JsonProcessorReplaceService.class,
-		JsonProcessorParseService.class })
-@ConditionalOnProperty(value = JSON_PROCESSOR_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnClass({ JsonProcessorInsertService.class, JsonProcessorRemoveService.class,
+		JsonProcessorReplaceService.class, JsonProcessorParseService.class })
+@ConditionalOnProperty(value = JSON_PROCESSOR_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 public class JsonProcessorAutoConfiguration {
 
 	@Bean

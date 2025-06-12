@@ -43,7 +43,8 @@ public class JsonProcessorParseService implements Function<JsonProcessorParseSer
 		String field = request.field;
 		try {
 			return jsonParseTool.getFieldValueAsText(content, field);
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			logger.error("Error occurred while json processing: {}", e.getMessage());
 			throw new RuntimeException(e);
 		}

@@ -44,7 +44,7 @@ public class JsonProcessorReplaceServiceTest {
 	@BeforeEach
 	void setUp() {
 		objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
-				.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 		JsonParseTool jsonParseTool = new JsonParseTool(objectMapper);
 		jsonProcessorReplaceService = new JsonProcessorReplaceService(jsonParseTool);
 		jsonContent = "{\"name\":\"John\",\"age\":30,\"city\":\"Beijing\"}";
@@ -53,8 +53,8 @@ public class JsonProcessorReplaceServiceTest {
 	@Test
 	void testReplaceStringValue() {
 		JsonNode newValue = new TextNode("David");
-		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent, "name",
-				newValue);
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(
+				jsonContent, "name", newValue);
 
 		JsonNode result = (JsonNode) jsonProcessorReplaceService.apply(request);
 
@@ -66,8 +66,8 @@ public class JsonProcessorReplaceServiceTest {
 	@Test
 	void testReplaceNumberValue() {
 		JsonNode newValue = new IntNode(40);
-		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent, "age",
-				newValue);
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(
+				jsonContent, "age", newValue);
 
 		JsonNode result = (JsonNode) jsonProcessorReplaceService.apply(request);
 
@@ -79,8 +79,8 @@ public class JsonProcessorReplaceServiceTest {
 	@Test
 	void testAddNewField() {
 		JsonNode newValue = TRUE;
-		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent,
-				"isActive", newValue);
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(
+				jsonContent, "isActive", newValue);
 
 		JsonNode result = (JsonNode) jsonProcessorReplaceService.apply(request);
 
@@ -96,8 +96,8 @@ public class JsonProcessorReplaceServiceTest {
 		addressObject.put("street", "Chang'an Street");
 		addressObject.put("zipCode", "100000");
 
-		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent,
-				"address", addressObject);
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(
+				jsonContent, "address", addressObject);
 
 		JsonNode result = (JsonNode) jsonProcessorReplaceService.apply(request);
 
@@ -108,8 +108,8 @@ public class JsonProcessorReplaceServiceTest {
 	@Test
 	void testNullField() {
 		JsonNode newValue = new TextNode("David");
-		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent, null,
-				newValue);
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(
+				jsonContent, null, newValue);
 
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			jsonProcessorReplaceService.apply(request);
@@ -118,8 +118,8 @@ public class JsonProcessorReplaceServiceTest {
 
 	@Test
 	void testNullValue() {
-		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent, "name",
-				null);
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(
+				jsonContent, "name", null);
 
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			jsonProcessorReplaceService.apply(request);

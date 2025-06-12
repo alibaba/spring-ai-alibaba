@@ -41,7 +41,7 @@ public class JsonProcessorRemoveServiceTest {
 	@BeforeEach
 	void setUp() {
 		objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
-				.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 		JsonParseTool jsonParseTool = new JsonParseTool(objectMapper);
 		jsonProcessorRemoveService = new JsonProcessorRemoveService(jsonParseTool);
 		jsonContent = "{\"name\":\"John\",\"age\":30,\"city\":\"Beijing\",\"isActive\":true}";
@@ -50,7 +50,8 @@ public class JsonProcessorRemoveServiceTest {
 	@Test
 	void testRemoveStringField() throws JsonProcessingException {
 		// Test removing a string type field
-		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(jsonContent, "name");
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(
+				jsonContent, "name");
 
 		// Execute the remove operation and get the return value
 		JsonNode result = (JsonNode) jsonProcessorRemoveService.apply(request);
@@ -74,7 +75,8 @@ public class JsonProcessorRemoveServiceTest {
 	@Test
 	void testRemoveNumberField() {
 		// Test removing a number type field
-		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(jsonContent, "age");
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(
+				jsonContent, "age");
 
 		// Execute the remove operation and get the return value
 		JsonNode result = (JsonNode) jsonProcessorRemoveService.apply(request);
@@ -86,7 +88,8 @@ public class JsonProcessorRemoveServiceTest {
 	@Test
 	void testRemoveBooleanField() {
 		// Test removing a boolean type field
-		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(jsonContent, "isActive");
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(
+				jsonContent, "isActive");
 
 		// Execute the remove operation and get the return value
 		JsonNode result = (JsonNode) jsonProcessorRemoveService.apply(request);
@@ -98,8 +101,8 @@ public class JsonProcessorRemoveServiceTest {
 	@Test
 	void testRemoveNonExistentField() {
 		// Test removing a non-existent field
-		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(jsonContent,
-				"nonExistentField");
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(
+				jsonContent, "nonExistentField");
 
 		// Execute the remove operation and get the return value
 		JsonNode result = (JsonNode) jsonProcessorRemoveService.apply(request);
@@ -111,7 +114,8 @@ public class JsonProcessorRemoveServiceTest {
 	@Test
 	void testNonObjectJsonContent() {
 		// Test non-object type JSON content
-		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(jsonContent, "noneField");
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(
+				jsonContent, "noneField");
 
 		// Verify that an exception is thrown
 		JsonNode result = (JsonNode) jsonProcessorRemoveService.apply(request);
@@ -121,7 +125,8 @@ public class JsonProcessorRemoveServiceTest {
 	@Test
 	void testRemoveAndVerifyJsonStructure() throws JsonProcessingException {
 		// Test the JSON structure after removing a field
-		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(jsonContent, "city");
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(
+				jsonContent, "city");
 
 		// Execute the remove operation
 		jsonProcessorRemoveService.apply(request);

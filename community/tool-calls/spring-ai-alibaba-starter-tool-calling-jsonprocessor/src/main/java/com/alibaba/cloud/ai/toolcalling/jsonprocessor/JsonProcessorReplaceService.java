@@ -48,7 +48,8 @@ public class JsonProcessorReplaceService implements Function<JsonProcessorReplac
 		Assert.notNull(value, "replace json fieldValue can not be null");
 		try {
 			return jsonParseTool.replaceFieldValue(content, field, value);
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			logger.error("Error occurred while json processing: {}", e.getMessage());
 			throw new RuntimeException(e);
 		}
