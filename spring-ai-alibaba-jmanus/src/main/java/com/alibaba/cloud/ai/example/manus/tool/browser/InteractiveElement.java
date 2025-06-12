@@ -15,19 +15,12 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
-import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.options.LoadState;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * 表示单个交互式元素的类，持有元素的Locator和所在的Frame/Page信息 同时提供管理页面中所有交互元素的能力
@@ -36,32 +29,11 @@ public class InteractiveElement {
 
 	private static final Logger log = LoggerFactory.getLogger(InteractiveElement.class);
 
-	/**
-	 * 用于选择交互式元素的CSS选择器
-	 */
-	private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea";
-
-	/**
-	 * 存储所有已索引的交互元素的列表
-	 */
-	private static final List<InteractiveElement> allElements = new ArrayList<>();
-
-	/**
-	 * 快速通过索引查找元素
-	 */
-	private static final Map<Integer, InteractiveElement> elementIndex = new HashMap<>();
-
 	// 全局索引
 	private final int index;
 
 	// 元素定位器
 	private final Locator locator;
-
-	// 元素所在的Frame（如果在iframe中）
-	private final Frame frame;
-
-	// 是否在主页面（不在iframe中）
-	private final boolean isInMainPage;
 
 	// 元素类型信息
 	private final String tagName;
@@ -74,31 +46,18 @@ public class InteractiveElement {
 
 	/**
 	 * @param index 全局索引
-	 * @param locator 元素定位器
-	 * @param frame 所在的iframe
 	 * @param elementMap 元素的其余参数
 	 */
-	public InteractiveElement(int index, Locator locator, Frame frame, Map<String, Object> elementMap) {
+	public InteractiveElement(int index, Page page, Map<String, Object> elementMap) {
 		this.index = index;
-		this.locator = locator;
-		this.frame = frame;
-		this.isInMainPage = false;
-		this.tagName = (String) elementMap.get("tagName");
-		this.text = (String) elementMap.get("text");
-		this.outerHtml = (String) elementMap.get("outerHtml");
-	}
-
-	/**
-	 * 创建主页面中的交互元素
-	 * @param index 全局索引
-	 * @param locator 元素定位器
-	 * @param elementMap 元素的其余参数
-	 */
-	public InteractiveElement(int index, Locator locator, Map<String, Object> elementMap) {
-		this.index = index;
-		this.locator = locator;
-		this.frame = null;
-		this.isInMainPage = true;
+		if (elementMap.containsKey("jManusId")) {
+			String jManusId = (String) elementMap.get("jManusId");
+			this.locator = page.locator("[jmanus-id=\"" + jManusId + "\"]");
+		}
+		else {
+			String xpath = (String) elementMap.get("xpath");
+			this.locator = page.locator("//" + xpath);
+		}
 		this.tagName = (String) elementMap.get("tagName");
 		this.text = (String) elementMap.get("text");
 		this.outerHtml = (String) elementMap.get("outerHtml");
@@ -118,22 +77,6 @@ public class InteractiveElement {
 	 */
 	public Locator getLocator() {
 		return locator;
-	}
-
-	/**
-	 * 获取元素所在的Frame
-	 * @return 元素所在的Frame，如果在主页面则返回null
-	 */
-	public Frame getFrame() {
-		return frame;
-	}
-
-	/**
-	 * 判断元素是否在主页面中
-	 * @return 如果元素在主页面则返回true，在iframe中则返回false
-	 */
-	public boolean isInMainPage() {
-		return isInMainPage;
 	}
 
 	/**
@@ -158,251 +101,6 @@ public class InteractiveElement {
 	 */
 	public String getOuterHtml() {
 		return outerHtml;
-	}
-
-	/**
-	 * 刷新元素的文本内容
-	 */
-	public void refreshText() {
-		try {
-			this.text = locator.innerText();
-		}
-		catch (Exception e) {
-			// 保持原有值不变
-		}
-	}
-
-	/**
-	 * 刷新页面中的所有交互元素，包括iframe中的
-	 * @param page 要处理的页面
-	 */
-	public void refreshElements(Page page) {
-		clearCache();
-		waitForPageLoad(page);
-		processMainPageElements(page);
-		processIframeElements(page);
-		log.info("已加载 {} 个交互式元素", allElements.size());
-	}
-
-	/**
-	 * 清空当前缓存
-	 */
-	private void clearCache() {
-		allElements.clear();
-		elementIndex.clear();
-	}
-
-	/**
-	 * 等待页面完全加载
-	 * @param page Page实例
-	 */
-	private void waitForPageLoad(Page page) {
-		try {
-			page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-			log.info("页面已加载完成");
-		}
-		catch (Exception e) {
-			log.warn("等待页面加载时出错: {}", e.getMessage());
-		}
-	}
-
-	/**
-	 * 处理主页面中的交互元素
-	 * @param page Page实例
-	 */
-	@SuppressWarnings("unchecked")
-	private void processMainPageElements(Page page) {
-		try {
-			Locator elementLocator = page.locator(INTERACTIVE_ELEMENTS_SELECTOR);
-			int count = elementLocator.count();
-			log.info("在iframe中找到 {} 个交互元素", count);
-			List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) elementLocator.evaluateAll("""
-					(elements) => elements.map((element, index) => {
-					    return {
-					        tagName: element.tagName.toLowerCase(),
-					        text: element.innerText,
-					        outerHtml: element.outerHTML,
-					        index: index
-					    };
-					})
-					""");
-			for (Map<String, Object> elementMap : elementMapList) {
-				Integer globalIndex = (Integer) elementMap.get("index");
-				Locator locator = elementLocator.nth(globalIndex);
-				InteractiveElement element = new InteractiveElement(globalIndex, locator, elementMap);
-				allElements.add(element);
-				elementIndex.put(globalIndex, element);
-			}
-		}
-		catch (Exception e) {
-			log.warn("处理主页面元素时出错: {}", e.getMessage());
-		}
-	}
-
-	/**
-	 * 处理页面中所有iframe的交互元素
-	 * @param page Page实例
-	 */
-	private void processIframeElements(Page page) {
-		List<Frame> frames = page.frames();
-		log.info("找到 {} 个iframe", frames.size());
-
-		// 排除主框架
-		frames.stream().filter(frame -> frame != page.mainFrame()).forEach(this::processFrameElements);
-	}
-
-	/**
-	 * 处理单个iframe中的交互元素
-	 * @param frame Frame实例
-	 */
-	@SuppressWarnings("unchecked")
-	private void processFrameElements(Frame frame) {
-		try {
-			Locator elementLocator = frame.locator(INTERACTIVE_ELEMENTS_SELECTOR);
-			int count = elementLocator.count();
-			log.info("在iframe中找到 {} 个交互元素", count);
-			List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) elementLocator.evaluateAll("""
-					(elements) => elements.map((element, index) => {
-					    return {
-					        tagName: element.tagName.toLowerCase(),
-					        text: element.innerText,
-					        outerHtml: element.outerHTML,
-					        index: index
-					    };
-					})
-					""");
-			for (Map<String, Object> elementMap : elementMapList) {
-				Integer globalIndex = (Integer) elementMap.get("index");
-				Locator locator = elementLocator.nth(globalIndex);
-				InteractiveElement element = new InteractiveElement(globalIndex, locator, frame, elementMap);
-				allElements.add(element);
-				elementIndex.put(globalIndex, element);
-			}
-		}
-		catch (Exception e) {
-			log.warn("处理iframe元素时出错: {}", e.getMessage());
-		}
-	}
-
-	/**
-	 * 获取所有交互元素列表
-	 * @return 交互元素列表
-	 */
-	public List<InteractiveElement> getAllElements() {
-		return new ArrayList<>(allElements);
-	}
-
-	/**
-	 * 根据全局索引获取交互元素
-	 * @param index 全局索引
-	 * @return 对应的交互元素，如果不存在则返回空
-	 */
-	public Optional<InteractiveElement> getElementById(int index) {
-		return Optional.ofNullable(elementIndex.get(index));
-	}
-
-	/**
-	 * 获取当前注册的元素数量
-	 * @return 元素数量
-	 */
-	public int size() {
-		return allElements.size();
-	}
-
-	/**
-	 * 生成所有元素的详细信息文本
-	 * @return 格式化的元素信息字符串
-	 */
-	public String generateElementsInfoText() {
-		StringBuilder result = new StringBuilder();
-		for (InteractiveElement element : allElements) {
-			result.append(element.toString()).append("\n");
-		}
-		return result.toString();
-	}
-
-	/**
-	 * 点击指定索引的元素
-	 * @param index 元素全局索引
-	 * @return 操作是否成功
-	 */
-	public boolean clickElement(int index) {
-		Optional<InteractiveElement> elementOpt = getElementById(index);
-		if (elementOpt.isPresent()) {
-			try {
-				InteractiveElement element = elementOpt.get();
-				element.getLocator().click();
-				log.info("点击了索引为 {} 的元素: {}", index, element.toString());
-				return true;
-			}
-			catch (Exception e) {
-				log.error("点击元素时出错: {}", e.getMessage());
-				return false;
-			}
-		}
-		log.warn("未找到索引为 {} 的元素", index);
-		return false;
-	}
-
-	/**
-	 * 在指定索引的输入元素中填写文本
-	 * @param index 元素全局索引
-	 * @param text 要填写的文本
-	 * @return 操作是否成功
-	 */
-	public boolean fillText(int index, String text) {
-		Optional<InteractiveElement> elementOpt = getElementById(index);
-		if (elementOpt.isPresent()) {
-			try {
-				InteractiveElement element = elementOpt.get();
-				element.getLocator().fill(text);
-				log.info("在索引为 {} 的元素中填写了文本: {}", index, text);
-				return true;
-			}
-			catch (Exception e) {
-				log.error("填写文本时出错: {}", e.getMessage());
-				return false;
-			}
-		}
-		log.warn("未找到索引为 {} 的元素", index);
-		return false;
-	}
-
-	/**
-	 * 操作特定索引的元素
-	 * @param index 元素的全局索引
-	 * @param action 要执行的操作，例如点击、填写等
-	 * @return 操作是否成功
-	 */
-	public boolean performAction(int index, ElementAction action) {
-		Optional<InteractiveElement> elementOpt = getElementById(index);
-		if (elementOpt.isPresent()) {
-			InteractiveElement element = elementOpt.get();
-			try {
-				// 执行指定动作
-				action.execute(element);
-				return true;
-			}
-			catch (Exception e) {
-				log.error("执行元素动作时出错: {}", e.getMessage());
-				return false;
-			}
-		}
-		log.warn("未找到索引为 {} 的元素", index);
-		return false;
-	}
-
-	/**
-	 * 元素操作接口
-	 */
-	public interface ElementAction {
-
-		/**
-		 * 在元素上执行操作
-		 * @param element 要操作的元素
-		 */
-		void execute(InteractiveElement element);
-
 	}
 
 	/**
