@@ -326,7 +326,7 @@ public abstract class BaseSchemaService {
 	 * @param schemaDTO SchemaDTO
 	 */
 	protected void extractDatabaseName(SchemaDTO schemaDTO) {
-		String pattern = "/([^/]+)$";
+		String pattern = ":\\d+/([^/?&]+)";
 		if (BizDataSourceTypeEnum.isMysqlDialect(dbConfig.getDialectType())) {
 			Pattern regex = Pattern.compile(pattern);
 			Matcher matcher = regex.matcher(dbConfig.getUrl());
