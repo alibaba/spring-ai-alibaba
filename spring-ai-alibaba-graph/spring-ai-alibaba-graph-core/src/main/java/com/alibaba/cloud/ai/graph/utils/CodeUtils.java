@@ -27,6 +27,7 @@ public class CodeUtils {
 			case "python3", "python" -> language;
 			case "shell", "bash", "sh", "powershell" -> "sh";
 			case "nodejs" -> "node";
+			case "java" -> "java";
 			default -> throw new Exception("Language not recognized in code execution:" + language);
 		};
 	}
@@ -36,6 +37,7 @@ public class CodeUtils {
 			case "python3", "python" -> "py";
 			case "shell", "bash", "sh", "powershell" -> "sh";
 			case "nodejs" -> "js";
+			case "java" -> "java";
 			default -> throw new Exception("Language not recognized in code execution:" + language);
 		};
 	}

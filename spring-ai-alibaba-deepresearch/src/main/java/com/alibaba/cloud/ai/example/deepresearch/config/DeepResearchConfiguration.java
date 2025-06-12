@@ -16,10 +16,12 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoderDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearcherDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
@@ -29,10 +31,7 @@ import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
-import com.alibaba.cloud.ai.graph.GraphRepresentation;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.OverAllStateFactory;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
@@ -44,6 +43,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -73,35 +73,38 @@ public class DeepResearchConfiguration {
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
 
-		OverAllStateFactory stateFactory = () -> {
-			OverAllState state = new OverAllState();
+		KeyStrategyFactory keyStrategyFactory = () -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			// 条件边控制：跳转下一个节点
-			state.registerKeyAndStrategy("coordinator_next_node", new ReplaceStrategy());
-			state.registerKeyAndStrategy("planner_next_node", new ReplaceStrategy());
-			state.registerKeyAndStrategy("human_next_node", new ReplaceStrategy());
-			state.registerKeyAndStrategy("research_team_next_node", new ReplaceStrategy());
+			keyStrategyHashMap.put("coordinator_next_node", new ReplaceStrategy());
+			keyStrategyHashMap.put("planner_next_node", new ReplaceStrategy());
+			keyStrategyHashMap.put("human_next_node", new ReplaceStrategy());
+			keyStrategyHashMap.put("research_team_next_node", new ReplaceStrategy());
 			// 用户输入
-			state.registerKeyAndStrategy("query", new ReplaceStrategy());
-			state.registerKeyAndStrategy("thread_id", new ReplaceStrategy());
-			state.registerKeyAndStrategy("enable_background_investigation", new ReplaceStrategy());
-			state.registerKeyAndStrategy("auto_accepted_plan", new ReplaceStrategy());
-			state.registerKeyAndStrategy("plan_max_iterations", new ReplaceStrategy());
-			state.registerKeyAndStrategy("max_step_num", new ReplaceStrategy());
-			state.registerKeyAndStrategy("mcp_settings", new ReplaceStrategy());
+			keyStrategyHashMap.put("query", new ReplaceStrategy());
+			keyStrategyHashMap.put("thread_id", new ReplaceStrategy());
+			keyStrategyHashMap.put("enable_background_investigation", new ReplaceStrategy());
+			keyStrategyHashMap.put("auto_accepted_plan", new ReplaceStrategy());
+			keyStrategyHashMap.put("plan_max_iterations", new ReplaceStrategy());
+			keyStrategyHashMap.put("max_step_num", new ReplaceStrategy());
+			keyStrategyHashMap.put("mcp_settings", new ReplaceStrategy());
 
-			state.registerKeyAndStrategy("feed_back_content", new ReplaceStrategy());
+			keyStrategyHashMap.put("feed_back_content", new ReplaceStrategy());
 
 			// 节点输出
-			state.registerKeyAndStrategy("background_investigation_results", new ReplaceStrategy());
-			state.registerKeyAndStrategy("output", new ReplaceStrategy());
-			state.registerKeyAndStrategy("plan_iterations", new ReplaceStrategy());
-			state.registerKeyAndStrategy("current_plan", new ReplaceStrategy());
-			state.registerKeyAndStrategy("observations", new ReplaceStrategy());
-			state.registerKeyAndStrategy("final_report", new ReplaceStrategy());
-			return state;
+			keyStrategyHashMap.put("background_investigation_results", new ReplaceStrategy());
+			keyStrategyHashMap.put("output", new ReplaceStrategy());
+			keyStrategyHashMap.put("plan_iterations", new ReplaceStrategy());
+			keyStrategyHashMap.put("current_plan", new ReplaceStrategy());
+			keyStrategyHashMap.put("observations", new ReplaceStrategy());
+			keyStrategyHashMap.put("final_report", new ReplaceStrategy());
+			keyStrategyHashMap.put("planner_content", new ReplaceStrategy());
+			keyStrategyHashMap.put("coder_content", new ReplaceStrategy());
+			keyStrategyHashMap.put("researcher_content", new ReplaceStrategy());
+			return keyStrategyHashMap;
 		};
 
-		StateGraph stateGraph = new StateGraph("deep research", stateFactory,
+		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
 			.addNode("background_investigator", node_async(new BackgroundInvestigationNode(tavilySearchService)))
@@ -117,13 +120,15 @@ public class DeepResearchConfiguration {
 					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 			.addEdge("background_investigator", "planner")
 			.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
-					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner", END, END))
+					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
+							"research_team", "research_team", END, END))
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
 					Map.of("planner", "planner", "research_team", "research_team", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
 					Map.of("reporter", "reporter", "researcher", "researcher", "coder", "coder"))
-			.addEdge("researcher", "research_team")
-			.addEdge("coder", "research_team")
+			.addConditionalEdges("researcher", edge_async(new ResearcherDispatcher()),
+					Map.of("research_team", "research_team"))
+			.addConditionalEdges("coder", edge_async(new CoderDispatcher()), Map.of("research_team", "research_team"))
 			.addEdge("reporter", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
