@@ -47,9 +47,12 @@ public abstract class BaseSchemaService {
 	 */
 	protected BaseVectorStoreService vectorStoreService;
 
-	public BaseSchemaService(DbConfig dbConfig, Gson gson) {
+	protected final BaseVectorStoreService baseVectorStoreService;
+
+	public BaseSchemaService(DbConfig dbConfig, Gson gson, BaseVectorStoreService vectorStoreService) {
 		this.dbConfig = dbConfig;
 		this.gson = gson;
+		this.baseVectorStoreService = vectorStoreService;
 	}
 
 	/**

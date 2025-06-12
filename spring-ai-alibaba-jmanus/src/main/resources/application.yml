@@ -9,7 +9,7 @@ spring:
       api-key: ${DASHSCOPE_API_KEY}
       chat:
         options:
-          model: qwen-plus-latest
+          model: qwen-plus
     mcp:
       client:
         enabled: false
