@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -23,6 +24,7 @@ import java.util.List;
 
 /**
  * @author yingzi
+ * @author ViliamSun
  * @since 2025/5/18 17:48
  */
 @Data
@@ -57,7 +59,9 @@ public class Plan {
 	public enum StepType {
 
 		@JsonProperty("research")
+				@JsonAlias("RESEARCH")
 		RESEARCH, @JsonProperty("processing")
+				@JsonAlias("PROCESSING")
 		PROCESSING
 
 	}
