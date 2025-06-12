@@ -16,7 +16,7 @@
 name: 🚀 Task
 description: Used to create tasks for the community.
 title: "[Task] <title>"
-labels: ["discussion"]
+labels: ["needs-triage", "kind/task"]
 body:
   - type: textarea
     attributes:
