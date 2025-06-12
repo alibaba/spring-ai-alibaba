@@ -94,17 +94,6 @@ public class DeepResearchController {
 			.doOnError(e -> logger.error("Error occurred during streaming", e));
 	}
 
-	@PostMapping("/chat")
-	public Map<String, Object> chat(@RequestBody(required = false) ChatRequest chatRequest) {
-		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
-		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
-		Map<String, Object> objectMap = new HashMap<>();
-		ChatRequestProcess.initializeObjectMap(chatRequest, objectMap);
-
-		var resultFuture = compiledGraph.invoke(objectMap, runnableConfig);
-		return resultFuture.get().data();
-	}
-
 	@PostMapping("/chat/resume")
 	public Map<String, Object> resume(@RequestBody(required = false) FeedbackRequest humanFeedback) {
 
