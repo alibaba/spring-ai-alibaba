@@ -15,20 +15,12 @@
  */
 package com.alibaba.cloud.ai.service.base;
 
-import com.alibaba.cloud.ai.dbconnector.DbAccessor;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
-import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
-import com.alibaba.cloud.ai.dbconnector.bo.ForeignKeyInfoBO;
-import com.alibaba.cloud.ai.dbconnector.bo.TableInfoBO;
-import com.alibaba.cloud.ai.request.DeleteRequest;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.request.SearchRequest;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -77,6 +69,13 @@ public abstract class BaseVectorStoreService {
 	 * 自定义 filter 的搜索接口
 	 */
 	public abstract List<Document> searchWithFilter(SearchRequest searchRequestDTO);
+
+	/**
+	 * 获取表的文档
+	 */
+	public List<Document> searchTableByNameAndVectorType(SearchRequest searchRequestDTO) {
+		throw new UnsupportedOperationException("Not implemented.");
+	}
 
 	/**
 	 * 将 float[] 转换为 List<Double>
