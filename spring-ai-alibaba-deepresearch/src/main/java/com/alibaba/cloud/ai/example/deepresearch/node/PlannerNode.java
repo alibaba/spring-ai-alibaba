@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -29,14 +30,11 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import java.util.Objects;
 
 /**
  * @author yingzi
@@ -83,51 +81,16 @@ public class PlannerNode implements NodeAction {
 
 		logger.debug("messages: {}", messages);
 		// 2. 规划任务
-		Flux<String> StreamResult = chatClient.prompt(converter.getFormat()).messages(messages).stream().content();
+		var streamResult = chatClient.prompt(converter.getFormat()).messages(messages).stream().chatResponse();
 
-		String result = StreamResult.reduce((acc, next) -> acc + next).block();
-		logger.info("Planner response: {}", result);
-		assert result != null;
+		var generator = StreamingChatGenerator.builder()
+			.startingNode("planner_llm_stream")
+			.startingState(state)
+			.mapResult(response -> Map.of("planner_content",
+					Objects.requireNonNull(response.getResult().getOutput().getText())))
+			.build(streamResult);
 
-		String nextStep = "reporter";
-		Map<String, Object> updated = new HashMap<>();
-		Plan curPlan = null;
-		try {
-			curPlan = converter.convert(result);
-			logger.info("反序列成功，convert: {}", curPlan);
-			// 2.1 反序列化成功，上下文充足，跳转reporter节点
-			if (curPlan.isHasEnoughContext()) {
-				logger.info("Planner response has enough context.");
-				updated.put("current_plan", curPlan);
-				updated.put("planner_next_node", nextStep);
-				logger.info("planner node -> {} node", nextStep);
-				return updated;
-			}
-		}
-		catch (Exception e) {
-			// 2.2 反序列化失败，尝试重新生成计划
-			logger.error("反序列化失败");
-			if (StateUtil.getPlanIterations(state) < StateUtil.getPlanMaxIterations(state)) {
-				// 尝试重新生成计划
-				updated.put("plan_iterations", StateUtil.getPlanIterations(state) + 1);
-				nextStep = "planner";
-				updated.put("planner_next_node", nextStep);
-				logger.info("planner node -> {} node", nextStep);
-				return updated;
-			}
-			else {
-				nextStep = END;
-				updated.put("planner_next_node", nextStep);
-				logger.warn("planner node -> {} node", nextStep);
-				return updated;
-			}
-		}
-		// 2.3 上下文不足，跳转到human_feedback节点
-		nextStep = "human_feedback";
-		updated.put("current_plan", curPlan);
-		updated.put("planner_next_node", nextStep);
-		logger.info("planner node -> {} node", nextStep);
-		return updated;
+		return Map.of("planner_content", generator);
 	}
 
 }
