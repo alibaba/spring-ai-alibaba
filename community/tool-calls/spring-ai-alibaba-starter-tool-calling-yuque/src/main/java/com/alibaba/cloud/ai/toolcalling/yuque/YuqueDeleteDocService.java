@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.toolcalling.yuque;
 
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,17 +60,22 @@ public class YuqueDeleteDocService
 	protected record deleteDocRequest(@JsonProperty("bookId") String bookId, @JsonProperty("id") String id) {
 	}
 
-	protected record deleteDocResponse(@JsonProperty("id") String id, @JsonProperty("slug") String slug,
-			@JsonProperty("type") String type, @JsonProperty("description") String description,
-			@JsonProperty("cover") String cover, @JsonProperty("user_id") String user_id,
-			@JsonProperty("book_id") String book_id, @JsonProperty("last_editor_id") String last_editor_id,
-			@JsonProperty("format") String format, @JsonProperty("body_draft") String body_draft,
-			@JsonProperty("body_sheet") String body_sheet, @JsonProperty("body_table") String body_table,
-			@JsonProperty("body_html") String body_html, @JsonProperty("public") int isPublic,
-			@JsonProperty("status") String status, @JsonProperty("likes_count") int likes_count,
-			@JsonProperty("read_count") int read_count, @JsonProperty("comments_count") int comments_count,
-			@JsonProperty("word_count") int word_count, @JsonProperty("created_at") String createdAt,
-			@JsonProperty("updated_at") String updatedAt) {
+	protected record deleteDocResponse(@JsonProperty("data") YuqueDeleteDocService.data data) {
+	}
+
+	// Used to retrieve specific property values from JSON.
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	protected record data(@JsonProperty("id") String id, @JsonProperty("slug") String slug,
+						  @JsonProperty("type") String type, @JsonProperty("description") String description,
+						  @JsonProperty("cover") String cover, @JsonProperty("user_id") String user_id,
+						  @JsonProperty("book_id") String book_id, @JsonProperty("last_editor_id") String last_editor_id,
+						  @JsonProperty("format") String format, @JsonProperty("body_draft") String body_draft,
+						  @JsonProperty("body_sheet") String body_sheet, @JsonProperty("body_table") String body_table,
+						  @JsonProperty("body_html") String body_html, @JsonProperty("public") int isPublic,
+						  @JsonProperty("status") String status, @JsonProperty("likes_count") int likes_count,
+						  @JsonProperty("read_count") int read_count, @JsonProperty("comments_count") int comments_count,
+						  @JsonProperty("word_count") int word_count, @JsonProperty("created_at") String createdAt,
+						  @JsonProperty("updated_at") String updatedAt) {
 	}
 
 }
