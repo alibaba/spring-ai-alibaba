@@ -125,7 +125,7 @@ class BrowserUseToolSpringTest {
 		}
 
 		@Override
-		protected Message addThinkPrompt(List<Message> messages) {
+		protected Message getThinkMessage() {
 			return null;
 		}
 
