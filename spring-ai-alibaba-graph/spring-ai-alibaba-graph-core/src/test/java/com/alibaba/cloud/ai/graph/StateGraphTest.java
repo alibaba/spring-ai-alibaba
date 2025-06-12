@@ -108,16 +108,13 @@ public class StateGraphTest {
 	@Test
 	public void testRunningOneNode() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
-            HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-            keyStrategyHashMap.put("prop1", (o, o2) -> o2);
-            return keyStrategyHashMap;
-        })
-			.addEdge(START, "agent_1")
-			.addNode("agent_1", node_async(state -> {
-				log.info("agent_1\n{}", state);
-				return Map.of("prop1", "test");
-			}))
-			.addEdge("agent_1", END);
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("prop1", (o, o2) -> o2);
+			return keyStrategyHashMap;
+		}).addEdge(START, "agent_1").addNode("agent_1", node_async(state -> {
+			log.info("agent_1\n{}", state);
+			return Map.of("prop1", "test");
+		})).addEdge("agent_1", END);
 
 		CompiledGraph app = workflow.compile();
 
@@ -195,7 +192,6 @@ public class StateGraphTest {
 
 	}
 
-
 	@Test
 	public void testRunnableConfigMetadata() throws Exception {
 
@@ -211,21 +207,16 @@ public class StateGraphTest {
 
 		// Build a workflow with a custom key strategy using ReplaceStrategy for "prop1"
 		var workflow = new StateGraph(() -> {
-            Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-            keyStrategyMap.put("prop1", new ReplaceStrategy());
-            return keyStrategyMap;
-        })
-				.addEdge(START, "agent_1")
-				.addNode("agent_1", agent)
-				.addEdge("agent_1", END);
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("prop1", new ReplaceStrategy());
+			return keyStrategyMap;
+		}).addEdge(START, "agent_1").addNode("agent_1", agent).addEdge("agent_1", END);
 
 		// Compile the workflow into a runnable graph
 		var app = workflow.compile();
 
 		// Configure RunnableConfig with metadata to be passed during execution
-		var config = RunnableConfig.builder()
-				.addMetadata("configData", "test")
-				.build();
+		var config = RunnableConfig.builder().addMetadata("configData", "test").build();
 
 		// Execute the graph with input and configured metadata
 		var result = app.invoke(Map.of("input", "test1"), config);
@@ -322,11 +313,11 @@ public class StateGraphTest {
 	 */
 	private static KeyStrategyFactory createKeyStrategyFactory() {
 		return () -> {
-            Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-            keyStrategyMap.put("steps", (o, o2) -> o2);
-            keyStrategyMap.put("messages", new AppendStrategy());
-            return keyStrategyMap;
-        };
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("steps", (o, o2) -> o2);
+			keyStrategyMap.put("messages", new AppendStrategy());
+			return keyStrategyMap;
+		};
 	}
 
 	/**
@@ -533,11 +524,11 @@ public class StateGraphTest {
 	@Test
 	public void testWithSubSerialize() throws Exception {
 		KeyStrategyFactory keyStrategyFactory = () -> {
-            Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-            keyStrategyMap.put("prop1", (o, o2) -> o2);
-            return keyStrategyMap;
-        };
-        String input = "jackson1";
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("prop1", (o, o2) -> o2);
+			return keyStrategyMap;
+		};
+		String input = "jackson1";
 		PlainTextStateSerializer plainTextStateSerializer;
 		if (input.equals("jackson")) {
 			plainTextStateSerializer = new StateGraph.JacksonSerializer();

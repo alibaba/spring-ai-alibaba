@@ -77,14 +77,13 @@ public class StateGraphMemorySaverTest {
 		return messages.get(messages.size() - 1).equals("tool_calls") ? "tools" : END;
 	};
 
-
 	private KeyStrategyFactory keyStrategyFactory = () -> {
-        Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-        keyStrategyMap.put("agent_1:prop1", new ReplaceStrategy());
-        keyStrategyMap.put("messages", new AppendStrategy());
-        keyStrategyMap.put("steps", new ReplaceStrategy());
-        return keyStrategyMap;
-    };
+		Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+		keyStrategyMap.put("agent_1:prop1", new ReplaceStrategy());
+		keyStrategyMap.put("messages", new AppendStrategy());
+		keyStrategyMap.put("steps", new ReplaceStrategy());
+		return keyStrategyMap;
+	};
 
 	@BeforeAll
 	public static void initLogging() throws IOException {

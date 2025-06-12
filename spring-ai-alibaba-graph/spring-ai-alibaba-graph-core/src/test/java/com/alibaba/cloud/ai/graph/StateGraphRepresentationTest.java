@@ -45,9 +45,9 @@ public class StateGraphRepresentationTest {
 	private OverAllStateFactory overAllStateFactory = () -> new OverAllState();
 
 	private KeyStrategyFactory keyStrategyFactory = () -> {
-        HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-        return new HashMap<>();
-    };
+		HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+		return new HashMap<>();
+	};
 
 	/**
 	 * Test a simple graph structure with three nodes and sequential edges. Verifies the
@@ -373,11 +373,10 @@ public class StateGraphRepresentationTest {
 	void testWithParallelBranchOnStart() throws Exception {
 
 		var workflow = new StateGraph(() -> {
-            HashMap<String, KeyStrategy> objectObjectHashMap = new HashMap<>();
-            objectObjectHashMap.put("messages", new AppendStrategy());
-            return objectObjectHashMap;
-        })
-			.addNode("A1", makeNode("A1"))
+			HashMap<String, KeyStrategy> objectObjectHashMap = new HashMap<>();
+			objectObjectHashMap.put("messages", new AppendStrategy());
+			return objectObjectHashMap;
+		}).addNode("A1", makeNode("A1"))
 			.addNode("A2", makeNode("A2"))
 			.addNode("A3", makeNode("A3"))
 			.addNode("B", makeNode("B"))

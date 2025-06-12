@@ -510,12 +510,11 @@ public class CompiledGraph {
 
 	/**
 	 * Get the last StateSnapshot of the given RunnableConfig.
-	 *
 	 * @param config - the RunnableConfig
 	 * @return the last StateSnapshot of the given RunnableConfig if any
 	 */
-	Optional<StateSnapshot> lastStateOf( RunnableConfig config ) {
-		return getStateHistory( config ).stream().findFirst();
+	Optional<StateSnapshot> lastStateOf(RunnableConfig config) {
+		return getStateHistory(config).stream().findFirst();
 	}
 
 	/**

@@ -82,8 +82,6 @@ public class SubGraphTest {
 			.toList();
 	}
 
-
-
 	/**
 	 * Get an initialized OverAllState instance with predefined key strategies.
 	 * @return Initialized OverAllState object.

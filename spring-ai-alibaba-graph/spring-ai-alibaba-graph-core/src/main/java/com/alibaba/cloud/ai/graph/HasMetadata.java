@@ -21,27 +21,29 @@ import java.util.Optional;
 
 public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 
-    /**
-     * return metadata value for key
-     *
-     * @param key given metadata key
-     * @return metadata value for key if any
-     */
-    Optional<Object> getMetadata(String key );
+	/**
+	 * return metadata value for key
+	 * @param key given metadata key
+	 * @return metadata value for key if any
+	 */
+	Optional<Object> getMetadata(String key);
 
-    class Builder<B extends Builder<B>> {
-        protected Map<String,Object> metadata;
+	class Builder<B extends Builder<B>> {
 
-        @SuppressWarnings("unchecked")
-        public B addMetadata( String key, Object value ) {
-            if( metadata == null ) {
-                // Lazy initialization of metadata map
-                metadata = new HashMap<>();
-            }
+		protected Map<String, Object> metadata;
 
-            metadata.put( key, value);
+		@SuppressWarnings("unchecked")
+		public B addMetadata(String key, Object value) {
+			if (metadata == null) {
+				// Lazy initialization of metadata map
+				metadata = new HashMap<>();
+			}
 
-            return (B)this;
-        };
-    }
+			metadata.put(key, value);
+
+			return (B) this;
+		};
+
+	}
+
 }
