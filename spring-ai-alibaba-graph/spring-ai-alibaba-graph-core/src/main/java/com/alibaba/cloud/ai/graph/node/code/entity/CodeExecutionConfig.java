@@ -36,6 +36,8 @@ public class CodeExecutionConfig {
 
 	private int lastMessagesNumber = 1;
 
+	private String classPath;
+
 	public String getWorkDir() {
 		return workDir;
 	}
@@ -76,7 +78,7 @@ public class CodeExecutionConfig {
 		return containerName;
 	}
 
-	public CodeExecutionConfig setCodeExecutionConfig(String containerName) {
+	public CodeExecutionConfig setContainerName(String containerName) {
 		this.containerName = containerName;
 		return this;
 	}
@@ -88,6 +90,16 @@ public class CodeExecutionConfig {
 	public CodeExecutionConfig setDockerHost(String dockerHost) {
 		this.dockerHost = dockerHost;
 		return this;
+	}
+
+	public String getClassPath() {
+		return classPath;
+	}
+
+	public CodeExecutionConfig setClassPath(String classPath) {
+		this.classPath = classPath;
+		return this;
+
 	}
 
 }
