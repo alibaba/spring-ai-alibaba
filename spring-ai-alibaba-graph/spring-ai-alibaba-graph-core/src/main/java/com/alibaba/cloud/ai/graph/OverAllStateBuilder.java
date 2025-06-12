@@ -16,8 +16,12 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import org.springframework.util.CollectionUtils;
+
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.mongodb.client.model.fill.FillOutputField.value;
 
 /**
  * A builder class for constructing {@link OverAllState} instances with a fluent API.
@@ -95,9 +99,16 @@ public class OverAllStateBuilder {
 	 * @return this for chained method calls
 	 */
 	public OverAllStateBuilder withData(Map<String, Object> dataMap) {
-		if (dataMap != null) {
-			data.putAll(dataMap);
+		if (dataMap == null) {
+			setResume(true);
+			return this;
 		}
+
+		if (CollectionUtils.isEmpty(dataMap)) {
+			return this;
+		}
+
+		data.putAll(dataMap);
 		return this;
 	}
 
