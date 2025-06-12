@@ -28,7 +28,6 @@ import com.alibaba.cloud.ai.util.MarkdownParser;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.springframework.ai.document.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -42,16 +41,12 @@ public class BaseNl2SqlService {
 
 	protected final BaseVectorStoreService vectorStoreService;
 
-	@Autowired
 	protected final BaseSchemaService schemaService;
 
-	@Autowired
 	public final LlmService aiService;
 
-	@Autowired
 	protected final DbAccessor dbAccessor;
 
-	@Autowired
 	protected final DbConfig dbConfig;
 
 	public BaseNl2SqlService(BaseVectorStoreService vectorStoreService, BaseSchemaService schemaService,
@@ -118,12 +113,21 @@ public class BaseNl2SqlService {
 
 		if (content != null && !content.trim().isEmpty()) {
 			String jsonContent = MarkdownParser.extractText(content);
-			List<String> tableList = new Gson().fromJson(jsonContent, new TypeToken<List<String>>() {
-			}.getType());
-
-			Set<String> selectedTables = tableList.stream().map(String::toLowerCase).collect(Collectors.toSet());
-
-			schemaDTO.getTable().removeIf(table -> !selectedTables.contains(table.getName().toLowerCase()));
+			List<String> tableList;
+			try {
+				tableList = new Gson().fromJson(jsonContent, new TypeToken<List<String>>() {
+				}.getType());
+			}
+			catch (Exception e) {
+				// 某些场景会提示异常，如：java.lang.IllegalStateException:
+				// 请提供数据库schema信息以便我能够根据您的问题筛选出相关的表。
+				// TODO 目前异常接口直接返回500，未返回向异常常信息，后续优化将异常返回给用户
+				throw new IllegalStateException(jsonContent);
+			}
+			if (tableList != null && !tableList.isEmpty()) {
+				Set<String> selectedTables = tableList.stream().map(String::toLowerCase).collect(Collectors.toSet());
+				schemaDTO.getTable().removeIf(table -> !selectedTables.contains(table.getName().toLowerCase()));
+			}
 		}
 		return schemaDTO;
 	}
