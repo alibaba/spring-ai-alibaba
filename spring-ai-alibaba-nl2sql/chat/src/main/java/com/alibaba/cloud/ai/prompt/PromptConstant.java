@@ -19,7 +19,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 
 public class PromptConstant {
 
-	public static final String INIT_REWRITE_WITH_AND_EVIDENCE_CLARIFY_PROMPT_STRING = "你是一名数据分析专家，需要从用户和助理的对话中确定用户最新需求的需求类型和需求内容，你需要遵循：\n"
+	public static final String INIT_REWRITE_PROMPT_STRING = "你是一名数据分析专家，需要从用户和助理的对话中确定用户最新需求的需求类型和需求内容，你需要遵循：\n"
 			+ "1. 判断用户的需求类型请从【需求类型】中进行选择。\n" + "2. 需求内容的生成，请严格按照语种类型生成，如果语种类型为《中文》，则以中文生成需求内容，如果语种类型为《英文》，则以英文生成需求内容。\n"
 			+ "3. 需求内容的生成，需要进行必要的继承上文内容替换改写，特别是对<最新>中出现的指代（如这、这个、那等）进行名词替换；注意不要遗漏相关信息，但不要改变用户问题的原意，不要过度的解释说明，不需要再重复输出用户的历史需求。\n"
 			+ "4. 当用户<最新>输入是回答助理的问题时，如果基于用户的回答已经能够明确意图，可以直接生成需求内容。当需要澄清时，需求内容为需要向用户反问的问题.\n" + "\n" + "【需求类型】\n"
@@ -90,8 +90,8 @@ public class PromptConstant {
 			+ "\n" + "【多轮输入】\n" + "{multi_turn}\n" + "\n" + "【参考信息】\n" + "{evidence}\n" + "【输出】\n" + "需求类型：\n"
 			+ "语种类型：\n" + "需求内容：";
 
-	public static final PromptTemplate INIT_REWRITE_WITH_CLARIFY_AND_EVIDENCE_PROMPT_TEMPLATE = new PromptTemplate(
-			INIT_REWRITE_WITH_AND_EVIDENCE_CLARIFY_PROMPT_STRING);
+	public static final PromptTemplate INIT_REWRITE_PROMPT_TEMPLATE = new PromptTemplate(
+			INIT_REWRITE_PROMPT_STRING);
 
 	public static final String QUESTION_TO_KEYWORDS_PROMPT_STRING = "将下述问题的关键语料抽取出来，直接以list形式输出，不要分析。\n" + "示例如下：\n"
 			+ "【问题】\n" + "查询2024年8月在北京，一级标签为“未成单”的人数。\n" + "【关键语料】\n"
