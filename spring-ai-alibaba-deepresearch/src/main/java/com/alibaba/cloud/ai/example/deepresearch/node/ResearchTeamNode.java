@@ -45,12 +45,14 @@ public class ResearchTeamNode implements NodeAction {
 
 		Plan curPlan = StateUtil.getPlan(state);
 		// 判断steps里的每个step都有执行结果
-		if (areAllExecutionResultsPresent(curPlan)) {
-			updated.put("research_team_next_node", nextStep);
-			logger.info("research_team node -> {} node", nextStep);
-			return updated;
+		if (!areAllExecutionResultsPresent(curPlan)) {
+			nextStep = "parallel_executor";
 		}
+		updated.put("research_team_next_node", nextStep);
+		logger.info("research_team node -> {} node", nextStep);
+		return updated;
 
+/*
 		// todo 异步 + 并行执行Step
 		for (Plan.Step step : curPlan.getSteps()) {
 			if (StringUtils.hasText(step.getExecutionRes())) {
@@ -71,7 +73,9 @@ public class ResearchTeamNode implements NodeAction {
 		}
 		updated.put("research_team_next_node", nextStep);
 		logger.info("research_team node -> {} node", nextStep);
-		return updated;
+
+
+		*/
 	}
 
 	public boolean areAllExecutionResultsPresent(Plan plan) {

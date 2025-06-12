@@ -23,6 +23,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.Resource;
 
 import java.nio.charset.Charset;
@@ -44,6 +45,7 @@ public class AgentsConfiguration {
 	 */
 	@SneakyThrows
 	@Bean
+	@Scope("prototype")
 	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset()))
 			.defaultToolNames("tavilySearch")
@@ -59,6 +61,7 @@ public class AgentsConfiguration {
 	 */
 	@SneakyThrows
 	@Bean
+	@Scope("prototype")
 	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties) {
 		return chatClientBuilder.defaultSystem(coderPrompt.getContentAsString(Charset.defaultCharset()))
 			.defaultTools(new PythonReplTool(coderProperties))

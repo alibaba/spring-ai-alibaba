@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
@@ -36,6 +37,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
@@ -113,8 +115,14 @@ public class DeepResearchConfiguration {
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
-			.addNode("researcher", node_async(new ResearcherNode(researchAgent)))
-			.addNode("coder", node_async(new CoderNode(coderAgent)))
+			//.addNode("researcher", node_async(new ResearcherNode(researchAgent)))
+			.addNode("parallel_executor", node_async(new ParallelExecutorNode()))
+			.addNode("researcher_0", node_async(new ResearcherNode(researchAgent, "0")))
+			.addNode("researcher_1", node_async(new ResearcherNode(researchAgent, "1")))
+			.addNode("researcher_2", node_async(new ResearcherNode(researchAgent, "2")))
+			.addNode("coder_0", node_async(new CoderNode(coderAgent)))
+			.addNode("coder_1", node_async(new CoderNode(coderAgent)))
+			.addNode("coder_2", node_async(new CoderNode(coderAgent)))
 			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))))
 
 			.addEdge(START, "coordinator")
@@ -127,10 +135,19 @@ public class DeepResearchConfiguration {
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
 					Map.of("planner", "planner", "research_team", "research_team", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
-					Map.of("reporter", "reporter", "researcher", "researcher", "coder", "coder"))
-			.addConditionalEdges("researcher", edge_async(new ResearcherDispatcher()),
-					Map.of("research_team", "research_team"))
-			.addConditionalEdges("coder", edge_async(new CoderDispatcher()), Map.of("research_team", "research_team"))
+					Map.of("reporter", "reporter", "parallel_executor", "parallel_executor", END, END))
+			.addEdge("parallel_executor", "researcher_0")
+			.addEdge("parallel_executor", "researcher_1")
+			.addEdge("parallel_executor", "researcher_2")
+			.addEdge("parallel_executor", "coder_0")
+			.addEdge("parallel_executor", "coder_1")
+			.addEdge("parallel_executor", "coder_2")
+			.addEdge("researcher_0", "research_team")
+			.addEdge("researcher_1", "research_team")
+			.addEdge("researcher_2", "research_team")
+			.addEdge("coder_0", "research_team")
+			.addEdge("coder_1", "research_team")
+			.addEdge("coder_2", "research_team")
 			.addEdge("reporter", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,

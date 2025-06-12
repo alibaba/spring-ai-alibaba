@@ -41,33 +41,42 @@ public class ResearcherNode implements NodeAction {
 
 	private final ChatClient researchAgent;
 
-	public ResearcherNode(ChatClient researchAgent) {
+	private final String executorNodeId;
+
+	public ResearcherNode(ChatClient researchAgent, String executorNodeId) {
 		this.researchAgent = researchAgent;
+		this.executorNodeId = executorNodeId;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("researcher node is running.");
+		logger.info("researcher node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
 		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Map<String, Object> updated = new HashMap<>();
-
-		Plan.Step unexecutedStep = null;
+		String executorNodeName = "researcher_" + executorNodeId;
+		Plan.Step assignedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
-			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())) {
-				unexecutedStep = step;
+			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())
+					&& step.getExecutionStatus().equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + executorNodeName)) {
+				assignedStep = step;
 				break;
 			}
 		}
-		if (unexecutedStep == null) {
+
+		// 如果没有找到分配的步骤，直接返回
+		if (assignedStep == null) {
 			logger.info("all researcher node is finished.");
 			return updated;
 		}
 
+		// 标记步骤为正在执行
+		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + executorNodeName);
+
 		// 添加任务消息
 		List<Message> messages = new ArrayList<>();
 		Message taskMessage = new UserMessage(String.format("# Current Task\n\n##title\n\n%s\n\n##description\n\n%s",
-				unexecutedStep.getTitle(), unexecutedStep.getDescription()));
+				assignedStep.getTitle(), assignedStep.getDescription()));
 		messages.add(taskMessage);
 
 		// 添加研究者特有的引用提醒
@@ -79,11 +88,12 @@ public class ResearcherNode implements NodeAction {
 		// 调用agent
 		var streamResult = researchAgent.prompt().messages(messages).stream().chatResponse();
 		var generator = StreamingChatGenerator.builder()
-			.startingNode("researcher_llm_stream")
-			.startingState(state)
-			.mapResult(response -> Map.of("researcher_content",
-					Objects.requireNonNull(response.getResult().getOutput().getText())))
-			.build(streamResult);
+				.startingNode("researcher_llm_stream")
+				.startingState(state)
+				.mapResult(response -> Map.of("researcher_content",
+						Objects.requireNonNull(response.getResult().getOutput().getText())))
+				.build(streamResult);
+		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
 
 		return Map.of("researcher_content", generator);
 	}
