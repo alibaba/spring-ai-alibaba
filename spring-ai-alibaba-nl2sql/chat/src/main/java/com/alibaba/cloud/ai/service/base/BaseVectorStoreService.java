@@ -15,12 +15,20 @@
  */
 package com.alibaba.cloud.ai.service.base;
 
+import com.alibaba.cloud.ai.dbconnector.DbAccessor;
+import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
+import com.alibaba.cloud.ai.dbconnector.bo.ForeignKeyInfoBO;
+import com.alibaba.cloud.ai.dbconnector.bo.TableInfoBO;
+import com.alibaba.cloud.ai.request.DeleteRequest;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.request.SearchRequest;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
