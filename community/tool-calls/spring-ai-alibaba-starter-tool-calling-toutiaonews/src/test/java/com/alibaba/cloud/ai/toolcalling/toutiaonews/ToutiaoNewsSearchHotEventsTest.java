@@ -8,20 +8,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.logging.Logger;
 
-@SpringBootTest(classes = {CommonToolCallAutoConfiguration.class, ToutiaoNewsAutoConfiguration.class})
+@SpringBootTest(classes = { CommonToolCallAutoConfiguration.class, ToutiaoNewsAutoConfiguration.class })
 @DisplayName("Toutiao News Test")
 class ToutiaoNewsSearchHotEventsTest {
-    @Autowired
-    private ToutiaoNewsSearchHotEventsService toutiaoNewsSearchHotEventsService;
 
-    private static final Logger log = Logger.getLogger(ToutiaoNewsSearchHotEventsTest.class.getName());
+	@Autowired
+	private ToutiaoNewsSearchHotEventsService toutiaoNewsSearchHotEventsService;
 
-    @Test
-    @DisplayName("Tool-Calling Test")
-    public void testGetHotEventFromToutiaoNews() {
-        var resp = toutiaoNewsSearchHotEventsService.apply(new ToutiaoNewsSearchHotEventsService.Request());
-        assert resp != null && resp.events() != null;
-        log.info("results: " + resp.events());
-    }
+	private static final Logger log = Logger.getLogger(ToutiaoNewsSearchHotEventsTest.class.getName());
+
+	@Test
+	@DisplayName("Tool-Calling Test")
+	public void testGetHotEventFromToutiaoNews() {
+		var resp = toutiaoNewsSearchHotEventsService.apply(new ToutiaoNewsSearchHotEventsService.Request());
+		assert resp != null && resp.events() != null;
+		log.info("results: " + resp.events());
+	}
 
 }
