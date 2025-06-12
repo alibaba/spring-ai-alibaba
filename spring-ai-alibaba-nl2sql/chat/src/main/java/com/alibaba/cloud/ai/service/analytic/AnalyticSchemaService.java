@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service;
+package com.alibaba.cloud.ai.service.analytic;
 
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
@@ -30,13 +30,12 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @Service
-public class SchemaService extends BaseSchemaService {
+public class AnalyticSchemaService extends BaseSchemaService {
 
 	@Autowired
-	public SchemaService(DbConfig dbConfig, Gson gson,
-			@Qualifier("vectorStoreService") BaseVectorStoreService vectorStoreService) {
-		super(dbConfig, gson);
-		setVectorStoreService(vectorStoreService);
+	public AnalyticSchemaService(DbConfig dbConfig, Gson gson,
+			@Qualifier("analyticVectorStoreService") BaseVectorStoreService vectorStoreService) {
+		super(dbConfig, gson, vectorStoreService);
 	}
 
 }
