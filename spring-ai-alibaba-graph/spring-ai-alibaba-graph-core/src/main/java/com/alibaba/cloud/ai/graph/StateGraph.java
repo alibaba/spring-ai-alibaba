@@ -49,7 +49,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import org.commonmark.node.Nodes;
 
 /** Represents a state graph with nodes and edges. */
 public class StateGraph {
