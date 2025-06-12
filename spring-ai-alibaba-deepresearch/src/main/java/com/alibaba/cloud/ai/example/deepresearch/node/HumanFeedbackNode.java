@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -35,7 +34,7 @@ import java.util.Map;
 
 public class HumanFeedbackNode implements NodeAction {
 
-	private static final Logger logger = LoggerFactory.getLogger(PlannerNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(HumanFeedbackNode.class);
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
@@ -46,43 +45,25 @@ public class HumanFeedbackNode implements NodeAction {
 		// auto_accepted、yes、no 迭代次数都+1
 		updated.put("plan_iterations", StateUtil.getPlanIterations(state) + 1);
 
-		if (!StateUtil.getAutoAcceptedPlan(state)) {
-			// todo 这里改为接口形式
-			logger.info("Do you accept the plan? [y/n]：");
-			interrupt(state);
+		Map<String, Object> feedBackData = state.humanFeedback().data();
+		boolean feedback = (boolean) feedBackData.getOrDefault("feed_back", true);
 
-			Map<String, Object> feedBackData = state.humanFeedback().data();
-			String feedback = feedBackData.getOrDefault("feed_back", "n").toString();
+		if (!feedback) {
+			nextStep = "planner";
+			updated.put("human_next_node", nextStep);
 
-			if (StringUtils.hasLength(feedback) && "n".equals(feedback)) {
-				nextStep = "planner";
-				updated.put("human_next_node", nextStep);
-
-				String feedbackContent = feedBackData.getOrDefault("feed_back_content", "").toString();
+			String feedbackContent = feedBackData.getOrDefault("feed_back_content", "").toString();
+			if (StringUtils.hasLength(feedbackContent)) {
 				updated.put("feed_back_content", feedbackContent);
-
 				logger.info("Human feedback content: {}", feedbackContent);
-				state.withoutResume();
-				logger.info("human_feedback node -> {} node", nextStep);
-				return updated;
 			}
-			else if (StringUtils.hasLength(feedback) && "y".equals(feedback)) {
-				logger.info("Plan is accepted by user.");
-			}
-			else {
-				throw new Exception(String.format("Interrupt value of %s is not supported", feedback));
-			}
+			state.withoutResume();
 		}
-
-		updated.put("human_next_node", nextStep);
+		else {
+			updated.put("human_next_node", nextStep);
+		}
 		logger.info("human_feedback node -> {} node", nextStep);
 		return updated;
-	}
-
-	private void interrupt(OverAllState state) throws GraphInterruptException {
-		if (state.humanFeedback() == null || !state.isResume()) {
-			throw new GraphInterruptException("interrupt");
-		}
 	}
 
 }

@@ -18,12 +18,12 @@ package com.alibaba.cloud.ai.example.deepresearch.controller;
 
 import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
 import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
-import com.alibaba.cloud.ai.example.deepresearch.model.ChatRequest;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
+import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import org.bsc.async.AsyncGenerator;
@@ -55,7 +55,9 @@ public class DeepResearchController {
 
 	@Autowired
 	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph) throws GraphStateException {
-		this.compiledGraph = stateGraph.compile();
+		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+		this.compiledGraph = stateGraph
+			.compile(CompileConfig.builder().saverConfig(saverConfig).interruptBefore("human_feedback").build());
 	}
 
 	/**
@@ -92,25 +94,13 @@ public class DeepResearchController {
 			.doOnError(e -> logger.error("Error occurred during streaming", e));
 	}
 
-	@PostMapping("/chat")
-	public Map<String, Object> chat(@RequestBody(required = false) ChatRequest chatRequest) {
-		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
-		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
+	@PostMapping("/chat/resume")
+	public Map<String, Object> resume(@RequestBody(required = false) FeedbackRequest humanFeedback) {
+
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(humanFeedback.threadId()).build();
 		Map<String, Object> objectMap = new HashMap<>();
-		ChatRequestProcess.initializeObjectMap(chatRequest, objectMap);
-
-		var resultFuture = compiledGraph.invoke(objectMap, runnableConfig);
-		return resultFuture.get().data();
-	}
-
-	@GetMapping("/chat/resume")
-	public Map<String, Object> resume(
-			@RequestParam(value = "thread_id", required = false, defaultValue = "__default__") String threadId,
-			@RequestParam(value = "feed_back", required = true) String feedBack,
-			@RequestParam(value = "feed_back_content", required = false) String feedBackContent) {
-
-		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(threadId).build();
-		Map<String, Object> objectMap = ChatRequestProcess.getStringObjectMap(feedBack, feedBackContent);
+		objectMap.put("feed_back", humanFeedback.feedBack());
+		objectMap.put("feed_back_content", humanFeedback.feedBackContent());
 
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
 		OverAllState state = stateSnapshot.state();

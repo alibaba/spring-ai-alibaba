@@ -16,6 +16,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.creator;
 
+import java.util.List;
+
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
@@ -30,7 +32,7 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
-import java.util.List;
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
  * 负责创建执行计划的类
@@ -69,31 +71,68 @@ public class PlanCreator {
 		try {
 			// 构建代理信息
 			String agentsInfo = buildAgentsInfo(agents);
-			ExecutionPlan currentPlan = null;
 			// 生成计划提示
-			String planPrompt = generatePlanPrompt(context.getUserRequest(), agentsInfo, planId);
+			String planPrompt = generatePlanPrompt(context.getUserRequest(), agentsInfo);
 
-			// 使用 LLM 生成计划
-			PromptTemplate promptTemplate = new PromptTemplate(planPrompt);
-			Prompt prompt = promptTemplate.create();
+			ExecutionPlan executionPlan = null;
+			String outputText = null;
 
-			ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
-				.prompt(prompt)
-				.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
-			if (useMemory) {
-				requestSpec.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
+			// 重试机制：最多尝试3次直到获取到有效的执行计划
+			int maxRetries = 3;
+			for (int attempt = 1; attempt <= maxRetries; attempt++) {
+				try {
+					log.info("Attempting to create plan, attempt: {}/{}", attempt, maxRetries);
+
+					// 使用 LLM 生成计划
+					PromptTemplate promptTemplate = new PromptTemplate(planPrompt);
+					Prompt prompt = promptTemplate.create();
+
+					ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
+						.prompt(prompt)
+						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
+					if (useMemory) {
+						requestSpec
+							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
+						requestSpec
+							.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
+					}
+					ChatClient.CallResponseSpec response = requestSpec.call();
+					outputText = response.chatResponse().getResult().getOutput().getText();
+
+					executionPlan = planningTool.getCurrentPlan();
+
+					if (executionPlan != null) {
+						log.info("Plan created successfully on attempt {}: {}", attempt, executionPlan);
+						break;
+					}
+					else {
+						log.warn("Plan creation attempt {} failed: planningTool.getCurrentPlan() returned null",
+								attempt);
+						if (attempt == maxRetries) {
+							log.error("Failed to create plan after {} attempts", maxRetries);
+						}
+					}
+				}
+				catch (Exception e) {
+					log.warn("Exception during plan creation attempt {}: {}", attempt, e.getMessage());
+					if (attempt == maxRetries) {
+						throw e;
+					}
+				}
 			}
-			ChatClient.CallResponseSpec response = requestSpec.call();
-			String outputText = response.chatResponse().getResult().getOutput().getText();
+
+			ExecutionPlan currentPlan;
 			// 检查计划是否创建成功
-			if (planId.equals(planningTool.getCurrentPlanId())) {
+			if (executionPlan != null) {
 				currentPlan = planningTool.getCurrentPlan();
-				log.info("Plan created successfully: {}", currentPlan);
+				currentPlan.setPlanId(planId);
 				currentPlan.setPlanningThinking(outputText);
 			}
 			else {
+				log.warn("Creating fallback plan for planId: {}", planId);
 				currentPlan = new ExecutionPlan(planId, "answer question without plan");
 			}
+
 			context.setPlan(currentPlan);
 
 		}
@@ -128,7 +167,7 @@ public class PlanCreator {
 	 * @param planId 计划ID
 	 * @return 格式化的提示字符串
 	 */
-	private String generatePlanPrompt(String request, String agentsInfo, String planId) {
+	private String generatePlanPrompt(String request, String agentsInfo) {
 		return """
 				## 介绍
 				我是 jmanus，旨在帮助用户完成各种任务。我擅长处理问候和闲聊，以及对复杂任务做细致的规划。我的设计目标是提供帮助、信息和多方面的支持。
@@ -156,11 +195,11 @@ public class PlanCreator {
 				# 需要完成的任务：
 				%s
 
-				你可以使用规划工具来帮助创建计划，使用 %s 作为计划ID。
+				你可以使用规划工具来帮助创建计划。
 
 				重要提示：计划中的每个步骤都必须以[AGENT]开头，代理名称必须是上述列出的可用代理之一。
 				例如："[BROWSER_AGENT] 搜索相关信息" 或 "[DEFAULT_AGENT] 处理搜索结果"
-				""".formatted(agentsInfo, request, planId);
+				""".formatted(agentsInfo, request);
 	}
 
 }

@@ -16,21 +16,25 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
 
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author yingzi
@@ -77,12 +81,17 @@ public class ReporterNode implements NodeAction {
 		messages.add(new UserMessage(currentPlan.getThought()));
 
 		logger.debug("reporter node messages: {}", messages);
-		Flux<String> StreamResult = chatClient.prompt().messages(messages).stream().content();
-		String result = StreamResult.reduce((acc, next) -> acc + next).block();
 
-		logger.info("final report: {}", result);
+		var streamResult = chatClient.prompt().messages(messages).stream().chatResponse();
+
+		var generator = StreamingChatGenerator.builder()
+			.startingNode("reporter_llm_stream")
+			.startingState(state)
+			.mapResult(response -> Map.of("final_report",
+					Objects.requireNonNull(response.getResult().getOutput().getText())))
+			.build(streamResult);
 		Map<String, Object> resultMap = new HashMap<>();
-		resultMap.put("final_report", result);
+		resultMap.put("final_report", generator);
 		return resultMap;
 	}
 
