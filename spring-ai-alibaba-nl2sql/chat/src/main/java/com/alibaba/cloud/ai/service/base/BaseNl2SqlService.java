@@ -112,6 +112,7 @@ public class BaseNl2SqlService {
 	}
 
 	public String generateSql(List<String> evidenceList, String query, SchemaDTO schemaDTO) throws Exception {
+		// TODO 时间处理暂时未应用
 		String dateTimeExtractPrompt = PromptHelper.buildDateTimeExtractPrompt(query);
 		String content = aiService.call(dateTimeExtractPrompt);
 		List<String> dateTimeList = new ArrayList<>();
@@ -132,7 +133,6 @@ public class BaseNl2SqlService {
 	}
 
 	public SchemaDTO fineSelect(SchemaDTO schemaDTO, String query, List<String> evidenceList) {
-		// 提取出想要的表名
 		String prompt = buildMixSelectorPrompt(evidenceList, query, schemaDTO);
 		String content = aiService.call(prompt);
 
