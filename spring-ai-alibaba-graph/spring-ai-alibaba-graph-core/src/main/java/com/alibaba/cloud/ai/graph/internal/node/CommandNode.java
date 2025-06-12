@@ -26,13 +26,20 @@ public class CommandNode extends Node {
 
 	private final Map<String, String> mappings;
 
+	private final AsyncCommandAction action;
+
 	public CommandNode(String id, AsyncCommandAction action, Map<String, String> mappings) {
 		super(id, (config) -> new AsyncCommandNodeActionWithConfig(action, mappings));
 		this.mappings = mappings;
+		this.action = action;
 	}
 
 	public Map<String, String> getMappings() {
 		return mappings;
+	}
+
+	public AsyncCommandAction getAction() {
+		return action;
 	}
 
 	public record AsyncCommandNodeActionWithConfig(AsyncCommandAction action,

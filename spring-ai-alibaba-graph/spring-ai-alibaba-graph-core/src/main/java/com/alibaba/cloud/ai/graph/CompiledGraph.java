@@ -20,9 +20,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
 
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.GraphInitKeyErrorException;
@@ -977,9 +975,22 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 			//
 			// Process nodes
 			//
-			sgWorkflow.nodes.elements.stream()
-				.map(n -> n.withIdUpdated(subgraphNode::formatId))
-				.forEach(nodes.elements::add);
+			sgWorkflow.nodes.elements.stream().map(n -> {
+				if (n instanceof CommandNode commandNode) {
+					Map<String, String> mappings = commandNode.getMappings();
+					HashMap<String, String> newMappings = new HashMap<>();
+					mappings.forEach((key, value) -> {
+						newMappings.put(key, subgraphNode.formatId(value));
+					});
+					return new CommandNode(subgraphNode.formatId(n.id()),
+							AsyncCommandAction.node_async((state, config1) -> {
+								Command command = commandNode.getAction().apply(state, config1).join();
+								String NewGoToNode = subgraphNode.formatId(command.gotoNode());
+								return new Command(NewGoToNode, command.update());
+							}), newMappings);
+				}
+				return n.withIdUpdated(subgraphNode::formatId);
+			}).forEach(nodes.elements::add);
 		}
 
 		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter);
