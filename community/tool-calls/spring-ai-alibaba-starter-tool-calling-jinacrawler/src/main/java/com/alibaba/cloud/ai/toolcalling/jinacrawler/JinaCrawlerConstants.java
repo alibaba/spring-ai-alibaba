@@ -30,30 +30,30 @@ public final class JinaCrawlerConstants {
 	/**
 	 * Jina Reader Request headers.
 	 */
-	public static final String X_LOCALE = "X-Locale";
+	static final String X_LOCALE = "X-Locale";
 
-	public static final String X_NO_CACHE = "X-No-Cache";
+	static final String X_NO_CACHE = "X-No-Cache";
 
-	public static final String X_PROXY_URL = "X-Proxy-Url";
+	static final String X_PROXY_URL = "X-Proxy-Url";
 
-	public static final String X_REMOVE_SELECTOR = "X-Remove-Selector";
+	static final String X_REMOVE_SELECTOR = "X-Remove-Selector";
 
-	public static final String X_RETAIN_IMAGES = "X-Retain-Images";
+	static final String X_RETAIN_IMAGES = "X-Retain-Images";
 
-	public static final String X_SET_COOKIE = "X-Set-Cookie";
+	static final String X_SET_COOKIE = "X-Set-Cookie";
 
-	public static final String X_TARGET_SELECTOR = "X-Target-Selector";
+	static final String X_TARGET_SELECTOR = "X-Target-Selector";
 
-	public static final String X_WAIT_FOR_SELECTOR = "X-Wait-For-Selector";
+	static final String X_WAIT_FOR_SELECTOR = "X-Wait-For-Selector";
 
-	public static final String X_WITH_GENERATED_ALT = "X-With-Generated-Alt";
+	static final String X_WITH_GENERATED_ALT = "X-With-Generated-Alt";
 
-	public static final String X_WITH_IFRAME = "X-With-Iframe";
+	static final String X_WITH_IFRAME = "X-With-Iframe";
 
-	public static final String X_WITH_IMAGES_SUMMARY = "X-With-Images-Summary";
+	static final String X_WITH_IMAGES_SUMMARY = "X-With-Images-Summary";
 
-	public static final String X_WITH_LINKS_SUMMARY = "X-With-Links-Summary";
+	static final String X_WITH_LINKS_SUMMARY = "X-With-Links-Summary";
 
-	public static final String X_WITH_SHADOW_DOM = "X-With-Shadow-Dom";
+	static final String X_WITH_SHADOW_DOM = "X-With-Shadow-Dom";
 
 }

@@ -37,7 +37,7 @@ public class JinaCrawlerAutoConfiguration {
 
 	@Bean(name = JinaCrawlerConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
-	@Description("")
+	@Description("Jina Reader Service Plugin.")
 	public JinaCrawlerService jinaCrawler(JsonParseTool jsonParseTool, JinaCrawlerProperties jinaProperties) {
 		Consumer<HttpHeaders> consumer = (httpHeaders) -> {
 			httpHeaders.add("Accept", jinaProperties.getAccept().toString());

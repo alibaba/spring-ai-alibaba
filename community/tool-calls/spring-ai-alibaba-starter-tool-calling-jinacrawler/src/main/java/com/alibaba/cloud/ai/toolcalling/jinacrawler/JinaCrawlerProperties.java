@@ -169,7 +169,7 @@ public class JinaCrawlerProperties extends CommonToolCallProperties {
 
 	@Override
 	public String toString() {
-		return "CrawlerJinaProperties{" + "token='" + "**********" + '\'' + ", enabled=" + super.isEnabled()
+		return "JinaCrawlerProperties{" + "api-key='" + "**********" + '\'' + ", enabled=" + super.isEnabled()
 				+ ", targetSelector='" + targetSelector + '\'' + ", waitForSelector='" + waitForSelector + '\''
 				+ ", removeSelector='" + removeSelector + '\'' + ", retainImages='" + retainImages + '\''
 				+ ", withLinksSummary=" + withLinksSummary + ", withImagesSummary=" + withImagesSummary
