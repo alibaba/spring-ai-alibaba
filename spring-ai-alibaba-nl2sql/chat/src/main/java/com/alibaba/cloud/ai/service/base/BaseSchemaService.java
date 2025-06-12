@@ -185,20 +185,21 @@ public abstract class BaseSchemaService {
 		int index = 0;
 
 		while (result.size() < maxCount) {
-			boolean added = false;
+			boolean completed = true;
 			for (List<Document> docs : columnDocumentList) {
 				if (index < docs.size()) {
 					Document doc = docs.get(index);
 					String id = doc.getId();
 					if (!result.containsKey(id)) {
 						result.put(id, doc);
-						added = true;
 					}
+					completed = false;
 				}
 			}
 			index++;
-			if (!added)
+			if (completed) {
 				break;
+			}
 		}
 		return result;
 	}
