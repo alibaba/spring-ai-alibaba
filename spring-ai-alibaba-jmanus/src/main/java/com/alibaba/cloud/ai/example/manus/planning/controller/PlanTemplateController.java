@@ -39,7 +39,6 @@ import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -72,11 +71,11 @@ public class PlanTemplateController {
 	/**
 	 * 将计划对象序列化为JSON字符串
 	 * @param plan 计划对象
-	 * @return JSON字符串
+	 * @return 格式化的JSON字符串（带缩进和换行）
 	 * @throws Exception 序列化失败时抛出异常
 	 */
 	private String planToJson(PlanInterface plan) throws Exception {
-		return objectMapper.writeValueAsString(plan);
+		return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(plan);
 	}
 
 	/**
@@ -223,11 +222,14 @@ public class PlanTemplateController {
 			ExecutionContext context = new ExecutionContext();
 			context.setPlanId(newPlanId);
 			context.setNeedSummary(true); // 需要生成摘要
-
+			
 			try {
-				ExecutionPlan plan = ExecutionPlan.fromJson(planJson, newPlanId);
-
-				// 设置URL参数到ExecutionPlan中
+				// 使用 Jackson 反序列化 JSON 为 PlanInterface 对象（支持多态）
+				PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
+				
+				// 设置新的计划ID，覆盖JSON中的ID
+				plan.setPlanId(newPlanId);
+				// 设置URL参数到计划中
 				if (rawParam != null && !rawParam.isEmpty()) {
 					logger.info("设置执行参数到计划中: {}", rawParam);
 					plan.setExecutionParams(rawParam);

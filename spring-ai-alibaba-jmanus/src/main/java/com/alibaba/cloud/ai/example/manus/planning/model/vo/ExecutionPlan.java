@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * 计划实体类，用于管理执行计划的相关信息
@@ -26,10 +27,31 @@ import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 public class ExecutionPlan extends AbstractExecutionPlan {
 
 	private List<ExecutionStep> steps;
+	
+	/**
+	 * 计划类型，用于 Jackson 多态反序列化
+	 */
+	private String planType = "simple";
+
+	/**
+	 * 默认构造函数 - Jackson 反序列化需要
+	 */
+	public ExecutionPlan() {
+		super();
+		this.steps = new ArrayList<>();
+	}
 
 	public ExecutionPlan(String planId, String title) {
 		super(planId, title);
 		this.steps = new ArrayList<>();
+	}
+	@JsonIgnore
+	public String getPlanType() {
+		return planType;
+	}
+
+	public void setPlanType(String planType) {
+		this.planType = planType;
 	}
 
 	// ExecutionPlan 特有的方法
@@ -41,7 +63,7 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 	public void setSteps(List<ExecutionStep> steps) {
 		this.steps = steps;
 	}
-
+	@JsonIgnore
 	public int getStepCount() {
 		return steps.size();
 	}
@@ -49,11 +71,13 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 	// AbstractExecutionPlan 抽象方法的实现
 
 	@Override
+	@JsonIgnore
 	public List<ExecutionStep> getAllSteps() {
 		return new ArrayList<>(steps);
 	}
 
 	@Override
+	@JsonIgnore
 	public int getTotalStepCount() {
 		return getStepCount();
 	}
@@ -69,6 +93,7 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	@Override
+	@JsonIgnore
 	public boolean isEmpty() {
 		return steps.isEmpty();
 	}
@@ -78,21 +103,19 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 		steps.clear();
 	}
 
-
-
 	// state.append("全局目标 (全局目标只是一个方向性指导，你在当前请求内不需要完成全局目标，只需要关注当前正在执行的步骤即可): ")
 	// .append("\n")
 	// .append(title)
 	// .append("\n");
 	@Override
+	@JsonIgnore
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
 
 		state.append("\n- 执行参数: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
 			state.append(executionParams).append("\n\n");
-		}
-		else {
+		} else {
 			state.append("未提供执行参数。\n\n");
 		}
 
@@ -104,9 +127,11 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 
 	/**
 	 * 获取步骤执行状态的字符串格式
+	 * 
 	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
 	 * @return 格式化的步骤执行状态字符串
 	 */
+	@JsonIgnore
 	public String getStepsExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
 		boolean foundInProgress = false;
@@ -139,15 +164,15 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 			};
 
 			state.append(i + 1)
-				.append(".  **步骤 ")
-				.append(i)
-				.append(":**\n")
-				.append("    *   **状态:** ")
-				.append(symbol)
-				.append("\n")
-				.append("    *   **操作:** ")
-				.append(step.getStepRequirement())
-				.append("\n");
+					.append(".  **步骤 ")
+					.append(i)
+					.append(":**\n")
+					.append("    *   **状态:** ")
+					.append(symbol)
+					.append("\n")
+					.append("    *   **操作:** ")
+					.append(step.getStepRequirement())
+					.append("\n");
 
 			String result = step.getResult();
 			if (result != null && !result.isEmpty()) {
@@ -160,58 +185,13 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 
 	/**
 	 * 获取所有步骤执行状态的字符串格式（兼容旧版本）
+	 * 
 	 * @return 格式化的步骤执行状态字符串
 	 */
+	@JsonIgnore
 	public String getStepsExecutionStateStringFormat() {
 		return getStepsExecutionStateStringFormat(false);
 	}
-
-
-	/**
-	 * 从JSON字符串解析并创建ExecutionPlan对象
-	 * @param planJson JSON字符串
-	 * @param newPlanId 新的计划ID（可选，如果提供将覆盖JSON中的planId）
-	 * @return 解析后的ExecutionPlan对象
-	 * @throws Exception 如果解析失败则抛出异常
-	 */
-	public static ExecutionPlan fromJson(String planJson, String newPlanId) throws Exception {
-		com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
-		com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(planJson);
-
-		// 获取计划标题
-		String title = rootNode.has("title") ? rootNode.get("title").asText() : "来自模板的计划";
-
-		// 使用新的计划ID或从JSON中获取
-		String planId = (newPlanId != null && !newPlanId.isEmpty()) ? newPlanId
-				: (rootNode.has("planId") ? rootNode.get("planId").asText() : "unknown-plan");
-
-		// 创建新的ExecutionPlan对象
-		ExecutionPlan plan = new ExecutionPlan(planId, title);
-
-		// 如果有计划步骤，添加到计划中
-		if (rootNode.has("steps") && rootNode.get("steps").isArray()) {
-			com.fasterxml.jackson.databind.JsonNode stepsNode = rootNode.get("steps");
-			int stepIndex = 0;
-			for (com.fasterxml.jackson.databind.JsonNode stepNode : stepsNode) {
-				if (stepNode.has("stepRequirement")) {
-					// 调用ExecutionStep的fromJson方法创建步骤
-					ExecutionStep step = ExecutionStep.fromJson(stepNode);
-					Integer stepIndexValFromJson = step.getStepIndex();
-					if (stepIndexValFromJson != null) {
-						stepIndex = stepIndexValFromJson;
-					}
-					else {
-						step.setStepIndex(stepIndex);
-					}
-					plan.addStep(step);
-					stepIndex++;
-				}
-			}
-		}
-
-		return plan;
-	}
-
 
 
 }

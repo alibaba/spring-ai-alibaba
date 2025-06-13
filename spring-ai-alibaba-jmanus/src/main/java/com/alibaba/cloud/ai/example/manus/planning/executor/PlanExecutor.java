@@ -77,13 +77,15 @@ public class PlanExecutor {
 
 	/**
 	 * 执行整个计划的所有步骤
+	 * 
 	 * @param context 执行上下文，包含用户请求和执行的过程信息
 	 */
 	public void executeAllSteps(ExecutionContext context) {
 		BaseAgent executor = null;
+		PlanInterface plan = context.getPlan();
+		plan.updateStepIndices();
 		try {
 			recordPlanExecutionStart(context);
-			PlanInterface plan = context.getPlan();
 			List<ExecutionStep> steps = plan.getAllSteps();
 
 			if (CollectionUtil.isNotEmpty(steps)) {
@@ -96,8 +98,7 @@ public class PlanExecutor {
 			}
 
 			context.setSuccess(true);
-		}
-		finally {
+		} finally {
 			String planId = context.getPlanId();
 			llmService.clearAgentMemory(planId);
 			if (executor != null) {
@@ -108,6 +109,7 @@ public class PlanExecutor {
 
 	/**
 	 * 执行单个步骤
+	 * 
 	 * @param executor 执行器
 	 * @param stepInfo 步骤信息
 	 * @return 步骤执行结果
@@ -141,12 +143,10 @@ public class PlanExecutor {
 			// Execute the step
 			step.setResult(stepResultStr);
 			return executor;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Error executing step: {}", e.getMessage(), e);
 			step.setResult("Execution failed: " + e.getMessage());
-		}
-		finally {
+		} finally {
 			recordStepEnd(step, context);
 		}
 		return null;
@@ -163,6 +163,7 @@ public class PlanExecutor {
 
 	/**
 	 * 获取步骤的执行器
+	 * 
 	 * @param stepType 步骤类型
 	 * @return 对应的执行器
 	 */
@@ -226,7 +227,8 @@ public class PlanExecutor {
 
 	/**
 	 * 记录步骤执行完成
-	 * @param step 执行的步骤
+	 * 
+	 * @param step    执行的步骤
 	 * @param context 执行上下文
 	 */
 	private void recordStepEnd(ExecutionStep step, ExecutionContext context) {

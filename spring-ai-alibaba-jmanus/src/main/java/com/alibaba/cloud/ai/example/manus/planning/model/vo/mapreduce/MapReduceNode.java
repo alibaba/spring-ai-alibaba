@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +25,7 @@ import java.util.List;
  * MapReduce执行节点
  */
 public class MapReduceNode {
-
+    
 	private MapReduceStepType type = MapReduceStepType.MAPREDUCE;
 
 	private List<ExecutionStep> mapSteps;
@@ -39,11 +41,10 @@ public class MapReduceNode {
 		this.mapSteps = mapSteps != null ? mapSteps : new ArrayList<>();
 		this.reduceSteps = reduceSteps != null ? reduceSteps : new ArrayList<>();
 	}
-
+	@JsonIgnore
 	public MapReduceStepType getType() {
 		return type;
 	}
-
 	public List<ExecutionStep> getMapSteps() {
 		return mapSteps;
 	}
@@ -51,11 +52,11 @@ public class MapReduceNode {
 	public void setMapSteps(List<ExecutionStep> mapSteps) {
 		this.mapSteps = mapSteps != null ? mapSteps : new ArrayList<>();
 	}
-
+	
 	public List<ExecutionStep> getReduceSteps() {
 		return reduceSteps;
 	}
-
+	
 	public void setReduceSteps(List<ExecutionStep> reduceSteps) {
 		this.reduceSteps = reduceSteps != null ? reduceSteps : new ArrayList<>();
 	}
@@ -77,15 +78,15 @@ public class MapReduceNode {
 	public int getMapStepCount() {
 		return mapSteps != null ? mapSteps.size() : 0;
 	}
-
+	@JsonIgnore		
 	public int getReduceStepCount() {
 		return reduceSteps != null ? reduceSteps.size() : 0;
 	}
-
+	@JsonIgnore
 	public int getTotalStepCount() {
 		return getMapStepCount() + getReduceStepCount();
 	}
-
+	@JsonIgnore
 	public ExecutionStep getMapStep(int index) {
 		if (mapSteps != null && index >= 0 && index < mapSteps.size()) {
 			return mapSteps.get(index);
@@ -104,6 +105,7 @@ public class MapReduceNode {
 	 * 获取所有步骤（Map + Reduce）
 	 * @return 所有步骤的列表
 	 */
+	@JsonIgnore
 	public List<ExecutionStep> getAllSteps() {
 		List<ExecutionStep> allSteps = new ArrayList<>();
 		if (mapSteps != null) {

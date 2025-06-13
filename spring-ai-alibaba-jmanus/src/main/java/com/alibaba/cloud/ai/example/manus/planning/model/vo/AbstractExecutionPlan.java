@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * 执行计划抽象基类
@@ -36,11 +37,13 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	/**
 	 * 规划思考过程
 	 */
+	@JsonIgnore
 	protected String planningThinking;
 
 	/**
 	 * 执行参数
 	 */
+    @JsonIgnore
 	protected String executionParams;
 
 	/**
@@ -162,31 +165,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	 * 子类需要实现具体的步骤清空逻辑
 	 */
 	protected abstract void clearSteps();
-
-	/**
-	 * 构建基础JSON开头部分
-	 * @return JSON开头部分的StringBuilder
-	 */
-	protected StringBuilder buildJsonHeader() {
-		StringBuilder json = new StringBuilder();
-		json.append("{\n");
-		json.append("  \"planId\": \"").append(planId != null ? planId : "").append("\",\n");
-		json.append("  \"title\": \"").append(title != null ? title : "").append("\",\n");
-		
-		if (planningThinking != null && !planningThinking.isEmpty()) {
-			json.append("  \"planningThinking\": \"")
-				.append(planningThinking.replace("\"", "\\\"").replace("\n", "\\n"))
-				.append("\",\n");
-		}
-		
-		if (executionParams != null && !executionParams.isEmpty()) {
-			json.append("  \"executionParams\": \"")
-				.append(executionParams.replace("\"", "\\\"").replace("\n", "\\n"))
-				.append("\",\n");
-		}
-		
-		return json;
-	}
 
 	@Override
 	public String toString() {

@@ -131,7 +131,6 @@ public class PlanningTool implements Function<String, ToolExecuteResult>, Planni
 	 */
 	private ExecutionStep createExecutionStep(String step, int index) {
 		ExecutionStep executionStep = new ExecutionStep();
-		executionStep.setStepIndex(index);
 		executionStep.setStepRequirement(step);
 		return executionStep;
 	}

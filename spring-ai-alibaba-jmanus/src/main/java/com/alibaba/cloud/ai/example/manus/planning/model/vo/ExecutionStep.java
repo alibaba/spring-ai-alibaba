@@ -17,20 +17,23 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * 单个步骤的执行结果
  */
 public class ExecutionStep {
-
+	@JsonIgnore
 	private Integer stepIndex;
 
 	private String stepRequirement;
-
+	@JsonIgnore
 	private String result;
 
+	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private String outputColumns;
-
+	@JsonIgnore
 	private BaseAgent agent;
 
 	public Integer getStepIndex() {
@@ -48,7 +51,7 @@ public class ExecutionStep {
 	public void setResult(String result) {
 		this.result = result;
 	}
-
+	@JsonIgnore
 	public AgentState getStatus() {
 		return agent == null ? AgentState.NOT_STARTED : agent.getState();
 	}
@@ -72,7 +75,8 @@ public class ExecutionStep {
 	public void setOutputColumns(String outputColumns) {
 		this.outputColumns = outputColumns;
 	}
-
+	
+	@JsonIgnore
 	public String getStepInStr() {
 		String agentState = null;
 		if (agent != null) {
@@ -89,37 +93,6 @@ public class ExecutionStep {
 		sb.append(stepRequirement);
 
 		return sb.toString();
-	}
-
-
-	/**
-	 * 从JsonNode解析并创建ExecutionStep对象
-	 * @param stepNode JsonNode对象
-	 * @return 解析后的ExecutionStep对象
-	 */
-	public static ExecutionStep fromJson(com.fasterxml.jackson.databind.JsonNode stepNode) {
-		ExecutionStep step = new ExecutionStep();
-
-		// 设置步骤需求
-		String stepRequirement = stepNode.has("stepRequirement") ? stepNode.get("stepRequirement").asText() : "未指定步骤";
-		step.setStepRequirement(stepRequirement);
-
-		// 设置输出列（如果有）
-		if (stepNode.has("outputColumns")) {
-			step.setOutputColumns(stepNode.get("outputColumns").asText());
-		}
-
-		// 设置步骤索引（如果有）
-		if (stepNode.has("stepIndex")) {
-			step.setStepIndex(stepNode.get("stepIndex").asInt());
-		}
-
-		// 设置步骤结果（如果有）
-		if (stepNode.has("result")) {
-			step.setResult(stepNode.get("result").asText());
-		}
-
-		return step;
 	}
 
 }

@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.AbstractExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,8 +28,13 @@ import java.util.List;
 public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 
 	private List<Object> nodes; // 存储 SequentialNode 或 MapReduceNode
-
+    @JsonIgnore 
 	private long createdTime;
+	
+	/**
+	 * 计划类型，用于 Jackson 多态反序列化
+	 */
+	private String planType = "mapreduce";
 
 	public MapReduceExecutionPlan() {
 		super();
@@ -39,6 +46,14 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		super(planId, title);
 		this.nodes = new ArrayList<>();
 		this.createdTime = System.currentTimeMillis();
+	}
+
+	public String getPlanType() {
+		return planType;
+	}
+
+	public void setPlanType(String planType) {
+		this.planType = planType;
 	}
 
 	// MapReduceExecutionPlan 特有的字段访问器
@@ -130,6 +145,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * @return 总步骤数
 	 */
 	@Override
+	@JsonIgnore
 	public int getTotalStepCount() {
 		return getAllSteps().size();
 	}
@@ -138,6 +154,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * 获取顺序节点列表
 	 * @return 顺序节点列表
 	 */
+	@JsonIgnore
 	public List<SequentialNode> getSequentialNodes() {
 		List<SequentialNode> sequentialNodes = new ArrayList<>();
 		for (Object node : nodes) {
@@ -152,6 +169,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * 获取MapReduce节点列表
 	 * @return MapReduce节点列表
 	 */
+	@JsonIgnore
 	public List<MapReduceNode> getMapReduceNodes() {
 		List<MapReduceNode> mapReduceNodes = new ArrayList<>();
 		for (Object node : nodes) {
@@ -273,6 +291,39 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		clearNodes();
 		planningThinking = null;
 		executionParams = "";
+	}
+
+	/**
+	 * 更新所有步骤的索引，从0开始递增
+	 * 为MapReduce计划中的所有步骤（包括Map和Reduce阶段）设置连续的索引
+	 */
+	@Override
+	public void updateStepIndices() {
+		int index = 0;
+		for (Object node : nodes) {
+			if (node instanceof SequentialNode) {
+				SequentialNode seqNode = (SequentialNode) node;
+				if (seqNode.getSteps() != null) {
+					for (ExecutionStep step : seqNode.getSteps()) {
+						step.setStepIndex(index++);
+					}
+				}
+			} else if (node instanceof MapReduceNode) {
+				MapReduceNode mrNode = (MapReduceNode) node;
+				// 先设置Map步骤的索引
+				if (mrNode.getMapSteps() != null) {
+					for (ExecutionStep step : mrNode.getMapSteps()) {
+						step.setStepIndex(index++);
+					}
+				}
+				// 再设置Reduce步骤的索引
+				if (mrNode.getReduceSteps() != null) {
+					for (ExecutionStep step : mrNode.getReduceSteps()) {
+						step.setStepIndex(index++);
+					}
+				}
+			}
+		}
 	}
 
 	@Override

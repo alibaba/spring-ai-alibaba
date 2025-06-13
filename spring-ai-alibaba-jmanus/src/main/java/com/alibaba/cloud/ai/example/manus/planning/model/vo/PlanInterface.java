@@ -16,11 +16,24 @@
 package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
 
 /**
  * 执行计划通用接口
  * 定义了所有执行计划类型共同的基本操作
  */
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "planType",
+    defaultImpl = ExecutionPlan.class  // 默认实现为 ExecutionPlan
+)
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = ExecutionPlan.class, name = "simple"),
+    @JsonSubTypes.Type(value = MapReduceExecutionPlan.class, name = "mapreduce")
+})
 public interface PlanInterface {
 
 	/**
@@ -112,5 +125,15 @@ public interface PlanInterface {
 	 * @return 计划状态字符串
 	 */
 	String getPlanExecutionStateStringFormat(boolean includeResults);
+
+	/**
+	 * 更新所有步骤的索引，从0开始递增
+	 */
+	default void updateStepIndices() {
+		List<ExecutionStep> allSteps = getAllSteps();
+		for (int i = 0; i < allSteps.size(); i++) {
+			allSteps.get(i).setStepIndex(i);
+		}
+	}
 
 }
