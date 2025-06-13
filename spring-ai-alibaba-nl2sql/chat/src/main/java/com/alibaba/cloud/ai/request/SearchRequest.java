@@ -26,6 +26,8 @@ public class SearchRequest implements Serializable {
 
 	private int topK;
 
+	private String name;
+
 	private String vectorType;
 
 	private String filterFormatted;

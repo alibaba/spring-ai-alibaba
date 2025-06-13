@@ -16,6 +16,7 @@ spring:
         version: 0.0.1 # 服务器版本号
     vectorstore:
       analytic:
+        enabled: false
         collectName:
         regionId:
         dbInstanceId:
