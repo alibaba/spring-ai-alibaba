@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.toolcalling.time;
 
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.TimeZone;
 
-class GetCurrentLocalTimeServiceTest {
+/**
+ * @author chengle
+ */
+public class TimeService {
 
-	@Test
-	void testGetCurrentLocalTime() {
-		GetCurrentLocalTimeService service = new GetCurrentLocalTimeService();
-		String result = service.getCurrentLocalTime();
-		assertNotNull(result);
-		assertTrue(result.contains("The current local time is"));
-		assertTrue(result.matches(".*\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} .+"));
+	public String getCurrentLocalTime() {
+		TimeZone timeZone = TimeZone.getDefault();
+		return String.format("The current local time is %s", TimeUtils.getTimeByZoneId(timeZone.getID()));
 	}
 
 }
