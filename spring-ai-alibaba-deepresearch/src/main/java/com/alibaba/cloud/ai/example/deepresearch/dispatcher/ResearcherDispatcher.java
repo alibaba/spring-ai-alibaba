@@ -42,9 +42,9 @@ public class ResearcherDispatcher implements EdgeAction {
 		Plan currentPlan = StateUtil.getPlan(state);
 
 		Plan.Step unexecutedStep = null;
-		for (Plan.Step step : currentPlan.getSteps()) {
-			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())) {
-				unexecutedStep = step;
+		for (Plan.Step step : currentPlan.steps()) {
+			if (Plan.StepType.RESEARCH.equals(step.stepType()) && !StringUtils.hasText(step.executionRes())) {
+				unexecutedStep = step.mutate().build();
 				break;
 			}
 		}
@@ -52,7 +52,7 @@ public class ResearcherDispatcher implements EdgeAction {
 			logger.info("all researcher node is finished.");
 			return "research_team";
 		}
-		unexecutedStep.setExecutionRes(result);
+		unexecutedStep.mutate().executionRes(result).build();
 
 		logger.info("researcher Node response: {}", result);
 		Map<String, Object> updated = new HashMap<>();
