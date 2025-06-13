@@ -15,9 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import java.util.List;
-
-import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
