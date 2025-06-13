@@ -15,19 +15,14 @@
  */
 package com.alibaba.cloud.ai.toolcalling.common;
 
-import java.time.Duration;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.http.client.HttpClient;
 
 /**
  * @author vlsmb
