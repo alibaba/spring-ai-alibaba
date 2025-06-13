@@ -32,7 +32,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceE
 )
 @JsonSubTypes({
     @JsonSubTypes.Type(value = ExecutionPlan.class, name = "simple"),
-    @JsonSubTypes.Type(value = MapReduceExecutionPlan.class, name = "mapreduce")
+    @JsonSubTypes.Type(value = MapReduceExecutionPlan.class, name = "advanced")
 })
 public interface PlanInterface {
 

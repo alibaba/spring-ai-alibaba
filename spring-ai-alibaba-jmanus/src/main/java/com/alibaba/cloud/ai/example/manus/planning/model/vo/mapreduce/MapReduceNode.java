@@ -74,7 +74,7 @@ public class MapReduceNode {
 		}
 		reduceSteps.add(step);
 	}
-
+    @JsonIgnore
 	public int getMapStepCount() {
 		return mapSteps != null ? mapSteps.size() : 0;
 	}
@@ -121,6 +121,7 @@ public class MapReduceNode {
 	 * 获取节点的字符串表示
 	 * @return 节点字符串
 	 */
+    @JsonIgnore
 	public String getNodeInStr() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("=== MapReduce执行节点 ===\n");

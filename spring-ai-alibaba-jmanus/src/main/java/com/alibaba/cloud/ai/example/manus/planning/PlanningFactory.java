@@ -117,7 +117,7 @@ public class PlanningFactory {
 		// Add all dynamic agents from the database
 		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
 
-		PlanningToolInterface planningTool = new PlanningTool();
+		PlanningToolInterface planningTool = new MapReducePlanningTool();
 
 		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder);
 		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService, llmService);

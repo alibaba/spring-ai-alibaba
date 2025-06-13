@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,7 +69,7 @@ public class SequentialNode {
 		}
 		return null;
 	}
-
+    @JsonIgnore
 	public int getStepCount() {
 		return steps != null ? steps.size() : 0;
 	}
@@ -83,6 +85,7 @@ public class SequentialNode {
 	 * 获取节点的字符串表示
 	 * @return 节点字符串
 	 */
+     @JsonIgnore
 	public String getNodeInStr() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("=== 顺序执行节点 ===\n");

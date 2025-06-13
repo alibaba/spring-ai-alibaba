@@ -27,24 +27,24 @@ import java.util.List;
  */
 public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 
-	private List<Object> nodes; // 存储 SequentialNode 或 MapReduceNode
+	private List<Object> steps; // 存储 SequentialNode 或 MapReduceNode
     @JsonIgnore 
 	private long createdTime;
 	
 	/**
 	 * 计划类型，用于 Jackson 多态反序列化
 	 */
-	private String planType = "mapreduce";
+	private String planType = "advanced";
 
 	public MapReduceExecutionPlan() {
 		super();
-		this.nodes = new ArrayList<>();
+		this.steps = new ArrayList<>();
 		this.createdTime = System.currentTimeMillis();
 	}
 
 	public MapReduceExecutionPlan(String planId, String title) {
 		super(planId, title);
-		this.nodes = new ArrayList<>();
+		this.steps = new ArrayList<>();
 		this.createdTime = System.currentTimeMillis();
 	}
 
@@ -56,14 +56,21 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		this.planType = planType;
 	}
 
-	// MapReduceExecutionPlan 特有的字段访问器
 
-	public List<Object> getNodes() {
-		return nodes;
+	/**
+	 * 获取步骤节点列表（更语义化的方法名）
+	 * @return 步骤节点列表
+	 */
+	public List<Object> getSteps() {
+		return steps;
 	}
 
-	public void setNodes(List<Object> nodes) {
-		this.nodes = nodes;
+	/**
+	 * 设置步骤节点列表（更语义化的方法名）
+	 * @param steps 步骤节点列表
+	 */
+	public void setSteps(List<Object> steps) {
+		this.steps = steps;
 	}
 
 	public long getCreatedTime() {
@@ -86,7 +93,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * @param node 顺序执行节点
 	 */
 	public void addSequentialNode(SequentialNode node) {
-		nodes.add(node);
+		steps.add(node);
 	}
 
 	/**
@@ -94,15 +101,16 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * @param node MapReduce执行节点
 	 */
 	public void addMapReduceNode(MapReduceNode node) {
-		nodes.add(node);
+		steps.add(node);
 	}
 
 	/**
 	 * 获取节点数量
 	 * @return 节点总数
 	 */
+    @JsonIgnore
 	public int getNodeCount() {
-		return nodes.size();
+		return steps.size();
 	}
 
 	/**
@@ -111,8 +119,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * @return 节点对象，如果索引无效则返回null
 	 */
 	public Object getNode(int index) {
-		if (index >= 0 && index < nodes.size()) {
-			return nodes.get(index);
+		if (index >= 0 && index < steps.size()) {
+			return steps.get(index);
 		}
 		return null;
 	}
@@ -122,10 +130,11 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * @return 所有执行步骤的列表
 	 */
 	@Override
+    @JsonIgnore
 	public List<ExecutionStep> getAllSteps() {
 		List<ExecutionStep> allSteps = new ArrayList<>();
 		
-		for (Object node : nodes) {
+		for (Object node : steps) {
 			if (node instanceof SequentialNode) {
 				SequentialNode seqNode = (SequentialNode) node;
 				if (seqNode.getSteps() != null) {
@@ -157,7 +166,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	@JsonIgnore
 	public List<SequentialNode> getSequentialNodes() {
 		List<SequentialNode> sequentialNodes = new ArrayList<>();
-		for (Object node : nodes) {
+		for (Object node : steps) {
 			if (node instanceof SequentialNode) {
 				sequentialNodes.add((SequentialNode) node);
 			}
@@ -172,7 +181,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	@JsonIgnore
 	public List<MapReduceNode> getMapReduceNodes() {
 		List<MapReduceNode> mapReduceNodes = new ArrayList<>();
-		for (Object node : nodes) {
+		for (Object node : steps) {
 			if (node instanceof MapReduceNode) {
 				mapReduceNodes.add((MapReduceNode) node);
 			}
@@ -192,12 +201,12 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		sb.append("计划ID: ").append(planId).append("\n");
 		sb.append("标题: ").append(title).append("\n");
 		sb.append("创建时间: ").append(new java.util.Date(createdTime)).append("\n");
-		sb.append("节点数量: ").append(nodes.size()).append("\n");
+		sb.append("节点数量: ").append(steps.size()).append("\n");
 		sb.append("总步骤数: ").append(getTotalStepCount()).append("\n");
 		sb.append("\n");
 
-		for (int i = 0; i < nodes.size(); i++) {
-			Object node = nodes.get(i);
+		for (int i = 0; i < steps.size(); i++) {
+			Object node = steps.get(i);
 			sb.append("--- 节点 ").append(i + 1).append(" ---\n");
 			
 			if (node instanceof SequentialNode) {
@@ -249,7 +258,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * 清空所有节点
 	 */
 	public void clearNodes() {
-		nodes.clear();
+		steps.clear();
 	}
 
 	/**
@@ -257,8 +266,9 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * @return 如果没有节点则返回true
 	 */
 	@Override
+    @JsonIgnore
 	public boolean isEmpty() {
-		return nodes.isEmpty();
+		return steps.isEmpty();
 	}
 
 	// PlanInterface 实现方法
@@ -274,7 +284,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	@Override
 	public void removeStep(ExecutionStep step) {
 		// 从所有节点中查找并移除指定步骤
-		for (Object node : nodes) {
+		for (Object node : steps) {
 			if (node instanceof SequentialNode) {
 				SequentialNode seqNode = (SequentialNode) node;
 				seqNode.removeStep(step);
@@ -300,7 +310,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	@Override
 	public void updateStepIndices() {
 		int index = 0;
-		for (Object node : nodes) {
+		for (Object node : steps) {
 			if (node instanceof SequentialNode) {
 				SequentialNode seqNode = (SequentialNode) node;
 				if (seqNode.getSteps() != null) {
