@@ -32,10 +32,11 @@
             <artifactId>spring-boot-starter</artifactId>
             <version>3.4.4</version>
         </dependency>
+        <!-- 引入 Spring MVC -->
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
-            <version>${spring-ai.version}</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <version>3.4.5</version>
         </dependency>
 
         <dependency>
