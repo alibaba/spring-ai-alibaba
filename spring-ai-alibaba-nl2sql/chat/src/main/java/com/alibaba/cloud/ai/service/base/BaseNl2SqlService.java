@@ -28,7 +28,6 @@ import com.alibaba.cloud.ai.util.MarkdownParser;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.springframework.ai.document.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -42,16 +41,12 @@ public class BaseNl2SqlService {
 
 	protected final BaseVectorStoreService vectorStoreService;
 
-	@Autowired
 	protected final BaseSchemaService schemaService;
 
-	@Autowired
 	public final LlmService aiService;
 
-	@Autowired
 	protected final DbAccessor dbAccessor;
 
-	@Autowired
 	protected final DbConfig dbConfig;
 
 	public BaseNl2SqlService(BaseVectorStoreService vectorStoreService, BaseSchemaService schemaService,
@@ -61,6 +56,30 @@ public class BaseNl2SqlService {
 		this.aiService = aiService;
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
+	}
+
+	public String rewrite(String query) throws Exception {
+		List<Document> evidenceDocuments = vectorStoreService.getDocuments(query, "evidence");
+		List<String> evidences = evidenceDocuments.stream().map(Document::getText).collect(Collectors.toList());
+		SchemaDTO schemaDTO = select(query, evidences);
+		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
+		String responseContent = aiService.call(prompt);
+		String[] splits = responseContent.split("\\n");
+		for (String line : splits) {
+			if (line.startsWith("需求类型：")) {
+				String content = line.substring(5).trim();
+				if ("《自由闲聊》".equals(content)) {
+					return "闲聊拒识";
+				}
+				else if ("《需要澄清》".equals(content)) {
+					return "意图模糊需要澄清";
+				}
+			}
+			else if (line.startsWith("需求内容：")) {
+				query = line.substring(5);
+			}
+		}
+		return query;
 	}
 
 	public String nl2sql(String query) throws Exception {
@@ -118,12 +137,21 @@ public class BaseNl2SqlService {
 
 		if (content != null && !content.trim().isEmpty()) {
 			String jsonContent = MarkdownParser.extractText(content);
-			List<String> tableList = new Gson().fromJson(jsonContent, new TypeToken<List<String>>() {
-			}.getType());
-
-			Set<String> selectedTables = tableList.stream().map(String::toLowerCase).collect(Collectors.toSet());
-
-			schemaDTO.getTable().removeIf(table -> !selectedTables.contains(table.getName().toLowerCase()));
+			List<String> tableList;
+			try {
+				tableList = new Gson().fromJson(jsonContent, new TypeToken<List<String>>() {
+				}.getType());
+			}
+			catch (Exception e) {
+				// 某些场景会提示异常，如：java.lang.IllegalStateException:
+				// 请提供数据库schema信息以便我能够根据您的问题筛选出相关的表。
+				// TODO 目前异常接口直接返回500，未返回向异常常信息，后续优化将异常返回给用户
+				throw new IllegalStateException(jsonContent);
+			}
+			if (tableList != null && !tableList.isEmpty()) {
+				Set<String> selectedTables = tableList.stream().map(String::toLowerCase).collect(Collectors.toSet());
+				schemaDTO.getTable().removeIf(table -> !selectedTables.contains(table.getName().toLowerCase()));
+			}
 		}
 		return schemaDTO;
 	}

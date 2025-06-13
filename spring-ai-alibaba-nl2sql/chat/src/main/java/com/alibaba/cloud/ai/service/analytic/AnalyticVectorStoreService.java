@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service;
+package com.alibaba.cloud.ai.service.analytic;
 
 import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStoreProperties;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.request.SearchRequest;
 import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
 import com.aliyun.gpdb20160503.Client;
@@ -36,7 +35,7 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @Service
-public class VectorStoreService extends BaseVectorStoreService {
+public class AnalyticVectorStoreService extends BaseVectorStoreService {
 
 	private static final String CONTENT_FIELD_NAME = "content";
 
