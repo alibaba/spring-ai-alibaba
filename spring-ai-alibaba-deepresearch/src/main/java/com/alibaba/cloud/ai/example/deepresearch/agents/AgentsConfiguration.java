@@ -18,13 +18,16 @@ package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
-import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
+import org.springframework.util.StreamUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 
 @Configuration
@@ -42,13 +45,20 @@ public class AgentsConfiguration {
 	 * ToolCallbackProviders.
 	 * @return ChatClient
 	 */
-	@SneakyThrows
 	@Bean
 	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) {
-		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset()))
-			.defaultToolNames("tavilySearch")
-			// .defaultToolNames("tavilySearch", "firecrawlFunction") todo 待调整
-			.build();
+		Assert.notNull(researcherPrompt, "researcherPrompt cannot be null");
+		try (InputStream inputStream = researcherPrompt.getInputStream()) {
+			var template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+			Assert.hasText(template, "template cannot be null or empty");
+			return chatClientBuilder.defaultSystem(template)
+					.defaultToolNames("tavilySearch")
+					// .defaultToolNames("tavilySearch", "firecrawlFunction") todo 待调整
+					.build();
+		}
+		catch (IOException ex) {
+			throw new RuntimeException("Failed to read resource", ex);
+		}
 	}
 
 	/**
@@ -57,12 +67,19 @@ public class AgentsConfiguration {
 	 * ToolCallbackProviders.
 	 * @return ChatClient
 	 */
-	@SneakyThrows
 	@Bean
 	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties) {
-		return chatClientBuilder.defaultSystem(coderPrompt.getContentAsString(Charset.defaultCharset()))
-			.defaultTools(new PythonReplTool(coderProperties))
-			.build();
+		Assert.notNull(coderPrompt, "coderPrompt cannot be null");
+		try (InputStream inputStream = researcherPrompt.getInputStream()) {
+			var template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+			Assert.hasText(template, "template cannot be null or empty");
+			return chatClientBuilder.defaultSystem(template)
+					.defaultTools(new PythonReplTool(coderProperties))
+					.build();
+		}
+		catch (IOException ex) {
+			throw new RuntimeException("Failed to read resource", ex);
+		}
 	}
 
 }
