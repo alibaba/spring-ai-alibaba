@@ -97,7 +97,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 		List<TableInfoBO> tableInfoBOS = dbAccessor.fetchTables(dbConfig, dqp);
 		for (TableInfoBO tableInfoBO : tableInfoBOS) {
-			processTable(tableInfoBO, dqp, dbConfig);
+			processTable(tableInfoBO, dqp, dbConfig, foreignKeyMap);
 		}
 
 		List<Document> columnDocuments = tableInfoBOS.stream().flatMap(table -> {
@@ -120,7 +120,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		return true;
 	}
 
-	private void processTable(TableInfoBO tableInfoBO, DbQueryParameter dqp, DbConfig dbConfig) throws Exception {
+	private void processTable(TableInfoBO tableInfoBO, DbQueryParameter dqp, DbConfig dbConfig,
+			Map<String, List<String>> foreignKeyMap) throws Exception {
 		dqp.setTable(tableInfoBO.getName());
 		List<ColumnInfoBO> columnInfoBOS = dbAccessor.showColumns(dbConfig, dqp);
 		for (ColumnInfoBO columnInfoBO : columnInfoBOS) {
@@ -145,7 +146,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			.orElse(new ColumnInfoBO());
 
 		tableInfoBO.setPrimaryKey(primaryColumnDO.getName());
-		tableInfoBO.setForeignKey(String.join("、", buildForeignKeyList(tableInfoBO.getName())));
+		tableInfoBO
+			.setForeignKey(String.join("、", foreignKeyMap.getOrDefault(tableInfoBO.getName(), new ArrayList<>())));
 	}
 
 	public Document convertToDocument(TableInfoBO tableInfoBO, ColumnInfoBO columnInfoBO) {
@@ -158,10 +160,6 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			metadata.put("samples", columnInfoBO.getSamples());
 		}
 		return new Document(columnInfoBO.getName(), text, metadata);
-	}
-
-	private List<String> buildForeignKeyList(String tableName) {
-		return new ArrayList<>();
 	}
 
 	public Document convertTableToDocument(TableInfoBO tableInfoBO) {
@@ -242,6 +240,18 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 		return vectorStore.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
 			.query(searchRequestDTO.getQuery())
+			.topK(searchRequestDTO.getTopK())
+			.filterExpression(expression)
+			.build());
+	}
+
+	@Override
+	public List<Document> searchTableByNameAndVectorType(SearchRequest searchRequestDTO) {
+		FilterExpressionBuilder b = new FilterExpressionBuilder();
+		Filter.Expression expression = b
+			.and(b.eq("vectorType", searchRequestDTO.getVectorType()), b.eq("name", searchRequestDTO.getName()))
+			.build();
+		return vectorStore.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
 			.topK(searchRequestDTO.getTopK())
 			.filterExpression(expression)
 			.build());
