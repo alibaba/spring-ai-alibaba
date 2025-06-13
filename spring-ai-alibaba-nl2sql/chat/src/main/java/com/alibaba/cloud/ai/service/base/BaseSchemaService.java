@@ -185,20 +185,21 @@ public abstract class BaseSchemaService {
 		int index = 0;
 
 		while (result.size() < maxCount) {
-			boolean added = false;
+			boolean completed = true;
 			for (List<Document> docs : columnDocumentList) {
 				if (index < docs.size()) {
 					Document doc = docs.get(index);
 					String id = doc.getId();
 					if (!result.containsKey(id)) {
 						result.put(id, doc);
-						added = true;
 					}
+					completed = false;
 				}
 			}
 			index++;
-			if (!added)
+			if (completed) {
 				break;
+			}
 		}
 		return result;
 	}
@@ -326,7 +327,7 @@ public abstract class BaseSchemaService {
 	 * @param schemaDTO SchemaDTO
 	 */
 	protected void extractDatabaseName(SchemaDTO schemaDTO) {
-		String pattern = "/([^/]+)$";
+		String pattern = ":\\d+/([^/?&]+)";
 		if (BizDataSourceTypeEnum.isMysqlDialect(dbConfig.getDialectType())) {
 			Pattern regex = Pattern.compile(pattern);
 			Matcher matcher = regex.matcher(dbConfig.getUrl());
