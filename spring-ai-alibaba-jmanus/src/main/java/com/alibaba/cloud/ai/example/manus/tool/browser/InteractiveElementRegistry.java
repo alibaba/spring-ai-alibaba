@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
+import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
 
@@ -106,17 +107,20 @@ public class InteractiveElementRegistry {
 	@SuppressWarnings("unchecked")
 	private void processPageElements(Page page) {
 		try {
-			List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) page
-				.evaluate(EXTRACT_INTERACTIVE_ELEMENTS_JS);
-			for (Map<String, Object> elementMap : elementMapList) {
-				Integer globalIndex = (Integer) elementMap.get("index");
-				InteractiveElement element = new InteractiveElement(globalIndex, page, elementMap);
-				interactiveElements.add(element);
-				indexToElementMap.put(globalIndex, element);
+			int index = 0;
+			for (Frame frame : page.frames()) {
+				List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) frame
+						.evaluate(EXTRACT_INTERACTIVE_ELEMENTS_JS, index);
+				for (Map<String, Object> elementMap : elementMapList) {
+					Integer globalIndex = (Integer) elementMap.get("index");
+					InteractiveElement element = new InteractiveElement(globalIndex, frame, elementMap);
+					interactiveElements.add(element);
+					indexToElementMap.put(globalIndex, element);
+				}
 			}
 		}
 		catch (Exception e) {
-			log.warn("处理iframe元素时出错: {}", e.getMessage());
+			log.warn("处理page元素时出错: {}", e.getMessage());
 		}
 	}
 

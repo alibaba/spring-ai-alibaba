@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
+import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
@@ -48,15 +49,15 @@ public class InteractiveElement {
 	 * @param index 全局索引
 	 * @param elementMap 元素的其余参数
 	 */
-	public InteractiveElement(int index, Page page, Map<String, Object> elementMap) {
+	public InteractiveElement(int index, Frame frame, Map<String, Object> elementMap) {
 		this.index = index;
 		if (elementMap.containsKey("jManusId")) {
 			String jManusId = (String) elementMap.get("jManusId");
-			this.locator = page.locator("[jmanus-id=\"" + jManusId + "\"]");
+			this.locator = frame.locator("[jmanus-id=\"" + jManusId + "\"]");
 		}
 		else {
 			String xpath = (String) elementMap.get("xpath");
-			this.locator = page.locator("//" + xpath);
+			this.locator = frame.locator("//" + xpath);
 		}
 		this.tagName = (String) elementMap.get("tagName");
 		this.text = (String) elementMap.get("text");
