@@ -53,23 +53,23 @@ public class DocumentExtractorNode implements NodeAction {
 		this.paramsKey = paramsKey;
 		this.outputKey = outputKey;
 		this.fileList = fileList;
-		extractors.put(".txt", inputStream -> new TextDocumentParser().parse(inputStream));
-		extractors.put(".markdown", inputStream -> new MarkdownDocumentParser().parse(inputStream));
-		extractors.put(".md", inputStream -> new MarkdownDocumentParser().parse(inputStream));
-		extractors.put(".html", inputStream -> new BsHtmlDocumentParser().parse(inputStream));
-		extractors.put(".htm", inputStream -> new BsHtmlDocumentParser().parse(inputStream));
-		extractors.put(".xml", inputStream -> new BsHtmlDocumentParser().parse(inputStream));
-		extractors.put(".json", inputStream -> new JsonDocumentParser().parse(inputStream));
-		extractors.put(".yaml", inputStream -> new YamlDocumentParser().parse(inputStream));
-		extractors.put(".yml", inputStream -> new YamlDocumentParser().parse(inputStream));
-		extractors.put(".pdf", inputStream -> new TikaDocumentParser().parse(inputStream));
-		extractors.put(".doc", inputStream -> new TikaDocumentParser().parse(inputStream));
-		extractors.put(".docx", inputStream -> new TikaDocumentParser().parse(inputStream));
-		extractors.put(".csv", inputStream -> new TikaDocumentParser().parse(inputStream));
-		extractors.put(".xls", inputStream -> new TikaDocumentParser().parse(inputStream));
-		extractors.put(".xlsx", inputStream -> new TikaDocumentParser().parse(inputStream));
-		extractors.put(".ppt", inputStream -> new TikaDocumentParser().parse(inputStream));
-		extractors.put(".pptx", inputStream -> new TikaDocumentParser().parse(inputStream));
+		extractors.put("txt", inputStream -> new TextDocumentParser().parse(inputStream));
+		extractors.put("markdown", inputStream -> new MarkdownDocumentParser().parse(inputStream));
+		extractors.put("md", inputStream -> new MarkdownDocumentParser().parse(inputStream));
+		extractors.put("html", inputStream -> new BsHtmlDocumentParser().parse(inputStream));
+		extractors.put("htm", inputStream -> new BsHtmlDocumentParser().parse(inputStream));
+		extractors.put("xml", inputStream -> new BsHtmlDocumentParser().parse(inputStream));
+		extractors.put("json", inputStream -> new JsonDocumentParser().parse(inputStream));
+		extractors.put("yaml", inputStream -> new YamlDocumentParser().parse(inputStream));
+		extractors.put("yml", inputStream -> new YamlDocumentParser().parse(inputStream));
+		extractors.put("pdf", inputStream -> new TikaDocumentParser().parse(inputStream));
+		extractors.put("doc", inputStream -> new TikaDocumentParser().parse(inputStream));
+		extractors.put("docx", inputStream -> new TikaDocumentParser().parse(inputStream));
+		extractors.put("csv", inputStream -> new TikaDocumentParser().parse(inputStream));
+		extractors.put("xls", inputStream -> new TikaDocumentParser().parse(inputStream));
+		extractors.put("xlsx", inputStream -> new TikaDocumentParser().parse(inputStream));
+		extractors.put("ppt", inputStream -> new TikaDocumentParser().parse(inputStream));
+		extractors.put("pptx", inputStream -> new TikaDocumentParser().parse(inputStream));
 	}
 
 	@Override

@@ -71,7 +71,7 @@ public abstract class BaseVectorStoreService {
 	public abstract List<Document> searchWithFilter(SearchRequest searchRequestDTO);
 
 	/**
-	 * 将 float[] 转换为 List<Double>
+	 * 将 float[] 转换为 Double List
 	 */
 	protected List<Double> convertToDoubleList(float[] array) {
 		return IntStream.range(0, array.length)
@@ -81,7 +81,7 @@ public abstract class BaseVectorStoreService {
 	}
 
 	/**
-	 * 将 float[] 转换为 List<Float>
+	 * 将 float[] 转换为 Float List
 	 */
 	protected List<Float> convertToFloatList(float[] array) {
 		return IntStream.range(0, array.length).mapToObj(i -> array[i]).collect(Collectors.toList());

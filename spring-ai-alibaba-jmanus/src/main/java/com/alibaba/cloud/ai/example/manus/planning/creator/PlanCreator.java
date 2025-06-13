@@ -16,6 +16,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.creator;
 
+import java.util.List;
+
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
@@ -30,7 +32,7 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
-import java.util.List;
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
  * 负责创建执行计划的类
@@ -89,6 +91,8 @@ public class PlanCreator {
 						.prompt(prompt)
 						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
 					if (useMemory) {
+						requestSpec
+							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
 						requestSpec
 							.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
 					}

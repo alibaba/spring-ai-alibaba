@@ -193,7 +193,7 @@ public class ReactAgent {
 			};
 		}
 
-		StateGraph graph = new StateGraph(this.overAllStateFactory);
+		StateGraph graph = new StateGraph(name, this.overAllStateFactory);
 
 		if (preLlmHook != null) {
 			graph.addNode("preLlm", node_async(preLlmHook));

@@ -16,7 +16,7 @@
 name: 🤔 Question
 description: Usage question that isn't answered in docs or discussion
 title: "[Question] <title>"
-labels: ["question"]
+labels: ["needs-triage", "kind/question"]
 body:
   - type: textarea
     attributes:

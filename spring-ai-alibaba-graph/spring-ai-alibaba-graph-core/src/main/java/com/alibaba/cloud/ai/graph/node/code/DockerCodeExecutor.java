@@ -33,6 +33,10 @@ import org.slf4j.LoggerFactory;
 import org.apache.commons.codec.digest.DigestUtils;
 import com.alibaba.cloud.ai.graph.utils.FileUtils;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +75,11 @@ public class DockerCodeExecutor implements CodeExecutor {
 				String hostWorkDir = codeExecutionConfig.getWorkDir();
 				FileUtils.writeCodeToFile(hostWorkDir, filename, code);
 
+				// Copy required JAR files to workDir if language is Java
+				if ("java".equals(language)) {
+					FileUtils.copyResourceJarToWorkDir(hostWorkDir);
+				}
+
 				// Create and configure container
 				// Mount host directory to container's /workspace directory
 				Volume containerVolume = new Volume("/workspace");
@@ -78,9 +87,42 @@ public class DockerCodeExecutor implements CodeExecutor {
 
 				CreateContainerCmd createContainerCmd = dockerClient.createContainerCmd(codeExecutionConfig.getDocker())
 					.withName(codeExecutionConfig.getContainerName() + "_" + codeBlockList.indexOf(codeBlock))
-					.withCmd(CodeUtils.getExecutableForLanguage(language), filename)
 					.withWorkingDir("/workspace")
 					.withHostConfig(newHostConfig().withBinds(volumeBind));
+
+				if ("java".equals(language)) {
+					StringBuilder classPathBuilder = new StringBuilder();
+					classPathBuilder.append("/workspace").append(File.pathSeparator).append(".");
+
+					// Add all JAR files in workDir to classpath
+					try {
+						Path workDirPath = Path.of(hostWorkDir);
+						if (Files.exists(workDirPath)) {
+							try (var stream = Files.walk(workDirPath)) {
+								stream.filter(path -> path.toString().endsWith(".jar")).forEach(jarPath -> {
+									// Use container path for JAR files
+									String containerJarPath = "/workspace/" + jarPath.getFileName().toString();
+									classPathBuilder.append(File.pathSeparator).append(containerJarPath);
+								});
+							}
+						}
+					}
+					catch (IOException e) {
+						logger.warn("Failed to scan JAR files in work directory", e);
+					}
+
+					String classPath = codeExecutionConfig.getClassPath();
+					if (classPath != null && !classPath.isEmpty()) {
+						classPathBuilder.append(File.pathSeparator).append(classPath);
+					}
+
+					String cpArg = classPathBuilder.toString();
+					createContainerCmd.withCmd(CodeUtils.getExecutableForLanguage(language), "-cp", cpArg, filename);
+				}
+				else {
+					createContainerCmd.withCmd(CodeUtils.getExecutableForLanguage(language), filename);
+				}
+
 				CreateContainerResponse container = createContainerCmd.exec();
 
 				try {
@@ -116,6 +158,11 @@ public class DockerCodeExecutor implements CodeExecutor {
 					dockerClient.removeContainerCmd(container.getId()).withForce(true).exec();
 					// Delete temporary file
 					FileUtils.deleteFile(codeExecutionConfig.getWorkDir(), filename);
+
+					// Delete JAR files if language is Java
+					if ("java".equals(language)) {
+						FileUtils.deleteResourceJarFromWorkDir(hostWorkDir);
+					}
 				}
 			}
 
