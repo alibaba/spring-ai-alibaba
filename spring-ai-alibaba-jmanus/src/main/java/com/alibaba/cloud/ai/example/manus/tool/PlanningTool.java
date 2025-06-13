@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Function;
 
-public class PlanningTool implements Function<String, ToolExecuteResult> {
+public class PlanningTool implements Function<String, ToolExecuteResult>, PlanningToolInterface {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanningTool.class);
 

@@ -23,7 +23,7 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
+import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -45,11 +45,11 @@ public class PlanCreator {
 
 	private final LlmService llmService;
 
-	private final PlanningTool planningTool;
+	private final PlanningToolInterface planningTool;
 
 	protected final PlanExecutionRecorder recorder;
 
-	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningTool planningTool,
+	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningToolInterface planningTool,
 			PlanExecutionRecorder recorder) {
 		this.agents = agents;
 		this.llmService = llmService;
