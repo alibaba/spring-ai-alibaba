@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.config;
+package com.alibaba.cloud.ai.toolcalling.time;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * @author Allen Hu
- * @since 2025/5/24
- */
-@ConfigurationProperties(prefix = DeepResearchProperties.PREFIX)
-public class DeepResearchProperties {
+class GetTimeByZoneIdServiceTest {
 
-	public static final String PREFIX = "spring.ai.alibaba.deepreserch";
+	@Test
+	void testApply() {
+		GetTimeByZoneIdService service = new GetTimeByZoneIdService();
+		String result = service.apply(new GetTimeByZoneIdService.Request("Asia/Shanghai")).description();
+		assertNotNull(result);
+		assertTrue(result.contains("Asia/Shanghai"));
+		assertTrue(result.matches(".*\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} .+"));
+	}
 
 }
