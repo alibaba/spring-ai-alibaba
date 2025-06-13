@@ -1,16 +1,16 @@
-# Spring AI Alibaba Graph Workflow Quick Start
+# Spring AI Alibaba Graph Workflow快速开始
 
-## Project Overview
+## 项目简介
 
-Spring AI Alibaba Graph is a **workflow and multi-agent framework** for Java developers to build complex applications composed of multiple AI models or steps. It is deeply integrated with the Spring Boot ecosystem, providing a declarative API to orchestrate workflows. This allows developers to abstract each step of an AI application as a node (Node) and connect these nodes in the form of a directed graph (Graph) to create a customizable execution flow. Compared to traditional single-agent (one-turn Q&A) solutions, Spring AI Alibaba Graph supports more complex multi-step task flows, helping to address the issue of a **single large model being insufficient for complex tasks**.
+Spring AI Alibaba Graph 是一款面向 Java 开发者的**工作流、多智能体框架**，用于构建由多个 AI 模型或步骤组成的复杂应用。它基于 Spring Boot 生态进行深度集成，提供声明式的 API 来编排工作流，让开发者能将 AI 应用的各个步骤抽象为节点（Node），并通过有向图（Graph）的形式连接这些节点，形成可定制的执行流程。与传统单 Agent（一问一答式）方案相比，Spring AI Alibaba Graph 支持更复杂的多步骤任务流程，有助于解决**单一大模型对复杂任务力不从心**的问题。框架核心包括：**StateGraph**（状态图，用于定义节点和边）、**Node**（节点，封装具体操作或模型调用）、**Edge**（边，表示节点间的跳转关系）以及 **OverAllState**（全局状态，贯穿流程共享数据）。这些设计使开发者能够方便地管理工作流中的状态和逻辑流转。
 
-The core of the framework includes: **StateGraph** (the state graph for defining nodes and edges), **Node** (node, encapsulating a specific operation or model call), **Edge** (edge, representing transitions between nodes), and **OverAllState** (global state, carrying shared data throughout the flow). These designs make it convenient to manage state and control flow in the workflow.
 
-## Simple Example
 
-To quickly get started with Spring AI Alibaba Graph, you can build a complete workflow application based on the official WorkflowAutoconfiguration example. The following uses a “customer feedback processing system” as an example to introduce the main steps from adding project dependencies to running tests:
+## 简单示例
 
-1. **Dependencies and Model Configuration**: In the Spring Boot project’s Maven `pom.xml`, include the Spring AI Alibaba BOM and the required Starter dependencies. For instance, include the DashScope Starter for Alibaba's Pai-Blade model (or the OpenAI Starter, depending on the model platform used). For example:
+要快速体验 Spring AI Alibaba Graph，可以基于官方提供的 WorkflowAutoconfiguration 示例搭建一个完整的工作流应用。下面将以“客户评价处理系统”为例，介绍从项目依赖到运行测试的主要步骤：
+
+1. **添加依赖与配置模型**：在 Spring Boot 项目的 Maven `pom.xml` 中引入 Spring AI Alibaba 的 BOM 以及所需的 Starter 依赖。如引入阿里百炼大模型 DashScope 的 Starter（或选择 OpenAI Starter，具体取决于所用模型平台）。例如：
 
    ```xml
    <dependencyManagement>
@@ -25,25 +25,26 @@ To quickly get started with Spring AI Alibaba Graph, you can build a complete wo
        </dependencies>
    </dependencyManagement>
    <dependencies>
-       <!-- Include the DashScope model adapter Starter -->
+       <!-- 引入 DashScope 模型适配的 Starter -->
        <dependency>
            <groupId>com.alibaba.cloud.ai</groupId>
            <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
        </dependency>
-       <!-- Include the Graph core dependency -->
-       <dependency>
+     	<!-- 引入 Graph 核心依赖 -->
+     	<dependency>
            <groupId>com.alibaba.cloud.ai</groupId>
            <artifactId>spring-ai-alibaba-graph-core</artifactId>
            <version>1.0.0.2</version>
-       </dependency>
+    		</dependency>
    </dependencies>
+   
    ```
 
-   After adding the dependencies, configure the model API key in the project’s `application.properties`. For example, when using an OpenAI model set `spring.ai.openai.api-key=<Your API Key>`, or for Alibaba’s Pai-Blade model configure the DashScope service access key (e.g., `spring.ai.dashscope.api-key=<Your API Key>`). These configurations ensure Spring AI can automatically create the necessary **ChatModel** bean to communicate with the corresponding model service.
+   添加依赖后，在项目的 `application.properties` 中配置模型 API 密钥。例如使用 OpenAI 模型时设置 `spring.ai.openai.api-key=<您的API密钥>`，或使用阿里百炼模型时配置 DashScope 服务的访问密钥（如 `spring.ai.dashscope.api-key=<您的API密钥>` 。这些配置确保 Spring AI 能自动创建所需的 **ChatModel** Bean，用于与对应的模型服务通信。
 
-2. **Workflow StateGraph Definition**: Create a Spring Boot configuration class (for example, `WorkflowAutoconfiguration`) and define a **StateGraph** bean in it to describe the workflow logic. In this configuration, the following steps need to be completed:
+2. **定义工作流 StateGraph**：创建一个 Spring Boot 配置类（例如 `WorkflowAutoconfiguration`），在其中定义一个 **StateGraph** Bean 来描述工作流逻辑。在该配置中，需要完成以下几个步骤：
 
-   - **ChatClient Initialization**: Retrieve the injected ChatModel from the container (produced by the previous configuration), build a ChatClient instance, and attach necessary Advisors (such as a logger) for subsequent LLM calls. For example:
+   - **初始化 ChatClient**：从容器中获取注入的 ChatModel（由上一步配置产生），构建一个 ChatClient 实例并附加必要的 Advisor（如日志记录器），用于后续 LLM 调用。例如：
 
      ```java
      ChatClient chatClient = ChatClient.builder(chatModel)
@@ -51,9 +52,9 @@ To quickly get started with Spring AI Alibaba Graph, you can build a complete wo
                                        .build();
      ```
 
-     Here, `ChatClient` is the client provided by Spring AI Alibaba for conversing with the large model, which can be seen as a wrapper around the underlying API.
+     这里 `ChatClient` 是 Spring AI Alibaba 提供的与大模型对话的客户端，可看作对底层 API 的封装。
 
-   - **Global State (OverAllState) Setup**: Define an `OverAllStateFactory` to create an initial global state object each time the workflow executes. Register several **Keys** and their update strategies to manage context data:
+   - **设置全局状态 OverAllState**：定义一个 OverAllStateFactory，用于在每次执行工作流时创建初始的全局状态对象。通过注册若干 **Key** 及其更新策略来管理上下文数据：
 
      ```java
      OverAllStateFactory stateFactory = () -> {
@@ -65,12 +66,12 @@ To quickly get started with Spring AI Alibaba Graph, you can build a complete wo
      };
      ```
 
-     The above code registers three state keys: `input` (the input text), `classifier_output` (classification result), and `solution` (final processing conclusion), all using **ReplaceStrategy** (each write replaces the old value). These keys persist throughout the workflow and are used to pass data between nodes.
+     上述代码注册了三个状态键：`input`（输入文本）、`classifier_output`（分类结果）和 `solution`（最终处理结论），均采用 **ReplaceStrategy**（每次写入替换旧值）。这些键将贯穿整个工作流，用于在节点之间传递数据。
 
-   - **Node Definitions**: Create the core nodes in the workflow, including two text classification nodes and one recording node. In this example, the framework provides a predefined **QuestionClassifierNode** class for text classification tasks. We use its builder to specify the classification categories and prompts, and use the ChatClient to call the large model service, achieving intelligent classification:
+   - **定义节点 (Node)**：创建工作流中的核心节点，包括两个文本分类节点和一个记录节点。在本示例中，框架提供了预定义的 **QuestionClassifierNode** 类用于文本分类任务。利用其构建器指定分类的细分类别及提示语，引入 ChatClient 来调用大模型服务，实现智能分类：
 
      ```java
-     // Feedback positive/negative classification node
+     // 评价正负分类节点
      QuestionClassifierNode feedbackClassifier = QuestionClassifierNode.builder()
              .chatClient(chatClient)
              .inputTextKey("input")
@@ -78,7 +79,7 @@ To quickly get started with Spring AI Alibaba Graph, you can build a complete wo
              .classificationInstructions(
                      List.of("Try to understand the user's feeling when he/she is giving the feedback."))
              .build();
-     // Negative feedback specific question classification node
+     // 负面评价具体问题分类节点
      QuestionClassifierNode specificQuestionClassifier = QuestionClassifierNode.builder()
              .chatClient(chatClient)
              .inputTextKey("input")
@@ -89,26 +90,26 @@ To quickly get started with Spring AI Alibaba Graph, you can build a complete wo
              .build();
      ```
 
-     In the above, two nodes are defined: `feedbackClassifier` will determine whether the feedback is **positive** or **negative**, and `specificQuestionClassifier` will further categorize negative feedback (e.g., after-sale service, transportation, product quality, or others). Both use the ChatClient to invoke the large model for classification, and will write the result to the `"classifier_output"` key in the global state (as per framework convention). In addition, you can define custom nodes as needed.
+     上面定义了两个节点：`feedbackClassifier` 将判断反馈是**正面**还是**负面**；`specificQuestionClassifier` 则对负面反馈进一步归类（如售后服务、运输、产品质量或其他）。两者都使用 ChatClient 连调用大模型完成分类，并会把结果写入全局状态的 `"classifier_output"` 键中（框架内部约定）。此外，也可以按需定义自定义节点。
 
-     For example, a custom `RecordingNode` is used to record and handle the final result:
+     例如自定义的 `RecordingNode` 节点用于记录和处理最终结果：
 
      ```java
-     // Node for recording results
+     // 记录结果的节点
      RecordingNode recorderNode = new RecordingNode();
      ```
 
-     `RecordingNode` implements the NodeAction interface. It will, at the end of the flow, generate the appropriate solution based on the classification result and write the result back to OverAllState.
+     `RecordingNode` 实现了 NodeAction 接口，会在流程末尾根据分类结果生成相应的解决方案，并将结果写回OverAllState。
 
-   - **StateGraph Construction**: Using the **StateGraph** API, add the above nodes to the graph and set up the transitions between nodes:
+   - **添加节点到 StateGraph**：使用 **StateGraph** 的 API，将上述节点加入图中，并设置节点间的跳转关系：
 
      ```java
      StateGraph graph = new StateGraph("Consumer Service Workflow Demo", stateFactory)
              .addNode("feedback_classifier", node_async(feedbackClassifier))
              .addNode("specific_question_classifier", node_async(specificQuestionClassifier))
              .addNode("recorder", node_async(recorderNode))
-             // Define edges (workflow sequence)
-             .addEdge(START, "feedback_classifier")  // Start node
+             // 定义边（流程顺序）
+             .addEdge(START, "feedback_classifier")  // 起始节点
              .addConditionalEdges("feedback_classifier",
                      edge_async(new CustomerServiceController.FeedbackQuestionDispatcher()),
                      Map.of("positive", "recorder", "negative", "specific_question_classifier"))
@@ -116,40 +117,40 @@ To quickly get started with Spring AI Alibaba Graph, you can build a complete wo
                      edge_async(new CustomerServiceController.SpecificQuestionDispatcher()),
                      Map.of("after-sale", "recorder", "transportation", "recorder", 
                             "quality", "recorder", "others", "recorder"))
-             .addEdge("recorder", END);  // End node
+             .addEdge("recorder", END);  // 结束节点
      ```
 
-     This configuration completes the construction of the workflow graph: first, nodes are registered to the graph, and each NodeAction is wrapped with `node_async(...)` to execute as an asynchronous node (to increase throughput or prevent blocking; the framework handles the implementation). Then the edges (transitions) and conditional routing logic between nodes are defined:
+     上述配置完成了工作流图的搭建：首先将节点注册到图，并使用 `node_async(...)` 将每个 NodeAction 包装为异步节点执行（提高吞吐或防止阻塞，具体实现框架已封装）。然后定义了节点间的边（Edges）和条件跳转逻辑：
 
-     - `START -> feedback_classifier`: The special START state goes directly into the initial **feedback classification** node.
-     - `feedback_classifier -> recorder` or `-> specific_question_classifier`: Uses a **conditional edge** to choose the next step based on the classification result. Here, `FeedbackQuestionDispatcher` (implementing **EdgeAction**) reads the classification output and returns `"positive"` or `"negative"`, which map to the subsequent nodes accordingly.
-     - `specific_question_classifier -> recorder`: Similarly, via a conditional edge, regardless of which category the negative feedback is classified into (after-sale, transportation, quality, or others), it merges into the **record** node for unified processing.
-     - `recorder -> END`: Finally, once the recording node has executed, it transitions to the END state, terminating the flow.
+     - `START -> feedback_classifier`：特殊的 START 状态直接进入初始 **反馈分类** 节点；
+     - `feedback_classifier -> recorder` 或 `-> specific_question_classifier`：通过 **条件边**根据分类结果选择下一步。这里使用 `FeedbackQuestionDispatcher` 实现 **EdgeAction** 来读取分类输出并返回 `"positive"` 或 `"negative"` 字符串，分别映射到后续节点；
+     - `specific_question_classifier -> recorder`：同样通过条件边，无论负面反馈被细分为何种类别（售后、运输、质量或其它），都汇流到 **记录** 节点进行统一处理；
+     - `recorder -> END`：最后记录节点执行完毕，进入终止状态 END，结束整个流程。
 
-   Completing the above definitions, you can inject the `StateGraph` bean built in the configuration class into the Spring container. At runtime, the framework will automatically compile this graph definition and await execution when invoked.
+   完成上述定义后，将配置类中构建的 `StateGraph` Bean 注入 Spring 容器即可。框架会在运行时根据此定义自动编译图并等待被调用执行。
 
-3. **Running the Application**: After configuring the dependencies and workflow, start the Spring Boot application (for example, using `mvn spring-boot:run` or running the main application class in an IDE). On startup, the application will read the configured API keys, initialize the ChatModel/ChatClient, and register the defined StateGraph. Spring AI Alibaba Graph provides a simple interface to trigger workflow execution — for example, a REST controller can map HTTP requests to the graph execution. Our example application includes a controller, `CustomerServiceController`, that exposes the workflow as an HTTP endpoint (details are explained in the next section).
+3. **运行应用**：在配置好依赖和工作流后，启动 Spring Boot 应用（例如使用 `mvn spring-boot:run` 或在 IDE 中运行主应用类）。应用启动时会读取配置的 API 密钥，初始化 ChatModel/ChatClient，并注册定义好的 StateGraph。Spring AI Alibaba Graph 提供了简单的调用接口来触发工作流执行，例如可以通过 REST 控制器映射 HTTP 请求到图的执行。示例应用就包含了一个控制器 `CustomerServiceController` 将工作流暴露为 HTTP 接口，下一节将详细说明。
 
-## Nodes and Component Collaboration
+## 节点和组件协作
 
-The business scenario of the above workflow application is to classify and process user product feedback. The collaboration of each component is as follows:
+上述工作流应用的业务场景是对用户产品评价进行分类和处理。各个组件的协作如下：
 
-- **Feedback Classification Node (`feedback_classifier`)**: This is a `QuestionClassifierNode` used to determine whether user feedback is positive or negative. It uses an LLM to semantically understand the input text (stored under the `"input"` key) and outputs a category result (such as *positive feedback* or *negative feedback*). The classification result is written to the global state under the `"classifier_output"` key, for use by subsequent edge decision logic.
+- **评价分类节点（feedback_classifier）**：这是一个 `QuestionClassifierNode`，用于判断用户反馈是正面还是负面。它利用 LLM 对输入文本（存储在 `"input"` 键）进行语义理解，并输出类别结果（如 *positive feedback* 或 *negative feedback*）。分类结果会写入全局状态的 `"classifier_output"` 键，供后续边的判断逻辑使用。
 
-- **Negative Feedback Detailed Classification Node (`specific_question_classifier`)**: This is also a `QuestionClassifierNode`, executed when the feedback is detected as negative. Based on the content of the negative feedback, it classifies the issue into one of four types: *after-sale service*, *transportation logistics*, *product quality*, or *others*. This node reuses the input text from `"input"` and writes the more specific classification result to `"classifier_output"` (overwriting the previous value, since that key is set with a ReplaceStrategy).
+- **负面评价细分节点（specific_question_classifier）**：同样是 `QuestionClassifierNode`，在检测到反馈为负面时被执行。它会根据负面反馈的内容，将问题归类为 *售后服务*、*运输物流*、*产品质量* 或 *其他* 四种类型之一。这个节点复用了输入文本 `"input"`，并将更具体的分类结果写入 `"classifier_output"`（会覆盖之前的值，因为该键设置了 ReplaceStrategy 策略）。
 
-- **Edge Dispatch Logic (EdgeAction)**: The transition logic between the two classification nodes is handled by `FeedbackQuestionDispatcher` and `SpecificQuestionDispatcher`. They implement the **EdgeAction** interface, which reads the global state after a node executes and decides which edge to take next:
+- **边的调度逻辑（EdgeAction）**：两个分类节点之间的转接逻辑由 `FeedbackQuestionDispatcher` 和 `SpecificQuestionDispatcher` 来完成。它们实现了 **EdgeAction** 接口，作用是在节点执行完后读取全局状态，决定下一步该走哪条边：
 
-  - `FeedbackQuestionDispatcher` (used after the feedback_classifier node) checks the `classifier_output` string. If it contains "positive", it returns `"positive"`; otherwise, it returns `"negative"`. Therefore, the StateGraph maps `"positive"` to the `recorder` node and `"negative"` to the `specific_question_classifier` node.
-  - `SpecificQuestionDispatcher` (used after the specific_question_classifier node) parses the more detailed category result. It has a predefined mapping of keywords (e.g., if the result contains "after-sale" then return `"after-sale"`, etc.). It iterates through and returns the corresponding value for the first keyword found in the classification result string, or returns `"others"` if none match. Based on this, the StateGraph directs all possible values (after-sale, transportation, quality, others) to the same next node, `recorder`.
+  - `FeedbackQuestionDispatcher`（用于 feedback_classifier 节点之后）会检查 `classifier_output` 字符串，包含“positive”则返回 `"positive"`，否则一律返回 `"negative"。因此，StateGraph 将 `"positive"` 映射到 `recorder` 节点，`"negative"` 映射到 `specific_question_classifier` 节点。
+  - `SpecificQuestionDispatcher`（用于 specific_question_classifier 节点之后）则解析更细的类别结果。它预先定义了若干关键词映射（如包含“after-sale”则返回 `"after-sale"` 等）。遍历发现分类结果字符串中含有某个关键词就返回对应值，否则返回 `"others"。StateGraph 据此将所有可能值（after-sale、transportation、quality、others）都指向同一个后续节点 `recorder`。
 
-  Through the above EdgeAction implementations, the workflow achieves **dynamic path selection**: positive feedback follows a simplified path, while negative feedback enters a detailed sub-flow. This demonstrates the advantage of Spring AI Alibaba Graph in **routing and branching** scenarios.
+  通过以上 EdgeAction，工作流实现了**动态路径选择**：正面反馈走简化路径，负面反馈则进入细分流程，充分体现了 Spring AI Alibaba Graph 在**路由分支**场景下的优势。
 
-- **Recording Node (`recorder`)**: `RecordingNode` is a custom NodeAction that handles recording and decision-making for the final result. Its `apply` method reads the `"classifier_output"` value from the global state and checks whether it contains "positive". If the feedback is positive, it only logs the event with no further action (in the example, it sets the `"solution"` field to the fixed text "Praise, no action taken." to indicate no processing is needed; in a real scenario, logic could be extended, e.g., sending the result to a branding department via an HttpNode). If the feedback is negative, it takes the detailed category result of the negative feedback as the solution (i.e., it puts the content of `"classifier_output"` directly into `"solution"`). The RecordingNode also logs the type of feedback received, so you can see the classification result in the console. This node essentially wraps up the entire workflow, determining what conclusion to provide for different types of user feedback.
+- **记录节点（recorder）**：`RecordingNode` 是按需自定义的 NodeAction，实现对最终结果的记录和决策。它的 `apply` 方法读取全局状态中的 `"classifier_output"` 字段值，判断其中是否包含“positive”。如果是正面反馈，则仅记录日志无需进一步动作（在示例中将 `"solution"` 字段设为固定文本“Praise, no action taken.”表示无需处理，真实业务场景中可扩展逻辑，例如通过HttpNode将结果发送到品牌宣传部门)；否则将负面反馈的细分类结果作为解决方案（即把 `"classifier_output"` 的内容原样填入 `"solution"`）。同时，RecordingNode 也通过日志打印了收到的反馈类型，方便在控制台查看分类结果。这一节点相当于整个工作流的收尾，决定了对于不同类型的用户评价给出怎样的处理结论。
 
-In summary, all components work together to complete a two-level classification process: **first determining if feedback is positive or negative, then further categorizing negative feedback, and finally outputting a handling plan**. This decoupled design allows developers to easily adjust each step (for example, swap out the classification model, change the granularity of categories, or add additional processing steps for negative feedback such as sending alerts or storing to a database) without affecting the overall architecture.
+综上，各组件协同完成了一个两级分类流程：**首先判断评价正负，其次细分负面问题，最后输出处理方案**。这种解耦的设计使开发者可以轻松地调整每个环节，例如替换分类模型、更改分类粒度，或在负面反馈流程中增加其他处理步骤（发送告警、存储数据库等），而无需影响整体架构。
 
-The complete PlantUML workflow diagram is shown below:
+完整的PlantUML 工作流图如下：
 
 ```
 powered by spring-ai-alibaba
@@ -178,15 +179,16 @@ hexagon "check state" as condition2<<Condition>>
 '"specific_question_classifier" .down.> "recorder": "after-sale"
 "recorder" -down-> "__END__"
 @enduml
-
 ```
 
-```mermaid
+
+
+```Mermaid
 flowchart TD
     START((Start))
-    feedback_classifier["Feedback Classification<br/>(feedback_classifier)"]
-    specific_question_classifier["Negative Feedback Detailed Classification<br/>(specific_question_classifier)"]
-    recorder["Result Recording<br/>(recorder)"]
+    feedback_classifier["反馈分类<br/>(feedback_classifier)"]
+    specific_question_classifier["负面细分分类<br/>(specific_question_classifier)"]
+    recorder["记录处理结果<br/>(recorder)"]
     END((End))
 
     START --> feedback_classifier
@@ -200,46 +202,51 @@ flowchart TD
     specific_question_classifier -->|others| recorder
 
     recorder --> END
+
 ```
 
 
 
-## Running and Testing
 
-After completing the above configuration, you can run this workflow application locally and test it through the HTTP interface:
 
-- **Starting the Application**: Ensure the required model API keys are set in the configuration file, then launch the Spring Boot application. In the startup logs, you should see messages indicating ChatClient initialization and StateGraph compiled successfully. If using an OpenAI model, the first call may download the model’s API description; if using an Alibaba Cloud model, ensure the network can reach the DashScope service.
+## 运行与测试
 
-- **Invoking the Workflow Interface**: The example application exposes the workflow as a REST interface via `CustomerServiceController`. Trigger the process by calling the following GET request in a browser or command line:
+完成上述配置后，就可以在本地运行这个工作流应用，并通过 HTTP 接口进行测试：
+
+- **启动应用**：确保已在配置文件中设置模型所需的密钥，然后启动 Spring Boot 应用。应用启动日志中应能看到 ChatClient 初始化和 StateGraph 编译成功的信息。如果使用的是 OpenAI 模型，在首次调用时可能下载模型的 API 描述；使用阿里云模型则需要确保网络能访问 DashScope 服务。
+
+- **调用工作流接口**：示例应用通过 `CustomerServiceController` 将工作流暴露为 REST 接口。在浏览器或命令行中调用以下 GET 请求即可触发流程：
 
   ```bash
-  # Invoke positive feedback example
+  # 调用正面评价案例
   curl "http://localhost:8080/customer/chat?query=This product is excellent, I love it!"
   ```
 
-  In the request above, the `query` parameter is the user feedback text. For a positive feedback example, the workflow will classify it as positive and directly record the conclusion. The expected return result is a fixed encouraging response, for example:
+  上述请求中的 `query` 参数就是用户反馈文本。对于一个正面反馈示例，工作流会判定为正面评价，直接记录结论。预计返回的结果是固定的鼓励回应，例如：
 
   ```
   Praise, no action taken.
   ```
 
-  This indicates the system recorded a positive feedback with no further action required.
+  这表示系统记录了正面评价，无需进一步处理。
 
-  Now test a negative feedback example:
+   
+
+  再测试一个负面反馈例子：
 
   ```bash
-  # Invoke negative feedback example
+  # 调用负面评价案例
   curl "http://localhost:8080/customer/chat?query=The product broke after one day, very disappointed."
   ```
 
-  Since this is a negative feedback, the workflow will first classify it as *negative*, then in the detailed classification node possibly categorize it as a "product quality" issue, and finally record that conclusion. The string returned by the interface will contain the specific issue category, for example:
+  由于这是负面评价，工作流首先会分类为 *negative*，然后在具体分类节点可能将其归类为“产品质量”问题，最后记录这一结论。接口返回的字符串将包含具体问题类别，例如：
 
   ```
   product quality
   ```
 
-  This return corresponds to the design in the RecordingNode: for negative feedback, it returns the detailed issue given by the classifier as the solution.
+  该返回结果对应在 RecordingNode 中的设计：对于负面反馈，直接返回分类器给出的细分问题作为解决方案。
 
-- **Observing Log Output**: In the application’s console logs, you can see the record of each step executed. For example, when the feedback is positive, the RecordingNode will output a log like “Received positive feedback: ...”, and for negative feedback it will output “Received negative feedback: ...”. This helps developers understand the flow during debugging. Meanwhile, because we configured the ChatClient with a SimpleLoggerAdvisor, the prompt and response for each model interaction are also logged in brief, making it easy to see the large model’s decision process.
+- **观察日志输出**：在应用控制台日志中，可以看到每一步执行的记录信息。例如，当反馈为正面时，RecordingNode 会输出日志“Received positive feedback: ...”，负面反馈则输出“Received negative feedback: ...”，这有助于开发调试了解流程走向。同时，由于给 ChatClient 配置了 SimpleLoggerAdvisor，与模型交互的提示词和回复也会简要记录，方便查看大模型决策过程。
 
-Through the above tests, we have verified that the workflow application is working correctly. Developers new to Spring AI Alibaba Graph can build on this foundation to modify and extend the workflow — for example, changing the classification categories, adjusting prompt wording, or integrating follow-up processing logic for different feedback categories (such as auto-reply or ticket creation). You can even define custom nodes and edges as per the framework to assemble workflows tailored to your business needs. Leveraging Spring AI Alibaba Graph’s powerful **declarative workflow** and **multi-agent** capabilities, developers are able to quickly set up flexible and controllable AI-driven business processes with minimal cost, efficiently utilizing the intelligence of large models in Java applications.
+通过以上测试，验证了工作流应用的正确性。新接触 Spring AI Alibaba Graph 的开发者可以在此基础上修改扩展，例如更改分类类别、调整提示词，或为不同类别的反馈接入后续处理逻辑（如自动回复、工单创建等），甚至按照框架定义，自定义节点和边，搭建适合自身业务的工作流。凭借 Spring AI Alibaba Graph **声明式工作流**和**多智能体**的强大能力，开发者能够以最小的代价快速搭建起灵活可控的 AI 驱动业务流程，在 Java 应用中高效地利用大模型的智能。
