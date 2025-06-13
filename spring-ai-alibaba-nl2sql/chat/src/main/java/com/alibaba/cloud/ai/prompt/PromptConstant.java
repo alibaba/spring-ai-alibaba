@@ -90,8 +90,7 @@ public class PromptConstant {
 			+ "\n" + "【多轮输入】\n" + "{multi_turn}\n" + "\n" + "【参考信息】\n" + "{evidence}\n" + "【输出】\n" + "需求类型：\n"
 			+ "语种类型：\n" + "需求内容：";
 
-	public static final PromptTemplate INIT_REWRITE_PROMPT_TEMPLATE = new PromptTemplate(
-			INIT_REWRITE_PROMPT_STRING);
+	public static final PromptTemplate INIT_REWRITE_PROMPT_TEMPLATE = new PromptTemplate(INIT_REWRITE_PROMPT_STRING);
 
 	public static final String QUESTION_TO_KEYWORDS_PROMPT_STRING = "将下述问题的关键语料抽取出来，直接以list形式输出，不要分析。\n" + "示例如下：\n"
 			+ "【问题】\n" + "查询2024年8月在北京，一级标签为“未成单”的人数。\n" + "【关键语料】\n"

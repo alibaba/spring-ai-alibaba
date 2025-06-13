@@ -63,7 +63,7 @@ public class BaseNl2SqlService {
 		this.dbConfig = dbConfig;
 	}
 
-	public String rewrite(String query) throws Exception{
+	public String rewrite(String query) throws Exception {
 		List<Document> evidenceDocuments = vectorStoreService.getDocuments(query, "evidence");
 		List<String> evidences = evidenceDocuments.stream().map(Document::getText).collect(Collectors.toList());
 		SchemaDTO schemaDTO = select(query, evidences);
@@ -75,10 +75,12 @@ public class BaseNl2SqlService {
 				String content = line.substring(5).trim();
 				if ("《自由闲聊》".equals(content)) {
 					return "闲聊拒识";
-				} else if ("《需要澄清》".equals(content)) {
+				}
+				else if ("《需要澄清》".equals(content)) {
 					return "意图模糊需要澄清";
 				}
-			} else if (line.startsWith("需求内容：")) {
+			}
+			else if (line.startsWith("需求内容：")) {
 				query = line.substring(5);
 			}
 		}

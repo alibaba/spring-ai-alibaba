@@ -31,8 +31,7 @@ public class PromptHelper {
 
 	private static final List<String> DATE_TIME_TYPES = Arrays.asList("DATE", "TIME", "DATETIME", "TIMESTAMP");
 
-	public static String buildRewritePrompt(String query, SchemaDTO schemaDTO,
-			List<String> evidenceList) {
+	public static String buildRewritePrompt(String query, SchemaDTO schemaDTO, List<String> evidenceList) {
 		StringBuilder dbContent = new StringBuilder();
 		dbContent.append("库名: 默认数据库, 包含以下表:\n");
 		for (TableDTO tableDTO : schemaDTO.getTable()) {
