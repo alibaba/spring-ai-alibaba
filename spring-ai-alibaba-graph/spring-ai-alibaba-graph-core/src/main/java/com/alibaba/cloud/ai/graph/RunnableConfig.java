@@ -184,7 +184,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 		/**
 		 * Sets the checkpoint ID for the configuration.
-		 * @param {@code checkPointId} - the ID of the checkpoint to be set
+		 * @param checkPointId - the ID of the checkpoint to be set
 		 * @return {@literal this} - a reference to the current `Builder` instance
 		 */
 		public Builder checkPointId(String checkPointId) {

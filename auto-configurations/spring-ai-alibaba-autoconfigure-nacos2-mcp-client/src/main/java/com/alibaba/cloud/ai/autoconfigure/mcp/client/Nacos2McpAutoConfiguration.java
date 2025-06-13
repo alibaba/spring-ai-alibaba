@@ -31,7 +31,7 @@ import java.util.Properties;
 
 /**
  * @author yingzi
- * @date 2025/6/4 16:11
+ * @since 2025/6/4 16:11
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ Nacos2McpSseClientProperties.class, NacosMcpProperties.class })

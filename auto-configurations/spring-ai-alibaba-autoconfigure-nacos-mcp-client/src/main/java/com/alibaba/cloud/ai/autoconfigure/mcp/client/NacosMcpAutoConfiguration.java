@@ -29,7 +29,7 @@ import java.util.Properties;
 
 /**
  * @author yingzi
- * @date 2025/6/4 19:16
+ * @since 2025/6/4 19:16
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ NacosMcpProperties.class })
