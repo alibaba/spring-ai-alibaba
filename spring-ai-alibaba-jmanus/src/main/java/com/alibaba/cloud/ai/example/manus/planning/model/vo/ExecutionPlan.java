@@ -23,41 +23,16 @@ import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 /**
  * 计划实体类，用于管理执行计划的相关信息
  */
-public class ExecutionPlan {
-
-	private String planId;
-
-	private String title;
-
-	private String planningThinking;
-
-	// 使用简单字符串存储执行参数
-	private String executionParams;
+public class ExecutionPlan extends AbstractExecutionPlan {
 
 	private List<ExecutionStep> steps;
 
 	public ExecutionPlan(String planId, String title) {
-		this.planId = planId;
-		this.title = title;
+		super(planId, title);
 		this.steps = new ArrayList<>();
-		this.executionParams = "";
 	}
 
-	public String getPlanId() {
-		return planId;
-	}
-
-	public void setPlanId(String planId) {
-		this.planId = planId;
-	}
-
-	public String getTitle() {
-		return title;
-	}
-
-	public void setTitle(String title) {
-		this.title = title;
-	}
+	// ExecutionPlan 特有的方法
 
 	public List<ExecutionStep> getSteps() {
 		return steps;
@@ -67,44 +42,49 @@ public class ExecutionPlan {
 		this.steps = steps;
 	}
 
-	public void addStep(ExecutionStep step) {
-		this.steps.add(step);
-	}
-
-	public void removeStep(ExecutionStep step) {
-		this.steps.remove(step);
-	}
-
 	public int getStepCount() {
 		return steps.size();
 	}
 
-	public String getPlanningThinking() {
-		return planningThinking;
-	}
+	// AbstractExecutionPlan 抽象方法的实现
 
-	public void setPlanningThinking(String planningThinking) {
-		this.planningThinking = planningThinking;
-	}
-
-	public String getExecutionParams() {
-		return executionParams;
-	}
-
-	public void setExecutionParams(String executionParams) {
-		this.executionParams = executionParams;
+	@Override
+	public List<ExecutionStep> getAllSteps() {
+		return new ArrayList<>(steps);
 	}
 
 	@Override
-	public String toString() {
-		return "ExecutionPlan{" + "planId='" + planId + '\'' + ", title='" + title + '\'' + ", stepsCount="
-				+ (steps != null ? steps.size() : 0) + '}';
+	public int getTotalStepCount() {
+		return getStepCount();
 	}
+
+	@Override
+	public void addStep(ExecutionStep step) {
+		this.steps.add(step);
+	}
+
+	@Override
+	public void removeStep(ExecutionStep step) {
+		this.steps.remove(step);
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return steps.isEmpty();
+	}
+
+	@Override
+	protected void clearSteps() {
+		steps.clear();
+	}
+
+
 
 	// state.append("全局目标 (全局目标只是一个方向性指导，你在当前请求内不需要完成全局目标，只需要关注当前正在执行的步骤即可): ")
 	// .append("\n")
 	// .append(title)
 	// .append("\n");
+	@Override
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
 
@@ -186,30 +166,6 @@ public class ExecutionPlan {
 		return getStepsExecutionStateStringFormat(false);
 	}
 
-	/**
-	 * 将计划转换为JSON字符串
-	 * @return 计划的JSON字符串表示
-	 */
-	public String toJson() {
-		StringBuilder json = new StringBuilder();
-		json.append("{\n");
-		json.append("  \"planId\": \"").append(planId).append("\",\n");
-		json.append("  \"title\": \"").append(title).append("\",\n");
-
-		// 添加步骤数组
-		json.append("  \"steps\": [\n");
-		for (int i = 0; i < steps.size(); i++) {
-			json.append(steps.get(i).toJson());
-			if (i < steps.size() - 1) {
-				json.append(",");
-			}
-			json.append("\n");
-		}
-		json.append("  ]\n");
-
-		json.append("}");
-		return json.toString();
-	}
 
 	/**
 	 * 从JSON字符串解析并创建ExecutionPlan对象
@@ -255,5 +211,7 @@ public class ExecutionPlan {
 
 		return plan;
 	}
+
+
 
 }

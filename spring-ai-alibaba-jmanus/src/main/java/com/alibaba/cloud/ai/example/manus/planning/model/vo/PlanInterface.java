@@ -1,0 +1,116 @@
+/*
+ * Copyright 2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.alibaba.cloud.ai.example.manus.planning.model.vo;
+
+import java.util.List;
+
+/**
+ * 执行计划通用接口
+ * 定义了所有执行计划类型共同的基本操作
+ */
+public interface PlanInterface {
+
+	/**
+	 * 获取计划ID
+	 * @return 计划ID
+	 */
+	String getPlanId();
+
+	/**
+	 * 设置计划ID
+	 * @param planId 计划ID
+	 */
+	void setPlanId(String planId);
+
+	/**
+	 * 获取计划标题
+	 * @return 计划标题
+	 */
+	String getTitle();
+
+	/**
+	 * 设置计划标题
+	 * @param title 计划标题
+	 */
+	void setTitle(String title);
+
+	/**
+	 * 获取规划思考过程
+	 * @return 规划思考过程
+	 */
+	String getPlanningThinking();
+
+	/**
+	 * 设置规划思考过程
+	 * @param planningThinking 规划思考过程
+	 */
+	void setPlanningThinking(String planningThinking);
+
+	/**
+	 * 获取执行参数
+	 * @return 执行参数
+	 */
+	String getExecutionParams();
+
+	/**
+	 * 设置执行参数
+	 * @param executionParams 执行参数
+	 */
+	void setExecutionParams(String executionParams);
+
+	/**
+	 * 获取所有执行步骤的扁平列表
+	 * @return 所有执行步骤
+	 */
+	List<ExecutionStep> getAllSteps();
+
+	/**
+	 * 获取总步骤数量
+	 * @return 总步骤数
+	 */
+	int getTotalStepCount();
+
+	/**
+	 * 添加执行步骤
+	 * @param step 执行步骤
+	 */
+	void addStep(ExecutionStep step);
+
+	/**
+	 * 移除执行步骤
+	 * @param step 执行步骤
+	 */
+	void removeStep(ExecutionStep step);
+
+	/**
+	 * 检查计划是否为空
+	 * @return 如果计划为空则返回true
+	 */
+	boolean isEmpty();
+
+	/**
+	 * 清空计划内容
+	 */
+	void clear();
+
+	/**
+	 * 获取计划执行状态的字符串格式
+	 * @param includeResults 是否包含步骤结果
+	 * @return 计划状态字符串
+	 */
+	String getPlanExecutionStateStringFormat(boolean includeResults);
+
+}

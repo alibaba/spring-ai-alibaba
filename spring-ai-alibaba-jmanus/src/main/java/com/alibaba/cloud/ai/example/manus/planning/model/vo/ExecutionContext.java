@@ -39,7 +39,7 @@ public class ExecutionContext {
 	private String planId;
 
 	/** 执行计划实体，包含计划的详细信息和执行步骤 */
-	private ExecutionPlan plan;
+	private PlanInterface plan;
 
 	/** 用户的原始请求内容 */
 	private String userRequest;
@@ -76,7 +76,7 @@ public class ExecutionContext {
 	 * 获取执行计划实体
 	 * @return 执行计划实体对象
 	 */
-	public ExecutionPlan getPlan() {
+	public PlanInterface getPlan() {
 		return plan;
 	}
 
@@ -84,7 +84,7 @@ public class ExecutionContext {
 	 * 设置执行计划实体
 	 * @param plan 执行计划实体对象
 	 */
-	public void setPlan(ExecutionPlan plan) {
+	public void setPlan(PlanInterface plan) {
 		this.plan = plan;
 	}
 

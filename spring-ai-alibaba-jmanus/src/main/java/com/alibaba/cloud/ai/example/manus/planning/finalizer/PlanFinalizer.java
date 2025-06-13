@@ -21,6 +21,7 @@ import java.util.Map;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +66,7 @@ public class PlanFinalizer {
 			recordPlanCompletion(context, summary);
 			return;
 		}
-		ExecutionPlan plan = context.getPlan();
+		PlanInterface plan = context.getPlan();
 		String executionDetail = plan.getPlanExecutionStateStringFormat(false);
 		try {
 			String userRequest = context.getUserRequest();

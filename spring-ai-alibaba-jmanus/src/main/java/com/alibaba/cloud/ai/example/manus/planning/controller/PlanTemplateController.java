@@ -40,8 +40,10 @@ import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinat
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * 计划模板控制器，处理计划模板页面的API请求
@@ -64,6 +66,18 @@ public class PlanTemplateController {
 
 	@Autowired
 	private PlanIdDispatcher planIdDispatcher;
+
+	private final ObjectMapper objectMapper = new ObjectMapper();
+
+	/**
+	 * 将计划对象序列化为JSON字符串
+	 * @param plan 计划对象
+	 * @return JSON字符串
+	 * @throws Exception 序列化失败时抛出异常
+	 */
+	private String planToJson(PlanInterface plan) throws Exception {
+		return objectMapper.writeValueAsString(plan);
+	}
 
 	/**
 	 * 生成计划
@@ -110,8 +124,15 @@ public class PlanTemplateController {
 				return ResponseEntity.internalServerError().body(Map.of("error", "计划生成失败，无法获取计划数据"));
 			}
 
-			// 获取计划JSON
-			String planJson = context.getPlan().toJson();
+			// 获取计划JSON - 使用 Jackson 序列化
+			String planJson;
+			try {
+				planJson = planToJson(context.getPlan());
+			}
+			catch (Exception jsonException) {
+				logger.error("序列化计划为JSON失败", jsonException);
+				return ResponseEntity.internalServerError().body(Map.of("error", "序列化计划失败: " + jsonException.getMessage()));
+			}
 
 			// 保存到版本历史
 			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planTemplateId, planJson);
@@ -489,8 +510,15 @@ public class PlanTemplateController {
 				return ResponseEntity.internalServerError().body(Map.of("error", "计划更新失败，无法获取计划数据"));
 			}
 
-			// 获取计划JSON
-			String planJson = context.getPlan().toJson();
+			// 获取计划JSON - 使用 Jackson 序列化
+			String planJson;
+			try {
+				planJson = planToJson(context.getPlan());
+			}
+			catch (Exception jsonException) {
+				logger.error("序列化计划为JSON失败", jsonException);
+				return ResponseEntity.internalServerError().body(Map.of("error", "序列化计划失败: " + jsonException.getMessage()));
+			}
 
 			// 保存到版本历史
 			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planId, planJson);

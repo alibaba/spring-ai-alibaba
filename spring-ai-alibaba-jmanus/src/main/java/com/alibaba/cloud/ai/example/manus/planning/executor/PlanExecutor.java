@@ -22,8 +22,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntit
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
@@ -83,8 +83,8 @@ public class PlanExecutor {
 		BaseAgent executor = null;
 		try {
 			recordPlanExecutionStart(context);
-			ExecutionPlan plan = context.getPlan();
-			List<ExecutionStep> steps = plan.getSteps();
+			PlanInterface plan = context.getPlan();
+			List<ExecutionStep> steps = plan.getAllSteps();
 
 			if (CollectionUtil.isNotEmpty(steps)) {
 				for (ExecutionStep step : steps) {
@@ -195,7 +195,7 @@ public class PlanExecutor {
 
 	private void retrieveExecutionSteps(ExecutionContext context, PlanExecutionRecord record) {
 		List<String> steps = new ArrayList<>();
-		for (ExecutionStep step : context.getPlan().getSteps()) {
+		for (ExecutionStep step : context.getPlan().getAllSteps()) {
 			steps.add(step.getStepInStr());
 		}
 		record.setSteps(steps);

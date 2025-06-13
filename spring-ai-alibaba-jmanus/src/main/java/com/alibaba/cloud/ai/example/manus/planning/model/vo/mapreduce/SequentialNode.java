@@ -1,0 +1,105 @@
+/*
+ * Copyright 2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce;
+
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 顺序执行节点
+ */
+public class SequentialNode {
+
+	private MapReduceStepType type = MapReduceStepType.SEQUENTIAL;
+
+	private List<ExecutionStep> steps;
+
+	public SequentialNode() {
+		this.steps = new ArrayList<>();
+	}
+
+	public SequentialNode(List<ExecutionStep> steps) {
+		this.steps = steps != null ? steps : new ArrayList<>();
+	}
+
+	public MapReduceStepType getType() {
+		return type;
+	}
+
+	public List<ExecutionStep> getSteps() {
+		return steps;
+	}
+
+	public void setSteps(List<ExecutionStep> steps) {
+		this.steps = steps != null ? steps : new ArrayList<>();
+	}
+
+	public void addStep(ExecutionStep step) {
+		if (steps == null) {
+			steps = new ArrayList<>();
+		}
+		steps.add(step);
+	}
+
+	public void removeStep(ExecutionStep step) {
+		if (steps != null) {
+			steps.remove(step);
+		}
+	}
+
+	public ExecutionStep removeStep(int index) {
+		if (steps != null && index >= 0 && index < steps.size()) {
+			return steps.remove(index);
+		}
+		return null;
+	}
+
+	public int getStepCount() {
+		return steps != null ? steps.size() : 0;
+	}
+
+	public ExecutionStep getStep(int index) {
+		if (steps != null && index >= 0 && index < steps.size()) {
+			return steps.get(index);
+		}
+		return null;
+	}
+
+	/**
+	 * 获取节点的字符串表示
+	 * @return 节点字符串
+	 */
+	public String getNodeInStr() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("=== 顺序执行节点 ===\n");
+		sb.append("步骤数量: ").append(getStepCount()).append("\n");
+		
+		if (steps != null) {
+			for (int i = 0; i < steps.size(); i++) {
+				ExecutionStep step = steps.get(i);
+				sb.append("  ").append(i + 1).append(". ").append(step.getStepRequirement()).append("\n");
+			}
+		}
+		
+		return sb.toString();
+	}
+
+	@Override
+	public String toString() {
+		return getNodeInStr();
+	}
+}

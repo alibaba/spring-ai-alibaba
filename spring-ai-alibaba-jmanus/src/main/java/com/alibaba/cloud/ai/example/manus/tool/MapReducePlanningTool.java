@@ -15,7 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.SequentialNode;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceNode;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,13 +35,13 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 
 	private static final Logger log = LoggerFactory.getLogger(MapReducePlanningTool.class);
 
-	private ExecutionPlan currentPlan;
+	private MapReduceExecutionPlan currentPlan;
 
 	public String getCurrentPlanId() {
 		return currentPlan != null ? currentPlan.getPlanId() : null;
 	}
 
-	public ExecutionPlan getCurrentPlan() {
+	public MapReduceExecutionPlan getCurrentPlan() {
 		return currentPlan;
 	}
 
@@ -197,15 +199,14 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 			return new ToolExecuteResult("Required parameters missing");
 		}
 
-		ExecutionPlan plan = new ExecutionPlan(planId, title);
-		int globalStepIndex = 0;
+		MapReduceExecutionPlan plan = new MapReduceExecutionPlan(planId, title);
 
 		for (Map<String, Object> stepNode : steps) {
 			String nodeType = (String) stepNode.get("type");
 			
 			switch (nodeType) {
-				case "sequential" -> globalStepIndex = processSequentialNode(plan, stepNode, globalStepIndex);
-				case "mapreduce" -> globalStepIndex = processMapReduceNode(plan, stepNode, globalStepIndex);
+				case "sequential" -> processSequentialNode(plan, stepNode);
+				case "mapreduce" -> processMapReduceNode(plan, stepNode);
 				default -> {
 					log.warn("未知的节点类型: {}", nodeType);
 					return new ToolExecuteResult("Unknown node type: " + nodeType);
@@ -218,71 +219,39 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 	}
 
 	/**
-	 * 处理并行节点
-	 * @param plan 执行计划
-	 * @param stepNode 步骤节点
-	 * @param startIndex 起始索引
-	 * @return 下一个可用索引
-	 */
-	private int processParallelNode(ExecutionPlan plan, Map<String, Object> stepNode, int startIndex) {
-		@SuppressWarnings("unchecked")
-		List<Map<String, Object>> parallelSteps = (List<Map<String, Object>>) stepNode.get("steps");
-		if (parallelSteps == null) return startIndex;
-
-		int currentIndex = startIndex;
-		for (Map<String, Object> step : parallelSteps) {
-			ExecutionStep executionStep = createExecutionStepFromMap(step, currentIndex);
-			// 在步骤要求前添加标识符表示这是并行步骤
-			executionStep.setStepRequirement("[PARALLEL] " + executionStep.getStepRequirement());
-			plan.addStep(executionStep);
-			currentIndex++;
-		}
-		return currentIndex;
-	}
-
-	/**
 	 * 处理顺序节点
 	 * @param plan 执行计划
 	 * @param stepNode 步骤节点
-	 * @param startIndex 起始索引
-	 * @return 下一个可用索引
 	 */
-	private int processSequentialNode(ExecutionPlan plan, Map<String, Object> stepNode, int startIndex) {
+	private void processSequentialNode(MapReduceExecutionPlan plan, Map<String, Object> stepNode) {
 		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> sequentialSteps = (List<Map<String, Object>>) stepNode.get("steps");
-		if (sequentialSteps == null) return startIndex;
+		if (sequentialSteps == null) return;
 
-		int currentIndex = startIndex;
+		SequentialNode node = new SequentialNode();
 		for (Map<String, Object> step : sequentialSteps) {
-			ExecutionStep executionStep = createExecutionStepFromMap(step, currentIndex);
-			// 在步骤要求前添加标识符表示这是顺序步骤
-			executionStep.setStepRequirement("[SEQUENTIAL] " + executionStep.getStepRequirement());
-			plan.addStep(executionStep);
-			currentIndex++;
+			ExecutionStep executionStep = createExecutionStepFromMap(step);
+			node.addStep(executionStep);
 		}
-		return currentIndex;
+		
+		plan.addSequentialNode(node);
 	}
 
 	/**
 	 * 处理MapReduce节点
 	 * @param plan 执行计划
 	 * @param stepNode 步骤节点
-	 * @param startIndex 起始索引
-	 * @return 下一个可用索引
 	 */
-	private int processMapReduceNode(ExecutionPlan plan, Map<String, Object> stepNode, int startIndex) {
-		int currentIndex = startIndex;
+	private void processMapReduceNode(MapReduceExecutionPlan plan, Map<String, Object> stepNode) {
+		MapReduceNode node = new MapReduceNode();
 
 		// 处理Map步骤
 		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> mapSteps = (List<Map<String, Object>>) stepNode.get("mapSteps");
 		if (mapSteps != null) {
 			for (Map<String, Object> step : mapSteps) {
-				ExecutionStep executionStep = createExecutionStepFromMap(step, currentIndex);
-				// 在步骤要求前添加标识符表示这是Map步骤
-				executionStep.setStepRequirement("[MAP] " + executionStep.getStepRequirement());
-				plan.addStep(executionStep);
-				currentIndex++;
+				ExecutionStep executionStep = createExecutionStepFromMap(step);
+				node.addMapStep(executionStep);
 			}
 		}
 
@@ -291,36 +260,30 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 		List<Map<String, Object>> reduceSteps = (List<Map<String, Object>>) stepNode.get("reduceSteps");
 		if (reduceSteps != null) {
 			for (Map<String, Object> step : reduceSteps) {
-				ExecutionStep executionStep = createExecutionStepFromMap(step, currentIndex);
-				// 在步骤要求前添加标识符表示这是Reduce步骤
-				executionStep.setStepRequirement("[REDUCE] " + executionStep.getStepRequirement());
-				plan.addStep(executionStep);
-				currentIndex++;
+				ExecutionStep executionStep = createExecutionStepFromMap(step);
+				node.addReduceStep(executionStep);
 			}
 		}
 
-		return currentIndex;
+		plan.addMapReduceNode(node);
 	}
 
 	/**
 	 * 从Map创建ExecutionStep
 	 * @param stepMap 步骤Map
-	 * @param index 步骤索引
 	 * @return 创建的ExecutionStep实例
 	 */
-	private ExecutionStep createExecutionStepFromMap(Map<String, Object> stepMap, int index) {
-		ExecutionStep executionStep = new ExecutionStep();
-		executionStep.setStepIndex(index);
-		
-		// 构建包含输出列信息的步骤要求字符串
+	private ExecutionStep createExecutionStepFromMap(Map<String, Object> stepMap) {
 		String stepRequirement = (String) stepMap.get("stepRequirement");
 		String outputColumns = (String) stepMap.get("outputColumns");
 		
-		if (outputColumns != null && !outputColumns.isEmpty()) {
-			stepRequirement += " [输出列: " + outputColumns + "]";
-		}
-		
+		ExecutionStep executionStep = new ExecutionStep();
 		executionStep.setStepRequirement(stepRequirement);
+		
+		// 直接保存输出列信息到对应字段
+		if (outputColumns != null && !outputColumns.trim().isEmpty()) {
+			executionStep.setOutputColumns(outputColumns);
+		}
 		
 		return executionStep;
 	}

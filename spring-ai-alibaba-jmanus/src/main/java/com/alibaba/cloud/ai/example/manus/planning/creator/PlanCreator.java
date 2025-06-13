@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntit
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
 import org.slf4j.Logger;
@@ -74,7 +75,7 @@ public class PlanCreator {
 			// 生成计划提示
 			String planPrompt = generatePlanPrompt(context.getUserRequest(), agentsInfo);
 
-			ExecutionPlan executionPlan = null;
+			PlanInterface executionPlan = null;
 			String outputText = null;
 
 			// 重试机制：最多尝试3次直到获取到有效的执行计划
@@ -121,7 +122,7 @@ public class PlanCreator {
 				}
 			}
 
-			ExecutionPlan currentPlan;
+			PlanInterface currentPlan;
 			// 检查计划是否创建成功
 			if (executionPlan != null) {
 				currentPlan = planningTool.getCurrentPlan();

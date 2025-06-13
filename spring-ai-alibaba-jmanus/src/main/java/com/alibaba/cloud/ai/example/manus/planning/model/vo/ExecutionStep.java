@@ -29,6 +29,8 @@ public class ExecutionStep {
 
 	private String result;
 
+	private String outputColumns;
+
 	private BaseAgent agent;
 
 	public Integer getStepIndex() {
@@ -63,6 +65,14 @@ public class ExecutionStep {
 		this.stepRequirement = stepRequirement;
 	}
 
+	public String getOutputColumns() {
+		return outputColumns;
+	}
+
+	public void setOutputColumns(String outputColumns) {
+		this.outputColumns = outputColumns;
+	}
+
 	public String getStepInStr() {
 		String agentState = null;
 		if (agent != null) {
@@ -81,22 +91,6 @@ public class ExecutionStep {
 		return sb.toString();
 	}
 
-	/**
-	 * 将步骤转换为JSON字符串
-	 * @return 步骤的JSON字符串表示
-	 */
-	public String toJson() {
-		StringBuilder json = new StringBuilder();
-		json.append("    {");
-		json.append("\"stepRequirement\": \"").append(stepRequirement.replace("\"", "\\\"")).append("\" ");
-
-		if (result != null && !result.isEmpty()) {
-			json.append(", \"result\": \"").append(result.replace("\"", "\\\"").replace("\n", "\\n")).append("\"");
-		}
-
-		json.append("}");
-		return json.toString();
-	}
 
 	/**
 	 * 从JsonNode解析并创建ExecutionStep对象
@@ -109,6 +103,11 @@ public class ExecutionStep {
 		// 设置步骤需求
 		String stepRequirement = stepNode.has("stepRequirement") ? stepNode.get("stepRequirement").asText() : "未指定步骤";
 		step.setStepRequirement(stepRequirement);
+
+		// 设置输出列（如果有）
+		if (stepNode.has("outputColumns")) {
+			step.setOutputColumns(stepNode.get("outputColumns").asText());
+		}
 
 		// 设置步骤索引（如果有）
 		if (stepNode.has("stepIndex")) {

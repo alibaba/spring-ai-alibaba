@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
@@ -34,7 +34,7 @@ public interface PlanningToolInterface {
      * 获取当前的执行计划
      * @return 当前的执行计划，如果没有计划则返回null
      */
-    ExecutionPlan getCurrentPlan();
+    PlanInterface getCurrentPlan();
 
     /**
      * 获取函数工具回调，用于与LLM集成
