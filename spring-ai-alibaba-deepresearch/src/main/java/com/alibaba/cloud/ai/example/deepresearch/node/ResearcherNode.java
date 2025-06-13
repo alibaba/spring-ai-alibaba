@@ -55,7 +55,7 @@ public class ResearcherNode implements NodeAction {
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.steps()) {
 			if (Plan.StepType.RESEARCH.equals(step.stepType()) && !StringUtils.hasText(step.executionRes())) {
-				unexecutedStep = step;
+				unexecutedStep = step.mutate().build();
 				break;
 			}
 		}

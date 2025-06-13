@@ -52,7 +52,7 @@ public class ResearcherDispatcher implements EdgeAction {
 			logger.info("all researcher node is finished.");
 			return "research_team";
 		}
-		unexecutedStep.mutate().executionRes(result).build();
+		unexecutedStep = unexecutedStep.mutate().executionRes(result).build();
 
 		logger.info("researcher Node response: {}", result);
 		Map<String, Object> updated = new HashMap<>();

@@ -59,7 +59,7 @@ public class CoderNode implements NodeAction {
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.steps()) {
 			if (step.stepType().equals(Plan.StepType.PROCESSING) && step.executionRes() == null) {
-				unexecutedStep = step;
+				unexecutedStep = step.mutate().build();
 				break;
 			}
 		}
