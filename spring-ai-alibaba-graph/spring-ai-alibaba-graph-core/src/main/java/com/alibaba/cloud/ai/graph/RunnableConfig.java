@@ -15,11 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
 
 /**
  * A final class representing configuration for a runnable task. This class holds various
@@ -27,15 +28,17 @@ import static java.lang.String.format;
  * methods to modify these parameters safely without permanently altering the original
  * configuration.
  */
-public final class RunnableConfig {
+public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder> {
 
-	private String threadId;
+	private final String threadId;
 
-	private String checkPointId;
+	private final String checkPointId;
 
-	private String nextNode;
+	private final String nextNode;
 
-	private CompiledGraph.StreamMode streamMode = CompiledGraph.StreamMode.VALUES;
+	private final CompiledGraph.StreamMode streamMode;
+
+	private final Map<String, Object> metadata;
 
 	/**
 	 * Returns the stream mode of the compiled graph.
@@ -51,7 +54,7 @@ public final class RunnableConfig {
 	 * if no thread ID is set.
 	 */
 	public Optional<String> threadId() {
-		return Optional.ofNullable(threadId);
+		return ofNullable(threadId);
 	}
 
 	/**
@@ -60,7 +63,7 @@ public final class RunnableConfig {
 	 * {@link Optional#empty()} if it is null.
 	 */
 	public Optional<String> checkPointId() {
-		return Optional.ofNullable(checkPointId);
+		return ofNullable(checkPointId);
 	}
 
 	/**
@@ -69,7 +72,7 @@ public final class RunnableConfig {
 	 * @return an {@code Optional} describing the next node, or an empty {@code Optional}
 	 */
 	public Optional<String> nextNode() {
-		return Optional.ofNullable(nextNode);
+		return ofNullable(nextNode);
 	}
 
 	/**
@@ -82,9 +85,8 @@ public final class RunnableConfig {
 		if (this.streamMode == streamMode) {
 			return this;
 		}
-		RunnableConfig newConfig = new RunnableConfig(this);
-		newConfig.streamMode = streamMode;
-		return newConfig;
+
+		return RunnableConfig.builder(this).streamMode(streamMode).build();
 	}
 
 	/**
@@ -97,9 +99,21 @@ public final class RunnableConfig {
 		if (Objects.equals(this.checkPointId, checkPointId)) {
 			return this;
 		}
-		RunnableConfig newConfig = new RunnableConfig(this);
-		newConfig.checkPointId = checkPointId;
-		return newConfig;
+		return RunnableConfig.builder(this).checkPointId(checkPointId).build();
+
+	}
+
+	/**
+	 * return metadata value for key
+	 * @param key given metadata key
+	 * @return metadata value for key if any
+	 */
+	@Override
+	public Optional<Object> getMetadata(String key) {
+		if (key == null) {
+			return Optional.empty();
+		}
+		return ofNullable(metadata).map(m -> m.get(key));
 	}
 
 	/**
@@ -124,9 +138,15 @@ public final class RunnableConfig {
 	 * provides a fluent interface to set various properties of a {@link RunnableConfig}
 	 * object and then build the final configuration.
 	 */
-	public static class Builder {
+	public static class Builder extends HasMetadata.Builder<Builder> {
 
-		private final RunnableConfig config;
+		private String threadId;
+
+		private String checkPointId;
+
+		private String nextNode;
+
+		private CompiledGraph.StreamMode streamMode = CompiledGraph.StreamMode.VALUES;
 
 		/**
 		 * Constructs a new instance of the {@link Builder} with default configuration
@@ -134,8 +154,6 @@ public final class RunnableConfig {
 		 * purposes.
 		 */
 		Builder() {
-			;
-			this.config = new RunnableConfig();
 		}
 
 		/**
@@ -144,7 +162,12 @@ public final class RunnableConfig {
 		 * @param config The configuration to be used for initialization.
 		 */
 		Builder(RunnableConfig config) {
-			this.config = new RunnableConfig(config);
+			Objects.requireNonNull(config, "config cannot be null!");
+			this.threadId = config.threadId;
+			this.checkPointId = config.checkPointId;
+			this.nextNode = config.nextNode;
+			this.streamMode = config.streamMode;
+			this.metadata = config.metadata;
 		}
 
 		/**
@@ -154,17 +177,17 @@ public final class RunnableConfig {
 		 * chained together
 		 */
 		public Builder threadId(String threadId) {
-			this.config.threadId = threadId;
+			this.threadId = threadId;
 			return this;
 		}
 
 		/**
 		 * Sets the checkpoint ID for the configuration.
-		 * @param {@code checkPointId} - the ID of the checkpoint to be set
+		 * @param checkPointId - the ID of the checkpoint to be set
 		 * @return {@literal this} - a reference to the current `Builder` instance
 		 */
 		public Builder checkPointId(String checkPointId) {
-			this.config.checkPointId = checkPointId;
+			this.checkPointId = checkPointId;
 			return this;
 		}
 
@@ -175,7 +198,7 @@ public final class RunnableConfig {
 		 * @return This builder instance, allowing for method chaining.
 		 */
 		public Builder nextNode(String nextNode) {
-			this.config.nextNode = nextNode;
+			this.nextNode = nextNode;
 			return this;
 		}
 
@@ -185,7 +208,7 @@ public final class RunnableConfig {
 		 * @return A reference to this builder for method chaining.
 		 */
 		public Builder streamMode(CompiledGraph.StreamMode streamMode) {
-			this.config.streamMode = streamMode;
+			this.streamMode = streamMode;
 			return this;
 		}
 
@@ -194,7 +217,7 @@ public final class RunnableConfig {
 		 * @return the configured {@code RunnableConfig} object
 		 */
 		public RunnableConfig build() {
-			return config;
+			return new RunnableConfig(this);
 		}
 
 	}
@@ -202,22 +225,14 @@ public final class RunnableConfig {
 	/**
 	 * Creates a new instance of {@code RunnableConfig} as a copy of the provided
 	 * {@code config}.
-	 * @param config The configuration to copy.
-	 * @throws NullPointerException If {@code config} is null.
+	 * @param builder The configuration builder.
 	 */
-	private RunnableConfig(RunnableConfig config) {
-		Objects.requireNonNull(config, "config cannot be null");
-		this.threadId = config.threadId;
-		this.checkPointId = config.checkPointId;
-		this.nextNode = config.nextNode;
-		this.streamMode = config.streamMode;
-	}
-
-	/**
-	 * Default constructor for the {@link RunnableConfig} class. Private to prevent
-	 * instantiation from outside the class.
-	 */
-	private RunnableConfig() {
+	private RunnableConfig(Builder builder) {
+		this.threadId = builder.threadId;
+		this.checkPointId = builder.checkPointId;
+		this.nextNode = builder.nextNode;
+		this.streamMode = builder.streamMode;
+		this.metadata = ofNullable(builder.metadata).map(Map::copyOf).orElse(null);
 	}
 
 	@Override

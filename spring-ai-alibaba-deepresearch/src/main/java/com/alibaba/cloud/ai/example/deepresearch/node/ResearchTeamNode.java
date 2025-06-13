@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -27,7 +27,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * @author yingzi
@@ -54,6 +53,9 @@ public class ResearchTeamNode implements NodeAction {
 
 		// todo 异步 + 并行执行Step
 		for (Plan.Step step : curPlan.getSteps()) {
+			if (StringUtils.hasText(step.getExecutionRes())) {
+				continue;
+			}
 			if (step.getStepType() == Plan.StepType.RESEARCH) {
 				nextStep = "researcher";
 				updated.put("research_team_next_node", nextStep);

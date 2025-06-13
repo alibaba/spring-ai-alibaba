@@ -26,7 +26,6 @@ import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import org.apache.commons.lang3.StringUtils;
 import org.bsc.async.AsyncGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +36,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -506,6 +504,15 @@ public class CompiledGraph {
 				printConditionalEdges);
 
 		return new GraphRepresentation(type, content);
+	}
+
+	/**
+	 * Get the last StateSnapshot of the given RunnableConfig.
+	 * @param config - the RunnableConfig
+	 * @return the last StateSnapshot of the given RunnableConfig if any
+	 */
+	Optional<StateSnapshot> lastStateOf(RunnableConfig config) {
+		return getStateHistory(config).stream().findFirst();
 	}
 
 	/**

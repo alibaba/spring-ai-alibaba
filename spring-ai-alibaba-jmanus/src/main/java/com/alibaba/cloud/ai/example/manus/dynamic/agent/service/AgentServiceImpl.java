@@ -17,8 +17,10 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +30,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
@@ -37,7 +38,6 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentR
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 @Service
 public class AgentServiceImpl implements AgentService {
@@ -52,6 +52,8 @@ public class AgentServiceImpl implements AgentService {
 
 	private final PlanningFactory planningFactory;
 
+	private final McpService mcpService;
+
 	@Autowired
 	@Lazy
 	private LlmService llmService;
@@ -62,10 +64,11 @@ public class AgentServiceImpl implements AgentService {
 
 	@Autowired
 	public AgentServiceImpl(@Lazy DynamicAgentLoader dynamicAgentLoader, DynamicAgentRepository repository,
-			@Lazy PlanningFactory planningFactory) {
+			@Lazy PlanningFactory planningFactory, @Lazy McpService mcpService) {
 		this.dynamicAgentLoader = dynamicAgentLoader;
 		this.repository = repository;
 		this.planningFactory = planningFactory;
+		this.mcpService = mcpService;
 	}
 
 	@Override
@@ -136,17 +139,24 @@ public class AgentServiceImpl implements AgentService {
 	@Override
 	public List<Tool> getAvailableTools() {
 
-		Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(null);
-		return toolcallContext.entrySet().stream().map(entry -> {
-			Tool tool = new Tool();
-			tool.setKey(entry.getKey());
-			tool.setName(entry.getKey()); // You might want to provide a more friendly
-											// name
-			tool.setDescription(entry.getValue().getFunctionInstance().getDescription());
-			tool.setEnabled(true);
-			tool.setServiceGroup(entry.getValue().getFunctionInstance().getServiceGroup());
-			return tool;
-		}).collect(Collectors.toList());
+		String uuid = UUID.randomUUID().toString();
+
+		try {
+			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid);
+			return toolcallContext.entrySet().stream().map(entry -> {
+				Tool tool = new Tool();
+				tool.setKey(entry.getKey());
+				tool.setName(entry.getKey()); // You might want to provide a more friendly
+				// name
+				tool.setDescription(entry.getValue().getFunctionInstance().getDescription());
+				tool.setEnabled(true);
+				tool.setServiceGroup(entry.getValue().getFunctionInstance().getServiceGroup());
+				return tool;
+			}).collect(Collectors.toList());
+		}
+		finally {
+			mcpService.close(uuid);
+		}
 	}
 
 	private AgentConfig mapToAgentConfig(DynamicAgentEntity entity) {

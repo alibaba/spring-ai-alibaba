@@ -15,11 +15,6 @@
  */
 package com.alibaba.cloud.ai.advisor;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -27,9 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Flux;
-import reactor.test.StepVerifier;
-
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
@@ -45,6 +37,13 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -189,7 +188,9 @@ class DocumentRetrievalAdvisorTests {
 		Map<String, Object> adviseContext = new HashMap<>();
 		adviseContext.put(DocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, Collections.emptyList());
 		ChatClientResponse mockResponse = ChatClientResponse.builder()
-				.chatResponse(testResponse.chatResponse()).context(adviseContext).build();
+			.chatResponse(testResponse.chatResponse())
+			.context(adviseContext)
+			.build();
 		when(callChain.nextCall(any(ChatClientRequest.class))).thenReturn(mockResponse);
 
 		// Execute aroundCall
@@ -198,7 +199,7 @@ class DocumentRetrievalAdvisorTests {
 		// Verify response
 		assertThat(response).isNotNull();
 		assertThat(response.context().get(DocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS))
-				.isEqualTo(Collections.emptyList());
+			.isEqualTo(Collections.emptyList());
 	}
 
 	/**
