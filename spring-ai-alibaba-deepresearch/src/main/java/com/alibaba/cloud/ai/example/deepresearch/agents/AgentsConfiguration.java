@@ -70,7 +70,7 @@ public class AgentsConfiguration {
 	@Bean
 	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties) {
 		Assert.notNull(coderPrompt, "coderPrompt cannot be null");
-		try (InputStream inputStream = researcherPrompt.getInputStream()) {
+		try (InputStream inputStream = coderPrompt.getInputStream()) {
 			var template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
 			Assert.hasText(template, "template cannot be null or empty");
 			return chatClientBuilder.defaultSystem(template)
