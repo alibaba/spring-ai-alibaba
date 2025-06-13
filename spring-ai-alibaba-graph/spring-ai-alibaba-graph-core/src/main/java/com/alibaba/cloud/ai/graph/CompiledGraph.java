@@ -509,6 +509,15 @@ public class CompiledGraph {
 	}
 
 	/**
+	 * Get the last StateSnapshot of the given RunnableConfig.
+	 * @param config - the RunnableConfig
+	 * @return the last StateSnapshot of the given RunnableConfig if any
+	 */
+	Optional<StateSnapshot> lastStateOf(RunnableConfig config) {
+		return getStateHistory(config).stream().findFirst();
+	}
+
+	/**
 	 * Generates a drawable graph representation of the state graph.
 	 * @param type the type of graph representation to generate
 	 * @param title the title of the graph
@@ -750,6 +759,8 @@ public class CompiledGraph {
 				}
 
 				var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
+
+				overAllState.updateState(command.update());
 
 				return new Command(result, currentState);
 			}

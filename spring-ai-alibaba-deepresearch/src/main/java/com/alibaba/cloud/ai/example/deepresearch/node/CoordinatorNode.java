@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -25,9 +26,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,26 +48,29 @@ public class CoordinatorNode implements NodeAction {
 
 	private final ChatClient chatClient;
 
-	private final PlannerTool plannerTool;
-
 	public CoordinatorNode(ChatClient.Builder chatClientBuilder) {
-		this.chatClient = chatClientBuilder.build();
-		this.plannerTool = new PlannerTool();
+		this.chatClient = chatClientBuilder
+			.defaultOptions(ToolCallingChatOptions.builder()
+				.internalToolExecutionEnabled(false) // 禁用内部工具执行
+				.build())
+			// 当前CoordinatorNode节点只绑定一个计划工具
+			.defaultTools(new PlannerTool())
+			.build();
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("Coordinator talking.");
-		List<Message> messages = TemplateUtil.applyPromptTemplate("coordinator", state);
+		logger.info("coordinator node is running.");
+		List<Message> messages = new ArrayList<>();
+		// 1. 添加消息
+		// 1.1 添加预置提示消息
+		messages.add(TemplateUtil.getMessage("coordinator"));
+		// 1.2 添加用户提问
+		messages.add(new UserMessage(StateUtil.getQuery(state)));
 		logger.debug("Current Coordinator messages: {}", messages);
 
 		// 发起调用并获取完整响应
-		ChatResponse response = chatClient.prompt()
-			.options(ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build())
-			.tools(plannerTool)
-			.messages(messages)
-			.call()
-			.chatResponse();
+		ChatResponse response = chatClient.prompt().messages(messages).call().chatResponse();
 
 		String nextStep = END;
 		Map<String, Object> updated = new HashMap<>();
@@ -72,24 +78,15 @@ public class CoordinatorNode implements NodeAction {
 		// 获取 assistant 消息内容
 		assert response != null;
 		AssistantMessage assistantMessage = response.getResult().getOutput();
-
-		// 判断下一步
-		if (state.value("enable_background_investigation", false)) {
-			nextStep = "background_investigator";
-		}
-		else {
-			// 直接交给planner
-			nextStep = "planner";
-		}
 		// 判断是否触发工具调用
 		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
 			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
-			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-				if (!"handoff_to_planner".equals(toolCall.name())) {
-					continue;
-				}
+			if (state.value("enable_background_investigation", true)) {
+				nextStep = "background_investigator";
 			}
-
+			else {
+				nextStep = "planner";
+			}
 		}
 		else {
 			logger.warn("❌ 未触发工具调用");

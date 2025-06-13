@@ -30,10 +30,11 @@ import org.springframework.http.MediaType;
 @Configuration
 @EnableConfigurationProperties(TavilySearchProperties.class)
 @ConditionalOnClass(TavilySearchService.class)
-@ConditionalOnProperty(prefix = TavilySearchProperties.PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = TavilySearchConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class TavilySearchAutoConfiguration {
 
-	@Bean
+	@Bean(name = TavilySearchConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Provides a TavilySearchService bean for performing searches using the Tavily search engine.")
 	public TavilySearchService tavilySearch(TavilySearchProperties properties, JsonParseTool jsonParseTool) {
