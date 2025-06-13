@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
-package com.alibaba.cloud.ai.example.deepresearch.config;
-
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/**
- * @author Allen Hu
- * @since 2025/5/24
- */
-@ConfigurationProperties(prefix = DeepResearchProperties.PREFIX)
-public class DeepResearchProperties {
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 
-	public static final String PREFIX = "spring.ai.alibaba.deepreserch";
+/**
+ * @author fengluo
+ */
+@ConfigurationProperties(prefix = JsonProcessorProperties.JSON_PROCESSOR_PREFIX)
+public class JsonProcessorProperties extends CommonToolCallProperties {
+
+	protected static final String JSON_PROCESSOR_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".jsonprocessor";
 
 }
