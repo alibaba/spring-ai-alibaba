@@ -15,10 +15,13 @@
  */
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import java.util.function.Function;
@@ -26,26 +29,35 @@ import java.util.function.Function;
 /**
  * @author 北极星
  */
-public class JsonInsertService implements Function<JsonInsertService.JsonInsertRequest, Object> {
+public class JsonProcessorInsertService implements Function<JsonProcessorInsertService.JsonInsertRequest, Object> {
+
+	private final JsonParseTool jsonParseTool;
+
+	private static final Logger logger = LoggerFactory.getLogger(JsonProcessorInsertService.class);
+
+	public JsonProcessorInsertService(JsonParseTool jsonParseTool) {
+		this.jsonParseTool = jsonParseTool;
+	}
 
 	@Override
 	public Object apply(JsonInsertRequest request) {
 		String content = request.content;
 		String field = request.field;
-		JsonElement value = request.value;
-		JsonElement jsonElement = JsonParser.parseString(content);
-		if (!jsonElement.isJsonObject()) {
-			throw new IllegalArgumentException("Content is not a valid JSON object .");
-		}
-		JsonObject jsonObject = jsonElement.getAsJsonObject();
+		JsonNode value = request.value;
 		Assert.notNull(field, "insert json field can not be null");
 		Assert.notNull(value, "insert json fieldValue can not be null");
-		jsonObject.add(field, value);
-		return jsonObject;
+		try {
+			return jsonParseTool.setFieldValue(content, field, value);
+		}
+		catch (JsonProcessingException e) {
+			logger.error("Error occurred while json processing: {}", e.getMessage());
+			throw new RuntimeException(e);
+		}
 	}
 
+	@JsonClassDescription("JsonProcessorInsertService request")
 	record JsonInsertRequest(@JsonProperty("content") String content, @JsonProperty("field") String field,
-			@JsonProperty("value") JsonElement value) {
+			@JsonProperty("value") JsonNode value) {
 	}
 
 }
