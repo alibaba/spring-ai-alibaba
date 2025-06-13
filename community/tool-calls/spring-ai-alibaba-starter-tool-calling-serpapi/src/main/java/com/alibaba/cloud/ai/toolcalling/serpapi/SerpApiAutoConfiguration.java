@@ -25,10 +25,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 import org.springframework.http.HttpHeaders;
 
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
-
-import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DEFAULT_USER_AGENTS;
 
 /**
  * @author 北极星
