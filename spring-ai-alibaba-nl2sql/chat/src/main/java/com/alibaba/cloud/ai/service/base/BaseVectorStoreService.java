@@ -71,6 +71,13 @@ public abstract class BaseVectorStoreService {
 	public abstract List<Document> searchWithFilter(SearchRequest searchRequestDTO);
 
 	/**
+	 * 获取表的文档
+	 */
+	public List<Document> searchTableByNameAndVectorType(SearchRequest searchRequestDTO) {
+		throw new UnsupportedOperationException("Not implemented.");
+	}
+
+	/**
 	 * 将 float[] 转换为 Double List
 	 */
 	protected List<Double> convertToDoubleList(float[] array) {
