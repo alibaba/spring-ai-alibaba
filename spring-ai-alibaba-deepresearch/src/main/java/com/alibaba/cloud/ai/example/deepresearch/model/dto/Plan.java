@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.deepresearch.model.dto;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.springframework.ai.rag.Query;
 
 import java.util.List;
 
@@ -27,41 +28,88 @@ import java.util.List;
  * @author ViliamSun
  * @since 2025/5/18 17:48
  */
-@Data
-public class Plan {
+public record Plan(String title,
+				  @JsonProperty("has_enough_context")
+				  boolean hasEnoughContext,
+				  String thought,
+				  List<Step> steps) {
 
-	private String title;
 
-	@JsonProperty("has_enough_context")
-	private boolean hasEnoughContext;
+	public record Step(@JsonProperty("need_web_search")
+					   boolean needWebSearch,
+					   String title,
+					   String description,
+					   @JsonProperty("step_type")
+					   StepType stepType,
+					   String executionRes) {
 
-	private String thought;
+		public Step {
+		}
 
-	private List<Step> steps;
+		public static Builder builder() {
+			return new Builder();
+		}
 
-	@Data
-	public static class Step {
+		public Builder mutate(){
+			return new Builder()
+					.needWebSearch(needWebSearch)
+					.title(title)
+					.description(description)
+					.stepType(stepType)
+					.executionRes(executionRes);
+		}
 
-		@JsonProperty("need_web_search")
-		private boolean needWebSearch;
+		public static final class Builder {
 
-		private String title;
+			private boolean needWebSearch;
+			private String title;
+			private String description;
+			private StepType stepType;
+			private String executionRes;
 
-		private String description;
+			private Builder(){
+			}
 
-		@JsonProperty("step_type")
-		private StepType stepType;
+			public Builder needWebSearch(boolean needWebSearch) {
+				this.needWebSearch = needWebSearch;
+				return this;
+			}
 
-		private String executionRes;
+			public Builder title(String title) {
+				this.title = title;
+				return this;
+			}
+
+			public Builder description(String description) {
+				this.description = description;
+				return this;
+			}
+
+			public Builder stepType(StepType stepType) {
+				this.stepType = stepType;
+				return this;
+			}
+
+			public Builder executionRes(String executionRes) {
+				this.executionRes = executionRes;
+				return this;
+			}
+
+			public Step build() {
+				return new Step(needWebSearch, title, description, stepType, executionRes);
+			}
+
+		}
+
 
 	}
 
 	public enum StepType {
 
 		@JsonProperty("research")
-				@JsonAlias("RESEARCH")
+		@JsonAlias("RESEARCH")
 		RESEARCH, @JsonProperty("processing")
-				@JsonAlias("PROCESSING")
+		@JsonAlias("PROCESSING")
 		PROCESSING
 
 	}
