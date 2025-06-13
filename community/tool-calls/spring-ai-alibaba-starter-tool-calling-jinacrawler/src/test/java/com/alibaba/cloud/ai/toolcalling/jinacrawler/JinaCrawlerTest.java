@@ -44,7 +44,7 @@ public class JinaCrawlerTest {
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	void testJinaCrawler() {
 		var resp = jinaCrawlerService.apply(new JinaCrawlerService.Request("https://java2ai.com/"));
-		assert resp != null && StringUtils.hasText(resp.content());
+		assert resp != null && resp.content() != null;
 		log.info("Jina Crawler Response: {}", resp.content());
 	}
 

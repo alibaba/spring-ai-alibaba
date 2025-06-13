@@ -18,14 +18,18 @@ package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
+import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
+import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 @Configuration
 public class AgentsConfiguration {
@@ -35,6 +39,19 @@ public class AgentsConfiguration {
 
 	@Value("classpath:prompts/coder.md")
 	private Resource coderPrompt;
+
+	private final ApplicationContext context;
+
+	public AgentsConfiguration(ApplicationContext context) {
+		this.context = context;
+	}
+
+	/**
+	 * Return the tool name array that have corresponding beans.
+	 */
+	private String[] getAvailableTools(String... toolNames) {
+		return Arrays.stream(toolNames).filter(context::containsBean).toArray(String[]::new);
+	}
 
 	/**
 	 * Create Research Agent ChatClient Bean
@@ -46,8 +63,7 @@ public class AgentsConfiguration {
 	@Bean
 	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset()))
-			.defaultToolNames("tavilySearch")
-			// .defaultToolNames("tavilySearch", "firecrawlFunction") todo 待调整
+			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
 			.build();
 	}
 
