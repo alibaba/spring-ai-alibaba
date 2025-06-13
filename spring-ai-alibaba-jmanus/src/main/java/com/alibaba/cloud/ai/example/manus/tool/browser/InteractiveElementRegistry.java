@@ -110,7 +110,7 @@ public class InteractiveElementRegistry {
 			int index = 0;
 			for (Frame frame : page.frames()) {
 				List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) frame
-						.evaluate(EXTRACT_INTERACTIVE_ELEMENTS_JS, index);
+					.evaluate(EXTRACT_INTERACTIVE_ELEMENTS_JS, index);
 				for (Map<String, Object> elementMap : elementMapList) {
 					Integer globalIndex = (Integer) elementMap.get("index");
 					InteractiveElement element = new InteractiveElement(globalIndex, frame, elementMap);

@@ -117,8 +117,7 @@ public abstract class BrowserAction {
 
 		try {
 			Integer timeout = getBrowserTimeoutMs();
-			Page.WaitForPopupOptions popupOptions = new Page.WaitForPopupOptions()
-				.setTimeout(timeout);
+			Page.WaitForPopupOptions popupOptions = new Page.WaitForPopupOptions().setTimeout(timeout);
 
 			newPageFromPopup = pageToClickOn.waitForPopup(popupOptions, clickLambda);
 
