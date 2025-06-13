@@ -57,8 +57,8 @@ public class CoderNode implements NodeAction {
 		Map<String, Object> updated = new HashMap<>();
 
 		Plan.Step unexecutedStep = null;
-		for (Plan.Step step : currentPlan.steps()) {
-			if (step.stepType().equals(Plan.StepType.PROCESSING) && step.executionRes() == null) {
+		for (Plan.Step step : currentPlan.getSteps()) {
+			if (step.getStepType().equals(Plan.StepType.PROCESSING) && step.getExecutionRes() == null) {
 				unexecutedStep = step;
 				break;
 			}
@@ -73,7 +73,7 @@ public class CoderNode implements NodeAction {
 		// 添加任务消息
 		Message taskMessage = new UserMessage(
 				String.format("#Task\n\n##title\n\n%s\n\n##description\n\n%s\n\n##locale\n\n%s",
-						unexecutedStep.title(), unexecutedStep.description(), state.value("locale", "en-US")));
+						unexecutedStep.getTitle(), unexecutedStep.getDescription(), state.value("locale", "en-US")));
 		messages.add(taskMessage);
 		logger.debug("coder Node message: {}", messages);
 
