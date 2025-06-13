@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class ResearcherNode implements NodeAction {
 
@@ -75,15 +77,15 @@ public class ResearcherNode implements NodeAction {
 
 		logger.debug("researcher Node messages: {}", messages);
 		// 调用agent
-		Flux<String> StreamResult = researchAgent.prompt().messages(messages).stream().content();
-		String result = StreamResult.reduce((acc, next) -> acc + next).block();
-		unexecutedStep.setExecutionRes(result);
+		var streamResult = researchAgent.prompt().messages(messages).stream().chatResponse();
+		var generator = StreamingChatGenerator.builder()
+			.startingNode("researcher_llm_stream")
+			.startingState(state)
+			.mapResult(response -> Map.of("researcher_content",
+					Objects.requireNonNull(response.getResult().getOutput().getText())))
+			.build(streamResult);
 
-		logger.info("researcher Node response: {}", result);
-		observations.add(result);
-		updated.put("observations", observations);
-
-		return updated;
+		return Map.of("researcher_content", generator);
 	}
 
 }
