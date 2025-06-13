@@ -16,13 +16,19 @@
 package com.alibaba.cloud.ai.service.analytic;
 
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.request.SearchRequest;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
 import com.google.gson.Gson;
+import org.apache.commons.collections.CollectionUtils;
+import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Schema 构建服务，支持基于 RAG 的混合查询。
@@ -36,6 +42,28 @@ public class AnalyticSchemaService extends BaseSchemaService {
 	public AnalyticSchemaService(DbConfig dbConfig, Gson gson,
 			@Qualifier("analyticVectorStoreService") BaseVectorStoreService vectorStoreService) {
 		super(dbConfig, gson, vectorStoreService);
+	}
+
+	@Override
+	protected void addTableDocument(List<Document> tableDocuments, String tableName, String vectorType) {
+		handleDocumentQuery(tableDocuments, tableName, vectorType, name -> {
+			SearchRequest req = new SearchRequest();
+			req.setQuery(null);
+			req.setFilterFormatted("jsonb_extract_path_text(metadata, 'vectorType') = '" + vectorType
+					+ "' and refdocid = '" + name + "'");
+			return req;
+		}, vectorStoreService::searchWithFilter);
+	}
+
+	@Override
+	protected void addColumnsDocument(Map<String, Document> weightedColumns, String columnName, String vectorType) {
+		handleDocumentQuery(weightedColumns, columnName, vectorType, name -> {
+			SearchRequest req = new SearchRequest();
+			req.setQuery(null);
+			req.setFilterFormatted("jsonb_extract_path_text(metadata, 'vectorType') = '" + vectorType
+					+ "' and refdocid = '" + name + "'");
+			return req;
+		}, vectorStoreService::searchWithFilter);
 	}
 
 }
