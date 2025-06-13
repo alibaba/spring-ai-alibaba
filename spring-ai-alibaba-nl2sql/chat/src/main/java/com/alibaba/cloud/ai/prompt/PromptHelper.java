@@ -31,8 +31,7 @@ public class PromptHelper {
 
 	private static final List<String> DATE_TIME_TYPES = Arrays.asList("DATE", "TIME", "DATETIME", "TIMESTAMP");
 
-	public static String buildInitRewritePromptWithEvidence(String query, SchemaDTO schemaDTO,
-			List<String> evidenceList) {
+	public static String buildRewritePrompt(String query, SchemaDTO schemaDTO, List<String> evidenceList) {
 		StringBuilder dbContent = new StringBuilder();
 		dbContent.append("库名: 默认数据库, 包含以下表:\n");
 		for (TableDTO tableDTO : schemaDTO.getTable()) {
@@ -46,7 +45,7 @@ public class PromptHelper {
 		params.put("db_content", dbContent.toString());
 		params.put("evidence", evidence);
 		params.put("multi_turn", multiTurn.toString());
-		return PromptConstant.INIT_REWRITE_WITH_CLARIFY_AND_EVIDENCE_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.INIT_REWRITE_PROMPT_TEMPLATE.render(params);
 	}
 
 	public static String buildMacSqlTablePrompt(TableDTO tableDTO) {
