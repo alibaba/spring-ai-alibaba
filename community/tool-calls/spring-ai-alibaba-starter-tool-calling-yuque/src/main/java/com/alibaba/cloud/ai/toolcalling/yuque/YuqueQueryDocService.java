@@ -65,14 +65,12 @@ public class YuqueQueryDocService
 	protected record queryDocRequest(String bookId, String id) {
 	}
 
-	protected record queryDocResponse(
-			@JsonProperty("data") YuqueQueryDocService.data data) {
+	protected record queryDocResponse(@JsonProperty("data") YuqueQueryDocService.data data) {
 	}
 
 	// Used to retrieve specific property values from JSON.
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	protected record data(
-			@JsonProperty("id") String id, @JsonProperty("type") String type,
+	protected record data(@JsonProperty("id") String id, @JsonProperty("type") String type,
 			@JsonProperty("slug") String slug, @JsonProperty("title") String title,
 			@JsonProperty("description") String description, @JsonProperty("cover") String cover,
 			@JsonProperty("user_id") String userId, @JsonProperty("book_id") String bookId,
@@ -84,31 +82,31 @@ public class YuqueQueryDocService
 			@JsonProperty("comments_count") String commentsCount, @JsonProperty("word_count") String wordCount,
 			@JsonProperty("created_at") String createdAt, @JsonProperty("updated_at") String updatedAt,
 			@JsonProperty("content_updated_at") String contentUpdatedAt, @JsonProperty("_serializer") String serializer,
-			@JsonProperty("published_at") String publishedAt, @JsonProperty("first_published_at") String firstPublishedAt,
-			@JsonProperty("user") UserSerializer user, @JsonProperty("book") BookSerializer book
-	) {
+			@JsonProperty("published_at") String publishedAt,
+			@JsonProperty("first_published_at") String firstPublishedAt, @JsonProperty("user") UserSerializer user,
+			@JsonProperty("book") BookSerializer book) {
 	}
 
 	// Used to retrieve specific property values from JSON.
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	protected record UserSerializer(
-			@JsonProperty("id") String id, @JsonProperty("type") String type, @JsonProperty("login") String login,
-			@JsonProperty("name") String name, @JsonProperty("avatar_url") String avatarUrl,
-			@JsonProperty("followers_count") int followersCount, @JsonProperty("following_count") int following_count,
-			@JsonProperty("public") int isPublic, @JsonProperty("description") String description,
-			@JsonProperty("created_at") String createdAt, @JsonProperty("updated_at") String updatedAt,
-			@JsonProperty("work_id") String workId, @JsonProperty("_serializer") String serializer
-	) {
-	}
-	// Used to retrieve specific property values from JSON.
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	protected record BookSerializer(
-			@JsonProperty("id") String id, @JsonProperty("type") String type, @JsonProperty("slug") String slug,
-			@JsonProperty("name") String name, @JsonProperty("description") String description,
-			@JsonProperty("creator_id") String creatorId, @JsonProperty("user_id") String userId,
-			@JsonProperty("public") int isPublic, @JsonProperty("items_count") int itemsCount,
-			@JsonProperty("user") UserSerializer user, @JsonProperty("namespace") String namespace,
-			@JsonProperty("likes_count") String likesCount, @JsonProperty("watches_count") String watchesCount,
+	protected record UserSerializer(@JsonProperty("id") String id, @JsonProperty("type") String type,
+			@JsonProperty("login") String login, @JsonProperty("name") String name,
+			@JsonProperty("avatar_url") String avatarUrl, @JsonProperty("followers_count") int followersCount,
+			@JsonProperty("following_count") int following_count, @JsonProperty("public") int isPublic,
+			@JsonProperty("description") String description, @JsonProperty("created_at") String createdAt,
+			@JsonProperty("updated_at") String updatedAt, @JsonProperty("work_id") String workId,
 			@JsonProperty("_serializer") String serializer) {
 	}
+
+	// Used to retrieve specific property values from JSON.
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	protected record BookSerializer(@JsonProperty("id") String id, @JsonProperty("type") String type,
+			@JsonProperty("slug") String slug, @JsonProperty("name") String name,
+			@JsonProperty("description") String description, @JsonProperty("creator_id") String creatorId,
+			@JsonProperty("user_id") String userId, @JsonProperty("public") int isPublic,
+			@JsonProperty("items_count") int itemsCount, @JsonProperty("user") UserSerializer user,
+			@JsonProperty("namespace") String namespace, @JsonProperty("likes_count") String likesCount,
+			@JsonProperty("watches_count") String watchesCount, @JsonProperty("_serializer") String serializer) {
+	}
+
 }

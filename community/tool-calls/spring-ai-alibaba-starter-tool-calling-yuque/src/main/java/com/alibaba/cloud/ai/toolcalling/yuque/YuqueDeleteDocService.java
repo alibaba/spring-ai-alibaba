@@ -66,16 +66,16 @@ public class YuqueDeleteDocService
 	// Used to retrieve specific property values from JSON.
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	protected record data(@JsonProperty("id") String id, @JsonProperty("slug") String slug,
-						  @JsonProperty("type") String type, @JsonProperty("description") String description,
-						  @JsonProperty("cover") String cover, @JsonProperty("user_id") String user_id,
-						  @JsonProperty("book_id") String book_id, @JsonProperty("last_editor_id") String last_editor_id,
-						  @JsonProperty("format") String format, @JsonProperty("body_draft") String body_draft,
-						  @JsonProperty("body_sheet") String body_sheet, @JsonProperty("body_table") String body_table,
-						  @JsonProperty("body_html") String body_html, @JsonProperty("public") int isPublic,
-						  @JsonProperty("status") String status, @JsonProperty("likes_count") int likes_count,
-						  @JsonProperty("read_count") int read_count, @JsonProperty("comments_count") int comments_count,
-						  @JsonProperty("word_count") int word_count, @JsonProperty("created_at") String createdAt,
-						  @JsonProperty("updated_at") String updatedAt) {
+			@JsonProperty("type") String type, @JsonProperty("description") String description,
+			@JsonProperty("cover") String cover, @JsonProperty("user_id") String user_id,
+			@JsonProperty("book_id") String book_id, @JsonProperty("last_editor_id") String last_editor_id,
+			@JsonProperty("format") String format, @JsonProperty("body_draft") String body_draft,
+			@JsonProperty("body_sheet") String body_sheet, @JsonProperty("body_table") String body_table,
+			@JsonProperty("body_html") String body_html, @JsonProperty("public") int isPublic,
+			@JsonProperty("status") String status, @JsonProperty("likes_count") int likes_count,
+			@JsonProperty("read_count") int read_count, @JsonProperty("comments_count") int comments_count,
+			@JsonProperty("word_count") int word_count, @JsonProperty("created_at") String createdAt,
+			@JsonProperty("updated_at") String updatedAt) {
 	}
 
 }

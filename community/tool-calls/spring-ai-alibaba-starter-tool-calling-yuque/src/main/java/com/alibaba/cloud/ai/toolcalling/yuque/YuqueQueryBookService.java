@@ -60,13 +60,13 @@ public class YuqueQueryBookService
 	protected record queryBookRequest(String bookId) {
 	}
 
-	protected record queryBookResponse(@JsonProperty("meta") meta meta, @JsonProperty("data") List<YuqueQueryBookService.data> data) {
+	protected record queryBookResponse(@JsonProperty("meta") meta meta,
+			@JsonProperty("data") List<YuqueQueryBookService.data> data) {
 	}
 
 	// Used to retrieve specific property values from JSON.
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	protected record data(
-			@JsonProperty("id") String id, @JsonProperty("type") String type,
+	protected record data(@JsonProperty("id") String id, @JsonProperty("type") String type,
 			@JsonProperty("slug") String slug, @JsonProperty("title") String title,
 			@JsonProperty("description") String description, @JsonProperty("cover") String cover,
 			@JsonProperty("user_id") String userId, @JsonProperty("user") YuqueQueryDocService.UserSerializer user,
@@ -75,7 +75,8 @@ public class YuqueQueryBookService
 			@JsonProperty("likes_count") String likesCount, @JsonProperty("read_count") String readCount,
 			@JsonProperty("comments_count") String commentsCount, @JsonProperty("word_count") String wordCount,
 			@JsonProperty("created_at") String createdAt, @JsonProperty("updated_at") String updatedAt,
-			@JsonProperty("published_at") String publishedAt, @JsonProperty("first_published_at") String firstPublishedAt) {
+			@JsonProperty("published_at") String publishedAt,
+			@JsonProperty("first_published_at") String firstPublishedAt) {
 	}
 
 	protected record meta(@JsonProperty("total") String total) {
