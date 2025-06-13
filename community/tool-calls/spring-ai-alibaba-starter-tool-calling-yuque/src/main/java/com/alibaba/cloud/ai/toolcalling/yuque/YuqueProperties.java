@@ -25,7 +25,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class YuqueProperties extends CommonToolCallProperties {
 
 	public YuqueProperties() {
-		super("https://www.yuque.com/api/v2/repo");
+		super("https://www.yuque.com/api/v2");
 		this.setPropertiesFromEnv(null, null, null, YuqueConstants.TOKEN_ENV);
 	}
 
