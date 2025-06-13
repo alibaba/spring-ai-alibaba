@@ -17,13 +17,12 @@ package com.alibaba.cloud.ai.toolcalling.yuque;
 
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.function.Function;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 /**
  * @author 北极星
@@ -47,19 +46,9 @@ public class YuqueQueryBookService
 		if (queryBookRequest == null || queryBookRequest.bookId == null) {
 			return null;
 		}
-		String uri = "/" + queryBookRequest.bookId + "/docs";
-		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-		if (queryBookRequest.slug() != null) {
-			params.add("slug", queryBookRequest.slug());
-		}
-		if (queryBookRequest.title() != null) {
-			params.add("title", queryBookRequest.title());
-		}
-		if (queryBookRequest.id() != null) {
-			params.add("id", queryBookRequest.id());
-		}
+		String uri = "/repos/" + queryBookRequest.bookId + "/docs";
 		try {
-			String json = webClientTool.get(uri, params).block();
+			String json = webClientTool.get(uri).block();
 			return jsonParseTool.jsonToObject(json, queryBookResponse.class);
 		}
 		catch (Exception e) {
@@ -68,19 +57,29 @@ public class YuqueQueryBookService
 		}
 	}
 
-	protected record queryBookRequest(@JsonProperty("slug") String slug, @JsonProperty("title") String title,
-			String bookId, String id) {
+	protected record queryBookRequest(String bookId) {
 	}
 
-	protected record queryBookResponse(@JsonProperty("meta") int meta, @JsonProperty("data") List<data> data) {
+	protected record queryBookResponse(@JsonProperty("meta") meta meta,
+			@JsonProperty("data") List<YuqueQueryBookService.data> data) {
 	}
 
-	protected record data(@JsonProperty("id") String id, @JsonProperty("docId") String docId,
+	// Used to retrieve specific property values from JSON.
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	protected record data(@JsonProperty("id") String id, @JsonProperty("type") String type,
 			@JsonProperty("slug") String slug, @JsonProperty("title") String title,
-			@JsonProperty("userId") String userId, @JsonProperty("user") YuqueQueryDocService.UserSerializer user,
-			@JsonProperty("draft") String draft, @JsonProperty("body") String body,
-			@JsonProperty("bodyAsl") String bodyAsl, @JsonProperty("bodyHtml") String bodyHtml,
-			@JsonProperty("createdAt") String createdAt, @JsonProperty("updatedAt") String updatedAt) {
+			@JsonProperty("description") String description, @JsonProperty("cover") String cover,
+			@JsonProperty("user_id") String userId, @JsonProperty("user") YuqueQueryDocService.UserSerializer user,
+			@JsonProperty("book_id") String bookId, @JsonProperty("last_editor_id") String lastEditorId,
+			@JsonProperty("public") int isPublic, @JsonProperty("status") String status,
+			@JsonProperty("likes_count") String likesCount, @JsonProperty("read_count") String readCount,
+			@JsonProperty("comments_count") String commentsCount, @JsonProperty("word_count") String wordCount,
+			@JsonProperty("created_at") String createdAt, @JsonProperty("updated_at") String updatedAt,
+			@JsonProperty("published_at") String publishedAt,
+			@JsonProperty("first_published_at") String firstPublishedAt) {
+	}
+
+	protected record meta(@JsonProperty("total") String total) {
 	}
 
 }
