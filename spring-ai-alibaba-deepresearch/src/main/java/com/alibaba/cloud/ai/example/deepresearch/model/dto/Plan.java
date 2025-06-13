@@ -26,12 +26,54 @@ import java.util.List;
  * @author ViliamSun
  * @since 2025/5/18 17:48
  */
-public record Plan(String title,
-				   @JsonProperty("has_enough_context")
-				   boolean hasEnoughContext,
-				   String thought,
-				   List<Step> steps) {
+public class Plan{
 
+	private String title;
+
+	@JsonProperty("has_enough_context")
+	private boolean hasEnoughContext;
+
+	private String thought;
+
+	private List<Step> steps;
+
+	public Plan() {
+	}
+
+	public Plan(String title, boolean hasEnoughContext, String thought, List<Step> steps) {
+		this.title = title;
+		this.hasEnoughContext = hasEnoughContext;
+		this.thought = thought;
+		this.steps = steps;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public String getThought() {
+		return thought;
+	}
+
+	public List<Step> getSteps() {
+		return steps;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public void setHasEnoughContext(boolean hasEnoughContext) {
+		this.hasEnoughContext = hasEnoughContext;
+	}
+
+	public void setThought(String thought) {
+		this.thought = thought;
+	}
+
+	public void setSteps(List<Step> steps) {
+		this.steps = steps;
+	}
 
 	public record Step(@JsonProperty("need_web_search")
 					   boolean needWebSearch,
