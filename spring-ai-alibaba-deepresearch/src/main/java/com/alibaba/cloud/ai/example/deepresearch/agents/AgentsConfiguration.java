@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,9 +45,11 @@ public class AgentsConfiguration {
 	 */
 	@SneakyThrows
 	@Bean
-	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) {
+	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder, ToolCallbackProvider toolCallbackProvider) {
 		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset()))
 			.defaultToolNames("tavilySearch")
+			// import MCP tools
+			.defaultToolCallbacks(toolCallbackProvider)
 			// .defaultToolNames("tavilySearch", "firecrawlFunction") todo 待调整
 			.build();
 	}

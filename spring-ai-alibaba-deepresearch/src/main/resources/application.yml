@@ -16,8 +16,11 @@ spring:
         write-timeout: 60000
     mcp:
       client:
-        sse:
-          servers-configuration: classpath:mcp-servers.json
+        type: async
+#        sse:
+#          connections:
+#            server1:
+#              url: http://localhost:8888
         stdio:
           servers-configuration: classpath:mcp-servers.json
         toolcallback:
