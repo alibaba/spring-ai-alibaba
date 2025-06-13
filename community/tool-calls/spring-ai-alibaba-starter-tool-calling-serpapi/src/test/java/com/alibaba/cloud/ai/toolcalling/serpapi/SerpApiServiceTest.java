@@ -39,7 +39,7 @@ public class SerpApiServiceTest {
 	@EnabledIfEnvironmentVariable(named = SerpApiConstants.API_KEY_ENV,
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	public void testSerpApiApply() {
-		var resp = serpApiSearch.apply(new SerpApiService.Request("Spring AI Alibab"));
+		var resp = serpApiSearch.apply(new SerpApiService.Request("Spring AI Alibaba"));
 		assert resp != null && resp.results() != null;
 		log.info("results: " + resp.results());
 	}
