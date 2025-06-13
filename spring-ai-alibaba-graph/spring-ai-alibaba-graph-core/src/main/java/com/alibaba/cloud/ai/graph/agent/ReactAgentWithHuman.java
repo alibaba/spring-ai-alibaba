@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.graph.node.HumanNode;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -172,7 +173,7 @@ public class ReactAgentWithHuman {
 		if (overAllStateFactory == null) {
 			this.overAllStateFactory = () -> {
 				OverAllState defaultState = new OverAllState();
-				defaultState.registerKeyAndStrategy("messages", List::of);
+				defaultState.registerKeyAndStrategy("messages", new AppendStrategy());
 				return defaultState;
 			};
 		}

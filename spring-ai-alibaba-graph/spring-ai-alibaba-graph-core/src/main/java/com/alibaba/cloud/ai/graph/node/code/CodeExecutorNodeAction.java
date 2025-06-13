@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.graph.node.code;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.graph.node.code.entity.CodeLanguage;
 import com.alibaba.cloud.ai.graph.node.code.entity.RunnerAndPreload;
 import com.alibaba.cloud.ai.graph.node.code.javascript.NodeJsTemplateTransformer;
 import com.alibaba.cloud.ai.graph.node.code.python3.Python3TemplateTransformer;
+import com.alibaba.cloud.ai.graph.node.code.java.JavaTemplateTransformer;
 
 /**
  * @author HeYQ
@@ -48,13 +49,13 @@ public class CodeExecutorNodeAction implements NodeAction {
 
 	private static final Map<CodeLanguage, TemplateTransformer> CODE_TEMPLATE_TRANSFORMERS = Map.of(
 			CodeLanguage.PYTHON3, new Python3TemplateTransformer(), CodeLanguage.PYTHON,
-			new Python3TemplateTransformer(),
-			// CodeLanguage.JINJA2, new Jinja2TemplateTransformer(),
-			CodeLanguage.JAVASCRIPT, new NodeJsTemplateTransformer());
+			new Python3TemplateTransformer(), CodeLanguage.JAVASCRIPT, new NodeJsTemplateTransformer(),
+			CodeLanguage.JAVA, new JavaTemplateTransformer());
 
 	private static final Map<CodeLanguage, String> CODE_LANGUAGE_TO_RUNNING_LANGUAGE = Map.of(CodeLanguage.JAVASCRIPT,
 			"nodejs", CodeLanguage.JINJA2, CodeLanguage.PYTHON3.getValue(), CodeLanguage.PYTHON3,
-			CodeLanguage.PYTHON3.getValue(), CodeLanguage.PYTHON, CodeLanguage.PYTHON.getValue());
+			CodeLanguage.PYTHON3.getValue(), CodeLanguage.PYTHON, CodeLanguage.PYTHON.getValue(), CodeLanguage.JAVA,
+			CodeLanguage.JAVA.getValue());
 
 	public CodeExecutorNodeAction(CodeExecutor codeExecutor, String codeLanguage, String code,
 			CodeExecutionConfig config, Map<String, Object> params) {
@@ -143,7 +144,7 @@ public class CodeExecutorNodeAction implements NodeAction {
 		}
 
 		public Builder params(Map<String, String> params) {
-			this.params = new HashMap<>(params);
+			this.params = new LinkedHashMap<>(params);
 			return this;
 		}
 
