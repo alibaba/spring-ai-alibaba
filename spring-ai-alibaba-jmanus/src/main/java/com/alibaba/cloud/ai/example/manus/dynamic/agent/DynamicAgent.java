@@ -17,11 +17,11 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -29,10 +29,11 @@ import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -59,6 +60,8 @@ import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 
 public class DynamicAgent extends ReActAgent {
+
+	private static final String CURRENT_STEP_ENV_DATA_KEY = "current_step_env_data";
 
 	private static final Logger log = LoggerFactory.getLogger(DynamicAgent.class);
 
@@ -134,21 +137,23 @@ public class DynamicAgent extends ReActAgent {
 		int attempt = 0;
 		while (attempt < maxRetries) {
 			attempt++;
-			List<Message> messages = new ArrayList<>();
-			addThinkPrompt(messages);
-
-			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
-			Message nextStepMessage = getNextStepWithEnvMessage();
-			messages.add(nextStepMessage);
-			thinkActRecord.startThinking(messages.toString());
-
-			log.debug("Messages prepared for the prompt: {}", messages);
+			Message systemMessage = getThinkMessage();
+			// Use current env as user message
+			Message currentStepEnvMessage = currentStepEnvMessage();
+			// Record think message
+			List<Message> thinkMessages = Arrays.asList(systemMessage, currentStepEnvMessage);
+			thinkActRecord.startThinking(thinkMessages.toString());
+			log.debug("Messages prepared for the prompt: {}", thinkMessages);
+			// Build current prompt. System message is the first message.
+			List<Message> messages = new ArrayList<>(Collections.singletonList(systemMessage));
+			// Add history message.
 			ChatMemory chatMemory = llmService.getAgentMemory();
 			List<Message> historyMem = chatMemory.get(getPlanId());
-			List<Message> conversationHistory = new ArrayList<>(historyMem);
-			conversationHistory.addAll(messages);
-			userPrompt = new Prompt(conversationHistory, chatOptions);
-
+			messages.addAll(historyMem);
+			messages.add(currentStepEnvMessage);
+			// Call the LLM
+			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
+			userPrompt = new Prompt(messages, chatOptions);
 			List<ToolCallback> callbacks = getToolCallList();
 			ChatClient chatClient = llmService.getAgentChatClient();
 			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
@@ -278,25 +283,29 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	private void processMemory(ToolExecutionResult toolExecutionResult) {
-
-		if (toolExecutionResult != null && toolExecutionResult.conversationHistory() != null) {
-			// Process the conversation history to update memory
-			List<Message> messages = toolExecutionResult.conversationHistory();
-
-			if (!messages.isEmpty()) {
-
-				// 先清空记忆，因为执行结果里有所有的记忆。
-
-				llmService.getAgentMemory().clear(getPlanId()); // 清除当前计划的内存，避免重复添加
-				for (Message message : messages) {
-					// 排除所有的SystemMessage
-					if (!(message instanceof org.springframework.ai.chat.messages.SystemMessage)) {
-						llmService.getAgentMemory().add(getPlanId(), message);
-					}
-				}
-			}
+		if (toolExecutionResult == null) {
+			return;
 		}
-
+		// Process the conversation history to update memory
+		List<Message> messages = toolExecutionResult.conversationHistory();
+		if (messages.isEmpty()) {
+			return;
+		}
+		// clear current plan memory
+		llmService.getAgentMemory().clear(getPlanId());
+		for (Message message : messages) {
+			// exclude all system message
+			if (message instanceof SystemMessage) {
+				continue;
+			}
+			// exclude env data message
+			if (message instanceof UserMessage userMessage
+					&& userMessage.getMetadata().containsKey(CURRENT_STEP_ENV_DATA_KEY)) {
+				continue;
+			}
+			// only keep assistant message and tool_call message
+			llmService.getAgentMemory().add(getPlanId(), message);
+		}
 	}
 
 	@Override
@@ -314,7 +323,7 @@ public class DynamicAgent extends ReActAgent {
 		if (StringUtils.isBlank(this.nextStepPrompt)) {
 			return new UserMessage("");
 		}
-		PromptTemplate promptTemplate = new PromptTemplate(this.nextStepPrompt);
+		PromptTemplate promptTemplate = new SystemPromptTemplate(this.nextStepPrompt);
 		Message userMessage = promptTemplate.createMessage(getMergedData());
 		return userMessage;
 	}
@@ -327,19 +336,30 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	@Override
-	protected Message addThinkPrompt(List<Message> messages) {
-		super.addThinkPrompt(messages);
+	protected Message getThinkMessage() {
+		Message baseThinkPrompt = super.getThinkMessage();
+		Message nextStepWithEnvMessage = getNextStepWithEnvMessage();
+		SystemMessage thinkMessage = new SystemMessage(
+				baseThinkPrompt.getText() + System.lineSeparator() + nextStepWithEnvMessage.getText());
+		return thinkMessage;
+	}
+
+	/**
+	 * Current step env data
+	 * @return User message for current step environment data
+	 */
+	private Message currentStepEnvMessage() {
 		String envPrompt = """
 
 				当前步骤的环境信息是:
 				{current_step_env_data}
 
 				""";
-
-		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(envPrompt);
-		Message systemMessage = promptTemplate.createMessage(getMergedData());
-		messages.add(systemMessage);
-		return systemMessage;
+		PromptTemplate promptTemplate = new PromptTemplate(envPrompt);
+		Message stepEnvMessage = promptTemplate.createMessage(getMergedData());
+		// mark as current step env data
+		stepEnvMessage.getMetadata().put(CURRENT_STEP_ENV_DATA_KEY, Boolean.TRUE);
+		return stepEnvMessage;
 	}
 
 	private ToolCallBackContext getToolCallBackContext(String toolKey) {
