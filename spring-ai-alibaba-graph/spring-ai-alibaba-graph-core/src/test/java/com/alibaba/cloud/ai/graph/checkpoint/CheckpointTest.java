@@ -52,6 +52,9 @@ public class CheckpointTest {
 					memorySaver.list(RunnableConfig.builder().threadId(threadName).build());
 
 				}
+				catch (Exception e) {
+					e.printStackTrace();
+				}
 				finally {
 					latch.countDown();
 				}
@@ -60,7 +63,7 @@ public class CheckpointTest {
 			futures.add(future);
 		}
 
-		latch.await();
+		latch.await(5, TimeUnit.SECONDS);
 		executorService.shutdown();
 
 		for (var future : futures) {
