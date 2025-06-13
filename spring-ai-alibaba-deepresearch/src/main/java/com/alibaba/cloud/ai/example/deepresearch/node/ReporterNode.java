@@ -66,7 +66,7 @@ public class ReporterNode implements NodeAction {
 		messages.add(TemplateUtil.getMessage("reporter"));
 		// 1.2 研究报告格式消息
 		messages.add(new UserMessage(
-				MessageFormat.format(RESEARCH_FORMAT, currentPlan.title(), currentPlan.thought())));
+				MessageFormat.format(RESEARCH_FORMAT, currentPlan.getTitle(), currentPlan.getThought())));
 		messages.add(new UserMessage(REPORT_FORMAT));
 		// 1.3 添加观察的消息
 		for (String observation : StateUtil.getMessagesByType(state, "observations")) {
@@ -78,7 +78,7 @@ public class ReporterNode implements NodeAction {
 			messages.add(new UserMessage(backgroundInvestigationResults));
 		}
 		// 1.5 添加planner节点返回的信息
-		messages.add(new UserMessage(currentPlan.thought()));
+		messages.add(new UserMessage(currentPlan.getThought()));
 
 		logger.debug("reporter node messages: {}", messages);
 

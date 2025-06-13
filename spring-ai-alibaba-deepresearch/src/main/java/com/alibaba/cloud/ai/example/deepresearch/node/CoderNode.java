@@ -56,7 +56,7 @@ public class CoderNode implements NodeAction {
 		Map<String, Object> updated = new HashMap<>();
 
 		Plan.Step unexecutedStep = null;
-		for (Plan.Step step : currentPlan.steps()) {
+		for (Plan.Step step : currentPlan.getSteps()) {
 			if (step.stepType().equals(Plan.StepType.PROCESSING) && step.executionRes() == null) {
 				unexecutedStep = step.mutate().build();
 				break;

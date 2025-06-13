@@ -53,7 +53,7 @@ public class ResearcherNode implements NodeAction {
 		Map<String, Object> updated = new HashMap<>();
 
 		Plan.Step unexecutedStep = null;
-		for (Plan.Step step : currentPlan.steps()) {
+		for (Plan.Step step : currentPlan.getSteps()) {
 			if (Plan.StepType.RESEARCH.equals(step.stepType()) && !StringUtils.hasText(step.executionRes())) {
 				unexecutedStep = step.mutate().build();
 				break;

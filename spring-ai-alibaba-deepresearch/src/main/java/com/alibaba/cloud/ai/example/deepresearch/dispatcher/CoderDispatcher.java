@@ -41,7 +41,7 @@ public class CoderDispatcher implements EdgeAction {
 		Plan currentPlan = StateUtil.getPlan(state);
 		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Plan.Step unexecutedStep = null;
-		for (Plan.Step step : currentPlan.steps()) {
+		for (Plan.Step step : currentPlan.getSteps()) {
 			if (step.stepType().equals(Plan.StepType.PROCESSING) && step.executionRes() == null) {
 				unexecutedStep = step.mutate().build();
 				break;

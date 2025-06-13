@@ -52,7 +52,7 @@ public class ResearchTeamNode implements NodeAction {
 		}
 
 		// todo 异步 + 并行执行Step
-		for (Plan.Step step : curPlan.steps()) {
+		for (Plan.Step step : curPlan.getSteps()) {
 			if (StringUtils.hasText(step.executionRes())) {
 				continue;
 			}
@@ -75,11 +75,11 @@ public class ResearchTeamNode implements NodeAction {
 	}
 
 	public boolean areAllExecutionResultsPresent(Plan plan) {
-		if (CollectionUtils.isEmpty(plan.steps())) {
+		if (CollectionUtils.isEmpty(plan.getSteps())) {
 			return false;
 		}
 
-		return plan.steps().stream().allMatch(step -> StringUtils.hasLength(step.executionRes()));
+		return plan.getSteps().stream().allMatch(step -> StringUtils.hasLength(step.executionRes()));
 	}
 
 }
