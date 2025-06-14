@@ -53,8 +53,8 @@ public class ResearcherNode implements NodeAction {
 
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
-			if (Plan.StepType.RESEARCH.equals(step.stepType()) && !StringUtils.hasText(step.executionRes())) {
-				unexecutedStep = step.mutate().build();
+			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())) {
+				unexecutedStep = step;
 				break;
 			}
 		}
@@ -66,7 +66,7 @@ public class ResearcherNode implements NodeAction {
 		// 添加任务消息
 		List<Message> messages = new ArrayList<>();
 		Message taskMessage = new UserMessage(String.format("# Current Task\n\n##title\n\n%s\n\n##description\n\n%s",
-				unexecutedStep.title(), unexecutedStep.description()));
+				unexecutedStep.getTitle(), unexecutedStep.getDescription()));
 		messages.add(taskMessage);
 
 		// 添加研究者特有的引用提醒

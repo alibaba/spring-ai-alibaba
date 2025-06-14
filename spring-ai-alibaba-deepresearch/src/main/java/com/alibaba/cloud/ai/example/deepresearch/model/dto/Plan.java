@@ -75,73 +75,64 @@ public class Plan{
 		this.steps = steps;
 	}
 
-	public record Step(@JsonProperty("need_web_search")
-					   boolean needWebSearch,
-					   String title,
-					   String description,
-					   @JsonProperty("step_type")
-					   StepType stepType,
-					   String executionRes) {
+	public static class Step {
 
-		public Step {
+		@JsonProperty("need_web_search")
+		private boolean needWebSearch;
+
+		private String title;
+
+		private String description;
+
+		@JsonProperty("step_type")
+		private StepType stepType;
+
+		private String executionRes;
+
+		public boolean isNeedWebSearch() {
+			return needWebSearch;
 		}
 
-		public static Builder builder() {
-			return new Builder();
+		public Step setNeedWebSearch(boolean needWebSearch) {
+			this.needWebSearch = needWebSearch;
+			return this;
 		}
 
-		public Builder mutate(){
-			return new Builder()
-					.needWebSearch(needWebSearch)
-					.title(title)
-					.description(description)
-					.stepType(stepType)
-					.executionRes(executionRes);
+		public String getTitle() {
+			return title;
 		}
 
-		public static final class Builder {
-
-			private boolean needWebSearch;
-			private String title;
-			private String description;
-			private StepType stepType;
-			private String executionRes;
-
-			private Builder(){
-			}
-
-			public Builder needWebSearch(boolean needWebSearch) {
-				this.needWebSearch = needWebSearch;
-				return this;
-			}
-
-			public Builder title(String title) {
-				this.title = title;
-				return this;
-			}
-
-			public Builder description(String description) {
-				this.description = description;
-				return this;
-			}
-
-			public Builder stepType(StepType stepType) {
-				this.stepType = stepType;
-				return this;
-			}
-
-			public Builder executionRes(String executionRes) {
-				this.executionRes = executionRes;
-				return this;
-			}
-
-			public Step build() {
-				return new Step(needWebSearch, title, description, stepType, executionRes);
-			}
-
+		public Step setTitle(String title) {
+			this.title = title;
+			return this;
 		}
 
+		public String getDescription() {
+			return description;
+		}
 
+		public Step setDescription(String description) {
+			this.description = description;
+			return this;
+		}
+
+		public StepType getStepType() {
+			return stepType;
+		}
+
+		public Step setStepType(StepType stepType) {
+			this.stepType = stepType;
+			return this;
+		}
+
+		public String getExecutionRes() {
+			return executionRes;
+		}
+
+		public Step setExecutionRes(String executionRes) {
+			this.executionRes = executionRes;
+			return this;
+		}
 	}
 
 	public enum StepType {

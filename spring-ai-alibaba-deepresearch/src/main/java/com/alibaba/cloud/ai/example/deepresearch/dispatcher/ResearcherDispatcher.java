@@ -43,8 +43,8 @@ public class ResearcherDispatcher implements EdgeAction {
 
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
-			if (Plan.StepType.RESEARCH.equals(step.stepType()) && !StringUtils.hasText(step.executionRes())) {
-				unexecutedStep = step.mutate().executionRes(result).build();
+			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())) {
+				unexecutedStep = step.setExecutionRes(result);
 				break;
 			}
 		}

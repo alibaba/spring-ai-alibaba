@@ -53,16 +53,16 @@ public class ResearchTeamNode implements NodeAction {
 
 		// todo 异步 + 并行执行Step
 		for (Plan.Step step : curPlan.getSteps()) {
-			if (StringUtils.hasText(step.executionRes())) {
+			if (StringUtils.hasText(step.getExecutionRes())) {
 				continue;
 			}
-			if (step.stepType() == Plan.StepType.RESEARCH) {
+			if (step.getStepType() == Plan.StepType.RESEARCH) {
 				nextStep = "researcher";
 				updated.put("research_team_next_node", nextStep);
 				logger.info("research_team node -> {} node", nextStep);
 				return updated;
 			}
-			else if (step.stepType() == Plan.StepType.PROCESSING) {
+			else if (step.getStepType() == Plan.StepType.PROCESSING) {
 				nextStep = "coder";
 				updated.put("research_team_next_node", nextStep);
 				logger.info("research_team node -> {} node", nextStep);
@@ -79,7 +79,7 @@ public class ResearchTeamNode implements NodeAction {
 			return false;
 		}
 
-		return plan.getSteps().stream().allMatch(step -> StringUtils.hasLength(step.executionRes()));
+		return plan.getSteps().stream().allMatch(step -> StringUtils.hasLength(step.getExecutionRes()));
 	}
 
 }
