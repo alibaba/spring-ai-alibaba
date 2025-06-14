@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.graph.internal.edge;
 
 import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
-import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 
 import java.util.Map;
 

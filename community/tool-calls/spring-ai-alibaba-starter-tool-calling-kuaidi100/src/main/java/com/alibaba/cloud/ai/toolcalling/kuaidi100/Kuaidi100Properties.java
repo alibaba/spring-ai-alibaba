@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.toolcalling.kuaidi100;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

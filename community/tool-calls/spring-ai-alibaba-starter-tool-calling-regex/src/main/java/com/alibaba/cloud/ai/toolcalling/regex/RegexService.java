@@ -16,13 +16,9 @@
 package com.alibaba.cloud.ai.toolcalling.regex;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.util.Assert;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**

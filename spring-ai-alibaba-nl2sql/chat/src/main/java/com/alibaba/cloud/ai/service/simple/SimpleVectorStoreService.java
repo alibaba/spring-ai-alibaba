@@ -102,6 +102,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 		List<Document> columnDocuments = tableInfoBOS.stream().flatMap(table -> {
 			try {
+				dqp.setTable(table.getName());
 				return dbAccessor.showColumns(dbConfig, dqp).stream().map(column -> convertToDocument(table, column));
 			}
 			catch (Exception e) {
@@ -159,7 +160,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		if (columnInfoBO.getSamples() != null) {
 			metadata.put("samples", columnInfoBO.getSamples());
 		}
-		return new Document(columnInfoBO.getName(), text, metadata);
+		// 多表重复字段数据会被去重，采用表名+字段名作为唯一标识
+		return new Document(tableInfoBO.getName() + "." + columnInfoBO.getName(), text, metadata);
 	}
 
 	public Document convertTableToDocument(TableInfoBO tableInfoBO) {

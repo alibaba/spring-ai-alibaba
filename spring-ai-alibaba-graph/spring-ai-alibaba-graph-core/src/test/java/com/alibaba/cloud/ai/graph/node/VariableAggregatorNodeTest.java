@@ -19,7 +19,6 @@ import com.alibaba.cloud.ai.graph.node.VariableAggregatorNode;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.*;
 

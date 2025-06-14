@@ -21,8 +21,6 @@ import org.springframework.util.CollectionUtils;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.mongodb.client.model.fill.FillOutputField.value;
-
 /**
  * A builder class for constructing {@link OverAllState} instances with a fluent API.
  *

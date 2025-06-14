@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.mcp.nacos2.registry.model.ToolMetaInfo;
 import com.alibaba.cloud.ai.mcp.nacos2.registry.model.McpNacosConstant;
 import com.alibaba.cloud.ai.mcp.nacos2.registry.utils.JsonUtils;
 import com.alibaba.cloud.ai.mcp.nacos2.registry.utils.MD5Utils;
-import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;

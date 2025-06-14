@@ -99,7 +99,13 @@ public abstract class BaseSchemaService {
 
 		// 最终组装 SchemaDTO
 		schemaDTO.setTable(tableList);
-		schemaDTO.setForeignKeys(List.of(new ArrayList<>(foreignKeySet)));
+
+		Set<String> foreignKeys = tableDocuments.stream()
+			.map(doc -> (String) doc.getMetadata().getOrDefault("foreignKey", ""))
+			.flatMap(fk -> Arrays.stream(fk.split("、")))
+			.filter(StringUtils::isNotBlank)
+			.collect(Collectors.toSet());
+		schemaDTO.setForeignKeys(List.of(new ArrayList<>(foreignKeys)));
 
 		return schemaDTO;
 	}
