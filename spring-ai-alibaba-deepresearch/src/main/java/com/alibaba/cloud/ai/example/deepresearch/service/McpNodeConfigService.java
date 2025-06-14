@@ -33,7 +33,7 @@ import java.util.Map;
 
 /**
  * Service for managing MCP node configurations
- * 
+ *
  * @author Makoto
  * @since 2025/1/14
  */
@@ -43,14 +43,15 @@ public class McpNodeConfigService {
 	private static final Logger logger = LoggerFactory.getLogger(McpNodeConfigService.class);
 
 	private final DeepResearchProperties deepResearchProperties;
+
 	private final ResourceLoader resourceLoader;
+
 	private final ObjectMapper objectMapper;
 
 	private Map<String, DeepResearchProperties.NodeMcpConfig> nodeConfigs;
 
-	public McpNodeConfigService(DeepResearchProperties deepResearchProperties, 
-								ResourceLoader resourceLoader,
-								ObjectMapper objectMapper) {
+	public McpNodeConfigService(DeepResearchProperties deepResearchProperties, ResourceLoader resourceLoader,
+			ObjectMapper objectMapper) {
 		this.deepResearchProperties = deepResearchProperties;
 		this.resourceLoader = resourceLoader;
 		this.objectMapper = objectMapper;
@@ -61,15 +62,17 @@ public class McpNodeConfigService {
 		try {
 			Resource resource = resourceLoader.getResource(deepResearchProperties.getMcpNodeConfigPath());
 			if (resource.exists()) {
-				TypeReference<Map<String, DeepResearchProperties.NodeMcpConfig>> typeRef = 
-					new TypeReference<Map<String, DeepResearchProperties.NodeMcpConfig>>() {};
+				TypeReference<Map<String, DeepResearchProperties.NodeMcpConfig>> typeRef = new TypeReference<Map<String, DeepResearchProperties.NodeMcpConfig>>() {
+				};
 				nodeConfigs = objectMapper.readValue(resource.getInputStream(), typeRef);
 				logger.info("Loaded MCP node configuration: {}", nodeConfigs.keySet());
-			} else {
+			}
+			else {
 				logger.warn("MCP node configuration file not found: {}", deepResearchProperties.getMcpNodeConfigPath());
 				nodeConfigs = Collections.emptyMap();
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			logger.error("Failed to load MCP node configuration", e);
 			nodeConfigs = Collections.emptyMap();
 		}
@@ -77,7 +80,6 @@ public class McpNodeConfigService {
 
 	/**
 	 * Get MCP server configurations for a specific node
-	 * 
 	 * @param nodeName the node name (e.g., "researcher", "coder")
 	 * @return list of MCP server configurations
 	 */
@@ -91,7 +93,6 @@ public class McpNodeConfigService {
 
 	/**
 	 * Check if a node has MCP server configurations
-	 * 
 	 * @param nodeName the node name
 	 * @return true if the node has MCP configurations
 	 */
@@ -101,10 +102,10 @@ public class McpNodeConfigService {
 
 	/**
 	 * Get all configured node names
-	 * 
 	 * @return set of configured node names
 	 */
 	public java.util.Set<String> getConfiguredNodes() {
 		return nodeConfigs.keySet();
 	}
-} 
+
+}

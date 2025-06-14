@@ -47,7 +47,7 @@ public class CoderNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(CoderNode.class);
 
 	private final ChatClient coderAgent;
-	
+
 	private final McpClientToolCallbackProvider mcpClientToolCallbackProvider;
 
 	public CoderNode(ChatClient coderAgent, McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
@@ -84,14 +84,12 @@ public class CoderNode implements NodeAction {
 
 		// 获取MCP工具回调
 		Set<ToolCallback> mcpToolCallbacks = mcpClientToolCallbackProvider.findToolCallbacks("coderAgent");
-		
 
 		ToolCallingChatOptions.Builder optionsBuilder = ToolCallingChatOptions.builder();
 		if (!mcpToolCallbacks.isEmpty()) {
 			logger.info("Found {} MCP tool callbacks for coder", mcpToolCallbacks.size());
 			optionsBuilder.toolCallbacks(new ArrayList<>(mcpToolCallbacks));
 		}
-
 
 		var streamResult = coderAgent.prompt()
 			.options(optionsBuilder.build())

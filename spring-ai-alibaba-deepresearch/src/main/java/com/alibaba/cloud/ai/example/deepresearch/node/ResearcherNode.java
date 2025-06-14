@@ -43,7 +43,7 @@ public class ResearcherNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(ResearcherNode.class);
 
 	private final ChatClient researchAgent;
-	
+
 	private final McpClientToolCallbackProvider mcpClientToolCallbackProvider;
 
 	public ResearcherNode(ChatClient researchAgent, McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
@@ -82,26 +82,26 @@ public class ResearcherNode implements NodeAction {
 		messages.add(citationMessage);
 
 		logger.debug("researcher Node messages: {}", messages);
-		
+
 		// 获取MCP工具回调
 		Set<ToolCallback> mcpToolCallbacks = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
-		
+
 		if (mcpToolCallbacks.isEmpty()) {
-			logger.warn("No MCP tool callbacks found for researcher agent. Ensure MCP clients are configured correctly.");
+			logger
+				.warn("No MCP tool callbacks found for researcher agent. Ensure MCP clients are configured correctly.");
 		}
 		ToolCallingChatOptions.Builder optionsBuilder = ToolCallingChatOptions.builder();
 		if (!mcpToolCallbacks.isEmpty()) {
 			logger.info("Found {} MCP tool callbacks for researcher", mcpToolCallbacks.size());
 			optionsBuilder.toolCallbacks(new ArrayList<>(mcpToolCallbacks));
 		}
-		
 
 		var streamResult = researchAgent.prompt()
 			.options(optionsBuilder.build())
 			.messages(messages)
 			.stream()
 			.chatResponse();
-			
+
 		var generator = StreamingChatGenerator.builder()
 			.startingNode("researcher_llm_stream")
 			.startingState(state)
