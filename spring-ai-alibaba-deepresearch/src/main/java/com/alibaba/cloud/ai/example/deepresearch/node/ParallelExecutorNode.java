@@ -2,6 +2,7 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
+import com.alibaba.cloud.ai.example.deepresearch.config.DeepResearchProperties;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.slf4j.Logger;
@@ -11,12 +12,20 @@ import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
+/**
+ * @author sixiyida
+ * @since 2025/6/12
+ */
+
 public class ParallelExecutorNode implements NodeAction {
 
     private static final Logger logger = LoggerFactory.getLogger(ParallelExecutorNode.class);
 
-    private final static long coderNum = 3;
-    private final static long researcherNum = 3;
+    private final DeepResearchProperties properties;
+    
+    public ParallelExecutorNode(DeepResearchProperties properties) {
+        this.properties = properties;
+    }
 
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
@@ -37,14 +46,15 @@ public class ParallelExecutorNode implements NodeAction {
             switch (stepType) {
                 case PROCESSING:
                     if (areAllResearchStepsCompleted(curPlan)) {
-                        step.setExecutionStatus(assignRole(stepType, coderNum));
-                        currCoder = (currCoder + 1) % coderNum;
+                        step.setExecutionStatus(assignRole(stepType, currCoder));
+                        currCoder = (currCoder + 1) % properties.getCoderNodeCount();
                     }
+                    logger.info("Waiting for remaining research steps executed");
                     break;
 
                 case RESEARCH:
-                    step.setExecutionStatus(assignRole(stepType, researcherNum));
-                    currResearcher = (currResearcher + 1) % researcherNum;
+                    step.setExecutionStatus(assignRole(stepType, currResearcher));
+                    currResearcher = (currResearcher + 1) % properties.getResearcherNodeCount();
                     break;
 
                 // 处理其他可能的StepType
@@ -56,7 +66,7 @@ public class ParallelExecutorNode implements NodeAction {
     }
 
     private String assignRole(Plan.StepType type, long executorId) {
-        String role = type == Plan.StepType.RESEARCH ? "coder_" : "researcher_";
+        String role = type == Plan.StepType.PROCESSING ? "coder_" : "researcher_";
         return StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + role + executorId;
     }
 

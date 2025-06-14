@@ -27,7 +27,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,19 +55,24 @@ public class ResearcherNode implements NodeAction {
 		Map<String, Object> updated = new HashMap<>();
 		String executorNodeName = "researcher_" + executorNodeId;
 		Plan.Step assignedStep = null;
+		long stepId = 0;
 		for (Plan.Step step : currentPlan.getSteps()) {
 			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())
+					&& StringUtils.hasText(step.getExecutionStatus())
 					&& step.getExecutionStatus().equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + executorNodeName)) {
 				assignedStep = step;
 				break;
 			}
+			stepId++;
 		}
 
 		// 如果没有找到分配的步骤，直接返回
 		if (assignedStep == null) {
-			logger.info("all researcher node is finished.");
+			logger.info("No remaining steps to be executed by {}", executorNodeName);
 			return updated;
 		}
+
+		final long assignedStepId = stepId;
 
 		// 标记步骤为正在执行
 		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + executorNodeName);
@@ -87,15 +91,18 @@ public class ResearcherNode implements NodeAction {
 		logger.debug("researcher Node messages: {}", messages);
 		// 调用agent
 		var streamResult = researchAgent.prompt().messages(messages).stream().chatResponse();
+		Plan.Step finalAssignedStep = assignedStep;
+		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, "researcher_llm_stream_" + executorNodeId);
 		var generator = StreamingChatGenerator.builder()
-				.startingNode("researcher_llm_stream")
+				.startingNode("researcher_llm_stream_" + executorNodeId)
 				.startingState(state)
-				.mapResult(response -> Map.of("researcher_content",
-						Objects.requireNonNull(response.getResult().getOutput().getText())))
+				.mapResult(response -> {
+					finalAssignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
+					finalAssignedStep.setExecutionRes(Objects.requireNonNull(response.getResult().getOutput().getText()));
+					return Map.of("researcher_content_" + executorNodeId, Objects.requireNonNull(response.getResult().getOutput().getText()));
+				})
 				.build(streamResult);
-		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
-
-		return Map.of("researcher_content", generator);
+		return Map.of("researcher_content_" + executorNodeId , generator);
 	}
 
 }
