@@ -207,8 +207,8 @@ initializr:
         - name: Spring AI Alibaba Graph
           id: spring-ai-alibaba-graph
           group-id: com.alibaba.cloud.ai
-          artifact-id: spring-ai-alibaba-graph-starter
-          version: 1.0.0-M8.1-SNAPSHOT
+          artifact-id: spring-ai-alibaba-graph-core
+          version: 1.0.0.3-SNAPSHOT
           description: Building agent using Spring AI Alibaba Graph
     - name: Developer Tools
       content:
