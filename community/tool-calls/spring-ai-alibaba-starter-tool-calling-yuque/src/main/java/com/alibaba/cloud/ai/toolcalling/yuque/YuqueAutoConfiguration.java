@@ -24,7 +24,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
-import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * @author 北极星

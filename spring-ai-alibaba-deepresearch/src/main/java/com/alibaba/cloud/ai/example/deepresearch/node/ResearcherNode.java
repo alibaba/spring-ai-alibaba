@@ -27,7 +27,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.HashMap;
