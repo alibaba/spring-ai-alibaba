@@ -21,7 +21,6 @@
 #### 必配
 - DashScope API: `${AI_DASHSCOPE_API_KEY}`
 - TavilySearch API: `${TAVILY_API_KEY}`
-- JinaCrawler API: `${JINA_API_KEY}`
 
 #### 选配
 - Jina API: `${JINA_API_KEY}`

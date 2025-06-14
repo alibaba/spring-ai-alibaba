@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -59,12 +60,14 @@ public class JinaCrawlerService implements Function<JinaCrawlerService.Request, 
 		String responseStr = "";
 		try {
 			responseStr = webClientTool.post("/", request).block();
-			return new Response(jsonParseTool.jsonToMap(responseStr, Object.class));
+			return new Response(jsonParseTool.jsonToMap(responseStr, Object.class),
+					jsonParseTool.getDepthFieldValue(responseStr, new TypeReference<String>() {
+					}, "data", "content"));
 		}
 		catch (Exception e) {
 			log.error("Jina reader request failed: ", e);
 			if (e instanceof JsonProcessingException && StringUtils.hasText(responseStr)) {
-				return new Response(Map.of("data", responseStr));
+				return new Response(Map.of("data", responseStr), null);
 			}
 			throw new RuntimeException(e);
 		}
@@ -74,7 +77,9 @@ public class JinaCrawlerService implements Function<JinaCrawlerService.Request, 
 	public record Request(@JsonPropertyDescription("url") String url) {
 	}
 
-	public record Response(Map<String, Object> content) {
+	@JsonClassDescription("Jina Reader API result")
+	public record Response(@JsonPropertyDescription("Jina Response Json Object") Map<String, Object> json,
+			@JsonPropertyDescription("Reader result from url") String content) {
 	}
 
 }
