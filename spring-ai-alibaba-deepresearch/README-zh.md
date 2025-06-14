@@ -1,17 +1,20 @@
-本项目利用spring-ai-alibaba-graph实现深度研究
+本项目利用 spring-ai-alibaba-graph 实现深度研究
 
-### 流程大纲
-
-![image-20250605212205834](../docs/imgs/202506052122988.png)
-
-### 整体架构图：
-
-![image-20250605212328282](../docs/imgs/202506052123329.png)
-
-### 效果演示
 <video width="640" height="360" controls>
   <source src="../docs/video/deepresearh-display.mp4" type="video/mp4">
 </video>
+
+## 流程大纲
+
+<p align="center">
+    <img src="../docs/imgs/202506052122988.png" alt="architecture" style="max-width: 740px; height: 508px" /> 
+</p>
+
+### 整体架构图：
+
+<p align="center">
+    <img src="../docs/imgs/202506052123329.png" alt="architecture" style="max-width: 740px; height: 508px" /> 
+</p>
 
 ### 配置
 
