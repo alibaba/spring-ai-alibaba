@@ -13,39 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.model.workflow.nodedata;
 
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 
 import java.util.Collections;
 import java.util.List;
 
-public class AnswerNodeData extends NodeData {
+/**
+ * NodeData for ToolNode, in addition to the original llmResponseKey, outputKey,
+ * toolNames.
+ */
+public class ToolNodeData extends NodeData {
 
-	public static final List<Variable> DEFAULT_OUTPUTS = List.of(new Variable("answer", VariableType.STRING.value()));
-
-	// a string template
-	private String answer;
+	private String llmResponseKey;
 
 	private String outputKey;
 
-	public AnswerNodeData() {
+	private List<String> toolNames;
+
+	private List<String> toolCallbacks;
+
+	public ToolNodeData() {
 		super(Collections.emptyList(), Collections.emptyList());
 	}
 
-	public AnswerNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs) {
+	public ToolNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs) {
 		super(inputs, outputs);
 	}
 
-	public String getAnswer() {
-		return answer;
+	public String getLlmResponseKey() {
+		return llmResponseKey;
 	}
 
-	public AnswerNodeData setAnswer(String answer) {
-		this.answer = answer;
+	public ToolNodeData setLlmResponseKey(String llmResponseKey) {
+		this.llmResponseKey = llmResponseKey;
 		return this;
 	}
 
@@ -53,8 +57,27 @@ public class AnswerNodeData extends NodeData {
 		return outputKey;
 	}
 
-	public void setOutputKey(String outputKey) {
+	public ToolNodeData setOutputKey(String outputKey) {
 		this.outputKey = outputKey;
+		return this;
+	}
+
+	public List<String> getToolNames() {
+		return toolNames;
+	}
+
+	public ToolNodeData setToolNames(List<String> toolNames) {
+		this.toolNames = toolNames;
+		return this;
+	}
+
+	public List<String> getToolCallbacks() {
+		return toolCallbacks;
+	}
+
+	public ToolNodeData setToolCallbacks(List<String> toolCallbacks) {
+		this.toolCallbacks = toolCallbacks;
+		return this;
 	}
 
 }

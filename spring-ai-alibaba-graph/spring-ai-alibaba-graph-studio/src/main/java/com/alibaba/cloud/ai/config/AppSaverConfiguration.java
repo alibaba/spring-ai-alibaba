@@ -21,7 +21,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
+@Configuration("graphAppSaverConfiguration")
 public class AppSaverConfiguration {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.studio";
