@@ -26,40 +26,40 @@ import java.util.function.Function;
 /**
  * @author 北极星
  */
-public class YuqueDeleteDocService
-		implements Function<YuqueDeleteDocService.DeleteDocRequest, YuqueDeleteDocService.DeleteDocResponse> {
+public class YuqueDeleteBookService
+		implements Function<YuqueDeleteBookService.DeleteBookRequest, YuqueDeleteBookService.DeleteBookResponse> {
 
-	private static final Logger logger = LoggerFactory.getLogger(YuqueDeleteDocService.class);
+	private static final Logger logger = LoggerFactory.getLogger(YuqueDeleteBookService.class);
 
 	private final WebClientTool webClientTool;
 
 	private final JsonParseTool jsonParseTool;
 
-	public YuqueDeleteDocService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
+	public YuqueDeleteBookService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
 		this.webClientTool = webClientTool;
 		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
-	public YuqueDeleteDocService.DeleteDocResponse apply(YuqueDeleteDocService.DeleteDocRequest deleteDocRequest) {
-		if (deleteDocRequest == null || deleteDocRequest.bookId == null) {
+	public YuqueDeleteBookService.DeleteBookResponse apply(YuqueDeleteBookService.DeleteBookRequest request) {
+		if (request == null || request.bookId == null) {
 			return null;
 		}
-		String uri = "/repos/" + deleteDocRequest.bookId + "/docs/" + deleteDocRequest.id;
+		String uri = "/repos/" + request.bookId;
 		try {
 			String json = webClientTool.delete(uri).block();
-			return jsonParseTool.jsonToObject(json, DeleteDocResponse.class);
+			return jsonParseTool.jsonToObject(json, DeleteBookResponse.class);
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete the Yuque document.", e);
+			logger.error("Failed to delete the Yuque book.", e);
 			return null;
 		}
 	}
 
-	public record DeleteDocRequest(@JsonProperty("bookId") String bookId, @JsonProperty("id") String id) {
+	public record DeleteBookRequest(@JsonProperty("bookId") String bookId) {
 	}
 
-	public record DeleteDocResponse(@JsonProperty("data") YuqueConstants.DocSerializer data) {
+	public record DeleteBookResponse(@JsonProperty("data") YuqueConstants.BookSerializer data) {
 	}
 
 }
