@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.plain_text.gson;
+package com.alibaba.cloud.ai.graph.plain_text;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -26,14 +26,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class GSonSerializerTest {
+public class JacksonSerializerTest {
 
 	@Test
 	public void serializeWithTypeInferenceTest() throws IOException, ClassNotFoundException {
 
 		OverAllState state = new OverAllState(mapOf("prop1", "value1"));
 
-		GsonStateSerializer serializer = new GsonStateSerializer(OverAllState::new) {
+		JacksonStateSerializer serializer = new JacksonStateSerializer(OverAllState::new) {
 		};
 
 		Class<?> type = serializer.getStateType();
