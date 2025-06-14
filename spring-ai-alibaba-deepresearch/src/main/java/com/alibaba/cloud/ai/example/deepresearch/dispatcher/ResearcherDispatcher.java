@@ -44,7 +44,7 @@ public class ResearcherDispatcher implements EdgeAction {
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
 			if (Plan.StepType.RESEARCH.equals(step.stepType()) && !StringUtils.hasText(step.executionRes())) {
-				unexecutedStep = step.mutate().build();
+				unexecutedStep = step.mutate().executionRes(result).build();
 				break;
 			}
 		}
@@ -52,7 +52,6 @@ public class ResearcherDispatcher implements EdgeAction {
 			logger.info("all researcher node is finished.");
 			return "research_team";
 		}
-		unexecutedStep = unexecutedStep.mutate().executionRes(result).build();
 
 		logger.info("researcher Node response: {}", result);
 		Map<String, Object> updated = new HashMap<>();

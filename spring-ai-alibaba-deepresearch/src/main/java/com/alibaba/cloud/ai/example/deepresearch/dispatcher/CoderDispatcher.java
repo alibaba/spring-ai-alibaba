@@ -43,7 +43,7 @@ public class CoderDispatcher implements EdgeAction {
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
 			if (step.stepType().equals(Plan.StepType.PROCESSING) && step.executionRes() == null) {
-				unexecutedStep = step.mutate().build();
+				unexecutedStep = step.mutate().executionRes(coderContent).build();
 				break;
 			}
 		}
@@ -51,7 +51,6 @@ public class CoderDispatcher implements EdgeAction {
 			logger.info("all coder node is finished.");
 			return "research_team";
 		}
-		unexecutedStep = unexecutedStep.mutate().executionRes(coderContent).build();
 
         logger.info("coder Node result: {}", coderContent);
 		Map<String, Object> updated = new HashMap<>();
