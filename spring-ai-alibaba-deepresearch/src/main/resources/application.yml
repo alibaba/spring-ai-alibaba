@@ -19,7 +19,7 @@ spring:
         type: async
 #        sse:
 #          connections:
-#            server1:
+#            weather_mcp_server:
 #              url: http://localhost:8888
         stdio:
           servers-configuration: classpath:mcp-servers.json
@@ -34,6 +34,13 @@ spring:
           jina:
             enabled: false
             api-key: ${JINA_API_KEY}
+      deepreserch:
+        mcp-client-mapping:
+          researchAgent:
+            - amap-maps
+#          coderAgent:
+#            - amap-maps
+#            - weather_mcp_server
 
 logging:
   level:
