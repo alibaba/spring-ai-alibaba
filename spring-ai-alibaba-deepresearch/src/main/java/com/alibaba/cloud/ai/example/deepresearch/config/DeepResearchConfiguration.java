@@ -104,7 +104,8 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("final_report", new ReplaceStrategy());
 			keyStrategyHashMap.put("planner_content", new ReplaceStrategy());
 
-			for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.RESEARCHER.getValue()); i++) {
+			for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
+				.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 				keyStrategyHashMap.put("researcher_content_" + i, new ReplaceStrategy());
 			}
 
