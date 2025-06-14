@@ -16,12 +16,10 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoderDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearcherDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
@@ -37,7 +35,6 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
@@ -58,6 +55,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 /**
  * @author yingzi
  * @since 2025/5/17 17:10
+ * @author sixiyida
+ * @since 2025/6/14 11:16
  */
 @Configuration
 @EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class })
@@ -66,13 +65,16 @@ public class DeepResearchConfiguration {
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
 	@Autowired
-	private ChatClient researchAgent;
+	private TavilySearchService tavilySearchService;
 
 	@Autowired
 	private ChatClient coderAgent;
 
 	@Autowired
-	private TavilySearchService tavilySearchService;
+	private ChatClient researchAgent;
+
+	@Autowired
+	private DeepResearchProperties deepResearchProperties;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
@@ -104,7 +106,16 @@ public class DeepResearchConfiguration {
 			state.registerKeyAndStrategy("final_report", new ReplaceStrategy());
 			state.registerKeyAndStrategy("planner_content", new ReplaceStrategy());
 			state.registerKeyAndStrategy("coder_content", new ReplaceStrategy());
-			state.registerKeyAndStrategy("researcher_content", new ReplaceStrategy());
+			
+			// 动态注册研究员节点的输出
+			for (int i = 0; i < deepResearchProperties.getResearcherNodeCount(); i++) {
+				state.registerKeyAndStrategy("researcher_content_" + i, new ReplaceStrategy());
+			}
+
+			for (int i = 0; i < deepResearchProperties.getCoderNodeCount(); i++) {
+				state.registerKeyAndStrategy("coder_content_" + i, new ReplaceStrategy());
+			}
+
 			return state;
 		};
 
@@ -115,17 +126,13 @@ public class DeepResearchConfiguration {
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
-			//.addNode("researcher", node_async(new ResearcherNode(researchAgent)))
-			.addNode("parallel_executor", node_async(new ParallelExecutorNode()))
-			.addNode("researcher_0", node_async(new ResearcherNode(researchAgent, "0")))
-			.addNode("researcher_1", node_async(new ResearcherNode(researchAgent, "1")))
-			.addNode("researcher_2", node_async(new ResearcherNode(researchAgent, "2")))
-			.addNode("coder_0", node_async(new CoderNode(coderAgent)))
-			.addNode("coder_1", node_async(new CoderNode(coderAgent)))
-			.addNode("coder_2", node_async(new CoderNode(coderAgent)))
-			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))))
+			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
+			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))));
 
-			.addEdge(START, "coordinator")
+		// 添加并行节点块
+		configureParallelNodes(stateGraph);
+
+		stateGraph.addEdge(START, "coordinator")
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
 					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 			.addEdge("background_investigator", "planner")
@@ -136,18 +143,6 @@ public class DeepResearchConfiguration {
 					Map.of("planner", "planner", "research_team", "research_team", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
 					Map.of("reporter", "reporter", "parallel_executor", "parallel_executor", END, END))
-			.addEdge("parallel_executor", "researcher_0")
-			.addEdge("parallel_executor", "researcher_1")
-			.addEdge("parallel_executor", "researcher_2")
-			.addEdge("parallel_executor", "coder_0")
-			.addEdge("parallel_executor", "coder_1")
-			.addEdge("parallel_executor", "coder_2")
-			.addEdge("researcher_0", "research_team")
-			.addEdge("researcher_1", "research_team")
-			.addEdge("researcher_2", "research_team")
-			.addEdge("coder_0", "research_team")
-			.addEdge("coder_1", "research_team")
-			.addEdge("coder_2", "research_team")
 			.addEdge("reporter", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
@@ -159,5 +154,32 @@ public class DeepResearchConfiguration {
 
 		return stateGraph;
 	}
-
+	
+	private void configureParallelNodes(StateGraph stateGraph) throws GraphStateException {
+		addResearcherNodes(stateGraph);
+		
+		addCoderNodes(stateGraph);
+	}
+	
+	private void addResearcherNodes(StateGraph stateGraph) throws GraphStateException {
+		for (int i = 0; i < deepResearchProperties.getResearcherNodeCount(); i++) {
+			String nodeId = "researcher_" + i;
+			// 添加节点
+			stateGraph.addNode(nodeId, node_async(new ResearcherNode(researchAgent, String.valueOf(i))));
+			// 添加边连接
+			stateGraph.addEdge("parallel_executor", nodeId)
+					.addEdge(nodeId, "research_team");
+		}
+	}
+	
+	private void addCoderNodes(StateGraph stateGraph) throws GraphStateException {
+		for (int i = 0; i < deepResearchProperties.getCoderNodeCount(); i++) {
+			String nodeId = "coder_" + i;
+			// 添加节点
+			stateGraph.addNode(nodeId, node_async(new CoderNode(coderAgent, String.valueOf(i))));
+			// 添加边连接
+			stateGraph.addEdge("parallel_executor", nodeId)
+					.addEdge(nodeId, "research_team");
+		}
+	}
 }

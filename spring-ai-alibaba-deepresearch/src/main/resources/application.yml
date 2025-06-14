@@ -31,6 +31,9 @@ spring:
           jina:
             enabled: false
             api-key: ${JINA_API_KEY}
+      deepresearch:
+        researcher-node-count: 10
+        coder-node-count: 10
 
 logging:
   level:

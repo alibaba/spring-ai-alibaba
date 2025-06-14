@@ -20,11 +20,38 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Allen Hu
- * @date 2025/5/24
+ * @since 2025/5/24
+ * @author sixiyida
+ * @since 2025/6/14
  */
 @ConfigurationProperties(prefix = DeepResearchProperties.PREFIX)
 public class DeepResearchProperties {
 
-	public static final String PREFIX = "spring.ai.alibaba.deepreserch";
+	public static final String PREFIX = "spring.ai.alibaba.deepresearch";
+	
+	/**
+	 * Number of researcher nodes to create
+	 */
+	private int researcherNodeCount = 3;
+	
+	/**
+	 * Number of coder nodes to create
+	 */
+	private int coderNodeCount = 3;
 
+	public int getResearcherNodeCount() {
+		return researcherNodeCount;
+	}
+
+	public void setResearcherNodeCount(int researcherNodeCount) {
+		this.researcherNodeCount = researcherNodeCount;
+	}
+
+	public int getCoderNodeCount() {
+		return coderNodeCount;
+	}
+
+	public void setCoderNodeCount(int coderNodeCount) {
+		this.coderNodeCount = coderNodeCount;
+	}
 }
