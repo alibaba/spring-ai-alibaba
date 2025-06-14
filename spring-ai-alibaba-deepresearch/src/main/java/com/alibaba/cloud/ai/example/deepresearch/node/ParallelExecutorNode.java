@@ -19,64 +19,65 @@ import java.util.Map;
 
 public class ParallelExecutorNode implements NodeAction {
 
-    private static final Logger logger = LoggerFactory.getLogger(ParallelExecutorNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(ParallelExecutorNode.class);
 
-    private final DeepResearchProperties properties;
-    
-    public ParallelExecutorNode(DeepResearchProperties properties) {
-        this.properties = properties;
-    }
+	private final DeepResearchProperties properties;
 
-    @Override
-    public Map<String, Object> apply(OverAllState state) throws Exception {
+	public ParallelExecutorNode(DeepResearchProperties properties) {
+		this.properties = properties;
+	}
 
-        long currResearcher = 0;
-        long currCoder = 0;
+	@Override
+	public Map<String, Object> apply(OverAllState state) throws Exception {
 
-        Plan curPlan = StateUtil.getPlan(state);
-        for (Plan.Step step : curPlan.getSteps()) {
-            // 跳过不需要处理的步骤
-            if (StringUtils.hasText(step.getExecutionRes()) ||
-                    StringUtils.hasText(step.getExecutionStatus())) {
-                continue;
-            }
+		long currResearcher = 0;
+		long currCoder = 0;
 
-            Plan.StepType stepType = step.getStepType();
+		Plan curPlan = StateUtil.getPlan(state);
+		for (Plan.Step step : curPlan.getSteps()) {
+			// 跳过不需要处理的步骤
+			if (StringUtils.hasText(step.getExecutionRes()) || StringUtils.hasText(step.getExecutionStatus())) {
+				continue;
+			}
 
-            switch (stepType) {
-                case PROCESSING:
-                    if (areAllResearchStepsCompleted(curPlan)) {
-                        step.setExecutionStatus(assignRole(stepType, currCoder));
-                        currCoder = (currCoder + 1) % properties.getCoderNodeCount();
-                    }
-                    logger.info("Waiting for remaining research steps executed");
-                    break;
+			Plan.StepType stepType = step.getStepType();
 
-                case RESEARCH:
-                    step.setExecutionStatus(assignRole(stepType, currResearcher));
-                    currResearcher = (currResearcher + 1) % properties.getResearcherNodeCount();
-                    break;
+			switch (stepType) {
+				case PROCESSING:
+					if (areAllResearchStepsCompleted(curPlan)) {
+						step.setExecutionStatus(assignRole(stepType, currCoder));
+						currCoder = (currCoder + 1) % properties.getCoderNodeCount();
+					}
+					logger.info("Waiting for remaining research steps executed");
+					break;
 
-                // 处理其他可能的StepType
-                default:
-                    logger.debug("Unhandled step type: {}", stepType);
-            }
-        }
-        return Map.of();
-    }
+				case RESEARCH:
+					step.setExecutionStatus(assignRole(stepType, currResearcher));
+					currResearcher = (currResearcher + 1) % properties.getResearcherNodeCount();
+					break;
 
-    private String assignRole(Plan.StepType type, long executorId) {
-        String role = type == Plan.StepType.PROCESSING ? "coder_" : "researcher_";
-        return StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + role + executorId;
-    }
+				// 处理其他可能的StepType
+				default:
+					logger.debug("Unhandled step type: {}", stepType);
+			}
+		}
+		return Map.of();
+	}
 
-    private boolean areAllResearchStepsCompleted(Plan plan) {
-        if (CollectionUtils.isEmpty(plan.getSteps())) {
-            return true;
-        }
+	private String assignRole(Plan.StepType type, long executorId) {
+		String role = type == Plan.StepType.PROCESSING ? "coder_" : "researcher_";
+		return StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + role + executorId;
+	}
 
-        return plan.getSteps().stream()
-                .filter(step -> step.getStepType() == Plan.StepType.RESEARCH)
-                .allMatch(step -> step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX));
-    }
+	private boolean areAllResearchStepsCompleted(Plan plan) {
+		if (CollectionUtils.isEmpty(plan.getSteps())) {
+			return true;
+		}
+
+		return plan.getSteps()
+			.stream()
+			.filter(step -> step.getStepType() == Plan.StepType.RESEARCH)
+			.allMatch(step -> step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX));
+	}
+
 }

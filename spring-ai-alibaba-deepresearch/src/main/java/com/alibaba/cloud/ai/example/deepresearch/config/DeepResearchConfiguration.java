@@ -150,28 +150,27 @@ public class DeepResearchConfiguration {
 
 		return stateGraph;
 	}
-	
+
 	private void configureParallelNodes(StateGraph stateGraph) throws GraphStateException {
 		addResearcherNodes(stateGraph);
-		
+
 		addCoderNodes(stateGraph);
 	}
-	
+
 	private void addResearcherNodes(StateGraph stateGraph) throws GraphStateException {
 		for (int i = 0; i < deepResearchProperties.getResearcherNodeCount(); i++) {
 			String nodeId = "researcher_" + i;
 			stateGraph.addNode(nodeId, node_async(new ResearcherNode(researchAgent, String.valueOf(i))));
-			stateGraph.addEdge("parallel_executor", nodeId)
-					.addEdge(nodeId, "research_team");
+			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
-	
+
 	private void addCoderNodes(StateGraph stateGraph) throws GraphStateException {
 		for (int i = 0; i < deepResearchProperties.getCoderNodeCount(); i++) {
 			String nodeId = "coder_" + i;
 			stateGraph.addNode(nodeId, node_async(new CoderNode(coderAgent, String.valueOf(i))));
-			stateGraph.addEdge("parallel_executor", nodeId)
-					.addEdge(nodeId, "research_team");
+			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
+
 }

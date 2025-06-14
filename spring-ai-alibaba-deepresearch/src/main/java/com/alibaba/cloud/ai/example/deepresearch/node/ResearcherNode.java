@@ -58,8 +58,8 @@ public class ResearcherNode implements NodeAction {
 		long stepId = 0;
 		for (Plan.Step step : currentPlan.getSteps()) {
 			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())
-					&& StringUtils.hasText(step.getExecutionStatus())
-					&& step.getExecutionStatus().equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + executorNodeName)) {
+					&& StringUtils.hasText(step.getExecutionStatus()) && step.getExecutionStatus()
+						.equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + executorNodeName)) {
 				assignedStep = step;
 				break;
 			}
@@ -92,17 +92,19 @@ public class ResearcherNode implements NodeAction {
 		// 调用agent
 		var streamResult = researchAgent.prompt().messages(messages).stream().chatResponse();
 		Plan.Step finalAssignedStep = assignedStep;
-		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, "researcher_llm_stream_" + executorNodeId);
+		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId,
+				"researcher_llm_stream_" + executorNodeId);
 		var generator = StreamingChatGenerator.builder()
-				.startingNode("researcher_llm_stream_" + executorNodeId)
-				.startingState(state)
-				.mapResult(response -> {
-					finalAssignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
-					finalAssignedStep.setExecutionRes(Objects.requireNonNull(response.getResult().getOutput().getText()));
-					return Map.of("researcher_content_" + executorNodeId, Objects.requireNonNull(response.getResult().getOutput().getText()));
-				})
-				.build(streamResult);
-		return Map.of("researcher_content_" + executorNodeId , generator);
+			.startingNode("researcher_llm_stream_" + executorNodeId)
+			.startingState(state)
+			.mapResult(response -> {
+				finalAssignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
+				finalAssignedStep.setExecutionRes(Objects.requireNonNull(response.getResult().getOutput().getText()));
+				return Map.of("researcher_content_" + executorNodeId,
+						Objects.requireNonNull(response.getResult().getOutput().getText()));
+			})
+			.build(streamResult);
+		return Map.of("researcher_content_" + executorNodeId, generator);
 	}
 
 }

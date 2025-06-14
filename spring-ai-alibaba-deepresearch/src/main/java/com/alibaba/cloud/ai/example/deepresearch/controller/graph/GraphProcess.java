@@ -69,7 +69,7 @@ public class GraphProcess {
 		executor.submit(() -> {
 			generator.forEachAsync(output -> {
 				try {
-					//logger.info("output = {}", output);
+					// logger.info("output = {}", output);
 					String nodeName = output.node();
 					String content;
 					if (output instanceof StreamingOutput streamingOutput) {

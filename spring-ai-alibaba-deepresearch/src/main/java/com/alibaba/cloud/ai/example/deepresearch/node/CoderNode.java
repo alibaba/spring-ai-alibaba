@@ -47,13 +47,13 @@ public class CoderNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(CoderNode.class);
 
 	private final ChatClient coderAgent;
-	
+
 	private final String executorNodeId;
 
 	public CoderNode(ChatClient coderAgent) {
 		this(coderAgent, "0");
 	}
-	
+
 	public CoderNode(ChatClient coderAgent, String executorNodeId) {
 		this.coderAgent = coderAgent;
 		this.executorNodeId = executorNodeId;
@@ -68,10 +68,9 @@ public class CoderNode implements NodeAction {
 
 		Plan.Step assignedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
-			if (step.getStepType().equals(Plan.StepType.PROCESSING) && 
-				!StringUtils.hasText(step.getExecutionRes()) &&
-				StringUtils.hasText(step.getExecutionStatus()) &&
-				step.getExecutionStatus().equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + executorNodeName)) {
+			if (step.getStepType().equals(Plan.StepType.PROCESSING) && !StringUtils.hasText(step.getExecutionRes())
+					&& StringUtils.hasText(step.getExecutionStatus()) && step.getExecutionStatus()
+						.equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + executorNodeName)) {
 				assignedStep = step;
 				break;
 			}
@@ -81,7 +80,7 @@ public class CoderNode implements NodeAction {
 			logger.info("No remaining steps to be executed by {}", executorNodeName);
 			return updated;
 		}
-		
+
 		// 标记步骤为正在执行
 		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + executorNodeName);
 
@@ -99,17 +98,18 @@ public class CoderNode implements NodeAction {
 			.messages(messages)
 			.stream()
 			.chatResponse();
-			
+
 		Plan.Step finalAssignedStep = assignedStep;
-		logger.info("CoderNode {} starting streaming with key: {}", executorNodeId, "coder_llm_stream_" + executorNodeId);
+		logger.info("CoderNode {} starting streaming with key: {}", executorNodeId,
+				"coder_llm_stream_" + executorNodeId);
 		var generator = StreamingChatGenerator.builder()
 			.startingNode("coder_llm_stream_" + executorNodeId)
 			.startingState(state)
 			.mapResult(response -> {
 				finalAssignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
 				finalAssignedStep.setExecutionRes(Objects.requireNonNull(response.getResult().getOutput().getText()));
-				return Map.of("coder_content_" + executorNodeId, 
-					Objects.requireNonNull(response.getResult().getOutput().getText()));
+				return Map.of("coder_content_" + executorNodeId,
+						Objects.requireNonNull(response.getResult().getOutput().getText()));
 			})
 			.build(streamResult);
 

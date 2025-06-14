@@ -663,7 +663,8 @@ public class CompiledGraph {
 		/**
 		 * Gets embed generator from partial state.
 		 * @param partialState the partial state containing generator instances
-		 * @return an Optional containing Data with the generator if found, empty otherwise
+		 * @return an Optional containing Data with the generator if found, empty
+		 * otherwise
 		 */
 		private Optional<Data<Output>> getEmbedGenerator(Map<String, Object> partialState) {
 			// Extract all AsyncGenerator instances
@@ -671,21 +672,20 @@ public class CompiledGraph {
 				.stream()
 				.filter(e -> e.getValue() instanceof AsyncGenerator)
 				.collect(Collectors.toList());
-			
+
 			if (generatorEntries.isEmpty()) {
 				return Optional.empty();
 			}
-			
+
 			// Log information about found generators
 			if (generatorEntries.size() > 1) {
-				log.info("Multiple generators found: {} - keys: {}", 
-					generatorEntries.size(), 
-					generatorEntries.stream().map(Map.Entry::getKey).collect(Collectors.joining(", ")));
+				log.info("Multiple generators found: {} - keys: {}", generatorEntries.size(),
+						generatorEntries.stream().map(Map.Entry::getKey).collect(Collectors.joining(", ")));
 			}
-			
+
 			// Create appropriate generator (single or merged)
 			AsyncGenerator<Output> generator = createAppropriateGenerator(generatorEntries);
-			
+
 			// Create data processing logic for the generator
 			return Optional.of(Data.composeWith(generator.map(n -> {
 				n.setSubGraph(true);
@@ -704,12 +704,12 @@ public class CompiledGraph {
 				// Only one generator, return it directly
 				return (AsyncGenerator<Output>) generatorEntries.get(0).getValue();
 			}
-			
+
 			// Multiple generators, create a merged generator
 			List<AsyncGenerator<Output>> generators = generatorEntries.stream()
 				.map(entry -> (AsyncGenerator<Output>) entry.getValue())
 				.collect(Collectors.toList());
-			
+
 			return createMergedGenerator(generators);
 		}
 
@@ -721,36 +721,38 @@ public class CompiledGraph {
 		private AsyncGenerator<Output> createMergedGenerator(List<AsyncGenerator<Output>> generators) {
 			return new AsyncGenerator<Output>() {
 				private int currentGeneratorIndex = 0;
+
 				private boolean isDone = false;
-				
+
 				@Override
 				public Data<Output> next() {
 					if (isDone) {
 						return Data.done();
 					}
-					
+
 					// Poll all generators in round-robin fashion
 					int startIndex = currentGeneratorIndex;
 					do {
 						AsyncGenerator<Output> currentGenerator = generators.get(currentGeneratorIndex);
 						Data<Output> data = currentGenerator.next();
-						
+
 						// If current generator has data, return it
 						if (!data.isDone()) {
 							// Update index for next generator to process
 							currentGeneratorIndex = (currentGeneratorIndex + 1) % generators.size();
 							return data;
 						}
-						
+
 						// Move to next generator
 						currentGeneratorIndex = (currentGeneratorIndex + 1) % generators.size();
-						
+
 						// If all generators have been checked and none has data, complete
 						if (currentGeneratorIndex == startIndex) {
 							isDone = true;
 							return Data.done();
 						}
-					} while (true);
+					}
+					while (true);
 				}
 			};
 		}
@@ -763,8 +765,8 @@ public class CompiledGraph {
 		 * @throws Exception if an error occurs during processing
 		 */
 		@SuppressWarnings("unchecked")
-		private void processGeneratorOutput(Object data, Map<String, Object> partialState, 
-										   List<Map.Entry<String, Object>> generatorEntries) throws Exception {
+		private void processGeneratorOutput(Object data, Map<String, Object> partialState,
+				List<Map.Entry<String, Object>> generatorEntries) throws Exception {
 			if (data != null) {
 				if (data instanceof Map<?, ?>) {
 					// Remove all generators
@@ -774,18 +776,18 @@ public class CompiledGraph {
 						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 					// Update state
-					var intermediateState = OverAllState.updateState(currentState,
-							partialStateWithoutGenerators, keyStrategyMap);
+					var intermediateState = OverAllState.updateState(currentState, partialStateWithoutGenerators,
+							keyStrategyMap);
 					currentState = OverAllState.updateState(intermediateState, (Map<String, Object>) data,
 							keyStrategyMap);
 
 					// Update global state
 					overAllState.updateState(partialStateWithoutGenerators);
 					overAllState.updateState((Map<String, Object>) data);
-					
+
 					if (log.isDebugEnabled() && generatorEntries.size() > 1) {
-						log.debug("Updated state with data keys: {}", 
-							((Map<String, Object>) data).keySet().stream().collect(Collectors.joining(", ")));
+						log.debug("Updated state with data keys: {}",
+								((Map<String, Object>) data).keySet().stream().collect(Collectors.joining(", ")));
 					}
 				}
 				else {

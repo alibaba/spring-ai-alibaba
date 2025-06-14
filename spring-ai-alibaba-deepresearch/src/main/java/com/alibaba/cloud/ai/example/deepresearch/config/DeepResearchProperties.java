@@ -24,23 +24,20 @@ import java.util.Set;
 
 /**
  * @author Allen Hu
- * @since 2025/5/24
-<<<<<<< HEAD
+ * @since 2025/5/24 <<<<<<< HEAD
  * @author sixiyida
- * @since 2025/6/14
-=======
->>>>>>> origin/main
+ * @since 2025/6/14 ======= >>>>>>> origin/main
  */
 @ConfigurationProperties(prefix = DeepResearchProperties.PREFIX)
 public class DeepResearchProperties {
 
 	public static final String PREFIX = "spring.ai.alibaba.deepresearch";
-	
+
 	/**
 	 * Number of researcher nodes to create
 	 */
 	private int researcherNodeCount = 3;
-	
+
 	/**
 	 * Number of coder nodes to create
 	 */
@@ -61,6 +58,7 @@ public class DeepResearchProperties {
 	public void setCoderNodeCount(int coderNodeCount) {
 		this.coderNodeCount = coderNodeCount;
 	}
+
 	/**
 	 * McpClient mapping for Agent name. key=Agent name, value=McpClient Name
 	 */
