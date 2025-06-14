@@ -29,6 +29,12 @@ import java.util.List;
 
 public class StateUtil {
 
+	public static final String EXECUTION_STATUS_ASSIGNED_PREFIX = "assigned_";
+
+	public static final String EXECUTION_STATUS_PROCESSING_PREFIX = "processing_";
+
+	public static final String EXECUTION_STATUS_COMPLETED_PREFIX = "completed_";
+
 	public static List<String> getMessagesByType(OverAllState state, String name) {
 		return state.value(name, List.class).map(obj -> new ArrayList<>((List<String>) obj)).orElseGet(ArrayList::new);
 	}

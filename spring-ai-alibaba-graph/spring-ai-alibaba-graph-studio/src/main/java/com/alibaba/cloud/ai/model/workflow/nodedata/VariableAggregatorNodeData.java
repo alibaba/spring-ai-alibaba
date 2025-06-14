@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.model.workflow.nodedata;
 
 import com.alibaba.cloud.ai.model.Variable;
@@ -29,6 +30,20 @@ public class VariableAggregatorNodeData extends NodeData {
 	private String outputType;
 
 	private AdvancedSettings advancedSettings;
+
+	private String outputKey = "output";
+
+	public VariableAggregatorNodeData() {
+	}
+
+	public VariableAggregatorNodeData(List<VariableSelector> inputs, List<Variable> outputs,
+			List<List<String>> variables, String outputType, AdvancedSettings advancedSettings) {
+		super(inputs, outputs);
+		this.variables = variables;
+		this.outputType = outputType;
+		this.advancedSettings = advancedSettings;
+		outputs.add(new Variable(this.outputKey, this.outputType));
+	}
 
 	public List<List<String>> getVariables() {
 		return variables;
@@ -57,15 +72,13 @@ public class VariableAggregatorNodeData extends NodeData {
 		return this;
 	}
 
-	public VariableAggregatorNodeData() {
+	public String getOutputKey() {
+		return outputKey;
 	}
 
-	public VariableAggregatorNodeData(List<VariableSelector> inputs, List<Variable> outputs,
-			List<List<String>> variables, String outputType, AdvancedSettings advancedSettings) {
-		super(inputs, outputs);
-		this.variables = variables;
-		this.outputType = outputType;
-		this.advancedSettings = advancedSettings;
+	public VariableAggregatorNodeData setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+		return this;
 	}
 
 	public static class Groups {

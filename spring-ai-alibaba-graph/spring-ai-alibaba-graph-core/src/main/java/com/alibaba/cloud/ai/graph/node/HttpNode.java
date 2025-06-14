@@ -121,7 +121,7 @@ public class HttpNode implements NodeAction {
 			Map<String, Object> updatedState = new HashMap<>();
 			updatedState.put("messages", httpResponse);
 			if (StringUtils.hasLength(this.outputKey)) {
-				updatedState.put(this.outputKey, httpResponse);
+				updatedState.put(this.outputKey, String.valueOf(httpResponse.get("body")));
 			}
 			return updatedState;
 		}
@@ -413,10 +413,149 @@ public class HttpNode implements NodeAction {
 				return new HttpRequestNodeBody(BodyType.NONE, null);
 			}
 			if (raw instanceof String) {
+				String text = ((String) raw).trim();
+				if (text.isEmpty()) {
+					return new HttpRequestNodeBody(BodyType.NONE, null);
+				}
 				BodyData bd = new BodyData();
 				bd.setType(BodyType.RAW_TEXT);
-				bd.setValue((String) raw);
+				bd.setValue(text);
 				return new HttpRequestNodeBody(BodyType.RAW_TEXT, List.of(bd));
+			}
+			if (raw instanceof Map<?, ?>) {
+				@SuppressWarnings("unchecked")
+				Map<String, Object> m = (Map<String, Object>) raw;
+				Object t = m.get("type");
+				String typeStr = (t instanceof String) ? ((String) t).trim().toUpperCase().replace("-", "_") : "NONE";
+				BodyType type;
+				try {
+					type = BodyType.valueOf(typeStr);
+				}
+				catch (Exception ex) {
+					type = BodyType.NONE;
+				}
+
+				Object dataField = m.get("data");
+
+				switch (type) {
+					case NONE:
+						return new HttpRequestNodeBody(BodyType.NONE, null);
+
+					case RAW_TEXT:
+						if (dataField instanceof String) {
+							String txt = ((String) dataField).trim();
+							if (!txt.isEmpty()) {
+								BodyData bd1 = new BodyData();
+								bd1.setType(BodyType.RAW_TEXT);
+								bd1.setValue(txt);
+								return new HttpRequestNodeBody(BodyType.RAW_TEXT, List.of(bd1));
+							}
+						}
+						return new HttpRequestNodeBody(BodyType.NONE, null);
+
+					case JSON:
+						if (dataField instanceof Map<?, ?> || dataField instanceof List<?>) {
+							String jsonString = new com.google.gson.Gson().toJson(dataField);
+							BodyData bd2 = new BodyData();
+							bd2.setType(BodyType.JSON);
+							bd2.setValue(jsonString);
+							return new HttpRequestNodeBody(BodyType.JSON, List.of(bd2));
+						}
+						return new HttpRequestNodeBody(BodyType.NONE, null);
+
+					case FORM_DATA:
+						if (dataField instanceof List<?>) {
+							@SuppressWarnings("unchecked")
+							List<Map<String, Object>> rawList = (List<Map<String, Object>>) dataField;
+							List<BodyData> listData = new ArrayList<>();
+							for (Map<String, Object> item : rawList) {
+								BodyData bd3 = new BodyData();
+								Object key0 = item.get("key");
+								if (key0 instanceof String) {
+									bd3.setKey((String) key0);
+								}
+								Object type0 = item.get("type");
+								if (type0 instanceof String) {
+									try {
+										bd3.setType(BodyType.valueOf(((String) type0).toUpperCase()));
+									}
+									catch (Exception ex) {
+										bd3.setType(BodyType.NONE);
+									}
+								}
+								Object val0 = item.get("value");
+								if (val0 instanceof String) {
+									bd3.setValue((String) val0);
+								}
+								Object fileBytes = item.get("fileBytes");
+								if (fileBytes instanceof byte[]) {
+									bd3.setFileBytes((byte[]) fileBytes);
+								}
+								Object filename = item.get("filename");
+								if (filename instanceof String) {
+									bd3.setFilename((String) filename);
+								}
+								Object mimeType = item.get("mimeType");
+								if (mimeType instanceof String) {
+									bd3.setMimeType((String) mimeType);
+								}
+								listData.add(bd3);
+							}
+							return new HttpRequestNodeBody(BodyType.FORM_DATA, listData);
+						}
+						return new HttpRequestNodeBody(BodyType.NONE, null);
+
+					case X_WWW_FORM_URLENCODED:
+						if (dataField instanceof List<?>) {
+							@SuppressWarnings("unchecked")
+							List<Map<String, Object>> rawList2 = (List<Map<String, Object>>) dataField;
+							List<BodyData> list2 = new ArrayList<>();
+							for (Map<String, Object> item : rawList2) {
+								BodyData bd4 = new BodyData();
+								Object key0 = item.get("key");
+								if (key0 instanceof String) {
+									bd4.setKey((String) key0);
+								}
+								bd4.setType(BodyType.X_WWW_FORM_URLENCODED);
+								Object val0 = item.get("value");
+								if (val0 instanceof String) {
+									bd4.setValue((String) val0);
+								}
+								list2.add(bd4);
+							}
+							return new HttpRequestNodeBody(BodyType.X_WWW_FORM_URLENCODED, list2);
+						}
+						return new HttpRequestNodeBody(BodyType.NONE, null);
+
+					case BINARY:
+						if (dataField instanceof List<?>) {
+							@SuppressWarnings("unchecked")
+							List<Map<String, Object>> rawList3 = (List<Map<String, Object>>) dataField;
+							List<BodyData> list3 = new ArrayList<>();
+							for (Map<String, Object> item : rawList3) {
+								BodyData bd5 = new BodyData();
+								bd5.setType(BodyType.BINARY);
+								Object fb = item.get("fileBytes");
+								if (fb instanceof byte[]) {
+									bd5.setFileBytes((byte[]) fb);
+								}
+								Object fn = item.get("filename");
+								if (fn instanceof String) {
+									bd5.setFilename((String) fn);
+								}
+								Object mt = item.get("mimeType");
+								if (mt instanceof String) {
+									bd5.setMimeType((String) mt);
+								}
+								list3.add(bd5);
+							}
+							return new HttpRequestNodeBody(BodyType.BINARY, list3);
+						}
+						return new HttpRequestNodeBody(BodyType.NONE, null);
+
+					default:
+						return new HttpRequestNodeBody(BodyType.NONE, null);
+				}
 			}
 			throw new IllegalArgumentException("Unsupported body type: " + raw.getClass());
 		}
@@ -435,6 +574,10 @@ public class HttpNode implements NodeAction {
 
 		public void setData(List<BodyData> data) {
 			this.data = data;
+		}
+
+		public boolean hasContent() {
+			return this.type != null && this.type != BodyType.NONE && this.data != null && !this.data.isEmpty();
 		}
 
 	}
@@ -472,6 +615,34 @@ public class HttpNode implements NodeAction {
 			this.type = type;
 		}
 
+		public AuthType getType() {
+			return type;
+		}
+
+		public String getUsername() {
+			return username;
+		}
+
+		public String getPassword() {
+			return password;
+		}
+
+		public String getToken() {
+			return token;
+		}
+
+		public String getTypeName() {
+			return this.type.name().toLowerCase();
+		}
+
+		public boolean isBasic() {
+			return this.type == AuthType.BASIC;
+		}
+
+		public boolean isBearer() {
+			return this.type == AuthType.BEARER;
+		}
+
 	}
 
 	public static class RetryConfig {
@@ -487,6 +658,23 @@ public class HttpNode implements NodeAction {
 			this.maxRetryInterval = maxRetryInterval > 0 ? maxRetryInterval : DEFAULT_MAX_RETRY_INTERVAL;
 			this.enable = enable;
 		}
+
+		public int getMaxRetries() {
+			return maxRetries;
+		}
+
+		public long getMaxRetryInterval() {
+			return maxRetryInterval;
+		}
+
+		public boolean isEnable() {
+			return enable;
+		}
+
+	}
+
+	public record TimeoutConfig(int connect, int read, int write, int maxConnectTimeout, int maxReadTimeout,
+			int maxWriteTimeout) {
 
 	}
 
