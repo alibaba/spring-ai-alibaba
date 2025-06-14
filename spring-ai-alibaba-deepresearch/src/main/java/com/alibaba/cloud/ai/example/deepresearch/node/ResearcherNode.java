@@ -40,33 +40,47 @@ public class ResearcherNode implements NodeAction {
 
 	private final ChatClient researchAgent;
 
-	public ResearcherNode(ChatClient researchAgent) {
+	private final String executorNodeId;
+
+	public ResearcherNode(ChatClient researchAgent, String executorNodeId) {
 		this.researchAgent = researchAgent;
+		this.executorNodeId = executorNodeId;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("researcher node is running.");
+		logger.info("researcher node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
 		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Map<String, Object> updated = new HashMap<>();
-
-		Plan.Step unexecutedStep = null;
+		String executorNodeName = "researcher_" + executorNodeId;
+		Plan.Step assignedStep = null;
+		long stepId = 0;
 		for (Plan.Step step : currentPlan.getSteps()) {
-			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())) {
-				unexecutedStep = step;
+			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())
+					&& StringUtils.hasText(step.getExecutionStatus()) && step.getExecutionStatus()
+						.equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + executorNodeName)) {
+				assignedStep = step;
 				break;
 			}
+			stepId++;
 		}
-		if (unexecutedStep == null) {
-			logger.info("all researcher node is finished.");
+
+		// 如果没有找到分配的步骤，直接返回
+		if (assignedStep == null) {
+			logger.info("No remaining steps to be executed by {}", executorNodeName);
 			return updated;
 		}
+
+		final long assignedStepId = stepId;
+
+		// 标记步骤为正在执行
+		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + executorNodeName);
 
 		// 添加任务消息
 		List<Message> messages = new ArrayList<>();
 		Message taskMessage = new UserMessage(String.format("# Current Task\n\n##title\n\n%s\n\n##description\n\n%s",
-				unexecutedStep.getTitle(), unexecutedStep.getDescription()));
+				assignedStep.getTitle(), assignedStep.getDescription()));
 		messages.add(taskMessage);
 
 		// 添加研究者特有的引用提醒
@@ -77,14 +91,20 @@ public class ResearcherNode implements NodeAction {
 		logger.debug("researcher Node messages: {}", messages);
 		// 调用agent
 		var streamResult = researchAgent.prompt().messages(messages).stream().chatResponse();
+		Plan.Step finalAssignedStep = assignedStep;
+		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId,
+				"researcher_llm_stream_" + executorNodeId);
 		var generator = StreamingChatGenerator.builder()
-			.startingNode("researcher_llm_stream")
+			.startingNode("researcher_llm_stream_" + executorNodeId)
 			.startingState(state)
-			.mapResult(response -> Map.of("researcher_content",
-					Objects.requireNonNull(response.getResult().getOutput().getText())))
+			.mapResult(response -> {
+				finalAssignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
+				finalAssignedStep.setExecutionRes(Objects.requireNonNull(response.getResult().getOutput().getText()));
+				return Map.of("researcher_content_" + executorNodeId,
+						Objects.requireNonNull(response.getResult().getOutput().getText()));
+			})
 			.build(streamResult);
-
-		return Map.of("researcher_content", generator);
+		return Map.of("researcher_content_" + executorNodeId, generator);
 	}
 
 }
