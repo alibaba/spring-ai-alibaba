@@ -58,6 +58,30 @@ public class BaseNl2SqlService {
 		this.dbConfig = dbConfig;
 	}
 
+	public String rewrite(String query) throws Exception {
+		List<Document> evidenceDocuments = vectorStoreService.getDocuments(query, "evidence");
+		List<String> evidences = evidenceDocuments.stream().map(Document::getText).collect(Collectors.toList());
+		SchemaDTO schemaDTO = select(query, evidences);
+		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
+		String responseContent = aiService.call(prompt);
+		String[] splits = responseContent.split("\\n");
+		for (String line : splits) {
+			if (line.startsWith("需求类型：")) {
+				String content = line.substring(5).trim();
+				if ("《自由闲聊》".equals(content)) {
+					return "闲聊拒识";
+				}
+				else if ("《需要澄清》".equals(content)) {
+					return "意图模糊需要澄清";
+				}
+			}
+			else if (line.startsWith("需求内容：")) {
+				query = line.substring(5);
+			}
+		}
+		return query;
+	}
+
 	public String nl2sql(String query) throws Exception {
 		List<Document> evidenceDocuments = vectorStoreService.getDocuments(query, "evidence");
 		List<String> evidences = evidenceDocuments.stream().map(Document::getText).collect(Collectors.toList());
@@ -88,6 +112,7 @@ public class BaseNl2SqlService {
 	}
 
 	public String generateSql(List<String> evidenceList, String query, SchemaDTO schemaDTO) throws Exception {
+		// TODO 时间处理暂时未应用
 		String dateTimeExtractPrompt = PromptHelper.buildDateTimeExtractPrompt(query);
 		String content = aiService.call(dateTimeExtractPrompt);
 		List<String> dateTimeList = new ArrayList<>();

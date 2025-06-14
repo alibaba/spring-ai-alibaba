@@ -59,7 +59,7 @@ public class AnalyticDbVectorStoreAutoConfiguration {
 			throw new IllegalArgumentException("Environment variable DASHSCOPE_API_KEY is not set.");
 		}
 		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
-		;
+
 		return new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED,
 				DashScopeEmbeddingOptions.builder().withModel("text-embedding-v2").build());
 	}

@@ -24,7 +24,7 @@ import java.util.Set;
 
 /**
  * @author Allen Hu
- * @date 2025/5/24
+ * @since 2025/5/24
  */
 @ConfigurationProperties(prefix = DeepResearchProperties.PREFIX)
 public class DeepResearchProperties {
