@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.streaming;
 
+import com.alibaba.cloud.ai.graph.CompiledGraph;
 import org.bsc.async.AsyncGenerator;
 
 import java.util.List;
@@ -33,7 +34,7 @@ public class AsyncGeneratorUtils {
 	 * @return single generator or merged generator
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> AsyncGenerator<T> createAppropriateGenerator(List<Map.Entry<String, Object>> generatorEntries) {
+	public static <T> AsyncGenerator<T> createAppropriateGenerator(List<Map.Entry<String, Object>> generatorEntries,List<AsyncGenerator<T>> asyncNodeGenerators) {
 		if (generatorEntries.size() == 1) {
 			// Only one generator, return it directly
 			return (AsyncGenerator<T>) generatorEntries.get(0).getValue();
@@ -43,7 +44,7 @@ public class AsyncGeneratorUtils {
 		List<AsyncGenerator<T>> generators = generatorEntries.stream()
 			.map(entry -> (AsyncGenerator<T>) entry.getValue())
 			.collect(Collectors.toList());
-
+		generators.addAll(asyncNodeGenerators);
 		return createMergedGenerator(generators);
 	}
 

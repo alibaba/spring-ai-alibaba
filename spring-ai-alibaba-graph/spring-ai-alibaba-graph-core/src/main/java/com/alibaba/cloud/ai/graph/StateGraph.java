@@ -32,13 +32,9 @@ import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import com.alibaba.cloud.ai.graph.internal.node.SubStateGraphNode;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializer;
 
 import java.util.*;
 
@@ -241,62 +237,7 @@ public class StateGraph {
 
 	}
 
-	/**
-	 * Gson-based serializer for state.
-	 */
-	static class GsonSerializer extends GsonStateSerializer {
 
-		/**
-		 * Instantiates a new Gson serializer.
-		 */
-		public GsonSerializer() {
-			super(OverAllState::new,
-					new GsonBuilder().enableComplexMapKeySerialization()
-						.setLenient()
-						.registerTypeAdapter(Double.TYPE,
-								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
-						.serializeNulls()
-						.create());
-		}
-
-		/**
-		 * Gets gson.
-		 * @return the gson
-		 */
-		Gson getGson() {
-			return gson;
-		}
-
-	}
-
-	/**
-	 * Alternative Gson-based serializer for state.
-	 */
-	static class GsonSerializer2 extends GsonStateSerializer {
-
-		/**
-		 * Instantiates a new Gson serializer 2.
-		 * @param stateFactory the state factory
-		 */
-		public GsonSerializer2(AgentStateFactory<OverAllState> stateFactory) {
-			super(stateFactory,
-					new GsonBuilder().enableComplexMapKeySerialization()
-						.registerTypeAdapter(Double.TYPE,
-								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
-						.setLenient()
-						.serializeNulls()
-						.create());
-		}
-
-		/**
-		 * Gets gson.
-		 * @return the gson
-		 */
-		Gson getGson() {
-			return gson;
-		}
-
-	}
 
 	/**
 	 * Constructs a StateGraph with the specified name, key strategy factory, and state
@@ -392,8 +333,8 @@ public class StateGraph {
 	 * serializer.
 	 */
 	public StateGraph() {
-		this.stateSerializer = new GsonSerializer();
-		this.keyStrategyFactory = () -> new HashMap<>();
+		this.stateSerializer = new JacksonSerializer();
+		this.keyStrategyFactory = HashMap::new;
 	}
 
 	/**
@@ -424,6 +365,7 @@ public class StateGraph {
 	 * Gets the overall state factory.
 	 * @return the overall state factory
 	 */
+	@Deprecated
 	public final OverAllStateFactory getOverAllStateFactory() {
 		return overAllStateFactory;
 	}
