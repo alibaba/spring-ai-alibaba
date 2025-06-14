@@ -42,24 +42,75 @@ public class YuqueTest {
 	private YuqueUpdateDocService yuqueUpdateDocService;
 
 	@Autowired
+	private YuqueUpdateBookService yuqueUpdateBookService;
+
+	@Autowired
 	private YuqueDeleteDocService yuqueDeleteDocService;
+
+	@Autowired
+	private YuqueDeleteBookService yuqueDeleteBookService;
+
+	@Autowired
+	private YuqueCreateDocService yuqueCreateDocService;
+
+	@Autowired
+	private YuqueCreateBookService yuqueCreateBookService;
 
 	private static final Logger log = LoggerFactory.getLogger(YuqueTest.class);
 
 	@Test
 	@EnabledIfEnvironmentVariable(named = YuqueConstants.TOKEN_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@DisplayName("Create Book Tool-Calling Test")
+	public void testCreateBook() {
+		var resp = yuqueCreateBookService.apply(new YuqueCreateBookService.CreateBookRequest("hiriki",
+				"Create Book Test", "sf258w", "Create Book Test", 0, false));
+		assert resp != null && resp.data() != null;
+		log.info("Create Book Response: {}", resp);
+	}
+
+	@Test
+	@EnabledIfEnvironmentVariable(named = YuqueConstants.TOKEN_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	@DisplayName("Query Book Tool-Calling Test")
 	public void testQueryBook() {
-		var resp = yuqueQueryBookService.apply(new YuqueQueryBookService.queryBookRequest("63184104"));
+		var resp = yuqueQueryBookService.apply(new YuqueQueryBookService.QueryBookRequest("66045409"));
 		assert resp != null && resp.meta() != null && resp.data() != null;
 		log.info("Query Book Response: {}", resp);
 	}
 
 	@Test
 	@EnabledIfEnvironmentVariable(named = YuqueConstants.TOKEN_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@DisplayName("Update Book Tool-Calling Test")
+	public void testUpdateBook() {
+		var resp = yuqueUpdateBookService.apply(new YuqueUpdateBookService.updateBookRequest("66045409",
+				"Update Book Test", "sf258w", "Update Book Test", 0, null));
+		assert resp != null && resp.data() != null;
+		log.info("Update Book Response: {}", resp);
+	}
+
+	@Test
+	@EnabledIfEnvironmentVariable(named = YuqueConstants.TOKEN_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@DisplayName("Delete Book Tool-Calling Test")
+	public void testDeleteBook() {
+		var resp = yuqueDeleteBookService.apply(new YuqueDeleteBookService.DeleteBookRequest("66045409"));
+		assert resp != null && resp.data() != null;
+		log.info("Delete Book Response: {}", resp);
+	}
+
+	@Test
+	@EnabledIfEnvironmentVariable(named = YuqueConstants.TOKEN_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@DisplayName("Create Doc Tool-Calling Test")
+	public void testCreateDoc() {
+		var resp = yuqueCreateDocService.apply(new YuqueCreateDocService.CreateDocRequest("66045409", "qy3266iux4zw7",
+				"Create Doc Test", 0, "markdown", "Create Doc Test"));
+		assert resp != null && resp.data() != null;
+		log.info("Create Doc Response: {}", resp);
+	}
+
+	@Test
+	@EnabledIfEnvironmentVariable(named = YuqueConstants.TOKEN_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	@DisplayName("Query Doc Tool-Calling Test")
 	public void testQueryDoc() {
-		var resp = yuqueQueryDocService.apply(new YuqueQueryDocService.queryDocRequest("63184104", "223645097"));
+		var resp = yuqueQueryDocService.apply(new YuqueQueryDocService.queryDocRequest("66045409", "223784883"));
 		assert resp != null && resp.data() != null;
 		log.info("Query Doc Response: {}", resp);
 	}
@@ -68,7 +119,7 @@ public class YuqueTest {
 	@EnabledIfEnvironmentVariable(named = YuqueConstants.TOKEN_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	@DisplayName("Update Doc Tool-Calling Test")
 	public void testUpdateDoc() {
-		var resp = yuqueUpdateDocService.apply(new YuqueUpdateDocService.updateDocRequest("63184104", "223645097",
+		var resp = yuqueUpdateDocService.apply(new YuqueUpdateDocService.updateDocRequest("66045409", "223784883",
 				"qy3266iux4zw7", "Update Doc Test", 0, "markdown", "Update Doc Test"));
 		assert resp != null && resp.data() != null;
 		log.info("Update Doc Response: {}", resp);
@@ -78,7 +129,7 @@ public class YuqueTest {
 	@EnabledIfEnvironmentVariable(named = YuqueConstants.TOKEN_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	@DisplayName("Delete Doc Tool-Calling Test")
 	public void testDeleteDoc() {
-		var resp = yuqueDeleteDocService.apply(new YuqueDeleteDocService.deleteDocRequest("63184104", "223645097"));
+		var resp = yuqueDeleteDocService.apply(new YuqueDeleteDocService.DeleteDocRequest("66045409", "223784883"));
 		assert resp != null;
 		log.info("Delete Doc Response: {}", resp);
 	}

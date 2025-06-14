@@ -24,42 +24,44 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Function;
 
 /**
- * @author 北极星
+ * @author hiriki
  */
-public class YuqueDeleteDocService
-		implements Function<YuqueDeleteDocService.DeleteDocRequest, YuqueDeleteDocService.DeleteDocResponse> {
+public class YuqueCreateBookService
+		implements Function<YuqueCreateBookService.CreateBookRequest, YuqueCreateBookService.CreateBookResponse> {
 
-	private static final Logger logger = LoggerFactory.getLogger(YuqueDeleteDocService.class);
+	private static final Logger logger = LoggerFactory.getLogger(YuqueCreateBookService.class);
 
 	private final WebClientTool webClientTool;
 
 	private final JsonParseTool jsonParseTool;
 
-	public YuqueDeleteDocService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
+	public YuqueCreateBookService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
 		this.webClientTool = webClientTool;
 		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
-	public YuqueDeleteDocService.DeleteDocResponse apply(YuqueDeleteDocService.DeleteDocRequest deleteDocRequest) {
-		if (deleteDocRequest == null || deleteDocRequest.bookId == null) {
+	public CreateBookResponse apply(CreateBookRequest request) {
+		if (request.login == null || request.name == null || request.slug == null) {
 			return null;
 		}
-		String uri = "/repos/" + deleteDocRequest.bookId + "/docs/" + deleteDocRequest.id;
+		String uri = "/groups/" + request.login + "/repos";
 		try {
-			String json = webClientTool.delete(uri).block();
-			return jsonParseTool.jsonToObject(json, DeleteDocResponse.class);
+			String json = webClientTool.post(uri, request).block();
+			return jsonParseTool.jsonToObject(json, CreateBookResponse.class);
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete the Yuque document.", e);
+			logger.error("Failed to create the Yuque book.", e);
 			return null;
 		}
 	}
 
-	public record DeleteDocRequest(@JsonProperty("bookId") String bookId, @JsonProperty("id") String id) {
+	public record CreateBookRequest(@JsonProperty("login") String login, @JsonProperty("name") String name,
+			@JsonProperty("slug") String slug, @JsonProperty("description") String description,
+			@JsonProperty("public") Integer isPublic, @JsonProperty("enhancedPrivacy") Boolean enhancedPrivacy) {
 	}
 
-	public record DeleteDocResponse(@JsonProperty("data") YuqueConstants.DocSerializer data) {
+	public record CreateBookResponse(@JsonProperty("data") YuqueConstants.BookSerializer data) {
 	}
 
 }
