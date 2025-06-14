@@ -16,8 +16,11 @@ spring:
         write-timeout: 60000
     mcp:
       client:
-        sse:
-          servers-configuration: classpath:mcp-servers.json
+        type: async
+#        sse:
+#          connections:
+#            weather_mcp_server:
+#              url: http://localhost:8888
         stdio:
           servers-configuration: classpath:mcp-servers.json
         toolcallback:
@@ -30,6 +33,15 @@ spring:
         jinacrawler:
           enabled: true
           api-key: ${JINA_API_KEY}
+      deepresearch:
+        researcher-node-count: 5
+        coder-node-count: 5
+        mcp-client-mapping:
+          researchAgent:
+            - amap-maps
+#          coderAgent:
+#            - amap-maps
+#            - weather_mcp_server
 
 logging:
   level:

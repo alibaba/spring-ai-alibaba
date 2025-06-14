@@ -28,7 +28,7 @@ import java.util.function.Function;
  * @author 北极星
  */
 public class YuqueQueryBookService
-		implements Function<YuqueQueryBookService.queryBookRequest, YuqueQueryBookService.queryBookResponse> {
+		implements Function<YuqueQueryBookService.QueryBookRequest, YuqueQueryBookService.QueryBookResponse> {
 
 	private static final Logger logger = LoggerFactory.getLogger(YuqueQueryBookService.class);
 
@@ -42,14 +42,14 @@ public class YuqueQueryBookService
 	}
 
 	@Override
-	public queryBookResponse apply(queryBookRequest queryBookRequest) {
+	public QueryBookResponse apply(QueryBookRequest queryBookRequest) {
 		if (queryBookRequest == null || queryBookRequest.bookId == null) {
 			return null;
 		}
 		String uri = "/repos/" + queryBookRequest.bookId + "/docs";
 		try {
 			String json = webClientTool.get(uri).block();
-			return jsonParseTool.jsonToObject(json, queryBookResponse.class);
+			return jsonParseTool.jsonToObject(json, QueryBookResponse.class);
 		}
 		catch (Exception e) {
 			logger.error("Failed to query the Yuque book.", e);
@@ -57,29 +57,14 @@ public class YuqueQueryBookService
 		}
 	}
 
-	protected record queryBookRequest(String bookId) {
+	protected record QueryBookRequest(String bookId) {
 	}
 
-	protected record queryBookResponse(@JsonProperty("meta") meta meta,
-			@JsonProperty("data") List<YuqueQueryBookService.data> data) {
+	protected record QueryBookResponse(@JsonProperty("meta") Meta meta,
+			@JsonProperty("data") List<YuqueConstants.DocSerializer> data) {
 	}
 
-	// Used to retrieve specific property values from JSON.
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	protected record data(@JsonProperty("id") String id, @JsonProperty("type") String type,
-			@JsonProperty("slug") String slug, @JsonProperty("title") String title,
-			@JsonProperty("description") String description, @JsonProperty("cover") String cover,
-			@JsonProperty("user_id") String userId, @JsonProperty("user") YuqueQueryDocService.UserSerializer user,
-			@JsonProperty("book_id") String bookId, @JsonProperty("last_editor_id") String lastEditorId,
-			@JsonProperty("public") int isPublic, @JsonProperty("status") String status,
-			@JsonProperty("likes_count") String likesCount, @JsonProperty("read_count") String readCount,
-			@JsonProperty("comments_count") String commentsCount, @JsonProperty("word_count") String wordCount,
-			@JsonProperty("created_at") String createdAt, @JsonProperty("updated_at") String updatedAt,
-			@JsonProperty("published_at") String publishedAt,
-			@JsonProperty("first_published_at") String firstPublishedAt) {
-	}
-
-	protected record meta(@JsonProperty("total") String total) {
+	protected record Meta(@JsonProperty("total") String total) {
 	}
 
 }
