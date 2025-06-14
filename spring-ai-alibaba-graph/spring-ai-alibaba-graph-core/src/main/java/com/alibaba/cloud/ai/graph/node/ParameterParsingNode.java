@@ -58,9 +58,9 @@ public class ParameterParsingNode implements NodeAction {
 			""";
 
 	private static final String PARAMETER_PARSING_ASSISTANT_PROMPT_1 = """
-			```json
+			json
 			{"paper_num": "2405.10739"}
-			```
+
 			""";
 
 	private static final String PARAMETER_PARSING_USER_PROMPT_2 = """
@@ -71,7 +71,7 @@ public class ParameterParsingNode implements NodeAction {
 			""";
 
 	private static final String PARAMETER_PARSING_ASSISTANT_PROMPT_2 = """
-			```json
+			json
 			{
 			  "array_of_story_outlines": [
 			    "Chapter 1: Encounters. The sun shines in the forest, and the young man sees the girl for the first time.",
@@ -79,7 +79,7 @@ public class ParameterParsingNode implements NodeAction {
 			    "Chapter 3: Departure. They embark on a journey to find the truth."
 			  ]
 			}
-			```
+
 			""";
 
 	private ChatClient chatClient;
@@ -92,10 +92,14 @@ public class ParameterParsingNode implements NodeAction {
 
 	private SystemPromptTemplate systemPromptTemplate;
 
-	public ParameterParsingNode(ChatClient chatClient, String inputTextKey, List<Map<String, String>> parameters) {
+	private final String outputKey;
+
+	public ParameterParsingNode(ChatClient chatClient, String inputTextKey, List<Map<String, String>> parameters,
+			String outputKey) {
 		this.chatClient = chatClient;
 		this.inputTextKey = inputTextKey;
 		this.parameters = parameters;
+		this.outputKey = outputKey;
 		this.systemPromptTemplate = new SystemPromptTemplate(PARAMETER_PARSING_PROMPT_TEMPLATE);
 	}
 
@@ -131,7 +135,7 @@ public class ParameterParsingNode implements NodeAction {
 		ObjectMapper mapper = new ObjectMapper();
 		Map<String, Object> updateState = new HashMap<>();
 		try {
-			updateState.put("parameterParsing_output", mapper.readValue(rawJson, new TypeReference<>() {
+			updateState.put(outputKey, mapper.readValue(rawJson, new TypeReference<>() {
 			}));
 		}
 		catch (Exception e) {
@@ -166,6 +170,8 @@ public class ParameterParsingNode implements NodeAction {
 
 		private List<Map<String, String>> parameters;
 
+		private String outputKey;
+
 		public Builder inputTextKey(String input) {
 			this.inputTextKey = input;
 			return this;
@@ -181,8 +187,13 @@ public class ParameterParsingNode implements NodeAction {
 			return this;
 		}
 
+		public Builder outputKey(String outputKey) {
+			this.outputKey = outputKey;
+			return this;
+		}
+
 		public ParameterParsingNode build() {
-			return new ParameterParsingNode(chatClient, inputTextKey, parameters);
+			return new ParameterParsingNode(chatClient, inputTextKey, parameters, outputKey);
 		}
 
 	}

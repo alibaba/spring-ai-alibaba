@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.toolcalling.yuque;
 
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,28 +56,13 @@ public class YuqueUpdateDocService
 		}
 	}
 
-	protected record updateDocRequest(@JsonProperty("bookId") String bookId, @JsonProperty("id") String id,
+	public record updateDocRequest(@JsonProperty("bookId") String bookId, @JsonProperty("id") String id,
 			@JsonProperty("slug") String slug, @JsonProperty("title") String title,
 			@JsonProperty("public") Integer isPublic, @JsonProperty("format") String format,
 			@JsonProperty("body") String body) {
 	}
 
-	protected record updateDocResponse(@JsonProperty("data") YuqueUpdateDocService.data data) {
-	}
-
-	// Used to retrieve specific property values from JSON.
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	protected record data(@JsonProperty("id") String id, @JsonProperty("slug") String slug,
-			@JsonProperty("type") String type, @JsonProperty("description") String description,
-			@JsonProperty("cover") String cover, @JsonProperty("user_id") String userId,
-			@JsonProperty("book_id") String bookId, @JsonProperty("last_editor_id") String lastEditorId,
-			@JsonProperty("format") String format, @JsonProperty("body_draft") String bodyDraft,
-			@JsonProperty("body_sheet") String bodySheet, @JsonProperty("body_table") String bodyTable,
-			@JsonProperty("body_html") String bodyHtml, @JsonProperty("public") int isPublic,
-			@JsonProperty("status") String status, @JsonProperty("likes_count") int likesCount,
-			@JsonProperty("read_count") int readCount, @JsonProperty("comments_count") int commentsCount,
-			@JsonProperty("word_count") int wordCount, @JsonProperty("created_at") String createdAt,
-			@JsonProperty("updated_at") String updatedAt) {
+	public record updateDocResponse(@JsonProperty("data") YuqueConstants.DocSerializer data) {
 	}
 
 }

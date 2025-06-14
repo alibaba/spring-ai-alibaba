@@ -63,4 +63,8 @@ public class NodeData {
 		return this;
 	}
 
+	public static String defaultOutputKey(String nodeId) {
+		return nodeId + "_output";
+	}
+
 }

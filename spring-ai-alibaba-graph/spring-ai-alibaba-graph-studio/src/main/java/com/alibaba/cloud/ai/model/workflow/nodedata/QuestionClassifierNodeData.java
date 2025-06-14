@@ -40,6 +40,10 @@ public class QuestionClassifierNodeData extends NodeData {
 
 	private List<ClassConfig> classes;
 
+	private String outputKey;
+
+	private String inputTextKey;
+
 	public QuestionClassifierNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
 		super(inputs, outputs);
 	}
@@ -68,6 +72,23 @@ public class QuestionClassifierNodeData extends NodeData {
 
 	public QuestionClassifierNodeData setMemoryConfig(MemoryConfig memoryConfig) {
 		this.memoryConfig = memoryConfig;
+		return this;
+	}
+
+	public String getOutputKey() {
+		return outputKey;
+	}
+
+	public void setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+	}
+
+	public String getInputTextKey() {
+		return inputTextKey;
+	}
+
+	public QuestionClassifierNodeData setInputTextKey(String inputTextKey) {
+		this.inputTextKey = inputTextKey;
 		return this;
 	}
 
@@ -219,6 +240,10 @@ public class QuestionClassifierNodeData extends NodeData {
 
 		private Integer topK;
 
+		private Integer frequencyPenalty;
+
+		private Integer presencePenalty;
+
 		public Integer getMaxTokens() {
 			return maxTokens;
 		}
@@ -226,6 +251,42 @@ public class QuestionClassifierNodeData extends NodeData {
 		public CompletionParams setMaxTokens(Integer maxTokens) {
 			this.maxTokens = maxTokens;
 			return this;
+		}
+
+		public void setRepetitionPenalty(Float repetitionPenalty) {
+			this.repetitionPenalty = repetitionPenalty;
+		}
+
+		public void setResponseFormat(String responseFormat) {
+			this.responseFormat = responseFormat;
+		}
+
+		public void setSeed(Integer seed) {
+			this.seed = seed;
+		}
+
+		public void setStop(List<String> stop) {
+			this.stop = stop;
+		}
+
+		public void setTemperature(Float temperature) {
+			this.temperature = temperature;
+		}
+
+		public void setTopP(Float topP) {
+			this.topP = topP;
+		}
+
+		public void setTopK(Integer topK) {
+			this.topK = topK;
+		}
+
+		public void setFrequencyPenalty(Integer frequencyPenalty) {
+			this.frequencyPenalty = frequencyPenalty;
+		}
+
+		public void setPresencePenalty(Integer presencePenalty) {
+			this.presencePenalty = presencePenalty;
 		}
 
 	}

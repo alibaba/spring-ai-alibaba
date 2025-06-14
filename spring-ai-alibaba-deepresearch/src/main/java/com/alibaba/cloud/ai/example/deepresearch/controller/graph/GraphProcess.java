@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.HashMap;
 
 /**
  * @author yingzi
@@ -45,7 +46,7 @@ public class GraphProcess {
 
 	private static final Logger logger = LoggerFactory.getLogger(GraphProcess.class);
 
-	private final ExecutorService executor = Executors.newSingleThreadExecutor();
+	private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
 	private CompiledGraph compiledGraph;
 
@@ -68,11 +69,12 @@ public class GraphProcess {
 		executor.submit(() -> {
 			generator.forEachAsync(output -> {
 				try {
-					logger.info("output = {}", output);
+					// logger.info("output = {}", output);
 					String nodeName = output.node();
 					String content;
 					if (output instanceof StreamingOutput streamingOutput) {
 						content = JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk()));
+						logger.info("Streaming output from node {}: {}", nodeName, streamingOutput.chunk());
 					}
 					else {
 						JSONObject nodeOutput = new JSONObject();
@@ -83,12 +85,14 @@ public class GraphProcess {
 					sink.tryEmitNext(ServerSentEvent.builder(content).build());
 				}
 				catch (Exception e) {
+					logger.error("Error processing output", e);
 					throw new CompletionException(e);
 				}
 			}).thenAccept(v -> {
 				// 正常完成
 				sink.tryEmitComplete();
 			}).exceptionally(e -> {
+				logger.error("Error in stream processing", e);
 				sink.tryEmitError(e);
 				return null;
 			});

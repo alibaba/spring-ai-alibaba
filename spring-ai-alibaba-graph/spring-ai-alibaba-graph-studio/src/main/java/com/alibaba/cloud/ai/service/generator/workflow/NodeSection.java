@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.service.generator.workflow;
 
-import com.alibaba.cloud.ai.model.workflow.NodeData;
+import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 
 /**
@@ -28,6 +28,17 @@ public interface NodeSection {
 
 	boolean support(NodeType nodeType);
 
-	String render(NodeData model);
+	String render(Node node, String varName);
+
+	default String escape(String input) {
+		if (input == null) {
+			return "";
+		}
+		return input.replace("\\", "\\\\")
+			.replace("\"", "\\\"")
+			.replace("\n", "\\n")
+			.replace("\r", "\\r")
+			.replace("\t", "\\t");
+	}
 
 }

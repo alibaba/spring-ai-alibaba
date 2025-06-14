@@ -52,6 +52,8 @@ public class Plan {
 
 		private String executionRes;
 
+		private String executionStatus;
+
 	}
 
 	public enum StepType {
