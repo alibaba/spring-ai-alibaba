@@ -24,42 +24,44 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Function;
 
 /**
- * @author 北极星
+ * @author hiriki
  */
-public class YuqueDeleteDocService
-		implements Function<YuqueDeleteDocService.DeleteDocRequest, YuqueDeleteDocService.DeleteDocResponse> {
+public class YuqueUpdateBookService
+		implements Function<YuqueUpdateBookService.updateBookRequest, YuqueUpdateBookService.updateBookResponse> {
 
-	private static final Logger logger = LoggerFactory.getLogger(YuqueDeleteDocService.class);
+	private static final Logger logger = LoggerFactory.getLogger(YuqueUpdateDocService.class);
 
 	private final WebClientTool webClientTool;
 
 	private final JsonParseTool jsonParseTool;
 
-	public YuqueDeleteDocService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
+	public YuqueUpdateBookService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
 		this.webClientTool = webClientTool;
 		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
-	public YuqueDeleteDocService.DeleteDocResponse apply(YuqueDeleteDocService.DeleteDocRequest deleteDocRequest) {
-		if (deleteDocRequest == null || deleteDocRequest.bookId == null) {
+	public updateBookResponse apply(updateBookRequest request) {
+		if (request.bookId == null) {
 			return null;
 		}
-		String uri = "/repos/" + deleteDocRequest.bookId + "/docs/" + deleteDocRequest.id;
+		String uri = "/repos/" + request.bookId;
 		try {
-			String json = webClientTool.delete(uri).block();
-			return jsonParseTool.jsonToObject(json, DeleteDocResponse.class);
+			String json = webClientTool.put(uri, request).block();
+			return jsonParseTool.jsonToObject(json, updateBookResponse.class);
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete the Yuque document.", e);
+			logger.error("Failed to update the Yuque book.", e);
 			return null;
 		}
 	}
 
-	public record DeleteDocRequest(@JsonProperty("bookId") String bookId, @JsonProperty("id") String id) {
+	public record updateBookRequest(@JsonProperty("bookId") String bookId, @JsonProperty("name") String name,
+			@JsonProperty("slug") String slug, @JsonProperty("description") String description,
+			@JsonProperty("public") Integer isPublic, @JsonProperty("toc") String toc) {
 	}
 
-	public record DeleteDocResponse(@JsonProperty("data") YuqueConstants.DocSerializer data) {
+	public record updateBookResponse(@JsonProperty("data") YuqueConstants.BookSerializer data) {
 	}
 
 }
