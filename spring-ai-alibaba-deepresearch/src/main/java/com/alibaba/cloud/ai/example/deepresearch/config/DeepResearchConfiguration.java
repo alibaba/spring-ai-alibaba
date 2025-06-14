@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatche
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
@@ -53,8 +54,6 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 /**
  * @author yingzi
  * @since 2025/5/17 17:10
- * @author sixiyida
- * @since 2025/6/14 11:16
  */
 @Configuration
 @EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class })
@@ -93,6 +92,7 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("max_step_num", new ReplaceStrategy());
 			keyStrategyHashMap.put("mcp_settings", new ReplaceStrategy());
 
+			keyStrategyHashMap.put("feed_back", new ReplaceStrategy());
 			keyStrategyHashMap.put("feed_back_content", new ReplaceStrategy());
 
 			// 节点输出
@@ -104,11 +104,11 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("final_report", new ReplaceStrategy());
 			keyStrategyHashMap.put("planner_content", new ReplaceStrategy());
 
-			for (int i = 0; i < deepResearchProperties.getResearcherNodeCount(); i++) {
+			for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.RESEARCHER.getValue()); i++) {
 				keyStrategyHashMap.put("researcher_content_" + i, new ReplaceStrategy());
 			}
 
-			for (int i = 0; i < deepResearchProperties.getCoderNodeCount(); i++) {
+			for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
 				keyStrategyHashMap.put("coder_content_" + i, new ReplaceStrategy());
 			}
 
@@ -158,7 +158,8 @@ public class DeepResearchConfiguration {
 	}
 
 	private void addResearcherNodes(StateGraph stateGraph) throws GraphStateException {
-		for (int i = 0; i < deepResearchProperties.getResearcherNodeCount(); i++) {
+		for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
+			.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 			String nodeId = "researcher_" + i;
 			stateGraph.addNode(nodeId, node_async(new ResearcherNode(researchAgent, String.valueOf(i))));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
@@ -166,7 +167,7 @@ public class DeepResearchConfiguration {
 	}
 
 	private void addCoderNodes(StateGraph stateGraph) throws GraphStateException {
-		for (int i = 0; i < deepResearchProperties.getCoderNodeCount(); i++) {
+		for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
 			String nodeId = "coder_" + i;
 			stateGraph.addNode(nodeId, node_async(new CoderNode(coderAgent, String.valueOf(i))));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
