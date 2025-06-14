@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
 import org.bsc.async.AsyncGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -679,82 +680,18 @@ public class CompiledGraph {
 
 			// Log information about found generators
 			if (generatorEntries.size() > 1) {
-				log.info("Multiple generators found: {} - keys: {}", generatorEntries.size(),
+				log.debug("Multiple generators found: {} - keys: {}", generatorEntries.size(),
 						generatorEntries.stream().map(Map.Entry::getKey).collect(Collectors.joining(", ")));
 			}
 
 			// Create appropriate generator (single or merged)
-			AsyncGenerator<Output> generator = createAppropriateGenerator(generatorEntries);
+			AsyncGenerator<Output> generator = AsyncGeneratorUtils.createAppropriateGenerator(generatorEntries);
 
 			// Create data processing logic for the generator
 			return Optional.of(Data.composeWith(generator.map(n -> {
 				n.setSubGraph(true);
 				return n;
 			}), data -> processGeneratorOutput(data, partialState, generatorEntries)));
-		}
-
-		/**
-		 * Creates appropriate generator based on generator entries.
-		 * @param generatorEntries list of generator entries
-		 * @return single generator or merged generator
-		 */
-		@SuppressWarnings("unchecked")
-		private AsyncGenerator<Output> createAppropriateGenerator(List<Map.Entry<String, Object>> generatorEntries) {
-			if (generatorEntries.size() == 1) {
-				// Only one generator, return it directly
-				return (AsyncGenerator<Output>) generatorEntries.get(0).getValue();
-			}
-
-			// Multiple generators, create a merged generator
-			List<AsyncGenerator<Output>> generators = generatorEntries.stream()
-				.map(entry -> (AsyncGenerator<Output>) entry.getValue())
-				.collect(Collectors.toList());
-
-			return createMergedGenerator(generators);
-		}
-
-		/**
-		 * Creates a merged generator that combines outputs from multiple generators.
-		 * @param generators list of generators to merge
-		 * @return merged generator
-		 */
-		private AsyncGenerator<Output> createMergedGenerator(List<AsyncGenerator<Output>> generators) {
-			return new AsyncGenerator<Output>() {
-				private int currentGeneratorIndex = 0;
-
-				private boolean isDone = false;
-
-				@Override
-				public Data<Output> next() {
-					if (isDone) {
-						return Data.done();
-					}
-
-					// Poll all generators in round-robin fashion
-					int startIndex = currentGeneratorIndex;
-					do {
-						AsyncGenerator<Output> currentGenerator = generators.get(currentGeneratorIndex);
-						Data<Output> data = currentGenerator.next();
-
-						// If current generator has data, return it
-						if (!data.isDone()) {
-							// Update index for next generator to process
-							currentGeneratorIndex = (currentGeneratorIndex + 1) % generators.size();
-							return data;
-						}
-
-						// Move to next generator
-						currentGeneratorIndex = (currentGeneratorIndex + 1) % generators.size();
-
-						// If all generators have been checked and none has data, complete
-						if (currentGeneratorIndex == startIndex) {
-							isDone = true;
-							return Data.done();
-						}
-					}
-					while (true);
-				}
-			};
 		}
 
 		/**
