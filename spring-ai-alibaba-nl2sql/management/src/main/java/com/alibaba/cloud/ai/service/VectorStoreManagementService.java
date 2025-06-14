@@ -16,10 +16,8 @@
 package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.request.DeleteRequest;
-import org.springframework.ai.vectorstore.SearchRequest;
 import com.alibaba.cloud.ai.request.EvidenceRequest;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
-import org.springframework.ai.document.Document;
 
 import java.util.List;
 
