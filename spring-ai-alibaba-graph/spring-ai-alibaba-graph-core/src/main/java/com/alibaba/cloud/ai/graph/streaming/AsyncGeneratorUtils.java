@@ -34,7 +34,8 @@ public class AsyncGeneratorUtils {
 	 * @return single generator or merged generator
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> AsyncGenerator<T> createAppropriateGenerator(List<Map.Entry<String, Object>> generatorEntries,List<AsyncGenerator<T>> asyncNodeGenerators) {
+	public static <T> AsyncGenerator<T> createAppropriateGenerator(List<Map.Entry<String, Object>> generatorEntries,
+			List<AsyncGenerator<T>> asyncNodeGenerators) {
 		if (generatorEntries.size() == 1) {
 			// Only one generator, return it directly
 			return (AsyncGenerator<T>) generatorEntries.get(0).getValue();

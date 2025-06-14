@@ -383,16 +383,14 @@ public class StateGraphTest {
 		});
 	}
 
-
-	private AsyncNodeAction makeNodeForStream(String id){
+	private AsyncNodeAction makeNodeForStream(String id) {
 		return node_async(state -> {
 			log.info("call node {}", id);
-			final AsyncGenerator<NodeOutput> it = AsyncGeneratorQueue.of(new LinkedBlockingQueue<>(),
-					queue -> {
-						for (int i = 0; i < 10; ++i) {
-							queue.add(AsyncGenerator.Data.of(completedFuture(new StreamingOutput(id + i,  id, state))));
-						}
-					});
+			final AsyncGenerator<NodeOutput> it = AsyncGeneratorQueue.of(new LinkedBlockingQueue<>(), queue -> {
+				for (int i = 0; i < 10; ++i) {
+					queue.add(AsyncGenerator.Data.of(completedFuture(new StreamingOutput(id + i, id, state))));
+				}
+			});
 
 			return Map.of("messages", it);
 		});
@@ -452,17 +450,16 @@ public class StateGraphTest {
 
 	@Test
 	public void testWithParallelBranchWithStream() throws GraphStateException {
-		var workflow  = new StateGraph(createKeyStrategyFactory())
-				.addNode("A",makeNode("A"))
-				.addNode("A1",makeNodeForStream("A1"))
-				.addNode("A2",makeNodeForStream("A2"))
-				.addNode("C",makeNode("C"))
-				.addEdge("A", "A1")
-				.addEdge("A", "A2")
-				.addEdge("A1", "C")
-				.addEdge("A2", "C")
-				.addEdge(START, "A")
-				.addEdge("C", END);
+		var workflow = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
+			.addNode("A1", makeNodeForStream("A1"))
+			.addNode("A2", makeNodeForStream("A2"))
+			.addNode("C", makeNode("C"))
+			.addEdge("A", "A1")
+			.addEdge("A", "A2")
+			.addEdge("A1", "C")
+			.addEdge("A2", "C")
+			.addEdge(START, "A")
+			.addEdge("C", END);
 		var app = workflow.compile();
 
 		for (var output : app.stream(Map.of())) {

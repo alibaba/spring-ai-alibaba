@@ -37,12 +37,13 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 			.filter(c -> c.supportDialect(dialectType))
 			.findFirst()
 			.orElseThrow(() -> new NotImplementedException("Unsupported dialect type: " + dialectType.value()));
-        try {
-            return converter.parse(data);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
+		try {
+			return converter.parse(data);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
 	public Map<String, Object> dumpMapData(T nodeData, DSLDialectType dialectType) {

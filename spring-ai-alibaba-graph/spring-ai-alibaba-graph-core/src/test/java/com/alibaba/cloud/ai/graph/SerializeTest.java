@@ -235,6 +235,4 @@ public class SerializeTest {
 		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":false}", json);
 	}
 
-
-
 }

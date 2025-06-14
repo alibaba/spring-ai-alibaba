@@ -672,26 +672,22 @@ public class CompiledGraph {
 		private Optional<Data<Output>> getEmbedGenerator(Map<String, Object> partialState) {
 			// Extract all AsyncGenerator instances
 			List<AsyncGenerator<Output>> asyncNodeGenerators = new ArrayList<>();
-			var generatorEntries = partialState.entrySet()
-				.stream()
-				.filter(e -> {
-					//Fixed when parallel nodes return asynchronous generating the same key
-					Object value = e.getValue();
-					if (value instanceof AsyncGenerator) {
-						asyncNodeGenerators.add((AsyncGenerator<Output>) value);
-						return false;
-					}
-					if (value instanceof Collection collection) {
-						collection.forEach(o -> {
-							if (o instanceof AsyncGenerator<?>){
-								asyncNodeGenerators.add((AsyncGenerator<Output>) o);
-							}
-						});
-					}
+			var generatorEntries = partialState.entrySet().stream().filter(e -> {
+				// Fixed when parallel nodes return asynchronous generating the same key
+				Object value = e.getValue();
+				if (value instanceof AsyncGenerator) {
+					asyncNodeGenerators.add((AsyncGenerator<Output>) value);
 					return false;
-				})
-				.collect(Collectors.toList());
-
+				}
+				if (value instanceof Collection collection) {
+					collection.forEach(o -> {
+						if (o instanceof AsyncGenerator<?>) {
+							asyncNodeGenerators.add((AsyncGenerator<Output>) o);
+						}
+					});
+				}
+				return false;
+			}).collect(Collectors.toList());
 
 			if (generatorEntries.isEmpty() && asyncNodeGenerators.isEmpty()) {
 				return Optional.empty();
@@ -704,7 +700,8 @@ public class CompiledGraph {
 			}
 
 			// Create appropriate generator (single or merged)
-			AsyncGenerator<Output> generator = AsyncGeneratorUtils.createAppropriateGenerator(generatorEntries,asyncNodeGenerators);
+			AsyncGenerator<Output> generator = AsyncGeneratorUtils.createAppropriateGenerator(generatorEntries,
+					asyncNodeGenerators);
 
 			// Create data processing logic for the generator
 			return Optional.of(Data.composeWith(generator.map(n -> {

@@ -237,8 +237,6 @@ public class StateGraph {
 
 	}
 
-
-
 	/**
 	 * Constructs a StateGraph with the specified name, key strategy factory, and state
 	 * serializer.
