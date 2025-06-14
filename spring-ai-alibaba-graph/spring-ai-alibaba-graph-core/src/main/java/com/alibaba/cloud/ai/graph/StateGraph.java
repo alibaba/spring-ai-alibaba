@@ -42,8 +42,6 @@ import com.google.gson.JsonDeserializer;
 
 import java.util.*;
 
-import static java.lang.String.format;
-
 /**
  * Represents a state graph with nodes and edges.
  */
