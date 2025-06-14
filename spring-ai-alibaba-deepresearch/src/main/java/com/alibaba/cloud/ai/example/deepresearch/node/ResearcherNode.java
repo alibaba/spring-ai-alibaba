@@ -113,7 +113,7 @@ public class ResearcherNode implements NodeAction {
 
 				observations.add(researchContent);
 				updated.put("observations", observations);
-				updated.put("researcher_content_" + executorNodeId, researchContent);
+				updated.put("researcher_content_" + executorNodeId, List.of(researchContent));
 				return updated;
 			})
 			.build(streamResult);

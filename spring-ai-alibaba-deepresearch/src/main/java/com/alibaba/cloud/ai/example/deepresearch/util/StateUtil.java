@@ -17,10 +17,17 @@
 package com.alibaba.cloud.ai.example.deepresearch.util;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import org.bsc.async.internal.reactive.GeneratorSubscriber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author yingzi
@@ -29,42 +36,61 @@ import java.util.List;
 
 public class StateUtil {
 
-	public static final String EXECUTION_STATUS_ASSIGNED_PREFIX = "assigned_";
+    private static final Logger logger = LoggerFactory.getLogger(StateUtil.class);
 
-	public static final String EXECUTION_STATUS_PROCESSING_PREFIX = "processing_";
+    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
 
-	public static final String EXECUTION_STATUS_COMPLETED_PREFIX = "completed_";
+    public static final String EXECUTION_STATUS_ASSIGNED_PREFIX = "assigned_";
 
-	public static List<String> getMessagesByType(OverAllState state, String name) {
-		return state.value(name, List.class).map(obj -> new ArrayList<>((List<String>) obj)).orElseGet(ArrayList::new);
-	}
+    public static final String EXECUTION_STATUS_PROCESSING_PREFIX = "processing_";
 
-	public static String getQuery(OverAllState state) {
-		return state.value("query", "草莓蛋糕怎么做呀");
-	}
+    public static final String EXECUTION_STATUS_COMPLETED_PREFIX = "completed_";
 
-	public static Plan getPlan(OverAllState state) {
-		return state.value("current_plan", Plan.class).get();
-	}
+    public static List<String> getMessagesByType(OverAllState state, String name) {
+        return state.value(name, List.class).map(obj -> new ArrayList<>((List<String>) obj)).orElseGet(ArrayList::new);
+    }
 
-	public static Integer getPlanIterations(OverAllState state) {
-		return state.value("plan_iterations", 0);
-	}
+    public static List<String> getParallelMessages(OverAllState state, String name, int count) {
+        List<String> resList = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            String nodeName = name + "_content_" + i;
+            GeneratorSubscriber<NodeOutput> generator = (GeneratorSubscriber<NodeOutput>) state.value(nodeName).get();
+            generator.forEach(
+                    output -> {
+                        Map<String, Object> data = output.state().data();
+                        logger.info("Processing node: {}, data: {}", nodeName, data);
+                    }
+            );
+        }
+        return resList;
+    }
 
-	public static Integer getPlanMaxIterations(OverAllState state) {
-		return state.value("plan_max_iterations", 1);
-	}
+        public static String getQuery (OverAllState state){
+            return state.value("query", "草莓蛋糕怎么做呀");
+        }
 
-	public static Integer getMaxStepNum(OverAllState state) {
-		return state.value("max_step_num", 3);
-	}
+        public static Plan getPlan (OverAllState state){
+            return state.value("current_plan", Plan.class).get();
+        }
 
-	public static String getThreadId(OverAllState state) {
-		return state.value("thread_id", "__default__");
-	}
+        public static Integer getPlanIterations (OverAllState state){
+            return state.value("plan_iterations", 0);
+        }
 
-	public static boolean getAutoAcceptedPlan(OverAllState state) {
-		return state.value("auto_accepted_plan", true);
-	}
+        public static Integer getPlanMaxIterations (OverAllState state){
+            return state.value("plan_max_iterations", 1);
+        }
 
-}
+        public static Integer getMaxStepNum (OverAllState state){
+            return state.value("max_step_num", 3);
+        }
+
+        public static String getThreadId (OverAllState state){
+            return state.value("thread_id", "__default__");
+        }
+
+        public static boolean getAutoAcceptedPlan (OverAllState state){
+            return state.value("auto_accepted_plan", true);
+        }
+
+    }
