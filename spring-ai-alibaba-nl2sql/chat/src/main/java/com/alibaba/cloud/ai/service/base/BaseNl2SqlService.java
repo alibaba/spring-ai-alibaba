@@ -112,6 +112,7 @@ public class BaseNl2SqlService {
 	}
 
 	public String generateSql(List<String> evidenceList, String query, SchemaDTO schemaDTO) throws Exception {
+		// TODO 时间处理暂时未应用
 		String dateTimeExtractPrompt = PromptHelper.buildDateTimeExtractPrompt(query);
 		String content = aiService.call(dateTimeExtractPrompt);
 		List<String> dateTimeList = new ArrayList<>();
