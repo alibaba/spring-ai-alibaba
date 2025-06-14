@@ -31,6 +31,7 @@ import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
+import com.alibaba.cloud.ai.example.deepresearch.tool.McpClientToolCallbackProvider;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -69,6 +70,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private TavilySearchService tavilySearchService;
+	
+	@Autowired
+	private McpClientToolCallbackProvider mcpClientToolCallbackProvider;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
@@ -111,8 +115,8 @@ public class DeepResearchConfiguration {
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
-			.addNode("researcher", node_async(new ResearcherNode(researchAgent)))
-			.addNode("coder", node_async(new CoderNode(coderAgent)))
+			.addNode("researcher", node_async(new ResearcherNode(researchAgent, mcpClientToolCallbackProvider)))
+			.addNode("coder", node_async(new CoderNode(coderAgent, mcpClientToolCallbackProvider)))
 			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))))
 
 			.addEdge(START, "coordinator")

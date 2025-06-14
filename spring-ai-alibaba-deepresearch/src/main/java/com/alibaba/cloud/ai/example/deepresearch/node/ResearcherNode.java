@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.tool.McpClientToolCallbackProvider;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -26,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -33,15 +36,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class ResearcherNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(ResearcherNode.class);
 
 	private final ChatClient researchAgent;
+	
+	private final McpClientToolCallbackProvider mcpClientToolCallbackProvider;
 
-	public ResearcherNode(ChatClient researchAgent) {
+	public ResearcherNode(ChatClient researchAgent, McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		this.researchAgent = researchAgent;
+		this.mcpClientToolCallbackProvider = mcpClientToolCallbackProvider;
 	}
 
 	@Override
@@ -75,8 +82,26 @@ public class ResearcherNode implements NodeAction {
 		messages.add(citationMessage);
 
 		logger.debug("researcher Node messages: {}", messages);
-		// 调用agent
-		var streamResult = researchAgent.prompt().messages(messages).stream().chatResponse();
+		
+		// 获取MCP工具回调
+		Set<ToolCallback> mcpToolCallbacks = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
+		
+		if (mcpToolCallbacks.isEmpty()) {
+			logger.warn("No MCP tool callbacks found for researcher agent. Ensure MCP clients are configured correctly.");
+		}
+		ToolCallingChatOptions.Builder optionsBuilder = ToolCallingChatOptions.builder();
+		if (!mcpToolCallbacks.isEmpty()) {
+			logger.info("Found {} MCP tool callbacks for researcher", mcpToolCallbacks.size());
+			optionsBuilder.toolCallbacks(new ArrayList<>(mcpToolCallbacks));
+		}
+		
+
+		var streamResult = researchAgent.prompt()
+			.options(optionsBuilder.build())
+			.messages(messages)
+			.stream()
+			.chatResponse();
+			
 		var generator = StreamingChatGenerator.builder()
 			.startingNode("researcher_llm_stream")
 			.startingState(state)

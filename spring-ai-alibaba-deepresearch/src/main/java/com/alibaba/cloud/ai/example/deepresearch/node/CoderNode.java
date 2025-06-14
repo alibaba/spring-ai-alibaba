@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.tool.McpClientToolCallbackProvider;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -27,12 +28,14 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author yingzi
@@ -44,9 +47,12 @@ public class CoderNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(CoderNode.class);
 
 	private final ChatClient coderAgent;
+	
+	private final McpClientToolCallbackProvider mcpClientToolCallbackProvider;
 
-	public CoderNode(ChatClient coderAgent) {
+	public CoderNode(ChatClient coderAgent, McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		this.coderAgent = coderAgent;
+		this.mcpClientToolCallbackProvider = mcpClientToolCallbackProvider;
 	}
 
 	@Override
@@ -76,9 +82,19 @@ public class CoderNode implements NodeAction {
 		messages.add(taskMessage);
 		logger.debug("coder Node message: {}", messages);
 
-		// 调用agent
+		// 获取MCP工具回调
+		Set<ToolCallback> mcpToolCallbacks = mcpClientToolCallbackProvider.findToolCallbacks("coderAgent");
+		
+
+		ToolCallingChatOptions.Builder optionsBuilder = ToolCallingChatOptions.builder();
+		if (!mcpToolCallbacks.isEmpty()) {
+			logger.info("Found {} MCP tool callbacks for coder", mcpToolCallbacks.size());
+			optionsBuilder.toolCallbacks(new ArrayList<>(mcpToolCallbacks));
+		}
+
+
 		var streamResult = coderAgent.prompt()
-			.options(ToolCallingChatOptions.builder().build())
+			.options(optionsBuilder.build())
 			.messages(messages)
 			.stream()
 			.chatResponse();

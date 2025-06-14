@@ -17,10 +17,10 @@ spring:
     mcp:
       client:
         type: async
-#        sse:
-#          connections:
-#            weather_mcp_server:
-#              url: http://localhost:8888
+        sse:
+          connections:
+            amap:
+              url: https://mcp.amap.com?key=${AMAP_API_KEY}
         stdio:
           servers-configuration: classpath:mcp-servers.json
         toolcallback:
@@ -37,10 +37,10 @@ spring:
       deepreserch:
         mcp-client-mapping:
           researchAgent:
-            - amap-maps
-#          coderAgent:
-#            - amap-maps
-#            - weather_mcp_server
+            - amap
+          coderAgent:
+            - amap
+        mcp-node-config-path: classpath:mcp-node-config.json
 
 logging:
   level:
