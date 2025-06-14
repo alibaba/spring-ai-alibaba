@@ -16,7 +16,11 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
+import com.google.common.collect.Maps;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Allen Hu
@@ -26,5 +30,18 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class DeepResearchProperties {
 
 	public static final String PREFIX = "spring.ai.alibaba.deepreserch";
+
+	/**
+	 * McpClient mapping for Agent name. key=Agent name, value=McpClient Name
+	 */
+	private Map<String, Set<String>> mcpClientMapping = Maps.newHashMap();
+
+	public Map<String, Set<String>> getMcpClientMapping() {
+		return mcpClientMapping;
+	}
+
+	public void setMcpClientMapping(Map<String, Set<String>> mcpClientMapping) {
+		this.mcpClientMapping = mcpClientMapping;
+	}
 
 }
