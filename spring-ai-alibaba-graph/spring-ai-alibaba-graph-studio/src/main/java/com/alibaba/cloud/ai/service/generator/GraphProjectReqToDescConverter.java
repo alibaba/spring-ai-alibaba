@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.model.AppModeEnum;
 import io.spring.initializr.generator.buildsystem.BuildSystem;
 import io.spring.initializr.generator.language.Language;
 import io.spring.initializr.generator.packaging.Packaging;
-import io.spring.initializr.generator.project.MutableProjectDescription;
 import io.spring.initializr.generator.project.ProjectDescription;
 import io.spring.initializr.generator.version.Version;
 import io.spring.initializr.metadata.*;

@@ -26,9 +26,12 @@ import com.google.gson.reflect.TypeToken;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -47,9 +50,12 @@ public abstract class BaseSchemaService {
 	 */
 	protected BaseVectorStoreService vectorStoreService;
 
-	public BaseSchemaService(DbConfig dbConfig, Gson gson) {
+	protected final BaseVectorStoreService baseVectorStoreService;
+
+	public BaseSchemaService(DbConfig dbConfig, Gson gson, BaseVectorStoreService vectorStoreService) {
 		this.dbConfig = dbConfig;
 		this.gson = gson;
+		this.baseVectorStoreService = vectorStoreService;
 	}
 
 	/**
@@ -93,7 +99,13 @@ public abstract class BaseSchemaService {
 
 		// 最终组装 SchemaDTO
 		schemaDTO.setTable(tableList);
-		schemaDTO.setForeignKeys(List.of(new ArrayList<>(foreignKeySet)));
+
+		Set<String> foreignKeys = tableDocuments.stream()
+			.map(doc -> (String) doc.getMetadata().getOrDefault("foreignKey", ""))
+			.flatMap(fk -> Arrays.stream(fk.split("、")))
+			.filter(StringUtils::isNotBlank)
+			.collect(Collectors.toSet());
+		schemaDTO.setForeignKeys(List.of(new ArrayList<>(foreignKeys)));
 
 		return schemaDTO;
 	}
@@ -127,17 +139,7 @@ public abstract class BaseSchemaService {
 		}
 
 		for (String columnName : missingColumns) {
-			SearchRequest request = new SearchRequest();
-			request.setQuery(null);
-			request.setTopK(10);
-			request.setFilterFormatted("jsonb_extract_path_text(metadata, 'vectorType') = '" + vectorType
-					+ "' and refdocid = '" + columnName + "'");
-			List<Document> docs = vectorStoreService.searchWithFilter(request);
-			if (CollectionUtils.isNotEmpty(docs)) {
-				for (Document doc : docs) {
-					weightedColumns.putIfAbsent(doc.getId(), doc);
-				}
-			}
+			addColumnsDocument(weightedColumns, columnName, vectorType);
 		}
 	}
 
@@ -162,17 +164,20 @@ public abstract class BaseSchemaService {
 		}
 
 		for (String tableName : missingTables) {
-			SearchRequest request = new SearchRequest();
-			request.setQuery(null);
-			request.setTopK(10);
-			request.setFilterFormatted("jsonb_extract_path_text(metadata, 'vectorType') = '" + vectorType
-					+ "' and refdocid = '" + tableName + "'");
-			List<Document> docs = vectorStoreService.searchWithFilter(request);
-			if (CollectionUtils.isNotEmpty(docs)) {
-				tableDocuments.addAll(docs);
-			}
+			addTableDocument(tableDocuments, tableName, vectorType);
 		}
 	}
+
+	/**
+	 * 添加缺失的表文档
+	 * @param tableDocuments
+	 * @param tableName
+	 * @param vectorType
+	 */
+	protected abstract void addTableDocument(List<Document> tableDocuments, String tableName, String vectorType);
+
+	protected abstract void addColumnsDocument(Map<String, Document> weightedColumns, String columnName,
+			String vectorType);
 
 	/**
 	 * 按照权重选取最多 maxCount 个列
@@ -182,20 +187,21 @@ public abstract class BaseSchemaService {
 		int index = 0;
 
 		while (result.size() < maxCount) {
-			boolean added = false;
+			boolean completed = true;
 			for (List<Document> docs : columnDocumentList) {
 				if (index < docs.size()) {
 					Document doc = docs.get(index);
 					String id = doc.getId();
 					if (!result.containsKey(id)) {
 						result.put(id, doc);
-						added = true;
 					}
+					completed = false;
 				}
 			}
 			index++;
-			if (!added)
+			if (completed) {
 				break;
+			}
 		}
 		return result;
 	}
@@ -323,7 +329,7 @@ public abstract class BaseSchemaService {
 	 * @param schemaDTO SchemaDTO
 	 */
 	protected void extractDatabaseName(SchemaDTO schemaDTO) {
-		String pattern = "/([^/]+)$";
+		String pattern = ":\\d+/([^/?&]+)";
 		if (BizDataSourceTypeEnum.isMysqlDialect(dbConfig.getDialectType())) {
 			Pattern regex = Pattern.compile(pattern);
 			Matcher matcher = regex.matcher(dbConfig.getUrl());
@@ -333,6 +339,33 @@ public abstract class BaseSchemaService {
 		}
 		else if (BizDataSourceTypeEnum.isPgDialect(dbConfig.getDialectType())) {
 			schemaDTO.setName(dbConfig.getSchema());
+		}
+	}
+
+	/**
+	 * 通用文档查询处理模板，减少子类冗余代码。
+	 */
+	protected void handleDocumentQuery(List<Document> targetList, String key, String vectorType,
+			Function<String, SearchRequest> requestBuilder, Function<SearchRequest, List<Document>> searchFunc) {
+		SearchRequest request = requestBuilder.apply(key);
+		request.setVectorType(vectorType);
+		request.setTopK(10);
+		List<Document> docs = searchFunc.apply(request);
+		if (CollectionUtils.isNotEmpty(docs)) {
+			targetList.addAll(docs);
+		}
+	}
+
+	protected void handleDocumentQuery(Map<String, Document> targetMap, String key, String vectorType,
+			Function<String, SearchRequest> requestBuilder, Function<SearchRequest, List<Document>> searchFunc) {
+		SearchRequest request = requestBuilder.apply(key);
+		request.setVectorType(vectorType);
+		request.setTopK(10);
+		List<Document> docs = searchFunc.apply(request);
+		if (CollectionUtils.isNotEmpty(docs)) {
+			for (Document doc : docs) {
+				targetMap.putIfAbsent(doc.getId(), doc);
+			}
 		}
 	}
 

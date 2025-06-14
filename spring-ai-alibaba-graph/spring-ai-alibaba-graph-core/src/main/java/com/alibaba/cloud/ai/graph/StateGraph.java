@@ -40,17 +40,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-
-import static java.lang.String.format;
+import java.util.*;
 
 /**
  * Represents a state graph with nodes and edges.
@@ -321,6 +311,11 @@ public class StateGraph {
 		this.stateSerializer = stateSerializer;
 	}
 
+	public StateGraph(KeyStrategyFactory keyStrategyFactory, PlainTextStateSerializer stateSerializer) {
+		this.keyStrategyFactory = keyStrategyFactory;
+		this.stateSerializer = stateSerializer;
+	}
+
 	/**
 	 * Constructs a StateGraph with the given key strategy factory and name.
 	 * @param keyStrategyFactory the factory for providing key strategies
@@ -398,6 +393,7 @@ public class StateGraph {
 	 */
 	public StateGraph() {
 		this.stateSerializer = new GsonSerializer();
+		this.keyStrategyFactory = () -> new HashMap<>();
 	}
 
 	/**
