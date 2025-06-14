@@ -13,32 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service.generator.workflow;
+
+package com.alibaba.cloud.ai.service.generator.workflow.sections;
 
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
+import org.springframework.stereotype.Component;
 
-/**
- * Render a node data
- *
- * @author robocanic
- * @since 2025/5/23
- */
-public interface NodeSection {
+@Component
+public class EndNodeSection implements NodeSection {
 
-	boolean support(NodeType nodeType);
+	@Override
+	public boolean support(NodeType nodeType) {
+		return NodeType.END.equals(nodeType);
+	}
 
-	String render(Node node, String varName);
-
-	default String escape(String input) {
-		if (input == null) {
-			return "";
-		}
-		return input.replace("\\", "\\\\")
-			.replace("\"", "\\\"")
-			.replace("\n", "\\n")
-			.replace("\r", "\\r")
-			.replace("\t", "\\t");
+	@Override
+	public String render(Node node, String varName) {
+		return "";
 	}
 
 }

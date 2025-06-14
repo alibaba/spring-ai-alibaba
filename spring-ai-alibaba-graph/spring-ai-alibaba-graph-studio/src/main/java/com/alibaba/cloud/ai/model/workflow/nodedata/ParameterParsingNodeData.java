@@ -13,39 +13,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.model.workflow.nodedata;
 
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-public class AnswerNodeData extends NodeData {
+/**
+ * NodeData for ParameterParsingNode, which contains three fields: inputTextKey,
+ * parameters, and outputKey.
+ */
+public class ParameterParsingNodeData extends NodeData {
 
-	public static final List<Variable> DEFAULT_OUTPUTS = List.of(new Variable("answer", VariableType.STRING.value()));
+	private String inputTextKey;
 
-	// a string template
-	private String answer;
+	private List<Map<String, String>> parameters;
 
 	private String outputKey;
 
-	public AnswerNodeData() {
+	public ParameterParsingNodeData() {
 		super(Collections.emptyList(), Collections.emptyList());
 	}
 
-	public AnswerNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs) {
+	public ParameterParsingNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs) {
 		super(inputs, outputs);
 	}
 
-	public String getAnswer() {
-		return answer;
+	public String getInputTextKey() {
+		return inputTextKey;
 	}
 
-	public AnswerNodeData setAnswer(String answer) {
-		this.answer = answer;
+	public ParameterParsingNodeData setInputTextKey(String inputTextKey) {
+		this.inputTextKey = inputTextKey;
+		return this;
+	}
+
+	public List<Map<String, String>> getParameters() {
+		return parameters;
+	}
+
+	public ParameterParsingNodeData setParameters(List<Map<String, String>> parameters) {
+		this.parameters = parameters;
 		return this;
 	}
 
@@ -53,8 +65,9 @@ public class AnswerNodeData extends NodeData {
 		return outputKey;
 	}
 
-	public void setOutputKey(String outputKey) {
+	public ParameterParsingNodeData setOutputKey(String outputKey) {
 		this.outputKey = outputKey;
+		return this;
 	}
 
 }
