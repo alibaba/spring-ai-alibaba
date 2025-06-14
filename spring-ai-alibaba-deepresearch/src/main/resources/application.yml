@@ -34,7 +34,9 @@ spring:
           jina:
             enabled: false
             api-key: ${JINA_API_KEY}
-      deepreserch:
+      deepresearch:
+        researcher-node-count: 5
+        coder-node-count: 5
         mcp-client-mapping:
           researchAgent:
             - amap-maps
