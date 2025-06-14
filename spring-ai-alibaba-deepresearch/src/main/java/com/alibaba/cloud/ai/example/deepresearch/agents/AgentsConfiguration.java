@@ -17,8 +17,10 @@
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
+import com.alibaba.cloud.ai.example.deepresearch.tool.McpClientToolCallbackProvider;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +31,7 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Set;
 
 @Configuration
 public class AgentsConfiguration {
@@ -46,13 +49,16 @@ public class AgentsConfiguration {
 	 * @return ChatClient
 	 */
 	@Bean
-	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) {
+	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder,
+									McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Assert.notNull(researcherPrompt, "researcherPrompt cannot be null");
+		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
 		try (InputStream inputStream = researcherPrompt.getInputStream()) {
 			var template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
 			Assert.hasText(template, "template cannot be null or empty");
 			return chatClientBuilder.defaultSystem(template)
 					.defaultToolNames("tavilySearch")
+					.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 					// .defaultToolNames("tavilySearch", "firecrawlFunction") todo 待调整
 					.build();
 		}
@@ -68,13 +74,17 @@ public class AgentsConfiguration {
 	 * @return ChatClient
 	 */
 	@Bean
-	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties) {
+	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder,
+								 PythonCoderProperties coderProperties,
+								 McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Assert.notNull(coderPrompt, "coderPrompt cannot be null");
+		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("coderAgent");
 		try (InputStream inputStream = coderPrompt.getInputStream()) {
 			var template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
 			Assert.hasText(template, "template cannot be null or empty");
 			return chatClientBuilder.defaultSystem(template)
 					.defaultTools(new PythonReplTool(coderProperties))
+					.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 					.build();
 		}
 		catch (IOException ex) {
