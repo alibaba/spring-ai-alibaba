@@ -28,6 +28,7 @@ import org.springframework.ai.chat.messages.Message;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.nio.charset.StandardCharsets;
 
 public class DeepResearchStateSerializer extends PlainTextStateSerializer {
 
@@ -64,12 +65,21 @@ public class DeepResearchStateSerializer extends PlainTextStateSerializer {
 	@Override
 	public void write(OverAllState object, ObjectOutput out) throws IOException {
 		String json = objectMapper.writeValueAsString(object);
-		out.writeUTF(json);
+
+		// 这边修改的原因在于，序列化长度限制的问题，当数据量过大时，可能会导致序列化失败。修改`DeepResearchStateSerializer`使用字节数组方式避免UTF长度限制
+		byte[] jsonBytes = json.getBytes(StandardCharsets.UTF_8);
+		out.writeInt(jsonBytes.length);
+		out.write(jsonBytes);
 	}
 
 	@Override
 	public OverAllState read(ObjectInput in) throws IOException {
-		String json = in.readUTF();
+
+		// 这边修改的原因在于，序列化长度限制的问题，当数据量过大时，可能会导致序列化失败。修改`DeepResearchStateSerializer`使用字节数组方式避免UTF长度限制
+		int length = in.readInt();
+		byte[] jsonBytes = new byte[length];
+		in.readFully(jsonBytes);
+		String json = new String(jsonBytes, StandardCharsets.UTF_8);
 		return objectMapper.readValue(json, OverAllState.class);
 	}
 
