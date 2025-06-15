@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.crawler;
+
+package com.alibaba.cloud.ai.example.deepresearch.model;
 
 /**
- * @author yuluo
- * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
+ * @author yingzi
+ * @since 2025/6/14
  */
 
-public class CrawlerServiceException extends RuntimeException {
+public enum ParallelEnum {
 
-	public CrawlerServiceException() {
-		super();
+	RESEARCHER("researcher"), CODER("coder");
+
+	private final String value;
+
+	ParallelEnum(String value) {
+		this.value = value;
 	}
 
-	public CrawlerServiceException(String message) {
-		super(message);
+	public String getValue() {
+		return value;
 	}
 
 }

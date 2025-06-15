@@ -36,8 +36,6 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * @author yingzi
- * @since 2025/5/18 17:07
  * @author sixiyida
  * @since 2025/6/14 11:17
  */
@@ -50,6 +48,8 @@ public class CoderNode implements NodeAction {
 
 	private final String executorNodeId;
 
+	private final String nodeName;
+
 	public CoderNode(ChatClient coderAgent) {
 		this(coderAgent, "0");
 	}
@@ -57,32 +57,33 @@ public class CoderNode implements NodeAction {
 	public CoderNode(ChatClient coderAgent, String executorNodeId) {
 		this.coderAgent = coderAgent;
 		this.executorNodeId = executorNodeId;
+		this.nodeName = "coder_" + executorNodeId;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("coder node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
+		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Map<String, Object> updated = new HashMap<>();
-		String executorNodeName = "coder_" + executorNodeId;
 
 		Plan.Step assignedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
 			if (step.getStepType().equals(Plan.StepType.PROCESSING) && !StringUtils.hasText(step.getExecutionRes())
-					&& StringUtils.hasText(step.getExecutionStatus()) && step.getExecutionStatus()
-						.equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + executorNodeName)) {
+					&& StringUtils.hasText(step.getExecutionStatus())
+					&& step.getExecutionStatus().equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + nodeName)) {
 				assignedStep = step;
 				break;
 			}
 		}
 
 		if (assignedStep == null) {
-			logger.info("No remaining steps to be executed by {}", executorNodeName);
+			logger.info("No remaining steps to be executed by {}", nodeName);
 			return updated;
 		}
 
 		// 标记步骤为正在执行
-		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + executorNodeName);
+		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + nodeName);
 
 		List<Message> messages = new ArrayList<>();
 		// 添加任务消息
@@ -107,13 +108,20 @@ public class CoderNode implements NodeAction {
 			.startingState(state)
 			.mapResult(response -> {
 				finalAssignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
-				finalAssignedStep.setExecutionRes(Objects.requireNonNull(response.getResult().getOutput().getText()));
-				return Map.of("coder_content_" + executorNodeId,
-						Objects.requireNonNull(response.getResult().getOutput().getText()));
+				String coderContent = response.getResult().getOutput().getText();
+				finalAssignedStep.setExecutionRes(Objects.requireNonNull(coderContent));
+
+				logger.info("{} completed, content: {}", nodeName, coderContent);
+
+				observations.add(coderContent);
+				updated.put("observations", observations);
+				updated.put("coder_content_" + executorNodeId, coderContent);
+				return updated;
 			})
 			.build(streamResult);
 
-		return Map.of("coder_content_" + executorNodeId, generator);
+		updated.put("coder_content_" + executorNodeId, generator);
+		return updated;
 	}
 
 }
