@@ -41,18 +41,18 @@ public class QuestionClassifierNodeSection implements NodeSection {
 		String id = node.getId();
 
 		StringBuilder sb = new StringBuilder();
-		sb.append(String.format("        // —— QuestionClassifierNode [%s] ——%n", id));
-		sb.append(String.format("        QuestionClassifierNode %s = QuestionClassifierNode.builder()%n", varName));
+		sb.append(String.format("// —— QuestionClassifierNode [%s] ——%n", id));
+		sb.append(String.format("QuestionClassifierNode %s = QuestionClassifierNode.builder()%n", varName));
 
-		sb.append("            .chatClient(chatClient)\n");
+		sb.append(".chatClient(chatClient)\n");
 
 		List<VariableSelector> inputs = data.getInputs();
 		if (inputs != null && !inputs.isEmpty()) {
 			String key = inputs.get(0).getName();
-			sb.append(String.format("            .inputTextKey(\"%s\")%n", escape(key)));
+			sb.append(String.format(".inputTextKey(\"%s\")%n", escape(key)));
 		}
 		else {
-			sb.append("            .inputTextKey(\"input\")\n");
+			sb.append(".inputTextKey(\"input\")\n");
 		}
 
 		List<String> categoryIds = data.getClasses()
@@ -64,25 +64,24 @@ public class QuestionClassifierNodeSection implements NodeSection {
 				.map(this::escape)
 				.map(s -> "\"" + s + "\"")
 				.collect(Collectors.joining(", "));
-			sb.append(String.format("            .categories(List.of(%s))%n", joined));
+			sb.append(String.format(".categories(List.of(%s))%n", joined));
 		}
 
 		String outputKey = data.getOutputKey();
 		if (!Strings.isNullOrEmpty(outputKey)) {
-			sb.append(String.format("            .outputKey(\"%s\")%n", escape(outputKey)));
+			sb.append(String.format(".outputKey(\"%s\")%n", escape(outputKey)));
 		}
 
 		String instr = data.getInstruction();
 		if (instr != null && !instr.isBlank()) {
-			sb.append(String.format("            .classificationInstructions(List.of(\"%s\"))%n", escape(instr)));
+			sb.append(String.format(".classificationInstructions(List.of(\"%s\"))%n", escape(instr)));
 		}
 		else {
-			sb.append("            .classificationInstructions(List.of(\"请根据输入内容选择对应分类\"))\n");
+			sb.append(".classificationInstructions(List.of(\"请根据输入内容选择对应分类\"))\n");
 		}
 
-		sb.append("            .build();\n");
-		sb.append(
-				String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(".build();\n");
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

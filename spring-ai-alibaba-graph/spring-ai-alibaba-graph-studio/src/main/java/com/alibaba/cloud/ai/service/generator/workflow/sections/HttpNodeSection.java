@@ -40,55 +40,52 @@ public class HttpNodeSection implements NodeSection {
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(String.format("        // —— HttpNode [%s] ——%n", id));
-		sb.append(String.format("        HttpNode %s = HttpNode.builder()%n", varName));
+		sb.append(String.format("// —— HttpNode [%s] ——%n", id));
+		sb.append(String.format("HttpNode %s = HttpNode.builder()%n", varName));
 		if (d.getMethod() != null && d.getMethod() != HttpMethod.GET) {
-			sb.append(String.format("                .method(HttpMethod.%s)%n", d.getMethod().name()));
+			sb.append(String.format(".method(HttpMethod.%s)%n", d.getMethod().name()));
 		}
 
 		if (d.getUrl() != null) {
-			sb.append(String.format("                .url(\"%s\")%n", escape(d.getUrl())));
+			sb.append(String.format(".url(\"%s\")%n", escape(d.getUrl())));
 		}
 
 		for (Map.Entry<String, String> entry : d.getHeaders().entrySet()) {
-			sb.append(String.format("                .header(\"%s\", \"%s\")%n", escape(entry.getKey()),
-					escape(entry.getValue())));
+			sb.append(String.format(".header(\"%s\", \"%s\")%n", escape(entry.getKey()), escape(entry.getValue())));
 		}
 
 		for (Map.Entry<String, String> entry : d.getQueryParams().entrySet()) {
-			sb.append(String.format("                .queryParam(\"%s\", \"%s\")%n", escape(entry.getKey()),
-					escape(entry.getValue())));
+			sb.append(String.format(".queryParam(\"%s\", \"%s\")%n", escape(entry.getKey()), escape(entry.getValue())));
 		}
 
 		HttpNode.HttpRequestNodeBody body = d.getBody();
 		if (body != null && body.hasContent()) {
-			sb.append("                .body(HttpRequestNodeBody.from(/* raw body value */))\n");
+			sb.append(".body(HttpRequestNodeBody.from(/* raw body value */))\n");
 		}
 
 		HttpNode.AuthConfig ac = d.getAuthConfig();
 		if (ac != null) {
 			if (ac.isBasic()) {
-				sb.append(String.format("                .auth(AuthConfig.basic(\"%s\", \"%s\"))%n",
-						escape(ac.getUsername()), escape(ac.getPassword())));
+				sb.append(String.format(".auth(AuthConfig.basic(\"%s\", \"%s\"))%n", escape(ac.getUsername()),
+						escape(ac.getPassword())));
 			}
 			else if (ac.isBearer()) {
-				sb.append(String.format("                .auth(AuthConfig.bearer(\"%s\"))%n", escape(ac.getToken())));
+				sb.append(String.format(".auth(AuthConfig.bearer(\"%s\"))%n", escape(ac.getToken())));
 			}
 		}
 
 		HttpNode.RetryConfig rc = d.getRetryConfig();
 		if (rc != null) {
-			sb.append(String.format("                .retryConfig(new RetryConfig(%d, %d, %b))%n", rc.getMaxRetries(),
+			sb.append(String.format(".retryConfig(new RetryConfig(%d, %d, %b))%n", rc.getMaxRetries(),
 					rc.getMaxRetryInterval(), rc.isEnable()));
 		}
 
 		if (d.getOutputKey() != null) {
-			sb.append(String.format("                .outputKey(\"%s\")%n", escape(d.getOutputKey())));
+			sb.append(String.format(".outputKey(\"%s\")%n", escape(d.getOutputKey())));
 		}
 
-		sb.append("                .build();\n");
-		sb.append(
-				String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(".build();\n");
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

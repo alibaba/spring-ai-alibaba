@@ -79,6 +79,11 @@ public class ReporterNode implements NodeAction {
 		}
 		// 1.5 添加planner节点返回的信息
 		messages.add(new UserMessage(currentPlan.getThought()));
+		// 1.6 todo 添加研究者节点返回的信息
+		for (String researcherContent : StateUtil.getParallelMessages(state, "researcher", 3)) {
+			logger.info("researcher_content: {}", researcherContent);
+			messages.add(new UserMessage(researcherContent));
+		}
 
 		logger.debug("reporter node messages: {}", messages);
 

@@ -29,8 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author yingzi
- * @since 2025/5/18 16:59
  * @author sixiyida
  * @since 2025/6/12 09:14
  */
@@ -43,7 +41,6 @@ public class ResearchTeamNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-
 		if (state.value("research_team_next_node").isPresent()) {
 			Thread.sleep(TIME_SLEEP);
 		}
