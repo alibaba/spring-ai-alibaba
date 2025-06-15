@@ -198,8 +198,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			for (Edge e : condEdges) {
 				String conditionKey = resolveConditionKey(sourceData, e.getSourceHandle());
 				String targetId = e.getTarget();
-				conditions.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey,
-						conditionKey));
+				conditions.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
 				mappings.add(String.format("\"%s\", \"%s\"", conditionKey, targetId));
 			}
 
