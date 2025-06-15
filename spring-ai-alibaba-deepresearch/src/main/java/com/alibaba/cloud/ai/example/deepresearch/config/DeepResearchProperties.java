@@ -19,14 +19,13 @@ package com.alibaba.cloud.ai.example.deepresearch.config;
 import com.google.common.collect.Maps;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * @author Allen Hu
  * @since 2025/5/24 <<<<<<< HEAD
- * @author sixiyida
- * @since 2025/6/14 ======= >>>>>>> origin/main
  */
 @ConfigurationProperties(prefix = DeepResearchProperties.PREFIX)
 public class DeepResearchProperties {
@@ -34,35 +33,22 @@ public class DeepResearchProperties {
 	public static final String PREFIX = "spring.ai.alibaba.deepresearch";
 
 	/**
-	 * Number of researcher nodes to create
+	 * Parallel node count, key=node name, value=node count
 	 */
-	private int researcherNodeCount = 3;
-
-	/**
-	 * Number of coder nodes to create
-	 */
-	private int coderNodeCount = 3;
-
-	public int getResearcherNodeCount() {
-		return researcherNodeCount;
-	}
-
-	public void setResearcherNodeCount(int researcherNodeCount) {
-		this.researcherNodeCount = researcherNodeCount;
-	}
-
-	public int getCoderNodeCount() {
-		return coderNodeCount;
-	}
-
-	public void setCoderNodeCount(int coderNodeCount) {
-		this.coderNodeCount = coderNodeCount;
-	}
+	private Map<String, Integer> parallelNodeCount = new HashMap<>();
 
 	/**
 	 * McpClient mapping for Agent name. key=Agent name, value=McpClient Name
 	 */
 	private Map<String, Set<String>> mcpClientMapping = Maps.newHashMap();
+
+	public Map<String, Integer> getParallelNodeCount() {
+		return parallelNodeCount;
+	}
+
+	public void setParallelNodeCount(Map<String, Integer> parallelNodeCount) {
+		this.parallelNodeCount = parallelNodeCount;
+	}
 
 	public Map<String, Set<String>> getMcpClientMapping() {
 		return mcpClientMapping;

@@ -39,15 +39,15 @@ public class ListOperatorNodeSection implements NodeSection {
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(String.format("        // —— ListOperatorNode [%s] ——%n", id));
-		sb.append(String.format("        ListOperatorNode %s = ListOperatorNode.builder()%n", varName));
+		sb.append(String.format("// —— ListOperatorNode [%s] ——%n", id));
+		sb.append(String.format("ListOperatorNode %s = ListOperatorNode.builder()%n", varName));
 
 		if (d.getInputTextKey() != null) {
-			sb.append(String.format("            .inputTextKey(\"%s\")%n", escape(d.getInputTextKey())));
+			sb.append(String.format(".inputTextKey(\"%s\")%n", escape(d.getInputTextKey())));
 		}
 
 		if (d.getOutputTextKey() != null) {
-			sb.append(String.format("            .outputTextKey(\"%s\")%n", escape(d.getOutputTextKey())));
+			sb.append(String.format(".outputTextKey(\"%s\")%n", escape(d.getOutputTextKey())));
 		}
 
 		List<String> filters = d.getFilters();
@@ -56,7 +56,7 @@ public class ListOperatorNodeSection implements NodeSection {
 				.map(this::escape)
 				.map(s -> "\"" + s + "\"")
 				.collect(Collectors.joining(", "));
-			sb.append(String.format("            .filters(List.of(%s))%n", joined));
+			sb.append(String.format(".filters(List.of(%s))%n", joined));
 		}
 
 		List<String> comps = d.getComparators();
@@ -65,20 +65,19 @@ public class ListOperatorNodeSection implements NodeSection {
 				.map(this::escape)
 				.map(s -> "\"" + s + "\"")
 				.collect(Collectors.joining(", "));
-			sb.append(String.format("            .comparators(List.of(%s))%n", joined));
+			sb.append(String.format(".comparators(List.of(%s))%n", joined));
 		}
 
 		if (d.getLimitNumber() != null) {
-			sb.append(String.format("            .limitNumber(%d)%n", d.getLimitNumber()));
+			sb.append(String.format(".limitNumber(%d)%n", d.getLimitNumber()));
 		}
 
 		if (d.getElementClassType() != null) {
-			sb.append(String.format("            .elementClassType(\"%s\")%n", escape(d.getElementClassType())));
+			sb.append(String.format(".elementClassType(\"%s\")%n", escape(d.getElementClassType())));
 		}
 
-		sb.append("            .build();\n");
-		sb.append(
-				String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(".build();\n");
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}
