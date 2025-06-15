@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.config;
 
 import com.alibaba.cloud.ai.controller.GeneratorController;
+import com.alibaba.cloud.ai.format.ApplicationYamlContributor;
 import com.alibaba.cloud.ai.format.EclipseJdtFormatProjectContributor;
 import com.alibaba.cloud.ai.service.generator.GraphProjectReqToDescConverter;
 import com.alibaba.cloud.ai.service.generator.GraphProjectRequest;
@@ -49,6 +50,11 @@ public class GraphInitializrConfiguration {
 	@Bean
 	public ProjectContributor eclipseJdtFormatContributor() {
 		return new EclipseJdtFormatProjectContributor();
+	}
+
+	@Bean
+	public ProjectContributor applicationYamlContributor() {
+		return new ApplicationYamlContributor();
 	}
 
 }
