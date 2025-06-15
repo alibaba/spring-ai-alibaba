@@ -670,7 +670,7 @@ public class CompiledGraph {
 		 */
 		private Optional<Data<Output>> getEmbedGenerator(Map<String, Object> partialState) {
 			// Extract all AsyncGenerator instances
-			List<AsyncGenerator<Output>> asyncNodeGenerators  = new ArrayList<>();
+			List<AsyncGenerator<Output>> asyncNodeGenerators = new ArrayList<>();
 			var generatorEntries = partialState.entrySet().stream().filter(e -> {
 				// Fixed when parallel nodes return asynchronous generating the same key
 				Object value = e.getValue();
@@ -686,8 +686,6 @@ public class CompiledGraph {
 				}
 				return false;
 			}).collect(Collectors.toList());
-
-
 
 			if (generatorEntries.isEmpty() && asyncNodeGenerators.isEmpty()) {
 				return Optional.empty();
@@ -722,33 +720,31 @@ public class CompiledGraph {
 				List<Map.Entry<String, Object>> generatorEntries) throws Exception {
 			AtomicBoolean isParallel = new AtomicBoolean(false);
 			// Remove all generators
-			var partialStateWithoutGenerators = partialState.entrySet()
-				.stream()
-				.filter(e -> {
-                    if ((e.getValue() instanceof AsyncGenerator)) {
-                        return false;
-                    }
-                    if (e.getValue() instanceof Collection<?>) {
-                        Collection collection = (Collection) e.getValue();
-						ArrayList<Object> result = new ArrayList<>();
-						for (Object o : collection) {
-							if (!(o instanceof AsyncGenerator)) {
-								isParallel.set(true);
-								result.add(o);
-							}
+			var partialStateWithoutGenerators = partialState.entrySet().stream().filter(e -> {
+				if ((e.getValue() instanceof AsyncGenerator)) {
+					return false;
+				}
+				if (e.getValue() instanceof Collection<?>) {
+					Collection collection = (Collection) e.getValue();
+					ArrayList<Object> result = new ArrayList<>();
+					for (Object o : collection) {
+						if (!(o instanceof AsyncGenerator)) {
+							isParallel.set(true);
+							result.add(o);
 						}
-                        if (!CollectionUtils.isEmpty(result)) {
-                            e.setValue(result);
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    return true;
-                })
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+					}
+					if (!CollectionUtils.isEmpty(result)) {
+						e.setValue(result);
+						return true;
+					}
+					else {
+						return false;
+					}
+				}
+				return true;
+			}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-			if (isParallel.get()){
+			if (isParallel.get()) {
 
 			}
 

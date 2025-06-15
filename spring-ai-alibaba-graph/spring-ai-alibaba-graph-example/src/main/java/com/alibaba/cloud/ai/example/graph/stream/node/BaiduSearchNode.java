@@ -37,18 +37,14 @@ public class BaiduSearchNode implements NodeAction {
 
 	@Autowired(required = false)
 	private BaiduSearchService baiduSearchService;
+
 	@Autowired
 	private ChatClient.Builder builder;
-
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		Optional<String> value = state.value(OverAllState.DEFAULT_INPUT_KEY, String.class);
 		StringBuilder sb = new StringBuilder();
-		UserMessage message = new UserMessage("写10字诗词");
-		ChatClient chatClient = builder.build();
-
-		var flux = chatClient.prompt().messages(message).stream().chatResponse();
 
 		if (value.isPresent()) {
 			String input = value.get();
@@ -66,6 +62,7 @@ public class BaiduSearchNode implements NodeAction {
 		}
 		return Map.of("parallel_result", sb.toString());
 	}
+
 	static CompletableFuture<NodeOutput> of(String node, String index, long delayInMills, OverAllState overAllState) {
 		return CompletableFuture.supplyAsync(() -> {
 			try {

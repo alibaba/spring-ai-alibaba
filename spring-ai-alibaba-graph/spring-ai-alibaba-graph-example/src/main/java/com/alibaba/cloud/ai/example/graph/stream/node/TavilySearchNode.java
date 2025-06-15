@@ -34,16 +34,14 @@ public class TavilySearchNode implements NodeAction {
 
 	@Autowired(required = false)
 	private TavilySearchService tavilySearchService;
+
 	@Autowired
 	private ChatClient.Builder builder;
-
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		Optional<String> value = state.value(OverAllState.DEFAULT_INPUT_KEY, String.class);
 		StringBuilder sb = new StringBuilder();
-		UserMessage message = new UserMessage("写10字诗词");
-		ChatClient chatClient = builder.build();
 
 		if (value.isPresent()) {
 			String input = value.get();
