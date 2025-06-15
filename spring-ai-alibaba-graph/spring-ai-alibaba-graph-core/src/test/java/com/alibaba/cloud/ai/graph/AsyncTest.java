@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import org.bsc.async.AsyncGenerator;
-import org.bsc.async.AsyncGeneratorQueue;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
