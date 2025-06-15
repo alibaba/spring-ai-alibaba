@@ -152,7 +152,7 @@ Spring AI Alibaba Graph 是一款面向 Java 开发者的**工作流、多智能
 
 完整的 PlantUML 工作流图如下：
 
-<img src="./docs/imgs/graphworkflow.png" alt="architecture" style="max-width: 740px; height: 508px" /> 
+<img src="../docs/imgs/graphworkflow.png" alt="architecture" style="max-width: 740px; height: 508px" /> 
 
 
 
