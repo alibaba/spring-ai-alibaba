@@ -15,83 +15,104 @@
  */
 package com.alibaba.cloud.ai.graph.streaming;
 
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import org.bsc.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 /**
  * Utility class for handling asynchronous generator merging and output processing
  */
 public class AsyncGeneratorUtils {
 
-	/**
-	 * Creates an appropriate generator based on the number of generator entries
-	 * @param generatorEntries list of generator entries
-	 * @param <T> output type
-	 * @return single generator or merged generator
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> AsyncGenerator<T> createAppropriateGenerator(List<Map.Entry<String, Object>> generatorEntries,
-			List<AsyncGenerator<T>> asyncNodeGenerators) {
-		if (generatorEntries.size() == 1) {
-			// Only one generator, return it directly
-			return (AsyncGenerator<T>) generatorEntries.get(0).getValue();
-		}
+    /**
+     * Creates an appropriate generator based on the number of generator entries
+     *
+     * @param generatorEntries list of generator entries
+     * @param <T>              output type
+     * @return single generator or merged generator
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> AsyncGenerator<T> createAppropriateGenerator(List<Map.Entry<String, Object>> generatorEntries,
+                                                                   List<AsyncGenerator<T>> asyncNodeGenerators, Map<String, KeyStrategy> keyStrategyMap) {
+        if (generatorEntries.size() == 1) {
+            // Only one generator, return it directly
+            return (AsyncGenerator<T>) generatorEntries.get(0).getValue();
+        }
 
-		// Multiple generators, create a merged generator
-		List<AsyncGenerator<T>> generators = generatorEntries.stream()
-			.map(entry -> (AsyncGenerator<T>) entry.getValue())
-			.collect(Collectors.toList());
-		generators.addAll(asyncNodeGenerators);
-		return createMergedGenerator(generators);
-	}
+        // Multiple generators, create a merged generator
+        List<AsyncGenerator<T>> generators = generatorEntries.stream()
+                .map(entry -> (AsyncGenerator<T>) entry.getValue())
+                .collect(Collectors.toList());
+        generators.addAll(asyncNodeGenerators);
+        return createMergedGenerator(generators, keyStrategyMap);
+    }
 
-	/**
-	 * Creates a merged generator that combines outputs from multiple generators
-	 * @param generators list of generators to merge
-	 * @param <T> output type
-	 * @return merged generator
-	 */
-	public static <T> AsyncGenerator<T> createMergedGenerator(List<AsyncGenerator<T>> generators) {
-		return new AsyncGenerator<T>() {
-			private int currentGeneratorIndex = 0;
+    /**
+     * Creates a merged generator that combines outputs from multiple generators
+     *
+     * @param generators list of generators to merge
+     * @param <T>        output type
+     * @return merged generator
+     */
+    public static <T> AsyncGenerator<T> createMergedGenerator(List<AsyncGenerator<T>> generators, Map<String, KeyStrategy> keyStrategyMap) {
+        return new AsyncGenerator<T>() {
+            private int currentIndex = 0;
+            private Map<String, Object> mergedResult = new HashMap<>();
+            private List<AsyncGenerator<T>> activeGenerators = new ArrayList<>(generators);
 
-			private boolean isDone = false;
+            @Override
+            public AsyncGenerator.Data<T> next() {
+                // If there is no active generator, return the merge result
+                if (activeGenerators.isEmpty()) {
+                    return AsyncGenerator.Data.done(mergedResult);
+                }
 
-			@Override
-			public AsyncGenerator.Data<T> next() {
-				if (isDone) {
-					return AsyncGenerator.Data.done();
-				}
+                // Polling to process each generator
+                while (!activeGenerators.isEmpty()) {
+                    AsyncGenerator<T> current = activeGenerators.get(currentIndex);
+                    AsyncGenerator.Data<T> data = current.next();
 
-				// Poll all generators in round-robin fashion
-				int startIndex = currentGeneratorIndex;
-				do {
-					AsyncGenerator<T> currentGenerator = generators.get(currentGeneratorIndex);
-					AsyncGenerator.Data<T> data = currentGenerator.next();
+                    // If generator completes
+                    if (data.isDone()) {
+                        // Removed completed generator from active list
+                        activeGenerators.remove(current);
+                        
+                        // Results when processing is completed
+                        Object result = data.resultValue();
+                        if (result != null) {
+                            if (result instanceof Map) {
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> mapResult = (Map<String, Object>) result;
+                                // Update status using keyStrategyMap
+                                mergedResult = OverAllState.updateState(mergedResult, mapResult, keyStrategyMap);
+                            } else {
+                                throw new IllegalArgumentException("Generator must return a Map type result");
+                            }
+                        }
+                        
+                        // If all generators are completed, return the final merge result
+                        if (activeGenerators.isEmpty()) {
+                            return AsyncGenerator.Data.done(mergedResult);
+                        }
+                        
+                        //Continue to process the next generator
+                        continue;
+                    }
 
-					// If current generator has data, return it
-					if (!data.isDone()) {
-						// Update index for next generator to process
-						currentGeneratorIndex = (currentGeneratorIndex + 1) % generators.size();
-						return data;
-					}
+                    // 如果generator还有数据，返回当前数据
+                    currentIndex = (currentIndex + 1) % activeGenerators.size();
+                    return data;
+                }
 
-					// Move to next generator
-					currentGeneratorIndex = (currentGeneratorIndex + 1) % generators.size();
-
-					// If all generators have been checked and none has data, complete
-					if (currentGeneratorIndex == startIndex) {
-						isDone = true;
-						return AsyncGenerator.Data.done();
-					}
-				}
-				while (true);
-			}
-		};
-	}
+                // 所有generator都处理完成，返回最终结果
+                return AsyncGenerator.Data.done(mergedResult);
+            }
+        };
+    }
 
 }
