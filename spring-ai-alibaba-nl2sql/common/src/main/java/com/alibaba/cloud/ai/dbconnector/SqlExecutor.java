@@ -18,8 +18,12 @@ package com.alibaba.cloud.ai.dbconnector;
 import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
 import org.apache.commons.lang3.StringUtils;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
 
 /**
  * 负责执行 SQL 并返回结构化结果。

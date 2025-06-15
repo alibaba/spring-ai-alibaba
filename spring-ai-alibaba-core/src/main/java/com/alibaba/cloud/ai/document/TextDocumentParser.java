@@ -20,10 +20,9 @@ import org.springframework.util.Assert;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * @author HeYQ
@@ -34,7 +33,7 @@ public class TextDocumentParser implements DocumentParser {
 	private final Charset charset;
 
 	public TextDocumentParser() {
-		this(UTF_8);
+		this(StandardCharsets.UTF_8);
 	}
 
 	public TextDocumentParser(Charset charset) {
