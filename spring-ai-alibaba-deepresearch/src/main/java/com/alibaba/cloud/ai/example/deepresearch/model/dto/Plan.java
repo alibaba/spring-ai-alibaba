@@ -100,6 +100,7 @@ public class Plan {
 		public void setExecutionStatus(String executionStatus) {
 			this.executionStatus = executionStatus;
 		}
+
 	}
 
 	public enum StepType {
