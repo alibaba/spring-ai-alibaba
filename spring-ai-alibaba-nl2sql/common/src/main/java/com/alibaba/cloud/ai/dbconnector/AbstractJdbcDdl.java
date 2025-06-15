@@ -15,7 +15,12 @@
  */
 package com.alibaba.cloud.ai.dbconnector;
 
-import com.alibaba.cloud.ai.dbconnector.bo.*;
+import com.alibaba.cloud.ai.dbconnector.bo.ColumnInfoBO;
+import com.alibaba.cloud.ai.dbconnector.bo.DatabaseInfoBO;
+import com.alibaba.cloud.ai.dbconnector.bo.ForeignKeyInfoBO;
+import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
+import com.alibaba.cloud.ai.dbconnector.bo.SchemaInfoBO;
+import com.alibaba.cloud.ai.dbconnector.bo.TableInfoBO;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.sql.Connection;
