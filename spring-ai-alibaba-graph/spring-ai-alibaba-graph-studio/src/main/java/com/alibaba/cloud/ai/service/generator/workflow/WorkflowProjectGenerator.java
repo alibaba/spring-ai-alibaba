@@ -179,13 +179,13 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 			// START and END special handling
 			if ("start".equals(sourceType)) {
-				sb.append(String.format("        stateGraph.addEdge(START, \"%s\");%n", targetId));
+				sb.append(String.format("stateGraph.addEdge(START, \"%s\");%n", targetId));
 			}
 			else if ("end".equals(targetType)) {
-				sb.append(String.format("        stateGraph.addEdge(\"%s\", END);%n", sourceId));
+				sb.append(String.format("stateGraph.addEdge(\"%s\", END);%n", sourceId));
 			}
 			else {
-				sb.append(String.format("        stateGraph.addEdge(\"%s\", \"%s\");%n", sourceId, targetId));
+				sb.append(String.format("stateGraph.addEdge(\"%s\", \"%s\");%n", sourceId, targetId));
 			}
 		}
 
@@ -202,8 +202,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			for (Edge e : condEdges) {
 				String conditionKey = resolveConditionKey(sourceData, e.getSourceHandle());
 				String targetId = e.getTarget();
-				conditions.add(String.format("            	if (value.contains(\"%s\")) return \"%s\";", conditionKey,
-						conditionKey));
+				conditions.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
 				mappings.add(String.format("\"%s\", \"%s\"", conditionKey, targetId));
 			}
 

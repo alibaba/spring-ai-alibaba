@@ -36,15 +36,15 @@ public class AnswerNodeSection implements NodeSection {
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
-		sb.append("        // —— AnswerNode [").append(id).append("] ——\n");
-		sb.append("        AnswerNode ").append(varName).append(" = AnswerNode.builder()\n");
+		sb.append("// —— AnswerNode [").append(id).append("] ——\n");
+		sb.append("AnswerNode ").append(varName).append(" = AnswerNode.builder()\n");
 
 		if (d.getAnswer() != null) {
-			sb.append("                .answer(\"").append(escape(d.getAnswer())).append("\")\n");
+			sb.append(".answer(\"").append(escape(d.getAnswer())).append("\")\n");
 		}
 
-		sb.append("                .build();\n");
-		sb.append("        stateGraph.addNode(\"")
+		sb.append(".build();\n");
+		sb.append("stateGraph.addNode(\"")
 			.append(id)
 			.append("\", AsyncNodeAction.node_async(")
 			.append(varName)

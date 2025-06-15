@@ -38,15 +38,15 @@ public class ToolNodeSection implements NodeSection {
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(String.format("        // —— ToolNode [%s] ——%n", id));
-		sb.append(String.format("        ToolNode %s = ToolNode.builder()%n", varName));
+		sb.append(String.format("// —— ToolNode [%s] ——%n", id));
+		sb.append(String.format("ToolNode %s = ToolNode.builder()%n", varName));
 
 		if (d.getLlmResponseKey() != null) {
-			sb.append(String.format("            .llmResponseKey(\"%s\")%n", escape(d.getLlmResponseKey())));
+			sb.append(String.format(".llmResponseKey(\"%s\")%n", escape(d.getLlmResponseKey())));
 		}
 
 		if (d.getOutputKey() != null) {
-			sb.append(String.format("            .outputKey(\"%s\")%n", escape(d.getOutputKey())));
+			sb.append(String.format(".outputKey(\"%s\")%n", escape(d.getOutputKey())));
 		}
 
 		List<String> names = d.getToolNames();
@@ -55,7 +55,7 @@ public class ToolNodeSection implements NodeSection {
 				.map(this::escape)
 				.map(s -> "\"" + s + "\"")
 				.collect(Collectors.joining(", "));
-			sb.append(String.format("            .toolNames(List.of(%s))%n", joined));
+			sb.append(String.format(".toolNames(List.of(%s))%n", joined));
 		}
 
 		List<String> callbacks = d.getToolCallbacks();
@@ -64,14 +64,13 @@ public class ToolNodeSection implements NodeSection {
 				.map(this::escape)
 				.map(s -> "\"" + s + "\"")
 				.collect(Collectors.joining(", "));
-			sb.append(String.format("            .toolCallbacks(List.of(%s))%n", joined));
+			sb.append(String.format(".toolCallbacks(List.of(%s))%n", joined));
 		}
 
-		sb.append("            .toolCallbackResolver(toolCallbackResolver)\n");
+		sb.append(".toolCallbackResolver(toolCallbackResolver)\n");
 
-		sb.append("            .build();\n");
-		sb.append(
-				String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(".build();\n");
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}
