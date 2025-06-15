@@ -54,11 +54,10 @@ public class StateUtil {
 		List<String> resList = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
 			String nodeName = name + "_content_" + i;
-			GeneratorSubscriber<NodeOutput> generator = (GeneratorSubscriber<NodeOutput>) state.value(nodeName).get();
-			generator.forEach(output -> {
-				Map<String, Object> data = output.state().data();
-				logger.info("Processing node: {}, data: {}", nodeName, data);
-			});
+			ArrayList<String> res = state.value(nodeName, List.class)
+				.map(obj -> new ArrayList<>((List<String>) obj))
+				.orElseGet(ArrayList::new);
+			resList.addAll(res);
 		}
 		return resList;
 	}

@@ -68,10 +68,10 @@ public class ReporterNode implements NodeAction {
 		messages.add(new UserMessage(
 				MessageFormat.format(RESEARCH_FORMAT, currentPlan.getTitle(), currentPlan.getThought())));
 		messages.add(new UserMessage(REPORT_FORMAT));
-		// 1.3 添加观察的消息
-		for (String observation : StateUtil.getMessagesByType(state, "observations")) {
-			messages.add(new UserMessage(observation));
-		}
+		// todo 待调整 1.3 添加观察的消息
+		// for (String observation : StateUtil.getMessagesByType(state, "observations")) {
+		// messages.add(new UserMessage(observation));
+		// }
 		// 1.4 添加背景调查的消息
 		String backgroundInvestigationResults = state.value("background_investigation_results", "");
 		if (StringUtils.hasText(backgroundInvestigationResults)) {
@@ -80,7 +80,8 @@ public class ReporterNode implements NodeAction {
 		// 1.5 添加planner节点返回的信息
 		messages.add(new UserMessage(currentPlan.getThought()));
 		// 1.6 todo 添加研究者节点返回的信息
-		for (String researcherContent : StateUtil.getParallelMessages(state, "researcher", 3)) {
+		for (String researcherContent : StateUtil.getParallelMessages(state, "researcher",
+				StateUtil.getMaxStepNum(state))) {
 			logger.info("researcher_content: {}", researcherContent);
 			messages.add(new UserMessage(researcherContent));
 		}

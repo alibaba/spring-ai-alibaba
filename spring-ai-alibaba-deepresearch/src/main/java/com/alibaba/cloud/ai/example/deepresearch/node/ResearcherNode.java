@@ -112,7 +112,6 @@ public class ResearcherNode implements NodeAction {
 				logger.info("{} completed, content: {}", nodeName, researchContent);
 
 				observations.add(researchContent);
-				updated.put("observations", observations);
 				updated.put("researcher_content_" + executorNodeId, List.of(researchContent));
 				return updated;
 			})
