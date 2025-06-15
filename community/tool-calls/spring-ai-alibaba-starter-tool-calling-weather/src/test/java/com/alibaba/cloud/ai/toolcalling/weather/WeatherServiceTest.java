@@ -45,7 +45,7 @@ public class WeatherServiceTest {
 	@DisplayName("Tool-Calling Test")
 	@EnabledIfEnvironmentVariable(named = WeatherConstants.API_KEY_ENV,
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
-	public void testWeather() {
+	public void testWeatherWithOneForecastDay() {
 		WeatherService.Response resp = weatherService.apply(new WeatherService.Request("London", 1));
 		log.info("Weather Service Response: {}", resp);
 		assert resp != null && StringUtils.hasText(resp.city()) && MapUtil.isNotEmpty(resp.current())
@@ -57,7 +57,7 @@ public class WeatherServiceTest {
 	@DisplayName("Tool-Calling Test")
 	@EnabledIfEnvironmentVariable(named = WeatherConstants.API_KEY_ENV,
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
-	public void testWeatherWithout() {
+	public void testWeatherWithSevenForecastDay() {
 		WeatherService.Response resp = weatherService.apply(new WeatherService.Request("Beijing", 7));
 		log.info("Weather Service Response: {}", resp);
 		assert resp != null && StringUtils.hasText(resp.city()) && MapUtil.isNotEmpty(resp.current())
