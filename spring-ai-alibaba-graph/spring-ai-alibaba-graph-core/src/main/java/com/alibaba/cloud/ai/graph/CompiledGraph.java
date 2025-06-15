@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.GraphInitKeyErrorException;
@@ -26,8 +27,7 @@ import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import org.apache.commons.lang3.StringUtils;
-import org.bsc.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -37,7 +37,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -509,6 +509,15 @@ public class CompiledGraph {
 	}
 
 	/**
+	 * Get the last StateSnapshot of the given RunnableConfig.
+	 * @param config - the RunnableConfig
+	 * @return the last StateSnapshot of the given RunnableConfig if any
+	 */
+	Optional<StateSnapshot> lastStateOf(RunnableConfig config) {
+		return getStateHistory(config).stream().findFirst();
+	}
+
+	/**
 	 * Generates a drawable graph representation of the state graph.
 	 * @param type the type of graph representation to generate
 	 * @param title the title of the graph
@@ -653,54 +662,120 @@ public class CompiledGraph {
 					stateGraph.getStateSerializer().stateFactory());
 		}
 
-		@SuppressWarnings("unchecked")
+		/**
+		 * Gets embed generator from partial state.
+		 * @param partialState the partial state containing generator instances
+		 * @return an Optional containing Data with the generator if found, empty
+		 * otherwise
+		 */
 		private Optional<Data<Output>> getEmbedGenerator(Map<String, Object> partialState) {
-			return partialState.entrySet()
-				.stream()
-				.filter(e -> e.getValue() instanceof AsyncGenerator)
-				.findFirst()
-				.map(generatorEntry -> {
-					final var generator = (AsyncGenerator<Output>) generatorEntry.getValue();
-					return Data.composeWith(generator.map(n -> {
-						n.setSubGraph(true);
-						return n;
-					}), data -> {
-
-						if (data != null) {
-
-							if (data instanceof Map<?, ?>) {
-								// FIX
-								// Assume that the whatever used appender channel doesn't
-								// accept duplicates
-								// FIX : remove generator
-								var partialStateWithoutGenerator = partialState.entrySet()
-									.stream()
-									.filter(e -> !Objects.equals(e.getKey(), generatorEntry.getKey()))
-									.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-								var intermediateState = OverAllState.updateState(currentState,
-										partialStateWithoutGenerator, keyStrategyMap);
-
-								currentState = OverAllState.updateState(intermediateState, (Map<String, Object>) data,
-										keyStrategyMap);
-
-								// update for overallstate
-								overAllState.updateState(partialStateWithoutGenerator);
-								overAllState.updateState((Map<String, Object>) data);
-							}
-							else {
-								throw new IllegalArgumentException("Embedded generator must return a Map");
-							}
+			// Extract all AsyncGenerator instances
+			List<AsyncGenerator<Output>> asyncNodeGenerators = new ArrayList<>();
+			var generatorEntries = partialState.entrySet().stream().filter(e -> {
+				// Fixed when parallel nodes return asynchronous generating the same key
+				Object value = e.getValue();
+				if (value instanceof AsyncGenerator) {
+					return true;
+				}
+				if (value instanceof Collection collection) {
+					collection.forEach(o -> {
+						if (o instanceof AsyncGenerator<?>) {
+							asyncNodeGenerators.add((AsyncGenerator<Output>) o);
 						}
-
-						var nextNodeCommand = nextNodeId(currentNodeId, overAllState, currentState, config);
-
-						nextNodeId = nextNodeCommand.gotoNode();
-						currentState = nextNodeCommand.update();
-
-						resumedFromEmbed = true;
 					});
-				});
+				}
+				return false;
+			}).collect(Collectors.toList());
+
+			if (generatorEntries.isEmpty() && asyncNodeGenerators.isEmpty()) {
+				return Optional.empty();
+			}
+
+			// Log information about found generators
+			if (generatorEntries.size() > 1) {
+				log.debug("Multiple generators found: {} - keys: {}", generatorEntries.size(),
+						generatorEntries.stream().map(Map.Entry::getKey).collect(Collectors.joining(", ")));
+			}
+
+			// Create appropriate generator (single or merged)
+			AsyncGenerator<Output> generator = AsyncGeneratorUtils.createAppropriateGenerator(generatorEntries,
+					asyncNodeGenerators, keyStrategyMap);
+
+			// Create data processing logic for the generator
+			return Optional.of(Data.composeWith(generator.map(n -> {
+				n.setSubGraph(true);
+				return n;
+			}), data -> processGeneratorOutput(data, partialState, generatorEntries)));
+		}
+
+		/**
+		 * Processes output data from generator.
+		 * @param data output data from generator
+		 * @param partialState partial state
+		 * @param generatorEntries generator entries list
+		 * @throws Exception if an error occurs during processing
+		 */
+		@SuppressWarnings("unchecked")
+		private void processGeneratorOutput(Object data, Map<String, Object> partialState,
+				List<Map.Entry<String, Object>> generatorEntries) throws Exception {
+			AtomicBoolean isParallel = new AtomicBoolean(false);
+			// Remove all generators
+			var partialStateWithoutGenerators = partialState.entrySet().stream().filter(e -> {
+				if ((e.getValue() instanceof AsyncGenerator)) {
+					return false;
+				}
+				if (e.getValue() instanceof Collection<?>) {
+					Collection collection = (Collection) e.getValue();
+					ArrayList<Object> result = new ArrayList<>();
+					for (Object o : collection) {
+						if (!(o instanceof AsyncGenerator)) {
+							isParallel.set(true);
+							result.add(o);
+						}
+					}
+					if (!CollectionUtils.isEmpty(result)) {
+						e.setValue(result);
+						return true;
+					}
+					else {
+						return false;
+					}
+				}
+				return true;
+			}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+			if (isParallel.get()) {
+
+			}
+
+			// Update state with partial state without generators
+			var intermediateState = OverAllState.updateState(currentState, partialStateWithoutGenerators,
+					keyStrategyMap);
+			currentState = intermediateState;
+			overAllState.updateState(partialStateWithoutGenerators);
+
+			// If data is not null and is a Map, update state with it
+			if (data != null) {
+				if (data instanceof Map<?, ?>) {
+					currentState = OverAllState.updateState(intermediateState, (Map<String, Object>) data,
+							keyStrategyMap);
+					overAllState.updateState((Map<String, Object>) data);
+
+					if (log.isDebugEnabled() && generatorEntries.size() > 1) {
+						log.debug("Updated state with data keys: {}",
+								((Map<String, Object>) data).keySet().stream().collect(Collectors.joining(", ")));
+					}
+				}
+				else {
+					throw new IllegalArgumentException("Embedded generator must return a Map");
+				}
+			}
+
+			// Get next node command
+			var nextNodeCommand = nextNodeId(currentNodeId, overAllState, currentState, config);
+			nextNodeId = nextNodeCommand.gotoNode();
+			currentState = nextNodeCommand.update();
+			resumedFromEmbed = true;
 		}
 
 		private CompletableFuture<Data<Output>> evaluateAction(AsyncNodeActionWithConfig action,

@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.graph.utils;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -61,6 +62,70 @@ public class FileUtils {
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Copies all JAR files from the resources/lib directory to the specified working
+	 * directory.
+	 * @param workDir The target working directory where the JAR files will be copied.
+	 */
+	public static void copyResourceJarToWorkDir(String workDir) {
+		try {
+			// Get the JAR files from resources/lib directory
+			ClassLoader classLoader = FileUtils.class.getClassLoader();
+			URL libUrl = classLoader.getResource("lib");
+			if (libUrl == null) {
+				throw new RuntimeException("Could not find lib directory in resources");
+			}
+
+			// Create target directory if it doesn't exist
+			Path targetDir = Path.of(workDir);
+			if (!Files.exists(targetDir)) {
+				Files.createDirectories(targetDir);
+			}
+
+			// Get all JAR files from lib directory
+			Path libPath = Path.of(libUrl.toURI());
+			try (var stream = Files.walk(libPath)) {
+				stream.filter(path -> path.toString().endsWith(".jar")).forEach(jarPath -> {
+					try {
+						Path targetPath = targetDir.resolve(jarPath.getFileName());
+						Files.copy(jarPath, targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+					}
+					catch (IOException e) {
+						throw new RuntimeException("Failed to copy JAR file: " + jarPath, e);
+					}
+				});
+			}
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to copy JAR files to working directory", e);
+		}
+	}
+
+	/**
+	 * Deletes all JAR files from the specified working directory.
+	 * @param workDir The working directory from which the JAR files will be deleted.
+	 */
+	public static void deleteResourceJarFromWorkDir(String workDir) {
+		try {
+			Path workDirPath = Path.of(workDir);
+			if (Files.exists(workDirPath)) {
+				try (var stream = Files.walk(workDirPath)) {
+					stream.filter(path -> path.toString().endsWith(".jar")).forEach(jarPath -> {
+						try {
+							Files.deleteIfExists(jarPath);
+						}
+						catch (IOException e) {
+							throw new RuntimeException("Failed to delete JAR file: " + jarPath, e);
+						}
+					});
+				}
+			}
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Failed to delete JAR files from working directory", e);
 		}
 	}
 

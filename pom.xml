@@ -71,7 +71,8 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-weather</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-larksuite</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-microsofttranslate</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-crawler</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-jinacrawler</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-firecrawl</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-regex</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-jsonprocessor</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-serpapi</module>
@@ -217,6 +218,8 @@
         <commons-codec.version>1.17.0</commons-codec.version>
         <commons-exec.version>1.3</commons-exec.version>
         <commons-collections4.version>4.4</commons-collections4.version>
+
+        <docker-java>3.3.3</docker-java>
 
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
 

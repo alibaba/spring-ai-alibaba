@@ -16,14 +16,11 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
 import com.alibaba.cloud.ai.graph.serializer.ObjectStreamStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.AgentState;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -234,37 +231,6 @@ public class SerializeTest {
 
 		output.setSubGraph(false);
 		json = serializer.getObjectMapper().writeValueAsString(output);
-
-		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":false}", json);
-	}
-
-	// GSON-based StateSerializer for testing alternative JSON serialization capabilities
-	static class GsonSerializer extends GsonStateSerializer {
-
-		public GsonSerializer() {
-			super(OverAllState::new, new GsonBuilder().serializeNulls().create());
-		}
-
-		Gson getGson() {
-			return gson;
-		}
-
-	}
-
-	// Test NodeOutput serialization using GSON JSON library
-	@Test
-	public void NodOutputJGsonSerializationTest() throws Exception {
-
-		GsonSerializer serializer = new GsonSerializer();
-
-		NodeOutput output = NodeOutput.of("node", null);
-		output.setSubGraph(true);
-		String json = serializer.getGson().toJson(output);
-
-		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":true}", json);
-
-		output.setSubGraph(false);
-		json = serializer.getGson().toJson(output);
 
 		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":false}", json);
 	}

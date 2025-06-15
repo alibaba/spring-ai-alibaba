@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * Variable is often used to represent the output of a node, or pre-defined variables in
- * an App.
+ * an App. todo: add a strategy field
  */
 public class Variable {
 

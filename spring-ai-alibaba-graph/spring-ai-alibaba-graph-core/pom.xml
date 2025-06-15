@@ -100,19 +100,19 @@
         <dependency>
             <groupId>com.github.docker-java</groupId>
             <artifactId>docker-java</artifactId>
-            <version>3.3.3</version>
+            <version>${docker-java}</version>
         </dependency>
 
         <dependency>
             <groupId>com.github.docker-java</groupId>
             <artifactId>docker-java-core</artifactId>
-            <version>3.3.3</version>
+            <version>${docker-java}</version>
         </dependency>
 
         <dependency>
             <groupId>com.github.docker-java</groupId>
             <artifactId>docker-java-transport-httpclient5</artifactId>
-            <version>3.3.3</version>
+            <version>${docker-java}</version>
         </dependency>
 
         <dependency>
@@ -131,12 +131,6 @@
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>${commons-codec.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bsc.async</groupId>
-            <artifactId>async-generator</artifactId>
-            <version>${async-generator.version}</version>
         </dependency>
 
         <dependency>
@@ -169,12 +163,6 @@
             <optional>true</optional>
         </dependency>
 
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>${gson.version}</version>
-            <scope>provided</scope>
-        </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.mongodb/mongodb-driver-sync -->
         <dependency>

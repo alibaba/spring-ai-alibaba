@@ -2,6 +2,10 @@
 
 ## 模块简介
 
+![img.png](img.png)
+
+随着大模型技术的快速发展，自然语言到 SQL（NL2SQL）能力在数据分析领域的落地日益广泛。然而，传统 NL2SQL 方案存在Schema 理解偏差、复杂查询生成效率低、执行结果不可控等问题，导致业务场景中频繁出现“答非所问”或“生成失败”的窘境。为了让更多开发者能够便捷地使用这一能力，我们决定将[阿里云析言GBI](https://bailian.console.aliyun.com/xiyan#/home)中“Schema 召回 + SQL 生成 + SQL 执行”的核心链路模块化、组件化，并以开源的形式回馈社区。
+
 本模块旨在提供一个轻量级的 **自然语言查询转 SQL 语句** 的服务，基于用户输入的自然语言问题，结合数据库 Schema 和业务逻辑解释（evidence），通过大模型推理生成对应的 SQL 查询语句，并支持执行该 SQL 返回结果。
 
 该模块被设计为可复用的 Service 层组件，**仅提供核心功能实现，不包含 RESTful 接口及独立启动能力**。适用于集成到其他 Spring Boot 项目中使用。
@@ -149,6 +153,9 @@ chatbi:
 ## 联系方式
 
 如有任何问题，请联系：
+
+- 邮箱: kunan.lw@alibaba-inc.com
+- GitHub: [willyomg](https://github.com/willyomg)
 
 - 邮箱: xuqirui.xqr@alibaba-inc.com
 - GitHub: [littleahri](https://github.com/littleahri)

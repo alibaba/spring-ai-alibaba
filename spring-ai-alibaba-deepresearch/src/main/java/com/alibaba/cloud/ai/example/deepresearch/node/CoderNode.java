@@ -27,7 +27,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import reactor.core.publisher.Flux;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -36,8 +36,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * @author yingzi
- * @since 2025/5/18 17:07
+ * @author sixiyida
+ * @since 2025/6/14 11:17
  */
 
 public class CoderNode implements NodeAction {
@@ -46,34 +46,50 @@ public class CoderNode implements NodeAction {
 
 	private final ChatClient coderAgent;
 
+	private final String executorNodeId;
+
+	private final String nodeName;
+
 	public CoderNode(ChatClient coderAgent) {
+		this(coderAgent, "0");
+	}
+
+	public CoderNode(ChatClient coderAgent, String executorNodeId) {
 		this.coderAgent = coderAgent;
+		this.executorNodeId = executorNodeId;
+		this.nodeName = "coder_" + executorNodeId;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("coder node is running.");
+		logger.info("coder node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
+		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Map<String, Object> updated = new HashMap<>();
 
-		Plan.Step unexecutedStep = null;
+		Plan.Step assignedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
-			if (step.getStepType().equals(Plan.StepType.PROCESSING) && step.getExecutionRes() == null) {
-				unexecutedStep = step;
+			if (step.getStepType().equals(Plan.StepType.PROCESSING) && !StringUtils.hasText(step.getExecutionRes())
+					&& StringUtils.hasText(step.getExecutionStatus())
+					&& step.getExecutionStatus().equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + nodeName)) {
+				assignedStep = step;
 				break;
 			}
 		}
 
-		if (unexecutedStep == null) {
-			logger.info("all coder node is finished.");
+		if (assignedStep == null) {
+			logger.info("No remaining steps to be executed by {}", nodeName);
 			return updated;
 		}
+
+		// 标记步骤为正在执行
+		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + nodeName);
 
 		List<Message> messages = new ArrayList<>();
 		// 添加任务消息
 		Message taskMessage = new UserMessage(
 				String.format("#Task\n\n##title\n\n%s\n\n##description\n\n%s\n\n##locale\n\n%s",
-						unexecutedStep.getTitle(), unexecutedStep.getDescription(), state.value("locale", "en-US")));
+						assignedStep.getTitle(), assignedStep.getDescription(), state.value("locale", "en-US")));
 		messages.add(taskMessage);
 		logger.debug("coder Node message: {}", messages);
 
@@ -84,14 +100,28 @@ public class CoderNode implements NodeAction {
 			.stream()
 			.chatResponse();
 
+		Plan.Step finalAssignedStep = assignedStep;
+		logger.info("CoderNode {} starting streaming with key: {}", executorNodeId,
+				"coder_llm_stream_" + executorNodeId);
 		var generator = StreamingChatGenerator.builder()
-			.startingNode("coder_llm_stream")
+			.startingNode("coder_llm_stream_" + executorNodeId)
 			.startingState(state)
-			.mapResult(response -> Map.of("coder_content",
-					Objects.requireNonNull(response.getResult().getOutput().getText())))
+			.mapResult(response -> {
+				finalAssignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
+				String coderContent = response.getResult().getOutput().getText();
+				finalAssignedStep.setExecutionRes(Objects.requireNonNull(coderContent));
+
+				logger.info("{} completed, content: {}", nodeName, coderContent);
+
+				observations.add(coderContent);
+				updated.put("observations", observations);
+				updated.put("coder_content_" + executorNodeId, coderContent);
+				return updated;
+			})
 			.build(streamResult);
 
-		return Map.of("coder_content", generator);
+		updated.put("coder_content_" + executorNodeId, generator);
+		return updated;
 	}
 
 }
