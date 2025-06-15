@@ -29,15 +29,15 @@ public class GraphBuilder {
             OverAllState overAllState = new OverAllState();
             // build state
             // overAllState.registerKeyAndStrategy("prompt", (o, o2) -> o2);
-{{stateSection}}
+            {{stateSection}}
             return overAllState;
         };
 
         StateGraph stateGraph = new StateGraph(stateFactory);
         // add nodes
-{{nodeSection}}
+        {{nodeSection}}
         // add edges
-{{edgeSection}}
+        {{edgeSection}}
         return stateGraph.compile();
     }
 }
