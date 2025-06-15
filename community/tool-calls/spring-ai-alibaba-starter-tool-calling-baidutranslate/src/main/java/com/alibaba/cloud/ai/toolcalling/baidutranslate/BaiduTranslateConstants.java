@@ -27,13 +27,4 @@ public final class BaiduTranslateConstants {
 
 	public static final String APP_ID_ENV = "BAIDU_TRANSLATE_APP_ID";
 
-	/**
-	 * offline doc: https://fanyi-api.baidu.com/doc/21
-	 */
-	public static final String LANGUAGE_CODE_ZH = "zh";
-
-	public static final String LANGUAGE_CODE_EN = "en";
-
-	public static final String LANGUAGE_CODE_AUTO = "auto";
-
 }
