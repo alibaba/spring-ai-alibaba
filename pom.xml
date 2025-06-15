@@ -71,7 +71,6 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-weather</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-larksuite</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-microsofttranslate</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-crawler</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-jinacrawler</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-firecrawl</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-regex</module>

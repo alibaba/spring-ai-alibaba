@@ -12,6 +12,7 @@ You have access to two types of tools:
 
 1. **Built-in Tools**: These are always available:
    - **tavilySearch**: For performing web searches
+   - **jinaCrawler**: For reading the content from the given URL and output it in Markdown format.
 
 2. **Dynamic Loaded Tools**: Additional tools that may be available depending on the configuration. These tools are loaded dynamically and will appear in your available tools list. Examples include:
    - Specialized search tools
