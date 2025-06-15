@@ -56,9 +56,6 @@ public class BaiduTranslateService implements Function<BaiduTranslateService.Req
 		this.restClientTool = restClientTool;
 		this.jsonParseTool = jsonParseTool;
 		this.properties = properties;
-		if (!StringUtils.hasText(properties.getAppId()) || !StringUtils.hasText(properties.getSecretKey())) {
-			throw new RuntimeException("AppId and SecretKey is empty. Please check your configuration.");
-		}
 	}
 
 	@Override
@@ -67,6 +64,9 @@ public class BaiduTranslateService implements Function<BaiduTranslateService.Req
 		if (request == null || !StringUtils.hasText(request.q) || !StringUtils.hasText(request.from)
 				|| !StringUtils.hasText(request.to)) {
 			return null;
+		}
+		if (!StringUtils.hasText(properties.getAppId()) || !StringUtils.hasText(properties.getSecretKey())) {
+			throw new RuntimeException("AppId and SecretKey is empty. Please check your configuration.");
 		}
 
 		String salt = String.valueOf(random.nextInt(100000));

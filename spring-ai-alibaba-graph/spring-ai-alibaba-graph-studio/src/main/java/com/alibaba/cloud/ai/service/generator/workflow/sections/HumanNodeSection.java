@@ -39,7 +39,7 @@ public class HumanNodeSection implements NodeSection {
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(String.format("        // —— HumanNode [%s] ——%n", id));
+		sb.append(String.format("// —— HumanNode [%s] ——%n", id));
 
 		String condKey = d.getInterruptConditionKey();
 		// If the policy is conditioned, you need to read the boolean value from the
@@ -75,8 +75,7 @@ public class HumanNodeSection implements NodeSection {
 			.append(updateLambda)
 			.append(");\n");
 
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id,
-				varName));
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, varName));
 
 		return sb.toString();
 	}

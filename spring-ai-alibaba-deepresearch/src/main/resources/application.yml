@@ -39,6 +39,9 @@ spring:
         mcp:
           enabled: true
           config-file: classpath:mcp-config.json
+        parallel-node-count:
+          researcher: 5
+          coder: 5
         mcp-client-mapping:
           researchAgent:
             - amap-maps

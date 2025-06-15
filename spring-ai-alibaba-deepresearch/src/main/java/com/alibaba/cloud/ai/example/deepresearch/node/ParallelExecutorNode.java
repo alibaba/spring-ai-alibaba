@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.config.DeepResearchProperties;
@@ -37,15 +38,14 @@ public class ParallelExecutorNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(ParallelExecutorNode.class);
 
-	private final DeepResearchProperties properties;
+	private final Map<String, Integer> parallelNodeCount;
 
 	public ParallelExecutorNode(DeepResearchProperties properties) {
-		this.properties = properties;
+		this.parallelNodeCount = properties.getParallelNodeCount();
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-
 		long currResearcher = 0;
 		long currCoder = 0;
 
@@ -62,14 +62,14 @@ public class ParallelExecutorNode implements NodeAction {
 				case PROCESSING:
 					if (areAllResearchStepsCompleted(curPlan)) {
 						step.setExecutionStatus(assignRole(stepType, currCoder));
-						currCoder = (currCoder + 1) % properties.getCoderNodeCount();
+						currCoder = (currCoder + 1) % parallelNodeCount.get(ParallelEnum.RESEARCHER.getValue());
 					}
 					logger.info("Waiting for remaining research steps executed");
 					break;
 
 				case RESEARCH:
 					step.setExecutionStatus(assignRole(stepType, currResearcher));
-					currResearcher = (currResearcher + 1) % properties.getResearcherNodeCount();
+					currResearcher = (currResearcher + 1) % parallelNodeCount.get(ParallelEnum.CODER.getValue());
 					break;
 
 				// 处理其他可能的StepType
@@ -81,8 +81,9 @@ public class ParallelExecutorNode implements NodeAction {
 	}
 
 	private String assignRole(Plan.StepType type, long executorId) {
-		String role = type == Plan.StepType.PROCESSING ? "coder_" : "researcher_";
-		return StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + role + executorId;
+		String role = type == Plan.StepType.PROCESSING ? ParallelEnum.CODER.getValue()
+				: ParallelEnum.RESEARCHER.getValue();
+		return StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + role + "_" + executorId;
 	}
 
 	private boolean areAllResearchStepsCompleted(Plan plan) {

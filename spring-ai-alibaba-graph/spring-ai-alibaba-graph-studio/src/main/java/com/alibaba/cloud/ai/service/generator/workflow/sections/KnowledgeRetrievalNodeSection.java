@@ -36,61 +36,58 @@ public class KnowledgeRetrievalNodeSection implements NodeSection {
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(String.format("        // —— KnowledgeRetrievalNode [%s] ——%n", id));
-		sb.append(String.format("        KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()%n", varName));
+		sb.append(String.format("// —— KnowledgeRetrievalNode [%s] ——%n", id));
+		sb.append(String.format("KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()%n", varName));
 
 		if (d.getUserPromptKey() != null) {
-			sb.append(String.format("                .userPromptKey(\"%s\")%n", escape(d.getUserPromptKey())));
+			sb.append(String.format(".userPromptKey(\"%s\")%n", escape(d.getUserPromptKey())));
 		}
 		if (d.getUserPrompt() != null) {
-			sb.append(String.format("                .userPrompt(\"%s\")%n", escape(d.getUserPrompt())));
+			sb.append(String.format(".userPrompt(\"%s\")%n", escape(d.getUserPrompt())));
 		}
 		if (d.getTopKKey() != null) {
-			sb.append(String.format("                .topKKey(\"%s\")%n", escape(d.getTopKKey())));
+			sb.append(String.format(".topKKey(\"%s\")%n", escape(d.getTopKKey())));
 		}
 		if (d.getTopK() != null) {
-			sb.append(String.format("                .topK(%d)%n", d.getTopK()));
+			sb.append(String.format(".topK(%d)%n", d.getTopK()));
 		}
 		if (d.getSimilarityThresholdKey() != null) {
-			sb.append(String.format("                .similarityThresholdKey(\"%s\")%n",
-					escape(d.getSimilarityThresholdKey())));
+			sb.append(String.format(".similarityThresholdKey(\"%s\")%n", escape(d.getSimilarityThresholdKey())));
 		}
 		if (d.getSimilarityThreshold() != null) {
-			sb.append(String.format("                .similarityThreshold(%s)%n", d.getSimilarityThreshold()));
+			sb.append(String.format(".similarityThreshold(%s)%n", d.getSimilarityThreshold()));
 		}
 		if (d.getFilterExpressionKey() != null) {
-			sb.append(String.format("                .filterExpressionKey(\"%s\")%n",
-					escape(d.getFilterExpressionKey())));
+			sb.append(String.format(".filterExpressionKey(\"%s\")%n", escape(d.getFilterExpressionKey())));
 		}
 		if (d.getFilterExpression() != null) {
-			sb.append(String.format("                .filterExpression(%s)%n", d.getFilterExpression().toString()));
+			sb.append(String.format(".filterExpression(%s)%n", d.getFilterExpression().toString()));
 		}
 		if (d.getEnableRankerKey() != null) {
-			sb.append(String.format("                .enableRankerKey(\"%s\")%n", escape(d.getEnableRankerKey())));
+			sb.append(String.format(".enableRankerKey(\"%s\")%n", escape(d.getEnableRankerKey())));
 		}
 		if (d.getEnableRanker() != null) {
-			sb.append(String.format("                .enableRanker(%b)%n", d.getEnableRanker()));
+			sb.append(String.format(".enableRanker(%b)%n", d.getEnableRanker()));
 		}
 		if (d.getRerankModelKey() != null) {
-			sb.append(String.format("                .rerankModelKey(\"%s\")%n", escape(d.getRerankModelKey())));
+			sb.append(String.format(".rerankModelKey(\"%s\")%n", escape(d.getRerankModelKey())));
 		}
 		if (d.getRerankModel() != null) {
-			sb.append(String.format("                .rerankModel(%s)%n", d.getRerankModel()));
+			sb.append(String.format(".rerankModel(%s)%n", d.getRerankModel()));
 		}
 		if (d.getRerankOptionsKey() != null) {
-			sb.append(String.format("                .rerankOptionsKey(\"%s\")%n", escape(d.getRerankOptionsKey())));
+			sb.append(String.format(".rerankOptionsKey(\"%s\")%n", escape(d.getRerankOptionsKey())));
 		}
 		if (d.getRerankOptions() != null) {
-			sb.append(String.format("                .rerankOptions(%s)%n", d.getRerankOptions()));
+			sb.append(String.format(".rerankOptions(%s)%n", d.getRerankOptions()));
 		}
 		if (d.getVectorStoreKey() != null) {
-			sb.append(String.format("                .vectorStoreKey(\"%s\")%n", escape(d.getVectorStoreKey())));
+			sb.append(String.format(".vectorStoreKey(\"%s\")%n", escape(d.getVectorStoreKey())));
 		}
-		sb.append("                .vectorStore(vectorStore)\n");
+		sb.append(".vectorStore(vectorStore)\n");
 
-		sb.append("                .build();\n");
-		sb.append(
-				String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(".build();\n");
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 		return sb.toString();
 	}
 
