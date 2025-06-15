@@ -58,7 +58,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * @since 2025/6/14 11:16
  */
 @Configuration
-@EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class })
+@EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class, McpJsonProperties.class })
 public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);

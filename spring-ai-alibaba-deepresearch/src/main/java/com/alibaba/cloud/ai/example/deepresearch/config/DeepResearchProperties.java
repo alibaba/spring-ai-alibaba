@@ -23,10 +23,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * @author Allen Hu
- * @since 2025/5/24 <<<<<<< HEAD
  * @author sixiyida
- * @since 2025/6/14 ======= >>>>>>> origin/main
+ * @since 2025/6/14
  */
 @ConfigurationProperties(prefix = DeepResearchProperties.PREFIX)
 public class DeepResearchProperties {
