@@ -40,22 +40,21 @@ public class MCPNodeSection implements NodeSection {
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(String.format("        // —— McpNode [%s] ——%n", id));
-		sb.append(String.format("        McpNode %s = McpNode.builder()%n", varName));
+		sb.append(String.format("// —— McpNode [%s] ——%n", id));
+		sb.append(String.format("McpNode %s = McpNode.builder()%n", varName));
 
 		if (d.getUrl() != null) {
-			sb.append(String.format("            .url(\"%s\")%n", escape(d.getUrl())));
+			sb.append(String.format(".url(\"%s\")%n", escape(d.getUrl())));
 		}
 
 		if (d.getTool() != null) {
-			sb.append(String.format("            .tool(\"%s\")%n", escape(d.getTool())));
+			sb.append(String.format(".tool(\"%s\")%n", escape(d.getTool())));
 		}
 
 		Map<String, String> headers = d.getHeaders();
 		if (headers != null) {
 			for (Map.Entry<String, String> entry : headers.entrySet()) {
-				sb.append(String.format("            .header(\"%s\", \"%s\")%n", escape(entry.getKey()),
-						escape(entry.getValue())));
+				sb.append(String.format(".header(\"%s\", \"%s\")%n", escape(entry.getKey()), escape(entry.getValue())));
 			}
 		}
 
@@ -70,23 +69,22 @@ public class MCPNodeSection implements NodeSection {
 				else {
 					valLiteral = String.valueOf(val);
 				}
-				sb.append(String.format("            .param(\"%s\", %s)%n", escape(entry.getKey()), valLiteral));
+				sb.append(String.format(".param(\"%s\", %s)%n", escape(entry.getKey()), valLiteral));
 			}
 		}
 
 		if (d.getOutputKey() != null) {
-			sb.append(String.format("            .outputKey(\"%s\")%n", escape(d.getOutputKey())));
+			sb.append(String.format(".outputKey(\"%s\")%n", escape(d.getOutputKey())));
 		}
 
 		List<String> ipk = d.getInputParamKeys();
 		if (ipk != null && !ipk.isEmpty()) {
 			String joined = ipk.stream().map(this::escape).map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
-			sb.append(String.format("            .inputParamKeys(List.of(%s))%n", joined));
+			sb.append(String.format(".inputParamKeys(List.of(%s))%n", joined));
 		}
 
-		sb.append("            .build();\n");
-		sb.append(
-				String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(".build();\n");
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

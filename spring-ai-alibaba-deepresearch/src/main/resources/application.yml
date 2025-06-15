@@ -30,13 +30,13 @@ spring:
         tavilysearch:
           enabled: true
           api-key: ${TAVILY_API_KEY}
-        crawler:
-          jina:
-            enabled: false
-            api-key: ${JINA_API_KEY}
+        jinacrawler:
+          enabled: true
+          api-key: ${JINA_API_KEY}
       deepresearch:
-        researcher-node-count: 5
-        coder-node-count: 5
+        parallel-node-count:
+          researcher: 5
+          coder: 5
         mcp-client-mapping:
           researchAgent:
             - amap-maps
