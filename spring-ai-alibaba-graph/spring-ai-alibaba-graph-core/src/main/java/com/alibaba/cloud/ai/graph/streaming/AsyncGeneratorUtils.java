@@ -31,8 +31,8 @@ import java.util.ArrayList;
  * Utility class for handling asynchronous generator merging and output processing
  */
 public class AsyncGeneratorUtils {
-	private static final Logger log = LoggerFactory.getLogger(AsyncGeneratorUtils.class);
 
+	private static final Logger log = LoggerFactory.getLogger(AsyncGeneratorUtils.class);
 
 	/**
 	 * Creates an appropriate generator based on the number of generator entries
@@ -66,12 +66,17 @@ public class AsyncGeneratorUtils {
 			Map<String, KeyStrategy> keyStrategyMap) {
 		return new AsyncGenerator<>() {
 			private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
 			private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
+
 			private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
 
 			private int currentIndex = 0;
+
 			private volatile Map<String, Object> mergedResult = new HashMap<>();
+
 			private volatile List<AsyncGenerator<T>> activeGenerators = new ArrayList<>(generators);
+
 			private final Map<AsyncGenerator<T>, Map<String, Object>> generatorResults = new HashMap<>();
 
 			@Override
@@ -81,7 +86,8 @@ public class AsyncGeneratorUtils {
 					if (activeGenerators.isEmpty()) {
 						return AsyncGenerator.Data.done(mergedResult);
 					}
-				} finally {
+				}
+				finally {
 					readLock.unlock();
 				}
 
@@ -92,7 +98,8 @@ public class AsyncGeneratorUtils {
 
 					// Use a fixed number of attempts to avoid infinite loops
 					int attempts = 0;
-					final int MAX_ATTEMPTS = activeGenerators.size() * 2; // Allow two full cycles
+					final int MAX_ATTEMPTS = activeGenerators.size() * 2; // Allow two
+																			// full cycles
 
 					while (attempts < MAX_ATTEMPTS && !activeGenerators.isEmpty()) {
 						AsyncGenerator<T> current = activeGenerators.get(currentIndex);
@@ -118,17 +125,16 @@ public class AsyncGeneratorUtils {
 
 						// If we get here, the generator has valid data
 						foundData = true;
-						
+
 						// Process and store the result
 						Object result = data.resultValue();
 						if (result instanceof Map) {
 							@SuppressWarnings("unchecked")
 							Map<String, Object> mapResult = (Map<String, Object>) result;
-							
+
 							// Store per-generator results
-							generatorResults.computeIfAbsent(current, k -> new HashMap<>())
-									.putAll(mapResult);
-									
+							generatorResults.computeIfAbsent(current, k -> new HashMap<>()).putAll(mapResult);
+
 							// Update merged result using key strategy
 							mergedResult = OverAllState.updateState(mergedResult, mapResult, keyStrategyMap);
 						}
@@ -151,7 +157,8 @@ public class AsyncGeneratorUtils {
 
 					// This should not happen, but as a fallback
 					return AsyncGenerator.Data.done(mergedResult);
-				} finally {
+				}
+				finally {
 					writeLock.unlock();
 				}
 			}
@@ -161,7 +168,7 @@ public class AsyncGeneratorUtils {
 			 */
 			private void handleCompletedGenerator(AsyncGenerator<T> generator, AsyncGenerator.Data<T> data) {
 				activeGenerators.remove(generator);
-				
+
 				// Process result if exists
 				Object result = data.resultValue();
 				if (result instanceof Map) {
@@ -169,7 +176,7 @@ public class AsyncGeneratorUtils {
 					Map<String, Object> mapResult = (Map<String, Object>) result;
 					mergedResult = OverAllState.updateState(mergedResult, mapResult, keyStrategyMap);
 				}
-				
+
 				// Remove from generator results if present
 				generatorResults.remove(generator);
 			}

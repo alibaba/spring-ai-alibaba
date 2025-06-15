@@ -737,22 +737,24 @@ public class CompiledGraph {
 				if (entry.getValue() instanceof AsyncGenerator) {
 					continue; // Skip top-level AsyncGenerator values
 				}
-				
+
 				if (entry.getValue() instanceof Collection<?>) {
 					Collection<?> collection = (Collection<?>) entry.getValue();
 					ArrayList<Object> filteredCollection = new ArrayList<>();
-					
+
 					for (Object item : collection) {
 						if (!(item instanceof AsyncGenerator)) {
 							filteredCollection.add(item);
 						}
 					}
-					
+
 					if (!filteredCollection.isEmpty()) {
 						partialStateWithoutGenerators.put(entry.getKey(), filteredCollection);
 					}
-				} else {
-					// Keep the entry if it's not an AsyncGenerator and not a collection containing it
+				}
+				else {
+					// Keep the entry if it's not an AsyncGenerator and not a collection
+					// containing it
 					partialStateWithoutGenerators.put(entry.getKey(), entry.getValue());
 				}
 			}
