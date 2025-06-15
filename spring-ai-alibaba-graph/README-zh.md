@@ -152,8 +152,9 @@ Spring AI Alibaba Graph 是一款面向 Java 开发者的**工作流、多智能
 
 完整的 PlantUML 工作流图如下：
 
-<img src="../docs/imgs/graphworkflow.png" alt="architecture" style="max-width: 740px; height: 508px" /> 
-
+<div style="text-align: center;">
+  <img src="../docs/imgs/graphworkflow.png" alt="architecture" style="max-width: 740px; height: auto;" />
+</div>
 
 
 
@@ -178,23 +179,22 @@ Spring AI Alibaba Graph 是一款面向 Java 开发者的**工作流、多智能
 
   这表示系统记录了正面评价，无需进一步处理。
 
+  再测试一个负面反馈例子：
 
+   ```bash
+   # 调用负面评价案例
+   curl "http://localhost:8080/customer/chat?query=The product broke after one day, very disappointed."
+   ```
 
-再测试一个负面反馈例子：
-
-  ```bash
-  # 调用负面评价案例
-  curl "http://localhost:8080/customer/chat?query=The product broke after one day, very disappointed."
-  ```
-
-由于这是负面评价，工作流首先会分类为 *negative*，然后在具体分类节点可能将其归类为“产品质量”问题，最后记录这一结论。接口返回的字符串将包含具体问题类别，例如：
+  由于这是负面评价，工作流首先会分类为 *negative*，然后在具体分类节点可能将其归类为“产品质量”问题，最后记录这一结论。接口返回的字符串将包含具体问题类别，例如：
 
   ```
   product quality
   ```
 
-该返回结果对应在 RecordingNode 中的设计：对于负面反馈，直接返回分类器给出的细分问题作为解决方案。
+  该返回结果对应在 RecordingNode 中的设计：对于负面反馈，直接返回分类器给出的细分问题作为解决方案。
 
 - **观察日志输出**：在应用控制台日志中，可以看到每一步执行的记录信息。例如，当反馈为正面时，RecordingNode 会输出日志“Received positive feedback: ...”，负面反馈则输出“Received negative feedback: ...”，这有助于开发调试了解流程走向。同时，由于给 ChatClient 配置了 SimpleLoggerAdvisor，与模型交互的提示词和回复也会简要记录，方便查看大模型决策过程。
 
 通过以上测试，验证了工作流应用的正确性。新接触 Spring AI Alibaba Graph 的开发者可以在此基础上修改扩展，例如更改分类类别、调整提示词，或为不同类别的反馈接入后续处理逻辑（如自动回复、工单创建等），可以在自定义的工作流中使用框架的预定义节点，也可以按照框架定义，自定义节点和边，搭建适合自身业务的工作流。凭借 Spring AI Alibaba Graph **声明式工作流**和**多智能体**的强大能力，开发者能够以最小的代价快速搭建起灵活可控的 AI 驱动业务流程，在 Java 应用中高效地利用大模型的智能。
+我想让这个地方对齐
