@@ -79,8 +79,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.MESSAGE_FORMAT;
-
 /**
  * {@link ChatModel} implementation for {@literal Alibaba DashScope} backed by
  * {@link Generation}.
@@ -481,7 +479,7 @@ public class DashScopeChatModel implements ChatModel {
 
 	private List<MediaContent> convertMediaContent(UserMessage message) {
 		MessageFormat format = MessageFormat.IMAGE;
-		if (message.getMetadata().get(MESSAGE_FORMAT) instanceof MessageFormat messageFormat) {
+		if (message.getMetadata().get(DashScopeApiConstants.MESSAGE_FORMAT) instanceof MessageFormat messageFormat) {
 			format = messageFormat;
 		}
 
