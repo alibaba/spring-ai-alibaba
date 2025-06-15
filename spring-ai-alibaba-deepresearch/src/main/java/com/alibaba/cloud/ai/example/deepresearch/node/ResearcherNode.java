@@ -34,6 +34,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * @author sixiyida
+ * @since 2025/6/14 11:17
+ */
+
 public class ResearcherNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(ResearcherNode.class);
@@ -42,9 +47,16 @@ public class ResearcherNode implements NodeAction {
 
 	private final String executorNodeId;
 
+	private final String nodeName;
+
+	public ResearcherNode(ChatClient researchAgent) {
+		this(researchAgent, "0");
+	}
+
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
+		this.nodeName = "researcher_" + executorNodeId;
 	}
 
 	@Override
@@ -53,29 +65,25 @@ public class ResearcherNode implements NodeAction {
 		Plan currentPlan = StateUtil.getPlan(state);
 		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Map<String, Object> updated = new HashMap<>();
-		String executorNodeName = "researcher_" + executorNodeId;
+
 		Plan.Step assignedStep = null;
-		long stepId = 0;
 		for (Plan.Step step : currentPlan.getSteps()) {
 			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())
-					&& StringUtils.hasText(step.getExecutionStatus()) && step.getExecutionStatus()
-						.equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + executorNodeName)) {
+					&& StringUtils.hasText(step.getExecutionStatus())
+					&& step.getExecutionStatus().equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + nodeName)) {
 				assignedStep = step;
 				break;
 			}
-			stepId++;
 		}
 
 		// 如果没有找到分配的步骤，直接返回
 		if (assignedStep == null) {
-			logger.info("No remaining steps to be executed by {}", executorNodeName);
+			logger.info("No remaining steps to be executed by {}", nodeName);
 			return updated;
 		}
 
-		final long assignedStepId = stepId;
-
 		// 标记步骤为正在执行
-		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + executorNodeName);
+		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + nodeName);
 
 		// 添加任务消息
 		List<Message> messages = new ArrayList<>();
@@ -99,12 +107,19 @@ public class ResearcherNode implements NodeAction {
 			.startingState(state)
 			.mapResult(response -> {
 				finalAssignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
-				finalAssignedStep.setExecutionRes(Objects.requireNonNull(response.getResult().getOutput().getText()));
-				return Map.of("researcher_content_" + executorNodeId,
-						Objects.requireNonNull(response.getResult().getOutput().getText()));
+				String researchContent = response.getResult().getOutput().getText();
+				finalAssignedStep.setExecutionRes(Objects.requireNonNull(researchContent));
+				logger.info("{} completed, content: {}", nodeName, researchContent);
+
+				observations.add(researchContent);
+				updated.put("observations", observations);
+				updated.put("researcher_content_" + executorNodeId, List.of(researchContent));
+				return updated;
 			})
 			.build(streamResult);
-		return Map.of("researcher_content_" + executorNodeId, generator);
+
+		updated.put("researcher_content_" + executorNodeId, generator);
+		return updated;
 	}
 
 }
