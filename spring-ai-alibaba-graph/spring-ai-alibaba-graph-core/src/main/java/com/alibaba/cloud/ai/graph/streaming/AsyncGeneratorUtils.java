@@ -74,7 +74,8 @@ public class AsyncGeneratorUtils {
 				}
 
 				// Polling to process each generator
-				while (!activeGenerators.isEmpty()) {
+				int attempts = 0;
+				while (attempts < activeGenerators.size()) {
 					AsyncGenerator<T> current = activeGenerators.get(currentIndex);
 					AsyncGenerator.Data<T> data = current.next();
 
@@ -101,7 +102,8 @@ public class AsyncGeneratorUtils {
 						if (activeGenerators.isEmpty()) {
 							return AsyncGenerator.Data.done(mergedResult);
 						}
-
+						currentIndex = Math.min(currentIndex, activeGenerators.size() - 1);
+						attempts++;
 						// Continue to process the next generator
 						continue;
 					}
