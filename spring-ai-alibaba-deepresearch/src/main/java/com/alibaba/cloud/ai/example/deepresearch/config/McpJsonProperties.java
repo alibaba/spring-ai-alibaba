@@ -62,6 +62,8 @@ public class McpJsonProperties {
 
 		private String description;
 
+		private boolean enabled = true;
+
 		public String getUrl() {
 			return url;
 		}
@@ -76,6 +78,20 @@ public class McpJsonProperties {
 
 		public void setDescription(String description) {
 			this.description = description;
+		}
+
+		public boolean isEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		@Override
+		public String toString() {
+			return "McpServerConfig{" + "url='" + url + '\'' + ", description='" + description + '\'' + ", enabled="
+					+ enabled + '}';
 		}
 
 	}
@@ -94,6 +110,18 @@ public class McpJsonProperties {
 
 		public void setMcpServers(List<McpServerConfig> mcpServers) {
 			this.mcpServers = mcpServers;
+		}
+
+		public List<McpServerConfig> getEnabledMcpServers() {
+			if (mcpServers == null) {
+				return List.of();
+			}
+			return mcpServers.stream().filter(McpServerConfig::isEnabled).toList();
+		}
+
+		@Override
+		public String toString() {
+			return "AgentConfig{" + "mcpServers=" + mcpServers + '}';
 		}
 
 	}
@@ -121,6 +149,22 @@ public class McpJsonProperties {
 
 		public void setResearcher(AgentConfig researcher) {
 			this.researcher = researcher;
+		}
+
+		public java.util.Map<String, AgentConfig> getAllAgentConfigs() {
+			java.util.Map<String, AgentConfig> configs = new java.util.HashMap<>();
+			if (coder != null) {
+				configs.put("coderAgent", coder);
+			}
+			if (researcher != null) {
+				configs.put("researchAgent", researcher);
+			}
+			return configs;
+		}
+
+		@Override
+		public String toString() {
+			return "McpJsonConfig{" + "coder=" + coder + ", researcher=" + researcher + '}';
 		}
 
 	}

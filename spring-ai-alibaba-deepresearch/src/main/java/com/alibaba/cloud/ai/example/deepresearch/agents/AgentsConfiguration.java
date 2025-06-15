@@ -23,7 +23,9 @@ import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +34,7 @@ import org.springframework.core.io.Resource;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 
 @Configuration
@@ -45,6 +48,9 @@ public class AgentsConfiguration {
 
 	private final ApplicationContext context;
 
+	@Autowired(required = false)
+	private Map<String, AsyncMcpToolCallbackProvider> node2AsyncMcpToolCallbackProvider;
+
 	public AgentsConfiguration(ApplicationContext context) {
 		this.context = context;
 	}
@@ -57,6 +63,19 @@ public class AgentsConfiguration {
 	}
 
 	/**
+	 * 获取指定代理的MCP工具回调
+	 */
+	private ToolCallback[] getMcpToolCallbacks(String agentName) {
+		if (node2AsyncMcpToolCallbackProvider != null) {
+			AsyncMcpToolCallbackProvider provider = node2AsyncMcpToolCallbackProvider.get(agentName);
+			if (provider != null) {
+				return provider.getToolCallbacks();
+			}
+		}
+		return new ToolCallback[0];
+	}
+
+	/**
 	 * Create Research Agent ChatClient Bean
 	 * @param chatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
 	 * ToolCallbackProviders.
@@ -64,13 +83,15 @@ public class AgentsConfiguration {
 	 */
 	@SneakyThrows
 	@Bean
-
 	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder,
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
+		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("researchAgent");
+
 		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset()))
 			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
+			.defaultToolCallbacks(mcpCallbacks)
 			.build();
 	}
 
@@ -85,9 +106,12 @@ public class AgentsConfiguration {
 	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties,
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("coderAgent");
+		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("coderAgent");
+
 		return chatClientBuilder.defaultSystem(coderPrompt.getContentAsString(Charset.defaultCharset()))
 			.defaultTools(new PythonReplTool(coderProperties))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
+			.defaultToolCallbacks(mcpCallbacks)
 			.build();
 	}
 

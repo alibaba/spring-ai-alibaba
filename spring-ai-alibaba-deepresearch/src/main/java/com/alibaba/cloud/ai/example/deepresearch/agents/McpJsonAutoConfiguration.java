@@ -25,6 +25,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -73,24 +74,16 @@ public class McpJsonAutoConfiguration {
 	}
 
 	/**
-	 * 创建基于JSON配置的ToolCallbackProvider Bean
+	 * 步骤1: 创建NamedClientMcpTransport列表
 	 */
 	@Bean
-	public JsonBasedMcpToolCallbackProvider jsonBasedMcpToolCallbackProvider() throws IOException {
-		Map<String, List<McpAsyncClient>> agentMcpClients = createMcpClientsFromJson();
-		return new JsonBasedMcpToolCallbackProvider(agentMcpClients);
-	}
-
-	/**
-	 * 从JSON文件创建按代理分组的MCP客户端
-	 */
-	private Map<String, List<McpAsyncClient>> createMcpClientsFromJson() throws IOException {
-		Map<String, List<McpAsyncClient>> agentClients = new HashMap<>();
+	public Map<String, List<NamedClientMcpTransport>> node2NamedClientMcpTransports() throws IOException {
+		Map<String, List<NamedClientMcpTransport>> node2Transports = new HashMap<>();
 
 		Resource configResource = resourceLoader.getResource(mcpJsonProperties.getConfigFile());
 		if (!configResource.exists()) {
 			logger.warn("MCP配置文件不存在: {}", mcpJsonProperties.getConfigFile());
-			return agentClients;
+			return node2Transports;
 		}
 
 		McpJsonProperties.McpJsonConfig config;
@@ -102,39 +95,98 @@ public class McpJsonAutoConfiguration {
 			throw e;
 		}
 
-		if (config.getCoder() != null && config.getCoder().getMcpServers() != null) {
-			List<McpAsyncClient> coderClients = new ArrayList<>();
-			for (McpJsonProperties.McpServerConfig serverConfig : config.getCoder().getMcpServers()) {
-				McpAsyncClient client = createMcpClient("coder_" + serverConfig.getUrl().hashCode(), serverConfig);
-				if (client != null) {
-					coderClients.add(client);
+		Map<String, McpJsonProperties.AgentConfig> allAgentConfigs = config.getAllAgentConfigs();
+		for (Map.Entry<String, McpJsonProperties.AgentConfig> entry : allAgentConfigs.entrySet()) {
+			String agentName = entry.getKey();
+			McpJsonProperties.AgentConfig agentConfig = entry.getValue();
+
+			List<NamedClientMcpTransport> transports = new ArrayList<>();
+			List<McpJsonProperties.McpServerConfig> enabledServers = agentConfig.getEnabledMcpServers();
+
+			for (McpJsonProperties.McpServerConfig serverConfig : enabledServers) {
+				String serverName = agentName + "_" + serverConfig.getUrl().hashCode();
+				NamedClientMcpTransport transport = createNamedClientMcpTransport(serverName, serverConfig);
+				if (transport != null) {
+					transports.add(transport);
 				}
 			}
-			agentClients.put("coderAgent", coderClients);
-		}
 
-		// 处理researcher agent的MCP服务器
-		if (config.getResearcher() != null && config.getResearcher().getMcpServers() != null) {
-			List<McpAsyncClient> researcherClients = new ArrayList<>();
-			for (McpJsonProperties.McpServerConfig serverConfig : config.getResearcher().getMcpServers()) {
-				McpAsyncClient client = createMcpClient("researcher_" + serverConfig.getUrl().hashCode(), serverConfig);
-				if (client != null) {
-					researcherClients.add(client);
-				}
+			if (!transports.isEmpty()) {
+				node2Transports.put(agentName, transports);
 			}
-			agentClients.put("researchAgent", researcherClients);
 		}
 
-		logger.info("从JSON配置创建了MCP客户端: coder={}, researcher={}",
-				agentClients.getOrDefault("coderAgent", new ArrayList<>()).size(),
-				agentClients.getOrDefault("researchAgent", new ArrayList<>()).size());
-		return agentClients;
+		logger.info("从JSON配置创建了NamedClientMcpTransport: {}",
+				node2Transports.entrySet()
+					.stream()
+					.collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().size())));
+		return node2Transports;
 	}
 
 	/**
-	 * 创建单个MCP客户端
+	 * 步骤2: 将NamedClientMcpTransport转换为McpAsyncClient
 	 */
-	private McpAsyncClient createMcpClient(String serverName, McpJsonProperties.McpServerConfig serverConfig) {
+	@Bean
+	public Map<String, List<McpAsyncClient>> node2McpAsyncClients(
+			Map<String, List<NamedClientMcpTransport>> node2NamedClientMcpTransports) {
+		Map<String, List<McpAsyncClient>> node2Clients = new HashMap<>();
+
+		for (Map.Entry<String, List<NamedClientMcpTransport>> entry : node2NamedClientMcpTransports.entrySet()) {
+			String nodeName = entry.getKey();
+			List<NamedClientMcpTransport> transports = entry.getValue();
+
+			List<McpAsyncClient> clients = new ArrayList<>();
+			for (NamedClientMcpTransport namedTransport : transports) {
+				try {
+					McpAsyncClient client = McpClient.async(namedTransport.transport())
+						.clientInfo(new McpSchema.Implementation(namedTransport.name(), "1.0.0"))
+						.build();
+
+					client.initialize().block(Duration.ofMinutes(2));
+					clients.add(client);
+					logger.info("MCP客户端初始化成功: {} -> {}", namedTransport.name(), nodeName);
+				}
+				catch (Exception e) {
+					logger.error("创建MCP客户端失败: {} -> {}", namedTransport.name(), nodeName, e);
+				}
+			}
+
+			if (!clients.isEmpty()) {
+				node2Clients.put(nodeName, clients);
+			}
+		}
+
+		return node2Clients;
+	}
+
+	/**
+	 * 步骤3: 将McpAsyncClient转换为AsyncMcpToolCallbackProvider
+	 */
+	@Bean
+	public Map<String, AsyncMcpToolCallbackProvider> node2AsyncMcpToolCallbackProvider(
+			Map<String, List<McpAsyncClient>> node2McpAsyncClients) {
+		Map<String, AsyncMcpToolCallbackProvider> node2Providers = new HashMap<>();
+
+		for (Map.Entry<String, List<McpAsyncClient>> entry : node2McpAsyncClients.entrySet()) {
+			String nodeName = entry.getKey();
+			List<McpAsyncClient> clients = entry.getValue();
+
+			if (!clients.isEmpty()) {
+				// 这边是为了每个节点创建一个AsyncMcpToolCallbackProvider，需要注意每个节点的客户端可能不同
+				AsyncMcpToolCallbackProvider provider = new AsyncMcpToolCallbackProvider(clients);
+				node2Providers.put(nodeName, provider);
+				logger.info("为节点 {} 创建了AsyncMcpToolCallbackProvider，包含 {} 个客户端", nodeName, clients.size());
+			}
+		}
+
+		return node2Providers;
+	}
+
+	/**
+	 * 创建NamedClientMcpTransport
+	 */
+	private NamedClientMcpTransport createNamedClientMcpTransport(String serverName,
+			McpJsonProperties.McpServerConfig serverConfig) {
 		try {
 			String url = serverConfig.getUrl();
 			String baseUrl = url.contains("?") ? url.substring(0, url.indexOf("?")) : url;
@@ -149,17 +201,11 @@ public class McpJsonAutoConfiguration {
 			WebFluxSseClientTransport transport = new WebFluxSseClientTransport(webClientBuilder, objectMapper,
 					sseEndpoint);
 
-			McpAsyncClient mcpClient = McpClient.async(transport)
-				.clientInfo(new McpSchema.Implementation(serverName, "1.0.0"))
-				.build();
-
-			mcpClient.initialize().block(Duration.ofMinutes(2));
-			logger.info("MCP客户端初始化成功: {} -> {}{}", serverName, baseUrl, sseEndpoint);
-			return mcpClient;
+			return new NamedClientMcpTransport(serverName, transport);
 
 		}
 		catch (Exception e) {
-			logger.error("创建MCP客户端失败: {} -> {}", serverName, serverConfig.getUrl(), e);
+			logger.error("创建NamedClientMcpTransport失败: {} -> {}", serverName, serverConfig.getUrl(), e);
 			return null;
 		}
 	}
@@ -176,66 +222,38 @@ public class McpJsonAutoConfiguration {
 	/**
 	 * 自定义的ToolCallbackProvider实现 基于JSON配置的MCP客户端，支持按代理名称获取工具回调
 	 */
+	@Bean
+	public JsonBasedMcpToolCallbackProvider jsonBasedMcpToolCallbackProvider(
+			Map<String, AsyncMcpToolCallbackProvider> node2AsyncMcpToolCallbackProvider) {
+		return new JsonBasedMcpToolCallbackProvider(node2AsyncMcpToolCallbackProvider);
+	}
+
 	public static class JsonBasedMcpToolCallbackProvider implements AgentSpecificToolCallbackProvider {
 
-		private final Map<String, List<AsyncMcpToolCallbackProvider>> agentProviders;
+		private final Map<String, AsyncMcpToolCallbackProvider> agentProviders;
 
 		private static final Logger logger = LoggerFactory.getLogger(JsonBasedMcpToolCallbackProvider.class);
 
-		public JsonBasedMcpToolCallbackProvider(Map<String, List<McpAsyncClient>> agentMcpClients) {
-			this.agentProviders = new HashMap<>();
-
-			// 为每个代理的每个MCP客户端创建AsyncMcpToolCallbackProvider
-			for (Map.Entry<String, List<McpAsyncClient>> entry : agentMcpClients.entrySet()) {
-				String agentName = entry.getKey();
-				List<McpAsyncClient> clients = entry.getValue();
-
-				if (!clients.isEmpty()) {
-					List<AsyncMcpToolCallbackProvider> providers = new ArrayList<>();
-
-					for (McpAsyncClient client : clients) {
-						try {
-							AsyncMcpToolCallbackProvider provider = new AsyncMcpToolCallbackProvider(client);
-							providers.add(provider);
-						}
-						catch (Exception e) {
-							logger.error("为代理 {} 创建AsyncMcpToolCallbackProvider失败", agentName, e);
-						}
-					}
-
-					if (!providers.isEmpty()) {
-						agentProviders.put(agentName, providers);
-					}
-				}
-			}
-
+		public JsonBasedMcpToolCallbackProvider(Map<String, AsyncMcpToolCallbackProvider> agentProviders) {
+			this.agentProviders = agentProviders;
 			logger.info("JsonBasedMcpToolCallbackProvider创建完成，代理: {}", agentProviders.keySet());
 		}
 
 		@Override
 		public ToolCallback[] getToolCallbacks() {
 			List<ToolCallback> allCallbacks = new ArrayList<>();
-			for (List<AsyncMcpToolCallbackProvider> providers : agentProviders.values()) {
-				for (AsyncMcpToolCallbackProvider provider : providers) {
-					ToolCallback[] callbacks = provider.getToolCallbacks();
-					allCallbacks.addAll(List.of(callbacks));
-				}
+			for (AsyncMcpToolCallbackProvider provider : agentProviders.values()) {
+				ToolCallback[] callbacks = provider.getToolCallbacks();
+				allCallbacks.addAll(List.of(callbacks));
 			}
 			return allCallbacks.toArray(new ToolCallback[0]);
 		}
 
 		@Override
 		public ToolCallback[] getToolCallbacksForAgent(String agentName) {
-			List<AsyncMcpToolCallbackProvider> providers = agentProviders.get(agentName);
-			if (providers != null && !providers.isEmpty()) {
-				List<ToolCallback> allCallbacks = new ArrayList<>();
-
-				for (AsyncMcpToolCallbackProvider provider : providers) {
-					ToolCallback[] callbacks = provider.getToolCallbacks();
-					allCallbacks.addAll(List.of(callbacks));
-				}
-
-				return allCallbacks.toArray(new ToolCallback[0]);
+			AsyncMcpToolCallbackProvider provider = agentProviders.get(agentName);
+			if (provider != null) {
+				return provider.getToolCallbacks();
 			}
 			else {
 				return new ToolCallback[0];
