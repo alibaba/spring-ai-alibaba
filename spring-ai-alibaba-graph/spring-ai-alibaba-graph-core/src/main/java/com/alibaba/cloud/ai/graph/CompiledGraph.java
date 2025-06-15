@@ -33,7 +33,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -42,7 +52,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.*;
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
@@ -619,7 +631,7 @@ public class CompiledGraph {
 				this.currentState = getInitialState(inputs, config);
 				this.overAllState = overAllState.input(currentState);
 				this.nextNodeId = null;
-				this.currentNodeId = StateGraph.START;
+				this.currentNodeId = START;
 				this.config = config;
 			}
 		}
@@ -703,7 +715,7 @@ public class CompiledGraph {
 		 */
 		@SuppressWarnings("unchecked")
 		private void processGeneratorOutput(Object data, Map<String, Object> partialState,
-				List<Map.Entry<String, Object>> generatorEntries) throws Exception {
+				List<Entry<String, Object>> generatorEntries) throws Exception {
 			if (data != null) {
 				if (data instanceof Map<?, ?>) {
 					// Remove all generators

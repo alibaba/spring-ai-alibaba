@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
 import org.bsc.async.AsyncGenerator;
+import org.bsc.async.AsyncGenerator.Data;
 import org.bsc.async.AsyncGeneratorQueue;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assumptions;
@@ -36,8 +37,12 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -254,7 +259,7 @@ public class StateGraphStreamTest {
 	 */
 	private static AsyncGenerator.WithResult<StreamingOutput> getStreamingOutputWithResult(OverAllState s) {
 
-		BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
+		BlockingQueue<Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
 		AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
 				new AsyncGeneratorQueue.Generator<>(queue));
 		String str = "random";
