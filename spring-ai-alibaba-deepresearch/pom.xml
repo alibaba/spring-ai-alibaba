@@ -57,9 +57,10 @@
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-tool-calling-tavilysearch</artifactId>
         </dependency>
+
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-tool-calling-crawler</artifactId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-jinacrawler</artifactId>
         </dependency>
 
         <dependency>

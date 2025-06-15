@@ -20,14 +20,19 @@ import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import com.alibaba.cloud.ai.example.deepresearch.tool.McpClientToolCallbackProvider;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
+import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
+import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
+import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Set;
 
 @Configuration
@@ -38,6 +43,19 @@ public class AgentsConfiguration {
 
 	@Value("classpath:prompts/coder.md")
 	private Resource coderPrompt;
+
+	private final ApplicationContext context;
+
+	public AgentsConfiguration(ApplicationContext context) {
+		this.context = context;
+	}
+
+	/**
+	 * Return the tool name array that have corresponding beans.
+	 */
+	private String[] getAvailableTools(String... toolNames) {
+		return Arrays.stream(toolNames).filter(context::containsBean).toArray(String[]::new);
+	}
 
 	/**
 	 * Create Research Agent ChatClient Bean
@@ -51,9 +69,8 @@ public class AgentsConfiguration {
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
 		return chatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt))
-			.defaultToolNames("tavilySearch")
+			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
-			// .defaultToolNames("tavilySearch", "firecrawlFunction") todo 待调整
 			.build();
 	}
 
