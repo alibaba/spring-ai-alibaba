@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
@@ -65,7 +66,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 
 			@SuppressWarnings("unchecked")
 			@Override
-			public HttpNodeData parse(Map<String, Object> data) {
+			public HttpNodeData parse(Map<String, Object> data) throws JsonProcessingException {
 				List<VariableSelector> inputs = Optional.ofNullable((List<String>) data.get("variable_selector"))
 					.filter(list -> list.size() == 2)
 					.map(list -> Collections.singletonList(new VariableSelector(list.get(0), list.get(1))))
