@@ -54,11 +54,12 @@ public class McpClientToolCallbackProvider {
 
 	private final ApplicationContext applicationContext;
 
-	private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(McpClientToolCallbackProvider.class);
+	private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory
+		.getLogger(McpClientToolCallbackProvider.class);
 
-	public McpClientToolCallbackProvider(@Qualifier("mcpAsyncToolCallbacks") ToolCallbackProvider yamlBasedToolCallbackProvider,
-			McpClientCommonProperties commonProperties, 
-			DeepResearchProperties deepResearchProperties,
+	public McpClientToolCallbackProvider(
+			@Qualifier("mcpAsyncToolCallbacks") ToolCallbackProvider yamlBasedToolCallbackProvider,
+			McpClientCommonProperties commonProperties, DeepResearchProperties deepResearchProperties,
 			ApplicationContext applicationContext) {
 		this.yamlBasedToolCallbackProvider = yamlBasedToolCallbackProvider;
 		this.commonProperties = commonProperties;
@@ -72,12 +73,12 @@ public class McpClientToolCallbackProvider {
 	 * @return ToolCallback
 	 */
 
-	//这边添加的就是一些调试信息，方便观察和排查问题，支持两种方式获取工具回调：
+	// 这边添加的就是一些调试信息，方便观察和排查问题，支持两种方式获取工具回调：
 	public Set<ToolCallback> findToolCallbacks(String agentName) {
 		Set<ToolCallback> defineCallback = Sets.newHashSet();
-		
+
 		logger.info("开始为代理 {} 查找工具回调", agentName);
-		
+
 		// 优先使用JSON配置的MCP工具回调
 		if (jsonBasedMcpToolCallbackProvider != null) {
 			try {
@@ -87,11 +88,13 @@ public class McpClientToolCallbackProvider {
 					logger.info("从JSON配置获取到 {} 个工具回调，代理: {}", agentCallbacks.length, agentName);
 					return defineCallback;
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				// 如果获取失败，回退到原有逻辑
 				logger.warn("无法从JSON配置获取代理特定的工具回调，回退到YAML配置方式", e);
 			}
-		} else {
+		}
+		else {
 			logger.warn("jsonBasedMcpToolCallbackProvider 为 null，无法使用JSON配置");
 		}
 
@@ -122,8 +125,9 @@ public class McpClientToolCallbackProvider {
 				}
 			}
 		}
-		
+
 		logger.info("从YAML配置获取到 {} 个工具回调，代理: {}", defineCallback.size(), agentName);
 		return defineCallback;
 	}
+
 }

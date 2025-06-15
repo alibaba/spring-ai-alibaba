@@ -22,8 +22,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.List;
 
 /**
- * MCP JSON配置属性类
- * 支持从JSON文件读取MCP服务器配置
+ * MCP JSON配置属性类 支持从JSON文件读取MCP服务器配置
  *
  * @author Makoto
  * @since 2025/6/14
@@ -31,90 +30,99 @@ import java.util.List;
 @ConfigurationProperties(prefix = "spring.ai.alibaba.deepresearch.mcp")
 public class McpJsonProperties {
 
-    private String configFile = "classpath:mcp-config.json";
+	private String configFile = "classpath:mcp-config.json";
 
-    /**
-     * 是否启用JSON配置
-     */
-    private boolean enabled = true;
+	/**
+	 * 是否启用JSON配置
+	 */
+	private boolean enabled = true;
 
-    public String getConfigFile() {
-        return configFile;
-    }
+	public String getConfigFile() {
+		return configFile;
+	}
 
-    public void setConfigFile(String configFile) {
-        this.configFile = configFile;
-    }
+	public void setConfigFile(String configFile) {
+		this.configFile = configFile;
+	}
 
-    public boolean isEnabled() {
-        return enabled;
-    }
+	public boolean isEnabled() {
+		return enabled;
+	}
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
 
-    /**
-     * MCP服务器配置
-     */
-    public static class McpServerConfig {
-        private String url;
-        private String description;
+	/**
+	 * MCP服务器配置
+	 */
+	public static class McpServerConfig {
 
-        public String getUrl() {
-            return url;
-        }
+		private String url;
 
-        public void setUrl(String url) {
-            this.url = url;
-        }
+		private String description;
 
-        public String getDescription() {
-            return description;
-        }
+		public String getUrl() {
+			return url;
+		}
 
-        public void setDescription(String description) {
-            this.description = description;
-        }
-    }
+		public void setUrl(String url) {
+			this.url = url;
+		}
 
-    /**
-     * 代理配置
-     */
-    public static class AgentConfig {
-        @JsonProperty("mcp-servers")
-        private List<McpServerConfig> mcpServers;
+		public String getDescription() {
+			return description;
+		}
 
-        public List<McpServerConfig> getMcpServers() {
-            return mcpServers;
-        }
+		public void setDescription(String description) {
+			this.description = description;
+		}
 
-        public void setMcpServers(List<McpServerConfig> mcpServers) {
-            this.mcpServers = mcpServers;
-        }
-    }
+	}
 
-    /**
-     * JSON配置结构
-     */
-    public static class McpJsonConfig {
-        private AgentConfig coder;
-        private AgentConfig researcher;
+	/**
+	 * 代理配置
+	 */
+	public static class AgentConfig {
 
-        public AgentConfig getCoder() {
-            return coder;
-        }
+		@JsonProperty("mcp-servers")
+		private List<McpServerConfig> mcpServers;
 
-        public void setCoder(AgentConfig coder) {
-            this.coder = coder;
-        }
+		public List<McpServerConfig> getMcpServers() {
+			return mcpServers;
+		}
 
-        public AgentConfig getResearcher() {
-            return researcher;
-        }
+		public void setMcpServers(List<McpServerConfig> mcpServers) {
+			this.mcpServers = mcpServers;
+		}
 
-        public void setResearcher(AgentConfig researcher) {
-            this.researcher = researcher;
-        }
-    }
-} 
+	}
+
+	/**
+	 * JSON配置结构
+	 */
+	public static class McpJsonConfig {
+
+		private AgentConfig coder;
+
+		private AgentConfig researcher;
+
+		public AgentConfig getCoder() {
+			return coder;
+		}
+
+		public void setCoder(AgentConfig coder) {
+			this.coder = coder;
+		}
+
+		public AgentConfig getResearcher() {
+			return researcher;
+		}
+
+		public void setResearcher(AgentConfig researcher) {
+			this.researcher = researcher;
+		}
+
+	}
+
+}
