@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.service.impl;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.PersistentConfig;
@@ -33,7 +34,6 @@ import com.alibaba.cloud.ai.graph.GraphInitData;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.bsc.async.AsyncGenerator;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;

@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.service.dsl;
 
 import com.alibaba.cloud.ai.model.workflow.NodeData;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -36,7 +37,12 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 			.filter(c -> c.supportDialect(dialectType))
 			.findFirst()
 			.orElseThrow(() -> new NotImplementedException("Unsupported dialect type: " + dialectType.value()));
-		return converter.parse(data);
+		try {
+			return converter.parse(data);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -56,7 +62,7 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 
 		Boolean supportDialect(DSLDialectType dialectType);
 
-		T parse(Map<String, Object> data);
+		T parse(Map<String, Object> data) throws JsonProcessingException;
 
 		Map<String, Object> dump(T nodeData);
 

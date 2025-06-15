@@ -20,7 +20,12 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.async.internal.reactive.GeneratorSubscriber;
+import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -36,14 +41,25 @@ public class ParallelNode extends Node {
 
 		@Override
 		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+			Map<String, Object> partialMergedStates = new HashMap<>();
+			Map<String, Object> asyncGenerators = new HashMap<>();
 			var futures = actions.stream().map(action -> action.apply(state, config).thenApply(partialState -> {
-				state.updateState(partialState);
+				partialState.forEach((key, value) -> {
+					if (value instanceof AsyncGenerator<?> || value instanceof GeneratorSubscriber) {
+						((List) asyncGenerators.computeIfAbsent(key, k -> new ArrayList<>())).add(value);
+					}
+					else {
+						partialMergedStates.put(key, value);
+					}
+				});
+				state.updateState(partialMergedStates);
 				return action;
 			}))
 				// .map( future -> supplyAsync(future::join) )
 				.toList()
 				.toArray(new CompletableFuture[0]);
-			return CompletableFuture.allOf(futures).thenApply((p) -> state.data());
+			return CompletableFuture.allOf(futures)
+				.thenApply((p) -> CollectionUtils.isEmpty(asyncGenerators) ? state.data() : asyncGenerators);
 		}
 
 	}

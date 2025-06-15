@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.example.deepresearch.util;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import org.bsc.async.internal.reactive.GeneratorSubscriber;
+import com.alibaba.cloud.ai.graph.async.internal.reactive.GeneratorSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
