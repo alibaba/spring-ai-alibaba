@@ -133,6 +133,16 @@ public class JsonParseTool {
 	}
 
 	/**
+	 * Get the object of obj.fieldName1.fileName2... from the JSON.
+	 * @param json json string
+	 * @param fieldNames keyNames
+	 */
+	public <T> T getDepthFieldValue(String json, TypeReference<T> typeRef, String... fieldNames)
+			throws JsonProcessingException {
+		return this.jsonToObject(this.getDepthFieldValueAsString(json, fieldNames), typeRef);
+	}
+
+	/**
 	 * Get the string value of obj.fieldName1.fileName2... from the JSON.
 	 * @param json json string
 	 * @param fieldNames keyNames

@@ -248,13 +248,13 @@
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-tool-calling-bingsearch</artifactId>
+                <artifactId>spring-ai-alibaba-starter-tool-calling-jinacrawler</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-tool-calling-crawler</artifactId>
+                <artifactId>spring-ai-alibaba-starter-tool-calling-firecrawl</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

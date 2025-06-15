@@ -33,6 +33,7 @@ import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSer
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +74,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private DeepResearchProperties deepResearchProperties;
+
+	@Autowired(required = false)
+	private JinaCrawlerService jinaCrawlerService;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
@@ -118,7 +122,8 @@ public class DeepResearchConfiguration {
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
-			.addNode("background_investigator", node_async(new BackgroundInvestigationNode(tavilySearchService)))
+			.addNode("background_investigator",
+					node_async(new BackgroundInvestigationNode(tavilySearchService, jinaCrawlerService)))
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
