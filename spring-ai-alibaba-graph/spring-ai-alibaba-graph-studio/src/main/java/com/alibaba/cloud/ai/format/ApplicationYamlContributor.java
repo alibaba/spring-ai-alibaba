@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.format;
 
 import io.spring.initializr.generator.project.contributor.ProjectContributor;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
