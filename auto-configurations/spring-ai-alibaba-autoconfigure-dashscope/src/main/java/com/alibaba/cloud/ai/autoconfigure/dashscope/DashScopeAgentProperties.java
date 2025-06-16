@@ -27,7 +27,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  */
 
 @ConfigurationProperties(DashScopeAgentProperties.CONFIG_PREFIX)
-public class DashScopeAgentProperties {
+public class DashScopeAgentProperties extends DashScopeParentProperties {
 
 	/**
 	 * Spring AI Alibaba configuration prefix.
