@@ -179,8 +179,7 @@ public class CompiledGraph {
 						throw Errors.unsupportedConditionalEdgeOnParallelNode.exception(e.sourceId(),
 								conditionalEdges.stream().map(Edge::sourceId).toList());
 					}
-					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(),
-							parallelNodeTargets);
+					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
 				}
 
 				var actions = parallelNodeStream.get()
@@ -321,8 +320,7 @@ public class CompiledGraph {
 
 			return new Command(result, currentState);
 		}
-		throw RunnableErrors.executionError
-			.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
+		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}
 
 	/**
@@ -396,7 +394,8 @@ public class CompiledGraph {
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) throws GraphRunnerException {
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config)
+			throws GraphRunnerException {
 		Objects.requireNonNull(config, "config cannot be null");
 		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(stateCreate(inputs), config);
 
@@ -409,7 +408,8 @@ public class CompiledGraph {
 	 * @param config the config
 	 * @return the async generator
 	 */
-	public AsyncGenerator<NodeOutput> streamFromInitialNode(OverAllState overAllState, RunnableConfig config) throws GraphRunnerException {
+	public AsyncGenerator<NodeOutput> streamFromInitialNode(OverAllState overAllState, RunnableConfig config)
+			throws GraphRunnerException {
 		Objects.requireNonNull(config, "config cannot be null");
 		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(overAllState, config);
 
@@ -440,7 +440,8 @@ public class CompiledGraph {
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 * Optional
 	 */
-	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config) throws GraphRunnerException {
+	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config)
+			throws GraphRunnerException {
 		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
@@ -482,7 +483,8 @@ public class CompiledGraph {
 	 * @param config the config
 	 * @return the optional
 	 */
-	public Optional<OverAllState> resume(OverAllState.HumanFeedback feedback, RunnableConfig config) throws GraphRunnerException {
+	public Optional<OverAllState> resume(OverAllState.HumanFeedback feedback, RunnableConfig config)
+			throws GraphRunnerException {
 		StateSnapshot stateSnapshot = this.getState(config);
 		OverAllState resumeState = stateCreate(stateSnapshot.state().data());
 		resumeState.withResume();
@@ -497,7 +499,8 @@ public class CompiledGraph {
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
-	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) throws GraphRunnerException {
+	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config)
+			throws GraphRunnerException {
 		Objects.requireNonNull(config, "config cannot be null");
 
 		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(stateCreate(inputs),
@@ -840,8 +843,7 @@ public class CompiledGraph {
 
 				return new Command(result, currentState);
 			}
-			throw RunnableErrors.executionError
-				.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
+			throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 		}
 
 		/**

@@ -80,7 +80,7 @@ public class HumanNode implements NodeAction {
 
 	private void interrupt(OverAllState state) throws GraphRunnerException {
 		if (state.humanFeedback() == null || !state.isResume()) {
-			throw  RunnableErrors.subGraphInterrupt.exception("interrupt");
+			throw RunnableErrors.subGraphInterrupt.exception("interrupt");
 		}
 	}
 

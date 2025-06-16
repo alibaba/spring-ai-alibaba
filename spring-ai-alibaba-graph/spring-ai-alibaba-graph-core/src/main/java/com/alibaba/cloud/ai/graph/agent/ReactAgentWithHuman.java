@@ -92,8 +92,8 @@ public class ReactAgentWithHuman {
 	}
 
 	public ReactAgentWithHuman(String name, String prompt, ChatClient chatClient, List<ToolCallback> tools,
-							   int maxIterations, KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig,
-							   Function<OverAllState, Boolean> shouldContinueFunc, Function<OverAllState, Boolean> shouldInterruptFunc)
+			int maxIterations, KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig,
+			Function<OverAllState, Boolean> shouldContinueFunc, Function<OverAllState, Boolean> shouldInterruptFunc)
 			throws GraphStateException {
 		this.name = name;
 		this.llmNode = LlmNode.builder()
@@ -185,7 +185,7 @@ public class ReactAgentWithHuman {
 			};
 		}
 
-		StateGraph graph = new StateGraph(name,keyStrategyFactory).addNode("agent", node_async(this.llmNode))
+		StateGraph graph = new StateGraph(name, keyStrategyFactory).addNode("agent", node_async(this.llmNode))
 			.addNode("human", node_async(this.humanNode))
 			.addNode("tool", node_async(this.toolNode))
 			.addEdge(START, "agent")
@@ -327,7 +327,7 @@ public class ReactAgentWithHuman {
 			return this;
 		}
 
-		public Builder state(KeyStrategyFactory keyStrategyFactory ) {
+		public Builder state(KeyStrategyFactory keyStrategyFactory) {
 			this.keyStrategyFactory = keyStrategyFactory;
 			return this;
 		}

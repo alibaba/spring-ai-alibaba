@@ -78,7 +78,7 @@ public class ReactAgent {
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
 	private ReactAgent(String name, LlmNode llmNode, ToolNode toolNode, int maxIterations,
-					   KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig,
+			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig,
 			Function<OverAllState, Boolean> shouldContinueFunc, NodeAction preLlmHook, NodeAction postLlmHook,
 			NodeAction preToolHook, NodeAction postToolHook) throws GraphStateException {
 		this.name = name;
@@ -117,7 +117,7 @@ public class ReactAgent {
 	}
 
 	public ReactAgent(String name, ChatClient chatClient, List<ToolCallback> tools, int maxIterations,
-					  KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig,
+			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig,
 			Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
 		this.name = name;
 		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
@@ -142,7 +142,7 @@ public class ReactAgent {
 	}
 
 	public ReactAgent(String name, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations,
-					  KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig,
+			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig,
 			Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
 		this.name = name;
 		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
@@ -190,7 +190,7 @@ public class ReactAgent {
 
 	private StateGraph initGraph() throws GraphStateException {
 		if (keyStrategyFactory == null) {
-			this.keyStrategyFactory  = () -> {
+			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 				keyStrategyHashMap.put("messages", new AppendStrategy());
 				return keyStrategyHashMap;

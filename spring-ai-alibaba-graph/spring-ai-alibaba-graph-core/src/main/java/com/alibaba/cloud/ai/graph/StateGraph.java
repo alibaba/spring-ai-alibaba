@@ -47,7 +47,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.LinkedHashSet;
 
-
 /**
  * Represents a state graph with nodes and edges.
  */
@@ -143,7 +142,7 @@ public class StateGraph {
 	 * @param keyStrategyFactory the factory for providing key strategies
 	 * @param name the name of the graph
 	 */
-	public StateGraph( String name,KeyStrategyFactory keyStrategyFactory) {
+	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory) {
 		this.keyStrategyFactory = keyStrategyFactory;
 		this.name = name;
 		this.stateSerializer = new JacksonSerializer();

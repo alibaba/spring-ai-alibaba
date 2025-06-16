@@ -125,10 +125,12 @@ public class HttpNode implements NodeAction {
 			return updatedState;
 		}
 		catch (WebClientResponseException e) {
-			throw RunnableErrors.nodeInterrupt.exception(format("%s HTTP request failed: %s", this.outputKey, e.getStatusText()));
+			throw RunnableErrors.nodeInterrupt
+				.exception(format("%s HTTP request failed: %s", this.outputKey, e.getStatusText()));
 		}
 		catch (RestClientException e) {
-			throw RunnableErrors.nodeInterrupt.exception(format("%s HTTP request failed: %s", this.outputKey, e.getMessage()));
+			throw RunnableErrors.nodeInterrupt
+				.exception(format("%s HTTP request failed: %s", this.outputKey, e.getMessage()));
 		}
 	}
 
@@ -151,7 +153,7 @@ public class HttpNode implements NodeAction {
 	}
 
 	private void initBody(HttpRequestNodeBody body, WebClient.RequestBodySpec requestSpec, OverAllState state)
-            throws  GraphRunnerException {
+			throws GraphRunnerException {
 		switch (body.getType()) {
 			case NONE:
 				break;
