@@ -28,7 +28,6 @@ import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import jakarta.annotation.PostConstruct;
-import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -38,6 +37,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -62,8 +63,7 @@ public class AgentsConfiguration {
 	}
 
 	@PostConstruct
-	@SneakyThrows
-	public void afterPropertiesSet() {
+	public void afterPropertiesSet() throws IOException {
 		String configContent = agentsConfig.getContentAsString(Charset.defaultCharset());
 		this.configJson = JSON.parseObject(configContent);
 	}
@@ -113,7 +113,6 @@ public class AgentsConfiguration {
 			.build();
 	}
 
-	@SneakyThrows
 	@Bean
 	public ChatClient coordinatorAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder
@@ -126,7 +125,6 @@ public class AgentsConfiguration {
 			.build();
 	}
 
-	@SneakyThrows
 	@Bean
 	public ChatClient plannerAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder
@@ -134,7 +132,6 @@ public class AgentsConfiguration {
 			.build();
 	}
 
-	@SneakyThrows
 	@Bean
 	public ChatClient reporterAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder
