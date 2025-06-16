@@ -25,7 +25,6 @@ import java.nio.file.*;
 /**
  * Copy the file `classpath:/templates/application.yml` to the `src/main/resources/application.yml` directory in the generated project.
  */
-@Component
 public class ApplicationYamlContributor implements ProjectContributor {
 
     /**
