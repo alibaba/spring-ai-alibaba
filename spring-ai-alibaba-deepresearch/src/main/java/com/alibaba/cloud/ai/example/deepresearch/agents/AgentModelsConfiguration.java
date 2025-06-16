@@ -29,7 +29,6 @@ public class AgentModelsConfiguration {
 
     private final ConfigurableBeanFactory beanFactory;
 
-
     private final List<ModelParamRepository.AgentModel> models;
 
     public AgentModelsConfiguration(ModelParamRepository modelParamRepository, ConfigurableBeanFactory beanFactory) {
@@ -39,12 +38,13 @@ public class AgentModelsConfiguration {
         this.models = modelParamRepository.loadModels();
     }
 
+
     @Bean
     public CommandLineRunner buildAgentChatClientBuilder(Map<String, DashScopeChatModel> agentModels) {
         return method -> {
             agentModels.forEach((key, value) -> {
                 String beanName = key.concat(BEAN_NAME_SUFFIX);
-                beanFactory.registerSingleton(beanName, value);
+                beanFactory.registerSingleton(beanName, ChatClient.create(value).mutate());
             });
         };
     }
