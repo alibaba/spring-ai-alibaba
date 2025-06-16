@@ -169,22 +169,26 @@ public class DashScopeApi {
 	public enum ChatModel {
 
 		/**
-		 * The model supports an 8k tokens context, and to ensure normal use and output, the API limits user input to 6k tokens.
+		 * The model supports an 8k tokens context, and to ensure normal use and output,
+		 * the API limits user input to 6k tokens.
 		 */
 		QWEN_PLUS("qwen-plus"),
 
 		/**
-		 * The model supports a context of 32k tokens. To ensure normal use and output, the API limits user input to 30k tokens.
+		 * The model supports a context of 32k tokens. To ensure normal use and output,
+		 * the API limits user input to 30k tokens.
 		 */
 		QWEN_TURBO("qwen-turbo"),
 
 		/**
-		 * The model supports an 8k tokens context, and to ensure normal use and output, the API limits user input to 6k tokens.
+		 * The model supports an 8k tokens context, and to ensure normal use and output,
+		 * the API limits user input to 6k tokens.
 		 */
 		QWEN_MAX("qwen-max"),
 
 		/**
-		 * The model supports a context of 30k tokens. To ensure normal use and output, the API limits user input to 28k tokens.
+		 * The model supports a context of 30k tokens. To ensure normal use and output,
+		 * the API limits user input to 28k tokens.
 		 */
 		QWEN_MAX_LONGCONTEXT("qwen-max-longcontext");
 
