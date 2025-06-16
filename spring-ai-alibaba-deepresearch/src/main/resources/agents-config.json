@@ -1,10 +1,10 @@
 {
   "models": [
-    {"name": "research","modeName": "qwen-max"},
-    {"name": "coder","modeName": "qwen-max"},
-    {"name": "customize","modeName": "qwen-max"},
-    {"name": "coordinator","modeName": "qwen-max"},
-    {"name": "planner","modeName": "qwen-max"},
-    {"name": "reporter","modeName": "qwen-max"}
+    {"name": "research","modelName": "qwen-max"},
+    {"name": "coder","modelName": "qwen-max"},
+    {"name": "customize","modelName": "qwen-max"},
+    {"name": "coordinator","modelName": "qwen-max"},
+    {"name": "planner","modelName": "qwen-max"},
+    {"name": "reporter","modelName": "qwen-max"}
   ]
 } 
