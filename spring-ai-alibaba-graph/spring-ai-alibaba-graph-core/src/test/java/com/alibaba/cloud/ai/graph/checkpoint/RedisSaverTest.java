@@ -23,6 +23,10 @@ import org.junit.jupiter.api.Test;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,13 +44,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Testcontainers
 class RedisSaverTest {
 
+	// 使用较为稳定的版本
+	private static final DockerImageName REDIS_IMAGE = DockerImageName.parse("valkey/valkey:8.0-alpine3.20");
 	static RedissonClient redisson;
 	static RedisSaver redisSaver;
 
+	@Container
+	private static final GenericContainer<?> redisContainer = new GenericContainer<>(
+			DockerImageName.parse("valkey/valkey:8.0-alpine3.20"))
+		.withExposedPorts(6379);
+
 	@BeforeAll
 	static void setup() {
+		redisContainer.start();
 		// 本地单机 Redis，测试环境需保证 6379 端口可用
 		Config config = new Config();
 		config.useSingleServer().setAddress("redis://127.0.0.1:6379");
