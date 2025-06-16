@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.request.SearchRequest;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -57,7 +58,7 @@ public abstract class BaseVectorStoreService {
 		request.setQuery(query);
 		request.setVectorType(vectorType);
 		request.setTopK(100);
-		return searchWithVectorType(request);
+		return new ArrayList<>(searchWithVectorType(request));
 	}
 
 	/**
