@@ -1,10 +1,10 @@
 {
-  "models": {
-    "research": "qwen-max",
-    "coder": "qwen-max",
-    "customize": "qwen-max",
-    "coordinator": "qwen-max",
-    "planner": "qwen-max",
-    "reporter": "qwen-max"
-  }
+  "models": [
+    {"name": "research","modeName": "qwen-max"},
+    {"name": "coder","modeName": "qwen-max"},
+    {"name": "customize","modeName": "qwen-max"},
+    {"name": "coordinator","modeName": "qwen-max"},
+    {"name": "planner","modeName": "qwen-max"},
+    {"name": "reporter","modeName": "qwen-max"}
+  ]
 } 
