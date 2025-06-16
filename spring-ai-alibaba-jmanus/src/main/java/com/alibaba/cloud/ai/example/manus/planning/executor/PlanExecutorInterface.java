@@ -18,16 +18,14 @@ package com.alibaba.cloud.ai.example.manus.planning.executor;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 
 /**
- * 计划执行器接口
- * 定义了执行计划的基本行为
+ * 计划执行器接口 定义了执行计划的基本行为
  */
 public interface PlanExecutorInterface {
 
-    /**
-     * 执行整个计划的所有步骤
-     * 
-     * @param context 执行上下文，包含用户请求和执行的过程信息
-     */
-    void executeAllSteps(ExecutionContext context);
+	/**
+	 * 执行整个计划的所有步骤
+	 * @param context 执行上下文，包含用户请求和执行的过程信息
+	 */
+	void executeAllSteps(ExecutionContext context);
 
 }

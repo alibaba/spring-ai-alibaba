@@ -130,7 +130,8 @@ public class PlanTemplateController {
 			}
 			catch (Exception jsonException) {
 				logger.error("序列化计划为JSON失败", jsonException);
-				return ResponseEntity.internalServerError().body(Map.of("error", "序列化计划失败: " + jsonException.getMessage()));
+				return ResponseEntity.internalServerError()
+					.body(Map.of("error", "序列化计划失败: " + jsonException.getMessage()));
 			}
 
 			// 保存到版本历史
@@ -222,11 +223,11 @@ public class PlanTemplateController {
 			ExecutionContext context = new ExecutionContext();
 			context.setPlanId(newPlanId);
 			context.setNeedSummary(true); // 需要生成摘要
-			
+
 			try {
 				// 使用 Jackson 反序列化 JSON 为 PlanInterface 对象（支持多态）
 				PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
-				
+
 				// 设置新的计划ID，覆盖JSON中的ID
 				plan.setPlanId(newPlanId);
 				// 设置URL参数到计划中
@@ -519,7 +520,8 @@ public class PlanTemplateController {
 			}
 			catch (Exception jsonException) {
 				logger.error("序列化计划为JSON失败", jsonException);
-				return ResponseEntity.internalServerError().body(Map.of("error", "序列化计划失败: " + jsonException.getMessage()));
+				return ResponseEntity.internalServerError()
+					.body(Map.of("error", "序列化计划失败: " + jsonException.getMessage()));
 			}
 
 			// 保存到版本历史

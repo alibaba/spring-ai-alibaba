@@ -27,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class ExecutionPlan extends AbstractExecutionPlan {
 
 	private List<ExecutionStep> steps;
-	
+
 	/**
 	 * 计划类型，用于 Jackson 多态反序列化
 	 */
@@ -45,6 +45,7 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 		super(planId, title);
 		this.steps = new ArrayList<>();
 	}
+
 	@JsonIgnore
 	public String getPlanType() {
 		return planType;
@@ -63,6 +64,7 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 	public void setSteps(List<ExecutionStep> steps) {
 		this.steps = steps;
 	}
+
 	@JsonIgnore
 	public int getStepCount() {
 		return steps.size();
@@ -115,7 +117,8 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 		state.append("\n- 执行参数: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
 			state.append(executionParams).append("\n\n");
-		} else {
+		}
+		else {
 			state.append("未提供执行参数。\n\n");
 		}
 
@@ -127,7 +130,6 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 
 	/**
 	 * 获取步骤执行状态的字符串格式
-	 * 
 	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
 	 * @return 格式化的步骤执行状态字符串
 	 */
@@ -164,15 +166,15 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 			};
 
 			state.append(i + 1)
-					.append(".  **步骤 ")
-					.append(i)
-					.append(":**\n")
-					.append("    *   **状态:** ")
-					.append(symbol)
-					.append("\n")
-					.append("    *   **操作:** ")
-					.append(step.getStepRequirement())
-					.append("\n");
+				.append(".  **步骤 ")
+				.append(i)
+				.append(":**\n")
+				.append("    *   **状态:** ")
+				.append(symbol)
+				.append("\n")
+				.append("    *   **操作:** ")
+				.append(step.getStepRequirement())
+				.append("\n");
 
 			String result = step.getResult();
 			if (result != null && !result.isEmpty()) {
@@ -185,13 +187,11 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 
 	/**
 	 * 获取所有步骤执行状态的字符串格式（兼容旧版本）
-	 * 
 	 * @return 格式化的步骤执行状态字符串
 	 */
 	@JsonIgnore
 	public String getStepsExecutionStateStringFormat() {
 		return getStepsExecutionStateStringFormat(false);
 	}
-
 
 }

@@ -28,9 +28,10 @@ import java.util.List;
 public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 
 	private List<Object> steps; // 存储 SequentialNode 或 MapReduceNode
-    @JsonIgnore 
+
+	@JsonIgnore
 	private long createdTime;
-	
+
 	/**
 	 * 计划类型，用于 Jackson 多态反序列化
 	 */
@@ -55,7 +56,6 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	public void setPlanType(String planType) {
 		this.planType = planType;
 	}
-
 
 	/**
 	 * 获取步骤节点列表（更语义化的方法名）
@@ -108,7 +108,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * 获取节点数量
 	 * @return 节点总数
 	 */
-    @JsonIgnore
+	@JsonIgnore
 	public int getNodeCount() {
 		return steps.size();
 	}
@@ -130,22 +130,23 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * @return 所有执行步骤的列表
 	 */
 	@Override
-    @JsonIgnore
+	@JsonIgnore
 	public List<ExecutionStep> getAllSteps() {
 		List<ExecutionStep> allSteps = new ArrayList<>();
-		
+
 		for (Object node : steps) {
 			if (node instanceof SequentialNode) {
 				SequentialNode seqNode = (SequentialNode) node;
 				if (seqNode.getSteps() != null) {
 					allSteps.addAll(seqNode.getSteps());
 				}
-			} else if (node instanceof MapReduceNode) {
+			}
+			else if (node instanceof MapReduceNode) {
 				MapReduceNode mrNode = (MapReduceNode) node;
 				allSteps.addAll(mrNode.getAllSteps());
 			}
 		}
-		
+
 		return allSteps;
 	}
 
@@ -208,12 +209,12 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		for (int i = 0; i < steps.size(); i++) {
 			Object node = steps.get(i);
 			sb.append("--- 节点 ").append(i + 1).append(" ---\n");
-			
+
 			if (node instanceof SequentialNode) {
 				SequentialNode seqNode = (SequentialNode) node;
 				sb.append("类型: 顺序执行\n");
 				sb.append("步骤数: ").append(seqNode.getStepCount()).append("\n");
-				
+
 				if (seqNode.getSteps() != null) {
 					for (ExecutionStep step : seqNode.getSteps()) {
 						sb.append("  ").append(step.getStepInStr()).append("\n");
@@ -222,12 +223,13 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 						}
 					}
 				}
-			} else if (node instanceof MapReduceNode) {
+			}
+			else if (node instanceof MapReduceNode) {
 				MapReduceNode mrNode = (MapReduceNode) node;
 				sb.append("类型: MapReduce\n");
 				sb.append("Map步骤数: ").append(mrNode.getMapStepCount()).append("\n");
 				sb.append("Reduce步骤数: ").append(mrNode.getReduceStepCount()).append("\n");
-				
+
 				if (mrNode.getMapSteps() != null && !mrNode.getMapSteps().isEmpty()) {
 					sb.append("  Map阶段:\n");
 					for (ExecutionStep step : mrNode.getMapSteps()) {
@@ -237,7 +239,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 						}
 					}
 				}
-				
+
 				if (mrNode.getReduceSteps() != null && !mrNode.getReduceSteps().isEmpty()) {
 					sb.append("  Reduce阶段:\n");
 					for (ExecutionStep step : mrNode.getReduceSteps()) {
@@ -266,7 +268,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * @return 如果没有节点则返回true
 	 */
 	@Override
-    @JsonIgnore
+	@JsonIgnore
 	public boolean isEmpty() {
 		return steps.isEmpty();
 	}
@@ -288,7 +290,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 			if (node instanceof SequentialNode) {
 				SequentialNode seqNode = (SequentialNode) node;
 				seqNode.removeStep(step);
-			} else if (node instanceof MapReduceNode) {
+			}
+			else if (node instanceof MapReduceNode) {
 				MapReduceNode mrNode = (MapReduceNode) node;
 				mrNode.getMapSteps().remove(step);
 				mrNode.getReduceSteps().remove(step);
@@ -304,8 +307,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 更新所有步骤的索引，从0开始递增
-	 * 为MapReduce计划中的所有步骤（包括Map和Reduce阶段）设置连续的索引
+	 * 更新所有步骤的索引，从0开始递增 为MapReduce计划中的所有步骤（包括Map和Reduce阶段）设置连续的索引
 	 */
 	@Override
 	public void updateStepIndices() {
@@ -318,7 +320,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 						step.setStepIndex(index++);
 					}
 				}
-			} else if (node instanceof MapReduceNode) {
+			}
+			else if (node instanceof MapReduceNode) {
 				MapReduceNode mrNode = (MapReduceNode) node;
 				// 先设置Map步骤的索引
 				if (mrNode.getMapSteps() != null) {
@@ -340,4 +343,5 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	public String toString() {
 		return getPlanExecutionStateStringFormat(false);
 	}
+
 }

@@ -39,7 +39,6 @@ public class PlanExecutor extends AbstractPlanExecutor {
 
 	/**
 	 * 执行整个计划的所有步骤
-	 * 
 	 * @param context 执行上下文，包含用户请求和执行的过程信息
 	 */
 	@Override
@@ -61,7 +60,8 @@ public class PlanExecutor extends AbstractPlanExecutor {
 			}
 
 			context.setSuccess(true);
-		} finally {
+		}
+		finally {
 			performCleanup(context, executor);
 		}
 	}

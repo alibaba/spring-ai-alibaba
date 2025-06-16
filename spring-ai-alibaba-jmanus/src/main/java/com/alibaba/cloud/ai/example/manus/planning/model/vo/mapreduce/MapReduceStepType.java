@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce;
  * MapReduce步骤类型枚举
  */
 public enum MapReduceStepType {
+
 	/**
 	 * 顺序执行步骤
 	 */
@@ -43,4 +44,5 @@ public enum MapReduceStepType {
 	public String toString() {
 		return description;
 	}
+
 }

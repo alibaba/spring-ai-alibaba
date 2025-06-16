@@ -25,7 +25,7 @@ import java.util.List;
  * MapReduce执行节点
  */
 public class MapReduceNode {
-    
+
 	private MapReduceStepType type = MapReduceStepType.MAPREDUCE;
 
 	private List<ExecutionStep> mapSteps;
@@ -41,10 +41,12 @@ public class MapReduceNode {
 		this.mapSteps = mapSteps != null ? mapSteps : new ArrayList<>();
 		this.reduceSteps = reduceSteps != null ? reduceSteps : new ArrayList<>();
 	}
+
 	@JsonIgnore
 	public MapReduceStepType getType() {
 		return type;
 	}
+
 	public List<ExecutionStep> getMapSteps() {
 		return mapSteps;
 	}
@@ -52,11 +54,11 @@ public class MapReduceNode {
 	public void setMapSteps(List<ExecutionStep> mapSteps) {
 		this.mapSteps = mapSteps != null ? mapSteps : new ArrayList<>();
 	}
-	
+
 	public List<ExecutionStep> getReduceSteps() {
 		return reduceSteps;
 	}
-	
+
 	public void setReduceSteps(List<ExecutionStep> reduceSteps) {
 		this.reduceSteps = reduceSteps != null ? reduceSteps : new ArrayList<>();
 	}
@@ -74,18 +76,22 @@ public class MapReduceNode {
 		}
 		reduceSteps.add(step);
 	}
-    @JsonIgnore
+
+	@JsonIgnore
 	public int getMapStepCount() {
 		return mapSteps != null ? mapSteps.size() : 0;
 	}
-	@JsonIgnore		
+
+	@JsonIgnore
 	public int getReduceStepCount() {
 		return reduceSteps != null ? reduceSteps.size() : 0;
 	}
+
 	@JsonIgnore
 	public int getTotalStepCount() {
 		return getMapStepCount() + getReduceStepCount();
 	}
+
 	@JsonIgnore
 	public ExecutionStep getMapStep(int index) {
 		if (mapSteps != null && index >= 0 && index < mapSteps.size()) {
@@ -121,14 +127,14 @@ public class MapReduceNode {
 	 * 获取节点的字符串表示
 	 * @return 节点字符串
 	 */
-    @JsonIgnore
+	@JsonIgnore
 	public String getNodeInStr() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("=== MapReduce执行节点 ===\n");
 		sb.append("Map步骤数量: ").append(getMapStepCount()).append("\n");
 		sb.append("Reduce步骤数量: ").append(getReduceStepCount()).append("\n");
 		sb.append("总步骤数量: ").append(getTotalStepCount()).append("\n");
-		
+
 		if (mapSteps != null && !mapSteps.isEmpty()) {
 			sb.append("\n--- Map阶段 ---\n");
 			for (int i = 0; i < mapSteps.size(); i++) {
@@ -136,7 +142,7 @@ public class MapReduceNode {
 				sb.append("  Map-").append(i + 1).append(". ").append(step.getStepRequirement()).append("\n");
 			}
 		}
-		
+
 		if (reduceSteps != null && !reduceSteps.isEmpty()) {
 			sb.append("\n--- Reduce阶段 ---\n");
 			for (int i = 0; i < reduceSteps.size(); i++) {
@@ -144,7 +150,7 @@ public class MapReduceNode {
 				sb.append("  Reduce-").append(i + 1).append(". ").append(step.getStepRequirement()).append("\n");
 			}
 		}
-		
+
 		return sb.toString();
 	}
 
@@ -152,4 +158,5 @@ public class MapReduceNode {
 	public String toString() {
 		return getNodeInStr();
 	}
+
 }

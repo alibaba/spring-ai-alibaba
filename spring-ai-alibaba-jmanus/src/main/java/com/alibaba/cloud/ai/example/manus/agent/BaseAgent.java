@@ -368,11 +368,11 @@ public abstract class BaseAgent {
 		this.envData = Collections.unmodifiableMap(new HashMap<>(envData));
 	}
 
-	public void setOutputColumns(String outputColumns){
+	public void setOutputColumns(String outputColumns) {
 		this.outputColumns = outputColumns;
 	}
 
-	public String getOutputColumns(){
+	public String getOutputColumns() {
 		return outputColumns;
 	}
 

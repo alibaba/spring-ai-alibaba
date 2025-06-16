@@ -24,15 +24,18 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * 单个步骤的执行结果
  */
 public class ExecutionStep {
+
 	@JsonIgnore
 	private Integer stepIndex;
 
 	private String stepRequirement;
+
 	@JsonIgnore
 	private String result;
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private String outputColumns;
+
 	@JsonIgnore
 	private BaseAgent agent;
 
@@ -51,6 +54,7 @@ public class ExecutionStep {
 	public void setResult(String result) {
 		this.result = result;
 	}
+
 	@JsonIgnore
 	public AgentState getStatus() {
 		return agent == null ? AgentState.NOT_STARTED : agent.getState();
@@ -75,7 +79,7 @@ public class ExecutionStep {
 	public void setOutputColumns(String outputColumns) {
 		this.outputColumns = outputColumns;
 	}
-	
+
 	@JsonIgnore
 	public String getStepInStr() {
 		String agentState = null;

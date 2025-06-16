@@ -169,8 +169,9 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 			String command = (String) input.get("command");
 			String planId = (String) input.get("planId");
 			String title = (String) input.get("title");
-			List<Map<String, Object>> steps = objectMapper.convertValue(input.get("steps"), new TypeReference<List<Map<String, Object>>>() {
-			});
+			List<Map<String, Object>> steps = objectMapper.convertValue(input.get("steps"),
+					new TypeReference<List<Map<String, Object>>>() {
+					});
 
 			return switch (command) {
 				case "create" -> createMapReducePlan(planId, title, steps);
@@ -203,7 +204,7 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 
 		for (Map<String, Object> stepNode : steps) {
 			String nodeType = (String) stepNode.get("type");
-			
+
 			switch (nodeType) {
 				case "sequential" -> processSequentialNode(plan, stepNode);
 				case "mapreduce" -> processMapReduceNode(plan, stepNode);
@@ -215,7 +216,8 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 		}
 
 		this.currentPlan = plan;
-		return new ToolExecuteResult("MapReduce Plan created: " + planId + "\n" + plan.getPlanExecutionStateStringFormat(false));
+		return new ToolExecuteResult(
+				"MapReduce Plan created: " + planId + "\n" + plan.getPlanExecutionStateStringFormat(false));
 	}
 
 	/**
@@ -226,14 +228,15 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 	private void processSequentialNode(MapReduceExecutionPlan plan, Map<String, Object> stepNode) {
 		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> sequentialSteps = (List<Map<String, Object>>) stepNode.get("steps");
-		if (sequentialSteps == null) return;
+		if (sequentialSteps == null)
+			return;
 
 		SequentialNode node = new SequentialNode();
 		for (Map<String, Object> step : sequentialSteps) {
 			ExecutionStep executionStep = createExecutionStepFromMap(step);
 			node.addStep(executionStep);
 		}
-		
+
 		plan.addSequentialNode(node);
 	}
 
@@ -276,15 +279,15 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 	private ExecutionStep createExecutionStepFromMap(Map<String, Object> stepMap) {
 		String stepRequirement = (String) stepMap.get("stepRequirement");
 		String outputColumns = (String) stepMap.get("outputColumns");
-		
+
 		ExecutionStep executionStep = new ExecutionStep();
 		executionStep.setStepRequirement(stepRequirement);
-		
+
 		// 直接保存输出列信息到对应字段
 		if (outputColumns != null && !outputColumns.trim().isEmpty()) {
 			executionStep.setOutputColumns(outputColumns);
 		}
-		
+
 		return executionStep;
 	}
 
@@ -292,4 +295,5 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 	public ToolExecuteResult apply(String input) {
 		return run(input);
 	}
+
 }

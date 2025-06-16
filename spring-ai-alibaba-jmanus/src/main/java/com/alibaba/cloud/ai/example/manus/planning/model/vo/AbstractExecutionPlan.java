@@ -19,8 +19,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * 执行计划抽象基类
- * 包含所有执行计划类型的共同属性和基本实现
+ * 执行计划抽象基类 包含所有执行计划类型的共同属性和基本实现
  */
 public abstract class AbstractExecutionPlan implements PlanInterface {
 
@@ -43,7 +42,7 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	/**
 	 * 执行参数
 	 */
-    @JsonIgnore
+	@JsonIgnore
 	protected String executionParams;
 
 	/**
@@ -161,17 +160,14 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	}
 
 	/**
-	 * 清空步骤的抽象方法
-	 * 子类需要实现具体的步骤清空逻辑
+	 * 清空步骤的抽象方法 子类需要实现具体的步骤清空逻辑
 	 */
 	protected abstract void clearSteps();
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "{" +
-			"planId='" + planId + '\'' +
-			", title='" + title + '\'' +
-			", stepCount=" + getTotalStepCount() +
-			'}';
+		return getClass().getSimpleName() + "{" + "planId='" + planId + '\'' + ", title='" + title + '\''
+				+ ", stepCount=" + getTotalStepCount() + '}';
 	}
+
 }

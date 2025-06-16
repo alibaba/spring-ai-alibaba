@@ -27,6 +27,7 @@ import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 public class PlanningToolFactory {
 
 	private static final PlanningTool simplePlanningTool = new PlanningTool();
+
 	private static final MapReducePlanningTool mapReducePlanningTool = new MapReducePlanningTool();
 
 	/**
@@ -126,4 +127,5 @@ public class PlanningToolFactory {
 	public static String getPlanTypeInfo(PlanType planType) {
 		return planType.getDisplayName() + ": " + planType.getDescription();
 	}
+
 }

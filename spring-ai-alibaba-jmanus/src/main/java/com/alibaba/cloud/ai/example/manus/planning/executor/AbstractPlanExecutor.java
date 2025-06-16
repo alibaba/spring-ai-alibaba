@@ -37,8 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 计划执行器的抽象基类
- * 包含所有执行器类型的共同逻辑和基本功能
+ * 计划执行器的抽象基类 包含所有执行器类型的共同逻辑和基本功能
  */
 public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
@@ -57,9 +56,13 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
 	// Define static final strings for the keys used in executorParams
 	public static final String PLAN_STATUS_KEY = "planStatus";
+
 	public static final String CURRENT_STEP_INDEX_KEY = "currentStepIndex";
+
 	public static final String STEP_TEXT_KEY = "stepText";
+
 	public static final String EXTRA_PARAMS_KEY = "extraParams";
+
 	public static final String EXECUTION_ENV_STRING_KEY = "current_step_env_data";
 
 	public AbstractPlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
@@ -72,7 +75,6 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
 	/**
 	 * 执行单个步骤的通用逻辑
-	 * 
 	 * @param step 执行步骤
 	 * @param context 执行上下文
 	 * @return 步骤执行器
@@ -84,20 +86,20 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
 			String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
 			String stepText = step.getStepRequirement();
-			
+
 			Map<String, Object> initSettings = new HashMap<>();
 			initSettings.put(PLAN_STATUS_KEY, planStatus);
 			initSettings.put(CURRENT_STEP_INDEX_KEY, String.valueOf(stepIndex));
 			initSettings.put(STEP_TEXT_KEY, stepText);
 			initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
-			
+
 			BaseAgent executor = getExecutorForStep(stepType, context, initSettings);
 			if (executor == null) {
 				logger.error("No executor found for step type: {}", stepType);
 				step.setResult("No executor found for step type: " + stepType);
 				return null;
 			}
-			
+
 			step.setAgent(executor);
 			executor.setState(AgentState.IN_PROGRESS);
 
@@ -105,12 +107,14 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			executor.setOutputColumns(step.getOutputColumns());
 			String stepResultStr = executor.run();
 			step.setResult(stepResultStr);
-			
+
 			return executor;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Error executing step: {}", e.getMessage(), e);
 			step.setResult("Execution failed: " + e.getMessage());
-		} finally {
+		}
+		finally {
 			recordStepEnd(step, context);
 		}
 		return null;
@@ -130,7 +134,8 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	/**
 	 * 获取步骤的执行器
 	 */
-	protected BaseAgent getExecutorForStep(String stepType, ExecutionContext context, Map<String, Object> initSettings) {
+	protected BaseAgent getExecutorForStep(String stepType, ExecutionContext context,
+			Map<String, Object> initSettings) {
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
 				return agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getPlanId(),
@@ -218,4 +223,5 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			lastExecutor.clearUp(planId);
 		}
 	}
+
 }

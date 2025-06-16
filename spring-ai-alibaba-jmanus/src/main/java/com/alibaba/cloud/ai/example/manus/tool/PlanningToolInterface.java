@@ -24,28 +24,29 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
  */
 public interface PlanningToolInterface {
 
-    /**
-     * 获取当前计划的ID
-     * @return 当前计划的ID，如果没有计划则返回null
-     */
-    String getCurrentPlanId();
+	/**
+	 * 获取当前计划的ID
+	 * @return 当前计划的ID，如果没有计划则返回null
+	 */
+	String getCurrentPlanId();
 
-    /**
-     * 获取当前的执行计划
-     * @return 当前的执行计划，如果没有计划则返回null
-     */
-    PlanInterface getCurrentPlan();
+	/**
+	 * 获取当前的执行计划
+	 * @return 当前的执行计划，如果没有计划则返回null
+	 */
+	PlanInterface getCurrentPlan();
 
-    /**
-     * 获取函数工具回调，用于与LLM集成
-     * @return FunctionToolCallback实例
-     */
-    FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback();
+	/**
+	 * 获取函数工具回调，用于与LLM集成
+	 * @return FunctionToolCallback实例
+	 */
+	FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback();
 
-    /**
-     * 执行工具输入并返回结果
-     * @param input 工具输入字符串
-     * @return 工具执行结果
-     */
-    ToolExecuteResult apply(String input);
+	/**
+	 * 执行工具输入并返回结果
+	 * @param input 工具输入字符串
+	 * @return 工具执行结果
+	 */
+	ToolExecuteResult apply(String input);
+
 }

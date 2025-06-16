@@ -21,19 +21,13 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
 
 /**
- * 执行计划通用接口
- * 定义了所有执行计划类型共同的基本操作
+ * 执行计划通用接口 定义了所有执行计划类型共同的基本操作
  */
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
-    property = "planType",
-    defaultImpl = ExecutionPlan.class  // 默认实现为 ExecutionPlan
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "planType",
+		defaultImpl = ExecutionPlan.class // 默认实现为 ExecutionPlan
 )
-@JsonSubTypes({
-    @JsonSubTypes.Type(value = ExecutionPlan.class, name = "simple"),
-    @JsonSubTypes.Type(value = MapReduceExecutionPlan.class, name = "advanced")
-})
+@JsonSubTypes({ @JsonSubTypes.Type(value = ExecutionPlan.class, name = "simple"),
+		@JsonSubTypes.Type(value = MapReduceExecutionPlan.class, name = "advanced") })
 public interface PlanInterface {
 
 	/**

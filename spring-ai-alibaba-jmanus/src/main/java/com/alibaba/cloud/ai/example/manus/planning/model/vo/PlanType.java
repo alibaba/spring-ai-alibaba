@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo;
  * 计划类型枚举
  */
 public enum PlanType {
+
 	/**
 	 * 传统的简单执行计划
 	 */
@@ -30,6 +31,7 @@ public enum PlanType {
 	MAPREDUCE("MapReduce计划", "适用于复杂的分布式任务，支持并行处理和结果聚合");
 
 	private final String displayName;
+
 	private final String description;
 
 	PlanType(String displayName, String description) {
@@ -49,4 +51,5 @@ public enum PlanType {
 	public String toString() {
 		return displayName;
 	}
+
 }

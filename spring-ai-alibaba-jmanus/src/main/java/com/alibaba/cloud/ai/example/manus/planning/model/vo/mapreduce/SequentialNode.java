@@ -69,7 +69,8 @@ public class SequentialNode {
 		}
 		return null;
 	}
-    @JsonIgnore
+
+	@JsonIgnore
 	public int getStepCount() {
 		return steps != null ? steps.size() : 0;
 	}
@@ -85,19 +86,19 @@ public class SequentialNode {
 	 * 获取节点的字符串表示
 	 * @return 节点字符串
 	 */
-     @JsonIgnore
+	@JsonIgnore
 	public String getNodeInStr() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("=== 顺序执行节点 ===\n");
 		sb.append("步骤数量: ").append(getStepCount()).append("\n");
-		
+
 		if (steps != null) {
 			for (int i = 0; i < steps.size(); i++) {
 				ExecutionStep step = steps.get(i);
 				sb.append("  ").append(i + 1).append(". ").append(step.getStepRequirement()).append("\n");
 			}
 		}
-		
+
 		return sb.toString();
 	}
 
@@ -105,4 +106,5 @@ public class SequentialNode {
 	public String toString() {
 		return getNodeInStr();
 	}
+
 }

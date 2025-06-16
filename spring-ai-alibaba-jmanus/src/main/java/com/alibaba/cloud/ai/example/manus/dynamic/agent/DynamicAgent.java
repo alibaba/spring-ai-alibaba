@@ -91,7 +91,8 @@ public class DynamicAgent extends ReActAgent {
 		for (ToolCallBackContext toolCallBack : toolCallBackContext.values()) {
 			try {
 				toolCallBack.getFunctionInstance().cleanup(planId);
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.error("Error cleaning up tool callback context: {}", e.getMessage(), e);
 			}
 		}
@@ -125,7 +126,8 @@ public class DynamicAgent extends ReActAgent {
 
 		try {
 			return executeWithRetry(3);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()), e);
 			thinkActRecord.recordError(e.getMessage());
 			return false;
@@ -195,7 +197,7 @@ public class DynamicAgent extends ReActAgent {
 
 			processMemory(toolExecutionResult);
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
-					.get(toolExecutionResult.conversationHistory().size() - 1);
+				.get(toolExecutionResult.conversationHistory().size() - 1);
 
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
 
@@ -224,19 +226,20 @@ public class DynamicAgent extends ReActAgent {
 							// We can now get the updated state string for the LLM.
 
 							UserMessage userMessage = UserMessage.builder()
-									.text("User input received for form: " + formInputTool.getCurrentToolStateString())
-									.build();
+								.text("User input received for form: " + formInputTool.getCurrentToolStateString())
+								.build();
 							processUserInputToMemory(userMessage); // Process user input
 																	// to memory
 							llmCallResponse = formInputTool.getCurrentToolStateString();
 
-						} else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
+						}
+						else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
 							log.warn("Input timeout occurred for FormInputTool for planId: {}", getPlanId());
 							// Handle input timeout
 
 							UserMessage userMessage = UserMessage.builder()
-									.text("Input timeout occurred for form: ")
-									.build();
+								.text("Input timeout occurred for form: ")
+								.build();
 							processUserInputToMemory(userMessage);
 							userInputService.removeFormInputTool(getPlanId()); // Clean up
 							return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS); // Or
@@ -254,7 +257,8 @@ public class DynamicAgent extends ReActAgent {
 			}
 
 			return new AgentExecResult(llmCallResponse, AgentState.IN_PROGRESS);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 
 			log.error(e.getMessage());
 
@@ -343,7 +347,6 @@ public class DynamicAgent extends ReActAgent {
 
 	/**
 	 * Current step env data
-	 * 
 	 * @return User message for current step environment data
 	 */
 	private Message currentStepEnvMessage() {
@@ -364,7 +367,8 @@ public class DynamicAgent extends ReActAgent {
 		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
 		if (toolCallBackContext.containsKey(toolKey)) {
 			return toolCallBackContext.get(toolKey);
-		} else {
+		}
+		else {
 			log.warn("Tool callback for {} not found in the map.", toolKey);
 			return null;
 		}
@@ -385,14 +389,15 @@ public class DynamicAgent extends ReActAgent {
 						ToolCallBiFunctionDef functionInstance = toolCallback.getFunctionInstance();
 						if (!(functionInstance instanceof com.alibaba.cloud.ai.example.manus.tool.TerminateTool)) {
 							log.warn("Expected TerminateTool instance, but got: {}", functionInstance.getClass());
-							continue; 
+							continue;
 						}
 						TerminateTool terminateTool = (TerminateTool) functionInstance;
 						terminateTool.setOutputColumns(getOutputColumns());
 					}
 					toolCallbacks.add(toolCallback.getToolCallback());
 				}
-			} else {
+			}
+			else {
 				log.warn("Tool callback for {} not found in the map.", toolKey);
 			}
 		}
@@ -470,7 +475,8 @@ public class DynamicAgent extends ReActAgent {
 				// Poll for input state change. In a real scenario, this might involve
 				// a more sophisticated mechanism like a Future or a callback from the UI.
 				TimeUnit.MILLISECONDS.sleep(500); // Check every 500ms
-			} catch (InterruptedException e) {
+			}
+			catch (InterruptedException e) {
 				log.warn("Interrupted while waiting for user input for planId: {}", getPlanId());
 				Thread.currentThread().interrupt();
 				formInputTool.handleInputTimeout(); // Treat interruption as timeout for
@@ -480,7 +486,8 @@ public class DynamicAgent extends ReActAgent {
 		}
 		if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_RECEIVED) {
 			log.info("User input received for planId: {}", getPlanId());
-		} else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
+		}
+		else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
 			log.warn("User input timed out for planId: {}", getPlanId());
 		}
 	}
