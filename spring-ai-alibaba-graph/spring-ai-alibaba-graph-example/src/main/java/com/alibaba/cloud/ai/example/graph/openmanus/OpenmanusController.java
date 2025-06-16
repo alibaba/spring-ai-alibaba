@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.springframework.ai.chat.client.ChatClient;
@@ -121,7 +122,7 @@ public class OpenmanusController {
 	 * ChatClient 简单调用
 	 */
 	@GetMapping("/chat")
-	public String simpleChat(String query) {
+	public String simpleChat(String query) throws GraphRunnerException {
 
 		return compiledGraph.invoke(Map.of("input", query)).get().data().toString();
 	}
