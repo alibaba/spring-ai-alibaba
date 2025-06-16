@@ -22,6 +22,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+
 public class GraphAppPropertiesCustomizer implements ApplicationPropertiesCustomizer {
 
 	public GraphAppPropertiesCustomizer() {
@@ -29,8 +30,7 @@ public class GraphAppPropertiesCustomizer implements ApplicationPropertiesCustom
 
 	@Override
 	public void customize(ApplicationProperties properties) {
-		try (InputStream in = getClass().getClassLoader()
-				.getResourceAsStream("templates/default-application.yml")) {
+		try (InputStream in = getClass().getClassLoader().getResourceAsStream("templates/default-application.yml")) {
 			if (in == null) {
 				throw new IllegalStateException("not found default-default-application.yml");
 			}
@@ -39,27 +39,30 @@ public class GraphAppPropertiesCustomizer implements ApplicationPropertiesCustom
 			if (loaded instanceof Map<?, ?>) {
 				flattenAndAdd(properties, "", (Map<String, Object>) loaded);
 			}
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw new IllegalStateException("parse default-default-application.yml failed", ex);
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	private void flattenAndAdd(ApplicationProperties props,
-							   String prefix,
-							   Map<String, Object> map) {
+	private void flattenAndAdd(ApplicationProperties props, String prefix, Map<String, Object> map) {
 		for (Map.Entry<String, Object> entry : map.entrySet()) {
 			String key = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
 			Object value = entry.getValue();
 			if (value instanceof Map) {
 				flattenAndAdd(props, key, (Map<String, Object>) value);
-			} else if (value instanceof List) {
+			}
+			else if (value instanceof List) {
 				props.add(key, ((List<?>) value).toString());
-			} else if (value instanceof Boolean) {
+			}
+			else if (value instanceof Boolean) {
 				props.add(key, (Boolean) value);
-			} else if (value instanceof Number) {
+			}
+			else if (value instanceof Number) {
 				props.add(key, ((Number) value).longValue());
-			} else {
+			}
+			else {
 				props.add(key, value == null ? "" : value.toString());
 			}
 		}
