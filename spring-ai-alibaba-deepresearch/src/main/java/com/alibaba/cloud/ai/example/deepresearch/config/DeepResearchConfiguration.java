@@ -81,7 +81,7 @@ public class DeepResearchConfiguration {
 	@Autowired(required = false)
 	private JinaCrawlerService jinaCrawlerService;
 
-	@Autowired
+	@Autowired(required = false)
 	private RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
 
 	@Bean
