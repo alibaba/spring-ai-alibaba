@@ -22,6 +22,7 @@ import java.util.Optional;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -41,7 +42,7 @@ public class ReactController {
 	}
 
 	@GetMapping("/chat")
-	public String simpleChat(String query) {
+	public String simpleChat(String query) throws GraphRunnerException {
 
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("messages", new UserMessage(query)));
 		List<Message> messages = (List<Message>) result.get().value("messages").get();
