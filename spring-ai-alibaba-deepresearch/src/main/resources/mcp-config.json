@@ -1,5 +1,5 @@
 {
-    "coder": {
+    "coderAgent": {
         "mcp-servers": [
             {
                 "url": "https://mcp.amap.com?key=${AI_DASHSCOPE_API_KEY}",
@@ -8,7 +8,7 @@
             }
         ]
     },
-    "researcher": {
+    "researchAgent": {
         "mcp-servers": [
             {
                 "url": "https://mcp.amap.com?key=${AI_DASHSCOPE_API_KEY}",

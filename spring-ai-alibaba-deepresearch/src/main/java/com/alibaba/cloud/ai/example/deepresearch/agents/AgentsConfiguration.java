@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
-import com.alibaba.cloud.ai.example.deepresearch.tool.McpClientToolCallbackProvider;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
@@ -35,7 +34,6 @@ import org.springframework.core.io.Resource;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Set;
 
 @Configuration
 public class AgentsConfiguration {
@@ -83,14 +81,11 @@ public class AgentsConfiguration {
 	 */
 	@SneakyThrows
 	@Bean
-	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder,
-			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
-		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
+	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("researchAgent");
 
 		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset()))
 			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
-			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 			.defaultToolCallbacks(mcpCallbacks)
 			.build();
 	}
@@ -103,14 +98,11 @@ public class AgentsConfiguration {
 	 */
 	@SneakyThrows
 	@Bean
-	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties,
-			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
-		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("coderAgent");
+	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties) {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("coderAgent");
 
 		return chatClientBuilder.defaultSystem(coderPrompt.getContentAsString(Charset.defaultCharset()))
 			.defaultTools(new PythonReplTool(coderProperties))
-			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 			.defaultToolCallbacks(mcpCallbacks)
 			.build();
 	}
