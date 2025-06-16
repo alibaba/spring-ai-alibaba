@@ -47,6 +47,7 @@ import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
@@ -383,7 +384,7 @@ public class DynamicAgent extends ReActAgent {
 				if (toolCallback != null) {
 					toolCallbacks.add(toolCallback.getToolCallback());
 				}
-			}
+			}add outputColumns in #sym:BaseAgent to #sym:TerminateTool in methods #sym:getToolCallList()
 			else {
 				log.warn("Tool callback for {} not found in the map.", toolKey);
 			}

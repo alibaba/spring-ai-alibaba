@@ -84,6 +84,8 @@ public abstract class BaseAgent {
 
 	public abstract void clearUp(String planId);
 
+	private String outputColumns;
+
 	/**
 	 * 获取智能体的名称
 	 *
@@ -364,6 +366,14 @@ public abstract class BaseAgent {
 
 	public void setEnvData(Map<String, Object> envData) {
 		this.envData = Collections.unmodifiableMap(new HashMap<>(envData));
+	}
+
+	public void setOutputColumns(String outputColumns){
+		this.outputColumns = outputColumns;
+	}
+
+	public String getOutputColumns(){
+		return outputColumns;
 	}
 
 }
