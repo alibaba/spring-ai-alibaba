@@ -33,17 +33,28 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.*;
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
@@ -620,7 +631,7 @@ public class CompiledGraph {
 				this.currentState = getInitialState(inputs, config);
 				this.overAllState = overAllState.input(currentState);
 				this.nextNodeId = null;
-				this.currentNodeId = StateGraph.START;
+				this.currentNodeId = START;
 				this.config = config;
 			}
 		}
@@ -718,34 +729,32 @@ public class CompiledGraph {
 		@SuppressWarnings("unchecked")
 		private void processGeneratorOutput(Object data, Map<String, Object> partialState,
 				List<Map.Entry<String, Object>> generatorEntries) throws Exception {
-			AtomicBoolean isParallel = new AtomicBoolean(false);
 			// Remove all generators
-			var partialStateWithoutGenerators = partialState.entrySet().stream().filter(e -> {
-				if ((e.getValue() instanceof AsyncGenerator)) {
-					return false;
+			Map<String, Object> partialStateWithoutGenerators = new HashMap<>();
+			for (Map.Entry<String, Object> entry : partialState.entrySet()) {
+				if (entry.getValue() instanceof AsyncGenerator) {
+					continue; // Skip top-level AsyncGenerator values
 				}
-				if (e.getValue() instanceof Collection<?>) {
-					Collection collection = (Collection) e.getValue();
-					ArrayList<Object> result = new ArrayList<>();
-					for (Object o : collection) {
-						if (!(o instanceof AsyncGenerator)) {
-							isParallel.set(true);
-							result.add(o);
+
+				if (entry.getValue() instanceof Collection<?>) {
+					Collection<?> collection = (Collection<?>) entry.getValue();
+					ArrayList<Object> filteredCollection = new ArrayList<>();
+
+					for (Object item : collection) {
+						if (!(item instanceof AsyncGenerator)) {
+							filteredCollection.add(item);
 						}
 					}
-					if (!CollectionUtils.isEmpty(result)) {
-						e.setValue(result);
-						return true;
-					}
-					else {
-						return false;
+
+					if (!filteredCollection.isEmpty()) {
+						partialStateWithoutGenerators.put(entry.getKey(), filteredCollection);
 					}
 				}
-				return true;
-			}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-			if (isParallel.get()) {
-
+				else {
+					// Keep the entry if it's not an AsyncGenerator and not a collection
+					// containing it
+					partialStateWithoutGenerators.put(entry.getKey(), entry.getValue());
+				}
 			}
 
 			// Update state with partial state without generators
