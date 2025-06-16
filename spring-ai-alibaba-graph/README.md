@@ -27,7 +27,7 @@ The core of the framework includes: **StateGraph** (the state graph for defining
    Handles the actual execution, state transitions, and streaming of results.
    Supports interruption, parallel nodes, and checkpointing.
 
-## How It’s Used (Typical Flow)
+## How It's Used (Typical Flow)
 - Define StateGraph: In a Spring configuration, you define a StateGraph bean, add nodes (each encapsulating a model call or logic), and connect them with edges.
 - Configure State: Use an OverAllStateFactory to define the initial state and key strategies.
 - Execution: The graph is compiled and executed, with state flowing through nodes and edges, and conditional logic determining the path.
