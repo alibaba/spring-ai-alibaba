@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.slf4j.Logger;
@@ -123,7 +124,7 @@ public class BigToolController {
 	}
 
 	@GetMapping("/search")
-	public String search(@RequestParam String query) {
+	public String search(@RequestParam String query) throws GraphRunnerException {
 		Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query, TOOL_LIST, documents));
 		return invoke.get().value("solution").get().toString();
 	}

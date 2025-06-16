@@ -17,7 +17,8 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.exception.NodeInterruptException;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.utils.InMemoryFileStorage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,6 +52,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.lang.String.format;
 
 public class HttpNode implements NodeAction {
 
@@ -122,10 +125,10 @@ public class HttpNode implements NodeAction {
 			return updatedState;
 		}
 		catch (WebClientResponseException e) {
-			throw new HttpNodeException("HTTP request failed: " + e.getStatusText());
+			throw RunnableErrors.nodeInterrupt.exception(format("%s HTTP request failed: %s", this.outputKey, e.getStatusText()));
 		}
 		catch (RestClientException e) {
-			throw new HttpNodeException("HTTP request failed");
+			throw RunnableErrors.nodeInterrupt.exception(format("%s HTTP request failed: %s", this.outputKey, e.getMessage()));
 		}
 	}
 
@@ -148,13 +151,13 @@ public class HttpNode implements NodeAction {
 	}
 
 	private void initBody(HttpRequestNodeBody body, WebClient.RequestBodySpec requestSpec, OverAllState state)
-			throws HttpNodeException {
+            throws  GraphRunnerException {
 		switch (body.getType()) {
 			case NONE:
 				break;
 			case RAW_TEXT:
 				if (body.getData().size() != 1) {
-					throw new HttpNodeException("RAW_TEXT body must contain exactly one item");
+					throw RunnableErrors.nodeInterrupt.exception("RAW_TEXT body must contain exactly one item");
 				}
 				String rawText = replaceVariables(body.getData().get(0).getValue(), state);
 				requestSpec.headers(h -> h.setContentType(MediaType.TEXT_PLAIN));
@@ -162,7 +165,7 @@ public class HttpNode implements NodeAction {
 				break;
 			case JSON:
 				if (body.getData().size() != 1) {
-					throw new HttpNodeException("JSON body must contain exactly one item");
+					throw RunnableErrors.nodeInterrupt.exception("JSON body must contain exactly one item");
 				}
 				String jsonTemplate = replaceVariables(body.getData().get(0).getValue(), state);
 				Object jsonObject;
@@ -170,7 +173,7 @@ public class HttpNode implements NodeAction {
 					jsonObject = new ObjectMapper().readValue(jsonTemplate, Object.class);
 				}
 				catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-					throw new HttpNodeException("Failed to parse JSON body: " + e.getMessage());
+					throw RunnableErrors.nodeInterrupt.exception("Failed to parse JSON body: " + e.getMessage());
 				}
 				requestSpec.headers(h -> h.setContentType(MediaType.APPLICATION_JSON));
 				requestSpec.bodyValue(jsonObject);
@@ -208,7 +211,7 @@ public class HttpNode implements NodeAction {
 				break;
 			case BINARY:
 				if (body.getData().size() != 1) {
-					throw new HttpNodeException("BINARY body must contain exactly one item");
+					throw RunnableErrors.nodeInterrupt.exception("BINARY body must contain exactly one item");
 				}
 				BodyData fileItem = body.getData().get(0);
 				ByteArrayResource resource = new ByteArrayResource(fileItem.getFileBytes()) {
@@ -223,7 +226,7 @@ public class HttpNode implements NodeAction {
 				requestSpec.body(BodyInserters.fromResource(resource));
 				break;
 			default:
-				throw new HttpNodeException("Unsupported body type: " + body.getType());
+				throw RunnableErrors.nodeInterrupt.exception("Unsupported body type: " + body.getType());
 		}
 	}
 
@@ -670,14 +673,6 @@ public class HttpNode implements NodeAction {
 
 	public record TimeoutConfig(int connect, int read, int write, int maxConnectTimeout, int maxReadTimeout,
 			int maxWriteTimeout) {
-
-	}
-
-	public static class HttpNodeException extends NodeInterruptException {
-
-		public HttpNodeException(String message) {
-			super(message);
-		}
 
 	}
 

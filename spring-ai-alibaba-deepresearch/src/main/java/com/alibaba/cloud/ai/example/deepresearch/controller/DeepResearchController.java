@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import org.slf4j.Logger;
@@ -68,7 +69,7 @@ public class DeepResearchController {
 	 * handling.
 	 */
 	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest) {
+	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest) throws GraphRunnerException {
 		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
 
@@ -95,7 +96,7 @@ public class DeepResearchController {
 	}
 
 	@PostMapping("/chat/resume")
-	public Map<String, Object> resume(@RequestBody(required = false) FeedbackRequest humanFeedback) {
+	public Map<String, Object> resume(@RequestBody(required = false) FeedbackRequest humanFeedback) throws GraphRunnerException {
 
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(humanFeedback.threadId()).build();
 		Map<String, Object> objectMap = new HashMap<>();

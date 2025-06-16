@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.*;
@@ -457,7 +458,7 @@ public class StateGraphTest {
 	}
 
 	@Test
-	public void testWithParallelBranchWithStream() throws GraphStateException {
+	public void testWithParallelBranchWithStream() throws GraphStateException, GraphRunnerException {
 		var workflow = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
 			.addNode("A1", makeNodeForStream("A1"))
 			.addNode("A2", makeNodeForStream("A2"))
@@ -624,7 +625,7 @@ public class StateGraphTest {
 	 * ReplaceStrategy for specific keys.
 	 */
 	@Test
-	public void testKeyStrategyFactoryCreateStateGraph() throws GraphStateException {
+	public void testKeyStrategyFactoryCreateStateGraph() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
@@ -646,7 +647,7 @@ public class StateGraphTest {
 	}
 
 	@Test
-	public void testLifecycleListenerGraphWithLIFO() throws GraphStateException {
+	public void testLifecycleListenerGraphWithLIFO() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
@@ -689,7 +690,7 @@ public class StateGraphTest {
 	 * execution.
 	 */
 	@Test
-	public void testLifecycleListenerGraphWithCompleteAndStart() throws GraphStateException {
+	public void testLifecycleListenerGraphWithCompleteAndStart() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
@@ -722,7 +723,7 @@ public class StateGraphTest {
 	 * execution.
 	 */
 	@Test
-	public void testLifecycleListenerGraphWithError() throws GraphStateException {
+	public void testLifecycleListenerGraphWithError() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			keyStrategyHashMap.put("prop1", new ReplaceStrategy());

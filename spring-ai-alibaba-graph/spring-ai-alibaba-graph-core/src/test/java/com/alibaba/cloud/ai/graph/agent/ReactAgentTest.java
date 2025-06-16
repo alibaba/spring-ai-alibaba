@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -119,7 +120,11 @@ class ReactAgentTest {
 		ReactAgent agent = ReactAgent.builder()
 			.name("testAgent")
 			.chatClient(chatClient)
-			.state(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()))
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				return keyStrategyHashMap;
+			})
 			.resolver(toolCallbackResolver)
 			.preLlmHook(state -> {
 				prellmStore.put("timestamp", String.valueOf(System.currentTimeMillis()));
@@ -149,7 +154,11 @@ class ReactAgentTest {
 		ReactAgent agent = ReactAgent.builder()
 			.name("testAgent")
 			.chatClient(chatClient)
-			.state(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()))
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				return keyStrategyHashMap;
+			})
 			.resolver(toolCallbackResolver)
 
 			.postLlmHook(state -> {
@@ -179,8 +188,12 @@ class ReactAgentTest {
 		ReactAgent agent = ReactAgent.builder()
 			.name("testAgent")
 			.chatClient(chatClient)
-			.state(() -> new OverAllState().registerKeyAndStrategy("toolParams", new ReplaceStrategy())
-				.registerKeyAndStrategy("messages", new AppendStrategy()))
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				keyStrategyHashMap.put("toolParams", new ReplaceStrategy());
+				return keyStrategyHashMap;
+			})
 			.resolver(toolCallbackResolver)
 			.preToolHook(state -> {
 				toolParams.put("timestamp", System.currentTimeMillis());
@@ -210,8 +223,12 @@ class ReactAgentTest {
 			.name("testAgent")
 			.chatClient(chatClient)
 			.resolver(toolCallbackResolver)
-			.state(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
-				.registerKeyAndStrategy("toolOutput", new ReplaceStrategy()))
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				keyStrategyHashMap.put("toolOutput", new ReplaceStrategy());
+				return keyStrategyHashMap;
+			})
 			.postToolHook(state -> {
 				toolResults.put("result", "collected: " + "tool output");
 				return Map.of();
@@ -239,9 +256,13 @@ class ReactAgentTest {
 		ReactAgent agent = ReactAgent.builder()
 			.name("testAgent")
 			.chatClient(chatClient)
-			.state(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
-				.registerKeyAndStrategy("toolParams", new ReplaceStrategy())
-				.registerKeyAndStrategy("toolOutput", new ReplaceStrategy()))
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				keyStrategyHashMap.put("toolOutput", new ReplaceStrategy());
+				keyStrategyHashMap.put("toolParams", new ReplaceStrategy());
+				return keyStrategyHashMap;
+			})
 			.resolver(toolCallbackResolver)
 			.preLlmHook(state -> {
 				prellmStore.put("timestamp", String.valueOf(System.currentTimeMillis()));
