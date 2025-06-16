@@ -15,8 +15,7 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -35,9 +34,9 @@ class DashScopeResponseFormatTests {
 		DashScopeResponseFormat format = new DashScopeResponseFormat(DashScopeResponseFormat.Type.TEXT);
 
 		// Verify properties
-		assertNotNull(format, "Response format should be created");
-		assertEquals(DashScopeResponseFormat.Type.TEXT, format.getType(), "Type should be TEXT");
-		assertEquals("{\"type\":\"text\"}", format.toString(), "String representation should match");
+		Assertions.assertNotNull(format, "Response format should be created");
+		Assertions.assertEquals(DashScopeResponseFormat.Type.TEXT, format.getType(), "Type should be TEXT");
+		Assertions.assertEquals("{\"type\":\"text\"}", format.toString(), "String representation should match");
 	}
 
 	@Test
@@ -46,9 +45,10 @@ class DashScopeResponseFormatTests {
 		DashScopeResponseFormat format = new DashScopeResponseFormat(DashScopeResponseFormat.Type.JSON_OBJECT);
 
 		// Verify properties
-		assertNotNull(format, "Response format should be created");
-		assertEquals(DashScopeResponseFormat.Type.JSON_OBJECT, format.getType(), "Type should be JSON_OBJECT");
-		assertEquals("{\"type\":\"json_object\"}", format.toString(), "String representation should match");
+		Assertions.assertNotNull(format, "Response format should be created");
+		Assertions.assertEquals(DashScopeResponseFormat.Type.JSON_OBJECT, format.getType(),
+				"Type should be JSON_OBJECT");
+		Assertions.assertEquals("{\"type\":\"json_object\"}", format.toString(), "String representation should match");
 	}
 
 	@Test
@@ -63,8 +63,9 @@ class DashScopeResponseFormatTests {
 			.build();
 
 		// Verify properties
-		assertEquals(DashScopeResponseFormat.Type.TEXT, textFormat.getType(), "Text format type should be TEXT");
-		assertEquals(DashScopeResponseFormat.Type.JSON_OBJECT, jsonFormat.getType(),
+		Assertions.assertEquals(DashScopeResponseFormat.Type.TEXT, textFormat.getType(),
+				"Text format type should be TEXT");
+		Assertions.assertEquals(DashScopeResponseFormat.Type.JSON_OBJECT, jsonFormat.getType(),
 				"JSON format type should be JSON_OBJECT");
 	}
 
@@ -76,14 +77,15 @@ class DashScopeResponseFormatTests {
 		DashScopeResponseFormat format3 = new DashScopeResponseFormat(DashScopeResponseFormat.Type.JSON_OBJECT);
 
 		// Test equals
-		assertTrue(format1.equals(format2), "Equal formats should be equal");
-		assertFalse(format1.equals(format3), "Different formats should not be equal");
-		assertFalse(format1.equals(null), "Format should not equal null");
-		assertFalse(format1.equals("string"), "Format should not equal different type");
+		Assertions.assertTrue(format1.equals(format2), "Equal formats should be equal");
+		Assertions.assertFalse(format1.equals(format3), "Different formats should not be equal");
+		Assertions.assertFalse(format1.equals(null), "Format should not equal null");
+		Assertions.assertFalse(format1.equals("string"), "Format should not equal different type");
 
 		// Test hashCode
-		assertEquals(format1.hashCode(), format2.hashCode(), "Equal formats should have same hash code");
-		assertNotEquals(format1.hashCode(), format3.hashCode(), "Different formats should have different hash codes");
+		Assertions.assertEquals(format1.hashCode(), format2.hashCode(), "Equal formats should have same hash code");
+		Assertions.assertNotEquals(format1.hashCode(), format3.hashCode(),
+				"Different formats should have different hash codes");
 	}
 
 	@Test
@@ -93,7 +95,7 @@ class DashScopeResponseFormatTests {
 		format.setType(DashScopeResponseFormat.Type.JSON_OBJECT);
 
 		// Verify type was changed
-		assertEquals(DashScopeResponseFormat.Type.JSON_OBJECT, format.getType(),
+		Assertions.assertEquals(DashScopeResponseFormat.Type.JSON_OBJECT, format.getType(),
 				"Type should be changed to JSON_OBJECT");
 	}
 

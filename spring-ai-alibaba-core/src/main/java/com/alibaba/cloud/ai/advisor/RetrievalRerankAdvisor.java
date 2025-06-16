@@ -43,8 +43,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import static java.util.stream.Collectors.toList;
-
 /**
  * Title Content rerank advisor.<br>
  * Description Content rerank advisor.<br>
@@ -154,7 +152,7 @@ public class RetrievalRerankAdvisor implements BaseAdvisor {
 			.filter(doc -> doc != null && doc.getScore() >= minScore)
 			.sorted(Comparator.comparingDouble(DocumentWithScore::getScore).reversed())
 			.map(DocumentWithScore::getOutput)
-			.collect(toList());
+			.collect(Collectors.toList());
 	}
 
 	@Override
