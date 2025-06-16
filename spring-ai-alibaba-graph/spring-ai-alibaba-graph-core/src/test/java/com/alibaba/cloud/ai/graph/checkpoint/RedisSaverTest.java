@@ -54,7 +54,7 @@ class RedisSaverTest {
 
 	@Container
 	private static final GenericContainer<?> redisContainer = new GenericContainer<>(
-			DockerImageName.parse("valkey/valkey:8.0-alpine3.20"))
+			DockerImageName.parse("valkey/valkey:8.1.2"))
 		.withExposedPorts(6379); // #gitleaks:allow
 
 	@BeforeAll
