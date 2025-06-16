@@ -118,6 +118,7 @@ public class InteractiveElementRegistry {
 					indexToElementMap.put(globalIndex, element);
 				}
 			}
+			index = interactiveElements.size();
 		}
 		catch (Exception e) {
 			log.warn("处理page元素时出错: {}", e.getMessage());
