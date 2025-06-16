@@ -31,6 +31,7 @@ import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
+import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -70,6 +71,15 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private ChatClient researchAgent;
+
+	@Autowired
+	private ChatClient reporterAgent;
+
+	@Autowired
+	private ChatClient coordinatorAgent;
+
+	@Autowired
+	private ChatClient plannerAgent;
 
 	@Autowired
 	private DeepResearchProperties deepResearchProperties;
@@ -122,14 +132,14 @@ public class DeepResearchConfiguration {
 
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
-			.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
+			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
 			.addNode("background_investigator",
 					node_async(new BackgroundInvestigationNode(tavilySearchService, jinaCrawlerService)))
-			.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
+			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))));
+			.addNode("reporter", node_async((new ReporterNode(reporterAgent))));
 
 		// 添加并行节点块
 		configureParallelNodes(stateGraph);

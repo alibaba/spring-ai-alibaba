@@ -1,0 +1,10 @@
+{
+  "models": {
+    "researchAgent": "qwen-max",
+    "coderAgent": "qwen-max",
+    "customizeAgent": "qwen-max",
+    "coordinatorAgent": "qwen-max",
+    "plannerAgent": "qwen-max",
+    "reporterAgent": "qwen-max"
+  }
+} 

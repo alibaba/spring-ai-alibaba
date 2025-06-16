@@ -18,11 +18,16 @@ package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import com.alibaba.cloud.ai.example.deepresearch.tool.McpClientToolCallbackProvider;
+import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -43,10 +48,25 @@ public class AgentsConfiguration {
 	@Value("classpath:prompts/coder.md")
 	private Resource coderPrompt;
 
+	@Value("classpath:agents-config.json")
+	private Resource agentsConfig;
+
 	private final ApplicationContext context;
+	private JSONObject configJson;
 
 	public AgentsConfiguration(ApplicationContext context) {
 		this.context = context;
+	}
+
+	@PostConstruct
+	@SneakyThrows
+	public void afterPropertiesSet() {
+		String configContent = agentsConfig.getContentAsString(Charset.defaultCharset());
+		this.configJson = JSON.parseObject(configContent);
+	}
+
+	private String getModelName(String agentName) {
+		return configJson.getJSONObject("models").getString(agentName);
 	}
 
 	/**
@@ -64,7 +84,6 @@ public class AgentsConfiguration {
 	 */
 	@SneakyThrows
 	@Bean
-
 	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder,
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
@@ -89,6 +108,42 @@ public class AgentsConfiguration {
 			.defaultTools(new PythonReplTool(coderProperties))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 			.build();
+	}
+
+	@SneakyThrows
+	@Bean
+	public ChatClient customizeAgent(ChatClient.Builder chatClientBuilder) {
+		return chatClientBuilder.build();
+	}
+
+	@SneakyThrows
+	@Bean
+	public ChatClient customize1Agent(ChatClient.Builder chatClientBuilder) {
+		return chatClientBuilder.build();
+	}
+
+	@SneakyThrows
+	@Bean
+	public ChatClient coordinatorAgent(ChatClient.Builder chatClientBuilder) {
+		return chatClientBuilder
+				.defaultOptions(ToolCallingChatOptions.builder()
+						.internalToolExecutionEnabled(false) // 禁用内部工具执行
+						.build())
+				// 当前CoordinatorNode节点只绑定一个计划工具
+				.defaultTools(new PlannerTool())
+				.build();
+	}
+
+	@SneakyThrows
+	@Bean
+	public ChatClient plannerAgent(ChatClient.Builder chatClientBuilder) {
+		return chatClientBuilder.build();
+	}
+
+	@SneakyThrows
+	@Bean
+	public ChatClient reporterAgent(ChatClient.Builder chatClientBuilder) {
+		return chatClientBuilder.build();
 	}
 
 }
