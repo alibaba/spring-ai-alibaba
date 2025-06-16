@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.service.dsl;
 
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.util.Map;
 

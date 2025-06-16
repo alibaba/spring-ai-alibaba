@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedConstruction;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -37,7 +38,10 @@ import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * 测试DashScopeApi类中的uploadFile方法
@@ -85,8 +89,8 @@ class DashScopeApiUploadFileTests {
 
 		dashScopeApi = DashScopeApi.builder().apiKey("test-api-key").build();
 
-		mockCall = mock(Call.class);
-		mockResponse = mock(Response.class);
+		mockCall = Mockito.mock(Call.class);
+		mockResponse = Mockito.mock(Response.class);
 	}
 
 	/**

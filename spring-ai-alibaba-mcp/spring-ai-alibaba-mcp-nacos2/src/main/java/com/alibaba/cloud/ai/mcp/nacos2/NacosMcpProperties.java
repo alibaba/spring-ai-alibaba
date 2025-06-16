@@ -31,14 +31,13 @@ import org.springframework.core.env.PropertyResolver;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.PropertySources;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static java.util.Collections.unmodifiableMap;
 
 /**
  * @author Sunrisea
@@ -214,7 +213,7 @@ public class NacosMcpProperties {
 				}
 			}
 		}
-		return unmodifiableMap(subProperties);
+		return Collections.unmodifiableMap(subProperties);
 	}
 
 	private String[] getPropertyNames(PropertySource propertySource) {

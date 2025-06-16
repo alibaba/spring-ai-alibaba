@@ -232,7 +232,7 @@
         <mcp.version>0.10.0</mcp.version>
 
         <!-- CheckStyle Plugin -->
-        <disable.checks>true</disable.checks>
+        <disable.checks>false</disable.checks>
 
         <!-- Unit Test Config -->
         <surefireArgLine>-Xms512m -Xmx1024m</surefireArgLine>
@@ -348,40 +348,26 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${maven-checkstyle-plugin.version}</version>
+                <configuration>
+                    <consoleOutput>true</consoleOutput>
+                    <configLocation>tools/src/checkstyle/checkstyle.xml</configLocation>
+                    <headerLocation>tools/src/checkstyle/checkstyle-header.txt</headerLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
                         <version>${puppycrawl-tools-checkstyle.version}</version>
                     </dependency>
-                    <dependency>
-                        <groupId>io.spring.javaformat</groupId>
-                        <artifactId>spring-javaformat-checkstyle</artifactId>
-                        <version>0.0.43</version>
-                    </dependency>
                 </dependencies>
                 <executions>
                     <execution>
-                        <id>checkstyle-validation</id>
+                        <id>validate</id>
                         <goals>
                             <goal>check</goal>
                         </goals>
                         <phase>validate</phase>
-                        <inherited>true</inherited>
-                        <configuration>
-                            <consoleOutput>true</consoleOutput>
-                            <skip>${disable.checks}</skip>
-                            <configLocation>tools/src/checkstyle/checkstyle.xml</configLocation>
-                            <headerLocation>tools/src/checkstyle/checkstyle-header.txt</headerLocation>
-                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                            <propertyExpansion>checkstyle.build.directory=${project.build.directory}
-                                checkstyle.suppressions.file=${project.basedir}/tools/src/checkstyle/checkstyle-suppressions.xml
-                                checkstyle.additional.suppressions.file=${project.basedir}/tools/src/checkstyle/checkstyle-suppressions.xml
-                                checkstyle.header.file=${project.basedir}/tools/src/checkstyle/checkstyle-header.txt</propertyExpansion>
-                            <failsOnError>${maven-checkstyle-plugin.failsOnError}</failsOnError>
-                            <violationSeverity>warning</violationSeverity>
-                            <failOnViolation>${maven-checkstyle-plugin.failOnViolation}</failOnViolation>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

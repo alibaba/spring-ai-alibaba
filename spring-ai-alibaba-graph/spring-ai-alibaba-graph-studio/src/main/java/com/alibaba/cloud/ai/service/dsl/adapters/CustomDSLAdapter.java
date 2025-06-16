@@ -15,10 +15,15 @@
  */
 package com.alibaba.cloud.ai.service.dsl.adapters;
 
+import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppMetadata;
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.chatbot.ChatBot;
-import com.alibaba.cloud.ai.model.workflow.*;
+import com.alibaba.cloud.ai.model.workflow.Edge;
+import com.alibaba.cloud.ai.model.workflow.Graph;
+import com.alibaba.cloud.ai.model.workflow.Node;
+import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.service.dsl.AbstractDSLAdapter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
@@ -29,9 +34,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import com.alibaba.cloud.ai.model.App;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * CustomDSLAdapter converts spring ai alibaba DSL to {@link App} and vice versa.

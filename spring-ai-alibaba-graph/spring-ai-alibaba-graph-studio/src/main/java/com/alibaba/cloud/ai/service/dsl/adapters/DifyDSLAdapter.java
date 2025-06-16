@@ -20,7 +20,12 @@ import com.alibaba.cloud.ai.model.AppMetadata;
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.chatbot.ChatBot;
-import com.alibaba.cloud.ai.model.workflow.*;
+import com.alibaba.cloud.ai.model.workflow.Edge;
+import com.alibaba.cloud.ai.model.workflow.Graph;
+import com.alibaba.cloud.ai.model.workflow.Node;
+import com.alibaba.cloud.ai.model.workflow.NodeData;
+import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.workflow.nodedata.DocumentExtractorNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
@@ -38,7 +43,13 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

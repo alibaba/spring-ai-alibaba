@@ -17,7 +17,10 @@ package com.alibaba.cloud.ai.dbconnector;
 
 import org.springframework.stereotype.Service;
 
-import static com.alibaba.cloud.ai.dbconnector.ErrorCodeEnum.*;
+import static com.alibaba.cloud.ai.dbconnector.ErrorCodeEnum.DATASOURCE_CONNECTION_FAILURE_08S01;
+import static com.alibaba.cloud.ai.dbconnector.ErrorCodeEnum.PASSWORD_ERROR_28000;
+import static com.alibaba.cloud.ai.dbconnector.ErrorCodeEnum.DATABASE_NOT_EXIST_42000;
+import static com.alibaba.cloud.ai.dbconnector.ErrorCodeEnum.OTHERS;
 
 @Service
 public class MysqlJdbcConnectionPool extends AbstractDBConnectionPool {

@@ -16,7 +16,11 @@
 package com.alibaba.cloud.ai.prompt;
 
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.prompt.*;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.PromptTemplateActions;
+import org.springframework.ai.chat.prompt.PromptTemplateMessageActions;
 import org.springframework.ai.content.Media;
 import org.springframework.core.io.Resource;
 

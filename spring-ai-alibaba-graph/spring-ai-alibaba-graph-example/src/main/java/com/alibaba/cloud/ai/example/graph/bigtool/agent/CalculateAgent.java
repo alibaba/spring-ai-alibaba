@@ -35,7 +35,10 @@ import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
-import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.*;
+import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.HIT_TOOL;
+import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.METHOD_NAME;
+import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.METHOD_PARAMETER_TYPES;
+import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.SOLUTION;
 
 public class CalculateAgent implements NodeAction {
 
