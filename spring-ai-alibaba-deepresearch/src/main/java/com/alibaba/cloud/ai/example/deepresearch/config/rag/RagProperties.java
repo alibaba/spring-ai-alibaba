@@ -18,9 +18,9 @@ public class RagProperties {
 	public static final String RAG_PREFIX = DeepResearchProperties.PREFIX + ".rag";
 
 	/**
-	 * 是否启用RAG功能，默认为true。
+	 * 是否启用RAG功能，默认为false。
 	 */
-	private boolean enabled = true;
+	private boolean enabled = false;
 
 	/**
 	 * 向量存储类型，默认为"simple"，可选值还包括"elasticsearch"。

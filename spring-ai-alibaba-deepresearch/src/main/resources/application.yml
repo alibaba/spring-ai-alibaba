@@ -51,36 +51,10 @@ spring:
           enabled: true
           # 可以设置为 'simple' 或 'elasticsearch'
           vector-store-type: simple
-          simple:
-            # simple模式下的存储文件路径
-            storage-path: "rag_vector_store.json"
-          # elasticsearch模式下的下ES相关配置
-          elasticsearch:
-            uris: http://localhost:9200
-            username: your-es-username
-            password: your-es-password
-            index-name: "spring-ai-rag-es-index"
-            dimensions: 1536 # 请根据您的Embedding模型维度修改
-            similarity: cosine # 请根据您的需求选择合适的相似度计算方式
           data:
             # 启动时加载 classpath下data目录中的所有文件
             locations:
               - "classpath:/data/"
-            # 定时扫描配置
-            scan:
-              enabled: true # 设置为true以开启
-              directory: "/path/to/your/unprocessed/docs" # 监控此目录
-              archive-directory: "/path/to/your/processed/docs/archive" # 处理后移动到此
-              cron: "0 */5 * * * *" # 每5分钟执行一次
-          pipeline:
-            # 设置为 true 来开启查询扩展
-            query-expansion-enabled: true
-            # 设置为 true 来开启查询翻译
-            query-translation-enabled: false
-            query-translation-language: "English"
-            # 设置为 true 来开启后处理（仅选择第一个文档）
-            post-processing-select-first-enabled: true
-
 logging:
   level:
     com.alibaba.cloud.ai.example.deepresearch: debug
