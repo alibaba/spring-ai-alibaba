@@ -22,15 +22,15 @@ import java.io.InputStream;
 import java.nio.file.*;
 
 /**
- * Copy the file `classpath:/templates/application.yml` to the
- * `src/main/resources/application.yml` directory in the generated project.
+ * Copy the file `classpath:/templates/default-application.yml` to the
+ * `src/main/resources/default-application.yml` directory in the generated project.
  */
 public class ApplicationYamlContributor implements ProjectContributor {
 
 	/**
-	 * Corresponding src/main/resources/templates/application.yml
+	 * Corresponding src/main/resources/templates/default-application.yml
 	 */
-	private static final String RESOURCE_PATH = "/templates/application.yml";
+	private static final String RESOURCE_PATH = "/templates/default-application.yml";
 
 	@Override
 	public void contribute(Path projectRoot) throws IOException {
