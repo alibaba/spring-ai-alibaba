@@ -18,9 +18,9 @@ package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
+import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
-import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallback;
@@ -31,7 +31,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -79,7 +78,6 @@ public class AgentsConfiguration {
 	 * ToolCallbackProviders.
 	 * @return ChatClient
 	 */
-	@SneakyThrows
 	@Bean
 	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("researchAgent");
@@ -96,7 +94,6 @@ public class AgentsConfiguration {
 	 * ToolCallbackProviders.
 	 * @return ChatClient
 	 */
-	@SneakyThrows
 	@Bean
 	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties) {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("coderAgent");

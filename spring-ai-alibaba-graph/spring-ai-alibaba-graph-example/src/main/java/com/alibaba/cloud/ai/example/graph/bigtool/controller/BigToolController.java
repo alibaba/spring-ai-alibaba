@@ -22,7 +22,12 @@ import com.alibaba.cloud.ai.example.graph.bigtool.agent.Tool;
 import com.alibaba.cloud.ai.example.graph.bigtool.agent.ToolAgent;
 import com.alibaba.cloud.ai.example.graph.bigtool.service.VectorStoreService;
 import com.alibaba.cloud.ai.example.graph.bigtool.utils.MethodUtils;
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.OverAllStateFactory;
+import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.slf4j.Logger;
@@ -37,9 +42,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.*;
+import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.HIT_TOOL;
+import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.INPUT_KEY;
+import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.METHOD_NAME;
+import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.METHOD_PARAMETER_TYPES;
+import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.SOLUTION;
+import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.TOOL_LIST;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
@@ -111,7 +124,7 @@ public class BigToolController {
 	}
 
 	@GetMapping("/search")
-	public String search(@RequestParam String query) {
+	public String search(@RequestParam String query) throws GraphRunnerException {
 		Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query, TOOL_LIST, documents));
 		return invoke.get().value("solution").get().toString();
 	}

@@ -16,15 +16,17 @@
 
 package com.alibaba.cloud.ai.example.graph.openmanus;
 
-import java.util.Map;
-
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.Builder;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.OverAllStateFactory;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
@@ -32,6 +34,8 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 import static com.alibaba.cloud.ai.example.graph.openmanus.OpenManusPrompt.PLANNING_SYSTEM_PROMPT;
 import static com.alibaba.cloud.ai.example.graph.openmanus.OpenManusPrompt.STEP_SYSTEM_PROMPT;
@@ -58,7 +62,7 @@ public class OpenmanusController {
 			// .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultToolCallbacks(Builder.getToolCallList())// tools registered will only
-															// be used
+			// be used
 			// as tool description
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
@@ -67,7 +71,7 @@ public class OpenmanusController {
 			.defaultSystem(STEP_SYSTEM_PROMPT)
 			// .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
 			.defaultToolCallbacks(Builder.getManusAgentToolCalls())// tools registered
-																	// will only
+			// will only
 			// be used as tool description
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
@@ -118,7 +122,7 @@ public class OpenmanusController {
 	 * ChatClient 简单调用
 	 */
 	@GetMapping("/chat")
-	public String simpleChat(String query) {
+	public String simpleChat(String query) throws GraphRunnerException {
 
 		return compiledGraph.invoke(Map.of("input", query)).get().data().toString();
 	}

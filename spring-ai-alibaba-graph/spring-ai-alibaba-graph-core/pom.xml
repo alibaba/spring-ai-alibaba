@@ -163,7 +163,6 @@
             <optional>true</optional>
         </dependency>
 
-
         <!-- https://mvnrepository.com/artifact/org.mongodb/mongodb-driver-sync -->
         <dependency>
             <groupId>org.mongodb</groupId>

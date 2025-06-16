@@ -21,8 +21,8 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator.Data;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -36,8 +36,13 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -255,7 +260,7 @@ public class StateGraphStreamTest {
 	 */
 	private static AsyncGenerator.WithResult<StreamingOutput> getStreamingOutputWithResult(OverAllState s) {
 
-		BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
+		BlockingQueue<Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
 		AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
 				new AsyncGeneratorQueue.Generator<>(queue));
 		String str = "random";
@@ -366,7 +371,7 @@ public class StateGraphStreamTest {
 	 * outputs are properly handled and aggregated through the graph.
 	 */
 	@Test
-	public void testStreamingOutputProcessing() throws GraphStateException {
+	public void testStreamingOutputProcessing() throws Exception {
 		StateGraph stateGraph = new StateGraph(() -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
 			keyStrategyMap.put("messages", new AppendStrategy());

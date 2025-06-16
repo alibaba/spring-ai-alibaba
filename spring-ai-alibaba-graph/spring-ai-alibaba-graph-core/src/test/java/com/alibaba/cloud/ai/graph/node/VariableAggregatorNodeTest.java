@@ -15,15 +15,20 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
-import com.alibaba.cloud.ai.graph.node.VariableAggregatorNode;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class VariableAggregatorNodeTest {
 

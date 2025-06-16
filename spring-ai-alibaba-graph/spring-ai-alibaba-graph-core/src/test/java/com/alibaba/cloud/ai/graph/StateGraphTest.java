@@ -15,9 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.*;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.*;
@@ -30,7 +34,12 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
@@ -55,7 +64,7 @@ public class StateGraphTest {
 	 * @param map The map to be sorted.
 	 * @return A list of map entries sorted by key.
 	 */
-	public static <T> List<Map.Entry<String, T>> sortMap(Map<String, T> map) {
+	public static <T> List<Entry<String, T>> sortMap(Map<String, T> map) {
 		return map.entrySet().stream().sorted(Map.Entry.comparingByKey()).collect(Collectors.toList());
 	}
 
@@ -449,7 +458,7 @@ public class StateGraphTest {
 	}
 
 	@Test
-	public void testWithParallelBranchWithStream() throws GraphStateException {
+	public void testWithParallelBranchWithStream() throws GraphStateException, GraphRunnerException {
 		var workflow = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
 			.addNode("A1", makeNodeForStream("A1"))
 			.addNode("A2", makeNodeForStream("A2"))
@@ -616,7 +625,7 @@ public class StateGraphTest {
 	 * ReplaceStrategy for specific keys.
 	 */
 	@Test
-	public void testKeyStrategyFactoryCreateStateGraph() throws GraphStateException {
+	public void testKeyStrategyFactoryCreateStateGraph() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
@@ -638,7 +647,7 @@ public class StateGraphTest {
 	}
 
 	@Test
-	public void testLifecycleListenerGraphWithLIFO() throws GraphStateException {
+	public void testLifecycleListenerGraphWithLIFO() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
@@ -681,7 +690,7 @@ public class StateGraphTest {
 	 * execution.
 	 */
 	@Test
-	public void testLifecycleListenerGraphWithCompleteAndStart() throws GraphStateException {
+	public void testLifecycleListenerGraphWithCompleteAndStart() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
@@ -714,7 +723,7 @@ public class StateGraphTest {
 	 * execution.
 	 */
 	@Test
-	public void testLifecycleListenerGraphWithError() throws GraphStateException {
+	public void testLifecycleListenerGraphWithError() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			keyStrategyHashMap.put("prop1", new ReplaceStrategy());

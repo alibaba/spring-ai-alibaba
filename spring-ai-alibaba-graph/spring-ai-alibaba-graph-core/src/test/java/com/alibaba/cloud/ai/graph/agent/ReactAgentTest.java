@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -37,10 +38,16 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 class ReactAgentTest {
@@ -110,16 +117,14 @@ class ReactAgentTest {
 	public void testReactAgentWithPreLlmHook() throws Exception {
 		Map<String, String> prellmStore = new HashMap<>();
 
-		ReactAgent agent = ReactAgent.builder()
-			.name("testAgent")
-			.chatClient(chatClient)
-			.state(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()))
-			.resolver(toolCallbackResolver)
-			.preLlmHook(state -> {
-				prellmStore.put("timestamp", String.valueOf(System.currentTimeMillis()));
-				return Map.of();
-			})
-			.build();
+		ReactAgent agent = ReactAgent.builder().name("testAgent").chatClient(chatClient).state(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("messages", new AppendStrategy());
+			return keyStrategyHashMap;
+		}).resolver(toolCallbackResolver).preLlmHook(state -> {
+			prellmStore.put("timestamp", String.valueOf(System.currentTimeMillis()));
+			return Map.of();
+		}).build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 		try {
@@ -140,10 +145,11 @@ class ReactAgentTest {
 		// Create a map to store processed responses
 		Map<String, String> responseStore = new HashMap<>();
 
-		ReactAgent agent = ReactAgent.builder()
-			.name("testAgent")
-			.chatClient(chatClient)
-			.state(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()))
+		ReactAgent agent = ReactAgent.builder().name("testAgent").chatClient(chatClient).state(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("messages", new AppendStrategy());
+			return keyStrategyHashMap;
+		})
 			.resolver(toolCallbackResolver)
 
 			.postLlmHook(state -> {
@@ -170,17 +176,15 @@ class ReactAgentTest {
 		// Create a map to store tool parameters
 		Map<String, Object> toolParams = new HashMap<>();
 
-		ReactAgent agent = ReactAgent.builder()
-			.name("testAgent")
-			.chatClient(chatClient)
-			.state(() -> new OverAllState().registerKeyAndStrategy("toolParams", new ReplaceStrategy())
-				.registerKeyAndStrategy("messages", new AppendStrategy()))
-			.resolver(toolCallbackResolver)
-			.preToolHook(state -> {
-				toolParams.put("timestamp", System.currentTimeMillis());
-				return Map.of();
-			})
-			.build();
+		ReactAgent agent = ReactAgent.builder().name("testAgent").chatClient(chatClient).state(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("messages", new AppendStrategy());
+			keyStrategyHashMap.put("toolParams", new ReplaceStrategy());
+			return keyStrategyHashMap;
+		}).resolver(toolCallbackResolver).preToolHook(state -> {
+			toolParams.put("timestamp", System.currentTimeMillis());
+			return Map.of();
+		}).build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 		try {
@@ -204,8 +208,12 @@ class ReactAgentTest {
 			.name("testAgent")
 			.chatClient(chatClient)
 			.resolver(toolCallbackResolver)
-			.state(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
-				.registerKeyAndStrategy("toolOutput", new ReplaceStrategy()))
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				keyStrategyHashMap.put("toolOutput", new ReplaceStrategy());
+				return keyStrategyHashMap;
+			})
 			.postToolHook(state -> {
 				toolResults.put("result", "collected: " + "tool output");
 				return Map.of();
@@ -230,30 +238,25 @@ class ReactAgentTest {
 		Map<String, Object> toolParams = new HashMap<>();
 		Map<String, Object> toolResults = new HashMap<>();
 
-		ReactAgent agent = ReactAgent.builder()
-			.name("testAgent")
-			.chatClient(chatClient)
-			.state(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
-				.registerKeyAndStrategy("toolParams", new ReplaceStrategy())
-				.registerKeyAndStrategy("toolOutput", new ReplaceStrategy()))
-			.resolver(toolCallbackResolver)
-			.preLlmHook(state -> {
-				prellmStore.put("timestamp", String.valueOf(System.currentTimeMillis()));
-				return Map.of();
-			})
-			.postLlmHook(state -> {
-				responseStore.put("response", "Processed: " + state.value("messages"));
-				return Map.of();
-			})
-			.preToolHook(state -> {
-				toolParams.put("timestamp", System.currentTimeMillis());
-				return Map.of();
-			})
-			.postToolHook(state -> {
-				toolResults.put("result", "collected: " + "tool output");
-				return Map.of();
-			})
-			.build();
+		ReactAgent agent = ReactAgent.builder().name("testAgent").chatClient(chatClient).state(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("messages", new AppendStrategy());
+			keyStrategyHashMap.put("toolOutput", new ReplaceStrategy());
+			keyStrategyHashMap.put("toolParams", new ReplaceStrategy());
+			return keyStrategyHashMap;
+		}).resolver(toolCallbackResolver).preLlmHook(state -> {
+			prellmStore.put("timestamp", String.valueOf(System.currentTimeMillis()));
+			return Map.of();
+		}).postLlmHook(state -> {
+			responseStore.put("response", "Processed: " + state.value("messages"));
+			return Map.of();
+		}).preToolHook(state -> {
+			toolParams.put("timestamp", System.currentTimeMillis());
+			return Map.of();
+		}).postToolHook(state -> {
+			toolResults.put("result", "collected: " + "tool output");
+			return Map.of();
+		}).build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 		try {

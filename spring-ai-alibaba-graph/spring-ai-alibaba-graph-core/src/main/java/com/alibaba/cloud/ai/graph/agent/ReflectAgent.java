@@ -15,7 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -24,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -86,14 +91,13 @@ public class ReflectAgent {
 			throws GraphStateException {
 		this.maxIterations = maxIterations;
 		logger.debug("Creating reflection graph with max iterations: {}", maxIterations);
-		OverAllStateFactory stateFactory = () -> {
-			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy(MESSAGES, new ReplaceStrategy());
-			state.registerKeyAndStrategy(ITERATION_NUM, new ReplaceStrategy());
-			return state;
-		};
 
-		StateGraph stateGraph = new StateGraph(stateFactory).addNode(GRAPH_NODE_ID, node_async(graph))
+		StateGraph stateGraph = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put(MESSAGES, new ReplaceStrategy());
+			keyStrategyHashMap.put(ITERATION_NUM, new ReplaceStrategy());
+			return keyStrategyHashMap;
+		}).addNode(GRAPH_NODE_ID, node_async(graph))
 			.addNode(REFLECTION_NODE_ID, node_async(reflection))
 			.addEdge(START, GRAPH_NODE_ID)
 			.addConditionalEdges(GRAPH_NODE_ID, edge_async(this::graphCount),
