@@ -21,11 +21,11 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import org.bsc.async.AsyncGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.codec.ServerSentEvent;
@@ -45,7 +45,7 @@ public class GraphProcess {
 
 	private static final Logger logger = LoggerFactory.getLogger(GraphProcess.class);
 
-	private final ExecutorService executor = Executors.newSingleThreadExecutor();
+	private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
 	private CompiledGraph compiledGraph;
 
@@ -68,11 +68,12 @@ public class GraphProcess {
 		executor.submit(() -> {
 			generator.forEachAsync(output -> {
 				try {
-					logger.info("output = {}", output);
+					// logger.info("output = {}", output);
 					String nodeName = output.node();
 					String content;
 					if (output instanceof StreamingOutput streamingOutput) {
 						content = JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk()));
+						logger.info("Streaming output from node {}: {}", nodeName, streamingOutput.chunk());
 					}
 					else {
 						JSONObject nodeOutput = new JSONObject();
@@ -83,12 +84,14 @@ public class GraphProcess {
 					sink.tryEmitNext(ServerSentEvent.builder(content).build());
 				}
 				catch (Exception e) {
+					logger.error("Error processing output", e);
 					throw new CompletionException(e);
 				}
 			}).thenAccept(v -> {
 				// 正常完成
 				sink.tryEmitComplete();
 			}).exceptionally(e -> {
+				logger.error("Error in stream processing", e);
 				sink.tryEmitError(e);
 				return null;
 			});

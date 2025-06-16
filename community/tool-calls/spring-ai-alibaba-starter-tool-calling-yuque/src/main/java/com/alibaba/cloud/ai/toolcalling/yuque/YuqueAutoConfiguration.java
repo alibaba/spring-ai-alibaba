@@ -24,7 +24,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
-import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * @author 北极星
@@ -36,20 +35,56 @@ import org.springframework.web.reactive.function.client.WebClient;
 @EnableConfigurationProperties(YuqueProperties.class)
 public class YuqueAutoConfiguration {
 
-	@Bean(name = YuqueConstants.CREATE_DOC_TOOL_NAME)
+	@Bean(name = YuqueConstants.CREATE_BOOK_TOOL_NAME)
 	@ConditionalOnMissingBean
-	@Description("Use yuque api to invoke a http request to create a doc.")
-	public YuqueQueryDocService createYuqueDoc(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
-		return new YuqueQueryDocService(WebClientTool.builder(jsonParseTool, yuqueProperties)
+	@Description("Use yuque api to invoke a http request to create a book.")
+	public YuqueCreateBookService createYuqueBook(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
+		return new YuqueCreateBookService(WebClientTool.builder(jsonParseTool, yuqueProperties)
 			.httpHeadersConsumer(headers -> headers.set("X-Auth-Token", yuqueProperties.getToken()))
 			.build(), jsonParseTool);
 	}
 
-	@Bean(name = YuqueConstants.CREATE_BOOK_TOOL_NAME)
+	@Bean(name = YuqueConstants.QUERY_BOOK_TOOL_NAME)
 	@ConditionalOnMissingBean
-	@Description("Use yuque api to invoke a http request to create a book.")
-	public YuqueQueryBookService createYuqueBook(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
+	@Description("Use yuque api to invoke a http request to query a book.")
+	public YuqueQueryBookService queryYuqueBook(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
 		return new YuqueQueryBookService(WebClientTool.builder(jsonParseTool, yuqueProperties)
+			.httpHeadersConsumer(headers -> headers.set("X-Auth-Token", yuqueProperties.getToken()))
+			.build(), jsonParseTool);
+	}
+
+	@Bean(name = YuqueConstants.UPDATE_BOOK_TOOL_NAME)
+	@ConditionalOnMissingBean
+	@Description("Use yuque api to invoke a http request to update a book.")
+	public YuqueUpdateBookService updateYuqueBook(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
+		return new YuqueUpdateBookService(WebClientTool.builder(jsonParseTool, yuqueProperties)
+			.httpHeadersConsumer(headers -> headers.set("X-Auth-Token", yuqueProperties.getToken()))
+			.build(), jsonParseTool);
+	}
+
+	@Bean(name = YuqueConstants.DELETE_BOOK_TOOL_NAME)
+	@ConditionalOnMissingBean
+	@Description("Use yuque api to invoke a http request to delete a book.")
+	public YuqueDeleteBookService deleteYuqueBook(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
+		return new YuqueDeleteBookService(WebClientTool.builder(jsonParseTool, yuqueProperties)
+			.httpHeadersConsumer(headers -> headers.set("X-Auth-Token", yuqueProperties.getToken()))
+			.build(), jsonParseTool);
+	}
+
+	@Bean(name = YuqueConstants.CREATE_DOC_TOOL_NAME)
+	@ConditionalOnMissingBean
+	@Description("Use yuque api to invoke a http request to create a doc.")
+	public YuqueCreateDocService createYuqueDoc(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
+		return new YuqueCreateDocService(WebClientTool.builder(jsonParseTool, yuqueProperties)
+			.httpHeadersConsumer(headers -> headers.set("X-Auth-Token", yuqueProperties.getToken()))
+			.build(), jsonParseTool);
+	}
+
+	@Bean(name = YuqueConstants.QUERY_DOC_TOOL_NAME)
+	@ConditionalOnMissingBean
+	@Description("Use yuque api to invoke a http request to query a doc.")
+	public YuqueQueryDocService queryYuqueDoc(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
+		return new YuqueQueryDocService(WebClientTool.builder(jsonParseTool, yuqueProperties)
 			.httpHeadersConsumer(headers -> headers.set("X-Auth-Token", yuqueProperties.getToken()))
 			.build(), jsonParseTool);
 	}

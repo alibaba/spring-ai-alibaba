@@ -16,15 +16,46 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
+import com.google.common.collect.Maps;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Allen Hu
- * @since 2025/5/24
+ * @since 2025/5/24 <<<<<<< HEAD
  */
 @ConfigurationProperties(prefix = DeepResearchProperties.PREFIX)
 public class DeepResearchProperties {
 
-	public static final String PREFIX = "spring.ai.alibaba.deepreserch";
+	public static final String PREFIX = "spring.ai.alibaba.deepresearch";
+
+	/**
+	 * Parallel node count, key=node name, value=node count
+	 */
+	private Map<String, Integer> parallelNodeCount = new HashMap<>();
+
+	/**
+	 * McpClient mapping for Agent name. key=Agent name, value=McpClient Name
+	 */
+	private Map<String, Set<String>> mcpClientMapping = Maps.newHashMap();
+
+	public Map<String, Integer> getParallelNodeCount() {
+		return parallelNodeCount;
+	}
+
+	public void setParallelNodeCount(Map<String, Integer> parallelNodeCount) {
+		this.parallelNodeCount = parallelNodeCount;
+	}
+
+	public Map<String, Set<String>> getMcpClientMapping() {
+		return mcpClientMapping;
+	}
+
+	public void setMcpClientMapping(Map<String, Set<String>> mcpClientMapping) {
+		this.mcpClientMapping = mcpClientMapping;
+	}
 
 }

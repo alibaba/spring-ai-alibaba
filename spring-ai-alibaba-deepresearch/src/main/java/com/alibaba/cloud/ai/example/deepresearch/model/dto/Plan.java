@@ -16,16 +16,16 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
 
 import java.util.List;
 
 /**
  * @author yingzi
+ * @author ViliamSun
  * @since 2025/5/18 17:48
  */
-@Data
 public class Plan {
 
 	private String title;
@@ -37,7 +37,6 @@ public class Plan {
 
 	private List<Step> steps;
 
-	@Data
 	public static class Step {
 
 		@JsonProperty("need_web_search")
@@ -52,14 +51,96 @@ public class Plan {
 
 		private String executionRes;
 
+		private String executionStatus;
+
+		public boolean isNeedWebSearch() {
+			return needWebSearch;
+		}
+
+		public void setNeedWebSearch(boolean needWebSearch) {
+			this.needWebSearch = needWebSearch;
+		}
+
+		public String getTitle() {
+			return title;
+		}
+
+		public void setTitle(String title) {
+			this.title = title;
+		}
+
+		public String getDescription() {
+			return description;
+		}
+
+		public void setDescription(String description) {
+			this.description = description;
+		}
+
+		public StepType getStepType() {
+			return stepType;
+		}
+
+		public void setStepType(StepType stepType) {
+			this.stepType = stepType;
+		}
+
+		public String getExecutionRes() {
+			return executionRes;
+		}
+
+		public void setExecutionRes(String executionRes) {
+			this.executionRes = executionRes;
+		}
+
+		public String getExecutionStatus() {
+			return executionStatus;
+		}
+
+		public void setExecutionStatus(String executionStatus) {
+			this.executionStatus = executionStatus;
+		}
+
 	}
 
 	public enum StepType {
 
 		@JsonProperty("research")
-		RESEARCH, @JsonProperty("processing")
+		@JsonAlias("RESEARCH")
+		RESEARCH,
+
+		@JsonProperty("processing")
+		@JsonAlias("PROCESSING")
 		PROCESSING
 
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public String getThought() {
+		return thought;
+	}
+
+	public void setThought(String thought) {
+		this.thought = thought;
+	}
+
+	public List<Step> getSteps() {
+		return steps;
+	}
+
+	public void setSteps(List<Step> steps) {
+		this.steps = steps;
+	}
+
+	public void setHasEnoughContext(boolean hasEnoughContext) {
+		this.hasEnoughContext = hasEnoughContext;
 	}
 
 	public boolean isHasEnoughContext() {

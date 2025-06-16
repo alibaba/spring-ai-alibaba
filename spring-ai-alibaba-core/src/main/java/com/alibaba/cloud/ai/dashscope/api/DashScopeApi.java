@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.dashscope.api;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
 import com.alibaba.cloud.ai.dashscope.common.ErrorCodeEnum;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
@@ -42,7 +42,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -69,8 +68,6 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.*;
 
 /**
  * @author nuocheng.lxm
@@ -133,7 +130,7 @@ public class DashScopeApi {
 
 		// For DashScope API, the workspace ID is passed in the headers.
 		if (StringUtils.hasText(workSpaceId)) {
-			this.headers.add(HEADER_WORK_SPACE_ID, workSpaceId);
+			this.headers.add(DashScopeApiConstants.HEADER_WORK_SPACE_ID, workSpaceId);
 		}
 
 		// Check API Key in headers.
@@ -480,7 +477,7 @@ public class DashScopeApi {
 	private String addFile(String leaseId, UploadRequest request) {
 		try {
 			UploadRequest.AddFileRequest addFileRequest = new UploadRequest.AddFileRequest(leaseId,
-					DEFAULT_PARSER_NAME);
+					DashScopeApiConstants.DEFAULT_PARSER_NAME);
 			ResponseEntity<CommonResponse<AddFileResponseData>> response = this.restClient.post()
 				.uri("/api/v1/datacenter/category/{categoryId}/add_file", request.categoryId)
 				.body(addFileRequest)
@@ -1513,7 +1510,7 @@ public class DashScopeApi {
 			this.responseErrorHandler = api.getResponseErrorHandler();
 		}
 
-		private String baseUrl = DEFAULT_BASE_URL;
+		private String baseUrl = DashScopeApiConstants.DEFAULT_BASE_URL;
 
 		private ApiKey apiKey;
 
