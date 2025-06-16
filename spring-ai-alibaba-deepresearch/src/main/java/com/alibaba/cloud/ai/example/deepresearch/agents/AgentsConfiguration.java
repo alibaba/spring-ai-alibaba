@@ -90,7 +90,7 @@ public class AgentsConfiguration {
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
 		return chatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt))
-                .defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("researchAgent")).build())
+			.defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("researchAgent")).build())
 			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 			.build();
@@ -107,7 +107,7 @@ public class AgentsConfiguration {
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("coderAgent");
 		return chatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(coderPrompt))
-                .defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("coderAgent")).build())
+			.defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("coderAgent")).build())
 			.defaultTools(new PythonReplTool(coderProperties))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 			.build();
