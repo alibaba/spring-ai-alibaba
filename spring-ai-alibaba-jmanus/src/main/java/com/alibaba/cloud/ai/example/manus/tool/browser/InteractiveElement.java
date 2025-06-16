@@ -46,7 +46,7 @@ public class InteractiveElement {
 
 	/**
 	 * @param index 全局索引
-  	 * @param frame 元素所在的frame
+	 * @param frame 元素所在的frame
 	 * @param elementMap 元素的其余参数
 	 */
 	public InteractiveElement(int index, Frame frame, Map<String, Object> elementMap) {
