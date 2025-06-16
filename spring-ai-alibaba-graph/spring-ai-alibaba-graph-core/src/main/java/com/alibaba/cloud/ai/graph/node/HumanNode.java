@@ -17,7 +17,8 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -50,7 +51,7 @@ public class HumanNode implements NodeAction {
 
 	//
 	@Override
-	public Map<String, Object> apply(OverAllState state) throws GraphInterruptException {
+	public Map<String, Object> apply(OverAllState state) throws GraphRunnerException {
 		var shouldInterrupt = interruptStrategy.equals("always")
 				|| (interruptStrategy.equals("conditioned") && interruptCondition.apply(state));
 		if (shouldInterrupt) {
@@ -77,9 +78,9 @@ public class HumanNode implements NodeAction {
 		return Map.of();
 	}
 
-	private void interrupt(OverAllState state) throws GraphInterruptException {
+	private void interrupt(OverAllState state) throws GraphRunnerException {
 		if (state.humanFeedback() == null || !state.isResume()) {
-			throw new GraphInterruptException("interrupt");
+			throw RunnableErrors.subGraphInterrupt.exception("interrupt");
 		}
 	}
 
