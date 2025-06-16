@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.graph.reflection;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.agent.ReflectAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ public class ReflectionController {
 	}
 
 	@GetMapping("/chat")
-	public String simpleChat(String query) throws GraphStateException {
+	public String simpleChat(String query) throws GraphRunnerException {
 		return compiledGraph.invoke(Map.of(ReflectAgent.MESSAGES, List.of(new UserMessage(query))))
 			.get()
 			.<List<Message>>value(ReflectAgent.MESSAGES)

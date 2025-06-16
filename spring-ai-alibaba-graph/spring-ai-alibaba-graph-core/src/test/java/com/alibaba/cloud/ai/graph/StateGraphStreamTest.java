@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator.Data;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -372,7 +371,7 @@ public class StateGraphStreamTest {
 	 * outputs are properly handled and aggregated through the graph.
 	 */
 	@Test
-	public void testStreamingOutputProcessing() throws GraphStateException {
+	public void testStreamingOutputProcessing() throws Exception {
 		StateGraph stateGraph = new StateGraph(() -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
 			keyStrategyMap.put("messages", new AppendStrategy());
