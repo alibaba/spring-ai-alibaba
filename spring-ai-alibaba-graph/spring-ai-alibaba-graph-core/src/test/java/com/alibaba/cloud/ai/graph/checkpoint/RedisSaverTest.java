@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class RedisSaverTest {
 
 	// 使用较为稳定的版本
-	private static final DockerImageName REDIS_IMAGE = DockerImageName.parse("valkey/valkey:8.0-alpine3.20");
+
 	static RedissonClient redisson;
 	static RedisSaver redisSaver;
 
