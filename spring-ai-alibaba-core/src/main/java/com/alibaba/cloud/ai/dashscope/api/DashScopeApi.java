@@ -169,22 +169,22 @@ public class DashScopeApi {
 	public enum ChatModel {
 
 		/**
-		 * 模型支持8k tokens上下文，为了保证正常的使用和输出，API限定用户输入为6k tokens。
+		 * The model supports an 8k tokens context, and to ensure normal use and output, the API limits user input to 6k tokens.
 		 */
 		QWEN_PLUS("qwen-plus"),
 
 		/**
-		 * 模型支持32k tokens上下文，为了保证正常的使用和输出，API限定用户输入为30k tokens。
+		 * The model supports a context of 32k tokens. To ensure normal use and output, the API limits user input to 30k tokens.
 		 */
 		QWEN_TURBO("qwen-turbo"),
 
 		/**
-		 * 模型支持8k tokens上下文，为了保证正常的使用和输出，API限定用户输入为6k tokens。
+		 * The model supports an 8k tokens context, and to ensure normal use and output, the API limits user input to 6k tokens.
 		 */
 		QWEN_MAX("qwen-max"),
 
 		/**
-		 * 模型支持30k tokens上下文，为了保证正常的使用和输出，API限定用户输入为28k tokens。
+		 * The model supports a context of 30k tokens. To ensure normal use and output, the API limits user input to 28k tokens.
 		 */
 		QWEN_MAX_LONGCONTEXT("qwen-max-longcontext");
 
@@ -201,7 +201,7 @@ public class DashScopeApi {
 	}
 
 	/*******************************************
-	 * Embedding相关
+	 * Embedding
 	 **********************************************/
 
 	public enum EmbeddingModel {
@@ -422,7 +422,7 @@ public class DashScopeApi {
 	}
 
 	public String upload(File file, UploadRequest request) {
-		// 申请上传
+		// apply to upload
 		ResponseEntity<UploadLeaseResponse> responseEntity = uploadLease(request);
 		var uploadLeaseResponse = responseEntity.getBody();
 		if (uploadLeaseResponse == null) {
