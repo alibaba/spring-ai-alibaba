@@ -17,14 +17,13 @@ package com.alibaba.cloud.ai.example.manus.tool.browser;
 
 import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 /**
- * 表示单个交互式元素的类，持有元素的Locator和所在的Frame/Page信息 同时提供管理页面中所有交互元素的能力
+ * 表示单个交互式元素的类，持有元素的Locator。
  */
 public class InteractiveElement {
 
@@ -47,6 +46,7 @@ public class InteractiveElement {
 
 	/**
 	 * @param index 全局索引
+  	 * @param frame 元素所在的frame
 	 * @param elementMap 元素的其余参数
 	 */
 	public InteractiveElement(int index, Frame frame, Map<String, Object> elementMap) {
