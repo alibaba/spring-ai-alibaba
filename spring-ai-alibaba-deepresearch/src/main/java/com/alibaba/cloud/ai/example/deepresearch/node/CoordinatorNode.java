@@ -70,16 +70,16 @@ public class CoordinatorNode implements NodeAction {
 		logger.debug("Current Coordinator messages: {}", messages);
 
 		ToolCallingChatOptions build = ToolCallingChatOptions.builder()
-				.internalToolExecutionEnabled(false) // 禁用内部工具执行
-				.build();
+			.internalToolExecutionEnabled(false) // 禁用内部工具执行
+			.build();
 
 		// 发起调用并获取完整响应
 		ChatResponse response = coordinatorAgent.prompt()
-				.tools(plannerTool)  // 使用注入的 plannerTool 实例
-				.options(DashScopeChatOptions.builder()
-						.withModel("qwen-max")
-						.build())
-				.messages(messages).call().chatResponse();
+			// .tools(plannerTool) // 使用注入的 plannerTool 实例
+			.options(DashScopeChatOptions.builder().withModel("qwen-max").build())
+			.messages(messages)
+			.call()
+			.chatResponse();
 
 		String nextStep = END;
 		Map<String, Object> updated = new HashMap<>();

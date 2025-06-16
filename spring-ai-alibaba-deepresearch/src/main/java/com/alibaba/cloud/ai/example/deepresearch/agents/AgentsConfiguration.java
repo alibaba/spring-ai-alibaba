@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import com.alibaba.cloud.ai.example.deepresearch.tool.McpClientToolCallbackProvider;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
@@ -52,6 +53,7 @@ public class AgentsConfiguration {
 	private Resource agentsConfig;
 
 	private final ApplicationContext context;
+
 	private JSONObject configJson;
 
 	public AgentsConfiguration(ApplicationContext context) {
@@ -88,6 +90,7 @@ public class AgentsConfiguration {
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
 		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset()))
+			.defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("researchAgent")).build())
 			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 			.build();
@@ -105,6 +108,7 @@ public class AgentsConfiguration {
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("coderAgent");
 		return chatClientBuilder.defaultSystem(coderPrompt.getContentAsString(Charset.defaultCharset()))
+			.defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("coderAgent")).build())
 			.defaultTools(new PythonReplTool(coderProperties))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 			.build();
@@ -112,38 +116,31 @@ public class AgentsConfiguration {
 
 	@SneakyThrows
 	@Bean
-	public ChatClient customizeAgent(ChatClient.Builder chatClientBuilder) {
-		return chatClientBuilder.build();
-	}
-
-	@SneakyThrows
-	@Bean
-	public ChatClient customize1Agent(ChatClient.Builder chatClientBuilder) {
-		return chatClientBuilder.build();
-	}
-
-	@SneakyThrows
-	@Bean
 	public ChatClient coordinatorAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder
-				.defaultOptions(ToolCallingChatOptions.builder()
-						.internalToolExecutionEnabled(false) // 禁用内部工具执行
-						.build())
-				// 当前CoordinatorNode节点只绑定一个计划工具
-				.defaultTools(new PlannerTool())
-				.build();
+			.defaultOptions(ToolCallingChatOptions.builder()
+				.model(getModelName("coordinatorAgent"))
+				.internalToolExecutionEnabled(false) // 禁用内部工具执行
+				.build())
+			// 当前CoordinatorNode节点只绑定一个计划工具
+			.defaultTools(new PlannerTool())
+			.build();
 	}
 
 	@SneakyThrows
 	@Bean
 	public ChatClient plannerAgent(ChatClient.Builder chatClientBuilder) {
-		return chatClientBuilder.build();
+		return chatClientBuilder
+			.defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("plannerAgent")).build())
+			.build();
 	}
 
 	@SneakyThrows
 	@Bean
 	public ChatClient reporterAgent(ChatClient.Builder chatClientBuilder) {
-		return chatClientBuilder.build();
+		return chatClientBuilder
+			.defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("reporterAgent")).build())
+			.build();
 	}
 
 }
