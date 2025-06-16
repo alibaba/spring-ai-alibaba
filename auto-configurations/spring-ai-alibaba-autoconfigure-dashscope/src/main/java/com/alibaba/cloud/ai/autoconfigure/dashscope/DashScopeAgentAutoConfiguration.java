@@ -25,6 +25,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -41,6 +42,8 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
  */
 
 @ConditionalOnClass(DashScopeApi.class)
+@ConditionalOnProperty(prefix = DashScopeAgentProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 		ToolCallingAutoConfiguration.class })
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
