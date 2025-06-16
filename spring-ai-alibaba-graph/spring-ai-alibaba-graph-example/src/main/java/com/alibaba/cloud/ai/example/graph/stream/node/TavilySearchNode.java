@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.graph.stream.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,10 +32,14 @@ public class TavilySearchNode implements NodeAction {
 	@Autowired(required = false)
 	private TavilySearchService tavilySearchService;
 
+	@Autowired
+	private ChatClient.Builder builder;
+
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		Optional<String> value = state.value(OverAllState.DEFAULT_INPUT_KEY, String.class);
 		StringBuilder sb = new StringBuilder();
+
 		if (value.isPresent()) {
 			String input = value.get();
 			TavilySearchService.Request request = new TavilySearchService.Request(input, null, null, null, 1, null,

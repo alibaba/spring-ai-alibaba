@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.VariableSelector;
@@ -20,19 +21,18 @@ import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
-import com.alibaba.cloud.ai.utils.StringTemplateUtil;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Convert the LLM node configuration in the Dify DSL to and from the LLMNodeData object.
+ */
 @Component
 public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData> {
 
@@ -43,130 +43,263 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 
 	@Override
 	protected List<DialectConverter<LLMNodeData>> getDialectConverters() {
-		return Stream.of(LLMNodeDialectConverter.values()).map(LLMNodeDialectConverter::dialectConverter).toList();
+		return Stream.of(LLMNodeDataConverter.LLMNodeConverter.values())
+			.map(LLMNodeDataConverter.LLMNodeConverter::dialectConverter)
+			.collect(Collectors.toList());
 	}
 
-	private enum LLMNodeDialectConverter {
+	private enum LLMNodeConverter {
 
 		DIFY(new DialectConverter<>() {
-			@Override
-			public Boolean supportDialect(DSLDialectType dialectType) {
-				return DSLDialectType.DIFY.equals(dialectType);
-			}
-
+			@SuppressWarnings("unchecked")
 			@Override
 			public LLMNodeData parse(Map<String, Object> data) {
-				List<VariableSelector> inputs = new ArrayList<>();
-				// convert prompt template
-				Map<String, Object> context = (Map<String, Object>) data.get("context");
-				List<Map<String, Object>> difyTmplList;
-				if (data.get("prompt_template") instanceof List<?>) {
-					difyTmplList = (List<Map<String, Object>>) data.get("prompt_template");
-				}
-				else {
-					difyTmplList = List.of((Map<String, Object>) data.get("prompt_template"));
-				}
-				List<LLMNodeData.PromptTemplate> tmplList = new ArrayList<>();
-				if ((Boolean) context.get("enabled")) {
-					List<String> variableSelector = (List<String>) context.get("variable_selector");
-					String systemText = (String) difyTmplList.get(0).get("text");
-					String replacement = systemText.replace("{{#context#}}",
-							variableSelector.get(0) + "." + variableSelector.get(1));
-					difyTmplList.get(0).put("text", replacement);
-				}
-				for (Map<String, Object> promptTmpl : difyTmplList) {
-					List<String> variables = new ArrayList<>();
-					String tmpl = StringTemplateUtil.fromDifyTmpl((String) promptTmpl.get("text"), variables);
-					variables.forEach(variable -> {
-						String[] splits = variable.split("\\.", 2);
-						inputs.add(new VariableSelector(splits[0], splits[1]));
-					});
-					String role = promptTmpl.containsKey("role") ? (String) promptTmpl.get("role") : "system";
-					tmplList.add(new LLMNodeData.PromptTemplate(role, tmpl));
-				}
-				// convert model config
-				Map<String, Object> modelData = (Map<String, Object>) data.get("model");
-				ObjectMapper objectMapper = new ObjectMapper();
-				objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-				objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CASE);
-				LLMNodeData.ModelConfig modelConfig = new LLMNodeData.ModelConfig()
-					.setMode((String) modelData.get("mode"))
-					.setName((String) modelData.get("name"))
-					.setProvider((String) modelData.get("provider"))
-					.setCompletionParams(objectMapper.convertValue(modelData.get("completion_params"),
-							LLMNodeData.CompletionParams.class));
-
-				LLMNodeData.MemoryConfig memoryConfig = new LLMNodeData.MemoryConfig();
-				// convert memory config
-				if (data.containsKey("memory")) {
-					List<String> variables = new ArrayList<>();
-					Map<String, Object> memoryData = (Map<String, Object>) data.get("memory");
-					String lastMessageTemplate = (String) memoryData.get("query_prompt_template");
-					lastMessageTemplate = StringTemplateUtil.fromDifyTmpl(lastMessageTemplate, variables);
-					variables.forEach(variable -> {
-						String[] splits = variable.split("\\.", 2);
-						inputs.add(new VariableSelector(splits[0], splits[1]));
-					});
-					Map<String, Object> window = (Map<String, Object>) memoryData.get("window");
-					Boolean windowEnabled = (Boolean) window.get("enabled");
-					Integer windowSize = (Integer) window.get("size");
-					memoryConfig.setEnabled(true)
-						.setWindowEnabled(windowEnabled)
-						.setWindowSize(windowSize)
-						.setLastMessageTemplate(lastMessageTemplate)
-						.setIncludeLastMessage(false);
+				LLMNodeData nd = new LLMNodeData();
+				// variable_selector -> inputs
+				List<String> sel = (List<String>) data.get("variable_selector");
+				if (sel != null && sel.size() == 2) {
+					nd.setInputs(Collections.singletonList(new VariableSelector(sel.get(0), sel.get(1))));
 				}
 
-				return new LLMNodeData(inputs, List.of(LLMNodeData.DEFAULT_OUTPUT_SCHEMA)).setModel(modelConfig)
-					.setPromptTemplate(tmplList)
-					.setMemoryConfig(memoryConfig);
+				// prompt_template (List of {role,text})
+				List<Map<String, Object>> prompts = (List<Map<String, Object>>) data.get("prompt_template");
+				if (prompts != null) {
+					List<LLMNodeData.PromptTemplate> pt = prompts.stream()
+						.map(m -> new LLMNodeData.PromptTemplate((String) m.get("role"), (String) m.get("text")))
+						.collect(Collectors.toList());
+					nd.setPromptTemplate(pt);
+				}
+
+				// model (mode,name,provider,completion_params)
+				Map<String, Object> modelMap = (Map<String, Object>) data.get("model");
+				if (modelMap != null) {
+					LLMNodeData.ModelConfig mc = new LLMNodeData.ModelConfig();
+					mc.setMode((String) modelMap.get("mode"))
+						.setName((String) modelMap.get("name"))
+						.setProvider((String) modelMap.get("provider"));
+
+					Map<String, Object> cpMap = (Map<String, Object>) modelMap.get("completion_params");
+					if (cpMap != null) {
+						LLMNodeData.CompletionParams cp = new LLMNodeData.CompletionParams();
+						if (cpMap.get("max_tokens") != null) {
+							cp.setMaxTokens(((Number) cpMap.get("max_tokens")).intValue());
+						}
+						mc.setCompletionParams(cp);
+					}
+					nd.setModel(mc);
+				}
+
+				// memory_config
+				Map<String, Object> memMap = (Map<String, Object>) data.get("memory_config");
+				if (memMap != null) {
+					LLMNodeData.MemoryConfig mem = new LLMNodeData.MemoryConfig();
+					mem.setEnabled((Boolean) memMap.getOrDefault("enabled", false))
+						.setWindowSize(((Number) memMap.getOrDefault("window_size", 20)).intValue())
+						.setWindowEnabled((Boolean) memMap.getOrDefault("window_enabled", true))
+						.setIncludeLastMessage((Boolean) memMap.getOrDefault("include_last_message", false))
+						.setLastMessageTemplate((String) memMap.get("last_message_template"));
+					nd.setMemoryConfig(mem);
+				}
+
+				// system_prompt_template
+				nd.setSystemPromptTemplate((String) data.get("system_prompt_template"));
+
+				// user_prompt_template
+				nd.setUserPromptTemplate((String) data.get("user_prompt_template"));
+
+				// system_prompt_template_key
+				nd.setSystemPromptTemplateKey((String) data.get("system_prompt_template_key"));
+
+				// user_prompt_template_key
+				nd.setUserPromptTemplateKey((String) data.get("user_prompt_template_key"));
+
+				// params (Map<String,Object>)
+				Map<String, Object> pmap = (Map<String, Object>) data.get("params");
+				if (pmap != null) {
+					nd.setParams(new LinkedHashMap<>(pmap));
+				}
+
+				// params_key
+				nd.setParamsKey((String) data.get("params_key"));
+
+				// messages (List of {role,content})
+				List<Map<String, Object>> mList = (List<Map<String, Object>>) data.get("messages");
+				if (mList != null) {
+					List<LLMNodeData.Message> msgObjs = mList.stream()
+						.map(m -> new LLMNodeData.Message((String) m.get("role"), (String) m.get("content")))
+						.collect(Collectors.toList());
+					nd.setMessages(msgObjs);
+				}
+
+				// messages_key
+				nd.setMessagesKey((String) data.get("messages_key"));
+
+				// advisors (List of {name,prompt})
+				List<Map<String, Object>> aList = (List<Map<String, Object>>) data.get("advisors");
+				if (aList != null) {
+					List<LLMNodeData.Advisor> advObjs = aList.stream()
+						.map(m -> new LLMNodeData.Advisor((String) m.get("name"), (String) m.get("prompt")))
+						.collect(Collectors.toList());
+					nd.setAdvisors(advObjs);
+				}
+
+				// tool_callbacks (List of {name,args})
+				List<Map<String, Object>> tList = (List<Map<String, Object>>) data.get("tool_callbacks");
+				if (tList != null) {
+					List<LLMNodeData.ToolCallback> cbObjs = tList.stream()
+						.map(m -> new LLMNodeData.ToolCallback((String) m.get("name"),
+								(Map<String, Object>) m.get("args")))
+						.collect(Collectors.toList());
+					nd.setToolCallbacks(cbObjs);
+				}
+
+				// output_key
+				nd.setOutputKey((String) data.get("output_key"));
+
+				return nd;
 			}
 
 			@Override
-			public Map<String, Object> dump(LLMNodeData nodeData) {
-				Map<String, Object> data = new HashMap<>();
-				ObjectMapper objectMapper = new ObjectMapper();
-				objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-				objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CASE);
-				objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				// put context
-				data.put("context", Map.of("enabled", false, "variable_selector", new ArrayList<>()
+			public Map<String, Object> dump(LLMNodeData nd) {
+				Map<String, Object> m = new LinkedHashMap<>();
 
-		));
-				// put memory
-				LLMNodeData.MemoryConfig memory = nodeData.getMemoryConfig();
-				if (memory != null) {
-					data.put("memory",
-							Map.of("query_prompt_template",
-									StringTemplateUtil.toDifyTmpl(memory.getLastMessageTemplate()), "role_prefix",
-									Map.of("assistant", "", "user", ""), "window",
-									Map.of("enabled", memory.getWindowEnabled(), "size", memory.getWindowSize())));
+				// variable_selector
+				if (nd.getInputs() != null && !nd.getInputs().isEmpty()) {
+					VariableSelector vs = nd.getInputs().get(0);
+					m.put("variable_selector", List.of(vs.getNamespace(), vs.getName()));
 				}
-				// put model
-				LLMNodeData.ModelConfig model = nodeData.getModel();
-				data.put("model",
-						Map.of("mode", model.getMode(), "name", model.getName(), "provider", model.getProvider(),
-								"completion_params",
-								objectMapper.convertValue(model.getCompletionParams(), Map.class)));
-				// put prompt template
-				List<LLMNodeData.PromptTemplate> tmplList = nodeData.getPromptTemplate();
-				List<Map<String, String>> difyTmplList = tmplList.stream().map(tmpl -> {
-					String difyTmpl = StringTemplateUtil.toDifyTmpl(tmpl.getText());
-					return Map.of("role", tmpl.getRole(), "text", difyTmpl);
-				}).toList();
-				data.put("prompt_template", difyTmplList);
-				return data;
+
+				// prompt_template
+				if (nd.getPromptTemplate() != null && !nd.getPromptTemplate().isEmpty()) {
+					List<Map<String, Object>> pt = nd.getPromptTemplate().stream().map(t -> {
+						Map<String, Object> entry = new LinkedHashMap<>();
+						entry.put("role", t.getRole());
+						entry.put("text", t.getText());
+						return entry;
+					}).collect(Collectors.toList());
+					m.put("prompt_template", pt);
+				}
+
+				// model
+				if (nd.getModel() != null) {
+					Map<String, Object> mc = new LinkedHashMap<>();
+					mc.put("mode", nd.getModel().getMode());
+					mc.put("name", nd.getModel().getName());
+					mc.put("provider", nd.getModel().getProvider());
+					if (nd.getModel().getCompletionParams() != null) {
+						Map<String, Object> cpm = new LinkedHashMap<>();
+						LLMNodeData.CompletionParams cp = nd.getModel().getCompletionParams();
+						if (cp.getMaxTokens() != null) {
+							cpm.put("max_tokens", cp.getMaxTokens());
+						}
+						// … 其他字段同理 …
+						mc.put("completion_params", cpm);
+					}
+					m.put("model", mc);
+				}
+
+				// memory_config
+				if (nd.getMemoryConfig() != null) {
+					Map<String, Object> mm = new LinkedHashMap<>();
+					LLMNodeData.MemoryConfig mem = nd.getMemoryConfig();
+					mm.put("enabled", mem.getEnabled());
+					mm.put("window_size", mem.getWindowSize());
+					mm.put("window_enabled", mem.getWindowEnabled());
+					mm.put("include_last_message", mem.getIncludeLastMessage());
+					mm.put("last_message_template", mem.getLastMessageTemplate());
+					m.put("memory_config", mm);
+				}
+
+				// system_prompt_template
+				if (nd.getSystemPromptTemplate() != null) {
+					m.put("system_prompt_template", nd.getSystemPromptTemplate());
+				}
+
+				// user_prompt_template
+				if (nd.getUserPromptTemplate() != null) {
+					m.put("user_prompt_template", nd.getUserPromptTemplate());
+				}
+
+				// system_prompt_template_key
+				if (nd.getSystemPromptTemplateKey() != null) {
+					m.put("system_prompt_template_key", nd.getSystemPromptTemplateKey());
+				}
+
+				// user_prompt_template_key
+				if (nd.getUserPromptTemplateKey() != null) {
+					m.put("user_prompt_template_key", nd.getUserPromptTemplateKey());
+				}
+
+				// params
+				if (nd.getParams() != null && !nd.getParams().isEmpty()) {
+					m.put("params", nd.getParams());
+				}
+
+				// params_key
+				if (nd.getParamsKey() != null) {
+					m.put("params_key", nd.getParamsKey());
+				}
+
+				// messages
+				if (nd.getMessages() != null && !nd.getMessages().isEmpty()) {
+					List<Map<String, Object>> ml = nd.getMessages().stream().map(msg -> {
+						Map<String, Object> entry = new LinkedHashMap<>();
+						entry.put("role", msg.getRole());
+						entry.put("content", msg.getContent());
+						return entry;
+					}).collect(Collectors.toList());
+					m.put("messages", ml);
+				}
+
+				// messages_key
+				if (nd.getMessagesKey() != null) {
+					m.put("messages_key", nd.getMessagesKey());
+				}
+
+				// advisors
+				if (nd.getAdvisors() != null && !nd.getAdvisors().isEmpty()) {
+					List<Map<String, Object>> al = nd.getAdvisors().stream().map(a -> {
+						Map<String, Object> entry = new LinkedHashMap<>();
+						entry.put("name", a.getName());
+						entry.put("prompt", a.getPrompt());
+						return entry;
+					}).collect(Collectors.toList());
+					m.put("advisors", al);
+				}
+
+				// tool_callbacks
+				if (nd.getToolCallbacks() != null && !nd.getToolCallbacks().isEmpty()) {
+					List<Map<String, Object>> tl = nd.getToolCallbacks().stream().map(tc -> {
+						Map<String, Object> entry = new LinkedHashMap<>();
+						entry.put("name", tc.getName());
+						entry.put("args", tc.getArgs());
+						return entry;
+					}).collect(Collectors.toList());
+					m.put("tool_callbacks", tl);
+				}
+
+				// output_key
+				if (nd.getOutputKey() != null) {
+					m.put("output_key", nd.getOutputKey());
+				}
+
+				return m;
 			}
-		}), CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(LLMNodeData.class));
 
-		private final DialectConverter<LLMNodeData> dialectConverter;
+			@Override
+			public Boolean supportDialect(DSLDialectType dialect) {
+				return DSLDialectType.DIFY.equals(dialect);
+			}
+		}), CUSTOM(defaultCustomDialectConverter(LLMNodeData.class));
 
-		public DialectConverter<LLMNodeData> dialectConverter() {
-			return dialectConverter;
+		private final DialectConverter<LLMNodeData> converter;
+
+		LLMNodeConverter(DialectConverter<LLMNodeData> converter) {
+			this.converter = converter;
 		}
 
-		LLMNodeDialectConverter(DialectConverter<LLMNodeData> dialectConverter) {
-			this.dialectConverter = dialectConverter;
+		public DialectConverter<LLMNodeData> dialectConverter() {
+			return converter;
 		}
 
 	}

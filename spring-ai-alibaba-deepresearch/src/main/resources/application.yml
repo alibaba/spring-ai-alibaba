@@ -16,8 +16,11 @@ spring:
         write-timeout: 60000
     mcp:
       client:
-        sse:
-          servers-configuration: classpath:mcp-servers.json
+        type: async
+#        sse:
+#          connections:
+#            weather_mcp_server:
+#              url: http://localhost:8888
         stdio:
           servers-configuration: classpath:mcp-servers.json
         toolcallback:
@@ -27,10 +30,19 @@ spring:
         tavilysearch:
           enabled: true
           api-key: ${TAVILY_API_KEY}
-        crawler:
-          jina:
-            enabled: false
-            api-key: ${JINA_API_KEY}
+        jinacrawler:
+          enabled: true
+          api-key: ${JINA_API_KEY}
+      deepresearch:
+        parallel-node-count:
+          researcher: 5
+          coder: 5
+        mcp-client-mapping:
+          researchAgent:
+            - amap-maps
+#          coderAgent:
+#            - amap-maps
+#            - weather_mcp_server
 
 logging:
   level:

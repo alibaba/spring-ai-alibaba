@@ -134,12 +134,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.bsc.async</groupId>
-            <artifactId>async-generator</artifactId>
-            <version>${async-generator.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
@@ -167,13 +161,6 @@
             <artifactId>redisson</artifactId>
             <version>${redission.version}</version>
             <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>${gson.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.mongodb/mongodb-driver-sync -->

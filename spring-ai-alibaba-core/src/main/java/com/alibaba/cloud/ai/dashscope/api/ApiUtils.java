@@ -20,10 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.*;
 
 /**
  * @author nuocheng.lxm
@@ -44,11 +43,11 @@ public class ApiUtils {
 	public static Consumer<HttpHeaders> getJsonContentHeaders(String apiKey, String workspaceId, boolean stream) {
 		return (headers) -> {
 			headers.setBearerAuth(apiKey);
-			headers.set(HEADER_OPENAPI_SOURCE, SOURCE_FLAG);
+			headers.set(DashScopeApiConstants.HEADER_OPENAPI_SOURCE, DashScopeApiConstants.SOURCE_FLAG);
 
 			headers.set(HttpHeaders.USER_AGENT, USER_AGENT);
 			if (workspaceId != null) {
-				headers.set(HEADER_WORK_SPACE_ID, workspaceId);
+				headers.set(DashScopeApiConstants.HEADER_WORK_SPACE_ID, workspaceId);
 			}
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			if (stream) {
@@ -63,7 +62,7 @@ public class ApiUtils {
 		headers.put(HttpHeaders.AUTHORIZATION, "bearer " + apiKey);
 		headers.put(HttpHeaders.USER_AGENT, USER_AGENT);
 		if (workspace != null && !workspace.isEmpty()) {
-			headers.put(HEADER_WORK_SPACE_ID, workspace);
+			headers.put(DashScopeApiConstants.HEADER_WORK_SPACE_ID, workspace);
 		}
 		if (isSecurityCheck) {
 			headers.put("X-DashScope-DataInspection", "enable");
@@ -84,7 +83,7 @@ public class ApiUtils {
 			}
 
 			if (workspace != null && !workspace.isEmpty()) {
-				headers.set(HEADER_WORK_SPACE_ID, workspace);
+				headers.set(DashScopeApiConstants.HEADER_WORK_SPACE_ID, workspace);
 			}
 
 			if (isAsyncTask) {
@@ -115,7 +114,7 @@ public class ApiUtils {
 	}
 
 	private static String userAgent() {
-		return String.format("%s/%s; java/%s; platform/%s; processor/%s", SDK_FLAG, "1.0.0",
+		return String.format("%s/%s; java/%s; platform/%s; processor/%s", DashScopeApiConstants.SDK_FLAG, "1.0.0",
 				System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.arch"));
 	}
 

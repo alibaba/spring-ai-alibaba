@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +45,11 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final Long RETRY_DELAY_MS = 500L;
 
-	public BackgroundInvestigationNode(TavilySearchService tavilySearchService) {
+	private final JinaCrawlerService jinaCrawlerService;
+
+	public BackgroundInvestigationNode(TavilySearchService tavilySearchService, JinaCrawlerService jinaCrawlerService) {
 		this.tavilySearchService = tavilySearchService;
+		this.jinaCrawlerService = jinaCrawlerService;
 	}
 
 	@Override
@@ -65,7 +69,20 @@ public class BackgroundInvestigationNode implements NodeAction {
 					results = response.results().stream().map(info -> {
 						Map<String, String> result = new HashMap<>();
 						result.put("title", info.title());
-						result.put("content", info.content());
+						if (jinaCrawlerService == null) {
+							result.put("content", info.content());
+						}
+						else {
+							try {
+								logger.info("Get detail info of a url using Jina Crawler...");
+								result.put("content",
+										jinaCrawlerService.apply(new JinaCrawlerService.Request(info.url())).content());
+							}
+							catch (Exception e) {
+								logger.error("Jina Crawler Service Error", e);
+								result.put("content", info.content());
+							}
+						}
 						return result;
 					}).collect(Collectors.toList());
 					break;
