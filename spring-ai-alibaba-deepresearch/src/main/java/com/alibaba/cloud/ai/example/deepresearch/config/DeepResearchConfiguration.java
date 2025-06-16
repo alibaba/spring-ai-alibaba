@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
@@ -26,10 +27,12 @@ import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNod
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
+
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -39,6 +42,7 @@ import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -57,7 +61,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * @since 2025/5/17 17:10
  */
 @Configuration
-@EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class })
+@EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class, RagProperties.class })
 public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
@@ -76,6 +80,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired(required = false)
 	private JinaCrawlerService jinaCrawlerService;
+
+	@Autowired(required = false)
+	private RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
@@ -129,7 +136,8 @@ public class DeepResearchConfiguration {
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))));
+			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))))
+			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, chatClientBuilder)));
 
 		// 添加并行节点块
 		configureParallelNodes(stateGraph);
