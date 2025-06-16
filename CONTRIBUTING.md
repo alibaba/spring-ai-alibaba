@@ -59,6 +59,10 @@ Develop your feature, and **after completing development, it's recommended to us
 
 After completing development in your local BOE environment, it's strongly recommended to run the provided `make` command in the project's `tools/make` directory to perform local Continuous Integration (CI) checks. This ensures your code adheres to the project's standards and guidelines. If you have questions about local CI, you can enter `make help` in the console for more detailed information.
 
+### Local Checkstyle
+
+To reduce unnecessary code style issues, Spring AI Alibaba provides a local Checkstyle check feature. You can run `mvn checkstyle:check` in the project's root directory to verify if your code style complies with the standards.
+
 ### Commit the Latest Code
 
 After completing your coding, you need to format and verify your commit messages according to the PR specification in `[lint-pr-title.yml](.github/workflows/lint-pr-title.yml)` to ensure they comply with the guidelines.

@@ -16,17 +16,19 @@
 
 package com.alibaba.cloud.ai.example.graph.openmanus.human;
 
-import java.util.Map;
-import java.util.Optional;
-
 import com.alibaba.cloud.ai.example.graph.openmanus.SupervisorAgent;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.OverAllStateFactory;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.HumanNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
@@ -36,6 +38,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+import java.util.Optional;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -118,7 +123,7 @@ public class OpenmanusHumanController {
 	}
 
 	@GetMapping("/chat")
-	public String simpleChat(String query) {
+	public String simpleChat(String query) throws GraphRunnerException {
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId("1").build();
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query), runnableConfig);
 		// send back to user and wait for plan approval
@@ -126,7 +131,7 @@ public class OpenmanusHumanController {
 	}
 
 	@GetMapping("/resume")
-	public String resume() {
+	public String resume() throws GraphRunnerException {
 		Map<String, Object> data = Map.of("input", "请帮我查询最近的新闻");
 		String nextNode = "planning_agent";
 
@@ -144,7 +149,7 @@ public class OpenmanusHumanController {
 	}
 
 	@GetMapping("/resume-to-next-step")
-	public String resumeToNextStep() {
+	public String resumeToNextStep() throws GraphRunnerException {
 		String nextNode = "supervisor_agent";
 
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId("1").build();

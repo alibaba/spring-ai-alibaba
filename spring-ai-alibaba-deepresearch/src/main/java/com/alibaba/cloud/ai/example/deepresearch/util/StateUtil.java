@@ -17,15 +17,12 @@
 package com.alibaba.cloud.ai.example.deepresearch.util;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
-import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.async.internal.reactive.GeneratorSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -54,11 +51,7 @@ public class StateUtil {
 		List<String> resList = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
 			String nodeName = name + "_content_" + i;
-			GeneratorSubscriber<NodeOutput> generator = (GeneratorSubscriber<NodeOutput>) state.value(nodeName).get();
-			generator.forEach(output -> {
-				Map<String, Object> data = output.state().data();
-				logger.info("Processing node: {}, data: {}", nodeName, data);
-			});
+			resList.add((String) state.value(nodeName, List.class).get().get(0));
 		}
 		return resList;
 	}

@@ -15,16 +15,18 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.web.client.RestClient;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for DashScopeAudioTranscriptionApi class functionality
@@ -43,7 +45,7 @@ class DashScopeAudioTranscriptionApiTests {
 	@BeforeEach
 	void setUp() {
 		// Setup mock RestClient
-		mockRestClient = mock(RestClient.class);
+		mockRestClient = Mockito.mock(RestClient.class);
 
 		// Initialize DashScopeAudioTranscriptionApi with test API key
 		audioTranscriptionApi = new DashScopeAudioTranscriptionApi("test-api-key");

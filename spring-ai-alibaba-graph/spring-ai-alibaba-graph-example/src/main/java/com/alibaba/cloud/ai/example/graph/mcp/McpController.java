@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.graph.mcp;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,7 @@ public class McpController {
 	}
 
 	@GetMapping("/weather")
-	public String simpleChat(String latitude, String longitude) throws GraphStateException {
+	public String simpleChat(String latitude, String longitude) throws GraphStateException, GraphRunnerException {
 		return stateGraph.compile()
 			.invoke(Map.of("latitude", latitude, "longitude", longitude))
 			.get()

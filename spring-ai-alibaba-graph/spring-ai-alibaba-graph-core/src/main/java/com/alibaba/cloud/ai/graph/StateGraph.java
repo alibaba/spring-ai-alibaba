@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.exception.Errors;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
@@ -36,139 +36,21 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSeri
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.LinkedHashSet;
 
 /**
  * Represents a state graph with nodes and edges.
  */
 public class StateGraph {
-
-	/**
-	 * Enum representing various error messages related to graph state.
-	 */
-	public enum Errors {
-
-		/**
-		 * Invalid node identifier.
-		 */
-		invalidNodeIdentifier("END is not a valid node id!"),
-		/**
-		 * Invalid edge identifier.
-		 */
-		invalidEdgeIdentifier("END is not a valid edge sourceId!"),
-		/**
-		 * Duplicate node error.
-		 */
-		duplicateNodeError("node with id: %s already exists!"),
-		/**
-		 * Duplicate edge error.
-		 */
-		duplicateEdgeError("edge with id: %s already exists!"),
-		/**
-		 * Duplicate conditional edge error.
-		 */
-		duplicateConditionalEdgeError("conditional edge from '%s' already exists!"),
-		/**
-		 * Edge mapping is empty.
-		 */
-		edgeMappingIsEmpty("edge mapping is empty!"),
-		/**
-		 * Missing entry point.
-		 */
-		missingEntryPoint("missing Entry Point"),
-		/**
-		 * Entry point does not exist.
-		 */
-		entryPointNotExist("entryPoint: %s does not exist!"),
-		/**
-		 * Finish point does not exist.
-		 */
-		finishPointNotExist("finishPoint: %s does not exist!"),
-		/**
-		 * Missing node referenced by edge.
-		 */
-		missingNodeReferencedByEdge("edge sourceId '%s' refers to undefined node!"),
-		/**
-		 * Missing node in edge mapping.
-		 */
-		missingNodeInEdgeMapping("edge mapping for sourceId: %s contains a non-existent nodeId %s!"),
-		/**
-		 * Invalid edge target.
-		 */
-		invalidEdgeTarget("edge sourceId: %s has an initialized target value!"),
-		/**
-		 * Duplicate edge target error.
-		 */
-		duplicateEdgeTargetError("edge [%s] has duplicate targets %s!"),
-		/**
-		 * Unsupported conditional edge on parallel node.
-		 */
-		unsupportedConditionalEdgeOnParallelNode(
-				"parallel node does not support conditional branch, but on [%s] a conditional branch on %s has been found!"),
-		/**
-		 * Illegal multiple targets on parallel node.
-		 */
-		illegalMultipleTargetsOnParallelNode("parallel node [%s] must have only one target, but %s have been found!"),
-		/**
-		 * Interruption node does not exist.
-		 */
-		interruptionNodeNotExist("node '%s' configured as interruption does not exist!");
-
-		private final String errorMessage;
-
-		Errors(String errorMessage) {
-			this.errorMessage = errorMessage;
-		}
-
-		/**
-		 * Creates a new GraphStateException with the formatted error message.
-		 * @param args the arguments to format the error message
-		 * @return a new GraphStateException
-		 */
-		public GraphStateException exception(Object... args) {
-			return new GraphStateException(String.format(errorMessage, args));
-		}
-
-	}
-
-	/**
-	 * Enum representing various error messages related to graph runner.
-	 */
-	enum RunnableErrors {
-
-		/**
-		 * Missing node in edge mapping.
-		 */
-		missingNodeInEdgeMapping("cannot find edge mapping for id: '%s' in conditional edge with sourceId: '%s' "),
-		/**
-		 * Missing node.
-		 */
-		missingNode("node with id: '%s' does not exist!"),
-		/**
-		 * Missing edge.
-		 */
-		missingEdge("edge with sourceId: '%s' does not exist!"),
-		/**
-		 * Execution error.
-		 */
-		executionError("%s");
-
-		private final String errorMessage;
-
-		RunnableErrors(String errorMessage) {
-			this.errorMessage = errorMessage;
-		}
-
-		/**
-		 * Creates a new GraphRunnerException with the formatted error message.
-		 * @param args the arguments to format the error message
-		 * @return a new GraphRunnerException
-		 */
-		GraphRunnerException exception(String... args) {
-			return new GraphRunnerException(String.format(errorMessage, args));
-		}
-
-	}
 
 	/**
 	 * Constant representing the END of the graph.
@@ -260,7 +142,7 @@ public class StateGraph {
 	 * @param keyStrategyFactory the factory for providing key strategies
 	 * @param name the name of the graph
 	 */
-	public StateGraph(KeyStrategyFactory keyStrategyFactory, String name) {
+	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory) {
 		this.keyStrategyFactory = keyStrategyFactory;
 		this.name = name;
 		this.stateSerializer = new JacksonSerializer();

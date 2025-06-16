@@ -53,6 +53,10 @@ Spring AI Alibaba 作为 Spring AI 的实现之一，在代码规范方面直接
 
 本地 boe 环境开发完成后，强烈建议在提交 PR 之前执行项目`tools\make`提供的 `make` 命令进行本地持续集成（CI）检查，以确保代码符合项目的标准和规范。如果对于本地CI有任何疑问，可以在控制台输入 `make help` 了解具体信息。
 
+### 本地Checkstyle
+
+为了减少一些不必要的代码风格问题，Spring AI Alibaba 提供了本地 Checkstyle 检查功能。可以在项目根目录下执行 `mvn checkstyle:check` 命令来检查代码风格是否符合规范。
+
 ### 提交最新代码
 
 在编码完成之后，需要基于 pr 规范`[lint-pr-title.yml](.github/workflows/lint-pr-title.yml)`对提交信息进行 format & check，确保提交信息符合规范。
