@@ -76,7 +76,6 @@ public class CoordinatorNode implements NodeAction {
 		// 发起调用并获取完整响应
 		ChatResponse response = coordinatorAgent.prompt()
 			// .tools(plannerTool) // 使用注入的 plannerTool 实例
-			.options(DashScopeChatOptions.builder().withModel("qwen-max").build())
 			.messages(messages)
 			.call()
 			.chatResponse();
