@@ -34,7 +34,7 @@
 ## 技术栈
 
 - **后端**: Java 17+ (Spring Boot)
-- **依赖模块**: `com.alibaba.cloud.ai:common:1.0-SNAPSHOT`
+- **依赖模块**: `com.alibaba.cloud.ai:common:${spring-ai-alibaba.version}`
 - **大模型服务**: LLM（如 Qwen、DashScope）
 - **数据库连接器**: MySQL / PostgreSQL
 - **辅助工具**: Gson、Jackson、Markdown 解析器
@@ -57,23 +57,51 @@
 
 ```xml
 <dependency>
-    <groupId>com.alibaba.cloud.ai</groupId>
-    <artifactId>nl2sql-service</artifactId>
-    <version>1.0-SNAPSHOT</version>
+  <groupId>com.alibaba.cloud.ai</groupId>
+  <artifactId>spring-ai-alibaba-starter-nl2sql</artifactId>
+  <version>${spring-ai-alibaba.version}</version>
 </dependency>
 ```
 
 #### Gradle 示例：
 
 ```groovy
-implementation 'com.alibaba.cloud.ai:nl2sql-service:1.0-SNAPSHOT'
+implementation 'com.alibaba.cloud.ai:spring-ai-alibaba-starter-nl2sql:${spring-ai-alibaba.version}'
 ```
 
 ---
 
 ## 配置说明
 
-确保主项目中已正确配置以下内容：
+目前支持两种向量存储方式：
+- **AnalyticDB**（推荐生产环境，支持大规模数据和高性能检索）
+- **SimpleVector**（适合本地开发、测试或小规模场景，无需依赖外部数据库）
+
+### AnalyticDB 配置示例
+
+```yaml
+spring:
+  ai:
+    vectorstore:
+      analytic:
+        collectName: chatbi
+        regionId: cn-hangzhou
+        dbInstanceId: gp-bp11vjucxhw757v9p
+        managerAccount: 
+        managerAccountPassword: 
+        namespace: 
+        namespacePassword: 
+        defaultTopK: 10
+        defaultSimilarityThreshold: 0.01
+        accessKeyId: 
+        accessKeySecret: 
+```
+
+> ⚠️ 注意：AnalyticDB 需提前开启向量引擎优化，详见[官方文档](https://help.aliyun.com/zh/analyticdb/analyticdb-for-postgresql/getting-started/create-an-instance-instances-with-vector-engine-optimization-enabled)。SimpleVector 适合本地开发和小数据量测试，不建议用于生产环境。
+
+### SimpleVector 配置示例
+
+无需配置，默认启动 SimpleVector
 
 ### 数据库连接配置 (`application.yml`)
 
@@ -122,7 +150,7 @@ chatbi:
 
 ## 核心类说明
 
-- **`Nl2SqlService`**
+- **`BaseNl2SqlService`**
   - 主要对外接口服务类，提供以下方法：
     - `nl2sql(String query)`：入口方法，接收自然语言问题，返回格式化结果
 
