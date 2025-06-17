@@ -58,7 +58,7 @@ public class AgentModelsConfiguration implements InitializingBean {
 		// Convert AgentModel to DashScopeChatModel
 		return models.stream()
 			.filter(Objects::nonNull)
-			.collect(Collectors.toMap(ModelParamRepository.AgentModel::name,
+			.collect(Collectors.toMap(ModelParamRepositoryImpl.AgentModel::name,
 					model -> DashScopeChatModel.builder()
 						.dashScopeApi(DashScopeApi.builder().apiKey(commonProperties.getApiKey()).build())
 						.defaultOptions(DashScopeChatOptions.builder()
