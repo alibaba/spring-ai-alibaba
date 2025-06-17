@@ -544,7 +544,7 @@ public class StateGraphTest {
 
 		exception = assertThrows(GraphStateException.class, noConditionalEdgeOnBranch::compile);
 		assertEquals(
-				"parallel node does not support conditional branch, but on [A] a conditional branch on [A3] has been found!",
+				"parallel node doesn't support conditional branch, but on [A] a conditional branch on [A3] have been found!",
 				exception.getMessage());
 
 		var noDuplicateTarget = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
