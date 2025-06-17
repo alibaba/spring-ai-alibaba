@@ -24,8 +24,8 @@ import com.alibaba.cloud.ai.example.graph.bigtool.service.VectorStoreService;
 import com.alibaba.cloud.ai.example.graph.bigtool.utils.MethodUtils;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -43,6 +43,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -74,21 +75,18 @@ public class BigToolController {
 		this.initializeVectorStore();
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
-		OverAllStateFactory stateFactory = () -> {
-			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy(INPUT_KEY, new ReplaceStrategy());
-			state.registerKeyAndStrategy(HIT_TOOL, new ReplaceStrategy());
-			state.registerKeyAndStrategy(SOLUTION, new ReplaceStrategy());
-			state.registerKeyAndStrategy(TOOL_LIST, new ReplaceStrategy());
-			return state;
-		};
-
 		ToolAgent tools = new ToolAgent(chatClient, INPUT_KEY, vectorStoreService);
 
 		CalculateAgent calculateAgent = new CalculateAgent(chatClient, INPUT_KEY);
 
-		StateGraph stateGraph = new StateGraph("Consumer Service Workflow Demo", stateFactory)
-			.addNode("tools", node_async(tools))
+		StateGraph stateGraph = new StateGraph("Consumer Service Workflow Demo", () -> {
+			Map<String, KeyStrategy> strategies = new HashMap<>();
+			strategies.put(INPUT_KEY, new ReplaceStrategy());
+			strategies.put(HIT_TOOL, new ReplaceStrategy());
+			strategies.put(SOLUTION, new ReplaceStrategy());
+			strategies.put(TOOL_LIST, new ReplaceStrategy());
+			return strategies;
+		}).addNode("tools", node_async(tools))
 			.addNode("calculate_agent", node_async(calculateAgent))
 			.addEdge(START, "tools")
 			.addEdge("tools", "calculate_agent")
