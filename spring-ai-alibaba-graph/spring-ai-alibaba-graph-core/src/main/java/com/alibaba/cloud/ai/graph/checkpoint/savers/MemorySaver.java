@@ -35,6 +35,7 @@ import static java.util.Optional.ofNullable;
 public class MemorySaver implements BaseCheckpointSaver {
 
 	final ConcurrentHashMap<String, LinkedList<Checkpoint>> _checkpointsByThread = new ConcurrentHashMap<>();
+
 	// 线程id和锁的映射
 	final ConcurrentHashMap<String, ReentrantLock> _locksByThread = new ConcurrentHashMap<>();
 
@@ -62,7 +63,8 @@ public class MemorySaver implements BaseCheckpointSaver {
 		try {
 			final LinkedList<Checkpoint> checkpoints = getCheckpoints(config);
 			return unmodifiableCollection(new LinkedList<>(checkpoints)); // 返回快照，防止并发修改
-		} finally {
+		}
+		finally {
 			lock.unlock();
 		}
 	}
@@ -76,10 +78,12 @@ public class MemorySaver implements BaseCheckpointSaver {
 			final LinkedList<Checkpoint> checkpoints = getCheckpoints(config);
 			if (config.checkPointId().isPresent()) {
 				return config.checkPointId()
-						.flatMap(id -> checkpoints.stream().filter(checkpoint -> checkpoint.getId().equals(id)).findFirst());
+					.flatMap(
+							id -> checkpoints.stream().filter(checkpoint -> checkpoint.getId().equals(id)).findFirst());
 			}
 			return getLast(checkpoints, config);
-		} finally {
+		}
+		finally {
 			lock.unlock();
 		}
 	}
@@ -94,16 +98,17 @@ public class MemorySaver implements BaseCheckpointSaver {
 			if (config.checkPointId().isPresent()) { // Replace Checkpoint
 				String checkPointId = config.checkPointId().get();
 				int index = IntStream.range(0, checkpoints.size())
-						.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
-						.findFirst()
-						.orElseThrow(() -> (new NoSuchElementException(
-								format("Checkpoint with id %s not found!", checkPointId))));
+					.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
+					.findFirst()
+					.orElseThrow(() -> (new NoSuchElementException(
+							format("Checkpoint with id %s not found!", checkPointId))));
 				checkpoints.set(index, checkpoint);
 				return config;
 			}
 			checkpoints.push(checkpoint); // Add Checkpoint
 			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
-		} finally {
+		}
+		finally {
 			lock.unlock();
 		}
 	}
@@ -120,7 +125,8 @@ public class MemorySaver implements BaseCheckpointSaver {
 				return true;
 			}
 			return false;
-		} finally {
+		}
+		finally {
 			lock.unlock();
 		}
 	}
@@ -134,7 +140,8 @@ public class MemorySaver implements BaseCheckpointSaver {
 			LinkedList<Checkpoint> removed = _checkpointsByThread.remove(threadId);
 			_locksByThread.remove(threadId);
 			return new Tag(threadId, removed);
-		} finally {
+		}
+		finally {
 			lock.unlock();
 		}
 	}
