@@ -16,9 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
-import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.service.VectorStoreDataIngestionService;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
