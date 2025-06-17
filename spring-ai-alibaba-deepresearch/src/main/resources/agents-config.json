@@ -2,7 +2,6 @@
   "models": [
     {"name": "research","modelName": "qwen-max"},
     {"name": "coder","modelName": "qwen-plus-2025-04-28"},
-    {"name": "customize","modelName": "qwen-turbo"},
     {"name": "coordinator","modelName": "qwen-max-0919"},
     {"name": "planner","modelName": "qwen-turbo-2025-04-28"},
     {"name": "reporter","modelName": "qwen-max-2025-01-25"}
