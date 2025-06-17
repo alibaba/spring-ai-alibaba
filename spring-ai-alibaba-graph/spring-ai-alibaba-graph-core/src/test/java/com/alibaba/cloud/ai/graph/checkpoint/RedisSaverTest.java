@@ -62,7 +62,8 @@ class RedisSaverTest {
 		redisContainer.start();
 		// 本地单机 Redis，测试环境需保证 6379 端口可用
 		Config config = new Config();
-		config.useSingleServer().setAddress("redis://127.0.0.1:6379");
+		config.useSingleServer()
+			.setAddress("redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379));
 		redisson = Redisson.create(config);
 		redisSaver = new RedisSaver(redisson);
 	}
