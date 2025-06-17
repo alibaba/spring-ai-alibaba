@@ -31,22 +31,23 @@ import java.util.logging.Logger;
 @DisplayName("youdao translate tool call Test")
 class YoudaotranslateTest {
 
-    @Autowired
-    private YoudaoTranslateService youdaoTranslateService;
+	@Autowired
+	private YoudaoTranslateService youdaoTranslateService;
 
-    private static final Logger log = Logger.getLogger(YoudaotranslateTest.class.getName());
+	private static final Logger log = Logger.getLogger(YoudaotranslateTest.class.getName());
 
-    @Test
-    @DisplayName("Tool-Calling Test")
-    @EnabledIfEnvironmentVariable(named = YoudaoTranslateConstants.APP_ID_ENV,
-            matches = CommonToolCallConstants.NOT_BLANK_REGEX)
-    @EnabledIfEnvironmentVariable(named = YoudaoTranslateConstants.SECRET_KEY_ENV,
-            matches = CommonToolCallConstants.NOT_BLANK_REGEX)
-    void testYoudaoTranslate() {
-        YoudaoTranslateService.Response resp = youdaoTranslateService
-                .apply(new YoudaoTranslateService.Request("你好,明天", "zh", "en"));
-        log.info("youdao translate result: " + resp);
-        Assertions.assertNotNull(resp, "response body should not be null!");
-        Assertions.assertNotNull(resp.translatedTexts(), "translated message should not be null!");
-    }
+	@Test
+	@DisplayName("Tool-Calling Test")
+	@EnabledIfEnvironmentVariable(named = YoudaoTranslateConstants.APP_ID_ENV,
+			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@EnabledIfEnvironmentVariable(named = YoudaoTranslateConstants.SECRET_KEY_ENV,
+			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	void testYoudaoTranslate() {
+		YoudaoTranslateService.Response resp = youdaoTranslateService
+			.apply(new YoudaoTranslateService.Request("你好,明天", "zh", "en"));
+		log.info("youdao translate result: " + resp);
+		Assertions.assertNotNull(resp, "response body should not be null!");
+		Assertions.assertNotNull(resp.translatedTexts(), "translated message should not be null!");
+	}
+
 }
