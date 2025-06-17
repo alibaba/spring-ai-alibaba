@@ -37,6 +37,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 
 		2. 元素交互：
 		- 只使用有索引的元素
+		- 你只能从当前页面中的提供的交互元素进行操作，在操作之前，要确保该元素存在于当前页面。
 		- 如用户要求点击某元素，但当期可交互元素中没有，则先查找对应的元素的对应像素位置，然后用click点击该元素
 
 		3. 导航和错误处理：
