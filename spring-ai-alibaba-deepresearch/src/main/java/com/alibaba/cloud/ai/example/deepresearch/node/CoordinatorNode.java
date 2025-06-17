@@ -16,12 +16,10 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -29,7 +27,6 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,9 +46,6 @@ public class CoordinatorNode implements NodeAction {
 
 	private final ChatClient coordinatorAgent;
 
-	@Resource
-	private PlannerTool plannerTool;
-
 	public CoordinatorNode(ChatClient coordinatorAgent) {
 		this.coordinatorAgent = coordinatorAgent;
 	}
@@ -66,10 +60,6 @@ public class CoordinatorNode implements NodeAction {
 		// 1.2 添加用户提问
 		messages.add(new UserMessage(StateUtil.getQuery(state)));
 		logger.debug("Current Coordinator messages: {}", messages);
-
-		ToolCallingChatOptions build = ToolCallingChatOptions.builder()
-			.internalToolExecutionEnabled(false) // 禁用内部工具执行
-			.build();
 
 		// 发起调用并获取完整响应
 		ChatResponse response = coordinatorAgent.prompt().messages(messages).call().chatResponse();
