@@ -68,7 +68,7 @@ public class ClickByElementAction extends BrowserAction {
 			}
 		});
 
-		return new ToolExecuteResult("Clicked element at index " + index + " " + clickResultMessage);
+		return new ToolExecuteResult("Successfully clicked element at index " + index + " " + clickResultMessage);
 	}
 
 }
