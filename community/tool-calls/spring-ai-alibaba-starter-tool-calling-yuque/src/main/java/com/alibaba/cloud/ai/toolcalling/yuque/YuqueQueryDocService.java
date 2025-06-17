@@ -42,7 +42,6 @@ public class YuqueQueryDocService
 	public YuqueQueryDocService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
 		this.webClientTool = webClientTool;
 		this.jsonParseTool = jsonParseTool;
-
 	}
 
 	@Override
@@ -52,7 +51,7 @@ public class YuqueQueryDocService
 		}
 		String uri = "/repos/" + queryDocRequest.bookId + "/docs/" + queryDocRequest.id;
 		try {
-			String json = webClientTool.post(uri, queryDocRequest).block();
+			String json = webClientTool.get(uri).block();
 			return jsonParseTool.jsonToObject(json, queryDocResponse.class);
 		}
 		catch (Exception e) {
@@ -61,20 +60,10 @@ public class YuqueQueryDocService
 		}
 	}
 
-	protected record queryDocRequest(@JsonProperty("slug") String slug, @JsonProperty("title") String title,
-			String bookId, String id) {
+	public record queryDocRequest(String bookId, String id) {
 	}
 
-	protected record queryDocResponse(@JsonProperty("id") String id, @JsonProperty("docId") String docId,
-			@JsonProperty("slug") String slug, @JsonProperty("title") String title,
-			@JsonProperty("userId") String userId, @JsonProperty("user") UserSerializer user,
-			@JsonProperty("draft") String draft, @JsonProperty("body") String body,
-			@JsonProperty("bodyAsl") String bodyAsl, @JsonProperty("bodyHtml") String bodyHtml,
-			@JsonProperty("createdAt") String createdAt, @JsonProperty("updatedAt") String updatedAt) {
-	}
-
-	protected record UserSerializer(@JsonProperty String id, @JsonProperty String type, @JsonProperty String login,
-			@JsonProperty String name) {
+	public record queryDocResponse(@JsonProperty("data") YuqueConstants.DocSerializer data) {
 	}
 
 }

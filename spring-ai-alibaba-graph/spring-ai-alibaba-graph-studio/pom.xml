@@ -14,6 +14,7 @@
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
         <spring-initializr.version>0.21.0</spring-initializr.version>
+        <org.eclipse.jdt.core.version>3.42.0</org.eclipse.jdt.core.version>
     </properties>
 
     <dependencies>
@@ -22,6 +23,12 @@
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-graph-core</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-io</groupId>
+                    <artifactId>commons-io</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -63,6 +70,19 @@
             <groupId>io.spring.initializr</groupId>
             <artifactId>initializr-generator-spring</artifactId>
             <version>${spring-initializr.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.spring.initializr</groupId>
+            <artifactId>initializr-generator</artifactId>
+            <version>${spring-initializr.version}</version>
+        </dependency>
+
+        <!-- org.eclipse.jdt.core for format -->
+        <dependency>
+            <groupId>org.eclipse.jdt</groupId>
+            <artifactId>org.eclipse.jdt.core</artifactId>
+            <version>3.42.0</version>
         </dependency>
 
         <dependency>

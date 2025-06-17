@@ -20,14 +20,12 @@ import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
@@ -36,23 +34,21 @@ import static java.util.Optional.ofNullable;
 
 public class MemorySaver implements BaseCheckpointSaver {
 
-	final Map<String, LinkedList<Checkpoint>> _checkpointsByThread = new HashMap<>();
+	final ConcurrentHashMap<String, LinkedList<Checkpoint>> _checkpointsByThread = new ConcurrentHashMap<>();
 
-	private final ReentrantLock _lock = new ReentrantLock();
+	// 线程id和锁的映射
+	final ConcurrentHashMap<String, ReentrantLock> _locksByThread = new ConcurrentHashMap<>();
 
 	public MemorySaver() {
 	}
 
-	final LinkedList<Checkpoint> getCheckpoints(RunnableConfig config) {
-		_lock.lock();
-		try {
-			var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
-			return _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>());
+	private Lock getLock(String threadId) {
+		return _locksByThread.computeIfAbsent(threadId, k -> new ReentrantLock());
+	}
 
-		}
-		finally {
-			_lock.unlock();
-		}
+	final LinkedList<Checkpoint> getCheckpoints(RunnableConfig config) {
+		var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
+		return _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>());
 	}
 
 	public final Optional<Checkpoint> getLast(LinkedList<Checkpoint> checkpoints, RunnableConfig config) {
@@ -61,21 +57,23 @@ public class MemorySaver implements BaseCheckpointSaver {
 
 	@Override
 	public Collection<Checkpoint> list(RunnableConfig config) {
-
-		_lock.lock();
+		var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
+		Lock lock = getLock(threadId);
+		lock.lock();
 		try {
 			final LinkedList<Checkpoint> checkpoints = getCheckpoints(config);
-			return unmodifiableCollection(checkpoints); // immutable checkpoints;
+			return unmodifiableCollection(new LinkedList<>(checkpoints)); // 返回快照，防止并发修改
 		}
 		finally {
-			_lock.unlock();
+			lock.unlock();
 		}
 	}
 
 	@Override
 	public Optional<Checkpoint> get(RunnableConfig config) {
-
-		_lock.lock();
+		var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
+		Lock lock = getLock(threadId);
+		lock.lock();
 		try {
 			final LinkedList<Checkpoint> checkpoints = getCheckpoints(config);
 			if (config.checkPointId().isPresent()) {
@@ -84,20 +82,19 @@ public class MemorySaver implements BaseCheckpointSaver {
 							id -> checkpoints.stream().filter(checkpoint -> checkpoint.getId().equals(id)).findFirst());
 			}
 			return getLast(checkpoints, config);
-
 		}
 		finally {
-			_lock.unlock();
+			lock.unlock();
 		}
 	}
 
 	@Override
 	public RunnableConfig put(RunnableConfig config, Checkpoint checkpoint) throws Exception {
-
-		_lock.lock();
+		var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
+		Lock lock = getLock(threadId);
+		lock.lock();
 		try {
 			final LinkedList<Checkpoint> checkpoints = getCheckpoints(config);
-
 			if (config.checkPointId().isPresent()) { // Replace Checkpoint
 				String checkPointId = config.checkPointId().get();
 				int index = IntStream.range(0, checkpoints.size())
@@ -108,38 +105,48 @@ public class MemorySaver implements BaseCheckpointSaver {
 				checkpoints.set(index, checkpoint);
 				return config;
 			}
-
 			checkpoints.push(checkpoint); // Add Checkpoint
-
 			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 		}
 		finally {
-			_lock.unlock();
+			lock.unlock();
 		}
 	}
 
 	@Override
 	public boolean clear(RunnableConfig config) {
-		return false;
+		var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
+		Lock lock = getLock(threadId);
+		lock.lock();
+		try {
+			LinkedList<Checkpoint> checkpoints = _checkpointsByThread.get(threadId);
+			if (checkpoints != null) {
+				checkpoints.clear();
+				return true;
+			}
+			return false;
+		}
+		finally {
+			lock.unlock();
+		}
 	}
 
 	@Override
 	public Tag release(RunnableConfig config) throws Exception {
-
-		_lock.lock();
+		var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
+		Lock lock = getLock(threadId);
+		lock.lock();
 		try {
-
-			var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
-
-			return new Tag(threadId, _checkpointsByThread.remove(threadId));
-
+			LinkedList<Checkpoint> removed = _checkpointsByThread.remove(threadId);
+			_locksByThread.remove(threadId);
+			return new Tag(threadId, removed);
 		}
 		finally {
-			_lock.unlock();
+			lock.unlock();
 		}
 	}
 
-	public Map<String, LinkedList<Checkpoint>> get_checkpointsByThread() {
+	public ConcurrentHashMap<String, LinkedList<Checkpoint>> get_checkpointsByThread() {
 		return _checkpointsByThread;
 	}
 

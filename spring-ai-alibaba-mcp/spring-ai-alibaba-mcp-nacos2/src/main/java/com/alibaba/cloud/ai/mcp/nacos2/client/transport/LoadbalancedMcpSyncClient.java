@@ -41,7 +41,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -110,7 +114,7 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 		md5ToClientMap = new ConcurrentHashMap<>();
 
 		for (Instance instance : instances) {
-			updateByAddInstace(instance);
+			updateByAddInstance(instance);
 		}
 	}
 
@@ -361,7 +365,7 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 		return syncClient;
 	}
 
-	private void updateByAddInstace(Instance instance) {
+	private void updateByAddInstance(Instance instance) {
 		Map<String, String> metadata = instance.getMetadata();
 		String serverMd5 = metadata.get("server.md5");
 		assert serverMd5 != null;
@@ -376,23 +380,23 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 	private void updateClientList(List<Instance> currentInstances) {
 		// 新增的实例
-		List<Instance> addInstaces = currentInstances.stream()
+		List<Instance> addInstances = currentInstances.stream()
 			.filter(instance -> !instances.contains(instance))
 			.collect(Collectors.toList());
-		for (Instance addInstace : addInstaces) {
-			updateByAddInstace(addInstace);
+		for (Instance addInstance : addInstances) {
+			updateByAddInstance(addInstance);
 		}
 		// 移除的实例
 		List<Instance> removeInstances = instances.stream()
 			.filter(instance -> !currentInstances.contains(instance))
 			.collect(Collectors.toList());
 		for (Instance removeInstance : removeInstances) {
-			updateByRemoveInstace(removeInstance);
+			updateByRemoveInstance(removeInstance);
 		}
 		this.instances = currentInstances;
 	}
 
-	private void updateByRemoveInstace(Instance instance) {
+	private void updateByRemoveInstance(Instance instance) {
 		String clientInfoName = connectedClientName(commonProperties.getName(),
 				this.serviceName + "-" + instance.getInstanceId());
 		String serverMd5 = instance.getMetadata().get("server.md5");

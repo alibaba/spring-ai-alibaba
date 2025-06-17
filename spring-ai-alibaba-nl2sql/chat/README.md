@@ -2,6 +2,10 @@
 
 ## 模块简介
 
+![img.png](img.png)
+
+随着大模型技术的快速发展，自然语言到 SQL（NL2SQL）能力在数据分析领域的落地日益广泛。然而，传统 NL2SQL 方案存在Schema 理解偏差、复杂查询生成效率低、执行结果不可控等问题，导致业务场景中频繁出现“答非所问”或“生成失败”的窘境。为了让更多开发者能够便捷地使用这一能力，我们决定将[阿里云析言GBI](https://bailian.console.aliyun.com/xiyan#/home)中“Schema 召回 + SQL 生成 + SQL 执行”的核心链路模块化、组件化，并以开源的形式回馈社区。
+
 本模块旨在提供一个轻量级的 **自然语言查询转 SQL 语句** 的服务，基于用户输入的自然语言问题，结合数据库 Schema 和业务逻辑解释（evidence），通过大模型推理生成对应的 SQL 查询语句，并支持执行该 SQL 返回结果。
 
 该模块被设计为可复用的 Service 层组件，**仅提供核心功能实现，不包含 RESTful 接口及独立启动能力**。适用于集成到其他 Spring Boot 项目中使用。
@@ -30,7 +34,7 @@
 ## 技术栈
 
 - **后端**: Java 17+ (Spring Boot)
-- **依赖模块**: `com.alibaba.cloud.ai:common:1.0-SNAPSHOT`
+- **依赖模块**: `com.alibaba.cloud.ai:common:${spring-ai-alibaba.version}`
 - **大模型服务**: LLM（如 Qwen、DashScope）
 - **数据库连接器**: MySQL / PostgreSQL
 - **辅助工具**: Gson、Jackson、Markdown 解析器
@@ -53,23 +57,51 @@
 
 ```xml
 <dependency>
-    <groupId>com.alibaba.cloud.ai</groupId>
-    <artifactId>nl2sql-service</artifactId>
-    <version>1.0-SNAPSHOT</version>
+  <groupId>com.alibaba.cloud.ai</groupId>
+  <artifactId>spring-ai-alibaba-starter-nl2sql</artifactId>
+  <version>${spring-ai-alibaba.version}</version>
 </dependency>
 ```
 
 #### Gradle 示例：
 
 ```groovy
-implementation 'com.alibaba.cloud.ai:nl2sql-service:1.0-SNAPSHOT'
+implementation 'com.alibaba.cloud.ai:spring-ai-alibaba-starter-nl2sql:${spring-ai-alibaba.version}'
 ```
 
 ---
 
 ## 配置说明
 
-确保主项目中已正确配置以下内容：
+目前支持两种向量存储方式：
+- **AnalyticDB**（推荐生产环境，支持大规模数据和高性能检索）
+- **SimpleVector**（适合本地开发、测试或小规模场景，无需依赖外部数据库）
+
+### AnalyticDB 配置示例
+
+```yaml
+spring:
+  ai:
+    vectorstore:
+      analytic:
+        collectName: chatbi
+        regionId: cn-hangzhou
+        dbInstanceId: gp-bp11vjucxhw757v9p
+        managerAccount: 
+        managerAccountPassword: 
+        namespace: 
+        namespacePassword: 
+        defaultTopK: 10
+        defaultSimilarityThreshold: 0.01
+        accessKeyId: 
+        accessKeySecret: 
+```
+
+> ⚠️ 注意：AnalyticDB 需提前开启向量引擎优化，详见[官方文档](https://help.aliyun.com/zh/analyticdb/analyticdb-for-postgresql/getting-started/create-an-instance-instances-with-vector-engine-optimization-enabled)。SimpleVector 适合本地开发和小数据量测试，不建议用于生产环境。
+
+### SimpleVector 配置示例
+
+无需配置，默认启动 SimpleVector
 
 ### 数据库连接配置 (`application.yml`)
 
@@ -118,7 +150,7 @@ chatbi:
 
 ## 核心类说明
 
-- **`Nl2SqlService`**
+- **`BaseNl2SqlService`**
   - 主要对外接口服务类，提供以下方法：
     - `nl2sql(String query)`：入口方法，接收自然语言问题，返回格式化结果
 
@@ -149,6 +181,9 @@ chatbi:
 ## 联系方式
 
 如有任何问题，请联系：
+
+- 邮箱: kunan.lw@alibaba-inc.com
+- GitHub: [willyomg](https://github.com/willyomg)
 
 - 邮箱: xuqirui.xqr@alibaba-inc.com
 - GitHub: [littleahri](https://github.com/littleahri)

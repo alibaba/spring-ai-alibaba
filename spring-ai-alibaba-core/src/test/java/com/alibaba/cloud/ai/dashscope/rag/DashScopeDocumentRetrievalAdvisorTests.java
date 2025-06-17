@@ -15,16 +15,6 @@
  */
 package com.alibaba.cloud.ai.dashscope.rag;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
@@ -46,6 +35,16 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.RETRIEVED_DOCUMENTS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -154,17 +153,16 @@ class DashScopeDocumentRetrievalAdvisorTests {
 
 		// Generate prompt
 		ChatClientRequest request = ChatClientRequest.builder()
-				.prompt(new Prompt(TEST_QUERY, ChatOptions.builder()
-						.model(DashScopeApi.DEFAULT_CHAT_MODEL).build()))
-				.build();
+			.prompt(new Prompt(TEST_QUERY, ChatOptions.builder().model(DashScopeApi.DEFAULT_CHAT_MODEL).build()))
+			.build();
 
 		// Create a valid ChatResponse with Generation and metadata
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("finishReason", ChatCompletionFinishReason.STOP.name());
 		AssistantMessage assistantMessage = new AssistantMessage("Test response", metadata);
 		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
-				.finishReason(ChatCompletionFinishReason.STOP.name())
-				.build();
+			.finishReason(ChatCompletionFinishReason.STOP.name())
+			.build();
 		Generation generation = new Generation(assistantMessage, generationMetadata);
 		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 
@@ -173,9 +171,8 @@ class DashScopeDocumentRetrievalAdvisorTests {
 		Map<String, Document> documentMap = new HashMap<>();
 		responseAdviseContext.put(RETRIEVED_DOCUMENTS, documentMap);
 
-		when(callChain.nextCall(any(ChatClientRequest.class))).thenReturn(ChatClientResponse.builder().chatResponse(chatResponse)
-				.context(responseAdviseContext).build());
-
+		when(callChain.nextCall(any(ChatClientRequest.class)))
+			.thenReturn(ChatClientResponse.builder().chatResponse(chatResponse).context(responseAdviseContext).build());
 
 		ChatClientResponse response = advisor.adviseCall(request, callChain);
 

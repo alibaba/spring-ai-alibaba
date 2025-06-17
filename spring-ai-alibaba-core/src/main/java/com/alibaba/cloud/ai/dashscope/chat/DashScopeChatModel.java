@@ -79,8 +79,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.MESSAGE_FORMAT;
-
 /**
  * {@link ChatModel} implementation for {@literal Alibaba DashScope} backed by
  * {@link Generation}.
@@ -282,6 +280,13 @@ public class DashScopeChatModel implements ChatModel {
 		});
 	}
 
+	private static String finishReasonToMetadataValue(DashScopeApi.ChatCompletionFinishReason finishReason) {
+		if (finishReason == null || finishReason == DashScopeApi.ChatCompletionFinishReason.NULL) {
+			return "";
+		}
+		return finishReason.name();
+	}
+
 	private ChatResponse toChatResponse(ChatCompletion chatCompletion, ChatResponse previousChatResponse,
 			ChatCompletionRequest request, ConcurrentHashMap<String, String> roleMap) {
 
@@ -308,7 +313,7 @@ public class DashScopeChatModel implements ChatModel {
 			Map<String, Object> metadata = Map.of(
 					"id", chatCompletion.requestId(),
 					"role", finalRoleMap.getOrDefault(chatCompletion.requestId(), ""),
-					"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+					"finishReason", finishReasonToMetadataValue(choice.finishReason()),
 					"reasoningContent", StringUtils.hasText(choice.message().reasoningContent()) ? choice.message().reasoningContent() : "");
 			// @formatter:on
 			return buildGeneration(choice, metadata, request);
@@ -339,7 +344,7 @@ public class DashScopeChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
+		String finishReason = finishReasonToMetadataValue(choice.finishReason());
 		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason);
 
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
@@ -474,7 +479,7 @@ public class DashScopeChatModel implements ChatModel {
 
 	private List<MediaContent> convertMediaContent(UserMessage message) {
 		MessageFormat format = MessageFormat.IMAGE;
-		if (message.getMetadata().get(MESSAGE_FORMAT) instanceof MessageFormat messageFormat) {
+		if (message.getMetadata().get(DashScopeApiConstants.MESSAGE_FORMAT) instanceof MessageFormat messageFormat) {
 			format = messageFormat;
 		}
 

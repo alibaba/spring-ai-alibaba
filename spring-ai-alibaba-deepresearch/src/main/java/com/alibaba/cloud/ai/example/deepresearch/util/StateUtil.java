@@ -18,9 +18,13 @@ package com.alibaba.cloud.ai.example.deepresearch.util;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author yingzi
@@ -29,8 +33,27 @@ import java.util.List;
 
 public class StateUtil {
 
+	private static final Logger logger = LoggerFactory.getLogger(StateUtil.class);
+
+	private static final ExecutorService executor = Executors.newFixedThreadPool(10);
+
+	public static final String EXECUTION_STATUS_ASSIGNED_PREFIX = "assigned_";
+
+	public static final String EXECUTION_STATUS_PROCESSING_PREFIX = "processing_";
+
+	public static final String EXECUTION_STATUS_COMPLETED_PREFIX = "completed_";
+
 	public static List<String> getMessagesByType(OverAllState state, String name) {
 		return state.value(name, List.class).map(obj -> new ArrayList<>((List<String>) obj)).orElseGet(ArrayList::new);
+	}
+
+	public static List<String> getParallelMessages(OverAllState state, String name, int count) {
+		List<String> resList = new ArrayList<>();
+		for (int i = 0; i < count; i++) {
+			String nodeName = name + "_content_" + i;
+			resList.add((String) state.value(nodeName, List.class).get().get(0));
+		}
+		return resList;
 	}
 
 	public static String getQuery(OverAllState state) {

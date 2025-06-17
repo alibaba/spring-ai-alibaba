@@ -207,9 +207,15 @@ initializr:
         - name: Spring AI Alibaba Graph
           id: spring-ai-alibaba-graph
           group-id: com.alibaba.cloud.ai
-          artifact-id: spring-ai-alibaba-graph-starter
-          version: 1.0.0-M8.1-SNAPSHOT
+          artifact-id: spring-ai-alibaba-graph-core
+          version: 1.0.0.3-SNAPSHOT
           description: Building agent using Spring AI Alibaba Graph
+        - name: Spring AI Alibaba Dashscope
+          id: spring-ai-alibaba-starter-dashscope
+          group-id: com.alibaba.cloud.ai
+          artifact-id: spring-ai-alibaba-starter-dashscope
+          version: 1.0.0.3-SNAPSHOT
+          description: DashScope Model adapted Starter
     - name: Developer Tools
       content:
         - name: GraalVM Native Support

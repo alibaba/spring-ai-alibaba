@@ -16,12 +16,9 @@
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
 import java.util.List;
-import java.util.Random;
 
-import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.options.WaitForSelectorState;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;

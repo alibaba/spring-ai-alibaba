@@ -122,6 +122,27 @@ public class JsonParseTool {
 	}
 
 	/**
+	 * Get the text value of 'fieldName' from the JSON.
+	 * @param json json string
+	 * @param fieldName keyName
+	 */
+	public String getFieldValueAsText(String json, String fieldName) throws JsonProcessingException {
+		JsonNode rootNode = objectMapper.readTree(json);
+		JsonNode fieldNode = rootNode.get(fieldName);
+		return fieldNode.asText();
+	}
+
+	/**
+	 * Get the object of obj.fieldName1.fileName2... from the JSON.
+	 * @param json json string
+	 * @param fieldNames keyNames
+	 */
+	public <T> T getDepthFieldValue(String json, TypeReference<T> typeRef, String... fieldNames)
+			throws JsonProcessingException {
+		return this.jsonToObject(this.getDepthFieldValueAsString(json, fieldNames), typeRef);
+	}
+
+	/**
 	 * Get the string value of obj.fieldName1.fileName2... from the JSON.
 	 * @param json json string
 	 * @param fieldNames keyNames
@@ -146,6 +167,48 @@ public class JsonParseTool {
 		}
 		rootNode.put(fieldName, value);
 		return objectMapper.writeValueAsString(rootNode);
+	}
+
+	/**
+	 * Assign 'value' to 'fieldName' in the JSON, then return JsonNode
+	 * @param json json string
+	 * @param fieldName fieldName
+	 * @param value JsonNode value
+	 */
+	public Object setFieldValue(String json, String fieldName, JsonNode value) throws JsonProcessingException {
+		JsonNode jsonNode = objectMapper.readTree(json);
+		if (!(jsonNode instanceof ObjectNode rootNode)) {
+			throw new RuntimeException("no json object string");
+		}
+		return rootNode.set(fieldName, value);
+	}
+
+	/**
+	 * Remove 'fieldName' in the JSON, then return JsonNode
+	 * @param json json string
+	 * @param fieldName fieldName
+	 */
+	public Object removeFieldValue(String json, String fieldName) throws JsonProcessingException {
+		JsonNode jsonNode = objectMapper.readTree(json);
+		if (!(jsonNode instanceof ObjectNode rootNode)) {
+			throw new RuntimeException("no json object string");
+		}
+		return rootNode.remove(fieldName);
+	}
+
+	/**
+	 * Replace 'value' to 'fieldName' in the JSON, then return JsonNode
+	 * @param json json string
+	 * @param fieldName fieldName
+	 * @param value JsonNode value
+	 */
+	public Object replaceFieldValue(String json, String fieldName, JsonNode value) throws JsonProcessingException {
+		JsonNode jsonNode = objectMapper.readTree(json);
+		if (!(jsonNode instanceof ObjectNode rootNode)) {
+			throw new RuntimeException("no json object string");
+		}
+		rootNode.replace(fieldName, value);
+		return jsonNode;
 	}
 
 	/**

@@ -15,15 +15,19 @@
  */
 package com.alibaba.cloud.ai.example.graph.stream.node;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.toolcalling.baidusearch.BaiduSearchService;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Component
 public class BaiduSearchNode implements NodeAction {
@@ -31,10 +35,14 @@ public class BaiduSearchNode implements NodeAction {
 	@Autowired(required = false)
 	private BaiduSearchService baiduSearchService;
 
+	@Autowired
+	private ChatClient.Builder builder;
+
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		Optional<String> value = state.value(OverAllState.DEFAULT_INPUT_KEY, String.class);
 		StringBuilder sb = new StringBuilder();
+
 		if (value.isPresent()) {
 			String input = value.get();
 			BaiduSearchService.Request request = new BaiduSearchService.Request(input, 1);
@@ -50,6 +58,18 @@ public class BaiduSearchNode implements NodeAction {
 			}
 		}
 		return Map.of("parallel_result", sb.toString());
+	}
+
+	static CompletableFuture<NodeOutput> of(String node, String index, long delayInMills, OverAllState overAllState) {
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				Thread.sleep(delayInMills);
+			}
+			catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+			return new StreamingOutput(index, node, overAllState);
+		});
 	}
 
 }

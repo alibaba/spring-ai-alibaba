@@ -27,7 +27,7 @@ import java.util.function.Function;
  * @author 北极星
  */
 public class YuqueDeleteDocService
-		implements Function<YuqueDeleteDocService.deleteDocRequest, YuqueDeleteDocService.deleteDocResponse> {
+		implements Function<YuqueDeleteDocService.DeleteDocRequest, YuqueDeleteDocService.DeleteDocResponse> {
 
 	private static final Logger logger = LoggerFactory.getLogger(YuqueDeleteDocService.class);
 
@@ -41,14 +41,14 @@ public class YuqueDeleteDocService
 	}
 
 	@Override
-	public YuqueDeleteDocService.deleteDocResponse apply(YuqueDeleteDocService.deleteDocRequest deleteDocRequest) {
+	public YuqueDeleteDocService.DeleteDocResponse apply(YuqueDeleteDocService.DeleteDocRequest deleteDocRequest) {
 		if (deleteDocRequest == null || deleteDocRequest.bookId == null) {
 			return null;
 		}
 		String uri = "/repos/" + deleteDocRequest.bookId + "/docs/" + deleteDocRequest.id;
 		try {
 			String json = webClientTool.delete(uri).block();
-			return jsonParseTool.jsonToObject(json, deleteDocResponse.class);
+			return jsonParseTool.jsonToObject(json, DeleteDocResponse.class);
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete the Yuque document.", e);
@@ -56,20 +56,10 @@ public class YuqueDeleteDocService
 		}
 	}
 
-	protected record deleteDocRequest(@JsonProperty("bookId") String bookId, @JsonProperty("id") String id) {
+	public record DeleteDocRequest(@JsonProperty("bookId") String bookId, @JsonProperty("id") String id) {
 	}
 
-	protected record deleteDocResponse(@JsonProperty("id") String id, @JsonProperty("slug") String slug,
-			@JsonProperty("type") String type, @JsonProperty("description") String description,
-			@JsonProperty("cover") String cover, @JsonProperty("user_id") String user_id,
-			@JsonProperty("book_id") String book_id, @JsonProperty("last_editor_id") String last_editor_id,
-			@JsonProperty("format") String format, @JsonProperty("body_draft") String body_draft,
-			@JsonProperty("body_sheet") String body_sheet, @JsonProperty("body_table") String body_table,
-			@JsonProperty("body_html") String body_html, @JsonProperty("public") int isPublic,
-			@JsonProperty("status") String status, @JsonProperty("likes_count") int likes_count,
-			@JsonProperty("read_count") int read_count, @JsonProperty("comments_count") int comments_count,
-			@JsonProperty("word_count") int word_count, @JsonProperty("created_at") String createdAt,
-			@JsonProperty("updated_at") String updatedAt) {
+	public record DeleteDocResponse(@JsonProperty("data") YuqueConstants.DocSerializer data) {
 	}
 
 }

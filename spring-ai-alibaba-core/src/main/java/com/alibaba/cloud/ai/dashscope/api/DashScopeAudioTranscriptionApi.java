@@ -37,8 +37,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.net.URL;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
-
 public class DashScopeAudioTranscriptionApi {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeAudioTranscriptionApi.class);
@@ -52,12 +50,12 @@ public class DashScopeAudioTranscriptionApi {
 	}
 
 	public DashScopeAudioTranscriptionApi(String apiKey, String workSpaceId) {
-		this(DEFAULT_BASE_URL, apiKey, workSpaceId, DashScopeApiConstants.DEFAULT_WEBSOCKET_URL, RestClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		this(DashScopeApiConstants.DEFAULT_BASE_URL, apiKey, workSpaceId, DashScopeApiConstants.DEFAULT_WEBSOCKET_URL,
+				RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	public DashScopeAudioTranscriptionApi(String apiKey, String workSpaceId, String websocketUrl) {
-		this(DEFAULT_BASE_URL, apiKey, workSpaceId, websocketUrl, RestClient.builder(),
+		this(DashScopeApiConstants.DEFAULT_BASE_URL, apiKey, workSpaceId, websocketUrl, RestClient.builder(),
 				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 

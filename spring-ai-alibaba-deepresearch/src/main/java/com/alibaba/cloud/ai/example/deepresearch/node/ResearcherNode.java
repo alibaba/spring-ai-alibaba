@@ -27,7 +27,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,39 +34,61 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * @author sixiyida
+ * @since 2025/6/14 11:17
+ */
+
 public class ResearcherNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(ResearcherNode.class);
 
 	private final ChatClient researchAgent;
 
+	private final String executorNodeId;
+
+	private final String nodeName;
+
 	public ResearcherNode(ChatClient researchAgent) {
+		this(researchAgent, "0");
+	}
+
+	public ResearcherNode(ChatClient researchAgent, String executorNodeId) {
 		this.researchAgent = researchAgent;
+		this.executorNodeId = executorNodeId;
+		this.nodeName = "researcher_" + executorNodeId;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("researcher node is running.");
+		logger.info("researcher node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
 		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Map<String, Object> updated = new HashMap<>();
 
-		Plan.Step unexecutedStep = null;
+		Plan.Step assignedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
-			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())) {
-				unexecutedStep = step;
+			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())
+					&& StringUtils.hasText(step.getExecutionStatus())
+					&& step.getExecutionStatus().equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + nodeName)) {
+				assignedStep = step;
 				break;
 			}
 		}
-		if (unexecutedStep == null) {
-			logger.info("all researcher node is finished.");
+
+		// 如果没有找到分配的步骤，直接返回
+		if (assignedStep == null) {
+			logger.info("No remaining steps to be executed by {}", nodeName);
 			return updated;
 		}
+
+		// 标记步骤为正在执行
+		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + nodeName);
 
 		// 添加任务消息
 		List<Message> messages = new ArrayList<>();
 		Message taskMessage = new UserMessage(String.format("# Current Task\n\n##title\n\n%s\n\n##description\n\n%s",
-				unexecutedStep.getTitle(), unexecutedStep.getDescription()));
+				assignedStep.getTitle(), assignedStep.getDescription()));
 		messages.add(taskMessage);
 
 		// 添加研究者特有的引用提醒
@@ -78,14 +99,27 @@ public class ResearcherNode implements NodeAction {
 		logger.debug("researcher Node messages: {}", messages);
 		// 调用agent
 		var streamResult = researchAgent.prompt().messages(messages).stream().chatResponse();
+		Plan.Step finalAssignedStep = assignedStep;
+		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId,
+				"researcher_llm_stream_" + executorNodeId);
 		var generator = StreamingChatGenerator.builder()
-			.startingNode("researcher_llm_stream")
+			.startingNode("researcher_llm_stream_" + executorNodeId)
 			.startingState(state)
-			.mapResult(response -> Map.of("researcher_content",
-					Objects.requireNonNull(response.getResult().getOutput().getText())))
+			.mapResult(response -> {
+				finalAssignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
+				String researchContent = response.getResult().getOutput().getText();
+				finalAssignedStep.setExecutionRes(Objects.requireNonNull(researchContent));
+				logger.info("{} completed, content: {}", nodeName, researchContent);
+
+				observations.add(researchContent);
+				updated.put("observations", observations);
+				updated.put("researcher_content_" + executorNodeId, List.of(researchContent));
+				return updated;
+			})
 			.build(streamResult);
 
-		return Map.of("researcher_content", generator);
+		updated.put("researcher_content_" + executorNodeId, generator);
+		return updated;
 	}
 
 }
