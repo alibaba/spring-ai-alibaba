@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.example.deepresearch.repository.ModelParamRepository;
+import com.alibaba.cloud.ai.example.deepresearch.repository.ModelParamRepositoryImpl;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -31,7 +32,7 @@ public class AgentModelsConfiguration implements InitializingBean {
 
 	private static final String BEAN_NAME_SUFFIX = "ChatClientBuilder";
 
-	private final List<ModelParamRepository.AgentModel> models;
+    private final List<ModelParamRepositoryImpl.AgentModel> models;
 
 	private final DashScopeConnectionProperties commonProperties;
 
