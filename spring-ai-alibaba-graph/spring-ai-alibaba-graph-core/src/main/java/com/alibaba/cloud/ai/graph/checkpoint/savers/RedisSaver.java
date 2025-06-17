@@ -71,8 +71,11 @@ public class RedisSaver implements BaseCheckpointSaver {
 				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
 				if (tryLock) {
 					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					// or CheckPointSerializer?
-					return objectMapper.readValue(bucket.get(), new TypeReference<>() {
+					String content = bucket.get();
+					if (content == null) {
+						return new LinkedList<>();
+					}
+					return objectMapper.readValue(content, new TypeReference<>() {
 					});
 				}
 				else {
@@ -109,9 +112,15 @@ public class RedisSaver implements BaseCheckpointSaver {
 				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
 				if (tryLock) {
 					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					// or CheckPointSerializer?
-					List<Checkpoint> checkpoints = objectMapper.readValue(bucket.get(), new TypeReference<>() {
-					});
+					String content = bucket.get();
+					List<Checkpoint> checkpoints;
+					if (content == null) {
+						checkpoints = new LinkedList<>();
+					}
+					else {
+						checkpoints = objectMapper.readValue(content, new TypeReference<>() {
+						});
+					}
 					if (config.checkPointId().isPresent()) {
 						return config.checkPointId()
 							.flatMap(id -> checkpoints.stream()
@@ -154,8 +163,15 @@ public class RedisSaver implements BaseCheckpointSaver {
 				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
 				if (tryLock) {
 					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					List<Checkpoint> checkpoints = objectMapper.readValue(bucket.get(), new TypeReference<>() {
-					});
+					String content = bucket.get();
+					List<Checkpoint> checkpoints;
+					if (content == null) {
+						checkpoints = new LinkedList<>();
+					}
+					else {
+						checkpoints = objectMapper.readValue(content, new TypeReference<>() {
+						});
+					}
 					LinkedList<Checkpoint> linkedList = getLinkedList(checkpoints);
 					if (config.checkPointId().isPresent()) { // Replace Checkpoint
 						String checkPointId = config.checkPointId().get();

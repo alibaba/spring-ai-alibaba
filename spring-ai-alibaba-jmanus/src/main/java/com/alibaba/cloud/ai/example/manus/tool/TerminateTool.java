@@ -56,6 +56,7 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 			          "type" : "string"
 			        }
 			      }
+
 			    }
 			  },
 			  "required" : [ "message" ]

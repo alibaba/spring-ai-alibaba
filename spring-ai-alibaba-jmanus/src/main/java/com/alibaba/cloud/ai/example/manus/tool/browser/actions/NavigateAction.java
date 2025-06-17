@@ -46,7 +46,7 @@ public class NavigateAction extends BrowserAction {
 		// 在调用 page.content() 之前，确保页面已完全加载
 		page.waitForLoadState(LoadState.DOMCONTENTLOADED, new WaitForLoadStateOptions().setTimeout(timeoutMs));
 
-		return new ToolExecuteResult("Navigated to " + url);
+		return new ToolExecuteResult("successfully navigated to " + url);
 	}
 
 }
