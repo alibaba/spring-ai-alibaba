@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config.rag;
 
-import com.alibaba.cloud.ai.example.deepresearch.controller.rag.DocumentSelectFirstProcess;
+import com.alibaba.cloud.ai.example.deepresearch.rag.post.DocumentSelectFirstProcess;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander;
@@ -62,7 +62,7 @@ public class RagAdvisorConfiguration {
 				.build());
 		}
 
-		// Conditionally add Post-Processor
+		// todo 文档后处理，增加如相关性排序、删除不相关文档，压缩文档等 Conditionally add Post-Processor
 		if (ragProperties.getPipeline().isPostProcessingSelectFirstEnabled()) {
 			advisorBuilder.documentPostProcessors(new DocumentSelectFirstProcess());
 		}
