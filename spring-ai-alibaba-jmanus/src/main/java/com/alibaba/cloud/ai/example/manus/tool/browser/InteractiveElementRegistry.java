@@ -16,13 +16,15 @@
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
 import com.microsoft.playwright.Frame;
-import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,11 +41,21 @@ public class InteractiveElementRegistry {
 	/**
 	 * 用于选择交互式元素的CSS选择器
 	 */
-	private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea";
+	private static final String EXTRACT_INTERACTIVE_ELEMENTS_JS;
 
-	// 可根据需要添加更多选择器
-	// + "[role='button'], [role='link'], [role='textbox'], [role='search'],
-	// [role='searchbox']";
+	static {
+		try (InputStream inputStream = InteractiveElementRegistry.class.getClassLoader()
+			.getResourceAsStream("tool/extract-interactive-elements.js")) {
+			if (inputStream == null) {
+				throw new NullPointerException("not find extract js");
+			}
+			byte[] bytes = inputStream.readAllBytes();
+			EXTRACT_INTERACTIVE_ELEMENTS_JS = new String(bytes, StandardCharsets.UTF_8);
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
 	 * 存储所有交互元素的列表，按全局索引顺序排列
@@ -62,12 +74,7 @@ public class InteractiveElementRegistry {
 	public void refresh(Page page) {
 		clearCache();
 		waitForPageLoad(page);
-		// 统一处理所有 frame（包括主页面和所有iframe）
-		List<Frame> frames = page.frames();
-		log.info("统一处理所有 frame, 共 {} 个", frames.size());
-		for (Frame frame : frames) {
-			processFrameElements(frame);
-		}
+		processPageElements(page);
 		log.info("已加载 {} 个交互式元素", interactiveElements.size());
 	}
 
@@ -95,34 +102,27 @@ public class InteractiveElementRegistry {
 
 	/**
 	 * 处理单个iframe中的交互元素
-	 * @param frame Frame实例
+	 * @param page current browser page
 	 */
 	@SuppressWarnings("unchecked")
-	private void processFrameElements(Frame frame) {
+	private void processPageElements(Page page) {
 		try {
-			Locator elementLocator = frame.locator(INTERACTIVE_ELEMENTS_SELECTOR);
-			int count = elementLocator.count();
-			log.info("在iframe中找到 {} 个交互元素", count);
-			List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) elementLocator.evaluateAll("""
-					(elements) => elements.map((element, index) => {
-					    return {
-					        tagName: element.tagName.toLowerCase(),
-					        text: element.innerText,
-					        outerHtml: element.outerHTML,
-					        index: index
-					    };
-					})
-					""");
-			for (Map<String, Object> elementMap : elementMapList) {
-				Integer globalIndex = (Integer) elementMap.get("index");
-				Locator locator = elementLocator.nth(globalIndex);
-				InteractiveElement element = new InteractiveElement(globalIndex, locator, frame, elementMap);
-				interactiveElements.add(element);
-				indexToElementMap.put(globalIndex, element);
+			int index = 0;
+			for (Frame frame : page.frames()) {
+				List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) frame
+					.evaluate(EXTRACT_INTERACTIVE_ELEMENTS_JS, index);
+				for (Map<String, Object> elementMap : elementMapList) {
+					Integer globalIndex = (Integer) elementMap.get("index");
+					InteractiveElement element = new InteractiveElement(globalIndex, frame, elementMap);
+					interactiveElements.add(element);
+					indexToElementMap.put(globalIndex, element);
+				}
+				index = interactiveElements.size();
 			}
+
 		}
 		catch (Exception e) {
-			log.warn("处理iframe元素时出错: {}", e.getMessage());
+			log.warn("处理page元素时出错: {}", e.getMessage());
 		}
 	}
 
