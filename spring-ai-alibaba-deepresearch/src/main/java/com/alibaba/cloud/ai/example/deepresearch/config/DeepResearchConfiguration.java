@@ -27,13 +27,11 @@ import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
-
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
