@@ -41,6 +41,7 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
+import com.alibaba.cloud.ai.example.manus.tool.split.SplitTool;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
 import org.apache.hc.client5.http.classic.HttpClient;
@@ -162,6 +163,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
+		toolDefinitions.add(new SplitTool(planId));
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
 			String serviceGroup = toolCallback.getServiceGroup();
