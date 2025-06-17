@@ -17,8 +17,7 @@
 package com.alibaba.cloud.ai.example.graph.mcp;
 
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.OverAllStateFactory;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.McpNode;
@@ -28,6 +27,9 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -44,14 +46,6 @@ public class McpAutoConfiguration {
 	@Bean
 	public StateGraph mcpGraph() throws GraphStateException {
 
-		OverAllStateFactory stateFactory = () -> {
-			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy("latitude", new ReplaceStrategy());
-			state.registerKeyAndStrategy("longitude", new ReplaceStrategy());
-			state.registerKeyAndStrategy("mcp_result", new ReplaceStrategy());
-			return state;
-		};
-
 		// 示例：添加 MCP Node
 		McpNode mcpNode = McpNode.builder()
 			.url("http://localhost:18080/sse") // MCP Server SSE 地址
@@ -64,9 +58,13 @@ public class McpAutoConfiguration {
 			.outputKey("mcp_result")
 			.build();
 
-		StateGraph stateGraph = new StateGraph(stateFactory).addNode("mcp_node", node_async(mcpNode))
-			.addEdge(START, "mcp_node")
-			.addEdge("mcp_node", END);
+		StateGraph stateGraph = new StateGraph(() -> {
+			Map<String, KeyStrategy> strategies = new HashMap<>();
+			strategies.put("latitude", new ReplaceStrategy());
+			strategies.put("longitude", new ReplaceStrategy());
+			strategies.put("mcp_result", new ReplaceStrategy());
+			return strategies;
+		}).addNode("mcp_node", node_async(mcpNode)).addEdge(START, "mcp_node").addEdge("mcp_node", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML, "mcp graph");
 
