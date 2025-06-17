@@ -32,7 +32,7 @@ public class AgentModelsConfiguration implements InitializingBean {
 
 	private static final String BEAN_NAME_SUFFIX = "ChatClientBuilder";
 
-    private final List<ModelParamRepositoryImpl.AgentModel> models;
+	private final List<ModelParamRepositoryImpl.AgentModel> models;
 
 	private final DashScopeConnectionProperties commonProperties;
 
