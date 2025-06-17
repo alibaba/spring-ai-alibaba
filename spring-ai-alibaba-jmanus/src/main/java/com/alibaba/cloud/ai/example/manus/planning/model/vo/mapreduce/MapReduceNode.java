@@ -28,16 +28,20 @@ public class MapReduceNode {
 
 	private MapReduceStepType type = MapReduceStepType.MAPREDUCE;
 
+	private List<ExecutionStep> dataPreparedSteps;
+
 	private List<ExecutionStep> mapSteps;
 
 	private List<ExecutionStep> reduceSteps;
 
 	public MapReduceNode() {
+		this.dataPreparedSteps = new ArrayList<>();
 		this.mapSteps = new ArrayList<>();
 		this.reduceSteps = new ArrayList<>();
 	}
 
-	public MapReduceNode(List<ExecutionStep> mapSteps, List<ExecutionStep> reduceSteps) {
+	public MapReduceNode(List<ExecutionStep> dataPreparedSteps, List<ExecutionStep> mapSteps, List<ExecutionStep> reduceSteps) {
+		this.dataPreparedSteps = dataPreparedSteps != null ? dataPreparedSteps : new ArrayList<>();
 		this.mapSteps = mapSteps != null ? mapSteps : new ArrayList<>();
 		this.reduceSteps = reduceSteps != null ? reduceSteps : new ArrayList<>();
 	}
@@ -45,6 +49,14 @@ public class MapReduceNode {
 	@JsonIgnore
 	public MapReduceStepType getType() {
 		return type;
+	}
+
+	public List<ExecutionStep> getDataPreparedSteps() {
+		return dataPreparedSteps;
+	}
+
+	public void setDataPreparedSteps(List<ExecutionStep> dataPreparedSteps) {
+		this.dataPreparedSteps = dataPreparedSteps != null ? dataPreparedSteps : new ArrayList<>();
 	}
 
 	public List<ExecutionStep> getMapSteps() {
@@ -63,6 +75,13 @@ public class MapReduceNode {
 		this.reduceSteps = reduceSteps != null ? reduceSteps : new ArrayList<>();
 	}
 
+	public void addDataPreparedStep(ExecutionStep step) {
+		if (dataPreparedSteps == null) {
+			dataPreparedSteps = new ArrayList<>();
+		}
+		dataPreparedSteps.add(step);
+	}
+
 	public void addMapStep(ExecutionStep step) {
 		if (mapSteps == null) {
 			mapSteps = new ArrayList<>();
@@ -78,6 +97,11 @@ public class MapReduceNode {
 	}
 
 	@JsonIgnore
+	public int getDataPreparedStepCount() {
+		return dataPreparedSteps != null ? dataPreparedSteps.size() : 0;
+	}
+
+	@JsonIgnore
 	public int getMapStepCount() {
 		return mapSteps != null ? mapSteps.size() : 0;
 	}
@@ -89,7 +113,15 @@ public class MapReduceNode {
 
 	@JsonIgnore
 	public int getTotalStepCount() {
-		return getMapStepCount() + getReduceStepCount();
+		return getDataPreparedStepCount() + getMapStepCount() + getReduceStepCount();
+	}
+
+	@JsonIgnore
+	public ExecutionStep getDataPreparedStep(int index) {
+		if (dataPreparedSteps != null && index >= 0 && index < dataPreparedSteps.size()) {
+			return dataPreparedSteps.get(index);
+		}
+		return null;
 	}
 
 	@JsonIgnore
@@ -108,12 +140,15 @@ public class MapReduceNode {
 	}
 
 	/**
-	 * 获取所有步骤（Map + Reduce）
+	 * 获取所有步骤（Data Prepared + Map + Reduce）
 	 * @return 所有步骤的列表
 	 */
 	@JsonIgnore
 	public List<ExecutionStep> getAllSteps() {
 		List<ExecutionStep> allSteps = new ArrayList<>();
+		if (dataPreparedSteps != null) {
+			allSteps.addAll(dataPreparedSteps);
+		}
 		if (mapSteps != null) {
 			allSteps.addAll(mapSteps);
 		}
@@ -131,9 +166,18 @@ public class MapReduceNode {
 	public String getNodeInStr() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("=== MapReduce执行节点 ===\n");
+		sb.append("Data Prepared步骤数量: ").append(getDataPreparedStepCount()).append("\n");
 		sb.append("Map步骤数量: ").append(getMapStepCount()).append("\n");
 		sb.append("Reduce步骤数量: ").append(getReduceStepCount()).append("\n");
 		sb.append("总步骤数量: ").append(getTotalStepCount()).append("\n");
+
+		if (dataPreparedSteps != null && !dataPreparedSteps.isEmpty()) {
+			sb.append("\n--- Data Prepared阶段 ---\n");
+			for (int i = 0; i < dataPreparedSteps.size(); i++) {
+				ExecutionStep step = dataPreparedSteps.get(i);
+				sb.append("  DataPrepared-").append(i + 1).append(". ").append(step.getStepRequirement()).append("\n");
+			}
+		}
 
 		if (mapSteps != null && !mapSteps.isEmpty()) {
 			sb.append("\n--- Map阶段 ---\n");

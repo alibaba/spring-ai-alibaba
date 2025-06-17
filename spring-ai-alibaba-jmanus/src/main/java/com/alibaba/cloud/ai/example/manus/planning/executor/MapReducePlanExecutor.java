@@ -118,20 +118,46 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	 * 执行 MapReduce 节点
 	 */
 	private BaseAgent executeMapReduceNode(MapReduceNode mrNode, ExecutionContext context, BaseAgent lastExecutor) {
-		logger.info("执行 MapReduce 节点，Map 步骤: {}, Reduce 步骤: {}", mrNode.getMapStepCount(), mrNode.getReduceStepCount());
+		logger.info("执行 MapReduce 节点，Data Prepared 步骤: {}, Map 步骤: {}, Reduce 步骤: {}", 
+				mrNode.getDataPreparedStepCount(), mrNode.getMapStepCount(), mrNode.getReduceStepCount());
 
 		BaseAgent executor = lastExecutor;
 
-		// 1. 并行执行 Map 阶段
+		// 1. 串行执行 Data Prepared 阶段
+		if (CollectionUtil.isNotEmpty(mrNode.getDataPreparedSteps())) {
+			executor = executeDataPreparedPhase(mrNode.getDataPreparedSteps(), context, executor);
+		}
+
+		// 2. 并行执行 Map 阶段
 		if (CollectionUtil.isNotEmpty(mrNode.getMapSteps())) {
 			executor = executeMapPhase(mrNode.getMapSteps(), context);
 		}
 
-		// 2. 串行执行 Reduce 阶段
+		// 3. 串行执行 Reduce 阶段
 		if (CollectionUtil.isNotEmpty(mrNode.getReduceSteps())) {
 			executor = executeReducePhase(mrNode.getReduceSteps(), context, executor);
 		}
 
+		return executor;
+	}
+
+	/**
+	 * 串行执行 Data Prepared 阶段
+	 */
+	private BaseAgent executeDataPreparedPhase(List<ExecutionStep> dataPreparedSteps, ExecutionContext context,
+			BaseAgent lastExecutor) {
+		logger.info("串行执行 Data Prepared 阶段，共 {} 个步骤", dataPreparedSteps.size());
+
+		BaseAgent executor = lastExecutor;
+
+		for (ExecutionStep step : dataPreparedSteps) {
+			BaseAgent stepExecutor = executeStep(step, context);
+			if (stepExecutor != null) {
+				executor = stepExecutor;
+			}
+		}
+
+		logger.info("Data Prepared 阶段执行完成");
 		return executor;
 	}
 
