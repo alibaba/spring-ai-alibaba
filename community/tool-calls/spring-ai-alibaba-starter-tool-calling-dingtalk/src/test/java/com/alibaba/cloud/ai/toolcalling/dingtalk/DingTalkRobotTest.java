@@ -27,23 +27,27 @@ import org.springframework.boot.test.context.SpringBootTest;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 
-@SpringBootTest(classes = {
-        DingTalkAutoConfiguration.class, CommonToolCallAutoConfiguration.class})
+@SpringBootTest(classes = { DingTalkAutoConfiguration.class, CommonToolCallAutoConfiguration.class })
 @DisplayName("dingTalk robot tool call test")
 public class DingTalkRobotTest {
-    @Autowired
-    private DingTalkRobotService dingTalkRobotService;
 
-    private static final Logger log = LoggerFactory.getLogger(DingTalkRobotTest.class);
+	@Autowired
+	private DingTalkRobotService dingTalkRobotService;
 
-    @Test
-    @EnabledIfEnvironmentVariable(named = DingTalkConstants.ACCESS_TOKEN_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
-    @EnabledIfEnvironmentVariable(named = DingTalkConstants.SIGNATURE_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
-    @DisplayName("DingTalk Robot Test")
-    public void testDingTalkRobot() {
-        DingTalkRobotService.Response response = dingTalkRobotService.apply(new DingTalkRobotService.Request("spring ai alibaba dingtalk robot tool call testing..."));
-        log.info("DingTalk robot service response: {}", response.message());
-        Assertions.assertNotNull(response, "response body should not be null!");
-        Assertions.assertNotNull(response.message(), "response message should not be null!");
-    }
+	private static final Logger log = LoggerFactory.getLogger(DingTalkRobotTest.class);
+
+	@Test
+	@EnabledIfEnvironmentVariable(named = DingTalkConstants.ACCESS_TOKEN_ENV,
+			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@EnabledIfEnvironmentVariable(named = DingTalkConstants.SIGNATURE_ENV,
+			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@DisplayName("DingTalk Robot Test")
+	public void testDingTalkRobot() {
+		DingTalkRobotService.Response response = dingTalkRobotService
+			.apply(new DingTalkRobotService.Request("spring ai alibaba dingtalk robot tool call testing..."));
+		log.info("DingTalk robot service response: {}", response.message());
+		Assertions.assertNotNull(response, "response body should not be null!");
+		Assertions.assertNotNull(response.message(), "response message should not be null!");
+	}
+
 }
