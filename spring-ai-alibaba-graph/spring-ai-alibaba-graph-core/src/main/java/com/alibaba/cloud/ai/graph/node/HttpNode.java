@@ -120,7 +120,7 @@ public class HttpNode implements NodeAction {
 			Map<String, Object> updatedState = new HashMap<>();
 			updatedState.put("messages", httpResponse);
 			if (StringUtils.hasLength(this.outputKey)) {
-                updatedState.put(this.outputKey, httpResponse);
+				updatedState.put(this.outputKey, httpResponse);
 			}
 			return updatedState;
 		}
