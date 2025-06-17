@@ -11,6 +11,18 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This repository class is responsible for loading agent model parameters
+ * from a JSON configuration file. It reads the models defined in the
+ * "agents-config.json" file and provides methods to access them.
+ *
+ * The JSON structure is expected to have a key "models" which maps to a list
+ * of AgentModel objects.
+ *
+ * @author ViliamSun
+ * @since 0.1.0
+ */
+
 @Repository
 public class ModelParamRepository {
 

@@ -18,7 +18,12 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
- * Configuration class for agent models.
+ * This configuration class will configure the corresponding
+ * ChatClientBuilder tool according to the agents-config.json
+ * file to provide multi-agent capabilities for deepsearch.
+ * different {@link ChatClient.Builder} will be created
+ * according to the name column.
+ * for example: `researchChatClientBuilder`
  *
  * @author ViliamSun
  * @since 0.1.0
@@ -46,9 +51,9 @@ public class AgentModelsConfiguration implements InitializingBean {
     }
 
     /**
-     * Creates a map of agent model names to their corresponding DashScopeChatModel instances.
+     * Creates a map of agent model names to their corresponding {@link DashScopeChatModel} instances.
      *
-     * @return a map where the key is the model name and the value is the DashScopeChatModel instance.
+     * @return a map where the key is the model name and the value is the {@link DashScopeChatModel} instance.
      */
     private Map<String, DashScopeChatModel> agentModels() {
         // Convert AgentModel to DashScopeChatModel
