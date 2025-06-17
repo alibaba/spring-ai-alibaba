@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
@@ -68,21 +69,16 @@ public class ReporterNode implements NodeAction {
 		messages.add(new UserMessage(
 				MessageFormat.format(RESEARCH_FORMAT, currentPlan.getTitle(), currentPlan.getThought())));
 		messages.add(new UserMessage(REPORT_FORMAT));
-		// 1.3 添加观察的消息
-		for (String observation : StateUtil.getMessagesByType(state, "observations")) {
-			messages.add(new UserMessage(observation));
-		}
-		// 1.4 添加背景调查的消息
+		// 1.3 添加背景调查的消息
 		String backgroundInvestigationResults = state.value("background_investigation_results", "");
 		if (StringUtils.hasText(backgroundInvestigationResults)) {
 			messages.add(new UserMessage(backgroundInvestigationResults));
 		}
-		// 1.5 添加planner节点返回的信息
-		messages.add(new UserMessage(currentPlan.getThought()));
-		// 1.6 todo 添加研究者节点返回的信息
-		for (String researcherContent : StateUtil.getParallelMessages(state, "researcher", 3)) {
-			logger.info("researcher_content: {}", researcherContent);
-			messages.add(new UserMessage(researcherContent));
+		// 1.4 添加研究组节点返回的信息
+		List<String> researcherTeam = List.of(ParallelEnum.RESEARCHER.getValue(), ParallelEnum.CODER.getValue());
+		for (String content : StateUtil.getParallelMessages(state, researcherTeam, StateUtil.getMaxStepNum(state))) {
+			logger.info("researcherTeam_content: {}", content);
+			messages.add(new UserMessage(content));
 		}
 
 		logger.debug("reporter node messages: {}", messages);
