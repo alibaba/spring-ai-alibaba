@@ -27,8 +27,8 @@
 ## 技术栈
 
 - **后端**: Java 17+ (Spring Boot)
-- **依赖模块**: `com.alibaba.cloud.ai:common:1.0-SNAPSHOT`
-- **向量引擎**: 云原生数据仓库 AnalyticDB PostgreSQL 版
+- **依赖模块**: `com.alibaba.cloud.ai:${spring-ai-alibaba.version}`
+- **向量引擎**: 云原生数据仓库 AnalyticDB PostgreSQL 版、SimpleVector
 - **嵌入模型**: DashScope Embedding Model
 
 ---
@@ -50,19 +50,25 @@
 
 ```xml
 <dependency>
-    <groupId>com.alibaba.cloud.ai</groupId>
-    <artifactId>common</artifactId>
-    <version>1.0-SNAPSHOT</version>
+  <groupId>com.alibaba.cloud.ai</groupId>
+  <artifactId>spring-ai-alibaba-starter-nl2sql</artifactId>
+  <version>${spring-ai-alibaba.version}</version>
 </dependency>
 ```
 
 #### Gradle 示例：
 
 ```groovy
-implementation 'com.alibaba.cloud.ai:common:1.0-SNAPSHOT'
+implementation 'com.alibaba.cloud.ai:spring-ai-alibaba-starter-nl2sql:${spring-ai-alibaba.version}'
 ```
 
 ### 配置说明
+
+目前支持两种向量存储方式：
+- **AnalyticDB**（推荐生产环境，支持大规模数据和高性能检索）
+- **SimpleVector**（适合本地开发、测试或小规模场景，无需依赖外部数据库）
+
+#### AnalyticDB 配置示例
 
 在 `application.yml` 中配置以下参数以启用 AnalyticDB 向量功能：
 
@@ -88,16 +94,20 @@ spring:
 
 > ⚠️ 注意：AnalyticDB PostgreSQL 实例需提前开启向量引擎优化，详见[创建实例文档](https://help.aliyun.com/zh/analyticdb/analyticdb-for-postgresql/getting-started/create-an-instance-instances-with-vector-engine-optimization-enabled)
 
+#### SimpleVector 配置示例
+
+无需配置，默认启动 SimpleVector
+
 ---
 
 ## 核心类说明
 
-- **`VectorStoreService`**  
+- **`VectorStoreManagementService`**  
   核心服务类，封装了以下功能：
   - 将数据库 schema 信息写入向量数据库
   - 对业务逻辑解释（evidence）进行增删改查
   - 提供向量搜索接口，用于召回相关业务规则
-  - 支持连接 AnalyticDB PostgreSQL 并执行向量查询/删除操作
+  - 支持执行向量查询/删除操作
 
 ---
 
