@@ -20,8 +20,8 @@ import com.alibaba.cloud.ai.example.graph.openmanus.SupervisorAgent;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.HumanNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
@@ -39,6 +40,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -83,15 +85,6 @@ public class OpenmanusHumanController {
 
 	@GetMapping("/init")
 	public void initGraph() throws GraphStateException {
-		OverAllStateFactory stateFactory = () -> {
-			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy("plan", (o1, o2) -> o2);
-			state.registerKeyAndStrategy("step_prompt", (o1, o2) -> o2);
-			state.registerKeyAndStrategy("step_output", (o1, o2) -> o2);
-			state.registerKeyAndStrategy("final_output", (o1, o2) -> o2);
-
-			return state;
-		};
 
 		SupervisorAgent supervisorAgent = new SupervisorAgent(planningTool);
 		ReactAgent planningAgent = new ReactAgent("planningAgent", planningClient, resolver, 10);
@@ -100,8 +93,14 @@ public class OpenmanusHumanController {
 		stepAgent.getAndCompileGraph();
 		HumanNode humanNode = new HumanNode();
 
-		StateGraph graph2 = new StateGraph(stateFactory)
-			.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
+		StateGraph graph2 = new StateGraph(() -> {
+			Map<String, KeyStrategy> strategies = new HashMap<>();
+			strategies.put("plan", new ReplaceStrategy());
+			strategies.put("step_prompt", new ReplaceStrategy());
+			strategies.put("step_output", new ReplaceStrategy());
+			strategies.put("final_output", new ReplaceStrategy());
+			return strategies;
+		}).addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
 			.addNode("human", node_async(humanNode))
 			.addNode("supervisor_agent", node_async(supervisorAgent))
 			.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
