@@ -27,11 +27,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
+import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -49,11 +53,12 @@ import java.util.Map;
  *
  * @author Makoto
  */
-@Configuration
+@AutoConfiguration(after = { WebClientAutoConfiguration.class })
 @ConditionalOnClass({ McpAsyncClient.class, WebFluxSseClientTransport.class })
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.deepresearch.mcp", name = "enabled", havingValue = "true",
 		matchIfMissing = false)
-@EnableConfigurationProperties({ McpAssignNodeProperties.class })
+@ImportAutoConfiguration(classes = { WebClientAutoConfiguration.class })
+@EnableConfigurationProperties({ McpAssignNodeProperties.class, McpClientCommonProperties.class })
 public class McpAssignNodeAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(McpAssignNodeAutoConfiguration.class);
@@ -64,11 +69,15 @@ public class McpAssignNodeAutoConfiguration {
 
 	private final ObjectMapper objectMapper;
 
+	private final ObjectProvider<WebClient.Builder> webClientBuilderProvider;
+
 	public McpAssignNodeAutoConfiguration(McpAssignNodeProperties mcpAssignNodeProperties,
-			ResourceLoader resourceLoader, ObjectMapper objectMapper) {
+			ResourceLoader resourceLoader, ObjectMapper objectMapper,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider) {
 		this.mcpAssignNodeProperties = mcpAssignNodeProperties;
 		this.resourceLoader = resourceLoader;
 		this.objectMapper = objectMapper;
+		this.webClientBuilderProvider = webClientBuilderProvider;
 	}
 
 	/**
@@ -116,7 +125,7 @@ public class McpAssignNodeAutoConfiguration {
 				}
 
 				try {
-					WebClient.Builder webClientBuilder = WebClient.builder()
+					WebClient.Builder webClientBuilder = webClientBuilderProvider.getIfAvailable(WebClient::builder)
 						.baseUrl(serverInfo.getUrl())
 						.defaultHeader("Accept", "text/event-stream")
 						.defaultHeader("Content-Type", "application/json");
@@ -126,7 +135,7 @@ public class McpAssignNodeAutoConfiguration {
 					transports.add(new NamedClientMcpTransport(transportName, transport));
 				}
 				catch (Exception e) {
-					logger.error("创建Transport失败: {}", agentName);
+					logger.error("创建Transport失败: {}", agentName, e);
 				}
 			}
 		}
@@ -136,12 +145,12 @@ public class McpAssignNodeAutoConfiguration {
 	}
 
 	/**
-	 * 创建按代理分组的AsyncMcpToolCallbackProvider Map ，加了一些调式信息方便观察
+	 * 创建按代理分组的AsyncMcpToolCallbackProvider Map
 	 */
 	@Bean
 	public Map<String, AsyncMcpToolCallbackProvider> node2AsyncMcpToolCallbackProvider(
 			Map<String, McpAssignNodeProperties.McpServerConfig> mcpAgentConfigs,
-			List<NamedClientMcpTransport> mcpAssignNodeTransports) {
+			List<NamedClientMcpTransport> mcpAssignNodeTransports, McpClientCommonProperties commonProperties) {
 
 		Map<String, AsyncMcpToolCallbackProvider> providerMap = new HashMap<>();
 
@@ -159,16 +168,27 @@ public class McpAssignNodeAutoConfiguration {
 
 			for (NamedClientMcpTransport transport : agentTransports) {
 				try {
+					McpSchema.Implementation clientInfo = new McpSchema.Implementation(
+							commonProperties.getName() != null ? commonProperties.getName() : agentName,
+							commonProperties.getVersion() != null ? commonProperties.getVersion() : "1.0.0");
+
 					McpAsyncClient mcpAsyncClient = McpClient.async(transport.transport())
-						.clientInfo(new McpSchema.Implementation(agentName, "1.0.0"))
-						.requestTimeout(Duration.ofSeconds(30))
+						.clientInfo(clientInfo)
+						.requestTimeout(commonProperties.getRequestTimeout() != null
+								? commonProperties.getRequestTimeout() : Duration.ofSeconds(30))
 						.build();
 
-					mcpAsyncClient.initialize().block(Duration.ofSeconds(30));
+					if (commonProperties.isInitialized()) {
+						mcpAsyncClient.initialize()
+							.block(commonProperties.getRequestTimeout() != null ? commonProperties.getRequestTimeout()
+									: Duration.ofSeconds(30));
+					}
+
 					successfulClients.add(mcpAsyncClient);
+					logger.info("创建MCP异步客户端: {}", transport.name());
 				}
 				catch (Exception e) {
-					logger.warn("MCP连接失败: {}", agentName);
+					logger.warn("MCP连接失败: {}: {}", transport.name(), e.getMessage());
 				}
 			}
 
@@ -176,10 +196,10 @@ public class McpAssignNodeAutoConfiguration {
 				try {
 					AsyncMcpToolCallbackProvider provider = new AsyncMcpToolCallbackProvider(successfulClients);
 					providerMap.put(agentName, provider);
-					logger.info("创建MCP工具: {}", agentName);
+					logger.info("创建MCP工具提供者: {}", agentName);
 				}
 				catch (Exception e) {
-					logger.error("创建工具提供者失败: {}", agentName);
+					logger.error("创建工具提供者失败: {}: {}", agentName, e.getMessage());
 					successfulClients.forEach(client -> {
 						try {
 							client.closeGracefully().block(Duration.ofSeconds(5));
@@ -191,7 +211,7 @@ public class McpAssignNodeAutoConfiguration {
 			}
 		}
 
-		logger.info("MCP初始化完成，创建了 {} 个工具提供者", providerMap.size());
+		logger.info("MCP工具提供者初始化完成，创建了 {} 个提供者", providerMap.size());
 		return providerMap;
 	}
 
