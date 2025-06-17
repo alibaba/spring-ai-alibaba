@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import com.alibaba.cloud.ai.example.deepresearch.tool.McpClientToolCallbackProvider;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
@@ -24,9 +23,7 @@ import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import jakarta.annotation.PostConstruct;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -36,8 +33,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -49,9 +44,6 @@ public class AgentsConfiguration {
 
 	@Value("classpath:prompts/coder.md")
 	private Resource coderPrompt;
-
-	@Value("classpath:agents-config.json")
-	private Resource agentsConfig;
 
 	private final ApplicationContext context;
 
