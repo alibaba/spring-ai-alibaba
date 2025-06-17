@@ -48,6 +48,7 @@ public class WorkflowAutoconfiguration {
 		QuestionClassifierNode feedbackClassifier = QuestionClassifierNode.builder()
 			.chatClient(chatClient)
 			.inputTextKey("input")
+			.outputKey("classifier_output")
 			.categories(List.of("positive feedback", "negative feedback"))
 			.classificationInstructions(
 					List.of("Try to understand the user's feeling when he/she is giving the feedback."))
@@ -56,6 +57,7 @@ public class WorkflowAutoconfiguration {
 		QuestionClassifierNode specificQuestionClassifier = QuestionClassifierNode.builder()
 			.chatClient(chatClient)
 			.inputTextKey("input")
+			.outputKey("classifier_output")
 			.categories(List.of("after-sale service", "transportation", "product quality", "others"))
 			.classificationInstructions(List
 				.of("What kind of service or help the customer is trying to get from us? Classify the question based on your understanding."))
