@@ -20,9 +20,12 @@ import com.alibaba.cloud.ai.example.deepresearch.config.McpAssignNodeProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
+import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,6 +38,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,7 +79,6 @@ public class McpAssignNodeAutoConfiguration {
 		try {
 			Resource resource = resourceLoader.getResource(mcpAssignNodeProperties.getConfigLocation());
 			if (!resource.exists()) {
-				logger.warn("MCP配置文件不存在: {}", mcpAssignNodeProperties.getConfigLocation());
 				return new HashMap<>();
 			}
 
@@ -84,12 +87,12 @@ public class McpAssignNodeAutoConfiguration {
 				};
 				Map<String, McpAssignNodeProperties.McpServerConfig> configs = objectMapper.readValue(inputStream,
 						typeRef);
-				logger.info("成功加载MCP代理配置，代理数量: {}", configs.size());
+				logger.info("加载MCP配置: {} 个代理", configs.size());
 				return configs;
 			}
 		}
 		catch (IOException e) {
-			logger.error("读取MCP配置文件失败: {}", mcpAssignNodeProperties.getConfigLocation(), e);
+			logger.error("读取MCP配置失败", e);
 			return new HashMap<>();
 		}
 	}
@@ -107,33 +110,89 @@ public class McpAssignNodeAutoConfiguration {
 			String agentName = entry.getKey();
 			McpAssignNodeProperties.McpServerConfig config = entry.getValue();
 
-			try {
-				for (McpAssignNodeProperties.McpServerInfo serverInfo : config.getMcpServers()) {
-					if (!serverInfo.isEnabled()) {
-						logger.debug("跳过禁用的MCP服务器: {} for agent: {}", serverInfo.getUrl(), agentName);
-						continue;
-					}
+			for (McpAssignNodeProperties.McpServerInfo serverInfo : config.getMcpServers()) {
+				if (!serverInfo.isEnabled()) {
+					continue;
+				}
 
+				try {
 					WebClient.Builder webClientBuilder = WebClient.builder()
 						.baseUrl(serverInfo.getUrl())
 						.defaultHeader("Accept", "text/event-stream")
 						.defaultHeader("Content-Type", "application/json");
 
 					WebFluxSseClientTransport transport = new WebFluxSseClientTransport(webClientBuilder, objectMapper);
-
 					String transportName = agentName + "-" + serverInfo.getUrl().hashCode();
 					transports.add(new NamedClientMcpTransport(transportName, transport));
-
-					logger.info("创建MCP传输: {} for agent: {}, server: {}", transportName, agentName, serverInfo.getUrl());
 				}
-			}
-			catch (Exception e) {
-				logger.error("创建MCP传输失败 for agent: {}", agentName, e);
+				catch (Exception e) {
+					logger.error("创建Transport失败: {}", agentName);
+				}
 			}
 		}
 
-		logger.info("总共创建了 {} 个MCP传输", transports.size());
+		logger.info("创建了 {} 个MCP传输", transports.size());
 		return transports;
+	}
+
+	/**
+	 * 创建按代理分组的AsyncMcpToolCallbackProvider Map ，加了一些调式信息方便观察
+	 */
+	@Bean
+	public Map<String, AsyncMcpToolCallbackProvider> node2AsyncMcpToolCallbackProvider(
+			Map<String, McpAssignNodeProperties.McpServerConfig> mcpAgentConfigs,
+			List<NamedClientMcpTransport> mcpAssignNodeTransports) {
+
+		Map<String, AsyncMcpToolCallbackProvider> providerMap = new HashMap<>();
+
+		for (String agentName : mcpAgentConfigs.keySet()) {
+			// 这边是找出所有的transport
+			List<NamedClientMcpTransport> agentTransports = mcpAssignNodeTransports.stream()
+				.filter(transport -> transport.name().startsWith(agentName + "-"))
+				.toList();
+
+			if (agentTransports.isEmpty()) {
+				continue;
+			}
+
+			List<McpAsyncClient> successfulClients = new ArrayList<>();
+
+			for (NamedClientMcpTransport transport : agentTransports) {
+				try {
+					McpAsyncClient mcpAsyncClient = McpClient.async(transport.transport())
+						.clientInfo(new McpSchema.Implementation(agentName, "1.0.0"))
+						.requestTimeout(Duration.ofSeconds(30))
+						.build();
+
+					mcpAsyncClient.initialize().block(Duration.ofSeconds(30));
+					successfulClients.add(mcpAsyncClient);
+				}
+				catch (Exception e) {
+					logger.warn("MCP连接失败: {}", agentName);
+				}
+			}
+
+			if (!successfulClients.isEmpty()) {
+				try {
+					AsyncMcpToolCallbackProvider provider = new AsyncMcpToolCallbackProvider(successfulClients);
+					providerMap.put(agentName, provider);
+					logger.info("创建MCP工具: {}", agentName);
+				}
+				catch (Exception e) {
+					logger.error("创建工具提供者失败: {}", agentName);
+					successfulClients.forEach(client -> {
+						try {
+							client.closeGracefully().block(Duration.ofSeconds(5));
+						}
+						catch (Exception ignored) {
+						}
+					});
+				}
+			}
+		}
+
+		logger.info("MCP初始化完成，创建了 {} 个工具提供者", providerMap.size());
+		return providerMap;
 	}
 
 }

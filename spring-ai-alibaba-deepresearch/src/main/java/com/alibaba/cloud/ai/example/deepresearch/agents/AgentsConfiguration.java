@@ -31,6 +31,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -79,7 +81,7 @@ public class AgentsConfiguration {
 	 * @return ChatClient
 	 */
 	@Bean
-	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) {
+	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) throws IOException {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("researchAgent");
 
 		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset()))
@@ -95,7 +97,8 @@ public class AgentsConfiguration {
 	 * @return ChatClient
 	 */
 	@Bean
-	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties) {
+	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties)
+			throws IOException {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("coderAgent");
 
 		return chatClientBuilder.defaultSystem(coderPrompt.getContentAsString(Charset.defaultCharset()))
