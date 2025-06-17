@@ -176,8 +176,8 @@
               </ul>
             </li>
             <li>将json配置复制到上面的输入框，本地选STUDIO，远程选STREAMING或SSE，提交</li>
-            <li>这样mcp tools就注册成功了。默认会放在DEFAULT_AGENT下面，如果tools过多，对上下文有压力，多出的tools会被忽略</li>
-            <li>推荐在Agent配置里面，新建一个agent，然后增加指定的tools，这样可以极大减少冲突，增强tools被agent选择的准确性</li>
+            <li>这样mcp tools就注册成功了。</li>
+            <li>然后需要在Agent配置里面，新建一个agent，然后增加指定你刚才添加的mcp tools，这样可以极大减少冲突，增强tools被agent选择的准确性</li>
           </ol>
         </div>
       </div>
