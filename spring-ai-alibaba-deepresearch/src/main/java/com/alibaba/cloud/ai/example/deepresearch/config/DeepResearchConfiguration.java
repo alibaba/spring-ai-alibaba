@@ -117,11 +117,10 @@ public class DeepResearchConfiguration {
 
 			for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
 				.get(ParallelEnum.RESEARCHER.getValue()); i++) {
-				keyStrategyHashMap.put("researcher_content_" + i, new ReplaceStrategy());
+				keyStrategyHashMap.put(ParallelEnum.RESEARCHER.getValue() + "_content_" + i, new ReplaceStrategy());
 			}
-
 			for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
-				keyStrategyHashMap.put("coder_content_" + i, new ReplaceStrategy());
+				keyStrategyHashMap.put(ParallelEnum.CODER.getValue() + "_content_" + i, new ReplaceStrategy());
 			}
 
 			return keyStrategyHashMap;
