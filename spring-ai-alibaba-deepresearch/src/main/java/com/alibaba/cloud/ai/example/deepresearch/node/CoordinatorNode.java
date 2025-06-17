@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
@@ -31,7 +30,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,11 +72,7 @@ public class CoordinatorNode implements NodeAction {
 			.build();
 
 		// 发起调用并获取完整响应
-		ChatResponse response = coordinatorAgent.prompt()
-			// .tools(plannerTool) // 使用注入的 plannerTool 实例
-			.messages(messages)
-			.call()
-			.chatResponse();
+		ChatResponse response = coordinatorAgent.prompt().messages(messages).call().chatResponse();
 
 		String nextStep = END;
 		Map<String, Object> updated = new HashMap<>();

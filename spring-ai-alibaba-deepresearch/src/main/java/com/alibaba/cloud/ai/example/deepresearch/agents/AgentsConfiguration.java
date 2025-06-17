@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
-import com.alibaba.fastjson.JSONObject;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -47,8 +46,6 @@ public class AgentsConfiguration {
 
 	private final ApplicationContext context;
 
-	private JSONObject configJson;
-
 	public AgentsConfiguration(ApplicationContext context) {
 		this.context = context;
 	}
@@ -62,8 +59,8 @@ public class AgentsConfiguration {
 
 	/**
 	 * Create Research Agent ChatClient Bean
-	 * @param researchChatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
-	 * ToolCallbackProviders.
+	 * @param researchChatClientBuilder ChatClientBuilder McpAsyncClient and the locally
+	 * configure ToolCallbackProviders.
 	 * @return ChatClient
 	 */
 	@Bean
@@ -78,8 +75,8 @@ public class AgentsConfiguration {
 
 	/**
 	 * Create Coder Agent ChatClient Bean
-	 * @param coderChatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
-	 * ToolCallbackProviders.
+	 * @param coderChatClientBuilder ChatClientBuilder McpAsyncClient and the locally
+	 * configure ToolCallbackProviders.
 	 * @return ChatClient
 	 */
 	@Bean
@@ -93,8 +90,7 @@ public class AgentsConfiguration {
 	}
 
 	@Bean
-	public ChatClient coordinatorAgent(ChatClient.Builder coordinatorChatClientBuilder,
-									   PlannerTool plannerTool) {
+	public ChatClient coordinatorAgent(ChatClient.Builder coordinatorChatClientBuilder, PlannerTool plannerTool) {
 		return coordinatorChatClientBuilder
 			.defaultOptions(ToolCallingChatOptions.builder()
 				.internalToolExecutionEnabled(false) // 禁用内部工具执行
@@ -106,14 +102,12 @@ public class AgentsConfiguration {
 
 	@Bean
 	public ChatClient plannerAgent(ChatClient.Builder plannerChatClientBuilder) {
-		return plannerChatClientBuilder
-			.build();
+		return plannerChatClientBuilder.build();
 	}
 
 	@Bean
 	public ChatClient reporterAgent(ChatClient.Builder reporterChatClientBuilder) {
-		return reporterChatClientBuilder
-			.build();
+		return reporterChatClientBuilder.build();
 	}
 
 }

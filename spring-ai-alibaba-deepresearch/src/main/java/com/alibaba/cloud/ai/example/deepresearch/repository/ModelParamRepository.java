@@ -12,12 +12,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This repository class is responsible for loading agent model parameters
- * from a JSON configuration file. It reads the models defined in the
- * "agents-config.json" file and provides methods to access them.
+ * This repository class is responsible for loading agent model parameters from a JSON
+ * configuration file. It reads the models defined in the "agents-config.json" file and
+ * provides methods to access them.
  *
- * The JSON structure is expected to have a key "models" which maps to a list
- * of AgentModel objects.
+ * The JSON structure is expected to have a key "models" which maps to a list of
+ * AgentModel objects.
  *
  * @author ViliamSun
  * @since 0.1.0
@@ -26,33 +26,34 @@ import java.util.Map;
 @Repository
 public class ModelParamRepository {
 
-    //JSON key in configuration file
-    private static final String MODELS_ORER_AGENT = "models";
+	// JSON key in configuration file
+	private static final String MODELS_ORER_AGENT = "models";
 
-    private final Map<String, List<AgentModel>> modelSet;
+	private final Map<String, List<AgentModel>> modelSet;
 
-    public ModelParamRepository(@Value("classpath:agents-config.json") Resource agentsConfig,
-                                ObjectMapper objectMapper){
-        try {
-            this.modelSet = objectMapper.readValue(ResourceUtil.loadResourceAsString(agentsConfig),
-                    new TypeReference<Map<String, List<AgentModel>>>() {
-                    });
+	public ModelParamRepository(@Value("classpath:agents-config.json") Resource agentsConfig,
+			ObjectMapper objectMapper) {
+		try {
+			this.modelSet = objectMapper.readValue(ResourceUtil.loadResourceAsString(agentsConfig),
+					new TypeReference<Map<String, List<AgentModel>>>() {
+					});
 
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error in parsing model configuration", e);
-        }
-    }
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException("Error in parsing model configuration", e);
+		}
+	}
 
-    /**
-     * Get the list of agent models.
-     *
-     * @return a list of AgentModel parameters.
-     */
-    public List<AgentModel> loadModels() {
-        return modelSet.getOrDefault(MODELS_ORER_AGENT, List.of());
-    }
+	/**
+	 * Get the list of agent models.
+	 * @return a list of AgentModel parameters.
+	 */
+	public List<AgentModel> loadModels() {
+		return modelSet.getOrDefault(MODELS_ORER_AGENT, List.of());
+	}
 
-    //fixme: To read external data in the future, this object needs to be redesigned
-    public record AgentModel(String name, String modelName) {
-    }
+	// fixme: To read external data in the future, this object needs to be redesigned
+	public record AgentModel(String name, String modelName) {
+	}
+
 }
