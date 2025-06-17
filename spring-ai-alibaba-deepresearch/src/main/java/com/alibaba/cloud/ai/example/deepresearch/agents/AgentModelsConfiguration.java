@@ -6,15 +6,16 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.example.deepresearch.repository.ModelParamRepository;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -24,39 +25,33 @@ import java.util.stream.Collectors;
  * @since 0.1.0
  */
 @Configuration
-public class AgentModelsConfiguration {
+public class AgentModelsConfiguration implements InitializingBean {
 
     private static final String BEAN_NAME_SUFFIX = "ChatClientBuilder";
-
-    private final ConfigurableBeanFactory beanFactory;
 
     private final List<ModelParamRepository.AgentModel> models;
 
     private final DashScopeConnectionProperties commonProperties;
 
+    private final BiConsumer<String, DashScopeChatModel> registerConsumer;
+
     public AgentModelsConfiguration(ModelParamRepository modelParamRepository,
                                     ConfigurableBeanFactory beanFactory,
                                     DashScopeConnectionProperties dashScopeConnectionProperties) {
         Assert.notNull(modelParamRepository, "ModelParamRepository must not be null");
-        this.beanFactory = beanFactory;
         this.commonProperties = dashScopeConnectionProperties;
         // load models from the repository
         this.models = modelParamRepository.loadModels();
+        this.registerConsumer = (key, value) ->
+                beanFactory.registerSingleton(key.concat(BEAN_NAME_SUFFIX), ChatClient.create(value).mutate());
     }
 
-
-    @Bean
-    public CommandLineRunner buildAgentChatClientBuilder(Map<String, DashScopeChatModel> agentModels) {
-        return method -> {
-            agentModels.forEach((key, value) -> {
-                String beanName = key.concat(BEAN_NAME_SUFFIX);
-                beanFactory.registerSingleton(beanName, ChatClient.create(value).mutate());
-            });
-        };
-    }
-
-    @Bean
-    public Map<String, DashScopeChatModel> agentModels() {
+    /**
+     * Creates a map of agent model names to their corresponding DashScopeChatModel instances.
+     *
+     * @return a map where the key is the model name and the value is the DashScopeChatModel instance.
+     */
+    private Map<String, DashScopeChatModel> agentModels() {
         // Convert AgentModel to DashScopeChatModel
         return models.stream()
                 .filter(Objects::nonNull)
@@ -72,5 +67,10 @@ public class AgentModelsConfiguration {
                                         ).build(),
                         (existing, replacement) -> existing) // On duplicate key, keep the)
                 );
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        this.agentModels().forEach(registerConsumer);
     }
 }

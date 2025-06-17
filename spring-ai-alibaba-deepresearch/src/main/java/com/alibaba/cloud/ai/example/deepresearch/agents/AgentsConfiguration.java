@@ -70,15 +70,15 @@ public class AgentsConfiguration {
 
 	/**
 	 * Create Research Agent ChatClient Bean
-	 * @param chatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
+	 * @param researchChatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
 	 * ToolCallbackProviders.
 	 * @return ChatClient
 	 */
 	@Bean
-	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder,
+	public ChatClient researchAgent(ChatClient.Builder researchChatClientBuilder,
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
-		return chatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt))
+		return researchChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt))
 			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 			.build();
@@ -86,23 +86,23 @@ public class AgentsConfiguration {
 
 	/**
 	 * Create Coder Agent ChatClient Bean
-	 * @param chatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
+	 * @param coderChatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
 	 * ToolCallbackProviders.
 	 * @return ChatClient
 	 */
 	@Bean
-	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties,
+	public ChatClient coderAgent(ChatClient.Builder coderChatClientBuilder, PythonCoderProperties coderProperties,
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("coderAgent");
-		return chatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(coderPrompt))
+		return coderChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(coderPrompt))
 			.defaultTools(new PythonReplTool(coderProperties))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 			.build();
 	}
 
 	@Bean
-	public ChatClient coordinatorAgent(ChatClient.Builder chatClientBuilder) {
-		return chatClientBuilder
+	public ChatClient coordinatorAgent(ChatClient.Builder coordinatorChatClientBuilder) {
+		return coordinatorChatClientBuilder
 			.defaultOptions(ToolCallingChatOptions.builder()
 				.internalToolExecutionEnabled(false) // 禁用内部工具执行
 				.build())
@@ -112,14 +112,14 @@ public class AgentsConfiguration {
 	}
 
 	@Bean
-	public ChatClient plannerAgent(ChatClient.Builder chatClientBuilder) {
-		return chatClientBuilder
+	public ChatClient plannerAgent(ChatClient.Builder plannerChatClientBuilder) {
+		return plannerChatClientBuilder
 			.build();
 	}
 
 	@Bean
-	public ChatClient reporterAgent(ChatClient.Builder chatClientBuilder) {
-		return chatClientBuilder
+	public ChatClient reporterAgent(ChatClient.Builder reporterChatClientBuilder) {
+		return reporterChatClientBuilder
 			.build();
 	}
 
