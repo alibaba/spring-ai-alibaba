@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.controller.rag;
+package com.alibaba.cloud.ai.example.deepresearch.rag.post;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
