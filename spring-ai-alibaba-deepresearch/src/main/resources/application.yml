@@ -10,10 +10,14 @@ spring:
       chat:
         options:
           model: qwen-max
+      embedding:
+        options:
+          model: text-embedding-v1
       client:
         connection-timeout: 60000
         read-timeout: 300000
         write-timeout: 60000
+
     mcp:
       client:
         type: async
@@ -43,7 +47,14 @@ spring:
 #          coderAgent:
 #            - amap-maps
 #            - weather_mcp_server
-
+        rag:
+          enabled: true
+          # 可以设置为 'simple' 或 'elasticsearch'
+          vector-store-type: simple
+          data:
+            # 启动时加载 classpath下data目录中的所有文件
+            locations:
+              - "classpath:/data/"
 logging:
   level:
     com.alibaba.cloud.ai.example.deepresearch: debug
