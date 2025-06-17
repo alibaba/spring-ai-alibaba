@@ -61,16 +61,6 @@ public class AgentsConfiguration {
 		this.context = context;
 	}
 
-	@PostConstruct
-	public void afterPropertiesSet() throws IOException {
-		String configContent = agentsConfig.getContentAsString(Charset.defaultCharset());
-		this.configJson = JSON.parseObject(configContent);
-	}
-
-	private String getModelName(String agentName) {
-		return configJson.getJSONObject("models").getString(agentName);
-	}
-
 	/**
 	 * Return the tool name array that have corresponding beans.
 	 */
@@ -89,7 +79,6 @@ public class AgentsConfiguration {
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
 		return chatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt))
-			.defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("researchAgent")).build())
 			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 			.build();
@@ -106,7 +95,6 @@ public class AgentsConfiguration {
 			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
 		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("coderAgent");
 		return chatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(coderPrompt))
-			.defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("coderAgent")).build())
 			.defaultTools(new PythonReplTool(coderProperties))
 			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
 			.build();
@@ -116,7 +104,6 @@ public class AgentsConfiguration {
 	public ChatClient coordinatorAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder
 			.defaultOptions(ToolCallingChatOptions.builder()
-				.model(getModelName("coordinatorAgent"))
 				.internalToolExecutionEnabled(false) // 禁用内部工具执行
 				.build())
 			// 当前CoordinatorNode节点只绑定一个计划工具
@@ -127,14 +114,12 @@ public class AgentsConfiguration {
 	@Bean
 	public ChatClient plannerAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder
-			.defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("plannerAgent")).build())
 			.build();
 	}
 
 	@Bean
 	public ChatClient reporterAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder
-			.defaultOptions(DashScopeChatOptions.builder().withModel(getModelName("reporterAgent")).build())
 			.build();
 	}
 
