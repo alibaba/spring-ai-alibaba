@@ -63,7 +63,6 @@ public class ResearcherNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("researcher node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
-		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Map<String, Object> updated = new HashMap<>();
 
 		Plan.Step assignedStep = null;
@@ -111,9 +110,7 @@ public class ResearcherNode implements NodeAction {
 				finalAssignedStep.setExecutionRes(Objects.requireNonNull(researchContent));
 				logger.info("{} completed, content: {}", nodeName, researchContent);
 
-				observations.add(researchContent);
-				updated.put("observations", observations);
-				updated.put("researcher_content_" + executorNodeId, List.of(researchContent));
+				updated.put("researcher_content_" + executorNodeId, researchContent);
 				return updated;
 			})
 			.build(streamResult);
