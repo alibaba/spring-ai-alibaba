@@ -47,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Testcontainers
 class RedisSaverTest {
 
-
 	// 使用较为稳定的版本
 
 	static RedissonClient redisson;
