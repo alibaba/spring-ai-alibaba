@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
-import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
 import org.springframework.ai.chat.client.ChatClient;
