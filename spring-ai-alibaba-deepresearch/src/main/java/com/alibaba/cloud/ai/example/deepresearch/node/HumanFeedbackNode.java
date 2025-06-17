@@ -44,8 +44,9 @@ public class HumanFeedbackNode implements NodeAction {
 		// check the Maximum number of iterations
 		int planIterations = StateUtil.getPlanIterations(state);
 		int maxPlanIterations = StateUtil.getPlanMaxIterations(state);
-		if (planIterations>=maxPlanIterations){
-			logger.info("Maximum number of iterations exceeded, planIterations:{}, maxPlanIterations:{}", planIterations, maxPlanIterations);
+		if (planIterations >= maxPlanIterations) {
+			logger.info("Maximum number of iterations exceeded, planIterations:{}, maxPlanIterations:{}",
+					planIterations, maxPlanIterations);
 			logger.info("human_feedback node -> {} node", nextStep);
 			updated.put("human_next_node", nextStep);
 			return updated;

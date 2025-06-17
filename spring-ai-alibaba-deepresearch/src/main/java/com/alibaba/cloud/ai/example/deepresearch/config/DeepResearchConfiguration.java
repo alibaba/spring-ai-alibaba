@@ -124,7 +124,7 @@ public class DeepResearchConfiguration {
 			.addNode("background_investigator",
 					node_async(new BackgroundInvestigationNode(tavilySearchService, jinaCrawlerService)))
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
-				.addNode("information", node_async((new InformationNode())))
+			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
@@ -138,7 +138,7 @@ public class DeepResearchConfiguration {
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
 					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 			.addEdge("background_investigator", "planner")
-				.addEdge("planner", "information")
+			.addEdge("planner", "information")
 			.addConditionalEdges("information", edge_async(new InformationDispatcher()),
 					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
 							"research_team", "research_team", END, END))
