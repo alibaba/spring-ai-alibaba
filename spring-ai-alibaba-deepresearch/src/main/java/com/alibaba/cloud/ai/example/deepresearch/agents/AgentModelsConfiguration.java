@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
+import com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionProperties;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
@@ -31,9 +32,14 @@ public class AgentModelsConfiguration {
 
     private final List<ModelParamRepository.AgentModel> models;
 
-    public AgentModelsConfiguration(ModelParamRepository modelParamRepository, ConfigurableBeanFactory beanFactory) {
+    private final DashScopeConnectionProperties commonProperties;
+
+    public AgentModelsConfiguration(ModelParamRepository modelParamRepository,
+                                    ConfigurableBeanFactory beanFactory,
+                                    DashScopeConnectionProperties dashScopeConnectionProperties) {
         Assert.notNull(modelParamRepository, "ModelParamRepository must not be null");
         this.beanFactory = beanFactory;
+        this.commonProperties = dashScopeConnectionProperties;
         // load models from the repository
         this.models = modelParamRepository.loadModels();
     }
@@ -56,7 +62,7 @@ public class AgentModelsConfiguration {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(ModelParamRepository.AgentModel::name, model ->
                                 DashScopeChatModel.builder()
-                                        .dashScopeApi(DashScopeApi.builder().build())
+                                        .dashScopeApi(DashScopeApi.builder().apiKey(commonProperties.getApiKey()).build())
                                         .defaultOptions(
                                                 DashScopeChatOptions
                                                         .builder()
