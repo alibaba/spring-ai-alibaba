@@ -40,7 +40,7 @@ public class SwitchTabAction extends BrowserAction {
 		if (targetPage == null) {
 			return new ToolExecuteResult("Tab ID " + tabId + " does not exist");
 		}
-		return new ToolExecuteResult("Switched to tab " + tabId);
+		return new ToolExecuteResult("Successfully switched to tab " + tabId);
 	}
 
 }
