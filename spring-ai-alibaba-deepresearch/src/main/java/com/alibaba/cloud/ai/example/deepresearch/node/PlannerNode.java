@@ -74,10 +74,6 @@ public class PlannerNode implements NodeAction {
 		if (StringUtils.hasText(feedBackContent)) {
 			messages.add(new UserMessage(feedBackContent));
 		}
-		// 1.5 添加观察的消息(Researcher、Coder返回的消息)
-		for (String observation : StateUtil.getMessagesByType(state, "observations")) {
-			messages.add(new UserMessage(observation));
-		}
 
 		logger.debug("messages: {}", messages);
 		// 2. 规划任务

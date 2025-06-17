@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.controller.rag;
+package com.alibaba.cloud.ai.example.deepresearch.controller;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.service.VectorStoreDataIngestionService;
@@ -31,7 +31,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/rag/data")
-@ConditionalOnProperty(prefix = RagProperties.RAG_PREFIX, name = "enabled", havingValue = "true")
 public class RagDataController {
 
 	private final VectorStoreDataIngestionService ingestionService;
