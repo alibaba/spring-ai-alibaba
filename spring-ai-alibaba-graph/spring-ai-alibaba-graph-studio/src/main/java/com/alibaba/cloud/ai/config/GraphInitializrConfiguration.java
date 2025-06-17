@@ -17,9 +17,11 @@ package com.alibaba.cloud.ai.config;
 
 import com.alibaba.cloud.ai.controller.GeneratorController;
 import com.alibaba.cloud.ai.format.EclipseJdtFormatProjectContributor;
+import com.alibaba.cloud.ai.service.generator.GraphAppPropertiesCustomizer;
 import com.alibaba.cloud.ai.service.generator.GraphProjectReqToDescConverter;
 import com.alibaba.cloud.ai.service.generator.GraphProjectRequest;
 import io.spring.initializr.generator.project.contributor.ProjectContributor;
+import io.spring.initializr.generator.spring.properties.ApplicationPropertiesCustomizer;
 import io.spring.initializr.metadata.InitializrMetadataProvider;
 import io.spring.initializr.web.controller.ProjectGenerationController;
 import io.spring.initializr.web.project.ProjectGenerationInvoker;
@@ -49,6 +51,11 @@ public class GraphInitializrConfiguration {
 	@Bean
 	public ProjectContributor eclipseJdtFormatContributor() {
 		return new EclipseJdtFormatProjectContributor();
+	}
+
+	@Bean
+	public ApplicationPropertiesCustomizer graphAppPropertiesCustomizer() {
+		return new GraphAppPropertiesCustomizer();
 	}
 
 }
