@@ -25,7 +25,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SpringBootTest(classes = { YoudaoTranslateAutoConfiguration.class, CommonToolCallAutoConfiguration.class })
 @DisplayName("youdao translate tool call Test")
@@ -34,7 +35,7 @@ class YoudaotranslateTest {
 	@Autowired
 	private YoudaoTranslateService youdaoTranslateService;
 
-	private static final Logger log = Logger.getLogger(YoudaotranslateTest.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(YoudaotranslateTest.class);
 
 	@Test
 	@DisplayName("Tool-Calling Test")
@@ -45,7 +46,7 @@ class YoudaotranslateTest {
 	void testYoudaoTranslate() {
 		YoudaoTranslateService.Response resp = youdaoTranslateService
 			.apply(new YoudaoTranslateService.Request("你好,明天", "zh", "en"));
-		log.info("youdao translate result: " + resp);
+		logger.info("youdao translate result: {}", resp);
 		Assertions.assertNotNull(resp, "response body should not be null!");
 		Assertions.assertNotNull(resp.translatedTexts(), "translated message should not be null!");
 	}
