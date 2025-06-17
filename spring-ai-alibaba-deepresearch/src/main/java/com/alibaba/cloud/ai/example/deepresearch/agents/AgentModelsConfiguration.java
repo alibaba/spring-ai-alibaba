@@ -56,7 +56,7 @@ public class AgentModelsConfiguration {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(ModelParamRepository.AgentModel::name, model ->
                                 DashScopeChatModel.builder()
-                                        .dashScopeApi(DashScopeApi.builder().build())
+                                        .dashScopeApi(DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build())
                                         .defaultOptions(
                                                 DashScopeChatOptions
                                                         .builder()
