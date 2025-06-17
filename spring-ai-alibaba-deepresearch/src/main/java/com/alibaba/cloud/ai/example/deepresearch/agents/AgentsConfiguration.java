@@ -101,13 +101,14 @@ public class AgentsConfiguration {
 	}
 
 	@Bean
-	public ChatClient coordinatorAgent(ChatClient.Builder coordinatorChatClientBuilder) {
+	public ChatClient coordinatorAgent(ChatClient.Builder coordinatorChatClientBuilder,
+									   PlannerTool plannerTool) {
 		return coordinatorChatClientBuilder
 			.defaultOptions(ToolCallingChatOptions.builder()
 				.internalToolExecutionEnabled(false) // 禁用内部工具执行
 				.build())
 			// 当前CoordinatorNode节点只绑定一个计划工具
-			.defaultTools(new PlannerTool())
+			.defaultTools(plannerTool)
 			.build();
 	}
 
