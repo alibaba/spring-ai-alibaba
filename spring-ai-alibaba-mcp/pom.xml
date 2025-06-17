@@ -17,6 +17,7 @@
     <modules>
         <module>spring-ai-alibaba-mcp-nacos2</module>
         <module>spring-ai-alibaba-mcp-nacos</module>
+        <module>spring-ai-alibaba-mcp-gateway</module>
     </modules>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
