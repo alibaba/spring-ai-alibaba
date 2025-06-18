@@ -22,10 +22,23 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatc
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
-import com.alibaba.cloud.ai.example.deepresearch.node.*;
-
+import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.InformationNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
@@ -68,6 +81,15 @@ public class DeepResearchConfiguration {
 	private ChatClient researchAgent;
 
 	@Autowired
+	private ChatClient reporterAgent;
+
+	@Autowired
+	private ChatClient coordinatorAgent;
+
+	@Autowired
+	private ChatClient plannerAgent;
+
+	@Autowired
 	private DeepResearchProperties deepResearchProperties;
 
 	@Autowired(required = false)
@@ -77,7 +99,7 @@ public class DeepResearchConfiguration {
 	private RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
 
 	@Bean
-	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
+	public StateGraph deepResearch(ChatClient researchAgent) throws GraphStateException {
 
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
@@ -121,16 +143,16 @@ public class DeepResearchConfiguration {
 
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
-			.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
+			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
 			.addNode("background_investigator",
 					node_async(new BackgroundInvestigationNode(tavilySearchService, jinaCrawlerService)))
-			.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
+			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))))
-			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, chatClientBuilder)));
+			.addNode("reporter", node_async((new ReporterNode(reporterAgent))))
+			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
 
 		// 添加并行节点块
 		configureParallelNodes(stateGraph);
