@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.config;
 
-
 import com.alibaba.cloud.ai.dbconnector.DbAccessor;
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.dispatcher.QueryRewriteDispatcher;
@@ -57,7 +56,6 @@ public class Nl2sqlConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(Nl2sqlConfiguration.class);
 
-
 	@Autowired
 	@Qualifier("nl2SqlServiceImpl")
 	private BaseNl2SqlService nl2SqlService;
@@ -72,7 +70,6 @@ public class Nl2sqlConfiguration {
 	@Autowired
 	private DbConfig dbConfig;
 
-
 	@Bean
 	public StateGraph nl2sqlGraph(ChatClient.Builder chatClientBuilder) throws GraphStateException {
 
@@ -83,10 +80,10 @@ public class Nl2sqlConfiguration {
 			// queryWrite节点输出
 			keyStrategyHashMap.put(QUERY_REWRITE_NODE_OUTPUT, new ReplaceStrategy());
 			// keyword extract节点输出
-			 keyStrategyHashMap.put(KEYWORD_EXTRACT_NODE_OUTPUT, new ReplaceStrategy());
-			 keyStrategyHashMap.put(EVIDENCES, new ReplaceStrategy());
+			keyStrategyHashMap.put(KEYWORD_EXTRACT_NODE_OUTPUT, new ReplaceStrategy());
+			keyStrategyHashMap.put(EVIDENCES, new ReplaceStrategy());
 			// schema recall节点输出
-			keyStrategyHashMap.put(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT , new ReplaceStrategy());
+			keyStrategyHashMap.put(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT, new ReplaceStrategy());
 			// sql validate节点输出
 			keyStrategyHashMap.put(SQL_VALIDATE_NODE_OUTPUT, new ReplaceStrategy());
@@ -95,9 +92,9 @@ public class Nl2sqlConfiguration {
 			keyStrategyHashMap.put(TABLE_RELATION_OUTPUT, new ReplaceStrategy());
 			// sql generate节点输出
 			keyStrategyHashMap.put(SQL_GENERATE_SCHEMA_MISSING_ADVICE, new ReplaceStrategy());
-			 keyStrategyHashMap.put(SQL_GENERATE_OUTPUT, new ReplaceStrategy());
-			 keyStrategyHashMap.put(SQL_GENERATE_COUNT, new ReplaceStrategy());
-			 // Semantic consistence节点输出
+			keyStrategyHashMap.put(SQL_GENERATE_OUTPUT, new ReplaceStrategy());
+			keyStrategyHashMap.put(SQL_GENERATE_COUNT, new ReplaceStrategy());
+			// Semantic consistence节点输出
 			keyStrategyHashMap.put(SEMANTIC_CONSISTENC_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, new ReplaceStrategy());
 			// 最终结果
@@ -106,24 +103,31 @@ public class Nl2sqlConfiguration {
 		};
 
 		StateGraph stateGraph = new StateGraph(NL2SQL_GRAPH_NAME, keyStrategyFactory)
-			.addNode(QUERY_REWRITE_NODE, node_async(new QueryRewriteNode(chatClientBuilder,nl2SqlService)))
-				.addNode(KEYWORD_EXTRACT_NODE, node_async(new KeywordExtractNode(chatClientBuilder,nl2SqlService)))
-				.addNode(SCHEMA_RECALL_NODE, node_async(new SchemaRecallNode(chatClientBuilder,schemaService)))
-				.addNode(TABLE_RELATION_NODE, node_async(new TableRelationNode(chatClientBuilder,schemaService,nl2SqlService)))
-				.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder,nl2SqlService,dbConfig)))
-				.addNode(SQL_VALIDATE_NODE, node_async(new SqlValidateNode(chatClientBuilder,dbAccessor,dbConfig)))
-				// TODO 待定：这里考虑可以添加一个自我反思的节点，进行自我反思和改进；是否需要根据使用效果再进行开发
-				.addNode(SEMANTIC_CONSISTENC_NODE, node_async(new SemanticConsistencNode(chatClientBuilder,nl2SqlService,dbConfig)));
-				// TODO 执行sql的节点
+			.addNode(QUERY_REWRITE_NODE, node_async(new QueryRewriteNode(chatClientBuilder, nl2SqlService)))
+			.addNode(KEYWORD_EXTRACT_NODE, node_async(new KeywordExtractNode(chatClientBuilder, nl2SqlService)))
+			.addNode(SCHEMA_RECALL_NODE, node_async(new SchemaRecallNode(chatClientBuilder, schemaService)))
+			.addNode(TABLE_RELATION_NODE,
+					node_async(new TableRelationNode(chatClientBuilder, schemaService, nl2SqlService)))
+			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder, nl2SqlService, dbConfig)))
+			.addNode(SQL_VALIDATE_NODE, node_async(new SqlValidateNode(chatClientBuilder, dbAccessor, dbConfig)))
+			// TODO 待定：这里考虑可以添加一个自我反思的节点，进行自我反思和改进；是否需要根据使用效果再进行开发
+			.addNode(SEMANTIC_CONSISTENC_NODE,
+					node_async(new SemanticConsistencNode(chatClientBuilder, nl2SqlService, dbConfig)));
+		// TODO 执行sql的节点
 
 		stateGraph.addEdge(START, QUERY_REWRITE_NODE)
-			.addConditionalEdges(QUERY_REWRITE_NODE,edge_async(new QueryRewriteDispatcher()), Map.of(KEYWORD_EXTRACT_NODE,KEYWORD_EXTRACT_NODE,END,END))
-				.addEdge(KEYWORD_EXTRACT_NODE,SCHEMA_RECALL_NODE)
-				.addEdge(SCHEMA_RECALL_NODE,TABLE_RELATION_NODE)
-				.addEdge(TABLE_RELATION_NODE,SQL_GENERATE_NODE) // TODO 使用 addConditionalEdges
-				.addConditionalEdges(SQL_GENERATE_NODE,edge_async(new SqlGenerateDispatcher()),Map.of(KEYWORD_EXTRACT_NODE,KEYWORD_EXTRACT_NODE,END,END,SQL_VALIDATE_NODE,SQL_VALIDATE_NODE))
-				.addConditionalEdges(SQL_VALIDATE_NODE,edge_async(new SqlValidateDispatcher()),Map.of(SEMANTIC_CONSISTENC_NODE,SEMANTIC_CONSISTENC_NODE,SQL_GENERATE_NODE,SQL_GENERATE_NODE))
-				.addConditionalEdges(SEMANTIC_CONSISTENC_NODE,edge_async(new SemanticConsistenceDispatcher()),Map.of(SQL_GENERATE_NODE,SQL_GENERATE_NODE,END,END));
+			.addConditionalEdges(QUERY_REWRITE_NODE, edge_async(new QueryRewriteDispatcher()),
+					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END))
+			.addEdge(KEYWORD_EXTRACT_NODE, SCHEMA_RECALL_NODE)
+			.addEdge(SCHEMA_RECALL_NODE, TABLE_RELATION_NODE)
+			.addEdge(TABLE_RELATION_NODE, SQL_GENERATE_NODE) // TODO 使用
+																// addConditionalEdges
+			.addConditionalEdges(SQL_GENERATE_NODE, edge_async(new SqlGenerateDispatcher()),
+					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END, SQL_VALIDATE_NODE, SQL_VALIDATE_NODE))
+			.addConditionalEdges(SQL_VALIDATE_NODE, edge_async(new SqlValidateDispatcher()),
+					Map.of(SEMANTIC_CONSISTENC_NODE, SEMANTIC_CONSISTENC_NODE, SQL_GENERATE_NODE, SQL_GENERATE_NODE))
+			.addConditionalEdges(SEMANTIC_CONSISTENC_NODE, edge_async(new SemanticConsistenceDispatcher()),
+					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, END, END));
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
 				"workflow graph");
@@ -134,6 +138,5 @@ public class Nl2sqlConfiguration {
 
 		return stateGraph;
 	}
-
 
 }

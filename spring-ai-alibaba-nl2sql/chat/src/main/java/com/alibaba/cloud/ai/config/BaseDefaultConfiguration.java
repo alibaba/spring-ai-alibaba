@@ -22,32 +22,31 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class BaseDefaultConfiguration {
-    private static final Logger logger = LoggerFactory.getLogger(Nl2sqlConfiguration.class);
 
-    @Autowired
-    private DbAccessor dbAccessor;
+	private static final Logger logger = LoggerFactory.getLogger(Nl2sqlConfiguration.class);
 
-    @Autowired
-    private DbConfig dbConfig;
+	@Autowired
+	private DbAccessor dbAccessor;
 
+	@Autowired
+	private DbConfig dbConfig;
 
-    @Bean("nl2SqlServiceImpl")
-    @ConditionalOnMissingBean(name = "nl2SqlServiceImpl")
-    public BaseNl2SqlService defaultNl2SqlService(
-            @Qualifier("simpleVectorStoreService") BaseVectorStoreService vectorStoreService,
-            @Qualifier("simpleSchemaService") BaseSchemaService schemaService,
-            LlmService aiService) {
-        logger.info("Creating default BaseNl2SqlService implementation");
-        return new SimpleNl2SqlService(vectorStoreService, schemaService, aiService, dbAccessor, dbConfig);
-    }
+	@Bean("nl2SqlServiceImpl")
+	@ConditionalOnMissingBean(name = "nl2SqlServiceImpl")
+	public BaseNl2SqlService defaultNl2SqlService(
+			@Qualifier("simpleVectorStoreService") BaseVectorStoreService vectorStoreService,
+			@Qualifier("simpleSchemaService") BaseSchemaService schemaService, LlmService aiService) {
+		logger.info("Creating default BaseNl2SqlService implementation");
+		return new SimpleNl2SqlService(vectorStoreService, schemaService, aiService, dbAccessor, dbConfig);
+	}
 
-    @Bean("schemaServiceImpl")
-    @ConditionalOnMissingBean(name = "schemaServiceImpl")
-    public BaseSchemaService defaultSchemaService(
-            @Qualifier("simpleVectorStoreService") BaseVectorStoreService vectorStoreService, DbConfig dbConfig, Gson gson) {
-        logger.info("Creating default BaseSchemaService implementation");
-        return new SimpleSchemaService(dbConfig,gson,vectorStoreService);
-    }
+	@Bean("schemaServiceImpl")
+	@ConditionalOnMissingBean(name = "schemaServiceImpl")
+	public BaseSchemaService defaultSchemaService(
+			@Qualifier("simpleVectorStoreService") BaseVectorStoreService vectorStoreService, DbConfig dbConfig,
+			Gson gson) {
+		logger.info("Creating default BaseSchemaService implementation");
+		return new SimpleSchemaService(dbConfig, gson, vectorStoreService);
+	}
+
 }
-
-
