@@ -25,10 +25,8 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.HashMap;
-import java.util.ArrayList;
 
 /**
  * Utility class for handling asynchronous generator merging and output processing
