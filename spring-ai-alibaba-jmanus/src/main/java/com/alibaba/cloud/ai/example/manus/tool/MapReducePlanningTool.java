@@ -91,27 +91,27 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 			                                }
 			                            },
 			                            "required": ["stepRequirement"]                        }
-                    },
-                    "dataPreparedSteps": {
-                        "description": "MapReduce节点的数据准备阶段步骤列表，在Map阶段之前串行执行，用于数据预处理、分割、清洗等准备工作",
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "stepRequirement": {
-                                    "description": "数据准备步骤要求描述",
-                                    "type": "string"
-                                },
-                                "outputColumns": {
-                                    "description": "输出列描述",
-                                    "type": "string"
-                                }
-                            },
-                            "required": ["stepRequirement"]
-                        }
-                    },
-                    "mapSteps": {
-                        "description": "MapReduce节点的Map阶段步骤列表，在数据准备阶段之后并行执行",
+			                 },
+			                 "dataPreparedSteps": {
+			                     "description": "MapReduce节点的数据准备阶段步骤列表，在Map阶段之前串行执行，用于数据预处理、分割、清洗等准备工作",
+			                     "type": "array",
+			                     "items": {
+			                         "type": "object",
+			                         "properties": {
+			                             "stepRequirement": {
+			                                 "description": "数据准备步骤要求描述",
+			                                 "type": "string"
+			                             },
+			                             "outputColumns": {
+			                                 "description": "输出列描述",
+			                                 "type": "string"
+			                             }
+			                         },
+			                         "required": ["stepRequirement"]
+			                     }
+			                 },
+			                 "mapSteps": {
+			                     "description": "MapReduce节点的Map阶段步骤列表，在数据准备阶段之后并行执行",
 			                        "type": "array",
 			                        "items": {
 			                            "type": "object",

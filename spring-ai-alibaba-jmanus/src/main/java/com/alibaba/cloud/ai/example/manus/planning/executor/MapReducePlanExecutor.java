@@ -118,7 +118,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	 * 执行 MapReduce 节点
 	 */
 	private BaseAgent executeMapReduceNode(MapReduceNode mrNode, ExecutionContext context, BaseAgent lastExecutor) {
-		logger.info("执行 MapReduce 节点，Data Prepared 步骤: {}, Map 步骤: {}, Reduce 步骤: {}", 
+		logger.info("执行 MapReduce 节点，Data Prepared 步骤: {}, Map 步骤: {}, Reduce 步骤: {}",
 				mrNode.getDataPreparedStepCount(), mrNode.getMapStepCount(), mrNode.getReduceStepCount());
 
 		BaseAgent executor = lastExecutor;

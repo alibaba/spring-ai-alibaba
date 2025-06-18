@@ -40,7 +40,8 @@ public class MapReduceNode {
 		this.reduceSteps = new ArrayList<>();
 	}
 
-	public MapReduceNode(List<ExecutionStep> dataPreparedSteps, List<ExecutionStep> mapSteps, List<ExecutionStep> reduceSteps) {
+	public MapReduceNode(List<ExecutionStep> dataPreparedSteps, List<ExecutionStep> mapSteps,
+			List<ExecutionStep> reduceSteps) {
 		this.dataPreparedSteps = dataPreparedSteps != null ? dataPreparedSteps : new ArrayList<>();
 		this.mapSteps = mapSteps != null ? mapSteps : new ArrayList<>();
 		this.reduceSteps = reduceSteps != null ? reduceSteps : new ArrayList<>();

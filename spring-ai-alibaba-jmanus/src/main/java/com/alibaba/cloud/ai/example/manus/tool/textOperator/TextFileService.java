@@ -32,6 +32,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
 
 import jakarta.annotation.PreDestroy;
 
@@ -46,6 +47,9 @@ public class TextFileService implements ApplicationRunner {
 	 */
 	@Autowired
 	private ManusProperties manusProperties;
+
+	@Autowired
+	private InnerStorageService innerStorageService;
 
 	/**
 	 * 支持的文本文件扩展名集合
@@ -64,6 +68,10 @@ public class TextFileService implements ApplicationRunner {
 	@Override
 	public void run(ApplicationArguments args) {
 		log.info("TextFileService initialized");
+	}
+
+	public InnerStorageService getInnerStorageService() {
+		return innerStorageService;
 	}
 
 	private Object getFileLock(String planId) {
