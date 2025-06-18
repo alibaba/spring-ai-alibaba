@@ -19,19 +19,19 @@
       <div class="sidebar-content-header">
         <div class="sidebar-content-title">计划模板</div>
       </div>
-      
+
       <!-- Tab Switcher -->
       <div class="tab-switcher">
-        <button 
-          class="tab-button" 
+        <button
+          class="tab-button"
           :class="{ active: currentTab === 'list' }"
           @click="currentTab = 'list'"
         >
           <Icon icon="carbon:list" width="16" />
           模板列表
         </button>
-        <button 
-          class="tab-button" 
+        <button
+          class="tab-button"
           :class="{ active: currentTab === 'config' }"
           @click="currentTab = 'config'"
           :disabled="!selectedTemplate"
@@ -57,24 +57,24 @@
             <Icon icon="carbon:circle-dash" width="20" class="spinning" />
             <span>加载中...</span>
           </div>
-          
+
           <!-- Error state -->
           <div v-else-if="errorMessage" class="error-state">
             <Icon icon="carbon:warning" width="20" />
             <span>{{ errorMessage }}</span>
             <button @click="loadPlanTemplateList" class="retry-btn">重试</button>
           </div>
-          
+
           <!-- Empty state -->
           <div v-else-if="planTemplateList.length === 0" class="empty-state">
             <Icon icon="carbon:document" width="32" />
             <span>没有可用的计划模板</span>
           </div>
-          
+
           <!-- Plan template list -->
-          <div 
+          <div
             v-else
-            v-for="template in sortedTemplates" 
+            v-for="template in sortedTemplates"
             :key="template.id"
             class="sidebar-content-list-item"
             :class="{ 'sidebar-content-list-item-active': template.id === currentPlanTemplateId }"
@@ -85,12 +85,16 @@
             </div>
             <div class="task-details">
               <div class="task-title">{{ template.title || '未命名计划' }}</div>
-              <div class="task-preview">{{ truncateText(template.description || '无描述', 40) }}</div>
+              <div class="task-preview">
+                {{ truncateText(template.description || '无描述', 40) }}
+              </div>
             </div>
-            <div class="task-time">{{ getRelativeTimeString(new Date(template.updateTime || template.createTime)) }}</div>
+            <div class="task-time">
+              {{ getRelativeTimeString(new Date(template.updateTime || template.createTime)) }}
+            </div>
             <div class="task-actions">
-              <button 
-                class="delete-task-btn" 
+              <button
+                class="delete-task-btn"
                 title="删除此计划模板"
                 @click.stop="handleDeletePlanTemplate(template)"
               >
@@ -121,7 +125,7 @@
               <Icon icon="carbon:code" width="16" />
               <span>JSON 模板</span>
               <div class="section-actions">
-                <button 
+                <button
                   class="btn btn-sm"
                   @click="handleRollback"
                   :disabled="!canRollback"
@@ -129,7 +133,7 @@
                 >
                   <Icon icon="carbon:undo" width="14" />
                 </button>
-                <button 
+                <button
                   class="btn btn-sm"
                   @click="handleRestore"
                   :disabled="!canRestore"
@@ -137,7 +141,7 @@
                 >
                   <Icon icon="carbon:redo" width="14" />
                 </button>
-                <button 
+                <button
                   class="btn btn-primary btn-sm"
                   @click="handleSaveTemplate"
                   :disabled="isGenerating || isExecuting"
@@ -168,19 +172,19 @@
                 rows="3"
               ></textarea>
               <div class="generator-actions">
-                <button 
+                <button
                   class="btn btn-primary btn-sm"
                   @click="handleGeneratePlan"
                   :disabled="isGenerating || !generatorPrompt.trim()"
                 >
-                  <Icon 
-                    :icon="isGenerating ? 'carbon:circle-dash' : 'carbon:generate'" 
-                    width="14" 
+                  <Icon
+                    :icon="isGenerating ? 'carbon:circle-dash' : 'carbon:generate'"
+                    width="14"
                     :class="{ spinning: isGenerating }"
                   />
                   {{ isGenerating ? '生成中...' : '生成计划' }}
                 </button>
-                <button 
+                <button
                   class="btn btn-secondary btn-sm"
                   @click="handleUpdatePlan"
                   :disabled="isGenerating || !generatorPrompt.trim() || !jsonContent.trim()"
@@ -207,11 +211,7 @@
                     class="params-input"
                     placeholder="输入执行参数..."
                   />
-                  <button 
-                    class="clear-params-btn"
-                    @click="executionParams = ''"
-                    title="清空参数"
-                  >
+                  <button class="clear-params-btn" @click="executionParams = ''" title="清空参数">
                     <Icon icon="carbon:close" width="12" />
                   </button>
                 </div>
@@ -220,14 +220,14 @@
                 <span class="api-url-label">API URL:</span>
                 <code class="api-url">{{ computedApiUrl }}</code>
               </div>
-              <button 
+              <button
                 class="btn btn-primary execute-btn"
                 @click="handleExecutePlan"
                 :disabled="isExecuting || isGenerating"
               >
-                <Icon 
-                  :icon="isExecuting ? 'carbon:circle-dash' : 'carbon:play'" 
-                  width="16" 
+                <Icon
+                  :icon="isExecuting ? 'carbon:circle-dash' : 'carbon:play'"
+                  width="16"
                   :class="{ spinning: isExecuting }"
                 />
                 {{ isExecuting ? '执行中...' : '执行计划' }}
@@ -308,39 +308,39 @@ const handleNewTaskButtonClick = () => {
     title: '新建计划',
     description: '请使用计划生成器创建新的计划模板',
     createTime: new Date().toISOString(),
-    updateTime: new Date().toISOString()
+    updateTime: new Date().toISOString(),
   }
-  
+
   // 设置选中的模板为空模板
   selectedTemplate.value = emptyTemplate
   currentPlanTemplateId.value = null // 清空当前选择的ID，因为这是新建的
-  
+
   // 重置配置标签页的所有状态
   jsonContent.value = ''
   generatorPrompt.value = ''
   executionParams.value = ''
   planVersions.value = []
   currentVersionIndex.value = -1
-  
+
   // 2) 切换到配置标签页
   currentTab.value = 'config'
-  
+
   // 发送事件
   emit('jsonContentClear')
   emit('planParamsChanged', { prompt: '', params: '' })
   emit('newTaskRequested')
-  
+
   console.log('[PlanTemplateSidebar] 创建新的空白计划模板，切换到配置标签页')
 }
 
 const loadPlanTemplateList = async () => {
   isLoading.value = true
   errorMessage.value = ''
-  
+
   try {
     console.log('[PlanTemplateSidebar] 开始加载计划模板列表...')
     const response = await PlanActApiService.getAllPlanTemplates()
-    
+
     // 处理 API 返回的数据结构: { count: number, templates: Array }
     if (response && response.templates && Array.isArray(response.templates)) {
       planTemplateList.value = response.templates
@@ -362,43 +362,42 @@ const handlePlanTemplateClick = async (template: PlanTemplate) => {
   // 更新本地状态
   currentPlanTemplateId.value = template.id
   selectedTemplate.value = template
-  
+
   // 切换到配置标签页
   currentTab.value = 'config'
-  
+
   // 加载模板数据
   await loadTemplateData(template)
-  
+
   console.log(`[PlanTemplateSidebar] 选择了计划模板: ${template.id}`)
 }
 
 const handleDeletePlanTemplate = async (template: PlanTemplate) => {
   if (!template || !template.id) {
-    console.warn("[PlanTemplateSidebar] handleDeletePlanTemplate: 无效的模板对象或ID")
+    console.warn('[PlanTemplateSidebar] handleDeletePlanTemplate: 无效的模板对象或ID')
     return
   }
 
   if (confirm(`确定要删除计划模板 "${template.title || '未命名计划'}" 吗？此操作不可恢复。`)) {
     try {
       await PlanActApiService.deletePlanTemplate(template.id)
-      
+
       if (currentPlanTemplateId.value === template.id) {
         // 如果删除的是当前选中的模板，清空选择和相关内容
         currentPlanTemplateId.value = null
         emit('jsonContentClear')
         emit('planParamsChanged', {
           prompt: '',
-          params: ''
+          params: '',
         })
       }
-      
+
       // 发送删除事件
       emit('planTemplateDeleted', { templateId: template.id })
-      
+
       // 重新加载列表
       await loadPlanTemplateList()
       alert('计划模板已删除。')
-
     } catch (error: any) {
       console.error('删除计划模板失败:', error)
       alert('删除计划模板失败: ' + error.message)
@@ -414,12 +413,12 @@ const loadTemplateData = async (template: PlanTemplate) => {
     // Load versions
     const versionsResponse = await PlanActApiService.getPlanVersions(template.id)
     planVersions.value = versionsResponse.versions || []
-    
+
     if (planVersions.value.length > 0) {
       const latestContent = planVersions.value[planVersions.value.length - 1]
       jsonContent.value = latestContent
       currentVersionIndex.value = planVersions.value.length - 1
-      
+
       // Parse and set prompt from JSON if available
       try {
         const parsed = JSON.parse(latestContent)
@@ -459,7 +458,7 @@ const handleRestore = () => {
 
 const handleSaveTemplate = async () => {
   if (!selectedTemplate.value) return
-  
+
   const content = jsonContent.value.trim()
   if (!content) {
     alert('内容不能为空。')
@@ -476,7 +475,7 @@ const handleSaveTemplate = async () => {
 
   try {
     const saveResult = await PlanActApiService.savePlanTemplate(selectedTemplate.value.id, content)
-    
+
     // 根据保存结果显示不同的消息
     if (saveResult.duplicate) {
       alert(`保存完成：${saveResult.message}\\n\\n当前版本数：${saveResult.versionCount}`)
@@ -487,7 +486,7 @@ const handleSaveTemplate = async () => {
       }
       planVersions.value.push(content)
       currentVersionIndex.value = planVersions.value.length - 1
-      
+
       alert(`保存成功：${saveResult.message}\\n\\n当前版本数：${saveResult.versionCount}`)
     } else {
       alert(`保存状态：${saveResult.message}`)
@@ -500,13 +499,13 @@ const handleSaveTemplate = async () => {
 
 const handleGeneratePlan = async () => {
   if (!generatorPrompt.value.trim()) return
-  
+
   isGenerating.value = true
-  
+
   try {
     const response = await PlanActApiService.generatePlan(generatorPrompt.value)
     jsonContent.value = response.planJson || ''
-    
+
     // 如果是新建的模板（ID以'new-'开头），使用API返回的planTemplateId更新模板信息
     if (selectedTemplate.value && selectedTemplate.value.id.startsWith('new-')) {
       // 解析返回的planJson来获取title等信息
@@ -517,7 +516,7 @@ const handleGeneratePlan = async () => {
       } catch (e) {
         console.warn('无法解析计划JSON获取标题')
       }
-      
+
       // 更新选中的模板信息
       selectedTemplate.value = {
         id: response.planTemplateId, // 使用API返回的planTemplateId
@@ -525,23 +524,23 @@ const handleGeneratePlan = async () => {
         description: '通过生成器创建的计划模板',
         createTime: new Date().toISOString(),
         updateTime: new Date().toISOString(),
-        planJson: response.planJson
+        planJson: response.planJson,
       }
-      
+
       // 更新当前计划模板ID
       currentPlanTemplateId.value = response.planTemplateId
-      
+
       // 重新加载模板列表以显示新创建的模板
       await loadPlanTemplateList()
     }
-    
+
     // 保存到版本历史
     if (currentVersionIndex.value < planVersions.value.length - 1) {
       planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
     }
     planVersions.value.push(jsonContent.value)
     currentVersionIndex.value = planVersions.value.length - 1
-    
+
     alert(`计划生成成功！模板ID: ${selectedTemplate.value?.id || '未知'}`)
   } catch (error: any) {
     console.error('生成计划失败:', error)
@@ -554,24 +553,24 @@ const handleGeneratePlan = async () => {
 const handleUpdatePlan = async () => {
   if (!generatorPrompt.value.trim() || !jsonContent.value.trim()) return
   if (!selectedTemplate.value) return
-  
+
   isGenerating.value = true
-  
+
   try {
     const response = await PlanActApiService.updatePlanTemplate(
-      selectedTemplate.value.id, 
-      generatorPrompt.value, 
+      selectedTemplate.value.id,
+      generatorPrompt.value,
       jsonContent.value
     )
     jsonContent.value = response.planJson || ''
-    
+
     // 保存到版本历史
     if (currentVersionIndex.value < planVersions.value.length - 1) {
       planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
     }
     planVersions.value.push(jsonContent.value)
     currentVersionIndex.value = planVersions.value.length - 1
-    
+
     alert('计划更新成功！')
   } catch (error: any) {
     console.error('更新计划失败:', error)
@@ -582,21 +581,26 @@ const handleUpdatePlan = async () => {
 }
 
 const handleExecutePlan = async () => {
-  console.log('[Sidebar] handleExecutePlan called, isExecuting:', isExecuting.value, 'selectedTemplate:', selectedTemplate.value?.id)
-  
+  console.log(
+    '[Sidebar] handleExecutePlan called, isExecuting:',
+    isExecuting.value,
+    'selectedTemplate:',
+    selectedTemplate.value?.id
+  )
+
   if (!selectedTemplate.value) {
     console.log('[Sidebar] No selected template, returning')
     return
   }
-  
+
   if (isExecuting.value) {
     console.log('[Sidebar] Already executing, ignoring request')
     return
   }
-  
+
   console.log('[Sidebar] Starting plan execution')
   isExecuting.value = true
-  
+
   try {
     // 解析当前模板的JSON内容来获取计划数据
     let planData
@@ -607,35 +611,38 @@ const handleExecutePlan = async () => {
     } catch (e) {
       // 如果解析失败，使用示例数据
       planData = {
-        "planTemplateId": selectedTemplate.value.id, // 使用真实的模板ID
-        "planId": selectedTemplate.value.id, // 兼容性
-        "title": selectedTemplate.value.title || "执行计划",
-        "steps": [
-          {"stepRequirement": "[BROWSER_AGENT] 访问百度搜索阿里巴巴的最新股价" },
-          {"stepRequirement": "[DEFAULT_AGENT] 提取和整理搜索结果中的股价信息" },
-          {"stepRequirement": "[TEXT_FILE_AGENT] 创建一个文本文件记录查询结果" },
-          {"stepRequirement": "[DEFAULT_AGENT] 向用户报告查询结果" }
-        ]
+        planTemplateId: selectedTemplate.value.id, // 使用真实的模板ID
+        planId: selectedTemplate.value.id, // 兼容性
+        title: selectedTemplate.value.title || '执行计划',
+        steps: [
+          { stepRequirement: '[BROWSER_AGENT] 访问百度搜索阿里巴巴的最新股价' },
+          { stepRequirement: '[DEFAULT_AGENT] 提取和整理搜索结果中的股价信息' },
+          { stepRequirement: '[TEXT_FILE_AGENT] 创建一个文本文件记录查询结果' },
+          { stepRequirement: '[DEFAULT_AGENT] 向用户报告查询结果' },
+        ],
       }
     }
 
     // 使用模板标题或计划标题作为用户输入
     const title = selectedTemplate.value.title || planData.title || '执行计划'
-    
-    console.log('[Sidebar] 触发计划执行请求:', { title, planData, planTemplateId: selectedTemplate.value.id })
-    
+
+    console.log('[Sidebar] 触发计划执行请求:', {
+      title,
+      planData,
+      planTemplateId: selectedTemplate.value.id,
+    })
+
     // 发送计划执行事件给聊天组件
     console.log('[Sidebar] Emitting planExecutionRequested event')
-    emit('planExecutionRequested', { 
-      title, 
-      planData, 
-      params: executionParams.value.trim() || undefined 
+    emit('planExecutionRequested', {
+      title,
+      planData,
+      params: executionParams.value.trim() || undefined,
     })
-    
+
     console.log('[Sidebar] Event emitted, closing sidebar')
     // 关闭sidebar
-    isCollapsed.value = true
-    
+    // isCollapsed.value = true
   } catch (error: any) {
     console.error('执行计划出错:', error)
     alert('执行计划失败: ' + error.message)
@@ -656,7 +663,7 @@ const getRelativeTimeString = (date: Date): string => {
   if (diffMinutes < 60) return `${diffMinutes}分钟前`
   if (diffHours < 24) return `${diffHours}小时前`
   if (diffDays < 30) return `${diffDays}天前`
-  
+
   return date.toLocaleDateString('zh-CN')
 }
 
@@ -674,7 +681,7 @@ onMounted(() => {
 defineExpose({
   loadPlanTemplateList,
   toggleSidebar,
-  currentPlanTemplateId: currentPlanTemplateId
+  currentPlanTemplateId: currentPlanTemplateId,
 })
 </script>
 
@@ -691,7 +698,7 @@ defineExpose({
 .sidebar-wrapper-collapsed {
   width: 0;
   border-right: none;
-  
+
   .sidebar-content {
     opacity: 0;
     pointer-events: none;
