@@ -115,7 +115,6 @@ public class AsyncGeneratorUtils {
 			 * Helper method to handle completed or errored generators
 			 */
 			private void handleCompletedGenerator(AsyncGenerator<T> generator, AsyncGenerator.Data<T> data) {
-				activeGenerators.remove(generator);
 
 				// Process result if exists
 				data.resultValue().ifPresent(result -> {
