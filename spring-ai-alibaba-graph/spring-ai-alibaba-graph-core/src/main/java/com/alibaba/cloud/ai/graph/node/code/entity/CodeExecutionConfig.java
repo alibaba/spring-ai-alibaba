@@ -37,6 +37,12 @@ public class CodeExecutionConfig {
 	private int lastMessagesNumber = 1;
 
 	private String classPath;
+	
+	private int maxConnections = 100;
+	
+	private int connectionTimeout = 30;
+	
+	private int responseTimeout = 50;
 
 	public String getWorkDir() {
 		return workDir;
@@ -101,5 +107,28 @@ public class CodeExecutionConfig {
 		return this;
 
 	}
-
+	
+	public int getMaxConnections() {
+		return maxConnections;
+	}
+	
+	public void setMaxConnections(final int maxConnections) {
+		this.maxConnections = maxConnections;
+	}
+	
+	public int getConnectionTimeout() {
+		return connectionTimeout;
+	}
+	
+	public void setConnectionTimeout(final int connectionTimeout) {
+		this.connectionTimeout = connectionTimeout;
+	}
+	
+	public int getResponseTimeout() {
+		return responseTimeout;
+	}
+	
+	public void setResponseTimeout(final int responseTimeout) {
+		this.responseTimeout = responseTimeout;
+	}
 }
