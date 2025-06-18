@@ -39,17 +39,16 @@ import java.util.Objects;
  * @author yingzi
  * @since 2025/5/18 16:47
  */
-
 public class PlannerNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(PlannerNode.class);
 
-	private final ChatClient chatClient;
+	private final ChatClient plannerAgent;
 
 	private final BeanOutputConverter<Plan> converter;
 
-	public PlannerNode(ChatClient.Builder chatClientBuilder) {
-		this.chatClient = chatClientBuilder.build();
+	public PlannerNode(ChatClient plannerAgent) {
+		this.plannerAgent = plannerAgent;
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
 		});
 	}
@@ -76,7 +75,7 @@ public class PlannerNode implements NodeAction {
 
 		logger.debug("messages: {}", messages);
 		// 2. 规划任务
-		var streamResult = chatClient.prompt(converter.getFormat()).messages(messages).stream().chatResponse();
+		var streamResult = plannerAgent.prompt(converter.getFormat()).messages(messages).stream().chatResponse();
 
 		var generator = StreamingChatGenerator.builder()
 			.startingNode("planner_llm_stream")
