@@ -32,7 +32,7 @@ import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
-import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
+import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.ai.tool.annotation.Tool;
@@ -91,7 +91,7 @@ public class PythonReplTool {
 			.build();
 
 		try (DockerClient dockerClient = DockerClientImpl.getInstance(config,
-				new ApacheDockerHttpClient.Builder().dockerHost(config.getDockerHost()).build())) {
+				new ZerodepDockerHttpClient.Builder().dockerHost(config.getDockerHost()).build())) {
 			// Create temp dir and files
 			Path tempDir = Files.createTempDirectory(coderProperties.getContainNamePrefix());
 			Files.createFile(tempDir.resolve("requirements.txt"));
