@@ -7,12 +7,6 @@
       "description": "Configuration properties for Nacos MCP integration."
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.registry",
-      "type": "com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties",
-      "description": "Configuration properties for Nacos MCP server registration."
-    },
-    {
       "name": "spring.ai.alibaba.mcp.nacos.gateway",
       "type": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
       "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
@@ -68,34 +62,6 @@
       "description": "Nacos server endpoint.",
       "sourceType": "com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties",
       "defaultValue": ""
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.registry.enabled",
-      "type": "java.lang.Boolean",
-      "description": "Whether to register MCP server service to Nacos.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties",
-      "defaultValue": false
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.registry.service-name",
-      "type": "java.lang.String",
-      "description": "Service name for MCP server service.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties",
-      "defaultValue": "mcp-server"
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.registry.service-group",
-      "type": "java.lang.String",
-      "description": "Group for MCP server service.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties",
-      "defaultValue": "DEFAULT_GROUP"
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.registry.sse-export-context-path",
-      "type": "java.lang.String",
-      "description": "Base context path for SSE MCP server.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties",
-      "defaultValue": "/mcp"
     },
     {
       "name": "spring.ai.alibaba.mcp.nacos.gateway.enabled",
