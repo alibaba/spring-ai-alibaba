@@ -136,8 +136,8 @@ public class DocumentDirectoryParser implements DocumentParser {
 	}
 
 	private Stream<Document> loadDocumentsFromFile(Path file) {
-		try {
-			return documentParser.parse(new FileInputStream(file.toFile())).stream();
+		try (FileInputStream fileInputStream = new FileInputStream(file.toFile())) {
+			return documentParser.parse(fileInputStream).stream();
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Error loading file: " + file, e);
