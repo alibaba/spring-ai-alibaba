@@ -19,12 +19,13 @@ package com.alibaba.cloud.ai.example.deepresearch.tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.stereotype.Service;
 
 /**
  * @author yingzi
  * @since 2025/5/17 18:10
  */
-
+@Service
 public class PlannerTool {
 
 	private static final Logger logger = LoggerFactory.getLogger(PlannerTool.class);
