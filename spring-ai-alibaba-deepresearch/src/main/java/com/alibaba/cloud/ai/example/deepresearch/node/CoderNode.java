@@ -26,12 +26,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 
@@ -93,11 +92,7 @@ public class CoderNode implements NodeAction {
 		logger.debug("coder Node message: {}", messages);
 
 		// 调用agent
-		var streamResult = coderAgent.prompt()
-			.options(ToolCallingChatOptions.builder().build())
-			.messages(messages)
-			.stream()
-			.chatResponse();
+		var streamResult = coderAgent.prompt().messages(messages).stream().chatResponse();
 
 		Plan.Step finalAssignedStep = assignedStep;
 		logger.info("CoderNode {} starting streaming with key: {}", executorNodeId,
