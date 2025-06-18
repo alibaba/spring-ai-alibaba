@@ -28,7 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(classes = { Kuaidi100AutoConfiguration.class, CommonToolCallAutoConfiguration.class })
-@DisplayName("youdao translate tool call Test")
+@DisplayName("kuaidi100 tool call Test")
 class Kuaidi100Test {
 
 	@Autowired
