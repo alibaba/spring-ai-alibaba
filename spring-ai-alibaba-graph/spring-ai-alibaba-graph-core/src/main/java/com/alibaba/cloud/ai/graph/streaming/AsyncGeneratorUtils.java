@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.HashMap;
 
@@ -89,13 +88,15 @@ public class AsyncGeneratorUtils {
 					lock.lock();
 					try {
 						final int size = activeGenerators.size();
-						if (size == 0) return AsyncGenerator.Data.done(mergedResult);
+						if (size == 0)
+							return AsyncGenerator.Data.done(mergedResult);
 
 						// Optimize the polling algorithm to avoid overstepping boundaries
 						final int idx = pollCounter.updateAndGet(i -> (i + 1) % size);
 						AsyncGenerator<T> current = activeGenerators.get(idx);
 
-						// Execute the generator call next() outside the lock (assuming the generator itself is thread-safe)
+						// Execute the generator call next() outside the lock (assuming
+						// the generator itself is thread-safe)
 						lock.unlock();
 						AsyncGenerator.Data<T> data = current.next();
 						lock.lock();
@@ -110,7 +111,8 @@ public class AsyncGeneratorUtils {
 
 						handleCompletedGenerator(current, data);
 						return data;
-					} finally {
+					}
+					finally {
 						if (lock.isHeldByCurrentThread()) {
 							lock.unlock();
 						}
@@ -122,7 +124,7 @@ public class AsyncGeneratorUtils {
 			 * Helper method to handle completed or errored generators
 			 */
 			private void handleCompletedGenerator(AsyncGenerator<T> generator, AsyncGenerator.Data<T> data) {
-                // Remove generator if done or error
+				// Remove generator if done or error
 				if (data.isDone() || data.isError()) {
 					activeGenerators.remove(generator);
 				}
