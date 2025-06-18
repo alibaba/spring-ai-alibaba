@@ -35,105 +35,103 @@ import java.util.ArrayList;
  */
 public class AsyncGeneratorUtils {
 
-    private static final Logger log = LoggerFactory.getLogger(AsyncGeneratorUtils.class);
+	private static final Logger log = LoggerFactory.getLogger(AsyncGeneratorUtils.class);
 
-    /**
-     * Creates an appropriate generator based on the number of generator entries
-     *
-     * @param generatorEntries list of generator entries
-     * @param <T>              output type
-     * @return single generator or merged generator
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> AsyncGenerator<T> createAppropriateGenerator(List<Map.Entry<String, Object>> generatorEntries,
-                                                                   List<AsyncGenerator<T>> asyncNodeGenerators, Map<String, KeyStrategy> keyStrategyMap) {
-        if (generatorEntries.size() == 1) {
-            // Only one generator, return it directly
-            return (AsyncGenerator<T>) generatorEntries.get(0).getValue();
-        }
+	/**
+	 * Creates an appropriate generator based on the number of generator entries
+	 * @param generatorEntries list of generator entries
+	 * @param <T> output type
+	 * @return single generator or merged generator
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> AsyncGenerator<T> createAppropriateGenerator(List<Map.Entry<String, Object>> generatorEntries,
+			List<AsyncGenerator<T>> asyncNodeGenerators, Map<String, KeyStrategy> keyStrategyMap) {
+		if (generatorEntries.size() == 1) {
+			// Only one generator, return it directly
+			return (AsyncGenerator<T>) generatorEntries.get(0).getValue();
+		}
 
-        // Multiple generators, create a merged generator
-        List<AsyncGenerator<T>> generators = generatorEntries.stream()
-                .map(entry -> (AsyncGenerator<T>) entry.getValue())
-                .collect(Collectors.toList());
-        generators.addAll(asyncNodeGenerators);
-        return createMergedGenerator(generators, keyStrategyMap);
-    }
+		// Multiple generators, create a merged generator
+		List<AsyncGenerator<T>> generators = generatorEntries.stream()
+			.map(entry -> (AsyncGenerator<T>) entry.getValue())
+			.collect(Collectors.toList());
+		generators.addAll(asyncNodeGenerators);
+		return createMergedGenerator(generators, keyStrategyMap);
+	}
 
-    /**
-     * Creates a merged generator that combines outputs from multiple generators
-     *
-     * @param generators list of generators to merge
-     * @param <T>        output type
-     * @return merged generator
-     */
-    public static <T> AsyncGenerator<T> createMergedGenerator(List<AsyncGenerator<T>> generators,
-                                                              Map<String, KeyStrategy> keyStrategyMap) {
-        return new AsyncGenerator<>() {
-            private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+	/**
+	 * Creates a merged generator that combines outputs from multiple generators
+	 * @param generators list of generators to merge
+	 * @param <T> output type
+	 * @return merged generator
+	 */
+	public static <T> AsyncGenerator<T> createMergedGenerator(List<AsyncGenerator<T>> generators,
+			Map<String, KeyStrategy> keyStrategyMap) {
+		return new AsyncGenerator<>() {
+			private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-            private AtomicInteger pollCounter = new AtomicInteger(0);
+			private AtomicInteger pollCounter = new AtomicInteger(0);
 
-            private Map<String, Object> mergedResult = new HashMap<>();
+			private Map<String, Object> mergedResult = new HashMap<>();
 
-            private final List<AsyncGenerator<T>> activeGenerators =
-                    new CopyOnWriteArrayList<>(generators);
+			private final List<AsyncGenerator<T>> activeGenerators = new CopyOnWriteArrayList<>(generators);
 
-            private final Map<AsyncGenerator<T>, Map<String, Object>> generatorResults = new HashMap<>();
+			private final Map<AsyncGenerator<T>, Map<String, Object>> generatorResults = new HashMap<>();
 
-            @Override
-            public AsyncGenerator.Data<T> next() {
-                // Try the quick lock-free check first
-                if (activeGenerators.isEmpty()) {
-                    return AsyncGenerator.Data.done(mergedResult);
-                }
+			@Override
+			public AsyncGenerator.Data<T> next() {
+				// Try the quick lock-free check first
+				if (activeGenerators.isEmpty()) {
+					return AsyncGenerator.Data.done(mergedResult);
+				}
 
-                lock.writeLock().lock();
+				lock.writeLock().lock();
 
-                try {
-                    final int size = activeGenerators.size();
-                    if (size == 0) return AsyncGenerator.Data.done(mergedResult);
+				try {
+					final int size = activeGenerators.size();
+					if (size == 0)
+						return AsyncGenerator.Data.done(mergedResult);
 
-                    // Use the polling algorithm to obtain the next generator (maintaining atomicity)
-                    final int idx = pollCounter.updateAndGet(i -> (i + 1) % size);
-                    AsyncGenerator<T> current = activeGenerators.get(idx);
+					// Use the polling algorithm to obtain the next generator (maintaining
+					// atomicity)
+					final int idx = pollCounter.updateAndGet(i -> (i + 1) % size);
+					AsyncGenerator<T> current = activeGenerators.get(idx);
 
-                    AsyncGenerator.Data<T> data = current.next();
+					AsyncGenerator.Data<T> data = current.next();
 
-                    if (data.isDone() || data.isError()) {
-                        handleCompletedGenerator(current, data);
-                        return activeGenerators.isEmpty() ?
-                                AsyncGenerator.Data.done(mergedResult) : next();
-                    }
+					if (data.isDone() || data.isError()) {
+						handleCompletedGenerator(current, data);
+						return activeGenerators.isEmpty() ? AsyncGenerator.Data.done(mergedResult) : next();
+					}
 
-                    handleCompletedGenerator(current, data);
-                    return data;
-                } finally {
-                    lock.writeLock().unlock();
-                }
+					handleCompletedGenerator(current, data);
+					return data;
+				}
+				finally {
+					lock.writeLock().unlock();
+				}
 
-            }
+			}
 
-            /**
-             * Helper method to handle completed or errored generators
-             */
-            private void handleCompletedGenerator(AsyncGenerator<T> generator, AsyncGenerator.Data<T> data) {
-                activeGenerators.remove(generator);
+			/**
+			 * Helper method to handle completed or errored generators
+			 */
+			private void handleCompletedGenerator(AsyncGenerator<T> generator, AsyncGenerator.Data<T> data) {
+				activeGenerators.remove(generator);
 
-                // Process result if exists
-                data.resultValue().ifPresent(result -> {
-                    if (result instanceof Map) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> mapResult = (Map<String, Object>) result;
-                        mergedResult = OverAllState.updateState(mergedResult, mapResult, keyStrategyMap);
-                    }
-                });
+				// Process result if exists
+				data.resultValue().ifPresent(result -> {
+					if (result instanceof Map) {
+						@SuppressWarnings("unchecked")
+						Map<String, Object> mapResult = (Map<String, Object>) result;
+						mergedResult = OverAllState.updateState(mergedResult, mapResult, keyStrategyMap);
+					}
+				});
 
-
-                // Remove from generator results if present
-                generatorResults.remove(generator);
-            }
-        };
-    }
+				// Remove from generator results if present
+				generatorResults.remove(generator);
+			}
+		};
+	}
 
 }

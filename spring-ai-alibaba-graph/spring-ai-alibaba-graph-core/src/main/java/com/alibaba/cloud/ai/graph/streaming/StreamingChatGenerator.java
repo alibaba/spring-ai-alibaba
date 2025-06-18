@@ -113,12 +113,11 @@ public interface StreamingChatGenerator {
 					var lastMessage = lastResponse.getResult().getOutput();
 
 					var newMessage = new AssistantMessage(
-                            Objects.requireNonNull(ofNullable(currentMessage.getText()).map(text -> {
-                                        assert lastMessage.getText() != null;
-                                        return lastMessage.getText().concat(text);
-                                    })
-                                    .orElse(lastMessage.getText())),
-							currentMessage.getMetadata(), currentMessage.getToolCalls(), currentMessage.getMedia());
+							Objects.requireNonNull(ofNullable(currentMessage.getText()).map(text -> {
+								assert lastMessage.getText() != null;
+								return lastMessage.getText().concat(text);
+							}).orElse(lastMessage.getText())), currentMessage.getMetadata(),
+							currentMessage.getToolCalls(), currentMessage.getMedia());
 
 					var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
 					return new ChatResponse(List.of(newGeneration), response.getMetadata());

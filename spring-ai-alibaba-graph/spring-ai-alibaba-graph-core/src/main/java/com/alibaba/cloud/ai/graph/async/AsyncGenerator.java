@@ -211,9 +211,7 @@ public interface AsyncGenerator<E> extends Iterable<E>, AsyncGeneratorOperators<
 		}
 
 		public Optional<Object> resultValue() {
-			return resultValue == null ?
-					Optional.empty() :
-					Optional.of(resultValue);
+			return resultValue == null ? Optional.empty() : Optional.of(resultValue);
 		}
 
 		public boolean isDone() {
