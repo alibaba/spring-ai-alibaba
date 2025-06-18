@@ -50,12 +50,7 @@ public class RagNode implements NodeAction {
 			.orElseThrow(() -> new IllegalArgumentException("Query is missing from state"));
 
 		// Use the advisor to get the RAG-enhanced response directly
-		String ragResult = chatClient
-			.prompt()
-			.advisors(this.retrievalAugmentationAdvisor)
-			.user(query)
-			.call()
-			.content();
+		String ragResult = chatClient.prompt().advisors(this.retrievalAugmentationAdvisor).user(query).call().content();
 
 		logger.info("RAG node produced a result.");
 
