@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Collectors;
 import java.util.HashMap;
 
@@ -68,7 +69,7 @@ public class AsyncGeneratorUtils {
 			Map<String, KeyStrategy> keyStrategyMap) {
 		return new AsyncGenerator<>() {
 			// Switch to ReentrantLock to simplify lock management
-			private final ReentrantLock lock = new ReentrantLock();
+			private final StampedLock lock = new StampedLock();
 
 			private AtomicInteger pollCounter = new AtomicInteger(0);
 
@@ -81,26 +82,47 @@ public class AsyncGeneratorUtils {
 			@Override
 			public AsyncGenerator.Data<T> next() {
 				while (true) {
-					// Quick lock-free inspection
-					if (activeGenerators.isEmpty()) {
+					// Read optimistically and check quickly
+					long stamp = lock.tryOptimisticRead();
+					boolean empty = activeGenerators.isEmpty();
+					if (!lock.validate(stamp)) {
+						stamp = lock.readLock();
+						try {
+							empty = activeGenerators.isEmpty();
+						}
+						finally {
+							lock.unlockRead(stamp);
+						}
+					}
+					if (empty) {
 						return AsyncGenerator.Data.done(mergedResult);
 					}
 
-					lock.lock();
+					// Fine-grained lock control
+					final int currentIdx;
+					AsyncGenerator<T> current;
+					long writeStamp = lock.writeLock();
 					try {
 						final int size = activeGenerators.size();
 						if (size == 0)
 							return AsyncGenerator.Data.done(mergedResult);
 
-						// Optimize the polling algorithm to avoid overstepping boundaries
-						final int idx = pollCounter.updateAndGet(i -> (i + 1) % size);
-						AsyncGenerator<T> current = activeGenerators.get(idx);
+						currentIdx = pollCounter.updateAndGet(i -> (i + 1) % size);
+						current = activeGenerators.get(currentIdx);
+					}
+					finally {
+						lock.unlockWrite(writeStamp);
+					}
 
-						// Execute the generator call next() outside the lock (assuming
-						// the generator itself is thread-safe)
-						lock.unlock();
-						AsyncGenerator.Data<T> data = current.next();
-						lock.lock();
+					// Execute the generator 'next()' in the unlocked state
+					AsyncGenerator.Data<T> data = current.next();
+
+					writeStamp = lock.writeLock();
+					try {
+						// Double checks prevent status changes
+						if (!activeGenerators.contains(current)) {
+							continue;
+						}
 
 						if (data.isDone() || data.isError()) {
 							handleCompletedGenerator(current, data);
@@ -114,11 +136,10 @@ public class AsyncGeneratorUtils {
 						return data;
 					}
 					finally {
-						if (lock.isHeldByCurrentThread()) {
-							lock.unlock();
-						}
+						lock.unlockWrite(writeStamp);
 					}
 				}
+
 			}
 
 			/**
