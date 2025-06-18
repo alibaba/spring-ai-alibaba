@@ -82,15 +82,15 @@ public class DocLoaderTool implements Function<String, ToolExecuteResult> {
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("DocLoaderTool toolInput:{}", toolInput);
-		try {
-			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
-			});
-			String fileType = (String) toolInputMap.get("file_type");
-			String filePath = (String) toolInputMap.get("file_path");
+		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<>() {
+		});
+		String fileType = (String) toolInputMap.get("file_type");
+		String filePath = (String) toolInputMap.get("file_path");
+		try (FileInputStream fileInputStream = new FileInputStream(filePath)) {
 			TikaDocumentParser parser = new TikaDocumentParser();
-			List<Document> documentList = parser.parse(new FileInputStream(filePath));
+			List<Document> documentList = parser.parse(fileInputStream);
 			List<String> documentContents = documentList.stream()
-				.map(document -> document.getFormattedContent())
+				.map(Document::getFormattedContent)
 				.collect(Collectors.toList());
 
 			String documentContentStr = String.join("\n", documentContents);
