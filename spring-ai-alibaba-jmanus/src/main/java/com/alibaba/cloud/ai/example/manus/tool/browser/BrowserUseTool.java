@@ -33,7 +33,10 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ScrollAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
+import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
+import com.alibaba.cloud.ai.example.manus.tool.textOperator.AbstractSmartFileOperator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
@@ -47,11 +50,13 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class BrowserUseTool implements ToolCallBiFunctionDef {
+public class BrowserUseTool extends AbstractSmartFileOperator implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
 	private final ChromeDriverService chromeDriverService;
+
+	private final String workingDirectoryPath;
 
 	private String planId;
 
@@ -60,6 +65,23 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
+		ManusProperties manusProperties = chromeDriverService.getManusProperties();
+		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+	}
+
+	@Override
+	protected String getWorkingDirectoryPath() {
+		return workingDirectoryPath;
+	}
+
+	@Override
+	protected String getCurrentPlanId() {
+		return planId;
+	}
+
+	@Override
+	protected InnerStorageService getInnerStorageService() {
+		return chromeDriverService.getInnerStorageService();
 	}
 
 	public DriverWrapper getDriver() {
@@ -239,55 +261,78 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			if (action == null) {
 				return new ToolExecuteResult("Action parameter is required");
 			}
+			
+			ToolExecuteResult result;
 			switch (action) {
 				case "navigate": {
-					return new NavigateAction(this).execute(requestVO);
+					result = new NavigateAction(this).execute(requestVO);
+					break;
 				}
 				case "click": {
-					return new ClickByElementAction(this).execute(requestVO);
+					result = new ClickByElementAction(this).execute(requestVO);
+					break;
 				}
 				case "input_text": {
-					return new InputTextAction(this).execute(requestVO);
+					result = new InputTextAction(this).execute(requestVO);
+					break;
 				}
 				case "key_enter": {
-					return new KeyEnterAction(this).execute(requestVO);
+					result = new KeyEnterAction(this).execute(requestVO);
+					break;
 				}
 				case "screenshot": {
-					return new ScreenShotAction(this).execute(requestVO);
+					result = new ScreenShotAction(this).execute(requestVO);
+					break;
 				}
 				case "get_html": {
-					return new GetHtmlAction(this).execute(requestVO);
+					result = new GetHtmlAction(this).execute(requestVO);
+					// HTML内容通常很长，使用智能处理
+					return processResult(result, "get_html", requestVO.getUrl());
 				}
 				case "get_text": {
-					return new GetTextAction(this).execute(requestVO);
+					result = new GetTextAction(this).execute(requestVO);
+					// 文本内容可能很长，使用智能处理
+					return processResult(result, "get_text", requestVO.getUrl());
 				}
 				case "execute_js": {
-					return new ExecuteJsAction(this).execute(requestVO);
+					result = new ExecuteJsAction(this).execute(requestVO);
+					// JS执行结果可能很长，使用智能处理
+					return processResult(result, "execute_js", "javascript");
 				}
 				case "scroll": {
-					return new ScrollAction(this).execute(requestVO);
+					result = new ScrollAction(this).execute(requestVO);
+					break;
 				}
 				case "new_tab": {
-					return new NewTabAction(this).execute(requestVO);
+					result = new NewTabAction(this).execute(requestVO);
+					break;
 				}
 				case "close_tab": {
-					return new CloseTabAction(this).execute(requestVO);
+					result = new CloseTabAction(this).execute(requestVO);
+					break;
 				}
 				case "switch_tab": {
-					return new SwitchTabAction(this).execute(requestVO);
+					result = new SwitchTabAction(this).execute(requestVO);
+					break;
 				}
 				case "refresh": {
-					return new RefreshAction(this).execute(requestVO);
+					result = new RefreshAction(this).execute(requestVO);
+					break;
 				}
 				case "get_element_position": {
-					return new GetElementPositionByNameAction(this).execute(requestVO);
+					result = new GetElementPositionByNameAction(this).execute(requestVO);
+					break;
 				}
 				case "move_to_and_click": {
-					return new MoveToAndClickAction(this).execute(requestVO);
+					result = new MoveToAndClickAction(this).execute(requestVO);
+					break;
 				}
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
+			
+			// 对于其他操作，也进行智能处理（但阈值通常不会超过）
+			return processResult(result, action, requestVO.getUrl());
 		}
 		catch (Exception e) {
 			log.error("Browser action '" + action + "' failed", e);

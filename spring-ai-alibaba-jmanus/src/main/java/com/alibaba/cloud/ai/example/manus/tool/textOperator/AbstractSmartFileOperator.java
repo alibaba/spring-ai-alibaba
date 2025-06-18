@@ -38,7 +38,7 @@ public abstract class AbstractSmartFileOperator {
 	private static final Logger log = LoggerFactory.getLogger(AbstractSmartFileOperator.class);
 
 	// 默认阈值：2KB
-	private static final int DEFAULT_CONTENT_THRESHOLD = 2048;
+	private static final int DEFAULT_CONTENT_THRESHOLD = 10;
 
 	// 存储计划ID对应的内容阈值配置
 	private final Map<String, Integer> planThresholds = new ConcurrentHashMap<>();
