@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -56,11 +57,11 @@ public class DashScopeAgentAutoConfiguration {
 	public DashScopeAgentApi dashscopeAgentApi(DashScopeConnectionProperties commonProperties,
 			DashScopeAgentProperties agentProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
-
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, agentProperties, "agent");
 
-		return new DashScopeAgentApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(), restClientBuilder,
-				webClientBuilder, responseErrorHandler);
+		return new DashScopeAgentApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
 	}
 
 }
