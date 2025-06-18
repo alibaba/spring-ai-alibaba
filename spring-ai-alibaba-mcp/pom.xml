@@ -17,6 +17,7 @@
     <modules>
         <module>spring-ai-alibaba-mcp-nacos2</module>
         <module>spring-ai-alibaba-mcp-nacos</module>
+        <module>spring-ai-alibaba-mcp-nacos-common</module>
         <module>spring-ai-alibaba-mcp-gateway</module>
     </modules>
     <scm>

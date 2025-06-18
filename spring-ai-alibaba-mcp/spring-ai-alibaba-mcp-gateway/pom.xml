@@ -43,7 +43,7 @@
             <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
             <optional>true</optional>
         </dependency>
-        
+
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-mcp-nacos-common</artifactId>
