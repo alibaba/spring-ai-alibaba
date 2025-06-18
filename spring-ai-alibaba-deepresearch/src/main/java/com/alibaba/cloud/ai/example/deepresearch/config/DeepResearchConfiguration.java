@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNod
 import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.InformationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
