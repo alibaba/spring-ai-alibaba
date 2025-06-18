@@ -42,7 +42,7 @@ class Kuaidi100Test {
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	@EnabledIfEnvironmentVariable(named = Kuaidi100Constants.API_KEY_ENV,
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
-	void testYoudaoTranslate() {
+	void testKuaidi100() {
 		Kuaidi100Service.QueryTrackResponse resp = kuaidi100Service
 			.apply(new Kuaidi100Service.Request("YT2237659878059"));
 		logger.info("kuaidi100 result: {}", resp);
