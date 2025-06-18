@@ -97,7 +97,7 @@ public class DeepResearchConfiguration {
 	private RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
 
 	@Bean
-	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
+	public StateGraph deepResearch(ChatClient researchAgent) throws GraphStateException {
 
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
@@ -148,7 +148,7 @@ public class DeepResearchConfiguration {
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
 			.addNode("reporter", node_async((new ReporterNode(reporterAgent))))
-			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, chatClientBuilder)));
+			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
 
 		// 添加并行节点块
 		configureParallelNodes(stateGraph);
