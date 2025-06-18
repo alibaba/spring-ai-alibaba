@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.HashMap;
@@ -66,7 +67,8 @@ public class AsyncGeneratorUtils {
 	public static <T> AsyncGenerator<T> createMergedGenerator(List<AsyncGenerator<T>> generators,
 			Map<String, KeyStrategy> keyStrategyMap) {
 		return new AsyncGenerator<>() {
-			private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+			// Switch to ReentrantLock to simplify lock management
+			private final ReentrantLock lock = new ReentrantLock();
 
 			private AtomicInteger pollCounter = new AtomicInteger(0);
 
@@ -78,43 +80,52 @@ public class AsyncGeneratorUtils {
 
 			@Override
 			public AsyncGenerator.Data<T> next() {
-				// Try the quick lock-free check first
-				if (activeGenerators.isEmpty()) {
-					return AsyncGenerator.Data.done(mergedResult);
-				}
-
-				lock.writeLock().lock();
-
-				try {
-					final int size = activeGenerators.size();
-					if (size == 0)
+				while (true) {
+					// Quick lock-free inspection
+					if (activeGenerators.isEmpty()) {
 						return AsyncGenerator.Data.done(mergedResult);
-
-					// Use the polling algorithm to obtain the next generator (maintaining
-					// atomicity)
-					final int idx = pollCounter.updateAndGet(i -> (i + 1) % size);
-					AsyncGenerator<T> current = activeGenerators.get(idx);
-
-					AsyncGenerator.Data<T> data = current.next();
-
-					if (data.isDone() || data.isError()) {
-						handleCompletedGenerator(current, data);
-						return activeGenerators.isEmpty() ? AsyncGenerator.Data.done(mergedResult) : next();
 					}
 
-					handleCompletedGenerator(current, data);
-					return data;
-				}
-				finally {
-					lock.writeLock().unlock();
-				}
+					lock.lock();
+					try {
+						final int size = activeGenerators.size();
+						if (size == 0) return AsyncGenerator.Data.done(mergedResult);
 
+						// Optimize the polling algorithm to avoid overstepping boundaries
+						final int idx = pollCounter.updateAndGet(i -> (i + 1) % size);
+						AsyncGenerator<T> current = activeGenerators.get(idx);
+
+						// Execute the generator call next() outside the lock (assuming the generator itself is thread-safe)
+						lock.unlock();
+						AsyncGenerator.Data<T> data = current.next();
+						lock.lock();
+
+						if (data.isDone() || data.isError()) {
+							handleCompletedGenerator(current, data);
+							if (activeGenerators.isEmpty()) {
+								return AsyncGenerator.Data.done(mergedResult);
+							}
+							continue;
+						}
+
+						handleCompletedGenerator(current, data);
+						return data;
+					} finally {
+						if (lock.isHeldByCurrentThread()) {
+							lock.unlock();
+						}
+					}
+				}
 			}
 
 			/**
 			 * Helper method to handle completed or errored generators
 			 */
 			private void handleCompletedGenerator(AsyncGenerator<T> generator, AsyncGenerator.Data<T> data) {
+                // Remove generator if done or error
+				if (data.isDone() || data.isError()) {
+					activeGenerators.remove(generator);
+				}
 
 				// Process result if exists
 				data.resultValue().ifPresent(result -> {
