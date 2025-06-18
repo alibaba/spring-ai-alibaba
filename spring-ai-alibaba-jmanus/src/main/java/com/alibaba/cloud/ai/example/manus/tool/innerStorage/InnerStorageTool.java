@@ -21,11 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.textOperator.AbstractSmartFileOperator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -41,11 +38,9 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
  * 支持智能内容管理：当返回内容过长时自动存储并返回摘要
  *
  */
-public class InnerStorageTool extends AbstractSmartFileOperator implements ToolCallBiFunctionDef {
+public class InnerStorageTool implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(InnerStorageTool.class);
-
-	private final String workingDirectoryPath;
 
 	private final InnerStorageService innerStorageService;
 
@@ -53,31 +48,14 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 
 	public InnerStorageTool(InnerStorageService innerStorageService) {
 		this.innerStorageService = innerStorageService;
-		ManusProperties manusProperties = innerStorageService.getManusProperties();
-		workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 	}
 
 	/**
-	 * 测试专用构造函数，直接指定工作目录路径
+	 * 测试专用构造函数
 	 */
-	public InnerStorageTool(InnerStorageService innerStorageService, String workingDirectoryPath) {
+	public InnerStorageTool(InnerStorageService innerStorageService, String testWorkingDirectoryPath) {
 		this.innerStorageService = innerStorageService;
-		this.workingDirectoryPath = workingDirectoryPath;
-	}
-
-	@Override
-	protected String getWorkingDirectoryPath() {
-		return workingDirectoryPath;
-	}
-
-	@Override
-	protected String getCurrentPlanId() {
-		return planId;
-	}
-
-	@Override
-	protected InnerStorageService getInnerStorageService() {
-		return innerStorageService;
+		// 测试构造函数保留向后兼容性，但不再使用workingDirectoryPath参数
 	}
 
 	private static final String TOOL_NAME = "inner_storage_tool";
@@ -220,41 +198,47 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 				case "append" -> {
 					String fileName = (String) toolInputMap.get("file_name");
 					String content = (String) toolInputMap.get("content");
-					ToolExecuteResult result = appendToFile(fileName, content);
-					yield processResult(result, "append", fileName);
+					yield appendToFile(fileName, content);
 				}
 				case "replace" -> {
 					String fileName = (String) toolInputMap.get("file_name");
 					String sourceText = (String) toolInputMap.get("source_text");
 					String targetText = (String) toolInputMap.get("target_text");
-					ToolExecuteResult result = replaceInFile(fileName, sourceText, targetText);
-					yield processResult(result, "replace", fileName);
+					yield replaceInFile(fileName, sourceText, targetText);
 				}
 				case "get_lines" -> {
 					String fileName = (String) toolInputMap.get("file_name");
 					Integer startLine = (Integer) toolInputMap.get("start_line");
 					Integer endLine = (Integer) toolInputMap.get("end_line");
 					ToolExecuteResult result = getFileLines(fileName, startLine, endLine);
-					yield processResult(result, "get_lines", fileName);
+					// 使用新的智能处理方法
+					InnerStorageService.SmartProcessResult processedResult = 
+						innerStorageService.processContent(planId, result.getOutput());
+					yield new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "search" -> {
 					String keyword = (String) toolInputMap.get("keyword");
 					ToolExecuteResult result = searchContent(keyword);
-					yield processResult(result, "search", null);
+					// 使用新的智能处理方法
+					InnerStorageService.SmartProcessResult processedResult = 
+						innerStorageService.processContent(planId, result.getOutput());
+					yield new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "list_contents" -> {
 					ToolExecuteResult result = listStoredContents();
-					yield processResult(result, "list_contents", null);
+					// 使用新的智能处理方法
+					InnerStorageService.SmartProcessResult processedResult = 
+						innerStorageService.processContent(planId, result.getOutput());
+					yield new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "get_content" -> {
 					String contentId = (String) toolInputMap.get("content_id");
 					yield getStoredContent(contentId);
 				}
-				case "get_description" -> {
-					// 获取所有自动存储的内容作为描述
-					List<InnerStorageService.FileInfo> autoStoredFiles = innerStorageService
-						.searchAutoStoredFiles(workingDirectoryPath, planId, "");
-					if (!autoStoredFiles.isEmpty()) {
+				case "get_description" -> {				// 获取所有自动存储的内容作为描述
+				List<InnerStorageService.FileInfo> autoStoredFiles = innerStorageService
+					.searchAutoStoredFiles(planId, "");
+				if (!autoStoredFiles.isEmpty()) {
 						StringBuilder desc = new StringBuilder();
 						desc.append("任务 ").append(planId).append(" 的自动存储内容概览:\n\n");
 						for (int i = 0; i < autoStoredFiles.size(); i++) {
@@ -290,14 +274,12 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 			if (content == null) {
 				content = "";
 			}
+		// 确保计划目录存在 - 直接使用计划目录，不使用 agent 子目录
+		Path planDir = innerStorageService.getPlanDirectory(planId);
+		innerStorageService.ensureDirectoryExists(planDir);
 
-			// 确保目录存在
-			String agentName = innerStorageService.getPlanAgent(planId);
-			Path agentDir = innerStorageService.getAgentDirectory(workingDirectoryPath, planId, agentName);
-			innerStorageService.ensureDirectoryExists(agentDir);
-
-			// 获取文件路径并追加内容
-			Path filePath = innerStorageService.getFilePath(workingDirectoryPath, planId, fileName);
+		// 获取文件路径并追加内容 - 直接在计划目录下创建文件
+		Path filePath = planDir.resolve(fileName);
 
 			// 如果文件不存在，创建新文件
 			if (!Files.exists(filePath)) {
@@ -325,13 +307,13 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 			if (fileName == null || fileName.trim().isEmpty()) {
 				return new ToolExecuteResult("错误：file_name参数是必需的");
 			}
-			if (sourceText == null || targetText == null) {
-				return new ToolExecuteResult("错误：source_text和target_text参数都是必需的");
-			}
+			if (sourceText == null || targetText == null) {			return new ToolExecuteResult("错误：source_text和target_text参数都是必需的");
+		}
 
-			Path filePath = innerStorageService.getFilePath(workingDirectoryPath, planId, fileName);
+		Path planDir = innerStorageService.getPlanDirectory(planId);
+		Path filePath = planDir.resolve(fileName);
 
-			if (!Files.exists(filePath)) {
+		if (!Files.exists(filePath)) {
 				return new ToolExecuteResult("错误：文件不存在: " + fileName);
 			}
 
@@ -353,13 +335,13 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 	 */
 	private ToolExecuteResult getFileLines(String fileName, Integer startLine, Integer endLine) {
 		try {
-			if (fileName == null || fileName.trim().isEmpty()) {
-				return new ToolExecuteResult("错误：file_name参数是必需的");
-			}
+			if (fileName == null || fileName.trim().isEmpty()) {			return new ToolExecuteResult("错误：file_name参数是必需的");
+		}
 
-			Path filePath = innerStorageService.getFilePath(workingDirectoryPath, planId, fileName);
+		Path planDir = innerStorageService.getPlanDirectory(planId);
+		Path filePath = planDir.resolve(fileName);
 
-			if (!Files.exists(filePath)) {
+		if (!Files.exists(filePath)) {
 				return new ToolExecuteResult("错误：文件不存在: " + fileName);
 			}
 
@@ -408,14 +390,13 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 		}
 
 		try {
-			List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(workingDirectoryPath,
-					planId);
+			List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
 			StringBuilder searchResults = new StringBuilder();
 			searchResults.append("🔍 搜索关键词: '").append(keyword).append("'\n\n");
 
 			int foundCount = 0;
 			for (InnerStorageService.FileInfo fileInfo : files) {
-				Path planDir = innerStorageService.getPlanDirectory(workingDirectoryPath, planId);
+				Path planDir = innerStorageService.getPlanDirectory(planId);
 				Path filePath = planDir.resolve(fileInfo.getRelativePath());
 
 				if (Files.exists(filePath)) {
@@ -449,7 +430,7 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 			List<InnerStorageService.FileInfo> autoStoredFiles = getAutoStoredFiles();
 			if (!autoStoredFiles.isEmpty()) {
 				for (InnerStorageService.FileInfo file : autoStoredFiles) {
-					Path planDir = innerStorageService.getPlanDirectory(workingDirectoryPath, planId);
+					Path planDir = innerStorageService.getPlanDirectory(planId);
 					Path filePath = planDir.resolve(file.getRelativePath());
 
 					if (Files.exists(filePath)) {
@@ -489,8 +470,7 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 	 * 获取自动存储的文件（以 auto_ 开头的文件）
 	 */
 	private List<InnerStorageService.FileInfo> getAutoStoredFiles() {
-		List<InnerStorageService.FileInfo> allFiles = innerStorageService.getDirectoryFiles(workingDirectoryPath,
-				planId);
+		List<InnerStorageService.FileInfo> allFiles = innerStorageService.getDirectoryFiles(planId);
 		return allFiles.stream()
 			.filter(file -> file.getRelativePath().contains("auto_"))
 			.collect(java.util.stream.Collectors.toList());
@@ -505,8 +485,7 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 			contentList.append("📋 当前任务存储内容列表\n\n");
 
 			// 列出文件内容
-			List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(workingDirectoryPath,
-					planId);
+			List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
 			if (!files.isEmpty()) {
 				contentList.append("📁 文件内容:\n");
 				for (int i = 0; i < files.size(); i++) {
@@ -561,13 +540,13 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 			if ("desc".equals(contentId)) {
 				// 获取自动存储内容的概览作为描述
 				List<InnerStorageService.FileInfo> autoStoredFiles = innerStorageService
-					.searchAutoStoredFiles(workingDirectoryPath, planId, "");
+					.searchAutoStoredFiles(planId, "");
 				if (!autoStoredFiles.isEmpty()) {
 					StringBuilder desc = new StringBuilder();
 					desc.append("任务 ").append(planId).append(" 的自动存储内容详情:\n\n");
 					for (InnerStorageService.FileInfo file : autoStoredFiles) {
 						try {
-							String content = innerStorageService.readFileContent(workingDirectoryPath, planId,
+							String content = innerStorageService.readFileContent(planId,
 									file.getRelativePath());
 							desc.append("📄 ").append(file.getRelativePath()).append(":\n");
 							desc.append(content).append("\n\n");
@@ -586,37 +565,40 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 			// 尝试按数字索引获取文件内容
 			try {
 				int index = Integer.parseInt(contentId) - 1; // 转换为0基索引
-				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(workingDirectoryPath,
-						planId);
+				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
 
 				if (index >= 0 && index < files.size()) {
 					InnerStorageService.FileInfo file = files.get(index);
 					// 使用 planDirectory + relativePath 来构建完整路径
-					Path planDir = innerStorageService.getPlanDirectory(workingDirectoryPath, planId);
+					Path planDir = innerStorageService.getPlanDirectory(planId);
 					Path filePath = planDir.resolve(file.getRelativePath());
 
 					if (Files.exists(filePath)) {
 						String content = Files.readString(filePath);
-						ToolExecuteResult result = new ToolExecuteResult(
-								String.format("📁 文件: %s\n%s\n%s", file.getRelativePath(), "=".repeat(50), content));
-						return processResult(result, "get_content", file.getRelativePath());
+						String fullContent = String.format("📁 文件: %s\n%s\n%s", file.getRelativePath(), "=".repeat(50), content);
+						// 使用新的智能处理方法
+						InnerStorageService.SmartProcessResult processedResult = 
+							innerStorageService.processContent(planId, fullContent);
+						return new ToolExecuteResult(processedResult.getSummary());
 					}
 				}
 			}
 			catch (NumberFormatException e) {
 				// 不是数字，尝试按文件名查找
-				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(workingDirectoryPath,
-						planId);
+				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
 				for (InnerStorageService.FileInfo file : files) {
 					if (file.getRelativePath().contains(contentId)) {
-						Path planDir = innerStorageService.getPlanDirectory(workingDirectoryPath, planId);
+						Path planDir = innerStorageService.getPlanDirectory(planId);
 						Path filePath = planDir.resolve(file.getRelativePath());
 
 						if (Files.exists(filePath)) {
 							String content = Files.readString(filePath);
-							ToolExecuteResult result = new ToolExecuteResult(String.format("📁 文件: %s\n%s\n%s",
-									file.getRelativePath(), "=".repeat(50), content));
-							return processResult(result, "get_content", file.getRelativePath());
+							String fullContent = String.format("📁 文件: %s\n%s\n%s",
+									file.getRelativePath(), "=".repeat(50), content);
+							// 使用新的智能处理方法
+							InnerStorageService.SmartProcessResult processedResult = 
+								innerStorageService.processContent(planId, fullContent);
+							return new ToolExecuteResult(processedResult.getSummary());
 						}
 					}
 				}
@@ -637,12 +619,10 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 			StringBuilder sb = new StringBuilder();
 			sb.append("InnerStorage 当前状态:\n");
 			sb.append("- Plan ID: ").append(planId != null ? planId : "未设置").append("\n");
-			sb.append("- Agent: ").append(innerStorageService.getPlanAgent(planId)).append("\n");
-			sb.append("- 工作目录: ").append(workingDirectoryPath).append("\n");
+			sb.append("- 存储根目录: ").append(innerStorageService.getInnerStorageRoot()).append("\n");
 
 			// 获取当前目录下的所有文件信息
-			List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(workingDirectoryPath,
-					planId);
+			List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
 
 			if (files.isEmpty()) {
 				sb.append("- 内部文件: 无\n");
@@ -666,7 +646,7 @@ public class InnerStorageTool extends AbstractSmartFileOperator implements ToolC
 	public void cleanup(String planId) {
 		if (planId != null) {
 			log.info("Cleaning up inner storage for plan: {}", planId);
-			innerStorageService.cleanupPlan(workingDirectoryPath, planId);
+			innerStorageService.cleanupPlan(planId);
 		}
 	}
 

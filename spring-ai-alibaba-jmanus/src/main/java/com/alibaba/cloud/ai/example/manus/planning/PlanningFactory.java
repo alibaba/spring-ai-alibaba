@@ -31,7 +31,6 @@ import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
-import com.alibaba.cloud.ai.example.manus.tool.MapReducePlanningTool;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
@@ -40,6 +39,7 @@ import com.alibaba.cloud.ai.example.manus.tool.bash.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.split.SplitTool;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
@@ -85,6 +85,8 @@ public class PlanningFactory {
 
 	private final TextFileService textFileService;
 
+	private final InnerStorageService innerStorageService;
+
 	@Autowired
 	private AgentService agentService;
 
@@ -105,12 +107,14 @@ public class PlanningFactory {
 	private McpStateHolderService mcpStateHolderService;
 
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
-			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService) {
+			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
+			InnerStorageService innerStorageService) {
 		this.chromeDriverService = chromeDriverService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
 		this.textFileService = textFileService;
 		this.mcpService = mcpService;
+		this.innerStorageService = innerStorageService;
 	}
 
 	public PlanningCoordinator createPlanningCoordinator(String planId) {
@@ -155,7 +159,7 @@ public class PlanningFactory {
 		List<ToolCallBiFunctionDef> toolDefinitions = new ArrayList<>();
 
 		// 添加所有工具定义
-		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService));
+		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService));
 		toolDefinitions.add(new TerminateTool(planId));
 		toolDefinitions.add(new Bash(manusProperties));
 		toolDefinitions.add(new DocLoaderTool());
@@ -176,7 +180,7 @@ public class PlanningFactory {
 
 		// 为每个工具创建 FunctionToolCallback
 		for (ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
-			FunctionToolCallback functionToolcallback = FunctionToolCallback
+			FunctionToolCallback<?, ?> functionToolcallback = FunctionToolCallback
 				.builder(toolDefinition.getName(), toolDefinition)
 				.description(toolDefinition.getDescription())
 				.inputSchema(toolDefinition.getParameters())

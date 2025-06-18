@@ -33,10 +33,8 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ScrollAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
-import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
-import com.alibaba.cloud.ai.example.manus.tool.textOperator.AbstractSmartFileOperator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
@@ -50,40 +48,23 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class BrowserUseTool extends AbstractSmartFileOperator implements ToolCallBiFunctionDef {
+public class BrowserUseTool  implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
 	private final ChromeDriverService chromeDriverService;
 
-	private final String workingDirectoryPath;
+	private final InnerStorageService innerStorageService;
 
 	private String planId;
 
 	// Initialize ObjectMapper instance
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
-	public BrowserUseTool(ChromeDriverService chromeDriverService) {
+	public BrowserUseTool(ChromeDriverService chromeDriverService, InnerStorageService innerStorageService) {
 		this.chromeDriverService = chromeDriverService;
-		ManusProperties manusProperties = chromeDriverService.getManusProperties();
-		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+		this.innerStorageService = innerStorageService;
 	}
-
-	@Override
-	protected String getWorkingDirectoryPath() {
-		return workingDirectoryPath;
-	}
-
-	@Override
-	protected String getCurrentPlanId() {
-		return planId;
-	}
-
-	@Override
-	protected InnerStorageService getInnerStorageService() {
-		return chromeDriverService.getInnerStorageService();
-	}
-
 	public DriverWrapper getDriver() {
 		return chromeDriverService.getDriver(planId);
 	}
@@ -227,14 +208,14 @@ public class BrowserUseTool extends AbstractSmartFileOperator implements ToolCal
 		return functionTool;
 	}
 
-	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService) {
-		BrowserUseTool instance = new BrowserUseTool(chromeDriverService);
+	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService, InnerStorageService innerStorageService) {
+		BrowserUseTool instance = new BrowserUseTool(chromeDriverService, innerStorageService);
 		return instance;
 	}
 
 	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(
-			ChromeDriverService chromeDriverService) {
-		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
+			ChromeDriverService chromeDriverService, InnerStorageService innerStorageService) {
+		return FunctionToolCallback.builder(name, getInstance(chromeDriverService, innerStorageService))
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
@@ -287,17 +268,23 @@ public class BrowserUseTool extends AbstractSmartFileOperator implements ToolCal
 				case "get_html": {
 					result = new GetHtmlAction(this).execute(requestVO);
 					// HTML内容通常很长，使用智能处理
-					return processResult(result, "get_html", requestVO.getUrl());
+					InnerStorageService.SmartProcessResult processedResult = 
+						innerStorageService.processContent(planId, result.getOutput());
+					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "get_text": {
 					result = new GetTextAction(this).execute(requestVO);
 					// 文本内容可能很长，使用智能处理
-					return processResult(result, "get_text", requestVO.getUrl());
+					InnerStorageService.SmartProcessResult processedResult = 
+						innerStorageService.processContent(planId, result.getOutput());
+					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "execute_js": {
 					result = new ExecuteJsAction(this).execute(requestVO);
 					// JS执行结果可能很长，使用智能处理
-					return processResult(result, "execute_js", "javascript");
+					InnerStorageService.SmartProcessResult processedResult = 
+						innerStorageService.processContent(planId, result.getOutput());
+					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "scroll": {
 					result = new ScrollAction(this).execute(requestVO);
@@ -332,7 +319,9 @@ public class BrowserUseTool extends AbstractSmartFileOperator implements ToolCal
 			}
 			
 			// 对于其他操作，也进行智能处理（但阈值通常不会超过）
-			return processResult(result, action, requestVO.getUrl());
+			InnerStorageService.SmartProcessResult processedResult = 
+				innerStorageService.processContent(planId, result.getOutput());
+			return new ToolExecuteResult(processedResult.getSummary());
 		}
 		catch (Exception e) {
 			log.error("Browser action '" + action + "' failed", e);

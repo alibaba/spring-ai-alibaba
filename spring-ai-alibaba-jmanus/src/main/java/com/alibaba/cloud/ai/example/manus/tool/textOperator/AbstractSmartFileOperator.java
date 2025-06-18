@@ -38,7 +38,7 @@ public abstract class AbstractSmartFileOperator {
 	private static final Logger log = LoggerFactory.getLogger(AbstractSmartFileOperator.class);
 
 	// 默认阈值：2KB
-	private static final int DEFAULT_CONTENT_THRESHOLD = 10;
+	private static final int DEFAULT_CONTENT_THRESHOLD = 3000;
 
 	// 存储计划ID对应的内容阈值配置
 	private final Map<String, Integer> planThresholds = new ConcurrentHashMap<>();
@@ -116,13 +116,12 @@ public abstract class AbstractSmartFileOperator {
 			// 生成存储文件名
 			String storageFileName = generateStorageFileName(planId, operationType, fileName);
 
-			// 确保agent目录存在
-			String agentName = storageService.getPlanAgent(planId);
-			Path agentDir = storageService.getAgentDirectory(getWorkingDirectoryPath(), planId, agentName);
-			storageService.ensureDirectoryExists(agentDir);
+			// 确保计划目录存在 - 直接使用计划目录，移除 agent 子目录逻辑
+			Path planDir = storageService.getPlanDirectory(planId);
+			storageService.ensureDirectoryExists(planDir);
 
-			// 保存详细内容到 InnerStorage
-			Path storagePath = storageService.getFilePath(getWorkingDirectoryPath(), planId, storageFileName);
+			// 保存详细内容到 InnerStorage - 直接在计划目录下存储
+			Path storagePath = planDir.resolve(storageFileName);
 			saveDetailedContentToStorage(storagePath, content, operationType, fileName);
 
 			// 生成内容ID
@@ -237,7 +236,7 @@ public abstract class AbstractSmartFileOperator {
 		// 清理 InnerStorage 中的相关文件
 		try {
 			InnerStorageService storageService = getInnerStorageService();
-			storageService.cleanupPlan(getWorkingDirectoryPath(), planId);
+			storageService.cleanupPlan(planId);
 			log.info("Cleaned up plan resources: {}", planId);
 		}
 		catch (Exception e) {

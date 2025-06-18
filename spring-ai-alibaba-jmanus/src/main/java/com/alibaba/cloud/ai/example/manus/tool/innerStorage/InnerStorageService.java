@@ -19,9 +19,9 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -36,10 +36,11 @@ public class InnerStorageService {
 
 	private final ManusProperties manusProperties;
 
-	private final Map<String, String> planAgentCache = new ConcurrentHashMap<>();
+	private final String workingDirectoryPath;
 
 	public InnerStorageService(ManusProperties manusProperties) {
 		this.manusProperties = manusProperties;
+		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 	}
 
 	public ManusProperties getManusProperties() {
@@ -49,35 +50,27 @@ public class InnerStorageService {
 	/**
 	 * 获取内部存储的根目录路径
 	 */
-	public Path getInnerStorageRoot(String workingDirectoryPath) {
+	public Path getInnerStorageRoot() {
 		return Paths.get(workingDirectoryPath, "inner_storage");
 	}
 
 	/**
 	 * 获取计划目录路径
 	 */
-	public Path getPlanDirectory(String workingDirectoryPath, String planId) {
-		return getInnerStorageRoot(workingDirectoryPath).resolve(planId);
+	public Path getPlanDirectory(String planId) {
+		return getInnerStorageRoot().resolve(planId);
 	}
 
 	/**
 	 * 获取Agent目录路径
 	 */
-	public Path getAgentDirectory(String workingDirectoryPath, String planId, String agentName) {
+	public Path getAgentDirectory(String planId, String agentName) {
 		if (agentName == null || agentName.trim().isEmpty()) {
 			agentName = "default";
 		}
-		return getPlanDirectory(workingDirectoryPath, planId).resolve(agentName);
+		return getPlanDirectory(planId).resolve(agentName);
 	}
 
-	/**
-	 * 获取文件路径
-	 */
-	public Path getFilePath(String workingDirectoryPath, String planId, String fileName) {
-		String agentName = getPlanAgent(planId);
-		Path agentDir = getAgentDirectory(workingDirectoryPath, planId, agentName);
-		return agentDir.resolve(fileName);
-	}
 
 	/**
 	 * 确保目录存在
@@ -90,29 +83,12 @@ public class InnerStorageService {
 	}
 
 	/**
-	 * 设置计划对应的Agent名称
-	 */
-	public void setPlanAgent(String planId, String agentName) {
-		if (planId != null && agentName != null) {
-			planAgentCache.put(planId, agentName);
-			log.debug("Set agent for plan {}: {}", planId, agentName);
-		}
-	}
-
-	/**
-	 * 获取计划对应的Agent名称
-	 */
-	public String getPlanAgent(String planId) {
-		return planAgentCache.getOrDefault(planId, "default");
-	}
-
-	/**
 	 * 获取目录下的所有文件信息
 	 */
-	public List<FileInfo> getDirectoryFiles(String workingDirectoryPath, String planId) {
+	public List<FileInfo> getDirectoryFiles(String planId) {
 		List<FileInfo> files = new ArrayList<>();
 		try {
-			Path planDir = getPlanDirectory(workingDirectoryPath, planId);
+			Path planDir = getPlanDirectory(planId);
 			if (!Files.exists(planDir)) {
 				return files;
 			}
@@ -140,10 +116,10 @@ public class InnerStorageService {
 	/**
 	 * 搜索自动存储的文件（以"auto_"开头的文件）
 	 */
-	public List<FileInfo> searchAutoStoredFiles(String workingDirectoryPath, String planId, String keyword) {
+	public List<FileInfo> searchAutoStoredFiles(String planId, String keyword) {
 		List<FileInfo> autoFiles = new ArrayList<>();
 		try {
-			Path planDir = getPlanDirectory(workingDirectoryPath, planId);
+			Path planDir = getPlanDirectory(planId);
 			if (!Files.exists(planDir)) {
 				return autoFiles;
 			}
@@ -192,8 +168,8 @@ public class InnerStorageService {
 	/**
 	 * 根据文件路径读取文件内容
 	 */
-	public String readFileContent(String workingDirectoryPath, String planId, String relativePath) throws IOException {
-		Path planDir = getPlanDirectory(workingDirectoryPath, planId);
+	public String readFileContent(String planId, String relativePath) throws IOException {
+		Path planDir = getPlanDirectory(planId);
 		Path filePath = planDir.resolve(relativePath);
 
 		if (!Files.exists(filePath)) {
@@ -206,9 +182,9 @@ public class InnerStorageService {
 	/**
 	 * 清理计划相关的文件
 	 */
-	public void cleanupPlan(String workingDirectoryPath, String planId) {
+	public void cleanupPlan(String planId) {
 		try {
-			Path planDir = getPlanDirectory(workingDirectoryPath, planId);
+			Path planDir = getPlanDirectory(planId);
 			if (Files.exists(planDir)) {
 				Files.walkFileTree(planDir, new SimpleFileVisitor<Path>() {
 					@Override
@@ -225,8 +201,6 @@ public class InnerStorageService {
 				});
 				log.info("Cleaned up files for plan: {}", planId);
 			}
-			// 从缓存中移除
-			planAgentCache.remove(planId);
 		}
 		catch (IOException e) {
 			log.error("Failed to cleanup plan {}", planId, e);
@@ -267,6 +241,141 @@ public class InnerStorageService {
 			return String.format("%s (%d bytes, %s)", relativePath, size, lastModified);
 		}
 
+	}
+
+	/**
+	 * 智能处理结果类
+	 */
+	public static class SmartProcessResult {
+		
+		private final String fileName;
+		
+		private final String summary;
+		
+		public SmartProcessResult(String fileName, String summary) {
+			this.fileName = fileName;
+			this.summary = summary;
+		}
+		
+		public String getFileName() {
+			return fileName;
+		}
+		
+		public String getSummary() {
+			return summary;
+		}
+		
+		@Override
+		public String toString() {
+			return String.format("SmartProcessResult{fileName='%s', summary='%s'}", fileName, summary);
+		}
+	}
+
+	/**
+	 * 智能处理内容，如果内容过长则自动存储并返回摘要
+	 * @param planId 计划ID
+	 * @param content 内容
+	 * @return 处理结果，包含文件名和摘要
+	 */
+	public SmartProcessResult processContent(String planId, String content) {
+		if (planId == null || content == null) {
+			return new SmartProcessResult(null, content);
+		}
+
+		// 默认阈值：2KB
+		int threshold = 2048;
+		
+		log.info("Processing content for plan {}: content length = {}, threshold = {}", planId, content.length(), threshold);
+
+		// 如果内容未超过阈值，直接返回
+		if (content.length() <= threshold) {
+			log.info("Content length {} is within threshold {}, returning original content", content.length(), threshold);
+			return new SmartProcessResult(null, content);
+		}
+
+		log.info("Content length {} exceeds threshold {}, triggering auto storage", content.length(), threshold);
+
+		try {
+			// 生成存储文件名
+			String storageFileName = generateStorageFileName(planId);
+
+			// 确保计划目录存在 - 直接存储在 planId 目录下，不使用 agent 子目录
+			Path planDir = getPlanDirectory(planId);
+			ensureDirectoryExists(planDir);
+
+			// 保存详细内容到 InnerStorage - 直接存储在计划目录下
+			Path storagePath = planDir.resolve(storageFileName);
+			saveDetailedContentToStorage(storagePath, content, planId);
+
+			// 生成简化摘要
+			String summary = generateSmartSummary(content, storageFileName);
+
+			log.info("Content exceeds threshold ({} bytes), saved to storage file: {}", threshold, storageFileName);
+
+			return new SmartProcessResult(storageFileName, summary);
+
+		} catch (IOException e) {
+			log.error("Failed to save content to storage for plan {}", planId, e);
+			// 如果保存失败，返回截断的内容
+			return new SmartProcessResult(null, content.substring(0, threshold) + "\n\n... (内容过长，已截断)");
+		}
+	}
+
+	/**
+	 * 生成存储文件名 - 格式：planId_时间戳_随机4位数.md
+	 */
+	private String generateStorageFileName(String planId) {
+		String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+		// 生成4位随机数
+		int randomNum = (int) (Math.random() * 9000) + 1000; // 1000-9999
+		return String.format("%s_%s_%04d.md", planId, timestamp, randomNum);
+	}
+
+	/**
+	 * 保存详细内容到存储
+	 */
+	private void saveDetailedContentToStorage(Path storagePath, String content, String planId) throws IOException {
+		StringBuilder detailedContent = new StringBuilder();
+		detailedContent.append(content);
+
+		Files.writeString(storagePath, detailedContent.toString(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+	}
+
+	/**
+	 * 生成智能摘要
+	 */
+	private String generateSmartSummary(String content, String storageFileName) {
+		StringBuilder summary = new StringBuilder();
+
+		summary.append("📄 内容已自动存储\n\n");
+		summary.append("📊 内容统计:\n");
+		summary.append("  - 总字符数: ").append(content.length()).append("\n");
+		summary.append("  - 总行数: ").append(content.split("\n").length).append("\n");
+
+		// 添加内容预览（前几行）
+		String[] lines = content.split("\n");
+		int previewLines = Math.min(5, lines.length);
+		summary.append("  - 内容预览 (前").append(previewLines).append("行):\n");
+		for (int i = 0; i < previewLines; i++) {
+			String line = lines[i];
+			if (line.length() > 80) {
+				line = line.substring(0, 80) + "...";
+			}
+			summary.append("    ").append(i + 1).append(": ").append(line).append("\n");
+		}
+
+		if (lines.length > previewLines) {
+			summary.append("    ... (还有 ").append(lines.length - previewLines).append(" 行)\n");
+		}
+
+		summary.append("\n💾 完整内容已自动保存:\n");
+		summary.append("  - 存储文件: ").append(storageFileName).append("\n\n");
+		summary.append("💡 使用 InnerStorageTool 的以下操作获取详细内容:\n");
+		summary.append("  - list_contents: 查看所有存储的内容\n");
+		summary.append("  - get_content: 根据文件名获取具体内容\n");
+		summary.append("  - search: 搜索关键词");
+
+		return summary.toString();
 	}
 
 }
