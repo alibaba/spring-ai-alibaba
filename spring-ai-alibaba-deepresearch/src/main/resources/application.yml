@@ -22,8 +22,8 @@ spring:
 #          connections:
 #            weather_mcp_server:
 #              url: http://localhost:8888
-        stdio:
-          servers-configuration: classpath:mcp-servers.json
+#        stdio:
+#          servers-configuration: classpath:mcp-servers.json
         toolcallback:
           enabled: true
     alibaba:
@@ -35,12 +35,15 @@ spring:
           enabled: true
           api-key: ${JINA_API_KEY}
       deepresearch:
+        mcp:
+          enabled: true
+          config-location: classpath:mcp-config.json
         parallel-node-count:
           researcher: 5
           coder: 5
-        mcp-client-mapping:
-          researchAgent:
-            - amap-maps
+#        mcp-client-mapping:
+#          researchAgent:
+#            - amap-maps
 #          coderAgent:
 #            - amap-maps
 #            - weather_mcp_server
