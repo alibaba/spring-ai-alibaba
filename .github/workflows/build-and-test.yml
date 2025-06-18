@@ -47,14 +47,14 @@ jobs:
   docker-pull:
     if: (github.repository == 'alibaba/spring-ai-alibaba')
     runs-on: ubuntu-22.04
-    needs: [check-style]
+    needs: [format, check-style]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: docker pull python:3.10
   test:
     if: (github.repository == 'alibaba/spring-ai-alibaba')
     runs-on: ubuntu-22.04
-    needs: [format]
+    needs: [docker-pull, format, check-style]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
@@ -62,7 +62,7 @@ jobs:
   build:
     if: (github.repository == 'alibaba/spring-ai-alibaba')
     runs-on: ubuntu-22.04
-    needs: [format, test]
+    needs: [format, check-style, test]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
