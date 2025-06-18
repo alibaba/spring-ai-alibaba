@@ -68,7 +68,7 @@ public class AsyncGeneratorUtils {
 	public static <T> AsyncGenerator<T> createMergedGenerator(List<AsyncGenerator<T>> generators,
 			Map<String, KeyStrategy> keyStrategyMap) {
 		return new AsyncGenerator<>() {
-			// Switch to ReentrantLock to simplify lock management
+			// Switch to StampedLock to simplify lock management
 			private final StampedLock lock = new StampedLock();
 
 			private AtomicInteger pollCounter = new AtomicInteger(0);
