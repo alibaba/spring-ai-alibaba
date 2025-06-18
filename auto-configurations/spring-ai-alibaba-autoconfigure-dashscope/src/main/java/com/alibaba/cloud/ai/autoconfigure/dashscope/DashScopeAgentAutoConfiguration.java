@@ -55,8 +55,8 @@ public class DashScopeAgentAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public DashScopeAgentApi dashscopeAgentApi(DashScopeConnectionProperties commonProperties,
-											   DashScopeAgentProperties agentProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-											   ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+			DashScopeAgentProperties agentProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, agentProperties, "agent");
 
