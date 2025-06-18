@@ -113,8 +113,11 @@ public interface StreamingChatGenerator {
 					var lastMessage = lastResponse.getResult().getOutput();
 
 					var newMessage = new AssistantMessage(
-							ofNullable(currentMessage.getText()).map(text -> lastMessage.getText().concat(text))
-								.orElse(lastMessage.getText()),
+                            Objects.requireNonNull(ofNullable(currentMessage.getText()).map(text -> {
+                                        assert lastMessage.getText() != null;
+                                        return lastMessage.getText().concat(text);
+                                    })
+                                    .orElse(lastMessage.getText())),
 							currentMessage.getMetadata(), currentMessage.getToolCalls(), currentMessage.getMedia());
 
 					var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
@@ -123,7 +126,7 @@ public interface StreamingChatGenerator {
 				});
 			};
 
-			var processedFlux = flux.doOnNext(next -> mergeMessage.accept(next))
+			var processedFlux = flux.doOnNext(mergeMessage::accept)
 				.map(next -> new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState));
 
 			return FlowGenerator.fromPublisher(FlowAdapters.toFlowPublisher(processedFlux),

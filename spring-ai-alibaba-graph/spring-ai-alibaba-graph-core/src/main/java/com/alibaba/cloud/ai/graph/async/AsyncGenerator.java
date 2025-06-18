@@ -210,8 +210,10 @@ public interface AsyncGenerator<E> extends Iterable<E>, AsyncGeneratorOperators<
 			this.resultValue = resultValue;
 		}
 
-		public Object resultValue() {
-			return resultValue;
+		public Optional<Object> resultValue() {
+			return resultValue == null ?
+					Optional.empty() :
+					Optional.of(resultValue);
 		}
 
 		public boolean isDone() {
