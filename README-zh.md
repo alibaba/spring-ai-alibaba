@@ -48,11 +48,11 @@ Spring AI Alibaba 提供以下核心能力，帮助开发者快速构建自己�
 </dependencies>
 ```
 
-请查看官网 [快速开始](https://java2ai.com/docs/1.0.0-M6.1/get-started/) 了解详细示例讲解。更多 starter 包括 spring-ai-alibaba-graph-core、spring-ai-alibaba-starter-nl2sql、spring-ai-alibaba-starter-nacos-mcp-client 等用法，请参考官方文档资料。
+请查看官网 [快速开始](https://java2ai.com/docs/1.0.0.2/get-started/chatbot) 了解详细示例讲解。更多 starter 包括 spring-ai-alibaba-graph-core、spring-ai-alibaba-starter-nl2sql、spring-ai-alibaba-starter-nacos-mcp-client 等用法，请参考官方文档资料。
 
 > 注意：
 > 1. 运行项目需要 JDK 17 及以上版本。
-> 2. 如果出现 spring-ai 相关依赖下载问题，请参考官网文档配置 spring-milestones Maven 仓库。
+> 2. 如果出现 spring-ai 相关依赖下载问题，请参考[官网 FAQ 文档](https://java2ai.com/docs/1.0.0.2/faq)配置 spring-milestones Maven 仓库。
 
 ### 体验官方 Playground 示例
 
