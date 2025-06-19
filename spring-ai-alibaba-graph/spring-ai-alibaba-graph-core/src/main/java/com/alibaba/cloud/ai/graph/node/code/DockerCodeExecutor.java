@@ -65,9 +65,9 @@ public class DockerCodeExecutor implements CodeExecutor {
 		// Create Docker client
 		DockerHttpClient httpClient = new ZerodepDockerHttpClient.Builder()
 			.dockerHost(new URI(codeExecutionConfig.getDockerHost()))
-			.maxConnections(100)
-			.connectionTimeout(Duration.ofSeconds(30))
-			.responseTimeout(Duration.ofSeconds(45))
+			.maxConnections(codeExecutionConfig.getMaxConnections())
+			.connectionTimeout(Duration.ofSeconds(codeExecutionConfig.getConnectionTimeout()))
+			.responseTimeout(Duration.ofSeconds(codeExecutionConfig.getResponseTimeout()))
 			.build();
 		try (DockerClient dockerClient = DockerClientBuilder.getInstance().withDockerHttpClient(httpClient).build()) {
 
