@@ -687,18 +687,17 @@
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>2.29.0</version>
                 <configuration>
-                    <skip>false</skip>
                     <java>
                         <removeUnusedImports></removeUnusedImports>
                     </java>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>spotless-check</id>
+                        <id>spotless-apply</id>
                         <goals>
                             <goal>apply</goal>
                         </goals>
-                        <phase>validate</phase>
+                        <phase>process-sources</phase>
                     </execution>
                 </executions>
             </plugin>
