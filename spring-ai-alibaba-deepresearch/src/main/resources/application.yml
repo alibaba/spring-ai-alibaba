@@ -3,6 +3,19 @@ server:
 spring:
   application:
     name: spring-ai-alibaba-deepresearch
+  # Redis 配置
+  data:
+    redis:
+      host: 10.10.3.131
+      port: 6379
+      password: difyai123456
+      timeout: 3000 # 连接超时时间（毫秒）
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
   ai:
     openai:
       api-key: ${AI_DASHSCOPE_API_KEY}
@@ -21,10 +34,10 @@ spring:
     mcp:
       client:
         type: async
-#        sse:
-#          connections:
-#            weather_mcp_server:
-#              url: http://localhost:8888
+        #        sse:
+        #          connections:
+        #            weather_mcp_server:
+        #              url: http://localhost:8888
         stdio:
           servers-configuration: classpath:mcp-servers.json
         toolcallback:
@@ -44,9 +57,9 @@ spring:
         mcp-client-mapping:
           researchAgent:
             - amap-maps
-#          coderAgent:
-#            - amap-maps
-#            - weather_mcp_server
+        #          coderAgent:
+        #            - amap-maps
+        #            - weather_mcp_server
         rag:
           enabled: true
           # 可以设置为 'simple' 或 'elasticsearch'

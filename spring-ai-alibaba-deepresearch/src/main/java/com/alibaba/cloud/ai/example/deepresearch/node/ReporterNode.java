@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.service.ReportRedisService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -48,19 +49,28 @@ public class ReporterNode implements NodeAction {
 
 	private final ChatClient chatClient;
 
+	private final ReportRedisService reportRedisService;
+
 	private static final String RESEARCH_FORMAT = "# Research Requirements\n\n## Task\n\n{0}\n\n## Description\n\n{1}";
 
 	private final String REPORT_FORMAT = "IMPORTANT: Structure your report according to the format in the prompt. Remember to include:\n\n1. Key Points - A bulleted list of the most important findings\n2. Overview - A brief introduction to the topic\n3. Detailed Analysis - Organized into logical sections\n4. Survey Note (optional) - For more comprehensive reports\n5. Key Citations - List all references at the end\n\nFor citations, DO NOT include inline citations in the text. Instead, place all citations in the 'Key Citations' section at the end using the format: `- [Source Title](URL)`. Include an empty line between each citation for better readability.\n\nPRIORITIZE USING MARKDOWN TABLES for data presentation and comparison. Use tables whenever presenting comparative data, statistics, features, or options. Structure tables with clear headers and aligned columns. Example table format:\n\n| Feature | Description | Pros | Cons |\n|---------|-------------|------|------|\n| Feature 1 | Description 1 | Pros 1 | Cons 1 |\n| Feature 2 | Description 2 | Pros 2 | Cons 2 |";
 
-	public ReporterNode(ChatClient.Builder chatClientBuilder) {
+	public ReporterNode(ChatClient.Builder chatClientBuilder, ReportRedisService reportRedisService) {
 		this.chatClient = chatClientBuilder.build();
+		this.reportRedisService = reportRedisService;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("reporter node is running.");
 		Plan currentPlan = state.value("current_plan", Plan.class)
-			.orElseThrow(() -> new IllegalArgumentException("current_plan is missing"));
+				.orElseThrow(() -> new IllegalArgumentException("current_plan is missing"));
+
+		// 从 OverAllState 中获取线程ID
+		String threadId = state.value("thread_id", String.class)
+				.orElseThrow(() -> new IllegalArgumentException("thread_id is missing from state"));
+		logger.info("Thread ID from state: {}", threadId);
+
 		// 1. 添加消息
 		List<Message> messages = new ArrayList<>();
 		// 1.1 添加预置提示消息
@@ -86,13 +96,23 @@ public class ReporterNode implements NodeAction {
 		var streamResult = chatClient.prompt().messages(messages).stream().chatResponse();
 
 		var generator = StreamingChatGenerator.builder()
-			.startingNode("reporter_llm_stream")
-			.startingState(state)
-			.mapResult(response -> Map.of("final_report",
-					Objects.requireNonNull(response.getResult().getOutput().getText())))
-			.build(streamResult);
+				.startingNode("reporter_llm_stream")
+				.startingState(state)
+				.mapResult(response -> {
+					String finalReport = Objects.requireNonNull(response.getResult().getOutput().getText());
+					// 将报告保存到 Redis
+					try {
+						reportRedisService.saveReport(threadId, finalReport);
+						logger.info("报告已成功保存到 Redis，线程ID: {}", threadId);
+					} catch (Exception e) {
+						logger.error("保存报告到 Redis 失败，线程ID: {}", threadId, e);
+					}
+					return Map.of("final_report", finalReport, "thread_id", threadId);
+				})
+				.build(streamResult);
 		Map<String, Object> resultMap = new HashMap<>();
 		resultMap.put("final_report", generator);
+		resultMap.put("thread_id", threadId);
 		return resultMap;
 	}
 
