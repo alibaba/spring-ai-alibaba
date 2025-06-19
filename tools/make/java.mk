@@ -35,6 +35,11 @@ format-check: ## Format Check the code
 	@$(LOG_TARGET)
 	mvn spring-javaformat:validate
 
+.PHONY: spotless-apply
+spotless-apply: ## Run spotless and apply changes
+	@$(LOG_TARGET)
+	mvn spotless:apply
+
 .PHONY: checkstyle-check
 checkstyle-check: ## Checkstyle Check the code and output to target/checkstyle-report.xml
 	@$(LOG_TARGET)
