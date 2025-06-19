@@ -275,9 +275,10 @@ public class InnerStorageService {
 	 * 智能处理内容，如果内容过长则自动存储并返回摘要
 	 * @param planId 计划ID
 	 * @param content 内容
+	 * @param callingMethod 调用的方法名
 	 * @return 处理结果，包含文件名和摘要
 	 */
-	public SmartProcessResult processContent(String planId, String content) {
+	public SmartProcessResult processContent(String planId, String content, String callingMethod) {
 		if (planId == null || content == null) {
 			return new SmartProcessResult(null, content);
 		}
@@ -308,7 +309,7 @@ public class InnerStorageService {
 			saveDetailedContentToStorage(storagePath, content, planId);
 
 			// 生成简化摘要
-			String summary = generateSmartSummary(content, storageFileName);
+			String summary = generateSmartSummary(content, storageFileName, callingMethod);
 
 			log.info("Content exceeds threshold ({} bytes), saved to storage file: {}", threshold, storageFileName);
 
@@ -344,10 +345,15 @@ public class InnerStorageService {
 	/**
 	 * 生成智能摘要
 	 */
-	private String generateSmartSummary(String content, String storageFileName) {
+	private String generateSmartSummary(String content, String storageFileName, String callingMethod) {
 		StringBuilder summary = new StringBuilder();
 
-		summary.append("调用函数成功，但内容过长，所以自动通过InnerStorageTool 做了存储，以减少上下文");
+		// 如果提供了调用方法，添加成功调用信息
+		if (callingMethod != null && !callingMethod.trim().isEmpty()) {
+			summary.append("成功调用 ").append(callingMethod).append(" 函数:\n\n");
+		}
+
+		summary.append("但函数返回的内容过长，所以自动通过 inner_storage_tool 工具存储到了文件里");
 		summary.append("\n\n");
 		summary.append("存储文件名: ").append(storageFileName).append("\n\n");
 
@@ -357,8 +363,8 @@ public class InnerStorageService {
 		summary.append("  - 总字符数: ").append(content.length()).append("\n");
 		summary.append("  - 总行数: ").append(lines.length).append("\n\n");
 
-		summary.append("💡 你可以使用 InnerStorageTool 的以下方法来获取你关心的相关信息:\n");
-		summary.append("  - get_content: 获取完整内容\n");
+		summary.append("💡 你可以使用 inner_storage_tool 的下述方法来获取你关心的相关信息:\n");
+		summary.append("  - get_content: 获取相关的内容\n");
 		summary.append("  - get_lines: 获取指定行号的内容");
 
 		return summary.toString();

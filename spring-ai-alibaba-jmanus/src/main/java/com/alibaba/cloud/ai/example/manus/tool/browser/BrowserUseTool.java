@@ -387,21 +387,21 @@ public class BrowserUseTool  implements ToolCallBiFunctionDef {
 					result = new GetHtmlAction(this).execute(requestVO);
 					// HTML内容通常很长，使用智能处理
 					InnerStorageService.SmartProcessResult processedResult = 
-						innerStorageService.processContent(planId, result.getOutput());
+						innerStorageService.processContent(planId, result.getOutput(), "get_html");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "get_text": {
 					result = new GetTextAction(this).execute(requestVO);
 					// 文本内容可能很长，使用智能处理
 					InnerStorageService.SmartProcessResult processedResult = 
-						innerStorageService.processContent(planId, result.getOutput());
+						innerStorageService.processContent(planId, result.getOutput(), "get_text");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "execute_js": {
 					result = new ExecuteJsAction(this).execute(requestVO);
 					// JS执行结果可能很长，使用智能处理
 					InnerStorageService.SmartProcessResult processedResult = 
-						innerStorageService.processContent(planId, result.getOutput());
+						innerStorageService.processContent(planId, result.getOutput(), "execute_js");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "scroll": {
@@ -438,7 +438,7 @@ public class BrowserUseTool  implements ToolCallBiFunctionDef {
 			
 			// 对于其他操作，也进行智能处理（但阈值通常不会超过）
 			InnerStorageService.SmartProcessResult processedResult = 
-				innerStorageService.processContent(planId, result.getOutput());
+				innerStorageService.processContent(planId, result.getOutput(), action);
 			return new ToolExecuteResult(processedResult.getSummary());
 		}
 		catch (Exception e) {
