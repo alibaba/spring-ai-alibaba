@@ -6,9 +6,9 @@ spring:
   # Redis 配置
   data:
     redis:
-      host: 10.10.3.131
+      host: localhost
       port: 6379
-      password: difyai123456
+      password: ${REDIS-PASSWORD}
       timeout: 3000 # 连接超时时间（毫秒）
       lettuce:
         pool:
