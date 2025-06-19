@@ -55,11 +55,9 @@ public class ReporterNode implements NodeAction {
 
 	private final String REPORT_FORMAT = "IMPORTANT: Structure your report according to the format in the prompt. Remember to include:\n\n1. Key Points - A bulleted list of the most important findings\n2. Overview - A brief introduction to the topic\n3. Detailed Analysis - Organized into logical sections\n4. Survey Note (optional) - For more comprehensive reports\n5. Key Citations - List all references at the end\n\nFor citations, DO NOT include inline citations in the text. Instead, place all citations in the 'Key Citations' section at the end using the format: `- [Source Title](URL)`. Include an empty line between each citation for better readability.\n\nPRIORITIZE USING MARKDOWN TABLES for data presentation and comparison. Use tables whenever presenting comparative data, statistics, features, or options. Structure tables with clear headers and aligned columns. Example table format:\n\n| Feature | Description | Pros | Cons |\n|---------|-------------|------|------|\n| Feature 1 | Description 1 | Pros 1 | Cons 1 |\n| Feature 2 | Description 2 | Pros 2 | Cons 2 |";
 
-
 	public ReporterNode(ChatClient reporterAgent, ReportRedisService reportRedisService) {
 		this.reporterAgent = reporterAgent;
 		this.reportRedisService = reportRedisService;
-
 	}
 
 	@Override
@@ -101,8 +99,8 @@ public class ReporterNode implements NodeAction {
 				.startingNode("reporter_llm_stream")
 				.startingState(state)
 				.mapResult(response -> {
-					Strin
-											try {
+					String finalReport = Objects.requireNonNull(response.getResult().getOutput().getText());
+					try {
 						reportRedisService.saveReport(threadId, finalReport);
 						logger.info("报告已成功保存到 Redis，线程ID: {}", threadId);
 					} catch (Exception e) {
