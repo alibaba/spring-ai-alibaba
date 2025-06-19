@@ -19,23 +19,28 @@ package com.alibaba.cloud.ai.example.deepresearch.config;
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
-import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.InformationNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportRedisService;
 
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
@@ -62,7 +67,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * @since 2025/5/17 17:10
  */
 @Configuration
-@EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class, RagProperties.class })
+@EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class,
+		McpAssignNodeProperties.class, RagProperties.class })
 public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
@@ -77,6 +83,15 @@ public class DeepResearchConfiguration {
 	private ChatClient researchAgent;
 
 	@Autowired
+	private ChatClient reporterAgent;
+
+	@Autowired
+	private ChatClient coordinatorAgent;
+
+	@Autowired
+	private ChatClient plannerAgent;
+
+	@Autowired
 	private DeepResearchProperties deepResearchProperties;
 
 	@Autowired(required = false)
@@ -89,13 +104,14 @@ public class DeepResearchConfiguration {
 	private ReportRedisService reportRedisService;
 
 	@Bean
-	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
+	public StateGraph deepResearch(ChatClient researchAgent) throws GraphStateException {
 
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			// 条件边控制：跳转下一个节点
 			keyStrategyHashMap.put("coordinator_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("planner_next_node", new ReplaceStrategy());
+			keyStrategyHashMap.put("information_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("human_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("research_team_next_node", new ReplaceStrategy());
 			// 用户输入
@@ -132,15 +148,16 @@ public class DeepResearchConfiguration {
 
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
-				.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
+				.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
 				.addNode("background_investigator",
 						node_async(new BackgroundInvestigationNode(tavilySearchService, jinaCrawlerService)))
-				.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
+				.addNode("planner", node_async((new PlannerNode(plannerAgent))))
+				.addNode("information", node_async((new InformationNode())))
 				.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 				.addNode("research_team", node_async(new ResearchTeamNode()))
 				.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-				.addNode("reporter", node_async((new ReporterNode(chatClientBuilder, reportRedisService))))
-				.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, chatClientBuilder)));
+				.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportRedisService))))
+				.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
 
 		// 添加并行节点块
 		configureParallelNodes(stateGraph);
@@ -149,7 +166,8 @@ public class DeepResearchConfiguration {
 				.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
 						Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 				.addEdge("background_investigator", "planner")
-				.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
+				.addEdge("planner", "information")
+				.addConditionalEdges("information", edge_async(new InformationDispatcher()),
 						Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
 								"research_team", "research_team", END, END))
 				.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
