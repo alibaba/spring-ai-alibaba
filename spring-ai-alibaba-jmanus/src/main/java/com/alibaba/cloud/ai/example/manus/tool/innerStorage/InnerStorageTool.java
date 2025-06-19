@@ -45,6 +45,9 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 
 	private String planId;
 
+	// get_lines 操作的最大行数限制
+	private static final int MAX_LINES_LIMIT = 100;
+
 	public InnerStorageTool(InnerStorageService innerStorageService) {
 		this.innerStorageService = innerStorageService;
 	}
@@ -64,12 +67,12 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 			自动管理基于planID，提供简化的文件操作：
 			- append: 向特定文件文件追加内容（自动创建文件和目录）
 			- replace: 替换文件中的特定文本
-			- get_lines: 获取文件的指定行号范围内容
-			- get_content: 根据文件名或索引获取详细内容
+			- get_lines: 获取文件的指定行号范围内容（单次最多%d行）
+			- get_content: 根据文件名或索引获取详细内容，**必须提供** query_key 和 columns 参数进行AI智能提取和结构化输出
 
 			当返回内容过长时，工具会自动存储详细内容并返回摘要和内容ID，以降低上下文压力。
 
-			""";
+			""".formatted(MAX_LINES_LIMIT);
 
 	private static final String PARAMETERS = """
 			{
@@ -148,9 +151,20 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 		                "file_name": {
 		                    "type": "string",
 		                    "description": "文件名（带扩展名）"
+		                },
+		                "query_key": {
+		                    "type": "string",
+		                    "description": "相关问题或希望提取的内容关键词"
+		                },
+		                "columns": {
+		                    "type": "array",
+		                    "items": {
+		                        "type": "string"
+		                    },
+		                    "description": "返回结果的列名，用于结构化输出，返回的结果 可以是一个列表"
 		                }
 		            },
-		            "required": ["action", "file_name"],
+		            "required": ["action", "file_name", "query_key", "columns"],
 		            "additionalProperties": false
 		        }
 			    ]
@@ -246,15 +260,14 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 					String fileName = (String) toolInputMap.get("file_name");
 					Integer startLine = (Integer) toolInputMap.get("start_line");
 					Integer endLine = (Integer) toolInputMap.get("end_line");
-					ToolExecuteResult result = getFileLines(fileName, startLine, endLine);
-					// 使用新的智能处理方法
-					InnerStorageService.SmartProcessResult processedResult = 
-						innerStorageService.processContent(planId, result.getOutput());
-					yield new ToolExecuteResult(processedResult.getSummary());
+					yield getFileLines(fileName, startLine, endLine);
 				}
 				case "get_content" -> {
 					String fileName = (String) toolInputMap.get("file_name");
-					yield getStoredContent(fileName);
+					String queryKey = (String) toolInputMap.get("query_key");
+					@SuppressWarnings("unchecked")
+					List<String> columns = (List<String>) toolInputMap.get("columns");
+					yield getStoredContent(fileName, queryKey, columns);
 				}
 				default -> new ToolExecuteResult("未知操作: " + action + "。支持的操作: append, replace, get_lines, get_content");
 			};
@@ -367,6 +380,13 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 				return new ToolExecuteResult("起始行号不能大于或等于结束行号");
 			}
 
+			// 检查行数限制
+			int requestedLines = end - start;
+			if (requestedLines > MAX_LINES_LIMIT) {
+				return new ToolExecuteResult(String.format("请求的行数 %d 超过最大限制 %d 行。请减少行数范围或使用多次调用获取内容。", 
+					requestedLines, MAX_LINES_LIMIT));
+			}
+
 			StringBuilder result = new StringBuilder();
 			result.append(String.format("文件: %s (第%d-%d行，共%d行)\n", fileName, start + 1, end, lines.size()));
 			result.append("=".repeat(50)).append("\n");
@@ -388,15 +408,17 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 
 
 	/**
-	 * 根据文件名或索引获取存储的内容
+	 * 根据文件名或索引获取存储的内容，支持AI智能提取和结构化输出
 	 */
-
-	private ToolExecuteResult getStoredContent(String fileName) {
+	private ToolExecuteResult getStoredContent(String fileName, String queryKey, List<String> columns) {
 		if (fileName == null || fileName.trim().isEmpty()) {
 			return new ToolExecuteResult("错误：file_name参数是必需的");
 		}
 
 		try {
+			String fileContent = null;
+			String actualFileName = null;
+			
 			// 尝试按数字索引获取文件内容
 			try {
 				int index = Integer.parseInt(fileName) - 1; // 转换为0基索引
@@ -404,18 +426,12 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 
 				if (index >= 0 && index < files.size()) {
 					InnerStorageService.FileInfo file = files.get(index);
-					// 使用 planDirectory + relativePath 来构建完整路径
 					Path planDir = innerStorageService.getPlanDirectory(planId);
 					Path filePath = planDir.resolve(file.getRelativePath());
 
 					if (Files.exists(filePath)) {
-						String content = Files.readString(filePath);
-						String fullContent = String.format("📁 文件: %s\n%s\n%s", 
-							file.getRelativePath(), "=".repeat(50), content);
-						// 使用新的智能处理方法
-						InnerStorageService.SmartProcessResult processedResult = 
-							innerStorageService.processContent(planId, fullContent);
-						return new ToolExecuteResult(processedResult.getSummary());
+						fileContent = Files.readString(filePath);
+						actualFileName = file.getRelativePath();
 					}
 				}
 			}
@@ -428,25 +444,92 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 						Path filePath = planDir.resolve(file.getRelativePath());
 
 						if (Files.exists(filePath)) {
-							String content = Files.readString(filePath);
-							String fullContent = String.format("📁 文件: %s\n%s\n%s",
-								file.getRelativePath(), "=".repeat(50), content);
-							// 使用新的智能处理方法
-							InnerStorageService.SmartProcessResult processedResult = 
-								innerStorageService.processContent(planId, fullContent);
-							return new ToolExecuteResult(processedResult.getSummary());
+							fileContent = Files.readString(filePath);
+							actualFileName = file.getRelativePath();
+							break;
 						}
 					}
 				}
 			}
 
-			return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内容。" +
-				"请使用文件索引号（如 '1', '2'）或文件名的一部分来查找内容。");
+			if (fileContent == null) {
+				return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内容。" +
+					"请使用文件索引号（如 '1', '2'）或文件名的一部分来查找内容。");
+			}
+
+			// 严格要求queryKey和columns参数 - 不提供向后兼容
+			if (queryKey == null || queryKey.trim().isEmpty()) {
+				return new ToolExecuteResult("错误：query_key参数是必需的，用于指定要提取的内容关键词");
+			}
+			if (columns == null || columns.isEmpty()) {
+				return new ToolExecuteResult("错误：columns参数是必需的，用于指定返回结果的结构化列名");
+			}
+
+			// 使用AI进行智能提取和结构化输出
+			return performAIExtraction(actualFileName, fileContent, queryKey, columns);
 
 		}
 		catch (IOException e) {
 			log.error("获取存储内容失败", e);
 			return new ToolExecuteResult("获取内容失败: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * 使用AI进行内容提取和结构化输出
+	 */
+	private ToolExecuteResult performAIExtraction(String fileName, String content, String queryKey, List<String> columns) {
+		try {
+			// 构建AI提取提示
+			StringBuilder prompt = new StringBuilder();
+			prompt.append("请从以下文件内容中提取相关信息：\n\n");
+			prompt.append("文件名: ").append(fileName).append("\n");
+			prompt.append("文件内容:\n").append(content).append("\n\n");
+			
+			if (queryKey != null && !queryKey.trim().isEmpty()) {
+				prompt.append("提取关键词/问题: ").append(queryKey).append("\n");
+			}
+			
+			if (columns != null && !columns.isEmpty()) {
+				prompt.append("请按以下列结构输出结果: ").append(String.join(", ", columns)).append("\n");
+				prompt.append("输出格式: JSON数组，每个元素包含指定的列字段\n\n");
+			} else {
+				prompt.append("请以列表形式返回相关信息\n\n");
+			}
+			
+			prompt.append("请确保输出是有用的、结构化的信息。");
+			
+			// 使用InnerStorageService的智能处理来生成AI提取结果
+			String aiPrompt = prompt.toString();
+			
+			// 创建一个包含AI提示和原始内容的组合内容
+			String combinedContent = String.format("""
+				=== AI提取请求 ===
+				%s
+				
+				=== 处理状态 ===
+				✅ 文件已读取: %s
+				✅ 提取关键词: %s
+				✅ 输出列: %s
+				
+				=== 建议 ===
+				请基于上述文件内容和提取要求，返回结构化的信息列表。
+				""", 
+				aiPrompt,
+				fileName,
+				queryKey != null ? queryKey : "无特定关键词",
+				columns != null && !columns.isEmpty() ? String.join(", ", columns) : "自由格式"
+			);
+			
+			// 使用智能处理方法
+			InnerStorageService.SmartProcessResult processedResult = 
+				innerStorageService.processContent(planId, combinedContent);
+			
+			return new ToolExecuteResult(processedResult.getSummary());
+
+		} catch (Exception e) {
+			log.error("AI提取失败", e);
+			return new ToolExecuteResult("AI提取失败: " + e.getMessage());
 		}
 	}
 
