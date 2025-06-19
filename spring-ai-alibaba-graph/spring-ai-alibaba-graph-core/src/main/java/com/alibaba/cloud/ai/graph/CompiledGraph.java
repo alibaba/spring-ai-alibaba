@@ -119,7 +119,10 @@ public class CompiledGraph {
 	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) throws GraphStateException {
 		this.stateGraph = stateGraph;
 		this.keyStrategyMap = Objects.isNull(stateGraph.getOverAllStateFactory())
-				? stateGraph.getKeyStrategyFactory().apply()
+				? stateGraph.getKeyStrategyFactory().apply().entrySet()
+				.stream()
+				.map(e -> Map.entry(e.getKey(), e.getValue()))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
 				: stateGraph.getOverAllStateFactory().create().keyStrategies();
 
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);

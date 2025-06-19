@@ -759,12 +759,11 @@ public class StateGraphTest {
 
 	@Test
 	public void testCommandEdgeGraph() throws Exception {
-		StateGraph workflow = new StateGraph(() -> {
-			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
-			keyStrategyHashMap.put("input", new ReplaceStrategy());
-			return keyStrategyHashMap;
-		}).addNode("agent_1", node_async(state -> {
+		StateGraph workflow = new StateGraph(() ->
+				Map.of("prop1", new ReplaceStrategy(),
+						"input", new ReplaceStrategy()))
+
+			.addNode("agent_1", node_async(state -> {
 			log.info("agent_1\n{}", state);
 
 			return Map.of("prop1", "agent_1");
