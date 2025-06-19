@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.example.manus.tool.innerStorage;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -61,15 +60,12 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 	private static final String TOOL_NAME = "inner_storage_tool";
 
 	private static final String TOOL_DESCRIPTION = """
-			内部存储工具，用于MapReduce流程中的中间数据管理。
-			自动管理基于planID和Agent的目录结构，提供简化的文件操作：
-			- append: 向文件追加内容（自动创建文件和目录）
+			内部存储工具，Agent流程内的数据管理。
+			自动管理基于planID，提供简化的文件操作：
+			- append: 向特定文件文件追加内容（自动创建文件和目录）
 			- replace: 替换文件中的特定文本
 			- get_lines: 获取文件的指定行号范围内容
-			- search: 在存储的内容中搜索关键词
-			- list_contents: 列出当前任务相关的所有内容ID和摘要
-			- get_content: 根据内容ID获取详细内容
-			- get_description: 获取保存的详细描述内容
+			- get_content: 根据文件名或索引获取详细内容
 
 			当返回内容过长时，工具会自动存储详细内容并返回摘要和内容ID，以降低上下文压力。
 
@@ -77,47 +73,87 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 
 	private static final String PARAMETERS = """
 			{
-			    "type": "object",
-			    "properties": {
-			        "action": {
-			            "type": "string",
-			            "description": "(required) 操作类型: 'append', 'replace', 'get_lines', 'search', 'list_contents', 'get_content', 'get_description'",
-			            "enum": ["append", "replace", "get_lines", "search", "list_contents", "get_content", "get_description"]
+			    "oneOf": [
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "append"
+			                },
+			                "file_name": {
+			                    "type": "string",
+			                    "description": "文件名（带扩展名）"
+			                },
+			                "content": {
+			                    "type": "string",
+			                    "description": "要追加的内容"
+			                }
+			            },
+			            "required": ["action", "file_name", "content"],
+			            "additionalProperties": false
 			        },
-			        "file_name": {
-			            "type": "string",
-			            "description": "(required for file operations) 文件名（带扩展名），不需要带目录路径，工具会自动处理目录结构"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "replace"
+			                },
+			                "file_name": {
+			                    "type": "string",
+			                    "description": "文件名（带扩展名）"
+			                },
+			                "source_text": {
+			                    "type": "string",
+			                    "description": "要被替换的文本"
+			                },
+			                "target_text": {
+			                    "type": "string",
+			                    "description": "替换后的文本"
+			                }
+			            },
+			            "required": ["action", "file_name", "source_text", "target_text"],
+			            "additionalProperties": false
 			        },
-			        "content": {
-			            "type": "string",
-			            "description": "(required for append) 要追加的内容"
-			        },
-			        "source_text": {
-			            "type": "string",
-			            "description": "(required for replace) 要被替换的文本"
-			        },
-			        "target_text": {
-			            "type": "string",
-			            "description": "(required for replace) 替换后的文本"
-			        },
-			        "start_line": {
-			            "type": "integer",
-			            "description": "(optional for get_lines) 起始行号，默认为1"
-			        },
-			        "end_line": {
-			            "type": "integer",
-			            "description": "(optional for get_lines) 结束行号，默认为文件末尾"
-			        },
-			        "keyword": {
-			            "type": "string",
-			            "description": "(required for search) 搜索关键词"
-			        },
-			        "content_id": {
-			            "type": "string",
-			            "description": "(required for get_content) 内容ID，用于获取特定的存储内容"
-			        }
-			    },
-			    "required": ["action"]
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "get_lines"
+			                },
+			                "file_name": {
+			                    "type": "string",
+			                    "description": "文件名（带扩展名）"
+			                },
+			                "start_line": {
+			                    "type": "integer",
+			                    "description": "起始行号，默认为1"
+			                },
+			                "end_line": {
+			                    "type": "integer",
+			                    "description": "结束行号，默认为文件末尾"
+			                }
+			            },
+			            "required": ["action", "file_name"],
+			            "additionalProperties": false
+			        },		        {
+		            "type": "object",
+		            "properties": {
+		                "action": {
+		                    "type": "string",
+		                    "const": "get_content"
+		                },
+		                "file_name": {
+		                    "type": "string",
+		                    "description": "文件名（带扩展名）"
+		                }
+		            },
+		            "required": ["action", "file_name"],
+		            "additionalProperties": false
+		        }
+			    ]
 			}
 			""";
 
@@ -153,7 +189,7 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 
 	@Override
 	public String getServiceGroup() {
-		return "inner-storage";
+		return "default-service-group";
 	}
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
@@ -216,44 +252,11 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 						innerStorageService.processContent(planId, result.getOutput());
 					yield new ToolExecuteResult(processedResult.getSummary());
 				}
-				case "search" -> {
-					String keyword = (String) toolInputMap.get("keyword");
-					ToolExecuteResult result = searchContent(keyword);
-					// 使用新的智能处理方法
-					InnerStorageService.SmartProcessResult processedResult = 
-						innerStorageService.processContent(planId, result.getOutput());
-					yield new ToolExecuteResult(processedResult.getSummary());
-				}
-				case "list_contents" -> {
-					ToolExecuteResult result = listStoredContents();
-					// 使用新的智能处理方法
-					InnerStorageService.SmartProcessResult processedResult = 
-						innerStorageService.processContent(planId, result.getOutput());
-					yield new ToolExecuteResult(processedResult.getSummary());
-				}
 				case "get_content" -> {
-					String contentId = (String) toolInputMap.get("content_id");
-					yield getStoredContent(contentId);
+					String fileName = (String) toolInputMap.get("file_name");
+					yield getStoredContent(fileName);
 				}
-				case "get_description" -> {				// 获取所有自动存储的内容作为描述
-				List<InnerStorageService.FileInfo> autoStoredFiles = innerStorageService
-					.searchAutoStoredFiles(planId, "");
-				if (!autoStoredFiles.isEmpty()) {
-						StringBuilder desc = new StringBuilder();
-						desc.append("任务 ").append(planId).append(" 的自动存储内容概览:\n\n");
-						for (int i = 0; i < autoStoredFiles.size(); i++) {
-							InnerStorageService.FileInfo file = autoStoredFiles.get(i);
-							desc.append(String.format("[%d] %s (%d bytes)\n", i + 1, file.getRelativePath(),
-									file.getSize()));
-						}
-						yield new ToolExecuteResult(desc.toString());
-					}
-					else {
-						yield new ToolExecuteResult("未找到任何自动存储的内容");
-					}
-				}
-				case "set_agent" -> new ToolExecuteResult("错误：set_agent 操作已不再支持。Agent 应该在工具初始化时设置。");
-				default -> new ToolExecuteResult("未知操作: " + action);
+				default -> new ToolExecuteResult("未知操作: " + action + "。支持的操作: append, replace, get_lines, get_content");
 			};
 
 		}
@@ -381,190 +384,22 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 		}
 	}
 
+
+
+
 	/**
-	 * 搜索存储内容中的关键词
+	 * 根据文件名或索引获取存储的内容
 	 */
-	private ToolExecuteResult searchContent(String keyword) {
-		if (keyword == null || keyword.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：keyword参数是必需的");
+
+	private ToolExecuteResult getStoredContent(String fileName) {
+		if (fileName == null || fileName.trim().isEmpty()) {
+			return new ToolExecuteResult("错误：file_name参数是必需的");
 		}
 
 		try {
-			List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
-			StringBuilder searchResults = new StringBuilder();
-			searchResults.append("🔍 搜索关键词: '").append(keyword).append("'\n\n");
-
-			int foundCount = 0;
-			for (InnerStorageService.FileInfo fileInfo : files) {
-				Path planDir = innerStorageService.getPlanDirectory(planId);
-				Path filePath = planDir.resolve(fileInfo.getRelativePath());
-
-				if (Files.exists(filePath)) {
-					try {
-						List<String> lines = Files.readAllLines(filePath);
-						List<String> matchingLines = new ArrayList<>();
-
-						for (int i = 0; i < lines.size(); i++) {
-							if (lines.get(i).toLowerCase().contains(keyword.toLowerCase())) {
-								matchingLines.add(String.format("  行 %d: %s", i + 1, lines.get(i).length() > 100
-										? lines.get(i).substring(0, 100) + "..." : lines.get(i)));
-							}
-						}
-
-						if (!matchingLines.isEmpty()) {
-							foundCount++;
-							searchResults.append("📁 ").append(fileInfo.getRelativePath()).append("\n");
-							for (String line : matchingLines) {
-								searchResults.append(line).append("\n");
-							}
-							searchResults.append("\n");
-						}
-					}
-					catch (IOException e) {
-						log.warn("无法读取文件进行搜索: {}", filePath, e);
-					}
-				}
-			}
-
-			// 搜索自动存储的内容
-			List<InnerStorageService.FileInfo> autoStoredFiles = getAutoStoredFiles();
-			if (!autoStoredFiles.isEmpty()) {
-				for (InnerStorageService.FileInfo file : autoStoredFiles) {
-					Path planDir = innerStorageService.getPlanDirectory(planId);
-					Path filePath = planDir.resolve(file.getRelativePath());
-
-					if (Files.exists(filePath)) {
-						try {
-							String content = Files.readString(filePath);
-							if (content.toLowerCase().contains(keyword.toLowerCase())) {
-								foundCount++;
-								searchResults.append("🤖 自动存储: ").append(file.getRelativePath()).append("\n");
-								searchResults.append("  匹配内容包含关键词，使用 get_content 获取详细内容\n\n");
-								break;
-							}
-						}
-						catch (IOException e) {
-							log.warn("无法读取自动存储文件进行搜索: {}", filePath, e);
-						}
-					}
-				}
-			}
-
-			if (foundCount == 0) {
-				searchResults.append("❌ 未找到包含关键词 '").append(keyword).append("' 的内容");
-			}
-			else {
-				searchResults.insert(0, String.format("✅ 找到 %d 个匹配项\n\n", foundCount));
-			}
-
-			return new ToolExecuteResult(searchResults.toString());
-
-		}
-		catch (Exception e) {
-			log.error("搜索内容失败", e);
-			return new ToolExecuteResult("搜索失败: " + e.getMessage());
-		}
-	}
-
-	/**
-	 * 获取自动存储的文件（以 auto_ 开头的文件）
-	 */
-	private List<InnerStorageService.FileInfo> getAutoStoredFiles() {
-		List<InnerStorageService.FileInfo> allFiles = innerStorageService.getDirectoryFiles(planId);
-		return allFiles.stream()
-			.filter(file -> file.getRelativePath().contains("auto_"))
-			.collect(java.util.stream.Collectors.toList());
-	}
-
-	/**
-	 * 列出当前任务相关的所有存储内容
-	 */
-	private ToolExecuteResult listStoredContents() {
-		try {
-			StringBuilder contentList = new StringBuilder();
-			contentList.append("📋 当前任务存储内容列表\n\n");
-
-			// 列出文件内容
-			List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
-			if (!files.isEmpty()) {
-				contentList.append("📁 文件内容:\n");
-				for (int i = 0; i < files.size(); i++) {
-					InnerStorageService.FileInfo file = files.get(i);
-					contentList.append(String.format("  [%d] %s (%d bytes, %s)\n", i + 1, file.getRelativePath(),
-							file.getSize(), file.getLastModified()));
-				}
-				contentList.append("\n");
-			}
-
-			// 列出自动存储的内容
-			List<InnerStorageService.FileInfo> autoStoredFiles = getAutoStoredFiles();
-			if (!autoStoredFiles.isEmpty()) {
-				contentList.append("🤖 自动存储的内容:\n");
-				for (int i = 0; i < autoStoredFiles.size(); i++) {
-					InnerStorageService.FileInfo file = autoStoredFiles.get(i);
-					contentList.append(String.format("  [auto_%d] %s (%d bytes, %s)\n", i + 1, file.getRelativePath(),
-							file.getSize(), file.getLastModified()));
-				}
-				contentList.append("\n");
-			}
-
-			if (files.isEmpty() && autoStoredFiles.isEmpty()) {
-				contentList.append("❌ 当前任务没有存储的内容");
-			}
-			else {
-				contentList.append("💡 提示:\n");
-				contentList.append("  - 使用 get_lines 操作读取文件内容\n");
-				contentList.append("  - 使用 get_content 操作根据ID获取内容\n");
-				contentList.append("  - 使用 search 操作搜索关键词");
-			}
-
-			return new ToolExecuteResult(contentList.toString());
-
-		}
-		catch (Exception e) {
-			log.error("列出存储内容失败", e);
-			return new ToolExecuteResult("列出内容失败: " + e.getMessage());
-		}
-	}
-
-	/**
-	 * 根据内容ID获取存储的内容
-	 */
-	private ToolExecuteResult getStoredContent(String contentId) {
-		if (contentId == null || contentId.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：content_id参数是必需的");
-		}
-
-		try {
-			// 尝试解析内容ID
-			if ("desc".equals(contentId)) {
-				// 获取自动存储内容的概览作为描述
-				List<InnerStorageService.FileInfo> autoStoredFiles = innerStorageService
-					.searchAutoStoredFiles(planId, "");
-				if (!autoStoredFiles.isEmpty()) {
-					StringBuilder desc = new StringBuilder();
-					desc.append("任务 ").append(planId).append(" 的自动存储内容详情:\n\n");
-					for (InnerStorageService.FileInfo file : autoStoredFiles) {
-						try {
-							String content = innerStorageService.readFileContent(planId,
-									file.getRelativePath());
-							desc.append("📄 ").append(file.getRelativePath()).append(":\n");
-							desc.append(content).append("\n\n");
-						}
-						catch (IOException e) {
-							desc.append("❌ 无法读取文件: ").append(file.getRelativePath()).append("\n\n");
-						}
-					}
-					return new ToolExecuteResult(desc.toString());
-				}
-				else {
-					return new ToolExecuteResult("未找到任何自动存储的内容");
-				}
-			}
-
 			// 尝试按数字索引获取文件内容
 			try {
-				int index = Integer.parseInt(contentId) - 1; // 转换为0基索引
+				int index = Integer.parseInt(fileName) - 1; // 转换为0基索引
 				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
 
 				if (index >= 0 && index < files.size()) {
@@ -575,7 +410,8 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 
 					if (Files.exists(filePath)) {
 						String content = Files.readString(filePath);
-						String fullContent = String.format("📁 文件: %s\n%s\n%s", file.getRelativePath(), "=".repeat(50), content);
+						String fullContent = String.format("📁 文件: %s\n%s\n%s", 
+							file.getRelativePath(), "=".repeat(50), content);
 						// 使用新的智能处理方法
 						InnerStorageService.SmartProcessResult processedResult = 
 							innerStorageService.processContent(planId, fullContent);
@@ -587,14 +423,14 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 				// 不是数字，尝试按文件名查找
 				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
 				for (InnerStorageService.FileInfo file : files) {
-					if (file.getRelativePath().contains(contentId)) {
+					if (file.getRelativePath().contains(fileName)) {
 						Path planDir = innerStorageService.getPlanDirectory(planId);
 						Path filePath = planDir.resolve(file.getRelativePath());
 
 						if (Files.exists(filePath)) {
 							String content = Files.readString(filePath);
 							String fullContent = String.format("📁 文件: %s\n%s\n%s",
-									file.getRelativePath(), "=".repeat(50), content);
+								file.getRelativePath(), "=".repeat(50), content);
 							// 使用新的智能处理方法
 							InnerStorageService.SmartProcessResult processedResult = 
 								innerStorageService.processContent(planId, fullContent);
@@ -604,7 +440,8 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 				}
 			}
 
-			return new ToolExecuteResult("未找到内容ID为 '" + contentId + "' 的内容。请使用 list_contents 查看可用的内容ID。");
+			return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内容。" +
+				"请使用文件索引号（如 '1', '2'）或文件名的一部分来查找内容。");
 
 		}
 		catch (IOException e) {

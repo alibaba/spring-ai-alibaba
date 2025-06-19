@@ -347,33 +347,19 @@ public class InnerStorageService {
 	private String generateSmartSummary(String content, String storageFileName) {
 		StringBuilder summary = new StringBuilder();
 
-		summary.append("📄 内容已自动存储\n\n");
-		summary.append("📊 内容统计:\n");
-		summary.append("  - 总字符数: ").append(content.length()).append("\n");
-		summary.append("  - 总行数: ").append(content.split("\n").length).append("\n");
+		summary.append("调用函数成功，但内容过长，所以自动通过InnerStorageTool 做了存储，以减少上下文");
+		summary.append("\n\n");
+		summary.append("存储文件名: ").append(storageFileName).append("\n\n");
 
-		// 添加内容预览（前几行）
+		// 添加内容统计
 		String[] lines = content.split("\n");
-		int previewLines = Math.min(5, lines.length);
-		summary.append("  - 内容预览 (前").append(previewLines).append("行):\n");
-		for (int i = 0; i < previewLines; i++) {
-			String line = lines[i];
-			if (line.length() > 80) {
-				line = line.substring(0, 80) + "...";
-			}
-			summary.append("    ").append(i + 1).append(": ").append(line).append("\n");
-		}
+		summary.append("内容统计:\n");
+		summary.append("  - 总字符数: ").append(content.length()).append("\n");
+		summary.append("  - 总行数: ").append(lines.length).append("\n\n");
 
-		if (lines.length > previewLines) {
-			summary.append("    ... (还有 ").append(lines.length - previewLines).append(" 行)\n");
-		}
-
-		summary.append("\n💾 完整内容已自动保存:\n");
-		summary.append("  - 存储文件: ").append(storageFileName).append("\n\n");
-		summary.append("💡 使用 InnerStorageTool 的以下操作获取详细内容:\n");
-		summary.append("  - list_contents: 查看所有存储的内容\n");
-		summary.append("  - get_content: 根据文件名获取具体内容\n");
-		summary.append("  - search: 搜索关键词");
+		summary.append("💡 你可以使用 InnerStorageTool 的以下方法来获取你关心的相关信息:\n");
+		summary.append("  - get_content: 获取完整内容\n");
+		summary.append("  - get_lines: 获取指定行号的内容");
 
 		return summary.toString();
 	}

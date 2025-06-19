@@ -40,6 +40,7 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageTool;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.split.SplitTool;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
@@ -164,6 +165,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new Bash(manusProperties));
 		toolDefinitions.add(new DocLoaderTool());
 		toolDefinitions.add(new TextFileOperator(textFileService));
+		toolDefinitions.add(new InnerStorageTool(innerStorageService));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());

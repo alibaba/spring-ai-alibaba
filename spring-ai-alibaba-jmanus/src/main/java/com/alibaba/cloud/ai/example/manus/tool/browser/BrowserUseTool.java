@@ -80,103 +80,221 @@ public class BrowserUseTool  implements ToolCallBiFunctionDef {
 
 	private final String PARAMETERS = """
 			{
-			    "type": "object",
-			    "properties": {
-			        "action": {
-			            "type": "string",
-			            "enum": [
-			                "navigate",
-			                "click",
-			                "input_text",
-			                "key_enter",
-			                "screenshot",
-			                "get_html",
-			                "get_text",
-			                "execute_js",
-			                "scroll",
-			                "switch_tab",
-			                "new_tab",
-			                "close_tab",
-			                "refresh",
-			                "get_element_position",
-			                "move_to_and_click"
-			            ],
-			            "description": "The browser action to perform"
+			    "oneOf": [
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "navigate"
+			                },
+			                "url": {
+			                    "type": "string",
+			                    "description": "URL to navigate to"
+			                }
+			            },
+			            "required": ["action", "url"],
+			            "additionalProperties": false
 			        },
-			        "url": {
-			            "type": "string",
-			            "description": "URL for 'navigate' or 'new_tab' actions , don't support get_text and get_html"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "click"
+			                },
+			                "index": {
+			                    "type": "integer",
+			                    "description": "Element index to click"
+			                }
+			            },
+			            "required": ["action", "index"],
+			            "additionalProperties": false
 			        },
-			        "index": {
-			            "type": "integer",
-			            "description": "Element index for 'click' or 'input_text' actions"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "input_text"
+			                },
+			                "index": {
+			                    "type": "integer",
+			                    "description": "Element index to input text"
+			                },
+			                "text": {
+			                    "type": "string",
+			                    "description": "Text to input"
+			                }
+			            },
+			            "required": ["action", "index", "text"],
+			            "additionalProperties": false
 			        },
-			        "text": {
-			            "type": "string",
-			            "description": "Text for 'input_text' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "key_enter"
+			                },
+			                "index": {
+			                    "type": "integer",
+			                    "description": "Element index to press enter"
+			                }
+			            },
+			            "required": ["action", "index"],
+			            "additionalProperties": false
 			        },
-			        "script": {
-			            "type": "string",
-			            "description": "JavaScript code for 'execute_js' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "screenshot"
+			                }
+			            },
+			            "required": ["action"],
+			            "additionalProperties": false
 			        },
-			        "scroll_amount": {
-			            "type": "integer",
-			            "description": "Pixels to scroll (positive for down, negative for up) for 'scroll' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "get_html"
+			                }
+			            },
+			            "required": ["action"],
+			            "additionalProperties": false
 			        },
-			        "tab_id": {
-			            "type": "integer",
-			            "description": "Tab ID for 'switch_tab' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "get_text"
+			                }
+			            },
+			            "required": ["action"],
+			            "additionalProperties": false
 			        },
-			        "element_name": {
-			            "type": "string",
-			            "description": "Element name for 'get_element_position' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "execute_js"
+			                },
+			                "script": {
+			                    "type": "string",
+			                    "description": "JavaScript code to execute"
+			                }
+			            },
+			            "required": ["action", "script"],
+			            "additionalProperties": false
 			        },
-			        "position_x": {
-			            "type": "integer",
-			            "description": "X coordinate for 'move_to_and_click' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "scroll"
+			                },
+			                "scroll_amount": {
+			                    "type": "integer",
+			                    "description": "Pixels to scroll (positive for down, negative for up)"
+			                }
+			            },
+			            "required": ["action", "scroll_amount"],
+			            "additionalProperties": false
 			        },
-			        "position_y": {
-			            "type": "integer",
-			            "description": "Y coordinate for 'move_to_and_click' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "switch_tab"
+			                },
+			                "tab_id": {
+			                    "type": "integer",
+			                    "description": "Tab ID to switch to"
+			                }
+			            },
+			            "required": ["action", "tab_id"],
+			            "additionalProperties": false
+			        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "new_tab"
+			                },
+			                "url": {
+			                    "type": "string",
+			                    "description": "URL to open in new tab"
+			                }
+			            },
+			            "required": ["action", "url"],
+			            "additionalProperties": false
+			        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "close_tab"
+			                }
+			            },
+			            "required": ["action"],
+			            "additionalProperties": false
+			        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "refresh"
+			                }
+			            },
+			            "required": ["action"],
+			            "additionalProperties": false
+			        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "get_element_position"
+			                },
+			                "element_name": {
+			                    "type": "string",
+			                    "description": "Element name to get position"
+			                }
+			            },
+			            "required": ["action", "element_name"],
+			            "additionalProperties": false
+			        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "move_to_and_click"
+			                },
+			                "position_x": {
+			                    "type": "integer",
+			                    "description": "X coordinate to move to and click"
+			                },
+			                "position_y": {
+			                    "type": "integer",
+			                    "description": "Y coordinate to move to and click"
+			                }
+			            },
+			            "required": ["action", "position_x", "position_y"],
+			            "additionalProperties": false
 			        }
-			    },
-			    "required": [
-			        "action"
-			    ],
-			    "dependencies": {
-			        "navigate": [
-			            "url"
-			        ],
-			        "click": [
-			            "index"
-			        ],
-			        "input_text": [
-			            "index",
-			            "text"
-			        ],
-			        "key_enter": [
-			            "index"
-			        ],
-			        "execute_js": [
-			            "script"
-			        ],
-			        "switch_tab": [
-			            "tab_id"
-			        ],
-			        "new_tab": [
-			            "url"
-			        ],
-			        "scroll": [
-			            "scroll_amount"
-			        ],
-			        "get_element_position": [
-			            "element_name"
-			        ],
-			        "move_to_and_click": [
-			            "position_x",
-			            "position_y"
-			        ]
-			    }
+			    ]
 			}
 			""";
 
