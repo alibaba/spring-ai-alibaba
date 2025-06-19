@@ -52,6 +52,7 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 
 // @formatter:off
 @ConditionalOnClass(DashScopeApi.class)
+@ConditionalOnDashScopeEnabled
 @ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 @AutoConfiguration(after = {
 		RestClientAutoConfiguration.class,
