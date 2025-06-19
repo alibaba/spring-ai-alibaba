@@ -27,12 +27,17 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  */
 
 @ConfigurationProperties(DashScopeAgentProperties.CONFIG_PREFIX)
-public class DashScopeAgentProperties {
+public class DashScopeAgentProperties extends DashScopeParentProperties {
 
 	/**
 	 * Spring AI Alibaba configuration prefix.
 	 */
 	public static final String CONFIG_PREFIX = "spring.ai.dashscope.agent";
+
+	/**
+	 * Enable DashScope ai agent client.
+	 */
+	private boolean enabled = true;
 
 	@NestedConfigurationProperty
 	private DashScopeAgentOptions options = DashScopeAgentOptions.builder().build();
@@ -45,6 +50,16 @@ public class DashScopeAgentProperties {
 	public void setOptions(DashScopeAgentOptions options) {
 
 		this.options = options;
+	}
+
+	public boolean isEnabled() {
+
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+
+		this.enabled = enabled;
 	}
 
 }
