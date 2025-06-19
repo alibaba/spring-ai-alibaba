@@ -22,6 +22,7 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -42,21 +43,24 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 	private static final Logger log = LoggerFactory.getLogger(InnerStorageTool.class);
 
 	private final InnerStorageService innerStorageService;
+	private final SummaryWorkflow summaryWorkflow;
 
 	private String planId;
 
 	// get_lines 操作的最大行数限制
 	private static final int MAX_LINES_LIMIT = 100;
 
-	public InnerStorageTool(InnerStorageService innerStorageService) {
+	public InnerStorageTool(InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow) {
 		this.innerStorageService = innerStorageService;
+		this.summaryWorkflow = summaryWorkflow;
 	}
 
 	/**
 	 * 测试专用构造函数
 	 */
-	public InnerStorageTool(InnerStorageService innerStorageService, String testWorkingDirectoryPath) {
+	public InnerStorageTool(InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow, String testWorkingDirectoryPath) {
 		this.innerStorageService = innerStorageService;
+		this.summaryWorkflow = summaryWorkflow;
 		// 测试构造函数保留向后兼容性，但不再使用workingDirectoryPath参数
 	}
 
@@ -154,14 +158,14 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 		                },
 		                "query_key": {
 		                    "type": "string",
-		                    "description": "相关问题或希望提取的内容关键词"
+		                    "description": "相关问题或希望提取的内容关键词，必须提供"
 		                },
 		                "columns": {
 		                    "type": "array",
 		                    "items": {
 		                        "type": "string"
 		                    },
-		                    "description": "返回结果的列名，用于结构化输出，返回的结果 可以是一个列表"
+		                    "description": "返回结果的列名，用于结构化输出，必须提供。返回的结果可以是一个列表"
 		                }
 		            },
 		            "required": ["action", "file_name", "query_key", "columns"],
@@ -213,8 +217,8 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 	}
 
 	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(
-			InnerStorageService innerStorageService) {
-		return FunctionToolCallback.builder(TOOL_NAME, new InnerStorageTool(innerStorageService))
+			InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow) {
+		return FunctionToolCallback.builder(TOOL_NAME, new InnerStorageTool(innerStorageService, summaryWorkflow))
 			.description(TOOL_DESCRIPTION)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
@@ -222,8 +226,8 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 	}
 
 	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(String planId,
-			InnerStorageService innerStorageService) {
-		InnerStorageTool tool = new InnerStorageTool(innerStorageService);
+			InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow) {
+		InnerStorageTool tool = new InnerStorageTool(innerStorageService, summaryWorkflow);
 		tool.setPlanId(planId);
 		return FunctionToolCallback.builder(TOOL_NAME, tool)
 			.description(TOOL_DESCRIPTION)
@@ -409,10 +413,19 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 
 	/**
 	 * 根据文件名或索引获取存储的内容，支持AI智能提取和结构化输出
+	 * 现在委托给 SummaryWorkflow 处理
 	 */
 	private ToolExecuteResult getStoredContent(String fileName, String queryKey, List<String> columns) {
 		if (fileName == null || fileName.trim().isEmpty()) {
 			return new ToolExecuteResult("错误：file_name参数是必需的");
+		}
+
+		// 严格要求queryKey和columns参数 - 不提供向后兼容
+		if (queryKey == null || queryKey.trim().isEmpty()) {
+			return new ToolExecuteResult("错误：query_key参数是必需的，用于指定要提取的内容关键词");
+		}
+		if (columns == null || columns.isEmpty()) {
+			return new ToolExecuteResult("错误：columns参数是必需的，用于指定返回结果的结构化列名");
 		}
 
 		try {
@@ -457,79 +470,23 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 					"请使用文件索引号（如 '1', '2'）或文件名的一部分来查找内容。");
 			}
 
-			// 严格要求queryKey和columns参数 - 不提供向后兼容
-			if (queryKey == null || queryKey.trim().isEmpty()) {
-				return new ToolExecuteResult("错误：query_key参数是必需的，用于指定要提取的内容关键词");
-			}
-			if (columns == null || columns.isEmpty()) {
-				return new ToolExecuteResult("错误：columns参数是必需的，用于指定返回结果的结构化列名");
-			}
-
-			// 使用AI进行智能提取和结构化输出
-			return performAIExtraction(actualFileName, fileContent, queryKey, columns);
+			// 委托给 SummaryWorkflow 进行处理
+			log.info("委托给 SummaryWorkflow 处理文件内容提取：文件={}, 查询关键词={}, 输出列={}", 
+					actualFileName, queryKey, columns);
+			
+			String result = summaryWorkflow.executeSummaryWorkflow(actualFileName, fileContent, queryKey, columns)
+					.get(); // 阻塞等待结果
+			
+			return new ToolExecuteResult(result);
 
 		}
 		catch (IOException e) {
 			log.error("获取存储内容失败", e);
 			return new ToolExecuteResult("获取内容失败: " + e.getMessage());
 		}
-	}
-
-	/**
-	 * 使用AI进行内容提取和结构化输出
-	 */
-	private ToolExecuteResult performAIExtraction(String fileName, String content, String queryKey, List<String> columns) {
-		try {
-			// 构建AI提取提示
-			StringBuilder prompt = new StringBuilder();
-			prompt.append("请从以下文件内容中提取相关信息：\n\n");
-			prompt.append("文件名: ").append(fileName).append("\n");
-			prompt.append("文件内容:\n").append(content).append("\n\n");
-			
-			if (queryKey != null && !queryKey.trim().isEmpty()) {
-				prompt.append("提取关键词/问题: ").append(queryKey).append("\n");
-			}
-			
-			if (columns != null && !columns.isEmpty()) {
-				prompt.append("请按以下列结构输出结果: ").append(String.join(", ", columns)).append("\n");
-				prompt.append("输出格式: JSON数组，每个元素包含指定的列字段\n\n");
-			} else {
-				prompt.append("请以列表形式返回相关信息\n\n");
-			}
-			
-			prompt.append("请确保输出是有用的、结构化的信息。");
-			
-			// 使用InnerStorageService的智能处理来生成AI提取结果
-			String aiPrompt = prompt.toString();
-			
-			// 创建一个包含AI提示和原始内容的组合内容
-			String combinedContent = String.format("""
-				=== AI提取请求 ===
-				%s
-				
-				=== 处理状态 ===
-				✅ 文件已读取: %s
-				✅ 提取关键词: %s
-				✅ 输出列: %s
-				
-				=== 建议 ===
-				请基于上述文件内容和提取要求，返回结构化的信息列表。
-				""", 
-				aiPrompt,
-				fileName,
-				queryKey != null ? queryKey : "无特定关键词",
-				columns != null && !columns.isEmpty() ? String.join(", ", columns) : "自由格式"
-			);
-			
-			// 使用智能处理方法
-			InnerStorageService.SmartProcessResult processedResult = 
-				innerStorageService.processContent(planId, combinedContent);
-			
-			return new ToolExecuteResult(processedResult.getSummary());
-
-		} catch (Exception e) {
-			log.error("AI提取失败", e);
-			return new ToolExecuteResult("AI提取失败: " + e.getMessage());
+		catch (Exception e) {
+			log.error("SummaryWorkflow 执行失败", e);
+			return new ToolExecuteResult("内容处理失败: " + e.getMessage());
 		}
 	}
 

@@ -31,7 +31,7 @@ import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
-import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
+import com.alibaba.cloud.ai.example.manus.tool.MapReducePlanningTool;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
@@ -45,6 +45,7 @@ import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.split.SplitTool;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
+import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -107,6 +108,10 @@ public class PlanningFactory {
 	@Autowired
 	private McpStateHolderService mcpStateHolderService;
 
+	@Autowired
+	@Lazy
+	private SummaryWorkflow summaryWorkflow;
+
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
 			InnerStorageService innerStorageService) {
@@ -123,7 +128,7 @@ public class PlanningFactory {
 		// Add all dynamic agents from the database
 		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
 
-		PlanningToolInterface planningTool = new PlanningTool();
+		PlanningToolInterface planningTool = new MapReducePlanningTool();
 
 		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder);
 		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService, llmService);
@@ -165,7 +170,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new Bash(manusProperties));
 		toolDefinitions.add(new DocLoaderTool());
 		toolDefinitions.add(new TextFileOperator(textFileService));
-		toolDefinitions.add(new InnerStorageTool(innerStorageService));
+		toolDefinitions.add(new InnerStorageTool(innerStorageService, summaryWorkflow));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
@@ -199,12 +204,7 @@ public class PlanningFactory {
 
 	@Bean
 	public RestClient.Builder createRestClient() {
-		// 1. 配置超时时间（单位：毫秒）
-		int connectionTimeout = 600000; // 连接超时时间
-		int readTimeout = 600000; // 响应读取超时时间
-		int writeTimeout = 600000; // 请求写入超时时间
-
-		// 2. 创建 RequestConfig 并设置超时
+		// 创建 RequestConfig 并设置超时
 		RequestConfig requestConfig = RequestConfig.custom()
 			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
 			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
