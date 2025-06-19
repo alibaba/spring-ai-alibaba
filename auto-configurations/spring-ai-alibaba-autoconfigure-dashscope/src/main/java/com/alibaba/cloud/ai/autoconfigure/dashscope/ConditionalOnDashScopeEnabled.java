@@ -30,4 +30,5 @@ import java.lang.annotation.*;
 @Inherited
 @ConditionalOnProperty(value = "spring.ai.dashscope.enabled", matchIfMissing = true)
 public @interface ConditionalOnDashScopeEnabled {
+
 }
