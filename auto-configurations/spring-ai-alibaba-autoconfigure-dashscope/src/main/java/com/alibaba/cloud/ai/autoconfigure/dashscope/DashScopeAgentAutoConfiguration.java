@@ -43,6 +43,7 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
  */
 
 @ConditionalOnClass(DashScopeApi.class)
+@ConditionalOnDashScopeEnabled
 @ConditionalOnProperty(prefix = DashScopeAgentProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
