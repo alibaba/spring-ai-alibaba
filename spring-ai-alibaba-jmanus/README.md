@@ -18,6 +18,13 @@ Spring AI Alibaba Java Manus provides the following key features:
 ![Image](https://github.com/user-attachments/assets/d9cbf980-9d56-4b58-b165-6840b6c9411b)
 
 
+
+## Stable Versions
+
+If you want a previous stable version, you can find it here:  
+[Stable Versions](https://github.com/rainerWJY/Java-Open-Manus/releases)
+
+
 ## How to Run
 
 ### Prerequisites
@@ -52,8 +59,3 @@ mvn spring-boot:run
 ## Architecture
 
 ![aaa](https://github.com/user-attachments/assets/4ad14a72-667b-456e-85c1-b05eef8fd414)
-
-## Stable Versions
-
-If you want a previous stable version, you can find it here:  
-[Previous Stable Versions](https://github.com/rainerWJY/Java-Open-Manus/releases)
