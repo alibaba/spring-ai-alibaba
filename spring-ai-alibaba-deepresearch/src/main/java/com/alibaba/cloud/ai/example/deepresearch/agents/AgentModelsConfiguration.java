@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.example.deepresearch.repository.ModelParamRepository;
 import com.alibaba.cloud.ai.example.deepresearch.repository.ModelParamRepositoryImpl;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Configuration;
@@ -52,10 +53,13 @@ public class AgentModelsConfiguration implements InitializingBean {
 
 	private final DashScopeConnectionProperties commonProperties;
 
+	private final ToolCallingManager toolCallingManager;
+
 	private final BiConsumer<String, DashScopeChatModel> registerConsumer;
 
 	public AgentModelsConfiguration(ModelParamRepository modelParamRepository, ConfigurableBeanFactory beanFactory,
-			DashScopeConnectionProperties dashScopeConnectionProperties) {
+			DashScopeConnectionProperties dashScopeConnectionProperties, ToolCallingManager toolCallingManager) {
+		this.toolCallingManager = toolCallingManager;
 		Assert.notNull(modelParamRepository, "ModelParamRepository must not be null");
 		this.commonProperties = dashScopeConnectionProperties;
 		// load models from the repository
@@ -77,6 +81,7 @@ public class AgentModelsConfiguration implements InitializingBean {
 			.collect(Collectors.toMap(ModelParamRepositoryImpl.AgentModel::name,
 					model -> DashScopeChatModel.builder()
 						.dashScopeApi(DashScopeApi.builder().apiKey(commonProperties.getApiKey()).build())
+						.toolCallingManager(toolCallingManager)
 						.defaultOptions(DashScopeChatOptions.builder()
 							.withModel(model.modelName())
 							.withTemperature(DashScopeChatModel.DEFAULT_TEMPERATURE)
