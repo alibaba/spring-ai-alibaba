@@ -13,10 +13,8 @@ spring:
 
     mcp:
       client:
-        type: async
-        toolcallback:
-          enabled: true
         enabled: false
+        type: async
     alibaba:
       toolcalling:
         tavilysearch:
