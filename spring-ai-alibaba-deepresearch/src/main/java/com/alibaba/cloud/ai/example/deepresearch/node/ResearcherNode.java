@@ -95,7 +95,7 @@ public class ResearcherNode implements NodeAction {
 				"IMPORTANT: DO NOT include inline citations in the text. Instead, track all sources and include a References section at the end using link reference format. Include an empty line between each citation for better readability. Use this format for each reference:\n- [Source Title](URL)\n\n- [Another Source](URL)");
 		messages.add(citationMessage);
 
-		logger.debug("researcher Node messages: {}", messages);
+		logger.debug("{} Node messages: {}", nodeName, messages);
 		// 调用agent
 		var streamResult = researchAgent.prompt().messages(messages).stream().chatResponse();
 		Plan.Step finalAssignedStep = assignedStep;

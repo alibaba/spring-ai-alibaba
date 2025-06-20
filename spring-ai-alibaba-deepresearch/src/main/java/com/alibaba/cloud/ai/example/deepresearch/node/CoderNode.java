@@ -89,7 +89,7 @@ public class CoderNode implements NodeAction {
 				String.format("#Task\n\n##title\n\n%s\n\n##description\n\n%s\n\n##locale\n\n%s",
 						assignedStep.getTitle(), assignedStep.getDescription(), state.value("locale", "en-US")));
 		messages.add(taskMessage);
-		logger.debug("coder Node message: {}", messages);
+		logger.debug("{} Node message: {}", nodeName, messages);
 
 		// 调用agent
 		var streamResult = coderAgent.prompt().messages(messages).stream().chatResponse();
