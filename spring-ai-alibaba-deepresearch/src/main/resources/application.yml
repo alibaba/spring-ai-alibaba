@@ -3,6 +3,20 @@ server:
 spring:
   application:
     name: spring-ai-alibaba-deepresearch
+  # Redis 配置
+  data:
+    redis:
+      enabled: false
+      host: localhost
+      port: 6379
+      password: ${REDIS-PASSWORD}
+      timeout: 3000 # 连接超时时间（毫秒）
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
   ai:
     dashscope:
       api-key: ${AI_DASHSCOPE_API_KEY}
@@ -13,10 +27,8 @@ spring:
 
     mcp:
       client:
-        type: async
-        toolcallback:
-          enabled: true
         enabled: false
+        type: async
     alibaba:
       toolcalling:
         tavilysearch:
