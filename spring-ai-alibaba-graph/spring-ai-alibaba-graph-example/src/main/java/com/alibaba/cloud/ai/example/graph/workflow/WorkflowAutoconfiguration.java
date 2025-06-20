@@ -17,8 +17,7 @@
 package com.alibaba.cloud.ai.example.graph.workflow;
 
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.OverAllStateFactory;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.QuestionClassifierNode;
@@ -29,6 +28,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,14 +44,6 @@ public class WorkflowAutoconfiguration {
 	public StateGraph workflowGraph(ChatModel chatModel) throws GraphStateException {
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
-
-		OverAllStateFactory stateFactory = () -> {
-			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy("input", new ReplaceStrategy());
-			state.registerKeyAndStrategy("classifier_output", new ReplaceStrategy());
-			state.registerKeyAndStrategy("solution", new ReplaceStrategy());
-			return state;
-		};
 
 		QuestionClassifierNode feedbackClassifier = QuestionClassifierNode.builder()
 			.chatClient(chatClient)
@@ -71,8 +63,13 @@ public class WorkflowAutoconfiguration {
 				.of("What kind of service or help the customer is trying to get from us? Classify the question based on your understanding."))
 			.build();
 
-		StateGraph stateGraph = new StateGraph("Consumer Service Workflow Demo", stateFactory)
-			.addNode("feedback_classifier", node_async(feedbackClassifier))
+		StateGraph stateGraph = new StateGraph("Consumer Service Workflow Demo", () -> {
+			Map<String, KeyStrategy> strategies = new HashMap<>();
+			strategies.put("input", new ReplaceStrategy());
+			strategies.put("classifier_output", new ReplaceStrategy());
+			strategies.put("solution", new ReplaceStrategy());
+			return strategies;
+		}).addNode("feedback_classifier", node_async(feedbackClassifier))
 			.addNode("specific_question_classifier", node_async(specificQuestionClassifier))
 			.addNode("recorder", node_async(new RecordingNode()))
 

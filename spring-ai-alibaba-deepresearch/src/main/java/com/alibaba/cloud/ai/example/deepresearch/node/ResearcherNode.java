@@ -63,7 +63,6 @@ public class ResearcherNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("researcher node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
-		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Map<String, Object> updated = new HashMap<>();
 
 		Plan.Step assignedStep = null;
@@ -96,7 +95,7 @@ public class ResearcherNode implements NodeAction {
 				"IMPORTANT: DO NOT include inline citations in the text. Instead, track all sources and include a References section at the end using link reference format. Include an empty line between each citation for better readability. Use this format for each reference:\n- [Source Title](URL)\n\n- [Another Source](URL)");
 		messages.add(citationMessage);
 
-		logger.debug("researcher Node messages: {}", messages);
+		logger.debug("{} Node messages: {}", nodeName, messages);
 		// 调用agent
 		var streamResult = researchAgent.prompt().messages(messages).stream().chatResponse();
 		Plan.Step finalAssignedStep = assignedStep;
@@ -111,9 +110,7 @@ public class ResearcherNode implements NodeAction {
 				finalAssignedStep.setExecutionRes(Objects.requireNonNull(researchContent));
 				logger.info("{} completed, content: {}", nodeName, researchContent);
 
-				observations.add(researchContent);
-				updated.put("observations", observations);
-				updated.put("researcher_content_" + executorNodeId, List.of(researchContent));
+				updated.put("researcher_content_" + executorNodeId, researchContent);
 				return updated;
 			})
 			.build(streamResult);

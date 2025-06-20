@@ -124,11 +124,19 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		if (overallStateVars == null || overallStateVars.isEmpty()) {
 			return "";
 		}
-		// todo: update create overAllState by newest saa graph
-		return overallStateVars.stream()
-			.map(var -> String.format("            overAllState.registerKeyAndStrategy(\"%s\", (o1, o2) -> o2);%n",
-					var.getName()))
-			.collect(Collectors.joining());
+		String template = """
+				() -> {
+				  Map<String, KeyStrategy> strategies = new HashMap<>();
+				  %s
+				  return strategies;
+				}
+				""";
+
+		String keyStrategies = overallStateVars.stream()
+			.map(var -> String.format("strategies.put(\"%s\", (o1, o2) -> o2);", var.getName()))
+			.collect(Collectors.joining("\n"));
+
+		return String.format(template, keyStrategies);
 	}
 
 	private String renderNodeSections(List<Node> nodes, Map<String, String> varNames) {
