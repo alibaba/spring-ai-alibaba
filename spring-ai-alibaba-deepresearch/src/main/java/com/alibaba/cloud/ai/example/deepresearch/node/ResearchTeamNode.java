@@ -64,7 +64,7 @@ public class ResearchTeamNode implements NodeAction {
 			return false;
 		}
 
-		return plan.getSteps().stream().allMatch(step -> StringUtils.hasLength(step.getExecutionRes()));
+		return plan.getSteps().stream().allMatch(step -> StringUtils.hasText(step.getExecutionRes()));
 	}
 
 }
