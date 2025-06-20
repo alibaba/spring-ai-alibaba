@@ -18,8 +18,8 @@
 
 <template>
   <div class="direct-page">
-    <Sidebar ref="sidebarRef" @planExecutionRequested="handlePlanExecutionRequested" />
     <div class="direct-chat">
+      <Sidebar @planExecutionRequested="handlePlanExecutionRequested" />
       <!-- Left Panel - Chat -->
       <div class="left-panel" :style="{ width: leftPanelWidth + '%' }">
         <div class="chat-header">
@@ -37,10 +37,8 @@
           :initial-prompt="prompt || ''"
           mode="direct"
           placeholder="向 JTaskPilot 发送消息"
-          @plan-update="handlePlanUpdate"
           @plan-completed="handlePlanCompleted"
           @dialog-round-start="handleDialogRoundStart"
-          @step-selected="handleStepSelected"
           @message-sent="handleMessageSent"
         />
       </div>
@@ -78,7 +76,6 @@ const taskStore = useTaskStore()
 const prompt = ref<string>('')
 const planExecutionRef = ref()
 const rightPanelRef = ref()
-const sidebarRef = ref()
 const isExecutingPlan = ref(false)
 
 // 面板宽度相关
@@ -192,33 +189,9 @@ const resetPanelSize = () => {
   localStorage.setItem('directPanelWidth', '50')
 }
 
-const handlePlanUpdate = (planData: any) => {
-  console.log('[DirectView] Plan updated:', planData)
-  // 将计划更新传递给右侧面板
-  try {
-    if (rightPanelRef.value && typeof rightPanelRef.value.handlePlanUpdate === 'function') {
-      rightPanelRef.value.handlePlanUpdate(planData)
-    }
-  } catch (error) {
-    console.error('[DirectView] Error calling rightPanelRef.handlePlanUpdate:', error)
-  }
-}
-
 const handlePlanCompleted = (result: any) => {
   console.log('[DirectView] Plan completed:', result)
   // 处理计划完成事件
-}
-
-const handleStepSelected = (planId: string, stepIndex: number) => {
-  console.log('[DirectView] Step selected:', planId, stepIndex)
-  // 将步骤选择事件传递给右侧面板
-  try {
-    if (rightPanelRef.value && typeof rightPanelRef.value.showStepDetails === 'function') {
-      rightPanelRef.value.showStepDetails(planId, stepIndex)
-    }
-  } catch (error) {
-    console.error('[DirectView] Error calling rightPanelRef.showStepDetails:', error)
-  }
 }
 
 const handleDialogRoundStart = (planId: string, query: string) => {
