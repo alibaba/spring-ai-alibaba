@@ -34,4 +34,4 @@ public class ExistsResponse extends BaseResponse {
 		this.exists = exists;
 	}
 
-} 
+}

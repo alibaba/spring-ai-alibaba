@@ -34,4 +34,4 @@ public class ReportResponse extends BaseResponse {
 		this.report = report;
 	}
 
-} 
+}

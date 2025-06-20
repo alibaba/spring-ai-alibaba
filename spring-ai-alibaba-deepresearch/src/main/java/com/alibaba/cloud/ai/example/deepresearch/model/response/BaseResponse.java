@@ -54,4 +54,4 @@ public class BaseResponse {
 		this.message = message;
 	}
 
-} 
+}
