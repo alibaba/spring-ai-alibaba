@@ -58,14 +58,14 @@ public class LarkSuiteChatService implements Function<LarkSuiteChatService.IMCha
 		try {
 			resp = client.im().v1().message().create(req);
 			if (!resp.success()) {
-				logger.error("code:{},msg:{},reqId:{}, resp:{}", resp.getCode(), resp.getMsg(), resp.getRequestId(),
-						Jsons.createGSON(true, false)
-							.toJson(JsonParser
-								.parseString(new String(resp.getRawResponse().getBody(), StandardCharsets.UTF_8))));
+				logger.error("消息发送失败 code:{}, msg:{}, 请求ID:{}", resp.getCode(), resp.getMsg(), resp.getRequestId());
+				throw new RuntimeException("飞书消息发送失败: " + resp.getMsg());
 			}
+			logger.info("消息发送成功 接收方:{}, 消息ID:{}", request.receiveId(), resp.getData().getMessageId());
 		}
 		catch (Exception e) {
-			logger.error("创建飞书文档异常");
+			logger.error("消息发送异常 接收方:{}, 错误信息:{}", request.receiveId(), e.getMessage(), e);
+			throw new RuntimeException("消息发送服务异常", e);
 		}
 
 		return resp;
