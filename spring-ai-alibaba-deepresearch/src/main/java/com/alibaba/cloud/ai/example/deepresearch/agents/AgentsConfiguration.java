@@ -17,13 +17,16 @@
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
-import com.alibaba.cloud.ai.example.deepresearch.tool.McpClientToolCallbackProvider;
+import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -31,7 +34,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
 import java.util.Arrays;
-import java.util.Set;
+import java.util.Map;
 
 @Configuration
 public class AgentsConfiguration {
@@ -43,6 +46,9 @@ public class AgentsConfiguration {
 	private Resource coderPrompt;
 
 	private final ApplicationContext context;
+
+	@Autowired(required = false)
+	private Map<String, AsyncMcpToolCallbackProvider> node2AsyncMcpToolCallbackProvider;
 
 	public AgentsConfiguration(ApplicationContext context) {
 		this.context = context;
@@ -56,36 +62,69 @@ public class AgentsConfiguration {
 	}
 
 	/**
+	 * 获取指定代理的MCP工具回调
+	 */
+	private ToolCallback[] getMcpToolCallbacks(String agentName) {
+		if (node2AsyncMcpToolCallbackProvider != null) {
+			AsyncMcpToolCallbackProvider provider = node2AsyncMcpToolCallbackProvider.get(agentName);
+			if (provider != null) {
+				return provider.getToolCallbacks();
+			}
+		}
+		return new ToolCallback[0];
+	}
+
+	/**
 	 * Create Research Agent ChatClient Bean
-	 * @param chatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
-	 * ToolCallbackProviders.
+	 * @param researchChatClientBuilder ChatClientBuilder McpAsyncClient and the locally
+	 * configure ToolCallbackProviders.
 	 * @return ChatClient
 	 */
 	@Bean
+	public ChatClient researchAgent(ChatClient.Builder researchChatClientBuilder) {
+		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("researchAgent");
 
-	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder,
-			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
-		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("researchAgent");
-		return chatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt))
+		return researchChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt))
 			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
-			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
+			.defaultToolCallbacks(mcpCallbacks)
 			.build();
 	}
 
 	/**
 	 * Create Coder Agent ChatClient Bean
-	 * @param chatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
-	 * ToolCallbackProviders.
+	 * @param coderChatClientBuilder ChatClientBuilder McpAsyncClient and the locally
+	 * configure ToolCallbackProviders.
 	 * @return ChatClient
 	 */
 	@Bean
-	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties,
-			McpClientToolCallbackProvider mcpClientToolCallbackProvider) {
-		Set<ToolCallback> defineCallback = mcpClientToolCallbackProvider.findToolCallbacks("coderAgent");
-		return chatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(coderPrompt))
+	public ChatClient coderAgent(ChatClient.Builder coderChatClientBuilder, PythonCoderProperties coderProperties) {
+		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("coderAgent");
+
+		return coderChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(coderPrompt))
 			.defaultTools(new PythonReplTool(coderProperties))
-			.defaultToolCallbacks(defineCallback.toArray(ToolCallback[]::new))
+			.defaultToolCallbacks(mcpCallbacks)
 			.build();
+	}
+
+	@Bean
+	public ChatClient coordinatorAgent(ChatClient.Builder coordinatorChatClientBuilder, PlannerTool plannerTool) {
+		return coordinatorChatClientBuilder
+			.defaultOptions(ToolCallingChatOptions.builder()
+				.internalToolExecutionEnabled(false) // 禁用内部工具执行
+				.build())
+			// 当前CoordinatorNode节点只绑定一个计划工具
+			.defaultTools(plannerTool)
+			.build();
+	}
+
+	@Bean
+	public ChatClient plannerAgent(ChatClient.Builder plannerChatClientBuilder) {
+		return plannerChatClientBuilder.build();
+	}
+
+	@Bean
+	public ChatClient reporterAgent(ChatClient.Builder reporterChatClientBuilder) {
+		return reporterChatClientBuilder.build();
 	}
 
 }

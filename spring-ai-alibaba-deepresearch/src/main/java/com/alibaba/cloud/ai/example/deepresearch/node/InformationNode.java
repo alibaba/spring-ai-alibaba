@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.dispatcher;
+package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.EdgeAction;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,18 +36,19 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
  * @since 2025/5/18 15:52
  */
 
-public class PlannerDispatcher implements EdgeAction {
+public class InformationNode implements NodeAction {
 
-	private static final Logger logger = LoggerFactory.getLogger(PlannerDispatcher.class);
+	private static final Logger logger = LoggerFactory.getLogger(InformationNode.class);
 
 	private final BeanOutputConverter<Plan> converter;
 
-	public PlannerDispatcher() {
-		converter = new BeanOutputConverter<>(Plan.class);
+	public InformationNode() {
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
+		});
 	}
 
 	@Override
-	public String apply(OverAllState state) {
+	public Map<String, Object> apply(OverAllState state) {
 		String result = state.value("planner_content", "");
 		logger.info("planner_content: {}", result);
 		assert Strings.isBlank(result);
@@ -59,12 +61,11 @@ public class PlannerDispatcher implements EdgeAction {
 			logger.info("反序列成功，convert: {}", curPlan);
 			// 2.1 反序列化成功，上下文充足，跳转reporter节点
 			if (curPlan.isHasEnoughContext()) {
-				logger.info("Planner response has enough context.");
+				logger.info("Information has enough context.");
 				updated.put("current_plan", curPlan);
-				updated.put("planner_next_node", nextStep);
-				logger.info("planner node -> {} node", nextStep);
-				state.input(updated);
-				return nextStep;
+				updated.put("information_next_node", nextStep);
+				logger.info("information node -> {} node", nextStep);
+				return updated;
 			}
 		}
 		catch (Exception e) {
@@ -74,17 +75,15 @@ public class PlannerDispatcher implements EdgeAction {
 				// 尝试重新生成计划
 				updated.put("plan_iterations", StateUtil.getPlanIterations(state) + 1);
 				nextStep = "planner";
-				updated.put("planner_next_node", nextStep);
-				logger.info("planner node -> {} node", nextStep);
-				state.input(updated);
-				return nextStep;
+				updated.put("information_next_node", nextStep);
+				logger.info("information node -> {} node", nextStep);
+				return updated;
 			}
 			else {
 				nextStep = END;
-				updated.put("planner_next_node", nextStep);
-				logger.warn("planner node -> {} node", nextStep);
-				state.input(updated);
-				return nextStep;
+				updated.put("information_next_node", nextStep);
+				logger.warn("information node -> {} node", nextStep);
+				return updated;
 			}
 		}
 		// 2.3 上下文不足，跳转到human_feedback节点
@@ -96,10 +95,9 @@ public class PlannerDispatcher implements EdgeAction {
 			updated.put("plan_iterations", StateUtil.getPlanIterations(state) + 1);
 		}
 		updated.put("current_plan", curPlan);
-		updated.put("planner_next_node", nextStep);
-		logger.info("planner node -> {} node", nextStep);
-		state.input(updated);
-		return nextStep;
+		updated.put("information_next_node", nextStep);
+		logger.info("information node -> {} node", nextStep);
+		return updated;
 	}
 
 }

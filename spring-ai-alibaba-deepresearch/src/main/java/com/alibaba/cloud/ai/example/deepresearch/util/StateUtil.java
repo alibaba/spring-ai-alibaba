@@ -79,7 +79,7 @@ public class StateUtil {
 	}
 
 	public static Integer getPlanMaxIterations(OverAllState state) {
-		return state.value("plan_max_iterations", 1);
+		return state.value("max_plan_iterations", 1);
 	}
 
 	public static Integer getMaxStepNum(OverAllState state) {
