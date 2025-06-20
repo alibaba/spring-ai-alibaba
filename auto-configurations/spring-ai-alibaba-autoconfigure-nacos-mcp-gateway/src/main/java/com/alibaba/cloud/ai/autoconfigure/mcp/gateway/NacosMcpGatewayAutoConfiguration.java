@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.mcp.server;
+package com.alibaba.cloud.ai.autoconfigure.mcp.gateway;
 
 import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
 import com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties;
@@ -63,8 +63,8 @@ import java.util.concurrent.TimeUnit;
  * @author aias00
  */
 @EnableConfigurationProperties({ NacosMcpProperties.class, NacosMcpGatewayProperties.class, McpServerProperties.class })
-@AutoConfiguration(after = { McpServerAutoConfiguration.class, NacosMcpRegistryAutoConfiguration.class })
-@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+@AutoConfiguration(after = { McpServerAutoConfiguration.class })
+@ConditionalOnProperty(prefix = NacosMcpGatewayProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class NacosMcpGatewayAutoConfiguration implements ApplicationContextAware {
 
