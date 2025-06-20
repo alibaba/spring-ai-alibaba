@@ -136,7 +136,7 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("planner_content", new ReplaceStrategy());
 
 			for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
-					.get(ParallelEnum.RESEARCHER.getValue()); i++) {
+				.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 				keyStrategyHashMap.put(ParallelEnum.RESEARCHER.getValue() + "_content_" + i, new ReplaceStrategy());
 			}
 			for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
@@ -148,33 +148,33 @@ public class DeepResearchConfiguration {
 
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
-				.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
-				.addNode("background_investigator",
-						node_async(new BackgroundInvestigationNode(tavilySearchService, jinaCrawlerService)))
-				.addNode("planner", node_async((new PlannerNode(plannerAgent))))
-				.addNode("information", node_async((new InformationNode())))
-				.addNode("human_feedback", node_async(new HumanFeedbackNode()))
-				.addNode("research_team", node_async(new ResearchTeamNode()))
-				.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-				.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportRedisService))))
-				.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
+			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
+			.addNode("background_investigator",
+					node_async(new BackgroundInvestigationNode(tavilySearchService, jinaCrawlerService)))
+			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
+			.addNode("information", node_async((new InformationNode())))
+			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
+			.addNode("research_team", node_async(new ResearchTeamNode()))
+			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
+			.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportRedisService))))
+			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
 
 		// 添加并行节点块
 		configureParallelNodes(stateGraph);
 
 		stateGraph.addEdge(START, "coordinator")
-				.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
-						Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
-				.addEdge("background_investigator", "planner")
-				.addEdge("planner", "information")
-				.addConditionalEdges("information", edge_async(new InformationDispatcher()),
-						Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
-								"research_team", "research_team", END, END))
-				.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
-						Map.of("planner", "planner", "research_team", "research_team", END, END))
-				.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
-						Map.of("reporter", "reporter", "parallel_executor", "parallel_executor", END, END))
-				.addEdge("reporter", END);
+			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
+					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
+			.addEdge("background_investigator", "planner")
+			.addEdge("planner", "information")
+			.addConditionalEdges("information", edge_async(new InformationDispatcher()),
+					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
+							"research_team", "research_team", END, END))
+			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
+					Map.of("planner", "planner", "research_team", "research_team", END, END))
+			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
+					Map.of("reporter", "reporter", "parallel_executor", "parallel_executor", END, END))
+			.addEdge("reporter", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
 				"workflow graph");
@@ -194,7 +194,7 @@ public class DeepResearchConfiguration {
 
 	private void addResearcherNodes(StateGraph stateGraph) throws GraphStateException {
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
-				.get(ParallelEnum.RESEARCHER.getValue()); i++) {
+			.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 			String nodeId = "researcher_" + i;
 			stateGraph.addNode(nodeId, node_async(new ResearcherNode(researchAgent, String.valueOf(i))));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
