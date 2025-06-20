@@ -45,9 +45,11 @@ import ChatContainer from '@/components/chat/index.vue'
 import InputArea from '@/components/input/index.vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import { useSidebarStore } from '@/stores/sidebar'
+import { useRightPanelStore } from '@/stores/right-panel'
 
-// 使用pinia store
+// 使用pinia stores
 const sidebarStore = useSidebarStore()
+const rightPanelStore = useRightPanelStore()
 
 // 定义 props
 interface Props {
@@ -62,12 +64,10 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: '向 JTaskPilot 发送消息',
 })
 
-// 定义 emits - 移除 plan-mode-clicked
+// 定义 emits - 移除 plan-update 和 step-selected，因为现在直接使用 store
 interface Emits {
-  (e: 'plan-update', planData: any): void
   (e: 'plan-completed', result: any): void
   (e: 'dialog-round-start', planId: string, query: string): void
-  (e: 'step-selected', planId: string, stepIndex: number): void
   (e: 'message-sent', message: string): void
 }
 
@@ -146,8 +146,8 @@ const handlePlanManagerUpdate = (planData: any) => {
   // 更新加载状态
   isLoading.value = !planData.completed
 
-  // 向父组件发射事件
-  emit('plan-update', planData)
+  // 直接使用right-panel store处理计划更新，替代emit事件
+  rightPanelStore.handlePlanUpdate(planData)
 }
 
 /**
@@ -271,7 +271,6 @@ const handleInputUpdateState = (enabled: boolean, placeholder?: string) => {
 
 const handlePlanModeClicked = () => {
   console.log('[PlanExecutionComponent] Plan mode button clicked, toggling sidebar')
-  // 直接使用pinia store切换sidebar
   sidebarStore.toggleSidebar()
 }
 
@@ -285,7 +284,6 @@ const handleMessageSent = (message: string) => {
 
 const handlePlanUpdate = (planData: any) => {
   console.log('[PlanExecutionComponent] Plan updated:', planData)
-  emit('plan-update', planData)
 }
 
 const handlePlanCompleted = (result: any) => {
@@ -303,8 +301,6 @@ const handleStepSelected = (planId: string, stepIndex: number) => {
       console.warn('[PlanExecutionComponent] Failed to refresh progress immediately:', error)
     })
   }
-
-  emit('step-selected', planId, stepIndex)
 }
 
 const handleDialogRoundStart = (planId: string, query: string) => {

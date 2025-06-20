@@ -313,6 +313,7 @@ import { PlanActApiService } from '@/api/plan-act-api-service'
 import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
+import { useRightPanelStore } from '@/stores/right-panel'
 
 interface Message {
   id: string
@@ -369,6 +370,9 @@ const emit = defineEmits<Emits>()
 
 // 使用计划执行管理器
 const planExecution = usePlanExecution()
+
+// 使用right-panel store
+const rightPanelStore = useRightPanelStore()
 
 const messagesRef = ref<HTMLElement>()
 const isLoading = ref(false)
@@ -698,8 +702,8 @@ const handleStepClick = (message: Message, stepIndex: number) => {
     stepTitle: message.steps?.[stepIndex]?.title || message.steps?.[stepIndex],
   })
 
-  // 通过 emit 通知父组件显示步骤详情
-  emit('step-selected', message.planId, stepIndex)
+  // 直接使用right-panel store显示步骤详情，替代emit事件
+  rightPanelStore.showStepDetails(message.planId, stepIndex)
 }
 
 // 旧的handlePlanUpdate函数已移除，保留计算进度和更新步骤动作的函数
@@ -874,6 +878,9 @@ const handlePlanUpdate = (planDetails: any) => {
     console.warn('[ChatComponent] Plan update missing planId')
     return
   }
+
+  // 直接使用right-panel store处理计划更新，替代emit事件
+  rightPanelStore.handlePlanUpdate(planDetails)
 
   // 找到对应的消息
   const messageIndex = messages.value.findIndex(

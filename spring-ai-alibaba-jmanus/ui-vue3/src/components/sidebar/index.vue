@@ -401,13 +401,13 @@ defineExpose({
   overflow: hidden;
 }
 .sidebar-wrapper-collapsed {
-  width: 0;
   border-right: none;
+  width: 0;
+  /* transform: translateX(-100%); */
 
   .sidebar-content {
     opacity: 0;
     pointer-events: none;
-    transform: translateX(-100%);
   }
 }
 
