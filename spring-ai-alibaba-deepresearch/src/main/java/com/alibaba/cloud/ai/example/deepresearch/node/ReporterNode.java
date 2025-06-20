@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
@@ -45,14 +46,14 @@ public class ReporterNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(ReporterNode.class);
 
-	private final ChatClient chatClient;
+	private final ChatClient reporterAgent;
 
 	private static final String RESEARCH_FORMAT = "# Research Requirements\n\n## Task\n\n{0}\n\n## Description\n\n{1}";
 
 	private final String REPORT_FORMAT = "IMPORTANT: Structure your report according to the format in the prompt. Remember to include:\n\n1. Key Points - A bulleted list of the most important findings\n2. Overview - A brief introduction to the topic\n3. Detailed Analysis - Organized into logical sections\n4. Survey Note (optional) - For more comprehensive reports\n5. Key Citations - List all references at the end\n\nFor citations, DO NOT include inline citations in the text. Instead, place all citations in the 'Key Citations' section at the end using the format: `- [Source Title](URL)`. Include an empty line between each citation for better readability.\n\nPRIORITIZE USING MARKDOWN TABLES for data presentation and comparison. Use tables whenever presenting comparative data, statistics, features, or options. Structure tables with clear headers and aligned columns. Example table format:\n\n| Feature | Description | Pros | Cons |\n|---------|-------------|------|------|\n| Feature 1 | Description 1 | Pros 1 | Cons 1 |\n| Feature 2 | Description 2 | Pros 2 | Cons 2 |";
 
-	public ReporterNode(ChatClient.Builder chatClientBuilder) {
-		this.chatClient = chatClientBuilder.build();
+	public ReporterNode(ChatClient reporterAgent) {
+		this.reporterAgent = reporterAgent;
 	}
 
 	@Override
@@ -68,26 +69,21 @@ public class ReporterNode implements NodeAction {
 		messages.add(new UserMessage(
 				MessageFormat.format(RESEARCH_FORMAT, currentPlan.getTitle(), currentPlan.getThought())));
 		messages.add(new UserMessage(REPORT_FORMAT));
-		// 1.3 添加观察的消息
-		for (String observation : StateUtil.getMessagesByType(state, "observations")) {
-			messages.add(new UserMessage(observation));
-		}
-		// 1.4 添加背景调查的消息
+		// 1.3 添加背景调查的消息
 		String backgroundInvestigationResults = state.value("background_investigation_results", "");
 		if (StringUtils.hasText(backgroundInvestigationResults)) {
 			messages.add(new UserMessage(backgroundInvestigationResults));
 		}
-		// 1.5 添加planner节点返回的信息
-		messages.add(new UserMessage(currentPlan.getThought()));
-		// 1.6 todo 添加研究者节点返回的信息
-		for (String researcherContent : StateUtil.getParallelMessages(state, "researcher", 3)) {
-			logger.info("researcher_content: {}", researcherContent);
-			messages.add(new UserMessage(researcherContent));
+		// 1.4 添加研究组节点返回的信息
+		List<String> researcherTeam = List.of(ParallelEnum.RESEARCHER.getValue(), ParallelEnum.CODER.getValue());
+		for (String content : StateUtil.getParallelMessages(state, researcherTeam, StateUtil.getMaxStepNum(state))) {
+			logger.info("researcherTeam_content: {}", content);
+			messages.add(new UserMessage(content));
 		}
 
 		logger.debug("reporter node messages: {}", messages);
 
-		var streamResult = chatClient.prompt().messages(messages).stream().chatResponse();
+		var streamResult = reporterAgent.prompt().messages(messages).stream().chatResponse();
 
 		var generator = StreamingChatGenerator.builder()
 			.startingNode("reporter_llm_stream")

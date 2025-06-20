@@ -79,6 +79,13 @@
       "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAgentProperties"
     },
     {
+      "name": "spring.ai.dashscope.agent.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable DashScope agent client.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAgentProperties",
+      "defaultValue": true
+    },
+    {
       "name": "spring.ai.dashscope.audio.synthesis.options",
       "type": "com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions",
       "description": "DashScope audio speech synthesis options.",
