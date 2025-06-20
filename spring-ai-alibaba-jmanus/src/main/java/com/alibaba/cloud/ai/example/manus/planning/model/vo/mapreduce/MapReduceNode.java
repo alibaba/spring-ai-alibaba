@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,9 +25,7 @@ import java.util.List;
 /**
  * MapReduce执行节点
  */
-public class MapReduceNode {
-
-	private MapReduceStepType type = MapReduceStepType.MAPREDUCE;
+public class MapReduceNode extends AbstractExecutionNode {
 
 	private List<ExecutionStep> dataPreparedSteps;
 
@@ -35,6 +34,7 @@ public class MapReduceNode {
 	private List<ExecutionStep> reduceSteps;
 
 	public MapReduceNode() {
+		super(MapReduceStepType.MAPREDUCE);
 		this.dataPreparedSteps = new ArrayList<>();
 		this.mapSteps = new ArrayList<>();
 		this.reduceSteps = new ArrayList<>();
@@ -42,14 +42,28 @@ public class MapReduceNode {
 
 	public MapReduceNode(List<ExecutionStep> dataPreparedSteps, List<ExecutionStep> mapSteps,
 			List<ExecutionStep> reduceSteps) {
+		super(MapReduceStepType.MAPREDUCE);
 		this.dataPreparedSteps = dataPreparedSteps != null ? dataPreparedSteps : new ArrayList<>();
 		this.mapSteps = mapSteps != null ? mapSteps : new ArrayList<>();
 		this.reduceSteps = reduceSteps != null ? reduceSteps : new ArrayList<>();
 	}
 
-	@JsonIgnore
-	public MapReduceStepType getType() {
-		return type;
+	/**
+	 * 获取节点类型的字符串表示，用于 Jackson 序列化/反序列化
+	 * @return 类型字符串
+	 */
+	@JsonProperty("type")
+	public String getTypeString() {
+		return "mapreduce";
+	}
+
+	/**
+	 * 设置节点类型，用于 Jackson 反序列化，实际不执行任何操作
+	 * @param typeString 类型字符串
+	 */
+	@JsonProperty("type")
+	public void setTypeString(String typeString) {
+		// 反序列化时忽略此字段，类型已在构造函数中设置
 	}
 
 	public List<ExecutionStep> getDataPreparedSteps() {

@@ -15,44 +15,39 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce;
 
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.util.List;
+
 /**
- * MapReduce步骤类型枚举
+ * 执行节点抽象基类，提供公共的默认实现
  */
-public enum MapReduceStepType {
+public abstract class AbstractExecutionNode implements ExecutionNode {
 
-	/**
-	 * 顺序执行步骤
-	 */
-	SEQUENTIAL("顺序执行", "sequential"),
+	@JsonIgnore
+	protected MapReduceStepType type;
 
-	/**
-	 * MapReduce模式执行步骤
-	 */
-	MAPREDUCE("MapReduce模式", "mapreduce");
-
-	private final String description;
-	private final String jsonTypeName;
-
-	MapReduceStepType(String description, String jsonTypeName) {
-		this.description = description;
-		this.jsonTypeName = jsonTypeName;
+	protected AbstractExecutionNode(MapReduceStepType type) {
+		this.type = type;
 	}
 
-	public String getDescription() {
-		return description;
+	@Override
+	@JsonIgnore
+	public MapReduceStepType getType() {
+		return type;
 	}
 
-	/**
-	 * 获取 JSON 序列化时使用的类型名称
-	 * @return JSON 类型名称
-	 */
-	public String getJsonTypeName() {
-		return jsonTypeName;
+	@Override
+	@JsonIgnore
+	public int getTotalStepCount() {
+		List<ExecutionStep> allSteps = getAllSteps();
+		return allSteps != null ? allSteps.size() : 0;
 	}
 
 	@Override
 	public String toString() {
-		return description;
+		return getNodeInStr();
 	}
 
 }

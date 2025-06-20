@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.ExecutionNode;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceNode;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.SequentialNode;
@@ -73,7 +74,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		try {
 			recordPlanExecutionStart(context);
-			List<Object> steps = mapReducePlan.getSteps();
+			List<ExecutionNode> steps = mapReducePlan.getSteps();
 
 			if (CollectionUtil.isNotEmpty(steps)) {
 				for (Object stepNode : steps) {

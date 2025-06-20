@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,22 +25,36 @@ import java.util.List;
 /**
  * 顺序执行节点
  */
-public class SequentialNode {
-
-	private MapReduceStepType type = MapReduceStepType.SEQUENTIAL;
+public class SequentialNode extends AbstractExecutionNode {
 
 	private List<ExecutionStep> steps;
 
 	public SequentialNode() {
+		super(MapReduceStepType.SEQUENTIAL);
 		this.steps = new ArrayList<>();
 	}
 
 	public SequentialNode(List<ExecutionStep> steps) {
+		super(MapReduceStepType.SEQUENTIAL);
 		this.steps = steps != null ? steps : new ArrayList<>();
 	}
 
-	public MapReduceStepType getType() {
-		return type;
+	/**
+	 * 获取节点类型的字符串表示，用于 Jackson 序列化/反序列化
+	 * @return 类型字符串
+	 */
+	@JsonProperty("type")
+	public String getTypeString() {
+		return "sequential";
+	}
+
+	/**
+	 * 设置节点类型，用于 Jackson 反序列化，实际不执行任何操作
+	 * @param typeString 类型字符串
+	 */
+	@JsonProperty("type")
+	public void setTypeString(String typeString) {
+		// 反序列化时忽略此字段，类型已在构造函数中设置
 	}
 
 	public List<ExecutionStep> getSteps() {
@@ -80,6 +95,12 @@ public class SequentialNode {
 			return steps.get(index);
 		}
 		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<ExecutionStep> getAllSteps() {
+		return steps != null ? new ArrayList<>(steps) : new ArrayList<>();
 	}
 
 	/**
