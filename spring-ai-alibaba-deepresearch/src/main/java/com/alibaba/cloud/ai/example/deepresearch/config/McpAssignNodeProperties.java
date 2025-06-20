@@ -26,8 +26,10 @@ import java.util.List;
  *
  * @author Makoto
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.deepresearch.mcp")
+@ConfigurationProperties(prefix = McpAssignNodeProperties.MCP_ASSIGN_NODE_PREFIX)
 public class McpAssignNodeProperties {
+
+	public static final String MCP_ASSIGN_NODE_PREFIX = DeepResearchProperties.PREFIX + ".mcp";
 
 	/**
 	 * 是否启用MCP代理节点分配
@@ -55,56 +57,13 @@ public class McpAssignNodeProperties {
 	/**
 	 * MCP服务器配置
 	 */
-	public static class McpServerConfig {
-
-		@JsonProperty("mcp-servers")
-		private List<McpServerInfo> mcpServers;
-
-		public List<McpServerInfo> getMcpServers() {
-			return mcpServers;
-		}
-
-		public void setMcpServers(List<McpServerInfo> mcpServers) {
-			this.mcpServers = mcpServers;
-		}
-
+	public static record McpServerConfig(@JsonProperty("mcp-servers") List<McpServerInfo> mcpServers) {
 	}
 
 	/**
 	 * MCP服务器信息
 	 */
-	public static class McpServerInfo {
-
-		private String url;
-
-		private String description;
-
-		private boolean enabled = true;
-
-		public String getUrl() {
-			return url;
-		}
-
-		public void setUrl(String url) {
-			this.url = url;
-		}
-
-		public String getDescription() {
-			return description;
-		}
-
-		public void setDescription(String description) {
-			this.description = description;
-		}
-
-		public boolean isEnabled() {
-			return enabled;
-		}
-
-		public void setEnabled(boolean enabled) {
-			this.enabled = enabled;
-		}
-
+	public static record McpServerInfo(String url, String sseEndpoint, String description, boolean enabled) {
 	}
 
 }
