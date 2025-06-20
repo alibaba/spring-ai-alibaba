@@ -16,22 +16,41 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.model.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * 存在性检查响应类
  *
  * @author huangzhen
  * @since 2025/6/20
  */
-public class ExistsResponse extends BaseResponse {
+public record ExistsResponse(
+		/**
+		 * 线程ID，用于标识当前对话的唯一性
+		 */
+		@JsonProperty("thread_id") String threadId,
 
-	private boolean exists;
+		/**
+		 * 状态
+		 */
+		@JsonProperty("status") String status,
 
-	public boolean isExists() {
-		return exists;
+		/**
+		 * 消息
+		 */
+		@JsonProperty("message") String message,
+
+		/**
+		 * 是否存在
+		 */
+		@JsonProperty("exists") boolean exists) {
+
+	public static ExistsResponse success(String threadId, boolean exists) {
+		String message = exists ? "Resource exists" : "Resource does not exist";
+		return new ExistsResponse(threadId, "success", message, exists);
 	}
 
-	public void setExists(boolean exists) {
-		this.exists = exists;
+	public static ExistsResponse error(String threadId, String message) {
+		return new ExistsResponse(threadId, "error", message, false);
 	}
-
 }
