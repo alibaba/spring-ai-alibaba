@@ -111,13 +111,13 @@ public class InteractiveElement {
 	@Override
 	public String toString() {
 		String content = text.isEmpty() ? outerHtml : text;
-		
+
 		// 如果使用的是outerHtml，移除jmanus-id属性和style属性
 		if (text.isEmpty() && content != null) {
 			content = content.replaceAll("\\s+jmanus-id=\"[^\"]*\"", "");
 			content = content.replaceAll("\\s+style=\"[^\"]*\"", "");
 		}
-		
+
 		if (content.length() > 500) {
 			content = content.substring(0, 500) + " ... " + content.substring(content.length() - 100);
 		}
