@@ -289,6 +289,9 @@ public final class OverAllState implements Serializable {
 	 * @return the over all state
 	 */
 	public OverAllState registerKeyAndStrategy(String key, KeyStrategy strategy) {
+		if (this.keyStrategies.containsKey(key)) {
+			return this;
+		}
 		this.keyStrategies.put(key, strategy);
 		return this;
 	}
