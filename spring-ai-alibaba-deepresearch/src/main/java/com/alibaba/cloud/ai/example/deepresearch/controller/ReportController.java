@@ -16,7 +16,10 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
-import com.alibaba.cloud.ai.example.deepresearch.service.ReportRedisService;
+import com.alibaba.cloud.ai.example.deepresearch.model.response.BaseResponse;
+import com.alibaba.cloud.ai.example.deepresearch.model.response.ExistsResponse;
+import com.alibaba.cloud.ai.example.deepresearch.model.response.ReportResponse;
+import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -34,10 +37,10 @@ public class ReportController {
 
 	private static final Logger logger = LoggerFactory.getLogger(ReportController.class);
 
-	private final ReportRedisService reportRedisService;
+	private final ReportService reportService;
 
-	public ReportController(ReportRedisService reportRedisService) {
-		this.reportRedisService = reportRedisService;
+	public ReportController(ReportService reportService) {
+		this.reportService = reportService;
 	}
 
 	/**
@@ -49,7 +52,7 @@ public class ReportController {
 	public ResponseEntity<ReportResponse> getReport(@PathVariable String threadId) {
 		try {
 			logger.info("查询报告，线程ID: {}", threadId);
-			String report = reportRedisService.getReport(threadId);
+			String report = reportService.getReport(threadId);
 
 			if (report != null) {
 				ReportResponse response = new ReportResponse();
@@ -86,7 +89,7 @@ public class ReportController {
 	public ResponseEntity<ExistsResponse> existsReport(@PathVariable String threadId) {
 		try {
 			logger.info("检查报告是否存在，线程ID: {}", threadId);
-			boolean exists = reportRedisService.existsReport(threadId);
+			boolean exists = reportService.existsReport(threadId);
 
 			ExistsResponse response = new ExistsResponse();
 			response.setThreadId(threadId);
@@ -117,7 +120,7 @@ public class ReportController {
 		try {
 			logger.info("删除报告，线程ID: {}", threadId);
 
-			if (!reportRedisService.existsReport(threadId)) {
+			if (!reportService.existsReport(threadId)) {
 				BaseResponse response = new BaseResponse();
 				response.setThreadId(threadId);
 				response.setStatus("not_found");
@@ -125,7 +128,7 @@ public class ReportController {
 				return ResponseEntity.notFound().build();
 			}
 
-			reportRedisService.deleteReport(threadId);
+			reportService.deleteReport(threadId);
 
 			BaseResponse response = new BaseResponse();
 			response.setThreadId(threadId);
@@ -142,77 +145,6 @@ public class ReportController {
 			response.setMessage("删除报告失败: " + e.getMessage());
 			return ResponseEntity.internalServerError().body(response);
 		}
-	}
-
-	/**
-	 * 基础响应类
-	 */
-	public static class BaseResponse {
-
-		private String threadId;
-
-		private String status;
-
-		private String message;
-
-		public String getThreadId() {
-			return threadId;
-		}
-
-		public void setThreadId(String threadId) {
-			this.threadId = threadId;
-		}
-
-		public String getStatus() {
-			return status;
-		}
-
-		public void setStatus(String status) {
-			this.status = status;
-		}
-
-		public String getMessage() {
-			return message;
-		}
-
-		public void setMessage(String message) {
-			this.message = message;
-		}
-
-	}
-
-	/**
-	 * 报告响应类
-	 */
-	public static class ReportResponse extends BaseResponse {
-
-		private String report;
-
-		public String getReport() {
-			return report;
-		}
-
-		public void setReport(String report) {
-			this.report = report;
-		}
-
-	}
-
-	/**
-	 * 存在性检查响应类
-	 */
-	public static class ExistsResponse extends BaseResponse {
-
-		private boolean exists;
-
-		public boolean isExists() {
-			return exists;
-		}
-
-		public void setExists(boolean exists) {
-			this.exists = exists;
-		}
-
 	}
 
 }

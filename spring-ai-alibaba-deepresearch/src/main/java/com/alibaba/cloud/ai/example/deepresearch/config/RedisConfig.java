@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -30,6 +31,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  * @since 2025/6/18
  */
 @Configuration
+@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = false)
 public class RedisConfig {
 
 	/**

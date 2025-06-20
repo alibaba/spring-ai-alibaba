@@ -19,78 +19,65 @@ package com.alibaba.cloud.ai.example.deepresearch.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 报告 Redis 服务类
+ * 基于内存的报告服务类（当Redis不可用时使用）
  *
  * @author huangzhen
- * @since 2025/6/18
+ * @since 2025/6/20
  */
 @Service
-@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = false)
-public class ReportRedisService implements ReportService {
+@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "false", matchIfMissing = true)
+public class ReportMemoryService implements ReportService {
 
-	private static final Logger logger = LoggerFactory.getLogger(ReportRedisService.class);
-
-	private final RedisTemplate<String, Object> redisTemplate;
+	private static final Logger logger = LoggerFactory.getLogger(ReportMemoryService.class);
 
 	/**
-	 * Redis key 前缀
+	 * 内存存储，使用ConcurrentHashMap保证线程安全
 	 */
-	private static final String REPORT_KEY_PREFIX = "deepresearch:report:";
+	private final Map<String, String> reportStorage = new ConcurrentHashMap<>();
 
 	/**
-	 * 默认过期时间（24小时）
-	 */
-	private static final long DEFAULT_EXPIRE_HOURS = 24;
-
-	public ReportRedisService(RedisTemplate<String, Object> redisTemplate) {
-		this.redisTemplate = redisTemplate;
-	}
-
-	/**
-	 * 存储报告到 Redis
+	 * 存储报告到内存
 	 * @param threadId 线程ID
 	 * @param report 报告内容
 	 */
 	@Override
 	public void saveReport(String threadId, String report) {
 		try {
-			String key = buildKey(threadId);
-			redisTemplate.opsForValue().set(key, report, DEFAULT_EXPIRE_HOURS, TimeUnit.HOURS);
-			logger.info("报告已保存到 Redis，线程ID: {}, key: {}", threadId, key);
+			reportStorage.put(threadId, report);
+			logger.info("报告已保存到内存，线程ID: {}", threadId);
 		}
 		catch (Exception e) {
-			logger.error("保存报告到 Redis 失败，线程ID: {}", threadId, e);
+			logger.error("保存报告到内存失败，线程ID: {}", threadId, e);
 			throw new RuntimeException("保存报告失败", e);
 		}
 	}
 
 	/**
-	 * 从 Redis 获取报告
+	 * 从内存获取报告
 	 * @param threadId 线程ID
 	 * @return 报告内容，如果不存在返回 null
 	 */
 	@Override
 	public String getReport(String threadId) {
 		try {
-			String key = buildKey(threadId);
-			Object result = redisTemplate.opsForValue().get(key);
-			if (result != null) {
-				logger.info("从 Redis 获取报告成功，线程ID: {}, key: {}", threadId, key);
-				return result.toString();
+			String report = reportStorage.get(threadId);
+			if (report != null) {
+				logger.info("从内存获取报告成功，线程ID: {}", threadId);
+				return report;
 			}
 			else {
-				logger.warn("Redis 中未找到报告，线程ID: {}, key: {}", threadId, key);
+				logger.warn("内存中未找到报告，线程ID: {}", threadId);
 				return null;
 			}
 		}
 		catch (Exception e) {
-			logger.error("从 Redis 获取报告失败，线程ID: {}", threadId, e);
+			logger.error("从内存获取报告失败，线程ID: {}", threadId, e);
 			throw new RuntimeException("获取报告失败", e);
 		}
 	}
@@ -103,9 +90,9 @@ public class ReportRedisService implements ReportService {
 	@Override
 	public boolean existsReport(String threadId) {
 		try {
-			String key = buildKey(threadId);
-			Boolean exists = redisTemplate.hasKey(key);
-			return exists != null && exists;
+			boolean exists = reportStorage.containsKey(threadId);
+			logger.debug("检查报告是否存在，线程ID: {}, 存在: {}", threadId, exists);
+			return exists;
 		}
 		catch (Exception e) {
 			logger.error("检查报告是否存在失败，线程ID: {}", threadId, e);
@@ -120,9 +107,8 @@ public class ReportRedisService implements ReportService {
 	@Override
 	public void deleteReport(String threadId) {
 		try {
-			String key = buildKey(threadId);
-			redisTemplate.delete(key);
-			logger.info("已删除 Redis 中的报告，线程ID: {}, key: {}", threadId, key);
+			reportStorage.remove(threadId);
+			logger.info("已删除内存中的报告，线程ID: {}", threadId);
 		}
 		catch (Exception e) {
 			logger.error("删除报告失败，线程ID: {}", threadId, e);
@@ -130,13 +116,4 @@ public class ReportRedisService implements ReportService {
 		}
 	}
 
-	/**
-	 * 构建 Redis key
-	 * @param threadId 线程ID
-	 * @return Redis key
-	 */
-	private String buildKey(String threadId) {
-		return REPORT_KEY_PREFIX + threadId;
-	}
-
-}
+} 
