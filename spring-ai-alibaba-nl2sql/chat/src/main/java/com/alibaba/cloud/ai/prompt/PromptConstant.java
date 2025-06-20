@@ -565,4 +565,99 @@ public class PromptConstant {
 	public static final PromptTemplate EXTRACT_DATETIME_PROMPT_TEMPLATE = new PromptTemplate(
 			EXTRACT_DATETIME_PROMPT_STRING);
 
+	public static final String SEMANTIC_CONSISTENC_PROMPT_STRING = """
+			# 角色
+			您是一位注重实效的SQL审计助手，核心目标是判断SQL是否满足业务需求主干。在保证数据准确性的前提下，允许存在可通过简单修改调整的非核心问题。
+
+			# 业务背景
+			## 用户需求：
+			%s
+			## 待验证SQL：
+			%s
+
+			# 审计原则
+			1. **核心需求优先**：仅关注影响结果准确性的关键要素
+			2. **允许合理偏差**：接受不影响业务决策的细微差异
+			3. **优化建议分离**：将改进建议与通过判定分离
+
+			# 审计维度
+			## 1. 核心逻辑验证
+			- ✅ **关键过滤条件**：时间范围、状态值等影响结果主干的条件
+			- ✅ **核心计算逻辑**：SUM/COUNT等聚合函数是否本质正确
+			- ✅ **主字段覆盖**：是否包含业务决策必需字段
+
+			## 2. 弹性接受项
+			- ➡️ 非关键字段缺失/多余（不影响业务解读）
+			- ➡️ 排序规则偏差（非核心排序需求）
+			- ➡️ 语法优化项（不影响结果正确性）
+
+			## 3. 问题分级
+			-  **致命问题**：结果错误、核心逻辑缺失
+			-  **可修复问题**：需简单调整的非核心问题
+			-  **优化建议**：代码规范等非功能性改进
+
+			# 不通过判定标准
+			仅当存在以下情况时判定不通过：
+			1. 核心业务逻辑错误（如错误聚合计算）
+			2. 关键过滤条件缺失导致结果失真
+			3. 结构缺陷导致无法通过简单修改修复
+
+			# 输出格式
+			请严格只返回“通过”或“不通过，并附具体原因”。
+
+
+			""".formatted("{nl_req}", "{sql}");
+
+	public static final PromptTemplate SEMANTIC_CONSISTENC_PROMPT_TEMPLATE = new PromptTemplate(
+			SEMANTIC_CONSISTENC_PROMPT_STRING);
+
+	public static final String MIX_SQL_GENERATOR_SYSTEM_PROMPT_CHECK_STRING = """
+			现在你是一个%s生成师，请评估以下内容能否生成可执行SQL：
+
+			### 核心审查原则（优先级从高到低）：
+			1. **表必须存在** \s
+			   - 问题直接提及的表必须在schema中定义
+			   - 衍生表（如子查询结果）无需预先存在
+
+			2. **基础字段验证** \s
+			   - 计算所需的原始字段必须存在（如计算总价需要单价和数量）
+			   - 业务术语允许映射（如状态值可通过参考信息解释）
+
+			3. **智能连接推导** \s
+			   - 通过业务语义自动关联实体（如涉及多实体时推导主外键关系）
+			   - 参考信息中声明的连接关系直接采纳
+			   - 仅当多表查询且完全无法推导连接逻辑时才判否
+
+			4. **操作可行性检查** \s
+			   - 聚合操作只需基础字段存在且类型合理
+			   - 状态过滤支持业务术语到字段值的映射
+
+			### 硬性缺失判定标准（任一不满足即返回"否"）：
+			❌ 问题直接提及的表缺失 \s
+			❌ 计算所需的基础字段完全不存在 \s
+			❌ 多表查询且连接逻辑完全无法推导 \s
+			❌ 关键过滤条件字段缺失且无法映射 \s
+
+			  ### 返回格式（严格只允许如下两种）：
+			  - **全部满足上述条件** → 返回：“是”
+			  - **任一条件不满足** → 返回：“否”，并附具体原因（不超过1句话）
+
+			  ---
+			  【数据库schema】
+			  %s
+
+			  【参考信息】
+			  %s
+
+			  【客户问题】
+			  %s
+
+			  ---
+			  【审查结果】
+			   请严格只返回“是”或“否，并附具体原因（不超过1句话）”。
+			""".formatted("{dialect}", "{schema_info}", "{evidence}", "{question}");
+
+	public static final PromptTemplate MIX_SQL_GENERATOR_SYSTEM_PROMPT_CHECK_TEMPLATE = new PromptTemplate(
+			MIX_SQL_GENERATOR_SYSTEM_PROMPT_CHECK_STRING);
+
 }

@@ -31,10 +31,14 @@ import org.springframework.ai.document.Document;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.alibaba.cloud.ai.constant.Constant.INTENT_UNCLEAR;
+import static com.alibaba.cloud.ai.constant.Constant.SMALL_TALK_REJECT;
+import static com.alibaba.cloud.ai.prompt.PromptHelper.buildMixMacSqlDbPrompt;
 import static com.alibaba.cloud.ai.prompt.PromptHelper.buildMixSelectorPrompt;
 
 public class BaseNl2SqlService {
@@ -59,8 +63,7 @@ public class BaseNl2SqlService {
 	}
 
 	public String rewrite(String query) throws Exception {
-		List<Document> evidenceDocuments = vectorStoreService.getDocuments(query, "evidence");
-		List<String> evidences = evidenceDocuments.stream().map(Document::getText).collect(Collectors.toList());
+		List<String> evidences = extractEvidences(query);
 		SchemaDTO schemaDTO = select(query, evidences);
 		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
 		String responseContent = aiService.call(prompt);
@@ -69,10 +72,10 @@ public class BaseNl2SqlService {
 			if (line.startsWith("需求类型：")) {
 				String content = line.substring(5).trim();
 				if ("《自由闲聊》".equals(content)) {
-					return "闲聊拒识";
+					return SMALL_TALK_REJECT;
 				}
 				else if ("《需要澄清》".equals(content)) {
-					return "意图模糊需要澄清";
+					return INTENT_UNCLEAR;
 				}
 			}
 			else if (line.startsWith("需求内容：")) {
@@ -83,8 +86,7 @@ public class BaseNl2SqlService {
 	}
 
 	public String nl2sql(String query) throws Exception {
-		List<Document> evidenceDocuments = vectorStoreService.getDocuments(query, "evidence");
-		List<String> evidences = evidenceDocuments.stream().map(Document::getText).collect(Collectors.toList());
+		List<String> evidences = extractEvidences(query);
 		SchemaDTO schemaDTO = select(query, evidences);
 		return generateSql(evidences, query, schemaDTO);
 	}
@@ -95,7 +97,21 @@ public class BaseNl2SqlService {
 		return MdTableGenerator.generateTable(resultSet);
 	}
 
-	public SchemaDTO select(String query, List<String> evidenceList) throws Exception {
+	public String semanticConsistency(String sql, String queryPrompt) throws Exception {
+		String semanticConsistenPrompt = PromptHelper.buildSemanticConsistenPrompt(queryPrompt, sql);
+		String call = aiService.call(semanticConsistenPrompt);
+		return call;
+	}
+
+	/**
+	 * 抽取证据
+	 */
+	public List<String> extractEvidences(String query) {
+		List<Document> evidenceDocuments = vectorStoreService.getDocuments(query, "evidence");
+		return evidenceDocuments.stream().map(Document::getText).collect(Collectors.toList());
+	}
+
+	public List<String> extractKeywords(String query, List<String> evidenceList) {
 		StringBuilder queryBuilder = new StringBuilder(query);
 		for (String evidence : evidenceList) {
 			queryBuilder.append(evidence).append("。");
@@ -107,11 +123,22 @@ public class BaseNl2SqlService {
 
 		List<String> keywords = new Gson().fromJson(content, new TypeToken<List<String>>() {
 		}.getType());
+		return keywords;
+	}
+
+	public SchemaDTO select(String query, List<String> evidenceList) throws Exception {
+		List<String> keywords = extractKeywords(query, evidenceList);
 		SchemaDTO schemaDTO = schemaService.mixRag(query, keywords);
 		return fineSelect(schemaDTO, query, evidenceList);
 	}
 
-	public String generateSql(List<String> evidenceList, String query, SchemaDTO schemaDTO) throws Exception {
+	public String isRecallInfoSatisfyRequirement(String query, SchemaDTO schemaDTO, List<String> evidenceList) {
+		String prompt = PromptHelper.mixSqlGeneratorSystemCheckPrompt(query, dbConfig, schemaDTO, evidenceList);
+		return aiService.call(prompt);
+	}
+
+	public String generateSql(List<String> evidenceList, String query, SchemaDTO schemaDTO, String sql,
+			String exceptionMessage) throws Exception {
 		// TODO 时间处理暂时未应用
 		String dateTimeExtractPrompt = PromptHelper.buildDateTimeExtractPrompt(query);
 		String content = aiService.call(dateTimeExtractPrompt);
@@ -129,13 +156,57 @@ public class BaseNl2SqlService {
 		expressionList.addAll(dateTimeList);
 
 		List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(query, dbConfig, schemaDTO, evidenceList);
-		return MarkdownParser.extractRawText(aiService.callWithSystemPrompt(prompts.get(0), prompts.get(1))).trim();
+		String newSql = "";
+		if (sql != null && !sql.isEmpty()) {
+			newSql = aiService.callWithSystemPrompt(prompts.get(0),
+					prompts.get(1) + "\n 上面描述的是需求，目前我已经生成了一个SQL，但是报错了，SQL是:" + sql + "\n 错误信息是:" + exceptionMessage
+							+ "\n 请你帮我修改这个SQL，确保它能正确执行。");
+		}
+		else {
+			newSql = aiService.callWithSystemPrompt(prompts.get(0), prompts.get(1));
+		}
+		return MarkdownParser.extractRawText(newSql).trim();
+	}
+
+	public String generateSql(List<String> evidenceList, String query, SchemaDTO schemaDTO) throws Exception {
+		return generateSql(evidenceList, query, schemaDTO, null, null);
+	}
+
+	public Set<String> fineSelect(SchemaDTO schemaDTO, String sqlGenerateSchemaMissingAdvice) {
+		String schemaInfo = buildMixMacSqlDbPrompt(schemaDTO, true);
+		String prompt = " 建议：" + sqlGenerateSchemaMissingAdvice
+				+ " \n 请按照建议进行返回相关表的名称，只返回建议中提到的表名，返回格式为：[\"a\",\"b\",\"c\"] \n " + schemaInfo;
+		String content = aiService.call(prompt);
+		if (content != null && !content.trim().isEmpty()) {
+			String jsonContent = MarkdownParser.extractText(content);
+			List<String> tableList;
+			try {
+				tableList = new Gson().fromJson(jsonContent, new TypeToken<List<String>>() {
+				}.getType());
+			}
+			catch (Exception e) {
+				throw new IllegalStateException(jsonContent);
+			}
+			if (tableList != null && !tableList.isEmpty()) {
+				Set<String> selectedTables = tableList.stream().map(String::toLowerCase).collect(Collectors.toSet());
+				return selectedTables;
+			}
+		}
+		return new HashSet<>();
 	}
 
 	public SchemaDTO fineSelect(SchemaDTO schemaDTO, String query, List<String> evidenceList) {
+		return fineSelect(schemaDTO, query, evidenceList, null);
+	}
+
+	public SchemaDTO fineSelect(SchemaDTO schemaDTO, String query, List<String> evidenceList,
+			String sqlGenerateSchemaMissingAdvice) {
 		String prompt = buildMixSelectorPrompt(evidenceList, query, schemaDTO);
 		String content = aiService.call(prompt);
-
+		Set<String> selectedTables = new HashSet<>();
+		if (sqlGenerateSchemaMissingAdvice != null) {
+			selectedTables.addAll(this.fineSelect(schemaDTO, sqlGenerateSchemaMissingAdvice));
+		}
 		if (content != null && !content.trim().isEmpty()) {
 			String jsonContent = MarkdownParser.extractText(content);
 			List<String> tableList;
@@ -150,7 +221,7 @@ public class BaseNl2SqlService {
 				throw new IllegalStateException(jsonContent);
 			}
 			if (tableList != null && !tableList.isEmpty()) {
-				Set<String> selectedTables = tableList.stream().map(String::toLowerCase).collect(Collectors.toSet());
+				selectedTables.addAll(tableList.stream().map(String::toLowerCase).collect(Collectors.toSet()));
 				schemaDTO.getTable().removeIf(table -> !selectedTables.contains(table.getName().toLowerCase()));
 			}
 		}
