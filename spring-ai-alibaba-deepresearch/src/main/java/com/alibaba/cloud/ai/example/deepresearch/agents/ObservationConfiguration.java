@@ -39,9 +39,9 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties({ ObservationProperties.class })
 @ConditionalOnProperty(prefix = ObservationProperties.PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-public class ObservationAutoConfiguration {
+public class ObservationConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(ObservationAutoConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(ObservationConfiguration.class);
 
 	@Bean
 	public ObservationHandler<ToolCallingObservationContext> toolCallingObservationContextObservationHandler() {
