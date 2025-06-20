@@ -153,15 +153,16 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 	public Document convertToDocument(TableInfoBO tableInfoBO, ColumnInfoBO columnInfoBO) {
 		String text = Optional.ofNullable(columnInfoBO.getDescription()).orElse(columnInfoBO.getName());
-		Map<String, Object> metadata = Map.of("name", columnInfoBO.getName(), "tableName", tableInfoBO.getName(),
-				"description", Optional.ofNullable(columnInfoBO.getDescription()).orElse(""), "type",
-				columnInfoBO.getType(), "primary", columnInfoBO.isPrimary(), "notnull", columnInfoBO.isNotnull(),
-				"vectorType", "column");
+		String id = tableInfoBO.getName() + "." + columnInfoBO.getName();
+		Map<String, Object> metadata = Map.of("id", id, "name", columnInfoBO.getName(), "tableName",
+				tableInfoBO.getName(), "description", Optional.ofNullable(columnInfoBO.getDescription()).orElse(""),
+				"type", columnInfoBO.getType(), "primary", columnInfoBO.isPrimary(), "notnull",
+				columnInfoBO.isNotnull(), "vectorType", "column");
 		if (columnInfoBO.getSamples() != null) {
 			metadata.put("samples", columnInfoBO.getSamples());
 		}
 		// 多表重复字段数据会被去重，采用表名+字段名作为唯一标识
-		return new Document(tableInfoBO.getName() + "." + columnInfoBO.getName(), text, metadata);
+		return new Document(id, text, metadata);
 	}
 
 	public Document convertTableToDocument(TableInfoBO tableInfoBO) {
@@ -251,7 +252,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	public List<Document> searchTableByNameAndVectorType(SearchRequest searchRequestDTO) {
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		Filter.Expression expression = b
-			.and(b.eq("vectorType", searchRequestDTO.getVectorType()), b.eq("name", searchRequestDTO.getName()))
+			.and(b.eq("vectorType", searchRequestDTO.getVectorType()), b.eq("id", searchRequestDTO.getName()))
 			.build();
 		return vectorStore.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
 			.topK(searchRequestDTO.getTopK())
