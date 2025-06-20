@@ -18,14 +18,19 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.AbstractExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
+这还需要增强： 第一个是要怎么识别sequential和Mapreduce ， 然后再看
 /**
  * MapReduce模式的执行计划
  */
 public class MapReduceExecutionPlan extends AbstractExecutionPlan {
+
+	private static final Logger logger = LoggerFactory.getLogger(MapReduceExecutionPlan.class);
 
 	private List<Object> steps; // 存储 SequentialNode 或 MapReduceNode
 
@@ -127,13 +132,27 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 
 	/**
 	 * 获取所有执行步骤（展平所有节点中的步骤）
+	 * 按照执行顺序返回：数据准备 → Map → Reduce
 	 * @return 所有执行步骤的列表
 	 */
 	@Override
 	@JsonIgnore
 	public List<ExecutionStep> getAllSteps() {
-		List<ExecutionStep> allSteps = new ArrayList<>();
-
+		// 预估总步骤数以优化性能
+		int estimatedSize = 0;
+		for (Object node : steps) {
+			if (node instanceof SequentialNode) {
+				SequentialNode seqNode = (SequentialNode) node;
+				estimatedSize += seqNode.getStepCount();
+			}
+			else if (node instanceof MapReduceNode) {
+				MapReduceNode mrNode = (MapReduceNode) node;
+				estimatedSize += mrNode.getTotalStepCount();
+			}
+		}
+		
+		List<ExecutionStep> allSteps = new ArrayList<>(estimatedSize);
+		
 		for (Object node : steps) {
 			if (node instanceof SequentialNode) {
 				SequentialNode seqNode = (SequentialNode) node;
@@ -143,7 +162,20 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 			}
 			else if (node instanceof MapReduceNode) {
 				MapReduceNode mrNode = (MapReduceNode) node;
-				allSteps.addAll(mrNode.getAllSteps());
+				// 按照执行顺序添加所有阶段的步骤
+				if (mrNode.getDataPreparedSteps() != null) {
+					allSteps.addAll(mrNode.getDataPreparedSteps());
+				}
+				if (mrNode.getMapSteps() != null) {
+					allSteps.addAll(mrNode.getMapSteps());
+				}
+				if (mrNode.getReduceSteps() != null) {
+					allSteps.addAll(mrNode.getReduceSteps());
+				}
+			}
+			else {
+				// 处理未知节点类型的日志记录
+				logger.warn("Unknown node type in execution plan: {}", node.getClass().getSimpleName());
 			}
 		}
 
@@ -227,8 +259,19 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 			else if (node instanceof MapReduceNode) {
 				MapReduceNode mrNode = (MapReduceNode) node;
 				sb.append("类型: MapReduce\n");
+				sb.append("数据准备步骤数: ").append(mrNode.getDataPreparedStepCount()).append("\n");
 				sb.append("Map步骤数: ").append(mrNode.getMapStepCount()).append("\n");
 				sb.append("Reduce步骤数: ").append(mrNode.getReduceStepCount()).append("\n");
+
+				if (mrNode.getDataPreparedSteps() != null && !mrNode.getDataPreparedSteps().isEmpty()) {
+					sb.append("  数据准备阶段:\n");
+					for (ExecutionStep step : mrNode.getDataPreparedSteps()) {
+						sb.append("    ").append(step.getStepInStr()).append("\n");
+						if (includeResults && step.getResult() != null) {
+							sb.append("      结果: ").append(step.getResult()).append("\n");
+						}
+					}
+				}
 
 				if (mrNode.getMapSteps() != null && !mrNode.getMapSteps().isEmpty()) {
 					sb.append("  Map阶段:\n");
@@ -293,6 +336,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 			}
 			else if (node instanceof MapReduceNode) {
 				MapReduceNode mrNode = (MapReduceNode) node;
+				mrNode.getDataPreparedSteps().remove(step);
 				mrNode.getMapSteps().remove(step);
 				mrNode.getReduceSteps().remove(step);
 			}
@@ -307,7 +351,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 更新所有步骤的索引，从0开始递增 为MapReduce计划中的所有步骤（包括Map和Reduce阶段）设置连续的索引
+	 * 更新所有步骤的索引，从0开始递增 为MapReduce计划中的所有步骤（包括数据准备、Map和Reduce阶段）设置连续的索引
 	 */
 	@Override
 	public void updateStepIndices() {
@@ -323,13 +367,19 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 			}
 			else if (node instanceof MapReduceNode) {
 				MapReduceNode mrNode = (MapReduceNode) node;
-				// 先设置Map步骤的索引
+				// 先设置数据准备步骤的索引
+				if (mrNode.getDataPreparedSteps() != null) {
+					for (ExecutionStep step : mrNode.getDataPreparedSteps()) {
+						step.setStepIndex(index++);
+					}
+				}
+				// 再设置Map步骤的索引
 				if (mrNode.getMapSteps() != null) {
 					for (ExecutionStep step : mrNode.getMapSteps()) {
 						step.setStepIndex(index++);
 					}
 				}
-				// 再设置Reduce步骤的索引
+				// 最后设置Reduce步骤的索引
 				if (mrNode.getReduceSteps() != null) {
 					for (ExecutionStep step : mrNode.getReduceSteps()) {
 						step.setStepIndex(index++);
