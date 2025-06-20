@@ -10,45 +10,30 @@ spring:
       embedding:
         options:
           model: text-embedding-v1
-      client:
-        connection-timeout: 60000
-        read-timeout: 300000
-        write-timeout: 60000
 
     mcp:
       client:
         type: async
-#        sse:
-#          connections:
-#            weather_mcp_server:
-#              url: http://localhost:8888
-#        stdio:
-#          servers-configuration: classpath:mcp-servers.json
         toolcallback:
           enabled: true
+        enabled: false
     alibaba:
       toolcalling:
         tavilysearch:
           enabled: true
           api-key: ${TAVILY_API_KEY}
         jinacrawler:
-          enabled: true
+          enabled: false
           api-key: ${JINA_API_KEY}
       deepresearch:
         mcp:
-          enabled: true
+          enabled: false
           config-location: classpath:mcp-config.json
         parallel-node-count:
           researcher: 5
           coder: 5
-#        mcp-client-mapping:
-#          researchAgent:
-#            - amap-maps
-#          coderAgent:
-#            - amap-maps
-#            - weather_mcp_server
         rag:
-          enabled: true
+          enabled: false
           # 可以设置为 'simple' 或 'elasticsearch'
           vector-store-type: simple
           data:
