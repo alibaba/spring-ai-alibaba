@@ -16,14 +16,10 @@
  */
 -->
 
-
 <template>
   <div class="direct-page">
-    <Sidebar 
-      ref="sidebarRef" 
-      @planExecutionRequested="handlePlanExecutionRequested"
-    />
     <div class="direct-chat">
+      <Sidebar @planExecutionRequested="handlePlanExecutionRequested" />
       <!-- Left Panel - Chat -->
       <div class="left-panel" :style="{ width: leftPanelWidth + '%' }">
         <div class="chat-header">
@@ -36,23 +32,20 @@
           </button>
         </div>
 
-        <PlanExecutionComponent 
+        <PlanExecutionComponent
           ref="planExecutionRef"
-          :initial-prompt="prompt || ''" 
+          :initial-prompt="prompt || ''"
           mode="direct"
           placeholder="向 JTaskPilot 发送消息"
-          @plan-update="handlePlanUpdate"
           @plan-completed="handlePlanCompleted"
           @dialog-round-start="handleDialogRoundStart"
-          @step-selected="handleStepSelected"
           @message-sent="handleMessageSent"
-          @plan-mode-clicked="handlePlanModeClicked"
         />
       </div>
 
       <!-- Resizer -->
-      <div 
-        class="panel-resizer" 
+      <div
+        class="panel-resizer"
         @mousedown="startResize"
         @dblclick="resetPanelSize"
         title="拖拽调整面板大小，双击重置"
@@ -61,10 +54,7 @@
       </div>
 
       <!-- Right Panel - Preview -->
-      <RightPanel 
-        ref="rightPanelRef" 
-        :style="{ width: (100 - leftPanelWidth) + '%' }"
-      />
+      <RightPanel ref="rightPanelRef" :style="{ width: 100 - leftPanelWidth + '%' }" />
     </div>
   </div>
 </template>
@@ -86,7 +76,6 @@ const taskStore = useTaskStore()
 const prompt = ref<string>('')
 const planExecutionRef = ref()
 const rightPanelRef = ref()
-const sidebarRef = ref()
 const isExecutingPlan = ref(false)
 
 // 面板宽度相关
@@ -99,7 +88,7 @@ onMounted(() => {
   console.log('[Direct] onMounted called')
   console.log('[Direct] taskStore.currentTask:', taskStore.currentTask)
   console.log('[Direct] taskStore.hasUnprocessedTask():', taskStore.hasUnprocessedTask())
-  
+
   // 检查 store 中是否有任务
   if (taskStore.hasUnprocessedTask() && taskStore.currentTask) {
     prompt.value = taskStore.currentTask.prompt
@@ -113,33 +102,41 @@ onMounted(() => {
     console.log('[Direct] Received task from URL:', prompt.value)
     console.log('[Direct] No unprocessed task in store')
   }
-  
+
   // 从 localStorage 恢复面板宽度
   const savedWidth = localStorage.getItem('directPanelWidth')
   if (savedWidth) {
     leftPanelWidth.value = parseFloat(savedWidth)
   }
-  
+
   console.log('[Direct] Final prompt value:', prompt.value)
 })
 
 // 监听 store 中的任务变化（仅处理未处理的任务）
-watch(() => taskStore.currentTask, (newTask) => {
-  console.log('[Direct] Watch taskStore.currentTask triggered, newTask:', newTask)
-  if (newTask && !newTask.processed) {
-    prompt.value = newTask.prompt
-    taskStore.markTaskAsProcessed()
-    console.log('[Direct] Received new task from store:', prompt.value)
-  } else {
-    console.log('[Direct] Task is null or already processed, ignoring')
-  }
-}, { immediate: false })
+watch(
+  () => taskStore.currentTask,
+  newTask => {
+    console.log('[Direct] Watch taskStore.currentTask triggered, newTask:', newTask)
+    if (newTask && !newTask.processed) {
+      prompt.value = newTask.prompt
+      taskStore.markTaskAsProcessed()
+      console.log('[Direct] Received new task from store:', prompt.value)
+    } else {
+      console.log('[Direct] Task is null or already processed, ignoring')
+    }
+  },
+  { immediate: false }
+)
 
 // 监听 prompt 值的变化，仅用于日志记录
-watch(() => prompt.value, (newPrompt, oldPrompt) => {
-  console.log('[Direct] prompt value changed from:', oldPrompt, 'to:', newPrompt)
-  // 不再手动调用 sendMessage，让 PlanExecutionComponent 通过 initialPrompt prop 自己处理
-}, { immediate: false })
+watch(
+  () => prompt.value,
+  (newPrompt, oldPrompt) => {
+    console.log('[Direct] prompt value changed from:', oldPrompt, 'to:', newPrompt)
+    // 不再手动调用 sendMessage，让 PlanExecutionComponent 通过 initialPrompt prop 自己处理
+  },
+  { immediate: false }
+)
 
 onUnmounted(() => {
   // 移除事件监听器
@@ -152,27 +149,27 @@ const startResize = (e: MouseEvent) => {
   isResizing.value = true
   startX.value = e.clientX
   startLeftWidth.value = leftPanelWidth.value
-  
+
   document.addEventListener('mousemove', handleMouseMove)
   document.addEventListener('mouseup', handleMouseUp)
   document.body.style.cursor = 'col-resize'
   document.body.style.userSelect = 'none'
-  
+
   e.preventDefault()
 }
 
 const handleMouseMove = (e: MouseEvent) => {
   if (!isResizing.value) return
-  
+
   const containerWidth = window.innerWidth
   const deltaX = e.clientX - startX.value
   const deltaPercent = (deltaX / containerWidth) * 100
-  
+
   let newWidth = startLeftWidth.value + deltaPercent
-  
+
   // 限制面板宽度在 20% 到 80% 之间
   newWidth = Math.max(20, Math.min(80, newWidth))
-  
+
   leftPanelWidth.value = newWidth
 }
 
@@ -182,7 +179,7 @@ const handleMouseUp = () => {
   document.removeEventListener('mouseup', handleMouseUp)
   document.body.style.cursor = ''
   document.body.style.userSelect = ''
-  
+
   // 保存到 localStorage
   localStorage.setItem('directPanelWidth', leftPanelWidth.value.toString())
 }
@@ -192,33 +189,9 @@ const resetPanelSize = () => {
   localStorage.setItem('directPanelWidth', '50')
 }
 
-const handlePlanUpdate = (planData: any) => {
-  console.log('[DirectView] Plan updated:', planData)
-  // 将计划更新传递给右侧面板
-  try {
-    if (rightPanelRef.value && typeof rightPanelRef.value.handlePlanUpdate === 'function') {
-      rightPanelRef.value.handlePlanUpdate(planData)
-    }
-  } catch (error) {
-    console.error('[DirectView] Error calling rightPanelRef.handlePlanUpdate:', error)
-  }
-}
-
 const handlePlanCompleted = (result: any) => {
   console.log('[DirectView] Plan completed:', result)
   // 处理计划完成事件
-}
-
-const handleStepSelected = (planId: string, stepIndex: number) => {
-  console.log('[DirectView] Step selected:', planId, stepIndex)
-  // 将步骤选择事件传递给右侧面板
-  try {
-    if (rightPanelRef.value && typeof rightPanelRef.value.showStepDetails === 'function') {
-      rightPanelRef.value.showStepDetails(planId, stepIndex)
-    }
-  } catch (error) {
-    console.error('[DirectView] Error calling rightPanelRef.showStepDetails:', error)
-  }
 }
 
 const handleDialogRoundStart = (planId: string, query: string) => {
@@ -235,40 +208,40 @@ const goBack = () => {
   router.push('/home')
 }
 
-const handlePlanModeClicked = () => {
-  console.log('[DirectView] Plan mode button clicked, toggling sidebar')
-  if (sidebarRef.value && typeof sidebarRef.value.toggleSidebar === 'function') {
-    sidebarRef.value.toggleSidebar()
-  } else {
-    console.warn('[DirectView] Sidebar ref not available or toggleSidebar method not found')
-  }
-}
-
 const handleConfig = () => {
   router.push('/configs')
 }
 
-const handlePlanExecutionRequested = async (payload: { title: string; planData: any; params?: string }) => {
+const handlePlanExecutionRequested = async (payload: {
+  title: string
+  planData: any
+  params?: string
+}) => {
   console.log('[DirectView] Plan execution requested:', payload)
-  
+
   // 防止重复执行
   if (isExecutingPlan.value) {
     console.log('[DirectView] Plan execution already in progress, ignoring request')
     return
   }
-  
+
   isExecutingPlan.value = true
-  
+
   try {
     // 获取计划模板ID
     const planTemplateId = payload.planData.planTemplateId || payload.planData.planId
-    
+
     if (!planTemplateId) {
       throw new Error('没有找到计划模板ID')
     }
-    
-    console.log('[Direct] Executing plan with templateId:', planTemplateId, 'params:', payload.params)
-    
+
+    console.log(
+      '[Direct] Executing plan with templateId:',
+      planTemplateId,
+      'params:',
+      payload.params
+    )
+
     // 调用真实的 API 执行计划
     console.log('[Direct] About to call PlanActApiService.executePlan')
     let response
@@ -279,20 +252,20 @@ const handlePlanExecutionRequested = async (payload: { title: string; planData: 
       console.log('[Direct] Calling executePlan without params')
       response = await PlanActApiService.executePlan(planTemplateId)
     }
-    
+
     console.log('[Direct] Plan execution API response:', response)
-    
+
     // 使用返回的 planId，启动计划执行流程，让管理器负责所有消息处理
     if (response.planId) {
       console.log('[Direct] Got planId from response:', response.planId, 'starting plan execution')
-      
+
       // 直接通过计划执行管理器启动执行，让它负责所有消息管理
       const manager = planExecutionRef.value?.getPlanExecutionManager()
       if (manager) {
         // 设置活动计划ID
         manager.state.activePlanId = response.planId
         console.log('[Direct] Set activePlanId to:', response.planId)
-        
+
         // 启动执行序列和轮询，这会处理所有必要的消息
         if (typeof manager.initiatePlanExecutionSequence === 'function') {
           console.log('[Direct] Starting plan execution sequence')
@@ -307,11 +280,10 @@ const handlePlanExecutionRequested = async (payload: { title: string; planData: 
       console.error('[Direct] No planId in response:', response)
       throw new Error('执行计划失败：未返回有效的计划ID')
     }
-    
   } catch (error: any) {
     console.error('[Direct] Plan execution failed:', error)
     console.error('[Direct] Error details:', { message: error.message, stack: error.stack })
-    
+
     // 获取chat组件的引用来显示错误
     const chatRef = planExecutionRef.value?.getChatRef()
     if (chatRef) {
@@ -320,7 +292,7 @@ const handlePlanExecutionRequested = async (payload: { title: string; planData: 
       chatRef.addMessage('user', payload.title)
       // 再添加错误消息
       chatRef.addMessage('assistant', `执行计划失败: ${error.message || '未知错误'}`, {
-        thinking: undefined
+        thinking: undefined,
       })
     } else {
       console.error('[Direct] Chat ref not available, showing alert')
@@ -368,16 +340,16 @@ const handlePlanExecutionRequested = async (payload: { title: string; planData: 
   justify-content: center;
   transition: background-color 0.2s ease;
   flex-shrink: 0;
-  
+
   &:hover {
     background: #2a2a2a;
-    
+
     .resizer-line {
       background: #4a90e2;
       width: 2px;
     }
   }
-  
+
   &:active {
     background: #3a3a3a;
   }

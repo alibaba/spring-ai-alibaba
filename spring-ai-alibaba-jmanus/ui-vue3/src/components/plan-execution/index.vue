@@ -15,18 +15,18 @@
 -->
 <template>
   <div class="plan-execution-container">
-    <ChatContainer 
+    <ChatContainer
       ref="chatRef"
-      :initial-prompt="initialPrompt" 
+      :initial-prompt="initialPrompt"
       @user-message-send-requested="handleMessageSent"
       @plan-update="handlePlanUpdate"
       @plan-completed="handlePlanCompleted"
       @step-selected="handleStepSelected"
       @dialog-round-start="handleDialogRoundStart"
     />
-    
+
     <!-- Input Area -->
-    <InputArea 
+    <InputArea
       ref="inputRef"
       :disabled="isLoading"
       :placeholder="isLoading ? '等待任务完成...' : placeholder"
@@ -44,6 +44,12 @@ import { ref, reactive, onMounted, onUnmounted, defineProps, defineEmits, watch 
 import ChatContainer from '@/components/chat/index.vue'
 import InputArea from '@/components/input/index.vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
+import { useSidebarStore } from '@/stores/sidebar'
+import { useRightPanelStore } from '@/stores/right-panel'
+
+// 使用pinia stores
+const sidebarStore = useSidebarStore()
+const rightPanelStore = useRightPanelStore()
 
 // 定义 props
 interface Props {
@@ -55,17 +61,14 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   initialPrompt: '',
   mode: 'direct',
-  placeholder: '向 JTaskPilot 发送消息'
+  placeholder: '向 JTaskPilot 发送消息',
 })
 
-// 定义 emits
+// 定义 emits - 移除 plan-update 和 step-selected，因为现在直接使用 store
 interface Emits {
-  (e: 'plan-update', planData: any): void
   (e: 'plan-completed', result: any): void
   (e: 'dialog-round-start', planId: string, query: string): void
-  (e: 'step-selected', planId: string, stepIndex: number): void
   (e: 'message-sent', message: string): void
-  (e: 'plan-mode-clicked'): void
 }
 
 const emit = defineEmits<Emits>()
@@ -79,7 +82,7 @@ const hasProcessedInitialPrompt = ref(false) // 标记是否已经处理过初�
 onMounted(() => {
   console.log('[PlanExecutionComponent] Initialized')
   console.log('[PlanExecutionComponent] props.initialPrompt:', props.initialPrompt)
-  
+
   // 设置 plan execution manager 的事件回调
   planExecutionManager.setEventCallbacks({
     onPlanUpdate: handlePlanManagerUpdate,
@@ -87,7 +90,7 @@ onMounted(() => {
     onDialogRoundStart: handlePlanManagerDialogStart,
     onMessageUpdate: handlePlanManagerMessageUpdate,
     onChatInputUpdateState: handlePlanManagerInputUpdate,
-    onChatInputClear: handlePlanManagerInputClear
+    onChatInputClear: handlePlanManagerInputClear,
   })
 
   // 如果有初始 prompt，自动发送（只发送一次）
@@ -101,17 +104,23 @@ onMounted(() => {
 })
 
 // 监听 initialPrompt 的变化
-watch(() => props.initialPrompt, (newPrompt: string, oldPrompt: string) => {
-  console.log('[PlanExecutionComponent] initialPrompt changed from:', oldPrompt, 'to:', newPrompt)
-  // 只有在新的 prompt 不为空，且不同于旧的 prompt，且还没有处理过初始 prompt 时才发送
-  if (newPrompt && newPrompt !== oldPrompt && !hasProcessedInitialPrompt.value) {
-    console.log('[PlanExecutionComponent] Auto-sending new initial prompt:', newPrompt)
-    hasProcessedInitialPrompt.value = true
-    handleUserMessageSendRequested(newPrompt)
-  } else {
-    console.log('[PlanExecutionComponent] Not sending prompt - already processed or invalid conditions')
-  }
-}, { immediate: false })
+watch(
+  () => props.initialPrompt,
+  (newPrompt: string, oldPrompt: string) => {
+    console.log('[PlanExecutionComponent] initialPrompt changed from:', oldPrompt, 'to:', newPrompt)
+    // 只有在新的 prompt 不为空，且不同于旧的 prompt，且还没有处理过初始 prompt 时才发送
+    if (newPrompt && newPrompt !== oldPrompt && !hasProcessedInitialPrompt.value) {
+      console.log('[PlanExecutionComponent] Auto-sending new initial prompt:', newPrompt)
+      hasProcessedInitialPrompt.value = true
+      handleUserMessageSendRequested(newPrompt)
+    } else {
+      console.log(
+        '[PlanExecutionComponent] Not sending prompt - already processed or invalid conditions'
+      )
+    }
+  },
+  { immediate: false }
+)
 
 onUnmounted(() => {
   cleanup()
@@ -122,20 +131,23 @@ onUnmounted(() => {
  */
 const handlePlanManagerUpdate = (planData: any) => {
   console.log('[PlanExecutionComponent] Received plan update from manager:', planData)
-  
+
   // 将计划更新传递给 chat container
   if (chatRef.value && typeof chatRef.value.handlePlanUpdate === 'function') {
     console.log('[PlanExecutionComponent] Calling chatRef.handlePlanUpdate with:', planData)
     chatRef.value.handlePlanUpdate(planData)
   } else {
-    console.warn('[PlanExecutionComponent] chatRef.value.handlePlanUpdate is not available:', chatRef.value)
+    console.warn(
+      '[PlanExecutionComponent] chatRef.value.handlePlanUpdate is not available:',
+      chatRef.value
+    )
   }
-  
+
   // 更新加载状态
   isLoading.value = !planData.completed
-  
-  // 向父组件发射事件
-  emit('plan-update', planData)
+
+  // 直接使用right-panel store处理计划更新，替代emit事件
+  rightPanelStore.handlePlanUpdate(planData)
 }
 
 /**
@@ -143,15 +155,15 @@ const handlePlanManagerUpdate = (planData: any) => {
  */
 const handlePlanManagerCompleted = (result: any) => {
   console.log('[PlanExecutionComponent] Received plan completed from manager:', result)
-  
+
   // 将计划完成传递给 chat container
   if (chatRef.value && typeof chatRef.value.handlePlanCompleted === 'function') {
     chatRef.value.handlePlanCompleted(result)
   }
-  
+
   // 更新加载状态
   isLoading.value = false
-  
+
   // 向父组件发射事件
   emit('plan-completed', result)
 }
@@ -161,15 +173,15 @@ const handlePlanManagerCompleted = (result: any) => {
  */
 const handlePlanManagerDialogStart = (dialogData: any) => {
   console.log('[PlanExecutionComponent] Received dialog round start from manager:', dialogData)
-  
+
   // 将对话开始传递给 chat container
   if (chatRef.value && typeof chatRef.value.handleDialogRoundStart === 'function') {
     chatRef.value.handleDialogRoundStart(dialogData.planId, dialogData.query)
   }
-  
+
   // 更新加载状态
   isLoading.value = true
-  
+
   // 向父组件发射事件
   emit('dialog-round-start', dialogData.planId, dialogData.query)
 }
@@ -179,7 +191,7 @@ const handlePlanManagerDialogStart = (dialogData: any) => {
  */
 const handlePlanManagerMessageUpdate = (messageData: any) => {
   console.log('[PlanExecutionComponent] Received message update from manager:', messageData)
-  
+
   // 将消息更新传递给 chat container
   if (chatRef.value && typeof chatRef.value.handleMessageUpdate === 'function') {
     chatRef.value.handleMessageUpdate(messageData)
@@ -191,7 +203,7 @@ const handlePlanManagerMessageUpdate = (messageData: any) => {
  */
 const handlePlanManagerInputUpdate = (inputData: any) => {
   console.log('[PlanExecutionComponent] Received input update from manager:', inputData)
-  
+
   // 更新输入框状态
   if (inputData.enabled !== undefined) {
     isLoading.value = !inputData.enabled
@@ -203,7 +215,7 @@ const handlePlanManagerInputUpdate = (inputData: any) => {
  */
 const handlePlanManagerInputClear = () => {
   console.log('[PlanExecutionComponent] Received input clear from manager')
-  
+
   // 清空输入框
   if (inputRef.value && typeof inputRef.value.clear === 'function') {
     inputRef.value.clear()
@@ -216,10 +228,12 @@ const handlePlanManagerInputClear = () => {
 const handleUserMessageSendRequested = async (query: string): Promise<void> => {
   console.log('[PlanExecutionComponent] handleUserMessageSendRequested called with query:', query)
   console.log('[PlanExecutionComponent] Current isLoading state:', isLoading.value)
-  
+
   // 委托给 plan execution manager
   await planExecutionManager.handleUserMessageSendRequested(query)
-  console.log('[PlanExecutionComponent] planExecutionManager.handleUserMessageSendRequested completed')
+  console.log(
+    '[PlanExecutionComponent] planExecutionManager.handleUserMessageSendRequested completed'
+  )
 }
 
 /**
@@ -256,8 +270,8 @@ const handleInputUpdateState = (enabled: boolean, placeholder?: string) => {
 }
 
 const handlePlanModeClicked = () => {
-  console.log('[PlanExecutionComponent] Plan mode button clicked')
-  emit('plan-mode-clicked')
+  console.log('[PlanExecutionComponent] Plan mode button clicked, toggling sidebar')
+  sidebarStore.toggleSidebar()
 }
 
 // Chat Container 事件处理
@@ -270,7 +284,6 @@ const handleMessageSent = (message: string) => {
 
 const handlePlanUpdate = (planData: any) => {
   console.log('[PlanExecutionComponent] Plan updated:', planData)
-  emit('plan-update', planData)
 }
 
 const handlePlanCompleted = (result: any) => {
@@ -280,16 +293,14 @@ const handlePlanCompleted = (result: any) => {
 
 const handleStepSelected = (planId: string, stepIndex: number) => {
   console.log('[PlanExecutionComponent] Step selected:', planId, stepIndex)
-  
+
   // 立即触发进度刷新
   if (planExecutionManager.getActivePlanId() === planId) {
     console.log('[PlanExecutionComponent] Triggering immediate progress refresh for selected step')
-    planExecutionManager.pollPlanStatusImmediately().catch((error) => {
+    planExecutionManager.pollPlanStatusImmediately().catch(error => {
       console.warn('[PlanExecutionComponent] Failed to refresh progress immediately:', error)
     })
   }
-  
-  emit('step-selected', planId, stepIndex)
 }
 
 const handleDialogRoundStart = (planId: string, query: string) => {
@@ -305,7 +316,7 @@ defineExpose({
   sendMessage: handleUserMessageSendRequested,
   getChatRef: () => chatRef.value,
   getInputRef: () => inputRef.value,
-  getPlanExecutionManager: () => planExecutionManager
+  getPlanExecutionManager: () => planExecutionManager,
 })
 </script>
 
