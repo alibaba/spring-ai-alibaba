@@ -72,6 +72,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 /**
  * @author nuocheng.lxm
  * @author yuluo
+ * @author YunKui Lu
  * @since 1.0.0-M2
  */
 public class DashScopeApi {
@@ -221,9 +222,14 @@ public class DashScopeApi {
 		EMBEDDING_V2("text-embedding-v2"),
 
 		/**
-		 * DIMENSION: 1024/768/512
+		 * DIMENSION: 1024/768/512/256/128/64
 		 */
-		EMBEDDING_V3("text-embedding-v3");
+		EMBEDDING_V3("text-embedding-v3"),
+
+		/**
+		 * DIMENSION: 2048/1536/1024/768/512/256/128/64
+		 */
+		EMBEDDING_V4("text-embedding-v4");
 
 		public final String value;
 
@@ -299,7 +305,43 @@ public class DashScopeApi {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record EmbeddingRequestInputParameters(@JsonProperty("text_type") String textType) {
+	public record EmbeddingRequestInputParameters(@JsonProperty("text_type") String textType,
+			@JsonProperty("dimension") Integer dimension) {
+
+		@Deprecated
+		public EmbeddingRequestInputParameters(String textType) {
+			this(textType, null);
+		}
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static class Builder {
+
+			private String textType;
+
+			private Integer dimension;
+
+			private Builder() {
+
+			}
+
+			public Builder textType(String textType) {
+				this.textType = textType;
+				return this;
+			}
+
+			public Builder dimension(Integer dimension) {
+				this.dimension = dimension;
+				return this;
+			}
+
+			public EmbeddingRequestInputParameters build() {
+				return new EmbeddingRequestInputParameters(textType, dimension);
+			}
+
+		}
 	}
 
 	/**
@@ -309,32 +351,88 @@ public class DashScopeApi {
 	public record EmbeddingRequest(@JsonProperty("model") String model,
 			@JsonProperty("input") EmbeddingRequestInput input,
 			@JsonProperty("parameters") EmbeddingRequestInputParameters parameters) {
+
+		@Deprecated
 		public EmbeddingRequest(String text) {
 			this(DEFAULT_EMBEDDING_MODEL, new EmbeddingRequestInput(List.of(text)),
 					new EmbeddingRequestInputParameters(DEFAULT_EMBEDDING_TEXT_TYPE));
 		}
 
+		@Deprecated
 		public EmbeddingRequest(String text, String model) {
 			this(model, new EmbeddingRequestInput(List.of(text)),
 					new EmbeddingRequestInputParameters(DEFAULT_EMBEDDING_TEXT_TYPE));
 		}
 
+		@Deprecated
 		public EmbeddingRequest(String text, String model, String textType) {
 			this(model, new EmbeddingRequestInput(List.of(text)), new EmbeddingRequestInputParameters(textType));
 		}
 
+		@Deprecated
 		public EmbeddingRequest(List<String> texts) {
 			this(DEFAULT_EMBEDDING_MODEL, new EmbeddingRequestInput(texts),
 					new EmbeddingRequestInputParameters(DEFAULT_EMBEDDING_TEXT_TYPE));
 		}
 
+		@Deprecated
 		public EmbeddingRequest(List<String> texts, String model) {
 			this(model, new EmbeddingRequestInput(texts),
 					new EmbeddingRequestInputParameters(DEFAULT_EMBEDDING_TEXT_TYPE));
 		}
 
+		@Deprecated
 		public EmbeddingRequest(List<String> texts, String model, String textType) {
 			this(model, new EmbeddingRequestInput(texts), new EmbeddingRequestInputParameters(textType));
+		}
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static class Builder {
+
+			private final List<String> texts = new ArrayList<>();
+
+			private String model = DEFAULT_EMBEDDING_MODEL;
+
+			private String textType;
+
+			private Integer dimension;
+
+			private Builder() {
+			}
+
+			public Builder model(String model) {
+				this.model = model;
+				return this;
+			}
+
+			public Builder texts(String... texts) {
+				this.texts.addAll(List.of(texts));
+				return this;
+			}
+
+			public Builder texts(List<String> texts) {
+				this.texts.addAll(texts);
+				return this;
+			}
+
+			public Builder textType(String textType) {
+				this.textType = textType;
+				return this;
+			}
+
+			public Builder dimension(Integer dimension) {
+				this.dimension = dimension;
+				return this;
+			}
+
+			public EmbeddingRequest build() {
+				return new EmbeddingRequest(model, new EmbeddingRequestInput(texts),
+						EmbeddingRequestInputParameters.builder().textType(textType).dimension(dimension).build());
+			}
+
 		}
 	}
 

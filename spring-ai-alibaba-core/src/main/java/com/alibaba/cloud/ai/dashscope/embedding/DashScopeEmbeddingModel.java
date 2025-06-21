@@ -207,8 +207,12 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 
 	private DashScopeApi.EmbeddingRequest createRequest(EmbeddingRequest request) {
 		DashScopeEmbeddingOptions requestOptions = (DashScopeEmbeddingOptions) request.getOptions();
-		return new DashScopeApi.EmbeddingRequest(request.getInstructions(), requestOptions.getModel(),
-				requestOptions.getTextType());
+		return DashScopeApi.EmbeddingRequest.builder()
+			.model(requestOptions.getModel())
+			.texts(request.getInstructions())
+			.textType(requestOptions.getTextType())
+			.dimension(requestOptions.getDimensions())
+			.build();
 	}
 
 	private EmbeddingResponseMetadata generateResponseMetadata(String model, Usage usage) {

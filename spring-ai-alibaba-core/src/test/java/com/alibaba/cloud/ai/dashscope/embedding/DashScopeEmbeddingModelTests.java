@@ -50,13 +50,15 @@ import static org.mockito.Mockito.when;
 class DashScopeEmbeddingModelTests {
 
 	// Test constants
-	private static final String TEST_MODEL = "text-embedding-v2";
+	private static final String TEST_MODEL = "text-embedding-v3";
 
 	private static final String TEST_TEXT_TYPE = "document";
 
 	private static final String TEST_REQUEST_ID = "test-request-id";
 
 	private static final String TEST_TEXT = "Hello, world!";
+
+	private static final Integer TEST_DIMENSION = 512;
 
 	private DashScopeApi dashScopeApi;
 
@@ -68,7 +70,11 @@ class DashScopeEmbeddingModelTests {
 	void setUp() {
 		// Initialize mock objects and test instances
 		dashScopeApi = Mockito.mock(DashScopeApi.class);
-		defaultOptions = DashScopeEmbeddingOptions.builder().withModel(TEST_MODEL).withTextType(TEST_TEXT_TYPE).build();
+		defaultOptions = DashScopeEmbeddingOptions.builder()
+			.withModel(TEST_MODEL)
+			.withTextType(TEST_TEXT_TYPE)
+			.withDimensions(TEST_DIMENSION)
+			.build();
 		embeddingModel = new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED, defaultOptions);
 	}
 

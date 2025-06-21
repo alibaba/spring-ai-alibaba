@@ -59,6 +59,16 @@ public class DashScopeAutoConfigurationIT {
 		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class));
 
+	private final ApplicationContextRunner textEmbeddingDefaultContextRunner = new ApplicationContextRunner()
+		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
+		.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class));
+
+	private final ApplicationContextRunner textEmbeddingV3ContextRunner = new ApplicationContextRunner()
+		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
+		.withPropertyValues("spring.ai.dashscope.embedding.options.model=text-embedding-v3")
+		.withPropertyValues("spring.ai.dashscope.embedding.options.dimensions=512")
+		.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class));
+
 	@Test
 	void chatCall() {
 
@@ -147,7 +157,7 @@ public class DashScopeAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		this.contextRunner.run(context -> {
+		this.textEmbeddingDefaultContextRunner.run(context -> {
 			DashScopeEmbeddingModel embeddingModel = context.getBean(DashScopeEmbeddingModel.class);
 
 			EmbeddingResponse embeddingResponse = embeddingModel
@@ -159,6 +169,24 @@ public class DashScopeAutoConfigurationIT {
 			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
 			assertThat(embeddingModel.dimensions()).isEqualTo(1536);
+		});
+	}
+
+	@Test
+	void embeddingWithTextEmbeddingV3Mode() {
+		this.textEmbeddingV3ContextRunner.run(context -> {
+			DashScopeEmbeddingModel embeddingModel = context.getBean(DashScopeEmbeddingModel.class);
+
+			EmbeddingResponse embeddingResponse = embeddingModel
+				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+			assertThat(embeddingResponse.getResults()).hasSize(2);
+			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+			assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+
+			assertThat(embeddingModel.dimensions()).isEqualTo(512);
+
 		});
 	}
 
