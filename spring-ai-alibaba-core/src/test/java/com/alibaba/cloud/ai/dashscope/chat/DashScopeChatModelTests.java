@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.dashscope.chat;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.lang.reflect.Field;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
@@ -44,7 +43,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
