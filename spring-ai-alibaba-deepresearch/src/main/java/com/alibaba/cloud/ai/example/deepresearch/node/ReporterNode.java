@@ -70,7 +70,6 @@ public class ReporterNode implements NodeAction {
 		String threadId = state.value("thread_id", String.class)
 			.orElseThrow(() -> new IllegalArgumentException("thread_id is missing from state"));
 		logger.info("Thread ID from state: {}", threadId);
-
 		// 1. 添加消息
 		List<Message> messages = new ArrayList<>();
 		// 1.1 添加预置提示消息
@@ -102,10 +101,10 @@ public class ReporterNode implements NodeAction {
 				String finalReport = Objects.requireNonNull(response.getResult().getOutput().getText());
 				try {
 					reportService.saveReport(threadId, finalReport);
-					logger.info("报告已成功保存，线程ID: {}", threadId);
+					logger.info("Report saved successfully, Thread ID: {}", threadId);
 				}
 				catch (Exception e) {
-					logger.error("保存报告失败，线程ID: {}", threadId, e);
+					logger.error("Failed to save report, Thread ID: {}", threadId, e);
 				}
 				return Map.of("final_report", finalReport, "thread_id", threadId);
 			})
