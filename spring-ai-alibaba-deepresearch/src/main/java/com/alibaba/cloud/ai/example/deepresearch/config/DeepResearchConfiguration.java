@@ -17,22 +17,9 @@
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatcher;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.*;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
-import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.InformationNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.*;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
@@ -50,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -91,6 +79,10 @@ public class DeepResearchConfiguration {
 	@Autowired
 	private ChatClient plannerAgent;
 
+	@Qualifier("chatClientBuilder")
+	@Autowired
+	private ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
+
 	@Autowired
 	private DeepResearchProperties deepResearchProperties;
 
@@ -110,6 +102,7 @@ public class DeepResearchConfiguration {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			// 条件边控制：跳转下一个节点
 			keyStrategyHashMap.put("coordinator_next_node", new ReplaceStrategy());
+			keyStrategyHashMap.put("rewrite_multi_query_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("planner_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("information_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("human_next_node", new ReplaceStrategy());
@@ -149,6 +142,7 @@ public class DeepResearchConfiguration {
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
+				.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
 			.addNode("background_investigator",
 					node_async(new BackgroundInvestigationNode(tavilySearchService, jinaCrawlerService)))
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
@@ -164,8 +158,10 @@ public class DeepResearchConfiguration {
 
 		stateGraph.addEdge(START, "coordinator")
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
-					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
-			.addEdge("background_investigator", "planner")
+					Map.of("rewrite_multi_query", "rewrite_multi_query", END, END))
+				.addConditionalEdges("rewrite_multi_query", edge_async(new RewriteAndMultiQueryDispatcher()),
+						Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
+				.addEdge("background_investigator", "planner")
 			.addEdge("planner", "information")
 			.addConditionalEdges("information", edge_async(new InformationDispatcher()),
 					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
