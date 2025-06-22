@@ -61,7 +61,11 @@ public class PlannerNode implements NodeAction {
 		// 1.1 添加预置提示消息
 		messages.add(TemplateUtil.getMessage("planner", state));
 		// 1.2 添加用户提问
-		messages.add(new UserMessage(state.value("query", "")));
+		List<String> queries = state.value("query", (List<String>) null);
+		assert queries != null;
+		for(String query : queries){
+			messages.add(new UserMessage(query));
+		}
 		// 1.3 添加背景调查消息
 		String backgroundInvestigationResults = state.value("background_investigation_results", "");
 		if (StringUtils.hasText(backgroundInvestigationResults)) {
