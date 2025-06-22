@@ -229,7 +229,8 @@ public class DashScopeMultiModalChatTests {
 		ChatCompletionChunk chunk1 = new ChatCompletionChunk(TEST_REQUEST_ID, output1, null);
 		ChatCompletionChunk chunk2 = new ChatCompletionChunk(TEST_REQUEST_ID, output2, new TokenUsage(10, 5, 15));
 
-		when(dashScopeApi.chatCompletionStream(any(ChatCompletionRequest.class), any())).thenReturn(Flux.just(chunk1, chunk2));
+		when(dashScopeApi.chatCompletionStream(any(ChatCompletionRequest.class), any()))
+			.thenReturn(Flux.just(chunk1, chunk2));
 
 		// Create user message with resource media
 		UserMessage message = UserMessage.builder()
