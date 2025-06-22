@@ -53,7 +53,7 @@ tools: ## Install ci tools
 
 	@echo "Installing mvnd"
 	curl -sL https://downloads.apache.org/maven/mvnd/${MVND_VERSION}/maven-mvnd-${MVND_VERSION}-linux-amd64.zip -o mvnd.zip \
-	unzip -q mvnd.zipAdd commentMore actions \
+	unzip -q mvnd.zip \
     mkdir -p $HOME/.local \
     mv maven-mvnd-${MVND_VERSION}-linux-amd64 /usr/local/bin/mvnd \
     mvnd --version
