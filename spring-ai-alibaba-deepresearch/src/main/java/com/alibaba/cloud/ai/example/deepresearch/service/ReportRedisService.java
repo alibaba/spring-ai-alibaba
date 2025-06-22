@@ -62,11 +62,11 @@ public class ReportRedisService implements ReportService {
 		try {
 			String key = buildKey(threadId);
 			redisTemplate.opsForValue().set(key, report, DEFAULT_EXPIRE_HOURS, TimeUnit.HOURS);
-			logger.info("报告已保存到 Redis，线程ID: {}, key: {}", threadId, key);
+			logger.info("Report saved to Redis, thread ID: {}, key: {}", threadId, key);
 		}
 		catch (Exception e) {
-			logger.error("保存报告到 Redis 失败，线程ID: {}", threadId, e);
-			throw new RuntimeException("保存报告失败", e);
+			logger.error("Failed to save report to Redis, thread ID: {}", threadId, e);
+			throw new RuntimeException("Failed to save report", e);
 		}
 	}
 
@@ -81,17 +81,17 @@ public class ReportRedisService implements ReportService {
 			String key = buildKey(threadId);
 			Object result = redisTemplate.opsForValue().get(key);
 			if (result != null) {
-				logger.info("从 Redis 获取报告成功，线程ID: {}, key: {}", threadId, key);
+				logger.info("Successfully retrieved report from Redis, thread ID: {}, key: {}", threadId, key);
 				return result.toString();
 			}
 			else {
-				logger.warn("Redis 中未找到报告，线程ID: {}, key: {}", threadId, key);
+				logger.warn("Report not found in Redis, thread ID: {}, key: {}", threadId, key);
 				return null;
 			}
 		}
 		catch (Exception e) {
-			logger.error("从 Redis 获取报告失败，线程ID: {}", threadId, e);
-			throw new RuntimeException("获取报告失败", e);
+			logger.error("Failed to get report from Redis, thread ID: {}", threadId, e);
+			throw new RuntimeException("Failed to get report", e);
 		}
 	}
 
@@ -108,7 +108,7 @@ public class ReportRedisService implements ReportService {
 			return exists != null && exists;
 		}
 		catch (Exception e) {
-			logger.error("检查报告是否存在失败，线程ID: {}", threadId, e);
+			logger.error("Failed to check if report exists, thread ID: {}", threadId, e);
 			return false;
 		}
 	}
@@ -122,11 +122,11 @@ public class ReportRedisService implements ReportService {
 		try {
 			String key = buildKey(threadId);
 			redisTemplate.delete(key);
-			logger.info("已删除 Redis 中的报告，线程ID: {}, key: {}", threadId, key);
+			logger.info("Report deleted from Redis, thread ID: {}, key: {}", threadId, key);
 		}
 		catch (Exception e) {
-			logger.error("删除报告失败，线程ID: {}", threadId, e);
-			throw new RuntimeException("删除报告失败", e);
+			logger.error("Failed to delete report, thread ID: {}", threadId, e);
+			throw new RuntimeException("Failed to delete report", e);
 		}
 	}
 

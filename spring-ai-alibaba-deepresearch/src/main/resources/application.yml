@@ -52,6 +52,9 @@ spring:
             # 启动时加载 classpath下data目录中的所有文件
             locations:
               - "classpath:/data/"
+        # 报告导出路径配置
+        export:
+          path: ${AI_DEEPRESEARCH_EXPORT_PATH}
 logging:
   level:
     com.alibaba.cloud.ai.example.deepresearch: debug

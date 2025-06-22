@@ -23,7 +23,10 @@
 
         <spring-ai.version>1.0.0</spring-ai.version>
         <spring-ai-alibaba.version>1.0.0.3-SNAPSHOT</spring-ai-alibaba.version>
-        
+       
+        <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
+        <commonmark.version>0.24.0</commonmark.version>
+
         <!-- CheckStyle Maven Plugin -->
         <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
@@ -105,6 +108,36 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-core</artifactId>
+            <version>${openhtmltopdf.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>${openhtmltopdf.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-slf4j</artifactId>
+            <version>${openhtmltopdf.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark</artifactId>
+            <version>${commonmark.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-tables</artifactId>
+            <version>${commonmark.version}</version>
         </dependency>
         
     </dependencies>
