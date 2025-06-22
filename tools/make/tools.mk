@@ -55,7 +55,5 @@ tools: ## Install ci tools
 	curl -sL https://downloads.apache.org/maven/mvnd/${MVND_VERSION}/maven-mvnd-${MVND_VERSION}-linux-amd64.zip -o mvnd.zip \
 	unzip -q mvnd.zipAdd commentMore actions \
     mkdir -p $HOME/.local \
-    mv maven-mvnd-${MVND_VERSION}-linux-amd64 $HOME/.local/mvnd \
-    echo "$HOME/.local/mvnd/bin" >> $GITHUB_PATH \
-    echo "MVND_HOME=$HOME/.local/mvnd" >> $GITHUB_ENV \
-    echo 'export PATH="$HOME/.local/mvnd/bin:$PATH"' >> $HOME/.bashrc
+    mv maven-mvnd-${MVND_VERSION}-linux-amd64 /usr/local/bin/mvnd \
+    mvnd --version
