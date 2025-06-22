@@ -73,7 +73,7 @@ public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
-	@Autowired(required = false)
+	@Autowired(required = true)
 	private TavilySearchService tavilySearchService;
 
 	@Autowired
