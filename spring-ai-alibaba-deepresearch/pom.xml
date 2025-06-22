@@ -23,7 +23,10 @@
 
         <spring-ai.version>1.0.0</spring-ai.version>
         <spring-ai-alibaba.version>1.0.0.3-SNAPSHOT</spring-ai-alibaba.version>
-        
+       
+        <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
+        <commonmark.version>0.24.0</commonmark.version>
+
         <!-- CheckStyle Maven Plugin -->
         <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
@@ -107,35 +110,34 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
         
-        <!-- OpenHTMLToPDF依赖 -->
         <dependency>
             <groupId>com.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-core</artifactId>
-            <version>1.0.10</version>
+            <version>${openhtmltopdf.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-pdfbox</artifactId>
-            <version>1.0.10</version>
+            <version>${openhtmltopdf.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-slf4j</artifactId>
-            <version>1.0.10</version>
+            <version>${openhtmltopdf.version}</version>
         </dependency>
         
-        <!-- CommonMark Markdown解析器 -->
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark</artifactId>
-            <version>0.24.0</version>
+            <version>${commonmark.version}</version>
         </dependency>
         
-        <!-- CommonMark表格扩展 -->
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark-ext-gfm-tables</artifactId>
-            <version>0.24.0</version>
+            <version>${commonmark.version}</version>
         </dependency>
         
     </dependencies>
