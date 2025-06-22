@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,51 +56,61 @@ public class BackgroundInvestigationNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("background investigation node is running.");
-		String query = StateUtil.getQuery(state);
 
-		List<Map<String, String>> results = new ArrayList<>();
+		List<String> queries = state.value("query", (List<String>) null);
+		assert queries != null && !queries.isEmpty();
+		List<List<Map<String, String>>> resultsList = new ArrayList<>();
+		for(String query : queries){
+			List<Map<String, String>> results = new ArrayList<>();
+			// Retry logic
+			for (int i = 0; i < MAX_RETRY_COUNT; i++) {
+				try {
+					TavilySearchService.Response response = tavilySearchService
+							.apply(TavilySearchService.Request.simpleQuery(query));
 
-		// Retry logic
-		for (int i = 0; i < MAX_RETRY_COUNT; i++) {
-			try {
-				TavilySearchService.Response response = tavilySearchService
-					.apply(TavilySearchService.Request.simpleQuery(query));
-
-				if (response != null && response.results() != null && !response.results().isEmpty()) {
-					results = response.results().stream().map(info -> {
-						Map<String, String> result = new HashMap<>();
-						result.put("title", info.title());
-						if (jinaCrawlerService == null) {
-							result.put("content", info.content());
-						}
-						else {
-							try {
-								logger.info("Get detail info of a url using Jina Crawler...");
-								result.put("content",
-										jinaCrawlerService.apply(new JinaCrawlerService.Request(info.url())).content());
-							}
-							catch (Exception e) {
-								logger.error("Jina Crawler Service Error", e);
+					if (response != null && response.results() != null && !response.results().isEmpty()) {
+						results = response.results().stream().map(info -> {
+							Map<String, String> result = new HashMap<>();
+							result.put("title", info.title());
+							if (jinaCrawlerService == null) {
 								result.put("content", info.content());
 							}
-						}
-						return result;
-					}).collect(Collectors.toList());
-					break;
-				}
+							else {
+								try {
+									logger.info("Get detail info of a url using Jina Crawler...");
+									result.put("content",
+											jinaCrawlerService.apply(new JinaCrawlerService.Request(info.url())).content());
+								}
+								catch (Exception e) {
+									logger.error("Jina Crawler Service Error", e);
+									result.put("content", info.content());
+								}
+							}
+							return result;
+						}).collect(Collectors.toList());
+						break;
+					}
 
+				}
+				catch (Exception e) {
+					logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
+				}
+				Thread.sleep(RETRY_DELAY_MS);
 			}
-			catch (Exception e) {
-				logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
-			}
-			Thread.sleep(RETRY_DELAY_MS);
+			resultsList.add(results);
 		}
 
+
+
 		Map<String, Object> resultMap = new HashMap<>();
-		if (!results.isEmpty()) {
-			String prompt = "background investigation results of user query:\n" + results + "\n";
-			resultMap.put("background_investigation_results", prompt);
-			logger.info("✅ 搜索结果: {} 条", results.size());
+		if (!resultsList.isEmpty()) {
+			List<String> backgroundResults = new ArrayList<>();
+			for(List<Map<String, String>> results : resultsList){
+				String prompt = "background investigation results of user query:\n" + results + "\n";
+				backgroundResults.add(prompt);
+				logger.info("✅ 搜索结果: {} 条", results.size());
+			}
+			resultMap.put("background_investigation_results", backgroundResults);
 		}
 		else {
 			logger.warn("⚠️ 搜索失败");
@@ -107,5 +118,4 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 		return resultMap;
 	}
-
 }
