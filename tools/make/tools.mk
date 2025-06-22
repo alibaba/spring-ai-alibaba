@@ -48,8 +48,7 @@ tools: ## Install ci tools
 	make build && \
 	chmod +x gitleaks && \
 	cp gitleaks /usr/local/bin && \
-	cd .. && rm -rf gitleaks
-
+	cd .. && rm -rf gitleaks \
 	gitleaks --version
 
 	@echo "Installing mvnd"
@@ -58,6 +57,5 @@ tools: ## Install ci tools
     mkdir -p $HOME/.local \
     mv maven-mvnd-${MVND_VERSION}-linux-amd64 $HOME/.local/mvnd \
     echo "$HOME/.local/mvnd/bin" >> $GITHUB_PATH \
-    echo "MVND_HOME=$HOME/.local/mvnd" >> $GITHUB_ENV
-
+    echo "MVND_HOME=$HOME/.local/mvnd" >> $GITHUB_ENV \
     mvnd --version
