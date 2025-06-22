@@ -29,6 +29,7 @@
   - 在配置文件的`spring.ai.alibaba.deepreserch.python-coder.docker-host`字段中设置DockerHost，默认为`unix:///var/run/docker.sock`。
   本项目需要使用`python:3-slim`镜像创建临时容器，也可以自己定制包含一些常用的第三方库的镜像，第三方库需要安装在镜像的`/app/dependency`文件夹里，在配置文件中设置`spring.ai.alibaba.deepreserch.python-coder.image-name`的值指定镜像名称。
 - 高德地图MCP
+- 
 #### 相关API、工具、MCP接入文档
 - tavily API文档：https://docs.tavily.com/documentation/api-reference/endpoint/search
 - Jina API文档：https://jina.ai/reader
