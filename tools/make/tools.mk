@@ -58,4 +58,4 @@ tools: ## Install ci tools
     mv maven-mvnd-${MVND_VERSION}-linux-amd64 $HOME/.local/mvnd \
     echo "$HOME/.local/mvnd/bin" >> $GITHUB_PATH \
     echo "MVND_HOME=$HOME/.local/mvnd" >> $GITHUB_ENV \
-    mvnd --version
+    echo 'export PATH="$HOME/.local/mvnd/bin:$PATH"' >> $HOME/.bashrc
