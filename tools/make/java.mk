@@ -17,13 +17,13 @@
 .PHONY: test
 test: ## Run tests
 	@$(LOG_TARGET)
-	mvn test
+	mvnd test
 
 # Separate build and test to speed up execution
 .PHONY: build
 build: ## Build the project
 	@$(LOG_TARGET)
-	mvn -B package --file pom.xml -DskipTests=true
+	mvnd -B package --file pom.xml -DskipTests=true
 
 .PHONY: format-fix
 format-fix: ## Format the code
@@ -43,4 +43,4 @@ spotless-apply: ## Run spotless and apply changes
 .PHONY: checkstyle-check
 checkstyle-check: ## Checkstyle Check the code and output to target/checkstyle-report.xml
 	@$(LOG_TARGET)
-	mvn clean compile -Dcheckstyle.skip=false -Dcheckstyle.output.file=checkstyle-report.xml checkstyle:checkstyle
+	mvnd clean compile -Dcheckstyle.skip=false -Dcheckstyle.output.file=checkstyle-report.xml checkstyle:checkstyle
