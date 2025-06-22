@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.toolcalling.baidusearch;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
+import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,9 +36,20 @@ public class BaiduSearchTest {
 	@Test
 	@DisplayName("Tool-Calling Test")
 	public void testBaiduSearch() {
-		var resp = baiduSearchService.apply(new BaiduSearchService.Request("Spring AI Alibab", 10));
+		var resp = baiduSearchService.apply(new BaiduSearchService.Request("Spring AI Alibaba", 10));
 		assert resp != null && resp.results() != null;
 		log.info("results: " + resp.results());
+	}
+
+	@Autowired
+	private SearchService searchService;
+
+	@Test
+	@DisplayName("Abstract Search Service Test")
+	public void testAbstractSearch() {
+		var resp = searchService.query("Spring AI Alibaba");
+		assert resp != null && resp.getSearchResult() != null;
+		log.info("results: " + resp.getSearchResult());
 	}
 
 }
