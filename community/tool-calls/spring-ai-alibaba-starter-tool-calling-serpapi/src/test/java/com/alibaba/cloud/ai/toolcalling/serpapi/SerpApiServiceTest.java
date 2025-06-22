@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.toolcalling.serpapi;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
+import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -42,6 +43,19 @@ public class SerpApiServiceTest {
 		var resp = serpApiSearch.apply(new SerpApiService.Request("Spring AI Alibaba"));
 		assert resp != null && resp.results() != null;
 		log.info("results: " + resp.results());
+	}
+
+	@Autowired
+	private SearchService searchService;
+
+	@Test
+	@DisplayName("Abstract Search Test")
+	@EnabledIfEnvironmentVariable(named = SerpApiConstants.API_KEY_ENV,
+			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	public void testAbstractSearch() {
+		var resp = searchService.query("Spring AI Alibaba");
+		assert resp != null && resp.getSearchResult() != null;
+		log.info("results: " + resp.getSearchResult());
 	}
 
 }
