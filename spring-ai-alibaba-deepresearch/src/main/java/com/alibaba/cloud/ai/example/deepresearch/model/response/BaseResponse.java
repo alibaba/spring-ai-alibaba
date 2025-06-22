@@ -16,42 +16,35 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.model.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * 基础响应类
  *
  * @author huangzhen
  * @since 2025/6/20
  */
-public class BaseResponse {
+public record BaseResponse(
+		/**
+		 * 线程ID，用于标识当前对话的唯一性
+		 */
+		@JsonProperty("thread_id") String threadId,
 
-	private String threadId;
+		/**
+		 * 状态
+		 */
+		@JsonProperty("status") String status,
 
-	private String status;
+		/**
+		 * 消息
+		 */
+		@JsonProperty("message") String message) {
 
-	private String message;
-
-	public String getThreadId() {
-		return threadId;
+	public static BaseResponse success(String threadId, String message) {
+		return new BaseResponse(threadId, "success", message);
 	}
 
-	public void setThreadId(String threadId) {
-		this.threadId = threadId;
+	public static BaseResponse error(String threadId, String message) {
+		return new BaseResponse(threadId, "error", message);
 	}
-
-	public String getStatus() {
-		return status;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
-	}
-
-	public String getMessage() {
-		return message;
-	}
-
-	public void setMessage(String message) {
-		this.message = message;
-	}
-
 }

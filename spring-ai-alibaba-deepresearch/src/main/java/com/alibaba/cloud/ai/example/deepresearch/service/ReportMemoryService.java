@@ -50,11 +50,11 @@ public class ReportMemoryService implements ReportService {
 	public void saveReport(String threadId, String report) {
 		try {
 			reportStorage.put(threadId, report);
-			logger.info("报告已保存到内存，线程ID: {}", threadId);
+			logger.info("Report saved to memory, thread ID: {}", threadId);
 		}
 		catch (Exception e) {
-			logger.error("保存报告到内存失败，线程ID: {}", threadId, e);
-			throw new RuntimeException("保存报告失败", e);
+			logger.error("Failed to save report to memory, thread ID: {}", threadId, e);
+			throw new RuntimeException("Failed to save report", e);
 		}
 	}
 
@@ -68,17 +68,17 @@ public class ReportMemoryService implements ReportService {
 		try {
 			String report = reportStorage.get(threadId);
 			if (report != null) {
-				logger.info("从内存获取报告成功，线程ID: {}", threadId);
+				logger.info("Successfully retrieved report from memory, thread ID: {}", threadId);
 				return report;
 			}
 			else {
-				logger.warn("内存中未找到报告，线程ID: {}", threadId);
+				logger.warn("Report not found in memory, thread ID: {}", threadId);
 				return null;
 			}
 		}
 		catch (Exception e) {
-			logger.error("从内存获取报告失败，线程ID: {}", threadId, e);
-			throw new RuntimeException("获取报告失败", e);
+			logger.error("Failed to get report from memory, thread ID: {}", threadId, e);
+			throw new RuntimeException("Failed to get report", e);
 		}
 	}
 
@@ -91,11 +91,11 @@ public class ReportMemoryService implements ReportService {
 	public boolean existsReport(String threadId) {
 		try {
 			boolean exists = reportStorage.containsKey(threadId);
-			logger.debug("检查报告是否存在，线程ID: {}, 存在: {}", threadId, exists);
+			logger.debug("Checking if report exists, thread ID: {}, exists: {}", threadId, exists);
 			return exists;
 		}
 		catch (Exception e) {
-			logger.error("检查报告是否存在失败，线程ID: {}", threadId, e);
+			logger.error("Failed to check if report exists, thread ID: {}", threadId, e);
 			return false;
 		}
 	}
@@ -108,11 +108,11 @@ public class ReportMemoryService implements ReportService {
 	public void deleteReport(String threadId) {
 		try {
 			reportStorage.remove(threadId);
-			logger.info("已删除内存中的报告，线程ID: {}", threadId);
+			logger.info("Report deleted from memory, thread ID: {}", threadId);
 		}
 		catch (Exception e) {
-			logger.error("删除报告失败，线程ID: {}", threadId, e);
-			throw new RuntimeException("删除报告失败", e);
+			logger.error("Failed to delete report, thread ID: {}", threadId, e);
+			throw new RuntimeException("Failed to delete report", e);
 		}
 	}
 
