@@ -41,6 +41,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.web.context.WebServerInitializedEvent;
 import org.springframework.context.ApplicationListener;
 
@@ -79,9 +80,11 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private NacosMcpOperationService nacosMcpOperationService;
 
+	private int serverPort = 8080;
+
 	public NacosMcpRegister(NacosMcpOperationService nacosMcpOperationService, McpAsyncServer mcpAsyncServer,
 			NacosMcpProperties nacosMcpProperties, NacosMcpRegistryProperties nacosMcpRegistryProperties,
-			McpServerProperties mcpServerProperties, String type) {
+			McpServerProperties mcpServerProperties, String type, ServerProperties serverProperties) {
 		this.mcpAsyncServer = mcpAsyncServer;
 		log.info("Mcp server type: {}", type);
 		this.type = type;
@@ -91,6 +94,9 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		this.mcpServerProperties = mcpServerProperties;
 
 		try {
+			if (serverProperties.getPort() != null) {
+				serverPort = serverProperties.getPort();
+			}
 			if (StringUtils.isBlank(this.mcpServerProperties.getVersion())) {
 				throw new IllegalArgumentException("mcp server version is blank");
 			}
@@ -278,6 +284,10 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		}
 		try {
 			int port = event.getWebServer().getPort();
+			if (port != serverPort) {
+				log.info("web server port [{}] not equal with server.port [{}], ignored it", port, serverPort);
+				return;
+			}
 			Instance instance = new Instance();
 			instance.setIp(this.nacosMcpProperties.getIp());
 			instance.setPort(port);

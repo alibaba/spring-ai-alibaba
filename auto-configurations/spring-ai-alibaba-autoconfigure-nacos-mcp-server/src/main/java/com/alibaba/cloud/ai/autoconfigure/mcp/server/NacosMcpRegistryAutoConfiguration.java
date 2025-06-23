@@ -32,6 +32,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
@@ -66,10 +67,10 @@ public class NacosMcpRegistryAutoConfiguration {
 	public NacosMcpRegister nacosMcpRegisterSync(NacosMcpOperationService nacosMcpOperationService,
 			McpSyncServer mcpSyncServer, NacosMcpProperties nacosMcpProperties,
 			NacosMcpRegistryProperties nacosMcpRegistryProperties, McpServerProperties mcpServerProperties,
-			McpServerTransportProvider mcpServerTransport) {
+			McpServerTransportProvider mcpServerTransport, ServerProperties serverProperties) {
 		McpAsyncServer mcpAsyncServer = mcpSyncServer.getAsyncServer();
 		return getNacosMcpRegister(nacosMcpOperationService, mcpAsyncServer, nacosMcpProperties,
-				nacosMcpRegistryProperties, mcpServerProperties, mcpServerTransport);
+				nacosMcpRegistryProperties, mcpServerProperties, mcpServerTransport, serverProperties);
 	}
 
 	@Bean
@@ -79,22 +80,24 @@ public class NacosMcpRegistryAutoConfiguration {
 	public NacosMcpRegister nacosMcpRegisterAsync(NacosMcpOperationService nacosMcpOperationService,
 			McpAsyncServer mcpAsyncServer, NacosMcpProperties nacosMcpProperties,
 			NacosMcpRegistryProperties nacosMcpRegistryProperties, McpServerProperties mcpServerProperties,
-			McpServerTransportProvider mcpServerTransport) {
+			McpServerTransportProvider mcpServerTransport, ServerProperties serverProperties) {
 		return getNacosMcpRegister(nacosMcpOperationService, mcpAsyncServer, nacosMcpProperties,
-				nacosMcpRegistryProperties, mcpServerProperties, mcpServerTransport);
+				nacosMcpRegistryProperties, mcpServerProperties, mcpServerTransport, serverProperties);
 	}
 
 	private NacosMcpRegister getNacosMcpRegister(NacosMcpOperationService nacosMcpOperationService,
 			McpAsyncServer mcpAsyncServer, NacosMcpProperties nacosMcpProperties,
 			NacosMcpRegistryProperties nacosMcpRegistryProperties, McpServerProperties mcpServerProperties,
-			McpServerTransportProvider mcpServerTransport) {
+			McpServerTransportProvider mcpServerTransport, ServerProperties serverProperties) {
 		if (mcpServerTransport instanceof StdioServerTransportProvider) {
 			return new NacosMcpRegister(nacosMcpOperationService, mcpAsyncServer, nacosMcpProperties,
-					nacosMcpRegistryProperties, mcpServerProperties, AiConstants.Mcp.MCP_PROTOCOL_STDIO);
+					nacosMcpRegistryProperties, mcpServerProperties, AiConstants.Mcp.MCP_PROTOCOL_STDIO,
+					serverProperties);
 		}
 		else {
 			return new NacosMcpRegister(nacosMcpOperationService, mcpAsyncServer, nacosMcpProperties,
-					nacosMcpRegistryProperties, mcpServerProperties, AiConstants.Mcp.MCP_PROTOCOL_SSE);
+					nacosMcpRegistryProperties, mcpServerProperties, AiConstants.Mcp.MCP_PROTOCOL_SSE,
+					serverProperties);
 		}
 	}
 
