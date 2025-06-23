@@ -62,6 +62,7 @@
         <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-aliyunaisearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidutranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidumap</module>

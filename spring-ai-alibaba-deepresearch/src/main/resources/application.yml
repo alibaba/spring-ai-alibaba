@@ -31,14 +31,22 @@ spring:
         type: async
     alibaba:
       toolcalling:
+        baidu:
+          search:
+            enabled: true
         tavilysearch:
           api-key: ${TAVILY_API_KEY}
+          enabled: true
         jinacrawler:
           enabled: false
           api-key: ${JINA_API_KEY}
         serpapi:
           api-key: ${SERPAPI_KEY}
-          enabled: false
+          enabled: true
+        aliyunaisearch:
+          api-key: ${ALIYUN_AI_SEARCH_API_KEY}
+          base-url: ${ALIYUN_AI_SEARCH_BASE_URL}
+          enabled: true
       deepresearch:
         mcp:
           enabled: false
