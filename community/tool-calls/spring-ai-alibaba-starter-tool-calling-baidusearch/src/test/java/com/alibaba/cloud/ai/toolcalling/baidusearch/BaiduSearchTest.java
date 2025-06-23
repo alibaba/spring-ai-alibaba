@@ -48,7 +48,8 @@ public class BaiduSearchTest {
 	@DisplayName("Abstract Search Service Test")
 	public void testAbstractSearch() {
 		var resp = searchService.query("Spring AI Alibaba");
-		assert resp != null && resp.getSearchResult() != null;
+		assert resp != null && resp.getSearchResult() != null && resp.getSearchResult().results() != null
+				&& !resp.getSearchResult().results().isEmpty();
 		log.info("results: " + resp.getSearchResult());
 	}
 

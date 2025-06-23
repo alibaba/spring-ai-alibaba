@@ -151,7 +151,8 @@ public class DeepResearchConfiguration {
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
 			.addNode("background_investigator",
-					node_async(new BackgroundInvestigationNode(SearchUtil.getAvailableSearchService(context), jinaCrawlerService)))
+					node_async(new BackgroundInvestigationNode(SearchUtil.getAvailableSearchService(context),
+							jinaCrawlerService)))
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))

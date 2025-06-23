@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.serpapi;
+package com.alibaba.cloud.ai.toolcalling.bravesearch;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
@@ -26,31 +26,31 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.logging.Logger;
 
-@SpringBootTest(classes = { CommonToolCallAutoConfiguration.class, SerpApiAutoConfiguration.class })
-@DisplayName("SerpApi Test")
-public class SerpApiServiceTest {
+@SpringBootTest(classes = { BraveSearchAutoConfiguration.class, CommonToolCallAutoConfiguration.class })
+@DisplayName("Brave Search Test")
+public class BraveSearchTest {
 
 	@Autowired
-	private SerpApiService serpApiSearch;
+	private BraveSearchService braveSearchService;
 
-	private static final Logger log = Logger.getLogger(SerpApiServiceTest.class.getName());
+	private static final Logger log = Logger.getLogger(BraveSearchTest.class.getName());
 
 	@Test
 	@DisplayName("Tool-Calling Test")
-	@EnabledIfEnvironmentVariable(named = SerpApiConstants.API_KEY_ENV,
+	@EnabledIfEnvironmentVariable(named = BraveSearchConstants.API_KEY_ENV,
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
-	public void testSerpApiApply() {
-		var resp = serpApiSearch.apply(new SerpApiService.Request("Spring AI Alibaba"));
-		assert resp != null && resp.results() != null;
-		log.info("results: " + resp.results());
+	public void testBraveSearch() {
+		var resp = braveSearchService.apply(new BraveSearchService.Request("Spring AI Alibaba"));
+		assert resp != null && resp.web() != null && resp.web().results() != null && !resp.web().results().isEmpty();
+		log.info("results: " + resp.web().results());
 	}
 
 	@Autowired
 	private SearchService searchService;
 
 	@Test
-	@DisplayName("Abstract Search Test")
-	@EnabledIfEnvironmentVariable(named = SerpApiConstants.API_KEY_ENV,
+	@DisplayName("Abstract Search Service Test")
+	@EnabledIfEnvironmentVariable(named = BraveSearchConstants.API_KEY_ENV,
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	public void testAbstractSearch() {
 		var resp = searchService.query("Spring AI Alibaba");

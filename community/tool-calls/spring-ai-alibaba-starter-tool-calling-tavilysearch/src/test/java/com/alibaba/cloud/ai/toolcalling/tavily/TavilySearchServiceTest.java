@@ -55,7 +55,8 @@ public class TavilySearchServiceTest {
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	public void abstractSearchTest() {
 		var resp = searchService.query("Spring AI Alibaba");
-		assert resp != null && resp.getSearchResult() != null;
+		assert resp != null && resp.getSearchResult() != null && resp.getSearchResult().results() != null
+				&& !resp.getSearchResult().results().isEmpty();
 		log.info("results: " + resp.getSearchResult());
 	}
 
