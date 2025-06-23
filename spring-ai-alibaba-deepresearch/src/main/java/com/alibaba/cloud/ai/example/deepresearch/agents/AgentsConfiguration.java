@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
-import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
+import com.alibaba.cloud.ai.toolcalling.searches.SearchUtil;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
@@ -93,7 +93,8 @@ public class AgentsConfiguration {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("researchAgent");
 
 		return researchChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt))
-			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
+			.defaultToolNames(this.getAvailableTools(SearchUtil.getAvailableSearchToolName(context),
+					JinaCrawlerConstants.TOOL_NAME))
 			.defaultToolCallbacks(mcpCallbacks)
 			.build();
 	}

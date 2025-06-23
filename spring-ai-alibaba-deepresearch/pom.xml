@@ -69,7 +69,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-tool-calling-tavilysearch</artifactId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-searches</artifactId>
         </dependency>
 
         <dependency>

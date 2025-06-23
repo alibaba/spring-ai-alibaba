@@ -147,7 +147,7 @@ public class SerpApiService implements SearchService, Function<SerpApiService.Re
 		public SearchService.SearchResult getSearchResult() {
 			return new SearchService.SearchResult(this.results()
 				.stream()
-				.map(item -> new SearchService.SearchContent(item.title(), item.text()))
+				.map(item -> new SearchService.SearchContent(item.title(), item.text(), null))
 				.toList());
 		}
 	}

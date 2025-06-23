@@ -31,6 +31,11 @@ spring:
         type: async
     alibaba:
       toolcalling:
+        baidu:
+          search:
+            enabled: false
+        serpapi:
+          enabled: false
         tavilysearch:
           enabled: true
           api-key: ${TAVILY_API_KEY}

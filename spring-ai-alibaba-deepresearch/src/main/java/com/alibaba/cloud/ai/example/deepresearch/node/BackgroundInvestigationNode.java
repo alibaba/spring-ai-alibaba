@@ -19,8 +19,9 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
+import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,7 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
 
-	private final TavilySearchService tavilySearchService;
+	private final SearchService searchService;
 
 	private final Integer MAX_RETRY_COUNT = 3;
 
@@ -47,8 +48,8 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final JinaCrawlerService jinaCrawlerService;
 
-	public BackgroundInvestigationNode(TavilySearchService tavilySearchService, JinaCrawlerService jinaCrawlerService) {
-		this.tavilySearchService = tavilySearchService;
+	public BackgroundInvestigationNode(SearchService searchService, JinaCrawlerService jinaCrawlerService) {
+		this.searchService = searchService;
 		this.jinaCrawlerService = jinaCrawlerService;
 	}
 
@@ -62,14 +63,14 @@ public class BackgroundInvestigationNode implements NodeAction {
 		// Retry logic
 		for (int i = 0; i < MAX_RETRY_COUNT; i++) {
 			try {
-				TavilySearchService.Response response = tavilySearchService
-					.apply(TavilySearchService.Request.simpleQuery(query));
+				SearchService.Response response = searchService.query(query);
 
-				if (response != null && response.results() != null && !response.results().isEmpty()) {
-					results = response.results().stream().map(info -> {
+				if (response != null && response.getSearchResult() != null
+						&& !response.getSearchResult().results().isEmpty()) {
+					results = response.getSearchResult().results().stream().map(info -> {
 						Map<String, String> result = new HashMap<>();
 						result.put("title", info.title());
-						if (jinaCrawlerService == null) {
+						if (jinaCrawlerService == null || !CommonToolCallUtils.isValidUrl(info.url())) {
 							result.put("content", info.content());
 						}
 						else {

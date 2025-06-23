@@ -187,7 +187,7 @@ public class BaiduSearchService
 		public SearchService.SearchResult getSearchResult() {
 			return new SearchService.SearchResult(this.results()
 				.stream()
-				.map(item -> new SearchService.SearchContent(item.title(), item.abstractText))
+				.map(item -> new SearchService.SearchContent(item.title(), item.abstractText(), item.sourceUrl()))
 				.toList());
 		}
 	}

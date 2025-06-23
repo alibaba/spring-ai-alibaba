@@ -153,7 +153,7 @@ public class TavilySearchService
 		public SearchResult getSearchResult() {
 			return new SearchResult(this.results()
 				.stream()
-				.map(item -> new SearchService.SearchContent(item.title(), item.content()))
+				.map(item -> new SearchService.SearchContent(item.title(), item.content(), item.url()))
 				.toList());
 		}
 	}
