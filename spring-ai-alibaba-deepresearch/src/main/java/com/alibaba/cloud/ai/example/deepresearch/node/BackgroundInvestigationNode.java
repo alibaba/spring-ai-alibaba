@@ -22,8 +22,11 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
+import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
+import com.alibaba.cloud.ai.toolcalling.searches.SearchUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,23 +43,26 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
 
-	private final SearchService searchService;
-
 	private final Integer MAX_RETRY_COUNT = 3;
 
 	private final Long RETRY_DELAY_MS = 500L;
 
 	private final JinaCrawlerService jinaCrawlerService;
 
-	public BackgroundInvestigationNode(SearchService searchService, JinaCrawlerService jinaCrawlerService) {
-		this.searchService = searchService;
+	private final ApplicationContext context;
+
+	public BackgroundInvestigationNode(ApplicationContext context, JinaCrawlerService jinaCrawlerService) {
 		this.jinaCrawlerService = jinaCrawlerService;
+		this.context = context;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("background investigation node is running.");
 		String query = StateUtil.getQuery(state);
+		SearchService searchService = SearchUtil
+			.getSearchService(context, state.value("search_engine", SearchEnum.class).orElseThrow().getToolName())
+			.orElseThrow();
 
 		List<Map<String, String>> results = new ArrayList<>();
 

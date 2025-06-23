@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.model.req;
 
+import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
@@ -57,5 +58,10 @@ public record ChatRequest(
 		 */
 		@JsonProperty(value = "mcp_settings") Map<String, Object> mcpSettings,
 
-		@JsonProperty(value = "query", defaultValue = "草莓蛋糕怎么做呀") String query) {
+		@JsonProperty(value = "query", defaultValue = "草莓蛋糕怎么做呀") String query,
+
+		/**
+		 * 搜索引擎，默认为Tavily
+		 */
+		@JsonProperty(value = "search_engine", defaultValue = "tavily") SearchEnum searchEngine) {
 }

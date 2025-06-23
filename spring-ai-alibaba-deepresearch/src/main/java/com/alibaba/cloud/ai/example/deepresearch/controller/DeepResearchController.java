@@ -28,10 +28,12 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.toolcalling.searches.SearchUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.util.StringUtils;
@@ -54,11 +56,15 @@ public class DeepResearchController {
 
 	private final CompiledGraph compiledGraph;
 
+	private final ApplicationContext context;
+
 	@Autowired
-	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph) throws GraphStateException {
+	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph, ApplicationContext context)
+			throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 		this.compiledGraph = stateGraph
 			.compile(CompileConfig.builder().saverConfig(saverConfig).interruptBefore("human_feedback").build());
+		this.context = context;
 	}
 
 	/**
@@ -70,8 +76,11 @@ public class DeepResearchController {
 	 */
 	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest)
-			throws GraphRunnerException {
-		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
+			throws GraphRunnerException, IllegalArgumentException {
+		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest, context);
+		if (SearchUtil.getSearchService(context, chatRequest.searchEngine().getToolName()).isEmpty()) {
+			throw new IllegalArgumentException("Search Engine not available.");
+		}
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
 
 		Map<String, Object> objectMap = new HashMap<>();

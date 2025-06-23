@@ -25,7 +25,7 @@
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-bravesearch</artifactId>
     <name>Spring AI Alibaba Starter Tool Calling Brave Search</name>
-    <description>Baidu search tool for Spring AI Alibaba</description>
+    <description>Brave search tool for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>

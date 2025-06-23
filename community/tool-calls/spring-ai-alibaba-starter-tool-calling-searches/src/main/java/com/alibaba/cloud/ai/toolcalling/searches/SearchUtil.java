@@ -15,22 +15,17 @@
  */
 package com.alibaba.cloud.ai.toolcalling.searches;
 
-import com.alibaba.cloud.ai.toolcalling.baidusearch.BaiduSearchConstants;
 import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
-import com.alibaba.cloud.ai.toolcalling.serpapi.SerpApiConstants;
-import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
 import org.springframework.context.ApplicationContext;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * @author vlsmb
  * @since 2025/6/23
  */
 public final class SearchUtil {
-
-	private static final String[] SEARCH_TOOL_NAMES = { TavilySearchConstants.TOOL_NAME, BaiduSearchConstants.TOOL_NAME,
-			SerpApiConstants.TOOL_NAME };
 
 	private SearchUtil() {
 
@@ -41,13 +36,12 @@ public final class SearchUtil {
 	 * multiple implementations exist, return the first available instance according to
 	 * the defined loading order.
 	 * @param context ApplicationContext
-	 * @return the first available SearchService
-	 * @throws RuntimeException When there is no available Service, throw RuntimeException
+	 * @return the first available SearchService.
 	 */
-	public static SearchService getAvailableSearchService(ApplicationContext context) throws RuntimeException {
-		String toolName = getAvailableSearchToolName(context);
+	public static Optional<SearchService> getAvailableSearchService(ApplicationContext context) {
+		String toolName = getAvailableSearchToolName(context).orElse(null);
 		if (toolName == null) {
-			throw new RuntimeException("No Available Search Tool");
+			return Optional.empty();
 		}
 		return getSearchService(context, toolName);
 	}
@@ -57,25 +51,27 @@ public final class SearchUtil {
 	 * multiple implementations exist, return the first available instance according to
 	 * the defined loading order.
 	 * @param context ApplicationContext
-	 * @return the first available SearchService Tool Name, or null.
+	 * @return the first available SearchService Tool Name.
 	 */
-	public static String getAvailableSearchToolName(ApplicationContext context) {
-		return Arrays.stream(SEARCH_TOOL_NAMES).filter(context::containsBean).findFirst().orElse(null);
+	public static Optional<String> getAvailableSearchToolName(ApplicationContext context) {
+		return Arrays.stream(SearchEnum.values())
+			.map(SearchEnum::getToolName)
+			.filter(context::containsBean)
+			.findFirst();
 	}
 
 	/**
 	 * Get SearchService by tool name.
 	 * @param context ApplicationContext
 	 * @param toolName search tool name
-	 * @return available SearchService
-	 * @throws RuntimeException When this tool is unavailable, throw RuntimeException
+	 * @return available SearchService.
 	 */
-	public static SearchService getSearchService(ApplicationContext context, String toolName) throws RuntimeException {
+	public static Optional<SearchService> getSearchService(ApplicationContext context, String toolName) {
 		try {
-			return context.getBean(toolName, SearchService.class);
+			return Optional.of(context.getBean(toolName, SearchService.class));
 		}
 		catch (Exception e) {
-			throw new RuntimeException("The tool is unavailable.", e);
+			return Optional.empty();
 		}
 	}
 

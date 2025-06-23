@@ -26,6 +26,7 @@
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-searches</artifactId>
     <name>Spring AI Alibaba Starter Tool Calling Searches</name>
+    <description>Collect All Search Plugins in Tool Calling</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>

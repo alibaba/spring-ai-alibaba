@@ -44,7 +44,6 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.searches.SearchUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -151,8 +150,7 @@ public class DeepResearchConfiguration {
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
 			.addNode("background_investigator",
-					node_async(new BackgroundInvestigationNode(SearchUtil.getAvailableSearchService(context),
-							jinaCrawlerService)))
+					node_async(new BackgroundInvestigationNode(context, jinaCrawlerService)))
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
