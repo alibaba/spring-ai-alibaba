@@ -28,17 +28,17 @@ build: ## Build the project
 .PHONY: format-fix
 format-fix: ## Format the code
 	@$(LOG_TARGET)
-	mvn spring-javaformat:apply
+	mvnd spring-javaformat:apply
 
 .PHONY: format-check
 format-check: ## Format Check the code
 	@$(LOG_TARGET)
-	mvn spring-javaformat:validate
+	mvnd spring-javaformat:validate
 
 .PHONY: spotless-apply
 spotless-apply: ## Run spotless and apply changes
 	@$(LOG_TARGET)
-	mvn spotless:apply
+	mvnd spotless:apply
 
 .PHONY: checkstyle-check
 checkstyle-check: ## Checkstyle Check the code and output to target/checkstyle-report.xml
