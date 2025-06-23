@@ -65,7 +65,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 		if (modelType == ModelType.CHAT) {
 			DashScopeApi.ChatModel[] values = DashScopeApi.ChatModel.values();
 			for (DashScopeApi.ChatModel value : values) {
-				res.add(value.getModel());
+				res.add(value.getValue());
 			}
 		}
 		else if (modelType == ModelType.IMAGE) {

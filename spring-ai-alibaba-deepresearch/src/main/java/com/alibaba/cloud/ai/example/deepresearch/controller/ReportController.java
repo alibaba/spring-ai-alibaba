@@ -51,32 +51,20 @@ public class ReportController {
 	@GetMapping("/{threadId}")
 	public ResponseEntity<ReportResponse> getReport(@PathVariable String threadId) {
 		try {
-			logger.info("查询报告，线程ID: {}", threadId);
+			logger.info("Querying report for thread ID: {}", threadId);
 			String report = reportService.getReport(threadId);
 
 			if (report != null) {
-				ReportResponse response = new ReportResponse();
-				response.setThreadId(threadId);
-				response.setReport(report);
-				response.setStatus("success");
-				response.setMessage("报告获取成功");
-				return ResponseEntity.ok(response);
+				return ResponseEntity.ok(ReportResponse.success(threadId, report));
 			}
 			else {
-				ReportResponse response = new ReportResponse();
-				response.setThreadId(threadId);
-				response.setStatus("not_found");
-				response.setMessage("未找到指定线程ID的报告");
 				return ResponseEntity.notFound().build();
 			}
 		}
 		catch (Exception e) {
-			logger.error("获取报告失败，线程ID: {}", threadId, e);
-			ReportResponse response = new ReportResponse();
-			response.setThreadId(threadId);
-			response.setStatus("error");
-			response.setMessage("获取报告失败: " + e.getMessage());
-			return ResponseEntity.internalServerError().body(response);
+			logger.error("Failed to get report for thread ID: {}", threadId, e);
+			return ResponseEntity.internalServerError()
+				.body(ReportResponse.error(threadId, "Failed to get report: " + e.getMessage()));
 		}
 	}
 
@@ -88,25 +76,15 @@ public class ReportController {
 	@GetMapping("/{threadId}/exists")
 	public ResponseEntity<ExistsResponse> existsReport(@PathVariable String threadId) {
 		try {
-			logger.info("检查报告是否存在，线程ID: {}", threadId);
+			logger.info("Checking if report exists for thread ID: {}", threadId);
 			boolean exists = reportService.existsReport(threadId);
 
-			ExistsResponse response = new ExistsResponse();
-			response.setThreadId(threadId);
-			response.setExists(exists);
-			response.setStatus("success");
-			response.setMessage(exists ? "报告存在" : "报告不存在");
-
-			return ResponseEntity.ok(response);
+			return ResponseEntity.ok(ExistsResponse.success(threadId, exists));
 		}
 		catch (Exception e) {
-			logger.error("检查报告是否存在失败，线程ID: {}", threadId, e);
-			ExistsResponse response = new ExistsResponse();
-			response.setThreadId(threadId);
-			response.setExists(false);
-			response.setStatus("error");
-			response.setMessage("检查失败: " + e.getMessage());
-			return ResponseEntity.internalServerError().body(response);
+			logger.error("Failed to check if report exists for thread ID: {}", threadId, e);
+			return ResponseEntity.internalServerError()
+				.body(ExistsResponse.error(threadId, "Check failed: " + e.getMessage()));
 		}
 	}
 
@@ -118,32 +96,19 @@ public class ReportController {
 	@DeleteMapping("/{threadId}")
 	public ResponseEntity<BaseResponse> deleteReport(@PathVariable String threadId) {
 		try {
-			logger.info("删除报告，线程ID: {}", threadId);
+			logger.info("Deleting report for thread ID: {}", threadId);
 
 			if (!reportService.existsReport(threadId)) {
-				BaseResponse response = new BaseResponse();
-				response.setThreadId(threadId);
-				response.setStatus("not_found");
-				response.setMessage("未找到指定线程ID的报告");
 				return ResponseEntity.notFound().build();
 			}
 
 			reportService.deleteReport(threadId);
-
-			BaseResponse response = new BaseResponse();
-			response.setThreadId(threadId);
-			response.setStatus("success");
-			response.setMessage("报告删除成功");
-
-			return ResponseEntity.ok(response);
+			return ResponseEntity.ok(BaseResponse.success(threadId, "Report deleted successfully"));
 		}
 		catch (Exception e) {
-			logger.error("删除报告失败，线程ID: {}", threadId, e);
-			BaseResponse response = new BaseResponse();
-			response.setThreadId(threadId);
-			response.setStatus("error");
-			response.setMessage("删除报告失败: " + e.getMessage());
-			return ResponseEntity.internalServerError().body(response);
+			logger.error("Failed to delete report for thread ID: {}", threadId, e);
+			return ResponseEntity.internalServerError()
+				.body(BaseResponse.error(threadId, "Failed to delete report: " + e.getMessage()));
 		}
 	}
 

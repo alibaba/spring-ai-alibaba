@@ -26,7 +26,7 @@ public class DashScopeEmbeddingProperties extends DashScopeParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.dashscope.embedding";
 
-	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-v1";
+	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-v3";
 
 	/**
 	 * Enable Dashscope embedding client.
