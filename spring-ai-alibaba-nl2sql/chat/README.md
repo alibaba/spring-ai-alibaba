@@ -2,163 +2,286 @@
 
 ## 模块简介
 
-![img.png](img.png)
+<div align="center">
 
-随着大模型技术的快速发展，自然语言到 SQL（NL2SQL）能力在数据分析领域的落地日益广泛。然而，传统 NL2SQL 方案存在Schema 理解偏差、复杂查询生成效率低、执行结果不可控等问题，导致业务场景中频繁出现“答非所问”或“生成失败”的窘境。为了让更多开发者能够便捷地使用这一能力，我们决定将[阿里云析言GBI](https://bailian.console.aliyun.com/xiyan#/home)中“Schema 召回 + SQL 生成 + SQL 执行”的核心链路模块化、组件化，并以开源的形式回馈社区。
+![NL2SQL架构图](img.png)
 
-本模块旨在提供一个轻量级的 **自然语言查询转 SQL 语句** 的服务，基于用户输入的自然语言问题，结合数据库 Schema 和业务逻辑解释（evidence），通过大模型推理生成对应的 SQL 查询语句，并支持执行该 SQL 返回结果。
+</div>
 
-该模块被设计为可复用的 Service 层组件，**仅提供核心功能实现，不包含 RESTful 接口及独立启动能力**。适用于集成到其他 Spring Boot 项目中使用。
+随着大模型技术的快速发展，自然语言到 SQL（NL2SQL）能力在数据分析领域的应用日益广泛。然而，传统 NL2SQL 方案存在以下挑战：
 
----
+- Schema 理解偏差
+- 复杂查询生成效率低
+- 执行结果不可控
 
-## 功能特性
+这些问题导致业务场景中频繁出现"答非所问"或"生成失败"的情况。为了让更多开发者能够便捷地使用这一能力，我们将[阿里云析言GBI](https://bailian.console.aliyun.com/xiyan#/home)中的核心能力进行了模块化改造，主要包括：
 
-- **自然语言理解与关键词提取**
-  - 支持从用户提问中提取关键词和时间表达式
-  - 基于 Prompt 工程引导大模型准确识别意图
+- Schema 召回
+- SQL 生成
+- SQL 执行
 
-- **Schema 精准匹配**
-  - 结合向量库召回相关表结构信息
-  - 根据关键词和上下文筛选最相关的数据库表结构
+本模块提供一个轻量级的**自然语言查询转 SQL 语句**服务，具有以下特点：
 
-- **SQL 生成**
-  - 利用大模型生成符合语义的 SQL 查询语句
-  - 支持嵌入业务逻辑解释（evidence）以提高准确性
+- 🔍 基于用户输入的自然语言问题
+- 📊 结合数据库 Schema 和业务逻辑解释（evidence）
+- 🤖 通过大模型推理生成精准的 SQL 查询
+- 📈 支持执行 SQL 并返回格式化结果
 
-- **SQL 执行与结果展示**
-  - 支持直接执行生成的 SQL 并返回格式化结果（Markdown 表格）
-
----
-
-## 技术栈
-
-- **后端**: Java 17+ (Spring Boot)
-- **依赖模块**: `com.alibaba.cloud.ai:common:${spring-ai-alibaba.version}`
-- **大模型服务**: LLM（如 Qwen、DashScope）
-- **数据库连接器**: MySQL / PostgreSQL
-- **辅助工具**: Gson、Jackson、Markdown 解析器
+> 💡 该模块被设计为可复用的 Service 层组件，**仅提供核心功能实现，不包含 RESTful 接口及独立启动能力**。适用于集成到其他 Spring Boot 项目中使用。
 
 ---
 
-## 使用说明
+## ✨ 功能特性
 
-### 前置依赖
+### 🎯 自然语言理解与关键词提取
+- 智能提取用户提问中的关键词和时间表达式
+- 基于优化的 Prompt 工程，引导大模型准确理解用户意图
+- 支持复杂的多条件组合和上下文理解
 
-- [Java](https://www.oracle.com/java/technologies/javase-jdk17-downloads.html) >= 17
-- [PostgreSQL](https://www.postgresql.org/) 或 [MySQL](https://www.mysql.com/)
-- [Gradle](https://gradle.org/) 或 [Maven](https://maven.apache.org/) 构建工具（用于主项目的构建）
+### 🔍 Schema 精准匹配
+- 采用向量库技术，高效召回相关表结构信息
+- 智能筛选最相关的数据库表结构
+- 支持复杂的表关系推理和字段映射
 
-### 引入方式
+### ⚡ SQL 生成
+- 基于大模型推理，生成语义准确的 SQL 查询语句
+- 支持嵌入业务逻辑解释（evidence）提升准确性
+- 内置 SQL 语法校验和优化机制
 
-将本模块作为依赖引入到你的 Spring Boot 项目中：
+### 📊 SQL 执行与结果展示
+- 支持直接执行生成的 SQL 语句
+- 自动格式化查询结果为 Markdown 表格
+- 提供友好的错误提示和执行状态反馈
 
-#### Maven 示例：
+---
+
+## 🛠 技术栈
+
+### 核心依赖
+- ⚡ **运行环境**: Java 17+ (Spring Boot)
+- 🔗 **基础模块**: `com.alibaba.cloud.ai:common:${spring-ai-alibaba.version}`
+- 🤖 **AI 能力**: 支持多种大模型服务（如 Qwen、DashScope）
+
+### 存储与连接
+- 📊 **数据库支持**: MySQL / PostgreSQL
+- 🔍 **向量存储**: AnalyticDB / SimpleVector
+
+### 工具支持
+- 🛠 **JSON 处理**: Gson、Jackson
+- 📝 **文档处理**: Markdown 解析器
+- 🔧 **开发工具**: Maven / Gradle
+
+---
+
+## 🚀 快速开始
+
+### 📋 前置要求
+
+在开始使用之前，请确保您的环境满足以下要求：
+
+| 依赖项 | 版本要求 | 说明 |
+|--------|----------|------|
+| [Java](https://www.oracle.com/java/technologies/javase-jdk17-downloads.html) | >= 17 | 运行环境 |
+| [PostgreSQL](https://www.postgresql.org/) / [MySQL](https://www.mysql.com/) | 最新稳定版 | 数据库支持 |
+| [Maven](https://maven.apache.org/) / [Gradle](https://gradle.org/) | 最新稳定版 | 项目构建工具 |
+
+### 📦 安装依赖
+
+选择以下任一方式将模块添加到您的 Spring Boot 项目中：
+
+<details>
+<summary>📎 Maven 配置</summary>
 
 ```xml
 <dependency>
-  <groupId>com.alibaba.cloud.ai</groupId>
-  <artifactId>spring-ai-alibaba-starter-nl2sql</artifactId>
-  <version>${spring-ai-alibaba.version}</version>
+    <groupId>com.alibaba.cloud.ai</groupId>
+    <artifactId>spring-ai-alibaba-starter-nl2sql</artifactId>
+    <version>${spring-ai-alibaba.version}</version>
 </dependency>
 ```
+</details>
 
-#### Gradle 示例：
+<details>
+<summary>📎 Gradle 配置</summary>
 
 ```groovy
 implementation 'com.alibaba.cloud.ai:spring-ai-alibaba-starter-nl2sql:${spring-ai-alibaba.version}'
 ```
+</details>
 
 ---
 
-## 配置说明
+## ⚙️ 配置指南
 
-目前支持两种向量存储方式：
-- **AnalyticDB**（推荐生产环境，支持大规模数据和高性能检索）
-- **SimpleVector**（适合本地开发、测试或小规模场景，无需依赖外部数据库）
+### 📝 配置详解
 
-### AnalyticDB 配置示例
+本模块提供了灵活的配置选项，以适应不同的使用场景：
+
+<details open>
+<summary>📌 向量存储选项</summary>
+
+#### 1️⃣ AnalyticDB（推荐用于生产环境）
+- ✨ 支持大规模数据存储和高性能检索
+- 🚀 分布式架构，支持横向扩展
+- 📊 企业级特性：高可用、数据备份、访问控制
+- 🔐 安全特性：传输加密、访问认证
+
+#### 2️⃣ SimpleVector（适合开发测试）
+- 💡 零配置，即开即用
+- 🎯 轻量级实现，适合本地开发
+- 📝 支持小规模数据场景
+- 🔄 快速迭代和测试
+
+> 💡 **选择建议**：
+> - 开发测试环境：使用 SimpleVector，简单快捷
+> - 生产环境：使用 AnalyticDB，性能和可靠性更好
+
+</details>
+
+### ⚙️ 配置详解
+
+<details>
+<summary>📌 AnalyticDB 配置</summary>
 
 ```yaml
 spring:
   ai:
     vectorstore:
       analytic:
-        collectName: chatbi
-        regionId: cn-hangzhou
-        dbInstanceId: gp-bp11vjucxhw757v9p
-        managerAccount: 
-        managerAccountPassword: 
-        namespace: 
-        namespacePassword: 
-        defaultTopK: 10
-        defaultSimilarityThreshold: 0.01
-        accessKeyId: 
-        accessKeySecret: 
+        # 基础配置
+        collectName: ${VECTOR_COLLECTION_NAME}  # 向量集合名称
+        regionId: ${REGION_ID}                  # 实例区域，如：cn-hangzhou
+        dbInstanceId: ${INSTANCE_ID}            # AnalyticDB 实例 ID
+        
+        # 安全凭证（建议使用环境变量）
+        accessKeyId: ${ACCESS_KEY_ID}           # 阿里云访问密钥ID
+        accessKeySecret: ${ACCESS_KEY_SECRET}   # 阿里云访问密钥密码
+        
+        # 数据库访问凭证
+        managerAccount: ${DB_MANAGER}           # 管理员账号
+        managerAccountPassword: ${DB_PASSWORD}   # 管理员密码
+        namespace: ${NAMESPACE}                 # 命名空间
+        namespacePassword: ${NS_PASSWORD}       # 命名空间密码
+        
+        # 向量检索参数
+        defaultTopK: 10                        # 返回结果数量
+        defaultSimilarityThreshold: 0.01       # 相似度阈值(0.01-0.75)
 ```
 
-> ⚠️ 注意：AnalyticDB 需提前开启向量引擎优化，详见[官方文档](https://help.aliyun.com/zh/analyticdb/analyticdb-for-postgresql/getting-started/create-an-instance-instances-with-vector-engine-optimization-enabled)。SimpleVector 适合本地开发和小数据量测试，不建议用于生产环境。
+> ⚠️ **重要提示**
+> 1. AnalyticDB 需开启向量引擎优化，详见[官方文档](https://help.aliyun.com/zh/analyticdb/analyticdb-for-postgresql/getting-started/create-an-instance-instances-with-vector-engine-optimization-enabled)
+> 2. 所有敏感信息请使用环境变量或配置中心管理
+> 3. 建议在生产环境中使用 RAM 用户，遵循最小权限原则
 
-### SimpleVector 配置示例
+</details>
 
-无需配置，默认启动 SimpleVector
-
-### 数据库连接配置 (`application.yml`)
+<details>
+<summary>📌 应用配置</summary>
 
 ```yaml
 spring:
   ai:
+    # DashScope 配置
     openai:
-      base-url: https://dashscope.aliyuncs.com/compatible-mode #类似 OpenAI 接口风格的兼容地址，这里指向的是阿里云 DashScope 的兼容接口。
-      api-key: sk
-      model: qwen-max #使用的模型名称，推荐使用：qwen-max: 适合复杂任务（如 NL2SQL）qwen-plus: 平衡性能与成本
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      api-key: ${DASHSCOPE_API_KEY}
+      model: qwen-max    # 推荐：复杂任务用 qwen-max，一般任务用 qwen-plus
+    
     dashscope:
-      api-key: sk  #DashScope 平台的 API Key，用于调用 Qwen 等模型。获取方式：登录 DashScope 控制台 → 查看或创建 API Key。
-    vectorstore:
-      analytic:
-        collectName: chatbi #向量集合名称，即你要写入数据的“collection”名，例如 chatbi
-        regionId: cn-hangzhou #实例所在的区域 ID，比如 cn-hangzhou（杭州）、cn-beijing（北京）等。
-        dbInstanceId: gp-bp11vjucxhw757v9p #AnalyticDB PostgreSQL 实例 ID，例如 gp-bp11vjucxhw757v9p
-        managerAccount: #实例的管理员账号。
-        managerAccountPassword: #实例的管理员密码。
-        namespace: #命名空间信息，用于隔离不同用户的向量数据
-        namespacePassword: 
-        defaultTopK: 10 #默认返回的相似向量数量。
-        defaultSimilarityThreshold: 0.01 #通常设为 0.01 到 0.75 之间，根据实际效果调整。
-        accessKeyId: #阿里云主账号或 RAM 用户的 AK 信息
-        accessKeySecret: 
+      api-key: ${DASHSCOPE_API_KEY}
+
+# 数据库配置
 chatbi:
   dbconfig:
-    url: jdbc:mysql://host:port/database #数据库 JDBC 连接地址，示例：MySQL: jdbc:mysql://host:port/databasePostgreSQL: jdbc:postgresql://host:port/database
-    username: #数据库用户名
-    password: #数据库用户密码
+    # 数据源配置
+    url: ${JDBC_URL}        # 如：jdbc:mysql://host:port/database
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    
+    # 连接参数
     connectiontype: jdbc
-    dialecttype: mysql #数据库类型，可选：postgresql、mysql
-    schema: #postgresql类型所需要的schema名称
-
+    dialecttype: mysql      # 可选：mysql、postgresql
+    schema: ${DB_SCHEMA}    # PostgreSQL需要
 ```
 
-### 大模型服务配置（LLM）
+> 🔒 **安全建议**
+> 1. 使用环境变量或配置中心管理所有敏感信息
+> 2. 定期轮换密钥和密码
+> 3. 使用加密连接（SSL/TLS）
+> 4. 为不同环境（开发、测试、生产）使用不同的凭证
 
-请确保 `LlmService` 实现类已注入容器，并支持调用大模型 API。
+</details>
 
-### 向量服务配置
+<details>
+<summary>📌 SimpleVector 配置</summary>
 
-确保 `VectorStoreService` 及其依赖项（如 `AnalyticDbVectorStoreProperties`）已正确配置并可用。
+无需特殊配置，系统将自动启用 SimpleVector 作为默认向量存储。
 
----
+> 💡 **说明**: SimpleVector 适合本地开发和测试环境使用，不建议在生产环境中使用。
 
-## 核心类说明
+</details>
 
-- **`BaseNl2SqlService`**
-  - 主要对外接口服务类，提供以下方法：
-    - `nl2sql(String query)`：入口方法，接收自然语言问题，返回格式化结果
+## 🔧 服务配置
 
----
+<details>
+<summary>📌 大模型服务（LLM）</summary>
 
-## NL2SQl Graph
+确保以下组件已正确配置：
+1. `LlmService` 实现类已注入 Spring 容器
+2. 大模型 API 调用权限已授予
+3. 相关配置项已在 `application.yml` 中设置
 
-### 设计
+> 💡 **提示**：建议在开发环境中使用较小的模型进行测试，生产环境再切换到完整模型。
+
+</details>
+
+<details>
+<summary>📌 向量服务</summary>
+
+系统依赖以下组件：
+1. `VectorStoreService` 接口及其实现类
+2. 向量存储配置类（如 `AnalyticDbVectorStoreProperties`）
+3. 向量计算和索引服务
+
+> ⚠️ **注意**：首次使用时需要初始化向量库，可能需要较长时间。
+
+</details>
+
+## 🏗️ 系统架构
+
+### 核心组件
+
+<details>
+<summary>📌 服务层</summary>
+
+#### BaseNl2SqlService
+主要的对外接口服务类，负责自然语言到 SQL 的转换流程。
+
+**核心方法**
+
+```java
+/**
+ * 将自然语言转换为SQL查询
+ * @param query 自然语言问题
+ * @return 格式化的SQL结果
+ */
+String nl2sql(String query);
+```
+
+**主要职责**
+- 自然语言解析和理解
+- Schema 匹配和关联
+- SQL 生成和优化
+- 结果验证和格式化
+
+</details>
+
+### NL2SQL Graph
+
+#### 工作流设计
+
+<details>
+<summary>📌 工作流程图</summary>
 
 ```plantuml
 @startuml
@@ -166,52 +289,45 @@ skinparam usecaseFontSize 14
 skinparam usecaseStereotypeFontSize 12
 skinparam hexagonFontSize 14
 skinparam hexagonStereotypeFontSize 12
-title "workflow graph"
+title "NL2SQL Workflow"
 footer
-
 powered by spring-ai-alibaba
 end footer
-circle start<<input>> as __START__
-circle stop as __END__
-usecase "QUERY_REWRITE_NODE"<<Node>>
-usecase "KEYWORD_EXTRACT_NODE"<<Node>>
-usecase "SCHEMA_RECALL_NODE"<<Node>>
-usecase "TABLE_RELATION_NODE"<<Node>>
-usecase "SQL_GENERATE_NODE"<<Node>>
-usecase "SQL_VALIDATE_NODE"<<Node>>
-usecase "SEMANTIC_CONSISTENC_NODE"<<Node>>
-hexagon "check state" as condition1<<Condition>>
-hexagon "check state" as condition2<<Condition>>
-hexagon "check state" as condition3<<Condition>>
-hexagon "check state" as condition4<<Condition>>
-"__START__" -down-> "QUERY_REWRITE_NODE"
-"QUERY_REWRITE_NODE" .down.> "condition1"
-"condition1" .down.> "__END__"
-'"QUERY_REWRITE_NODE" .down.> "__END__"
-"condition1" .down.> "KEYWORD_EXTRACT_NODE"
-'"QUERY_REWRITE_NODE" .down.> "KEYWORD_EXTRACT_NODE"
-"KEYWORD_EXTRACT_NODE" -down-> "SCHEMA_RECALL_NODE"
-"SCHEMA_RECALL_NODE" -down-> "TABLE_RELATION_NODE"
-"TABLE_RELATION_NODE" -down-> "SQL_GENERATE_NODE"
-"SQL_GENERATE_NODE" .down.> "condition2"
-"condition2" .down.> "__END__"
-'"SQL_GENERATE_NODE" .down.> "__END__"
-"condition2" .down.> "SQL_VALIDATE_NODE"
-'"SQL_GENERATE_NODE" .down.> "SQL_VALIDATE_NODE"
-"condition2" .down.> "KEYWORD_EXTRACT_NODE"
-'"SQL_GENERATE_NODE" .down.> "KEYWORD_EXTRACT_NODE"
-"SQL_VALIDATE_NODE" .down.> "condition3"
-"condition3" .down.> "SEMANTIC_CONSISTENC_NODE"
-'"SQL_VALIDATE_NODE" .down.> "SEMANTIC_CONSISTENC_NODE"
-"condition3" .down.> "SQL_GENERATE_NODE"
-'"SQL_VALIDATE_NODE" .down.> "SQL_GENERATE_NODE"
-"SEMANTIC_CONSISTENC_NODE" .down.> "condition4"
-"condition4" .down.> "SQL_GENERATE_NODE"
-'"SEMANTIC_CONSISTENC_NODE" .down.> "SQL_GENERATE_NODE"
-"condition4" .down.> "__END__"
-'"SEMANTIC_CONSISTENC_NODE" .down.> "__END__"
+
+circle "Start" as start
+circle "End" as end
+
+usecase "Query Rewrite" as qr
+usecase "Keyword Extract" as ke
+usecase "Schema Recall" as sr
+usecase "Table Relation" as tr
+usecase "SQL Generate" as sg
+usecase "SQL Validate" as sv
+usecase "Semantic Check" as sc
+
+start -> qr
+qr --> ke
+ke --> sr
+sr --> tr
+tr --> sg
+sg --> sv
+sv --> sc
+sc --> end
+
+note right of qr : 查询重写
+note right of ke : 关键词提取
+note right of sr : Schema召回
+note right of tr : 表关系分析
+note right of sg : SQL生成
+note right of sv : SQL验证
+note right of sc : 语义一致性检查
+
 @enduml
 ```
+
+> 💡 **说明**: 工作流程图展示了NL2SQL模块的主要处理步骤和数据流向
+
+</details>
 
 ### 调用方法
 
@@ -240,9 +356,6 @@ import java.util.Optional;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.RESULT;
 
-/**
- * @author zhangshenghang
- */
 @RestController
 @RequestMapping("nl2sql")
 public class Nl2sqlController {
