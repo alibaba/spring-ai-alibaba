@@ -3,6 +3,20 @@ server:
 spring:
   application:
     name: spring-ai-alibaba-deepresearch
+  # Redis 配置
+  data:
+    redis:
+      enabled: false
+      host: localhost
+      port: 6379
+      password: ${REDIS-PASSWORD}
+      timeout: 3000 # 连接超时时间（毫秒）
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
   ai:
     dashscope:
       api-key: ${AI_DASHSCOPE_API_KEY}
@@ -10,51 +24,37 @@ spring:
       embedding:
         options:
           model: text-embedding-v1
-      client:
-        connection-timeout: 60000
-        read-timeout: 300000
-        write-timeout: 60000
 
     mcp:
       client:
+        enabled: false
         type: async
-#        sse:
-#          connections:
-#            weather_mcp_server:
-#              url: http://localhost:8888
-#        stdio:
-#          servers-configuration: classpath:mcp-servers.json
-        toolcallback:
-          enabled: true
     alibaba:
       toolcalling:
         tavilysearch:
           enabled: true
           api-key: ${TAVILY_API_KEY}
         jinacrawler:
-          enabled: true
+          enabled: false
           api-key: ${JINA_API_KEY}
       deepresearch:
         mcp:
-          enabled: true
+          enabled: false
           config-location: classpath:mcp-config.json
         parallel-node-count:
           researcher: 5
           coder: 5
-#        mcp-client-mapping:
-#          researchAgent:
-#            - amap-maps
-#          coderAgent:
-#            - amap-maps
-#            - weather_mcp_server
         rag:
-          enabled: true
+          enabled: false
           # 可以设置为 'simple' 或 'elasticsearch'
           vector-store-type: simple
           data:
             # 启动时加载 classpath下data目录中的所有文件
             locations:
               - "classpath:/data/"
+        # 报告导出路径配置
+        export:
+          path: ${AI_DEEPRESEARCH_EXPORT_PATH}
 logging:
   level:
     com.alibaba.cloud.ai.example.deepresearch: debug
