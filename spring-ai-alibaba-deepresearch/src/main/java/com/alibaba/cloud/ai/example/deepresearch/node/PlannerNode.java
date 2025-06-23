@@ -62,14 +62,20 @@ public class PlannerNode implements NodeAction {
 		messages.add(TemplateUtil.getMessage("planner", state));
 		// 1.2 添加用户提问
 		List<String> queries = state.value("query", (List<String>) null);
-		assert queries != null;
-		for(String query : queries){
+		assert queries != null && !queries.isEmpty();
+		for (String query : queries) {
 			messages.add(new UserMessage(query));
 		}
 		// 1.3 添加背景调查消息
-		String backgroundInvestigationResults = state.value("background_investigation_results", "");
-		if (StringUtils.hasText(backgroundInvestigationResults)) {
-			messages.add(new UserMessage(backgroundInvestigationResults));
+		if (state.value("enable_background_investigation", true)) {
+			List<String> backgroundInvestigationResults = state.value("background_investigation_results",
+					(List<String>) null);
+			assert backgroundInvestigationResults != null && !backgroundInvestigationResults.isEmpty();
+			for (String backgroundInvestigationResult : backgroundInvestigationResults) {
+				if (StringUtils.hasText(backgroundInvestigationResult)) {
+					messages.add(new UserMessage(backgroundInvestigationResult));
+				}
+			}
 		}
 		// 1.4 添加用户反馈消息
 		String feedBackContent = state.value("feed_back_content", "").toString();

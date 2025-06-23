@@ -16,14 +16,12 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,13 +58,13 @@ public class BackgroundInvestigationNode implements NodeAction {
 		List<String> queries = state.value("query", (List<String>) null);
 		assert queries != null && !queries.isEmpty();
 		List<List<Map<String, String>>> resultsList = new ArrayList<>();
-		for(String query : queries){
+		for (String query : queries) {
 			List<Map<String, String>> results = new ArrayList<>();
 			// Retry logic
 			for (int i = 0; i < MAX_RETRY_COUNT; i++) {
 				try {
 					TavilySearchService.Response response = tavilySearchService
-							.apply(TavilySearchService.Request.simpleQuery(query));
+						.apply(TavilySearchService.Request.simpleQuery(query));
 
 					if (response != null && response.results() != null && !response.results().isEmpty()) {
 						results = response.results().stream().map(info -> {
@@ -79,7 +77,8 @@ public class BackgroundInvestigationNode implements NodeAction {
 								try {
 									logger.info("Get detail info of a url using Jina Crawler...");
 									result.put("content",
-											jinaCrawlerService.apply(new JinaCrawlerService.Request(info.url())).content());
+											jinaCrawlerService.apply(new JinaCrawlerService.Request(info.url()))
+												.content());
 								}
 								catch (Exception e) {
 									logger.error("Jina Crawler Service Error", e);
@@ -100,12 +99,10 @@ public class BackgroundInvestigationNode implements NodeAction {
 			resultsList.add(results);
 		}
 
-
-
 		Map<String, Object> resultMap = new HashMap<>();
 		if (!resultsList.isEmpty()) {
 			List<String> backgroundResults = new ArrayList<>();
-			for(List<Map<String, String>> results : resultsList){
+			for (List<Map<String, String>> results : resultsList) {
 				String prompt = "background investigation results of user query:\n" + results + "\n";
 				backgroundResults.add(prompt);
 				logger.info("✅ 搜索结果: {} 条", results.size());
@@ -118,4 +115,5 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 		return resultMap;
 	}
+
 }
