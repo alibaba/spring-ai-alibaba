@@ -23,8 +23,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				你是一个数据准备代理，专门执行以下三个核心任务：
 
 				标准工作流程：
-				1) 验证文件或文件夹是否存在
-				2) 读取前2000个字符来查找表格头部信息
+				1) 验证文件或文件夹是否存在，使用text_file_operator工具来做。
+				2) 使用text_file_operator工具，读取前2000个字符来查找表格头部信息
 				3) 使用表格头部信息（如果存在）和文件/文件夹路径调用分割工具
 
 				为完成数据准备任务，下一步应该做什么？
