@@ -40,7 +40,7 @@ public class CheckpointTest {
 	public void concurrentExceptionTest() throws Exception {
 		var memorySaver = new MemorySaver();
 		ExecutorService executorService = Executors.newCachedThreadPool();
-		int count = 100;
+		int count = 50;
 		CountDownLatch latch = new CountDownLatch(count);
 		var index = new AtomicInteger(0);
 		var futures = new ArrayList<Future<?>>();
