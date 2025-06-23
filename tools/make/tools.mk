@@ -55,5 +55,5 @@ tools: ## Install ci tools
 	unzip -q mvnd.zip \
 	mkdir -p $HOME/.local \
     mv maven-mvnd-${MVND_VERSION}-linux-amd64 $HOME/.local/mvnd \
-    echo "$HOME/.local/mvnd/bin" >> $GITHUB_PATH \
-    echo "MVND_HOME=$HOME/.local/mvnd" >> $GITHUB_ENV \
+    echo "${HOME}/.local/mvnd/bin" >> ${GITHUB_PATH} \
+    echo "MVND_HOME=${HOME}/.local/mvnd" >> ${GITHUB_ENV} \
