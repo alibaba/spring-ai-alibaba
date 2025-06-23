@@ -17,13 +17,17 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import java.util.Collection;
+import java.util.Deque;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.stream.Collectors;
 
+import static com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant.MEMORY;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -33,18 +37,41 @@ import static java.util.Optional.ofNullable;
  */
 public class CompileConfig {
 
-	private SaverConfig saverConfig;
+	private SaverConfig saverConfig = new SaverConfig().register(MEMORY, new MemorySaver());
 
-	private PlainTextStateSerializer plainTextStateSerializer;
+	private Deque<GraphLifecycleListener> lifecycleListeners = new LinkedBlockingDeque<>(25);
 
 	// private BaseCheckpointSaver checkpointSaver; // replaced with SaverConfig
 	private Set<String> interruptsBefore = Set.of();
 
 	private Set<String> interruptsAfter = Set.of();
 
+	private boolean releaseThread = false;
+
 	/**
-	 * Returns the array of interrupts that will occur before the specified node.
-	 * @return an array of interruptible nodes.
+	 * Returns the current state of the thread release flag.
+	 *
+	 * @see BaseCheckpointSaver#release(RunnableConfig)
+	 * @return true if the thread has been released, false otherwise
+	 */
+	public boolean releaseThread() {
+		return releaseThread;
+	}
+
+	/**
+	 * Gets an unmodifiable list of node lifecycle listeners.
+	 * @return The list of lifecycle listeners.
+	 */
+	public Queue<GraphLifecycleListener> lifecycleListeners() {
+		return lifecycleListeners;
+	}
+
+	/**
+	 * Returns the array of interrupts that will occur before the specified node
+	 * (deprecated).
+	 * @return An array of interruptible nodes.
+	 * @deprecated Use {@link #interruptsBefore()} instead for better immutability and
+	 * type safety.
 	 */
 	@Deprecated
 	public String[] getInterruptBefore() {
@@ -52,8 +79,11 @@ public class CompileConfig {
 	}
 
 	/**
-	 * Returns the array of interrupts that will occur after the specified node.
-	 * @return an array of interruptible nodes.
+	 * Returns the array of interrupts that will occur after the specified node
+	 * (deprecated).
+	 * @return An array of interruptible nodes.
+	 * @deprecated Use {@link #interruptsAfter()} instead for better immutability and type
+	 * safety.
 	 */
 	@Deprecated
 	public String[] getInterruptAfter() {
@@ -61,76 +91,88 @@ public class CompileConfig {
 	}
 
 	/**
-	 * Returns the array of interrupts that will occur before the specified node.
-	 * @return an unmodifiable {@link Set} of interruptible nodes.
+	 * Returns the set of interrupts that will occur before the specified node.
+	 * @return An unmodifiable set of interruptible nodes.
 	 */
 	public Set<String> interruptsBefore() {
 		return interruptsBefore;
 	}
 
 	/**
-	 * Returns the array of interrupts that will occur after the specified node.
-	 * @return an unmodifiable {@link Set} of interruptible nodes.
+	 * Returns the set of interrupts that will occur after the specified node.
+	 * @return An unmodifiable set of interruptible nodes.
 	 */
 	public Set<String> interruptsAfter() {
 		return interruptsAfter;
 	}
 
 	/**
-	 * Returns the current {@code BaseCheckpointSaver} instance if it is not {@code null},
-	 * otherwise returns an empty {@link Optional}.
-	 * @return an {@link Optional} containing the current {@code BaseCheckpointSaver}
-	 * instance, or an empty {@link Optional} if it is {@code null}
+	 * Retrieves a checkpoint saver based on the specified type from the saver
+	 * configuration.
+	 * @param type The type of the checkpoint saver to retrieve.
+	 * @return An Optional containing the checkpoint saver if available; otherwise, empty.
 	 */
 	public Optional<BaseCheckpointSaver> checkpointSaver(String type) {
 		return ofNullable(saverConfig.get(type));
 	}
 
+	/**
+	 * Retrieves the default checkpoint saver from the saver configuration.
+	 * @return An Optional containing the default checkpoint saver if available;
+	 * otherwise, empty.
+	 */
 	public Optional<BaseCheckpointSaver> checkpointSaver() {
 		return ofNullable(saverConfig.get());
 	}
 
 	/**
-	 * Returns a new {@link Builder} instance with the default {@link CompileConfig}.
-	 * @return A {@link Builder} instance.
+	 * Returns a new instance of the builder with default configuration settings.
+	 * @return A new Builder instance.
 	 */
 	public static Builder builder() {
 		return new Builder(new CompileConfig());
 	}
 
 	/**
-	 * Creates a new {@link Builder} instance with the specified Compile configuration.
-	 * @param config The {@link CompileConfig} to be used for compilation settings.
-	 * @return A new {@link Builder} instance initialized with the given compilation
-	 * configuration.
+	 * Returns a new instance of the builder initialized with the provided configuration.
+	 * @param config The compile configuration to use as a base.
+	 * @return A new Builder instance initialized with the given configuration.
 	 */
 	public static Builder builder(CompileConfig config) {
 		return new Builder(config);
 	}
 
 	/**
-	 * This class is a builder for {@link CompileConfig}. It allows for the configuration
-	 * of various options to customize the compilation process.
-	 *
+	 * Builder class for creating instances of CompileConfig. It allows setting various
+	 * options such as savers, interrupts, and lifecycle listeners in a fluent manner.
 	 */
 	public static class Builder {
 
 		private final CompileConfig config;
 
 		/**
-		 * Constructs a new instance of {@code Builder} with the specified compile
-		 * configuration.
-		 * @param config The compile configuration to be used. This value must not be
-		 * {@literal null}.
+		 * Initializes the builder with the provided compile configuration.
+		 * @param config The base configuration to start from.
 		 */
 		protected Builder(CompileConfig config) {
 			this.config = new CompileConfig(config);
 		}
 
 		/**
-		 * Sets the checkpoint saver for the configuration.
-		 * @param saverConfig The {@code BaseCheckpointSaver} to set.
-		 * @return The current {@code Builder} instance for method chaining.
+		 * Sets whether the thread should be released during execution.
+		 * @param releaseThread Flag indicating whether to release the thread.
+		 * @see BaseCheckpointSaver#release(RunnableConfig)
+		 * @return This builder instance for method chaining.
+		 */
+		public Builder releaseThread(boolean releaseThread) {
+			this.config.releaseThread = releaseThread;
+			return this;
+		}
+
+		/**
+		 * Sets the saver configuration for checkpoints.
+		 * @param saverConfig The SaverConfig to use.
+		 * @return This builder instance for method chaining.
 		 */
 		public Builder saverConfig(SaverConfig saverConfig) {
 			this.config.saverConfig = saverConfig;
@@ -138,19 +180,10 @@ public class CompileConfig {
 		}
 
 		/**
-		 * Plain text state serializer builder.
-		 * @param plainTextStateSerializer the plain text state serializer
-		 * @return The current {@code Builder} instance for method chaining.
-		 */
-		public Builder plainTextStateSerializer(PlainTextStateSerializer plainTextStateSerializer) {
-			this.config.plainTextStateSerializer = plainTextStateSerializer;
-			return this;
-		}
-
-		/**
-		 * Sets the actions to be performed before an interruption.
-		 * @param interruptBefore the actions to be performed before an interruption
-		 * @return a reference to the current instance of Builder
+		 * Sets individual interrupt points that trigger before node execution using
+		 * varargs.
+		 * @param interruptBefore One or more strings representing interrupt points.
+		 * @return This builder instance for method chaining.
 		 */
 		public Builder interruptBefore(String... interruptBefore) {
 			this.config.interruptsBefore = Set.of(interruptBefore);
@@ -158,9 +191,10 @@ public class CompileConfig {
 		}
 
 		/**
-		 * Sets the strings that cause an interrupt in the configuration.
-		 * @param interruptAfter An array of string values representing the interruptions.
-		 * @return The current Builder instance, allowing method chaining.
+		 * Sets individual interrupt points that trigger after node execution using
+		 * varargs.
+		 * @param interruptAfter One or more strings representing interrupt points.
+		 * @return This builder instance for method chaining.
 		 */
 		public Builder interruptAfter(String... interruptAfter) {
 			this.config.interruptsAfter = Set.of(interruptAfter);
@@ -168,8 +202,9 @@ public class CompileConfig {
 		}
 
 		/**
-		 * Sets the collection of interrupts to be executed before the configuration.
-		 * @param interruptsBefore The collection of interrupt strings.
+		 * Sets multiple interrupt points that trigger before node execution from a
+		 * collection.
+		 * @param interruptsBefore Collection of strings representing interrupt points.
 		 * @return This builder instance for method chaining.
 		 */
 		public Builder interruptsBefore(Collection<String> interruptsBefore) {
@@ -178,20 +213,29 @@ public class CompileConfig {
 		}
 
 		/**
-		 * Sets the collection of strings that specify which interrupts should occur
-		 * after.
-		 * @param interruptsAfter Collection of interrupt identifiers
-		 * @return The current Builder instance for method chaining
+		 * Sets multiple interrupt points that trigger after node execution from a
+		 * collection.
+		 * @param interruptsAfter Collection of strings representing interrupt points.
+		 * @return This builder instance for method chaining.
 		 */
 		public Builder interruptsAfter(Collection<String> interruptsAfter) {
 			this.config.interruptsAfter = interruptsAfter.stream().collect(Collectors.toUnmodifiableSet());
-			;
 			return this;
 		}
 
 		/**
-		 * Initializes the compilation configuration and returns it.
-		 * @return the compiled {@link CompileConfig} object
+		 * Adds a lifecycle listener to monitor node execution events.
+		 * @param listener The NodeLifecycleListener to add.
+		 * @return This builder instance for method chaining.
+		 */
+		public Builder withLifecycleListener(GraphLifecycleListener listener) {
+			this.config.lifecycleListeners.offer(listener);
+			return this;
+		}
+
+		/**
+		 * Finalizes the configuration and returns the compiled instance.
+		 * @return The configured CompileConfig object.
 		 */
 		public CompileConfig build() {
 			return config;
@@ -200,21 +244,23 @@ public class CompileConfig {
 	}
 
 	/**
-	 * Default constructor for the {@class CompileConfig} class. This constructor is
-	 * private to enforce that instances of this class are not created outside its
-	 * package.
+	 * Default constructor used internally to create a new configuration with default
+	 * settings. Made private to ensure all instances are created through the builder
+	 * pattern.
 	 */
 	private CompileConfig() {
 	}
 
 	/**
-	 * Creates a new {@code CompileConfig} object as a copy of the provided configuration.
+	 * Copy constructor to create a new instance based on an existing configuration.
 	 * @param config The configuration to copy.
 	 */
 	private CompileConfig(CompileConfig config) {
 		this.saverConfig = config.saverConfig;
 		this.interruptsBefore = config.interruptsBefore;
 		this.interruptsAfter = config.interruptsAfter;
+		this.releaseThread = config.releaseThread;
+		this.lifecycleListeners = config.lifecycleListeners;
 	}
 
 }

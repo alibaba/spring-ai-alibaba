@@ -21,7 +21,7 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
@@ -31,7 +31,7 @@ import java.util.function.BiPredicate;
 
 /**
  * @author yingzi
- * @date 2025/5/6:14:27
+ * @since 2025/5/6:14:27
  */
 public class LoadbalancedAsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 

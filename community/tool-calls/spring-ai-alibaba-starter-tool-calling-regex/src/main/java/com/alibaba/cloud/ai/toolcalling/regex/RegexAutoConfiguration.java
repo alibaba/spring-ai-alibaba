@@ -27,13 +27,14 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @ConditionalOnClass(RegexService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.regex", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = RegexConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class RegexAutoConfiguration {
 
-	@Bean
+	@Bean(name = RegexConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Use regex to find content based on the expression.")
-	public RegexService regexFindAllFunction() {
+	public RegexService regexFindAll() {
 		return new RegexService();
 	}
 

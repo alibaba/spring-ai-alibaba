@@ -52,10 +52,12 @@
         <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-core</module>
+        <module>spring-ai-alibaba-prompt</module>
         <module>spring-ai-alibaba-graph</module>
+        <module>spring-ai-alibaba-nl2sql</module>
         <module>spring-ai-alibaba-studio</module>
-        <module>spring-ai-alibaba-starter</module>
-        <module>spring-ai-alibaba-auto-configurations</module>
+        <module>spring-ai-alibaba-jmanus</module>
+        <module>spring-ai-alibaba-deepresearch</module>
 
         <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
@@ -63,14 +65,14 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidutranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidumap</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-bingsearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-dingtalk</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-sensitivefilter</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-amap</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-weather</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-larksuite</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-microsofttranslate</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-crawler</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-jinacrawler</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-firecrawl</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-regex</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-jsonprocessor</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-serpapi</module>
@@ -83,6 +85,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-alitranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tavilysearch</module>
 
         <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
@@ -126,16 +129,41 @@
         <module>community/vector-stores/spring-ai-alibaba-starter-oceanbase-store</module>
 
         <!-- Spring AI Alibaba Chat Memory Support -->
-        <module>community/memories/spring-ai-alibaba-redis-memory</module>
-        <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-redis</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-jdbc</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-elasticsearch</module>
 
-        <!-- Spring AI Alibaba JManus -->
-        <module>spring-ai-alibaba-jmanus</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
         <!-- Spring AI Alibaba ARMS Extension -->
-        <module>spring-ai-alibaba-arms-observation-autoconfigure</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-arms-observation</module>
 
+        <!-- Spring AI Alibaba Autoconfigure -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
+
+        <!-- Spring AI Alibaba MCP -->
+        <!-- Nacos2 version -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-client</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-server</module>
+        <!-- Nacos3 version -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-server</module>
+
+        <!-- Spring AI Alibaba Nacos Prompt Template -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
+
+        <!-- Spring AI Alibaba Spring Boot Starters -->
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-prompt</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-client</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-server</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
     </modules>
+
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
         <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
@@ -153,19 +181,19 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0-M8.1-SNAPSHOT</revision>
+        <revision>1.0.0.3-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>${project.build.sourceEncoding}</project.reporting.outputEncoding>
         <java.version>17</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <maven.compiler.parameters>true</maven.compiler.parameters>
 
         <!-- Spring version -->
-        <spring-ai.version>1.0.0-M8</spring-ai.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
         <spring-boot.version>3.4.5</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
@@ -173,7 +201,8 @@
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
 
         <!-- Nacos -->
-        <nacos-client.version>2.5.1</nacos-client.version>
+        <nacos2.version>2.5.1</nacos2.version>
+        <nacos3.version>3.0.1</nacos3.version>
         <nacos-client-mse-extension.version>1.0.4</nacos-client-mse-extension.version>
         <spring-alibaba-nacos-config.version>2023.0.1.3</spring-alibaba-nacos-config.version>
 
@@ -186,16 +215,26 @@
 
         <okhttp.version>4.12.0</okhttp.version>
 
-        <async-generator.version>3.0.0</async-generator.version>
+        <async-generator.version>3.2.0</async-generator.version>
 
         <commons-codec.version>1.17.0</commons-codec.version>
         <commons-exec.version>1.3</commons-exec.version>
         <commons-collections4.version>4.4</commons-collections4.version>
 
+        <docker-java>3.3.3</docker-java>
+
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
 
+        <json-path.version>2.9.0</json-path.version>
+
+        <jedis.version>5.2.0</jedis.version>
+
+        <mysql.version>8.0.32</mysql.version>
+
+        <mcp.version>0.10.0</mcp.version>
+
         <!-- CheckStyle Plugin -->
-        <disable.checks>true</disable.checks>
+        <disable.checks>false</disable.checks>
 
         <!-- Unit Test Config -->
         <surefireArgLine>-Xms512m -Xmx1024m</surefireArgLine>
@@ -218,12 +257,15 @@
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
         <maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
         <sorter-maven-plugin.version>1.0.1</sorter-maven-plugin.version>
+        <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
+        <maven.deploy.skip>false</maven.deploy.skip>
 
         <!-- CheckStyle Maven Plugin -->
         <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
+        <spotless.version>2.29.0</spotless.version>
     </properties>
 
     <dependencyManagement>
@@ -257,6 +299,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -305,43 +348,48 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>2.29.0</version>
+                <configuration>
+                    <java>
+                        <removeUnusedImports></removeUnusedImports>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>spotless-apply</id>
+                        <goals>
+                            <goal>apply</goal>
+                        </goals>
+                        <phase>process-sources</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${maven-checkstyle-plugin.version}</version>
+                <configuration>
+                    <consoleOutput>true</consoleOutput>
+                    <configLocation>tools/src/checkstyle/checkstyle.xml</configLocation>
+                    <headerLocation>tools/src/checkstyle/checkstyle-header.txt</headerLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
                         <version>${puppycrawl-tools-checkstyle.version}</version>
                     </dependency>
-                    <dependency>
-                        <groupId>io.spring.javaformat</groupId>
-                        <artifactId>spring-javaformat-checkstyle</artifactId>
-                        <version>0.0.43</version>
-                    </dependency>
                 </dependencies>
                 <executions>
                     <execution>
-                        <id>checkstyle-validation</id>
+                        <id>validate</id>
                         <goals>
                             <goal>check</goal>
                         </goals>
                         <phase>validate</phase>
-                        <inherited>true</inherited>
-                        <configuration>
-                            <consoleOutput>true</consoleOutput>
-                            <skip>${disable.checks}</skip>
-                            <configLocation>tools/src/checkstyle/checkstyle.xml</configLocation>
-                            <headerLocation>tools/src/checkstyle/checkstyle-header.txt</headerLocation>
-                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                            <propertyExpansion>checkstyle.build.directory=${project.build.directory}
-                                checkstyle.suppressions.file=${project.basedir}/tools/src/checkstyle/checkstyle-suppressions.xml
-                                checkstyle.additional.suppressions.file=${project.basedir}/tools/src/checkstyle/checkstyle-suppressions.xml
-                                checkstyle.header.file=${project.basedir}/tools/src/checkstyle/checkstyle-header.txt</propertyExpansion>
-                            <failsOnError>${maven-checkstyle-plugin.failsOnError}</failsOnError>
-                            <violationSeverity>warning</violationSeverity>
-                            <failOnViolation>${maven-checkstyle-plugin.failOnViolation}</failOnViolation>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -475,6 +523,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>${maven-deploy-plugin.version}</version>
+                <configuration>
+                    <skip>${maven.deploy.skip}</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -490,52 +541,77 @@
 
     <profiles>
         <profile>
-            <id>sonatype</id>
+            <id>release</id>
+
             <distributionManagement>
                 <repository>
-                    <id>ossrh</id>
-                    <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                    <id>sonatype-nexus-staging</id>
+                    <name>Nexus Release Repository</name>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
                 <snapshotRepository>
-                    <id>ossrh</id>
-                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+                    <id>sonatype-nexus-snapshots</id>
+                    <name>Sonatype Nexus Snapshots</name>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
                 </snapshotRepository>
             </distributionManagement>
-            <properties>
-                <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
-                <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
-                <maven.test.skip>true</maven.test.skip>
-            </properties>
             <build>
                 <plugins>
-                    <!--                    <plugin>-->
-                    <!--                        <groupId>org.apache.maven.plugins</groupId>-->
-                    <!--                        <artifactId>maven-gpg-plugin</artifactId>-->
-                    <!--                        <version>${maven-gpg-plugin.version}</version>-->
-                    <!--                        <executions>-->
-                    <!--                            <execution>-->
-                    <!--                                <id>sign-artifacts</id>-->
-                    <!--                                <phase>verify</phase>-->
-                    <!--                                <goals>-->
-                    <!--                                    <goal>sign</goal>-->
-                    <!--                                </goals>-->
-                    <!--                            </execution>-->
-                    <!--                        </executions>-->
-                    <!--                        <configuration>-->
-                    <!--                            &lt;!&ndash; Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. &ndash;&gt;-->
-                    <!--                        </configuration>-->
-                    <!--                    </plugin>-->
                     <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${nexus-staging-maven-plugin.version}</version>
-                        <extensions>true</extensions>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven-javadoc-plugin.version}</version>
                         <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                            <keepStagingRepositoryOnFailure>true</keepStagingRepositoryOnFailure>
+                            <doclint>all,-missing</doclint>
                         </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <phase>verify</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>flatten-maven-plugin</artifactId>
+                        <version>${flatten-maven-plugin.version}</version>
+                        <configuration>
+                            <updatePomFile>true</updatePomFile>
+                            <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>flatten</id>
+                                <goals>
+                                    <goal>flatten</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>flatten.clean</id>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <phase>clean</phase>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

@@ -101,9 +101,12 @@ public class ExecutionPlan {
 				+ (steps != null ? steps.size() : 0) + '}';
 	}
 
+	// state.append("全局目标 (全局目标只是一个方向性指导，你在当前请求内不需要完成全局目标，只需要关注当前正在执行的步骤即可): ")
+	// .append("\n")
+	// .append(title)
+	// .append("\n");
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
-		state.append("全局目标 : ").append("\n").append(title).append(")\n");
 
 		state.append("\n- 执行参数: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
@@ -154,17 +157,21 @@ public class ExecutionPlan {
 				case NOT_STARTED -> "[not_started]";
 				default -> "[ ]";
 			};
-			state.append("步骤 ")
+
+			state.append(i + 1)
+				.append(".  **步骤 ")
 				.append(i)
-				.append(": ")
+				.append(":**\n")
+				.append("    *   **状态:** ")
 				.append(symbol)
-				.append(" ")
-				.append(step.getStepRequirement())
 				.append("\n")
+				.append("    *   **操作:** ")
+				.append(step.getStepRequirement())
 				.append("\n");
+
 			String result = step.getResult();
 			if (result != null && !result.isEmpty()) {
-				state.append("该步骤的执行结果: ").append("\n").append(result).append("\n");
+				state.append("    *   **结果:** ").append(result).append("\n\n");
 			}
 
 		}

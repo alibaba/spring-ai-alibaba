@@ -47,9 +47,37 @@ After forking the repository, new commits may have appeared in the original repo
 
 As one of the implementations of Spring AI, Spring AI Alibaba directly follows the Spring AI project's code standards. Before you start, please refer to the relevant code format specification instructions. You need to configure the code format standards properly before submitting your code.
 
-### Develop, Commit, and Push
+### Develop
 
 Develop your feature, and **after development, we recommend using the `mvn clean package` command to ensure that the modified code can be compiled locally. This command will also automatically format the code in the Spring way**. Then commit your code. Before committing, please create a new branch related to this feature and use this branch for code submission.
+
+### Development
+
+Develop your feature, and **after completing development, it's recommended to use the `mvn clean package` command to ensure that the modified code compiles successfully locally. This command also automatically formats the code according to Spring standards.** Before committing your code, please create a new branch specific to your feature and commit your changes to this branch.
+
+### Local CI
+
+After completing development in your local BOE environment, it's strongly recommended to run the provided `make` command in the project's `tools/make` directory to perform local Continuous Integration (CI) checks. This ensures your code adheres to the project's standards and guidelines. If you have questions about local CI, you can enter `make help` in the console for more detailed information.
+
+### Local Checkstyle
+
+To reduce unnecessary code style issues, Spring AI Alibaba provides a local Checkstyle check feature. You can run `mvn checkstyle:check` in the project's root directory to verify if your code style complies with the standards.
+
+### Remove Unused Imports
+
+To ensure code cleanliness, please remove any unused imports in your Java files. You can do this by using the `mvn spotless:apply` command, which will automatically remove unused imports from your code.
+
+### Commit the Latest Code
+
+After completing your coding, you need to format and verify your commit messages according to the PR specification in `[lint-pr-title.yml](.github/workflows/lint-pr-title.yml)` to ensure they comply with the guidelines.
+
+Commit format example:
+
+```bash
+git commit -m "type(module): descriptive message"
+```
+
+For instance: `feat(docs): update contribute-zh`
 
 ### Merge Latest Code Again
 

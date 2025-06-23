@@ -23,7 +23,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
 import com.alibaba.cloud.ai.exception.NotFoundException;
-import com.alibaba.cloud.ai.model.ChatModel;
+import com.alibaba.cloud.ai.model.ChatModelConfig;
 import com.alibaba.cloud.ai.param.ModelRunActionParam;
 import com.alibaba.cloud.ai.service.ChatModelDelegate;
 import com.alibaba.cloud.ai.utils.SpringApplicationUtil;
@@ -65,7 +65,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 		if (modelType == ModelType.CHAT) {
 			DashScopeApi.ChatModel[] values = DashScopeApi.ChatModel.values();
 			for (DashScopeApi.ChatModel value : values) {
-				res.add(value.getModel());
+				res.add(value.getValue());
 			}
 		}
 		else if (modelType == ModelType.IMAGE) {
@@ -108,10 +108,10 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 	}
 
 	@Override
-	public ChatModel getByModelName(String modelName) {
+	public ChatModelConfig getByModelName(String modelName) {
 		org.springframework.ai.chat.model.ChatModel chatModel = getChatModel(modelName);
 		if (chatModel != null) {
-			ChatModel model = ChatModel.builder()
+			ChatModelConfig model = ChatModelConfig.builder()
 				.name(modelName)
 				.model(chatModel.getDefaultOptions().getModel())
 				.modelType(ModelType.CHAT)
@@ -125,7 +125,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 
 		ImageModel imageModel = getImageModel(modelName);
 		if (imageModel != null) {
-			ChatModel model = ChatModel.builder().name(modelName).modelType(ModelType.IMAGE).build();
+			ChatModelConfig model = ChatModelConfig.builder().name(modelName).modelType(ModelType.IMAGE).build();
 			if (imageModel.getClass().equals(DashScopeImageModel.class)) {
 				DashScopeImageModel dashScopeImageModel = (DashScopeImageModel) imageModel;
 				model.setModel(dashScopeImageModel.getOptions().getModel());
@@ -231,8 +231,8 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 	}
 
 	@Override
-	public List<ChatModel> list() {
-		List<ChatModel> res = new ArrayList<>();
+	public List<ChatModelConfig> list() {
+		List<ChatModelConfig> res = new ArrayList<>();
 
 		// ChatModel
 		Map<String, org.springframework.ai.chat.model.ChatModel> chatModelMap = SpringApplicationUtil
@@ -241,7 +241,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 			org.springframework.ai.chat.model.ChatModel chatModel = entry.getValue();
 			log.info("bean name:{}, bean Class:{}", entry.getKey(), chatModel.getClass());
 
-			ChatModel model = ChatModel.builder()
+			ChatModelConfig model = ChatModelConfig.builder()
 				.name(entry.getKey())
 				.model(chatModel.getDefaultOptions().getModel())
 				.modelType(ModelType.CHAT)
@@ -260,7 +260,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 		for (Map.Entry<String, ImageModel> entry : imageModelMap.entrySet()) {
 			ImageModel imageModel = entry.getValue();
 			log.info("bean name:{}, bean Class:{}", entry.getKey(), imageModel.getClass());
-			ChatModel model = ChatModel.builder().name(entry.getKey()).modelType(ModelType.IMAGE).build();
+			ChatModelConfig model = ChatModelConfig.builder().name(entry.getKey()).modelType(ModelType.IMAGE).build();
 
 			if (imageModel.getClass() == DashScopeImageModel.class) {
 				DashScopeImageModel dashScopeImageModel = (DashScopeImageModel) imageModel;

@@ -32,11 +32,11 @@ import org.springframework.http.HttpHeaders;
 @Configuration
 @ConditionalOnClass(MicroSoftTranslateService.class)
 @EnableConfigurationProperties(MicroSoftTranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.microsofttranslate", name = "enabled",
-		havingValue = "true")
+@ConditionalOnProperty(prefix = MicroSoftTranslateConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class MicroSoftTranslateAutoConfiguration {
 
-	@Bean
+	@Bean(name = MicroSoftTranslateConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Implement natural language translation capabilities.")
 	public MicroSoftTranslateService microSoftTranslateFunction(MicroSoftTranslateProperties properties,
@@ -48,7 +48,7 @@ public class MicroSoftTranslateAutoConfiguration {
 				headers.set(HttpHeaders.CONTENT_TYPE, "application/json");
 			})
 			.build();
-		return new MicroSoftTranslateService(webClientTool);
+		return new MicroSoftTranslateService(webClientTool, jsonParseTool);
 	}
 
 }

@@ -61,9 +61,12 @@
             <artifactId>gson</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
     </dependencies>
 
-    <build>
-        <finalName>spring-ai-alibaba-starter-tool-calling-githubtoolkit</finalName>
-    </build>
 </project>

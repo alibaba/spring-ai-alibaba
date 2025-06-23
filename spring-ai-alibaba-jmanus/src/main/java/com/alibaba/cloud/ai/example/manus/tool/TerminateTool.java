@@ -35,7 +35,7 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 			  "properties" : {
 			    "message" : {
 			      "type" : "string",
-			      "description" : "The termination message"
+			      "description" : "终结当前步骤的信息，你需要在这个终结信息里尽可能多的包含所有相关的事实和数据，详细描述执行结果和状态，包含所有收集到的相关事实和数据，关键发现和观察。这个终结信息将作为当前步骤的最终输出，并且应该足够全面，以便为后续步骤或其他代理提供完整的上下文与关键事实。无需输出浏览器可交互元素索引，因为索引会根据页面的变化而变化。"
 			    }
 			  },
 			  "required" : [ "message" ]

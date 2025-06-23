@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JTaskPilot - 管理界面</title>
+    <!-- 引入模块化CSS文件 -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/forms.css">
+    <link rel="stylesheet" href="css/agent.css">
+    <link rel="stylesheet" href="css/dialog.css">
+    <link rel="stylesheet" href="css/mcp.css">
+    <link rel="stylesheet" href="css/collapsible-group.css">
+    <!-- 添加与主页一致的图标样式 -->
+    <style>
+        /* Simple icons for demo */
+        .icon-placeholder::before { content: "□"; display: inline-block; margin-right: 5px; }
+        .icon-collapse-left::before { content: "◀"; display: inline-block; }
+        .icon-expand-left::before { content: "▶"; display: inline-block; }
+        .icon-collapse-right::before { content: "▶"; display: inline-block; }
+        .icon-expand-right::before { content: "◀"; display: inline-block; }
+        .icon-terminal::before { content: ">_"; display: inline-block; }
+        .icon-play::before { content: "►"; display: inline-block; }
+        .icon-realtime::before { content: "●"; color: #1a73e8; display: inline-block; }
+        .icon-menu::before { content: "⋮"; display: inline-block; }
+        .icon-share::before { content: "↑"; display: inline-block; }
+        .icon-star-outline::before { content: "☆"; display: inline-block; }
+        .icon-star-filled::before { content: "★"; display: inline-block; }
+        .icon-lightbulb::before { content: "💡"; display: inline-block; }
+        .icon-attach::before { content: "📎"; display: inline-block; }
+        .icon-send::before { content: "↑"; display: inline-block; }
+        .icon-add::before { content: "+"; display: inline-block; }
+        .icon-folder::before { content:"📁"; display: inline-block; }
+        .icon-pages::before { content:"📄"; display: inline-block; }
+        .icon-down-arrow::before { content: "▼"; display: inline-block; }
+        .icon-up-arrow::before { content: "▲"; display: inline-block; }
+        .icon-settings::before { content:"⚙️"; display: inline-block; }
+        .icon-agent::before { content:"🤖"; display: inline-block; }
+        .icon-tool::before { content:"🛠️"; display: inline-block; }
+        .icon-mcp::before { content:"🔌"; display: inline-block; }
+        .icon-back::before { content:"⬅️"; display: inline-block; }
+        .icon-save::before { content:"💾"; display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- 顶部导航栏 -->
+        <header class="admin-header">
+            <div class="header-title">
+                <h1>JTaskPilot 管理控制台</h1>
+            </div>
+            <div class="header-actions">
+                <button class="action-btn" id="backToMainBtn"><span class="icon-back"></span> 返回主页</button>
+            </div>
+        </header>
+
+        <!-- 主体内容区域 - 左右结构 -->
+        <div class="admin-content">
+            <!-- 左侧配置类别列表 -->
+            <nav class="config-categories">
+                <ul>
+                    <li class="category-item active" data-category="basic">
+                        <span class="icon-settings"></span>
+                        <span class="category-label">基础配置</span>
+                    </li>
+                    <li class="category-item" data-category="agent">
+                        <span class="icon-agent"></span>
+                        <span class="category-label">Agent配置</span>
+                    </li>
+                  
+                    <li class="category-item" data-category="mcp">
+                        <span class="icon-mcp"></span>
+                        <span class="category-label">Tools/MCP配置</span>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- 中间分割线 -->
+            <div class="content-divider"></div>
+
+            <!-- 右侧配置详情区域 -->
+            <div class="config-details">
+                <!-- 基础配置面板 - 默认显示 -->
+                <div class="config-panel active" id="basic-config">
+                    <h2 class="panel-title">基础配置</h2>
+                    
+                    <div class="config-group">
+                        <h3 class="group-title">系统设置</h3>
+                        <div class="config-item">
+                            <label for="system-name">系统名称</label>
+                            <input type="text" id="system-name" value="JTaskPilot">
+                        </div>
+                        <div class="config-item">
+                            <label for="system-language">默认语言</label>
+                            <select id="system-language">
+                                <option value="zh-CN">中文 (简体)</option>
+                                <option value="en-US">English</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="config-group">
+                        <h3 class="group-title">性能设置</h3>
+                        <div class="config-item">
+                            <label for="max-threads">最大线程数</label>
+                            <input type="number" id="max-threads" min="1" max="32" value="8">
+                        </div>
+                        <div class="config-item">
+                            <label for="timeout-seconds">请求超时时间(秒)</label>
+                            <input type="number" id="timeout-seconds" min="5" max="300" value="60">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent配置面板 - 初始隐藏 -->
+                <div class="config-panel" id="agent-config">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Agent配置</h2>
+                        <div class="panel-actions">
+                            <button class="action-btn import-agents-btn" title="导入Agent配置">
+                                <span class="icon-attach"></span>
+                                导入
+                            </button>
+                            <button class="action-btn export-agents-btn" title="导出Agent配置">
+                                <span class="icon-share"></span>
+                                导出
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="agent-layout">
+                        <!-- 左侧Agent列表 -->
+                        <div class="agent-list">
+                            <div class="agent-list-container">
+                                <!-- 示例Agent项 -->
+                                <div class="agent-item">
+                                    <div class="agent-item-header">
+                                        <span class="agent-name">通用助手</span>
+                                        <button class="expand-btn"><span class="icon-play"></span></button>
+                                    </div>
+                                    <div class="agent-item-content">
+                                        <div class="agent-desc">这是一个通用的智能助手，可以回答问题和执行多种任务，具有良好的通用能力...</div>
+                                        <div class="agent-tools">
+                                            <span class="tool-tag">search</span>
+                                            <span class="tool-tag">calculator</span>
+                                            <span class="tool-tag">weather</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="agent-item">
+                                    <div class="agent-item-header">
+                                        <span class="agent-name">编程专家</span>
+                                        <button class="expand-btn"><span class="icon-play"></span></button>
+                                    </div>
+                                    <div class="agent-item-content">
+                                        <div class="agent-desc">专注于解决编程相关问题的AI助手，熟悉多种编程语言和框架，可以提供代码分析...</div>
+                                        <div class="agent-tools">
+                                            <span class="tool-tag">code_analysis</span>
+                                            <span class="tool-tag">git</span>
+                                            <span class="tool-tag">docker</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="agent-item">
+                                    <div class="agent-item-header">
+                                        <span class="agent-name">文件管理器</span>
+                                        <button class="expand-btn"><span class="icon-play"></span></button>
+                                    </div>
+                                    <div class="agent-item-content">
+                                        <div class="agent-desc">专门用于文件管理和操作的智能体，可以进行文件读写、复制、移动等操作...</div>
+                                        <div class="agent-tools">
+                                            <span class="tool-tag">file_read</span>
+                                            <span class="tool-tag">file_write</span>
+                                            <span class="tool-tag">file_search</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 添加新Agent按钮 -->
+                            <div class="add-agent-container">
+                                <button class="add-agent-btn">
+                                    <span class="icon-add"></span>
+                                    新建Agent
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 右侧Agent详情 -->
+                        <div class="agent-detail">
+                            <div class="detail-section">
+                                <label for="agent-detail-name">Agent名称</label>
+                                <input type="text" id="agent-detail-name" class="detail-input" placeholder="输入Agent名称">
+                            </div>
+                            
+                            <div class="detail-section">
+                                <label for="agent-detail-desc">描述</label>
+                                <textarea id="agent-detail-desc" class="detail-input" rows="3" placeholder="描述这个Agent的功能和用途"></textarea>
+                            </div>
+                            
+                            
+                            <div class="detail-section">
+                                <label for="agent-next-prompt">Agent提示词(人设，要求，以及下一步动作的指导)</label>
+                                <textarea id="agent-next-prompt" class="detail-input" rows="6" placeholder="设置Agent执行任务时的提示词"></textarea>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <div class="detail-header">
+                                    <label>工具调用列表(你可以通过Tools/mcp配置增加新工具）</label>
+                                </div>
+                                <div class="tool-list">
+                                    <div class="tool-item">
+                                        <span class="tool-name">search（demo)</span>
+                                       
+                                    </div>
+                                    <div class="tool-item">
+                                        <span class="tool-name">calculator(demo)</span>
+                                    </div>
+                                    <div class="tool-item">
+                                        <span class="tool-name">weather(demo)</span>
+                                    </div>
+                                </div>
+                                <button class="add-tool-btn">
+                                    <span class="icon-add"></span>
+                                    添加/删除当前Agent能使用的工具
+                                </button>
+                            </div>
+                            
+                            <div class="detail-actions">
+                                <button class="action-btn save-agent-btn">
+                                    <span class="icon-save"></span>
+                                    保存Agent
+                                </button>
+                                <button class="action-btn delete-agent-btn">
+                                    <span class="icon-delete"></span>
+                                    删除Agent
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+              
+
+                <!-- MCP配置面板 - 初始隐藏 -->
+                <div class="config-panel" id="mcp-config">
+                    <!-- 此处内容将由mcp-ui.js动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 工具选择对话框 -->
+    <div class="tool-selection-dialog" style="display: none;">
+        <div class="dialog-header">
+            <h3>选择工具</h3>
+            <input type="text" class="tool-search" placeholder="搜索工具...">
+        </div>
+        <div class="tool-list-container">
+            <!-- 工具列表项将由JS动态生成 -->
+        </div>
+        <div class="dialog-footer">
+            <button class="cancel-btn">取消</button>
+            <button class="confirm-btn">确认</button>
+        </div>
+    </div>
+    <!-- 引入模块化JavaScript文件 -->
+    <script type="module" src="js/admin-core.js"></script>
+    <script type="module" src="js/admin-events.js"></script>
+    <script type="module" src="js/admin-ui.js"></script>
+    <script type="module" src="js/admin-utils.js"></script>
+    <script type="module" src="js/config-model.js"></script>
+    <script type="module" src="js/admin-api.js"></script>
+    <script type="module" src="js/mcp-api.js"></script>
+    <script type="module" src="js/mcp-ui.js"></script>
+    <script type="module" src="js/tool-group-collapsible.js"></script>
+</body>
+</html>

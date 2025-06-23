@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 name: 🗒️ License Check
-
 on:
   push:
     branches:
@@ -23,12 +21,12 @@ on:
   pull_request:
     branches:
       - main
-
 jobs:
   license-check:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
       - run: make tools
       - run: make licenses-check

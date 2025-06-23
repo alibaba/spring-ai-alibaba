@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>计划-执行 编辑器 - JTaskPilot</title>
+    <!-- 引入模块化CSS文件 -->
+    <link rel="stylesheet" href="../css/reset.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/sidebar.css">
+    <link rel="stylesheet" href="../css/content.css">
+    <link rel="stylesheet" href="../css/chat.css">
+    <link rel="stylesheet" href="../css/input.css">
+    <link rel="stylesheet" href="../css/right-sidebar.css">
+    <link rel="stylesheet" href="css/plan-template.css">
+    <link rel="stylesheet" href="css/chat-area.css">
+    <link rel="stylesheet" href="css/sidebar-collapse.css">
+    <style>
+        /* Simple icons for demo */
+        .icon-placeholder::before {
+            content: "□";
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .icon-collapse-left::before {
+            content: "◀";
+        }
+
+        .icon-expand-left::before {
+            content: "▶";
+        }
+
+        .icon-collapse-right::before {
+            content: "▶";
+        }
+
+        .icon-expand-right::before {
+            content: "◀";
+        }
+
+        .icon-terminal::before {
+            content: ">_";
+        }
+
+        .icon-play::before {
+            content: "►";
+        }
+
+        .icon-realtime::before {
+            content: "●";
+            color: #1a73e8;
+        }
+
+        .icon-menu::before {
+            content: "⋮";
+        }
+
+        .icon-share::before {
+            content: "↑";
+        }
+
+        .icon-star-outline::before {
+            content: "☆";
+        }
+
+        .icon-star-filled::before {
+            content: "★";
+        }
+
+        .icon-lightbulb::before {
+            content: "💡";
+        }
+
+        .icon-attach::before {
+            content: "📎";
+        }
+
+        .icon-send::before {
+            content: "↑";
+        }
+
+        .icon-add::before {
+            content: "+";
+        }
+
+        .icon-folder::before {
+            content: "📁";
+        }
+
+        .icon-pages::before {
+            content: "📄";
+        }
+
+        .icon-down-arrow::before {
+            content: "▼";
+        }
+
+        .icon-up-arrow::before {
+            content: "▲";
+        }
+
+        .icon-edit::before {
+            content: "✎";
+        }
+
+        .icon-run::before {
+            content: "▶";
+        }
+
+        .icon-save::before {
+            content: "💾";
+        }
+
+        .icon-back::before {
+            content: "⬅";
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- 左侧边栏 - 已简化 -->
+        <aside class="sidebar left-sidebar" id="leftSidebar">
+            <div class="sidebar-top-icons">
+                <div class="icon">[M]</div>
+                <div class="icon">[G]</div>
+            </div>
+            <button class="new-task-btn">
+                <span class="icon-add"></span> 新建计划 <span class="shortcut">⌘ K</span>
+            </button>
+            <ul class="task-list">
+                <li class="task-item">
+                    <div class="task-icon">[📊]</div>
+                    <div class="task-details">
+                        <div class="task-title">深度分析MCP核心技术原理</div>
+                        <div class="task-preview">我已经成功将MCP核心技术原理分析报...</div>
+                    </div>
+                    <div class="task-time">6小时前</div>
+                </li>
+                <li class="task-item selected">
+                    <div class="task-icon">[🛡️]</div>
+                    <div class="task-details">
+                        <div class="task-title">JTaskPilot 核心技术讲解与开源...</div>
+                        <div class="task-preview">我已经成功将JTaskPilot AI指南网站部署到...</div>
+                    </div>
+                    <div class="task-time">2天前</div>
+                </li>
+            </ul>
+            <div class="sidebar-bottom">
+                <!-- 用户信息区域 -->
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content-wrapper" id="mainContent">
+            <header class="content-header">
+                <div class="header-controls-left">
+                    <button id="toggleLeftSidebarBtn" class="action-btn toggle-btn" title="切换左侧边栏">
+                        <span class="icon-collapse-left"></span>
+                    </button>
+                    <div class="header-title-section">
+                        <h1>计划-执行 编辑器</h1>
+                        <div class="knowledge-suggestion">
+                            <span class="icon-lightbulb"></span> 可以基于prompt生成和修改执行计划，详细的计划步骤可以重复使用，来获取更准确的执行结果。
+                        </div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="backToMainBtn" class="action-btn" onclick="window.location.href='../index.html'">
+                        <span class="icon-back"></span> 返回主页
+                    </button>
+                    <button id="toggleRightSidebarBtn" class="action-btn toggle-btn" title="切换右侧边栏">
+                        <span class="icon-collapse-right"></span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="plan-container">
+                <div class="plan-input-section">
+                    <div class="section-header">
+                        <h2>Step1: 需求输入</h2>
+                        <div class="section-actions">
+                            <button class="action-btn" id="clearBtn">
+                                <span class="icon-placeholder"></span> 清空
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-field">
+                        <label for="plan-prompt">任务描述：</label>
+                        <textarea id="plan-prompt"
+                            placeholder="请输入您的任务需求，系统将基于此生成执行计划，如果是既有计划，可以输入修改方案，他会结合之前的计划，将新需求自动添加到计划中..."></textarea>
+                    </div>
+                    <div class="submit-area">
+                        <button class="submit-btn" id="generatePlanBtn">
+                            <span class="icon-placeholder"></span> 生成计划模板
+                        </button>
+                    </div>
+                </div>
+
+
+                <div class="plan-json-section">
+                    <div class="section-header">
+                        <h2>Step2: 计划模板精调</h2>
+                        <div class="section-actions">
+                            <button class="action-btn" id="rollbackJsonBtn" title="回滚到上一个版本">
+                                <span class="icon-back"></span> 回滚
+                            </button>
+                            <button class="action-btn" id="restoreJsonBtn" title="恢复到下一个版本">
+                                <span class="icon-run"></span> 恢复
+                            </button>
+                        </div>
+                    </div>
+                    <div class="plan-json-preview">
+                        <!-- 默认显示编辑器而不是只读视图 -->
+                        <textarea id="plan-json-editor" class="preview-content code-view"
+                            placeholder="计划的JSON数据将在这里显示..."></textarea>
+                    </div>
+                    <div class="save-plan-container">
+                        <button class="secondary-btn" id="modifyPlanBtn">
+                            <span class="icon-save"></span> 保存计划
+                        </button>
+                    </div>
+                </div>
+
+                <div class="plan-execution-section">
+
+
+                    <div class="section-header">
+                        <h2>Step3: 计划执行控制</h2>
+                    </div>
+                    <div class="plan-param-section">
+                        <div>附加额外参数</div>
+                        <div class="input-field">
+                            <textarea id="plan-params"
+                                placeholder="可选：请输入计划执行需要的参数 ，会作为额外参数给到模型 ， 格式自定义只要能跟模型的执行prompt对应即可。 例如 变量1： xxx  ，那么执行计划里面有 变量1 ，模型就会自己替换"></textarea>
+                        </div>
+                        <div class="execution-buttons">
+                            <button class="secondary-btn" id="clearParamBtn" title="清空参数">
+                                <span class="icon-placeholder"></span> 清空
+                            </button>
+                            <button class="primary-btn" id="runPlanBtn">
+                                <span class="icon-run"></span> 执行计划
+                            </button>
+                        </div>
+                    </div>
+                    <div class="plan-actions">
+                        <div class="api-call-link">
+                            # 也可以通过get方法重复调用链接:
+                            <div class="api-url-container">
+                                <span class="api-url">http://your-domain/api/plan-template/execute/<span
+                                        class="dynamic-id">template_xxxx</span></span>
+                            </div>
+                            <div class="api-description">
+                                <span># 调用会返回结果样例: {"planId": "plan_xxxx", "status": "processing", "message":
+                                    "计划执行请求已提交，正在处理中"}</span>
+                            </div>
+                            <div class="api-description">
+                                <span># 可监控执行状态: http://your-domain/api/executor/details/<span
+                                        class="dynamic-plan-id">plan_xxxx</span></span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+
+
+                <div class="chat-area">
+                    <!-- 聊天消息将在此处动态生成 -->
+                </div>
+        </main>
+
+        <!-- 右侧边栏 -->
+        <aside class="sidebar right-sidebar" id="rightSidebar">
+            <div class="right-sidebar-header">
+                <h3>执行详情</h3>
+            </div>
+            <div class="right-sidebar-content">
+                <!-- 执行详情将在这里动态填充 -->
+                <div class="no-selection-message">
+                    <p>点击执行计划后查看详情</p>
+                </div>
+            </div>
+            <div class="right-sidebar-footer">
+                <div class="playback-controls">
+                    <button class="icon-play"></button>
+                    <div class="progress-bar-stub"></div>
+                </div>
+                <button class="realtime-btn">
+                    <span class="icon-play"></span> 跳到实时
+                </button>
+                <span class="realtime-indicator">
+                    <span class="icon-realtime"></span> 实时
+                </span>
+            </div>
+            <div class="right-sidebar-status-bar">
+                <span id="execution-status">未选择执行步骤</span>
+                <span id="execution-progress">0 / 0 <span class="icon-up-arrow"></span></span>
+            </div>
+        </aside>
+    </div>
+
+    <!-- 引入模块化JavaScript文件 -->
+    <script src="../js/api.js"></script>
+    <script src="../js/ui-event-common.js"></script>
+    <!-- 引入右侧边栏和聊天处理器 -->
+    <script src="../js/right-sidebar.js"></script>
+    <script src="../js/chat-handler.js"></script>
+
+    <script src="../js/plan-execution-manager.js"></script>
+
+    <!-- 引入计划模板页面特有的JS文件 -->
+    <script src="js/plan-prompt-generator.js"></script>
+    <script src="js/plan-template-handler.js"></script>
+    <script src="js/plan-template-list-ui-handler.js"></script>
+    <script src="js/template-helpers.js"></script>
+    <script src="js/plan-template-execution-controller.js"></script>
+
+    <script src="js/plan-template-main.js"></script> <!-- Ensure plan-template-main.js is loaded -->
+
+</body>
+
+</html>

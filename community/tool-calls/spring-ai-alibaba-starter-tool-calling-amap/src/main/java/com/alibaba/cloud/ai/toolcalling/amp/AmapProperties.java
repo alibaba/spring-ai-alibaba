@@ -16,25 +16,17 @@
 package com.alibaba.cloud.ai.toolcalling.amp;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 
 /**
  * @author YunLong
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.amap")
-public class AmapProperties {
+@ConfigurationProperties(prefix = AmapConstants.CONFIG_PREFIX)
+public class AmapProperties extends CommonToolCallProperties {
 
-	private String webApiKey;
-
-	public AmapProperties(String webApiKey) {
-		this.webApiKey = webApiKey;
-	}
-
-	public String getWebApiKey() {
-		return webApiKey;
-	}
-
-	public void setWebApiKey(String webApiKey) {
-		this.webApiKey = webApiKey;
+	public AmapProperties() {
+		super("https://restapi.amap.com/v3");
+		this.setPropertiesFromEnv(AmapConstants.API_KEY_ENV, null, null, null);
 	}
 
 }

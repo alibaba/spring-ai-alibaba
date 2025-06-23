@@ -15,13 +15,15 @@
  */
 package com.alibaba.cloud.ai.toolcalling.dingtalk;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.StringUtils;
 
 /**
  * @author YunLong
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.dingtalk")
-public class DingTalkProperties {
+@ConfigurationProperties(prefix = DingTalkConstants.CONFIG_PREFIX)
+public class DingTalkProperties extends CommonToolCallProperties {
 
 	private String customRobotAccessToken;
 
@@ -30,6 +32,12 @@ public class DingTalkProperties {
 	public DingTalkProperties(String customRobotAccessToken, String customRobotSignature) {
 		this.customRobotAccessToken = customRobotAccessToken;
 		this.customRobotSignature = customRobotSignature;
+		if (!StringUtils.hasText(customRobotAccessToken)) {
+			this.customRobotAccessToken = System.getenv(DingTalkConstants.ACCESS_TOKEN_ENV);
+		}
+		if (!StringUtils.hasText(customRobotSignature)) {
+			this.customRobotSignature = System.getenv(DingTalkConstants.SIGNATURE_ENV);
+		}
 	}
 
 	public String getCustomRobotAccessToken() {

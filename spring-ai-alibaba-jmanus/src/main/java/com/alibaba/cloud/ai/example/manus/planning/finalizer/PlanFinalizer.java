@@ -18,18 +18,21 @@ package com.alibaba.cloud.ai.example.manus.planning.finalizer;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
  * 负责生成计划执行总结的类
@@ -49,9 +52,7 @@ public class PlanFinalizer {
 
 	/**
 	 * 生成计划执行总结
-	 * @param userRequest 原始用户请求
-	 * @param executionResult 执行结果
-	 * @return 格式化的总结文本
+	 * @param context 执行上下文，包含用户请求和执行的过程信息
 	 */
 	public void generateSummary(ExecutionContext context) {
 		if (context == null || context.getPlan() == null) {
@@ -70,7 +71,7 @@ public class PlanFinalizer {
 			String userRequest = context.getUserRequest();
 
 			SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate("""
-					您是一个能够回应用户请求的AI助手，你需要根据这个分步骤的执行计划的执行结果，来回应用户的请求。
+					您是 jmanus，一个能够回应用户请求的AI助手，你需要根据这个分步骤的执行计划的执行结果，来回应用户的请求。
 
 					分步骤计划的执行详情：
 					{executionDetail}
@@ -91,12 +92,12 @@ public class PlanFinalizer {
 
 			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
-			ChatResponse response = llmService.getPlanningChatClient()
-				.prompt(prompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param("chat_memory_conversation_id", plan.getPlanId())
-					.param("chat_memory_retrieve_size", 100))
-				.call()
-				.chatResponse();
+			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
+			if (context.isUseMemory()) {
+				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
+				requestSpec.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
+			}
+			ChatResponse response = requestSpec.call().chatResponse();
 
 			String summary = response.getResult().getOutput().getText();
 			context.setResultSummary(summary);
@@ -107,6 +108,9 @@ public class PlanFinalizer {
 		catch (Exception e) {
 			log.error("Error generating summary with LLM", e);
 			throw new RuntimeException("Failed to generate summary", e);
+		}
+		finally {
+			llmService.clearConversationMemory(plan.getPlanId());
 		}
 	}
 

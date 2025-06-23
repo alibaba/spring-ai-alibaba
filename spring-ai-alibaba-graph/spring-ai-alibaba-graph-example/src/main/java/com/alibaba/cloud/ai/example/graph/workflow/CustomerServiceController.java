@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.GraphStateException;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
@@ -44,7 +44,7 @@ public class CustomerServiceController {
 	}
 
 	@GetMapping("/chat")
-	public String simpleChat(String query) throws GraphStateException {
+	public String simpleChat(String query) throws Exception {
 
 		return compiledGraph.invoke(Map.of("input", query)).get().value("solution").get().toString();
 	}

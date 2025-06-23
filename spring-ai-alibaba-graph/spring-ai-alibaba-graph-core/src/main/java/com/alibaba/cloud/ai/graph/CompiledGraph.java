@@ -17,36 +17,45 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
+import com.alibaba.cloud.ai.graph.exception.Errors;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import org.bsc.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -80,7 +89,7 @@ public class CompiledGraph {
 	 */
 	public final StateGraph stateGraph;
 
-	private final OverAllState overAllState;
+	private final Map<String, KeyStrategy> keyStrategyMap;
 
 	/**
 	 * The Nodes.
@@ -109,20 +118,21 @@ public class CompiledGraph {
 	 */
 	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) throws GraphStateException {
 		this.stateGraph = stateGraph;
-		this.overAllState = Objects.nonNull(stateGraph.getOverAllStateFactory())
-				? stateGraph.getOverAllStateFactory().create() : stateGraph.getOverAllState();
+		this.keyStrategyMap = Objects.isNull(stateGraph.getOverAllStateFactory())
+				? stateGraph.getKeyStrategyFactory().apply()
+				: stateGraph.getOverAllStateFactory().create().keyStrategies();
 
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
 
 		// CHECK INTERRUPTIONS
 		for (String interruption : processedData.interruptsBefore()) {
 			if (!processedData.nodes().anyMatchById(interruption)) {
-				throw StateGraph.Errors.interruptionNodeNotExist.exception(interruption);
+				throw Errors.interruptionNodeNotExist.exception(interruption);
 			}
 		}
-		for (String interruption : processedData.interruptsAfter()) {
+		for (String interruption : processedData.interruptsBefore()) {
 			if (!processedData.nodes().anyMatchById(interruption)) {
-				throw StateGraph.Errors.interruptionNodeNotExist.exception(interruption);
+				throw Errors.interruptionNodeNotExist.exception(interruption);
 			}
 		}
 
@@ -166,11 +176,10 @@ public class CompiledGraph {
 						.filter(ee -> ee.target().value() != null)
 						.toList();
 					if (!conditionalEdges.isEmpty()) {
-						throw StateGraph.Errors.unsupportedConditionalEdgeOnParallelNode.exception(e.sourceId(),
+						throw Errors.unsupportedConditionalEdgeOnParallelNode.exception(e.sourceId(),
 								conditionalEdges.stream().map(Edge::sourceId).toList());
 					}
-					throw StateGraph.Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(),
-							parallelNodeTargets);
+					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
 				}
 
 				var actions = parallelNodeStream.get()
@@ -178,7 +187,7 @@ public class CompiledGraph {
 					.map(target -> nodes.get(target.id()))
 					.toList();
 
-				var parallelNode = new ParallelNode(e.sourceId(), actions, stateGraph.keyStrategies());
+				var parallelNode = new ParallelNode(e.sourceId(), actions, keyStrategyMap);
 
 				nodes.put(parallelNode.id(), parallelNode.actionFactory().apply(compileConfig));
 
@@ -191,21 +200,13 @@ public class CompiledGraph {
 		}
 	}
 
-	/**
-	 * Over all state over all state.
-	 * @return the over all state
-	 */
-	public OverAllState overAllState() {
-		return this.overAllState;
-	}
-
 	public Collection<StateSnapshot> getStateHistory(RunnableConfig config) {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
 			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
 		return saver.list(config)
 			.stream()
-			.map(checkpoint -> StateSnapshot.of(checkpoint, config, stateGraph.getStateFactory()))
+			.map(checkpoint -> StateSnapshot.of(keyStrategyMap, checkpoint, config, stateGraph.getStateFactory()))
 			.collect(toList());
 	}
 
@@ -231,7 +232,8 @@ public class CompiledGraph {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
 			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
-		return saver.get(config).map(checkpoint -> StateSnapshot.of(checkpoint, config, stateGraph.getStateFactory()));
+		return saver.get(config)
+			.map(checkpoint -> StateSnapshot.of(keyStrategyMap, checkpoint, config, stateGraph.getStateFactory()));
 
 	}
 
@@ -253,12 +255,16 @@ public class CompiledGraph {
 		// merge values with checkpoint values
 		Checkpoint branchCheckpoint = saver.get(config)
 			.map(Checkpoint::new)
-			.map(cp -> cp.updateState(values, overAllState().keyStrategies()))
+			.map(cp -> cp.updateState(values, keyStrategyMap))
 			.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
 
 		String nextNodeId = null;
 		if (asNode != null) {
-			nextNodeId = nextNodeId(asNode, branchCheckpoint.getState());
+			var nextNodeCommand = nextNodeId(asNode, branchCheckpoint.getState(), config);
+
+			nextNodeId = nextNodeCommand.gotoNode();
+			branchCheckpoint = branchCheckpoint.updateState(nextNodeCommand.update(), keyStrategyMap);
+
 		}
 		// update checkpoint in saver
 		RunnableConfig newConfig = saver.put(config, branchCheckpoint);
@@ -289,53 +295,49 @@ public class CompiledGraph {
 		this.maxIterations = maxIterations;
 	}
 
-	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId) throws Exception {
-		return nextNodeId(route, state, nodeId, null);
-	}
-
-	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, OverAllState overAllState)
+	private Command nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, RunnableConfig config)
 			throws Exception {
 
 		if (route == null) {
-			throw StateGraph.RunnableErrors.missingEdge.exception(nodeId);
+			throw RunnableErrors.missingEdge.exception(nodeId);
 		}
 		if (route.id() != null) {
-			return route.id();
+			return new Command(route.id(), state);
 		}
 		if (route.value() != null) {
-			if (overAllState == null) {
-				overAllState = stateGraph.getStateFactory().apply(state);
-			}
-			com.alibaba.cloud.ai.graph.action.AsyncEdgeAction condition = route.value().action();
-			String newRoute = condition.apply(overAllState).get();
+			OverAllState derefState = stateGraph.getStateFactory().apply(state);
+
+			var command = route.value().action().apply(derefState, config).get();
+
+			var newRoute = command.gotoNode();
+
 			String result = route.value().mappings().get(newRoute);
 			if (result == null) {
-				throw StateGraph.RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+				throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
 			}
-			return result;
+
+			var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
+
+			return new Command(result, currentState);
 		}
-		throw StateGraph.RunnableErrors.executionError
-			.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
+		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}
 
 	/**
 	 * Determines the next node ID based on the current node ID and state.
 	 * @param nodeId the current node ID
 	 * @param state the current state
-	 * @return the next node ID
+	 * @return the next node command
 	 * @throws Exception if there is an error determining the next node ID
 	 */
-	private String nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
-		return nextNodeId(edges.get(nodeId), state, nodeId);
+	private Command nextNodeId(String nodeId, Map<String, Object> state, RunnableConfig config) throws Exception {
+		return nextNodeId(edges.get(nodeId), state, nodeId, config);
+
 	}
 
-	private String nextNodeId(String nodeId, Map<String, Object> state, OverAllState overAllState) throws Exception {
-		return nextNodeId(edges.get(nodeId), state, nodeId, overAllState);
-	}
-
-	private String getEntryPoint(Map<String, Object> state) throws Exception {
+	private Command getEntryPoint(Map<String, Object> state, RunnableConfig config) throws Exception {
 		var entryPoint = this.edges.get(START);
-		return nextNodeId(entryPoint, state, "entryPoint");
+		return nextNodeId(entryPoint, state, "entryPoint", config);
 	}
 
 	private boolean shouldInterruptBefore(String nodeId, String previousNodeId) {
@@ -373,22 +375,17 @@ public class CompiledGraph {
 
 		return compileConfig.checkpointSaver()
 			.flatMap(saver -> saver.get(config))
-			.map(cp -> OverAllState.updateState(cp.getState(), inputs, overAllState().keyStrategies()))
-			.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, overAllState().keyStrategies()));
+			.map(cp -> OverAllState.updateState(cp.getState(), inputs, keyStrategyMap))
+			.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, keyStrategyMap));
 	}
 
 	/**
 	 * Clone state over all state.
 	 * @param data the data
 	 * @return the over all state
-	 * @throws IOException the io exception
-	 * @throws ClassNotFoundException the class not found exception
-	 * @throws InstantiationException the instantiation exception
-	 * @throws IllegalAccessException the illegal access exception
 	 */
-	OverAllState cloneState(Map<String, Object> data)
-			throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-		return new OverAllState(data);
+	OverAllState cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
+		return stateGraph.getStateSerializer().cloneObject(data);
 	}
 
 	/**
@@ -397,9 +394,10 @@ public class CompiledGraph {
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) {
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config)
+			throws GraphRunnerException {
 		Objects.requireNonNull(config, "config cannot be null");
-		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(overAllState().input(inputs), config);
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(stateCreate(inputs), config);
 
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
@@ -410,7 +408,8 @@ public class CompiledGraph {
 	 * @param config the config
 	 * @return the async generator
 	 */
-	public AsyncGenerator<NodeOutput> stream(OverAllState overAllState, RunnableConfig config) {
+	public AsyncGenerator<NodeOutput> streamFromInitialNode(OverAllState overAllState, RunnableConfig config)
+			throws GraphRunnerException {
 		Objects.requireNonNull(config, "config cannot be null");
 		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(overAllState, config);
 
@@ -422,16 +421,16 @@ public class CompiledGraph {
 	 * @param inputs the input map
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) {
-		return this.stream(overAllState().input(inputs), RunnableConfig.builder().build());
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) throws GraphRunnerException {
+		return this.streamFromInitialNode(stateCreate(inputs), RunnableConfig.builder().build());
 	}
 
 	/**
 	 * Stream async generator.
 	 * @return the async generator
 	 */
-	public AsyncGenerator<NodeOutput> stream() {
-		return this.stream(overAllState(), RunnableConfig.builder().build());
+	public AsyncGenerator<NodeOutput> stream() throws GraphRunnerException {
+		return this.stream(Map.of(), RunnableConfig.builder().build());
 	}
 
 	/**
@@ -441,7 +440,8 @@ public class CompiledGraph {
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 * Optional
 	 */
-	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config) {
+	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config)
+			throws GraphRunnerException {
 		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
@@ -451,8 +451,8 @@ public class CompiledGraph {
 	 * @param config the config
 	 * @return the optional
 	 */
-	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
-		return stream(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
+	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) throws GraphRunnerException {
+		return streamFromInitialNode(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
 	/**
@@ -461,8 +461,20 @@ public class CompiledGraph {
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 * Optional
 	 */
-	public Optional<OverAllState> invoke(Map<String, Object> inputs) {
-		return this.invoke(overAllState.input(inputs), RunnableConfig.builder().build());
+	public Optional<OverAllState> invoke(Map<String, Object> inputs) throws GraphRunnerException {
+		return this.invoke(stateCreate(inputs), RunnableConfig.builder().build());
+	}
+
+	private OverAllState stateCreate(Map<String, Object> inputs) {
+		// Creates a new OverAllState instance based on the presence of an
+		// OverAllStateFactory in the stateGraph.
+		// If no factory is present, constructs a new state using key strategies from the
+		// graph and provided input data.
+		// If a factory exists, uses it to create the state and applies the input data.
+		return Objects.isNull(stateGraph.getOverAllStateFactory()) ? OverAllStateBuilder.builder()
+			.withKeyStrategies(stateGraph.getKeyStrategyFactory().apply())
+			.withData(inputs)
+			.build() : stateGraph.getOverAllStateFactory().create().input(inputs);
 	}
 
 	/**
@@ -471,9 +483,10 @@ public class CompiledGraph {
 	 * @param config the config
 	 * @return the optional
 	 */
-	public Optional<OverAllState> resume(OverAllState.HumanFeedback feedback, RunnableConfig config) {
+	public Optional<OverAllState> resume(OverAllState.HumanFeedback feedback, RunnableConfig config)
+			throws GraphRunnerException {
 		StateSnapshot stateSnapshot = this.getState(config);
-		OverAllState resumeState = stateGraph.getStateFactory().apply(stateSnapshot.state().data());
+		OverAllState resumeState = stateCreate(stateSnapshot.state().data());
 		resumeState.withResume();
 		resumeState.withHumanFeedback(feedback);
 
@@ -486,11 +499,13 @@ public class CompiledGraph {
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
-	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
+	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config)
+			throws GraphRunnerException {
 		Objects.requireNonNull(config, "config cannot be null");
 
-		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(overAllState().input(inputs),
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(stateCreate(inputs),
 				config.withStreamMode(StreamMode.SNAPSHOTS));
+
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
 
@@ -507,6 +522,15 @@ public class CompiledGraph {
 				printConditionalEdges);
 
 		return new GraphRepresentation(type, content);
+	}
+
+	/**
+	 * Get the last StateSnapshot of the given RunnableConfig.
+	 * @param config - the RunnableConfig
+	 * @return the last StateSnapshot of the given RunnableConfig if any
+	 */
+	Optional<StateSnapshot> lastStateOf(RunnableConfig config) {
+		return getStateHistory(config).stream().findFirst();
 	}
 
 	/**
@@ -578,7 +602,7 @@ public class CompiledGraph {
 		 * @param overAllState the over all state
 		 * @param config the config
 		 */
-		protected AsyncNodeGenerator(OverAllState overAllState, RunnableConfig config) {
+		protected AsyncNodeGenerator(OverAllState overAllState, RunnableConfig config) throws GraphRunnerException {
 
 			if (overAllState.isResume()) {
 
@@ -594,7 +618,6 @@ public class CompiledGraph {
 
 				// Reset checkpoint id
 				this.config = config.withCheckPointId(null);
-				// FIXME
 				this.overAllState = overAllState.input(this.currentState);
 				this.nextNodeId = startCheckpoint.getNextNodeId();
 				this.currentNodeId = null;
@@ -606,57 +629,22 @@ public class CompiledGraph {
 				Map<String, Object> inputs = overAllState.data();
 				boolean verify = overAllState.keyVerify();
 				if (!CollectionUtils.isEmpty(inputs) && !verify) {
-					throw new GraphInitKeyErrorException(
-							Arrays.toString(inputs.keySet().toArray()) + " isn't included in the keyStrategies");
+					throw RunnableErrors.initializationError.exception(Arrays.toString(inputs.keySet().toArray()));
 				}
 				// patch for backward support of AppendableValue
 				this.currentState = getInitialState(inputs, config);
-				this.overAllState = overAllState;
-				this.nextNodeId = null;
-				this.currentNodeId = StateGraph.START;
-				this.config = config;
-			}
-		}
-
-		/**
-		 * Instantiates a new Async node generator.
-		 * @param inputs the inputs
-		 * @param config the config
-		 */
-		protected AsyncNodeGenerator(Map<String, Object> inputs, RunnableConfig config) {
-			final boolean isResumeRequest = (inputs == null);
-
-			if (isResumeRequest) {
-
-				log.trace("RESUME REQUEST");
-
-				BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-					.orElseThrow(() -> (new IllegalStateException(
-							"inputs cannot be null (ie. resume request) if no checkpoint saver is configured")));
-				Checkpoint startCheckpoint = saver.get(config)
-					.orElseThrow(() -> (new IllegalStateException("Resume request without a saved checkpoint!")));
-
-				this.currentState = startCheckpoint.getState();
-
-				// Reset checkpoint id
-				this.config = config.withCheckPointId(null);
-
-				this.nextNodeId = startCheckpoint.getNextNodeId();
-				this.currentNodeId = null;
-				log.trace("RESUME FROM {}", startCheckpoint.getNodeId());
-			}
-			else {
-
-				log.trace("START");
-
-				Map<String, Object> initState = getInitialState(inputs, config);
-				// patch for backward support of AppendableValue
-				OverAllState initializedState = stateGraph.getStateFactory().apply(initState);
-				this.currentState = initializedState.data();
+				this.overAllState = overAllState.input(currentState);
 				this.nextNodeId = null;
 				this.currentNodeId = START;
 				this.config = config;
 			}
+		}
+
+		private Optional<BaseCheckpointSaver.Tag> releaseThread() throws Exception {
+			if (compileConfig.releaseThread() && compileConfig.checkpointSaver().isPresent()) {
+				return Optional.of(compileConfig.checkpointSaver().get().release(config));
+			}
+			return Optional.empty();
 		}
 
 		/**
@@ -666,69 +654,159 @@ public class CompiledGraph {
 		 */
 		@SuppressWarnings("unchecked")
 		protected Output buildNodeOutput(String nodeId) {
-			return (Output) NodeOutput.of(nodeId, overAllState);
+			return (Output) NodeOutput.of(nodeId, cloneState(currentState));
+		}
+
+		/**
+		 * Clone state over all state.
+		 * @param data the data
+		 * @return the over all state
+		 */
+		OverAllState cloneState(Map<String, Object> data) {
+			return new OverAllState(data, keyStrategyMap, overAllState.isResume());
 		}
 
 		/**
 		 * Build state snapshot output.
 		 * @param checkpoint the checkpoint
 		 * @return the output
-		 * @throws Exception the exception
 		 */
 		@SuppressWarnings("unchecked")
-		protected Output buildStateSnapshot(Checkpoint checkpoint) throws Exception {
-			return (Output) StateSnapshot.of(checkpoint, config, stateGraph.getStateFactory());
+		protected Output buildStateSnapshot(Checkpoint checkpoint) {
+			return (Output) StateSnapshot.of(keyStrategyMap, checkpoint, config,
+					stateGraph.getStateSerializer().stateFactory());
 		}
 
-		@SuppressWarnings("unchecked")
+		/**
+		 * Gets embed generator from partial state.
+		 * @param partialState the partial state containing generator instances
+		 * @return an Optional containing Data with the generator if found, empty
+		 * otherwise
+		 */
 		private Optional<Data<Output>> getEmbedGenerator(Map<String, Object> partialState) {
-			return partialState.entrySet()
-				.stream()
-				.filter(e -> e.getValue() instanceof AsyncGenerator)
-				.findFirst()
-				.map(generatorEntry -> {
-					final AsyncGenerator<Output> generator = (AsyncGenerator<Output>) generatorEntry.getValue();
-					return Data.composeWith(generator.map(n -> {
-						n.setSubGraph(true);
-						return n;
-					}), data -> {
-
-						if (data != null) {
-							if (data instanceof Map<?, ?>) {
-								// Assume that the whatever used appender channel doesn't
-								// accept duplicates
-								var partialStateWithoutGenerator = partialState.entrySet()
-									.stream()
-									.filter(e -> !Objects.equals(e.getKey(), generatorEntry.getKey()))
-									.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-								currentState = OverAllState.updateState(currentState, partialStateWithoutGenerator,
-										overAllState().keyStrategies());
-							}
-							else {
-								throw new IllegalArgumentException("Embedded generator must return a Map");
-							}
+			// Extract all AsyncGenerator instances
+			List<AsyncGenerator<Output>> asyncNodeGenerators = new ArrayList<>();
+			var generatorEntries = partialState.entrySet().stream().filter(e -> {
+				// Fixed when parallel nodes return asynchronous generating the same key
+				Object value = e.getValue();
+				if (value instanceof AsyncGenerator) {
+					return true;
+				}
+				if (value instanceof Collection collection) {
+					collection.forEach(o -> {
+						if (o instanceof AsyncGenerator<?>) {
+							asyncNodeGenerators.add((AsyncGenerator<Output>) o);
 						}
-
-						nextNodeId = nextNodeId(currentNodeId, currentState);
-						resumedFromEmbed = true;
 					});
-				});
+				}
+				return false;
+			}).collect(Collectors.toList());
+
+			if (generatorEntries.isEmpty() && asyncNodeGenerators.isEmpty()) {
+				return Optional.empty();
+			}
+
+			// Log information about found generators
+			if (generatorEntries.size() > 1) {
+				log.debug("Multiple generators found: {} - keys: {}", generatorEntries.size(),
+						generatorEntries.stream().map(Map.Entry::getKey).collect(Collectors.joining(", ")));
+			}
+
+			// Create appropriate generator (single or merged)
+			AsyncGenerator<Output> generator = AsyncGeneratorUtils.createAppropriateGenerator(generatorEntries,
+					asyncNodeGenerators, keyStrategyMap);
+
+			// Create data processing logic for the generator
+			return Optional.of(Data.composeWith(generator.map(n -> {
+				n.setSubGraph(true);
+				return n;
+			}), data -> processGeneratorOutput(data, partialState, generatorEntries)));
+		}
+
+		/**
+		 * Processes output data from generator.
+		 * @param data output data from generator
+		 * @param partialState partial state
+		 * @param generatorEntries generator entries list
+		 * @throws Exception if an error occurs during processing
+		 */
+		@SuppressWarnings("unchecked")
+		private void processGeneratorOutput(Object data, Map<String, Object> partialState,
+				List<Map.Entry<String, Object>> generatorEntries) throws Exception {
+			// Remove all generators
+			Map<String, Object> partialStateWithoutGenerators = new HashMap<>();
+			for (Map.Entry<String, Object> entry : partialState.entrySet()) {
+				if (entry.getValue() instanceof AsyncGenerator) {
+					continue; // Skip top-level AsyncGenerator values
+				}
+
+				if (entry.getValue() instanceof Collection<?>) {
+					Collection<?> collection = (Collection<?>) entry.getValue();
+					ArrayList<Object> filteredCollection = new ArrayList<>();
+
+					for (Object item : collection) {
+						if (!(item instanceof AsyncGenerator)) {
+							filteredCollection.add(item);
+						}
+					}
+
+					if (!filteredCollection.isEmpty()) {
+						partialStateWithoutGenerators.put(entry.getKey(), filteredCollection);
+					}
+				}
+				else {
+					// Keep the entry if it's not an AsyncGenerator and not a collection
+					// containing it
+					partialStateWithoutGenerators.put(entry.getKey(), entry.getValue());
+				}
+			}
+
+			// Update state with partial state without generators
+			var intermediateState = OverAllState.updateState(currentState, partialStateWithoutGenerators,
+					keyStrategyMap);
+			currentState = intermediateState;
+			overAllState.updateState(partialStateWithoutGenerators);
+
+			// If data is not null and is a Map, update state with it
+			if (data != null) {
+				if (data instanceof Map<?, ?>) {
+					currentState = OverAllState.updateState(intermediateState, (Map<String, Object>) data,
+							keyStrategyMap);
+					overAllState.updateState((Map<String, Object>) data);
+
+					if (log.isDebugEnabled() && generatorEntries.size() > 1) {
+						log.debug("Updated state with data keys: {}",
+								((Map<String, Object>) data).keySet().stream().collect(Collectors.joining(", ")));
+					}
+				}
+				else {
+					throw new IllegalArgumentException("Embedded generator must return a Map");
+				}
+			}
+
+			// Get next node command
+			var nextNodeCommand = nextNodeId(currentNodeId, overAllState, currentState, config);
+			nextNodeId = nextNodeCommand.gotoNode();
+			currentState = nextNodeCommand.update();
+			resumedFromEmbed = true;
 		}
 
 		private CompletableFuture<Data<Output>> evaluateAction(AsyncNodeActionWithConfig action,
 				OverAllState withState) {
 
-			return action.apply(withState, config).thenApply(partialState -> {
+			return action.apply(withState, config).thenApply(updateState -> {
 				try {
 
-					Optional<Data<Output>> embed = getEmbedGenerator(partialState);
+					Optional<Data<Output>> embed = getEmbedGenerator(updateState);
 					if (embed.isPresent()) {
 						return embed.get();
 					}
 
-					currentState = overAllState.updateState(partialState);
-					nextNodeId = nextNodeId(currentNodeId, currentState, overAllState);
+					this.currentState = OverAllState.updateState(currentState, updateState, keyStrategyMap);
+					this.overAllState.updateState(updateState);
+					var nextNodeCommand = nextNodeId(currentNodeId, overAllState, currentState, config);
+					nextNodeId = nextNodeCommand.gotoNode();
+					this.currentState = nextNodeCommand.update();
 
 					return Data.of(getNodeOutput());
 				}
@@ -739,6 +817,35 @@ public class CompiledGraph {
 			});
 		}
 
+		private Command nextNodeId(String nodeId, OverAllState overAllState, Map<String, Object> state,
+				RunnableConfig config) throws Exception {
+			EdgeValue route = edges.get(nodeId);
+
+			if (route == null) {
+				throw RunnableErrors.missingEdge.exception(nodeId);
+			}
+			if (route.id() != null) {
+				return new Command(route.id(), state);
+			}
+			if (route.value() != null) {
+				var command = route.value().action().apply(overAllState, config).get();
+
+				var newRoute = command.gotoNode();
+
+				String result = route.value().mappings().get(newRoute);
+				if (result == null) {
+					throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+				}
+
+				var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
+
+				overAllState.updateState(command.update());
+
+				return new Command(result, currentState);
+			}
+			throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
+		}
+
 		/**
 		 * evaluate Action without nested support
 		 */
@@ -746,8 +853,11 @@ public class CompiledGraph {
 
 			return action.apply(withState).thenApply(partialState -> {
 				try {
-					currentState = OverAllState.updateState(currentState, partialState, overAllState().keyStrategies());
-					nextNodeId = nextNodeId(currentNodeId, currentState);
+					currentState = OverAllState.updateState(currentState, partialState, keyStrategyMap);
+
+					var nextNodeCommand = nextNodeId(currentNodeId, overAllState, currentState, config);
+					nextNodeId = nextNodeCommand.gotoNode();
+					currentState = nextNodeCommand.update();
 
 					Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
 					return (cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
@@ -769,17 +879,20 @@ public class CompiledGraph {
 
 		@Override
 		public Data<Output> next() {
-			// GUARD: CHECK MAX ITERATION REACHED
-			if (++iteration > maxIterations) {
-				log.warn("Maximum number of iterations ({}) reached!", maxIterations);
-				return Data.done(currentState);
-			}
-
-			// GUARD: CHECK IF IT IS END
-			if (nextNodeId == null && currentNodeId == null)
-				return Data.done(currentState);
-
 			try {
+				// GUARD: CHECK MAX ITERATION REACHED
+				if (++iteration > maxIterations) {
+					// log.warn( "Maximum number of iterations ({}) reached!",
+					// maxIterations);
+					return Data.error(new IllegalStateException(
+							format("Maximum number of iterations (%d) reached!", maxIterations)));
+				}
+
+				// GUARD: CHECK IF IT IS END
+				if (nextNodeId == null && currentNodeId == null) {
+					return releaseThread().map(Data::<Output>done).orElseGet(() -> Data.done(currentState));
+				}
+
 				// IS IT A RESUME FROM EMBED ?
 				if (resumedFromEmbed) {
 					final CompletableFuture<Output> future = getNodeOutput();
@@ -788,44 +901,83 @@ public class CompiledGraph {
 				}
 
 				if (START.equals(currentNodeId)) {
-					nextNodeId = getEntryPoint(currentState);
+					doListeners(START, null);
+					var nextNodeCommand = getEntryPoint(currentState, config);
+					nextNodeId = nextNodeCommand.gotoNode();
+					currentState = nextNodeCommand.update();
+
+					var cp = addCheckpoint(config, START, currentState, nextNodeId);
+
+					var output = (cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
+							? buildStateSnapshot(cp.get()) : buildNodeOutput(currentNodeId);
+
 					currentNodeId = nextNodeId;
-					addCheckpoint(config, START, currentState, nextNodeId);
-					return Data.of(buildNodeOutput(START));
+
+					return Data.of(output);
 				}
 
 				if (END.equals(nextNodeId)) {
 					nextNodeId = null;
 					currentNodeId = null;
+					doListeners(END, null);
 					return Data.of(buildNodeOutput(END));
 				}
 
 				// check on previous node
-				if (shouldInterruptAfter(currentNodeId, nextNodeId))
-					return Data.done();
+				if (shouldInterruptAfter(currentNodeId, nextNodeId)) {
+					return Data.done(currentNodeId);
+				}
 
-				if (shouldInterruptBefore(nextNodeId, currentNodeId))
-					return Data.done();
+				if (shouldInterruptBefore(nextNodeId, currentNodeId)) {
+					return Data.done(currentNodeId);
+				}
 
 				currentNodeId = nextNodeId;
 
-				AsyncNodeActionWithConfig action = nodes.get(currentNodeId);
+				var action = nodes.get(currentNodeId);
 
 				if (action == null)
-					throw StateGraph.RunnableErrors.missingNode.exception(currentNodeId);
+					throw RunnableErrors.missingNode.exception(currentNodeId);
 
-				return evaluateAction(action, overAllState).get();
+				return evaluateAction(action, this.overAllState).get();
 			}
 			catch (Exception e) {
-				if (e instanceof ExecutionException executionException
-						&& executionException.getCause() instanceof GraphInterruptException interruptException) {
-					overAllState.setInterruptMessage(interruptException.getMessage());
-					return Data.done(buildNodeOutput(currentNodeId));
-				}
+				doListeners(ERROR, e);
 				log.error(e.getMessage(), e);
 				return Data.error(e);
 			}
 
+		}
+
+		private void doListeners(String scene, Exception e) {
+			Deque<GraphLifecycleListener> listeners = new LinkedBlockingDeque<>(compileConfig.lifecycleListeners());
+
+			processListenersLIFO(listeners, scene, e);
+		}
+
+		private void processListenersLIFO(Deque<GraphLifecycleListener> listeners, String scene, Exception e) {
+			if (listeners.isEmpty()) {
+				return;
+			}
+
+			GraphLifecycleListener listener = listeners.pollLast();
+
+			try {
+				if (START.equals(scene)) {
+					listener.onStart(START, this.currentState);
+				}
+				else if (END.equals(scene)) {
+					listener.onComplete(END, this.currentState);
+				}
+				else if (ERROR.equals(scene)) {
+					listener.onError(this.currentNodeId, this.currentState, e);
+				}
+
+				processListenersLIFO(listeners, scene, e);
+			}
+			catch (Exception ex) {
+				log.debug("Error occurred during listener processing: {}", ex.getMessage());
+			}
 		}
 
 	}
@@ -894,7 +1046,7 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 				.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId : interrupt)
 				.collect(Collectors.toUnmodifiableSet());
 
-			var edgesWithSubgraphTargetId = stateGraph.edges.edgesByTargetId(subgraphNode.id());
+			var edgesWithSubgraphTargetId = edges.edgesByTargetId(subgraphNode.id());
 
 			if (edgesWithSubgraphTargetId.isEmpty()) {
 				throw new GraphStateException(
@@ -915,7 +1067,7 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 			//
 			var sgEdgesEnd = sgWorkflow.edges.edgesByTargetId(END);
 
-			var edgeWithSubgraphSourceId = stateGraph.edges.edgeBySourceId(subgraphNode.id()).orElseThrow();
+			var edgeWithSubgraphSourceId = edges.edgeBySourceId(subgraphNode.id()).orElseThrow();
 
 			if (edgeWithSubgraphSourceId.isParallel()) {
 				throw new GraphStateException("subgraph not support routes to parallel branches yet!");

@@ -1,0 +1,15 @@
+/* chat-area.css - 计划模板页面中的聊天区域样式 */
+
+/* 聊天区域容器的外层包裹，包含头部和聊天区域本身 */
+.chat-area {
+    min-height: 500px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column; 
+}

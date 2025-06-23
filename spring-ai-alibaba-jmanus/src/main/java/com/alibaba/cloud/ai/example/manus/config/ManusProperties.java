@@ -85,9 +85,45 @@ public class ManusProperties {
 		this.consoleQuery = consoleQuery;
 	}
 
+	@ConfigProperty(group = "manus", subGroup = "browser", key = "requestTimeout",
+			path = "manus.browser.requestTimeout", description = "浏览器请求超时时间(秒)", defaultValue = "180",
+			inputType = ConfigInputType.NUMBER)
+	private volatile Integer browserRequestTimeout;
+
+	@ConfigProperty(group = "manus", subGroup = "browser", key = "debug", path = "manus.browser.debug",
+			description = "浏览器debug模式", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+	private volatile Boolean browserDebug;
+
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "maxSteps", path = "manus.maxSteps",
 			description = "智能体执行最大步数", defaultValue = "20", inputType = ConfigInputType.NUMBER)
 	private volatile Integer maxSteps;
+
+	public Integer getBrowserRequestTimeout() {
+		String configPath = "manus.browser.requestTimeout";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			browserRequestTimeout = Integer.valueOf(value);
+		}
+		return browserRequestTimeout;
+	}
+
+	public void setBrowserRequestTimeout(Integer browserRequestTimeout) {
+		this.browserRequestTimeout = browserRequestTimeout;
+	}
+
+	public Boolean getBrowserDebug() {
+		String configPath = "manus.browser.debug";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			browserDebug = Boolean.valueOf(value);
+		}
+		return browserDebug;
+	}
+
+	public void setBrowserDebug(Boolean browserDebug) {
+		this.browserDebug = browserDebug;
+	}
 
 	public Integer getMaxSteps() {
 		String configPath = "manus.maxSteps";
@@ -118,6 +154,48 @@ public class ManusProperties {
 
 	public void setResetAgents(Boolean resetAgents) {
 		this.resetAgents = resetAgents;
+	}
+
+	@ConfigProperty(group = "manus", subGroup = "general", key = "baseDir", path = "manus.baseDir",
+			description = "manus根目录", defaultValue = "", inputType = ConfigInputType.TEXT)
+	private volatile String baseDir = "";
+
+	public String getBaseDir() {
+		String configPath = "manus.baseDir";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			baseDir = value;
+		}
+		return baseDir;
+	}
+
+	public void setBaseDir(String baseDir) {
+		this.baseDir = baseDir;
+	}
+
+	@ConfigProperty(group = "manus", subGroup = "agent", key = "userInputTimeout",
+			path = "manus.agent.userInputTimeout", description = "用户输入表单等待超时时间(秒)", defaultValue = "300",
+			inputType = ConfigInputType.NUMBER)
+	private volatile Integer userInputTimeout;
+
+	public Integer getUserInputTimeout() {
+		String configPath = "manus.agent.userInputTimeout";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			userInputTimeout = Integer.valueOf(value);
+		}
+		// Ensure a default value if not configured and not set
+		if (userInputTimeout == null) {
+			// Attempt to parse the default value specified in the annotation,
+			// or use a hardcoded default if parsing fails or is complex to retrieve here.
+			// For simplicity, directly using the intended default.
+			userInputTimeout = 300;
+		}
+		return userInputTimeout;
+	}
+
+	public void setUserInputTimeout(Integer userInputTimeout) {
+		this.userInputTimeout = userInputTimeout;
 	}
 
 }

@@ -15,15 +15,16 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.*;
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
+import org.junit.jupiter.api.Test;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -47,9 +48,10 @@ class ApiUtilsTests {
 		ApiUtils.getJsonContentHeaders(TEST_API_KEY).accept(headers);
 
 		assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
-		assertThat(headers.getFirst(HEADER_OPENAPI_SOURCE)).isEqualTo(SOURCE_FLAG);
+		assertThat(headers.getFirst(DashScopeApiConstants.HEADER_OPENAPI_SOURCE))
+			.isEqualTo(DashScopeApiConstants.SOURCE_FLAG);
 		assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
-		assertThat(headers.getFirst("user-agent")).contains(SDK_FLAG);
+		assertThat(headers.getFirst("user-agent")).contains(DashScopeApiConstants.SDK_FLAG);
 	}
 
 	@Test
@@ -59,10 +61,11 @@ class ApiUtilsTests {
 		ApiUtils.getJsonContentHeaders(TEST_API_KEY, TEST_WORKSPACE_ID).accept(headers);
 
 		assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
-		assertThat(headers.getFirst(HEADER_OPENAPI_SOURCE)).isEqualTo(SOURCE_FLAG);
-		assertThat(headers.getFirst(HEADER_WORK_SPACE_ID)).isEqualTo(TEST_WORKSPACE_ID);
+		assertThat(headers.getFirst(DashScopeApiConstants.HEADER_OPENAPI_SOURCE))
+			.isEqualTo(DashScopeApiConstants.SOURCE_FLAG);
+		assertThat(headers.getFirst(DashScopeApiConstants.HEADER_WORK_SPACE_ID)).isEqualTo(TEST_WORKSPACE_ID);
 		assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
-		assertThat(headers.getFirst("user-agent")).contains(SDK_FLAG);
+		assertThat(headers.getFirst("user-agent")).contains(DashScopeApiConstants.SDK_FLAG);
 	}
 
 	@Test
@@ -72,11 +75,12 @@ class ApiUtilsTests {
 		ApiUtils.getJsonContentHeaders(TEST_API_KEY, TEST_WORKSPACE_ID, true).accept(headers);
 
 		assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
-		assertThat(headers.getFirst(HEADER_OPENAPI_SOURCE)).isEqualTo(SOURCE_FLAG);
-		assertThat(headers.getFirst(HEADER_WORK_SPACE_ID)).isEqualTo(TEST_WORKSPACE_ID);
+		assertThat(headers.getFirst(DashScopeApiConstants.HEADER_OPENAPI_SOURCE))
+			.isEqualTo(DashScopeApiConstants.SOURCE_FLAG);
+		assertThat(headers.getFirst(DashScopeApiConstants.HEADER_WORK_SPACE_ID)).isEqualTo(TEST_WORKSPACE_ID);
 		assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
 		assertThat(headers.getFirst("X-DashScope-SSE")).isEqualTo("enable");
-		assertThat(headers.getFirst("user-agent")).contains(SDK_FLAG);
+		assertThat(headers.getFirst("user-agent")).contains(DashScopeApiConstants.SDK_FLAG);
 	}
 
 	@Test
@@ -88,11 +92,11 @@ class ApiUtilsTests {
 		Map<String, String> headers = ApiUtils.getMapContentHeaders(TEST_API_KEY, true, TEST_WORKSPACE_ID,
 				customHeaders);
 
-		assertThat(headers.get("Authorization")).isEqualTo("bearer " + TEST_API_KEY);
-		assertThat(headers.get("X-DashScope-WorkSpace")).isEqualTo(TEST_WORKSPACE_ID);
+		assertThat(headers.get(HttpHeaders.AUTHORIZATION)).isEqualTo("bearer " + TEST_API_KEY);
+		assertThat(headers.get(DashScopeApiConstants.HEADER_WORK_SPACE_ID)).isEqualTo(TEST_WORKSPACE_ID);
 		assertThat(headers.get("X-DashScope-DataInspection")).isEqualTo("enable");
 		assertThat(headers.get("Custom-Header")).isEqualTo("custom-value");
-		assertThat(headers.get("user-agent")).contains(SDK_FLAG);
+		assertThat(headers.get(HttpHeaders.USER_AGENT)).contains(DashScopeApiConstants.SDK_FLAG);
 	}
 
 	@Test

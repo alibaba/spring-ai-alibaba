@@ -30,8 +30,35 @@ public class DocumentExtractorNodeData extends NodeData {
 
 	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("text", VariableType.ARRAY_STRING.value());
 
+	private List<String> fileList;
+
+	private String outputKey;
+
 	public DocumentExtractorNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
 		super(inputs, outputs);
+	}
+
+	public DocumentExtractorNodeData(List<VariableSelector> inputs, List<Variable> outputs, List<String> fileList,
+			String outputKey) {
+		super(inputs, outputs);
+		this.fileList = fileList;
+		this.outputKey = outputKey;
+	}
+
+	public List<String> getFileList() {
+		return fileList;
+	}
+
+	public void setFileList(List<String> fileList) {
+		this.fileList = fileList;
+	}
+
+	public String getOutputKey() {
+		return outputKey;
+	}
+
+	public void setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
 	}
 
 }

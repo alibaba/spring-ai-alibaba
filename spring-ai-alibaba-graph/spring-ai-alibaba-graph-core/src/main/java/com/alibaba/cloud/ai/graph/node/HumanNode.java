@@ -17,10 +17,12 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class HumanNode implements NodeAction {
 
@@ -49,7 +51,7 @@ public class HumanNode implements NodeAction {
 
 	//
 	@Override
-	public Map<String, Object> apply(OverAllState state) throws GraphInterruptException {
+	public Map<String, Object> apply(OverAllState state) throws GraphRunnerException {
 		var shouldInterrupt = interruptStrategy.equals("always")
 				|| (interruptStrategy.equals("conditioned") && interruptCondition.apply(state));
 		if (shouldInterrupt) {
@@ -60,8 +62,13 @@ public class HumanNode implements NodeAction {
 					data = stateUpdateFunc.apply(state);
 				}
 				else {
-					// todo, check and only update keys defined in state.
-					data = state.updateState(state.humanFeedback().data());
+					// check and only update keys defined in state.
+					data = state.humanFeedback().data();
+					Map<String, Object> filtered = data.entrySet()
+						.stream()
+						.filter(e -> state.value(e.getKey()).isPresent())
+						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+					data = state.updateState(filtered);
 				}
 			}
 
@@ -71,14 +78,47 @@ public class HumanNode implements NodeAction {
 		return Map.of();
 	}
 
-	private void interrupt(OverAllState state) throws GraphInterruptException {
+	private void interrupt(OverAllState state) throws GraphRunnerException {
 		if (state.humanFeedback() == null || !state.isResume()) {
-			throw new GraphInterruptException("interrupt");
+			throw RunnableErrors.subGraphInterrupt.exception("interrupt");
 		}
 	}
 
 	public String think(OverAllState state) {
 		return state.humanFeedback().nextNodeId();
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private String interruptStrategy = "always";
+
+		private Function<OverAllState, Boolean> interruptCondition = state -> true;
+
+		private Function<OverAllState, Map<String, Object>> stateUpdateFunc = null;
+
+		public Builder interruptStrategy(String interruptStrategy) {
+			this.interruptStrategy = interruptStrategy;
+			return this;
+		}
+
+		public Builder interruptCondition(Function<OverAllState, Boolean> interruptCondition) {
+			this.interruptCondition = interruptCondition;
+			return this;
+		}
+
+		public Builder stateUpdateFunc(Function<OverAllState, Map<String, Object>> stateUpdateFunc) {
+			this.stateUpdateFunc = stateUpdateFunc;
+			return this;
+		}
+
+		public HumanNode build() {
+			return new HumanNode(interruptStrategy, interruptCondition, stateUpdateFunc);
+		}
+
 	}
 
 }

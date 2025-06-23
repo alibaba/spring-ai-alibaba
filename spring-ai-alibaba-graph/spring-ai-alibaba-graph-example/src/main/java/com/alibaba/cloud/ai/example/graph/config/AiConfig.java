@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.graph.config;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.context.annotation.Bean;
@@ -36,6 +37,12 @@ public class AiConfig {
 	@Primary
 	public ChatModel preferredChatModel(OpenAiChatModel openAiChatModel) {
 		return openAiChatModel;
+	}
+
+	@Bean
+	@Primary
+	public ChatClient chatClient(ChatClient.Builder builder) {
+		return builder.build();
 	}
 
 }

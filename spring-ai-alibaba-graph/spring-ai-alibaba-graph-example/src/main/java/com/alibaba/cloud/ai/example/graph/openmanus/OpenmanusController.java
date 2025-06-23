@@ -16,15 +16,16 @@
 
 package com.alibaba.cloud.ai.example.graph.openmanus;
 
-import java.util.Map;
-
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.Builder;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
@@ -32,6 +33,9 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.alibaba.cloud.ai.example.graph.openmanus.OpenManusPrompt.PLANNING_SYSTEM_PROMPT;
 import static com.alibaba.cloud.ai.example.graph.openmanus.OpenManusPrompt.STEP_SYSTEM_PROMPT;
@@ -57,16 +61,18 @@ public class OpenmanusController {
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
 			// .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultTools(Builder.getToolCallList())// tools registered will only be used
-													// as tool description
+			.defaultToolCallbacks(Builder.getToolCallList())// tools registered will only
+			// be used
+			// as tool description
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
 
 		this.stepClient = ChatClient.builder(chatModel)
 			.defaultSystem(STEP_SYSTEM_PROMPT)
 			// .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
-			.defaultTools(Builder.getManusAgentToolCalls())// tools registered will only
-															// be used as tool description
+			.defaultToolCallbacks(Builder.getManusAgentToolCalls())// tools registered
+			// will only
+			// be used as tool description
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
@@ -76,16 +82,6 @@ public class OpenmanusController {
 
 	public void initGraph() throws GraphStateException {
 
-		OverAllStateFactory stateFactory = () -> {
-			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy("plan", new ReplaceStrategy());
-			state.registerKeyAndStrategy("step_prompt", new ReplaceStrategy());
-			state.registerKeyAndStrategy("step_output", new ReplaceStrategy());
-			state.registerKeyAndStrategy("final_output", new ReplaceStrategy());
-
-			return state;
-		};
-
 		SupervisorAgent supervisorAgent = new SupervisorAgent(PlanningTool.INSTANCE);
 		ReactAgent planningAgent = new ReactAgent("planningAgent", planningClient, Builder.getFunctionCallbackList(),
 				10);
@@ -93,8 +89,14 @@ public class OpenmanusController {
 		ReactAgent stepAgent = new ReactAgent("stepAgent", stepClient, Builder.getManusAgentFunctionCallbacks(), 10);
 		stepAgent.getAndCompileGraph();
 
-		StateGraph graph = new StateGraph(stateFactory)
-			.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
+		StateGraph graph = new StateGraph(() -> {
+			Map<String, KeyStrategy> strategies = new HashMap<>();
+			strategies.put("plan", new ReplaceStrategy());
+			strategies.put("step_prompt", new ReplaceStrategy());
+			strategies.put("step_output", new ReplaceStrategy());
+			strategies.put("final_output", new ReplaceStrategy());
+			return strategies;
+		}).addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
 			.addNode("supervisor_agent", node_async(supervisorAgent))
 			.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
 
@@ -116,7 +118,7 @@ public class OpenmanusController {
 	 * ChatClient 简单调用
 	 */
 	@GetMapping("/chat")
-	public String simpleChat(String query) {
+	public String simpleChat(String query) throws GraphRunnerException {
 
 		return compiledGraph.invoke(Map.of("input", query)).get().data().toString();
 	}

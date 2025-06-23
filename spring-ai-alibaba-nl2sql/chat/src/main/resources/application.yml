@@ -1,0 +1,38 @@
+server:
+  port: 8080 # 服务器端口配置
+spring:
+  main:
+    banner-mode: off
+  ai:
+    openai:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      api-key:
+      model: qwen-max-2025-01-25
+    dashscope:
+      api-key:
+    mcp:
+      server:
+        name: xiyan-server # MCP服务器名称
+        version: 0.0.1 # 服务器版本号
+    vectorstore:
+      analytic:
+        enabled: false
+        collectName:
+        regionId:
+        dbInstanceId:
+        managerAccount:
+        managerAccountPassword:
+        namespace:
+        namespacePassword:
+        defaultTopK:
+        defaultSimilarityThreshold:
+        accessKeyId:
+        accessKeySecret:
+chatbi:
+  dbconfig:
+    url:
+    username:
+    password:
+    connectiontype:
+    dialecttype:
+    schema:

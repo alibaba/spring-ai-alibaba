@@ -31,14 +31,13 @@ import org.springframework.core.env.PropertyResolver;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.PropertySources;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static java.util.Collections.unmodifiableMap;
 
 /**
  * @author Sunrisea
@@ -48,13 +47,13 @@ public class NacosMcpProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos";
 
-	public static final String DEFAULT_NAMESPACE = "public";
-
 	public static final String DEFAULT_ADDRESS = "127.0.0.1:8848";
 
 	private static final Pattern PATTERN = Pattern.compile("-(\\w)");
 
 	private static final Logger log = LoggerFactory.getLogger(NacosMcpProperties.class);
+
+	String namespace;
 
 	String serverAddr;
 
@@ -73,6 +72,14 @@ public class NacosMcpProperties {
 	@Autowired
 	@JsonIgnore
 	private Environment environment;
+
+	public String getnamespace() {
+		return namespace;
+	}
+
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
+	}
 
 	public String getUsername() {
 		return username;
@@ -133,12 +140,13 @@ public class NacosMcpProperties {
 	@PostConstruct
 	public void init() throws Exception {
 		if (StringUtils.isEmpty(this.ip)) {
-			this.ip = NetUtils.localIP();
+			this.ip = NetUtils.localIp();
 		}
 	}
 
 	public Properties getNacosProperties() {
 		Properties properties = new Properties();
+		properties.put(PropertyKeyConst.NAMESPACE, Objects.toString(this.namespace, ""));
 		properties.put(PropertyKeyConst.SERVER_ADDR, Objects.toString(this.serverAddr, ""));
 		properties.put(PropertyKeyConst.USERNAME, Objects.toString(this.username, ""));
 		properties.put(PropertyKeyConst.PASSWORD, Objects.toString(this.password, ""));
@@ -203,7 +211,7 @@ public class NacosMcpProperties {
 				}
 			}
 		}
-		return unmodifiableMap(subProperties);
+		return Collections.unmodifiableMap(subProperties);
 	}
 
 	private String[] getPropertyNames(PropertySource propertySource) {

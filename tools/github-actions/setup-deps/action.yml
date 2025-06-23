@@ -13,10 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 name: setup-deps
 description: Install host system dependencies
-
 runs:
   using: composite
   steps:
@@ -25,7 +23,7 @@ runs:
         java-version: '17'
         distribution: 'temurin'
         cache: 'maven'
-    - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34  # v5.0.1
+    - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.0.1
       with:
         go-version: '1.23'
     - uses: actions/setup-python@v5
@@ -34,3 +32,6 @@ runs:
     - uses: actions/setup-node@v4
       with:
         node-version: '22'
+    - name: Pull python:3.10 docker image
+      shell: bash
+      run: docker pull python:3.10

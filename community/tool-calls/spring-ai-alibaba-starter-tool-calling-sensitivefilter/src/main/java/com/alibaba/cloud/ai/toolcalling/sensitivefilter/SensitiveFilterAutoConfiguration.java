@@ -29,16 +29,16 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @ConditionalOnClass(SensitiveFilterService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.sensitivefilter", name = "enabled", havingValue = "true",
+@ConditionalOnProperty(prefix = SensitiveFilterConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @EnableConfigurationProperties(SensitiveFilterProperties.class)
 public class SensitiveFilterAutoConfiguration {
 
-	@Bean
+	@Bean(name = SensitiveFilterConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("It is used to filter and replace sensitive information in text, "
 			+ "such as mobile phone numbers, ID numbers, bank card numbers, etc")
-	public SensitiveFilterService sensitiveFilterFunction(SensitiveFilterProperties properties) {
+	public SensitiveFilterService sensitiveFilter(SensitiveFilterProperties properties) {
 		return new SensitiveFilterService(properties);
 	}
 

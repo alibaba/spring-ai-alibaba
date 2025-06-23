@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.api;
 
 import com.alibaba.cloud.ai.common.ModelType;
 import com.alibaba.cloud.ai.common.R;
-import com.alibaba.cloud.ai.model.ChatModel;
+import com.alibaba.cloud.ai.model.ChatModelConfig;
 import com.alibaba.cloud.ai.param.ModelRunActionParam;
 import com.alibaba.cloud.ai.service.ChatModelDelegate;
 import com.alibaba.cloud.ai.vo.ChatModelRunResult;
@@ -47,15 +47,15 @@ public interface ChatModelAPI {
 
 	@Operation(summary = "list chat models", description = "", tags = { "chat-model" })
 	@GetMapping(value = "", produces = { "application/json" })
-	default R<List<ChatModel>> list() {
-		List<ChatModel> res = getDelegate().list();
+	default R<List<ChatModelConfig>> list() {
+		List<ChatModelConfig> res = getDelegate().list();
 		return R.success(res);
 	}
 
 	@Operation(summary = "get chat model by model name", description = "", tags = { "chat-model" })
 	@GetMapping(value = "/{modelName}", produces = { "application/json" })
-	default R<ChatModel> get(@PathVariable String modelName) {
-		ChatModel res = getDelegate().getByModelName(modelName);
+	default R<ChatModelConfig> get(@PathVariable String modelName) {
+		ChatModelConfig res = getDelegate().getByModelName(modelName);
 		return R.success(res);
 	}
 

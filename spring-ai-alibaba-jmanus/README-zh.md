@@ -9,13 +9,19 @@ Spring AI 对 [OpenManus](https://github.com/mannaandpoem/OpenManus/) 的 Java �
 Spring AI Alibaba Java Manus 提供以下关键功能：
 
 1. **完美实现 OpenManus 多 Agent 框架**：使用 Spring AI 和 Java 全面实现 OpenManus 架构。
-![Image](https://github.com/user-attachments/assets/f27b763e-9c68-44e0-a57d-4f31d04c0200)
+![Image](https://github.com/user-attachments/assets/893c7fc1-5e6e-4ec9-8389-182f14d86b18)
 2. **通过网页界面配置 Agent**：通过直观的网页管理界面轻松配置 agent，无需修改代码。
-![Image](https://github.com/user-attachments/assets/96d5902a-f741-4e82-9007-136cf4c56bb0)
+![Image](https://github.com/user-attachments/assets/5afdfe2e-0e98-4100-bff1-b7aaf413850b)
 3. **MCP (Model Context Protocol) 接入 Agent**：无缝集成 Model Context Protocol，使 agent 能够与各种模型和服务交互。
-![Image](https://github.com/user-attachments/assets/df24679a-77f1-4e66-a15f-5e0fadcffacf)
+![Image](https://github.com/user-attachments/assets/31d915a9-04dc-45b2-9635-488cc06ba468)
 4. **支持 PLAN-ACT 模式**：实现强大的 PLAN-ACT 模式，支持复杂的推理和执行工作流。
-![Image](https://github.com/user-attachments/assets/d00fc59d-3f10-4163-a548-784eb21f77d6)
+![Image](https://github.com/user-attachments/assets/d9cbf980-9d56-4b58-b165-6840b6c9411b)
+
+
+## 稳定版本的Release
+
+如果你想要之前的稳定版本，可以在这里找到：
+[稳定release版](https://github.com/rainerWJY/Java-Open-Manus/releases)
 
 
 ## 运行方法
@@ -24,26 +30,21 @@ Spring AI Alibaba Java Manus 提供以下关键功能：
 
 1. 确保安装了 JDK 17 或更新版本。
 2. 使用 npm 全局安装 npx：
+
    ```shell
    npm install -g npx
    ```
-3. 设置 [dashscope api key](https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen)。
+
+3. 设置 [dashscope api key](https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen)。  dashscope是阿里云百炼的API， 可以登录阿里云免费获取100万的免费token 。
 
  ```shell
  export AI_DASHSCOPE_API_KEY=xxxx
  ```
 
-4. [可选] 设置 [SerpApi key](https://serpapi.com/users/sign_in)，注册后每月可获得免费额度。
 
- ```shell
- export SERP_API_KEY=xxxx
- ```
+4. [可选] 访问 [mcp sse 免费服务](https://mcp.higress.ai/)。获取可以快速测试的mcp服务。
 
-5. [可选] 设置 [百度地图 key](https://lbsyun.baidu.com/apiconsole/key)。修改 mcp-servers-config.json 文件中的 "ak"。
-
- ```shell
- "BAIDU_MAP_API_KEY": "your_baidu_AK"
- ```
+直接将连接复制到mcp配置页面添加即可。
 
 ### 使用 IDE 运行
 

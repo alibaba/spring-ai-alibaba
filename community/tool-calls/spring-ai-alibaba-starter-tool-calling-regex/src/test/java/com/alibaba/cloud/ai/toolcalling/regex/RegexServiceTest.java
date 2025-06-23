@@ -76,7 +76,7 @@ public class RegexServiceTest {
 	@Test
 	public void testFindAllWithNullPattern() {
 		// Test with null Pattern
-		List<String> result = RegexService.findAll(null, "content", 0, new ArrayList<>());
+		List<String> result = RegexUtils.findAll(null, "content", 0, new ArrayList<>());
 		assertNull(result);
 	}
 
@@ -84,7 +84,7 @@ public class RegexServiceTest {
 	public void testFindAllWithNullContent() {
 		// Test with null Content
 		Pattern pattern = Pattern.compile("\\w+");
-		List<String> result = RegexService.findAll(pattern, null, 0, new ArrayList<>());
+		List<String> result = RegexUtils.findAll(pattern, null, 0, new ArrayList<>());
 		assertNull(result);
 	}
 
@@ -93,7 +93,7 @@ public class RegexServiceTest {
 		// Test multiple matches
 		String content = "abc123def456ghi789";
 		Pattern pattern = Pattern.compile("([a-z]+)(\\d+)");
-		List<String> result = RegexService.findAll(pattern, content, 1, new ArrayList<>());
+		List<String> result = RegexUtils.findAll(pattern, content, 1, new ArrayList<>());
 
 		assertEquals(3, result.size());
 		assertEquals("abc", result.get(0));

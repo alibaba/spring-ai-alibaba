@@ -15,247 +15,210 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import io.github.bonigarcia.wdm.WebDriverManager;
+import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserType;
+
 import jakarta.annotation.PreDestroy;
-import org.openqa.selenium.Dimension;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 @Service
 @Primary
-public class ChromeDriverService implements ApplicationRunner {
+public class ChromeDriverService {
 
 	private static final Logger log = LoggerFactory.getLogger(ChromeDriverService.class);
 
-	private final ConcurrentHashMap<String, ChromeDriver> drivers = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<String, DriverWrapper> drivers = new ConcurrentHashMap<>();
 
-	private final ManusProperties manusProperties;
+	private final Lock driverLock = new ReentrantLock();
 
-	private final ConcurrentHashMap<String, Object> driverLocks = new ConcurrentHashMap<>();
+	private ManusProperties manusProperties;
+
+	// Initialize ObjectMapper instance
+	private static final ObjectMapper objectMapper = new ObjectMapper();
+
+	/**
+	 * 共享目录 用来存cookies
+	 */
+	/**
+	 * 共享目录 用来存cookies
+	 */
+	private String sharedDir;
+
+	/**
+	 * 获取当前共享目录
+	 */
+	public String getSharedDir() {
+		return sharedDir;
+	}
+
+	/**
+	 * 保存所有driver中的cookies到全局共享目录（cookies.json）
+	 */
+	public void saveCookiesToSharedDir() {
+		// 取第一个可用 driver
+		DriverWrapper driver = drivers.values().stream().findFirst().orElse(null);
+		if (driver == null) {
+			log.warn("No driver found for saving cookies");
+			return;
+		}
+		try {
+			List<com.microsoft.playwright.options.Cookie> cookies = driver.getCurrentPage().context().cookies();
+			String cookieFile = sharedDir + "/cookies.json";
+			try (java.io.FileWriter writer = new java.io.FileWriter(cookieFile)) {
+				writer.write(objectMapper.writeValueAsString(cookies));
+			}
+			log.info("Cookies saved to {}", cookieFile);
+		}
+		catch (Exception e) {
+			log.error("Failed to save cookies", e);
+		}
+	}
+
+	/**
+	 * 从全局共享目录加载cookies到所有driver
+	 */
+	public void loadCookiesFromSharedDir() {
+		String cookieFile = sharedDir + "/cookies.json";
+		java.io.File file = new java.io.File(cookieFile);
+		if (!file.exists()) {
+			log.warn("Cookie file does not exist: {}", cookieFile);
+			return;
+		}
+		try (java.io.FileReader reader = new java.io.FileReader(cookieFile)) {
+			// Replace FastJSON's JSON.parseArray with Jackson's objectMapper.readValue
+			List<com.microsoft.playwright.options.Cookie> cookies = objectMapper.readValue(reader,
+					new TypeReference<List<com.microsoft.playwright.options.Cookie>>() {
+					});
+			for (DriverWrapper driver : drivers.values()) {
+				driver.getCurrentPage().context().addCookies(cookies);
+			}
+			log.info("Cookies loaded from {} to all drivers", cookieFile);
+		}
+		catch (Exception e) {
+			log.error("Failed to load cookies for all drivers", e);
+		}
+	}
 
 	public ChromeDriverService(ManusProperties manusProperties) {
 		this.manusProperties = manusProperties;
+		this.sharedDir = CodeUtils.getSharedDirectory(manusProperties.getBaseDir(), "playwright");
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			log.info("JVM shutting down - cleaning up Chrome processes");
-			cleanupAllChromeProcesses();
+			log.info("JVM shutting down - cleaning up Playwright processes");
+			cleanupAllPlaywrightProcesses();
 		}));
 	}
 
-	private Object getDriverLock(String planId) {
-		return driverLocks.computeIfAbsent(planId, k -> new Object());
-	}
-
-	public ChromeDriver getDriver(String planId) {
+	public DriverWrapper getDriver(String planId) {
 		if (planId == null) {
 			throw new IllegalArgumentException("planId cannot be null");
 		}
 
-		ChromeDriver currentDriver = drivers.get(planId);
-		if (currentDriver != null && isDriverActive(currentDriver)) {
+		DriverWrapper currentDriver = drivers.get(planId);
+		if (currentDriver != null) {
 			return currentDriver;
 		}
 
-		synchronized (getDriverLock(planId)) {
+		try {
+			driverLock.lock();
 			currentDriver = drivers.get(planId);
-			if (currentDriver != null && isDriverActive(currentDriver)) {
+			if (currentDriver != null) {
 				return currentDriver;
 			}
-
-			ChromeDriver newDriver = createNewDriver();
-			drivers.put(planId, newDriver);
-			return newDriver;
+			log.info("Creating new Playwright Browser instance for planId: {}", planId);
+			currentDriver = createNewDriver(); // createNewDriver will now pass sharedDir
+			if (currentDriver != null) { // Check if driver creation was successful
+				drivers.put(planId, currentDriver);
+			}
+			else {
+				// Handle the case where driver creation failed, e.g., log an error or
+				// throw an exception
+				log.error("Failed to create new driver for planId: {}. createNewDriver returned null.", planId);
+				// Optionally throw an exception to indicate failure to the caller
+				// throw new RuntimeException("Failed to create new driver for planId: " +
+				// planId);
+			}
 		}
+		finally {
+			driverLock.unlock();
+		}
+
+		return currentDriver;
 	}
 
-	private void cleanupAllChromeProcesses() {
+	private void cleanupAllPlaywrightProcesses() {
 		try {
-			// 关闭所有 driver
-			for (Map.Entry<String, ChromeDriver> entry : drivers.entrySet()) {
-				try {
-					ChromeDriver driver = entry.getValue();
-					if (driver != null) {
-						closeDriver(driver);
-					}
-				}
-				catch (Exception e) {
-					log.error("Error closing ChromeDriver for planId: {}", entry.getKey(), e);
-				}
-			}
 			drivers.clear();
-			driverLocks.clear();
-			log.info("Successfully cleaned up all Chrome drivers");
+			log.info("Successfully cleaned up all Playwright processes	");
 		}
 		catch (Exception e) {
-			log.error("Error cleaning up Chrome processes", e);
+			log.error("Error cleaning up Browser processes", e);
 		}
 	}
 
 	public void closeDriverForPlan(String planId) {
-		ChromeDriver driver = drivers.remove(planId);
+		DriverWrapper driver = drivers.remove(planId);
 		if (driver != null) {
-			closeDriver(driver);
-			driverLocks.remove(planId);
+			driver.close();
 		}
 	}
 
-	@Override
-	public void run(ApplicationArguments args) throws Exception {
-
-		Map<OsType, String> chromeDriverMap = checkOS();
-		if (Objects.isNull(chromeDriverMap)) {
-			throw new UnsupportedOperationException("不受支持的操作系统，当前仅支持 Windows、MacOS 和 Linux 系统");
-		}
-
-		String chromeDriverPath = getChromeDriverPath(chromeDriverMap);
-
-		System.setProperty("webdriver.chrome.driver", chromeDriverPath);
-		log.info("ChromeDriver path initialized: {}", chromeDriverPath);
-	}
-
-	private String getChromeDriverPath(Map<OsType, String> chromeDriverMap) throws IOException, URISyntaxException {
-		if (chromeDriverMap.size() != 1) {
-			throw new IllegalArgumentException("Chrome Driver Map 中的元素数量非法，必须且只能包含一个元素");
-		}
-		// 获取 ChromeDriver 的路径
-		String chromeDriverPath = chromeDriverMap.values().iterator().next();
-
-		// 获取资源 URL
-		URL resource = getClass().getClassLoader().getResource(chromeDriverPath);
-		if (resource == null) {
-			throw new IllegalStateException("ChromeDriver not found: " + chromeDriverPath);
-		}
-		// 判断资源是否在 JAR 包中
-		Path resolvedPath;
-		if (resource.getProtocol().equals("jar")) {
-			// 资源在 JAR 包中，需要提取到临时文件
-			try (InputStream inputStream = resource.openStream()) {
-				Path tempFile = Files.createTempFile("chromedriver", ".tmp");
-				Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
-				resolvedPath = tempFile;
-				tempFile.toFile().deleteOnExit(); // 程序退出时删除临时文件
-			}
-		}
-		else {
-			// 资源在文件系统中，直接转换为 Path
-			resolvedPath = Paths.get(resource.toURI());
-		}
-		// 返回绝对路径
-		return resolvedPath.toAbsolutePath().toString();
-	}
-
-	private enum OsType {
-
-		WINDOWS, MAC, LINUX, UNSUPPORTED
-
-	}
-
-	private static Map<OsType, String> checkOS() {
-
-		String os = System.getProperty("os.name").toLowerCase();
-		Map<OsType, String> resMap = new HashMap<>();
-
-		if (os.contains("win")) {
-			resMap.put(OsType.WINDOWS, "chromedriver/win64/chromedriver.exe");
-		}
-		else if (os.contains("mac")) {
-			resMap.put(OsType.MAC, "chromedriver/mac-arm/chromedriver");
-		}
-		else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
-			resMap.put(OsType.LINUX, "chromedriver/linux64/chromedriver");
-		}
-		else {
-			log.warn("不支持的操作系统类型: {}", os);
-			return null;
-		}
-
-		return resMap;
-	}
-
-	private ChromeDriver createNewDriver() {
-		ChromeDriver newDriver = null;
+	private DriverWrapper createNewDriver() {
+		Playwright playwright = null;
 		try {
-			ChromeOptions options = new ChromeOptions();
+
+			if (playwright == null) {
+				playwright = Playwright.create();
+			}
+			BrowserType.LaunchOptions options = new BrowserType.LaunchOptions();
 
 			// 基础配置
-			options.addArguments("--remote-allow-origins=*");
-			options.addArguments("--disable-blink-features=AutomationControlled");
+			options.setArgs(Arrays.asList("--remote-allow-origins=*", "--disable-blink-features=AutomationControlled",
+					"--disable-infobars", "--disable-notifications", "--disable-dev-shm-usage",
+					"--lang=zh-CN,zh,en-US,en", "--user-agent=" + getRandomUserAgent(), "--window-size=1920,1080" // 默认窗口大小
+			));
 
 			// 根据配置决定是否使用 headless 模式
 			if (manusProperties.getBrowserHeadless()) {
-				log.info("启用 Chrome headless 模式");
-				options.addArguments("--headless=true");
+				log.info("启用 Playwright headless 模式");
+				options.setHeadless(true);
+			}
+			else {
+				log.info("启用 Playwright 非 headless 模式");
+				options.setHeadless(false);
 			}
 
-			// 模拟真实浏览器环境
-			options.addArguments("--disable-infobars");
-			options.addArguments("--disable-notifications");
-			options.addArguments("--disable-dev-shm-usage");
-			options.addArguments("--lang=zh-CN,zh,en-US,en");
-
-			// 添加随机化的用户代理
-			options.addArguments("--user-agent=" + getRandomUserAgent());
-
-			// 添加随机化的浏览器窗口大小
-			Dimension randomSize = getRandomWindowSize();
-			options.addArguments("--window-size=" + randomSize.width + "," + randomSize.height);
-
-			// 禁用自动化标志
-			Map<String, Object> prefs = new HashMap<>();
-			prefs.put("credentials_enable_service", false);
-			prefs.put("profile.password_manager_enabled", false);
-			options.setExperimentalOption("prefs", prefs);
-
-			// 设置 webdriver 属性
-			Map<String, Object> properties = new HashMap<>();
-			properties.put("navigator.webdriver", false);
-			options.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
-
-			// 自动匹配版本
-			WebDriverManager.chromedriver().setup();
-			newDriver = new ChromeDriver(options);
-			executeAntiDetectionScript(newDriver);
-			log.info("Created new ChromeDriver instance with anti-detection");
-			return newDriver;
+			Browser browser = playwright.chromium().launch(options);
+			log.info("Created new Playwright Browser instance with anti-detection");
+			// Pass the sharedDir to the DriverWrapper constructor
+			return new DriverWrapper(playwright, browser, browser.newPage(), this.sharedDir);
 		}
 		catch (Exception e) {
-			if (newDriver != null) {
+			if (playwright != null) {
 				try {
-					newDriver.quit();
+					playwright.close();
 				}
 				catch (Exception ex) {
-					log.warn("Failed to quit failed driver instance", ex);
+					log.warn("Failed to close failed Playwright instance", ex);
 				}
 			}
-			log.error("Failed to create ChromeDriver instance", e);
-			throw new RuntimeException("Failed to initialize ChromeDriver", e);
+			log.error("Failed to create Playwright Browser instance", e);
+			throw new RuntimeException("Failed to initialize Playwright Browser", e);
 		}
 	}
 
@@ -267,103 +230,18 @@ public class ChromeDriverService implements ApplicationRunner {
 		return userAgents.get(new Random().nextInt(userAgents.size()));
 	}
 
-	private Dimension getRandomWindowSize() {
-		List<Dimension> sizes = Arrays.asList(new Dimension(1920, 1080), new Dimension(1366, 768),
-				new Dimension(1440, 900));
-		return sizes.get(new Random().nextInt(sizes.size()));
-	}
-
-	private void executeAntiDetectionScript(WebDriver driver) {
-		((JavascriptExecutor) driver).executeScript("""
-				Object.defineProperty(navigator, 'webdriver', {
-				    get: () => undefined
-				});
-
-				// 覆盖 navigator 属性
-				const newProto = navigator.__proto__;
-				delete newProto.webdriver;
-
-				// 模拟真实的 plugins
-				Object.defineProperty(navigator, 'plugins', {
-				    get: () => [1, 2, 3, 4, 5],
-				});
-
-				// 模拟真实的语言
-				Object.defineProperty(navigator, 'languages', {
-				    get: () => ['zh-CN', 'zh', 'en-US', 'en'],
-				});
-				""");
-	}
-
-	private boolean isDriverActive(ChromeDriver driver) {
-		try {
-			driver.getCurrentUrl();
-			return true;
-		}
-		catch (Exception e) {
-			log.warn("Existing ChromeDriver is not active", e);
-			closeDriver(driver);
-			return false;
-		}
-	}
-
-	private void closeDriver(WebDriver driver) {
-		try {
-			if (driver != null) {
-				try {
-					// 首先关闭所有窗口，但使用超时保护
-					try {
-						Set<String> windowHandles = driver.getWindowHandles();
-						for (String handle : windowHandles) {
-							try {
-								driver.switchTo().window(handle);
-								driver.close();
-							}
-							catch (Exception e) {
-								log.warn("Error closing window: {}", e.getMessage());
-							}
-						}
-					}
-					catch (Exception e) {
-						log.warn("Error getting window handles: {}", e.getMessage());
-					}
-
-					// 使用超时机制执行driver.quit()
-					Thread shutdownThread = new Thread(() -> {
-						try {
-							driver.quit();
-							log.info("ChromeDriver closed successfully");
-						}
-						catch (Exception e) {
-							log.warn("Error in shutdown thread during driver.quit(): {}", e.getMessage());
-						}
-					}, "DriverShutdownThread");
-
-					shutdownThread.setDaemon(true);
-					shutdownThread.start();
-
-					// 最多等待5秒
-					shutdownThread.join(5000);
-
-					if (shutdownThread.isAlive()) {
-						log.warn("Shutdown thread timed out, may need to force kill browser processes");
-					}
-				}
-				catch (InterruptedException ie) {
-					log.warn("Driver shutdown thread interrupted: {}", ie.getMessage());
-					Thread.currentThread().interrupt();
-				}
-			}
-		}
-		catch (Exception e) {
-			log.error("Error closing ChromeDriver", e);
-		}
-	}
-
 	@PreDestroy
 	public void cleanup() {
-		log.info("Spring container shutting down - cleaning up Chrome resources");
-		cleanupAllChromeProcesses();
+		log.info("Spring container shutting down - cleaning up Browser resources");
+		cleanupAllPlaywrightProcesses();
+	}
+
+	public void setManusProperties(ManusProperties manusProperties) {
+		this.manusProperties = manusProperties;
+	}
+
+	public ManusProperties getManusProperties() {
+		return manusProperties;
 	}
 
 }

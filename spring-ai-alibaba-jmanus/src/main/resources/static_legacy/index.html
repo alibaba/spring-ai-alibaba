@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> JTaskPilot -  Open Manus Java implementation</title>
+    <!-- 引入模块化CSS文件 -->
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/content.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="css/input.css">
+    <link rel="stylesheet" href="css/right-sidebar.css">
+    <style>
+        /* Simple icons for demo */
+        .icon-placeholder::before { content: "□"; display: inline-block; margin-right: 5px; }
+        .icon-collapse-left::before { content: "◀"; }
+        .icon-expand-left::before { content: "▶"; }
+        .icon-collapse-right::before { content: "▶"; }
+        .icon-expand-right::before { content: "◀"; }
+        .icon-terminal::before { content: ">_"; }
+        .icon-play::before { content: "►"; }
+        .icon-realtime::before { content: "●"; color: #1a73e8; }
+        .icon-menu::before { content: "⋮"; }
+        .icon-share::before { content: "↑"; }
+        .icon-star-outline::before { content: "☆"; }
+        .icon-star-filled::before { content: "★"; }
+        .icon-lightbulb::before { content: "💡"; }
+        .icon-attach::before { content: "📎"; }
+        .icon-send::before { content: "↑"; }
+        .icon-add::before { content: "+"; }
+        .icon-folder::before { content:"📁"; }
+        .icon-pages::before { content:"📄";}
+        .icon-down-arrow::before { content: "▼"; }
+        .icon-up-arrow::before { content: "▲"; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧边栏
+        <aside class="sidebar left-sidebar" id="leftSidebar">
+            <div class="sidebar-top-icons">
+            
+                <div class="icon">[M]</div>
+                <div class="icon">[G]</div>
+            </div>
+            <button class="new-task-btn">
+                <span class="plus-icon">+</span> 新建任务 <span class="shortcut">⌘ K</span>
+            </button>
+            <ul class="task-list">
+                <li class="task-item">
+                    <div class="task-icon">[📊]</div>
+                    <div class="task-details">
+                        <div class="task-title">深度分析MCP核心技术原理</div>
+                        <div class="task-preview">我已经成功将MCP核心技术原理分析报...</div>
+                    </div>
+                    <div class="task-time">6小时前</div>
+                </li>
+                <li class="task-item selected">
+                    <div class="task-icon">[🛡️]</div>
+                    <div class="task-details">
+                        <div class="task-title">manus核心技术讲解与开源...</div>
+                        <div class="task-preview">我已经成功将Manus AI指南网站部署到...</div>
+                    </div>
+                    <div class="task-time">2天前</div>
+                </li>
+               
+            </ul>
+            <div class="sidebar-bottom">
+            
+            </div>
+        </aside> -->
+
+        <!-- 主内容区域 -->
+        <main class="main-content-wrapper" id="mainContent">
+            <header class="content-header">
+                <div class="header-controls-left">
+                    <button id="toggleLeftSidebarBtn" class="action-btn toggle-btn" title="Toggle Left Sidebar">
+                        <span class="icon-collapse-left"></span>
+                    </button>
+                    <div class="header-title-section">
+                        <h1>JTaskPilot</h1>
+                        <div class="knowledge-suggestion">
+                            <span class="icon-lightbulb"></span> 知识建议 <span class="badge">1 待处理 ></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="toggleRightSidebarBtn" class="action-btn toggle-btn" title="Toggle Right Sidebar">
+                        <span class="icon-collapse-right"></span>
+                    </button>
+                    <button class="action-btn" id="configBtn" onclick="window.location.href='/admin/index.html'"><span class="icon-settings"></span> 配置与Agent管理</button>
+                    <button class="action-btn"><span class="icon-star-outline"></span></button>
+                    <button class="action-btn"><span class="icon-menu"></span></button>
+                </div>
+            </header>
+
+            <div class="chat-area">
+                <!-- 聊天消息将在此处动态生成 -->
+            </div>
+
+            <footer class="input-area">
+                 <button class="attach-btn">[📎]</button>
+                <input type="text" placeholder="向 JTaskPilot 发送消息">
+                <button class="plan-mode-btn" onclick="window.location.href='plan-template/index.html'" title="进入计划模式">📝计划模式</button>
+                <button class="send-btn">[📤] 发送</button>
+            </footer>
+        </main>
+
+        <!-- 右侧边栏 -->
+        <aside class="sidebar right-sidebar" id="rightSidebar">
+            <div class="right-sidebar-header">
+                <h3>执行详情</h3>
+            </div>
+            <div class="right-sidebar-content">
+                <!-- 执行详情将在这里动态填充 -->
+                <div class="no-selection-message">
+                    <p>请在左侧聊天区域点击任意执行步骤查看详情</p>
+                </div>
+            </div>
+            <div class="right-sidebar-footer">
+                <div class="playback-controls">
+                    <button class="icon-play"></button>
+                    <div class="progress-bar-stub"></div>
+                </div>
+                <button class="realtime-btn">
+                    <span class="icon-play"></span> 跳到实时
+                </button>
+                <span class="realtime-indicator">
+                    <span class="icon-realtime"></span> 实时
+                </span>
+            </div>
+            <div class="right-sidebar-status-bar">
+                <span id="execution-status">未选择执行步骤</span>
+                <span id="execution-progress">0 / 0 <span class="icon-up-arrow"></span></span>
+            </div>
+        </aside>
+    </div>
+
+    <!-- 引入模块化JavaScript文件 -->
+    <script src="js/chat-input.js"></script>
+    <script src="js/ui-event-common.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/chat-handler.js"></script>
+    <script src="js/right-sidebar.js"></script>
+    <script src="js/plan-execution-manager.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

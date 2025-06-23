@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 name: 🛠️ Build and Test
-
 on:
   push:
     branches:
@@ -27,29 +25,37 @@ on:
       - main
     paths-ignore:
       - '**.md'
-
+env:
+  ENABLE_TEST_CI: true
 permissions:
   contents: read
-
 jobs:
   format:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
       - run: make format-check
-
-  test:
+  check-style:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
     runs-on: ubuntu-22.04
-    needs: [format]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./tools/github-actions/setup-deps
+      - run: make checkstyle-check
+  test:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
+    runs-on: ubuntu-22.04
+    needs: [format, check-style]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
       - run: make test
-
   build:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
     runs-on: ubuntu-22.04
-    needs: [format, test]
+    needs: [format, check-style, test]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps

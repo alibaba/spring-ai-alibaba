@@ -25,10 +25,9 @@ import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
-import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -40,8 +39,6 @@ import org.springframework.ai.rag.generation.augmentation.QueryAugmenter;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
-
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.RETRIEVED_DOCUMENTS;
 
 /**
  * Title Document retrieval advisor.<br>
@@ -132,13 +129,6 @@ public class DashScopeDocumentRetrievalAdvisor implements BaseAdvisor {
 	}
 
 	@Override
-	@Deprecated
-	public AdvisedRequest before(AdvisedRequest request) {
-		ChatClientRequest chatClientRequest = request.toChatClientRequest();
-		return AdvisedRequest.from(before(chatClientRequest, null));
-	}
-
-	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, @Nullable AdvisorChain advisorChain) {
 		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
 
@@ -154,7 +144,7 @@ public class DashScopeDocumentRetrievalAdvisor implements BaseAdvisor {
 			documentMap.put("[%d]".formatted(indexId), document);
 		}
 
-		context.put(RETRIEVED_DOCUMENTS, documentMap);
+		context.put(DashScopeApiConstants.RETRIEVED_DOCUMENTS, documentMap);
 
 		Query augmentedQuery = this.queryAugmenter.augment(originalQuery, documents);
 
@@ -162,13 +152,6 @@ public class DashScopeDocumentRetrievalAdvisor implements BaseAdvisor {
 			.prompt(chatClientRequest.prompt().augmentUserMessage(augmentedQuery.text()))
 			.context(context)
 			.build();
-	}
-
-	@Override
-	@Deprecated
-	public AdvisedResponse after(AdvisedResponse advisedResponse) {
-		ChatClientResponse chatClientResponse = advisedResponse.toChatClientResponse();
-		return AdvisedResponse.from(after(chatClientResponse, null));
 	}
 
 	@Override
@@ -195,7 +178,8 @@ public class DashScopeDocumentRetrievalAdvisor implements BaseAdvisor {
 						content = result.getOutput().getText();
 					}
 
-					Map<String, Document> documentMap = (Map<String, Document>) context.get(RETRIEVED_DOCUMENTS);
+					Map<String, Document> documentMap = (Map<String, Document>) context
+						.get(DashScopeApiConstants.RETRIEVED_DOCUMENTS);
 					List<Document> referencedDocuments = new ArrayList<>();
 
 					Matcher refMatcher = RAG_REFERENCE_PATTERN.matcher(content);
@@ -216,7 +200,8 @@ public class DashScopeDocumentRetrievalAdvisor implements BaseAdvisor {
 				}
 			}
 		}
-		chatResponseBuilder.metadata(RETRIEVED_DOCUMENTS, response.context().get(RETRIEVED_DOCUMENTS));
+		chatResponseBuilder.metadata(DashScopeApiConstants.RETRIEVED_DOCUMENTS,
+				response.context().get(DashScopeApiConstants.RETRIEVED_DOCUMENTS));
 		return ChatClientResponse.builder().chatResponse(chatResponseBuilder.build()).context(context).build();
 	}
 

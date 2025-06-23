@@ -1,0 +1,276 @@
+{
+  "groups": [
+    {
+      "name": "spring.ai.dashscope",
+      "type": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.agent",
+      "type": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAgentProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAgentProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.audio.synthesis",
+      "type": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioSpeechSynthesisProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioSpeechSynthesisProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.audio.transcription",
+      "type": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioTranscriptionProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioTranscriptionProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.chat",
+      "type": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeChatProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeChatProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.embedding",
+      "type": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeEmbeddingProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeEmbeddingProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.image",
+      "type": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeImageProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeImageProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.rerank",
+      "type": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeRerankProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeRerankProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "spring.ai.dashscope.api-key",
+      "type": "java.lang.String",
+      "description": "DashScope API key.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.base-url",
+      "type": "java.lang.String",
+      "description": "DashScope base URL.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.workspace-id",
+      "type": "java.lang.String",
+      "description": "DashScope workspace ID.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.secret-key",
+      "type": "java.lang.String",
+      "description": "DashScope secret key.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.read-timeout",
+      "type": "java.lang.Integer",
+      "description": "Read timeout for DashScope API calls.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.agent.options",
+      "type": "com.alibaba.cloud.ai.dashscope.agent.DashScopeAgentOptions",
+      "description": "DashScope Agent options.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAgentProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.agent.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable DashScope agent client.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAgentProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.dashscope.audio.synthesis.options",
+      "type": "com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions",
+      "description": "DashScope audio speech synthesis options.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioSpeechSynthesisProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.audio.synthesis.api-key",
+      "type": "java.lang.String",
+      "description": "DashScope audio speech synthesis API key. Overrides spring.ai.dashscope.api-key if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioSpeechSynthesisProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.audio.synthesis.base-url",
+      "type": "java.lang.String",
+      "description": "DashScope audio speech synthesis base URL. Overrides spring.ai.dashscope.base-url if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioSpeechSynthesisProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.audio.synthesis.workspace-id",
+      "type": "java.lang.String",
+      "description": "DashScope audio speech synthesis workspace ID. Overrides spring.ai.dashscope.workspace-id if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioSpeechSynthesisProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.audio.transcription.options",
+      "type": "com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionOptions",
+      "description": "DashScope audio transcription options.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioTranscriptionProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.audio.transcription.api-key",
+      "type": "java.lang.String",
+      "description": "DashScope audio transcription API key. Overrides spring.ai.dashscope.api-key if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioTranscriptionProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.audio.transcription.base-url",
+      "type": "java.lang.String",
+      "description": "DashScope audio transcription base URL. Overrides spring.ai.dashscope.base-url if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioTranscriptionProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.audio.transcription.workspace-id",
+      "type": "java.lang.String",
+      "description": "DashScope audio transcription workspace ID. Overrides spring.ai.dashscope.workspace-id if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioTranscriptionProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.chat.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable DashScope chat client.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeChatProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.dashscope.chat.options",
+      "type": "com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions",
+      "description": "DashScope chat options.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeChatProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.chat.api-key",
+      "type": "java.lang.String",
+      "description": "DashScope chat API key. Overrides spring.ai.dashscope.api-key if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeChatProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.chat.base-url",
+      "type": "java.lang.String",
+      "description": "DashScope chat base URL. Overrides spring.ai.dashscope.base-url if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeChatProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.chat.workspace-id",
+      "type": "java.lang.String",
+      "description": "DashScope chat workspace ID. Overrides spring.ai.dashscope.workspace-id if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeChatProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.embedding.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable DashScope embedding client.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeEmbeddingProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.dashscope.embedding.metadata-mode",
+      "type": "org.springframework.ai.document.MetadataMode",
+      "description": "Metadata mode for embeddings.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeEmbeddingProperties",
+      "defaultValue": "EMBED"
+    },
+    {
+      "name": "spring.ai.dashscope.embedding.options",
+      "type": "com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions",
+      "description": "DashScope embedding options.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeEmbeddingProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.embedding.api-key",
+      "type": "java.lang.String",
+      "description": "DashScope embedding API key. Overrides spring.ai.dashscope.api-key if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeEmbeddingProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.embedding.base-url",
+      "type": "java.lang.String",
+      "description": "DashScope embedding base URL. Overrides spring.ai.dashscope.base-url if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeEmbeddingProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.embedding.workspace-id",
+      "type": "java.lang.String",
+      "description": "DashScope embedding workspace ID. Overrides spring.ai.dashscope.workspace-id if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeEmbeddingProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.image.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable DashScope image client.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeImageProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.dashscope.image.options",
+      "type": "com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions",
+      "description": "DashScope image options.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeImageProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.image.api-key",
+      "type": "java.lang.String",
+      "description": "DashScope image API key. Overrides spring.ai.dashscope.api-key if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeImageProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.image.base-url",
+      "type": "java.lang.String",
+      "description": "DashScope image base URL. Overrides spring.ai.dashscope.base-url if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeImageProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.image.workspace-id",
+      "type": "java.lang.String",
+      "description": "DashScope image workspace ID. Overrides spring.ai.dashscope.workspace-id if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeImageProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.rerank.top-n",
+      "type": "java.lang.Integer",
+      "description": "Top n rerank results.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeRerankProperties",
+      "defaultValue": 5
+    },
+    {
+      "name": "spring.ai.dashscope.rerank.return-documents",
+      "type": "java.lang.Boolean",
+      "description": "If need to return original documents.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeRerankProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.dashscope.rerank.options",
+      "type": "com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankOptions",
+      "description": "DashScope rerank options.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeRerankProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.rerank.api-key",
+      "type": "java.lang.String",
+      "description": "DashScope rerank API key. Overrides spring.ai.dashscope.api-key if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeRerankProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.rerank.base-url",
+      "type": "java.lang.String",
+      "description": "DashScope rerank base URL. Overrides spring.ai.dashscope.base-url if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeRerankProperties"
+    },
+    {
+      "name": "spring.ai.dashscope.rerank.workspace-id",
+      "type": "java.lang.String",
+      "description": "DashScope rerank workspace ID. Overrides spring.ai.dashscope.workspace-id if set.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeRerankProperties"
+    }
+  ],
+  "hints": []
+}

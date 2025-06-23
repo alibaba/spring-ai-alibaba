@@ -17,11 +17,21 @@ package com.alibaba.cloud.ai.dashscope.image;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
+import com.alibaba.cloud.ai.dashscope.image.observation.DashScopeImageModelObservationConvention;
+import com.alibaba.cloud.ai.dashscope.image.observation.DashScopeImagePromptContentObservationHandler;
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.image.*;
+
+import org.springframework.ai.image.Image;
+import org.springframework.ai.image.ImageGeneration;
+import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
@@ -119,6 +129,11 @@ public class DashScopeImageModel implements ImageModel {
 		retryTemplate.setBackOffPolicy(backOff);
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
+
+		this.observationRegistry.observationConfig()
+			.observationHandler(new DashScopeImagePromptContentObservationHandler());
+
+		this.observationConvention = new DashScopeImageModelObservationConvention();
 	}
 
 	public static Builder builder() {
@@ -303,6 +318,10 @@ public class DashScopeImageModel implements ImageModel {
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
+		private ImageModelObservationConvention observationConvention = new DashScopeImageModelObservationConvention();
+
+		private ObservationHandler<ImageModelObservationContext> promptHandler = new DashScopeImagePromptContentObservationHandler();
+
 		private Builder() {
 		}
 
@@ -326,8 +345,23 @@ public class DashScopeImageModel implements ImageModel {
 			return this;
 		}
 
+		public Builder observationConvention(ImageModelObservationConvention observationConvention) {
+			this.observationConvention = observationConvention;
+			return this;
+		}
+
+		public Builder promptHandler(ObservationHandler<ImageModelObservationContext> promptHandler) {
+			this.promptHandler = promptHandler;
+			return this;
+		}
+
 		public DashScopeImageModel build() {
-			return new DashScopeImageModel(dashScopeImageApi, defaultOptions, retryTemplate, observationRegistry);
+			DashScopeImageModel model = new DashScopeImageModel(dashScopeImageApi, defaultOptions, retryTemplate,
+					observationRegistry);
+
+			model.setObservationConvention(this.observationConvention);
+			this.observationRegistry.observationConfig().observationHandler(this.promptHandler);
+			return model;
 		}
 
 	}

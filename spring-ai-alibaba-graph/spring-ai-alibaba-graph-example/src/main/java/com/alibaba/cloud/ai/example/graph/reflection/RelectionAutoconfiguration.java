@@ -16,11 +16,14 @@
  */
 package com.alibaba.cloud.ai.example.graph.reflection;
 
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.ReflectAgent;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -32,6 +35,7 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -96,15 +100,11 @@ public class RelectionAutoconfiguration {
 
 			List<Message> messages = (List<Message>) overAllState.value(MESSAGES).get();
 
-			OverAllStateFactory stateFactory = () -> {
-				OverAllState state = new OverAllState();
-				state.registerKeyAndStrategy(MESSAGES, new AppendStrategy());
-				return state;
-			};
-
-			StateGraph stateGraph = new StateGraph(stateFactory).addNode(this.NODE_ID, node_async(llmNode))
-				.addEdge(START, this.NODE_ID)
-				.addEdge(this.NODE_ID, END);
+			StateGraph stateGraph = new StateGraph(() -> {
+				Map<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put(MESSAGES, new AppendStrategy());
+				return strategies;
+			}).addNode(this.NODE_ID, node_async(llmNode)).addEdge(START, this.NODE_ID).addEdge(this.NODE_ID, END);
 
 			OverAllState invokeState = stateGraph.compile().invoke(Map.of(MESSAGES, messages)).get();
 			List<Message> reactMessages = (List<Message>) invokeState.value(MESSAGES).orElseThrow();
@@ -174,15 +174,11 @@ public class RelectionAutoconfiguration {
 		public Map<String, Object> apply(OverAllState allState) throws Exception {
 			List<Message> messages = (List<Message>) allState.value(MESSAGES).get();
 
-			OverAllStateFactory stateFactory = () -> {
-				OverAllState state = new OverAllState();
-				state.registerKeyAndStrategy(MESSAGES, new AppendStrategy());
-				return state;
-			};
-
-			StateGraph stateGraph = new StateGraph(stateFactory).addNode(this.NODE_ID, node_async(llmNode))
-				.addEdge(START, this.NODE_ID)
-				.addEdge(this.NODE_ID, END);
+			StateGraph stateGraph = new StateGraph(() -> {
+				Map<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put(MESSAGES, new AppendStrategy());
+				return strategies;
+			}).addNode(this.NODE_ID, node_async(llmNode)).addEdge(START, this.NODE_ID).addEdge(this.NODE_ID, END);
 
 			CompiledGraph compile = stateGraph.compile();
 

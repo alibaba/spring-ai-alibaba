@@ -53,10 +53,13 @@ public final class CommonToolCallConstants {
 	// Default response timeout in seconds
 	public static final int DEFAULT_RESPONSE_TIMEOUT_SECONDS = 10;
 
+	public static final String NOT_BLANK_REGEX = "\\S+";
+
 	// Default Agents
 	public static final String[] DEFAULT_USER_AGENTS = {
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" };
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" };
 
 	// Default error handler for RestClient bean
 	public static final ResponseErrorHandler DEFAULT_RESTCLIENT_ERROR_HANDLER = new ResponseErrorHandler() {

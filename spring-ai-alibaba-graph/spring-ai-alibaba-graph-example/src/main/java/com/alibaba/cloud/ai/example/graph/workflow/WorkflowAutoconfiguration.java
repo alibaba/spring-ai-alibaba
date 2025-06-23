@@ -16,19 +16,21 @@
  */
 package com.alibaba.cloud.ai.example.graph.workflow;
 
-import java.util.List;
-import java.util.Map;
-
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.QuestionClassifierNode;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -43,17 +45,10 @@ public class WorkflowAutoconfiguration {
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
-		OverAllStateFactory stateFactory = () -> {
-			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy("input", new ReplaceStrategy());
-			state.registerKeyAndStrategy("classifier_output", new ReplaceStrategy());
-			state.registerKeyAndStrategy("solution", new ReplaceStrategy());
-			return state;
-		};
-
 		QuestionClassifierNode feedbackClassifier = QuestionClassifierNode.builder()
 			.chatClient(chatClient)
 			.inputTextKey("input")
+			.outputKey("classifier_output")
 			.categories(List.of("positive feedback", "negative feedback"))
 			.classificationInstructions(
 					List.of("Try to understand the user's feeling when he/she is giving the feedback."))
@@ -62,13 +57,19 @@ public class WorkflowAutoconfiguration {
 		QuestionClassifierNode specificQuestionClassifier = QuestionClassifierNode.builder()
 			.chatClient(chatClient)
 			.inputTextKey("input")
+			.outputKey("classifier_output")
 			.categories(List.of("after-sale service", "transportation", "product quality", "others"))
 			.classificationInstructions(List
 				.of("What kind of service or help the customer is trying to get from us? Classify the question based on your understanding."))
 			.build();
 
-		StateGraph stateGraph = new StateGraph("Consumer Service Workflow Demo", stateFactory)
-			.addNode("feedback_classifier", node_async(feedbackClassifier))
+		StateGraph stateGraph = new StateGraph("Consumer Service Workflow Demo", () -> {
+			Map<String, KeyStrategy> strategies = new HashMap<>();
+			strategies.put("input", new ReplaceStrategy());
+			strategies.put("classifier_output", new ReplaceStrategy());
+			strategies.put("solution", new ReplaceStrategy());
+			return strategies;
+		}).addNode("feedback_classifier", node_async(feedbackClassifier))
 			.addNode("specific_question_classifier", node_async(specificQuestionClassifier))
 			.addNode("recorder", node_async(new RecordingNode()))
 

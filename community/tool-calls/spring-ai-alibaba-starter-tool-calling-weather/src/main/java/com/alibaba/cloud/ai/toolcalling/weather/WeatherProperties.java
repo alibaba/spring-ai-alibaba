@@ -21,12 +21,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author 31445
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.weather")
+@ConfigurationProperties(prefix = WeatherConstants.CONFIG_PREFIX)
 public class WeatherProperties extends CommonToolCallProperties {
 
 	public WeatherProperties() {
 		super("https://api.weatherapi.com/");
-		this.setPropertiesFromEnv("WEATHER_API_KEY", null, null, null);
+		this.setPropertiesFromEnv(WeatherConstants.API_KEY_ENV, null, null, null);
 	}
 
 }

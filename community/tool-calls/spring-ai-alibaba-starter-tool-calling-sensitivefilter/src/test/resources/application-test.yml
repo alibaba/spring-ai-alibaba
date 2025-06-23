@@ -1,0 +1,21 @@
+spring:
+  ai:
+    alibaba:
+      toolcalling:
+        sensitivefilter:
+          enabled: true
+          replacement: "[已脱敏]"
+          filter-phone-number: true
+          filter-id-card: true
+          filter-bank-card: true
+          filter-email: true
+          custom-patterns:
+            - name: "qq"
+              pattern: "QQ[:：]?\\d{5,11}"
+              replacement: "[QQ号]"
+              enabled: true
+# 日志配置
+logging:
+  level:
+    com.alibaba.cloud.ai.toolcalling.sensitivefilter: DEBUG
+    root: INFO

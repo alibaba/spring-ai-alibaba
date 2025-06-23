@@ -1,0 +1,268 @@
+/* chat.css - 聊天区域样式 */
+
+/* 聊天区域 */
+.chat-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 24px;
+    position: relative; /* 添加相对定位，以便表单可以绝对定位到底部 */
+}
+
+/* 消息通用样式 */
+.message {
+    margin-bottom: 20px;
+    max-width: 90%; /* 限制宽度 */
+}
+
+/* 用户消息 */
+.user-message {
+    background-color: #f0f0f0; /* 用户消息浅灰色背景 */
+    padding: 12px 16px;
+    border-radius: 18px 18px 18px 4px; /* 气泡形状 */
+    margin-left: auto; /* 右对齐 */
+}
+
+/* AI消息 */
+.ai-message {
+    background-color: #ffffff;
+    padding: 16px;
+    border-radius: 8px;
+    margin-right: auto; /* 左对齐 */
+    width: 100%; /* 让它占据可用的全宽 */
+    max-width: 100%; /* 覆盖.message的max-width */
+}
+
+/* AI消息头部 */
+.ai-header {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #1f1f1f;
+}
+
+.ai-logo {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+/* AI消息分节 */
+.ai-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0; /* 分隔线 */
+}
+
+/* 分节标题 */
+.section-header {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: #1f1f1f;
+}
+
+.section-header.checked .icon {
+    color: #34a853; /* 绿色勾选标记 */
+    margin-right: 6px;
+}
+
+.section-header .toggle-arrow {
+    margin-left: auto;
+    color: #888;
+}
+
+/* 分节内容 */
+.section-content {
+    font-size: 13px;
+    color: #555;
+    margin-top: 6px;
+    padding-left: 22px; /* 在图标下方缩进内容 */
+}
+
+.section-content.result-obtained {
+    margin-top: 12px;
+    margin-bottom: 10px;
+}
+
+/* 高亮文本 */
+.highlight {
+    background-color: #e8f0fe; /* 浅蓝色高亮 */
+    padding: 1px 3px;
+    border-radius: 3px;
+    color: #1967d2; /* 深蓝色文本 */
+}
+
+/* 状态更新 */
+.status-update {
+    font-size: 12px;
+    color: #777;
+    background-color: #f8f9fa;
+    border: 1px solid #e8eaed;
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin-top: 8px;
+    margin-left: 22px; /* 缩进 */
+    display: inline-flex; /* 适应内容 */
+    align-items: center;
+}
+
+.status-update .icon {
+    margin-right: 6px;
+}
+
+.file-creation .icon { color: #4285f4; } /* 文件图标蓝色 */
+.searching .icon { color: #777; } /* 搜索图标灰色 */
+
+/* 结果链接 */
+.result-link {
+    display: flex;
+    align-items: center;
+    background-color: #f8f8f8;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 8px;
+    margin-top: 10px;
+    margin-left: 22px;
+}
+
+.link-thumbnail {
+    width: 40px; /* 缩略图大小 */
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 10px;
+    border: 1px solid #ddd;
+}
+
+.result-link a {
+    color: #1a0dab; /* 标准链接颜色 */
+    text-decoration: none;
+    font-size: 13px;
+    word-break: break-all; /* 防止长URL溢出 */
+}
+
+.result-link a:hover {
+    text-decoration: underline;
+}
+
+/* 操作报告 */
+.action-report {
+    font-size: 13px;
+    color: #555;
+    margin-top: 12px;
+    padding-left: 22px;
+    display: flex;
+    align-items: center;
+}
+
+.action-report .icon {
+    color: #34a853; /* 绿色勾选标记 */
+    margin-right: 6px;
+}
+
+/* 页面指示器 */
+.page-indicator {
+    font-size: 11px;
+    color: #999;
+    text-align: right;
+    margin-top: 10px;
+    padding-right: 5px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.page-indicator .toggle-arrow {
+    margin-left: 4px;
+}
+
+/* Action Info 样式 */
+.action-info {
+    margin-top: 8px;
+    margin-left: 22px;
+    font-size: 12px;
+    color: #666;
+    background-color: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+.action-info .action-description,
+.action-info .tool-params {
+    display: flex;
+    align-items: center;
+    line-height: 1.4;
+}
+
+.action-info .tool-params {
+    margin-top: 4px;
+    color: #888;
+}
+
+/* 用户输入表单容器 */
+.user-input-form-container {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-top: 1px solid #e0e0e0;
+    /* position: sticky; */ /* 使其在聊天区域滚动时固定在底部 */
+    /* bottom: 0; */
+    /* left: 0; */
+    /* right: 0; */
+    /* z-index: 10; */ /* 确保在其他聊天内容之上 */
+    margin-top: 10px; /* 与上方内容的间距 */
+    border-radius: 8px;
+}
+
+.user-input-form-container p {
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #333;
+}
+
+.user-input-form-container .form-description {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 15px;
+}
+
+.user-input-form-container .form-group {
+    margin-bottom: 15px;
+}
+
+.user-input-form-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.user-input-form-container input[type="text"] {
+    width: calc(100% - 22px); /* 减去padding和border */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.user-input-form-container button[type="submit"] {
+    background-color: #1a73e8;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.user-input-form-container button[type="submit"]:hover {
+    background-color: #1558b0;
+}
+
+.user-input-form-container .error-message {
+    color: red;
+    font-size: 12px;
+    margin-top: 10px;
+}

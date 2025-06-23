@@ -17,8 +17,11 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -27,7 +30,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
@@ -36,7 +38,6 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentR
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 @Service
 public class AgentServiceImpl implements AgentService {
@@ -51,15 +52,11 @@ public class AgentServiceImpl implements AgentService {
 
 	private final PlanningFactory planningFactory;
 
+	private final McpService mcpService;
+
 	@Autowired
 	@Lazy
 	private LlmService llmService;
-
-	@Autowired
-	private PlanExecutionRecorder planExecutionRecorder;
-
-	@Autowired
-	private ManusProperties manusProperties;
 
 	@Autowired
 	@Lazy
@@ -67,10 +64,11 @@ public class AgentServiceImpl implements AgentService {
 
 	@Autowired
 	public AgentServiceImpl(@Lazy DynamicAgentLoader dynamicAgentLoader, DynamicAgentRepository repository,
-			@Lazy PlanningFactory planningFactory) {
+			@Lazy PlanningFactory planningFactory, @Lazy McpService mcpService) {
 		this.dynamicAgentLoader = dynamicAgentLoader;
 		this.repository = repository;
 		this.planningFactory = planningFactory;
+		this.mcpService = mcpService;
 	}
 
 	@Override
@@ -97,6 +95,7 @@ public class AgentServiceImpl implements AgentService {
 			}
 
 			DynamicAgentEntity entity = new DynamicAgentEntity();
+			entity = mergePrompts(entity, config.getName());
 			updateEntityFromConfig(entity, config);
 			entity = repository.save(entity);
 			log.info("成功创建新Agent: {}", config.getName());
@@ -140,21 +139,29 @@ public class AgentServiceImpl implements AgentService {
 	@Override
 	public List<Tool> getAvailableTools() {
 
-		Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(null);
-		return toolcallContext.entrySet().stream().map(entry -> {
-			Tool tool = new Tool();
-			tool.setKey(entry.getKey());
-			tool.setName(entry.getKey()); // You might want to provide a more friendly
-											// name
-			tool.setDescription(entry.getValue().getFunctionInstance().getDescription());
-			tool.setEnabled(true);
-			tool.setServiceGroup(entry.getValue().getFunctionInstance().getServiceGroup());
-			return tool;
-		}).collect(Collectors.toList());
+		String uuid = UUID.randomUUID().toString();
+
+		try {
+			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid);
+			return toolcallContext.entrySet().stream().map(entry -> {
+				Tool tool = new Tool();
+				tool.setKey(entry.getKey());
+				tool.setName(entry.getKey()); // You might want to provide a more friendly
+				// name
+				tool.setDescription(entry.getValue().getFunctionInstance().getDescription());
+				tool.setEnabled(true);
+				tool.setServiceGroup(entry.getValue().getFunctionInstance().getServiceGroup());
+				return tool;
+			}).collect(Collectors.toList());
+		}
+		finally {
+			mcpService.close(uuid);
+		}
 	}
 
 	private AgentConfig mapToAgentConfig(DynamicAgentEntity entity) {
 		AgentConfig config = new AgentConfig();
+		entity = mergePrompts(entity, entity.getAgentName());
 		config.setId(entity.getId().toString());
 		config.setName(entity.getAgentName());
 		config.setDescription(entity.getAgentDescription());
@@ -168,8 +175,9 @@ public class AgentServiceImpl implements AgentService {
 	private void updateEntityFromConfig(DynamicAgentEntity entity, AgentConfig config) {
 		entity.setAgentName(config.getName());
 		entity.setAgentDescription(config.getDescription());
-		entity.setSystemPrompt(config.getSystemPrompt());
-		entity.setNextStepPrompt(config.getNextStepPrompt());
+		String nextStepPrompt = config.getNextStepPrompt();
+		entity = mergePrompts(entity, config.getName());
+		entity.setNextStepPrompt(nextStepPrompt);
 
 		// 1. 创建新集合，保证唯一性和顺序
 		java.util.Set<String> toolSet = new java.util.LinkedHashSet<>();
@@ -188,14 +196,31 @@ public class AgentServiceImpl implements AgentService {
 		entity.setClassName(config.getName());
 	}
 
+	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity, String agentName) {
+		// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
+		if (StringUtils.isNotBlank(entity.getSystemPrompt())) {
+			String systemPrompt = entity.getSystemPrompt();
+			String nextPrompt = entity.getNextStepPrompt();
+			// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
+			if (nextPrompt != null && !nextPrompt.trim().isEmpty()) {
+				nextPrompt = systemPrompt + "\n" + nextPrompt;
+			}
+			log.warn(
+					"Agent[{}]的SystemPrompt不为空， 但属性已经废弃，只保留nextPrompt， 本次将agent 的内容合并，如需要该内容在prompt生效，请直接更新界面的唯一的那个prompt , 当前制定的值: {}",
+					agentName, nextPrompt);
+			entity.setSystemPrompt(" ");
+		}
+		return entity;
+	}
+
 	@Override
-	public BaseAgent createDynamicBaseAgent(String name, String planId) {
+	public BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting) {
 
 		log.info("创建新的BaseAgent: {}, planId: {}", name, planId);
 
 		try {
 			// 通过dynamicAgentLoader加载已存在的Agent
-			DynamicAgent agent = dynamicAgentLoader.loadAgent(name);
+			DynamicAgent agent = dynamicAgentLoader.loadAgent(name, initialAgentSetting);
 
 			// 设置planId
 			agent.setPlanId(planId);

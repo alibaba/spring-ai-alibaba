@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.internal.edge;
 
-import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 
 import java.util.Map;
 
@@ -28,7 +28,7 @@ import static java.lang.String.format;
  * @param mappings A map of string key-value pairs representing additional mappings for
  * the edge condition.
  */
-public record EdgeCondition(AsyncEdgeAction action, Map<String, String> mappings) {
+public record EdgeCondition(AsyncCommandAction action, Map<String, String> mappings) {
 
 	@Override
 	public String toString() {

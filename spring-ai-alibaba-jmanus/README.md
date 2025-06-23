@@ -4,19 +4,26 @@
 
 The Spring AI implementation of <a href="https://github.com/mannaandpoem/OpenManus/" target="_blank">OpenManus</a>
 
-
 # features 
 
 Spring AI Alibaba Java Manus provides the following key features:
 
 1. **Perfect Implementation of OpenManus Multi-Agent Framework**: A comprehensive implementation that faithfully recreates the OpenManus architecture in Java with Spring AI.
-![Image](https://github.com/user-attachments/assets/f27b763e-9c68-44e0-a57d-4f31d04c0200)
+![Image](https://github.com/user-attachments/assets/893c7fc1-5e6e-4ec9-8389-182f14d86b18)
 2. **Agent Configuration via Web Interface**: Easily configure agents through an intuitive web-based administration interface without modifying code.
-![Image](https://github.com/user-attachments/assets/96d5902a-f741-4e82-9007-136cf4c56bb0)
+![Image](https://github.com/user-attachments/assets/5afdfe2e-0e98-4100-bff1-b7aaf413850b)
 3. **MCP (Model Context Protocol) Integration**: Seamless integration with Model Context Protocol allows agents to interact with various models and services.
-![Image](https://github.com/user-attachments/assets/df24679a-77f1-4e66-a15f-5e0fadcffacf)
+![Image](https://github.com/user-attachments/assets/31d915a9-04dc-45b2-9635-488cc06ba468)
 4. **PLAN-ACT Pattern Support**: Implements the powerful PLAN-ACT pattern for sophisticated reasoning and execution workflows.
-![Image](https://github.com/user-attachments/assets/d00fc59d-3f10-4163-a548-784eb21f77d6)
+![Image](https://github.com/user-attachments/assets/d9cbf980-9d56-4b58-b165-6840b6c9411b)
+
+
+
+## Stable Versions
+
+If you want a previous stable version, you can find it here:  
+[Stable Versions](https://github.com/rainerWJY/Java-Open-Manus/releases)
+
 
 ## How to Run
 
@@ -24,27 +31,18 @@ Spring AI Alibaba Java Manus provides the following key features:
 
 1. Make sure you have JDK 17 or later installed.
 2. Install npx globally using npm:
+
    ```shell
    npm install -g npx
    ```
+
 3. Set <a href="https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen" target="_blank">dashscope api key</a>.
 
  ```shell
  export AI_DASHSCOPE_API_KEY=xxxx
  ```
 
-4. [Optional] Set <a href="https://serpapi.com/users/sign_in" target="_blank">SerpApi key</a>, register to get free tokens for each month.
-
- ```shell
- export SERP_API_KEY=xxxx
- ```
-
-5. [Optional] Set <a href="https://lbsyun.baidu.com/apiconsole/key" target="_blank">Baidu Map key</a>. Modify the "ak" in the mcp-servers-config.json file.
-
-
- ```shell
- "BAIDU_MAP_API_KEY": "your_baidu_AK"
- ```
+4. [Optional] Visit the [mcp sse free service](https://mcp.higress.ai/). Obtain an MCP service for quick testing.
 
 ### Run with IDE
 
