@@ -796,6 +796,14 @@ public class CompiledGraph {
 
 			return action.apply(withState, config).thenApply(updateState -> {
 				try {
+					if (action instanceof CommandNode.AsyncCommandNodeActionWithConfig) {
+						Command command = (Command) updateState.get("command");
+
+						this.currentState = OverAllState.updateState(currentState, command.update(), keyStrategyMap);
+						this.overAllState.updateState(command.update());
+						nextNodeId = command.gotoNode();
+						return Data.of(getNodeOutput());
+					}
 
 					Optional<Data<Output>> embed = getEmbedGenerator(updateState);
 					if (embed.isPresent()) {
@@ -813,7 +821,6 @@ public class CompiledGraph {
 				catch (Exception e) {
 					throw new CompletionException(e);
 				}
-
 			});
 		}
 
@@ -846,9 +853,7 @@ public class CompiledGraph {
 			throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 		}
 
-		/**
-		 * evaluate Action without nested support
-		 */
+		/** evaluate Action without nested support */
 		private CompletableFuture<Output> evaluateActionWithoutNested(AsyncNodeAction action, OverAllState withState) {
 
 			return action.apply(withState).thenApply(partialState -> {
@@ -868,7 +873,6 @@ public class CompiledGraph {
 					throw new CompletionException(e);
 				}
 			});
-
 		}
 
 		private CompletableFuture<Output> getNodeOutput() throws Exception {
@@ -946,7 +950,6 @@ public class CompiledGraph {
 				log.error(e.getMessage(), e);
 				return Data.error(e);
 			}
-
 		}
 
 		private void doListeners(String scene, Exception e) {
@@ -984,9 +987,7 @@ public class CompiledGraph {
 
 }
 
-/**
- * The type Processed nodes edges and config.
- */
+/** The type Processed nodes edges and config. */
 record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edges, Set<String> interruptsBefore,
 		Set<String> interruptsAfter) {
 
@@ -1060,7 +1061,6 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 								? subgraphNode.formatId(sgEdgeStartTarget.id()) : id)));
 				edges.elements.remove(edgeWithSubgraphTargetId);
 				edges.elements.add(newEdge);
-
 			}
 			//
 			// Process END Nodes
@@ -1081,7 +1081,6 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 							"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: '%s'",
 							edgeWithSubgraphSourceId.target().id());
 				throw new GraphStateException(exceptionMessage);
-
 			}
 
 			sgEdgesEnd.stream()
@@ -1104,14 +1103,24 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 			//
 			// Process nodes
 			//
-			sgWorkflow.nodes.elements.stream()
-				.map(n -> n.withIdUpdated(subgraphNode::formatId))
-				.forEach(nodes.elements::add);
-
+			sgWorkflow.nodes.elements.stream().map(n -> {
+				if (n instanceof CommandNode commandNode) {
+					Map<String, String> mappings = commandNode.getMappings();
+					HashMap<String, String> newMappings = new HashMap<>();
+					mappings.forEach((key, value) -> {
+						newMappings.put(key, subgraphNode.formatId(value));
+					});
+					return new CommandNode(subgraphNode.formatId(n.id()),
+							AsyncCommandAction.node_async((state, config1) -> {
+								Command command = commandNode.getAction().apply(state, config1).join();
+								String NewGoToNode = subgraphNode.formatId(command.gotoNode());
+								return new Command(NewGoToNode, command.update());
+							}), newMappings);
+				}
+				return n.withIdUpdated(subgraphNode::formatId);
+			}).forEach(nodes.elements::add);
 		}
 
 		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter);
-
 	}
-
 }

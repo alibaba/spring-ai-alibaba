@@ -788,4 +788,31 @@ public class StateGraphTest {
 		compile.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 	}
 
+	@Test
+	public void testCommandNodeGraph() throws Exception {
+		StateGraph graph = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+			stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+			return stringKeyStrategyHashMap;
+		});
+
+		CommandAction commandAction = (state, config) -> new Command("node1", state.data());
+		graph.addNode("testCommandNode", AsyncCommandAction.node_async(commandAction),
+				Map.of("node1", "node1", "node2", "node2"));
+
+		graph.addNode("node1", makeNode("node1"));
+		graph.addNode("node2", makeNode("node2"));
+
+		graph.addEdge(START, "testCommandNode");
+		graph.addEdge("node1", "node2");
+		graph.addEdge("node2", END);
+
+		CompiledGraph compile = graph.compile();
+		// GraphRepresentation graph1 =
+		// compile.getGraph(GraphRepresentation.Type.PLANTUML);
+		GraphRepresentation graph2 = compile.getGraph(GraphRepresentation.Type.MERMAID);
+		// System.out.println(graph1.content());
+		System.out.println(graph2.content());
+	}
+
 }
