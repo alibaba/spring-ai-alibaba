@@ -67,7 +67,6 @@ public class StateUtil {
 	}
 
 	public static String getQuery(OverAllState state) {
-		//query在后续节点已成List<String>，这里为了避免兼容性问题，暂时不改动
 		return state.value("query", "草莓蛋糕怎么做呀");
 	}
 

@@ -52,17 +52,17 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 	private final QueryExpander queryExpander;
 
 	public RewriteAndMultiQueryNode(ChatClient.Builder rewriteAndMultiQueryAgentBuilder) {
-		//查询重写
+		// 查询重写
 		this.queryTransformer = RewriteQueryTransformer.builder()
-				.chatClientBuilder(rewriteAndMultiQueryAgentBuilder)
-				.build();
+			.chatClientBuilder(rewriteAndMultiQueryAgentBuilder)
+			.build();
 
-		//查询拓展
+		// 查询拓展
 		this.queryExpander = MultiQueryExpander.builder()
-				.chatClientBuilder(rewriteAndMultiQueryAgentBuilder)
-				.includeOriginal(true)
-				.numberOfQueries(3)
-				.build();
+			.chatClientBuilder(rewriteAndMultiQueryAgentBuilder)
+			.includeOriginal(true)
+			.numberOfQueries(3)
+			.build();
 	}
 
 	@Override
@@ -74,15 +74,15 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 		String queryText = StateUtil.getQuery(state);
 		assert queryText != null;
 		Query query = Query.builder().text(queryText).build();
-		//查询重写
+		// 查询重写
 		Query rewriteQuery = queryTransformer.transform(query);
-		//多拓展
+		// 多拓展
 		List<Query> multiQueries = queryExpander.expand(rewriteQuery);
 		List<String> newQueries = multiQueries.stream().map(Query::text).collect(Collectors.toList());
 		updated.put("query", newQueries);
-		//判断是否需要背景调查
+		// 判断是否需要背景调查
 		if (state.value("enable_background_investigation", true)) {
-				nextStep = "background_investigator";
+			nextStep = "background_investigator";
 		}
 		else {
 			nextStep = "planner";
