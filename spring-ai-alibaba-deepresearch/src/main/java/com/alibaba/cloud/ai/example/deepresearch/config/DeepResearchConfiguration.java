@@ -142,7 +142,7 @@ public class DeepResearchConfiguration {
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
-				.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
+			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
 			.addNode("background_investigator",
 					node_async(new BackgroundInvestigationNode(tavilySearchService, jinaCrawlerService)))
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
@@ -159,9 +159,9 @@ public class DeepResearchConfiguration {
 		stateGraph.addEdge(START, "coordinator")
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
 					Map.of("rewrite_multi_query", "rewrite_multi_query", END, END))
-				.addConditionalEdges("rewrite_multi_query", edge_async(new RewriteAndMultiQueryDispatcher()),
-						Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
-				.addEdge("background_investigator", "planner")
+			.addConditionalEdges("rewrite_multi_query", edge_async(new RewriteAndMultiQueryDispatcher()),
+					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
+			.addEdge("background_investigator", "planner")
 			.addEdge("planner", "information")
 			.addConditionalEdges("information", edge_async(new InformationDispatcher()),
 					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
