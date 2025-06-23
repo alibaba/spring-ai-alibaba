@@ -14,8 +14,6 @@
 
 ##@ Tools
 
-MVND_VERSION = 1.0.2
-
 .PHONY: tools
 tools: ## Install ci tools
 
@@ -51,7 +49,8 @@ tools: ## Install ci tools
 	cd .. && rm -rf gitleaks
 
 	@echo "Installing mvnd"
-	curl -sL https://downloads.apache.org/maven/mvnd/${MVND_VERSION}/maven-mvnd-${MVND_VERSION}-linux-amd64.zip -o mvnd.zip \
+	MVND_VERSION=2.0.0-rc-3
+	curl -sL https://dlcdn.apache.org/maven/mvnd/${MVND_VERSION}/maven-mvnd-${MVND_VERSION}-linux-amd64.zip -o mvnd.zip \
 	unzip -q mvnd.zip \
 	mkdir -p ${HOME}/.local \
     mv maven-mvnd-${MVND_VERSION}-linux-amd64 ${HOME}/.local/mvnd \
