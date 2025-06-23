@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.planning.coordinator;
 
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 
@@ -27,11 +27,11 @@ public class PlanningCoordinator {
 
 	private final PlanCreator planCreator;
 
-	private final PlanExecutor planExecutor;
+	private final PlanExecutorInterface planExecutor;
 
 	private final PlanFinalizer planFinalizer;
 
-	public PlanningCoordinator(PlanCreator planCreator, PlanExecutor planExecutor, PlanFinalizer planFinalizer) {
+	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorInterface planExecutor, PlanFinalizer planFinalizer) {
 		this.planCreator = planCreator;
 		this.planExecutor = planExecutor;
 		this.planFinalizer = planFinalizer;

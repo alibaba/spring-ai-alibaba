@@ -26,7 +26,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderServ
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
+import com.alibaba.cloud.ai.example.manus.planning.executor.MapReducePlanExecutor;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
@@ -123,6 +124,7 @@ public class PlanningFactory {
 		this.innerStorageService = innerStorageService;
 	}
 
+	//这里修改Mapreduce的逻辑
 	public PlanningCoordinator createPlanningCoordinator(String planId) {
 
 		// Add all dynamic agents from the database
@@ -131,7 +133,7 @@ public class PlanningFactory {
 		PlanningToolInterface planningTool = new MapReducePlanningTool();
 
 		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder);
-		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService, llmService);
+		PlanExecutorInterface planExecutor = new MapReducePlanExecutor(agentEntities, recorder, agentService, llmService);
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder);
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
