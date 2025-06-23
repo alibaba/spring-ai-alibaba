@@ -36,6 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
+      - run: make tools
       - run: make format-check
   check-style:
     if: (github.repository == 'alibaba/spring-ai-alibaba')
@@ -43,6 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
+      - run: make tools
       - run: make checkstyle-check
   test:
     if: (github.repository == 'alibaba/spring-ai-alibaba')
@@ -51,6 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
+      - run: make tools
       - run: make test
   build:
     if: (github.repository == 'alibaba/spring-ai-alibaba')
@@ -59,4 +62,5 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
+      - run: make tools
       - run: make build
