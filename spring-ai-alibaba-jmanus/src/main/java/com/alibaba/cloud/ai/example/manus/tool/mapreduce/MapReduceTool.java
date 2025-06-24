@@ -84,31 +84,34 @@ public class MapReduceTool implements ToolCallBiFunctionDef {
 			            },
 			            "required": ["action", "file_path"],
 			            "additionalProperties": false
-			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "record_map_output"
-			                },
-			                "output_file_path": {
-			                    "type": "string",
-			                    "description": "Map阶段处理完成后的输出文件路径"
-			                },
-			                "task_id": {
-			                    "type": "string",
-			                    "description": "任务ID，用于状态跟踪"
-			                },
-			                "status": {
-			                    "type": "string",
-			                    "enum": ["completed", "failed"],
-			                    "description": "任务状态"
-			                }
-			            },
-			            "required": ["action", "output_file_path", "task_id", "status"],
-			            "additionalProperties": false
-			        }
+			        },		        {
+		            "type": "object",
+		            "properties": {
+		                "action": {
+		                    "type": "string",
+		                    "const": "record_map_output"
+		                },
+		                "output_file_name": {
+		                    "type": "string",
+		                    "description": "输出文件名（不含路径，工具会自动选择合适的输出目录）"
+		                },
+		                "content": {
+		                    "type": "string",
+		                    "description": "Map阶段处理完成后的输出内容"
+		                },
+		                "task_id": {
+		                    "type": "string",
+		                    "description": "任务ID，用于状态跟踪"
+		                },
+		                "status": {
+		                    "type": "string",
+		                    "enum": ["completed", "failed"],
+		                    "description": "任务状态"
+		                }
+		            },
+		            "required": ["action", "output_file_name", "content", "task_id", "status"],
+		            "additionalProperties": false
+		        }
 			    ]
 			}
 			""";
@@ -258,7 +261,11 @@ public class MapReduceTool implements ToolCallBiFunctionDef {
 			log.error("SplitTool执行失败", e);
 			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
 		}
-	}
+	}我建议修改 MapReduceTool 的 recordMapTaskOutput 方法，使其能够：
+
+接受处理结果内容而不仅仅是文件路径
+自动创建输出文件并写入内容
+然后记录状态
 
 	/**
 	 * 处理文件或目录的完整流程：验证存在性 -> 分割数据
