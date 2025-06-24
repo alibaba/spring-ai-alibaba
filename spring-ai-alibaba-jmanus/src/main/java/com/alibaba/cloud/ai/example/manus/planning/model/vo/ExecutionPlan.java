@@ -104,6 +104,7 @@ public class ExecutionPlan {
 	public String getUserRequest() {
 		return userRequest;
 	}
+
 	/**
 	 * 设置用户请求
 	 * @param userRequest 用户请求字符串
@@ -111,7 +112,7 @@ public class ExecutionPlan {
 	public void setUserRequest(String userRequest) {
 		this.userRequest = userRequest;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "ExecutionPlan{" + "planId='" + planId + '\'' + ", title='" + title + '\'' + ", stepsCount="
@@ -127,7 +128,7 @@ public class ExecutionPlan {
 
 		state.append("- 用户原始需求 (这个需求是用户最初的输入，信息可以参考，但当前交互轮次中只需要完成当前步骤要求即可!) :\n");
 		state.append(title).append("\n");
-		if(userRequest != null && !userRequest.isEmpty()) {
+		if (userRequest != null && !userRequest.isEmpty()) {
 			state.append("").append(userRequest).append("\n\n");
 		}
 		state.append("\n- 执行参数: ").append("\n");
