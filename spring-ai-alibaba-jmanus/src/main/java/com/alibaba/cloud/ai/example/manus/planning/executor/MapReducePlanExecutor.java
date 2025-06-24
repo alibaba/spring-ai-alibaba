@@ -37,6 +37,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -191,33 +194,29 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		BaseAgent lastExecutor = null;
 
 		try {
-			// 2. 获取分割文件列表
-			List<String> splitFiles = splitTool.getSplitResults();
+			// 2. 获取任务目录列表（新的MapReduceTool返回任务目录路径）
+			List<String> taskDirectories = splitTool.getSplitResults();
 			
-			if (splitFiles.isEmpty()) {
-				logger.error("没有找到分割文件，Map 阶段执行失败");
-				throw new RuntimeException("没有找到分割文件，Map 阶段无法执行");
+			if (taskDirectories.isEmpty()) {
+				logger.error("没有找到任务目录，Map 阶段执行失败");
+				throw new RuntimeException("没有找到任务目录，Map 阶段无法执行");
 			} else {
-				logger.info("找到 {} 个分割文件，将为每个文件执行 Map 步骤", splitFiles.size());
+				logger.info("找到 {} 个任务目录，将为每个任务执行 Map 步骤", taskDirectories.size());
 				
-				// 3. 为每个分割文件创建并执行 mapSteps 副本
-				for (String splitFile : splitFiles) {
+				// 3. 为每个任务目录创建并执行 mapSteps 副本
+				for (String taskDirectory : taskDirectories) {
 					// 4. 复制一个新的 mapSteps 列表
-					List<ExecutionStep> copiedMapSteps = copyMapSteps(mapSteps, splitFile);
+					List<ExecutionStep> copiedMapSteps = copyMapSteps(mapSteps, taskDirectory);
 					
-					// 5. 使用 CompletableFuture 为每个文件部分执行新的 mapSteps 列表
+					// 5. 使用 CompletableFuture 为每个任务目录执行新的 mapSteps 列表
 					CompletableFuture<BaseAgent> future = CompletableFuture.supplyAsync(() -> {
 						BaseAgent fileExecutor = null;
-						logger.info("开始处理分割文件: {}", splitFile);
+						logger.info("开始处理任务目录: {}", taskDirectory);
 						
-						for (ExecutionStep step : copiedMapSteps) {
-							BaseAgent stepExecutor = executeStep(step, context);
-							if (stepExecutor != null) {
-								fileExecutor = stepExecutor;
-							}
-						}
+						// 执行带有任务上下文参数注入的步骤
+						fileExecutor = executeStepsWithTaskContext(copiedMapSteps, context, taskDirectory);
 						
-						logger.info("完成处理分割文件: {}", splitFile);
+						logger.info("完成处理任务目录: {}", taskDirectory);
 						return fileExecutor;
 					}, executorService);
 					
@@ -247,19 +246,40 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		return lastExecutor;
 	}
 	/**
-	 * 复制 mapSteps 列表，并为特定文件调整步骤要求
+	 * 复制 mapSteps 列表，并为特定任务目录调整步骤要求，同时读取并包含文档片段内容
 	 */
-	private List<ExecutionStep> copyMapSteps(List<ExecutionStep> originalSteps, String splitFile) {
+	private List<ExecutionStep> copyMapSteps(List<ExecutionStep> originalSteps, String taskDirectory) {
 		List<ExecutionStep> copiedSteps = new ArrayList<>();
+
+		// 读取任务目录中的 input.md 文件内容
+		String documentContent = "";
+		try {
+			Path inputFile = Paths.get(taskDirectory, "input.md");
+			if (Files.exists(inputFile)) {
+				documentContent = Files.readString(inputFile);
+				logger.debug("成功读取任务文档片段，长度: {} 字符", documentContent.length());
+			} else {
+				logger.warn("任务目录中不存在 input.md 文件: {}", inputFile);
+				documentContent = "文档片段文件不存在";
+			}
+		} catch (Exception e) {
+			logger.error("读取任务文档片段失败: {}", taskDirectory, e);
+			documentContent = "读取文档片段时发生错误: " + e.getMessage();
+		}
 
 		for (ExecutionStep originalStep : originalSteps) {
 			ExecutionStep copiedStep = new ExecutionStep();
 			copiedStep.setStepIndex(originalStep.getStepIndex());
 
-			// 调整步骤要求，将分割文件信息添加到步骤要求中
+			// 调整步骤要求，只包含文档片段内容，不暴露路径和任务ID
 			String originalRequirement = originalStep.getStepRequirement();
-			String modifiedRequirement = originalRequirement + " [处理文件: " + splitFile + "]";
-			copiedStep.setStepRequirement(modifiedRequirement);
+			StringBuilder modifiedRequirement = new StringBuilder();
+			modifiedRequirement.append(originalRequirement);
+			modifiedRequirement.append("\n\n=== 任务文档片段内容 ===\n");
+			modifiedRequirement.append(documentContent);
+			modifiedRequirement.append("\n=== 文档片段内容结束 ===");
+			
+			copiedStep.setStepRequirement(modifiedRequirement.toString());
 
 			copiedSteps.add(copiedStep);
 		}
@@ -294,6 +314,81 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		if (executorService != null && !executorService.isShutdown()) {
 			executorService.shutdown();
 		}
+	}
+
+	/**
+	 * 重写父类的executeStep方法，为map任务执行时临时添加任务信息到ExecutionParams
+	 */
+	@Override
+	protected BaseAgent executeStep(ExecutionStep step, ExecutionContext context) {
+		// 直接调用父类方法，因为任务上下文参数注入已经在executeStepsWithTaskContext中处理
+		return super.executeStep(step, context);
+	}
+
+	/**
+	 * 执行带有任务上下文参数注入的步骤列表
+	 * 
+	 * @param steps 要执行的步骤列表
+	 * @param context 执行上下文
+	 * @param taskDirectory 任务目录路径
+	 * @return 最后一个执行的Agent
+	 */
+	private BaseAgent executeStepsWithTaskContext(List<ExecutionStep> steps, ExecutionContext context, String taskDirectory) {
+		BaseAgent fileExecutor = null;
+		
+		// 1. 根据context.getPlan().getExecutionParams() 拿到一个contextMap
+		String originalExecutionParams = context.getPlan().getExecutionParams();
+		
+		// 2. 根据taskDirectory从对应目录找到input.md这个固定文件
+		String taskId = "";
+		String fileContent = "";
+		
+		try {
+			// 提取任务ID (从taskDirectory路径中获取最后一个目录名)
+			Path taskPath = Paths.get(taskDirectory);
+			taskId = taskPath.getFileName().toString();
+			
+			// 读取input.md文件内容
+			Path inputFile = taskPath.resolve("input.md");
+			if (Files.exists(inputFile)) {
+				fileContent = Files.readString(inputFile);
+				logger.debug("成功读取任务文件内容，任务ID: {}, 内容长度: {} 字符", taskId, fileContent.length());
+			} else {
+				logger.warn("任务目录中不存在 input.md 文件: {}", inputFile);
+				fileContent = "任务文件不存在";
+			}
+		} catch (Exception e) {
+			logger.error("读取任务文件失败: {}", taskDirectory, e);
+			fileContent = "读取任务文件时发生错误: " + e.getMessage();
+		}
+		
+		// 3. 把任务ID和文件内容作为参数放到contextMap里面
+		StringBuilder enhancedParams = new StringBuilder();
+		if (originalExecutionParams != null && !originalExecutionParams.trim().isEmpty()) {
+			enhancedParams.append(originalExecutionParams).append("\n\n");
+		}
+		enhancedParams.append("=== 当前任务上下文 ===\n");
+		enhancedParams.append("任务ID: ").append(taskId).append("\n");
+		enhancedParams.append("文件内容: ").append(fileContent).append("\n");
+		enhancedParams.append("=== 任务上下文结束 ===");
+		
+		// 临时设置增强的ExecutionParams
+		context.getPlan().setExecutionParams(enhancedParams.toString());
+		
+		try {
+			// 4. 执行步骤
+			for (ExecutionStep step : steps) {
+				BaseAgent stepExecutor = executeStep(step, context);
+				if (stepExecutor != null) {
+					fileExecutor = stepExecutor;
+				}
+			}
+		} finally {
+			// 恢复原始ExecutionParams
+			context.getPlan().setExecutionParams(originalExecutionParams);
+		}
+		
+		return fileExecutor;
 	}
 
 }
