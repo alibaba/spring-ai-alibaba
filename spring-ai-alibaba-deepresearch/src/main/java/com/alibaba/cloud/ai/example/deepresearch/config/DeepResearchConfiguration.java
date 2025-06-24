@@ -33,6 +33,8 @@ import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
+import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
+
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -71,7 +73,7 @@ public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
-	@Autowired
+	@Autowired(required = false)
 	private TavilySearchService tavilySearchService;
 
 	@Autowired
@@ -97,6 +99,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired(required = false)
 	private RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
+
+	@Autowired
+	private ReportService reportService;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient researchAgent) throws GraphStateException {
@@ -151,7 +156,7 @@ public class DeepResearchConfiguration {
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-			.addNode("reporter", node_async((new ReporterNode(reporterAgent))))
+			.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportService))))
 			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
 
 		// 添加并行节点块
