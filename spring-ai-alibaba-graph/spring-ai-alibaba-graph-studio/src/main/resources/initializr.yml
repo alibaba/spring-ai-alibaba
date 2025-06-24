@@ -216,12 +216,6 @@ initializr:
           artifact-id: spring-ai-alibaba-starter-dashscope
           version: 1.0.0.3-SNAPSHOT
           description: DashScope Model adapted Starter
-        - name: Apache httpcomponents client
-          id: httpclient5
-          group-id: org.apache.httpcomponents.client5
-          artifact-id: httpclient5
-          version: 5.4.4
-          description: Apache HTTP Components Client 5.4.4
     - name: Developer Tools
       content:
         - name: GraalVM Native Support
