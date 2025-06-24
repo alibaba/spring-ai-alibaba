@@ -326,7 +326,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	}
 
 	/**
-	 * 执行带有任务上下文参数注入的步骤列表
+	 * 执行带有任务上下文参数注入的步骤列表，并支持任务完成状态检查和重试
 	 * 
 	 * @param steps 要执行的步骤列表
 	 * @param context 执行上下文
@@ -372,23 +372,108 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		enhancedParams.append("文件内容: ").append(fileContent).append("\n");
 		enhancedParams.append("=== 任务上下文结束 ===");
 		
-		// 临时设置增强的ExecutionParams
-		context.getPlan().setExecutionParams(enhancedParams.toString());
+		// 执行任务，支持重试机制
+		int maxRetries = 3; // 最大重试次数
+		int currentRetry = 0;
+		boolean taskCompleted = false;
 		
-		try {
-			// 4. 执行步骤
-			for (ExecutionStep step : steps) {
-				BaseAgent stepExecutor = executeStep(step, context);
-				if (stepExecutor != null) {
-					fileExecutor = stepExecutor;
-				}
+		while (currentRetry <= maxRetries && !taskCompleted) {
+			if (currentRetry > 0) {
+				logger.warn("任务 {} 第 {} 次重试执行", taskId, currentRetry);
 			}
-		} finally {
-			// 恢复原始ExecutionParams
-			context.getPlan().setExecutionParams(originalExecutionParams);
+			
+			// 临时设置增强的ExecutionParams
+			context.getPlan().setExecutionParams(enhancedParams.toString());
+			
+			try {
+				// 4. 执行步骤
+				for (ExecutionStep step : steps) {
+					BaseAgent stepExecutor = executeStep(step, context);
+					if (stepExecutor != null) {
+						fileExecutor = stepExecutor;
+					}
+				}
+				
+				// 5. 检查任务是否完成
+				taskCompleted = checkTaskCompletion(taskDirectory, taskId);
+				
+				if (taskCompleted) {
+					logger.info("任务 {} 执行成功", taskId);
+					break;
+				} else {
+					logger.warn("任务 {} 执行未完成，检查到任务状态不是completed或缺少输出文件", taskId);
+					currentRetry++;
+					
+					if (currentRetry <= maxRetries) {
+						// 等待一段时间后重试
+						try {
+							Thread.sleep(1000 * currentRetry); // 递增等待时间
+						} catch (InterruptedException ie) {
+							Thread.currentThread().interrupt();
+							logger.error("重试等待被中断", ie);
+							break;
+						}
+					}
+				}
+				
+			} finally {
+				// 恢复原始ExecutionParams
+				context.getPlan().setExecutionParams(originalExecutionParams);
+			}
+		}
+		
+		// 6. 最终检查任务状态
+		if (!taskCompleted) {
+			logger.error("任务 {} 在 {} 次重试后仍未完成", taskId, maxRetries);
+			throw new RuntimeException("任务 " + taskId + " 执行失败，已达到最大重试次数");
 		}
 		
 		return fileExecutor;
+	}
+	
+	/**
+	 * 检查任务是否完成
+	 * 
+	 * @param taskDirectory 任务目录路径
+	 * @param taskId 任务ID
+	 * @return 任务是否完成
+	 */
+	private boolean checkTaskCompletion(String taskDirectory, String taskId) {
+		try {
+			Path taskPath = Paths.get(taskDirectory);
+			
+			// 检查status.json文件
+			Path statusFile = taskPath.resolve("status.json");
+			if (Files.exists(statusFile)) {
+				String statusContent = Files.readString(statusFile);
+				logger.debug("任务 {} 状态文件内容: {}", taskId, statusContent);
+				
+				// 检查状态是否为completed
+				if (statusContent.contains("\"status\":\"completed\"") || 
+					statusContent.contains("\"status\": \"completed\"")) {
+					
+					// 同时检查是否存在output.md文件
+					Path outputFile = taskPath.resolve("output.md");
+					if (Files.exists(outputFile)) {
+						logger.debug("任务 {} 已完成，存在状态文件和输出文件", taskId);
+						return true;
+					} else {
+						logger.warn("任务 {} 状态为completed但缺少output.md文件", taskId);
+						return false;
+					}
+				} else {
+					logger.debug("任务 {} 状态不是completed", taskId);
+					return false;
+				}
+			} else {
+				logger.warn("任务 {} 缺少status.json文件", taskId);
+				return false;
+			}
+			
+		} catch (Exception e) {
+			logger.error("检查任务 {} 完成状态时发生错误", taskId, e);
+			return false;
+		}
 	}
 
 }
