@@ -793,7 +793,7 @@ public class StateGraphTest {
 			return stringKeyStrategyHashMap;
 		});
 
-		CommandAction commandAction = (state, config) -> new Command("node1", Map.of("messages","go to command node"));
+		CommandAction commandAction = (state, config) -> new Command("node1", Map.of("messages", "go to command node"));
 		graph.addNode("testCommandNode", AsyncCommandAction.node_async(commandAction),
 				Map.of("node1", "node1", "node2", "node2"));
 
@@ -813,7 +813,7 @@ public class StateGraphTest {
 		System.out.println(mermaid);
 
 		OverAllState state = compile.invoke(Map.of()).orElseThrow();
-		assertEquals(List.of("go to command node","node1","node2"), state.value("messages", List.class).get());
+		assertEquals(List.of("go to command node", "node1", "node2"), state.value("messages", List.class).get());
 	}
 
 }

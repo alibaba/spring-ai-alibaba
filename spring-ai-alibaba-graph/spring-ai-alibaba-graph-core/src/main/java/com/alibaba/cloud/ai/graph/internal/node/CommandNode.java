@@ -47,8 +47,7 @@ public class CommandNode extends Node {
 
 		@Override
 		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-			return CompletableFuture
-				.completedFuture(Map.of("command", action, "mappings", mappings));
+			return CompletableFuture.completedFuture(Map.of("command", action, "mappings", mappings));
 		}
 	}
 
