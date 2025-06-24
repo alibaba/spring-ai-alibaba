@@ -42,8 +42,8 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageTool;
+import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
-import com.alibaba.cloud.ai.example.manus.tool.split.SplitTool;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
@@ -177,7 +177,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
-		toolDefinitions.add(new SplitTool(planId,manusProperties));
+		toolDefinitions.add(new MapReduceTool(planId,manusProperties));
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
 			String serviceGroup = toolCallback.getServiceGroup();

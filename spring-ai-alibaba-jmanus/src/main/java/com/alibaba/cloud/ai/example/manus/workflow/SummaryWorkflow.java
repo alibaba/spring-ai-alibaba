@@ -45,7 +45,7 @@ public class SummaryWorkflow {
               "type": "mapreduce",
               "dataPreparedSteps": [
                 {
-                    "stepRequirement": "[DEFAULT_AGENT] 使用split_tool，对 %s 进行内容分割",
+                    "stepRequirement": "[DEFAULT_AGENT] 使用map_reduce_tool，对 %s 进行内容分割",
                     "outputColumns": "文件名"
                 }
               ],

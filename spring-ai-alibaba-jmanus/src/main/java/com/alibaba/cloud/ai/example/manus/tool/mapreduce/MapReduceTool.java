@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool.split;
+package com.alibaba.cloud.ai.example.manus.tool.mapreduce;
 
 import java.io.*;
 import java.nio.file.*;
@@ -38,11 +38,11 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 /**
  * 数据分割工具，用于MapReduce流程中的数据准备阶段 负责验证文件存在性、识别表格头部信息并进行数据分割处理
  */
-public class SplitTool implements ToolCallBiFunctionDef {
+public class MapReduceTool implements ToolCallBiFunctionDef {
 
-	private static final Logger log = LoggerFactory.getLogger(SplitTool.class);
+	private static final Logger log = LoggerFactory.getLogger(MapReduceTool.class);
 
-	private static final String TOOL_NAME = "split_tool";
+	private static final String TOOL_NAME = "map_reduce_tool";
 
 	private static final String TOOL_DESCRIPTION = """
 			数据分割工具，用于MapReduce流程中的数据准备阶段和任务状态管理。
@@ -62,39 +62,54 @@ public class SplitTool implements ToolCallBiFunctionDef {
 
 	private static final String PARAMETERS = """
 			{
-			    "type": "object",
-			    "properties": {
-			        "action": {
-			            "type": "string",
-			            "enum": ["split_data", "record_map_output"]
-			        },
-			        "file_path": {
-			            "type": "string",
-			            "description": "要处理的文件或文件夹路径"
-			        },
-			        "return_columns": {
-			            "type": "array",
-			            "items": {
-			                "type": "string"
+			    "oneOf": [
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "split_data"
+			                },
+			                "file_path": {
+			                    "type": "string",
+			                    "description": "要处理的文件或文件夹路径"
+			                },
+			                "return_columns": {
+			                    "type": "array",
+			                    "items": {
+			                        "type": "string"
+			                    },
+			                    "description": "返回结果的列名，用于结构化输出"
+			                }
 			            },
-			            "description": "返回结果的列名，用于结构化输出"
+			            "required": ["action", "file_path"],
+			            "additionalProperties": false
 			        },
-			        "output_file_path": {
-			            "type": "string",
-			            "description": "Map阶段处理完成后的输出文件路径"
-			        },
-			        "task_id": {
-			            "type": "string",
-			            "description": "任务ID，用于状态跟踪"
-			        },
-			        "status": {
-			            "type": "string",
-			            "enum": ["completed", "failed"],
-			            "description": "任务状态"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "record_map_output"
+			                },
+			                "output_file_path": {
+			                    "type": "string",
+			                    "description": "Map阶段处理完成后的输出文件路径"
+			                },
+			                "task_id": {
+			                    "type": "string",
+			                    "description": "任务ID，用于状态跟踪"
+			                },
+			                "status": {
+			                    "type": "string",
+			                    "enum": ["completed", "failed"],
+			                    "description": "任务状态"
+			                }
+			            },
+			            "required": ["action", "output_file_path", "task_id", "status"],
+			            "additionalProperties": false
 			        }
-			    },
-			    "required": ["action"],
-			    "additionalProperties": false
+			    ]
 			}
 			""";
 
@@ -117,16 +132,16 @@ public class SplitTool implements ToolCallBiFunctionDef {
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
-	public SplitTool() {
+	public MapReduceTool() {
 	}
 
 
-	public SplitTool(ManusProperties manusProperties) {
+	public MapReduceTool(ManusProperties manusProperties) {
 		this.manusProperties = manusProperties;
 		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 	}
 
-	public SplitTool(String planId, ManusProperties manusProperties) {
+	public MapReduceTool(String planId, ManusProperties manusProperties) {
 		this.planId = planId;
 		this.manusProperties = manusProperties;
 		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
@@ -174,7 +189,7 @@ public class SplitTool implements ToolCallBiFunctionDef {
 	}
 
 	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.builder(TOOL_NAME, new SplitTool())
+		return FunctionToolCallback.builder(TOOL_NAME, new MapReduceTool())
 			.description(TOOL_DESCRIPTION)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
@@ -182,7 +197,7 @@ public class SplitTool implements ToolCallBiFunctionDef {
 	}
 
 	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(String planId, ManusProperties manusProperties) {
-		return FunctionToolCallback.builder(TOOL_NAME, new SplitTool(planId, manusProperties))
+		return FunctionToolCallback.builder(TOOL_NAME, new MapReduceTool(planId, manusProperties))
 			.description(TOOL_DESCRIPTION)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
@@ -475,6 +490,79 @@ public class SplitTool implements ToolCallBiFunctionDef {
 			Files.createDirectories(directory);
 			log.debug("Created directory: {}", directory);
 		}
+	}
+
+	/**
+	 * 记录Map任务的输出结果和状态
+	 */
+	private ToolExecuteResult recordMapTaskOutput(String outputFilePath, String taskId, String status) {
+		try {
+			// 确保 planId 存在
+			if (planId == null || planId.trim().isEmpty()) {
+				return new ToolExecuteResult("错误：planId未设置，无法记录任务状态");
+			}
+
+			// 创建任务状态对象
+			TaskStatus taskStatus = new TaskStatus();
+			taskStatus.taskId = taskId;
+			taskStatus.outputFilePath = outputFilePath;
+			taskStatus.status = status;
+			taskStatus.timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+			// 存储到内存中
+			mapTaskStatuses.put(taskId, taskStatus);
+
+			// 创建状态目录
+			Path planDir = getPlanDirectory(planId);
+			Path statusDir = planDir.resolve("map_status");
+			ensureDirectoryExists(statusDir);
+
+			// 写入状态文件
+			Path statusFile = statusDir.resolve("task_" + taskId + "_status.json");
+			String statusJson = objectMapper.writeValueAsString(taskStatus);
+			Files.write(statusFile, statusJson.getBytes());
+
+			// 更新汇总状态文件
+			updateSummaryStatusFile(statusDir);
+
+			String result = String.format("任务 %s 状态已记录：%s，输出文件：%s", taskId, status, outputFilePath);
+			log.info(result);
+			return new ToolExecuteResult(result);
+
+		} catch (Exception e) {
+			String error = "记录Map任务状态失败: " + e.getMessage();
+			log.error(error, e);
+			return new ToolExecuteResult(error);
+		}
+	}
+
+	/**
+	 * 更新汇总状态文件
+	 */
+	private void updateSummaryStatusFile(Path statusDir) throws IOException {
+		Path summaryFile = statusDir.resolve("summary.json");
+		
+		Map<String, Object> summary = new HashMap<>();
+		summary.put("totalTasks", mapTaskStatuses.size());
+		summary.put("completedTasks", mapTaskStatuses.values().stream()
+			.mapToInt(task -> "completed".equals(task.status) ? 1 : 0).sum());
+		summary.put("failedTasks", mapTaskStatuses.values().stream()
+			.mapToInt(task -> "failed".equals(task.status) ? 1 : 0).sum());
+		summary.put("lastUpdated", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+		summary.put("tasks", mapTaskStatuses);
+
+		String summaryJson = objectMapper.writeValueAsString(summary);
+		Files.write(summaryFile, summaryJson.getBytes());
+	}
+
+	/**
+	 * 任务状态内部类
+	 */
+	private static class TaskStatus {
+		public String taskId;
+		public String outputFilePath;
+		public String status;
+		public String timestamp;
 	}
 
 }

@@ -41,7 +41,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				2. 目标是否存在？
 				3. 是否能识别到表格头部？
 				4. 如何正确调用分割工具？
-				""", availableToolKeys = { "text_file_operator", "split_tool", "terminate" })
+				""", availableToolKeys = { "text_file_operator", "map_reduce_tool", "terminate" })
 public class DDataPrepareAgent {
 
 }

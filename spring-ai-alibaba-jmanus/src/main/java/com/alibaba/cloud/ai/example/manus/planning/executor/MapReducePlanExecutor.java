@@ -30,7 +30,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.Sequential
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.split.SplitTool;
+import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -181,11 +181,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			logger.error("ToolCallBiFunctionDef is null, cannot execute Map phase");
 			return null;
 		}
-		if (!(callFunc instanceof SplitTool)) {
+		if (!(callFunc instanceof MapReduceTool)) {
 			logger.error("ToolCallBiFunctionDef is not SplitTool, cannot execute Map phase");
 			return null;
 		}
-		SplitTool splitTool = (SplitTool) callFunc;
+		MapReduceTool splitTool = (MapReduceTool) callFunc;
 
 		List<CompletableFuture<BaseAgent>> futures = new ArrayList<>();
 		BaseAgent lastExecutor = null;
