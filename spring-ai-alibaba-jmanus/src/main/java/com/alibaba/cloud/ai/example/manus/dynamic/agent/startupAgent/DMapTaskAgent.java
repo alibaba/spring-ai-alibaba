@@ -36,17 +36,17 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				3. 生成唯一的任务ID（可以基于时间戳或文件名）
 				4. 调用map_reduce_tool的record_map_output直接记录处理结果和任务状态：
 				   - action: "record_map_output"
-				   - output_file_path: 处理结果的输出路径（工具会自动创建文件）
+				   - content: Map阶段处理完成后的输出内容
 				   - task_id: 唯一的任务标识符
 				   - status: "completed" 或 "failed"
+				   注意：工具会自动生成输出文件名，格式为"map_task_{task_id}_{timestamp}.txt"
 				6. 重要：你必须在回复中使用至少一个工具才能取得进展！
 
 				逐步思考：
 				1. 当前要处理的文件是什么？
 				2. 需要执行什么样的处理操作？
 				3. 如何生成合适的任务ID？
-				4. 处理结果应该输出到哪个路径？
-				5. 如何通过record_map_output直接记录结果和状态？
+				4. 如何通过record_map_output直接记录处理内容和状态？
 				""", availableToolKeys = { "text_file_operator", "map_reduce_tool", "terminate" })
 public class DMapTaskAgent {
 
