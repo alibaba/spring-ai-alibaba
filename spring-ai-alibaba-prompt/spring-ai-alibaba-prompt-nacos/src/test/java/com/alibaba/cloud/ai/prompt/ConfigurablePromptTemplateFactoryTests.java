@@ -17,13 +17,12 @@ package com.alibaba.cloud.ai.prompt;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,7 +48,7 @@ class ConfigurablePromptTemplateFactoryTests {
 	@BeforeEach
 	void setUp() {
 		// Initialize the factory before each test
-		factory = new ConfigurablePromptTemplateFactory();
+		factory = new ConfigurablePromptTemplateFactory(new PromptTemplateBuilderConfigure());
 	}
 
 	@Test
@@ -117,6 +116,24 @@ class ConfigurablePromptTemplateFactoryTests {
 	}
 
 	@Test
+	void testCreateWithPromptTemplate() {
+		Map<String, Object> model = new HashMap<>();
+		model.put("name", "John");
+		// Test creating template with promptTemplate
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(TEST_TEMPLATE_CONTENT)
+			.variables(model)
+			.build();
+
+		ConfigurablePromptTemplate template = factory.create(TEST_TEMPLATE_NAME, promptTemplate);
+
+		// Verify template is created correctly
+		assertThat(template).isNotNull();
+		assertThat(template.render()).isEqualTo("Hello, John!");
+		assertThat(factory.getTemplate(TEST_TEMPLATE_NAME)).isEqualTo(template);
+	}
+
+	@Test
 	void testGetNonExistentTemplate() {
 		// Test getting a template that doesn't exist
 		ConfigurablePromptTemplate template = factory.getTemplate("non-existent");
@@ -174,6 +191,27 @@ class ConfigurablePromptTemplateFactoryTests {
 
 		// Verify both references point to same instance
 		assertThat(template1).isSameAs(template2);
+	}
+
+	@Test
+	void testTemplateConfigure() {
+		PromptTemplateBuilderConfigure configure = new PromptTemplateBuilderConfigure();
+		configure.setPromptTemplateBuilderCustomizers(List.of(builder -> {
+			builder.variables(Map.of("name", "yuhuangbin")).renderer(StTemplateRenderer.builder().build());
+		}));
+		factory = new ConfigurablePromptTemplateFactory(configure);
+
+		List<ConfigurablePromptTemplateFactory.ConfigurablePromptTemplateModel> configList = new ArrayList<>();
+		Map<String, Object> model = new HashMap<>();
+		model.put("name", "John");
+
+		configList.add(new ConfigurablePromptTemplateFactory.ConfigurablePromptTemplateModel(TEST_TEMPLATE_NAME,
+				TEST_TEMPLATE_CONTENT, model));
+
+		factory.onConfigChange(configList);
+		ConfigurablePromptTemplate template = factory.getTemplate(TEST_TEMPLATE_NAME);
+		assertThat(template.render()).isNotEqualTo("Hello, John!");
+		assertThat(template.render()).isEqualTo("Hello, yuhuangbin!");
 	}
 
 }
