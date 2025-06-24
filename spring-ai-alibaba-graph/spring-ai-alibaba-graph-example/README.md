@@ -92,6 +92,7 @@ mvn spring-boot:run
 浏览器访问如下示例链接，查看运行效果：
 
 * http://localhost:18080/reflection/chat?query=写一篇论文，题目是东北经济落后分析
+* http://localhost:18080/mcp/weather?latitude=39.9042&longitude=116.4074
 
 > Tip: 演示代码中通过迭代次数来实现停止运行，也可以在`reflection`的图中控制结束时机。具体逻辑可以参考`ReflectionAgent`类。
 
