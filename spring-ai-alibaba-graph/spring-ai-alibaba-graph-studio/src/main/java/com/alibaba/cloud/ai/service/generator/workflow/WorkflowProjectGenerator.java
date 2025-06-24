@@ -23,7 +23,9 @@ import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Edge;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
+import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.StartNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLAdapter;
 import com.alibaba.cloud.ai.service.generator.GraphProjectDescription;
 import com.alibaba.cloud.ai.service.generator.ProjectGenerator;
@@ -63,6 +65,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private final String GRAPH_BUILDER_EDGE_SECTION = "edgeSection";
 
+	private final String GRAPH_BUILDER_START_INPUTS_SECTION = "startInputsSection";
+
 	private final String GRAPH_RUN_TEMPLATE_NAME = "GraphRunController.java";
 
 	private final String PACKAGE_NAME = "packageName";
@@ -101,7 +105,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		Map<String, String> graphBuilderModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
 				GRAPH_BUILDER_STATE_SECTION, stateSectionStr, GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
 				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr);
-		Map<String, String> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
+		Map<String, String> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
+				GRAPH_BUILDER_START_INPUTS_SECTION, renderStartInputSection(workflow));
 		renderAndWriteTemplates(List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
 				List.of(graphBuilderModel, graphRunControllerModel), projectRoot, projectDescription);
 	}
@@ -192,9 +197,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			else if ("end".equals(targetType)) {
 				sb.append(String.format("stateGraph.addEdge(\"%s\", END);%n", sourceId));
 			}
-			else {
-				sb.append(String.format("stateGraph.addEdge(\"%s\", \"%s\");%n", sourceId, targetId));
-			}
 		}
 
 		// conditional edge（aggregate by sourceId）
@@ -208,8 +210,16 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			List<String> mappings = new ArrayList<>();
 
 			for (Edge e : condEdges) {
+				Map<String, Object> data = e.getData();
+				String targetType = data != null ? (String) data.get("targetType") : null;
 				String conditionKey = resolveConditionKey(sourceData, e.getSourceHandle());
 				String targetId = e.getTarget();
+				if ("end".equals(targetType)) {
+					conditions
+						.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
+					mappings.add(String.format("\"%s\", END", conditionKey));
+					continue;
+				}
 				conditions.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
 				mappings.add(String.format("\"%s\", \"%s\"", conditionKey, targetId));
 			}
@@ -237,8 +247,43 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				.findFirst()
 				.orElse(handleId);
 		}
+		else if (data instanceof BranchNodeData branch) {
+			return branch.getCases()
+				.stream()
+				.filter(c -> c.getId().equals(handleId))
+				.map(c -> c.getConditions().get(0).getValue())
+				.findFirst()
+				.orElse(handleId);
+		}
 		// todo: extend to other node types that support conditional edges
 		return handleId;
+	}
+
+	private String renderStartInputSection(Workflow workflow) {
+		List<Variable> startInputs = workflow.getWorkflowVars()
+			.stream()
+			.filter(v -> workflow.getGraph()
+				.getNodes()
+				.stream()
+				.anyMatch(n -> n.getData() instanceof StartNodeData
+						&& ((StartNodeData) n.getData()).getStartInputs() != null
+						&& ((StartNodeData) n.getData()).getStartInputs()
+							.stream()
+							.anyMatch(i -> i.getVariable().equals(v.getName()))))
+			.toList();
+
+		if (startInputs.isEmpty()) {
+			return "";
+		}
+		StringBuilder sb = new StringBuilder();
+		sb.append("Map<String, Object> startInputs = new HashMap<>();\n");
+		for (Variable var : startInputs) {
+			sb.append(String.format("startInputs.put(\"%s\", inputs.get(\"%s\")); // %s%n", var.getName(),
+					var.getName(), var.getDescription()));
+		}
+		sb.append("return graph.invoke(startInputs).get().data();\n");
+
+		return sb.toString();
 	}
 
 	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,

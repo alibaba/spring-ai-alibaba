@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
@@ -154,7 +155,9 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 				}
 
 				// output_key
-				nd.setOutputKey((String) data.get("output_key"));
+				String nodeId = (String) data.get("id");
+				String outputKey = (String) data.getOrDefault("output_key", LLMNodeData.defaultOutputKey(nodeId));
+				nd.setOutputKey(outputKey);
 
 				return nd;
 			}
