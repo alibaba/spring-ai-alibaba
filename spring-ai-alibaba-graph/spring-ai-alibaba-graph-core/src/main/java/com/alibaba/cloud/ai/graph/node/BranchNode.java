@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.graph.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 
-import com.alibaba.cloud.ai.graph.node.DocumentExtractorNode.Builder;
 import java.util.*;
 import org.springframework.util.StringUtils;
 
