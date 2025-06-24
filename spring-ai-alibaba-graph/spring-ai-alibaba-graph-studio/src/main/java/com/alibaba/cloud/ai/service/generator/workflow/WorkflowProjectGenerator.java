@@ -294,7 +294,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	}
 
 	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, Object>> models, Path projectRoot,
-
 			ProjectDescription projectDescription) {
 		// todo: may to standardize the code format via the IdentifierGeneratorFactory
 		Path fileRoot = createDirectory(projectRoot, projectDescription);
