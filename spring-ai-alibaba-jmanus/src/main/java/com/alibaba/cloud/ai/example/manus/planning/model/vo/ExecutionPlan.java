@@ -29,6 +29,8 @@ public class ExecutionPlan {
 
 	private String title;
 
+	private String userRequest;
+
 	private String planningThinking;
 
 	// 使用简单字符串存储执行参数
@@ -95,6 +97,22 @@ public class ExecutionPlan {
 		this.executionParams = executionParams;
 	}
 
+	/**
+	 * 获取用户请求
+	 * @return 用户请求字符串
+	 */
+	public String getUserRequest() {
+		return userRequest;
+	}
+
+	/**
+	 * 设置用户请求
+	 * @param userRequest 用户请求字符串
+	 */
+	public void setUserRequest(String userRequest) {
+		this.userRequest = userRequest;
+	}
+
 	@Override
 	public String toString() {
 		return "ExecutionPlan{" + "planId='" + planId + '\'' + ", title='" + title + '\'' + ", stepsCount="
@@ -108,6 +126,11 @@ public class ExecutionPlan {
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
 
+		state.append("- 用户原始需求 (这个需求是用户最初的输入，信息可以参考，但当前交互轮次中只需要完成当前步骤要求即可!) :\n");
+		state.append(title).append("\n");
+		if (userRequest != null && !userRequest.isEmpty()) {
+			state.append("").append(userRequest).append("\n\n");
+		}
 		state.append("\n- 执行参数: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
 			state.append(executionParams).append("\n\n");
@@ -116,7 +139,7 @@ public class ExecutionPlan {
 			state.append("未提供执行参数。\n\n");
 		}
 
-		state.append("- 全局步骤计划:\n");
+		state.append("- 历史执行过的步骤记录:\n");
 		state.append(getStepsExecutionStateStringFormat(onlyCompletedAndFirstInProgress));
 
 		return state.toString();

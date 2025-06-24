@@ -102,6 +102,8 @@ public class PlanCreator {
 					executionPlan = planningTool.getCurrentPlan();
 
 					if (executionPlan != null) {
+						// 设置计划的用户输入部分，方便后期存储和使用。
+						executionPlan.setUserRequest(context.getUserRequest());
 						log.info("Plan created successfully on attempt {}: {}", attempt, executionPlan);
 						break;
 					}

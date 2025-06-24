@@ -263,7 +263,7 @@
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
-        <spotless.version>2.29.0</spotless.version>
+        <spotless.version>2.44.5</spotless.version>
     </properties>
 
     <dependencyManagement>
@@ -348,7 +348,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.29.0</version>
+                <version>${spotless.version}</version>
                 <configuration>
                     <java>
                         <removeUnusedImports></removeUnusedImports>
