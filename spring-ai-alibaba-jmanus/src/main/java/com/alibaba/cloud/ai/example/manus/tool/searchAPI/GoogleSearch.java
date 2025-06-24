@@ -29,7 +29,8 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-public class GoogleSearch implements ToolCallBiFunctionDef {
+
+public class GoogleSearch implements ToolCallBiFunctionDef<GoogleSearch.GoogleSearchInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(GoogleSearch.class);
 
@@ -66,7 +67,6 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
 		return functionTool;
 	}
-
 
 	private static final String SERP_API_KEY = System.getenv("SERP_API_KEY");
 
@@ -179,7 +179,7 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
+	public Class<GoogleSearchInput> getInputType() {
 		return GoogleSearchInput.class;
 	}
 
@@ -189,8 +189,84 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		return run(s);
+	public ToolExecuteResult apply(GoogleSearchInput input, ToolContext toolContext) {
+		return run(input);
+	}
+
+	public ToolExecuteResult run(GoogleSearchInput input) {
+		String query = input.getQuery();
+		Integer numResults = input.getNumResults() != null ? input.getNumResults() : 2;
+		
+		log.info("GoogleSearch input: query={}, numResults={}", query, numResults);
+
+		this.lastQuery = query;
+		this.lastNumResults = numResults;
+
+		try {
+			SerpApiService.Request request = new SerpApiService.Request(query);
+			Map<String, Object> response = service.apply(request);
+
+			if (response.containsKey("answer_box") && response.get("answer_box") instanceof List) {
+				response.put("answer_box", ((List<Map<String, Object>>) response.get("answer_box")).get(0));
+			}
+
+			String toret = "";
+			if (response.containsKey("answer_box")
+					&& ((Map<String, Object>) response.get("answer_box")).containsKey("answer")) {
+				toret = ((Map<String, Object>) response.get("answer_box")).get("answer").toString();
+			}
+			else if (response.containsKey("answer_box")
+					&& ((Map<String, Object>) response.get("answer_box")).containsKey("snippet")) {
+				toret = ((Map<String, Object>) response.get("answer_box")).get("snippet").toString();
+			}
+			else if (response.containsKey("answer_box")
+					&& ((Map<String, Object>) response.get("answer_box")).containsKey("snippet_highlighted_words")) {
+				toret = ((List<String>) ((Map<String, Object>) response.get("answer_box"))
+					.get("snippet_highlighted_words")).get(0);
+			}
+			else if (response.containsKey("sports_results")
+					&& ((Map<String, Object>) response.get("sports_results")).containsKey("game_spotlight")) {
+				toret = ((Map<String, Object>) response.get("sports_results")).get("game_spotlight").toString();
+			}
+			else if (response.containsKey("shopping_results")
+					&& ((List<Map<String, Object>>) response.get("shopping_results")).get(0).containsKey("title")) {
+				List<Map<String, Object>> shoppingResults = (List<Map<String, Object>>) response
+					.get("shopping_results");
+				List<Map<String, Object>> subList = shoppingResults.subList(0, 3);
+				toret = subList.toString();
+			}
+			else if (response.containsKey("knowledge_graph")
+					&& ((Map<String, Object>) response.get("knowledge_graph")).containsKey("description")) {
+				toret = ((Map<String, Object>) response.get("knowledge_graph")).get("description").toString();
+			}
+			else if ((((List<Map<String, Object>>) response.get("organic_results")).get(0)).containsKey("snippet")) {
+				toret = (((List<Map<String, Object>>) response.get("organic_results")).get(0)).get("snippet")
+					.toString();
+			}
+			else if ((((List<Map<String, Object>>) response.get("organic_results")).get(0)).containsKey("link")) {
+				toret = (((List<Map<String, Object>>) response.get("organic_results")).get(0)).get("link").toString();
+			}
+			else if (response.containsKey("images_results")
+					&& ((Map<String, Object>) ((List<Map<String, Object>>) response.get("images_results")).get(0))
+						.containsKey("thumbnail")) {
+				List<String> thumbnails = new ArrayList<>();
+				List<Map<String, Object>> imageResults = (List<Map<String, Object>>) response.get("images_results");
+				for (Map<String, Object> item : imageResults.subList(0, 10)) {
+					thumbnails.add(item.get("thumbnail").toString());
+				}
+				toret = thumbnails.toString();
+			}
+			else {
+				toret = "No good search result found";
+			}
+			log.warn("SerpapiTool result:{}", toret);
+			this.lastSearchResults = toret;
+			return new ToolExecuteResult(toret);
+		}
+		catch (Exception e) {
+			log.error("Error executing Google search", e);
+			return new ToolExecuteResult("Error executing Google search: " + e.getMessage());
+		}
 	}
 
 	@Override
@@ -226,10 +302,13 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 	 * 内部输入类，用于定义谷歌搜索工具的输入参数
 	 */
 	public static class GoogleSearchInput {
+
 		private String query;
+
 		private Integer numResults;
 
-		public GoogleSearchInput() {}
+		public GoogleSearchInput() {
+		}
 
 		public GoogleSearchInput(String query, Integer numResults) {
 			this.query = query;
@@ -251,6 +330,7 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 		public void setNumResults(Integer numResults) {
 			this.numResults = numResults;
 		}
+
 	}
 
 }

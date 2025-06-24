@@ -18,8 +18,7 @@ package com.alibaba.cloud.ai.example.manus.tool;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -28,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.*;
 
-public class PlanningTool implements ToolCallBiFunctionDef {
+public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.PlanningInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanningTool.class);
 
@@ -38,9 +37,13 @@ public class PlanningTool implements ToolCallBiFunctionDef {
 	 * 内部输入类，用于定义规划工具的输入参数
 	 */
 	public static class PlanningInput {
+
 		private String command;
+
 		private String planId;
+
 		private String title;
+
 		private List<String> steps;
 
 		public PlanningInput() {
@@ -84,6 +87,7 @@ public class PlanningTool implements ToolCallBiFunctionDef {
 		public void setSteps(List<String> steps) {
 			this.steps = steps;
 		}
+
 	}
 
 	public String getCurrentPlanId() {
@@ -134,14 +138,13 @@ public class PlanningTool implements ToolCallBiFunctionDef {
 	}
 
 	// Parameterized FunctionToolCallback with appropriate types.
-
-	public FunctionToolCallback<?, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, this)
-				.description(description)
-				.inputSchema(PARAMETERS)
-				.inputType(PlanningInput.class)
-				.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
-				.build();
+	public static FunctionToolCallback<?, ToolExecuteResult> getFunctionToolCallback( PlanningTool toolInstance) {
+		return FunctionToolCallback.builder(name,toolInstance )
+			.description(description)
+			.inputSchema(PARAMETERS)
+			.inputType(PlanningInput.class)
+			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
+			.build();
 	}
 
 	public ToolExecuteResult run(PlanningInput input) {
@@ -165,8 +168,7 @@ public class PlanningTool implements ToolCallBiFunctionDef {
 
 	/**
 	 * 创建单个执行步骤
-	 * 
-	 * @param step  步骤描述
+	 * @param step 步骤描述
 	 * @param index 步骤索引
 	 * @return 创建的ExecutionStep实例
 	 */
@@ -196,15 +198,8 @@ public class PlanningTool implements ToolCallBiFunctionDef {
 
 	// ToolCallBiFunctionDef interface methods
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-			PlanningInput input = objectMapper.readValue(s, PlanningInput.class);
-			return run(input);
-		} catch (Exception e) {
-			log.error("Error parsing planning input", e);
-			return new ToolExecuteResult("Error parsing input: " + e.getMessage());
-		}
+	public ToolExecuteResult apply(PlanningInput input, ToolContext toolContext) {
+		return run(input);
 	}
 
 	@Override
@@ -223,7 +218,7 @@ public class PlanningTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
+	public Class<PlanningInput> getInputType() {
 		return PlanningInput.class;
 	}
 

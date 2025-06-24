@@ -26,9 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class PythonExecute implements ToolCallBiFunctionDef {
+public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.PythonInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(PythonExecute.class);
 
@@ -36,9 +35,11 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 	 * 内部输入类，用于定义Python执行工具的输入参数
 	 */
 	public static class PythonInput {
+
 		private String code;
 
-		public PythonInput() {}
+		public PythonInput() {
+		}
 
 		public PythonInput(String code) {
 			this.code = code;
@@ -51,6 +52,7 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 		public void setCode(String code) {
 			this.code = code;
 		}
+
 	}
 
 	private Boolean arm64 = true;
@@ -89,7 +91,6 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
 		return functionTool;
 	}
-
 
 	private String lastCode = "";
 
@@ -205,7 +206,7 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
+	public Class<PythonInput> getInputType() {
 		return PythonInput.class;
 	}
 
@@ -215,8 +216,43 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		return run(s);
+	public ToolExecuteResult apply(PythonInput input, ToolContext toolContext) {
+		return run(input);
+	}
+
+	public ToolExecuteResult run(PythonInput input) {
+		String code = input.getCode();
+		log.info("PythonExecute code: {}", code);
+		
+		this.lastCode = code;
+		this.lastExecutionLogId = "tmp_" + LogIdGenerator.generateUniqueId();
+
+		try {
+			CodeExecutionResult codeExecutionResult = CodeUtils.executeCode(code, "python",
+					lastExecutionLogId + ".py", arm64, new HashMap<>());
+			String result = codeExecutionResult.getLogs();
+			this.lastExecutionResult = result;
+
+			// 检查执行结果中是否包含 Python 错误信息
+			if (result.contains("SyntaxError") || result.contains("IndentationError")
+					|| result.contains("NameError") || result.contains("TypeError") || result.contains("ValueError")
+					|| result.contains("ImportError")) {
+				this.hasError = true;
+				this.lastError = extractErrorMessage(result);
+			}
+			else {
+				this.hasError = false;
+				this.lastError = "";
+			}
+
+			return new ToolExecuteResult(result);
+		}
+		catch (Exception e) {
+			this.hasError = true;
+			this.lastError = e.getMessage();
+			this.lastExecutionResult = "Execution failed: " + e.getMessage();
+			return new ToolExecuteResult("Execution failed: " + e.getMessage());
+		}
 	}
 
 	@Override

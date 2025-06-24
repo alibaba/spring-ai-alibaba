@@ -16,16 +16,13 @@
 package com.alibaba.cloud.ai.example.manus.tool;
 
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.tool.metadata.ToolMetadata;
 
-public class TerminateTool implements ToolCallBiFunctionDef {
+public class TerminateTool implements ToolCallBiFunctionDef<TerminateTool.TerminateInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(TerminateTool.class);
 
@@ -33,9 +30,11 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 	 * 内部输入类，用于定义终止工具的输入参数
 	 */
 	public static class TerminateInput {
+
 		private String message;
 
-		public TerminateInput() {}
+		public TerminateInput() {
+		}
 
 		public TerminateInput(String message) {
 			this.message = message;
@@ -48,6 +47,7 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 		public void setMessage(String message) {
 			this.message = message;
 		}
+
 	}
 
 	private static String PARAMETERS = """
@@ -84,7 +84,6 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
 		return new OpenAiApi.FunctionTool(function);
 	}
-
 
 	private String planId;
 
@@ -123,16 +122,8 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-			TerminateInput input = objectMapper.readValue(s, TerminateInput.class);
-			return run(input);
-		}
-		catch (Exception e) {
-			log.error("Error parsing terminate input", e);
-			return new ToolExecuteResult("Error parsing input: " + e.getMessage());
-		}
+	public ToolExecuteResult apply(TerminateInput input, ToolContext toolContext) {
+		return run(input);
 	}
 
 	@Override
@@ -151,7 +142,7 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
+	public Class<TerminateInput> getInputType() {
 		return TerminateInput.class;
 	}
 

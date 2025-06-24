@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
-public class TextFileOperator implements ToolCallBiFunctionDef {
+public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.TextFileInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(TextFileOperator.class);
 
@@ -40,13 +40,19 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	 * 内部输入类，用于定义文本文件操作工具的输入参数
 	 */
 	public static class TextFileInput {
+
 		private String action;
+
 		private String filePath;
+
 		private String content;
+
 		private String sourceText;
+
 		private String targetText;
 
-		public TextFileInput() {}
+		public TextFileInput() {
+		}
 
 		public String getAction() {
 			return action;
@@ -87,6 +93,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		public void setTargetText(String targetText) {
 			this.targetText = targetText;
 		}
+
 	}
 
 	private final String workingDirectoryPath;
@@ -101,7 +108,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 	}
 
-	private final String PARAMETERS = """
+	private static final String PARAMETERS = """
 			{
 			    "type": "object",
 			    "properties": {
@@ -130,9 +137,9 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 			}
 			""";
 
-	private final String TOOL_NAME = "text_file_operator";
+	private static final String TOOL_NAME = "text_file_operator";
 
-	private final String TOOL_DESCRIPTION = """
+	private static final String TOOL_DESCRIPTION = """
 			对文本文件（包括 md、html、css、java 等）执行各种操作：
 			- open: 打开并读取文本文件，您必须先打开文件！
 			- replace: 替换文件中的特定文本
@@ -158,7 +165,6 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
 		return functionTool;
 	}
-
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("TextFileOperator toolInput:{}", toolInput);
@@ -196,6 +202,44 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 			};
 		}
 		catch (Exception e) {
+			String planId = this.planId;
+			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+					"Error: " + e.getMessage());
+			return new ToolExecuteResult("Error: " + e.getMessage());
+		}
+	}
+
+	public ToolExecuteResult runTyped(TextFileInput input) {
+		log.info("TextFileOperator typed input: action={}, filePath={}", input.getAction(), input.getFilePath());
+		try {
+			String planId = this.planId;
+			String action = input.getAction();
+			String filePath = input.getFilePath();
+
+			return switch (action) {
+				case "open" -> openFile(planId, filePath);
+				case "replace" -> {
+					String sourceText = input.getSourceText();
+					String targetText = input.getTargetText();
+					yield replaceText(planId, sourceText, targetText);
+				}
+				case "get_text" -> getCurrentText(planId);
+				case "save" -> {
+					String content = input.getContent();
+					yield saveAndClose(planId, content);
+				}
+				case "append" -> {
+					String appendContent = input.getContent();
+					yield appendToFile(planId, appendContent);
+				}
+				case "count_words" -> countWords(planId);
+				default -> {
+					textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+							"Error: Unknown action");
+					yield new ToolExecuteResult("Unknown action: " + action);
+				}
+			};
+		} catch (Exception e) {
 			String planId = this.planId;
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
@@ -404,7 +448,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
+	public Class<TextFileInput> getInputType() {
 		return TextFileInput.class;
 	}
 
@@ -414,8 +458,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		return run(s);
+	public ToolExecuteResult apply(TextFileInput input, ToolContext toolContext) {
+		return runTyped(input);
 	}
 
 	@Override

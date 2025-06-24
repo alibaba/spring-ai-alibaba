@@ -16,8 +16,6 @@
 package com.alibaba.cloud.ai.example.manus.tool;
 
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -25,13 +23,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.Map;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class DocLoaderTool implements ToolCallBiFunctionDef {
+public class DocLoaderTool implements ToolCallBiFunctionDef<DocLoaderTool.DocLoaderInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(DocLoaderTool.class);
 
@@ -97,6 +94,16 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 		return functionTool;
 	}
 
+	/**
+	 * 获取用于 Spring AI 的 FunctionToolCallback
+	 */
+	public static FunctionToolCallback<DocLoaderInput, ToolExecuteResult> getFunctionToolCallback() {
+		return FunctionToolCallback.builder(name, new DocLoaderTool()::apply)
+				.description(description)
+				.inputType(DocLoaderInput.class)
+				.build();
+	}
+
 	public DocLoaderTool() {
 	}
 
@@ -105,8 +112,6 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 	private String lastOperationResult = "";
 
 	private String lastFileType = "";
-
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	public ToolExecuteResult run(DocLoaderInput input) {
 		String fileType = input.getFileType();
@@ -156,7 +161,7 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
+	public Class<DocLoaderInput> getInputType() {
 		return DocLoaderInput.class;
 	}
 
@@ -166,15 +171,8 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String t, ToolContext u) {
-		try {
-			DocLoaderInput input = objectMapper.readValue(t, DocLoaderInput.class);
-			return run(input);
-		}
-		catch (Exception e) {
-			log.error("Error parsing input", e);
-			return new ToolExecuteResult("Error parsing input: " + e.getMessage());
-		}
+	public ToolExecuteResult apply(DocLoaderInput input, ToolContext context) {
+		return run(input);
 	}
 
 	@Override

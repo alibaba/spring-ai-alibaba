@@ -28,9 +28,8 @@ import java.util.List;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class Bash implements ToolCallBiFunctionDef {
+public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(Bash.class);
 
@@ -38,9 +37,11 @@ public class Bash implements ToolCallBiFunctionDef {
 	 * 内部输入类，用于定义Bash工具的输入参数
 	 */
 	public static class BashInput {
+
 		private String command;
 
-		public BashInput() {}
+		public BashInput() {
+		}
 
 		public BashInput(String command) {
 			this.command = command;
@@ -53,6 +54,7 @@ public class Bash implements ToolCallBiFunctionDef {
 		public void setCommand(String command) {
 			this.command = command;
 		}
+
 	}
 
 	private ManusProperties manusProperties;
@@ -147,7 +149,7 @@ public class Bash implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
+	public Class<BashInput> getInputType() {
 		return BashInput.class;
 	}
 
@@ -157,15 +159,8 @@ public class Bash implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		try {
-			BashInput input = objectMapper.readValue(s, BashInput.class);
-			return run(input);
-		}
-		catch (Exception e) {
-			log.error("Error processing JSON", e);
-			return new ToolExecuteResult("Error processing JSON: " + e.getMessage());
-		}
+	public ToolExecuteResult apply(BashInput input, ToolContext toolContext) {
+		return run(input);
 	}
 
 	@Override

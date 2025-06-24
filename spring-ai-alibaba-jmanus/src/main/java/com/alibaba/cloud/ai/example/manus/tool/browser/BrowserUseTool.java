@@ -45,9 +45,8 @@ import java.util.HashMap;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class BrowserUseTool implements ToolCallBiFunctionDef {
+public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
@@ -210,7 +209,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return instance;
 	}
 
-
 	public ToolExecuteResult run(String toolInput) {
 		log.info("BrowserUseTool toolInput:" + toolInput);
 
@@ -287,6 +285,54 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		}
 	}
 
+	public ToolExecuteResult runTyped(BrowserRequestVO requestVO) {
+		log.info("BrowserUseTool typed input: action={}", requestVO.getAction());
+
+		// 从RequestVO中获取参数
+		String action = requestVO.getAction();
+		try {
+			if (action == null) {
+				return new ToolExecuteResult("Action parameter is required");
+			}
+			switch (action) {
+				case "navigate": {
+					return new NavigateAction(this).execute(requestVO);
+				}
+				case "click": {
+					return new ClickByElementAction(this).execute(requestVO);
+				}
+				case "input_text": {
+					return new InputTextAction(this).execute(requestVO);
+				}
+				case "new_tab": {
+					return new NewTabAction(this).execute(requestVO);
+				}
+				case "close_tab": {
+					return new CloseTabAction(this).execute(requestVO);
+				}
+				case "switch_tab": {
+					return new SwitchTabAction(this).execute(requestVO);
+				}
+				case "refresh": {
+					return new RefreshAction(this).execute(requestVO);
+				}
+				case "get_element_position": {
+					return new GetElementPositionByNameAction(this).execute(requestVO);
+				}
+				case "move_to_and_click": {
+					return new MoveToAndClickAction(this).execute(requestVO);
+				}
+				default:
+					return new ToolExecuteResult("Unknown action: " + action);
+			}
+		} catch (Exception e) {
+			log.error("Browser action '" + action + "' failed", e);
+			return new ToolExecuteResult("Browser action '" + action + "' failed: " + e.getMessage());
+		}
+	}
+
+	// ...existing code...
+
 	private List<Map<String, Object>> getTabsInfo(Page page) {
 		return page.context().pages().stream().map(p -> {
 			Map<String, Object> tabInfo = new HashMap<>();
@@ -337,9 +383,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String t, ToolContext u) {
-
-		return run(t);
+	public ToolExecuteResult apply(BrowserRequestVO requestVO, ToolContext u) {
+		return runTyped(requestVO);
 	}
 
 	@Override
@@ -363,7 +408,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
+	public Class<BrowserRequestVO> getInputType() {
 		return BrowserRequestVO.class;
 	}
 
