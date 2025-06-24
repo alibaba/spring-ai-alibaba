@@ -104,7 +104,6 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			executor.setState(AgentState.IN_PROGRESS);
 
 			recordStepStart(step, context);
-			executor.setOutputColumns(step.getOutputColumns());
 			String stepResultStr = executor.run();
 			step.setResult(stepResultStr);
 

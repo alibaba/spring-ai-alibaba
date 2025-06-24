@@ -50,7 +50,7 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 			    "type": "object",
 			    "properties": {
 			        "command": {
-			            "description": "MapReducePlanningTool 接受JSON格式输入创建执行计划，必需参数包括command固定为create、planId作为唯一标识、title作为计划标题、steps数组包含执行节点，每个节点有type字段指定sequential顺序执行或mapreduce分布式处理三种类型，sequential节点包含steps数组，mapreduce节点包含dataPreparedSteps（数据准备阶段，串行执行）、mapSteps（Map阶段，并行执行）和reduceSteps（Reduce阶段，串行执行）数组，每个步骤对象包含stepRequirement描述具体任务内容建议用方括号标明代理类型、outputColumns描述期望输出结果用逗号分隔多个字段，工具会自动为步骤添加类型前缀并将输出信息嵌入描述中，支持在同一计划中组合多种节点类型形成复杂工作流。 所有的jsonkey都必须是完全符合要求的英文",
+			            "description": "MapReducePlanningTool 接受JSON格式输入创建执行计划，必需参数包括command固定为create、planId作为唯一标识、title作为计划标题、steps数组包含执行节点，每个节点有type字段指定sequential顺序执行或mapreduce分布式处理两种类型，sequential节点包含steps数组，mapreduce节点包含dataPreparedSteps（数据准备阶段，串行执行）、mapSteps（Map阶段，并行执行）和reduceSteps（Reduce阶段，串行执行）数组，每个步骤对象包含stepRequirement描述具体任务内容建议用方括号标明代理类型，工具会自动为步骤添加类型前缀，支持在同一计划中组合多种节点类型形成复杂工作流。 所有的jsonkey都必须是完全符合要求的英文",
 			            "enum": [
 			                "create"
 			            ],
@@ -65,7 +65,7 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 			            "type": "string"
 			        },
 			        "steps": {
-			            "description": "计划步骤列表，支持顺序和MapReduce三种节点类型",
+			            "description": "计划步骤列表，支持顺序和MapReduce两种节点类型",
 			            "type": "array",
 			            "items": {
 			                "type": "object",
@@ -84,34 +84,27 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 			                                "stepRequirement": {
 			                                    "description": "步骤要求描述",
 			                                    "type": "string"
-			                                },
-			                                "outputColumns": {
-			                                    "description": "输出列描述",
+			                                }
+			                            },
+			                            "required": ["stepRequirement"]
+			                        }
+			                    },
+			                    "dataPreparedSteps": {
+			                        "description": "MapReduce节点的数据准备阶段步骤列表，在Map阶段之前串行执行，用于数据预处理、分割、清洗等准备工作",
+			                        "type": "array",
+			                        "items": {
+			                            "type": "object",
+			                            "properties": {
+			                                "stepRequirement": {
+			                                    "description": "数据准备步骤要求描述",
 			                                    "type": "string"
 			                                }
 			                            },
-			                            "required": ["stepRequirement"]                        }
-			                 },
-			                 "dataPreparedSteps": {
-			                     "description": "MapReduce节点的数据准备阶段步骤列表，在Map阶段之前串行执行，用于数据预处理、分割、清洗等准备工作",
-			                     "type": "array",
-			                     "items": {
-			                         "type": "object",
-			                         "properties": {
-			                             "stepRequirement": {
-			                                 "description": "数据准备步骤要求描述",
-			                                 "type": "string"
-			                             },
-			                             "outputColumns": {
-			                                 "description": "输出列描述",
-			                                 "type": "string"
-			                             }
-			                         },
-			                         "required": ["stepRequirement"]
-			                     }
-			                 },
-			                 "mapSteps": {
-			                     "description": "MapReduce节点的Map阶段步骤列表，在数据准备阶段之后并行执行",
+			                            "required": ["stepRequirement"]
+			                        }
+			                    },
+			                    "mapSteps": {
+			                        "description": "MapReduce节点的Map阶段步骤列表，在数据准备阶段之后并行执行",
 			                        "type": "array",
 			                        "items": {
 			                            "type": "object",
@@ -119,13 +112,9 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 			                                "stepRequirement": {
 			                                    "description": "Map步骤要求描述",
 			                                    "type": "string"
-			                                },
-			                                "outputColumns": {
-			                                    "description": "输出列描述",
-			                                    "type": "string"
 			                                }
 			                            },
-			                            "required": ["stepRequirement", "outputColumns"]
+			                            "required": ["stepRequirement"]
 			                        }
 			                    },
 			                    "reduceSteps": {
@@ -136,10 +125,6 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 			                            "properties": {
 			                                "stepRequirement": {
 			                                    "description": "Reduce步骤要求描述",
-			                                    "type": "string"
-			                                },
-			                                "outputColumns": {
-			                                    "description": "输出列描述",
 			                                    "type": "string"
 			                                }
 			                            },
@@ -305,15 +290,9 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 	 */
 	private ExecutionStep createExecutionStepFromMap(Map<String, Object> stepMap) {
 		String stepRequirement = (String) stepMap.get("stepRequirement");
-		String outputColumns = (String) stepMap.get("outputColumns");
 
 		ExecutionStep executionStep = new ExecutionStep();
 		executionStep.setStepRequirement(stepRequirement);
-
-		// 直接保存输出列信息到对应字段
-		if (outputColumns != null && !outputColumns.trim().isEmpty()) {
-			executionStep.setOutputColumns(outputColumns);
-		}
 
 		return executionStep;
 	}

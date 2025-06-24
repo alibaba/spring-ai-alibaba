@@ -27,7 +27,10 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.ExecutionN
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceNode;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.SequentialNode;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.split.SplitTool;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +59,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 	/**
 	 * 执行整个 MapReduce 计划的所有步骤
+	 * 
 	 * @param context 执行上下文，包含用户请求和执行的过程信息
 	 */
 	@Override
@@ -80,16 +84,14 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 				for (Object stepNode : steps) {
 					if (stepNode instanceof SequentialNode) {
 						lastExecutor = executeSequentialNode((SequentialNode) stepNode, context, lastExecutor);
-					}
-					else if (stepNode instanceof MapReduceNode) {
+					} else if (stepNode instanceof MapReduceNode) {
 						lastExecutor = executeMapReduceNode((MapReduceNode) stepNode, context, lastExecutor);
 					}
 				}
 			}
 
 			context.setSuccess(true);
-		}
-		finally {
+		} finally {
 			performCleanup(context, lastExecutor);
 		}
 	}
@@ -131,7 +133,12 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		// 2. 并行执行 Map 阶段
 		if (CollectionUtil.isNotEmpty(mrNode.getMapSteps())) {
-			executor = executeMapPhase(mrNode.getMapSteps(), context);
+			// 获取 SplitTool 的 ToolCallBackContext
+			ToolCallBackContext toolCallBackContext = null;
+			if (executor != null) {
+				toolCallBackContext = executor.getToolCallBackContext("SplitTool");
+			}
+			executor = executeMapPhase(mrNode.getMapSteps(), context, toolCallBackContext);
 		}
 
 		// 3. 串行执行 Reduce 阶段
@@ -165,34 +172,99 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	/**
 	 * 并行执行 Map 阶段
 	 */
-	private BaseAgent executeMapPhase(List<ExecutionStep> mapSteps, ExecutionContext context) {
+	private BaseAgent executeMapPhase(List<ExecutionStep> mapSteps, ExecutionContext context,
+			ToolCallBackContext toolCallBackContext) {
 		logger.info("并行执行 Map 阶段，共 {} 个步骤", mapSteps.size());
 
-		List<CompletableFuture<BaseAgent>> futures = new ArrayList<>();
-
-		for (ExecutionStep step : mapSteps) {
-			CompletableFuture<BaseAgent> future = CompletableFuture.supplyAsync(() -> {
-				return executeStep(step, context);
-			}, executorService);
-			futures.add(future);
+		ToolCallBiFunctionDef callFunc = toolCallBackContext.getFunctionInstance();
+		if (callFunc == null) {
+			logger.error("ToolCallBiFunctionDef is null, cannot execute Map phase");
+			return null;
 		}
+		if (!(callFunc instanceof SplitTool)) {
+			logger.error("ToolCallBiFunctionDef is not SplitTool, cannot execute Map phase");
+			return null;
+		}
+		SplitTool splitTool = (SplitTool) callFunc;
 
-		// 等待所有 Map 步骤完成
+		List<CompletableFuture<BaseAgent>> futures = new ArrayList<>();
 		BaseAgent lastExecutor = null;
-		for (CompletableFuture<BaseAgent> future : futures) {
-			try {
-				BaseAgent executor = future.get();
-				if (executor != null) {
-					lastExecutor = executor;
+
+		try {
+			// 2. 获取分割文件列表
+			List<String> splitFiles = splitTool.getSplitResults();
+			
+			if (splitFiles.isEmpty()) {
+				logger.error("没有找到分割文件，Map 阶段执行失败");
+				throw new RuntimeException("没有找到分割文件，Map 阶段无法执行");
+			} else {
+				logger.info("找到 {} 个分割文件，将为每个文件执行 Map 步骤", splitFiles.size());
+				
+				// 3. 为每个分割文件创建并执行 mapSteps 副本
+				for (String splitFile : splitFiles) {
+					// 4. 复制一个新的 mapSteps 列表
+					List<ExecutionStep> copiedMapSteps = copyMapSteps(mapSteps, splitFile);
+					
+					// 5. 使用 CompletableFuture 为每个文件部分执行新的 mapSteps 列表
+					CompletableFuture<BaseAgent> future = CompletableFuture.supplyAsync(() -> {
+						BaseAgent fileExecutor = null;
+						logger.info("开始处理分割文件: {}", splitFile);
+						
+						for (ExecutionStep step : copiedMapSteps) {
+							BaseAgent stepExecutor = executeStep(step, context);
+							if (stepExecutor != null) {
+								fileExecutor = stepExecutor;
+							}
+						}
+						
+						logger.info("完成处理分割文件: {}", splitFile);
+						return fileExecutor;
+					}, executorService);
+					
+					futures.add(future);
 				}
 			}
-			catch (Exception e) {
-				logger.error("Map 阶段步骤执行失败", e);
+			
+			// 等待所有 Map 步骤完成
+			for (CompletableFuture<BaseAgent> future : futures) {
+				try {
+					BaseAgent executor = future.get();
+					if (executor != null) {
+						lastExecutor = executor;
+					}
+				}
+				catch (Exception e) {
+					logger.error("Map 阶段步骤执行失败", e);
+				}
 			}
+			
+		} catch (Exception e) {
+			logger.error("执行 Map 阶段时发生错误", e);
+			throw new RuntimeException("Map 阶段执行失败", e);
 		}
 
 		logger.info("Map 阶段执行完成");
 		return lastExecutor;
+	}
+	/**
+	 * 复制 mapSteps 列表，并为特定文件调整步骤要求
+	 */
+	private List<ExecutionStep> copyMapSteps(List<ExecutionStep> originalSteps, String splitFile) {
+		List<ExecutionStep> copiedSteps = new ArrayList<>();
+
+		for (ExecutionStep originalStep : originalSteps) {
+			ExecutionStep copiedStep = new ExecutionStep();
+			copiedStep.setStepIndex(originalStep.getStepIndex());
+
+			// 调整步骤要求，将分割文件信息添加到步骤要求中
+			String originalRequirement = originalStep.getStepRequirement();
+			String modifiedRequirement = originalRequirement + " [处理文件: " + splitFile + "]";
+			copiedStep.setStepRequirement(modifiedRequirement);
+
+			copiedSteps.add(copiedStep);
+		}
+
+		return copiedSteps;
 	}
 
 	/**

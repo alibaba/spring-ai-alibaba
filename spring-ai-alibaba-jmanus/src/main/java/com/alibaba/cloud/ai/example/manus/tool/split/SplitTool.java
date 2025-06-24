@@ -17,11 +17,15 @@ package com.alibaba.cloud.ai.example.manus.tool.split;
 
 import java.io.*;
 import java.nio.file.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -41,80 +45,64 @@ public class SplitTool implements ToolCallBiFunctionDef {
 	private static final String TOOL_NAME = "split_tool";
 
 	private static final String TOOL_DESCRIPTION = """
-			数据分割工具，用于MapReduce流程中的数据准备阶段。
+			数据分割工具，用于MapReduce流程中的数据准备阶段和任务状态管理。
 			支持的操作：
 			- split_data: 自动完成验证文件存在性并进行数据分割处理，支持CSV、TSV、TXT等文本格式的数据文件。
-			  输出目录采用map+taskId模式，每个任务都有独立的目录和状态跟踪文件。
-			- get_undispatched_task: 获取一个未分配的任务信息，用于任务调度和管理。
-			- mark_task_success: 标记指定任务为成功状态，用于任务完成确认和状态管理。
+			  输出目录采用inner_storage/{planId}/split_output模式，与InnerStorageService统一管理，每个任务都有独立的目录和状态跟踪文件。
+			- record_map_output: 记录Map阶段处理完成后的输出文件，并更新对应的任务状态文件。
+			  用于跟踪每个Map任务的完成状态和输出文件位置。
 			
 			任务管理特性：
 			- 自动生成递增的任务ID
-			- 在map+taskId目录中创建task_status.log文件跟踪任务状态
-			- 支持任务状态查询和管理
-			- 支持手动标记任务完成状态
+			- 在inner_storage/{planId}/map_status目录中创建任务状态文件跟踪任务状态
+			- 与InnerStorageService统一存储管理
+			- 通过 getSplitResults() 方法获取分割文件列表用于任务分配
+			- 支持Map阶段完成后的状态记录和输出文件管理
 			""";
 
 	private static final String PARAMETERS = """
 			{
-			    "oneOf": [
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "split_data"
-			                },
-			                "file_path": {
-			                    "type": "string",
-			                    "description": "要处理的文件或文件夹路径"
-			                },
-			                "return_columns": {
-			                    "type": "array",
-			                    "items": {
-			                        "type": "string"
-			                    },
-			                    "description": "返回结果的列名，用于结构化输出"
-			                }
-			            },
-			            "required": ["action", "file_path"],
-			            "additionalProperties": false
+			    "type": "object",
+			    "properties": {
+			        "action": {
+			            "type": "string",
+			            "enum": ["split_data", "record_map_output"]
 			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "get_undispatched_task"
-			                }
-			            },
-			            "required": ["action"],
-			            "additionalProperties": false
+			        "file_path": {
+			            "type": "string",
+			            "description": "要处理的文件或文件夹路径"
 			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "mark_task_success"
-			                },
-			                "task_id": {
-			                    "type": "string",
-			                    "description": "要标记为成功的任务ID"
-			                },
-			                "result_summary": {
-			                    "type": "string",
-			                    "description": "任务完成的结果摘要（可选）"
-			                }
+			        "return_columns": {
+			            "type": "array",
+			            "items": {
+			                "type": "string"
 			            },
-			            "required": ["action", "task_id"],
-			            "additionalProperties": false
+			            "description": "返回结果的列名，用于结构化输出"
+			        },
+			        "output_file_path": {
+			            "type": "string",
+			            "description": "Map阶段处理完成后的输出文件路径"
+			        },
+			        "task_id": {
+			            "type": "string",
+			            "description": "任务ID，用于状态跟踪"
+			        },
+			        "status": {
+			            "type": "string",
+			            "enum": ["completed", "failed"],
+			            "description": "任务状态"
 			        }
-			    ]
+			    },
+			    "required": ["action"],
+			    "additionalProperties": false
 			}
 			""";
 
 	private String planId;
+
+	private String workingDirectoryPath;
+
+	private ManusProperties manusProperties;
 
 	private String lastOperationResult = "";
 
@@ -123,39 +111,25 @@ public class SplitTool implements ToolCallBiFunctionDef {
 	private List<String> splitResults = new ArrayList<>();
 	
 	private List<String> returnColumns = new ArrayList<>();
-	
-	private static int taskIdCounter = 1;
-	
-	private static final Map<String, TaskInfo> taskMap = new HashMap<>();
+
+	// Map任务状态管理
+	private Map<String, TaskStatus> mapTaskStatuses = new HashMap<>();
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
-	
-	/**
-	 * 任务信息类
-	 */
-	private static class TaskInfo {
-		String taskId;
-		String filePath;
-		List<String> splitFiles;
-		boolean isFinished;
-		String status;
-		long createdTime;
-		
-		TaskInfo(String taskId, String filePath) {
-			this.taskId = taskId;
-			this.filePath = filePath;
-			this.splitFiles = new ArrayList<>();
-			this.isFinished = false;
-			this.status = "CREATED";
-			this.createdTime = System.currentTimeMillis();
-		}
-	}
 
 	public SplitTool() {
 	}
 
-	public SplitTool(String planId) {
+
+	public SplitTool(ManusProperties manusProperties) {
+		this.manusProperties = manusProperties;
+		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+	}
+
+	public SplitTool(String planId, ManusProperties manusProperties) {
 		this.planId = planId;
+		this.manusProperties = manusProperties;
+		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 	}
 
 	@Override
@@ -207,8 +181,8 @@ public class SplitTool implements ToolCallBiFunctionDef {
 			.build();
 	}
 
-	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(String planId) {
-		return FunctionToolCallback.builder(TOOL_NAME, new SplitTool(planId))
+	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(String planId, ManusProperties manusProperties) {
+		return FunctionToolCallback.builder(TOOL_NAME, new SplitTool(planId, manusProperties))
 			.description(TOOL_DESCRIPTION)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
@@ -244,20 +218,24 @@ public class SplitTool implements ToolCallBiFunctionDef {
 					
 					yield processFileOrDirectory(filePath);
 				}
-				case "get_undispatched_task" -> {
-					yield getUndispatchedTask();
-				}
-				case "mark_task_success" -> {
+				case "record_map_output" -> {
+					String outputFilePath = (String) toolInputMap.get("output_file_path");
 					String taskId = (String) toolInputMap.get("task_id");
-					String resultSummary = (String) toolInputMap.get("result_summary");
+					String status = (String) toolInputMap.get("status");
 					
+					if (outputFilePath == null) {
+						yield new ToolExecuteResult("错误：output_file_path参数是必需的");
+					}
 					if (taskId == null) {
 						yield new ToolExecuteResult("错误：task_id参数是必需的");
 					}
+					if (status == null) {
+						yield new ToolExecuteResult("错误：status参数是必需的");
+					}
 					
-					yield markTaskSuccess(taskId, resultSummary);
+					yield recordMapTaskOutput(outputFilePath, taskId, status);
 				}
-				default -> new ToolExecuteResult("未知操作: " + action + "。支持的操作: split_data, get_undispatched_task, mark_task_success");
+				default -> new ToolExecuteResult("未知操作: " + action + "。支持的操作: split_data, record_map_output");
 			};
 
 		}
@@ -268,62 +246,55 @@ public class SplitTool implements ToolCallBiFunctionDef {
 	}
 
 	/**
-	 * 处理文件或目录的完整流程：验证存在性 -> 分割数据 -> 管理任务
+	 * 处理文件或目录的完整流程：验证存在性 -> 分割数据
 	 */
 	private ToolExecuteResult processFileOrDirectory(String filePath) {
-		StringBuilder finalResult = new StringBuilder();
-
 		try {
-			// 生成任务ID
-			String taskId = generateTaskId();
-			TaskInfo taskInfo = new TaskInfo(taskId, filePath);
-			taskMap.put(taskId, taskInfo);
+			// 确保 planId 存在，如果为空则使用默认值
+			if (planId == null || planId.trim().isEmpty()) {
+				planId = "plan-" + System.currentTimeMillis();
+				log.info("planId 为空，使用默认值: {}", planId);
+			}
 			
-			// 步骤1: 验证文件或文件夹存在性
-			finalResult.append("=== 步骤1: 验证文件存在性 ===\n");
-			Path path = Paths.get(filePath);
+			// 验证文件或文件夹存在性
+			// 确保工作目录已初始化
+			if (workingDirectoryPath == null) {
+				if (manusProperties != null) {
+					workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+				} else {
+					// 如果没有 manusProperties，使用默认方式
+					workingDirectoryPath = CodeUtils.getWorkingDirectory(null);
+				}
+			}
+			
+			// 根据路径类型进行处理
+			Path path;
+			if (Paths.get(filePath).isAbsolute()) {
+				// 如果是绝对路径，直接使用
+				path = Paths.get(filePath);
+			} else {
+				// 如果是相对路径，基于工作目录解析
+				path = Paths.get(workingDirectoryPath).resolve(filePath);
+			}
+			
 			if (!Files.exists(path)) {
-				taskInfo.status = "FAILED";
-				taskInfo.isFinished = true;
-				updateTaskStatus(taskId, "FAILED");
-				return new ToolExecuteResult("错误：文件或目录不存在: " + filePath);
+				return new ToolExecuteResult("错误：文件或目录不存在: " + path.toAbsolutePath().toString());
 			}
 
 			boolean isFile = Files.isRegularFile(path);
 			boolean isDirectory = Files.isDirectory(path);
 
-			finalResult.append("- 任务ID: ").append(taskId).append("\n");
-			finalResult.append("- 路径: ").append(filePath).append("\n");
-			finalResult.append("- 类型: ").append(isFile ? "文件" : (isDirectory ? "文件夹" : "其他")).append("\n");
-
-			if (isFile) {
-				long size = Files.size(path);
-				finalResult.append("- 文件大小: ").append(formatFileSize(size)).append("\n");
-			}
-			else if (isDirectory) {
-				long fileCount = Files.list(path).count();
-				finalResult.append("- 包含文件数: ").append(fileCount).append("\n");
-			}
-			finalResult.append("\n");
-
-			// 步骤2: 执行数据分割
-			finalResult.append("=== 步骤2: 执行数据分割 ===\n");
-			taskInfo.status = "PROCESSING";
-			updateTaskStatus(taskId, "PROCESSING");
-
-			// 确定输出目录 - 使用map+taskId模式
-			Path outputPath = Paths.get("split_output", "map" + taskId);
-			Files.createDirectories(outputPath);
-			finalResult.append("- 输出目录: ").append(outputPath.toString()).append("\n");
+			// 确定输出目录 - 存储到 inner_storage/{planId}/split_output 目录
+			Path planDir = getPlanDirectory(planId);
+			Path outputPath = planDir.resolve("split_output");
+			ensureDirectoryExists(outputPath);
 
 			List<String> allSplitFiles = new ArrayList<>();
-			int totalProcessedLines = 0;
 
 			if (isFile && isTextFile(filePath)) {
 				// 处理单个文件
 				SplitResult result = splitSingleFile(path, null, 1000, outputPath, null);
 				allSplitFiles.addAll(result.splitFiles);
-				totalProcessedLines += result.totalLines;
 
 			}
 			else if (isDirectory) {
@@ -336,25 +307,23 @@ public class SplitTool implements ToolCallBiFunctionDef {
 				for (Path file : textFiles) {
 					SplitResult result = splitSingleFile(file, null, 1000, outputPath, null);
 					allSplitFiles.addAll(result.splitFiles);
-					totalProcessedLines += result.totalLines;
 				}
 			}
 
-			finalResult.append("- 总处理行数: ").append(totalProcessedLines).append("\n");
-			finalResult.append("- 生成分割文件数: ").append(allSplitFiles.size()).append("\n");
-			finalResult.append("- 分割文件列表:\n");
-			for (String file : allSplitFiles) {
-				finalResult.append("  ").append(file).append("\n");
-			}
-
-			// 更新任务信息
-			taskInfo.splitFiles = allSplitFiles;
-			taskInfo.status = "COMPLETED";
-			taskInfo.isFinished = true;
-			updateTaskStatus(taskId, "COMPLETED");
-
+			// 更新分割结果
 			splitResults = allSplitFiles;
-			lastOperationResult = finalResult.toString();
+			
+			// 生成简洁的返回结果
+			StringBuilder result = new StringBuilder();
+			result.append("切分文件成功");
+			result.append("，切分为").append(allSplitFiles.size()).append("个文件");
+			
+			// 如果有返回列要求，添加返回列信息
+			if (!returnColumns.isEmpty()) {
+				result.append("，返回列：").append(returnColumns);
+			}
+			
+			lastOperationResult = result.toString();
 			return new ToolExecuteResult(lastOperationResult);
 
 		}
@@ -372,11 +341,8 @@ public class SplitTool implements ToolCallBiFunctionDef {
 
 		List<String> splitFiles;
 
-		int totalLines;
-
-		SplitResult(List<String> splitFiles, int totalLines) {
+		SplitResult(List<String> splitFiles) {
 			this.splitFiles = splitFiles;
-			this.totalLines = totalLines;
 		}
 
 	}
@@ -430,7 +396,7 @@ public class SplitTool implements ToolCallBiFunctionDef {
 			}
 		}
 
-		return new SplitResult(splitFiles, totalLineCount);
+		return new SplitResult(splitFiles);
 	}
 
 	/**
@@ -440,20 +406,9 @@ public class SplitTool implements ToolCallBiFunctionDef {
 		String lowercaseFileName = fileName.toLowerCase();
 		return lowercaseFileName.endsWith(".csv") || lowercaseFileName.endsWith(".tsv")
 				|| lowercaseFileName.endsWith(".txt") || lowercaseFileName.endsWith(".dat")
-				|| lowercaseFileName.endsWith(".log");
-	}
-
-	/**
-	 * 格式化文件大小
-	 */
-	private String formatFileSize(long size) {
-		if (size < 1024)
-			return size + " B";
-		if (size < 1024 * 1024)
-			return String.format("%.1f KB", size / 1024.0);
-		if (size < 1024 * 1024 * 1024)
-			return String.format("%.1f MB", size / (1024.0 * 1024.0));
-		return String.format("%.1f GB", size / (1024.0 * 1024.0 * 1024.0));
+				|| lowercaseFileName.endsWith(".log") || lowercaseFileName.endsWith(".json")
+				|| lowercaseFileName.endsWith(".xml") || lowercaseFileName.endsWith(".yaml")
+				|| lowercaseFileName.endsWith(".yml") || lowercaseFileName.endsWith(".md");
 	}
 
 	@Override
@@ -483,143 +438,42 @@ public class SplitTool implements ToolCallBiFunctionDef {
 	}
 
 	/**
-	 * 生成任务ID
+	 * 获取分割结果文件列表
 	 */
-	private synchronized String generateTaskId() {
-		return String.valueOf(taskIdCounter++);
+	public List<String> getSplitResults() {
+		return new ArrayList<>(splitResults);
 	}
 	
 	/**
-	 * 更新任务状态到文件
+	 * 获取内部存储的根目录路径
 	 */
-	private void updateTaskStatus(String taskId, String status) {
-		try {
-			Path taskDir = Paths.get("split_output", "map" + taskId);
-			Files.createDirectories(taskDir);
-			
-			Path statusFile = taskDir.resolve("task_status.log");
-			String statusContent = String.format("TaskID: %s%nStatus: %s%nTimestamp: %s%n", 
-				taskId, status, new java.util.Date());
-			
-			Files.writeString(statusFile, statusContent, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-			log.info("Updated task status: {} -> {}", taskId, status);
-		} catch (IOException e) {
-			log.error("Failed to update task status for taskId: {}", taskId, e);
+	private Path getInnerStorageRoot() {
+		if (workingDirectoryPath == null) {
+			// 使用 CodeUtils.getWorkingDirectory 来获取工作目录，与 InnerStorageService 保持一致
+			if (manusProperties != null) {
+				workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+			} else {
+				// 如果没有 manusProperties，使用默认方式
+				workingDirectoryPath = CodeUtils.getWorkingDirectory(null);
+			}
 		}
-	}
-	
-	/**
-	 * 获取未分配的任务
-	 */
-	private ToolExecuteResult getUndispatchedTask() {
-		try {
-			// 查找未完成的任务
-			TaskInfo undispatchedTask = taskMap.values().stream()
-				.filter(task -> !task.isFinished)
-				.findFirst()
-				.orElse(null);
-			
-			if (undispatchedTask == null) {
-				return new ToolExecuteResult("没有找到未分配的任务");
-			}
-			
-			StringBuilder result = new StringBuilder();
-			result.append("=== 未分配任务信息 ===\n");
-			result.append("- 任务ID: ").append(undispatchedTask.taskId).append("\n");
-			result.append("- 文件路径: ").append(undispatchedTask.filePath).append("\n");
-			result.append("- 状态: ").append(undispatchedTask.status).append("\n");
-			result.append("- 创建时间: ").append(new java.util.Date(undispatchedTask.createdTime)).append("\n");
-			result.append("- 分割文件数: ").append(undispatchedTask.splitFiles.size()).append("\n");
-			
-			if (!undispatchedTask.splitFiles.isEmpty()) {
-				result.append("- 分割文件列表:\n");
-				for (String file : undispatchedTask.splitFiles) {
-					result.append("  ").append(file).append("\n");
-				}
-			}
-			
-			// 如果有返回列要求，添加结构化信息
-			if (!returnColumns.isEmpty()) {
-				result.append("- 返回列: ").append(returnColumns).append("\n");
-			}
-			
-			return new ToolExecuteResult(result.toString());
-			
-		} catch (Exception e) {
-			log.error("获取未分配任务失败", e);
-			return new ToolExecuteResult("获取未分配任务失败: " + e.getMessage());
-		}
+		return Paths.get(workingDirectoryPath, "inner_storage");
 	}
 
 	/**
-	 * 标记任务为成功状态
+	 * 获取计划目录路径
 	 */
-	private ToolExecuteResult markTaskSuccess(String taskId, String resultSummary) {
-		try {
-			// 检查任务是否存在
-			TaskInfo taskInfo = taskMap.get(taskId);
-			if (taskInfo == null) {
-				return new ToolExecuteResult("错误：任务ID不存在: " + taskId);
-			}
-			
-			// 更新任务状态
-			taskInfo.status = "SUCCESS";
-			taskInfo.isFinished = true;
-			
-			// 更新状态文件
-			updateTaskStatusWithSummary(taskId, "SUCCESS", resultSummary);
-			
-			StringBuilder result = new StringBuilder();
-			result.append("=== 任务标记成功 ===\n");
-			result.append("- 任务ID: ").append(taskId).append("\n");
-			result.append("- 原状态: ").append("COMPLETED -> SUCCESS").append("\n");
-			result.append("- 文件路径: ").append(taskInfo.filePath).append("\n");
-			result.append("- 分割文件数: ").append(taskInfo.splitFiles.size()).append("\n");
-			result.append("- 更新时间: ").append(new java.util.Date()).append("\n");
-			
-			if (resultSummary != null && !resultSummary.trim().isEmpty()) {
-				result.append("- 结果摘要: ").append(resultSummary).append("\n");
-			}
-			
-			if (!taskInfo.splitFiles.isEmpty()) {
-				result.append("- 相关文件:\n");
-				for (String file : taskInfo.splitFiles) {
-					result.append("  ").append(file).append("\n");
-				}
-			}
-			
-			log.info("Task {} marked as SUCCESS by LLM", taskId);
-			return new ToolExecuteResult(result.toString());
-			
-		} catch (Exception e) {
-			log.error("标记任务成功失败", e);
-			return new ToolExecuteResult("标记任务成功失败: " + e.getMessage());
-		}
+	private Path getPlanDirectory(String planId) {
+		return getInnerStorageRoot().resolve(planId);
 	}
 	
 	/**
-	 * 更新任务状态到文件（带摘要）
+	 * 确保目录存在
 	 */
-	private void updateTaskStatusWithSummary(String taskId, String status, String summary) {
-		try {
-			Path taskDir = Paths.get("split_output", "map" + taskId);
-			Files.createDirectories(taskDir);
-			
-			Path statusFile = taskDir.resolve("task_status.log");
-			StringBuilder statusContent = new StringBuilder();
-			statusContent.append(String.format("TaskID: %s%n", taskId));
-			statusContent.append(String.format("Status: %s%n", status));
-			statusContent.append(String.format("Timestamp: %s%n", new java.util.Date()));
-			
-			if (summary != null && !summary.trim().isEmpty()) {
-				statusContent.append(String.format("Summary: %s%n", summary));
-			}
-			
-			Files.writeString(statusFile, statusContent.toString(), 
-				StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-			log.info("Updated task status with summary: {} -> {}", taskId, status);
-		} catch (IOException e) {
-			log.error("Failed to update task status with summary for taskId: {}", taskId, e);
+	private void ensureDirectoryExists(Path directory) throws IOException {
+		if (!Files.exists(directory)) {
+			Files.createDirectories(directory);
+			log.debug("Created directory: {}", directory);
 		}
 	}
 

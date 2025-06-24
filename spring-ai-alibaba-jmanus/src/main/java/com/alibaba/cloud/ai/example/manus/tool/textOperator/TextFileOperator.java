@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -41,10 +42,13 @@ public class TextFileOperator  implements ToolCallBiFunctionDef {
 
 	private final TextFileService textFileService;
 
+	private final InnerStorageService innerStorageService;
+
 	private String planId;
 
-	public TextFileOperator(TextFileService textFileService) {
+	public TextFileOperator(TextFileService textFileService, InnerStorageService innerStorageService) {
 		this.textFileService = textFileService;
+		this.innerStorageService = innerStorageService;
 		ManusProperties manusProperties = textFileService.getManusProperties();
 		workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 	}
@@ -52,40 +56,116 @@ public class TextFileOperator  implements ToolCallBiFunctionDef {
 
 	private final String PARAMETERS = """
 			{
-			    "type": "object",
-			    "properties": {
-			        "action": {
-			            "type": "string",
-			            "description": "(required) The action to perform: 'replace', 'get_text', 'append', 'count_words', 'get_description'"
+			    "oneOf": [
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "replace"
+			                },
+			                "file_path": {
+			                    "type": "string",
+			                    "description": "要操作的文件路径"
+			                },
+			                "source_text": {
+			                    "type": "string",
+			                    "description": "要被替换的文本"
+			                },
+			                "target_text": {
+			                    "type": "string",
+			                    "description": "替换后的文本"
+			                }
+			            },
+			            "required": ["action", "file_path", "source_text", "target_text"],
+			            "additionalProperties": false
+			        },		        {
+		            "type": "object",
+		            "properties": {
+		                "action": {
+		                    "type": "string",
+		                    "const": "get_text"
+		                },
+		                "file_path": {
+		                    "type": "string",
+		                    "description": "要读取的文件路径"
+		                },
+		                "start_line": {
+		                    "type": "integer",
+		                    "description": "起始行号（从1开始）"
+		                },
+		                "end_line": {
+		                    "type": "integer",
+		                    "description": "结束行号（包含该行）。注意：单次最多返回500行，可多次调用获取更多内容"
+		                }
+		            },
+		            "required": ["action", "file_path", "start_line", "end_line"],
+		            "additionalProperties": false
+		        },
+		        {
+		            "type": "object",
+		            "properties": {
+		                "action": {
+		                    "type": "string",
+		                    "const": "get_all_text"
+		                },
+		                "file_path": {
+		                    "type": "string",
+		                    "description": "要读取全部内容的文件路径。注意：如果文件过长，内容将存储在临时文件中并返回文件路径"
+		                }
+		            },
+		            "required": ["action", "file_path"],
+		            "additionalProperties": false
+		        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "append"
+			                },
+			                "file_path": {
+			                    "type": "string",
+			                    "description": "要追加内容的文件路径"
+			                },
+			                "content": {
+			                    "type": "string",
+			                    "description": "要追加的内容"
+			                }
+			            },
+			            "required": ["action", "file_path", "content"],
+			            "additionalProperties": false
 			        },
-			        "file_path": {
-			            "type": "string",
-			            "description": "(required for file operations) The path where the text file is located or should be saved"
-			        },
-			        "content": {
-			            "type": "string",
-			            "description": "(optional) The content to write or append to the file"
-			        },
-			        "source_text": {
-			            "type": "string",
-			            "description": "(optional) The text to be replaced when using 'replace' action"
-			        },
-			        "target_text": {
-			            "type": "string",
-			            "description": "(optional) The text to replace with when using 'replace' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "count_words"
+			                },
+			                "file_path": {
+			                    "type": "string",
+			                    "description": "要统计单词数的文件路径"
+			                }
+			            },
+			            "required": ["action", "file_path"],
+			            "additionalProperties": false
 			        }
-			    },
-			    "required": ["action"]
+			    ]
 			}
 			""";
 
 	private final String TOOL_NAME = "text_file_operator";
 
 	private final String TOOL_DESCRIPTION = """
-			对文本文件（包括 md、html、css、java 等）执行各种操作：
-			- replace: 替换文件中的特定文本
-			- get_text: 获取文件的当前内容
-			- append: 向文件追加内容
+			对文本文件（包括 md、html、css、java 等）执行各种操作。
+			支持的操作：
+			- replace: 替换文件中的特定文本，需要提供 source_text 和 target_text 参数
+			- get_text: 获取文件指定行号范围的内容，需要提供 start_line 和 end_line 参数
+			  限制：单次最多返回500行内容，如需更多内容请多次调用
+			- get_all_text: 获取文件的全部内容
+			  注意：如果文件内容过长，将自动存储到临时文件中并返回文件路径
+			- append: 向文件追加内容，需要提供 content 参数
 			- count_words: 统计当前文件中的单词数量
 
 			支持的文件类型包括：
@@ -99,6 +179,7 @@ public class TextFileOperator  implements ToolCallBiFunctionDef {
 			- 以及更多基于文本的文件类型
 
 			注意：文件操作会自动处理文件的打开和保存，用户无需手动执行这些操作。
+			每个操作都有严格的参数要求，确保操作的准确性和安全性。
 			""";
 
 	public OpenAiApi.FunctionTool getToolDefinition() {
@@ -108,8 +189,9 @@ public class TextFileOperator  implements ToolCallBiFunctionDef {
 		return functionTool;
 	}
 
-	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(TextFileService textFileService) {
-		return FunctionToolCallback.builder(TOOL_NAME, new TextFileOperator(textFileService))
+	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(
+			TextFileService textFileService, InnerStorageService innerStorageService) {
+		return FunctionToolCallback.builder(TOOL_NAME, new TextFileOperator(textFileService, innerStorageService))
 			.description(TOOL_DESCRIPTION)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
@@ -126,21 +208,50 @@ public class TextFileOperator  implements ToolCallBiFunctionDef {
 
 			String action = (String) toolInputMap.get("action");
 			String filePath = (String) toolInputMap.get("file_path");
+			
+			// 基本参数验证
+			if (action == null) {
+				return new ToolExecuteResult("错误：action参数是必需的");
+			}
+			if (filePath == null) {
+				return new ToolExecuteResult("错误：file_path参数是必需的");
+			}
+
 			return switch (action) {
 				case "replace" -> {
 					String sourceText = (String) toolInputMap.get("source_text");
 					String targetText = (String) toolInputMap.get("target_text");
+					
+					if (sourceText == null || targetText == null) {
+						yield new ToolExecuteResult("错误：replace操作需要source_text和target_text参数");
+					}
+					
 					yield replaceText(planId, filePath, sourceText, targetText);
 				}
-				case "get_text" -> getCurrentText(planId, filePath);
+				case "get_text" -> {
+					Integer startLine = (Integer) toolInputMap.get("start_line");
+					Integer endLine = (Integer) toolInputMap.get("end_line");
+					
+					if (startLine == null || endLine == null) {
+						yield new ToolExecuteResult("错误：get_text操作需要start_line和end_line参数");
+					}
+					
+					yield getTextByLines(planId, filePath, startLine, endLine);
+				}
+				case "get_all_text" -> getAllText(planId, filePath);
 				case "append" -> {
 					String appendContent = (String) toolInputMap.get("content");
+					
+					if (appendContent == null) {
+						yield new ToolExecuteResult("错误：append操作需要content参数");
+					}
+					
 					yield appendToFile(planId, filePath, appendContent);
 				}
 				case "count_words" -> countWords(planId, filePath);
 				default -> {
 					textFileService.updateFileState(planId, filePath, "Error: Unknown action");
-					yield new ToolExecuteResult("Unknown action: " + action);
+					yield new ToolExecuteResult("未知操作: " + action + "。支持的操作: replace, get_text, get_all_text, append, count_words");
 				}
 			};
 		}
@@ -148,7 +259,7 @@ public class TextFileOperator  implements ToolCallBiFunctionDef {
 			String planId = this.planId;
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
-			return new ToolExecuteResult("Error: " + e.getMessage());
+			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
 		}
 	}
 
@@ -217,7 +328,67 @@ public class TextFileOperator  implements ToolCallBiFunctionDef {
 		}
 	}
 
-	private ToolExecuteResult getCurrentText(String planId, String filePath) {
+	private ToolExecuteResult getTextByLines(String planId, String filePath, Integer startLine, Integer endLine) {
+		try {
+			// 参数验证
+			if (startLine < 1 || endLine < 1) {
+				return new ToolExecuteResult("错误：行号必须从1开始");
+			}
+			if (startLine > endLine) {
+				return new ToolExecuteResult("错误：起始行号不能大于结束行号");
+			}
+
+			// 检查500行限制
+			int requestedLines = endLine - startLine + 1;
+			if (requestedLines > 500) {
+				return new ToolExecuteResult("错误：单次最多返回500行内容。请调整行号范围或分多次调用。当前请求行数：" + requestedLines);
+			}
+
+			// 自动打开文件
+			ToolExecuteResult openResult = ensureFileOpen(planId, filePath);
+			if (!openResult.getOutput().toLowerCase().contains("success")) {
+				return openResult;
+			}
+
+			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
+			java.util.List<String> lines = Files.readAllLines(absolutePath);
+			
+			if (lines.isEmpty()) {
+				textFileService.updateFileState(planId, filePath, "Success: File is empty");
+				return new ToolExecuteResult("文件为空");
+			}
+
+			// 验证行号范围
+			if (startLine > lines.size()) {
+				return new ToolExecuteResult("错误：起始行号超出文件范围（文件共" + lines.size() + "行）");
+			}
+
+			// 调整结束行号（不超过文件总行数）
+			int actualEndLine = Math.min(endLine, lines.size());
+			
+			StringBuilder result = new StringBuilder();
+			result.append(String.format("文件: %s (第%d-%d行，共%d行)\n", filePath, startLine, actualEndLine, lines.size()));
+			result.append("=".repeat(50)).append("\n");
+
+			for (int i = startLine - 1; i < actualEndLine; i++) {
+				result.append(String.format("%4d: %s\n", i + 1, lines.get(i)));
+			}
+
+			// 如果文件还有更多内容，提示用户
+			if (actualEndLine < lines.size()) {
+				result.append("\n提示：文件还有更多内容（第").append(actualEndLine + 1).append("-").append(lines.size()).append("行），可继续调用get_text获取。");
+			}
+
+			textFileService.updateFileState(planId, filePath, "Success: Retrieved text lines");
+			return new ToolExecuteResult(result.toString());
+		}
+		catch (IOException e) {
+			textFileService.updateFileState(planId, filePath, "Error: " + e.getMessage());
+			return new ToolExecuteResult("Error retrieving text lines: " + e.getMessage());
+		}
+	}
+
+	private ToolExecuteResult getAllText(String planId, String filePath) {
 		try {
 			// 自动打开文件
 			ToolExecuteResult openResult = ensureFileOpen(planId, filePath);
@@ -228,12 +399,17 @@ public class TextFileOperator  implements ToolCallBiFunctionDef {
 			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
 			String content = Files.readString(absolutePath);
 
-			textFileService.updateFileState(planId, filePath, "Success: Retrieved current text");
-			return new ToolExecuteResult(content);
+			textFileService.updateFileState(planId, filePath, "Success: Retrieved all text");
+			
+			// 使用 InnerStorageService 智能处理内容
+			InnerStorageService.SmartProcessResult processedResult = 
+				innerStorageService.processContent(planId, content, "get_all_text");
+			
+			return new ToolExecuteResult(processedResult.getSummary());
 		}
 		catch (IOException e) {
 			textFileService.updateFileState(planId, filePath, "Error: " + e.getMessage());
-			return new ToolExecuteResult("Error retrieving text: " + e.getMessage());
+			return new ToolExecuteResult("Error retrieving all text: " + e.getMessage());
 		}
 	}
 

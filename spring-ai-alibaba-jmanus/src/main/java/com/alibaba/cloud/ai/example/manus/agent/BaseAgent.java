@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 
@@ -84,7 +85,6 @@ public abstract class BaseAgent {
 
 	public abstract void clearUp(String planId);
 
-	private String outputColumns;
 
 	/**
 	 * 获取智能体的名称
@@ -181,6 +181,8 @@ public abstract class BaseAgent {
 
 	public abstract List<ToolCallback> getToolCallList();
 
+	public abstract ToolCallBackContext getToolCallBackContext(String toolKey);
+	
 	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, Map<String, Object> initialAgentSetting) {
 		this.llmService = llmService;
@@ -368,12 +370,5 @@ public abstract class BaseAgent {
 		this.envData = Collections.unmodifiableMap(new HashMap<>(envData));
 	}
 
-	public void setOutputColumns(String outputColumns) {
-		this.outputColumns = outputColumns;
-	}
-
-	public String getOutputColumns() {
-		return outputColumns;
-	}
 
 }

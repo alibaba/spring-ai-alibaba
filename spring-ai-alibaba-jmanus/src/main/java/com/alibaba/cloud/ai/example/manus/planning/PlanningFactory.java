@@ -136,6 +136,7 @@ public class PlanningFactory {
 		PlanExecutorInterface planExecutor = new MapReducePlanExecutor(agentEntities, recorder, agentService, llmService);
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder);
 
+		
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
 
 		return planningCoordinator;
@@ -171,12 +172,12 @@ public class PlanningFactory {
 		toolDefinitions.add(new TerminateTool(planId));
 		toolDefinitions.add(new Bash(manusProperties));
 		toolDefinitions.add(new DocLoaderTool());
-		toolDefinitions.add(new TextFileOperator(textFileService));
+		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService));
 		toolDefinitions.add(new InnerStorageTool(innerStorageService, summaryWorkflow));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
-		toolDefinitions.add(new SplitTool(planId));
+		toolDefinitions.add(new SplitTool(planId,manusProperties));
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
 			String serviceGroup = toolCallback.getServiceGroup();

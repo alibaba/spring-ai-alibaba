@@ -31,6 +31,7 @@ public class PlanningCoordinator {
 
 	private final PlanFinalizer planFinalizer;
 
+	
 	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorInterface planExecutor, PlanFinalizer planFinalizer) {
 		this.planCreator = planCreator;
 		this.planExecutor = planExecutor;

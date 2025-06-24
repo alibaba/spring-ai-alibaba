@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * 单个步骤的执行结果
@@ -32,9 +31,6 @@ public class ExecutionStep {
 
 	@JsonIgnore
 	private String result;
-
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	private String outputColumns;
 
 	@JsonIgnore
 	private BaseAgent agent;
@@ -72,13 +68,6 @@ public class ExecutionStep {
 		this.stepRequirement = stepRequirement;
 	}
 
-	public String getOutputColumns() {
-		return outputColumns;
-	}
-
-	public void setOutputColumns(String outputColumns) {
-		this.outputColumns = outputColumns;
-	}
 
 	@JsonIgnore
 	public String getStepInStr() {

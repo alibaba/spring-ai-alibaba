@@ -362,7 +362,7 @@ public class DynamicAgent extends ReActAgent {
 		return stepEnvMessage;
 	}
 
-	private ToolCallBackContext getToolCallBackContext(String toolKey) {
+	public ToolCallBackContext getToolCallBackContext(String toolKey) {
 		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
 		if (toolCallBackContext.containsKey(toolKey)) {
 			return toolCallBackContext.get(toolKey);
@@ -382,16 +382,13 @@ public class DynamicAgent extends ReActAgent {
 				ToolCallBackContext toolCallback = toolCallBackContext.get(toolKey);
 				if (toolCallback != null) {
 					// 特殊处理 TerminateTool，如果当前 agent 有 outputColumns，则创建新的实例
-					if (TerminateTool.name.equals(toolKey) && getOutputColumns() != null
-							&& !getOutputColumns().trim().isEmpty()) {
+					if (TerminateTool.name.equals(toolKey)) {
 
 						ToolCallBiFunctionDef functionInstance = toolCallback.getFunctionInstance();
 						if (!(functionInstance instanceof com.alibaba.cloud.ai.example.manus.tool.TerminateTool)) {
 							log.warn("Expected TerminateTool instance, but got: {}", functionInstance.getClass());
 							continue;
 						}
-						TerminateTool terminateTool = (TerminateTool) functionInstance;
-						terminateTool.setOutputColumns(getOutputColumns());
 					}
 					toolCallbacks.add(toolCallback.getToolCallback());
 				}
