@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
-
 public class GoogleSearch implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(GoogleSearch.class);
@@ -69,13 +67,6 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 		return functionTool;
 	}
 
-	public static FunctionToolCallback getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, new GoogleSearch())
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
-	}
 
 	private static final String SERP_API_KEY = System.getenv("SERP_API_KEY");
 
@@ -189,7 +180,7 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 
 	@Override
 	public Class<?> getInputType() {
-		return String.class;
+		return GoogleSearchInput.class;
 	}
 
 	@Override
@@ -229,6 +220,37 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 	@Override
 	public void setPlanId(String planId) {
 		// No operation needed as planId is no longer used
+	}
+
+	/**
+	 * 内部输入类，用于定义谷歌搜索工具的输入参数
+	 */
+	public static class GoogleSearchInput {
+		private String query;
+		private Integer numResults;
+
+		public GoogleSearchInput() {}
+
+		public GoogleSearchInput(String query, Integer numResults) {
+			this.query = query;
+			this.numResults = numResults;
+		}
+
+		public String getQuery() {
+			return query;
+		}
+
+		public void setQuery(String query) {
+			this.query = query;
+		}
+
+		public Integer getNumResults() {
+			return numResults;
+		}
+
+		public void setNumResults(Integer numResults) {
+			this.numResults = numResults;
+		}
 	}
 
 }

@@ -35,6 +35,37 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(DocLoaderTool.class);
 
+	/**
+	 * 内部输入类，用于定义文档加载工具的输入参数
+	 */
+	public static class DocLoaderInput {
+		private String fileType;
+		private String filePath;
+
+		public DocLoaderInput() {}
+
+		public DocLoaderInput(String fileType, String filePath) {
+			this.fileType = fileType;
+			this.filePath = filePath;
+		}
+
+		public String getFileType() {
+			return fileType;
+		}
+
+		public void setFileType(String fileType) {
+			this.fileType = fileType;
+		}
+
+		public String getFilePath() {
+			return filePath;
+		}
+
+		public void setFilePath(String filePath) {
+			this.filePath = filePath;
+		}
+	}
+
 	private static String PARAMETERS = """
 			{
 			    "type": "object",
@@ -66,14 +97,6 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 		return functionTool;
 	}
 
-	public static FunctionToolCallback getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, new DocLoaderTool()) // 修改为正确的工具类
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
-	}
-
 	public DocLoaderTool() {
 	}
 
@@ -85,17 +108,14 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
-	public ToolExecuteResult run(String toolInput) {
-		log.info("DocLoaderTool toolInput:{}", toolInput);
-		try {
-			Map<String, Object> toolInputMap = objectMapper.readValue(toolInput,
-					new TypeReference<Map<String, Object>>() {
-					});
-			String fileType = (String) toolInputMap.get("file_type");
-			String filePath = (String) toolInputMap.get("file_path");
-			this.lastFilePath = filePath;
-			this.lastFileType = fileType;
+	public ToolExecuteResult run(DocLoaderInput input) {
+		String fileType = input.getFileType();
+		String filePath = input.getFilePath();
+		log.info("DocLoaderTool fileType: {}, filePath: {}", fileType, filePath);
+		this.lastFilePath = filePath;
+		this.lastFileType = fileType;
 
+		try {
 			if (!"pdf".equalsIgnoreCase(fileType)) {
 				return new ToolExecuteResult("Unsupported file type: " + fileType);
 			}
@@ -137,7 +157,7 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 
 	@Override
 	public Class<?> getInputType() {
-		return String.class;
+		return DocLoaderInput.class;
 	}
 
 	@Override
@@ -147,7 +167,14 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 
 	@Override
 	public ToolExecuteResult apply(String t, ToolContext u) {
-		return run(t);
+		try {
+			DocLoaderInput input = objectMapper.readValue(t, DocLoaderInput.class);
+			return run(input);
+		}
+		catch (Exception e) {
+			log.error("Error parsing input", e);
+			return new ToolExecuteResult("Error parsing input: " + e.getMessage());
+		}
 	}
 
 	@Override

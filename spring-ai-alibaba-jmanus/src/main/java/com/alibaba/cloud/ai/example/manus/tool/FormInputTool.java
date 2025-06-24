@@ -77,15 +77,6 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 		return new OpenAiApi.FunctionTool(function);
 	}
 
-	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, new FormInputTool())
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
-			.build();
-	}
-
 	// Data structures:
 	/**
 	 * 表单输入项，包含标签和对应的值。
@@ -275,7 +266,7 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 
 	@Override
 	public Class<?> getInputType() {
-		return String.class;
+		return UserFormInput.class;
 	}
 
 	@Override

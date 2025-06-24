@@ -31,11 +31,63 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
 public class TextFileOperator implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(TextFileOperator.class);
+
+	/**
+	 * 内部输入类，用于定义文本文件操作工具的输入参数
+	 */
+	public static class TextFileInput {
+		private String action;
+		private String filePath;
+		private String content;
+		private String sourceText;
+		private String targetText;
+
+		public TextFileInput() {}
+
+		public String getAction() {
+			return action;
+		}
+
+		public void setAction(String action) {
+			this.action = action;
+		}
+
+		public String getFilePath() {
+			return filePath;
+		}
+
+		public void setFilePath(String filePath) {
+			this.filePath = filePath;
+		}
+
+		public String getContent() {
+			return content;
+		}
+
+		public void setContent(String content) {
+			this.content = content;
+		}
+
+		public String getSourceText() {
+			return sourceText;
+		}
+
+		public void setSourceText(String sourceText) {
+			this.sourceText = sourceText;
+		}
+
+		public String getTargetText() {
+			return targetText;
+		}
+
+		public void setTargetText(String targetText) {
+			this.targetText = targetText;
+		}
+	}
 
 	private final String workingDirectoryPath;
 
@@ -107,13 +159,6 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		return functionTool;
 	}
 
-	public FunctionToolCallback getFunctionToolCallback(TextFileService textFileService) {
-		return FunctionToolCallback.builder(TOOL_NAME, new TextFileOperator(textFileService))
-			.description(TOOL_DESCRIPTION)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
-	}
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("TextFileOperator toolInput:{}", toolInput);
@@ -360,7 +405,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 	@Override
 	public Class<?> getInputType() {
-		return String.class;
+		return TextFileInput.class;
 	}
 
 	@Override

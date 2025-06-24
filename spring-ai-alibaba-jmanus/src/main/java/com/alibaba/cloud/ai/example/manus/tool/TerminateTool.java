@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.tool;
 
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +28,27 @@ import org.springframework.ai.tool.metadata.ToolMetadata;
 public class TerminateTool implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(TerminateTool.class);
+
+	/**
+	 * 内部输入类，用于定义终止工具的输入参数
+	 */
+	public static class TerminateInput {
+		private String message;
+
+		public TerminateInput() {}
+
+		public TerminateInput(String message) {
+			this.message = message;
+		}
+
+		public String getMessage() {
+			return message;
+		}
+
+		public void setMessage(String message) {
+			this.message = message;
+		}
+	}
 
 	private static String PARAMETERS = """
 			{
@@ -64,14 +85,6 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 		return new OpenAiApi.FunctionTool(function);
 	}
 
-	public static FunctionToolCallback getFunctionToolCallback(String planId) {
-		return FunctionToolCallback.builder(name, new TerminateTool(planId))
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
-			.build();
-	}
 
 	private String planId;
 
@@ -99,18 +112,27 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 		this.planId = planId;
 	}
 
-	public ToolExecuteResult run(String toolInput) {
-		log.info("Terminate toolInput: {}", toolInput);
-		this.lastTerminationMessage = toolInput;
+	public ToolExecuteResult run(TerminateInput input) {
+		String message = input.getMessage();
+		log.info("Terminate message: {}", message);
+		this.lastTerminationMessage = message;
 		this.isTerminated = true;
 		this.terminationTimestamp = java.time.LocalDateTime.now().toString();
 
-		return new ToolExecuteResult(toolInput);
+		return new ToolExecuteResult(message);
 	}
 
 	@Override
 	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		return run(s);
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			TerminateInput input = objectMapper.readValue(s, TerminateInput.class);
+			return run(input);
+		}
+		catch (Exception e) {
+			log.error("Error parsing terminate input", e);
+			return new ToolExecuteResult("Error parsing input: " + e.getMessage());
+		}
 	}
 
 	@Override
@@ -130,7 +152,7 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 
 	@Override
 	public Class<?> getInputType() {
-		return String.class;
+		return TerminateInput.class;
 	}
 
 	@Override

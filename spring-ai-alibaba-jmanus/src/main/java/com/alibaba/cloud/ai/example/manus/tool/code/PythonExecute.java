@@ -32,6 +32,27 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(PythonExecute.class);
 
+	/**
+	 * 内部输入类，用于定义Python执行工具的输入参数
+	 */
+	public static class PythonInput {
+		private String code;
+
+		public PythonInput() {}
+
+		public PythonInput(String code) {
+			this.code = code;
+		}
+
+		public String getCode() {
+			return code;
+		}
+
+		public void setCode(String code) {
+			this.code = code;
+		}
+	}
+
 	private Boolean arm64 = true;
 
 	public static final String LLMMATH_PYTHON_CODE = """
@@ -69,13 +90,6 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 		return functionTool;
 	}
 
-	public static FunctionToolCallback getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, new PythonExecute())
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
-	}
 
 	private String lastCode = "";
 
@@ -192,7 +206,7 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 
 	@Override
 	public Class<?> getInputType() {
-		return String.class;
+		return PythonInput.class;
 	}
 
 	@Override

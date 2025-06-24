@@ -160,6 +160,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
+		
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
 			String serviceGroup = toolCallback.getServiceGroup();

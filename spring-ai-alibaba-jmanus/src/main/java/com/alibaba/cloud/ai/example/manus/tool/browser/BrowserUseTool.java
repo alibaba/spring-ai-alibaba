@@ -210,14 +210,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return instance;
 	}
 
-	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(
-			ChromeDriverService chromeDriverService) {
-		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
-	}
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("BrowserUseTool toolInput:" + toolInput);
@@ -372,7 +364,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 	@Override
 	public Class<?> getInputType() {
-		return String.class;
+		return BrowserRequestVO.class;
 	}
 
 	@Override
