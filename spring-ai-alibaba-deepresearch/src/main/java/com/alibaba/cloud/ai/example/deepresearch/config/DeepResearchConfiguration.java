@@ -17,9 +17,25 @@
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.*;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.RewriteAndMultiQueryDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
-import com.alibaba.cloud.ai.example.deepresearch.node.*;
+
+import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.InformationNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.RewriteAndMultiQueryNode;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
@@ -109,6 +125,7 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("research_team_next_node", new ReplaceStrategy());
 			// 用户输入
 			keyStrategyHashMap.put("query", new ReplaceStrategy());
+			keyStrategyHashMap.put("optimize_queries", new ReplaceStrategy());
 			keyStrategyHashMap.put("thread_id", new ReplaceStrategy());
 			keyStrategyHashMap.put("enable_background_investigation", new ReplaceStrategy());
 			keyStrategyHashMap.put("auto_accepted_plan", new ReplaceStrategy());

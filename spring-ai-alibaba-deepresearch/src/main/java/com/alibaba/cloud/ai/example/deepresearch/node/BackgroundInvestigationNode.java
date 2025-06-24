@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
@@ -55,7 +56,7 @@ public class BackgroundInvestigationNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("background investigation node is running.");
 
-		List<String> queries = state.value("query", (List<String>) null);
+		List<String> queries = StateUtil.getOptimizeQueries(state);
 		assert queries != null && !queries.isEmpty();
 		List<List<Map<String, String>>> resultsList = new ArrayList<>();
 		for (String query : queries) {
@@ -102,8 +103,12 @@ public class BackgroundInvestigationNode implements NodeAction {
 		Map<String, Object> resultMap = new HashMap<>();
 		if (!resultsList.isEmpty()) {
 			List<String> backgroundResults = new ArrayList<>();
-			for (List<Map<String, String>> results : resultsList) {
-				String prompt = "background investigation results of user query:\n" + results + "\n";
+			assert resultsList.size() != queries.size();
+			for (int i = 0; i < resultsList.size(); i++) {
+				List<Map<String, String>> results = resultsList.get(i);
+				String query = queries.get(i);
+				String prompt = "background investigation query:\n" + query + "\n"
+						+ "background investigation results:\n" + results + "\n";
 				backgroundResults.add(prompt);
 				logger.info("✅ 搜索结果: {} 条", results.size());
 			}
