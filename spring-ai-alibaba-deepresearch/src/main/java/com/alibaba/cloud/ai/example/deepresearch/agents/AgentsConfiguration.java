@@ -47,6 +47,9 @@ public class AgentsConfiguration {
 	@Value("classpath:prompts/coder.md")
 	private Resource coderPrompt;
 
+	@Value("classpath:prompts/buildInteractiveHtmlPrompt.md")
+	private Resource interactionPrompt;
+
 	@Autowired
 	private ApplicationContext context;
 
@@ -133,6 +136,11 @@ public class AgentsConfiguration {
 	@Bean
 	public ChatClient reporterAgent(ChatClient.Builder reporterChatClientBuilder) {
 		return reporterChatClientBuilder.build();
+	}
+
+	@Bean
+	public ChatClient interactionAgent(ChatClient.Builder interactionChatClientBuilder) {
+		return interactionChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(interactionPrompt)).build();
 	}
 
 }
