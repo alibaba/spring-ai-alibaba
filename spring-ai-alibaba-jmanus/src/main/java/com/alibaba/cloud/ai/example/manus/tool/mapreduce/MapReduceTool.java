@@ -261,11 +261,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef {
 			log.error("SplitTool执行失败", e);
 			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
 		}
-	}我建议修改 MapReduceTool 的 recordMapTaskOutput 方法，使其能够：
-
-接受处理结果内容而不仅仅是文件路径
-自动创建输出文件并写入内容
-然后记录状态
+	}
 
 	/**
 	 * 处理文件或目录的完整流程：验证存在性 -> 分割数据

@@ -90,6 +90,14 @@ public interface PlanInterface {
 	 */
 	int getTotalStepCount();
 
+	public String getUserRequest();
+	
+	/**
+	 * 设置用户请求
+	 * @param userRequest 用户请求
+	 */
+	void setUserRequest(String userRequest);
+
 	/**
 	 * 添加执行步骤
 	 * @param step 执行步骤
