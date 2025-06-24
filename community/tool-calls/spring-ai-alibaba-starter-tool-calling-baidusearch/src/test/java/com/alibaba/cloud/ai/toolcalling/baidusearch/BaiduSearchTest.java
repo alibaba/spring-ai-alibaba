@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.toolcalling.baidusearch;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
 import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import java.util.logging.Logger;
 
 @SpringBootTest(classes = { CommonToolCallAutoConfiguration.class, BaiduSearchAutoConfiguration.class })
 @DisplayName("Baidu Search Test")
+@Disabled("This service for directly scraping search web pages has been temporarily disabled due to intermittent parsing success rates; future implementation may transition to an API-based solution.")
 public class BaiduSearchTest {
 
 	@Autowired
