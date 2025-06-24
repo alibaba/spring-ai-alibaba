@@ -42,7 +42,7 @@ spring:
           search:
             enabled: true
         tavilysearch:
-          api-key: ${TAVILY_API_KEY}
+          api-key: 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
           enabled: true
     dashscope:
       api-key: sk-fe3978a15ee242b4b4ae399c7096f392
