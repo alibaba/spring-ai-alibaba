@@ -15,10 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
@@ -796,7 +793,7 @@ public class StateGraphTest {
 			return stringKeyStrategyHashMap;
 		});
 
-		CommandAction commandAction = (state, config) -> new Command("node1", state.data());
+		CommandAction commandAction = (state, config) -> new Command("node1", Map.of("messages","go to command node"));
 		graph.addNode("testCommandNode", AsyncCommandAction.node_async(commandAction),
 				Map.of("node1", "node1", "node2", "node2"));
 
@@ -808,11 +805,15 @@ public class StateGraphTest {
 		graph.addEdge("node2", END);
 
 		CompiledGraph compile = graph.compile();
-		// GraphRepresentation graph1 =
-		// compile.getGraph(GraphRepresentation.Type.PLANTUML);
-		GraphRepresentation graph2 = compile.getGraph(GraphRepresentation.Type.MERMAID);
-		// System.out.println(graph1.content());
-		System.out.println(graph2.content());
+		String plantuml = compile.getGraph(GraphRepresentation.Type.PLANTUML).content();
+		String mermaid = compile.getGraph(GraphRepresentation.Type.MERMAID).content();
+		System.out.println("===============plantuml===============");
+		System.out.println(plantuml);
+		System.out.println("===============mermaid===============");
+		System.out.println(mermaid);
+
+		OverAllState state = compile.invoke(Map.of()).orElseThrow();
+		assertEquals(List.of("go to command node","node1","node2"), state.value("messages", List.class).get());
 	}
 
 }

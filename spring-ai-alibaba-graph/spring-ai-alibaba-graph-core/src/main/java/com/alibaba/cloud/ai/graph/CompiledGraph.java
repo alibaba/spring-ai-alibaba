@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
@@ -27,6 +28,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
+import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
@@ -797,7 +799,8 @@ public class CompiledGraph {
 			return action.apply(withState, config).thenApply(updateState -> {
 				try {
 					if (action instanceof CommandNode.AsyncCommandNodeActionWithConfig) {
-						Command command = (Command) updateState.get("command");
+						AsyncCommandAction commandAction = (AsyncCommandAction) updateState.get("command");
+						Command command = commandAction.apply(withState, config).join();
 
 						this.currentState = OverAllState.updateState(currentState, command.update(), keyStrategyMap);
 						this.overAllState.updateState(command.update());

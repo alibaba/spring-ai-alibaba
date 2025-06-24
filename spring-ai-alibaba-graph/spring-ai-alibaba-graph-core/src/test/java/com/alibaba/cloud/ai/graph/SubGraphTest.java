@@ -15,11 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import org.junit.jupiter.api.BeforeAll;
@@ -469,7 +469,7 @@ public class SubGraphTest {
 	}
 
 	@Test
-	public void testCommandNodeSubGraph() throws GraphStateException {
+	public void testCommandNodeSubGraph() throws Exception {
 		StateGraph childGraph = new StateGraph(() -> {
 			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
 			stringKeyStrategyHashMap.put("messages", new AppendStrategy());

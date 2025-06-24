@@ -22,7 +22,8 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.exception.Errors;
+
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
@@ -97,28 +98,6 @@ public class StateGraph {
 	 * Serializer for the state.
 	 */
 	private final PlainTextStateSerializer stateSerializer;
-
-	/**
-	 * Jackson-based serializer for state.
-	 */
-	static class JacksonSerializer extends JacksonStateSerializer {
-
-		/**
-		 * Instantiates a new Jackson serializer.
-		 */
-		public JacksonSerializer() {
-			super(OverAllState::new);
-		}
-
-		/**
-		 * Gets object mapper.
-		 * @return the object mapper
-		 */
-		ObjectMapper getObjectMapper() {
-			return objectMapper;
-		}
-
-	}
 
 	/**
 	 * Constructs a StateGraph with the specified name, key strategy factory, and state
@@ -628,57 +607,6 @@ public class StateGraph {
 		 */
 		ObjectMapper getObjectMapper() {
 			return objectMapper;
-		}
-
-	}
-
-	/** Gson-based serializer for state. */
-	static class GsonSerializer extends GsonStateSerializer {
-
-		/** Instantiates a new Gson serializer. */
-		public GsonSerializer() {
-			super(OverAllState::new,
-					new GsonBuilder().enableComplexMapKeySerialization()
-						.setLenient()
-						.registerTypeAdapter(Double.TYPE,
-								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
-						.serializeNulls()
-						.create());
-		}
-
-		/**
-		 * Gets gson.
-		 * @return the gson
-		 */
-		Gson getGson() {
-			return gson;
-		}
-
-	}
-
-	/** Alternative Gson-based serializer for state. */
-	static class GsonSerializer2 extends GsonStateSerializer {
-
-		/**
-		 * Instantiates a new Gson serializer 2.
-		 * @param stateFactory the state factory
-		 */
-		public GsonSerializer2(AgentStateFactory<OverAllState> stateFactory) {
-			super(stateFactory,
-					new GsonBuilder().enableComplexMapKeySerialization()
-						.registerTypeAdapter(Double.TYPE,
-								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
-						.setLenient()
-						.serializeNulls()
-						.create());
-		}
-
-		/**
-		 * Gets gson.
-		 * @return the gson
-		 */
-		Gson getGson() {
-			return gson;
 		}
 
 	}
