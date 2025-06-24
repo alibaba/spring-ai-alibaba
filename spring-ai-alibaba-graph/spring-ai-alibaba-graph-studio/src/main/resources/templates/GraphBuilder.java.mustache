@@ -30,12 +30,16 @@ import org.springframework.core.io.Resource;
 @Component
 public class GraphBuilder {
     {{#hasRetriever}}
-    @Value("${rag.source:classpath:${todo: add your knowledge base}}}}")
+    // todo: add your knowledge base
+    @Value("${rag.source:classpath:${}")
     private Resource ragSource;
     {{/hasRetriever}}
 
     @Bean
-    public CompiledGraph buildGraph(ChatModel chatModel{{#hasRetriever}}, VectorStore vectorStore{{/hasRetriever}) throws GraphStateException {
+    public CompiledGraph buildGraph(
+        ChatModel chatModel
+        {{#hasRetriever}}, VectorStore vectorStore{{/hasRetriever}}
+        ) throws GraphStateException {
         ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
         // new stateGraph

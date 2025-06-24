@@ -97,18 +97,18 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		List<Node> nodes = workflow.getGraph().getNodes();
 		Map<String, String> varNames = assignVariableNames(nodes);
 
-        boolean hasRetriever = nodes.stream()
-                .map(Node::getData)
-                .anyMatch(nd -> nd instanceof KnowledgeRetrievalNodeData);
+		boolean hasRetriever = nodes.stream()
+			.map(Node::getData)
+			.anyMatch(nd -> nd instanceof KnowledgeRetrievalNodeData);
 
 		String stateSectionStr = renderStateSections(workflow.getWorkflowVars());
 		String nodeSectionStr = renderNodeSections(nodes, varNames);
 		String edgeSectionStr = renderEdgeSections(workflow.getGraph().getEdges(), nodes);
 
-		Map<String, String> graphBuilderModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
+		Map<String, Object> graphBuilderModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
 				GRAPH_BUILDER_STATE_SECTION, stateSectionStr, GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
-				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr, HAS_RETRIEVER, hasRetriever ? "true" : "false");
-		Map<String, String> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
+				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr, HAS_RETRIEVER, hasRetriever);
+		Map<String, Object> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
 		renderAndWriteTemplates(List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
 				List.of(graphBuilderModel, graphRunControllerModel), projectRoot, projectDescription);
 	}
@@ -248,7 +248,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return handleId;
 	}
 
-	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
+	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, Object>> models, Path projectRoot,
 			ProjectDescription projectDescription) {
 		// todo: may to standardize the code format via the IdentifierGeneratorFactory
 		Path fileRoot = createDirectory(projectRoot, projectDescription);
