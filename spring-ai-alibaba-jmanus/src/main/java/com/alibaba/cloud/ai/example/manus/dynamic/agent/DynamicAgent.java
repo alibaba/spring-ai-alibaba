@@ -351,7 +351,8 @@ public class DynamicAgent extends ReActAgent {
 	private Message currentStepEnvMessage() {
 		String envPrompt = """
 
-				当前步骤的环境信息是:
+				- 当前步骤的环境信息:
+
 				{current_step_env_data}
 
 				""";
