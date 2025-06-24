@@ -46,18 +46,25 @@ public class InteractiveHtmlController {
 
 	/**
 	 * building an interactive html report(构建交互式HTML报告)
-	 * @param reportId 报告ID
+	 * @param threadId 线程ID
 	 * @return Return a Flux stream containing events from the build
 	 * process(返回一个Flux流，包含构建过程中的事件)
 	 */
 	@RequestMapping(value = "/build", method = RequestMethod.GET, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	public Flux<ChatResponse> buildInteractiveHtml(String reportId) {
-		if (reportId == null || reportId.isEmpty()) {
-			log.error("Report ID is null or empty");
-			return Flux.error(new IllegalArgumentException("Report ID cannot be null or empty"));
+	public Flux<ChatResponse> buildInteractiveHtml(String threadId) {
+		if (threadId == null || threadId.isEmpty()) {
+			log.error("threadId is null or empty");
+			return Flux.error(new IllegalArgumentException("threadId cannot be null or empty"));
+		}
+		String reportInfo = reportService.getReport(threadId);
+		if (reportInfo == null) {
+			log.error("Report with threadId {} not found", threadId);
+			return Flux.error(new IllegalArgumentException("Report not found"));
+		}
+		else {
+			log.debug("Found report for threadId: {} ,Report info: {}", threadId, reportInfo);
 		}
 		log.info("Building interactive HTML report");
-		String reportInfo = reportService.getReport(reportId);
 		// 使用ChatClient来构建HTML报告
 		return interactionAgent.prompt(reportInfo).stream().chatResponse();
 	}
