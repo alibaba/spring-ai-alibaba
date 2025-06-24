@@ -38,15 +38,11 @@ public class InteractiveHtmlController {
 
 	private static final Logger log = LoggerFactory.getLogger(InteractiveHtmlController.class);
 
-	private final ReportService reportService;
+	@Autowired
+	private ReportService reportService;
 
 	@Autowired
 	private ChatClient interactionAgent;
-
-	public InteractiveHtmlController(ReportService reportService) {
-		this.reportService = reportService;
-		log.info("InteractiveHtmlController initialized with ReportService");
-	}
 
 	/**
 	 * building an interactive html report(构建交互式HTML报告)
@@ -54,7 +50,7 @@ public class InteractiveHtmlController {
 	 * @return Return a Flux stream containing events from the build
 	 * process(返回一个Flux流，包含构建过程中的事件)
 	 */
-	@RequestMapping(value = "/buildHtml", method = RequestMethod.GET, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@RequestMapping(value = "/build", method = RequestMethod.GET, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ChatResponse> buildInteractiveHtml(String reportId) {
 		if (reportId == null || reportId.isEmpty()) {
 			log.error("Report ID is null or empty");
