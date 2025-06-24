@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Edge;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.KnowledgeRetrievalNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.StartNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLAdapter;
@@ -71,6 +72,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private final String PACKAGE_NAME = "packageName";
 
+	private final String HAS_RETRIEVER = "hasRetriever";
+
 	private final DSLAdapter dslAdapter;
 
 	private final TemplateRenderer templateRenderer;
@@ -97,6 +100,10 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 		List<Node> nodes = workflow.getGraph().getNodes();
 		Map<String, String> varNames = assignVariableNames(nodes);
+
+		boolean hasRetriever = nodes.stream()
+			.map(Node::getData)
+			.anyMatch(nd -> nd instanceof KnowledgeRetrievalNodeData);
 
 		String stateSectionStr = renderStateSections(workflow.getWorkflowVars());
 		String nodeSectionStr = renderNodeSections(nodes, varNames);
@@ -259,6 +266,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return handleId;
 	}
 
+
 	private String renderStartInputSection(Workflow workflow) {
 		List<Variable> startInputs = workflow.getWorkflowVars()
 			.stream()
@@ -286,7 +294,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return sb.toString();
 	}
 
-	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
+	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, Object>> models, Path projectRoot,
+
 			ProjectDescription projectDescription) {
 		// todo: may to standardize the code format via the IdentifierGeneratorFactory
 		Path fileRoot = createDirectory(projectRoot, projectDescription);
