@@ -43,12 +43,15 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 		private String action;
 
+		@com.fasterxml.jackson.annotation.JsonProperty("file_path")
 		private String filePath;
 
 		private String content;
 
+		@com.fasterxml.jackson.annotation.JsonProperty("source_text")
 		private String sourceText;
 
+		@com.fasterxml.jackson.annotation.JsonProperty("target_text")
 		private String targetText;
 
 		public TextFileInput() {

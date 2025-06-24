@@ -305,6 +305,7 @@ public class GoogleSearch implements ToolCallBiFunctionDef<GoogleSearch.GoogleSe
 
 		private String query;
 
+		@com.fasterxml.jackson.annotation.JsonProperty("num_results")
 		private Integer numResults;
 
 		public GoogleSearchInput() {

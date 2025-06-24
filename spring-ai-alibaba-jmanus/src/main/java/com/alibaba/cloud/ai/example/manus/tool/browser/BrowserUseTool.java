@@ -34,7 +34,6 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +52,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 	private final ChromeDriverService chromeDriverService;
 
 	private String planId;
-
-	// Initialize ObjectMapper instance
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
@@ -209,19 +205,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 		return instance;
 	}
 
-	public ToolExecuteResult run(String toolInput) {
-		log.info("BrowserUseTool toolInput:" + toolInput);
-
-		// 直接将JSON字符串解析为BrowserRequestVO对象
-		BrowserRequestVO requestVO;
-		// Add exception handling for JSON deserialization
-		try {
-			requestVO = objectMapper.readValue(toolInput, BrowserRequestVO.class);
-		}
-		catch (Exception e) {
-			log.error("Error deserializing JSON", e);
-			return new ToolExecuteResult("Error deserializing JSON: " + e.getMessage());
-		}
+	public ToolExecuteResult run(BrowserRequestVO requestVO) {
+		log.info("BrowserUseTool requestVO: action={}", requestVO.getAction());
 
 		// 从RequestVO中获取参数
 		String action = requestVO.getAction();
@@ -285,53 +270,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 		}
 	}
 
-	public ToolExecuteResult runTyped(BrowserRequestVO requestVO) {
-		log.info("BrowserUseTool typed input: action={}", requestVO.getAction());
-
-		// 从RequestVO中获取参数
-		String action = requestVO.getAction();
-		try {
-			if (action == null) {
-				return new ToolExecuteResult("Action parameter is required");
-			}
-			switch (action) {
-				case "navigate": {
-					return new NavigateAction(this).execute(requestVO);
-				}
-				case "click": {
-					return new ClickByElementAction(this).execute(requestVO);
-				}
-				case "input_text": {
-					return new InputTextAction(this).execute(requestVO);
-				}
-				case "new_tab": {
-					return new NewTabAction(this).execute(requestVO);
-				}
-				case "close_tab": {
-					return new CloseTabAction(this).execute(requestVO);
-				}
-				case "switch_tab": {
-					return new SwitchTabAction(this).execute(requestVO);
-				}
-				case "refresh": {
-					return new RefreshAction(this).execute(requestVO);
-				}
-				case "get_element_position": {
-					return new GetElementPositionByNameAction(this).execute(requestVO);
-				}
-				case "move_to_and_click": {
-					return new MoveToAndClickAction(this).execute(requestVO);
-				}
-				default:
-					return new ToolExecuteResult("Unknown action: " + action);
-			}
-		} catch (Exception e) {
-			log.error("Browser action '" + action + "' failed", e);
-			return new ToolExecuteResult("Browser action '" + action + "' failed: " + e.getMessage());
-		}
-	}
-
-	// ...existing code...
 
 	private List<Map<String, Object>> getTabsInfo(Page page) {
 		return page.context().pages().stream().map(p -> {
@@ -384,7 +322,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 
 	@Override
 	public ToolExecuteResult apply(BrowserRequestVO requestVO, ToolContext u) {
-		return runTyped(requestVO);
+		return run(requestVO);
 	}
 
 	@Override

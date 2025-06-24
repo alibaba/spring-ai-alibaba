@@ -36,7 +36,10 @@ public class DocLoaderTool implements ToolCallBiFunctionDef<DocLoaderTool.DocLoa
 	 * 内部输入类，用于定义文档加载工具的输入参数
 	 */
 	public static class DocLoaderInput {
+		@com.fasterxml.jackson.annotation.JsonProperty("file_type")
 		private String fileType;
+		
+		@com.fasterxml.jackson.annotation.JsonProperty("file_path")
 		private String filePath;
 
 		public DocLoaderInput() {}
