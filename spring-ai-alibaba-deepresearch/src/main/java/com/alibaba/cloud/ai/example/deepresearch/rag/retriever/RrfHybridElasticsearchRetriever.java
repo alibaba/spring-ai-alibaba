@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.rag.Query;
@@ -28,9 +29,10 @@ import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Hybrid Elasticsearch retriever using BM25 and KNN search with Reciprocal Rank Fusion.
@@ -39,20 +41,44 @@ import java.util.stream.Collectors;
  */
 public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 
+	/**
+	 * Elasticsearch REST client for executing search requests
+	 */
 	private final RestClient restClient;
 
+	/**
+	 * Model used for generating embeddings from text queries
+	 */
 	private final EmbeddingModel embeddingModel;
 
+	/**
+	 * Name of the Elasticsearch index to search
+	 */
 	private final String indexName;
 
+	/**
+	 * Maximum number of documents to return in search results
+	 */
 	private final int windowSize;
 
+	/**
+	 * Constant k used in Reciprocal Rank Fusion scoring
+	 */
 	private final int rrfK;
 
+	/**
+	 * Boost factor applied to BM25 text search scores
+	 */
 	private final float bm25Boost;
 
+	/**
+	 * Boost factor applied to KNN vector search scores
+	 */
 	private final float knnBoost;
 
+	/**
+	 * JSON object mapper for parsing Elasticsearch responses
+	 */
 	private final ObjectMapper mapper = new ObjectMapper();
 
 	public RrfHybridElasticsearchRetriever(RestClient restClient, EmbeddingModel embeddingModel, String indexName,
@@ -66,30 +92,19 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 		this.knnBoost = hybrid.getKnnBoost();
 	}
 
+	@NotNull
 	@Override
 	public List<Document> retrieve(Query query) {
 		String text = query.text();
 		try {
-			List<ScoredDocument> bm25Docs = searchBm25(text);
-			List<ScoredDocument> knnDocs = searchKnn(text);
-			List<ScoredDocument> merged = rrfMerge(bm25Docs, knnDocs);
-			return merged.stream().limit(windowSize).map(ScoredDocument::doc).collect(Collectors.toList());
+			return searchHybrid(text);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to execute hybrid search", ex);
 		}
 	}
 
-	private List<ScoredDocument> searchBm25(String text) throws IOException {
-		String body = String.format(Locale.ROOT, "{\"size\":%d,\"query\":{\"match\":{\"content\":\"%s\"}}}", windowSize,
-				escape(text));
-		Request request = new Request("GET", "/" + indexName + "/_search");
-		request.setJsonEntity(body);
-		Response response = restClient.performRequest(request);
-		return parseResults(response.getEntity().getContent());
-	}
-
-	private List<ScoredDocument> searchKnn(String text) throws IOException {
+	private List<Document> searchHybrid(String text) throws IOException {
 		float[] vector = embeddingModel.embed(text);
 		StringBuilder builder = new StringBuilder("[");
 		for (int i = 0; i < vector.length; i++) {
@@ -100,80 +115,63 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 		}
 		builder.append(']');
 		String vectorStr = builder.toString();
-		String body = String.format(Locale.ROOT,
-				"{\"size\":%d,\"knn\":{\"field\":\"embedding\",\"query_vector\":%s,\"k\":%d,\"num_candidates\":%d}}",
-				windowSize, vectorStr, windowSize, Math.max(windowSize * 2, 10));
+
+		String body = String.format(Locale.ROOT, """
+				{
+				  "queries": [
+				    {
+				      "query": {
+				        "match": {
+				          "content": "%s"
+				        }
+				      },
+				      "boost": %f
+				    },
+				    {
+				      "knn": {
+				        "field": "embedding",
+				        "query_vector": %s,
+				        "k": %d,
+				        "num_candidates": %d
+				      },
+				      "boost": %f
+				    }
+				  ],
+				  "rank": {
+				    "rrf": {
+				      "window_size": %d,
+				      "rank_constant": %d
+				    }
+				  }
+				}""", escape(text), bm25Boost, vectorStr, windowSize, Math.max(windowSize * 2, 10), knnBoost,
+				windowSize, rrfK);
+
 		Request request = new Request("GET", "/" + indexName + "/_search");
 		request.setJsonEntity(body);
 		Response response = restClient.performRequest(request);
 		return parseResults(response.getEntity().getContent());
 	}
 
-	private List<ScoredDocument> parseResults(InputStream content) throws IOException {
+	private List<Document> parseResults(InputStream content) throws IOException {
 		JsonNode hits = mapper.readTree(content).path("hits").path("hits");
-		List<ScoredDocument> results = new ArrayList<>();
+
+		List<Document> results = new ArrayList<>();
+
 		for (JsonNode hit : hits) {
 			String id = hit.path("_id").asText();
 			String docText = hit.path("_source").path("content").asText();
-			Map<String, Object> metadata = mapper.convertValue(hit.path("_source"), Map.class);
-			Document doc = new Document(id, docText, metadata);
-			results.add(new ScoredDocument(doc));
+
+			Map<String, Object> metadata = mapper.convertValue(hit.path("_source"),
+					mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
+
+			results.add(new Document(id, docText, metadata));
 		}
+
 		return results;
-	}
-
-	private List<ScoredDocument> rrfMerge(List<ScoredDocument> bm25Docs, List<ScoredDocument> knnDocs) {
-		Map<String, ScoredDocument> map = new HashMap<>();
-		AtomicInteger rank = new AtomicInteger(1);
-		for (ScoredDocument d : bm25Docs) {
-			map.compute(d.doc().getId(), (k, v) -> accumulate(v, d, rank.getAndIncrement(), bm25Boost));
-		}
-		rank.set(1);
-		for (ScoredDocument d : knnDocs) {
-			map.compute(d.doc().getId(), (k, v) -> accumulate(v, d, rank.getAndIncrement(), knnBoost));
-		}
-		return map.values()
-			.stream()
-			.sorted(Comparator.comparingDouble(ScoredDocument::score).reversed())
-			.collect(Collectors.toList());
-	}
-
-	private ScoredDocument accumulate(ScoredDocument existing, ScoredDocument incoming, int rank, float boost) {
-		double score = boost / (rrfK + rank);
-		if (existing == null) {
-			incoming.addScore(score);
-			return incoming;
-		}
-		existing.addScore(score);
-		return existing;
 	}
 
 	private static String escape(String text) {
 		return text.replace("\"", "\\\"");
-	}
-
-	private static class ScoredDocument {
-
-		private final Document doc;
-
-		private double score;
-
-		ScoredDocument(Document doc) {
-			this.doc = doc;
-		}
-
-		Document doc() {
-			return doc;
-		}
-
-		double score() {
-			return score;
-		}
-
-		void addScore(double s) {
-			this.score += s;
-		}
-
 	}
 
 }
