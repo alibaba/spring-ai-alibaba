@@ -45,6 +45,9 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	@JsonIgnore
 	protected String executionParams;
 
+
+	private String userRequest;
+
 	/**
 	 * 默认构造函数
 	 */
@@ -157,6 +160,24 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 		clearSteps();
 		planningThinking = null;
 		executionParams = "";
+	}
+
+
+
+	/**
+	 * 获取用户请求
+	 * @return 用户请求字符串
+	 */
+	public String getUserRequest() {
+		return userRequest;
+	}
+
+	/**
+	 * 设置用户请求
+	 * @param userRequest 用户请求字符串
+	 */
+	public void setUserRequest(String userRequest) {
+		this.userRequest = userRequest;
 	}
 
 	/**
