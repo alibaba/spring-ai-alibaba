@@ -17,30 +17,30 @@
 .PHONY: test
 test: ## Run tests
 	@$(LOG_TARGET)
-	mvn test
+	mvnd test
 
 # Separate build and test to speed up execution
 .PHONY: build
 build: ## Build the project
 	@$(LOG_TARGET)
-	mvn -B package --file pom.xml -DskipTests=true
+	mvnd -B package --file pom.xml -DskipTests=true
 
 .PHONY: format-fix
 format-fix: ## Format the code
 	@$(LOG_TARGET)
-	mvn spring-javaformat:apply
+	mvnd spring-javaformat:apply
 
 .PHONY: format-check
 format-check: ## Format Check the code
 	@$(LOG_TARGET)
-	mvn spring-javaformat:validate
+	mvnd spring-javaformat:validate
 
 .PHONY: spotless-apply
 spotless-apply: ## Run spotless and apply changes
 	@$(LOG_TARGET)
-	mvn spotless:apply
+	mvnd spotless:apply
 
 .PHONY: checkstyle-check
 checkstyle-check: ## Checkstyle Check the code and output to target/checkstyle-report.xml
 	@$(LOG_TARGET)
-	mvn clean compile -Dcheckstyle.skip=false -Dcheckstyle.output.file=checkstyle-report.xml checkstyle:checkstyle
+	mvnd clean compile -Dcheckstyle.skip=false -Dcheckstyle.output.file=checkstyle-report.xml checkstyle:checkstyle
