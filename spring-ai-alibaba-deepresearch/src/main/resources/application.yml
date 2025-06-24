@@ -48,6 +48,12 @@ spring:
           base-url: ${ALIYUN_AI_SEARCH_BASE_URL}
           enabled: true
       deepresearch:
+        # 定义项目可以使用的搜索引擎
+        search-list:
+          - tavily
+          - aliyun
+          - baidu
+          - serpapi
         mcp:
           enabled: false
           config-location: classpath:mcp-config.json

@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
 import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
+import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
@@ -28,12 +29,10 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import com.alibaba.cloud.ai.toolcalling.searches.SearchUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.util.StringUtils;
@@ -56,15 +55,15 @@ public class DeepResearchController {
 
 	private final CompiledGraph compiledGraph;
 
-	private final ApplicationContext context;
+	private final SearchBeanUtil searchBeanUtil;
 
 	@Autowired
-	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph, ApplicationContext context)
+	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph, SearchBeanUtil searchBeanUtil)
 			throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 		this.compiledGraph = stateGraph
 			.compile(CompileConfig.builder().saverConfig(saverConfig).interruptBefore("human_feedback").build());
-		this.context = context;
+		this.searchBeanUtil = searchBeanUtil;
 	}
 
 	/**
@@ -77,8 +76,8 @@ public class DeepResearchController {
 	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest)
 			throws GraphRunnerException, IllegalArgumentException {
-		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest, context);
-		if (SearchUtil.getSearchService(context, chatRequest.searchEngine().getToolName()).isEmpty()) {
+		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest, searchBeanUtil);
+		if (searchBeanUtil.getSearchService(chatRequest.searchEngine()).isEmpty()) {
 			throw new IllegalArgumentException("Search Engine not available.");
 		}
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();

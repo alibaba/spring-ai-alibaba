@@ -17,9 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.controller.request;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
-import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
-import com.alibaba.cloud.ai.toolcalling.searches.SearchUtil;
-import org.springframework.context.ApplicationContext;
+import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
@@ -35,10 +33,10 @@ public class ChatRequestProcess {
 	/**
 	 * Creates a default ChatRequest instance or set some default value for an instance.
 	 */
-	public static ChatRequest getDefaultChatRequest(ChatRequest chatRequest, ApplicationContext context) {
+	public static ChatRequest getDefaultChatRequest(ChatRequest chatRequest, SearchBeanUtil searchBeanUtil) {
 		if (chatRequest == null) {
 			return new ChatRequest("__default__", 1, 3, true, null, true, Collections.emptyMap(), "草莓蛋糕怎么做呀。",
-					SearchEnum.fromToolName(SearchUtil.getAvailableSearchToolName(context).orElse(null)));
+					searchBeanUtil.getFirstAvailableSearch().orElse(null));
 		}
 		else {
 			return new ChatRequest(StringUtils.hasText(chatRequest.threadId()) ? chatRequest.threadId() : "__default__",
@@ -49,8 +47,7 @@ public class ChatRequestProcess {
 					chatRequest.enableBackgroundInvestigation() == null || chatRequest.enableBackgroundInvestigation(),
 					chatRequest.mcpSettings() == null ? Collections.emptyMap() : chatRequest.mcpSettings(),
 					StringUtils.hasText(chatRequest.query()) ? chatRequest.query() : "草莓蛋糕怎么做呀",
-					chatRequest.searchEngine() == null
-							? SearchEnum.fromToolName(SearchUtil.getAvailableSearchToolName(context).orElse(null))
+					chatRequest.searchEngine() == null ? searchBeanUtil.getFirstAvailableSearch().orElse(null)
 							: chatRequest.searchEngine());
 		}
 	}

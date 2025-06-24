@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -23,10 +24,8 @@ import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
-import com.alibaba.cloud.ai.toolcalling.searches.SearchUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,19 +48,19 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final JinaCrawlerService jinaCrawlerService;
 
-	private final ApplicationContext context;
+	private final SearchBeanUtil searchBeanUtil;
 
-	public BackgroundInvestigationNode(ApplicationContext context, JinaCrawlerService jinaCrawlerService) {
+	public BackgroundInvestigationNode(SearchBeanUtil searchBeanUtil, JinaCrawlerService jinaCrawlerService) {
 		this.jinaCrawlerService = jinaCrawlerService;
-		this.context = context;
+		this.searchBeanUtil = searchBeanUtil;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("background investigation node is running.");
 		String query = StateUtil.getQuery(state);
-		SearchService searchService = SearchUtil
-			.getSearchService(context, state.value("search_engine", SearchEnum.class).orElseThrow().getToolName())
+		SearchService searchService = searchBeanUtil
+			.getSearchService(state.value("search_engine", SearchEnum.class).orElseThrow())
 			.orElseThrow();
 
 		List<Map<String, String>> results = new ArrayList<>();
