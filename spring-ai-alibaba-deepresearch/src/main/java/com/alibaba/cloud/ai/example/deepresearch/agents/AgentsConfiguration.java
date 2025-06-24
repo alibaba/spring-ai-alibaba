@@ -21,7 +21,6 @@ import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
-import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
@@ -46,6 +45,9 @@ public class AgentsConfiguration {
 
 	@Value("classpath:prompts/coder.md")
 	private Resource coderPrompt;
+
+	@Value("classpath:prompts/buildInteractiveHtmlPrompt.md")
+	private Resource interactionPrompt;
 
 	@Autowired
 	private ApplicationContext context;
@@ -92,10 +94,12 @@ public class AgentsConfiguration {
 	public ChatClient researchAgent(ChatClient.Builder researchChatClientBuilder) {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("researchAgent");
 
-		return researchChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt))
-			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
-			.defaultToolCallbacks(mcpCallbacks)
-			.build();
+		var builder = researchChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt));
+		var toolArray = this.getAvailableTools(JinaCrawlerConstants.TOOL_NAME);
+		if (toolArray.length > 0) {
+			builder = builder.defaultToolNames(toolArray);
+		}
+		return builder.defaultToolCallbacks(mcpCallbacks).build();
 	}
 
 	/**
@@ -133,6 +137,11 @@ public class AgentsConfiguration {
 	@Bean
 	public ChatClient reporterAgent(ChatClient.Builder reporterChatClientBuilder) {
 		return reporterChatClientBuilder.build();
+	}
+
+	@Bean
+	public ChatClient interactionAgent(ChatClient.Builder interactionChatClientBuilder) {
+		return interactionChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(interactionPrompt)).build();
 	}
 
 }

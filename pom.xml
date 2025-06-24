@@ -62,9 +62,11 @@
         <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-aliyunaisearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidutranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidumap</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-bravesearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-dingtalk</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-sensitivefilter</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-amap</module>
@@ -86,6 +88,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tavilysearch</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-searches</module>
 
         <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
@@ -263,7 +266,7 @@
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
-        <spotless.version>2.29.0</spotless.version>
+        <spotless.version>2.44.5</spotless.version>
     </properties>
 
     <dependencyManagement>
@@ -348,7 +351,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.29.0</version>
+                <version>${spotless.version}</version>
                 <configuration>
                     <java>
                         <removeUnusedImports></removeUnusedImports>

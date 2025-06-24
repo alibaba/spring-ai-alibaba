@@ -23,7 +23,7 @@
 
         <spring-ai.version>1.0.0</spring-ai.version>
         <spring-ai-alibaba.version>1.0.0.3-SNAPSHOT</spring-ai-alibaba.version>
-       
+
         <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
         <commonmark.version>0.24.0</commonmark.version>
 
@@ -69,7 +69,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-tool-calling-tavilysearch</artifactId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-searches</artifactId>
         </dependency>
 
         <dependency>
@@ -109,7 +109,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>com.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-core</artifactId>
@@ -127,19 +127,19 @@
             <artifactId>openhtmltopdf-slf4j</artifactId>
             <version>${openhtmltopdf.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark</artifactId>
             <version>${commonmark.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark-ext-gfm-tables</artifactId>
             <version>${commonmark.version}</version>
         </dependency>
-        
+
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -290,10 +290,10 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.29.0</version>
+                <version>2.44.5</version>
                 <configuration>
                     <java>
-                        <removeUnusedImports></removeUnusedImports>
+                        <removeUnusedImports/>
                     </java>
                 </configuration>
                 <executions>
@@ -308,5 +308,5 @@
             </plugin>
         </plugins>
     </build>
-    
+
 </project>
