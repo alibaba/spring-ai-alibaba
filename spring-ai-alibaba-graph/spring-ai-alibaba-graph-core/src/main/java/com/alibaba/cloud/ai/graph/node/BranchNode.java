@@ -34,6 +34,7 @@ public class BranchNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		Map<String, Object> updatedState = new HashMap<>();
+		// use the inputKey to get the value
 		if (StringUtils.hasLength(this.inputKey)) {
 			String value = state.value(inputKey).map(Object::toString).orElse(null);
 			updatedState.put(this.outputKey, value);
