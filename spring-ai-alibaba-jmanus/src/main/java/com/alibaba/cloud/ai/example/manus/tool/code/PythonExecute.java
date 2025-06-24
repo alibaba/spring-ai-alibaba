@@ -223,19 +223,19 @@ public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.Python
 	public ToolExecuteResult run(PythonInput input) {
 		String code = input.getCode();
 		log.info("PythonExecute code: {}", code);
-		
+
 		this.lastCode = code;
 		this.lastExecutionLogId = "tmp_" + LogIdGenerator.generateUniqueId();
 
 		try {
-			CodeExecutionResult codeExecutionResult = CodeUtils.executeCode(code, "python",
-					lastExecutionLogId + ".py", arm64, new HashMap<>());
+			CodeExecutionResult codeExecutionResult = CodeUtils.executeCode(code, "python", lastExecutionLogId + ".py",
+					arm64, new HashMap<>());
 			String result = codeExecutionResult.getLogs();
 			this.lastExecutionResult = result;
 
 			// 检查执行结果中是否包含 Python 错误信息
-			if (result.contains("SyntaxError") || result.contains("IndentationError")
-					|| result.contains("NameError") || result.contains("TypeError") || result.contains("ValueError")
+			if (result.contains("SyntaxError") || result.contains("IndentationError") || result.contains("NameError")
+					|| result.contains("TypeError") || result.contains("ValueError")
 					|| result.contains("ImportError")) {
 				this.hasError = true;
 				this.lastError = extractErrorMessage(result);

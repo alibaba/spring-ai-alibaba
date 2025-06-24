@@ -196,7 +196,7 @@ public class GoogleSearch implements ToolCallBiFunctionDef<GoogleSearch.GoogleSe
 	public ToolExecuteResult run(GoogleSearchInput input) {
 		String query = input.getQuery();
 		Integer numResults = input.getNumResults() != null ? input.getNumResults() : 2;
-		
+
 		log.info("GoogleSearch input: query={}, numResults={}", query, numResults);
 
 		this.lastQuery = query;

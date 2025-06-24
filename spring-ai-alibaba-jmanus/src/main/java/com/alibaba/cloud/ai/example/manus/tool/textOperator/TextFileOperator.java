@@ -242,7 +242,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 					yield new ToolExecuteResult("Unknown action: " + action);
 				}
 			};
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			String planId = this.planId;
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());

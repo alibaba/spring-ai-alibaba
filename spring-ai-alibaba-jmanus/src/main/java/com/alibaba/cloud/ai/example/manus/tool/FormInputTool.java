@@ -170,7 +170,7 @@ public class FormInputTool implements ToolCallBiFunctionDef<FormInputTool.UserFo
 	@Override
 	public ToolExecuteResult apply(UserFormInput formInput, ToolContext toolContext) {
 		log.info("FormInputTool input: {}", formInput);
-		
+
 		this.currentFormDefinition = formInput;
 		// Initialize values to empty string if null, to ensure they are present for
 		// form binding
@@ -182,12 +182,13 @@ public class FormInputTool implements ToolCallBiFunctionDef<FormInputTool.UserFo
 			}
 		}
 		setInputState(InputState.AWAITING_USER_INPUT);
-		
+
 		// Return form definition as a structured result
 		try {
 			String formJson = objectMapper.writeValueAsString(formInput);
 			return new ToolExecuteResult(formJson);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Error serializing form input", e);
 			return new ToolExecuteResult("{\"error\": \"Failed to process form input: " + e.getMessage() + "\"}");
 		}

@@ -36,13 +36,15 @@ public class DocLoaderTool implements ToolCallBiFunctionDef<DocLoaderTool.DocLoa
 	 * 内部输入类，用于定义文档加载工具的输入参数
 	 */
 	public static class DocLoaderInput {
+
 		@com.fasterxml.jackson.annotation.JsonProperty("file_type")
 		private String fileType;
-		
+
 		@com.fasterxml.jackson.annotation.JsonProperty("file_path")
 		private String filePath;
 
-		public DocLoaderInput() {}
+		public DocLoaderInput() {
+		}
 
 		public DocLoaderInput(String fileType, String filePath) {
 			this.fileType = fileType;
@@ -64,6 +66,7 @@ public class DocLoaderTool implements ToolCallBiFunctionDef<DocLoaderTool.DocLoa
 		public void setFilePath(String filePath) {
 			this.filePath = filePath;
 		}
+
 	}
 
 	private static String PARAMETERS = """
@@ -102,9 +105,9 @@ public class DocLoaderTool implements ToolCallBiFunctionDef<DocLoaderTool.DocLoa
 	 */
 	public static FunctionToolCallback<DocLoaderInput, ToolExecuteResult> getFunctionToolCallback() {
 		return FunctionToolCallback.builder(name, new DocLoaderTool()::apply)
-				.description(description)
-				.inputType(DocLoaderInput.class)
-				.build();
+			.description(description)
+			.inputType(DocLoaderInput.class)
+			.build();
 	}
 
 	public DocLoaderTool() {

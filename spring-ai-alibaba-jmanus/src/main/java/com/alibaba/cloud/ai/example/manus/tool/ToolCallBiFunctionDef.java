@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 /**
  * Tool 定义的接口，提供统一的工具定义方法
+ *
  * @param <I> 工具输入类型
  */
 public interface ToolCallBiFunctionDef<I> extends BiFunction<I, ToolContext, ToolExecuteResult> {

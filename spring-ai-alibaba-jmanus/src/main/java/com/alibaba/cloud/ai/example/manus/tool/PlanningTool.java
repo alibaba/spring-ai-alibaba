@@ -138,8 +138,8 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 	}
 
 	// Parameterized FunctionToolCallback with appropriate types.
-	public static FunctionToolCallback<?, ToolExecuteResult> getFunctionToolCallback( PlanningTool toolInstance) {
-		return FunctionToolCallback.builder(name,toolInstance )
+	public static FunctionToolCallback<?, ToolExecuteResult> getFunctionToolCallback(PlanningTool toolInstance) {
+		return FunctionToolCallback.builder(name, toolInstance)
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(PlanningInput.class)

@@ -270,7 +270,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 		}
 	}
 
-
 	private List<Map<String, Object>> getTabsInfo(Page page) {
 		return page.context().pages().stream().map(p -> {
 			Map<String, Object> tabInfo = new HashMap<>();
