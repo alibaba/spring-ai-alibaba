@@ -20,10 +20,10 @@
 		"https://checkstyle.org/dtds/configuration_1_3.dtd">
 <module name="com.puppycrawl.tools.checkstyle.Checker">
 
-	<!-- 抑制文件配置 -->
-	<module name="SuppressionFilter">
-		<property name="file" value="tools/src/checkstyle/checkstyle-suppressions.xml"/>
-	</module>
+<!--	&lt;!&ndash; 抑制文件配置 &ndash;&gt;-->
+<!--	<module name="SuppressionFilter">-->
+<!--		<property name="file" value="tools/src/checkstyle/checkstyle-suppressions.xml"/>-->
+<!--	</module>-->
 
 	<!-- Root Checks -->
 	<!-- Contains a line break check at the beginning and end of the file -->

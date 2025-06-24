@@ -83,14 +83,22 @@ public abstract class BaseSchemaService {
 		SchemaDTO schemaDTO = new SchemaDTO();
 		extractDatabaseName(schemaDTO); // 设置数据库名或模式名
 
-		List<Document> tableDocuments = vectorStoreService.getDocuments(query, "table"); // 获取表文档
+		List<Document> tableDocuments = getTableDocuments(query); // 获取表文档
 		List<List<Document>> columnDocumentList = getColumnDocumentsByKeywords(keywords); // 获取列文档列表
 
+		buildSchemaFromDocuments(columnDocumentList, tableDocuments, schemaDTO);
+
+		return schemaDTO;
+	}
+
+	public void buildSchemaFromDocuments(List<List<Document>> columnDocumentList, List<Document> tableDocuments,
+			SchemaDTO schemaDTO) {
 		// 处理列权重，并按表关联排序
 		processColumnWeights(columnDocumentList, tableDocuments);
 
 		// 初始化列选择器
-		Map<String, Document> weightedColumns = selectWeightedColumns(columnDocumentList, 100);
+		Map<String, Document> weightedColumns = selectWeightedColumns(columnDocumentList, 100); // TODO
+																								// 上限100存在问题
 		Set<String> foreignKeySet = extractForeignKeyRelations(tableDocuments);
 
 		// 构建表列表
@@ -112,8 +120,13 @@ public abstract class BaseSchemaService {
 			.filter(StringUtils::isNotBlank)
 			.collect(Collectors.toSet());
 		schemaDTO.setForeignKeys(List.of(new ArrayList<>(foreignKeys)));
+	}
 
-		return schemaDTO;
+	/**
+	 * 根据关键词获取所有表文档
+	 */
+	public List<Document> getTableDocuments(String query) {
+		return vectorStoreService.getDocuments(query, "table");
 	}
 
 	/**
@@ -128,25 +141,19 @@ public abstract class BaseSchemaService {
 	 */
 	private void expandColumnDocumentsWithForeignKeys(Map<String, Document> weightedColumns, Set<String> foreignKeySet,
 			String vectorType) {
-		Set<String> existingColumnNames = weightedColumns.values()
-			.stream()
-			.map(doc -> (String) doc.getMetadata().get("name"))
-			.collect(Collectors.toSet());
 
+		Set<String> existingColumnNames = weightedColumns.keySet();
 		Set<String> missingColumns = new HashSet<>();
 		for (String key : foreignKeySet) {
-			String[] parts = key.split("\\.");
-			if (parts.length == 2) {
-				String columnName = parts[1];
-				if (!existingColumnNames.contains(columnName)) {
-					missingColumns.add(columnName);
-				}
+			if (!existingColumnNames.contains(key)) {
+				missingColumns.add(key);
 			}
 		}
 
 		for (String columnName : missingColumns) {
 			addColumnsDocument(weightedColumns, columnName, vectorType);
 		}
+
 	}
 
 	/**
@@ -320,7 +327,7 @@ public abstract class BaseSchemaService {
 	 * @return 表元数据
 	 */
 	protected Map<String, Object> getTableMetadata(String tableName) {
-		List<Document> tableDocuments = vectorStoreService.getDocuments(tableName, "table");
+		List<Document> tableDocuments = getTableDocuments(tableName);
 		for (Document doc : tableDocuments) {
 			Map<String, Object> metadata = doc.getMetadata();
 			if (tableName.equals(metadata.get("name"))) {
@@ -334,7 +341,7 @@ public abstract class BaseSchemaService {
 	 * 提取数据库名称
 	 * @param schemaDTO SchemaDTO
 	 */
-	protected void extractDatabaseName(SchemaDTO schemaDTO) {
+	public void extractDatabaseName(SchemaDTO schemaDTO) {
 		String pattern = ":\\d+/([^/?&]+)";
 		if (BizDataSourceTypeEnum.isMysqlDialect(dbConfig.getDialectType())) {
 			Pattern regex = Pattern.compile(pattern);
