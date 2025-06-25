@@ -128,6 +128,7 @@ public class DynamicAgent extends ReActAgent {
 		}
 		catch (Exception e) {
 			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()), e);
+			log.info("Exception occurred", e);
 			thinkActRecord.recordError(e.getMessage());
 			return false;
 		}
@@ -260,7 +261,7 @@ public class DynamicAgent extends ReActAgent {
 		catch (Exception e) {
 
 			log.error(e.getMessage());
-
+			log.info("Exception occurred", e);
 			thinkActRecord.recordError(e.getMessage());
 			userInputService.removeFormInputTool(getPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error
