@@ -3,6 +3,20 @@ server:
 spring:
   application:
     name: spring-ai-alibaba-deepresearch
+  # Redis 配置
+  data:
+    redis:
+      enabled: false
+      host: localhost
+      port: 6379
+      password: ${REDIS-PASSWORD}
+      timeout: 3000 # 连接超时时间（毫秒）
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
   ai:
     dashscope:
       api-key: ${AI_DASHSCOPE_API_KEY}
@@ -13,19 +27,33 @@ spring:
 
     mcp:
       client:
-        type: async
-        toolcallback:
-          enabled: true
         enabled: false
+        type: async
     alibaba:
       toolcalling:
+        baidu:
+          search:
+            enabled: true
         tavilysearch:
-          enabled: true
           api-key: ${TAVILY_API_KEY}
+          enabled: true
         jinacrawler:
           enabled: false
           api-key: ${JINA_API_KEY}
+        serpapi:
+          api-key: ${SERPAPI_KEY}
+          enabled: true
+        aliyunaisearch:
+          api-key: ${ALIYUN_AI_SEARCH_API_KEY}
+          base-url: ${ALIYUN_AI_SEARCH_BASE_URL}
+          enabled: true
       deepresearch:
+        # 定义项目可以使用的搜索引擎
+        search-list:
+          - tavily
+          - aliyun
+          - baidu
+          - serpapi
         mcp:
           enabled: false
           config-location: classpath:mcp-config.json
@@ -40,6 +68,9 @@ spring:
             # 启动时加载 classpath下data目录中的所有文件
             locations:
               - "classpath:/data/"
+        # 报告导出路径配置
+        export:
+          path: ${AI_DEEPRESEARCH_EXPORT_PATH}
 logging:
   level:
     com.alibaba.cloud.ai.example.deepresearch: debug

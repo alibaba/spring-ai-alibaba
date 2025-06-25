@@ -177,10 +177,8 @@ public class NacosMcpProperties {
 		if (environment == null) {
 			return;
 		}
-		String prefix = "spring.ai.alibaba.mcp.nacos";
-
 		ConfigurableEnvironment env = (ConfigurableEnvironment) environment;
-		Map<String, Object> properties = getSubProperties(env.getPropertySources(), env, prefix);
+		Map<String, Object> properties = getSubProperties(env.getPropertySources(), env, CONFIG_PREFIX);
 		properties.forEach((k, v) -> nacosConfigProperties.putIfAbsent(resolveKey(k), String.valueOf(v)));
 	}
 
@@ -202,7 +200,7 @@ public class NacosMcpProperties {
 		for (PropertySource<?> source : propertySources) {
 			for (String name : getPropertyNames(source)) {
 				if (!subProperties.containsKey(name) && name.startsWith(prefix)) {
-					String subName = name.substring(prefix.length());
+					String subName = name.substring(prefix.length() + 1);
 					if (!subProperties.containsKey(subName)) { // take first one
 						Object value = source.getProperty(name);
 						if (value instanceof String) {

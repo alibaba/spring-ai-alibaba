@@ -34,7 +34,6 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,18 +44,14 @@ import java.util.HashMap;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class BrowserUseTool implements ToolCallBiFunctionDef {
+public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
 	private final ChromeDriverService chromeDriverService;
 
 	private String planId;
-
-	// Initialize ObjectMapper instance
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
@@ -210,28 +205,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return instance;
 	}
 
-	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(
-			ChromeDriverService chromeDriverService) {
-		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
-	}
-
-	public ToolExecuteResult run(String toolInput) {
-		log.info("BrowserUseTool toolInput:" + toolInput);
-
-		// 直接将JSON字符串解析为BrowserRequestVO对象
-		BrowserRequestVO requestVO;
-		// Add exception handling for JSON deserialization
-		try {
-			requestVO = objectMapper.readValue(toolInput, BrowserRequestVO.class);
-		}
-		catch (Exception e) {
-			log.error("Error deserializing JSON", e);
-			return new ToolExecuteResult("Error deserializing JSON: " + e.getMessage());
-		}
+	public ToolExecuteResult run(BrowserRequestVO requestVO) {
+		log.info("BrowserUseTool requestVO: action={}", requestVO.getAction());
 
 		// 从RequestVO中获取参数
 		String action = requestVO.getAction();
@@ -345,9 +320,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String t, ToolContext u) {
-
-		return run(t);
+	public ToolExecuteResult apply(BrowserRequestVO requestVO, ToolContext u) {
+		return run(requestVO);
 	}
 
 	@Override
@@ -371,8 +345,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
+	public Class<BrowserRequestVO> getInputType() {
+		return BrowserRequestVO.class;
 	}
 
 	@Override

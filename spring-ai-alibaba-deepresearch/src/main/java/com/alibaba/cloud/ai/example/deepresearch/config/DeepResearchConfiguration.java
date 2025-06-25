@@ -33,7 +33,10 @@ import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
+import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
+
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
+import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
@@ -42,7 +45,6 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -72,7 +74,7 @@ public class DeepResearchConfiguration {
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
 	@Autowired
-	private TavilySearchService tavilySearchService;
+	private SearchBeanUtil searchBeanUtil;
 
 	@Autowired
 	private ChatClient coderAgent;
@@ -97,6 +99,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired(required = false)
 	private RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
+
+	@Autowired
+	private ReportService reportService;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient researchAgent) throws GraphStateException {
@@ -145,13 +150,13 @@ public class DeepResearchConfiguration {
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
 			.addNode("background_investigator",
-					node_async(new BackgroundInvestigationNode(tavilySearchService, jinaCrawlerService)))
+					node_async(new BackgroundInvestigationNode(searchBeanUtil, jinaCrawlerService)))
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-			.addNode("reporter", node_async((new ReporterNode(reporterAgent))))
+			.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportService))))
 			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
 
 		// 添加并行节点块
