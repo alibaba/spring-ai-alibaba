@@ -89,10 +89,11 @@ public class McpTool implements ToolCallBiFunctionDef<Map<String, Object>> {
 		String jsonInput;
 		try {
 			jsonInput = objectMapper.writeValueAsString(inputMap);
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			return new ToolExecuteResult("Error: Failed to serialize input to JSON - " + e.getMessage());
 		}
-		
+
 		String result = toolCallback.call(jsonInput, toolContext);
 		if (result == null) {
 			result = "";
