@@ -98,13 +98,13 @@ public class BackgroundInvestigationNode implements NodeAction {
 					}
 				}
 				catch (Exception e) {
-					ogger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
+					logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
 					Thread.sleep(RETRY_DELAY_MS);
 				}
 			}
 			resultsList.add(results);
 		}
-    
+
 		Map<String, Object> resultMap = new HashMap<>();
 		if (!resultsList.isEmpty()) {
 			List<String> backgroundResults = new ArrayList<>();
