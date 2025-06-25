@@ -554,7 +554,7 @@ public class MapReduceToolTest {
 		// 预期输出：非空的参数信息对象
 
 		// 测试输入类型
-		assertEquals(String.class, mapReduceTool.getInputType());
+		assertEquals(MapReduceTool.MapReduceInput.class, mapReduceTool.getInputType());
 		// 预期输出：String.class（工具接受字符串类型输入）
 
 		// 测试返回直接性

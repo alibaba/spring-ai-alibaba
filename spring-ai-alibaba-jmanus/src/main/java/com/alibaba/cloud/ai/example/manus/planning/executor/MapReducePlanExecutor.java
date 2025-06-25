@@ -136,10 +136,16 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		// 2. 并行执行 Map 阶段
 		if (CollectionUtil.isNotEmpty(mrNode.getMapSteps())) {
-			// 获取 SplitTool 的 ToolCallBackContext
+			// 获取 MapReduceTool 的 ToolCallBackContext
 			ToolCallBackContext toolCallBackContext = null;
 			if (executor != null) {
-				toolCallBackContext = executor.getToolCallBackContext("SplitTool");
+				logger.debug("尝试获取 map_reduce_tool 的 ToolCallBackContext，当前executor: {}", executor.getClass().getSimpleName());
+				toolCallBackContext = executor.getToolCallBackContext("map_reduce_tool");
+				if (toolCallBackContext == null) {
+					logger.warn("无法获取 map_reduce_tool 的 ToolCallBackContext，工具可能未正确注册或名称不匹配");
+				}
+			} else {
+				logger.error("executor 为空，无法获取 MapReduceTool 的 ToolCallBackContext");
 			}
 			executor = executeMapPhase(mrNode.getMapSteps(), context, toolCallBackContext);
 		}
@@ -179,13 +185,20 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			ToolCallBackContext toolCallBackContext) {
 		logger.info("并行执行 Map 阶段，共 {} 个步骤", mapSteps.size());
 
-		ToolCallBiFunctionDef callFunc = toolCallBackContext.getFunctionInstance();
+		// 添加空指针检查
+		if (toolCallBackContext == null) {
+			logger.error("ToolCallBackContext is null, cannot execute Map phase. 请确保在执行Map阶段之前已正确获取MapReduceTool的上下文。");
+			throw new RuntimeException("ToolCallBackContext为空，无法执行Map阶段");
+		}
+
+		ToolCallBiFunctionDef<?> callFunc = toolCallBackContext.getFunctionInstance();
 		if (callFunc == null) {
 			logger.error("ToolCallBiFunctionDef is null, cannot execute Map phase");
 			return null;
 		}
 		if (!(callFunc instanceof MapReduceTool)) {
-			logger.error("ToolCallBiFunctionDef is not SplitTool, cannot execute Map phase");
+			logger.error("ToolCallBiFunctionDef is not MapReduceTool, cannot execute Map phase. 实际类型: {}", 
+					callFunc.getClass().getSimpleName());
 			return null;
 		}
 		MapReduceTool splitTool = (MapReduceTool) callFunc;
@@ -289,6 +302,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 	/**
 	 * 串行执行 Reduce 阶段
+	 * 支持批量处理Map任务输出，基于字符数控制每批次处理的任务数量
 	 */
 	private BaseAgent executeReducePhase(List<ExecutionStep> reduceSteps, ExecutionContext context,
 			BaseAgent lastExecutor) {
@@ -296,15 +310,356 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		BaseAgent executor = lastExecutor;
 
-		for (ExecutionStep step : reduceSteps) {
-			BaseAgent stepExecutor = executeStep(step, context);
-			if (stepExecutor != null) {
-				executor = stepExecutor;
-			}
+		// 获取MapReduceTool实例以获取Map任务结果
+		ToolCallBackContext mapReduceToolContext = null;
+		if (executor != null) {
+			mapReduceToolContext = executor.getToolCallBackContext("map_reduce_tool");
 		}
 
-		logger.info("Reduce 阶段执行完成");
+		if (mapReduceToolContext == null) {
+			logger.error("无法获取MapReduceTool上下文，Reduce阶段无法获取Map任务结果");
+			throw new RuntimeException("MapReduceTool上下文为空，无法执行Reduce阶段");
+		}
+
+		ToolCallBiFunctionDef<?> mapReduceToolFunc = mapReduceToolContext.getFunctionInstance();
+		if (!(mapReduceToolFunc instanceof MapReduceTool)) {
+			logger.error("获取的工具不是MapReduceTool实例，无法执行Reduce阶段");
+			throw new RuntimeException("工具类型错误，无法执行Reduce阶段");
+		}
+
+		MapReduceTool mapReduceTool = (MapReduceTool) mapReduceToolFunc;
+		
+		// 获取所有Map任务目录
+		List<String> taskDirectories = mapReduceTool.getSplitResults();
+		if (taskDirectories.isEmpty()) {
+			logger.warn("没有找到Map任务结果，Reduce阶段跳过");
+			return executor;
+		}
+
+		// 配置每批次处理的字符数限制（可配置，主要受制于上下文长度限制）
+		int maxBatchCharacters = getMaxBatchCharacters(context);
+		logger.info("开始Reduce阶段处理，共 {} 个Map任务，每批次字符数限制 {} 字符", taskDirectories.size(), maxBatchCharacters);
+
+		// 基于字符数分批次处理Map任务结果
+		List<List<String>> batches = groupTasksByCharacterCount(taskDirectories, maxBatchCharacters);
+		
+		int batchCounter = 1;
+		for (List<String> batchTaskDirectories : batches) {
+			logger.info("处理第 {} 批次，包含 {} 个任务", batchCounter, batchTaskDirectories.size());
+			
+			// 为当前批次执行Reduce步骤
+			for (ExecutionStep step : reduceSteps) {
+				BaseAgent stepExecutor = executeReduceStepWithBatch(step, context, batchTaskDirectories, batchCounter);
+				if (stepExecutor != null) {
+					executor = stepExecutor;
+				}
+			}
+			
+			batchCounter++;
+		}
+
+		logger.info("Reduce 阶段执行完成，共处理 {} 个批次", batches.size());
 		return executor;
+	}
+
+	/**
+	 * 获取每批次处理的最大字符数
+	 * 可以根据上下文长度限制和配置来动态调整
+	 */
+	private int getMaxBatchCharacters(ExecutionContext context) {
+		// 默认批次字符数限制，可以根据实际需求调整
+		// 考虑到上下文长度限制，建议不要设置太大
+		int defaultMaxCharacters = 2500; // 约2500字符
+		
+		// 可以从ExecutionParams中获取配置的批次字符数限制
+		String executionParams = context.getPlan().getExecutionParams();
+		if (executionParams != null && executionParams.contains("reduce_batch_characters:")) {
+			try {
+				String[] lines = executionParams.split("\n");
+				for (String line : lines) {
+					if (line.trim().startsWith("reduce_batch_characters:")) {
+						String charactersStr = line.split(":")[1].trim();
+						int configuredCharacters = Integer.parseInt(charactersStr);
+						if (configuredCharacters > 0 && configuredCharacters <= 10000) { // 限制最大字符数
+							logger.info("使用配置的Reduce批次字符数限制: {}", configuredCharacters);
+							return configuredCharacters;
+						}
+					}
+				}
+			} catch (Exception e) {
+				logger.warn("解析reduce_batch_characters配置失败，使用默认值: {}", defaultMaxCharacters, e);
+			}
+		}
+		
+		logger.info("使用默认的Reduce批次字符数限制: {}", defaultMaxCharacters);
+		return defaultMaxCharacters;
+	}
+
+	/**
+	 * 根据字符数将任务分组到不同批次
+	 * 确保每个批次的总字符数不超过指定限制，且保持文档完整性
+	 */
+	private List<List<String>> groupTasksByCharacterCount(List<String> taskDirectories, int maxBatchCharacters) {
+		List<List<String>> batches = new ArrayList<>();
+		List<String> currentBatch = new ArrayList<>();
+		int currentBatchCharacterCount = 0;
+		
+		for (String taskDirectory : taskDirectories) {
+			// 计算当前任务的字符数
+			int taskCharacterCount = getTaskCharacterCount(taskDirectory);
+			
+			// 如果单个任务的字符数已经超过限制，单独作为一个批次
+			if (taskCharacterCount > maxBatchCharacters) {
+				// 先保存当前批次（如果不为空）
+				if (!currentBatch.isEmpty()) {
+					batches.add(new ArrayList<>(currentBatch));
+					currentBatch.clear();
+					currentBatchCharacterCount = 0;
+				}
+				
+				// 单个超大任务作为独立批次
+				List<String> singleTaskBatch = new ArrayList<>();
+				singleTaskBatch.add(taskDirectory);
+				batches.add(singleTaskBatch);
+				logger.warn("任务 {} 字符数 {} 超过批次限制 {}，单独作为一个批次", 
+						taskDirectory, taskCharacterCount, maxBatchCharacters);
+				continue;
+			}
+			
+			// 检查加入当前任务后是否会超过限制
+			if (currentBatchCharacterCount + taskCharacterCount > maxBatchCharacters && !currentBatch.isEmpty()) {
+				// 保存当前批次并开始新批次
+				batches.add(new ArrayList<>(currentBatch));
+				currentBatch.clear();
+				currentBatchCharacterCount = 0;
+			}
+			
+			// 将任务添加到当前批次
+			currentBatch.add(taskDirectory);
+			currentBatchCharacterCount += taskCharacterCount;
+			
+			logger.debug("任务 {} ({} 字符) 添加到批次，当前批次字符数: {}", 
+					taskDirectory, taskCharacterCount, currentBatchCharacterCount);
+		}
+		
+		// 添加最后一个批次（如果不为空）
+		if (!currentBatch.isEmpty()) {
+			batches.add(currentBatch);
+		}
+		
+		// 记录批次分组结果
+		for (int i = 0; i < batches.size(); i++) {
+			List<String> batch = batches.get(i);
+			int batchTotalCharacters = batch.stream().mapToInt(this::getTaskCharacterCount).sum();
+			logger.info("批次 {} 包含 {} 个任务，总字符数: {}", i + 1, batch.size(), batchTotalCharacters);
+		}
+		
+		return batches;
+	}
+
+	/**
+	 * 获取单个任务的字符数
+	 * 读取任务目录中的output.md文件并计算字符数
+	 */
+	private int getTaskCharacterCount(String taskDirectory) {
+		try {
+			Path taskPath = Paths.get(taskDirectory);
+			Path outputFile = taskPath.resolve("output.md");
+			
+			if (Files.exists(outputFile)) {
+				String content = Files.readString(outputFile);
+				return content.length();
+			} else {
+				logger.warn("任务目录 {} 的output.md文件不存在，返回默认字符数", taskDirectory);
+				return 100; // 返回默认字符数，避免计算错误
+			}
+		} catch (Exception e) {
+			logger.error("读取任务 {} 的字符数失败", taskDirectory, e);
+			return 100; // 返回默认字符数，避免计算错误
+		}
+	}
+
+	/**
+	 * 执行带有批次Map结果的Reduce步骤
+	 * 利用InnerStorageTool将批次上下文聚合存储到统一文件，避免上下文过长
+	 */
+	private BaseAgent executeReduceStepWithBatch(ExecutionStep step, ExecutionContext context, 
+			List<String> batchTaskDirectories, int batchCounter) {
+		
+		// 收集当前批次的Map任务结果 - 包含完整内容，不截断
+		StringBuilder batchResults = new StringBuilder();
+		batchResults.append("=== Reduce批次 ").append(String.format("%03d", batchCounter)).append(" 上下文 ===\n");
+		batchResults.append("批次ID: reduce_batch_").append(String.format("%03d", batchCounter)).append("\n");
+		batchResults.append("Map任务数量: ").append(batchTaskDirectories.size()).append("\n");
+		batchResults.append("处理时间: ").append(java.time.LocalDateTime.now()).append("\n");
+		batchResults.append("Map结果列表:\n");
+		
+		for (String taskDirectory : batchTaskDirectories) {
+			try {
+				Path taskPath = Paths.get(taskDirectory);
+				String taskId = taskPath.getFileName().toString();
+				
+				// 读取任务的output.md文件（Map阶段的输出）
+				Path outputFile = taskPath.resolve("output.md");
+				if (Files.exists(outputFile)) {
+					String mapOutput = Files.readString(outputFile);
+					batchResults.append("- 任务ID: ").append(taskId).append("\n");
+					batchResults.append("  字符数: ").append(mapOutput.length()).append("\n");
+					batchResults.append("  结果: ").append(mapOutput).append("\n\n"); // 完整内容，不截断
+				} else {
+					batchResults.append("- 任务ID: ").append(taskId).append("\n");
+					batchResults.append("  结果: [输出文件不存在]\n\n");
+					logger.warn("Map任务 {} 的输出文件不存在: {}", taskId, outputFile);
+				}
+			} catch (Exception e) {
+				logger.error("读取Map任务结果失败: {}", taskDirectory, e);
+				batchResults.append("- 任务目录: ").append(taskDirectory).append("\n");
+				batchResults.append("  结果: [读取失败: ").append(e.getMessage()).append("]\n\n");
+			}
+		}
+		
+		batchResults.append("=== Reduce批次 ").append(String.format("%03d", batchCounter)).append(" 上下文结束 ===\n\n");
+		
+		// 使用统一的文件名聚合所有批次数据
+		String aggregatedFileName = "reduce_aggregated_context.md";
+		String batchContextReference = "";
+		
+		try {
+			// 生成存储指令用于Agent - 指向统一的聚合文件
+			batchContextReference = String.format(
+				"当前批次的详细Map结果已聚合存储在统一的内部文件中。请使用inner_storage_tool获取完整内容：\n" +
+				"- 聚合文件名: %s\n" +
+				"- 当前批次ID: reduce_batch_%03d\n" +
+				"- 当前批次任务数: %d\n" +
+				"- 当前批次字符数: %d\n\n" +
+				"使用方法示例（获取所有批次数据）：\n" +
+				"inner_storage_tool({\n" +
+				"  \"action\": \"get_content\",\n" +
+				"  \"file_name\": \"%s\",\n" +
+				"  \"query_key\": \"所有批次Map任务结果分析\",\n" +
+				"  \"columns\": [\"批次ID\", \"任务ID\", \"主要内容\", \"关键发现\"]\n" +
+				"})\n\n" +
+				"注意：该文件包含从第一个批次到当前批次的所有Map任务结果数据。\n" +
+				"建议先将当前批次的处理结果追加到该文件中，然后进行综合分析。",
+				aggregatedFileName, batchCounter, batchTaskDirectories.size(), 
+				batchResults.length(), aggregatedFileName
+			);
+			
+			logger.info("批次 {} 上下文已准备聚合存储到文件: {}, 当前批次内容长度: {} 字符", 
+					batchCounter, aggregatedFileName, batchResults.length());
+			
+		} catch (Exception e) {
+			logger.error("准备批次上下文聚合存储失败", e);
+			// 如果存储失败，回退到原有方式（但仍然截断以避免上下文过长）
+			batchContextReference = createFallbackBatchContext(batchTaskDirectories, batchCounter);
+		}
+		
+		// 保存原始ExecutionParams并临时修改
+		String originalExecutionParams = context.getPlan().getExecutionParams();
+		StringBuilder enhancedParams = new StringBuilder();
+		if (originalExecutionParams != null && !originalExecutionParams.trim().isEmpty()) {
+			enhancedParams.append(originalExecutionParams).append("\n\n");
+		}
+		
+		// 添加批次上下文聚合存储信息和InnerStorageTool使用指导
+		enhancedParams.append("=== Reduce批次处理指导 ===\n");
+		enhancedParams.append("当前批次编号: ").append(batchCounter).append("\n");
+		enhancedParams.append("聚合存储文件: ").append(aggregatedFileName).append("\n");
+		enhancedParams.append("重要说明：所有批次的Map结果都聚合在同一个文件中\n");
+		enhancedParams.append("建议流程：\n");
+		enhancedParams.append("1. 首先将当前批次数据追加到聚合文件中\n");
+		enhancedParams.append("2. 然后获取完整的聚合文件内容进行综合分析\n");
+		enhancedParams.append("3. 最后将分析结果也追加到聚合文件中\n");
+		enhancedParams.append("=== 批次处理指导结束 ===\n\n");
+		enhancedParams.append(batchContextReference);
+		
+		// 创建修改后的步骤
+		ExecutionStep enhancedStep = new ExecutionStep();
+		enhancedStep.setStepIndex(step.getStepIndex());
+		
+		StringBuilder enhancedRequirement = new StringBuilder();
+		enhancedRequirement.append(step.getStepRequirement());
+		enhancedRequirement.append("\n\n=== 当前批次处理说明 ===\n");
+		enhancedRequirement.append("这是第 ").append(batchCounter).append(" 个批次的Reduce处理。\n");
+		enhancedRequirement.append("批次包含 ").append(batchTaskDirectories.size()).append(" 个Map任务的结果。\n");
+		enhancedRequirement.append("所有批次的Map结果数据都聚合在统一的内部文件中。\n\n");
+		enhancedRequirement.append("处理步骤建议：\n");
+		enhancedRequirement.append("1. 【必须】首先使用inner_storage_tool将当前批次数据追加到聚合文件：\n");
+		enhancedRequirement.append("   - action: \"append\"\n");
+		enhancedRequirement.append("   - file_name: \"").append(aggregatedFileName).append("\"\n");
+		enhancedRequirement.append("   - content: [当前批次的Map结果数据]\n\n");
+		enhancedRequirement.append("2. 然后获取完整的聚合文件内容进行分析：\n");
+		enhancedRequirement.append("   - action: \"get_content\"\n");
+		enhancedRequirement.append("   - file_name: \"").append(aggregatedFileName).append("\"\n");
+		enhancedRequirement.append("   - 进行综合分析所有已处理的批次数据\n\n");
+		enhancedRequirement.append("3. 最后将分析结果也追加到聚合文件中，供后续批次参考。\n");
+		enhancedRequirement.append("=== 批次处理说明结束 ===\n\n");
+		enhancedRequirement.append(batchContextReference);
+		
+		enhancedStep.setStepRequirement(enhancedRequirement.toString());
+		
+		try {
+			// 临时设置增强的ExecutionParams
+			context.getPlan().setExecutionParams(enhancedParams.toString());
+			
+			// 在ExecutionParams中提供当前批次的原始数据，供Agent追加到聚合文件
+			String currentBatchDataForAppend = "\n" + batchResults.toString();
+			String finalEnhancedParams = enhancedParams.toString() + 
+				"\n=== 当前批次原始数据（用于追加） ===\n" +
+				currentBatchDataForAppend +
+				"=== 当前批次原始数据结束 ===\n";
+			
+			context.getPlan().setExecutionParams(finalEnhancedParams);
+			
+			// 执行步骤
+			BaseAgent stepExecutor = executeStep(enhancedStep, context);
+			
+			logger.info("完成Reduce批次 {} 的处理，包含 {} 个Map任务，已引导聚合存储到: {}", 
+					batchCounter, batchTaskDirectories.size(), aggregatedFileName);
+			return stepExecutor;
+			
+		} finally {
+			// 恢复原始ExecutionParams
+			context.getPlan().setExecutionParams(originalExecutionParams);
+		}
+	}
+	
+	/**
+	 * 创建回退的批次上下文（当InnerStorageTool存储失败时使用）
+	 */
+	private String createFallbackBatchContext(List<String> batchTaskDirectories, int batchCounter) {
+		StringBuilder fallbackContext = new StringBuilder();
+		fallbackContext.append("=== Reduce批次摘要 (回退模式) ===\n");
+		fallbackContext.append("批次ID: reduce_batch_").append(String.format("%03d", batchCounter)).append("\n");
+		fallbackContext.append("Map任务数量: ").append(batchTaskDirectories.size()).append("\n");
+		fallbackContext.append("任务列表:\n");
+		
+		for (String taskDirectory : batchTaskDirectories) {
+			try {
+				Path taskPath = Paths.get(taskDirectory);
+				String taskId = taskPath.getFileName().toString();
+				
+				Path outputFile = taskPath.resolve("output.md");
+				if (Files.exists(outputFile)) {
+					String mapOutput = Files.readString(outputFile);
+					fallbackContext.append("- 任务ID: ").append(taskId);
+					fallbackContext.append(" (").append(mapOutput.length()).append(" 字符)");
+					// 只显示前200字符作为摘要
+					if (mapOutput.length() > 200) {
+						fallbackContext.append(": ").append(mapOutput.substring(0, 200)).append("...[截断]\n");
+					} else {
+						fallbackContext.append(": ").append(mapOutput).append("\n");
+					}
+				} else {
+					fallbackContext.append("- 任务ID: ").append(taskId).append(": [输出文件不存在]\n");
+				}
+			} catch (Exception e) {
+				fallbackContext.append("- 任务目录: ").append(taskDirectory).append(": [读取失败]\n");
+			}
+		}
+		
+		fallbackContext.append("=== 批次摘要结束 ===");
+		return fallbackContext.toString();
 	}
 
 	/**
