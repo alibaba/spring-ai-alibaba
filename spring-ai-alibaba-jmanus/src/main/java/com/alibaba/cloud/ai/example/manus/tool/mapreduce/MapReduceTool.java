@@ -27,7 +27,6 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +37,81 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 /**
  * 数据分割工具，用于MapReduce流程中的数据准备阶段 负责验证文件存在性、识别表格头部信息并进行数据分割处理
  */
-public class MapReduceTool implements ToolCallBiFunctionDef {
+public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapReduceInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(MapReduceTool.class);
+
+	/**
+	 * 内部输入类，用于定义MapReduce工具的输入参数
+	 */
+	public static class MapReduceInput {
+
+		private String action;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("file_path")
+		private String filePath;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("return_columns")
+		private List<String> returnColumns;
+
+		private String content;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("task_id")
+		private String taskId;
+
+		private String status;
+
+		public MapReduceInput() {
+		}
+
+		public String getAction() {
+			return action;
+		}
+
+		public void setAction(String action) {
+			this.action = action;
+		}
+
+		public String getFilePath() {
+			return filePath;
+		}
+
+		public void setFilePath(String filePath) {
+			this.filePath = filePath;
+		}
+
+		public List<String> getReturnColumns() {
+			return returnColumns;
+		}
+
+		public void setReturnColumns(List<String> returnColumns) {
+			this.returnColumns = returnColumns;
+		}
+
+		public String getContent() {
+			return content;
+		}
+
+		public void setContent(String content) {
+			this.content = content;
+		}
+
+		public String getTaskId() {
+			return taskId;
+		}
+
+		public void setTaskId(String taskId) {
+			this.taskId = taskId;
+		}
+
+		public String getStatus() {
+			return status;
+		}
+
+		public void setStatus(String status) {
+			this.status = status;
+		}
+	}
 
 	private static final String TOOL_NAME = "map_reduce_tool";
 
@@ -170,8 +241,8 @@ public class MapReduceTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
+	public Class<MapReduceInput> getInputType() {
+		return MapReduceInput.class;
 	}
 
 	@Override
@@ -195,39 +266,37 @@ public class MapReduceTool implements ToolCallBiFunctionDef {
 		return new OpenAiApi.FunctionTool(function);
 	}
 
-	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback() {
+	public static FunctionToolCallback<MapReduceInput, ToolExecuteResult> getFunctionToolCallback() {
 		return FunctionToolCallback.builder(TOOL_NAME, new MapReduceTool())
 			.description(TOOL_DESCRIPTION)
 			.inputSchema(PARAMETERS)
-			.inputType(String.class)
+			.inputType(MapReduceInput.class)
 			.build();
 	}
 
-	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(String planId, ManusProperties manusProperties) {
+	public static FunctionToolCallback<MapReduceInput, ToolExecuteResult> getFunctionToolCallback(String planId, ManusProperties manusProperties) {
 		return FunctionToolCallback.builder(TOOL_NAME, new MapReduceTool(planId, manusProperties))
 			.description(TOOL_DESCRIPTION)
 			.inputSchema(PARAMETERS)
-			.inputType(String.class)
+			.inputType(MapReduceInput.class)
 			.build();
 	}
 
-	public ToolExecuteResult run(String toolInput) {
-		log.info("SplitTool toolInput: {}", toolInput);
+	/**
+	 * 执行MapReduce操作，接受强类型输入对象
+	 */
+	public ToolExecuteResult run(MapReduceInput input) {
+		log.info("MapReduceTool input: action={}, filePath={}", input.getAction(), input.getFilePath());
 		try {
-			Map<String, Object> toolInputMap = objectMapper.readValue(toolInput,
-					new TypeReference<Map<String, Object>>() {
-					});
-
-			String action = (String) toolInputMap.get("action");
+			String action = input.getAction();
 			if (action == null) {
 				return new ToolExecuteResult("错误：action参数是必需的");
 			}
 
 			return switch (action) {
 				case "split_data" -> {
-					String filePath = (String) toolInputMap.get("file_path");
-					@SuppressWarnings("unchecked")
-					List<String> columns = (List<String>) toolInputMap.get("return_columns");
+					String filePath = input.getFilePath();
+					List<String> columns = input.getReturnColumns();
 					
 					if (filePath == null) {
 						yield new ToolExecuteResult("错误：file_path参数是必需的");
@@ -241,9 +310,9 @@ public class MapReduceTool implements ToolCallBiFunctionDef {
 					yield processFileOrDirectory(filePath);
 				}
 				case "record_map_output" -> {
-					String content = (String) toolInputMap.get("content");
-					String taskId = (String) toolInputMap.get("task_id");
-					String status = (String) toolInputMap.get("status");
+					String content = input.getContent();
+					String taskId = input.getTaskId();
+					String status = input.getStatus();
 					
 					if (content == null) {
 						yield new ToolExecuteResult("错误：content参数是必需的");
@@ -262,7 +331,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef {
 
 		}
 		catch (Exception e) {
-			log.error("SplitTool执行失败", e);
+			log.error("MapReduceTool执行失败", e);
 			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
 		}
 	}
@@ -476,8 +545,8 @@ public class MapReduceTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		return run(s);
+	public ToolExecuteResult apply(MapReduceInput input, ToolContext toolContext) {
+		return run(input);
 	}
 
 	/**

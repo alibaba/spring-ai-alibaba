@@ -47,6 +47,8 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.microsoft.playwright.Page;
@@ -63,6 +65,9 @@ class BrowserUseToolSpringTest {
 
 	@Autowired
 	private ChromeDriverService chromeDriverService;
+
+	@Autowired
+	private InnerStorageService innerStorageService;
 
 	private BrowserUseTool browserUseTool;
 
@@ -83,7 +88,7 @@ class BrowserUseToolSpringTest {
 		manusProperties.setBrowserHeadless(false);
 		manusProperties.setBrowserDebug(true);
 		chromeDriverService.setManusProperties(manusProperties);
-		browserUseTool = new BrowserUseTool(chromeDriverService);
+		browserUseTool = new BrowserUseTool(chromeDriverService, innerStorageService);
 		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties);
 		agent.setPlanId("plan_123123124124124");
 		browserUseTool.setPlanId(agent.getPlanId());
@@ -115,6 +120,11 @@ class BrowserUseToolSpringTest {
 
 		@Override
 		public List<ToolCallback> getToolCallList() {
+			return null;
+		}
+
+		@Override
+		public ToolCallBackContext getToolCallBackContext(String toolKey) {
 			return null;
 		}
 
@@ -612,6 +622,7 @@ class BrowserUseToolSpringTest {
 			browserUseTool.getDriver().getInteractiveElementRegistry().refresh(page);
 			state = browserUseTool.getCurrentState(page);
 			String updatedElements = (String) state.get("interactive_elements");
+			log.info("Updated elements: {}", updatedElements != null ? updatedElements.length() + " characters" : "null");
 
 			log.info("CSDN登录测试完成");
 		}

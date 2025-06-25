@@ -18,13 +18,10 @@ package com.alibaba.cloud.ai.example.manus.tool.innerStorage;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
-import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +35,114 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
  * 支持智能内容管理：当返回内容过长时自动存储并返回摘要
  *
  */
-public class InnerStorageTool implements ToolCallBiFunctionDef {
+public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.InnerStorageInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(InnerStorageTool.class);
+
+	/**
+	 * 内部输入类，用于定义内部存储工具的输入参数
+	 */
+	public static class InnerStorageInput {
+
+		private String action;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("file_name")
+		private String fileName;
+
+		private String content;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("source_text")
+		private String sourceText;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("target_text")
+		private String targetText;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("start_line")
+		private Integer startLine;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("end_line")
+		private Integer endLine;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("query_key")
+		private String queryKey;
+
+		private List<String> columns;
+
+		public InnerStorageInput() {
+		}
+
+		public String getAction() {
+			return action;
+		}
+
+		public void setAction(String action) {
+			this.action = action;
+		}
+
+		public String getFileName() {
+			return fileName;
+		}
+
+		public void setFileName(String fileName) {
+			this.fileName = fileName;
+		}
+
+		public String getContent() {
+			return content;
+		}
+
+		public void setContent(String content) {
+			this.content = content;
+		}
+
+		public String getSourceText() {
+			return sourceText;
+		}
+
+		public void setSourceText(String sourceText) {
+			this.sourceText = sourceText;
+		}
+
+		public String getTargetText() {
+			return targetText;
+		}
+
+		public void setTargetText(String targetText) {
+			this.targetText = targetText;
+		}
+
+		public Integer getStartLine() {
+			return startLine;
+		}
+
+		public void setStartLine(Integer startLine) {
+			this.startLine = startLine;
+		}
+
+		public Integer getEndLine() {
+			return endLine;
+		}
+
+		public void setEndLine(Integer endLine) {
+			this.endLine = endLine;
+		}
+
+		public String getQueryKey() {
+			return queryKey;
+		}
+
+		public void setQueryKey(String queryKey) {
+			this.queryKey = queryKey;
+		}
+
+		public List<String> getColumns() {
+			return columns;
+		}
+
+		public void setColumns(List<String> columns) {
+			this.columns = columns;
+		}
+	}
 
 	private final InnerStorageService innerStorageService;
 	private final SummaryWorkflow summaryWorkflow;
@@ -191,8 +293,8 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
+	public Class<InnerStorageInput> getInputType() {
+		return InnerStorageInput.class;
 	}
 
 	@Override
@@ -216,61 +318,51 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 		return new OpenAiApi.FunctionTool(function);
 	}
 
-	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(
-			InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow) {
-		return FunctionToolCallback.builder(TOOL_NAME, new InnerStorageTool(innerStorageService, summaryWorkflow))
-			.description(TOOL_DESCRIPTION)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
-	}
 
-	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(String planId,
+	public static FunctionToolCallback<InnerStorageInput, ToolExecuteResult> getFunctionToolCallback(String planId,
 			InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow) {
 		InnerStorageTool tool = new InnerStorageTool(innerStorageService, summaryWorkflow);
 		tool.setPlanId(planId);
 		return FunctionToolCallback.builder(TOOL_NAME, tool)
 			.description(TOOL_DESCRIPTION)
 			.inputSchema(PARAMETERS)
-			.inputType(String.class)
+			.inputType(InnerStorageInput.class)
 			.build();
 	}
 
-	public ToolExecuteResult run(String toolInput) {
-		log.info("InnerStorageTool toolInput: {}", toolInput);
+	/**
+	 * 执行内部存储操作，接受强类型输入对象
+	 */
+	public ToolExecuteResult run(InnerStorageInput input) {
+		log.info("InnerStorageTool input: action={}, fileName={}", input.getAction(), input.getFileName());
 		try {
-			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput,
-					new TypeReference<Map<String, Object>>() {
-					});
-
-			String action = (String) toolInputMap.get("action");
+			String action = input.getAction();
 			if (action == null) {
 				return new ToolExecuteResult("错误：action参数是必需的");
 			}
 
 			return switch (action) {
 				case "append" -> {
-					String fileName = (String) toolInputMap.get("file_name");
-					String content = (String) toolInputMap.get("content");
+					String fileName = input.getFileName();
+					String content = input.getContent();
 					yield appendToFile(fileName, content);
 				}
 				case "replace" -> {
-					String fileName = (String) toolInputMap.get("file_name");
-					String sourceText = (String) toolInputMap.get("source_text");
-					String targetText = (String) toolInputMap.get("target_text");
+					String fileName = input.getFileName();
+					String sourceText = input.getSourceText();
+					String targetText = input.getTargetText();
 					yield replaceInFile(fileName, sourceText, targetText);
 				}
 				case "get_lines" -> {
-					String fileName = (String) toolInputMap.get("file_name");
-					Integer startLine = (Integer) toolInputMap.get("start_line");
-					Integer endLine = (Integer) toolInputMap.get("end_line");
+					String fileName = input.getFileName();
+					Integer startLine = input.getStartLine();
+					Integer endLine = input.getEndLine();
 					yield getFileLines(fileName, startLine, endLine);
 				}
 				case "get_content" -> {
-					String fileName = (String) toolInputMap.get("file_name");
-					String queryKey = (String) toolInputMap.get("query_key");
-					@SuppressWarnings("unchecked")
-					List<String> columns = (List<String>) toolInputMap.get("columns");
+					String fileName = input.getFileName();
+					String queryKey = input.getQueryKey();
+					List<String> columns = input.getColumns();
 					yield getStoredContent(fileName, queryKey, columns);
 				}
 				default -> new ToolExecuteResult("未知操作: " + action + "。支持的操作: append, replace, get_lines, get_content");
@@ -528,8 +620,8 @@ public class InnerStorageTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		return run(s);
+	public ToolExecuteResult apply(InnerStorageInput input, ToolContext toolContext) {
+		return run(input);
 	}
 
 }

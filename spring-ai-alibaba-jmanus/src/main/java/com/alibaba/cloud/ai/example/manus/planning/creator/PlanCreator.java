@@ -90,7 +90,7 @@ public class PlanCreator {
 
 					ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
 						.prompt(prompt)
-						.toolCallbacks(List.of(PlanningTool.getFunctionToolCallback(planningTool)));
+						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
 					if (useMemory) {
 						requestSpec
 							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));

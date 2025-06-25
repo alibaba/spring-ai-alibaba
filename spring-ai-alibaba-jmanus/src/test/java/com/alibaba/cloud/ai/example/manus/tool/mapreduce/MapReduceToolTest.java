@@ -17,11 +17,11 @@ package com.alibaba.cloud.ai.example.manus.tool.mapreduce;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -42,6 +42,12 @@ public class MapReduceToolTest {
 
 	private final String testPlanId = "test-plan-001";
 
+	private final ObjectMapper objectMapper = new ObjectMapper();
+
+	private MapReduceTool.MapReduceInput createMapReduceInput(String jsonInput) throws Exception {
+		return objectMapper.readValue(jsonInput, MapReduceTool.MapReduceInput.class);
+	}
+
 	@BeforeEach
 	void setUp() {
 		// 创建模拟的 ManusProperties，避免 ConfigService 依赖
@@ -61,7 +67,7 @@ public class MapReduceToolTest {
 	}
 
 	@Test
-	void testSplitDataAction_SingleFile() throws IOException {
+	void testSplitDataAction_SingleFile() throws Exception {
 		// === 输入准备 ===
 		// 使用测试资源文件作为数据源
 		Path testResourcesFile = Path.of("src/test/resources/test_docs.md");
@@ -79,7 +85,8 @@ public class MapReduceToolTest {
 		// 工具输入：JSON格式，包含动作类型、文件路径和返回列配置
 
 		// === 执行处理 ===
-		ToolExecuteResult result = mapReduceTool.run(input);
+		MapReduceTool.MapReduceInput mapReduceInput = createMapReduceInput(input);
+		ToolExecuteResult result = mapReduceTool.run(mapReduceInput);
 
 		// === 输出验证 ===
 		// 验证工具执行结果 - 返回的字符串输出
@@ -120,7 +127,7 @@ public class MapReduceToolTest {
 	}
 
 	@Test
-	void testSplitDataAction_Directory() throws IOException {
+	void testSplitDataAction_Directory() throws Exception {
 		// === 输入准备 ===
 		// 创建测试目录和多个文件
 		Path testDir = tempDir.resolve("test_data");
@@ -168,7 +175,7 @@ public class MapReduceToolTest {
 		// 工具输入：JSON格式，包含动作类型和目录路径
 
 		// === 执行处理 ===
-		ToolExecuteResult result = mapReduceTool.run(input);
+		ToolExecuteResult result = mapReduceTool.run(createMapReduceInput(input));
 
 		// === 输出验证 ===
 		// 验证工具执行结果 - 返回的字符串输出
@@ -250,7 +257,7 @@ public class MapReduceToolTest {
 	}
 
 	@Test
-	void testRecordMapOutput() throws IOException {
+	void testRecordMapOutput() throws Exception {
 		// === 输入准备 ===
 		// 首先创建一个任务目录（模拟先运行split_data）
 		Path planDir = tempDir.resolve("extensions").resolve("inner_storage").resolve(testPlanId);
@@ -295,7 +302,7 @@ public class MapReduceToolTest {
 		// 工具输入：JSON格式，包含动作类型、处理结果内容、任务ID和状态
 
 		// === 执行处理 ===
-		ToolExecuteResult result = mapReduceTool.run(input);
+		ToolExecuteResult result = mapReduceTool.run(createMapReduceInput(input));
 
 		// === 输出验证 ===
 		// 验证工具执行结果 - 返回的字符串输出
@@ -332,7 +339,7 @@ public class MapReduceToolTest {
 	}
 
 	@Test
-	void testRecordMapOutput_Failed() throws IOException {
+	void testRecordMapOutput_Failed() throws Exception {
 		// === 输入准备 ===
 		// 首先创建一个任务目录（模拟先运行split_data）
 		Path planDir = tempDir.resolve("extensions").resolve("inner_storage").resolve(testPlanId);
@@ -377,7 +384,7 @@ public class MapReduceToolTest {
 		// 工具输入：JSON格式，包含动作类型、失败内容、任务ID和失败状态
 
 		// === 执行处理 ===
-		ToolExecuteResult result = mapReduceTool.run(input);
+		ToolExecuteResult result = mapReduceTool.run(createMapReduceInput(input));
 
 		// === 输出验证 ===
 		// 验证工具执行结果 - 返回的字符串输出
@@ -399,7 +406,7 @@ public class MapReduceToolTest {
 	}
 
 	@Test
-	void testInvalidAction() {
+	void testInvalidAction() throws Exception {
 		// === 输入准备 ===
 		// 测试无效的 action - 模拟用户传入不支持的动作类型
 		String input = """
@@ -411,7 +418,7 @@ public class MapReduceToolTest {
 		// 工具输入：JSON格式，包含无效的动作类型和文件路径
 
 		// === 执行处理 ===
-		ToolExecuteResult result = mapReduceTool.run(input);
+		ToolExecuteResult result = mapReduceTool.run(createMapReduceInput(input));
 
 		// === 输出验证 ===
 		// 验证工具执行结果 - 返回的错误信息字符串
@@ -423,7 +430,7 @@ public class MapReduceToolTest {
 	}
 
 	@Test
-	void testMissingRequiredParameters() {
+	void testMissingRequiredParameters() throws Exception {
 		// === 输入准备 - 测试缺少必需参数的场景 ===
 		
 		// 测试split_data缺少file_path参数
@@ -435,7 +442,7 @@ public class MapReduceToolTest {
 		// 工具输入1：JSON格式，只包含动作类型，缺少必需的file_path参数
 
 		// === 执行处理1 ===
-		ToolExecuteResult result1 = mapReduceTool.run(input1);
+		ToolExecuteResult result1 = mapReduceTool.run(createMapReduceInput(input1));
 		
 		// === 输出验证1 ===
 		assertNotNull(result1);
@@ -452,7 +459,7 @@ public class MapReduceToolTest {
 		// 工具输入2：JSON格式，包含动作类型和内容，但缺少必需的task_id参数
 
 		// === 执行处理2 ===
-		ToolExecuteResult result2 = mapReduceTool.run(input2);
+		ToolExecuteResult result2 = mapReduceTool.run(createMapReduceInput(input2));
 		
 		// === 输出验证2 ===
 		assertNotNull(result2);
@@ -462,7 +469,7 @@ public class MapReduceToolTest {
 	}
 
 	@Test
-	void testFileNotExists() {
+	void testFileNotExists() throws Exception {
 		// === 输入准备 ===
 		// 测试不存在的文件 - 模拟用户传入不存在的文件路径
 		String input = """
@@ -474,7 +481,7 @@ public class MapReduceToolTest {
 		// 工具输入：JSON格式，包含动作类型和不存在的文件路径
 
 		// === 执行处理 ===
-		ToolExecuteResult result = mapReduceTool.run(input);
+		ToolExecuteResult result = mapReduceTool.run(createMapReduceInput(input));
 
 		// === 输出验证 ===
 		// 验证工具执行结果 - 返回的错误信息字符串
@@ -562,7 +569,7 @@ public class MapReduceToolTest {
 	}
 
 	@Test
-	void testMultipleMapOutputs() throws IOException {
+	void testMultipleMapOutputs() throws Exception {
 		// === 输入准备 ===
 		// 首先创建任务目录结构
 		Path planDir = tempDir.resolve("extensions").resolve("inner_storage").resolve(testPlanId);
@@ -613,7 +620,7 @@ public class MapReduceToolTest {
 					""".formatted(contents[i], taskIds[i]);
 			// 工具输入：JSON格式，依次记录每个任务的输出
 
-			ToolExecuteResult result = mapReduceTool.run(input);
+			ToolExecuteResult result = mapReduceTool.run(createMapReduceInput(input));
 			assertNotNull(result);
 			assertTrue(result.getOutput().contains("状态已记录"));
 			// 预期输出：每次调用都返回状态记录成功的信息
@@ -638,7 +645,7 @@ public class MapReduceToolTest {
 	}
 
 	@Test
-	void testRelativePathHandling() throws IOException {
+	void testRelativePathHandling() throws Exception {
 		// === 输入准备 ===
 		// 测试相对路径处理
 		Path testFile = tempDir.resolve("relative_test.txt");
@@ -658,7 +665,7 @@ public class MapReduceToolTest {
 		// === 执行处理 ===
 		// 由于相对路径解析可能找不到文件（基于工作目录），这个测试可能失败
 		// 但我们测试工具能正确处理相对路径的逻辑
-		ToolExecuteResult result = mapReduceTool.run(input);
+		ToolExecuteResult result = mapReduceTool.run(createMapReduceInput(input));
 		
 		// === 输出验证 ===
 		assertNotNull(result);

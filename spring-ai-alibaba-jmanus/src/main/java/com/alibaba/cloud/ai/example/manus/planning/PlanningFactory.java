@@ -147,9 +147,9 @@ public class PlanningFactory {
 
 		private final ToolCallback toolCallback;
 
-		private final ToolCallBiFunctionDef functionInstance;
+		private final ToolCallBiFunctionDef<?> functionInstance;
 
-		public ToolCallBackContext(ToolCallback toolCallback, ToolCallBiFunctionDef functionInstance) {
+		public ToolCallBackContext(ToolCallback toolCallback, ToolCallBiFunctionDef<?> functionInstance) {
 			this.toolCallback = toolCallback;
 			this.functionInstance = functionInstance;
 		}
@@ -158,7 +158,7 @@ public class PlanningFactory {
 			return toolCallback;
 		}
 
-		public ToolCallBiFunctionDef getFunctionInstance() {
+		public ToolCallBiFunctionDef<?> getFunctionInstance() {
 			return functionInstance;
 		}
 
@@ -166,7 +166,7 @@ public class PlanningFactory {
 
 	public Map<String, ToolCallBackContext> toolCallbackMap(String planId) {
 		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
-		List<ToolCallBiFunctionDef> toolDefinitions = new ArrayList<>();
+		List<ToolCallBiFunctionDef<?>> toolDefinitions = new ArrayList<>();
 
 		// 添加所有工具定义
 		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService));
@@ -191,8 +191,8 @@ public class PlanningFactory {
 		}
 
 		// 为每个工具创建 FunctionToolCallback
-		for (ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
-			FunctionToolCallback<?, ToolExecuteResult><?, ?> functionToolcallback = FunctionToolCallback
+		for (ToolCallBiFunctionDef<?> toolDefinition : toolDefinitions) {
+			FunctionToolCallback<?, ToolExecuteResult> functionToolcallback = FunctionToolCallback
 				.builder(toolDefinition.getName(), toolDefinition)
 				.description(toolDefinition.getDescription())
 				.inputSchema(toolDefinition.getParameters())

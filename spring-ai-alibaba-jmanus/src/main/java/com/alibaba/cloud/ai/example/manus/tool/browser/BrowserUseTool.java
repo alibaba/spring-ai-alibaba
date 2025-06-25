@@ -57,8 +57,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 
 	private String planId;
 
-	// Initialize ObjectMapper instance
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	public BrowserUseTool(ChromeDriverService chromeDriverService, InnerStorageService innerStorageService) {
 		this.chromeDriverService = chromeDriverService;

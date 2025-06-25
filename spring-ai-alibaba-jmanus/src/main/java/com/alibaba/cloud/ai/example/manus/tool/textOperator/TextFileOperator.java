@@ -55,6 +55,12 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 		@com.fasterxml.jackson.annotation.JsonProperty("target_text")
 		private String targetText;
 
+		@com.fasterxml.jackson.annotation.JsonProperty("start_line")
+		private Integer startLine;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("end_line")
+		private Integer endLine;
+
 		public TextFileInput() {
 		}
 
@@ -96,6 +102,22 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 		public void setTargetText(String targetText) {
 			this.targetText = targetText;
+		}
+
+		public Integer getStartLine() {
+			return startLine;
+		}
+
+		public void setStartLine(Integer startLine) {
+			this.startLine = startLine;
+		}
+
+		public Integer getEndLine() {
+			return endLine;
+		}
+
+		public void setEndLine(Integer endLine) {
+			this.endLine = endLine;
 		}
 
 	}
@@ -315,6 +337,71 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
 		}
 	}
+
+	/**
+	 * 执行文本文件操作，接受强类型输入对象
+	 */
+	public ToolExecuteResult run(TextFileInput input) {
+		log.info("TextFileOperator input: action={}, filePath={}", input.getAction(), input.getFilePath());
+		try {
+			String planId = this.planId;
+			String action = input.getAction();
+			String filePath = input.getFilePath();
+			
+			// 基本参数验证
+			if (action == null) {
+				return new ToolExecuteResult("错误：action参数是必需的");
+			}
+			if (filePath == null) {
+				return new ToolExecuteResult("错误：file_path参数是必需的");
+			}
+
+			return switch (action) {
+				case "replace" -> {
+					String sourceText = input.getSourceText();
+					String targetText = input.getTargetText();
+					
+					if (sourceText == null || targetText == null) {
+						yield new ToolExecuteResult("错误：replace操作需要source_text和target_text参数");
+					}
+					
+					yield replaceText(planId, filePath, sourceText, targetText);
+				}
+				case "get_text" -> {
+					Integer startLine = input.getStartLine();
+					Integer endLine = input.getEndLine();
+					
+					if (startLine == null || endLine == null) {
+						yield new ToolExecuteResult("错误：get_text操作需要start_line和end_line参数");
+					}
+					
+					yield getTextByLines(planId, filePath, startLine, endLine);
+				}
+				case "get_all_text" -> getAllText(planId, filePath);
+				case "append" -> {
+					String appendContent = input.getContent();
+					
+					if (appendContent == null) {
+						yield new ToolExecuteResult("错误：append操作需要content参数");
+					}
+					
+					yield appendToFile(planId, filePath, appendContent);
+				}
+				case "count_words" -> countWords(planId, filePath);
+				default -> {
+					textFileService.updateFileState(planId, filePath, "Error: Unknown action");
+					yield new ToolExecuteResult("未知操作: " + action + "。支持的操作: replace, get_text, get_all_text, append, count_words");
+				}
+			};
+		}
+		catch (Exception e) {
+			String planId = this.planId;
+			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+					"Error: " + e.getMessage());
+			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
+		}
+	}
+
 	/**
 	 * 确保文件被打开，如果不存在则创建
 	 */
@@ -568,7 +655,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 	@Override
 	public ToolExecuteResult apply(TextFileInput input, ToolContext toolContext) {
-		return runTyped(input);
+		return run(input);
 	}
 
 	@Override
