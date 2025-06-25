@@ -23,24 +23,24 @@ test: ## Run tests
 .PHONY: build
 build: ## Build the project
 	@$(LOG_TARGET)
-	mvnd -B package --file pom.xml -DskipTests=true
+	mvnd -Dmvnd.connectTimeout=30000 -B package --file pom.xml -DskipTests=true
 
 .PHONY: format-fix
 format-fix: ## Format the code
 	@$(LOG_TARGET)
-	mvnd spring-javaformat:apply
+	mvnd -Dmvnd.connectTimeout=30000 spring-javaformat:apply
 
 .PHONY: format-check
 format-check: ## Format Check the code
 	@$(LOG_TARGET)
-	mvnd spring-javaformat:validate
+	mvnd -Dmvnd.connectTimeout=30000 spring-javaformat:validate
 
 .PHONY: spotless-apply
 spotless-apply: ## Run spotless and apply changes
 	@$(LOG_TARGET)
-	mvnd spotless:apply
+	mvnd -Dmvnd.connectTimeout=30000 spotless:apply
 
 .PHONY: checkstyle-check
 checkstyle-check: ## Checkstyle Check the code and output to target/checkstyle-report.xml
 	@$(LOG_TARGET)
-	mvnd clean compile -Dcheckstyle.skip=false -Dcheckstyle.output.file=checkstyle-report.xml checkstyle:checkstyle
+	mvnd -Dmvnd.connectTimeout=30000 -Dcheckstyle.skip=false -Dcheckstyle.output.file=checkstyle-report.xml checkstyle:check
