@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.toolcalling.tavily;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
+import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -43,6 +44,20 @@ public class TavilySearchServiceTest {
 				null, null, null, null, null, null, null));
 		assert resp != null && resp.results() != null;
 		log.info("results: " + resp.results());
+	}
+
+	@Autowired
+	private SearchService searchService;
+
+	@Test
+	@DisplayName("Abstract Search Test")
+	@EnabledIfEnvironmentVariable(named = TavilySearchConstants.API_KEY_ENV,
+			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	public void abstractSearchTest() {
+		var resp = searchService.query("Spring AI Alibaba");
+		assert resp != null && resp.getSearchResult() != null && resp.getSearchResult().results() != null
+				&& !resp.getSearchResult().results().isEmpty();
+		log.info("results: " + resp.getSearchResult());
 	}
 
 }

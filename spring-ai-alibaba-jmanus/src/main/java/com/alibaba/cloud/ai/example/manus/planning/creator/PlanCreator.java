@@ -89,7 +89,7 @@ public class PlanCreator {
 
 					ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
 						.prompt(prompt)
-						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
+						.toolCallbacks(List.of(PlanningTool.getFunctionToolCallback(planningTool)));
 					if (useMemory) {
 						requestSpec
 							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
@@ -102,6 +102,8 @@ public class PlanCreator {
 					executionPlan = planningTool.getCurrentPlan();
 
 					if (executionPlan != null) {
+						// 设置计划的用户输入部分，方便后期存储和使用。
+						executionPlan.setUserRequest(context.getUserRequest());
 						log.info("Plan created successfully on attempt {}: {}", attempt, executionPlan);
 						break;
 					}
@@ -115,6 +117,7 @@ public class PlanCreator {
 				}
 				catch (Exception e) {
 					log.warn("Exception during plan creation attempt {}: {}", attempt, e.getMessage());
+					e.printStackTrace();
 					if (attempt == maxRetries) {
 						throw e;
 					}
