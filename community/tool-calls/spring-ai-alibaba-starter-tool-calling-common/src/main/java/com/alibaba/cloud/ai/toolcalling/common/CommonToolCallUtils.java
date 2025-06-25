@@ -128,7 +128,9 @@ public final class CommonToolCallUtils {
 	 * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
 	 */
 	public static boolean isValidUrl(String target) {
-
+		if (!StringUtils.hasText(target)) {
+			return false;
+		}
 		return pattern.matcher(target).matches();
 	}
 

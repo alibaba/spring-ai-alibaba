@@ -46,9 +46,8 @@ import java.util.HashMap;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class BrowserUseTool  implements ToolCallBiFunctionDef {
+public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
@@ -331,28 +330,8 @@ public class BrowserUseTool  implements ToolCallBiFunctionDef {
 		return instance;
 	}
 
-	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(
-			ChromeDriverService chromeDriverService, InnerStorageService innerStorageService) {
-		return FunctionToolCallback.builder(name, getInstance(chromeDriverService, innerStorageService))
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
-	}
-
-	public ToolExecuteResult run(String toolInput) {
-		log.info("BrowserUseTool toolInput:" + toolInput);
-
-		// 直接将JSON字符串解析为BrowserRequestVO对象
-		BrowserRequestVO requestVO;
-		// Add exception handling for JSON deserialization
-		try {
-			requestVO = objectMapper.readValue(toolInput, BrowserRequestVO.class);
-		}
-		catch (Exception e) {
-			log.error("Error deserializing JSON", e);
-			return new ToolExecuteResult("Error deserializing JSON: " + e.getMessage());
-		}
+	public ToolExecuteResult run(BrowserRequestVO requestVO) {
+		log.info("BrowserUseTool requestVO: action={}", requestVO.getAction());
 
 		// 从RequestVO中获取参数
 		String action = requestVO.getAction();
@@ -497,9 +476,8 @@ public class BrowserUseTool  implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String t, ToolContext u) {
-
-		return run(t);
+	public ToolExecuteResult apply(BrowserRequestVO requestVO, ToolContext u) {
+		return run(requestVO);
 	}
 
 	@Override
@@ -523,8 +501,8 @@ public class BrowserUseTool  implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
+	public Class<BrowserRequestVO> getInputType() {
+		return BrowserRequestVO.class;
 	}
 
 	@Override

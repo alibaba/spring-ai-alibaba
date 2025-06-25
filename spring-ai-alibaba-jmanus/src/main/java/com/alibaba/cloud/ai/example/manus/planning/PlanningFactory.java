@@ -40,6 +40,7 @@ import com.alibaba.cloud.ai.example.manus.tool.bash.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
@@ -178,6 +179,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
 		toolDefinitions.add(new MapReduceTool(planId,manusProperties));
+
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
 			String serviceGroup = toolCallback.getServiceGroup();
@@ -190,7 +192,7 @@ public class PlanningFactory {
 
 		// 为每个工具创建 FunctionToolCallback
 		for (ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
-			FunctionToolCallback<?, ?> functionToolcallback = FunctionToolCallback
+			FunctionToolCallback<?, ToolExecuteResult><?, ?> functionToolcallback = FunctionToolCallback
 				.builder(toolDefinition.getName(), toolDefinition)
 				.description(toolDefinition.getDescription())
 				.inputSchema(toolDefinition.getParameters())
