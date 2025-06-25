@@ -58,54 +58,66 @@ public class BackgroundInvestigationNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("background investigation node is running.");
-		String query = StateUtil.getQuery(state);
-		SearchService searchService = searchBeanUtil
-			.getSearchService(state.value("search_engine", SearchEnum.class).orElseThrow())
-			.orElseThrow();
+		List<String> queries = StateUtil.getOptimizeQueries(state);
+		assert queries != null && !queries.isEmpty();
+		List<List<Map<String, String>>> resultsList = new ArrayList<>();
+		for (String query : queries) {
+			SearchService searchService = searchBeanUtil
+				.getSearchService(state.value("search_engine", SearchEnum.class).orElseThrow())
+				.orElseThrow();
 
-		List<Map<String, String>> results = new ArrayList<>();
+			List<Map<String, String>> results = new ArrayList<>();
 
-		// Retry logic
-		for (int i = 0; i < MAX_RETRY_COUNT; i++) {
-			try {
-				SearchService.Response response = searchService.query(query);
-
-				if (response != null && response.getSearchResult() != null
-						&& !response.getSearchResult().results().isEmpty()) {
-					results = response.getSearchResult().results().stream().map(info -> {
-						Map<String, String> result = new HashMap<>();
-						result.put("title", info.title());
-						if (jinaCrawlerService == null || !CommonToolCallUtils.isValidUrl(info.url())) {
-							result.put("content", info.content());
-						}
-						else {
-							try {
-								logger.info("Get detail info of a url using Jina Crawler...");
-								result.put("content",
-										jinaCrawlerService.apply(new JinaCrawlerService.Request(info.url())).content());
-							}
-							catch (Exception e) {
-								logger.error("Jina Crawler Service Error", e);
+			// Retry logic
+			for (int i = 0; i < MAX_RETRY_COUNT; i++) {
+				try {
+					SearchService.Response response = searchService.query(query);
+					if (response != null && response.getSearchResult() != null
+							&& !response.getSearchResult().results().isEmpty()) {
+						results = response.getSearchResult().results().stream().map(info -> {
+							Map<String, String> result = new HashMap<>();
+							result.put("title", info.title());
+							if (jinaCrawlerService == null || !CommonToolCallUtils.isValidUrl(info.url())) {
 								result.put("content", info.content());
 							}
-						}
-						return result;
-					}).collect(Collectors.toList());
-					break;
+							else {
+								try {
+									logger.info("Get detail info of a url using Jina Crawler...");
+									result.put("content",
+											jinaCrawlerService.apply(new JinaCrawlerService.Request(info.url()))
+												.content());
+								}
+								catch (Exception e) {
+									logger.error("Jina Crawler Service Error", e);
+									result.put("content", info.content());
+								}
+							}
+							return result;
+						}).collect(Collectors.toList());
+						break;
+					}
 				}
-
+				catch (Exception e) {
+					logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
+					Thread.sleep(RETRY_DELAY_MS);
+				}
 			}
-			catch (Exception e) {
-				logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
-			}
-			Thread.sleep(RETRY_DELAY_MS);
+			resultsList.add(results);
 		}
 
 		Map<String, Object> resultMap = new HashMap<>();
-		if (!results.isEmpty()) {
-			String prompt = "background investigation results of user query:\n" + results + "\n";
-			resultMap.put("background_investigation_results", prompt);
-			logger.info("✅ 搜索结果: {} 条", results.size());
+		if (!resultsList.isEmpty()) {
+			List<String> backgroundResults = new ArrayList<>();
+			assert resultsList.size() != queries.size();
+			for (int i = 0; i < resultsList.size(); i++) {
+				List<Map<String, String>> results = resultsList.get(i);
+				String query = queries.get(i);
+				String prompt = "background investigation query:\n" + query + "\n"
+						+ "background investigation results:\n" + results + "\n";
+				backgroundResults.add(prompt);
+				logger.info("✅ 搜索结果: {} 条", results.size());
+			}
+			resultMap.put("background_investigation_results", backgroundResults);
 		}
 		else {
 			logger.warn("⚠️ 搜索失败");
