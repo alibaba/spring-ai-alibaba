@@ -661,22 +661,22 @@ public class StateGraphTest {
 		CompiledGraph app = workflow
 			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
 				@Override
-				public void onComplete(String nodeId, Map<String, Object> state) {
+				public void onComplete(String nodeId, Map<String, Object> state,RunnableConfig config) {
 					log.info("listener1 ,node = {},state = {}", nodeId, state);
 				}
 
 				@Override
-				public void onStart(String nodeId, Map<String, Object> state) {
+				public void onStart(String nodeId, Map<String, Object> state,RunnableConfig config) {
 					log.info("listener1 ,node = {},state = {}", nodeId, state);
 				}
 			}).withLifecycleListener(new GraphLifecycleListener() {
 				@Override
-				public void onStart(String nodeId, Map<String, Object> state) {
+				public void onStart(String nodeId, Map<String, Object> state,RunnableConfig config) {
 					log.info("listener2 ,node = {},state = {}", nodeId, state);
 				}
 
 				@Override
-				public void onComplete(String nodeId, Map<String, Object> state) {
+				public void onComplete(String nodeId, Map<String, Object> state,RunnableConfig config) {
 					log.info("listener2 ,node = {},state = {}", nodeId, state);
 				}
 			}).build());
@@ -704,12 +704,12 @@ public class StateGraphTest {
 		CompiledGraph app = workflow
 			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
 				@Override
-				public void onComplete(String nodeId, Map<String, Object> state) {
+				public void onComplete(String nodeId, Map<String, Object> state,RunnableConfig config) {
 					log.info("node = {},state = {}", nodeId, state);
 				}
 
 				@Override
-				public void onStart(String nodeId, Map<String, Object> state) {
+				public void onStart(String nodeId, Map<String, Object> state,RunnableConfig config) {
 					log.info("node = {},state = {}", nodeId, state);
 				}
 			}).build());
@@ -738,17 +738,17 @@ public class StateGraphTest {
 		CompiledGraph app = workflow
 			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
 				@Override
-				public void onComplete(String nodeId, Map<String, Object> state) {
+				public void onComplete(String nodeId, Map<String, Object> state,RunnableConfig config) {
 					log.info("node = {},state = {}", nodeId, state);
 				}
 
 				@Override
-				public void onStart(String nodeId, Map<String, Object> state) {
+				public void onStart(String nodeId, Map<String, Object> state,RunnableConfig config) {
 					log.info("node = {},state = {}", nodeId, state);
 				}
 
 				@Override
-				public void onError(String nodeId, Map<String, Object> state, Throwable ex) {
+				public void onError(String nodeId, Map<String, Object> state, Throwable ex,RunnableConfig config) {
 					log.error("node = {},state = {}", nodeId, state, ex);
 				}
 			}).build());

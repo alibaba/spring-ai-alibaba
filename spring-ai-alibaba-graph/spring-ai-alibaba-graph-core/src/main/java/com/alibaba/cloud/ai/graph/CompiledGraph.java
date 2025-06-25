@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
+import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -54,9 +55,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.StateGraph.*;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
@@ -796,7 +795,7 @@ public class CompiledGraph {
 
 		private CompletableFuture<Data<Output>> evaluateAction(AsyncNodeActionWithConfig action,
 				OverAllState withState) {
-
+			doListeners(NODE_BEFORE, null);
 			return action.apply(withState, config).thenApply(updateState -> {
 				try {
 
@@ -817,7 +816,7 @@ public class CompiledGraph {
 					throw new CompletionException(e);
 				}
 
-			});
+			}).whenComplete((outputData, throwable) -> doListeners(NODE_AFTER, null));
 		}
 
 		private Command nextNodeId(String nodeId, OverAllState overAllState, Map<String, Object> state,
@@ -967,13 +966,19 @@ public class CompiledGraph {
 
 			try {
 				if (START.equals(scene)) {
-					listener.onStart(START, this.currentState);
+					listener.onStart(START, this.currentState, this.config);
 				}
 				else if (END.equals(scene)) {
-					listener.onComplete(END, this.currentState);
+					listener.onComplete(END, this.currentState, this.config);
 				}
 				else if (ERROR.equals(scene)) {
-					listener.onError(this.currentNodeId, this.currentState, e);
+					listener.onError(this.currentNodeId, this.currentState, e, this.config);
+				}
+				else if(NODE_BEFORE.equals(scene)){
+					listener.before(this.currentNodeId, this.currentState, this.config, SystemClock.now());
+				}
+				else if(NODE_AFTER.equals(scene)){
+					listener.after(this.currentNodeId, this.currentState, this.config, SystemClock.now());
 				}
 
 				processListenersLIFO(listeners, scene, e);
