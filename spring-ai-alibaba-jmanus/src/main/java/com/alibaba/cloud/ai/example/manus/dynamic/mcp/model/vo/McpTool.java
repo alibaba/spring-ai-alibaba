@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 
-public class McpTool implements ToolCallBiFunctionDef {
+public class McpTool implements ToolCallBiFunctionDef<String> {
 
 	private final ToolCallback toolCallback;
 
@@ -55,7 +55,7 @@ public class McpTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
+	public Class<String> getInputType() {
 		return String.class;
 	}
 
