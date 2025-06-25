@@ -51,6 +51,55 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 	private static final Logger logger = LoggerFactory.getLogger(MapReducePlanExecutor.class);
 
+	// ==================== 配置常量 ====================
+	
+	/**
+	 * Reduce阶段批次处理的默认最大字符数限制
+	 * 用于控制每个批次处理的Map任务结果总字符数，避免上下文过长
+	 */
+	private static final int DEFAULT_REDUCE_BATCH_MAX_CHARACTERS = 2500;
+	
+	/**
+	 * Reduce阶段批次处理的最大字符数上限
+	 * 防止配置的批次字符数过大导致上下文溢出
+	 */
+	private static final int MAX_REDUCE_BATCH_CHARACTERS_LIMIT = 10000;
+	
+	/**
+	 * 执行参数中批次字符数配置的键名
+	 */
+	private static final String REDUCE_BATCH_CHARACTERS_CONFIG_KEY = "reduce_batch_characters:";
+	
+	/**
+	 * 聚合所有Reduce批次Map结果的统一文件名
+	 * 所有批次的Map任务结果都会追加到此文件中
+	 */
+	private static final String REDUCE_AGGREGATED_CONTEXT_FILE_NAME = "reduce_aggregated_context.md";
+	
+	/**
+	 * Map任务执行的最大重试次数
+	 * 当任务执行失败或未完成时的重试机制
+	 */
+	private static final int MAX_TASK_RETRY_COUNT = 3;
+	
+	/**
+	 * 重试等待的基础时间间隔（毫秒）
+	 * 实际等待时间 = BASE_RETRY_WAIT_MILLIS * 当前重试次数
+	 */
+	private static final long BASE_RETRY_WAIT_MILLIS = 1000;
+	
+	/**
+	 * 任务字符数计算失败时的默认字符数
+	 * 当无法读取任务输出文件时的回退值，避免计算错误
+	 */
+	private static final int DEFAULT_TASK_CHARACTER_COUNT = 100;
+	
+	/**
+	 * 回退模式下任务摘要的最大字符数
+	 * 当聚合存储失败时，显示任务结果摘要的字符数限制
+	 */
+	private static final int FALLBACK_SUMMARY_MAX_CHARACTERS = 200;
+
 	// 线程池用于并行执行
 	private final ExecutorService executorService;
 
@@ -367,32 +416,28 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	 * 可以根据上下文长度限制和配置来动态调整
 	 */
 	private int getMaxBatchCharacters(ExecutionContext context) {
-		// 默认批次字符数限制，可以根据实际需求调整
-		// 考虑到上下文长度限制，建议不要设置太大
-		int defaultMaxCharacters = 2500; // 约2500字符
-		
 		// 可以从ExecutionParams中获取配置的批次字符数限制
 		String executionParams = context.getPlan().getExecutionParams();
-		if (executionParams != null && executionParams.contains("reduce_batch_characters:")) {
+		if (executionParams != null && executionParams.contains(REDUCE_BATCH_CHARACTERS_CONFIG_KEY)) {
 			try {
 				String[] lines = executionParams.split("\n");
 				for (String line : lines) {
-					if (line.trim().startsWith("reduce_batch_characters:")) {
+					if (line.trim().startsWith(REDUCE_BATCH_CHARACTERS_CONFIG_KEY)) {
 						String charactersStr = line.split(":")[1].trim();
 						int configuredCharacters = Integer.parseInt(charactersStr);
-						if (configuredCharacters > 0 && configuredCharacters <= 10000) { // 限制最大字符数
+						if (configuredCharacters > 0 && configuredCharacters <= MAX_REDUCE_BATCH_CHARACTERS_LIMIT) {
 							logger.info("使用配置的Reduce批次字符数限制: {}", configuredCharacters);
 							return configuredCharacters;
 						}
 					}
 				}
 			} catch (Exception e) {
-				logger.warn("解析reduce_batch_characters配置失败，使用默认值: {}", defaultMaxCharacters, e);
+				logger.warn("解析reduce_batch_characters配置失败，使用默认值: {}", DEFAULT_REDUCE_BATCH_MAX_CHARACTERS, e);
 			}
 		}
 		
-		logger.info("使用默认的Reduce批次字符数限制: {}", defaultMaxCharacters);
-		return defaultMaxCharacters;
+		logger.info("使用默认的Reduce批次字符数限制: {}", DEFAULT_REDUCE_BATCH_MAX_CHARACTERS);
+		return DEFAULT_REDUCE_BATCH_MAX_CHARACTERS;
 	}
 
 	/**
@@ -471,11 +516,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 				return content.length();
 			} else {
 				logger.warn("任务目录 {} 的output.md文件不存在，返回默认字符数", taskDirectory);
-				return 100; // 返回默认字符数，避免计算错误
+				return DEFAULT_TASK_CHARACTER_COUNT;
 			}
 		} catch (Exception e) {
 			logger.error("读取任务 {} 的字符数失败", taskDirectory, e);
-			return 100; // 返回默认字符数，避免计算错误
+			return DEFAULT_TASK_CHARACTER_COUNT;
 		}
 	}
 
@@ -521,7 +566,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		batchResults.append("=== Reduce批次 ").append(String.format("%03d", batchCounter)).append(" 上下文结束 ===\n\n");
 		
 		// 使用统一的文件名聚合所有批次数据
-		String aggregatedFileName = "reduce_aggregated_context.md";
+		String aggregatedFileName = REDUCE_AGGREGATED_CONTEXT_FILE_NAME;
 		String batchContextReference = "";
 		
 		try {
@@ -644,9 +689,9 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 					String mapOutput = Files.readString(outputFile);
 					fallbackContext.append("- 任务ID: ").append(taskId);
 					fallbackContext.append(" (").append(mapOutput.length()).append(" 字符)");
-					// 只显示前200字符作为摘要
-					if (mapOutput.length() > 200) {
-						fallbackContext.append(": ").append(mapOutput.substring(0, 200)).append("...[截断]\n");
+					// 只显示前N字符作为摘要
+					if (mapOutput.length() > FALLBACK_SUMMARY_MAX_CHARACTERS) {
+						fallbackContext.append(": ").append(mapOutput.substring(0, FALLBACK_SUMMARY_MAX_CHARACTERS)).append("...[截断]\n");
 					} else {
 						fallbackContext.append(": ").append(mapOutput).append("\n");
 					}
@@ -728,7 +773,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		enhancedParams.append("=== 任务上下文结束 ===");
 		
 		// 执行任务，支持重试机制
-		int maxRetries = 3; // 最大重试次数
+		int maxRetries = MAX_TASK_RETRY_COUNT;
 		int currentRetry = 0;
 		boolean taskCompleted = false;
 		
@@ -762,7 +807,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 					if (currentRetry <= maxRetries) {
 						// 等待一段时间后重试
 						try {
-							Thread.sleep(1000 * currentRetry); // 递增等待时间
+							Thread.sleep(BASE_RETRY_WAIT_MILLIS * currentRetry); // 递增等待时间
 						} catch (InterruptedException ie) {
 							Thread.currentThread().interrupt();
 							logger.error("重试等待被中断", ie);
