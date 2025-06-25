@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
-import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -62,12 +61,7 @@ public class PlannerNode implements NodeAction {
 		// 1.1 添加预置提示消息
 		messages.add(TemplateUtil.getMessage("planner", state));
 		// 1.2 添加用户提问
-		List<String> queries = StateUtil.getOptimizeQueries(state);
-		assert queries != null && !queries.isEmpty();
-		for (String query : queries) {
-			logger.info("original query:{}, optimize query:{}", StateUtil.getQuery(state), query);
-			messages.add(new UserMessage(query));
-		}
+		messages.add(TemplateUtil.getOptQuryMessage(state));
 		// 1.3 添加背景调查消息
 		if (state.value("enable_background_investigation", true)) {
 			List<String> backgroundInvestigationResults = state.value("background_investigation_results",
