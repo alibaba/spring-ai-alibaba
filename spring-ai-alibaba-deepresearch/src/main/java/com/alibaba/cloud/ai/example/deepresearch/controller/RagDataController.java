@@ -28,7 +28,7 @@ import java.util.Map;
  * @author hupei
  */
 @RestController
-@RequestMapping("/api/rag/data")
+@RequestMapping("/api/rag/")
 public class RagDataController {
 
 	private final VectorStoreDataIngestionService ingestionService;

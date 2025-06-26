@@ -24,26 +24,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author huangzhen
  * @since 2025/6/20
  */
-public record ExistsResponse(
-		/**
-		 * 线程ID，用于标识当前对话的唯一性
-		 */
-		@JsonProperty("thread_id") String threadId,
+public class ExistsResponse extends BaseResponse {
 
-		/**
-		 * 状态
-		 */
-		@JsonProperty("status") String status,
+	/**
+	 * 是否存在
+	 */
+	@JsonProperty("exists") boolean exists;
 
-		/**
-		 * 消息
-		 */
-		@JsonProperty("message") String message,
-
-		/**
-		 * 是否存在
-		 */
-		@JsonProperty("exists") boolean exists) {
+	public ExistsResponse(String threadId, String status, String message, boolean exists) {
+		super(threadId, status, message);
+		this.exists = exists;
+	}
 
 	public static ExistsResponse success(String threadId, boolean exists) {
 		String message = exists ? "Resource exists" : "Resource does not exist";
