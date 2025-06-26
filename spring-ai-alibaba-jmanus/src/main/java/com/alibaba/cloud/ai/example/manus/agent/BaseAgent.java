@@ -144,20 +144,20 @@ public abstract class BaseAgent {
 
 				- Current Date:
 				%s
-				- 全局计划信息:
+
 				{planStatus}
 
-				- 当前要做的步骤要求(这个步骤是需要当前智能体完成的!) :
+				- 当前要做的步骤要求(这个步骤是需要你完成的!用户原始需求里要求的，但当前步骤没有要求的，不需要在当前步骤完成，) :
 				STEP {currentStepIndex} :{stepText}
 
-				- 当前步骤的上下文信息:
+				- 操作步骤说明:
 				{extraParams}
 
 				重要说明：
 				%s
 				3. 做且只做当前要做的步骤要求中的内容
 				4. 如果当前要做的步骤要求已经做完，则调用terminate工具来完成当前步骤。
-				5. 全局目标 是用来有个全局认识的，不要在当前步骤中去完成这个全局目标。
+				5. 用户原始需求 是用来有个全局认识的，不要在当前步骤中去完成这个用户原始需求。
 
 				""".formatted(osName, osVersion, osArch, currentDateTime, detailOutput);
 
