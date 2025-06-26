@@ -79,9 +79,15 @@ public class ReporterNode implements NodeAction {
 				MessageFormat.format(RESEARCH_FORMAT, currentPlan.getTitle(), currentPlan.getThought())));
 		messages.add(new UserMessage(REPORT_FORMAT));
 		// 1.3 添加背景调查的消息
-		String backgroundInvestigationResults = state.value("background_investigation_results", "");
-		if (StringUtils.hasText(backgroundInvestigationResults)) {
-			messages.add(new UserMessage(backgroundInvestigationResults));
+		if (state.value("enable_background_investigation", true)) {
+			List<String> backgroundInvestigationResults = state.value("background_investigation_results",
+					(List<String>) null);
+			assert backgroundInvestigationResults != null && !backgroundInvestigationResults.isEmpty();
+			for (String backgroundInvestigationResult : backgroundInvestigationResults) {
+				if (StringUtils.hasText(backgroundInvestigationResult)) {
+					messages.add(new UserMessage(backgroundInvestigationResult));
+				}
+			}
 		}
 		// 1.4 添加研究组节点返回的信息
 		List<String> researcherTeam = List.of(ParallelEnum.RESEARCHER.getValue(), ParallelEnum.CODER.getValue());
