@@ -72,7 +72,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				}
 
 				注意：文档片段内容已经自动提供给你，无需手动读取文件或处理路径。
-				""", availableToolKeys = { "map_reduce_tool", "terminate" })
+				""", availableToolKeys = { "map_reduce_tool", "terminate"  })
 public class DMapTaskAgent {
 
 }
