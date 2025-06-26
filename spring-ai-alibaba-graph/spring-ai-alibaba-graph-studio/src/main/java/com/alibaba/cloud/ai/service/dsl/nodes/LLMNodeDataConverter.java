@@ -304,4 +304,25 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 
 	}
 
+    @Override
+    public String generateVarName(int count) {
+        return "LLMNode" + count;
+    }
+
+    @Override
+    public void postProcess(LLMNodeData data, String varName) {
+        String origKey = data.getOutputKey();
+        String newKey  = varName + "_output";
+
+        if (origKey == null) {
+            data.setOutputKey(newKey);
+        }
+        data.setOutputs(List.of(
+                new com.alibaba.cloud.ai.model.Variable(
+                        data.getOutputKey(),
+                        com.alibaba.cloud.ai.model.VariableType.STRING.value()
+                )
+        ));
+    }
+
 }

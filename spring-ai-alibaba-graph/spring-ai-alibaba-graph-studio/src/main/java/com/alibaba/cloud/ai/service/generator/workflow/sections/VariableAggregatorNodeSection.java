@@ -58,7 +58,7 @@ public class VariableAggregatorNodeSection implements NodeSection {
 						+ "                .inputKeys(List.of(%s))%n" + "                .outputKey(\"%s\")%n"
 						+ "                .build();%n"
 						+ "        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n",
-				id, varName, keysLit, outputKey, id, varName);
+				id, varName, keysLit, outputKey, varName, varName);
 	}
 
 }

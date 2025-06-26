@@ -185,4 +185,9 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 
 	}
 
+    @Override
+    public String generateVarName(int count) {
+        return "knowledgeRetrievalNode" + count;
+    }
+
 }

@@ -104,4 +104,9 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 
 	}
 
+    @Override
+    public String generateVarName(int count) {
+        return "codeNode" + count;
+    }
+
 }

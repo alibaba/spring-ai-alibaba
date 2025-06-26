@@ -98,4 +98,9 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 
 	}
 
+    @Override
+    public String generateVarName(int count) {
+        return "start" + count;
+    }
+
 }

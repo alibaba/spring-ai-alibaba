@@ -114,4 +114,9 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 
 	}
 
+    @Override
+    public String generateVarName(int count) {
+        return "branchNode" + count;
+    }
+
 }

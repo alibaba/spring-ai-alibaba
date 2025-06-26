@@ -207,36 +207,56 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		return graph;
 	}
 
-	private List<Node> constructNodes(List<Map<String, Object>> nodeMaps) {
-		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		List<Node> nodes = new ArrayList<>();
-		for (Map<String, Object> nodeMap : nodeMaps) {
-			Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
-			String difyNodeType = (String) nodeDataMap.get("type");
-			if (difyNodeType == null || difyNodeType.isBlank()) {
-				// This node is just a "note", skip it, and the corresponding node will
-				// not be generated [compatible dify]
-				continue;
-			}
-			String nodeId = (String) nodeMap.get("id");
-			nodeDataMap.put("id", nodeId);
-			// determine the type of dify node is supported yet
-			NodeType nodeType = NodeType.fromDifyValue(difyNodeType)
-				.orElseThrow(() -> new NotImplementedException("unsupported node type " + difyNodeType));
-			// convert node map to workflow node using jackson
-			nodeMap.remove("data");
-			Node n = objectMapper.convertValue(nodeMap, Node.class);
-			// set title and desc
-			n.setTitle((String) nodeDataMap.get("title")).setDesc((String) nodeDataMap.get("desc"));
-			// convert node data using specific WorkflowNodeDataConverter
-			NodeDataConverter<?> nodeDataConverter = getNodeDataConverter(nodeType);
-			n.setData(nodeDataConverter.parseMapData(nodeDataMap, DSLDialectType.DIFY));
-			n.setType(nodeType.value());
-			nodes.add(n);
-		}
-		return nodes;
-	}
+    private List<Node> constructNodes(List<Map<String, Object>> nodeMaps) {
+        ObjectMapper objectMapper = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        Map<NodeType, Integer> counters = new HashMap<>();
+        List<Node> nodes = new ArrayList<>();
+
+        for (Map<String, Object> nodeMap : nodeMaps) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
+            String difyNodeType = (String) nodeDataMap.get("type");
+            if (difyNodeType == null || difyNodeType.isBlank()) {
+                // This node is just a "note", skip it, and the corresponding node will
+                // not be generated [compatible dify]
+                continue;
+            }
+            String nodeId = (String) nodeMap.get("id");
+            nodeDataMap.put("id", nodeId);
+            // determine the type of dify node is supported yet
+            NodeType nodeType = NodeType.fromDifyValue(difyNodeType)
+                    .orElseThrow(() -> new NotImplementedException("unsupported node type " + difyNodeType));
+
+            // convert node map to workflow node using jackson
+            nodeMap.remove("data");
+            Node node = objectMapper.convertValue(nodeMap, Node.class);
+            // set title and desc
+            node.setTitle((String) nodeDataMap.get("title"))
+                    .setDesc((String) nodeDataMap.get("desc"));
+
+            // convert node data using specific WorkflowNodeDataConverter
+            @SuppressWarnings("unchecked")
+            NodeDataConverter<NodeData> converter =
+                    (NodeDataConverter<NodeData>) getNodeDataConverter(nodeType);
+
+            NodeData data = converter.parseMapData(nodeDataMap, DSLDialectType.DIFY);
+
+            // Generate a readable varName and inject it into NodeData
+            int count = counters.merge(nodeType, 1, Integer::sum);
+            String varName = converter.generateVarName(count);
+            data.setVarName(varName);
+
+            // Post-processing: Overwrite the default outputKey and refresh the outputs
+            converter.postProcess(data, varName);
+
+            node.setData(data);
+            node.setType(nodeType.value());
+            nodes.add(node);
+        }
+        return nodes;
+    }
 
 	private List<Edge> constructEdges(List<Map<String, Object>> edgeMaps) {
 		ObjectMapper objectMapper = new ObjectMapper();
