@@ -1,7 +1,7 @@
 本项目利用 spring-ai-alibaba-graph 实现深度研究
 
 <video width="640" height="360" controls>
-  <source src="../docs/video/deepresearh-display.mp4" type="video/mp4">
+<source src="../deepresearh-display.mp4" type="video/mp4">
 </video>
 
 ## 流程大纲
@@ -92,7 +92,7 @@ docker run -d \
 
 ##### 测试用例
 ```curl
-curl --location 'http://localhost:8080/deep-research/chat/stream' \
+curl --location 'http://localhost:8080/chat/stream' \
 --header 'Content-Type: application/json' \
 --data '{
     "thread_id": "__default_",
@@ -117,3 +117,6 @@ GitHub:
 - [Makoto](https://github.com/zxuexingzhijie)
 - [sixiyida](https://github.com/sixiyida)
 - [Gfangxin](https://github.com/Gfangxin)
+- [AliciaHu](https://github.com/AliciaHu)
+- [swl](https://github.com/hbsjz-swl)
+- [huangzhen](https://github.com/james-huangzhen)

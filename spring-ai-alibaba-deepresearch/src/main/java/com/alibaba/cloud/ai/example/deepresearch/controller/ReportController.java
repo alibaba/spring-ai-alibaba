@@ -16,14 +16,23 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.req.ExportRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.response.BaseResponse;
 import com.alibaba.cloud.ai.example.deepresearch.model.response.ExistsResponse;
+import com.alibaba.cloud.ai.example.deepresearch.model.response.ExportResponse;
 import com.alibaba.cloud.ai.example.deepresearch.model.response.ReportResponse;
+import com.alibaba.cloud.ai.example.deepresearch.service.ExportService;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 /**
  * 报告查询控制器
@@ -37,11 +46,12 @@ public class ReportController {
 
 	private static final Logger logger = LoggerFactory.getLogger(ReportController.class);
 
-	private final ReportService reportService;
-
-	public ReportController(ReportService reportService) {
-		this.reportService = reportService;
-	}
+	@Autowired
+	private ExportService exportService;
+	@Autowired
+	private  ReportService reportService;
+	@Autowired
+	private ChatClient interactionAgent;
 
 	/**
 	 * 根据线程ID获取报告
@@ -110,6 +120,130 @@ public class ReportController {
 			return ResponseEntity.internalServerError()
 				.body(BaseResponse.error(threadId, "Failed to delete report: " + e.getMessage()));
 		}
+	}
+
+	/**
+	 * 导出报告，返回导出文件的元数据信息
+	 * @param request 包含线程ID和导出格式的请求
+	 * @return 导出文件的元数据信息
+	 */
+	@PostMapping("/export")
+	public ResponseEntity<ExportResponse> exportReport(@RequestBody ExportRequest request) {
+		if (request == null) {
+			return ResponseEntity.badRequest().body(ExportResponse.error("Report request cannot be null"));
+		}
+
+		try {
+			String threadId = request.threadId();
+			String format = request.format().toLowerCase();
+
+			logger.info("Exporting report for threadId: {}, format: {}", threadId, format);
+
+			// 检查线程ID对应的报告是否存在
+			if (!exportService.existsReportByThreadId(threadId)) {
+				return ResponseEntity.badRequest()
+						.body(ExportResponse.error("Report not found for thread: " + threadId));
+			}
+
+			// 检查请求的格式是否支持
+			if (!exportService.isSupportedFormat(format)) {
+				return ResponseEntity.badRequest()
+						.body(ExportResponse
+								.error("Unsupported format: " + format + ", only markdown and pdf are supported"));
+			}
+
+			// 实际保存文件
+			String filePath = exportReport(threadId, format);
+			if (filePath == null) {
+				return ResponseEntity.badRequest()
+						.body(ExportResponse.error("Failed to export report to format: " + format));
+			}
+
+			// 构建下载URL
+			String downloadUrl = "/api/reports/download/" + threadId + "?format=" + format;
+
+			// 构建成功响应
+			ExportResponse response = ExportResponse.success(threadId, format, filePath, downloadUrl);
+			return ResponseEntity.ok(response);
+		}
+		catch (Exception e) {
+			logger.error("Failed to export report", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ExportResponse.error(e.getMessage()));
+		}
+	}
+
+	/**
+	 * 下载指定格式的报告文件
+	 * @param threadId 线程ID
+	 * @param format 文件格式
+	 * @return 文件下载响应
+	 */
+	@GetMapping("/download/{threadId}")
+	public ResponseEntity<?> downloadReport(@PathVariable String threadId,
+											@RequestParam(required = false, defaultValue = "markdown") String format) {
+
+		format = format.toLowerCase();
+
+		try {
+			// 检查格式是否支持
+			if (!exportService.isSupportedFormat(format)) {
+				return ResponseEntity.badRequest()
+						.body(ExportResponse
+								.error("Unsupported format: " + format + ", only markdown and pdf are supported"));
+			}
+
+			// 统一使用markdown作为键
+			if ("md".equals(format)) {
+				format = "markdown";
+			}
+
+			return exportService.downloadReport(threadId, format);
+		}
+		catch (Exception e) {
+			logger.error("Failed to download report", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ExportResponse.error(e.getMessage()));
+		}
+	}
+
+	/**
+	 * 构建交互式HTML报告
+	 * @param threadId
+	 * @return
+	 */
+	@GetMapping(value = "/build-html", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public Flux<ChatResponse> buildInteractiveHtml(String threadId) {
+		if (threadId == null || threadId.isEmpty()) {
+			logger.error("threadId is null or empty");
+			return Flux.error(new IllegalArgumentException("threadId cannot be null or empty"));
+		}
+		String reportInfo = reportService.getReport(threadId);
+		if (reportInfo == null) {
+			logger.error("Report with threadId {} not found", threadId);
+			return Flux.error(new IllegalArgumentException("Report not found"));
+		}
+		else {
+			logger.debug("Found report for threadId: {} ,Report info: {}", threadId, reportInfo);
+		}
+		logger.info("Building interactive HTML report");
+		// 使用ChatClient来构建HTML报告
+		return interactionAgent.prompt(reportInfo).stream().chatResponse();
+	}
+
+	/**
+	 * 根据线程ID和格式导出报告
+	 * @param threadId 线程ID
+	 * @param format 导出格式
+	 * @return 导出文件的路径
+	 */
+	private String exportReport(String threadId, String format) {
+		if ("markdown".equals(format) || "md".equals(format)) {
+			String filePath = exportService.saveAsMarkdown(threadId);
+			return filePath;
+		}
+		else if ("pdf".equals(format)) {
+			return exportService.saveAsPdf(threadId);
+		}
+		return null;
 	}
 
 }

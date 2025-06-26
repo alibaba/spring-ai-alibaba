@@ -1,0 +1,30 @@
+## 会话接口
+
+### 流式请求
+POST http://localhost:8080/chat/stream
+
+### 人类反馈
+POST http://localhost:8080/chat/resume
+
+## 上传文件
+### 上传文件，解析并保存至向量数据库中
+POST http://localhost:8080/api/rag/upload
+
+## 报告
+### 根据线程ID获取报告
+GET http://localhost:8080/api/reports/{threadId}?threadId=__default__
+
+### 检查报告是否存在
+GET http://localhost:8080/api/reports/{threadId}/exists?threadId=__default__
+
+### 删除报告
+DELETE http://localhost:8080/api/reports/{threadId}?threadId=__default__
+
+### 导出报告
+POST http://localhost:8080/api/reports/export
+
+### 下载指定格式的报告文件
+GET http://localhost:8080/api/reports/download
+
+### 构建交互式HTML报告
+POST http://localhost:8080/api/reports/build-html
