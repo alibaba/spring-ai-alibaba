@@ -17,7 +17,8 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.util.StringUtils;
 
 public class BranchNode implements NodeAction {
@@ -27,6 +28,9 @@ public class BranchNode implements NodeAction {
 	private final String outputKey;
 
 	public BranchNode(String outputKey, String inputKey) {
+		if (!StringUtils.hasLength(inputKey) || !StringUtils.hasLength(outputKey)) {
+			throw new IllegalArgumentException("inputKey and outputKey must not be null or empty.");
+		}
 		this.inputKey = inputKey;
 		this.outputKey = outputKey;
 	}
@@ -34,11 +38,8 @@ public class BranchNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		Map<String, Object> updatedState = new HashMap<>();
-		// use the inputKey to get the value
-		if (StringUtils.hasLength(this.inputKey)) {
-			String value = state.value(inputKey).map(Object::toString).orElse(null);
-			updatedState.put(this.outputKey, value);
-		}
+		String value = state.value(inputKey).map(Object::toString).orElse(null);
+		updatedState.put(this.outputKey, value);
 		return updatedState;
 	}
 
