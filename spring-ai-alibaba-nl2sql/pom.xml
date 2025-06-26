@@ -15,9 +15,9 @@
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
     <modules>
-        <module>chat</module>
-        <module>management</module>
-        <module>common</module>
+        <module>spring-ai-alibaba-nl2sql-chat</module>
+        <module>spring-ai-alibaba-nl2sql-management</module>
+        <module>spring-ai-alibaba-nl2sql-common</module>
     </modules>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
