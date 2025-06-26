@@ -19,12 +19,15 @@ package com.alibaba.cloud.ai.example.deepresearch.util;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author yingzi
@@ -55,6 +58,19 @@ public class TemplateUtil {
 
 		SystemMessage systemMessage = new SystemMessage(systemPrompt);
 		return systemMessage;
+	}
+
+	public static Message getOptQuryMessage(OverAllState state) throws IOException {
+		List<String> queries = StateUtil.getOptimizeQueries(state);
+		assert queries != null && !queries.isEmpty();
+		String originalQuery = StateUtil.getQuery(state);
+
+		List<String> results = queries.stream()
+			.map(optimizeQuery -> "original query:" + originalQuery + "optimize query:" + optimizeQuery + "\n")
+			.collect(Collectors.toList());
+
+		Message userMessage = new UserMessage(String.valueOf(results));
+		return userMessage;
 	}
 
 }

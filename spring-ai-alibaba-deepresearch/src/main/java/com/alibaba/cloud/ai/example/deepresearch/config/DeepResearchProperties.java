@@ -16,10 +16,12 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
+import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.google.common.collect.Maps;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -56,6 +58,16 @@ public class DeepResearchProperties {
 
 	public void setMcpClientMapping(Map<String, Set<String>> mcpClientMapping) {
 		this.mcpClientMapping = mcpClientMapping;
+	}
+
+	private List<SearchEnum> searchList = List.of();
+
+	public List<SearchEnum> getSearchList() {
+		return searchList;
+	}
+
+	public void setSearchList(List<SearchEnum> searchList) {
+		this.searchList = searchList;
 	}
 
 }
