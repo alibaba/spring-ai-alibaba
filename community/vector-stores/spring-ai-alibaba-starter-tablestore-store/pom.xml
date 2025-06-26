@@ -21,12 +21,14 @@
         <groupId>com.alibaba.cloud.ai</groupId>
         <artifactId>spring-ai-alibaba</artifactId>
         <version>${revision}</version>
-        <relativePath>../../pom.xml</relativePath>
+        <relativePath>../../../pom.xml</relativePath>
     </parent>
-
-    <artifactId>spring-ai-alibaba-starter-memory</artifactId>
+    <artifactId>spring-ai-alibaba-starter-store-tablestore</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI Alibaba Starter Memory</name>
+
+    <name>Spring AI Alibaba Starter Store Tablestore</name>
+
+    <description>Tablestore vector store implementation for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
@@ -37,57 +39,51 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-autoconfigure-memory</artifactId>
-            <version>${revision}</version>
+            <groupId>com.aliyun.openservices.tablestore</groupId>
+            <artifactId>tablestore-for-agent-memory</artifactId>
+            <version>1.1.0</version>
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-memory-jdbc</artifactId>
-            <version>${revision}</version>
-        </dependency>
-
-        <!--        <dependency>-->
-        <!--            <groupId>redis.clients</groupId>-->
-        <!--            <artifactId>jedis</artifactId>-->
-        <!--            <version>${jedis.version}</version>-->
-        <!--        </dependency>-->
-
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-memory-redis</artifactId>
-            <version>${revision}</version>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.38</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-memory-tablestore</artifactId>
-            <version>${revision}</version>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-vector-store</artifactId>
         </dependency>
 
-        <!--        <dependency>-->
-        <!--            <groupId>co.elastic.clients</groupId>-->
-        <!--            <artifactId>elasticsearch-java</artifactId>-->
-        <!--        </dependency>-->
-
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-memory-elasticsearch</artifactId>
-            <version>${revision}</version>
-        </dependency>
-
+        <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
 
+        <!-- Test -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-            <optional>true</optional>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
         </dependency>
 
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-embeddings-all-minilm-l6-v2-q</artifactId>
+            <version>1.1.0-beta7</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>

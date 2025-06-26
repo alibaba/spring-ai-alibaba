@@ -130,11 +130,13 @@
         <module>community/vector-stores/spring-ai-alibaba-starter-analyticdb-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-opensearch-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-oceanbase-store</module>
+        <module>community/vector-stores/spring-ai-alibaba-starter-tablestore-store</module>
 
         <!-- Spring AI Alibaba Chat Memory Support -->
         <module>community/memories/spring-ai-alibaba-starter-memory-redis</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-jdbc</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-elasticsearch</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-tablestore</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
