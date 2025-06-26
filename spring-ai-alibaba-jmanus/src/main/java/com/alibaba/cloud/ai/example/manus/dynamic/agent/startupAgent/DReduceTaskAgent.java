@@ -47,7 +47,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				   - 生成综合性的最终结果
 				4. 保存Reduce结果：
 				   - 使用inner_storage_tool的save_content功能保存处理结果
-				   - 文件路径建议使用：reduce_results/batch_{批次ID}.md格式
+				   - 文件路径建议使用：reduce_results/batch_【批次ID】.md格式
 				   - 内容应包含完整的汇总结果和分析
 				5. 使用terminate工具终止当前批次处理，提供详细的处理摘要
 
@@ -69,16 +69,16 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				批次ID: reduce_batch_001
 				Map任务数量: 5
 				Map结果列表:
-				- 任务ID: task_001, 结果: [具体内容]
-				- 任务ID: task_002, 结果: [具体内容]
+				- 任务ID: task_001, 结果: 《具体内容》
+				- 任务ID: task_002, 结果: 《具体内容》
 				...
 				
 				则在调用inner_storage_tool时可使用：
-				{
+				〈
 				  "action": "save_content",
 				  "file_path": "reduce_results/batch_reduce_batch_001.md",
 				  "content": "你的Reduce汇总结果"
-				}
+				〉
 
 				注意：
 				- Map任务结果已经自动提供给你，无需手动读取文件

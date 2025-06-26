@@ -93,7 +93,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	 * 默认的文件分割大小（字符数）
 	 * 每个任务处理的文件字符数，可根据实际需求调整
 	 */
-	private static final int DEFAULT_SPLIT_SIZE = 1000;
+	private static final int DEFAULT_SPLIT_SIZE = 5000;
 	
 	/**
 	 * 任务状态：待处理
@@ -680,16 +680,9 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 		// 创建 output.md 文件
 		Path outputFile = taskDir.resolve(TASK_OUTPUT_FILE_NAME);
-			StringBuilder outputContent = new StringBuilder();
-			outputContent.append("# 任务处理结果\n\n");
-			outputContent.append("**任务ID:** ").append(taskId).append("\n\n");
-			outputContent.append("**处理状态:** ").append(status).append("\n\n");
-			outputContent.append("**处理时间:** ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
-			outputContent.append("## 处理结果\n\n");
-			outputContent.append(content).append("\n");
-			
-			Files.write(outputFile, outputContent.toString().getBytes());
-			String outputFilePath = outputFile.toAbsolutePath().toString();
+		// 直接写入处理内容，不添加额外的元数据信息
+		Files.write(outputFile, content.getBytes());
+		String outputFilePath = outputFile.toAbsolutePath().toString();
 		// 更新任务状态文件
 		Path statusFile = taskDir.resolve(TASK_STATUS_FILE_NAME);
 		TaskStatus taskStatus;

@@ -61,15 +61,15 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				如果上下文参数中包含：
 				=== 当前任务上下文 ===
 				任务ID: task_001
-				文件内容: [具体内容]...
+				文件内容: 《具体内容》...
 				
 				则在调用map_reduce_tool时应使用：
-				{
+				〈
 				  "action": "record_map_output",
 				  "content": "你的处理结果",
 				  "task_id": "task_001",
 				  "status": "completed"
-				}
+				〉
 
 				注意：文档片段内容已经自动提供给你，无需手动读取文件或处理路径。
 				""", availableToolKeys = { "map_reduce_tool", "terminate"  })

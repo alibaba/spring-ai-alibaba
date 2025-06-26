@@ -1,5 +1,9 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2025 timport com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;riginal author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +26,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.ExecutionNode;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
@@ -33,7 +38,9 @@ import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -99,6 +106,13 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	 * 当聚合存储失败时，显示任务结果摘要的字符数限制
 	 */
 	private static final int FALLBACK_SUMMARY_MAX_CHARACTERS = 200;
+	
+	/**
+	 * Map任务执行的线程池线程数
+	 * 调试阶段设置为1，便于调试和问题排查
+	 * 生产环境可以根据系统资源调整为更大的值
+	 */
+	private static final int MAP_TASK_THREAD_POOL_SIZE = 1;
 
 	// 线程池用于并行执行
 	private final ExecutorService executorService;
@@ -106,7 +120,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	public MapReducePlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
 			AgentService agentService, LlmService llmService) {
 		super(agents, recorder, agentService, llmService);
-		this.executorService = Executors.newCachedThreadPool();
+		this.executorService = Executors.newFixedThreadPool(MAP_TASK_THREAD_POOL_SIZE);
 	}
 
 	/**
@@ -379,6 +393,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		MapReduceTool mapReduceTool = (MapReduceTool) mapReduceToolFunc;
 		
 		// 获取所有Map任务目录
+		为什么这里是空啊？好奇怪好奇怪
 		List<String> taskDirectories = mapReduceTool.getSplitResults();
 		if (taskDirectories.isEmpty()) {
 			logger.warn("没有找到Map任务结果，Reduce阶段跳过");
@@ -727,6 +742,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 	/**
 	 * 执行带有任务上下文参数注入的步骤列表，并支持任务完成状态检查和重试
+	 * 使用复制的ExecutionContext，避免修改原始上下文
 	 * 
 	 * @param steps 要执行的步骤列表
 	 * @param context 执行上下文
@@ -735,9 +751,6 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	 */
 	private BaseAgent executeStepsWithTaskContext(List<ExecutionStep> steps, ExecutionContext context, String taskDirectory) {
 		BaseAgent fileExecutor = null;
-		
-		// 1. 根据context.getPlan().getExecutionParams() 拿到一个contextMap
-		String originalExecutionParams = context.getPlan().getExecutionParams();
 		
 		// 2. 根据taskDirectory从对应目录找到input.md这个固定文件
 		String taskId = "";
@@ -762,15 +775,8 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			fileContent = "读取任务文件时发生错误: " + e.getMessage();
 		}
 		
-		// 3. 把任务ID和文件内容作为参数放到contextMap里面
-		StringBuilder enhancedParams = new StringBuilder();
-		if (originalExecutionParams != null && !originalExecutionParams.trim().isEmpty()) {
-			enhancedParams.append(originalExecutionParams).append("\n\n");
-		}
-		enhancedParams.append("=== 当前任务上下文 ===\n");
-		enhancedParams.append("任务ID: ").append(taskId).append("\n");
-		enhancedParams.append("文件内容: ").append(fileContent).append("\n");
-		enhancedParams.append("=== 任务上下文结束 ===");
+		// 3. 创建带有增强参数的ExecutionContext副本
+		ExecutionContext copiedContext = createContextCopyWithEnhancedParams(context, taskId, fileContent);
 		
 		// 执行任务，支持重试机制
 		int maxRetries = MAX_TASK_RETRY_COUNT;
@@ -782,13 +788,10 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 				logger.warn("任务 {} 第 {} 次重试执行", taskId, currentRetry);
 			}
 			
-			// 临时设置增强的ExecutionParams
-			context.getPlan().setExecutionParams(enhancedParams.toString());
-			
 			try {
-				// 4. 执行步骤
+				// 4. 使用复制的上下文执行步骤
 				for (ExecutionStep step : steps) {
-					BaseAgent stepExecutor = executeStep(step, context);
+					BaseAgent stepExecutor = executeStep(step, copiedContext);
 					if (stepExecutor != null) {
 						fileExecutor = stepExecutor;
 					}
@@ -816,9 +819,19 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 					}
 				}
 				
-			} finally {
-				// 恢复原始ExecutionParams
-				context.getPlan().setExecutionParams(originalExecutionParams);
+			} catch (Exception e) {
+				logger.error("执行任务 {} 时发生异常", taskId, e);
+				currentRetry++;
+				
+				if (currentRetry <= maxRetries) {
+					try {
+						Thread.sleep(BASE_RETRY_WAIT_MILLIS * currentRetry);
+					} catch (InterruptedException ie) {
+						Thread.currentThread().interrupt();
+						logger.error("重试等待被中断", ie);
+						break;
+					}
+				}
 			}
 		}
 		
@@ -829,6 +842,99 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		}
 		
 		return fileExecutor;
+	}
+
+	/**
+	 * 创建ExecutionContext的副本并增强ExecutionParams
+	 * 
+	 * @param originalContext 原始执行上下文
+	 * @param taskId 任务ID
+	 * @param fileContent 文件内容
+	 * @return 增强后的ExecutionContext副本
+	 */
+	private ExecutionContext createContextCopyWithEnhancedParams(ExecutionContext originalContext, String taskId, String fileContent) {
+		// 创建ExecutionContext副本
+		ExecutionContext copiedContext = new ExecutionContext();
+		
+		// 复制基本属性
+		copiedContext.setPlanId(originalContext.getPlanId());
+		copiedContext.setUserRequest(originalContext.getUserRequest());
+		copiedContext.setResultSummary(originalContext.getResultSummary());
+		copiedContext.setNeedSummary(originalContext.isNeedSummary());
+		copiedContext.setSuccess(originalContext.isSuccess());
+		copiedContext.setUseMemory(originalContext.isUseMemory());
+		
+		// 复制工具上下文
+		if (originalContext.getToolsContext() != null) {
+			Map<String, String> copiedToolsContext = new HashMap<>(originalContext.getToolsContext());
+			copiedContext.setToolsContext(copiedToolsContext);
+		}
+		
+		// 创建Plan的副本并增强ExecutionParams
+		PlanInterface copiedPlan = createPlanCopyWithEnhancedParams(originalContext.getPlan(), taskId, fileContent);
+		copiedContext.setPlan(copiedPlan);
+		
+		return copiedContext;
+	}
+
+	/**
+	 * 创建Plan的副本并增强ExecutionParams
+	 * 
+	 * @param originalPlan 原始计划
+	 * @param taskId 任务ID
+	 * @param fileContent 文件内容
+	 * @return 增强后的Plan副本
+	 */
+	private PlanInterface createPlanCopyWithEnhancedParams(PlanInterface originalPlan, String taskId, String fileContent) {
+		// 根据Plan的实际类型创建副本
+		PlanInterface copiedPlan;
+		
+		if (originalPlan instanceof MapReduceExecutionPlan) {
+			MapReduceExecutionPlan originalMapReducePlan = (MapReduceExecutionPlan) originalPlan;
+			MapReduceExecutionPlan copiedMapReducePlan = new MapReduceExecutionPlan();
+			
+			// 复制MapReduceExecutionPlan的所有属性
+			copiedMapReducePlan.setPlanId(originalMapReducePlan.getPlanId());
+			copiedMapReducePlan.setTitle(originalMapReducePlan.getTitle());
+			copiedMapReducePlan.setPlanningThinking(originalMapReducePlan.getPlanningThinking());
+			copiedMapReducePlan.setUserRequest(originalMapReducePlan.getUserRequest());
+			
+			// 复制步骤结构（注意：这里复制的是引用，因为步骤本身在执行过程中不会被修改）
+			copiedMapReducePlan.setSteps(originalMapReducePlan.getSteps());
+			
+			copiedPlan = copiedMapReducePlan;
+		} else {
+			// 处理其他类型的Plan，如ExecutionPlan
+			ExecutionPlan originalExecutionPlan = (ExecutionPlan) originalPlan;
+			ExecutionPlan copiedExecutionPlan = new ExecutionPlan();
+			
+			// 复制ExecutionPlan的所有属性
+			copiedExecutionPlan.setPlanId(originalExecutionPlan.getPlanId());
+			copiedExecutionPlan.setTitle(originalExecutionPlan.getTitle());
+			copiedExecutionPlan.setPlanningThinking(originalExecutionPlan.getPlanningThinking());
+			copiedExecutionPlan.setUserRequest(originalExecutionPlan.getUserRequest());
+			
+			// 复制步骤列表（注意：这里复制的是引用，因为步骤本身在执行过程中不会被修改）
+			copiedExecutionPlan.setSteps(originalExecutionPlan.getSteps());
+			
+			copiedPlan = copiedExecutionPlan;
+		}
+		
+		// 创建增强的ExecutionParams
+		String originalExecutionParams = originalPlan.getExecutionParams();
+		StringBuilder enhancedParams = new StringBuilder();
+		if (originalExecutionParams != null && !originalExecutionParams.trim().isEmpty()) {
+			enhancedParams.append(originalExecutionParams).append("\n\n");
+		}
+		enhancedParams.append("=== 当前任务上下文 ===\n");
+		enhancedParams.append("任务ID: ").append(taskId).append("\n");
+		enhancedParams.append("文件内容: ").append(fileContent).append("\n");
+		enhancedParams.append("=== 任务上下文结束 ===");
+		
+		// 设置增强的ExecutionParams
+		copiedPlan.setExecutionParams(enhancedParams.toString());
+		
+		return copiedPlan;
 	}
 	
 	/**
