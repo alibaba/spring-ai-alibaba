@@ -49,7 +49,7 @@ public class BranchNodeSection implements NodeSection {
 		sb.append(String.format("    .outputKey(\"%s\")\n", ouputKey));
 		sb.append(String.format("    .build();\n"));
 
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
 
 		return sb.toString();
 	}

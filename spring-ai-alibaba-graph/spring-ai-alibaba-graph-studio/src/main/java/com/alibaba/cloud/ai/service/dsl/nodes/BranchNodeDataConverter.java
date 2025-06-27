@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
+import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.Case;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -122,6 +124,25 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
     @Override
     public String generateVarName(int count) {
         return "branchNode" + count;
+    }
+
+    @Override
+    public void postProcess(BranchNodeData data, String varName) {
+        if (data.getOutputKey() == null) {
+            data.setOutputKey(varName + "_output");
+        }
+        List<Variable> outs = Optional.ofNullable(data.getOutputs())
+                .stream().flatMap(List::stream)
+                .map(cfg -> new Variable(
+                        cfg.getName(),
+                        com.alibaba.cloud.ai.model.VariableType.STRING.value()
+                ))
+                .collect(Collectors.toList());
+        outs.add(new Variable(
+                data.getOutputKey(),
+                com.alibaba.cloud.ai.model.VariableType.STRING.value()
+        ));
+        data.setOutputs(outs);
     }
 
 }

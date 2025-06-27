@@ -148,56 +148,16 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		Graph graph = constructGraph((Map<String, Object>) workflowData.get("graph"));
 		workflow.setGraph(graph);
 		// register overAllState output key
-		List<Variable> extraVars = graph.getNodes().stream().map(Node::getData).flatMap(nd -> {
-			if (nd instanceof StartNodeData start) {
-				return Optional.ofNullable(start.getStartInputs())
-					.stream()
-					.flatMap(List::stream)
-					.map(input -> new Variable(input.getVariable(), VariableType.STRING.value()));
-			}
-			if (nd instanceof BranchNodeData branch) {
-				Stream<Variable> outputVars = Optional.ofNullable(branch.getOutputs())
-					.stream()
-					.flatMap(List::stream)
-					.map(output -> new Variable(output.getName(), VariableType.STRING.value()));
-
-				Stream<Variable> outputKeyVar = Optional.ofNullable(branch.getOutputKey())
-					.map(k -> new Variable(k, VariableType.STRING.value()))
-					.stream();
-
-				return Stream.concat(outputVars, outputKeyVar);
-			}
-			if (nd instanceof DocumentExtractorNodeData) {
-				return Stream.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA);
-			}
-			if (nd instanceof HttpNodeData http) {
-				return Optional.ofNullable(http.getOutputKey())
-					.map(k -> new Variable(k, VariableType.STRING.value()))
-					.stream();
-			}
-			if (nd instanceof LLMNodeData llm) {
-				return Optional.ofNullable(llm.getOutputKey())
-					.map(k -> new Variable(k, VariableType.STRING.value()))
-					.stream();
-			}
-			if (nd instanceof VariableAggregatorNodeData agg) {
-				return Optional.ofNullable(agg.getOutputKey()).map(k -> new Variable(k, agg.getOutputType())).stream();
-			}
-			if (nd instanceof QuestionClassifierNodeData classifier) {
-				Stream<Variable> outputKeyVar = Optional.ofNullable(classifier.getOutputKey())
-					.map(k -> new Variable(k, VariableType.STRING.value()))
-					.stream();
-
-				Stream<Variable> inputVars = Optional.ofNullable(classifier.getInputs())
-					.orElse(List.of())
-					.stream()
-					.map(sel -> new Variable(sel.getName(), VariableType.STRING.value()));
-
-				return Stream.concat(outputKeyVar, inputVars);
-			}
-			return Stream.empty();
-			// todo： other node may create overallstate variables
-		}).toList();
+        List<Variable> extraVars = graph.getNodes().stream()
+                .flatMap(node -> {
+                    NodeType type = NodeType.fromValue(node.getType())
+                            .orElseThrow(() -> new IllegalArgumentException("Unsupported NodeType: " + node.getType()));
+                    @SuppressWarnings("unchecked")
+                    NodeDataConverter<NodeData> conv =
+                            (NodeDataConverter<NodeData>) getNodeDataConverter(type);
+                    return conv.extractWorkflowVars(node.getData());
+                })
+                .toList();
 
 		List<Variable> allVars = new ArrayList<>(Stream.concat(convVars.stream(), extraVars.stream())
 			.collect(Collectors.toMap(Variable::getName, v -> v, (v1, v2) -> v1))
