@@ -115,4 +115,15 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
                 ));
     }
 
+    @Override
+    public void postProcess(StartNodeData data, String varName) {
+        List<Variable> vars = data.getStartInputs().stream()
+                .map(si -> new Variable(
+                        si.getVariable(),
+                        VariableType.STRING.value()
+                ))
+                .toList();
+        data.setOutputs(vars);
+    }
+
 }

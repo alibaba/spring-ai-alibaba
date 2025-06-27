@@ -82,8 +82,7 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 				}
 
 				// outputKey
-				String nodeId = (String) data.get("id");
-				String outputKey = (String) data.getOrDefault("output_key", BranchNodeData.defaultOutputKey(nodeId));
+                String outputKey = (String) data.get("output_key");
 
 				return new BranchNodeData(List.of(), List.of()).setCases(cases).setOutputKey(outputKey);
 			}
@@ -131,18 +130,24 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
         if (data.getOutputKey() == null) {
             data.setOutputKey(varName + "_output");
         }
-        List<Variable> outs = Optional.ofNullable(data.getOutputs())
-                .stream().flatMap(List::stream)
-                .map(cfg -> new Variable(
-                        cfg.getName(),
-                        com.alibaba.cloud.ai.model.VariableType.STRING.value()
-                ))
-                .collect(Collectors.toList());
+
+        List<Variable> outs = new ArrayList<>();
         outs.add(new Variable(
                 data.getOutputKey(),
-                com.alibaba.cloud.ai.model.VariableType.STRING.value()
+                VariableType.STRING.value()
         ));
+        for (Case c : data.getCases()) {
+            outs.add(new Variable(
+                    c.getId(),
+                    VariableType.STRING.value()
+            ));
+        }
         data.setOutputs(outs);
+    }
+
+    @Override
+    public Stream<Variable> extractWorkflowVars(BranchNodeData data) {
+        return data.getOutputs().stream();
     }
 
 }

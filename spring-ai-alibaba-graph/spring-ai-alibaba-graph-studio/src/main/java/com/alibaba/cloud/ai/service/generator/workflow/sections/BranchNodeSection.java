@@ -34,8 +34,6 @@ public class BranchNodeSection implements NodeSection {
 		BranchNodeData branchNode = (BranchNodeData) node.getData();
 		String id = node.getId();
 
-		String ouputKey = id + "_output";
-
 		String inputKey = "";
 		if (!branchNode.getCases().isEmpty()) {
 			inputKey = branchNode.getCases().get(0).getConditions().get(0).getVariableSelector().getName();
@@ -46,7 +44,7 @@ public class BranchNodeSection implements NodeSection {
 		sb.append(String.format("BranchNode %s = BranchNode.builder()\n", varName));
 
 		sb.append(String.format("    .inputKey(\"%s\")\n", inputKey));
-		sb.append(String.format("    .outputKey(\"%s\")\n", ouputKey));
+		sb.append(String.format("    .outputKey(\"%s\")\n", escape(branchNode.getOutputKey())));
 		sb.append(String.format("    .build();\n"));
 
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
