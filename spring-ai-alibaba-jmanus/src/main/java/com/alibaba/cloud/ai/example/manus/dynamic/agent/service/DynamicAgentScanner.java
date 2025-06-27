@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentDefinition;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent.StartupAgentConfigLoader;
 
 import jakarta.annotation.PostConstruct;
 
@@ -45,6 +47,9 @@ public class DynamicAgentScanner {
 
 	@Autowired
 	private ConfigService configService;
+
+	@Autowired
+	private StartupAgentConfigLoader startupAgentConfigLoader;
 
 	@Autowired
 	public DynamicAgentScanner(DynamicAgentRepository repository) {
@@ -79,6 +84,9 @@ public class DynamicAgentScanner {
 				}
 			}
 
+			// 扫描并保存从配置文件加载的StartupAgent
+			scanAndSaveStartupAgents();
+
 			// 重置完成后，将配置改为 false
 			configService.updateConfig("manus.resetAgents", "false");
 			log.info("动态代理重置完成");
@@ -106,6 +114,51 @@ public class DynamicAgentScanner {
 		repository.save(entity);
 		String action = (existingEntity != null) ? "更新" : "创建";
 		log.info("已{}动态代理: {}", action, entity.getAgentName());
+	}
+
+	/**
+	 * 扫描并保存从配置文件加载的StartupAgent
+	 */
+	private void scanAndSaveStartupAgents() {
+		log.info("开始扫描StartupAgent配置文件...");
+
+		List<String> agentDirs = startupAgentConfigLoader.scanAvailableAgents();
+		for (String agentDir : agentDirs) {
+			try {
+				StartupAgentConfigLoader.AgentConfig agentConfig = startupAgentConfigLoader.loadAgentConfig(agentDir);
+				if (agentConfig != null) {
+					saveStartupAgent(agentConfig);
+				}
+			}
+			catch (Exception e) {
+				log.error("加载StartupAgent配置失败: {}", agentDir, e);
+			}
+		}
+
+		log.info("StartupAgent配置文件扫描完成，共处理 {} 个agent", agentDirs.size());
+	}
+
+	/**
+	 * 保存从配置文件加载的StartupAgent
+	 */
+	private void saveStartupAgent(StartupAgentConfigLoader.AgentConfig agentConfig) {
+		// 检查是否存在同名的动态代理
+		DynamicAgentEntity existingEntity = repository.findByAgentName(agentConfig.getAgentName());
+
+		// 创建或更新动态代理实体
+		DynamicAgentEntity entity = (existingEntity != null) ? existingEntity : new DynamicAgentEntity();
+
+		// 更新所有字段
+		entity.setAgentName(agentConfig.getAgentName());
+		entity.setAgentDescription(agentConfig.getAgentDescription());
+		entity.setNextStepPrompt(agentConfig.getNextStepPrompt());
+		entity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
+		entity.setClassName(""); // 基于配置文件的agent没有对应的Java类
+
+		// 保存或更新实体
+		repository.save(entity);
+		String action = (existingEntity != null) ? "更新" : "创建";
+		log.info("已{}基于配置文件的动态代理: {}", action, entity.getAgentName());
 	}
 
 }
