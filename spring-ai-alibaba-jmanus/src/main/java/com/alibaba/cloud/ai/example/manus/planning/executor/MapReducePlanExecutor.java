@@ -248,6 +248,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			ToolCallBackContext toolCallBackContext) {
 		logger.info("并行执行 Map 阶段，共 {} 个步骤", mapSteps.size());
 
+		// 记录Map阶段开始状态 - 为每个Map步骤记录开始状态
+		for (ExecutionStep step : mapSteps) {
+			recordStepStart(step, context);
+		}
+
 		// 添加空指针检查
 		if (toolCallBackContext == null) {
 			logger.error("ToolCallBackContext is null, cannot execute Map phase. 请确保在执行Map阶段之前已正确获取MapReduceTool的上下文。");
@@ -318,6 +323,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			throw new RuntimeException("Map 阶段执行失败", e);
 		}
 
+		// 记录Map阶段完成状态 - 为每个Map步骤记录完成状态
+		for (ExecutionStep step : mapSteps) {
+			recordStepEnd(step, context);
+		}
+
 		logger.info("Map 阶段执行完成");
 		return lastExecutor;
 	}
@@ -371,6 +381,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			BaseAgent lastExecutor) {
 		logger.info("串行执行 Reduce 阶段，共 {} 个步骤", reduceSteps.size());
 
+		// 记录Reduce阶段开始状态 - 为每个Reduce步骤记录开始状态
+		for (ExecutionStep step : reduceSteps) {
+			recordStepStart(step, context);
+		}
+
 		BaseAgent executor = lastExecutor;
 
 		// 获取MapReduceTool实例以获取Map任务结果
@@ -392,8 +407,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		MapReduceTool mapReduceTool = (MapReduceTool) mapReduceToolFunc;
 		
-		// 获取所有Map任务目录
-		为什么这里是空啊？好奇怪好奇怪
+		// 获取所有Map任务目录，为什么这里是空啊？好奇怪好奇怪
 		List<String> taskDirectories = mapReduceTool.getSplitResults();
 		if (taskDirectories.isEmpty()) {
 			logger.warn("没有找到Map任务结果，Reduce阶段跳过");
@@ -422,6 +436,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			batchCounter++;
 		}
 
+		// 记录Reduce阶段完成状态 - 为每个Reduce步骤记录完成状态
+		for (ExecutionStep step : reduceSteps) {
+			recordStepEnd(step, context);
+		}
+
 		logger.info("Reduce 阶段执行完成，共处理 {} 个批次", batches.size());
 		return executor;
 	}
@@ -432,24 +451,24 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	 */
 	private int getMaxBatchCharacters(ExecutionContext context) {
 		// 可以从ExecutionParams中获取配置的批次字符数限制
-		String executionParams = context.getPlan().getExecutionParams();
-		if (executionParams != null && executionParams.contains(REDUCE_BATCH_CHARACTERS_CONFIG_KEY)) {
-			try {
-				String[] lines = executionParams.split("\n");
-				for (String line : lines) {
-					if (line.trim().startsWith(REDUCE_BATCH_CHARACTERS_CONFIG_KEY)) {
-						String charactersStr = line.split(":")[1].trim();
-						int configuredCharacters = Integer.parseInt(charactersStr);
-						if (configuredCharacters > 0 && configuredCharacters <= MAX_REDUCE_BATCH_CHARACTERS_LIMIT) {
-							logger.info("使用配置的Reduce批次字符数限制: {}", configuredCharacters);
-							return configuredCharacters;
-						}
-					}
-				}
-			} catch (Exception e) {
-				logger.warn("解析reduce_batch_characters配置失败，使用默认值: {}", DEFAULT_REDUCE_BATCH_MAX_CHARACTERS, e);
-			}
-		}
+		// String executionParams = context.getPlan().getExecutionParams();
+		// if (executionParams != null && executionParams.contains(REDUCE_BATCH_CHARACTERS_CONFIG_KEY)) {
+		// 	try {
+		// 		String[] lines = executionParams.split("\n");
+		// 		for (String line : lines) {
+		// 			if (line.trim().startsWith(REDUCE_BATCH_CHARACTERS_CONFIG_KEY)) {
+		// 				String charactersStr = line.split(":")[1].trim();
+		// 				int configuredCharacters = Integer.parseInt(charactersStr);
+		// 				if (configuredCharacters > 0 && configuredCharacters <= MAX_REDUCE_BATCH_CHARACTERS_LIMIT) {
+		// 					logger.info("使用配置的Reduce批次字符数限制: {}", configuredCharacters);
+		// 					return configuredCharacters;
+		// 				}
+		// 			}
+		// 		}
+		// 	} catch (Exception e) {
+		// 		logger.warn("解析reduce_batch_characters配置失败，使用默认值: {}", DEFAULT_REDUCE_BATCH_MAX_CHARACTERS, e);
+		// 	}
+		// }
 		
 		logger.info("使用默认的Reduce批次字符数限制: {}", DEFAULT_REDUCE_BATCH_MAX_CHARACTERS);
 		return DEFAULT_REDUCE_BATCH_MAX_CHARACTERS;
@@ -798,7 +817,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 				}
 				
 				// 5. 检查任务是否完成
-				taskCompleted = checkTaskCompletion(taskDirectory, taskId);
+ 				taskCompleted = checkTaskCompletion(taskDirectory, taskId);
 				
 				if (taskCompleted) {
 					logger.info("任务 {} 执行成功", taskId);

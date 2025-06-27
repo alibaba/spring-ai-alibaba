@@ -263,35 +263,38 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 	private ManusProperties manusProperties;
 
-	private String lastOperationResult = "";
-
-	private String lastProcessedFile = "";
-
-	private List<String> splitResults = new ArrayList<>();
-	
-	private List<String> returnColumns = new ArrayList<>();
-
-	// Map任务状态管理
-	private Map<String, TaskStatus> mapTaskStatuses = new HashMap<>();
-	
-	// 任务计数器，用于生成任务ID
-	private int taskCounter = 1;
+	// 共享状态管理器，用于管理多个Agent实例间的共享状态
+	private MapReduceSharedStateManager sharedStateManager;
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
-	public MapReduceTool() {
-	}
+	// public MapReduceTool() {
+	// 	// 注意：默认构造函数中无法注入依赖，需要后续设置
+	// }
 
+	// public MapReduceTool(ManusProperties manusProperties) {
+	// 	this.manusProperties = manusProperties;
+	// 	this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+	// }
 
-	public MapReduceTool(ManusProperties manusProperties) {
-		this.manusProperties = manusProperties;
-		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
-	}
+	// public MapReduceTool(String planId, ManusProperties manusProperties) {
+	// 	this.planId = planId;
+	// 	this.manusProperties = manusProperties;
+	// 	this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+	// }
 
-	public MapReduceTool(String planId, ManusProperties manusProperties) {
+	public MapReduceTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager) {
 		this.planId = planId;
 		this.manusProperties = manusProperties;
 		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+		this.sharedStateManager = sharedStateManager;
+	}
+
+	/**
+	 * 设置共享状态管理器
+	 */
+	public void setSharedStateManager(MapReduceSharedStateManager sharedStateManager) {
+		this.sharedStateManager = sharedStateManager;
 	}
 
 	@Override
@@ -334,23 +337,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 				PARAMETERS);
 		return new OpenAiApi.FunctionTool(function);
 	}
-
-	public static FunctionToolCallback<MapReduceInput, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.builder(TOOL_NAME, new MapReduceTool())
-			.description(TOOL_DESCRIPTION)
-			.inputSchema(PARAMETERS)
-			.inputType(MapReduceInput.class)
-			.build();
-	}
-
-	public static FunctionToolCallback<MapReduceInput, ToolExecuteResult> getFunctionToolCallback(String planId, ManusProperties manusProperties) {
-		return FunctionToolCallback.builder(TOOL_NAME, new MapReduceTool(planId, manusProperties))
-			.description(TOOL_DESCRIPTION)
-			.inputSchema(PARAMETERS)
-			.inputType(MapReduceInput.class)
-			.build();
-	}
-
+	
 	/**
 	 * 执行MapReduce操作，接受强类型输入对象
 	 */
@@ -372,8 +359,8 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 					}
 					
 					// 存储返回列信息
-					if (columns != null) {
-						this.returnColumns = new ArrayList<>(columns);
+					if (columns != null && sharedStateManager != null) {
+						sharedStateManager.setReturnColumns(planId, columns);
 					}
 					
 					yield processFileOrDirectory(filePath);
@@ -471,7 +458,9 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			}
 
 			// 更新分割结果
-			splitResults = allTaskDirs;
+			if (sharedStateManager != null) {
+				sharedStateManager.setSplitResults(planId, allTaskDirs);
+			}
 			
 			// 生成简洁的返回结果
 			StringBuilder result = new StringBuilder();
@@ -479,12 +468,18 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			result.append("，创建了").append(allTaskDirs.size()).append("个任务目录");
 			
 			// 如果有返回列要求，添加返回列信息
-			if (!returnColumns.isEmpty()) {
-				result.append("，返回列：").append(returnColumns);
+			if (sharedStateManager != null) {
+				List<String> returnColumns = sharedStateManager.getReturnColumns(planId);
+				if (!returnColumns.isEmpty()) {
+					result.append("，返回列：").append(returnColumns);
+				}
 			}
 			
-			lastOperationResult = result.toString();
-			return new ToolExecuteResult(lastOperationResult);
+			String resultStr = result.toString();
+			if (sharedStateManager != null) {
+				sharedStateManager.setLastOperationResult(planId, resultStr);
+			}
+			return new ToolExecuteResult(resultStr);
 
 		}
 		catch (Exception e) {
@@ -550,7 +545,14 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	 */
 	private String createTaskDirectory(Path tasksPath, String content, String originalFileName) throws IOException {
 		// 生成任务ID
-		String taskId = String.format(TASK_ID_FORMAT, taskCounter++);
+		String taskId = null;
+		if (sharedStateManager != null) {
+			taskId = sharedStateManager.getNextTaskId(planId);
+		} else {
+			// 回退方案：使用默认格式
+			taskId = String.format(TASK_ID_FORMAT, 1);
+		}
+		
 		Path taskDir = tasksPath.resolve(taskId);
 		ensureDirectoryExists(taskDir);
 		
@@ -595,24 +597,24 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 	@Override
 	public String getCurrentToolStateString() {
+		if (sharedStateManager != null && planId != null) {
+			return sharedStateManager.getCurrentToolStateString(planId);
+		}
+		
+		// 回退方案
 		StringBuilder sb = new StringBuilder();
 		sb.append("MapReduceTool 当前状态:\n");
 		sb.append("- Plan ID: ").append(planId != null ? planId : "未设置").append("\n");
-		sb.append("- 最后处理文件: ").append(lastProcessedFile.isEmpty() ? "无" : lastProcessedFile).append("\n");
-		sb.append("- 最后操作结果: ").append(lastOperationResult.isEmpty() ? "无" : "已完成").append("\n");
-		sb.append("- 任务目录数: ").append(splitResults.size()).append("\n");
-
+		sb.append("- 共享状态管理器: ").append(sharedStateManager != null ? "已连接" : "未连接").append("\n");
 		return sb.toString();
 	}
 
 	@Override
 	public void cleanup(String planId) {
-		// 清理资源
-		splitResults.clear();
-		lastOperationResult = "";
-		lastProcessedFile = "";
-		mapTaskStatuses.clear();
-		taskCounter = 1;
+		// 清理共享状态
+		if (sharedStateManager != null && planId != null) {
+			sharedStateManager.cleanupPlanState(planId);
+		}
 		log.info("MapReduceTool cleanup completed for planId: {}", planId);
 	}
 
@@ -625,7 +627,10 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	 * 获取任务目录列表
 	 */
 	public List<String> getSplitResults() {
-		return new ArrayList<>(splitResults);
+		if (sharedStateManager != null && planId != null) {
+			return sharedStateManager.getSplitResults(planId);
+		}
+		return new ArrayList<>();
 	}
 	
 	/**
@@ -703,8 +708,16 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			taskStatus.status = status;
 			taskStatus.timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
-			// 存储到内存中
-			mapTaskStatuses.put(taskId, taskStatus);
+			// 存储到共享状态管理器中
+			if (sharedStateManager != null) {
+				MapReduceSharedStateManager.TaskStatus sharedTaskStatus = new MapReduceSharedStateManager.TaskStatus();
+				sharedTaskStatus.taskId = taskStatus.taskId;
+				sharedTaskStatus.inputFile = taskStatus.inputFile;
+				sharedTaskStatus.outputFilePath = taskStatus.outputFilePath;
+				sharedTaskStatus.status = taskStatus.status;
+				sharedTaskStatus.timestamp = taskStatus.timestamp;
+				sharedStateManager.recordMapTaskStatus(planId, taskId, sharedTaskStatus);
+			}
 
 			// 写入更新后的状态文件
 			String statusJson = objectMapper.writeValueAsString(taskStatus);

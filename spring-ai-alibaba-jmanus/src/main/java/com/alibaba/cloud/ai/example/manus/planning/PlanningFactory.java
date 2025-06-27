@@ -43,6 +43,7 @@ import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageTool;
+import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceSharedStateManager;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
@@ -109,6 +110,9 @@ public class PlanningFactory {
 
 	@Autowired
 	private McpStateHolderService mcpStateHolderService;
+
+	@Autowired
+	private MapReduceSharedStateManager sharedStateManager;
 
 	@Autowired
 	@Lazy
@@ -178,7 +182,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
-		toolDefinitions.add(new MapReduceTool(planId,manusProperties));
+		toolDefinitions.add(new MapReduceTool(planId,manusProperties,sharedStateManager));
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
