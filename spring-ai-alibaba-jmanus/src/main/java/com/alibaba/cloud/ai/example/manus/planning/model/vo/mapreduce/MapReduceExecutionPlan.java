@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce;
 
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.AbstractExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -193,11 +194,11 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 
 	/**
 	 * 获取计划执行状态的字符串格式
-	 * @param includeResults 是否包含步骤结果
+	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
 	 * @return 计划状态字符串
 	 */
 	@Override
-	public String getPlanExecutionStateStringFormat(boolean includeResults) {
+	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("=== MapReduce执行计划 ===\n");
 		sb.append("计划ID: ").append(planId).append("\n");
@@ -219,7 +220,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 				if (seqNode.getSteps() != null) {
 					for (ExecutionStep step : seqNode.getSteps()) {
 						sb.append("  ").append(step.getStepInStr()).append("\n");
-						if (includeResults && step.getResult() != null) {
+						if (!onlyCompletedAndFirstInProgress && step.getResult() != null) {
 							sb.append("    结果: ").append(step.getResult()).append("\n");
 						}
 					}
@@ -233,44 +234,28 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 				sb.append("Reduce步骤数: ").append(mrNode.getReduceStepCount()).append("\n");
 				sb.append("后处理步骤数: ").append(mrNode.getPostProcessStepCount()).append("\n");
 
+				// 数据准备阶段
 				if (mrNode.getDataPreparedSteps() != null && !mrNode.getDataPreparedSteps().isEmpty()) {
 					sb.append("  数据准备阶段:\n");
-					for (ExecutionStep step : mrNode.getDataPreparedSteps()) {
-						sb.append("    ").append(step.getStepInStr()).append("\n");
-						if (includeResults && step.getResult() != null) {
-							sb.append("      结果: ").append(step.getResult()).append("\n");
-						}
-					}
+					appendFilteredSteps(sb, mrNode.getDataPreparedSteps(), onlyCompletedAndFirstInProgress);
 				}
 
+				// Map阶段
 				if (mrNode.getMapSteps() != null && !mrNode.getMapSteps().isEmpty()) {
 					sb.append("  Map阶段:\n");
-					for (ExecutionStep step : mrNode.getMapSteps()) {
-						sb.append("    ").append(step.getStepInStr()).append("\n");
-						if (includeResults && step.getResult() != null) {
-							sb.append("      结果: ").append(step.getResult()).append("\n");
-						}
-					}
+					appendFilteredSteps(sb, mrNode.getMapSteps(), onlyCompletedAndFirstInProgress);
 				}
 
+				// Reduce阶段
 				if (mrNode.getReduceSteps() != null && !mrNode.getReduceSteps().isEmpty()) {
 					sb.append("  Reduce阶段:\n");
-					for (ExecutionStep step : mrNode.getReduceSteps()) {
-						sb.append("    ").append(step.getStepInStr()).append("\n");
-						if (includeResults && step.getResult() != null) {
-							sb.append("      结果: ").append(step.getResult()).append("\n");
-						}
-					}
+					appendFilteredSteps(sb, mrNode.getReduceSteps(), onlyCompletedAndFirstInProgress);
 				}
 
+				// 后处理阶段
 				if (mrNode.getPostProcessSteps() != null && !mrNode.getPostProcessSteps().isEmpty()) {
 					sb.append("  后处理阶段:\n");
-					for (ExecutionStep step : mrNode.getPostProcessSteps()) {
-						sb.append("    ").append(step.getStepInStr()).append("\n");
-						if (includeResults && step.getResult() != null) {
-							sb.append("      结果: ").append(step.getResult()).append("\n");
-						}
-					}
+					appendFilteredSteps(sb, mrNode.getPostProcessSteps(), onlyCompletedAndFirstInProgress);
 				}
 			}
 			sb.append("\n");
@@ -379,6 +364,42 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	@Override
 	public String toString() {
 		return getPlanExecutionStateStringFormat(false);
+	}
+
+	/**
+	 * 根据过滤条件添加步骤到字符串构建器
+	 * @param sb 字符串构建器
+	 * @param steps 步骤列表
+	 * @param onlyCompletedAndFirstNotStarted 是否只显示已完成的步骤和第一个未开始的步骤
+	 */
+	private void appendFilteredSteps(StringBuilder sb, List<ExecutionStep> steps, boolean onlyCompletedAndFirstNotStarted) {
+		boolean foundNotStarted = false;
+
+		for (ExecutionStep step : steps) {
+			if (onlyCompletedAndFirstNotStarted) {
+				// 如果是COMPLETED状态，始终显示
+				if (step.getStatus() == AgentState.COMPLETED) {
+					sb.append("    ").append(step.getStepInStr()).append("\n");
+					if (step.getResult() != null) {
+						sb.append("      结果: ").append(step.getResult()).append("\n");
+					}
+				}
+				// 如果是NOT_STARTED状态，且还没找到其他NOT_STARTED的步骤
+				else if (step.getStatus() == AgentState.NOT_STARTED && !foundNotStarted) {
+					foundNotStarted = true; // 标记已找到NOT_STARTED步骤
+					sb.append("    ").append(step.getStepInStr()).append("\n");
+					// NOT_STARTED状态的步骤通常没有结果，所以不显示结果
+				}
+				// 其他所有情况（不是COMPLETED且不是第一个NOT_STARTED）
+				// 跳过不符合条件的步骤
+			} else {
+				// 显示所有步骤
+				sb.append("    ").append(step.getStepInStr()).append("\n");
+				if (step.getResult() != null) {
+					sb.append("      结果: ").append(step.getResult()).append("\n");
+				}
+			}
+		}
 	}
 
 }

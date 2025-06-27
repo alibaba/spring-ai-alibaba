@@ -146,11 +146,11 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	/**
 	 * 获取计划执行状态的字符串格式
-	 * @param includeResults 是否包含步骤结果
+	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
 	 * @return 计划状态字符串
 	 */
 	@Override
-	public abstract String getPlanExecutionStateStringFormat(boolean includeResults);
+	public abstract String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress);
 
 	// 通用实现方法
 

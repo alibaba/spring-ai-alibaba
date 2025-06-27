@@ -551,8 +551,8 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			String finalTargetName = (targetFileName != null && !targetFileName.trim().isEmpty()) ? targetFileName
 					: new File(actualFileName).getName(); // 只取文件名，不包含路径
 
-			// 获取工作目录路径
-			String workingDirectoryPath = innerStorageService.getManusProperties().getBaseDir();
+			// 获取工作目录路径 - 使用与 InnerStorageService 相同的逻辑
+			String workingDirectoryPath = innerStorageService.getWorkingDirectoryPath();
 			if (workingDirectoryPath == null || workingDirectoryPath.trim().isEmpty()) {
 				return new ToolExecuteResult("错误：工作目录路径未配置");
 			}

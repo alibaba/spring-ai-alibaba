@@ -48,6 +48,13 @@ public class InnerStorageService {
 	}
 
 	/**
+	 * 获取工作目录路径
+	 */
+	public String getWorkingDirectoryPath() {
+		return workingDirectoryPath;
+	}
+
+	/**
 	 * 获取内部存储的根目录路径
 	 */
 	public Path getInnerStorageRoot() {

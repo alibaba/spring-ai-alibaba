@@ -34,17 +34,19 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				为完成Map任务，下一步应该做什么？
 
 				重要指南：
-				1. 专注于业务逻辑处理：分析、转换或提取上下文中提供的文档片段内容
-				2. 从上下文参数中提取任务ID：
+				1. 专注于业务逻辑处理：分析、转换或提取上下文中提供的文档片段内容，不要漏掉任何的事实，数据，观点，以及有意义的信息。
+				2. 如果没有相关信息，则返回 无相关信息 
+				3. 从上下文参数中提取任务ID：
 				   - 查找上下文中"=== 当前任务上下文 ==="部分
 				   - 提取"任务ID: "后面的值（例如：task_001, task_002等）
 				   - 这个任务ID将作为task_id参数传递给map_reduce_tool
-				3. 调用map_reduce_tool的record_map_output记录处理结果：
+				4. 调用map_reduce_tool的record_map_output记录处理结果：
 				   - action: "record_map_output"
 				   - content: Map阶段处理完成后的输出内容
 				   - task_id: 从上下文参数中提取的任务ID（例如："task_001"）
 				   - status: "completed" 或 "failed"
-				4. 重要：你必须调用至少一次map_reduce_tool才能完成任务！
+				5. 重要：你必须调用至少一次map_reduce_tool才能完成任务！
+				6. 最后以TerminateTool终结任务
 
 				逐步思考：
 				1. 当前提供的文档片段内容是什么？
@@ -57,20 +59,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				   - 使用提取的任务ID作为task_id参数
 				   - 确保任务ID格式正确（通常是task_xxx格式）
 
-				任务ID使用示例：
-				如果上下文参数中包含：
-				=== 当前任务上下文 ===
-				任务ID: task_001
-				文件内容: 《具体内容》...
-
-				则在调用map_reduce_tool时应使用：
-				〈
-				  "action": "record_map_output",
-				  "content": "你的处理结果",
-				  "task_id": "task_001",
-				  "status": "completed"
-				〉
-
+				
 				注意：文档片段内容已经自动提供给你，无需手动读取文件或处理路径。
 				""", availableToolKeys = { "map_reduce_tool", "terminate" })
 public class DMapTaskAgent {
