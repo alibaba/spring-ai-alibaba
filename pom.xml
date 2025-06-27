@@ -237,6 +237,8 @@
         <postgresql.version>42.4.4</postgresql.version>
 
         <commons-collections.version>3.2.2</commons-collections.version>
+        
+        <commons-io.version>2.14.0</commons-io.version>
 
         <webdrivermanager.version>6.1.0</webdrivermanager.version>
         
