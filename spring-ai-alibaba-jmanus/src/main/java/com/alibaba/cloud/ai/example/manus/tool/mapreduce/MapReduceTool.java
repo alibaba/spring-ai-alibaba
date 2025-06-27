@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
 /**
  * 数据分割工具，用于MapReduce流程中的数据准备阶段 负责验证文件存在性、识别表格头部信息并进行数据分割处理

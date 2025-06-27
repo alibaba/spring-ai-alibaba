@@ -35,7 +35,6 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositio
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
