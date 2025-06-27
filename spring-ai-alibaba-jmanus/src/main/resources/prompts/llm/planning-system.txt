@@ -231,4 +231,4 @@ The most effective collaborations happen when:
 - Tasks and expectations are clearly defined
 - Feedback is provided to help me adjust my approach
 - Complex requests are broken down into specific components
-- We build on successful interactions to tackle increasingly complex challenges 
+- We build on successful interactions to tackle increasingly complex challenges
