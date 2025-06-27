@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
+import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -63,7 +64,6 @@ public class ResearcherNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("researcher node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
-		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 		Map<String, Object> updated = new HashMap<>();
 
 		Plan.Step assignedStep = null;
@@ -96,9 +96,15 @@ public class ResearcherNode implements NodeAction {
 				"IMPORTANT: DO NOT include inline citations in the text. Instead, track all sources and include a References section at the end using link reference format. Include an empty line between each citation for better readability. Use this format for each reference:\n- [Source Title](URL)\n\n- [Another Source](URL)");
 		messages.add(citationMessage);
 
-		logger.debug("researcher Node messages: {}", messages);
+		logger.debug("{} Node messages: {}", nodeName, messages);
+		// 获取搜索工具
+		SearchEnum searchTool = state.value("search_engine", SearchEnum.class).orElse(null);
 		// 调用agent
-		var streamResult = researchAgent.prompt().messages(messages).stream().chatResponse();
+		var requestSpec = researchAgent.prompt().messages(messages);
+		if (searchTool != null) {
+			requestSpec = requestSpec.toolNames(searchTool.getToolName());
+		}
+		var streamResult = requestSpec.stream().chatResponse();
 		Plan.Step finalAssignedStep = assignedStep;
 		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId,
 				"researcher_llm_stream_" + executorNodeId);
@@ -111,9 +117,7 @@ public class ResearcherNode implements NodeAction {
 				finalAssignedStep.setExecutionRes(Objects.requireNonNull(researchContent));
 				logger.info("{} completed, content: {}", nodeName, researchContent);
 
-				observations.add(researchContent);
-				updated.put("observations", observations);
-				updated.put("researcher_content_" + executorNodeId, List.of(researchContent));
+				updated.put("researcher_content_" + executorNodeId, researchContent);
 				return updated;
 			})
 			.build(streamResult);

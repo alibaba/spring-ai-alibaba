@@ -128,6 +128,7 @@ public class DynamicAgent extends ReActAgent {
 		}
 		catch (Exception e) {
 			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()), e);
+			log.info("Exception occurred", e);
 			thinkActRecord.recordError(e.getMessage());
 			return false;
 		}
@@ -260,7 +261,7 @@ public class DynamicAgent extends ReActAgent {
 		catch (Exception e) {
 
 			log.error(e.getMessage());
-
+			log.info("Exception occurred", e);
 			thinkActRecord.recordError(e.getMessage());
 			userInputService.removeFormInputTool(getPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error
@@ -351,7 +352,8 @@ public class DynamicAgent extends ReActAgent {
 	private Message currentStepEnvMessage() {
 		String envPrompt = """
 
-				当前步骤的环境信息是:
+				- 当前步骤的环境信息:
+
 				{current_step_env_data}
 
 				""";

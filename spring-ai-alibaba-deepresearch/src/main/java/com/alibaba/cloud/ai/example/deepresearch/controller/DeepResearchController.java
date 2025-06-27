@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
 import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
+import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
@@ -54,11 +55,15 @@ public class DeepResearchController {
 
 	private final CompiledGraph compiledGraph;
 
+	private final SearchBeanUtil searchBeanUtil;
+
 	@Autowired
-	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph) throws GraphStateException {
+	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph, SearchBeanUtil searchBeanUtil)
+			throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 		this.compiledGraph = stateGraph
 			.compile(CompileConfig.builder().saverConfig(saverConfig).interruptBefore("human_feedback").build());
+		this.searchBeanUtil = searchBeanUtil;
 	}
 
 	/**
@@ -70,8 +75,11 @@ public class DeepResearchController {
 	 */
 	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest)
-			throws GraphRunnerException {
-		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
+			throws GraphRunnerException, IllegalArgumentException {
+		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest, searchBeanUtil);
+		if (searchBeanUtil.getSearchService(chatRequest.searchEngine()).isEmpty()) {
+			throw new IllegalArgumentException("Search Engine not available.");
+		}
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
 
 		Map<String, Object> objectMap = new HashMap<>();
@@ -96,22 +104,29 @@ public class DeepResearchController {
 			.doOnError(e -> logger.error("Error occurred during streaming", e));
 	}
 
-	@PostMapping("/chat/resume")
-	public Map<String, Object> resume(@RequestBody(required = false) FeedbackRequest humanFeedback)
+	@RequestMapping(value = "/chat/resume", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public Flux<ServerSentEvent<String>> resume(@RequestBody(required = false) FeedbackRequest humanFeedback)
 			throws GraphRunnerException {
-
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(humanFeedback.threadId()).build();
 		Map<String, Object> objectMap = new HashMap<>();
 		objectMap.put("feed_back", humanFeedback.feedBack());
 		objectMap.put("feed_back_content", humanFeedback.feedBackContent());
+
+		// Create a unicast sink to emit ServerSentEvents
+		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
+		GraphProcess graphProcess = new GraphProcess(this.compiledGraph);
 
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
 		OverAllState state = stateSnapshot.state();
 		state.withResume();
 		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
 
-		var resultFuture = compiledGraph.invoke(state, runnableConfig);
-		return resultFuture.get().data();
+		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state, runnableConfig);
+		graphProcess.processStream(resultFuture, sink);
+
+		return sink.asFlux()
+			.doOnCancel(() -> logger.info("Client disconnected from stream"))
+			.doOnError(e -> logger.error("Error occurred during streaming", e));
 	}
 
 }

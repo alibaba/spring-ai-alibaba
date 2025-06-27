@@ -205,4 +205,24 @@ public class PromptHelper {
 		return prompts;
 	}
 
+	public static String mixSqlGeneratorSystemCheckPrompt(String question, DbConfig dbConfig, SchemaDTO schemaDTO,
+			List<String> evidenceList) {
+		String evidence = StringUtils.join(evidenceList, ";\n");
+		String schemaInfo = buildMixMacSqlDbPrompt(schemaDTO, true);
+		String dialect = BizDataSourceTypeEnum.fromTypeName(dbConfig.getDialectType()).getDialect();
+		Map<String, Object> params = new HashMap<>();
+		params.put("dialect", dialect);
+		params.put("question", question);
+		params.put("schema_info", schemaInfo);
+		params.put("evidence", evidence);
+		return PromptConstant.MIX_SQL_GENERATOR_SYSTEM_PROMPT_CHECK_TEMPLATE.render(params);
+	}
+
+	public static String buildSemanticConsistenPrompt(String nlReq, String sql) {
+		Map<String, Object> params = new HashMap<>();
+		params.put("nl_req", nlReq);
+		params.put("sql", sql);
+		return PromptConstant.SEMANTIC_CONSISTENC_PROMPT_TEMPLATE.render(params);
+	}
+
 }

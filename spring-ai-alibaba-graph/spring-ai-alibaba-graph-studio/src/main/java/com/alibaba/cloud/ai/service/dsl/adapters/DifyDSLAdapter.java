@@ -26,10 +26,12 @@ import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
+import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.DocumentExtractorNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.StartNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
@@ -147,6 +149,24 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		workflow.setGraph(graph);
 		// register overAllState output key
 		List<Variable> extraVars = graph.getNodes().stream().map(Node::getData).flatMap(nd -> {
+			if (nd instanceof StartNodeData start) {
+				return Optional.ofNullable(start.getStartInputs())
+					.stream()
+					.flatMap(List::stream)
+					.map(input -> new Variable(input.getVariable(), VariableType.STRING.value()));
+			}
+			if (nd instanceof BranchNodeData branch) {
+				Stream<Variable> outputVars = Optional.ofNullable(branch.getOutputs())
+					.stream()
+					.flatMap(List::stream)
+					.map(output -> new Variable(output.getName(), VariableType.STRING.value()));
+
+				Stream<Variable> outputKeyVar = Optional.ofNullable(branch.getOutputKey())
+					.map(k -> new Variable(k, VariableType.STRING.value()))
+					.stream();
+
+				return Stream.concat(outputVars, outputKeyVar);
+			}
 			if (nd instanceof DocumentExtractorNodeData) {
 				return Stream.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA);
 			}

@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -47,17 +48,30 @@ public class StateUtil {
 		return state.value(name, List.class).map(obj -> new ArrayList<>((List<String>) obj)).orElseGet(ArrayList::new);
 	}
 
-	public static List<String> getParallelMessages(OverAllState state, String name, int count) {
+	public static List<String> getParallelMessages(OverAllState state, List<String> researcherTeam, int count) {
 		List<String> resList = new ArrayList<>();
-		for (int i = 0; i < count; i++) {
-			String nodeName = name + "_content_" + i;
-			resList.add((String) state.value(nodeName, List.class).get().get(0));
+
+		for (String item : researcherTeam) {
+			for (int i = 0; i < count; i++) {
+				String nodeName = item + "_content_" + i;
+				Optional<String> value = state.value(nodeName, String.class);
+				if (value.isPresent()) {
+					resList.add(value.get());
+				}
+				else {
+					break;
+				}
+			}
 		}
 		return resList;
 	}
 
 	public static String getQuery(OverAllState state) {
 		return state.value("query", "草莓蛋糕怎么做呀");
+	}
+
+	public static List<String> getOptimizeQueries(OverAllState state) {
+		return state.value("optimize_queries", (List<String>) null);
 	}
 
 	public static Plan getPlan(OverAllState state) {
@@ -69,7 +83,7 @@ public class StateUtil {
 	}
 
 	public static Integer getPlanMaxIterations(OverAllState state) {
-		return state.value("plan_max_iterations", 1);
+		return state.value("max_plan_iterations", 1);
 	}
 
 	public static Integer getMaxStepNum(OverAllState state) {

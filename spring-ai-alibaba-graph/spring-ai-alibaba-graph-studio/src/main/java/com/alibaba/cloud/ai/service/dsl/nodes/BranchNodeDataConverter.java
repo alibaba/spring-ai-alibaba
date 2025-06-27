@@ -78,7 +78,12 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 							.setConditions(conditions));
 					}
 				}
-				return new BranchNodeData(List.of(), List.of()).setCases(cases);
+
+				// outputKey
+				String nodeId = (String) data.get("id");
+				String outputKey = (String) data.getOrDefault("output_key", BranchNodeData.defaultOutputKey(nodeId));
+
+				return new BranchNodeData(List.of(), List.of()).setCases(cases).setOutputKey(outputKey);
 			}
 
 			@Override

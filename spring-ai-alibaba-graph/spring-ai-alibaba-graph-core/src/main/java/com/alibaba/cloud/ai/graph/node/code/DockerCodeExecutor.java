@@ -28,6 +28,8 @@ import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.DockerClientBuilder;
+import com.github.dockerjava.transport.DockerHttpClient;
+import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -35,8 +37,10 @@ import com.alibaba.cloud.ai.graph.utils.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +63,13 @@ public class DockerCodeExecutor implements CodeExecutor {
 		CodeExecutionResult result;
 
 		// Create Docker client
-		try (DockerClient dockerClient = DockerClientBuilder.getInstance().build()) {
+		DockerHttpClient httpClient = new ZerodepDockerHttpClient.Builder()
+			.dockerHost(new URI(codeExecutionConfig.getDockerHost()))
+			.maxConnections(codeExecutionConfig.getMaxConnections())
+			.connectionTimeout(Duration.ofSeconds(codeExecutionConfig.getConnectionTimeout()))
+			.responseTimeout(Duration.ofSeconds(codeExecutionConfig.getResponseTimeout()))
+			.build();
+		try (DockerClient dockerClient = DockerClientBuilder.getInstance().withDockerHttpClient(httpClient).build()) {
 
 			for (CodeBlock codeBlock : codeBlockList) {
 				String language = codeBlock.language();

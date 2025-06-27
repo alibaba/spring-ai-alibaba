@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
-import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -40,17 +39,16 @@ import java.util.Objects;
  * @author yingzi
  * @since 2025/5/18 16:47
  */
-
 public class PlannerNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(PlannerNode.class);
 
-	private final ChatClient chatClient;
+	private final ChatClient plannerAgent;
 
 	private final BeanOutputConverter<Plan> converter;
 
-	public PlannerNode(ChatClient.Builder chatClientBuilder) {
-		this.chatClient = chatClientBuilder.build();
+	public PlannerNode(ChatClient plannerAgent) {
+		this.plannerAgent = plannerAgent;
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
 		});
 	}
@@ -63,25 +61,27 @@ public class PlannerNode implements NodeAction {
 		// 1.1 添加预置提示消息
 		messages.add(TemplateUtil.getMessage("planner", state));
 		// 1.2 添加用户提问
-		messages.add(new UserMessage(state.value("query", "")));
+		messages.add(TemplateUtil.getOptQuryMessage(state));
 		// 1.3 添加背景调查消息
-		String backgroundInvestigationResults = state.value("background_investigation_results", "");
-		if (StringUtils.hasText(backgroundInvestigationResults)) {
-			messages.add(new UserMessage(backgroundInvestigationResults));
+		if (state.value("enable_background_investigation", true)) {
+			List<String> backgroundInvestigationResults = state.value("background_investigation_results",
+					(List<String>) null);
+			assert backgroundInvestigationResults != null && !backgroundInvestigationResults.isEmpty();
+			for (String backgroundInvestigationResult : backgroundInvestigationResults) {
+				if (StringUtils.hasText(backgroundInvestigationResult)) {
+					messages.add(new UserMessage(backgroundInvestigationResult));
+				}
+			}
 		}
 		// 1.4 添加用户反馈消息
 		String feedBackContent = state.value("feed_back_content", "").toString();
 		if (StringUtils.hasText(feedBackContent)) {
 			messages.add(new UserMessage(feedBackContent));
 		}
-		// 1.5 添加观察的消息(Researcher、Coder返回的消息)
-		for (String observation : StateUtil.getMessagesByType(state, "observations")) {
-			messages.add(new UserMessage(observation));
-		}
 
 		logger.debug("messages: {}", messages);
 		// 2. 规划任务
-		var streamResult = chatClient.prompt(converter.getFormat()).messages(messages).stream().chatResponse();
+		var streamResult = plannerAgent.prompt(converter.getFormat()).messages(messages).stream().chatResponse();
 
 		var generator = StreamingChatGenerator.builder()
 			.startingNode("planner_llm_stream")

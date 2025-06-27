@@ -25,6 +25,7 @@ import com.alibaba.cloud.nacos.annotation.NacosConfigListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.io.Resource;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -34,6 +35,12 @@ public class ConfigurablePromptTemplateFactory {
 	private static final Logger logger = LoggerFactory.getLogger(ConfigurablePromptTemplateFactory.class);
 
 	private final Map<String, ConfigurablePromptTemplate> templates = new ConcurrentHashMap<>();
+
+	private final PromptTemplateBuilderConfigure promptTemplateBuilderConfigure;
+
+	public ConfigurablePromptTemplateFactory(PromptTemplateBuilderConfigure promptTemplateBuilderConfigure) {
+		this.promptTemplateBuilderConfigure = promptTemplateBuilderConfigure;
+	}
 
 	public ConfigurablePromptTemplate create(String name, Resource resource) {
 		return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, resource));
@@ -51,6 +58,10 @@ public class ConfigurablePromptTemplateFactory {
 		return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, resource, model));
 	}
 
+	public ConfigurablePromptTemplate create(String name, PromptTemplate promptTemplate) {
+		return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, promptTemplate));
+	}
+
 	@NacosConfigListener(dataId = "spring.ai.alibaba.configurable.prompt", group = "DEFAULT_GROUP", initNotify = true)
 	protected void onConfigChange(List<ConfigurablePromptTemplateModel> configList) {
 		if (CollectionUtils.isEmpty(configList)) {
@@ -60,8 +71,13 @@ public class ConfigurablePromptTemplateFactory {
 			if (!StringUtils.hasText(configuration.name()) || !StringUtils.hasText(configuration.template())) {
 				continue;
 			}
-			templates.put(configuration.name(), new ConfigurablePromptTemplate(configuration.name(),
-					configuration.template(), configuration.model() == null ? new HashMap<>() : configuration.model()));
+			PromptTemplate.Builder promptTemplateBuilder = promptTemplateBuilderConfigure
+				.configure(PromptTemplate.builder()
+					.template(configuration.template())
+					.variables(configuration.model() == null ? new HashMap<>() : configuration.model()));
+
+			templates.put(configuration.name(),
+					new ConfigurablePromptTemplate(configuration.name(), promptTemplateBuilder.build()));
 
 			logger.info("OnPromptTemplateConfigChange,templateName:{},template:{},model:{}", configuration.name(),
 					configuration.template(), configuration.model());

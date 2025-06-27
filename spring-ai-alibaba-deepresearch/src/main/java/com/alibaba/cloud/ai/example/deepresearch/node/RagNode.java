@@ -36,11 +36,11 @@ public class RagNode implements NodeAction {
 
 	private final RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
 
-	private final ChatClient.Builder chatClientBuilder;
+	private final ChatClient chatClient;
 
-	public RagNode(RetrievalAugmentationAdvisor retrievalAugmentationAdvisor, ChatClient.Builder chatClientBuilder) {
+	public RagNode(RetrievalAugmentationAdvisor retrievalAugmentationAdvisor, ChatClient chatClient) {
 		this.retrievalAugmentationAdvisor = retrievalAugmentationAdvisor;
-		this.chatClientBuilder = chatClientBuilder;
+		this.chatClient = chatClient;
 	}
 
 	@Override
@@ -50,12 +50,7 @@ public class RagNode implements NodeAction {
 			.orElseThrow(() -> new IllegalArgumentException("Query is missing from state"));
 
 		// Use the advisor to get the RAG-enhanced response directly
-		String ragResult = chatClientBuilder.build()
-			.prompt()
-			.advisors(this.retrievalAugmentationAdvisor)
-			.user(query)
-			.call()
-			.content();
+		String ragResult = chatClient.prompt().advisors(this.retrievalAugmentationAdvisor).user(query).call().content();
 
 		logger.info("RAG node produced a result.");
 
