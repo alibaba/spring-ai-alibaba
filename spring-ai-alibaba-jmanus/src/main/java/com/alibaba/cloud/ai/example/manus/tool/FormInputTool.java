@@ -22,10 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.tool.metadata.ToolMetadata;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +30,7 @@ import java.util.Map;
 /**
  * LLM表单输入工具：支持带标签的多输入项和描述说明。
  */
-public class FormInputTool implements ToolCallBiFunctionDef {
+public class FormInputTool implements ToolCallBiFunctionDef<FormInputTool.UserFormInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
 
@@ -75,15 +72,6 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
 		return new OpenAiApi.FunctionTool(function);
-	}
-
-	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, new FormInputTool())
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
-			.build();
 	}
 
 	// Data structures:
@@ -179,33 +167,29 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		log.info("FormInputTool input: {}", s);
-		try {
-			this.currentFormDefinition = objectMapper.readValue(s, UserFormInput.class);
-			// Initialize values to empty string if null, to ensure they are present for
-			// form binding
-			if (this.currentFormDefinition != null && this.currentFormDefinition.getInputs() != null) {
-				for (InputItem item : this.currentFormDefinition.getInputs()) {
-					if (item.getValue() == null) {
-						item.setValue(""); // Initialize with empty string
-					}
+	public ToolExecuteResult apply(UserFormInput formInput, ToolContext toolContext) {
+		log.info("FormInputTool input: {}", formInput);
+
+		this.currentFormDefinition = formInput;
+		// Initialize values to empty string if null, to ensure they are present for
+		// form binding
+		if (this.currentFormDefinition != null && this.currentFormDefinition.getInputs() != null) {
+			for (InputItem item : this.currentFormDefinition.getInputs()) {
+				if (item.getValue() == null) {
+					item.setValue(""); // Initialize with empty string
 				}
 			}
-			setInputState(InputState.AWAITING_USER_INPUT);
-			// Return the original JSON string 's' which represents the form definition.
-			// The agent can use this or call getLatestUserFormInput() via
-			// UserInputService.
-			return new ToolExecuteResult(s);
 		}
-		catch (IOException e) {
-			log.error("Error deserializing form input JSON: {}. Error: {}", s, e.getMessage());
-			// Do not change state to AWAITING_USER_INPUT if parsing fails.
-			// Keep previous state or reset to INPUT_RECEIVED.
-			// this.inputState = InputState.INPUT_RECEIVED; // Or handle error state
-			// appropriately
-			this.currentFormDefinition = null; // Clear partially parsed/invalid form
-			return new ToolExecuteResult("{\"error\": \"Failed to parse form input: " + e.getMessage() + "\"}");
+		setInputState(InputState.AWAITING_USER_INPUT);
+
+		// Return form definition as a structured result
+		try {
+			String formJson = objectMapper.writeValueAsString(formInput);
+			return new ToolExecuteResult(formJson);
+		}
+		catch (Exception e) {
+			log.error("Error serializing form input", e);
+			return new ToolExecuteResult("{\"error\": \"Failed to process form input: " + e.getMessage() + "\"}");
 		}
 	}
 
@@ -274,8 +258,8 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
+	public Class<UserFormInput> getInputType() {
+		return UserFormInput.class;
 	}
 
 	@Override
