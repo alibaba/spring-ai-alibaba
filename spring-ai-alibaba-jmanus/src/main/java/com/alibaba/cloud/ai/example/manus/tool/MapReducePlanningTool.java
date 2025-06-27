@@ -280,6 +280,16 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 			}
 		}
 
+		// 处理后处理步骤
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> postProcessSteps = (List<Map<String, Object>>) stepNode.get("postProcessSteps");
+		if (postProcessSteps != null) {
+			for (Map<String, Object> step : postProcessSteps) {
+				ExecutionStep executionStep = createExecutionStepFromMap(step);
+				node.addPostProcessStep(executionStep);
+			}
+		}
+
 		plan.addMapReduceNode(node);
 	}
 

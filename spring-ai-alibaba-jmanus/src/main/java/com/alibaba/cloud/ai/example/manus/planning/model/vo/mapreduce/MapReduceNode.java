@@ -33,11 +33,14 @@ public class MapReduceNode extends AbstractExecutionNode {
 
 	private List<ExecutionStep> reduceSteps;
 
+	private List<ExecutionStep> postProcessSteps;
+
 	public MapReduceNode() {
 		super(MapReduceStepType.MAPREDUCE);
 		this.dataPreparedSteps = new ArrayList<>();
 		this.mapSteps = new ArrayList<>();
 		this.reduceSteps = new ArrayList<>();
+		this.postProcessSteps = new ArrayList<>();
 	}
 
 	public MapReduceNode(List<ExecutionStep> dataPreparedSteps, List<ExecutionStep> mapSteps,
@@ -46,6 +49,16 @@ public class MapReduceNode extends AbstractExecutionNode {
 		this.dataPreparedSteps = dataPreparedSteps != null ? dataPreparedSteps : new ArrayList<>();
 		this.mapSteps = mapSteps != null ? mapSteps : new ArrayList<>();
 		this.reduceSteps = reduceSteps != null ? reduceSteps : new ArrayList<>();
+		this.postProcessSteps = new ArrayList<>();
+	}
+
+	public MapReduceNode(List<ExecutionStep> dataPreparedSteps, List<ExecutionStep> mapSteps,
+			List<ExecutionStep> reduceSteps, List<ExecutionStep> postProcessSteps) {
+		super(MapReduceStepType.MAPREDUCE);
+		this.dataPreparedSteps = dataPreparedSteps != null ? dataPreparedSteps : new ArrayList<>();
+		this.mapSteps = mapSteps != null ? mapSteps : new ArrayList<>();
+		this.reduceSteps = reduceSteps != null ? reduceSteps : new ArrayList<>();
+		this.postProcessSteps = postProcessSteps != null ? postProcessSteps : new ArrayList<>();
 	}
 
 	/**
@@ -90,6 +103,14 @@ public class MapReduceNode extends AbstractExecutionNode {
 		this.reduceSteps = reduceSteps != null ? reduceSteps : new ArrayList<>();
 	}
 
+	public List<ExecutionStep> getPostProcessSteps() {
+		return postProcessSteps;
+	}
+
+	public void setPostProcessSteps(List<ExecutionStep> postProcessSteps) {
+		this.postProcessSteps = postProcessSteps != null ? postProcessSteps : new ArrayList<>();
+	}
+
 	public void addDataPreparedStep(ExecutionStep step) {
 		if (dataPreparedSteps == null) {
 			dataPreparedSteps = new ArrayList<>();
@@ -111,6 +132,13 @@ public class MapReduceNode extends AbstractExecutionNode {
 		reduceSteps.add(step);
 	}
 
+	public void addPostProcessStep(ExecutionStep step) {
+		if (postProcessSteps == null) {
+			postProcessSteps = new ArrayList<>();
+		}
+		postProcessSteps.add(step);
+	}
+
 	@JsonIgnore
 	public int getDataPreparedStepCount() {
 		return dataPreparedSteps != null ? dataPreparedSteps.size() : 0;
@@ -127,8 +155,13 @@ public class MapReduceNode extends AbstractExecutionNode {
 	}
 
 	@JsonIgnore
+	public int getPostProcessStepCount() {
+		return postProcessSteps != null ? postProcessSteps.size() : 0;
+	}
+
+	@JsonIgnore
 	public int getTotalStepCount() {
-		return getDataPreparedStepCount() + getMapStepCount() + getReduceStepCount();
+		return getDataPreparedStepCount() + getMapStepCount() + getReduceStepCount() + getPostProcessStepCount();
 	}
 
 	@JsonIgnore
@@ -154,8 +187,16 @@ public class MapReduceNode extends AbstractExecutionNode {
 		return null;
 	}
 
+	@JsonIgnore
+	public ExecutionStep getPostProcessStep(int index) {
+		if (postProcessSteps != null && index >= 0 && index < postProcessSteps.size()) {
+			return postProcessSteps.get(index);
+		}
+		return null;
+	}
+
 	/**
-	 * 获取所有步骤（Data Prepared + Map + Reduce）
+	 * 获取所有步骤（Data Prepared + Map + Reduce + Post Process）
 	 * @return 所有步骤的列表
 	 */
 	@JsonIgnore
@@ -169,6 +210,9 @@ public class MapReduceNode extends AbstractExecutionNode {
 		}
 		if (reduceSteps != null) {
 			allSteps.addAll(reduceSteps);
+		}
+		if (postProcessSteps != null) {
+			allSteps.addAll(postProcessSteps);
 		}
 		return allSteps;
 	}
@@ -184,6 +228,7 @@ public class MapReduceNode extends AbstractExecutionNode {
 		sb.append("Data Prepared步骤数量: ").append(getDataPreparedStepCount()).append("\n");
 		sb.append("Map步骤数量: ").append(getMapStepCount()).append("\n");
 		sb.append("Reduce步骤数量: ").append(getReduceStepCount()).append("\n");
+		sb.append("Post Process步骤数量: ").append(getPostProcessStepCount()).append("\n");
 		sb.append("总步骤数量: ").append(getTotalStepCount()).append("\n");
 
 		if (dataPreparedSteps != null && !dataPreparedSteps.isEmpty()) {
@@ -207,6 +252,14 @@ public class MapReduceNode extends AbstractExecutionNode {
 			for (int i = 0; i < reduceSteps.size(); i++) {
 				ExecutionStep step = reduceSteps.get(i);
 				sb.append("  Reduce-").append(i + 1).append(". ").append(step.getStepRequirement()).append("\n");
+			}
+		}
+
+		if (postProcessSteps != null && !postProcessSteps.isEmpty()) {
+			sb.append("\n--- Post Process阶段 ---\n");
+			for (int i = 0; i < postProcessSteps.size(); i++) {
+				ExecutionStep step = postProcessSteps.get(i);
+				sb.append("  PostProcess-").append(i + 1).append(". ").append(step.getStepRequirement()).append("\n");
 			}
 		}
 

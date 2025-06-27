@@ -231,6 +231,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 				sb.append("数据准备步骤数: ").append(mrNode.getDataPreparedStepCount()).append("\n");
 				sb.append("Map步骤数: ").append(mrNode.getMapStepCount()).append("\n");
 				sb.append("Reduce步骤数: ").append(mrNode.getReduceStepCount()).append("\n");
+				sb.append("后处理步骤数: ").append(mrNode.getPostProcessStepCount()).append("\n");
 
 				if (mrNode.getDataPreparedSteps() != null && !mrNode.getDataPreparedSteps().isEmpty()) {
 					sb.append("  数据准备阶段:\n");
@@ -255,6 +256,16 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 				if (mrNode.getReduceSteps() != null && !mrNode.getReduceSteps().isEmpty()) {
 					sb.append("  Reduce阶段:\n");
 					for (ExecutionStep step : mrNode.getReduceSteps()) {
+						sb.append("    ").append(step.getStepInStr()).append("\n");
+						if (includeResults && step.getResult() != null) {
+							sb.append("      结果: ").append(step.getResult()).append("\n");
+						}
+					}
+				}
+
+				if (mrNode.getPostProcessSteps() != null && !mrNode.getPostProcessSteps().isEmpty()) {
+					sb.append("  后处理阶段:\n");
+					for (ExecutionStep step : mrNode.getPostProcessSteps()) {
 						sb.append("    ").append(step.getStepInStr()).append("\n");
 						if (includeResults && step.getResult() != null) {
 							sb.append("      结果: ").append(step.getResult()).append("\n");
@@ -308,6 +319,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 				mrNode.getDataPreparedSteps().remove(step);
 				mrNode.getMapSteps().remove(step);
 				mrNode.getReduceSteps().remove(step);
+				mrNode.getPostProcessSteps().remove(step);
 			}
 		}
 	}
@@ -348,9 +360,15 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 						step.setStepIndex(index++);
 					}
 				}
-				// 最后设置Reduce步骤的索引
+				// 然后设置Reduce步骤的索引
 				if (mrNode.getReduceSteps() != null) {
 					for (ExecutionStep step : mrNode.getReduceSteps()) {
+						step.setStepIndex(index++);
+					}
+				}
+				// 最后设置后处理步骤的索引
+				if (mrNode.getPostProcessSteps() != null) {
+					for (ExecutionStep step : mrNode.getPostProcessSteps()) {
 						step.setStepIndex(index++);
 					}
 				}

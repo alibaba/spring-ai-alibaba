@@ -179,8 +179,8 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	 * 执行 MapReduce 节点
 	 */
 	private BaseAgent executeMapReduceNode(MapReduceNode mrNode, ExecutionContext context, BaseAgent lastExecutor) {
-		logger.info("执行 MapReduce 节点，Data Prepared 步骤: {}, Map 步骤: {}, Reduce 步骤: {}",
-				mrNode.getDataPreparedStepCount(), mrNode.getMapStepCount(), mrNode.getReduceStepCount());
+		logger.info("执行 MapReduce 节点，Data Prepared 步骤: {}, Map 步骤: {}, Reduce 步骤: {}, Post Process 步骤: {}",
+				mrNode.getDataPreparedStepCount(), mrNode.getMapStepCount(), mrNode.getReduceStepCount(), mrNode.getPostProcessStepCount());
 
 		BaseAgent executor = lastExecutor;
 
@@ -212,6 +212,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			executor = executeReducePhase(mrNode.getReduceSteps(), context, executor);
 		}
 
+		// 4. 串行执行 Post Process 阶段（后处理阶段）
+		if (CollectionUtil.isNotEmpty(mrNode.getPostProcessSteps())) {
+			executor = executePostProcessPhase(mrNode.getPostProcessSteps(), context, executor);
+		}
+
 		return executor;
 	}
 
@@ -232,6 +237,27 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		}
 
 		logger.info("Data Prepared 阶段执行完成");
+		return executor;
+	}
+
+	/**
+	 * 串行执行 Post Process 阶段（后处理阶段）
+	 * 类似于 Data Prepared 阶段，支持单个代理执行，专门用于 MapReduce 流程完成后的最终处理任务
+	 */
+	private BaseAgent executePostProcessPhase(List<ExecutionStep> postProcessSteps, ExecutionContext context,
+			BaseAgent lastExecutor) {
+		logger.info("串行执行 Post Process 阶段，共 {} 个步骤", postProcessSteps.size());
+
+		BaseAgent executor = lastExecutor;
+
+		for (ExecutionStep step : postProcessSteps) {
+			BaseAgent stepExecutor = executeStep(step, context);
+			if (stepExecutor != null) {
+				executor = stepExecutor;
+			}
+		}
+
+		logger.info("Post Process 阶段执行完成");
 		return executor;
 	}
 
