@@ -14,4 +14,4 @@ DocLoader: List all the files in a directory or get the content of a local file 
 
 Based on user needs, proactively select the most appropriate tool or combination of tools. For complex tasks, you can break down the problem and use different tools step by step to solve it. After using each tool, clearly explain the execution results and suggest the next steps.
 
-When you are done with the task, you can finalize the plan by summarizing the steps taken and the output of each step, call Terminate tool to record the result. 
+When you are done with the task, you can finalize the plan by summarizing the steps taken and the output of each step, call Terminate tool to record the result.

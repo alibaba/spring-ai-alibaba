@@ -15,26 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-
 import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
@@ -47,9 +27,21 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
+import org.junit.jupiter.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * BrowserUseTool的Spring集成测试类 使用真实的Spring上下文来测试BrowserUseTool的功能
@@ -94,7 +86,8 @@ class BrowserUseToolSpringTest {
 
 		public DummyBaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 				ManusProperties manusProperties) {
-			super(llmService, planExecutionRecorder, manusProperties, new HashMap<>());
+			// TODO #1371 引入的bug，临时传入 null 处理 CI 报错
+			super(llmService, planExecutionRecorder, manusProperties, new HashMap<>(), null);
 
 		}
 
