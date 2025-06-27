@@ -243,6 +243,8 @@
         <webdrivermanager.version>6.1.0</webdrivermanager.version>
         
         <httpclient5.version>5.4.3</httpclient5.version>
+        
+        <poi.version>5.4.0</poi.version>
 
         <mcp.version>0.10.0</mcp.version>
 
