@@ -113,7 +113,7 @@ public class VariableAggregatorNodeSection implements NodeSection {
 		for (int i = 0; i < variables.size(); i++) {
 			List<String> path = variables.get(i);
 			String listStr = "        List.of(" + path.stream()
-				.map(s -> "\"" + s.replace("\"", "\\\"") + "\"") // 转义引号
+				.map(s -> "\"" + s.replace("\"", "\\\"") + "\"")
 				.collect(Collectors.joining(", ")) + ")";
 			sb.append(listStr);
 
