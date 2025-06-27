@@ -68,7 +68,6 @@ public class ExecutionStep {
 		this.stepRequirement = stepRequirement;
 	}
 
-
 	@JsonIgnore
 	public String getStepInStr() {
 		String agentState = null;

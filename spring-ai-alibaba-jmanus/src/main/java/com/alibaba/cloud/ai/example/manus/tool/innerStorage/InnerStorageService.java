@@ -71,7 +71,6 @@ public class InnerStorageService {
 		return getPlanDirectory(planId).resolve(agentName);
 	}
 
-
 	/**
 	 * 确保目录存在
 	 */
@@ -247,28 +246,29 @@ public class InnerStorageService {
 	 * 智能处理结果类
 	 */
 	public static class SmartProcessResult {
-		
+
 		private final String fileName;
-		
+
 		private final String summary;
-		
+
 		public SmartProcessResult(String fileName, String summary) {
 			this.fileName = fileName;
 			this.summary = summary;
 		}
-		
+
 		public String getFileName() {
 			return fileName;
 		}
-		
+
 		public String getSummary() {
 			return summary;
 		}
-		
+
 		@Override
 		public String toString() {
 			return String.format("SmartProcessResult{fileName='%s', summary='%s'}", fileName, summary);
 		}
+
 	}
 
 	/**
@@ -285,12 +285,14 @@ public class InnerStorageService {
 
 		// 默认阈值：2KB
 		int threshold = 2048;
-		
-		log.info("Processing content for plan {}: content length = {}, threshold = {}", planId, content.length(), threshold);
+
+		log.info("Processing content for plan {}: content length = {}, threshold = {}", planId, content.length(),
+				threshold);
 
 		// 如果内容未超过阈值，直接返回
 		if (content.length() <= threshold) {
-			log.info("Content length {} is within threshold {}, returning original content", content.length(), threshold);
+			log.info("Content length {} is within threshold {}, returning original content", content.length(),
+					threshold);
 			return new SmartProcessResult(null, content);
 		}
 
@@ -315,7 +317,8 @@ public class InnerStorageService {
 
 			return new SmartProcessResult(storageFileName, summary);
 
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			log.error("Failed to save content to storage for plan {}", planId, e);
 			// 如果保存失败，返回截断的内容
 			return new SmartProcessResult(null, content.substring(0, threshold) + "\n\n... (内容过长，已截断)");
@@ -326,7 +329,8 @@ public class InnerStorageService {
 	 * 生成存储文件名 - 格式：planId_时间戳_随机4位数.md
 	 */
 	private String generateStorageFileName(String planId) {
-		String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+		String timestamp = java.time.LocalDateTime.now()
+			.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
 		// 生成4位随机数
 		int randomNum = (int) (Math.random() * 9000) + 1000; // 1000-9999
 		return String.format("%s_%s_%04d.md", planId, timestamp, randomNum);
@@ -339,7 +343,8 @@ public class InnerStorageService {
 		StringBuilder detailedContent = new StringBuilder();
 		detailedContent.append(content);
 
-		Files.writeString(storagePath, detailedContent.toString(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+		Files.writeString(storagePath, detailedContent.toString(), StandardOpenOption.CREATE,
+				StandardOpenOption.TRUNCATE_EXISTING);
 	}
 
 	/**

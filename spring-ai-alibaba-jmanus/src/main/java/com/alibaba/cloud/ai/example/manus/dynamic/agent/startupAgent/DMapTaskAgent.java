@@ -40,7 +40,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				   - 提取"任务ID: "后面的值（例如：task_001, task_002等）
 				   - 这个任务ID将作为task_id参数传递给map_reduce_tool
 				3. 调用map_reduce_tool的record_map_output记录处理结果：
-				   - action: "record_map_output"  
+				   - action: "record_map_output"
 				   - content: Map阶段处理完成后的输出内容
 				   - task_id: 从上下文参数中提取的任务ID（例如："task_001"）
 				   - status: "completed" 或 "failed"
@@ -62,7 +62,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				=== 当前任务上下文 ===
 				任务ID: task_001
 				文件内容: 《具体内容》...
-				
+
 				则在调用map_reduce_tool时应使用：
 				〈
 				  "action": "record_map_output",
@@ -72,7 +72,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				〉
 
 				注意：文档片段内容已经自动提供给你，无需手动读取文件或处理路径。
-				""", availableToolKeys = { "map_reduce_tool", "terminate"  })
+				""", availableToolKeys = { "map_reduce_tool", "terminate" })
 public class DMapTaskAgent {
 
 }

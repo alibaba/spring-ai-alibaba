@@ -24,8 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * MapReduce工具共享状态管理器
- * 用于管理不同Agent实例之间的共享状态信息，确保MapReduce流程的一致性
+ * MapReduce工具共享状态管理器 用于管理不同Agent实例之间的共享状态信息，确保MapReduce流程的一致性
  */
 @Component
 public class MapReduceSharedStateManager {
@@ -33,34 +32,33 @@ public class MapReduceSharedStateManager {
 	private static final Logger log = LoggerFactory.getLogger(MapReduceSharedStateManager.class);
 
 	/**
-	 * 计划状态信息
-	 * Key: planId, Value: PlanState
+	 * 计划状态信息 Key: planId, Value: PlanState
 	 */
 	private final Map<String, PlanState> planStates = new ConcurrentHashMap<>();
 
 	/**
-	 * 计划状态内部类
-	 * 包含单个计划的所有共享状态信息
+	 * 计划状态内部类 包含单个计划的所有共享状态信息
 	 */
 	public static class PlanState {
+
 		// Map任务状态管理
 		private final Map<String, TaskStatus> mapTaskStatuses = new ConcurrentHashMap<>();
-		
+
 		// 任务计数器，用于生成任务ID
 		private final AtomicInteger taskCounter = new AtomicInteger(1);
-		
+
 		// 分割结果列表
 		private final List<String> splitResults = Collections.synchronizedList(new ArrayList<>());
-		
+
 		// 返回列信息
 		private final List<String> returnColumns = Collections.synchronizedList(new ArrayList<>());
-		
+
 		// 最后操作结果
 		private volatile String lastOperationResult = "";
-		
+
 		// 最后处理的文件
 		private volatile String lastProcessedFile = "";
-		
+
 		// 创建时间戳
 		private final long createTime = System.currentTimeMillis();
 
@@ -99,16 +97,22 @@ public class MapReduceSharedStateManager {
 		public long getCreateTime() {
 			return createTime;
 		}
+
 	}
 
 	/**
 	 * 任务状态类
 	 */
 	public static class TaskStatus {
+
 		public String taskId;
+
 		public String inputFile;
+
 		public String outputFilePath;
+
 		public String status;
+
 		public String timestamp;
 
 		public TaskStatus() {
@@ -118,11 +122,11 @@ public class MapReduceSharedStateManager {
 			this.taskId = taskId;
 			this.status = status;
 		}
+
 	}
 
 	/**
 	 * 获取或创建计划状态
-	 * 
 	 * @param planId 计划ID
 	 * @return 计划状态
 	 */
@@ -130,7 +134,7 @@ public class MapReduceSharedStateManager {
 		if (planId == null || planId.trim().isEmpty()) {
 			throw new IllegalArgumentException("planId不能为空");
 		}
-		
+
 		return planStates.computeIfAbsent(planId, id -> {
 			log.info("为计划 {} 创建新的共享状态", id);
 			return new PlanState();
@@ -139,7 +143,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 获取计划状态（如果不存在则返回null）
-	 * 
 	 * @param planId 计划ID
 	 * @return 计划状态，不存在则返回null
 	 */
@@ -149,7 +152,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 清理计划状态
-	 * 
 	 * @param planId 计划ID
 	 */
 	public void cleanupPlanState(String planId) {
@@ -161,7 +163,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 获取下一个任务ID
-	 * 
 	 * @param planId 计划ID
 	 * @return 任务ID
 	 */
@@ -173,7 +174,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 添加分割结果
-	 * 
 	 * @param planId 计划ID
 	 * @param taskDirectory 任务目录
 	 */
@@ -185,7 +185,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 获取分割结果列表
-	 * 
 	 * @param planId 计划ID
 	 * @return 分割结果列表的副本
 	 */
@@ -199,7 +198,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 设置分割结果列表
-	 * 
 	 * @param planId 计划ID
 	 * @param splitResults 分割结果列表
 	 */
@@ -212,7 +210,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 记录Map任务状态
-	 * 
 	 * @param planId 计划ID
 	 * @param taskId 任务ID
 	 * @param taskStatus 任务状态
@@ -225,7 +222,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 获取Map任务状态
-	 * 
 	 * @param planId 计划ID
 	 * @param taskId 任务ID
 	 * @return 任务状态
@@ -240,7 +236,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 获取所有Map任务状态
-	 * 
 	 * @param planId 计划ID
 	 * @return 任务状态映射的副本
 	 */
@@ -254,7 +249,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 设置返回列信息
-	 * 
 	 * @param planId 计划ID
 	 * @param returnColumns 返回列列表
 	 */
@@ -268,7 +262,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 获取返回列信息
-	 * 
 	 * @param planId 计划ID
 	 * @return 返回列列表的副本
 	 */
@@ -282,7 +275,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 设置最后操作结果
-	 * 
 	 * @param planId 计划ID
 	 * @param result 操作结果
 	 */
@@ -293,7 +285,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 获取最后操作结果
-	 * 
 	 * @param planId 计划ID
 	 * @return 最后操作结果
 	 */
@@ -307,7 +298,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 设置最后处理的文件
-	 * 
 	 * @param planId 计划ID
 	 * @param filePath 文件路径
 	 */
@@ -318,7 +308,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 获取最后处理的文件
-	 * 
 	 * @param planId 计划ID
 	 * @return 最后处理的文件路径
 	 */
@@ -332,7 +321,6 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 获取当前工具状态字符串
-	 * 
 	 * @param planId 计划ID
 	 * @return 状态字符串
 	 */
@@ -345,7 +333,9 @@ public class MapReduceSharedStateManager {
 		StringBuilder sb = new StringBuilder();
 		sb.append("MapReduceTool 当前状态:\n");
 		sb.append("- Plan ID: ").append(planId).append("\n");
-		sb.append("- 最后处理文件: ").append(planState.getLastProcessedFile().isEmpty() ? "无" : planState.getLastProcessedFile()).append("\n");
+		sb.append("- 最后处理文件: ")
+			.append(planState.getLastProcessedFile().isEmpty() ? "无" : planState.getLastProcessedFile())
+			.append("\n");
 		sb.append("- 最后操作结果: ").append(planState.getLastOperationResult().isEmpty() ? "无" : "已完成").append("\n");
 		sb.append("- 任务目录数: ").append(planState.getSplitResults().size()).append("\n");
 		sb.append("- Map任务状态数: ").append(planState.getMapTaskStatuses().size()).append("\n");
@@ -356,14 +346,13 @@ public class MapReduceSharedStateManager {
 
 	/**
 	 * 获取所有计划的状态概览
-	 * 
 	 * @return 状态概览字符串
 	 */
 	public String getAllPlansOverview() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("MapReduce共享状态管理器概览:\n");
 		sb.append("- 活跃计划数: ").append(planStates.size()).append("\n");
-		
+
 		for (Map.Entry<String, PlanState> entry : planStates.entrySet()) {
 			String planId = entry.getKey();
 			PlanState planState = entry.getValue();
@@ -373,7 +362,7 @@ public class MapReduceSharedStateManager {
 			sb.append(", 计数器=").append(planState.getTaskCounter().get());
 			sb.append("\n");
 		}
-		
+
 		return sb.toString();
 	}
 
@@ -385,4 +374,5 @@ public class MapReduceSharedStateManager {
 		planStates.clear();
 		log.info("已清理所有计划状态，共 {} 个计划", count);
 	}
+
 }

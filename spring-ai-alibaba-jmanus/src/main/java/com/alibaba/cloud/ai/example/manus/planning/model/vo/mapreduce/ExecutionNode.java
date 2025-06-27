@@ -24,16 +24,10 @@ import java.util.List;
 /**
  * 执行节点接口，定义了所有执行节点的公共行为
  */
-@JsonTypeInfo(
-	use = JsonTypeInfo.Id.NAME,
-	include = JsonTypeInfo.As.EXISTING_PROPERTY,
-	property = "type",
-	visible = true
-)
-@JsonSubTypes({
-	@JsonSubTypes.Type(value = SequentialNode.class, name = "sequential"),
-	@JsonSubTypes.Type(value = MapReduceNode.class, name = "mapreduce")
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
+		visible = true)
+@JsonSubTypes({ @JsonSubTypes.Type(value = SequentialNode.class, name = "sequential"),
+		@JsonSubTypes.Type(value = MapReduceNode.class, name = "mapreduce") })
 public interface ExecutionNode {
 
 	/**

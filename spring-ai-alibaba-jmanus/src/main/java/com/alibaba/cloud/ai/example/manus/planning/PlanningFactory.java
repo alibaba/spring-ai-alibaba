@@ -129,7 +129,7 @@ public class PlanningFactory {
 		this.innerStorageService = innerStorageService;
 	}
 
-	//这里修改Mapreduce的逻辑
+	// 这里修改Mapreduce的逻辑
 	public PlanningCoordinator createPlanningCoordinator(String planId) {
 
 		// Add all dynamic agents from the database
@@ -138,10 +138,10 @@ public class PlanningFactory {
 		PlanningToolInterface planningTool = new MapReducePlanningTool();
 
 		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder);
-		PlanExecutorInterface planExecutor = new MapReducePlanExecutor(agentEntities, recorder, agentService, llmService);
+		PlanExecutorInterface planExecutor = new MapReducePlanExecutor(agentEntities, recorder, agentService,
+				llmService);
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder);
 
-		
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
 
 		return planningCoordinator;
@@ -182,7 +182,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
-		toolDefinitions.add(new MapReduceTool(planId,manusProperties,sharedStateManager));
+		toolDefinitions.add(new MapReduceTool(planId, manusProperties, sharedStateManager));
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {

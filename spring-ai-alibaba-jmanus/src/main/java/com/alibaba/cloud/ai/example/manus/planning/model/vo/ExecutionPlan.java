@@ -25,7 +25,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * 计划实体类，用于管理执行计划的相关信息
  */
 public class ExecutionPlan extends AbstractExecutionPlan {
-	
 
 	private List<ExecutionStep> steps;
 

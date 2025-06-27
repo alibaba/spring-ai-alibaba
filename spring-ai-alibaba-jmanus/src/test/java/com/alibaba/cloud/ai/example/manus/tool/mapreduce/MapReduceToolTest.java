@@ -103,7 +103,8 @@ public class MapReduceToolTest {
 
 		// === 文件系统输出验证 ===
 		// 验证输出目录结构
-		// CodeUtils.getWorkingDirectory() 会返回 tempDir/extensions，所以 inner_storage 会在 extensions 目录下
+		// CodeUtils.getWorkingDirectory() 会返回 tempDir/extensions，所以 inner_storage 会在
+		// extensions 目录下
 		Path planDir = tempDir.resolve("extensions").resolve("inner_storage").resolve(testPlanId);
 		Path tasksDir = planDir.resolve("tasks");
 		assertTrue(Files.exists(tasksDir));
@@ -113,8 +114,9 @@ public class MapReduceToolTest {
 		// 验证任务目录存在及其内容
 		for (String taskDir : splitResults) {
 			assertTrue(Files.exists(Path.of(taskDir)));
-			// 预期任务目录：tempDir/extensions/inner_storage/test-plan-001/tasks/task_001, task_002, ...
-			
+			// 预期任务目录：tempDir/extensions/inner_storage/test-plan-001/tasks/task_001,
+			// task_002, ...
+
 			// 验证每个任务目录包含标准化文件
 			Path taskPath = Path.of(taskDir);
 			assertTrue(Files.exists(taskPath.resolve("input.md")));
@@ -148,19 +150,23 @@ public class MapReduceToolTest {
 		StringBuilder testData2 = new StringBuilder();
 		// 创建一个较大的文件，确保字符数足够触发自动切分
 		for (int i = 1; i <= 200; i++) { // 增加行数，确保总字符数更大
-			testData2.append(String.format("Line %d from file 2 - 这是较长的一行内容用于确保文件字符数足够大以触发自动分割功能。内容ID: %d, 时间戳: 2025-06-24T%02d:%02d:%02d\n", 
-				i, i, (i % 24), ((i * 13) % 60), ((i * 7) % 60)));
+			testData2.append(String.format(
+					"Line %d from file 2 - 这是较长的一行内容用于确保文件字符数足够大以触发自动分割功能。内容ID: %d, 时间戳: 2025-06-24T%02d:%02d:%02d\n",
+					i, i, (i % 24), ((i * 13) % 60), ((i * 7) % 60)));
 		}
 		Files.write(testFile2, testData2.toString().getBytes());
 		// 预期输入文件2：data2.txt（包含200行较长的测试数据，用于测试大文件基于字符数的自动切分）
-		
+
 		// 添加第三个更大的文件用于测试大文件的多重切分
 		Path testFile3 = testDir.resolve("large_data.txt");
 		StringBuilder testData3 = new StringBuilder();
 		// 创建一个字符数很大的文件以确保会被切分成多个任务
 		for (int i = 1; i <= 300; i++) { // 增加行数
-			testData3.append(String.format("Large file line %d - 这一行包含大量内容设计用于创建字符数很大的文件，该文件肯定会被分割成多个块。章节: %d, 子章节: %d, 详细信息: %s, 扩展内容带时间戳 %s 和随机数据 %d\n", 
-				i, (i / 100) + 1, (i / 10) % 10, "TEST_DATA_" + i, "2025-06-24T" + String.format("%02d:%02d:%02d", (i % 24), ((i * 13) % 60), ((i * 7) % 60)), i * 997));
+			testData3.append(String.format(
+					"Large file line %d - 这一行包含大量内容设计用于创建字符数很大的文件，该文件肯定会被分割成多个块。章节: %d, 子章节: %d, 详细信息: %s, 扩展内容带时间戳 %s 和随机数据 %d\n",
+					i, (i / 100) + 1, (i / 10) % 10, "TEST_DATA_" + i,
+					"2025-06-24T" + String.format("%02d:%02d:%02d", (i % 24), ((i * 13) % 60), ((i * 7) % 60)),
+					i * 997));
 		}
 		Files.write(testFile3, testData3.toString().getBytes());
 		// 预期输入文件3：large_data.txt（包含300行超长测试数据，确保基于字符数触发多重切分）
@@ -189,15 +195,15 @@ public class MapReduceToolTest {
 		assertFalse(splitResults.isEmpty());
 		// 应该有多个任务目录（三个原始文件的分割结果，特别是大文件应该基于字符数被分割成多个任务）
 		assertTrue(splitResults.size() >= 3, "应该至少有3个任务目录（来自3个文件）");
-		
+
 		// 特别验证大文件的字符数自动切分效果
 		// 由于 large_data.txt 字符数很大，应该被分割成多个任务
 		assertTrue(splitResults.size() >= 5, "大文件应该基于字符数触发自动切分，生成更多任务目录");
-		
+
 		// 输出详细信息用于调试
 		System.out.println("=== 文件切分结果统计 ===");
 		System.out.println("总任务数: " + splitResults.size());
-		
+
 		// 统计各文件的大小和预期切分情况
 		long file1Size = Files.size(testFile1);
 		long file2Size = Files.size(testFile2);
@@ -205,44 +211,48 @@ public class MapReduceToolTest {
 		System.out.println("文件1大小: " + file1Size + " bytes");
 		System.out.println("文件2大小: " + file2Size + " bytes");
 		System.out.println("文件3大小: " + file3Size + " bytes");
-		
+
 		// 验证大文件确实比小文件大
 		assertTrue(file2Size > file1Size, "第二个文件应该比第一个文件大");
 		assertTrue(file3Size > file2Size, "第三个文件应该是最大的文件");
 		assertTrue(file3Size > 50000, "大文件应该超过50KB以确保触发字符数切分");
 		// 预期内部状态：splitResults 列表包含>=5个任务目录路径（大文件的字符数自动切分效果）
 		// 预期文件系统输出：
-		// - tempDir/extensions/inner_storage/test-plan-001/tasks/task_001/（来自data1.txt的分割）
-		// - tempDir/extensions/inner_storage/test-plan-001/tasks/task_002/（来自data2.txt的分割）
-		// - tempDir/extensions/inner_storage/test-plan-001/tasks/task_003/（来自large_data.txt的第一个分割）
-		// - tempDir/extensions/inner_storage/test-plan-001/tasks/task_004/（来自large_data.txt的第二个分割）
+		// -
+		// tempDir/extensions/inner_storage/test-plan-001/tasks/task_001/（来自data1.txt的分割）
+		// -
+		// tempDir/extensions/inner_storage/test-plan-001/tasks/task_002/（来自data2.txt的分割）
+		// -
+		// tempDir/extensions/inner_storage/test-plan-001/tasks/task_003/（来自large_data.txt的第一个分割）
+		// -
+		// tempDir/extensions/inner_storage/test-plan-001/tasks/task_004/（来自large_data.txt的第二个分割）
 		// - ... 更多任务目录（大文件的多重字符数自动切分结果）
 		// 每个任务目录包含：input.md, status.json
-		
+
 		// === 文件系统输出验证 ===
 		// 验证输出目录结构
 		Path planDir = tempDir.resolve("extensions").resolve("inner_storage").resolve(testPlanId);
 		Path tasksDir = planDir.resolve("tasks");
 		assertTrue(Files.exists(tasksDir));
 		assertTrue(Files.isDirectory(tasksDir));
-		
+
 		// 验证每个任务目录的结构和内容
 		for (String taskDir : splitResults) {
 			assertTrue(Files.exists(Path.of(taskDir)), "任务目录应该存在: " + taskDir);
-			
+
 			Path taskPath = Path.of(taskDir);
 			assertTrue(Files.exists(taskPath.resolve("input.md")), "input.md 应该存在");
 			assertTrue(Files.exists(taskPath.resolve("status.json")), "status.json 应该存在");
-			
+
 			// 验证输入文件不为空
 			assertTrue(Files.size(taskPath.resolve("input.md")) > 0, "input.md 不应该为空");
-			
+
 			// 验证状态文件格式
 			String statusContent = Files.readString(taskPath.resolve("status.json"));
 			assertTrue(statusContent.contains("\"taskId\""), "状态文件应该包含taskId");
 			assertTrue(statusContent.contains("\"status\""), "状态文件应该包含status");
 		}
-		
+
 		// 验证大文件切分的效果：检查是否有多个任务来自同一个大文件
 		int tasksFromLargeFile = 0;
 		for (String taskDir : splitResults) {
@@ -266,22 +276,22 @@ public class MapReduceToolTest {
 		Path taskDir = tasksDir.resolve("task_001");
 		Files.createDirectories(taskDir);
 		// 预期输入目录：tempDir/extensions/inner_storage/test-plan-001/tasks/task_001/
-		
+
 		// 创建 input.md 文件（模拟split_data阶段创建的输入文件）
 		Path inputFile = taskDir.resolve("input.md");
 		Files.write(inputFile, "# 测试文档片段\n\n测试内容".getBytes());
 		// 预期输入文件：input.md（包含待处理的文档片段）
-		
+
 		// 创建初始状态文件（模拟split_data阶段创建的状态文件）
 		Path statusFile = taskDir.resolve("status.json");
 		String initialStatus = """
-			{
-				"taskId": "task_001",
-				"inputFile": "%s",
-				"status": "pending",
-				"timestamp": "2025-01-01T12:00:00"
-			}
-			""".formatted(inputFile.toAbsolutePath().toString());
+				{
+					"taskId": "task_001",
+					"inputFile": "%s",
+					"status": "pending",
+					"timestamp": "2025-01-01T12:00:00"
+				}
+				""".formatted(inputFile.toAbsolutePath().toString());
 		Files.write(statusFile, initialStatus.getBytes());
 		// 预期输入状态文件：status.json（包含pending状态的任务信息）
 
@@ -348,22 +358,22 @@ public class MapReduceToolTest {
 		Path taskDir = tasksDir.resolve("task_002");
 		Files.createDirectories(taskDir);
 		// 预期输入目录：tempDir/extensions/inner_storage/test-plan-001/tasks/task_002/
-		
+
 		// 创建 input.md 文件（模拟split_data阶段创建的输入文件）
 		Path inputFile = taskDir.resolve("input.md");
 		Files.write(inputFile, "# 测试文档片段\n\n测试内容".getBytes());
 		// 预期输入文件：input.md（包含待处理的文档片段）
-		
+
 		// 创建初始状态文件（模拟split_data阶段创建的状态文件）
 		Path statusFile = taskDir.resolve("status.json");
 		String initialStatus = """
-			{
-				"taskId": "task_002",
-				"inputFile": "%s",
-				"status": "pending",
-				"timestamp": "2025-01-01T12:00:00"
-			}
-			""".formatted(inputFile.toAbsolutePath().toString());
+				{
+					"taskId": "task_002",
+					"inputFile": "%s",
+					"status": "pending",
+					"timestamp": "2025-01-01T12:00:00"
+				}
+				""".formatted(inputFile.toAbsolutePath().toString());
 		Files.write(statusFile, initialStatus.getBytes());
 		// 预期输入状态文件：status.json（包含pending状态的任务信息）
 
@@ -433,7 +443,7 @@ public class MapReduceToolTest {
 	@Test
 	void testMissingRequiredParameters() throws Exception {
 		// === 输入准备 - 测试缺少必需参数的场景 ===
-		
+
 		// 测试split_data缺少file_path参数
 		String input1 = """
 				{
@@ -444,7 +454,7 @@ public class MapReduceToolTest {
 
 		// === 执行处理1 ===
 		ToolExecuteResult result1 = mapReduceTool.run(createMapReduceInput(input1));
-		
+
 		// === 输出验证1 ===
 		assertNotNull(result1);
 		assertTrue(result1.getOutput().contains("错误：file_path参数是必需的"));
@@ -461,7 +471,7 @@ public class MapReduceToolTest {
 
 		// === 执行处理2 ===
 		ToolExecuteResult result2 = mapReduceTool.run(createMapReduceInput(input2));
-		
+
 		// === 输出验证2 ===
 		assertNotNull(result2);
 		assertTrue(result2.getOutput().contains("错误：task_id参数是必需的"));
@@ -565,7 +575,7 @@ public class MapReduceToolTest {
 		// 测试服务组
 		assertEquals("data-processing", mapReduceTool.getServiceGroup());
 		// 预期输出：服务组名称字符串 "data-processing"
-		
+
 		// 预期文件系统输出：无文件系统变更（只是元数据查询）
 	}
 
@@ -579,31 +589,27 @@ public class MapReduceToolTest {
 		// 预期输入目录：tempDir/extensions/inner_storage/test-plan-001/tasks/
 
 		// 测试记录多个Map任务输出
-		String[] taskIds = {"task_001", "task_002", "task_003"};
-		String[] contents = {
-			"第一个任务的输出内容",
-			"第二个任务的输出内容",
-			"第三个任务的输出内容"
-		};
+		String[] taskIds = { "task_001", "task_002", "task_003" };
+		String[] contents = { "第一个任务的输出内容", "第二个任务的输出内容", "第三个任务的输出内容" };
 		// 预期输入数据：3个任务ID和对应的处理结果内容
 
 		// 为每个任务创建目录和初始文件（模拟split_data阶段创建的文件）
 		for (String taskId : taskIds) {
 			Path taskDir = tasksDir.resolve(taskId);
 			Files.createDirectories(taskDir);
-			
+
 			// 创建 input.md
 			Files.write(taskDir.resolve("input.md"), "# 测试文档片段\n\n测试内容".getBytes());
-			
+
 			// 创建初始状态文件
 			String initialStatus = """
-				{
-					"taskId": "%s",
-					"inputFile": "%s",
-					"status": "pending",
-					"timestamp": "2025-01-01T12:00:00"
-				}
-				""".formatted(taskId, taskDir.resolve("input.md").toAbsolutePath().toString());
+					{
+						"taskId": "%s",
+						"inputFile": "%s",
+						"status": "pending",
+						"timestamp": "2025-01-01T12:00:00"
+					}
+					""".formatted(taskId, taskDir.resolve("input.md").toAbsolutePath().toString());
 			Files.write(taskDir.resolve("status.json"), initialStatus.getBytes());
 		}
 		// 预期输入文件系统：3个任务目录，每个包含input.md和status.json（pending状态）
@@ -633,7 +639,7 @@ public class MapReduceToolTest {
 			Path taskDir = tasksDir.resolve(taskId);
 			assertTrue(Files.exists(taskDir.resolve("output.md")));
 			assertTrue(Files.exists(taskDir.resolve("status.json")));
-			
+
 			// 验证状态文件内容
 			String statusContent = Files.readString(taskDir.resolve("status.json"));
 			assertTrue(statusContent.contains("\"taskId\":\"" + taskId + "\""));
@@ -667,7 +673,7 @@ public class MapReduceToolTest {
 		// 由于相对路径解析可能找不到文件（基于工作目录），这个测试可能失败
 		// 但我们测试工具能正确处理相对路径的逻辑
 		ToolExecuteResult result = mapReduceTool.run(createMapReduceInput(input));
-		
+
 		// === 输出验证 ===
 		assertNotNull(result);
 		// 结果可能是错误信息，但不应该抛出异常
@@ -696,13 +702,13 @@ public class MapReduceToolTest {
 		// 创建初始状态文件
 		Path statusFile = taskDir.resolve("status.json");
 		String initialStatus = """
-			{
-				"taskId": "task_status_test",
-				"inputFile": "%s",
-				"status": "pending",
-				"timestamp": "2025-01-01T12:00:00"
-			}
-			""".formatted(inputFile.toAbsolutePath().toString());
+				{
+					"taskId": "task_status_test",
+					"inputFile": "%s",
+					"status": "pending",
+					"timestamp": "2025-01-01T12:00:00"
+				}
+				""".formatted(inputFile.toAbsolutePath().toString());
 		Files.write(statusFile, initialStatus.getBytes());
 		// 预期输入状态文件：status.json（包含pending状态）
 
@@ -747,7 +753,7 @@ public class MapReduceToolTest {
 		// 测试大文件自动分割功能，验证DEFAULT_SPLIT_SIZE的工作机制（按字符数分割）
 		Path testFile = tempDir.resolve("large_auto_split.txt");
 		StringBuilder largeContent = new StringBuilder();
-		
+
 		// 创建超过DEFAULT_SPLIT_SIZE（1000字符）的文件
 		// 每行大约50个字符，需要约25行才能超过1000字符
 		int linesPerChunk = 25;
@@ -785,17 +791,17 @@ public class MapReduceToolTest {
 		for (int i = 0; i < splitResults.size(); i++) {
 			String taskDir = splitResults.get(i);
 			assertTrue(Files.exists(Path.of(taskDir)));
-			
+
 			// 验证任务文件存在
 			Path taskPath = Path.of(taskDir);
 			assertTrue(Files.exists(taskPath.resolve("input.md")));
 			assertTrue(Files.exists(taskPath.resolve("status.json")));
-			
+
 			// 读取任务内容并检查字符数（除了最后一个任务）
 			String inputContent = Files.readString(taskPath.resolve("input.md"));
 			assertTrue(inputContent.contains("# 文档片段"));
 			assertTrue(inputContent.contains("large_auto_split.txt"));
-			
+
 			// 提取实际的文档内容（去除Markdown格式）
 			String[] lines = inputContent.split("\n");
 			StringBuilder actualContent = new StringBuilder();
@@ -809,16 +815,16 @@ public class MapReduceToolTest {
 					actualContent.append(line).append("\n");
 				}
 			}
-			
+
 			// 验证字符数限制（最后一个任务可能少于DEFAULT_SPLIT_SIZE）
 			int contentLength = actualContent.toString().length();
 			if (i < splitResults.size() - 1) {
 				// 非最后一个任务应该接近DEFAULT_SPLIT_SIZE
 				assertTrue(contentLength <= 1200, // 允许一些Markdown格式的额外字符
-					"任务 " + (i + 1) + " 的内容字符数 (" + contentLength + ") 应该接近DEFAULT_SPLIT_SIZE");
+						"任务 " + (i + 1) + " 的内容字符数 (" + contentLength + ") 应该接近DEFAULT_SPLIT_SIZE");
 			}
 		}
-		
+
 		// 输出统计信息用于验证
 		System.out.println("=== 大文件字符数分割测试结果 ===");
 		System.out.println("原始文件字符数: " + largeContent.length());
@@ -835,30 +841,27 @@ public class MapReduceToolTest {
 		Files.createDirectories(tasksDir);
 
 		// 创建两个测试任务
-		String[] taskIds = {"task_completed", "task_failed"};
-		String[] statuses = {"completed", "failed"};
-		String[] contents = {
-			"任务成功完成，处理了所有数据并生成了预期结果",
-			"任务执行失败，遇到数据格式错误：无法解析第42行的JSON数据"
-		};
-		
+		String[] taskIds = { "task_completed", "task_failed" };
+		String[] statuses = { "completed", "failed" };
+		String[] contents = { "任务成功完成，处理了所有数据并生成了预期结果", "任务执行失败，遇到数据格式错误：无法解析第42行的JSON数据" };
+
 		// 为每个任务创建初始结构
 		for (String taskId : taskIds) {
 			Path taskDir = tasksDir.resolve(taskId);
 			Files.createDirectories(taskDir);
-			
+
 			// 创建 input.md
 			Files.write(taskDir.resolve("input.md"), "# 状态测试文档\n\n测试不同状态处理".getBytes());
-			
+
 			// 创建初始状态文件
 			String initialStatus = """
-				{
-					"taskId": "%s",
-					"inputFile": "%s",
-					"status": "pending",
-					"timestamp": "2025-01-01T12:00:00"
-				}
-				""".formatted(taskId, taskDir.resolve("input.md").toAbsolutePath().toString());
+					{
+						"taskId": "%s",
+						"inputFile": "%s",
+						"status": "pending",
+						"timestamp": "2025-01-01T12:00:00"
+					}
+					""".formatted(taskId, taskDir.resolve("input.md").toAbsolutePath().toString());
 			Files.write(taskDir.resolve("status.json"), initialStatus.getBytes());
 		}
 		// 预期输入文件系统：2个任务目录，每个包含input.md和status.json（pending状态）
@@ -890,7 +893,7 @@ public class MapReduceToolTest {
 		String completedOutput = Files.readString(completedTaskDir.resolve("output.md"));
 		assertTrue(completedOutput.contains("completed"));
 		assertTrue(completedOutput.contains("任务成功完成"));
-		
+
 		String completedStatus = Files.readString(completedTaskDir.resolve("status.json"));
 		assertTrue(completedStatus.contains("\"status\":\"completed\""));
 		// 预期completed任务：输出文件包含成功信息，状态文件标记为completed
@@ -901,7 +904,7 @@ public class MapReduceToolTest {
 		String failedOutput = Files.readString(failedTaskDir.resolve("output.md"));
 		assertTrue(failedOutput.contains("failed"));
 		assertTrue(failedOutput.contains("数据格式错误"));
-		
+
 		String failedStatus = Files.readString(failedTaskDir.resolve("status.json"));
 		assertTrue(failedStatus.contains("\"status\":\"failed\""));
 		// 预期failed任务：输出文件包含错误信息，状态文件标记为failed
@@ -979,10 +982,10 @@ public class MapReduceToolTest {
 		// 验证目录结构符合预期模式：extensions/inner_storage/{planId}/tasks/{taskId}
 		List<String> splitResults = mapReduceTool.getSplitResults();
 		assertFalse(splitResults.isEmpty());
-		
+
 		String taskDir = splitResults.get(0);
 		Path taskPath = Path.of(taskDir);
-		
+
 		// 验证路径结构
 		assertTrue(taskPath.toString().contains("extensions"));
 		assertTrue(taskPath.toString().contains("inner_storage"));
@@ -1016,7 +1019,7 @@ public class MapReduceToolTest {
 	@Test
 	void testErrorHandlingRobustness() throws Exception {
 		// === 输入准备 - 测试各种错误情况的处理 ===
-		
+
 		// 测试1：空的action参数
 		String input1 = """
 				{
@@ -1063,9 +1066,11 @@ public class MapReduceToolTest {
 			ToolExecuteResult result4 = mapReduceTool.run(invalidInput);
 			assertNotNull(result4);
 			// 应该能正常处理，不会抛出异常
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			fail("工具应该能够处理无效输入而不抛出异常");
 		}
 		// 预期行为：异常被捕获并转换为错误信息，不会导致程序崩溃
 	}
+
 }

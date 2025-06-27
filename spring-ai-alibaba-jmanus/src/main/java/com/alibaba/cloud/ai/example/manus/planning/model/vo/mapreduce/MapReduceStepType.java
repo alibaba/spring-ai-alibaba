@@ -31,6 +31,7 @@ public enum MapReduceStepType {
 	MAPREDUCE("MapReduce模式", "mapreduce");
 
 	private final String description;
+
 	private final String jsonTypeName;
 
 	MapReduceStepType(String description, String jsonTypeName) {

@@ -141,7 +141,8 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 	}
 
 	// Parameterized FunctionToolCallback with appropriate types.
-	public static FunctionToolCallback<PlanningInput, ToolExecuteResult> getFunctionToolCallback(PlanningTool toolInstance) {
+	public static FunctionToolCallback<PlanningInput, ToolExecuteResult> getFunctionToolCallback(
+			PlanningTool toolInstance) {
 		return FunctionToolCallback.builder(name, toolInstance)
 			.description(description)
 			.inputSchema(PARAMETERS)
@@ -268,7 +269,8 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 		try {
 			PlanningInput planningInput = objectMapper.readValue(input, PlanningInput.class);
 			return run(planningInput);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Failed to parse input JSON: {}", input, e);
 			return new ToolExecuteResult("Error parsing input: " + e.getMessage());
 		}

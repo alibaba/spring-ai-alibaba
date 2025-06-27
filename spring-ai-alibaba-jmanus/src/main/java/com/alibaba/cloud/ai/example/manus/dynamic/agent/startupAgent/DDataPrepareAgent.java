@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentDefinition;
 
-@DynamicAgentDefinition(agentName = "DATA_PREPARE_AGENT",
+@DynamicAgentDefinition(agentName = "MAPREDUCE_DATA_PREPARE_AGENT",
 		agentDescription = "一个数据准备代理，负责验证文件/文件夹存在性、识别表格头部信息并调用分割工具进行数据分割处理，固定的用于MapReduce 的开始的 Preparation  准备 环节。",
 		nextStepPrompt = """
 				你是一个数据准备代理，专门执行以下三个核心任务：
@@ -41,7 +41,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				2. 目标是否存在？
 				3. 是否能识别到表格头部？
 				4. 如何正确调用分割工具？
-				""", availableToolKeys = { "text_file_operator", "map_reduce_tool", "terminate","inner_storage_tool" })
+				""", availableToolKeys = { "text_file_operator", "map_reduce_tool", "terminate", "inner_storage_tool" })
 public class DDataPrepareAgent {
 
 }

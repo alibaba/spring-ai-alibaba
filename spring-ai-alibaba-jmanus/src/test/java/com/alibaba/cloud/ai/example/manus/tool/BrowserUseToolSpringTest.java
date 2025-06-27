@@ -622,7 +622,8 @@ class BrowserUseToolSpringTest {
 			browserUseTool.getDriver().getInteractiveElementRegistry().refresh(page);
 			state = browserUseTool.getCurrentState(page);
 			String updatedElements = (String) state.get("interactive_elements");
-			log.info("Updated elements: {}", updatedElements != null ? updatedElements.length() + " characters" : "null");
+			log.info("Updated elements: {}",
+					updatedElements != null ? updatedElements.length() + " characters" : "null");
 
 			log.info("CSDN登录测试完成");
 		}

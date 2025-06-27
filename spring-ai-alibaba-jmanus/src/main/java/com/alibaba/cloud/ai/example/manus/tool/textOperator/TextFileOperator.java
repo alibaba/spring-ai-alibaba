@@ -137,7 +137,6 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 		workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 	}
 
-
 	private final String PARAMETERS = """
 			{
 			    "oneOf": [
@@ -164,43 +163,43 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			            "required": ["action", "file_path", "source_text", "target_text"],
 			            "additionalProperties": false
 			        },		        {
-		            "type": "object",
-		            "properties": {
-		                "action": {
-		                    "type": "string",
-		                    "const": "get_text"
-		                },
-		                "file_path": {
-		                    "type": "string",
-		                    "description": "要读取的文件路径"
-		                },
-		                "start_line": {
-		                    "type": "integer",
-		                    "description": "起始行号（从1开始）"
-		                },
-		                "end_line": {
-		                    "type": "integer",
-		                    "description": "结束行号（包含该行）。注意：单次最多返回500行，可多次调用获取更多内容"
-		                }
-		            },
-		            "required": ["action", "file_path", "start_line", "end_line"],
-		            "additionalProperties": false
-		        },
-		        {
-		            "type": "object",
-		            "properties": {
-		                "action": {
-		                    "type": "string",
-		                    "const": "get_all_text"
-		                },
-		                "file_path": {
-		                    "type": "string",
-		                    "description": "要读取全部内容的文件路径。注意：如果文件过长，内容将存储在临时文件中并返回文件路径"
-		                }
-		            },
-		            "required": ["action", "file_path"],
-		            "additionalProperties": false
-		        },
+			           "type": "object",
+			           "properties": {
+			               "action": {
+			                   "type": "string",
+			                   "const": "get_text"
+			               },
+			               "file_path": {
+			                   "type": "string",
+			                   "description": "要读取的文件路径"
+			               },
+			               "start_line": {
+			                   "type": "integer",
+			                   "description": "起始行号（从1开始）"
+			               },
+			               "end_line": {
+			                   "type": "integer",
+			                   "description": "结束行号（包含该行）。注意：单次最多返回500行，可多次调用获取更多内容"
+			               }
+			           },
+			           "required": ["action", "file_path", "start_line", "end_line"],
+			           "additionalProperties": false
+			       },
+			       {
+			           "type": "object",
+			           "properties": {
+			               "action": {
+			                   "type": "string",
+			                   "const": "get_all_text"
+			               },
+			               "file_path": {
+			                   "type": "string",
+			                   "description": "要读取全部内容的文件路径。注意：如果文件过长，内容将存储在临时文件中并返回文件路径"
+			               }
+			           },
+			           "required": ["action", "file_path"],
+			           "additionalProperties": false
+			       },
 			        {
 			            "type": "object",
 			            "properties": {
@@ -283,7 +282,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 			String action = (String) toolInputMap.get("action");
 			String filePath = (String) toolInputMap.get("file_path");
-			
+
 			// 基本参数验证
 			if (action == null) {
 				return new ToolExecuteResult("错误：action参数是必需的");
@@ -296,37 +295,38 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 				case "replace" -> {
 					String sourceText = (String) toolInputMap.get("source_text");
 					String targetText = (String) toolInputMap.get("target_text");
-					
+
 					if (sourceText == null || targetText == null) {
 						yield new ToolExecuteResult("错误：replace操作需要source_text和target_text参数");
 					}
-					
+
 					yield replaceText(planId, filePath, sourceText, targetText);
 				}
 				case "get_text" -> {
 					Integer startLine = (Integer) toolInputMap.get("start_line");
 					Integer endLine = (Integer) toolInputMap.get("end_line");
-					
+
 					if (startLine == null || endLine == null) {
 						yield new ToolExecuteResult("错误：get_text操作需要start_line和end_line参数");
 					}
-					
+
 					yield getTextByLines(planId, filePath, startLine, endLine);
 				}
 				case "get_all_text" -> getAllText(planId, filePath);
 				case "append" -> {
 					String appendContent = (String) toolInputMap.get("content");
-					
+
 					if (appendContent == null) {
 						yield new ToolExecuteResult("错误：append操作需要content参数");
 					}
-					
+
 					yield appendToFile(planId, filePath, appendContent);
 				}
 				case "count_words" -> countWords(planId, filePath);
 				default -> {
 					textFileService.updateFileState(planId, filePath, "Error: Unknown action");
-					yield new ToolExecuteResult("未知操作: " + action + "。支持的操作: replace, get_text, get_all_text, append, count_words");
+					yield new ToolExecuteResult(
+							"未知操作: " + action + "。支持的操作: replace, get_text, get_all_text, append, count_words");
 				}
 			};
 		}
@@ -347,7 +347,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			String planId = this.planId;
 			String action = input.getAction();
 			String filePath = input.getFilePath();
-			
+
 			// 基本参数验证
 			if (action == null) {
 				return new ToolExecuteResult("错误：action参数是必需的");
@@ -360,37 +360,38 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 				case "replace" -> {
 					String sourceText = input.getSourceText();
 					String targetText = input.getTargetText();
-					
+
 					if (sourceText == null || targetText == null) {
 						yield new ToolExecuteResult("错误：replace操作需要source_text和target_text参数");
 					}
-					
+
 					yield replaceText(planId, filePath, sourceText, targetText);
 				}
 				case "get_text" -> {
 					Integer startLine = input.getStartLine();
 					Integer endLine = input.getEndLine();
-					
+
 					if (startLine == null || endLine == null) {
 						yield new ToolExecuteResult("错误：get_text操作需要start_line和end_line参数");
 					}
-					
+
 					yield getTextByLines(planId, filePath, startLine, endLine);
 				}
 				case "get_all_text" -> getAllText(planId, filePath);
 				case "append" -> {
 					String appendContent = input.getContent();
-					
+
 					if (appendContent == null) {
 						yield new ToolExecuteResult("错误：append操作需要content参数");
 					}
-					
+
 					yield appendToFile(planId, filePath, appendContent);
 				}
 				case "count_words" -> countWords(planId, filePath);
 				default -> {
 					textFileService.updateFileState(planId, filePath, "Error: Unknown action");
-					yield new ToolExecuteResult("未知操作: " + action + "。支持的操作: replace, get_text, get_all_text, append, count_words");
+					yield new ToolExecuteResult(
+							"未知操作: " + action + "。支持的操作: replace, get_text, get_all_text, append, count_words");
 				}
 			};
 		}
@@ -491,7 +492,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
 			java.util.List<String> lines = Files.readAllLines(absolutePath);
-			
+
 			if (lines.isEmpty()) {
 				textFileService.updateFileState(planId, filePath, "Success: File is empty");
 				return new ToolExecuteResult("文件为空");
@@ -504,7 +505,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 			// 调整结束行号（不超过文件总行数）
 			int actualEndLine = Math.min(endLine, lines.size());
-			
+
 			StringBuilder result = new StringBuilder();
 			result.append(String.format("文件: %s (第%d-%d行，共%d行)\n", filePath, startLine, actualEndLine, lines.size()));
 			result.append("=".repeat(50)).append("\n");
@@ -515,7 +516,11 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 			// 如果文件还有更多内容，提示用户
 			if (actualEndLine < lines.size()) {
-				result.append("\n提示：文件还有更多内容（第").append(actualEndLine + 1).append("-").append(lines.size()).append("行），可继续调用get_text获取。");
+				result.append("\n提示：文件还有更多内容（第")
+					.append(actualEndLine + 1)
+					.append("-")
+					.append(lines.size())
+					.append("行），可继续调用get_text获取。");
 			}
 
 			textFileService.updateFileState(planId, filePath, "Success: Retrieved text lines");
@@ -539,11 +544,11 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			String content = Files.readString(absolutePath);
 
 			textFileService.updateFileState(planId, filePath, "Success: Retrieved all text");
-			
+
 			// 使用 InnerStorageService 智能处理内容
-			InnerStorageService.SmartProcessResult processedResult = 
-				innerStorageService.processContent(planId, content, "get_all_text");
-			
+			InnerStorageService.SmartProcessResult processedResult = innerStorageService.processContent(planId, content,
+					"get_all_text");
+
 			return new ToolExecuteResult(processedResult.getSummary());
 		}
 		catch (IOException e) {

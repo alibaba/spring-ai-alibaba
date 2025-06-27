@@ -153,9 +153,11 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 		public void setTargetFileName(String targetFileName) {
 			this.targetFileName = targetFileName;
 		}
+
 	}
 
 	private final InnerStorageService innerStorageService;
+
 	private final SummaryWorkflow summaryWorkflow;
 
 	private String planId;
@@ -251,50 +253,50 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			            "required": ["action", "file_name"],
 			            "additionalProperties": false
 			        },		        {
-		            "type": "object",
-		            "properties": {
-		                "action": {
-		                    "type": "string",
-		                    "const": "get_content"
-		                },
-		                "file_name": {
-		                    "type": "string",
-		                    "description": "文件名（带扩展名）"
-		                },
-		                "query_key": {
-		                    "type": "string",
-		                    "description": "相关问题或希望提取的内容关键词，必须提供"
-		                },
-		                "columns": {
-		                    "type": "array",
-		                    "items": {
-		                        "type": "string"
-		                    },
-		                    "description": "返回结果的列名，用于结构化输出，必须提供。返回的结果可以是一个列表"
-		                }
-		            },
-		            "required": ["action", "file_name", "query_key", "columns"],
-		            "additionalProperties": false
-		        },
-		        {
-		            "type": "object",
-		            "properties": {
-		                "action": {
-		                    "type": "string",
-		                    "const": "export"
-		                },
-		                "file_name": {
-		                    "type": "string",
-		                    "description": "要导出的内部存储文件名（带扩展名）"
-		                },
-		                "target_file_name": {
-		                    "type": "string",
-		                    "description": "导出后的目标文件名（可选，默认使用原文件名）"
-		                }
-		            },
-		            "required": ["action", "file_name"],
-		            "additionalProperties": false
-		        }
+			           "type": "object",
+			           "properties": {
+			               "action": {
+			                   "type": "string",
+			                   "const": "get_content"
+			               },
+			               "file_name": {
+			                   "type": "string",
+			                   "description": "文件名（带扩展名）"
+			               },
+			               "query_key": {
+			                   "type": "string",
+			                   "description": "相关问题或希望提取的内容关键词，必须提供"
+			               },
+			               "columns": {
+			                   "type": "array",
+			                   "items": {
+			                       "type": "string"
+			                   },
+			                   "description": "返回结果的列名，用于结构化输出，必须提供。返回的结果可以是一个列表"
+			               }
+			           },
+			           "required": ["action", "file_name", "query_key", "columns"],
+			           "additionalProperties": false
+			       },
+			       {
+			           "type": "object",
+			           "properties": {
+			               "action": {
+			                   "type": "string",
+			                   "const": "export"
+			               },
+			               "file_name": {
+			                   "type": "string",
+			                   "description": "要导出的内部存储文件名（带扩展名）"
+			               },
+			               "target_file_name": {
+			                   "type": "string",
+			                   "description": "导出后的目标文件名（可选，默认使用原文件名）"
+			               }
+			           },
+			           "required": ["action", "file_name"],
+			           "additionalProperties": false
+			       }
 			    ]
 			}
 			""";
@@ -380,7 +382,8 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 					String targetFileName = input.getTargetFileName();
 					yield exportToWorkingDirectory(fileName, targetFileName);
 				}
-				default -> new ToolExecuteResult("未知操作: " + action + "。支持的操作: append, replace, get_lines, get_content, export");
+				default -> new ToolExecuteResult(
+						"未知操作: " + action + "。支持的操作: append, replace, get_lines, get_content, export");
 			};
 
 		}
@@ -401,12 +404,12 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			if (content == null) {
 				content = "";
 			}
-		// 确保计划目录存在 - 直接使用计划目录，不使用 agent 子目录
-		Path planDir = innerStorageService.getPlanDirectory(planId);
-		innerStorageService.ensureDirectoryExists(planDir);
+			// 确保计划目录存在 - 直接使用计划目录，不使用 agent 子目录
+			Path planDir = innerStorageService.getPlanDirectory(planId);
+			innerStorageService.ensureDirectoryExists(planDir);
 
-		// 获取文件路径并追加内容 - 直接在计划目录下创建文件
-		Path filePath = planDir.resolve(fileName);
+			// 获取文件路径并追加内容 - 直接在计划目录下创建文件
+			Path filePath = planDir.resolve(fileName);
 
 			// 如果文件不存在，创建新文件
 			if (!Files.exists(filePath)) {
@@ -434,13 +437,14 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			if (fileName == null || fileName.trim().isEmpty()) {
 				return new ToolExecuteResult("错误：file_name参数是必需的");
 			}
-			if (sourceText == null || targetText == null) {			return new ToolExecuteResult("错误：source_text和target_text参数都是必需的");
-		}
+			if (sourceText == null || targetText == null) {
+				return new ToolExecuteResult("错误：source_text和target_text参数都是必需的");
+			}
 
-		Path planDir = innerStorageService.getPlanDirectory(planId);
-		Path filePath = planDir.resolve(fileName);
+			Path planDir = innerStorageService.getPlanDirectory(planId);
+			Path filePath = planDir.resolve(fileName);
 
-		if (!Files.exists(filePath)) {
+			if (!Files.exists(filePath)) {
 				return new ToolExecuteResult("错误：文件不存在: " + fileName);
 			}
 
@@ -462,13 +466,14 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 	 */
 	private ToolExecuteResult getFileLines(String fileName, Integer startLine, Integer endLine) {
 		try {
-			if (fileName == null || fileName.trim().isEmpty()) {			return new ToolExecuteResult("错误：file_name参数是必需的");
-		}
+			if (fileName == null || fileName.trim().isEmpty()) {
+				return new ToolExecuteResult("错误：file_name参数是必需的");
+			}
 
-		Path planDir = innerStorageService.getPlanDirectory(planId);
-		Path filePath = planDir.resolve(fileName);
+			Path planDir = innerStorageService.getPlanDirectory(planId);
+			Path filePath = planDir.resolve(fileName);
 
-		if (!Files.exists(filePath)) {
+			if (!Files.exists(filePath)) {
 				return new ToolExecuteResult("错误：文件不存在: " + fileName);
 			}
 
@@ -494,8 +499,8 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			// 检查行数限制
 			int requestedLines = end - start;
 			if (requestedLines > MAX_LINES_LIMIT) {
-				return new ToolExecuteResult(String.format("请求的行数 %d 超过最大限制 %d 行。请减少行数范围或使用多次调用获取内容。", 
-					requestedLines, MAX_LINES_LIMIT));
+				return new ToolExecuteResult(
+						String.format("请求的行数 %d 超过最大限制 %d 行。请减少行数范围或使用多次调用获取内容。", requestedLines, MAX_LINES_LIMIT));
 			}
 
 			StringBuilder result = new StringBuilder();
@@ -515,12 +520,8 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 		}
 	}
 
-
-
-
 	/**
-	 * 根据文件名或索引获取存储的内容，支持AI智能提取和结构化输出
-	 * 现在委托给 SummaryWorkflow 处理
+	 * 根据文件名或索引获取存储的内容，支持AI智能提取和结构化输出 现在委托给 SummaryWorkflow 处理
 	 */
 	private ToolExecuteResult getStoredContent(String fileName, String queryKey, List<String> columns) {
 		if (fileName == null || fileName.trim().isEmpty()) {
@@ -538,7 +539,7 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 		try {
 			String fileContent = null;
 			String actualFileName = null;
-			
+
 			// 尝试按数字索引获取文件内容
 			try {
 				int index = Integer.parseInt(fileName) - 1; // 转换为0基索引
@@ -573,17 +574,15 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			}
 
 			if (fileContent == null) {
-				return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内容。" +
-					"请使用文件索引号（如 '1', '2'）或文件名的一部分来查找内容。");
+				return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内容。" + "请使用文件索引号（如 '1', '2'）或文件名的一部分来查找内容。");
 			}
 
 			// 委托给 SummaryWorkflow 进行处理
-			log.info("委托给 SummaryWorkflow 处理文件内容提取：文件={}, 查询关键词={}, 输出列={}", 
-					actualFileName, queryKey, columns);
-			
+			log.info("委托给 SummaryWorkflow 处理文件内容提取：文件={}, 查询关键词={}, 输出列={}", actualFileName, queryKey, columns);
+
 			String result = summaryWorkflow.executeSummaryWorkflow(actualFileName, fileContent, queryKey, columns)
-					.get(); // 阻塞等待结果
-			
+				.get(); // 阻塞等待结果
+
 			return new ToolExecuteResult(result);
 
 		}
@@ -677,14 +676,13 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			}
 
 			if (sourceFile == null || !Files.exists(sourceFile)) {
-				return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内部存储文件。" +
-					"请使用文件索引号（如 '1', '2'）或文件名的一部分来查找文件。");
+				return new ToolExecuteResult(
+						"未找到文件名为 '" + fileName + "' 的内部存储文件。" + "请使用文件索引号（如 '1', '2'）或文件名的一部分来查找文件。");
 			}
 
 			// 确定目标文件名
-			String finalTargetName = (targetFileName != null && !targetFileName.trim().isEmpty()) 
-				? targetFileName 
-				: new File(actualFileName).getName(); // 只取文件名，不包含路径
+			String finalTargetName = (targetFileName != null && !targetFileName.trim().isEmpty()) ? targetFileName
+					: new File(actualFileName).getName(); // 只取文件名，不包含路径
 
 			// 获取工作目录路径
 			String workingDirectoryPath = innerStorageService.getManusProperties().getBaseDir();
@@ -703,15 +701,8 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 
 			log.info("成功导出文件：{} -> {}", actualFileName, targetFile.toString());
 
-			return new ToolExecuteResult(String.format(
-				"文件导出成功：\n" +
-				"- 源文件: %s\n" +
-				"- 目标文件: %s\n" +
-				"- 文件大小: %d 字节",
-				actualFileName, 
-				targetFile.toString(),
-				Files.size(targetFile)
-			));
+			return new ToolExecuteResult(String.format("文件导出成功：\n" + "- 源文件: %s\n" + "- 目标文件: %s\n" + "- 文件大小: %d 字节",
+					actualFileName, targetFile.toString(), Files.size(targetFile)));
 
 		}
 		catch (IOException e) {

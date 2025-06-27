@@ -40,71 +40,64 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapReduceInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(MapReduceTool.class);
-	
+
 	// ==================== 配置常量 ====================
-	
+
 	/**
 	 * 支持的操作类型：数据分割
 	 */
 	private static final String ACTION_SPLIT_DATA = "split_data";
-	
+
 	/**
 	 * 支持的操作类型：记录Map输出
 	 */
 	private static final String ACTION_RECORD_MAP_OUTPUT = "record_map_output";
-	
+
 	/**
-	 * 默认的计划ID前缀
-	 * 当planId为空时，使用此前缀 + 时间戳生成默认ID
+	 * 默认的计划ID前缀 当planId为空时，使用此前缀 + 时间戳生成默认ID
 	 */
 	private static final String DEFAULT_PLAN_ID_PREFIX = "plan-";
-	
+
 	/**
-	 * 任务目录名称
-	 * 所有任务都存储在此目录下
+	 * 任务目录名称 所有任务都存储在此目录下
 	 */
 	private static final String TASKS_DIRECTORY_NAME = "tasks";
-	
+
 	/**
-	 * 任务ID格式模板
-	 * 用于生成递增的任务ID，如 task_001, task_002
+	 * 任务ID格式模板 用于生成递增的任务ID，如 task_001, task_002
 	 */
 	private static final String TASK_ID_FORMAT = "task_%03d";
-	
+
 	/**
-	 * 任务输入文件名
-	 * 存储分割后的文档片段内容
+	 * 任务输入文件名 存储分割后的文档片段内容
 	 */
 	private static final String TASK_INPUT_FILE_NAME = "input.md";
-	
+
 	/**
-	 * 任务状态文件名
-	 * 存储任务的执行状态信息
+	 * 任务状态文件名 存储任务的执行状态信息
 	 */
 	private static final String TASK_STATUS_FILE_NAME = "status.json";
-	
+
 	/**
-	 * 任务输出文件名
-	 * 存储Map阶段处理完成后的结果
+	 * 任务输出文件名 存储Map阶段处理完成后的结果
 	 */
 	private static final String TASK_OUTPUT_FILE_NAME = "output.md";
-	
+
 	/**
-	 * 默认的文件分割大小（字符数）
-	 * 每个任务处理的文件字符数，可根据实际需求调整
+	 * 默认的文件分割大小（字符数） 每个任务处理的文件字符数，可根据实际需求调整
 	 */
 	private static final int DEFAULT_SPLIT_SIZE = 5000;
-	
+
 	/**
 	 * 任务状态：待处理
 	 */
 	private static final String TASK_STATUS_PENDING = "pending";
-	
+
 	/**
 	 * 任务状态：已完成
 	 */
 	private static final String TASK_STATUS_COMPLETED = "completed";
-	
+
 	/**
 	 * 任务状态：失败
 	 */
@@ -180,6 +173,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 		public void setStatus(String status) {
 			this.status = status;
 		}
+
 	}
 
 	private static final String TOOL_NAME = "map_reduce_tool";
@@ -194,7 +188,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			  工具会自动在inner_storage/{planId}/tasks/task_{taskId}目录下创建标准化文件结构：
 			  input.md（文档片段）、status.json（任务状态）、output.md（模型处理结果），
 			  每个任务都有独立的目录和统一的文件命名。
-			
+
 			任务管理特性：
 			- 自动生成递增的任务ID
 			- 每个任务创建独立的目录：inner_storage/{planId}/tasks/task_{taskId}
@@ -230,29 +224,29 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			            "required": ["action", "file_path"],
 			            "additionalProperties": false
 			        },		        {
-		            "type": "object",
-		            "properties": {
-		                "action": {
-		                    "type": "string",
-		                    "const": "record_map_output"
-		                },
-		                "content": {
-		                    "type": "string",
-		                    "description": "Map阶段处理完成后的输出内容"
-		                },
-		                "task_id": {
-		                    "type": "string",
-		                    "description": "任务ID，用于状态跟踪"
-		                },
-		                "status": {
-		                    "type": "string",
-		                    "enum": ["completed", "failed"],
-		                    "description": "任务状态"
-		                }
-		            },
-		            "required": ["action", "content", "task_id", "status"],
-		            "additionalProperties": false
-		        }
+			           "type": "object",
+			           "properties": {
+			               "action": {
+			                   "type": "string",
+			                   "const": "record_map_output"
+			               },
+			               "content": {
+			                   "type": "string",
+			                   "description": "Map阶段处理完成后的输出内容"
+			               },
+			               "task_id": {
+			                   "type": "string",
+			                   "description": "任务ID，用于状态跟踪"
+			               },
+			               "status": {
+			                   "type": "string",
+			                   "enum": ["completed", "failed"],
+			                   "description": "任务状态"
+			               }
+			           },
+			           "required": ["action", "content", "task_id", "status"],
+			           "additionalProperties": false
+			       }
 			    ]
 			}
 			""";
@@ -269,21 +263,24 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	// public MapReduceTool() {
-	// 	// 注意：默认构造函数中无法注入依赖，需要后续设置
+	// // 注意：默认构造函数中无法注入依赖，需要后续设置
 	// }
 
 	// public MapReduceTool(ManusProperties manusProperties) {
-	// 	this.manusProperties = manusProperties;
-	// 	this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+	// this.manusProperties = manusProperties;
+	// this.workingDirectoryPath =
+	// CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 	// }
 
 	// public MapReduceTool(String planId, ManusProperties manusProperties) {
-	// 	this.planId = planId;
-	// 	this.manusProperties = manusProperties;
-	// 	this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+	// this.planId = planId;
+	// this.manusProperties = manusProperties;
+	// this.workingDirectoryPath =
+	// CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 	// }
 
-	public MapReduceTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager) {
+	public MapReduceTool(String planId, ManusProperties manusProperties,
+			MapReduceSharedStateManager sharedStateManager) {
 		this.planId = planId;
 		this.manusProperties = manusProperties;
 		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
@@ -337,7 +334,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 				PARAMETERS);
 		return new OpenAiApi.FunctionTool(function);
 	}
-	
+
 	/**
 	 * 执行MapReduce操作，接受强类型输入对象
 	 */
@@ -353,23 +350,23 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 				case ACTION_SPLIT_DATA -> {
 					String filePath = input.getFilePath();
 					List<String> columns = input.getReturnColumns();
-					
+
 					if (filePath == null) {
 						yield new ToolExecuteResult("错误：file_path参数是必需的");
 					}
-					
+
 					// 存储返回列信息
 					if (columns != null && sharedStateManager != null) {
 						sharedStateManager.setReturnColumns(planId, columns);
 					}
-					
+
 					yield processFileOrDirectory(filePath);
 				}
 				case ACTION_RECORD_MAP_OUTPUT -> {
 					String content = input.getContent();
 					String taskId = input.getTaskId();
 					String status = input.getStatus();
-					
+
 					if (content == null) {
 						yield new ToolExecuteResult("错误：content参数是必需的");
 					}
@@ -379,10 +376,11 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 					if (status == null) {
 						yield new ToolExecuteResult("错误：status参数是必需的");
 					}
-					
+
 					yield recordMapTaskOutput(content, taskId, status);
 				}
-				default -> new ToolExecuteResult("未知操作: " + action + "。支持的操作: " + ACTION_SPLIT_DATA + ", " + ACTION_RECORD_MAP_OUTPUT);
+				default -> new ToolExecuteResult(
+						"未知操作: " + action + "。支持的操作: " + ACTION_SPLIT_DATA + ", " + ACTION_RECORD_MAP_OUTPUT);
 			};
 
 		}
@@ -402,28 +400,30 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 				planId = DEFAULT_PLAN_ID_PREFIX + System.currentTimeMillis();
 				log.info("planId 为空，使用默认值: {}", planId);
 			}
-			
+
 			// 验证文件或文件夹存在性
 			// 确保工作目录已初始化
 			if (workingDirectoryPath == null) {
 				if (manusProperties != null) {
 					workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
-				} else {
+				}
+				else {
 					// 如果没有 manusProperties，使用默认方式
 					workingDirectoryPath = CodeUtils.getWorkingDirectory(null);
 				}
 			}
-			
+
 			// 根据路径类型进行处理
 			Path path;
 			if (Paths.get(filePath).isAbsolute()) {
 				// 如果是绝对路径，直接使用
 				path = Paths.get(filePath);
-			} else {
+			}
+			else {
 				// 如果是相对路径，基于工作目录解析
 				path = Paths.get(workingDirectoryPath).resolve(filePath);
 			}
-			
+
 			if (!Files.exists(path)) {
 				return new ToolExecuteResult("错误：文件或目录不存在: " + path.toAbsolutePath().toString());
 			}
@@ -461,12 +461,12 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			if (sharedStateManager != null) {
 				sharedStateManager.setSplitResults(planId, allTaskDirs);
 			}
-			
+
 			// 生成简洁的返回结果
 			StringBuilder result = new StringBuilder();
 			result.append("切分文件成功");
 			result.append("，创建了").append(allTaskDirs.size()).append("个任务目录");
-			
+
 			// 如果有返回列要求，添加返回列信息
 			if (sharedStateManager != null) {
 				List<String> returnColumns = sharedStateManager.getReturnColumns(planId);
@@ -474,7 +474,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 					result.append("，返回列：").append(returnColumns);
 				}
 			}
-			
+
 			String resultStr = result.toString();
 			if (sharedStateManager != null) {
 				sharedStateManager.setLastOperationResult(planId, resultStr);
@@ -505,19 +505,19 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	/**
 	 * 将单个文件分割成任务目录结构
 	 */
-	private SplitResult splitSingleFileToTasks(Path filePath, String headers, int splitSize, Path tasksPath, String delimiter)
-			throws IOException {
+	private SplitResult splitSingleFileToTasks(Path filePath, String headers, int splitSize, Path tasksPath,
+			String delimiter) throws IOException {
 		List<String> taskDirs = new ArrayList<>();
 		String fileName = filePath.getFileName().toString();
 
 		try (BufferedReader reader = Files.newBufferedReader(filePath)) {
 			String line;
 			StringBuilder currentContent = new StringBuilder();
-			
+
 			while ((line = reader.readLine()) != null) {
 				// 添加行内容和换行符
 				String lineWithNewline = line + "\n";
-				
+
 				// 检查添加这一行后是否会超过字符数限制
 				if (currentContent.length() + lineWithNewline.length() > splitSize && currentContent.length() > 0) {
 					// 如果会超过限制且当前内容不为空，先保存当前内容
@@ -525,11 +525,11 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 					taskDirs.add(taskDir);
 					currentContent = new StringBuilder();
 				}
-				
+
 				// 添加当前行
 				currentContent.append(lineWithNewline);
 			}
-			
+
 			// 处理剩余内容
 			if (currentContent.length() > 0) {
 				String taskDir = createTaskDirectory(tasksPath, currentContent.toString(), fileName);
@@ -539,7 +539,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 		return new SplitResult(taskDirs);
 	}
-	
+
 	/**
 	 * 创建任务目录结构
 	 */
@@ -548,14 +548,15 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 		String taskId = null;
 		if (sharedStateManager != null) {
 			taskId = sharedStateManager.getNextTaskId(planId);
-		} else {
+		}
+		else {
 			// 回退方案：使用默认格式
 			taskId = String.format(TASK_ID_FORMAT, 1);
 		}
-		
+
 		Path taskDir = tasksPath.resolve(taskId);
 		ensureDirectoryExists(taskDir);
-		
+
 		// 创建 input.md 文件
 		Path inputFile = taskDir.resolve(TASK_INPUT_FILE_NAME);
 		StringBuilder inputContent = new StringBuilder();
@@ -566,9 +567,9 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 		inputContent.append("```\n");
 		inputContent.append(content);
 		inputContent.append("```\n");
-		
+
 		Files.write(inputFile, inputContent.toString().getBytes());
-		
+
 		// 创建初始状态文件 status.json
 		Path statusFile = taskDir.resolve(TASK_STATUS_FILE_NAME);
 		TaskStatus initialStatus = new TaskStatus();
@@ -576,10 +577,10 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 		initialStatus.status = TASK_STATUS_PENDING;
 		initialStatus.timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 		initialStatus.inputFile = inputFile.toAbsolutePath().toString();
-		
+
 		String statusJson = objectMapper.writeValueAsString(initialStatus);
 		Files.write(statusFile, statusJson.getBytes());
-		
+
 		return taskDir.toAbsolutePath().toString();
 	}
 
@@ -600,7 +601,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 		if (sharedStateManager != null && planId != null) {
 			return sharedStateManager.getCurrentToolStateString(planId);
 		}
-		
+
 		// 回退方案
 		StringBuilder sb = new StringBuilder();
 		sb.append("MapReduceTool 当前状态:\n");
@@ -632,7 +633,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 		}
 		return new ArrayList<>();
 	}
-	
+
 	/**
 	 * 获取内部存储的根目录路径
 	 */
@@ -641,7 +642,8 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			// 使用 CodeUtils.getWorkingDirectory 来获取工作目录，与 InnerStorageService 保持一致
 			if (manusProperties != null) {
 				workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
-			} else {
+			}
+			else {
 				// 如果没有 manusProperties，使用默认方式
 				workingDirectoryPath = CodeUtils.getWorkingDirectory(null);
 			}
@@ -655,7 +657,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	private Path getPlanDirectory(String planId) {
 		return getInnerStorageRoot().resolve(planId);
 	}
-	
+
 	/**
 	 * 确保目录存在
 	 */
@@ -675,34 +677,35 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			if (planId == null || planId.trim().isEmpty()) {
 				return new ToolExecuteResult("错误：planId未设置，无法记录任务状态");
 			}
-		// 定位任务目录
-		Path planDir = getPlanDirectory(planId);
-		Path taskDir = planDir.resolve(TASKS_DIRECTORY_NAME).resolve(taskId);
-		
-		if (!Files.exists(taskDir)) {
-			return new ToolExecuteResult("错误：任务目录不存在: " + taskId);
-		}
+			// 定位任务目录
+			Path planDir = getPlanDirectory(planId);
+			Path taskDir = planDir.resolve(TASKS_DIRECTORY_NAME).resolve(taskId);
 
-		// 创建 output.md 文件
-		Path outputFile = taskDir.resolve(TASK_OUTPUT_FILE_NAME);
-		// 直接写入处理内容，不添加额外的元数据信息
-		Files.write(outputFile, content.getBytes());
-		String outputFilePath = outputFile.toAbsolutePath().toString();
-		// 更新任务状态文件
-		Path statusFile = taskDir.resolve(TASK_STATUS_FILE_NAME);
-		TaskStatus taskStatus;
-		
-		if (Files.exists(statusFile)) {
-			// 读取现有状态
-			String existingStatusJson = new String(Files.readAllBytes(statusFile));
-			taskStatus = objectMapper.readValue(existingStatusJson, TaskStatus.class);
-		} else {
-			// 创建新状态
-			taskStatus = new TaskStatus();
-			taskStatus.taskId = taskId;
-			taskStatus.inputFile = taskDir.resolve(TASK_INPUT_FILE_NAME).toAbsolutePath().toString();
-		}
-			
+			if (!Files.exists(taskDir)) {
+				return new ToolExecuteResult("错误：任务目录不存在: " + taskId);
+			}
+
+			// 创建 output.md 文件
+			Path outputFile = taskDir.resolve(TASK_OUTPUT_FILE_NAME);
+			// 直接写入处理内容，不添加额外的元数据信息
+			Files.write(outputFile, content.getBytes());
+			String outputFilePath = outputFile.toAbsolutePath().toString();
+			// 更新任务状态文件
+			Path statusFile = taskDir.resolve(TASK_STATUS_FILE_NAME);
+			TaskStatus taskStatus;
+
+			if (Files.exists(statusFile)) {
+				// 读取现有状态
+				String existingStatusJson = new String(Files.readAllBytes(statusFile));
+				taskStatus = objectMapper.readValue(existingStatusJson, TaskStatus.class);
+			}
+			else {
+				// 创建新状态
+				taskStatus = new TaskStatus();
+				taskStatus.taskId = taskId;
+				taskStatus.inputFile = taskDir.resolve(TASK_INPUT_FILE_NAME).toAbsolutePath().toString();
+			}
+
 			// 更新状态信息
 			taskStatus.outputFilePath = outputFilePath;
 			taskStatus.status = status;
@@ -722,11 +725,12 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			// 写入更新后的状态文件
 			String statusJson = objectMapper.writeValueAsString(taskStatus);
 			Files.write(statusFile, statusJson.getBytes());
-		String result = String.format("任务 %s 状态已记录：%s，输出文件：%s", taskId, status, TASK_OUTPUT_FILE_NAME);
-		log.info(result);
-		return new ToolExecuteResult(result);
+			String result = String.format("任务 %s 状态已记录：%s，输出文件：%s", taskId, status, TASK_OUTPUT_FILE_NAME);
+			log.info(result);
+			return new ToolExecuteResult(result);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			String error = "记录Map任务状态失败: " + e.getMessage();
 			log.error(error, e);
 			return new ToolExecuteResult(error);
@@ -738,11 +742,17 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	 */
 	@SuppressWarnings("unused")
 	private static class TaskStatus {
+
 		public String taskId;
+
 		public String inputFile;
+
 		public String outputFilePath;
+
 		public String status;
+
 		public String timestamp;
+
 	}
 
 }

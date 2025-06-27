@@ -85,7 +85,6 @@ public abstract class BaseAgent {
 
 	public abstract void clearUp(String planId);
 
-
 	/**
 	 * 获取智能体的名称
 	 *
@@ -182,7 +181,7 @@ public abstract class BaseAgent {
 	public abstract List<ToolCallback> getToolCallList();
 
 	public abstract ToolCallBackContext getToolCallBackContext(String toolKey);
-	
+
 	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, Map<String, Object> initialAgentSetting) {
 		this.llmService = llmService;
@@ -369,6 +368,5 @@ public abstract class BaseAgent {
 	public void setEnvData(Map<String, Object> envData) {
 		this.envData = Collections.unmodifiableMap(new HashMap<>(envData));
 	}
-
 
 }

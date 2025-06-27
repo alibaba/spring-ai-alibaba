@@ -126,8 +126,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 获取所有执行步骤（展平所有节点中的步骤）
-	 * 按照执行顺序返回：数据准备 → Map → Reduce
+	 * 获取所有执行步骤（展平所有节点中的步骤） 按照执行顺序返回：数据准备 → Map → Reduce
 	 * @return 所有执行步骤的列表
 	 */
 	@Override
@@ -138,9 +137,9 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		for (ExecutionNode node : steps) {
 			estimatedSize += node.getTotalStepCount();
 		}
-		
+
 		List<ExecutionStep> allSteps = new ArrayList<>(estimatedSize);
-		
+
 		// 使用接口方法直接获取每个节点的所有步骤
 		for (ExecutionNode node : steps) {
 			List<ExecutionStep> nodeSteps = node.getAllSteps();

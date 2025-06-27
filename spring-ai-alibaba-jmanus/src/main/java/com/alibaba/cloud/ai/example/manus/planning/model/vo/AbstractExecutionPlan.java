@@ -45,7 +45,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	@JsonIgnore
 	protected String executionParams;
 
-
 	private String userRequest;
 
 	/**
@@ -161,8 +160,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 		planningThinking = null;
 		executionParams = "";
 	}
-
-
 
 	/**
 	 * 获取用户请求

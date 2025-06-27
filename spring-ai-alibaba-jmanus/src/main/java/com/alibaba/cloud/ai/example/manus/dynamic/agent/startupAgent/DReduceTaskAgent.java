@@ -38,4 +38,3 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 public class DReduceTaskAgent {
 
 }
-还需要一个OutputAgent用来把内容移动出去。

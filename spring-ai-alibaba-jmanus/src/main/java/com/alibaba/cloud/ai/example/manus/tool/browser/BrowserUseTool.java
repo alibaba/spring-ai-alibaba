@@ -57,11 +57,11 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 
 	private String planId;
 
-
 	public BrowserUseTool(ChromeDriverService chromeDriverService, InnerStorageService innerStorageService) {
 		this.chromeDriverService = chromeDriverService;
 		this.innerStorageService = innerStorageService;
 	}
+
 	public DriverWrapper getDriver() {
 		return chromeDriverService.getDriver(planId);
 	}
@@ -323,7 +323,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 		return functionTool;
 	}
 
-	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService, InnerStorageService innerStorageService) {
+	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService,
+			InnerStorageService innerStorageService) {
 		BrowserUseTool instance = new BrowserUseTool(chromeDriverService, innerStorageService);
 		return instance;
 	}
@@ -337,7 +338,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 			if (action == null) {
 				return new ToolExecuteResult("Action parameter is required");
 			}
-			
+
 			ToolExecuteResult result;
 			switch (action) {
 				case "navigate": {
@@ -363,22 +364,22 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 				case "get_html": {
 					result = new GetHtmlAction(this).execute(requestVO);
 					// HTML内容通常很长，使用智能处理
-					InnerStorageService.SmartProcessResult processedResult = 
-						innerStorageService.processContent(planId, result.getOutput(), "get_html");
+					InnerStorageService.SmartProcessResult processedResult = innerStorageService.processContent(planId,
+							result.getOutput(), "get_html");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "get_text": {
 					result = new GetTextAction(this).execute(requestVO);
 					// 文本内容可能很长，使用智能处理
-					InnerStorageService.SmartProcessResult processedResult = 
-						innerStorageService.processContent(planId, result.getOutput(), "get_text");
+					InnerStorageService.SmartProcessResult processedResult = innerStorageService.processContent(planId,
+							result.getOutput(), "get_text");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "execute_js": {
 					result = new ExecuteJsAction(this).execute(requestVO);
 					// JS执行结果可能很长，使用智能处理
-					InnerStorageService.SmartProcessResult processedResult = 
-						innerStorageService.processContent(planId, result.getOutput(), "execute_js");
+					InnerStorageService.SmartProcessResult processedResult = innerStorageService.processContent(planId,
+							result.getOutput(), "execute_js");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "scroll": {
@@ -412,10 +413,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
-			
+
 			// 对于其他操作，也进行智能处理（但阈值通常不会超过）
-			InnerStorageService.SmartProcessResult processedResult = 
-				innerStorageService.processContent(planId, result.getOutput(), action);
+			InnerStorageService.SmartProcessResult processedResult = innerStorageService.processContent(planId,
+					result.getOutput(), action);
 			return new ToolExecuteResult(processedResult.getSummary());
 		}
 		catch (Exception e) {
