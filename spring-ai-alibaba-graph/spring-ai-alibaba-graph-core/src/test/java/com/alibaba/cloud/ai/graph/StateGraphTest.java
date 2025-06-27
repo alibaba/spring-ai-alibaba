@@ -15,10 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
@@ -786,6 +783,37 @@ public class StateGraphTest {
 			.addEdge("agent_1", "agent_2");
 		CompiledGraph compile = workflow.compile();
 		compile.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+	}
+
+	@Test
+	public void testCommandNodeGraph() throws Exception {
+		StateGraph graph = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+			stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+			return stringKeyStrategyHashMap;
+		});
+
+		CommandAction commandAction = (state, config) -> new Command("node1", Map.of("messages", "go to command node"));
+		graph.addNode("testCommandNode", AsyncCommandAction.node_async(commandAction),
+				Map.of("node1", "node1", "node2", "node2"));
+
+		graph.addNode("node1", makeNode("node1"));
+		graph.addNode("node2", makeNode("node2"));
+
+		graph.addEdge(START, "testCommandNode");
+		graph.addEdge("node1", "node2");
+		graph.addEdge("node2", END);
+
+		CompiledGraph compile = graph.compile();
+		String plantuml = compile.getGraph(GraphRepresentation.Type.PLANTUML).content();
+		String mermaid = compile.getGraph(GraphRepresentation.Type.MERMAID).content();
+		System.out.println("===============plantuml===============");
+		System.out.println(plantuml);
+		System.out.println("===============mermaid===============");
+		System.out.println(mermaid);
+
+		OverAllState state = compile.invoke(Map.of()).orElseThrow();
+		assertEquals(List.of("go to command node", "node1", "node2"), state.value("messages", List.class).get());
 	}
 
 }
