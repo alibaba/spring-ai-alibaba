@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import java.util.List;
-
 import com.microsoft.playwright.Page;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
@@ -36,19 +34,12 @@ public class ClickByElementAction extends BrowserAction {
 		if (index == null) {
 			return new ToolExecuteResult("Index is required for 'click' action");
 		}
-
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
-
-		// 获取交互元素（InteractiveElement）
-		List<InteractiveElement> interactiveElements = getInteractiveElements(page);
-
-		if (index < 0 || index >= interactiveElements.size()) {
+		InteractiveElement element = getInteractiveElement(index);
+		if (element == null) {
 			return new ToolExecuteResult("Element with index " + index + " not found");
 		}
-
-		InteractiveElement element = interactiveElements.get(index);
 		log.info("Clicking element: {}", element.getText());
-
+		Page page = getCurrentPage();
 		String clickResultMessage = clickAndSwitchToNewTabIfOpened(page, () -> {
 			try {
 				log.info("Executing click action on: {}", element.getText());
@@ -67,7 +58,6 @@ public class ClickByElementAction extends BrowserAction {
 				throw new RuntimeException("Error clicking element: " + element.getText(), e);
 			}
 		});
-
 		return new ToolExecuteResult("Successfully clicked element at index " + index + " " + clickResultMessage);
 	}
 

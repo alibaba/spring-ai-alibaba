@@ -203,17 +203,19 @@
                   <div v-if="tas.actionNeeded" class="action-section">
                     <h5><Icon icon="carbon:play" /> 行动</h5>
                     <div class="action-content">
-                      <div class="tool-info">
-                        <span class="label">工具:</span>
-                        <span class="value">{{ tas.toolName || '' }}</span>
-                      </div>
-                      <div class="input">
-                        <span class="label">工具参数:</span>
-                        <pre>{{ rightPanelStore.formatJson(tas.toolParameters) }}</pre>
-                      </div>
-                      <div class="output">
-                        <span class="label">执行结果:</span>
-                        <pre>{{ rightPanelStore.formatJson(tas.actionResult) }}</pre>
+                      <div v-for="(actToolInfo, index) in tas.actToolInfoList" :key="index">
+                        <div class="tool-info">
+                          <span class="label">工具:</span>
+                          <span class="value">{{ actToolInfo.name || '' }}</span>
+                        </div>
+                        <div class="input">
+                          <span class="label">工具参数:</span>
+                          <pre>{{ rightPanelStore.formatJson(actToolInfo.parameters) }}</pre>
+                        </div>
+                        <div class="output">
+                          <span class="label">执行结果:</span>
+                          <pre>{{ rightPanelStore.formatJson(actToolInfo.result) }}</pre>
+                        </div>
                       </div>
                     </div>
                   </div>

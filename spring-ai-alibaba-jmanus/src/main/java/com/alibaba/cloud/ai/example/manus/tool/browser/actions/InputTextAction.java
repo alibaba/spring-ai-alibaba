@@ -15,10 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import java.util.List;
-
 import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.Page;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -33,36 +30,26 @@ public class InputTextAction extends BrowserAction {
 	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
 		Integer index = request.getIndex();
 		String text = request.getText();
-
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
 		if (index == null || text == null) {
 			return new ToolExecuteResult("Index and text are required for 'input_text' action");
 		}
-
-		// 获取交互元素（InteractiveElement），支持所有 frame（包括 iframe）
-		List<InteractiveElement> interactiveElements = getInteractiveElements(page); // 已支持递归
-																						// frame
-		if (index < 0 || index >= interactiveElements.size()) {
+		InteractiveElement inputElement = getInteractiveElement(index);
+		if (inputElement == null) {
 			return new ToolExecuteResult("Element with index " + index + " not found");
 		}
-
-		InteractiveElement inputElement = interactiveElements.get(index);
-
 		String tagName = inputElement.getTagName();
 		if (!"input".equals(tagName) && !"textarea".equals(tagName)) {
 			return new ToolExecuteResult("Element at index " + index + " is not an input element");
 		}
-
 		// 获取元素定位器
 		Locator elementLocator = inputElement.getLocator();
 		// 3. 尝试 fill
 		try {
-			elementLocator.fill(""); // 先清空
+			// 先清空
+			elementLocator.fill("");
 			// 设置每个字符输入间隔 100ms，可根据需要调整
-			com.microsoft.playwright.Locator.PressSequentiallyOptions options = new com.microsoft.playwright.Locator.PressSequentiallyOptions()
-				.setDelay(100);
+			Locator.PressSequentiallyOptions options = new Locator.PressSequentiallyOptions().setDelay(100);
 			elementLocator.pressSequentially(text, options);
-
 		}
 		catch (Exception e) {
 			// 4. fill 失败，尝试 pressSequentially

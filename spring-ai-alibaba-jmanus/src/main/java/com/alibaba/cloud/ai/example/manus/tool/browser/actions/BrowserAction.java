@@ -16,10 +16,12 @@
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElementRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +57,18 @@ public abstract class BrowserAction {
 	protected Integer getBrowserTimeoutMs() {
 		Integer timeout = getBrowserUseTool().getManusProperties().getBrowserRequestTimeout();
 		return (timeout != null ? timeout : 30) * 1000; // 转换为毫秒
+	}
+
+	/**
+	 * Retrieve the interaction elements of the specified index
+	 * @param index element index
+	 * @return InteractiveElement
+	 */
+	protected InteractiveElement getInteractiveElement(int index) {
+		DriverWrapper driverWrapper = getDriverWrapper();
+		InteractiveElementRegistry interactiveElementRegistry = driverWrapper.getInteractiveElementRegistry();
+		Optional<InteractiveElement> elementOpt = interactiveElementRegistry.getElementById(index);
+		return elementOpt.orElse(null);
 	}
 
 	/**

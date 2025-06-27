@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 记录智能体在单个执行步骤中的思考和行动过程。 作为AgentExecutionRecord的子步骤存在，专注于记录思考和行动阶段的处理消息。
@@ -80,6 +81,9 @@ public class ThinkActRecord {
 
 	// 用于行动的工具参数（序列化，如适用）
 	private String toolParameters;
+
+	// 行动的工具信息列表
+	private List<ActToolInfo> actToolInfoList;
 
 	// 默认构造函数
 	public ThinkActRecord() {
@@ -273,10 +277,68 @@ public class ThinkActRecord {
 		this.toolParameters = toolParameters;
 	}
 
+	public List<ActToolInfo> getActToolInfoList() {
+		return actToolInfoList;
+	}
+
+	public void setActToolInfoList(List<ActToolInfo> actToolInfoList) {
+		this.actToolInfoList = actToolInfoList;
+	}
+
 	@Override
 	public String toString() {
 		return "ThinkActRecord{" + "id='" + id + '\'' + ", parentExecutionId='" + parentExecutionId + '\''
 				+ ", actionNeeded=" + actionNeeded + ", status='" + status + '\'' + '}';
+	}
+
+	public static class ActToolInfo {
+
+		private String name;
+
+		private String parameters;
+
+		private String result;
+
+		private String id;
+
+		public ActToolInfo(String name, String arguments, String id) {
+			this.name = name;
+			this.parameters = arguments;
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getParameters() {
+			return parameters;
+		}
+
+		public void setParameters(String parameters) {
+			this.parameters = parameters;
+		}
+
+		public String getResult() {
+			return result;
+		}
+
+		public void setResult(String result) {
+			this.result = result;
+		}
+
+		public String getId() {
+			return id;
+		}
+
+		public void setId(String id) {
+			this.id = id;
+		}
+
 	}
 
 }

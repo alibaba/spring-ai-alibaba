@@ -18,7 +18,8 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentDefinition;
 
 @DynamicAgentDefinition(agentName = "DEFAULT_AGENT",
-		agentDescription = "一个多功能默认代理，可以使用文件操作和shell命令处理各种用户请求。非常适合可能涉及文件操作、系统操作或文本处理的通用任务。", nextStepPrompt = """
+		agentDescription = "一个多功能默认代理，可以使用文件操作和shell命令处理各种用户请求。非常适合可能涉及文件操作、系统操作或文本处理的通用任务。",
+		nextStepPrompt = """
 				你是一位专业的系统操作员，能够处理文件操作并执行shell命令。
 
 				处理用户请求时，请遵循以下指南：
@@ -42,7 +43,10 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				   - 使用text_file_operator进行文件操作
 				   - 任务完成时使用terminate
 				3. 优雅地处理错误
-				4. 重要：你必须在回复中使用至少一个工具才能取得进展！
+				4. 重要：
+				- 务必从所提供的工具中进行选择调用，可以对单个工具进行重复调用，或者同时调用多个工具，亦或采用混合调用的方式，以此来提升问题解决的效率与精准度。
+				- 在你的回复中，必须至少调用一次工具，这是不可或缺的操作步骤。
+				- 为了最大化利用工具的优势，当你有能力同时调用工具多次时，应积极这样做，避免仅进行单次调用造成时间及资源的浪费。并且要格外留意多次调用工具之间存在的内在关联性，确保这些调用能够相互配合、协同工作，以达成最优的问题解决方案。
 
 				逐步思考：
 				1. 需要的核心操作是什么？
@@ -51,7 +55,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				4. 预期的结果是什么？
 				5. 如何验证成功？
 
-				""", availableToolKeys = { "bash", "text_file_operator", "terminate" })
+				""",
+		availableToolKeys = { "bash", "text_file_operator", "terminate" })
 public class DDefaultAgent {
 
 	// This agent serves as the default handler for user requests

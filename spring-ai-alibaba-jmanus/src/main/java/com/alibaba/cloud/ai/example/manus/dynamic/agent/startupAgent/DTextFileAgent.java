@@ -36,7 +36,10 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				3. 验证文件路径和内容
 				4. 跟踪文件操作
 				5. 处理潜在错误
-				6. 重要：你必须在回复中使用至少一个工具才能取得进展！
+				6. 重要
+				- 务必从所提供的工具中进行选择调用，可以对单个工具进行重复调用，或者同时调用多个工具，亦或采用混合调用的方式，以此来提升问题解决的效率与精准度。
+				- 在你的回复中，必须至少调用一次工具，这是不可或缺的操作步骤。
+				- 为了最大化利用工具的优势，当你有能力同时调用工具多次时，应积极这样做，避免仅进行单次调用造成时间及资源的浪费。并且要格外留意多次调用工具之间存在的内在关联性，确保这些调用能够相互配合、协同工作，以达成最优的问题解决方案。
 
 				逐步思考：
 				1. 需要什么文件操作？
@@ -50,7 +53,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				- 编程文件（.java、.py、.js）
 				- 配置文件（.xml、.json、.yaml）
 				- 日志和脚本文件（.log、.sh、.bat）
-				""", availableToolKeys = { "text_file_operator", "terminate" })
+				""",
+		availableToolKeys = { "text_file_operator", "terminate" })
 public class DTextFileAgent {
 
 }
