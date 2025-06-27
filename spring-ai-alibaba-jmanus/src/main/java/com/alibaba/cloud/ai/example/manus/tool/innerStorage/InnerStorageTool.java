@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.innerStorage;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
@@ -27,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
 /**
  *
@@ -67,6 +67,9 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 		private String queryKey;
 
 		private List<String> columns;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("target_file_name")
+		private String targetFileName;
 
 		public InnerStorageInput() {
 		}
@@ -142,6 +145,14 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 		public void setColumns(List<String> columns) {
 			this.columns = columns;
 		}
+
+		public String getTargetFileName() {
+			return targetFileName;
+		}
+
+		public void setTargetFileName(String targetFileName) {
+			this.targetFileName = targetFileName;
+		}
 	}
 
 	private final InnerStorageService innerStorageService;
@@ -157,15 +168,6 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 		this.summaryWorkflow = summaryWorkflow;
 	}
 
-	/**
-	 * 测试专用构造函数
-	 */
-	public InnerStorageTool(InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow, String testWorkingDirectoryPath) {
-		this.innerStorageService = innerStorageService;
-		this.summaryWorkflow = summaryWorkflow;
-		// 测试构造函数保留向后兼容性，但不再使用workingDirectoryPath参数
-	}
-
 	private static final String TOOL_NAME = "inner_storage_tool";
 
 	private static final String TOOL_DESCRIPTION = """
@@ -175,6 +177,7 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			- replace: 替换文件中的特定文本
 			- get_lines: 获取文件的指定行号范围内容（单次最多%d行）
 			- get_content: 根据文件名或索引获取详细内容，**必须提供** query_key 和 columns 参数进行AI智能提取和结构化输出
+			- export: 将内部存储文件导出到工作目录，供外部使用
 
 			当返回内容过长时，工具会自动存储详细内容并返回摘要和内容ID，以降低上下文压力。
 
@@ -272,6 +275,25 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 		            },
 		            "required": ["action", "file_name", "query_key", "columns"],
 		            "additionalProperties": false
+		        },
+		        {
+		            "type": "object",
+		            "properties": {
+		                "action": {
+		                    "type": "string",
+		                    "const": "export"
+		                },
+		                "file_name": {
+		                    "type": "string",
+		                    "description": "要导出的内部存储文件名（带扩展名）"
+		                },
+		                "target_file_name": {
+		                    "type": "string",
+		                    "description": "导出后的目标文件名（可选，默认使用原文件名）"
+		                }
+		            },
+		            "required": ["action", "file_name"],
+		            "additionalProperties": false
 		        }
 			    ]
 			}
@@ -318,18 +340,6 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 		return new OpenAiApi.FunctionTool(function);
 	}
 
-
-	public static FunctionToolCallback<InnerStorageInput, ToolExecuteResult> getFunctionToolCallback(String planId,
-			InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow) {
-		InnerStorageTool tool = new InnerStorageTool(innerStorageService, summaryWorkflow);
-		tool.setPlanId(planId);
-		return FunctionToolCallback.builder(TOOL_NAME, tool)
-			.description(TOOL_DESCRIPTION)
-			.inputSchema(PARAMETERS)
-			.inputType(InnerStorageInput.class)
-			.build();
-	}
-
 	/**
 	 * 执行内部存储操作，接受强类型输入对象
 	 */
@@ -365,7 +375,12 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 					List<String> columns = input.getColumns();
 					yield getStoredContent(fileName, queryKey, columns);
 				}
-				default -> new ToolExecuteResult("未知操作: " + action + "。支持的操作: append, replace, get_lines, get_content");
+				case "export" -> {
+					String fileName = input.getFileName();
+					String targetFileName = input.getTargetFileName();
+					yield exportToWorkingDirectory(fileName, targetFileName);
+				}
+				default -> new ToolExecuteResult("未知操作: " + action + "。支持的操作: append, replace, get_lines, get_content, export");
 			};
 
 		}
@@ -622,6 +637,91 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 	@Override
 	public ToolExecuteResult apply(InnerStorageInput input, ToolContext toolContext) {
 		return run(input);
+	}
+
+	/**
+	 * 将内部存储文件导出到工作目录
+	 */
+	private ToolExecuteResult exportToWorkingDirectory(String fileName, String targetFileName) {
+		try {
+			if (fileName == null || fileName.trim().isEmpty()) {
+				return new ToolExecuteResult("错误：file_name参数是必需的");
+			}
+
+			// 查找源文件
+			Path planDir = innerStorageService.getPlanDirectory(planId);
+			Path sourceFile = null;
+			String actualFileName = null;
+
+			// 尝试按数字索引查找文件
+			try {
+				int index = Integer.parseInt(fileName) - 1; // 转换为0基索引
+				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
+
+				if (index >= 0 && index < files.size()) {
+					InnerStorageService.FileInfo file = files.get(index);
+					sourceFile = planDir.resolve(file.getRelativePath());
+					actualFileName = file.getRelativePath();
+				}
+			}
+			catch (NumberFormatException e) {
+				// 不是数字，尝试按文件名查找
+				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
+				for (InnerStorageService.FileInfo file : files) {
+					if (file.getRelativePath().contains(fileName)) {
+						sourceFile = planDir.resolve(file.getRelativePath());
+						actualFileName = file.getRelativePath();
+						break;
+					}
+				}
+			}
+
+			if (sourceFile == null || !Files.exists(sourceFile)) {
+				return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内部存储文件。" +
+					"请使用文件索引号（如 '1', '2'）或文件名的一部分来查找文件。");
+			}
+
+			// 确定目标文件名
+			String finalTargetName = (targetFileName != null && !targetFileName.trim().isEmpty()) 
+				? targetFileName 
+				: new File(actualFileName).getName(); // 只取文件名，不包含路径
+
+			// 获取工作目录路径
+			String workingDirectoryPath = innerStorageService.getManusProperties().getBaseDir();
+			if (workingDirectoryPath == null || workingDirectoryPath.trim().isEmpty()) {
+				return new ToolExecuteResult("错误：工作目录路径未配置");
+			}
+
+			Path workingDir = Paths.get(workingDirectoryPath);
+			Path targetFile = workingDir.resolve(finalTargetName);
+
+			// 确保工作目录存在
+			innerStorageService.ensureDirectoryExists(workingDir);
+
+			// 复制文件
+			Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+
+			log.info("成功导出文件：{} -> {}", actualFileName, targetFile.toString());
+
+			return new ToolExecuteResult(String.format(
+				"文件导出成功：\n" +
+				"- 源文件: %s\n" +
+				"- 目标文件: %s\n" +
+				"- 文件大小: %d 字节",
+				actualFileName, 
+				targetFile.toString(),
+				Files.size(targetFile)
+			));
+
+		}
+		catch (IOException e) {
+			log.error("导出文件失败", e);
+			return new ToolExecuteResult("导出文件失败: " + e.getMessage());
+		}
+		catch (Exception e) {
+			log.error("导出操作异常", e);
+			return new ToolExecuteResult("导出操作失败: " + e.getMessage());
+		}
 	}
 
 }
