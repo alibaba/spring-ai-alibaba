@@ -25,18 +25,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @since 2025/6/20
  */
 public class BaseResponse {
+
 	/**
 	 * 线程ID，用于标识当前对话的唯一性
 	 */
-	@JsonProperty("thread_id") String threadId;
+	@JsonProperty("thread_id")
+	String threadId;
+
 	/**
 	 * 状态
 	 */
-	@JsonProperty("status") String status;
+	@JsonProperty("status")
+	String status;
+
 	/**
 	 * 消息
 	 */
-	@JsonProperty("message") String message;
+	@JsonProperty("message")
+	String message;
 
 	public BaseResponse(String threadId, String status, String message) {
 		this.threadId = threadId;

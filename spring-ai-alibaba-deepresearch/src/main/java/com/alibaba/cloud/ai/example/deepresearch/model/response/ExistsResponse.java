@@ -29,7 +29,8 @@ public class ExistsResponse extends BaseResponse {
 	/**
 	 * 是否存在
 	 */
-	@JsonProperty("exists") boolean exists;
+	@JsonProperty("exists")
+	boolean exists;
 
 	public ExistsResponse(String threadId, String status, String message, boolean exists) {
 		super(threadId, status, message);
@@ -44,4 +45,5 @@ public class ExistsResponse extends BaseResponse {
 	public static ExistsResponse error(String threadId, String message) {
 		return new ExistsResponse(threadId, "error", message, false);
 	}
+
 }

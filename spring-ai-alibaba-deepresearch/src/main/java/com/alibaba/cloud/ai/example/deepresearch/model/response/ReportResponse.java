@@ -24,11 +24,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author huangzhen
  * @since 2025/6/20
  */
-public class ReportResponse extends BaseResponse{
+public class ReportResponse extends BaseResponse {
+
 	/**
 	 * 报告内容
 	 */
-	@JsonProperty("report") String report;
+	@JsonProperty("report")
+	String report;
 
 	public ReportResponse(String threadId, String status, String message, String report) {
 		super(threadId, status, message);
@@ -42,4 +44,5 @@ public class ReportResponse extends BaseResponse{
 	public static ReportResponse error(String threadId, String message) {
 		return new ReportResponse(threadId, "error", message, null);
 	}
+
 }
