@@ -24,8 +24,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
-import static com.alibaba.cloud.ai.toolcalling.jsonprocessor.JsonProcessorProperties.JSON_PROCESSOR_PREFIX;
-
 /**
  * @author 北极星
  */
@@ -33,34 +31,35 @@ import static com.alibaba.cloud.ai.toolcalling.jsonprocessor.JsonProcessorProper
 @EnableConfigurationProperties(JsonProcessorProperties.class)
 @ConditionalOnClass({ JsonProcessorInsertService.class, JsonProcessorRemoveService.class,
 		JsonProcessorReplaceService.class, JsonProcessorParseService.class })
-@ConditionalOnProperty(value = JSON_PROCESSOR_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(value = JsonProcessorConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class JsonProcessorAutoConfiguration {
 
-	@Bean
+	@Bean(name = JsonProcessorConstants.INSERT_TOOL_NAME)
 	@Description("Use Gson to insert a jsonObject property field .")
 	@ConditionalOnMissingBean
-	public JsonProcessorInsertService jsonInsertPropertyFieldFunction(JsonParseTool jsonParseTool) {
+	public JsonProcessorInsertService jsonInsertPropertyField(JsonParseTool jsonParseTool) {
 		return new JsonProcessorInsertService(jsonParseTool);
 	}
 
-	@Bean
+	@Bean(name = JsonProcessorConstants.PARSE_TOOL_NAME)
 	@Description("Use Gson to parse String JsonObject .")
 	@ConditionalOnMissingBean
-	public JsonProcessorParseService jsonParsePropertyFunction(JsonParseTool jsonParseTool) {
+	public JsonProcessorParseService jsonParseProperty(JsonParseTool jsonParseTool) {
 		return new JsonProcessorParseService(jsonParseTool);
 	}
 
-	@Bean
+	@Bean(name = JsonProcessorConstants.REMOVE_TOOL_NAME)
 	@Description("Use Gson to remove JsonObject property field .")
 	@ConditionalOnMissingBean
-	public JsonProcessorRemoveService jsonRemovePropertyFieldFunction(JsonParseTool jsonParseTool) {
+	public JsonProcessorRemoveService jsonRemovePropertyField(JsonParseTool jsonParseTool) {
 		return new JsonProcessorRemoveService(jsonParseTool);
 	}
 
-	@Bean
+	@Bean(name = JsonProcessorConstants.REPLACE_TOOL_NAME)
 	@Description("Use Gson to replace JsonObject Field Value .")
 	@ConditionalOnMissingBean
-	public JsonProcessorReplaceService jsonReplacePropertyFiledValueFunction(JsonParseTool jsonParseTool) {
+	public JsonProcessorReplaceService jsonReplacePropertyFiledValue(JsonParseTool jsonParseTool) {
 		return new JsonProcessorReplaceService(jsonParseTool);
 	}
 
