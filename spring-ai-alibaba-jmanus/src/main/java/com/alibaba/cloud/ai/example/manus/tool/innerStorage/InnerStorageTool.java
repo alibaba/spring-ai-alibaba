@@ -22,7 +22,6 @@ import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,11 +61,6 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 
 		@com.fasterxml.jackson.annotation.JsonProperty("end_line")
 		private Integer endLine;
-
-		@com.fasterxml.jackson.annotation.JsonProperty("query_key")
-		private String queryKey;
-
-		private List<String> columns;
 
 		@com.fasterxml.jackson.annotation.JsonProperty("target_file_name")
 		private String targetFileName;
@@ -130,22 +124,6 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			this.endLine = endLine;
 		}
 
-		public String getQueryKey() {
-			return queryKey;
-		}
-
-		public void setQueryKey(String queryKey) {
-			this.queryKey = queryKey;
-		}
-
-		public List<String> getColumns() {
-			return columns;
-		}
-
-		public void setColumns(List<String> columns) {
-			this.columns = columns;
-		}
-
 		public String getTargetFileName() {
 			return targetFileName;
 		}
@@ -158,16 +136,13 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 
 	private final InnerStorageService innerStorageService;
 
-	private final SummaryWorkflow summaryWorkflow;
-
 	private String planId;
 
 	// get_lines 操作的最大行数限制
 	private static final int MAX_LINES_LIMIT = 100;
 
-	public InnerStorageTool(InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow) {
+	public InnerStorageTool(InnerStorageService innerStorageService) {
 		this.innerStorageService = innerStorageService;
-		this.summaryWorkflow = summaryWorkflow;
 	}
 
 	private static final String TOOL_NAME = "inner_storage_tool";
@@ -178,7 +153,6 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			- append: 向特定文件文件追加内容（自动创建文件和目录）
 			- replace: 替换文件中的特定文本
 			- get_lines: 获取文件的指定行号范围内容（单次最多%d行）
-			- get_content: 根据文件名或索引获取详细内容，**必须提供** query_key 和 columns 参数进行AI智能提取和结构化输出
 			- export: 将内部存储文件导出到工作目录，供外部使用
 
 			当返回内容过长时，工具会自动存储详细内容并返回摘要和内容ID，以降低上下文压力。
@@ -252,51 +226,26 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			            },
 			            "required": ["action", "file_name"],
 			            "additionalProperties": false
-			        },		        {
-			           "type": "object",
-			           "properties": {
-			               "action": {
-			                   "type": "string",
-			                   "const": "get_content"
-			               },
-			               "file_name": {
-			                   "type": "string",
-			                   "description": "文件名（带扩展名）"
-			               },
-			               "query_key": {
-			                   "type": "string",
-			                   "description": "相关问题或希望提取的内容关键词，必须提供"
-			               },
-			               "columns": {
-			                   "type": "array",
-			                   "items": {
-			                       "type": "string"
-			                   },
-			                   "description": "返回结果的列名，用于结构化输出，必须提供。返回的结果可以是一个列表"
-			               }
-			           },
-			           "required": ["action", "file_name", "query_key", "columns"],
-			           "additionalProperties": false
-			       },
-			       {
-			           "type": "object",
-			           "properties": {
-			               "action": {
-			                   "type": "string",
-			                   "const": "export"
-			               },
-			               "file_name": {
-			                   "type": "string",
-			                   "description": "要导出的内部存储文件名（带扩展名）"
-			               },
-			               "target_file_name": {
-			                   "type": "string",
-			                   "description": "导出后的目标文件名（可选，默认使用原文件名）"
-			               }
-			           },
-			           "required": ["action", "file_name"],
-			           "additionalProperties": false
-			       }
+			        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "export"
+			                },
+			                "file_name": {
+			                    "type": "string",
+			                    "description": "要导出的内部存储文件名（带扩展名）"
+			                },
+			                "target_file_name": {
+			                    "type": "string",
+			                    "description": "导出后的目标文件名（可选，默认使用原文件名）"
+			                }
+			            },
+			            "required": ["action", "file_name"],
+			            "additionalProperties": false
+			        }
 			    ]
 			}
 			""";
@@ -371,19 +320,13 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 					Integer endLine = input.getEndLine();
 					yield getFileLines(fileName, startLine, endLine);
 				}
-				case "get_content" -> {
-					String fileName = input.getFileName();
-					String queryKey = input.getQueryKey();
-					List<String> columns = input.getColumns();
-					yield getStoredContent(fileName, queryKey, columns);
-				}
 				case "export" -> {
 					String fileName = input.getFileName();
 					String targetFileName = input.getTargetFileName();
 					yield exportToWorkingDirectory(fileName, targetFileName);
 				}
 				default -> new ToolExecuteResult(
-						"未知操作: " + action + "。支持的操作: append, replace, get_lines, get_content, export");
+						"未知操作: " + action + "。支持的操作: append, replace, get_lines, export");
 			};
 
 		}
@@ -517,82 +460,6 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 		catch (IOException e) {
 			log.error("读取文件行失败", e);
 			return new ToolExecuteResult("读取文件行失败: " + e.getMessage());
-		}
-	}
-
-	/**
-	 * 根据文件名或索引获取存储的内容，支持AI智能提取和结构化输出 现在委托给 SummaryWorkflow 处理
-	 */
-	private ToolExecuteResult getStoredContent(String fileName, String queryKey, List<String> columns) {
-		if (fileName == null || fileName.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：file_name参数是必需的");
-		}
-
-		// 严格要求queryKey和columns参数 - 不提供向后兼容
-		if (queryKey == null || queryKey.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：query_key参数是必需的，用于指定要提取的内容关键词");
-		}
-		if (columns == null || columns.isEmpty()) {
-			return new ToolExecuteResult("错误：columns参数是必需的，用于指定返回结果的结构化列名");
-		}
-
-		try {
-			String fileContent = null;
-			String actualFileName = null;
-
-			// 尝试按数字索引获取文件内容
-			try {
-				int index = Integer.parseInt(fileName) - 1; // 转换为0基索引
-				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
-
-				if (index >= 0 && index < files.size()) {
-					InnerStorageService.FileInfo file = files.get(index);
-					Path planDir = innerStorageService.getPlanDirectory(planId);
-					Path filePath = planDir.resolve(file.getRelativePath());
-
-					if (Files.exists(filePath)) {
-						fileContent = Files.readString(filePath);
-						actualFileName = file.getRelativePath();
-					}
-				}
-			}
-			catch (NumberFormatException e) {
-				// 不是数字，尝试按文件名查找
-				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
-				for (InnerStorageService.FileInfo file : files) {
-					if (file.getRelativePath().contains(fileName)) {
-						Path planDir = innerStorageService.getPlanDirectory(planId);
-						Path filePath = planDir.resolve(file.getRelativePath());
-
-						if (Files.exists(filePath)) {
-							fileContent = Files.readString(filePath);
-							actualFileName = file.getRelativePath();
-							break;
-						}
-					}
-				}
-			}
-
-			if (fileContent == null) {
-				return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内容。" + "请使用文件索引号（如 '1', '2'）或文件名的一部分来查找内容。");
-			}
-
-			// 委托给 SummaryWorkflow 进行处理
-			log.info("委托给 SummaryWorkflow 处理文件内容提取：文件={}, 查询关键词={}, 输出列={}", actualFileName, queryKey, columns);
-
-			String result = summaryWorkflow.executeSummaryWorkflow(actualFileName, fileContent, queryKey, columns)
-				.get(); // 阻塞等待结果
-
-			return new ToolExecuteResult(result);
-
-		}
-		catch (IOException e) {
-			log.error("获取存储内容失败", e);
-			return new ToolExecuteResult("获取内容失败: " + e.getMessage());
-		}
-		catch (Exception e) {
-			log.error("SummaryWorkflow 执行失败", e);
-			return new ToolExecuteResult("内容处理失败: " + e.getMessage());
 		}
 	}
 

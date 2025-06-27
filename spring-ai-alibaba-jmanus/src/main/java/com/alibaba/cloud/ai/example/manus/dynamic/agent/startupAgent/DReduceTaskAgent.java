@@ -34,7 +34,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				1. 数据汇总与合并：分析上下文中提供的多个Map任务输出结果
 				2. 执行被要求的操作步骤。
 				3. 在输出的时候要去掉所有的任务，批次相关信息，只考虑原始信息以及步骤要求！
-				""", availableToolKeys = { "map_reduce_tool", "inner_storage_tool", "terminate" })
+				""",		availableToolKeys = { "map_reduce_tool", "inner_storage_tool", "inner_storage_content_tool", "terminate" })
 public class DReduceTaskAgent {
 
 }

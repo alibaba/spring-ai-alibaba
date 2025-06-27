@@ -368,9 +368,9 @@ public class InnerStorageService {
 		summary.append("  - 总字符数: ").append(content.length()).append("\n");
 		summary.append("  - 总行数: ").append(lines.length).append("\n\n");
 
-		summary.append("💡 你可以使用 inner_storage_tool 的下述方法来获取你关心的相关信息:\n");
-		summary.append("  - get_content: 获取相关的内容\n");
-		summary.append("  - get_lines: 获取指定行号的内容");
+		summary.append("💡 你可以使用以下工具来获取相关信息:\n");
+		summary.append("  - inner_storage_tool: 基本文件操作（get_lines获取指定行号的内容）\n");
+		summary.append("  - inner_storage_content_tool: 智能内容提取和分析");
 
 		return summary.toString();
 	}

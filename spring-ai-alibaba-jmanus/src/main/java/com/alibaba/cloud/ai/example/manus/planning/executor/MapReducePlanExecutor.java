@@ -632,10 +632,10 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		try {
 			// 生成存储指令用于Agent - 指向统一的聚合文件
 			batchContextReference = String.format(
-					"当前批次的详细Map结果已聚合存储在统一的内部文件中。请使用inner_storage_tool获取完整内容：\n" + "- 聚合文件名: %s\n"
+					"当前批次的详细Map结果已聚合存储在统一的内部文件中。请使用inner_storage_content_tool获取完整内容：\n" + "- 聚合文件名: %s\n"
 							+ "- 当前批次ID: reduce_batch_%03d\n" + "- 当前批次任务数: %d\n" + "- 当前批次字符数: %d\n\n"
-							+ "使用方法示例（获取所有批次数据）：\n" + "inner_storage_tool({\n" + "  \"action\": \"get_content\",\n"
-							+ "  \"file_name\": \"%s\",\n" + "  \"query_key\": \"所有批次Map任务结果分析\",\n"
+							+ "使用方法示例（获取所有批次数据）：\n" + "inner_storage_content_tool({\n" + "  \"file_name\": \"%s\",\n"
+							+ "  \"query_key\": \"所有批次Map任务结果分析\",\n"
 							+ "  \"columns\": [\"批次ID\", \"任务ID\", \"主要内容\", \"关键发现\"]\n" + "})\n\n"
 							+ "注意：该文件包含从第一个批次到当前批次的所有Map任务结果数据。\n" + "建议先将当前批次的处理结果追加到该文件中，然后进行综合分析。",
 					aggregatedFileName, batchCounter, batchTaskDirectories.size(), batchResults.length(),

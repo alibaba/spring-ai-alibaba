@@ -187,7 +187,7 @@ public class SummaryWorkflow {
 						      "type": "SEQUENTIAL",
 						      "steps": [
 						        {
-						          "stepRequirement": "[DEFAULT_AGENT] 使用inner_storage_tool执行快速总结",
+						          "stepRequirement": "[DEFAULT_AGENT] 使用inner_storage_content_tool执行快速总结",
 						          "outputColumns": "%s"
 						        }
 						      ]

@@ -33,7 +33,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				   - 其他用户定制的后续处理
 				4) 使用inner_storage_tool保存处理后的最终结果
 				5) 如需要导出到外部，可使用inner_storage_tool的export功能
-				6) 调用Terminate工具，结束任务
+				6) 如需要获取和分析内容，可使用inner_storage_content_tool进行智能提取
+				7) 调用Terminate工具，结束任务
 				
 				请依据用户在请求中提出的具体后处理需求，执行相应的处理操作。
 
@@ -42,7 +43,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				2. 基于MapReduce的处理结果，执行用户要求的后续处理操作
 				3. 确保最终输出符合用户的期望和要求
 				4. 如果用户没有明确的后处理需求，则进行基本的结果整理和格式化
-				""", availableToolKeys = { "map_reduce_tool", "inner_storage_tool", "terminate" })
+				""",		availableToolKeys = { "map_reduce_tool", "inner_storage_tool", "inner_storage_content_tool", "terminate" })
 public class MapReduceFinAgent {
 
 }

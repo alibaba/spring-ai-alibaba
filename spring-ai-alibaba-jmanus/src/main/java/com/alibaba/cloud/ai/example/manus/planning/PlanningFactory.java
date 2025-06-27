@@ -43,6 +43,7 @@ import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageTool;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceSharedStateManager;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
@@ -178,7 +179,8 @@ public class PlanningFactory {
 		toolDefinitions.add(new Bash(manusProperties));
 		toolDefinitions.add(new DocLoaderTool());
 		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService));
-		toolDefinitions.add(new InnerStorageTool(innerStorageService, summaryWorkflow));
+		toolDefinitions.add(new InnerStorageTool(innerStorageService));
+		toolDefinitions.add(new InnerStorageContentTool(innerStorageService, summaryWorkflow));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
