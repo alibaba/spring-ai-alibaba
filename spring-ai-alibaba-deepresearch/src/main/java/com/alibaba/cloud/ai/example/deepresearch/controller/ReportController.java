@@ -48,8 +48,10 @@ public class ReportController {
 
 	@Autowired
 	private ExportService exportService;
+
 	@Autowired
-	private  ReportService reportService;
+	private ReportService reportService;
+
 	@Autowired
 	private ChatClient interactionAgent;
 
@@ -142,21 +144,21 @@ public class ReportController {
 			// 检查线程ID对应的报告是否存在
 			if (!exportService.existsReportByThreadId(threadId)) {
 				return ResponseEntity.badRequest()
-						.body(ExportResponse.error("Report not found for thread: " + threadId));
+					.body(ExportResponse.error("Report not found for thread: " + threadId));
 			}
 
 			// 检查请求的格式是否支持
 			if (!exportService.isSupportedFormat(format)) {
 				return ResponseEntity.badRequest()
-						.body(ExportResponse
-								.error("Unsupported format: " + format + ", only markdown and pdf are supported"));
+					.body(ExportResponse
+						.error("Unsupported format: " + format + ", only markdown and pdf are supported"));
 			}
 
 			// 实际保存文件
 			String filePath = exportReport(threadId, format);
 			if (filePath == null) {
 				return ResponseEntity.badRequest()
-						.body(ExportResponse.error("Failed to export report to format: " + format));
+					.body(ExportResponse.error("Failed to export report to format: " + format));
 			}
 
 			// 构建下载URL
@@ -180,7 +182,7 @@ public class ReportController {
 	 */
 	@GetMapping("/download/{threadId}")
 	public ResponseEntity<?> downloadReport(@PathVariable String threadId,
-											@RequestParam(required = false, defaultValue = "markdown") String format) {
+			@RequestParam(required = false, defaultValue = "markdown") String format) {
 
 		format = format.toLowerCase();
 
@@ -188,8 +190,8 @@ public class ReportController {
 			// 检查格式是否支持
 			if (!exportService.isSupportedFormat(format)) {
 				return ResponseEntity.badRequest()
-						.body(ExportResponse
-								.error("Unsupported format: " + format + ", only markdown and pdf are supported"));
+					.body(ExportResponse
+						.error("Unsupported format: " + format + ", only markdown and pdf are supported"));
 			}
 
 			// 统一使用markdown作为键
