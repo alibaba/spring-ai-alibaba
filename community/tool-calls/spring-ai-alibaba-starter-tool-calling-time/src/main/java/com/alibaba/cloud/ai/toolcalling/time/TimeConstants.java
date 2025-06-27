@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
+package com.alibaba.cloud.ai.toolcalling.time;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 
-/**
- * @author fengluo
- */
-@ConfigurationProperties(prefix = JsonProcessorConstants.CONFIG_PREFIX)
-public class JsonProcessorProperties extends CommonToolCallProperties {
+public final class TimeConstants {
+
+	public static final String CONFIG_PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".time";
+
+	public static final String TOOL_NAME = "getCityTimeFunction";
 
 }

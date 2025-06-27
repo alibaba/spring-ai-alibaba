@@ -15,13 +15,18 @@
  */
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 
-/**
- * @author fengluo
- */
-@ConfigurationProperties(prefix = JsonProcessorConstants.CONFIG_PREFIX)
-public class JsonProcessorProperties extends CommonToolCallProperties {
+public final class JsonProcessorConstants {
+
+	public static final String CONFIG_PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".jsonprocessor";
+
+	public static final String INSERT_TOOL_NAME = "jsonInsertPropertyField";
+
+	public static final String PARSE_TOOL_NAME = "jsonParseProperty";
+
+	public static final String REPLACE_TOOL_NAME = "jsonReplacePropertyFiledValue";
+
+	public static final String REMOVE_TOOL_NAME = "jsonRemovePropertyField";
 
 }
