@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.deepresearch.serializer;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
@@ -40,12 +41,17 @@ public class DeepResearchDeserializer extends JsonDeserializer<OverAllState> {
 
 		Map<String, Object> data = objectMapper.convertValue(node.get("data"), new TypeReference<>() {
 		});
-
-		Plan currentPlan = objectMapper.convertValue(data.get("current_plan"), Plan.class);
-
 		Map<String, Object> newData = new HashMap<>();
+
+		// 处理Plan
+		Plan currentPlan = objectMapper.convertValue(data.get("current_plan"), Plan.class);
 		newData.put("current_plan", currentPlan);
 
+		// 处理search_engine
+		SearchEnum searchEnum = objectMapper.convertValue(data.get("search_engine"), SearchEnum.class);
+		newData.put("search_engine", searchEnum);
+
+		// 处理其他数据
 		data.forEach((key, value) -> {
 			if (!newData.containsKey(key)) {
 				newData.put(key, value);
