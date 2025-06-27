@@ -70,7 +70,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.13.0</version>
+            <version>${commons-io.version}</version>
         </dependency>
 
         <!-- Apache POI for MSG file parsing -->

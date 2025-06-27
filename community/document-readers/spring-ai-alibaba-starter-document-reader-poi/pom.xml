@@ -48,10 +48,6 @@
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
 
-    <properties>
-        <apache.poi.version>5.2.5</apache.poi.version>
-    </properties>
-
     <dependencies>
 
         <dependency>
@@ -62,19 +58,19 @@
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
-            <version>${apache.poi.version}</version>
+            <version>${poi.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>${apache.poi.version}</version>
+            <version>${poi.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-scratchpad</artifactId>
-            <version>${apache.poi.version}</version>
+            <version>${poi.version}</version>
         </dependency>
 
         <!-- test dependencies -->

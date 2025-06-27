@@ -41,6 +41,8 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
+import org.springframework.boot.web.context.ConfigurableWebServerApplicationContext;
+import org.springframework.boot.web.context.WebServerApplicationContext;
 import org.springframework.boot.web.context.WebServerInitializedEvent;
 import org.springframework.context.ApplicationListener;
 
@@ -277,6 +279,12 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			return;
 		}
 		try {
+			WebServerApplicationContext context = event.getApplicationContext();
+			if (context instanceof ConfigurableWebServerApplicationContext) {
+				if ("management".equals(context.getServerNamespace())) {
+					return;
+				}
+			}
 			int port = event.getWebServer().getPort();
 			Instance instance = new Instance();
 			instance.setIp(this.nacosMcpProperties.getIp());
