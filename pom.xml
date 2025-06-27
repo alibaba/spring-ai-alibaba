@@ -234,6 +234,18 @@
 
         <mysql.version>8.0.32</mysql.version>
 
+        <postgresql.version>42.4.4</postgresql.version>
+
+        <commons-collections.version>3.2.2</commons-collections.version>
+        
+        <commons-io.version>2.14.0</commons-io.version>
+
+        <webdrivermanager.version>6.1.0</webdrivermanager.version>
+        
+        <httpclient5.version>5.4.3</httpclient5.version>
+        
+        <poi.version>5.4.0</poi.version>
+
         <mcp.version>0.10.0</mcp.version>
 
         <!-- CheckStyle Plugin -->
