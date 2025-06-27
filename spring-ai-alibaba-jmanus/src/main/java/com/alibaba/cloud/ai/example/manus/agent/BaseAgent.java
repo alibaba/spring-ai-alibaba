@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 
@@ -24,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
 
 import java.time.LocalDateTime;
@@ -70,6 +70,8 @@ public abstract class BaseAgent {
 	protected LlmService llmService;
 
 	private final ManusProperties manusProperties;
+
+	protected final PromptLoader promptLoader;
 
 	private int maxSteps;
 
@@ -138,33 +140,14 @@ public abstract class BaseAgent {
 
 		}
 
-		String stepPrompt = """
-				- SYSTEM INFORMATION:
-				OS: %s %s (%s)
+		Map<String, Object> variables = new HashMap<>(getInitSettingData());
+		variables.put("osName", osName);
+		variables.put("osVersion", osVersion);
+		variables.put("osArch", osArch);
+		variables.put("currentDateTime", currentDateTime);
+		variables.put("detailOutput", detailOutput);
 
-				- Current Date:
-				%s
-
-				{planStatus}
-
-				- 当前要做的步骤要求(这个步骤是需要你完成的!用户原始需求里要求的，但当前步骤没有要求的，不需要在当前步骤完成，) :
-				STEP {currentStepIndex} :{stepText}
-
-				- 操作步骤说明:
-				{extraParams}
-
-				重要说明：
-				%s
-				3. 做且只做当前要做的步骤要求中的内容
-				4. 如果当前要做的步骤要求已经做完，则调用terminate工具来完成当前步骤。
-				5. 用户原始需求 是用来有个全局认识的，不要在当前步骤中去完成这个用户原始需求。
-
-				""".formatted(osName, osVersion, osArch, currentDateTime, detailOutput);
-
-		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
-
-		Message systemMessage = promptTemplate.createMessage(getInitSettingData());
-		return systemMessage;
+		return promptLoader.createSystemMessage("agent/step-execution.txt", variables);
 	}
 
 	/**
@@ -180,10 +163,11 @@ public abstract class BaseAgent {
 	public abstract List<ToolCallback> getToolCallList();
 
 	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties, Map<String, Object> initialAgentSetting) {
+			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptLoader promptLoader) {
 		this.llmService = llmService;
 		this.planExecutionRecorder = planExecutionRecorder;
 		this.manusProperties = manusProperties;
+		this.promptLoader = promptLoader;
 		this.maxSteps = manusProperties.getMaxSteps();
 		this.initSettingData = Collections.unmodifiableMap(new HashMap<>(initialAgentSetting));
 	}
