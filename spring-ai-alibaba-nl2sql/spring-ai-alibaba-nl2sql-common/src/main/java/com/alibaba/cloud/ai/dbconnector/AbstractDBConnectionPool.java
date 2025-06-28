@@ -27,9 +27,16 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public abstract class AbstractDBConnectionPool implements DBConnectionPool {
+
+	/**
+	 * DataSource缓存，以确保同一配置只创建一次DataSource
+	 */
+	private static final ConcurrentHashMap<String, DataSource> dataSourceCache = new ConcurrentHashMap<>();
 
 	/**
 	 * 方言
@@ -74,9 +81,21 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 
 	public Connection getConnection(DbConfig config) {
 		String jdbcUrl = config.getUrl();
-		DataSource dataSource = null;
 		try {
-			dataSource = createdDataSource(jdbcUrl, config.getUsername(), config.getPassword());
+			// 生成缓存key
+			String cacheKey = generateCacheKey(jdbcUrl, config.getUsername(), config.getPassword());
+			
+			// 使用computeIfAbsent确保线程安全且只创建一次
+			DataSource dataSource = dataSourceCache.computeIfAbsent(cacheKey, key -> {
+				try {
+					log.debug("Creating new DataSource for key: {}", key);
+					return createdDataSource(jdbcUrl, config.getUsername(), config.getPassword());
+				} catch (Exception e) {
+					log.error("Failed to create DataSource for key: {}", key, e);
+					throw new RuntimeException("Failed to create DataSource", e);
+				}
+			});
+			
 			return dataSource.getConnection();
 		}
 		catch (SQLException e) {
@@ -86,6 +105,30 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * 生成缓存key
+	 * @param url 数据库URL
+	 * @param username 用户名
+	 * @param password 密码
+	 * @return 缓存key
+	 */
+	private String generateCacheKey(String url, String username, String password) {
+		return url + "|" + username + "|" + Objects.hashCode(password);
+	}
+
+	/**
+	 * 清理DataSource缓存（可选方法，用于特殊情况下的资源清理）
+	 */
+	public static void clearDataSourceCache() {
+		dataSourceCache.values().forEach(dataSource -> {
+			if (dataSource instanceof DruidDataSource) {
+				((DruidDataSource) dataSource).close();
+			}
+		});
+		dataSourceCache.clear();
+		log.info("DataSource cache cleared");
 	}
 
 	public DataSource createdDataSource(String url, String username, String password) throws Exception {
