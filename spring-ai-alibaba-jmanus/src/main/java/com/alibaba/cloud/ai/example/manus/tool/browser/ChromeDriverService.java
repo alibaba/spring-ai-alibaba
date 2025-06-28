@@ -53,25 +53,25 @@ public class ChromeDriverService {
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
-	 * 共享目录 用来存cookies
+	 * Shared directory for storing cookies
 	 */
 	/**
-	 * 共享目录 用来存cookies
+	 * Shared directory for storing cookies
 	 */
 	private String sharedDir;
 
 	/**
-	 * 获取当前共享目录
+	 * Get current shared directory
 	 */
 	public String getSharedDir() {
 		return sharedDir;
 	}
 
 	/**
-	 * 保存所有driver中的cookies到全局共享目录（cookies.json）
+	 * Save all cookies from drivers to global shared directory (cookies.json)
 	 */
 	public void saveCookiesToSharedDir() {
-		// 取第一个可用 driver
+		// Get the first available driver
 		DriverWrapper driver = drivers.values().stream().findFirst().orElse(null);
 		if (driver == null) {
 			log.warn("No driver found for saving cookies");
@@ -91,7 +91,7 @@ public class ChromeDriverService {
 	}
 
 	/**
-	 * 从全局共享目录加载cookies到所有driver
+	 * Load cookies from global shared directory to all drivers
 	 */
 	public void loadCookiesFromSharedDir() {
 		String cookieFile = sharedDir + "/cookies.json";
@@ -187,19 +187,19 @@ public class ChromeDriverService {
 			}
 			BrowserType.LaunchOptions options = new BrowserType.LaunchOptions();
 
-			// 基础配置
+			// Basic configuration
 			options.setArgs(Arrays.asList("--remote-allow-origins=*", "--disable-blink-features=AutomationControlled",
 					"--disable-infobars", "--disable-notifications", "--disable-dev-shm-usage",
-					"--lang=zh-CN,zh,en-US,en", "--user-agent=" + getRandomUserAgent(), "--window-size=1920,1080" // 默认窗口大小
+					"--lang=zh-CN,zh,en-US,en", "--user-agent=" + getRandomUserAgent(), "--window-size=1920,1080" // Default window size
 			));
 
-			// 根据配置决定是否使用 headless 模式
+			// Decide whether to use headless mode based on configuration
 			if (manusProperties.getBrowserHeadless()) {
-				log.info("启用 Playwright headless 模式");
+				log.info("Enable Playwright headless mode");
 				options.setHeadless(true);
 			}
 			else {
-				log.info("启用 Playwright 非 headless 模式");
+				log.info("Enable Playwright non-headless mode");
 				options.setHeadless(false);
 			}
 

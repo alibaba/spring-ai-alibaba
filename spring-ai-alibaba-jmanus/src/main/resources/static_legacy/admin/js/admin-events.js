@@ -1,20 +1,20 @@
 /**
- * admin-events.js - 管理界面事件处理
+ * admin-events.js - Admin interface event handling
  */
 import { AdminUtils } from './admin-utils.js';
 
 class AdminEvents {
     constructor() {
-        // Agent列表相关元素
+        // Agent list related elements
         this.agentListContainer = document.querySelector('.agent-list-container');
         this.addAgentBtn = document.querySelector('.add-agent-btn');
         
-        // Agent详情相关元素
+        // Agent details related elements
         this.saveAgentBtn = document.querySelector('.save-agent-btn');
         this.addToolBtn = document.querySelector('.add-tool-btn');
         this.deleteAgentBtn = document.querySelector('.delete-agent-btn');
         
-        // 添加导入导出按钮
+        // Add import/export buttons
         this.importAgentsBtn = document.querySelector('.import-agents-btn');
         this.exportAgentsBtn = document.querySelector('.export-agents-btn');
         
@@ -23,28 +23,28 @@ class AdminEvents {
     }
 
     /**
-     * 绑定所有事件监听器
+     * Bind all event listeners
      */
     bindEvents() {
-        // Agent列表事件
+        // Agent list events
         this.agentListContainer.addEventListener('click', (e) => this.handleAgentListClick(e));
         this.addAgentBtn.addEventListener('click', () => this.handleAddAgent());
 
-        // Agent详情事件
+        // Agent details events
         this.saveAgentBtn.addEventListener('click', () => this.handleSaveAgent());
         this.addToolBtn.addEventListener('click', () => this.handleAddTool());
         this.deleteAgentBtn.addEventListener('click', () => this.handleDeleteAgent());
 
-        // 导入导出事件
+        // Import/export events
         this.importAgentsBtn.addEventListener('click', () => this.handleImportAgents());
         this.exportAgentsBtn.addEventListener('click', () => this.handleExportAgents());
 
-        // 工具列表事件委托
+        // Tool list event delegation
         document.querySelector('.tool-list').addEventListener('click', (e) => this.handleToolListClick(e));
     }
 
     /**
-     * 处理Agent列表点击事件
+     * Handle Agent list click events
      */
     async handleAgentListClick(event) {
         const agentItem = event.target.closest('.agent-item');
@@ -52,22 +52,22 @@ class AdminEvents {
 
         const agentId = agentItem.dataset.agentId;
         if (event.target.closest('.expand-btn')) {
-            // 展开/折叠Agent详情
+            // Expand/collapse Agent details
             agentItem.classList.toggle('expanded');
         } else {
-            // 加载Agent详情
+            // Load Agent details
             try {
                 const agent = await agentConfigModel.loadAgentDetails(agentId);
                 this.currentAgentId = agentId;
                 adminUI.showAgentDetails(agent);
             } catch (error) {
-                adminUI.showError('加载Agent详情失败');
+                adminUI.showError('Failed to load Agent details');
             }
         }
     }
 
     /**
-     * 处理添加新Agent
+     * Handle adding new Agent
      */
     handleAddAgent() {
         this.currentAgentId = null;
@@ -75,7 +75,7 @@ class AdminEvents {
     }
 
     /**
-     * 处理保存Agent
+     * Handle saving Agent
      */
     async handleSaveAgent() {
         try {
@@ -87,16 +87,16 @@ class AdminEvents {
             const savedAgent = await agentConfigModel.saveAgent(formData);
             this.currentAgentId = savedAgent.id;
             
-            // 重新加载Agent列表
+            // Reload Agent list
             await adminUI.loadAgents();
-            adminUI.showSuccess('Agent保存成功');
+            adminUI.showSuccess('Agent saved successfully');
         } catch (error) {
-            adminUI.showError('保存Agent失败');
+            adminUI.showError('Failed to save Agent');
         }
     }
 
     /**
-     * 处理添加工具
+     * Handle adding tools
      */
     handleAddTool() {
         const availableTools = agentConfigModel.availableTools;
@@ -125,21 +125,21 @@ class AdminEvents {
                 });
             });
         } else {
-            adminUI.showError('工具列表未加载或为空');
+            adminUI.showError('Tool list not loaded or empty');
         }
     }
 
 
     /**
-     * 处理删除Agent
+     * Handle deleting Agent
      */
     async handleDeleteAgent() {
         if (!this.currentAgentId) {
-            adminUI.showError('未选择任何Agent');
+            adminUI.showError('No Agent selected');
             return;
         }
 
-        const confirmed = await AdminUtils.confirmDialog('确定要删除该Agent吗？');
+        const confirmed = await AdminUtils.confirmDialog('Are you sure you want to delete this Agent?');
         if (!confirmed) return;
 
         try {
@@ -147,17 +147,17 @@ class AdminEvents {
             this.currentAgentId = null;
             await adminUI.loadAgents();
             adminUI.clearAgentDetails();
-            adminUI.showSuccess('Agent删除成功');
+            adminUI.showSuccess('Agent deleted successfully');
         } catch (error) {
-            adminUI.showError('删除Agent失败');
+            adminUI.showError('Failed to delete Agent');
         }
     }
 
     /**
-     * 处理导入Agents配置
+     * Handle importing Agents configuration
      */
     handleImportAgents() {
-        // 创建隐藏的文件输入框
+        // Create hidden file input element
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.json';
@@ -177,14 +177,14 @@ class AdminEvents {
                             await agentConfigModel.saveAgent(config,true);
                         }
                         await adminUI.loadAgents();
-                        adminUI.showSuccess('成功导入Agent配置');
+                        adminUI.showSuccess('Agent configuration imported successfully');
                     } catch (error) {
-                        adminUI.showError('导入失败：无效的配置文件格式');
+                        adminUI.showError('Import failed: Invalid configuration file format');
                     }
                 };
                 reader.readAsText(file);
             } catch (error) {
-                adminUI.showError('导入失败');
+                adminUI.showError('Import failed');
             } finally {
                 document.body.removeChild(fileInput);
             }
@@ -194,14 +194,14 @@ class AdminEvents {
     }
 
     /**
-     * 处理导出Agents配置
+     * Handle exporting Agents configuration
      */
     async handleExportAgents() {
         try {
             const agents = await agentConfigModel.loadAgents();
             const exportData = JSON.stringify(agents, null, 2);
             
-            // 创建下载链接
+            // Create download link
             const blob = new Blob([exportData], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -210,20 +210,20 @@ class AdminEvents {
             document.body.appendChild(a);
             a.click();
             
-            // 清理
+            // Cleanup
             setTimeout(() => {
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             }, 100);
             
-            adminUI.showSuccess('成功导出Agent配置');
+            adminUI.showSuccess('Agent configuration exported successfully');
         } catch (error) {
-            adminUI.showError('导出失败');
+            adminUI.showError('Export failed');
         }
     }
 }
 
-// 等待DOM加载完成后初始化
+// Initialize after DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.adminEvents = new AdminEvents();
     window.adminUI.init();

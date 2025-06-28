@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Linux命令执行器实现
+ * Linux command executor implementation
  */
 public class LinuxShellExecutor implements ShellCommandExecutor {
 
@@ -34,7 +34,7 @@ public class LinuxShellExecutor implements ShellCommandExecutor {
 
 	private Process currentProcess;
 
-	private static final int DEFAULT_TIMEOUT = 60; // 默认超时时间(秒)
+	private static final int DEFAULT_TIMEOUT = 60; // Default timeout (seconds)
 
 	private BufferedWriter processInput;
 
@@ -96,12 +96,12 @@ public class LinuxShellExecutor implements ShellCommandExecutor {
 	@Override
 	public void terminate() {
 		if (currentProcess != null && currentProcess.isAlive()) {
-			// 首先尝试发送SIGINT (ctrl+c)
+			// First try sending SIGINT (ctrl+c)
 			currentProcess.destroy();
 			try {
-				// 等待进程响应SIGINT
+				// Wait for process to respond to SIGINT
 				if (!currentProcess.waitFor(5, TimeUnit.SECONDS)) {
-					// 如果进程没有响应SIGINT，强制终止
+					// If process doesn't respond to SIGINT, force terminate
 					currentProcess.destroyForcibly();
 				}
 			}
@@ -117,7 +117,7 @@ public class LinuxShellExecutor implements ShellCommandExecutor {
 		StringBuilder outputBuilder = new StringBuilder();
 		StringBuilder errorBuilder = new StringBuilder();
 
-		// 读取标准输出
+		// Read standard output
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"))) {
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -126,7 +126,7 @@ public class LinuxShellExecutor implements ShellCommandExecutor {
 			}
 		}
 
-		// 读取错误输出
+		// Read error output
 		try (BufferedReader errorReader = new BufferedReader(
 				new InputStreamReader(process.getErrorStream(), "UTF-8"))) {
 			String line;

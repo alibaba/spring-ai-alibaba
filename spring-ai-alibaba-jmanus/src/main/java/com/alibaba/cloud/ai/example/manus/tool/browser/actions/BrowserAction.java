@@ -49,30 +49,30 @@ public abstract class BrowserAction {
 	}
 
 	/**
-	 * 获取浏览器操作的超时时间配置
-	 * @return 超时时间（毫秒），如果未配置则返回默认值30秒
+	 * Get browser operation timeout configuration
+	 * @return Timeout in milliseconds, returns default value of 30 seconds if not configured
 	 */
 	protected Integer getBrowserTimeoutMs() {
 		Integer timeout = getBrowserUseTool().getManusProperties().getBrowserRequestTimeout();
-		return (timeout != null ? timeout : 30) * 1000; // 转换为毫秒
+		return (timeout != null ? timeout : 30) * 1000; // Convert to milliseconds
 	}
 
 	/**
-	 * 获取浏览器操作的超时时间配置
-	 * @return 超时时间（秒），如果未配置则返回默认值30秒
+	 * Get browser operation timeout configuration
+	 * @return Timeout in seconds, returns default value of 30 seconds if not configured
 	 */
 	protected Integer getBrowserTimeoutSec() {
 		Integer timeout = getBrowserUseTool().getManusProperties().getBrowserRequestTimeout();
-		return timeout != null ? timeout : 30; // 默认超时时间为 30 秒
+		return timeout != null ? timeout : 30; // Default timeout is 30 seconds
 	}
 
 	/**
-	 * 模拟人类行为
-	 * @param element Playwright的ElementHandle实例
+	 * Simulate human behavior
+	 * @param element Playwright ElementHandle instance
 	 */
 	protected void simulateHumanBehavior(ElementHandle element) {
 		try {
-			// 添加随机延迟
+			// Add random delay
 			Thread.sleep(new Random().nextInt(500) + 200);
 		}
 		catch (InterruptedException e) {
@@ -81,7 +81,7 @@ public abstract class BrowserAction {
 	}
 
 	/**
-	 * 获取 DriverWrapper 实例
+	 * Get DriverWrapper instance
 	 * @return DriverWrapper
 	 */
 	protected DriverWrapper getDriverWrapper() {
@@ -90,8 +90,8 @@ public abstract class BrowserAction {
 	}
 
 	/**
-	 * 获取当前页面 Page 实例
-	 * @return 当前 Playwright 的 Page 实例
+	 * Get current page Page instance
+	 * @return Current Playwright Page instance
 	 */
 	protected Page getCurrentPage() {
 		DriverWrapper driverWrapper = getDriverWrapper();
@@ -99,9 +99,9 @@ public abstract class BrowserAction {
 	}
 
 	/**
-	 * 获取可交互元素
-	 * @param page Playwright的Page实例
-	 * @return 可交互元素列表
+	 * Get interactive elements
+	 * @param page Playwright Page instance
+	 * @return List of interactive elements
 	 */
 	protected List<InteractiveElement> getInteractiveElements(Page page) {
 		DriverWrapper driverWrapper = browserUseTool.getDriver();

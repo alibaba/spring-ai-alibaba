@@ -20,19 +20,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 智能体执行记录类，用于跟踪和记录BaseAgent执行过程的详细信息。
+ * Agent execution record class for tracking and recording detailed information about BaseAgent execution process.
  *
- * 数据结构分为三个主要部分：
+ * Data structure is divided into three main parts:
  *
- * 1. 基本信息 (Basic Info) - id: 记录的唯一标识 - conversationId: 对话唯一标识 - agentName: 智能体名称 -
- * agentDescription: 智能体描述 - startTime: 执行开始时间 - endTime: 执行结束时间
+ * 1. Basic Info - id: unique identifier of the record - conversationId: conversation unique identifier - agentName: agent name -
+ * agentDescription: agent description - startTime: execution start time - endTime: execution end time
  *
- * 2. 执行过程数据 (Execution Data) - maxSteps: 最大执行步骤数 - currentStep: 当前执行步骤 - status:
- * 执行状态（IDLE, RUNNING, FINISHED） - thinkActSteps: 思考-行动步骤记录列表，每个元素是ThinkActRecord对象 -
- * agentRequest: 输入提示模板
+ * 2. Execution Data - maxSteps: maximum execution steps - currentStep: current execution step - status:
+ * execution status (IDLE, RUNNING, FINISHED) - thinkActSteps: think-act step record list, each element is a ThinkActRecord object -
+ * agentRequest: input prompt template
  *
- * 3. 执行结果 (Execution Result) - isCompleted: 是否完成 - isStuck: 是否卡住 - result: 执行结果 -
- * errorMessage: 错误信息（如有）
+ * 3. Execution Result - isCompleted: whether completed - isStuck: whether stuck - result: execution result -
+ * errorMessage: error message (if any)
  *
  * @see BaseAgent
  * @see ThinkActRecord
@@ -40,57 +40,57 @@ import java.util.List;
  */
 public class AgentExecutionRecord {
 
-	// 记录的唯一标识符
+	// Unique identifier of the record
 	private Long id;
 
-	// 此记录所属的对话ID
+	// Conversation ID this record belongs to
 	private String conversationId;
 
-	// 创建此记录的智能体名称
+	// Name of the agent that created this record
 	private String agentName;
 
-	// 智能体的描述信息
+	// Description information of the agent
 	private String agentDescription;
 
-	// 执行开始的时间戳
+	// Timestamp when execution started
 	private LocalDateTime startTime;
 
-	// 执行结束的时间戳
+	// Timestamp when execution ended
 	private LocalDateTime endTime;
 
-	// 最大允许的步骤数
+	// Maximum allowed number of steps
 	private int maxSteps;
 
-	// 当前执行的步骤编号
+	// Current execution step number
 	private int currentStep;
 
-	// 执行状态（IDLE, RUNNING, FINISHED）
+	// Execution status (IDLE, RUNNING, FINISHED)
 	private String status;
 
-	// 是否执行完成
+	// Whether execution is completed
 	private boolean isCompleted;
 
-	// 是否卡住
+	// Whether stuck
 	private boolean isStuck;
 
-	// 思考-行动步骤的记录列表，作为子步骤存在
+	// Record list of think-act steps, existing as sub-steps
 	private List<ThinkActRecord> thinkActSteps;
 
-	// 用于智能体执行的请求内容
+	// Request content for agent execution
 	private String agentRequest;
 
-	// 执行结果
+	// Execution result
 	private String result;
 
-	// 如果执行遇到问题的错误消息
+	// Error message if execution encounters problems
 	private String errorMessage;
 
-	// 默认构造函数
+	// Default constructor
 	public AgentExecutionRecord() {
 		this.thinkActSteps = new ArrayList<>();
 	}
 
-	// 带参数的构造函数
+	// Constructor with parameters
 	public AgentExecutionRecord(String conversationId, String agentName, String agentDescription) {
 		this.conversationId = conversationId;
 		this.agentName = agentName;
@@ -104,8 +104,8 @@ public class AgentExecutionRecord {
 	}
 
 	/**
-	 * 添加一个ThinkActRecord作为执行步骤
-	 * @param record ThinkActRecord实例
+	 * Add a ThinkActRecord as execution step
+	 * @param record ThinkActRecord instance
 	 */
 	public void addThinkActStep(ThinkActRecord record) {
 		if (this.thinkActSteps == null) {
@@ -239,13 +239,13 @@ public class AgentExecutionRecord {
 	}
 
 	/**
-	 * 保存记录到持久化存储 空实现，由具体的存储实现来覆盖 同时会递归保存所有ThinkActRecord
-	 * @return 保存后的记录ID
+	 * Save record to persistent storage. Empty implementation, to be overridden by specific storage implementations. Also recursively saves all ThinkActRecords
+	 * @return Record ID after saving
 	 */
 	public Long save() {
-		// 如果ID为空，生成一个随机ID
+		// If ID is null, generate a random ID
 		if (this.id == null) {
-			// 使用时间戳和随机数组合生成ID
+			// Use combination of timestamp and random number to generate ID
 			long timestamp = System.currentTimeMillis();
 			int random = (int) (Math.random() * 1000000);
 			this.id = timestamp * 1000 + random;

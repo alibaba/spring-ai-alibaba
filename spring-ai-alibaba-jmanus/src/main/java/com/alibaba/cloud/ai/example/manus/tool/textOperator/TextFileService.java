@@ -42,21 +42,21 @@ public class TextFileService implements ApplicationRunner {
 	private static final Logger log = LoggerFactory.getLogger(TextFileService.class);
 
 	/**
-	 * 文件状态类，用于存储文件的当前路径和上次操作结果
+	 * File state class for storing current file path and last operation result
 	 */
 	@Autowired
 	private ManusProperties manusProperties;
 
 	/**
-	 * 支持的文本文件扩展名集合
+	 * Set of supported text file extensions
 	 */
-	private static final Set<String> SUPPORTED_EXTENSIONS = new HashSet<>(Set.of(".txt", ".md", ".markdown", // 普通文本和Markdown
-			".java", ".py", ".js", ".ts", ".jsx", ".tsx", // 常见编程语言
-			".html", ".htm", ".css", ".scss", ".sass", ".less", // Web相关
-			".xml", ".json", ".yaml", ".yml", ".properties", // 配置文件
-			".sql", ".sh", ".bat", ".cmd", // 脚本和数据库
-			".log", ".conf", ".ini", // 日志和配置
-			".gradle", ".pom", ".mvn" // 构建工具
+	private static final Set<String> SUPPORTED_EXTENSIONS = new HashSet<>(Set.of(".txt", ".md", ".markdown", // Plain text and Markdown
+			".java", ".py", ".js", ".ts", ".jsx", ".tsx", // Common programming languages
+			".html", ".htm", ".css", ".scss", ".sass", ".less", // Web-related
+			".xml", ".json", ".yaml", ".yml", ".properties", // Configuration files
+			".sql", ".sh", ".bat", ".cmd", // Scripts and database
+			".log", ".conf", ".ini", // Logs and configuration
+			".gradle", ".pom", ".mvn" // Build tools
 	));
 
 	private final ConcurrentHashMap<String, FileState> fileStates = new ConcurrentHashMap<>();
@@ -98,12 +98,12 @@ public class TextFileService implements ApplicationRunner {
 		Path workingDir = Paths.get(workingDirectoryPath).toAbsolutePath().normalize();
 		Path absolutePath = workingDir.resolve(filePath).normalize();
 
-		// 检查文件是否在工作目录范围内
+		// Check if file is within working directory scope
 		if (!absolutePath.startsWith(workingDir)) {
 			throw new IOException("Access denied: File path must be within working directory");
 		}
 
-		// 检查文件大小（如果文件存在）
+		// Check file size (if file exists)
 		if (Files.exists(absolutePath) && Files.size(absolutePath) > 10 * 1024 * 1024) { // 10MB
 																							// limit
 			throw new IOException("File is too large (>10MB). For safety reasons, please use a smaller file.");

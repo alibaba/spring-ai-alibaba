@@ -1,5 +1,5 @@
 /**
- * 这个对应 输入框 和发送按钮
+ * This corresponds to the input field and send button
  */
 class ChatInputHandler {
     #inputField;
@@ -10,19 +10,19 @@ class ChatInputHandler {
         this.#sendButton = document.querySelector('.send-btn');
 
         if (!this.#inputField || !this.#sendButton) {
-            console.error('ChatInputHandler: 未找到输入框或发送按钮!');
+            console.error('ChatInputHandler: Input field or send button not found!');
             return;
         }
         this.#attachEventListeners();
         this.#subscribeToEvents();
-        console.log('ChatInputHandler 初始化完成');
+        console.log('ChatInputHandler initialization completed');
     }
 
     #attachEventListeners() {
         const handleSend = () => {
             const query = this.#inputField.value.trim();
             if (query) {
-                // 发布用户请求发送消息的事件
+                // Publish event for user request send message
                 TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.USER_MESSAGE_SEND_REQUESTED, { query });
             }
         };
@@ -37,21 +37,21 @@ class ChatInputHandler {
     }
 
     #subscribeToEvents() {
-        // 订阅外部事件来清空输入和更新状态
+        // Subscribe to external events to clear input and update state
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_CLEAR, this.clearInput.bind(this));
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, (data) => this.updateState(data.enabled, data.placeholder));
     }
 
     /**
-     * 获取当前输入框的值
-     * @returns {string} 当前输入框的文本值 (已去除首尾空格)
+     * Get current input field value
+     * @returns {string} Current input field text value (trimmed)
      */
     getQuery() {
         return this.#inputField ? this.#inputField.value.trim() : '';
     }
 
     /**
-     * 清空输入框
+     * Clear input field
      */
     clearInput() {
         if (this.#inputField) {
@@ -60,14 +60,14 @@ class ChatInputHandler {
     }
 
     /**
-     * 更新输入区域的状态（启用/禁用）
-     * @param {boolean} enabled - 是否启用输入
-     * @param {string} [placeholder='向 JTaskPilot 发送消息'] - 启用时的占位文本
+     * Update input area state (enable/disable)
+     * @param {boolean} enabled - Whether to enable input
+     * @param {string} [placeholder='Send message to JTaskPilot'] - Placeholder text when enabled
      */
-    updateState(enabled, placeholder = '向 JTaskPilot 发送消息') {
+    updateState(enabled, placeholder = 'Send message to JTaskPilot') {
         if (this.#inputField) {
             this.#inputField.disabled = !enabled;
-            this.#inputField.placeholder = enabled ? placeholder : '等待任务完成...'; // 更具体的禁用提示
+            this.#inputField.placeholder = enabled ? placeholder : 'Waiting for task completion...'; // More specific disable hint
             this.#inputField.classList.toggle('disabled', !enabled);
         }
         if (this.#sendButton) {

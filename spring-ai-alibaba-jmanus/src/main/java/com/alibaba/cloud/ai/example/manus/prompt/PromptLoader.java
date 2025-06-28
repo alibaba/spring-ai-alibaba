@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Prompt加载器，从resources/prompts目录加载prompt模板文件
+ * Prompt loader that loads prompt template files from resources/prompts directory
  */
 @Component
 public class PromptLoader {
@@ -39,22 +39,22 @@ public class PromptLoader {
 
 	private static final String PROMPT_BASE_PATH = "prompts/";
 
-	// 缓存已加载的prompt内容
+	// Cache for loaded prompt content
 	private final Map<String, String> promptCache = new ConcurrentHashMap<>();
 
 	/**
-	 * 加载prompt模板内容
-	 * @param promptPath prompt文件的相对路径（相对于prompts目录）
-	 * @return prompt内容
+	 * Load prompt template content
+	 * @param promptPath Relative path of prompt file (relative to prompts directory)
+	 * @return Prompt content
 	 */
 	public String loadPrompt(String promptPath) {
 		return promptCache.computeIfAbsent(promptPath, this::loadPromptFromResource);
 	}
 
 	/**
-	 * 从资源文件加载prompt内容
-	 * @param promptPath prompt文件路径
-	 * @return prompt内容
+	 * Load prompt content from resource file
+	 * @param promptPath Prompt file path
+	 * @return Prompt content
 	 */
 	private String loadPromptFromResource(String promptPath) {
 		try {
@@ -78,10 +78,10 @@ public class PromptLoader {
 	}
 
 	/**
-	 * 创建系统prompt模板消息
-	 * @param promptPath prompt文件路径
-	 * @param variables 变量映射
-	 * @return 系统消息
+	 * Create system prompt template message
+	 * @param promptPath Prompt file path
+	 * @param variables Variable mapping
+	 * @return System message
 	 */
 	public Message createSystemMessage(String promptPath, Map<String, Object> variables) {
 		String promptContent = loadPrompt(promptPath);
@@ -90,10 +90,10 @@ public class PromptLoader {
 	}
 
 	/**
-	 * 创建用户prompt模板消息
-	 * @param promptPath prompt文件路径
-	 * @param variables 变量映射
-	 * @return 用户消息
+	 * Create user prompt template message
+	 * @param promptPath Prompt file path
+	 * @param variables Variable mapping
+	 * @return User message
 	 */
 	public Message createUserMessage(String promptPath, Map<String, Object> variables) {
 		String promptContent = loadPrompt(promptPath);
@@ -102,10 +102,10 @@ public class PromptLoader {
 	}
 
 	/**
-	 * 渲染prompt模板
-	 * @param promptPath prompt文件路径
-	 * @param variables 变量映射
-	 * @return 渲染后的prompt内容
+	 * Render prompt template
+	 * @param promptPath Prompt file path
+	 * @param variables Variable mapping
+	 * @return Rendered prompt content
 	 */
 	public String renderPrompt(String promptPath, Map<String, Object> variables) {
 		String promptContent = loadPrompt(promptPath);
@@ -114,7 +114,7 @@ public class PromptLoader {
 	}
 
 	/**
-	 * 清空prompt缓存
+	 * Clear prompt cache
 	 */
 	public void clearCache() {
 		promptCache.clear();

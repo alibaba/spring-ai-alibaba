@@ -20,70 +20,70 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 
 /**
- * 计划执行记录器接口，定义了记录和检索计划执行详情的方法。
+ * Plan execution recorder interface that defines methods for recording and retrieving plan execution details.
  */
 public interface PlanExecutionRecorder {
 
 	/**
-	 * 记录一个计划执行实例，返回其唯一标识符
-	 * @param stepRecord 计划执行记录
-	 * @return 计划ID
+	 * Records a plan execution instance and returns its unique identifier
+	 * @param stepRecord Plan execution record
+	 * @return Plan ID
 	 */
 	String recordPlanExecution(PlanExecutionRecord stepRecord);
 
 	/**
-	 * 记录智能体执行实例，关联到特定的计划
-	 * @param planId 计划ID
-	 * @param agentRecord 智能体执行记录
-	 * @return 智能体执行ID
+	 * Records an agent execution instance associated with a specific plan
+	 * @param planId Plan ID
+	 * @param agentRecord Agent execution record
+	 * @return Agent execution ID
 	 */
 	Long recordAgentExecution(String planId, AgentExecutionRecord agentRecord);
 
 	/**
-	 * 记录思考-行动执行实例，关联到特定的智能体执行
-	 * @param planId 计划ID
-	 * @param agentExecutionId 智能体执行ID
-	 * @param thinkActRecord 思考-行动记录
+	 * Records a think-act execution instance associated with a specific agent execution
+	 * @param planId Plan ID
+	 * @param agentExecutionId Agent execution ID
+	 * @param thinkActRecord Think-act record
 	 */
 	void recordThinkActExecution(String planId, Long agentExecutionId, ThinkActRecord thinkActRecord);
 
 	/**
-	 * 标记计划执行完成
-	 * @param planId 计划ID
-	 * @param summary 执行总结
+	 * Marks plan execution as completed
+	 * @param planId Plan ID
+	 * @param summary Execution summary
 	 */
 	void recordPlanCompletion(String planId, String summary);
 
 	/**
-	 * 获取计划执行记录
-	 * @param planId 计划ID
-	 * @return 计划执行记录
+	 * Gets plan execution record
+	 * @param planId Plan ID
+	 * @return Plan execution record
 	 */
 	PlanExecutionRecord getExecutionRecord(String planId);
 
 	/**
-	 * 将指定计划ID的执行记录保存到持久化存储 此方法会递归调用 PlanExecutionRecord、AgentExecutionRecord 和
-	 * ThinkActRecord 的 save 方法
-	 * @param planId 要保存的计划ID
-	 * @return 如果找到并保存了记录则返回 true，否则返回 false
+	 * Saves the execution records for the specified plan ID to persistent storage. This method will recursively call
+	 * the save methods of PlanExecutionRecord, AgentExecutionRecord, and ThinkActRecord
+	 * @param planId The plan ID to save
+	 * @return true if records were found and saved, false otherwise
 	 */
 	boolean savePlanExecutionRecords(String planId);
 
 	/**
-	 * 将所有执行记录保存到持久化存储 此方法会遍历所有计划记录并调用它们的 save 方法
+	 * Saves all execution records to persistent storage. This method will iterate through all plan records and call their save methods
 	 */
 	void saveAllExecutionRecords();
 
 	/**
-	 * 获取指定计划的当前活动智能体执行记录
-	 * @param planId 计划ID
-	 * @return 当前活动的智能体执行记录，如果没有则返回null
+	 * Gets the current active agent execution record for the specified plan
+	 * @param planId Plan ID
+	 * @return Current active agent execution record, or null if none exists
 	 */
 	AgentExecutionRecord getCurrentAgentExecutionRecord(String planId);
 
 	/**
-	 * 删除指定计划ID的执行记录
-	 * @param planId 要删除的计划ID
+	 * Removes the execution records for the specified plan ID
+	 * @param planId The plan ID to remove
 	 */
 	void removeExecutionRecord(String planId);
 

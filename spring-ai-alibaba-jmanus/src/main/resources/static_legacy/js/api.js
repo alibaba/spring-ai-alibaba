@@ -1,16 +1,16 @@
 /**
- * API 模块 - 处理与后端的所有通信
+ * API module - Handle all communication with backend
  */
 const ManusAPI = (() => {
 
-    // API 基础URL
+    // API base URL
     const BASE_URL = '/api/executor';
     const PLAN_TEMPLATE_URL = '/api/plan-template';
 
     /**
-     * 向 Manus 发送消息，获取异步处理结果
-     * @param {string} query - 用户输入的查询内容
-     * @returns {Promise<Object>} - 包含任务 ID 和初始状态的响应
+     * Send message to Manus, get asynchronous processing result
+     * @param {string} query - User input query content
+     * @returns {Promise<Object>} - Response containing task ID and initial status
      */
     const sendMessage = async (query) => {
         try {
@@ -23,27 +23,27 @@ const ManusAPI = (() => {
             });
 
             if (!response.ok) {
-                throw new Error(`API请求失败: ${response.status}`);
+                throw new Error(`API request failed: ${response.status}`);
             }
 
             return await response.json();
         } catch (error) {
-            console.error('发送消息失败:', error);
+            console.error('Failed to send message:', error);
             throw error;
         }
     };
     
     /**
-     * 根据输入生成执行计划
-     * @param {string} query - 用户输入的计划需求
-     * @param {string} [existingJson] - 可选的已有JSON数据字符串
-     * @returns {Promise<Object>} - 包含完整计划数据的响应
+     * Generate execution plan based on input
+     * @param {string} query - User input plan requirements
+     * @param {string} [existingJson] - Optional existing JSON data string
+     * @returns {Promise<Object>} - Response containing complete plan data
      */
     const generatePlan = async (query, existingJson = null) => {
         try {
             const requestBody = { query };
             
-            // 如果存在已有的JSON数据，添加到请求中
+            // If existing JSON data exists, add to request
             if (existingJson) {
                 requestBody.existingJson = existingJson;
             }
@@ -57,47 +57,47 @@ const ManusAPI = (() => {
             });
 
             if (!response.ok) {
-                throw new Error(`生成计划失败: ${response.status}`);
+                throw new Error(`Failed to generate plan: ${response.status}`);
             }
 
             const responseData = await response.json();
             
-            // 如果响应中包含planJson字段，就将其解析为JSON对象
+            // If response contains planJson field, parse it as JSON object
             if (responseData.planJson) {
                 try {
                     responseData.plan = JSON.parse(responseData.planJson);
                 } catch (e) {
-                    console.warn('无法解析计划JSON:', e);
-                    responseData.plan = { error: '无法解析计划数据' };
+                    console.warn('Unable to parse plan JSON:', e);
+                    responseData.plan = { error: 'Unable to parse plan data' };
                 }
             }
 
             return responseData;
         } catch (error) {
-            console.error('生成计划失败:', error);
+            console.error('Failed to generate plan:', error);
             throw error;
         }
     };
     
     /**
-     * 执行已生成的计划
-     * @param {string} planTemplateId - 计划模板ID
-     * @param {string} [rawParam=null] - 可选的执行参数，字符串格式
-     * @returns {Promise<Object>} - 包含执行状态的响应
+     * Execute generated plan
+     * @param {string} planTemplateId - Plan template ID
+     * @param {string} [rawParam=null] - Optional execution parameters, string format
+     * @returns {Promise<Object>} - Response containing execution status
      */
     const executePlan = async (planTemplateId, rawParam = null) => {
         try {
             let response;
             
-            // 构建请求体对象
+            // Build request body object
             const requestBody = { planTemplateId: planTemplateId };
             
-            // 如果有原始参数，添加到请求体
+            // If rawParam exists, add to request body
             if (rawParam) {
                 requestBody.rawParam = rawParam;
             }
             
-            // 统一使用POST方法
+            // Use POST method uniformly
             response = await fetch(`${PLAN_TEMPLATE_URL}/executePlanByTemplateId`, {
                 method: 'POST',
                 headers: {
@@ -107,62 +107,62 @@ const ManusAPI = (() => {
             });
 
             if (!response.ok) {
-                throw new Error(`执行计划失败: ${response.status}`);
+                throw new Error(`Failed to execute plan: ${response.status}`);
             }
 
             return await response.json();
         } catch (error) {
-            console.error('执行计划失败:', error);
+            console.error('Failed to execute plan:', error);
             throw error;
         }
     };
     
     /**
-     * 获取详细的执行记录
-     * @param {string} planId - 计划ID
-     * @returns {Promise<Object>} - 包含详细执行记录的响应，如果404则返回null
+     * Get detailed execution record
+     * @param {string} planId - Plan ID
+     * @returns {Promise<Object>} - Response containing detailed execution record, returns null if 404
      */
     const getDetails = async (planId) => {
         try {
             const response = await fetch(`${BASE_URL}/details/${planId}`);
 
             if (response.status === 404) {
-                // 静默处理404错误，返回null
-                console.log(`Plan ${planId} 不存在或已被删除，忽略此次查询`);
+                // Silent handling of 404 error, return null
+                console.log(`Plan ${planId} does not exist or has been deleted, ignoring this query`);
                 return null;
             }
             
             if (!response.ok) {
-                throw new Error(`获取详细信息失败: ${response.status}`);
+                throw new Error(`Failed to get details: ${response.status}`);
             }
 
-            // 先获取原始文本进行检查
+            // First get original text for inspection
             const rawText = await response.text();
-            console.log(`原始响应文本 (planId: ${planId}):`, rawText); // 打印原始文本
+            console.log(`Original response text (planId: ${planId}):`, rawText); // Print original text
 
-            // 尝试解析原始文本
+            // Try to parse original text
             try {
                 return JSON.parse(rawText);
             } catch (jsonParseError) {
-                console.error(`JSON 解析原始文本失败 (planId: ${planId}):`, jsonParseError);
-                console.error("原始文本中可能存在问题的部分，请检查是否有未转义的控制字符。");
-                // 为了让调用方知道这里出错了，并且错误与之前类似，我们重新抛出这个解析错误
-                // 或者根据需要返回一个特定的错误对象或null
-                throw jsonParseError; // 或者 return null; 
+                console.error(`JSON parsing of original text failed (planId: ${planId}):`, jsonParseError);
+                console.error("There may be problems in the original text, please check for unescaped control characters.");
+                // To let the caller know there's an error here, and the error is similar to before, we re-throw this parsing error
+                // Or return a specific error object or null as needed
+                throw jsonParseError; // or return null; 
             }
 
         } catch (error) {
-            // 记录错误但不抛出异常
-            console.log(`获取详细信息失败 (planId: ${planId}):`, error.message);
+            // Log error but don't throw exception
+            console.log(`Failed to get details (planId: ${planId}):`, error.message);
             return null;
         }
     };
     
     /**
-     * 保存计划到服务器
-     * @param {string} planId - 计划ID
-     * @param {string} planJson - 计划JSON内容
-     * @returns {Promise<Object>} - 保存结果
+     * Save plan to server
+     * @param {string} planId - Plan ID
+     * @param {string} planJson - Plan JSON content
+     * @returns {Promise<Object>} - Save result
      */
     const savePlanTemplate = async (planId, planJson) => {
         try {
@@ -178,20 +178,20 @@ const ManusAPI = (() => {
             });
 
             if (!response.ok) {
-                throw new Error(`保存计划失败: ${response.status}`);
+                throw new Error(`Failed to save plan: ${response.status}`);
             }
 
             return await response.json();
         } catch (error) {
-            console.error('保存计划失败:', error);
+            console.error('Failed to save plan:', error);
             throw error;
         }
     };
     
     /**
-     * 获取计划的所有版本
-     * @param {string} planId - 计划ID
-     * @returns {Promise<Object>} - 包含版本历史的响应
+     * Get all versions of a plan
+     * @param {string} planId - Plan ID
+     * @returns {Promise<Object>} - Response containing version history
      */
     const getPlanVersions = async (planId) => {
         try {
@@ -204,21 +204,21 @@ const ManusAPI = (() => {
             });
 
             if (!response.ok) {
-                throw new Error(`获取计划版本失败: ${response.status}`);
+                throw new Error(`Failed to get plan versions: ${response.status}`);
             }
 
             return await response.json();
         } catch (error) {
-            console.error('获取计划版本失败:', error);
+            console.error('Failed to get plan versions:', error);
             throw error;
         }
     };
     
     /**
-     * 获取特定版本的计划
-     * @param {string} planId - 计划ID
-     * @param {number} versionIndex - 版本索引
-     * @returns {Promise<Object>} - 包含特定版本计划的响应
+     * Get plan of specific version
+     * @param {string} planId - Plan ID
+     * @param {number} versionIndex - Version index
+     * @returns {Promise<Object>} - Response containing specific version plan
      */
     const getVersionPlan = async (planId, versionIndex) => {
         try {
@@ -234,44 +234,44 @@ const ManusAPI = (() => {
             });
 
             if (!response.ok) {
-                throw new Error(`获取特定版本计划失败: ${response.status}`);
+                throw new Error(`Failed to get specific version plan: ${response.status}`);
             }
 
             return await response.json();
         } catch (error) {
-            console.error('获取特定版本计划失败:', error);
+            console.error('Failed to get specific version plan:', error);
             throw error;
         }
     };
     
     /**
-     * 获取所有计划模板列表
-     * @returns {Promise<Object>} - 包含计划模板列表的响应
+     * Get all plan template list
+     * @returns {Promise<Object>} - Response containing plan template list
      */
     const getAllPlanTemplates = async () => {
         try {
             const url = `${PLAN_TEMPLATE_URL}/list`;
-            console.log('正在请求计划模板列表，URL:', url);
+            console.log('Requesting plan template list, URL:', url);
             
             const response = await fetch(url);
             
             if (!response.ok) {
-                throw new Error(`获取计划模板列表失败: ${response.status}`);
+                throw new Error(`Failed to get plan template list: ${response.status}`);
             }
             
             return await response.json();
         } catch (error) {
-            console.error('获取计划模板列表失败:', error);
+            console.error('Failed to get plan template list:', error);
             throw error;
         }
     };
 
     /**
-     * 更新现有计划模板
-     * @param {string} planId - 计划模板ID
-     * @param {string} query - 用户输入的计划需求
-     * @param {string} existingJson - 已有的JSON数据字符串
-     * @returns {Promise<Object>} - 包含更新后计划数据的响应
+     * Update existing plan template
+     * @param {string} planId - Plan template ID
+     * @param {string} query - User input plan requirements
+     * @param {string} existingJson - Existing JSON data string
+     * @returns {Promise<Object>} - Response containing updated plan data
      */
     const updatePlanTemplate = async (planId, query, existingJson = null) => {
         try {
@@ -280,7 +280,7 @@ const ManusAPI = (() => {
                 query
             };
             
-            // 如果存在已有的JSON数据，添加到请求中
+            // If existing JSON data exists, add to request
             if (existingJson) {
                 requestBody.existingJson = existingJson;
             }
@@ -294,32 +294,32 @@ const ManusAPI = (() => {
             });
 
             if (!response.ok) {
-                throw new Error(`更新计划模板失败: ${response.status}`);
+                throw new Error(`Failed to update plan template: ${response.status}`);
             }
 
             const responseData = await response.json();
             
-            // 如果响应中包含planJson字段，就将其解析为JSON对象
+            // If response contains planJson field, parse it as JSON object
             if (responseData.planJson) {
                 try {
                     responseData.plan = JSON.parse(responseData.planJson);
                 } catch (e) {
-                    console.warn('无法解析计划JSON:', e);
-                    responseData.plan = { error: '无法解析计划数据' };
+                    console.warn('Unable to parse plan JSON:', e);
+                    responseData.plan = { error: 'Unable to parse plan data' };
                 }
             }
 
             return responseData;
         } catch (error) {
-            console.error('更新计划模板失败:', error);
+            console.error('Failed to update plan template:', error);
             throw error;
         }
     };
 
     /**
-     * 删除计划模板
-     * @param {string} planId - 计划模板ID
-     * @returns {Promise<Object>} - 删除结果
+     * Delete plan template
+     * @param {string} planId - Plan template ID
+     * @returns {Promise<Object>} - Delete result
      */
     const deletePlanTemplate = async (planId) => {
         try {
@@ -332,21 +332,21 @@ const ManusAPI = (() => {
             });
 
             if (!response.ok) {
-                throw new Error(`删除计划模板失败: ${response.status}`);
+                throw new Error(`Failed to delete plan template: ${response.status}`);
             }
 
             return await response.json();
         } catch (error) {
-            console.error('删除计划模板失败:', error);
+            console.error('Failed to delete plan template:', error);
             throw error;
         }
     };
 
     /**
-     * 提交用户表单输入
-     * @param {string} planId - 计划ID
-     * @param {Object} formData - 用户输入的表单数据
-     * @returns {Promise<Object>} - 提交结果
+     * Submit user form input
+     * @param {string} planId - Plan ID
+     * @param {Object} formData - User input form data
+     * @returns {Promise<Object>} - Submit result
      */
     const submitFormInput = async (planId, formData) => {
         try {
@@ -359,31 +359,31 @@ const ManusAPI = (() => {
             });
 
             if (!response.ok) {
-                // 尝试解析错误响应体
+                // Try to parse error response body
                 let errorData;
                 try {
                     errorData = await response.json();
                 } catch (e) {
-                    errorData = { message: `提交表单输入失败: ${response.status}` };
+                    errorData = { message: `Failed to submit form input: ${response.status}` };
                 }
-                console.error('提交表单输入失败:', errorData);
-                throw new Error(errorData.message || `提交表单输入失败: ${response.status}`);
+                console.error('Failed to submit form input:', errorData);
+                throw new Error(errorData.message || `Failed to submit form input: ${response.status}`);
             }
-            // 即使是200 OK，也可能没有响应体，或者响应体表示成功但无特定数据
-            // 检查是否有内容可解析
+            // Even if it's 200 OK, there may be no response body, or the response body may indicate success but have no specific data
+            // Check if there's content to parse
             const contentType = response.headers.get("content-type");
             if (contentType && contentType.indexOf("application/json") !== -1) {
                  return await response.json(); // { success: true } or similar
             }
-            return { success: true }; // 默认成功处理
+            return { success: true }; // Default successful processing
 
         } catch (error) {
-            console.error('提交表单输入失败:', error);
-            throw error; // 将错误重新抛出，以便调用者可以处理
+            console.error('Failed to submit form input:', error);
+            throw error; // Re-throw the error so the caller can handle
         }
     };
 
-    // 返回公开的方法
+    // Return public methods
     return {
         BASE_URL,
         PLAN_TEMPLATE_URL,
