@@ -242,11 +242,11 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			String lambdaContent = String.join("\n", conditions);
 			String mapContent = String.join(", ", mappings);
 
-			sb.append(String
-				.format("stateGraph.addConditionalEdges(\"%s\",%n" + "            edge_async(state -> {%n"
-						+ "String value = state.value(\"%s_output\", String.class).orElse(\"\");%n"
-						+ "%s%n" + "return null;%n" + "            }),%n" + "            Map.of(%s)%n"
-						+ ");%n", srcVar, srcVar, lambdaContent, mapContent));
+			sb.append(String.format(
+					"stateGraph.addConditionalEdges(\"%s\",%n" + "            edge_async(state -> {%n"
+							+ "String value = state.value(\"%s_output\", String.class).orElse(\"\");%n" + "%s%n"
+							+ "return null;%n" + "            }),%n" + "            Map.of(%s)%n" + ");%n",
+					srcVar, srcVar, lambdaContent, mapContent));
 		}
 
 		return sb.toString();
