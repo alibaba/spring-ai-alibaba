@@ -150,7 +150,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 				}
 
 				// output_key
-                String outputKey = (String) data.get("output_key");
+				String outputKey = (String) data.get("output_key");
 
 				return new HttpNodeData(inputs, outputs, method, url, headers, queryParams, body, auth, retryConfig,
 						timeoutConfig, outputKey);
@@ -229,25 +229,21 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 
 	}
 
-    @Override
-    public String generateVarName(int count) {
-        return "httpNode" + count;
-    }
+	@Override
+	public String generateVarName(int count) {
+		return "httpNode" + count;
+	}
 
-    @Override
-    public void postProcess(HttpNodeData data, String varName) {
-        String origKey = data.getOutputKey();
-        String newKey  = varName + "_output";
+	@Override
+	public void postProcess(HttpNodeData data, String varName) {
+		String origKey = data.getOutputKey();
+		String newKey = varName + "_output";
 
-        if (origKey == null) {
-            data.setOutputKey(newKey);
-        }
-        data.setOutputs(List.of(
-                new Variable(
-                        data.getOutputKey(),
-                        com.alibaba.cloud.ai.model.VariableType.STRING.value()
-                )
-        ));
-    }
+		if (origKey == null) {
+			data.setOutputKey(newKey);
+		}
+		data.setOutputs(
+				List.of(new Variable(data.getOutputKey(), com.alibaba.cloud.ai.model.VariableType.STRING.value())));
+	}
 
 }

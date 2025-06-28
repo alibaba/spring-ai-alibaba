@@ -19,7 +19,6 @@ import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
-import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
@@ -121,7 +120,7 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 				}
 
 				// output_key
-                String outputKey = (String) data.get("output_key");
+				String outputKey = (String) data.get("output_key");
 				nodeData.setOutputKey(outputKey);
 
 				// input_text_key
@@ -192,34 +191,29 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 
 	}
 
-    public String generateVarName(int count) {
-        return "questionClassifyNode" + count;
-    }
+	public String generateVarName(int count) {
+		return "questionClassifyNode" + count;
+	}
 
-    @Override
-    public void postProcess(QuestionClassifierNodeData data, String varName) {
-        String origKey = data.getOutputKey();
-        String newKey  = varName + "_output";
+	@Override
+	public void postProcess(QuestionClassifierNodeData data, String varName) {
+		String origKey = data.getOutputKey();
+		String newKey = varName + "_output";
 
-        if (origKey == null) {
-            data.setOutputKey(newKey);
-        }
-        data.setOutputs(List.of(
-                new com.alibaba.cloud.ai.model.Variable(
-                        data.getOutputKey(),
-                        com.alibaba.cloud.ai.model.VariableType.STRING.value()
-                )
-        ));
-    }
+		if (origKey == null) {
+			data.setOutputKey(newKey);
+		}
+		data.setOutputs(List.of(new com.alibaba.cloud.ai.model.Variable(data.getOutputKey(),
+				com.alibaba.cloud.ai.model.VariableType.STRING.value())));
+	}
 
-    @Override
-    public Stream<Variable> extractWorkflowVars(QuestionClassifierNodeData data) {
-        Stream<Variable> outVar = Stream.of(
-                new Variable(data.getOutputKey(), VariableType.STRING.value())
-        );
-        Stream<Variable> inVars = data.getInputs().stream()
-                .map(sel -> new Variable(sel.getName(), VariableType.STRING.value()));
-        return Stream.concat(outVar, inVars);
-    }
+	@Override
+	public Stream<Variable> extractWorkflowVars(QuestionClassifierNodeData data) {
+		Stream<Variable> outVar = Stream.of(new Variable(data.getOutputKey(), VariableType.STRING.value()));
+		Stream<Variable> inVars = data.getInputs()
+			.stream()
+			.map(sel -> new Variable(sel.getName(), VariableType.STRING.value()));
+		return Stream.concat(outVar, inVars);
+	}
 
 }

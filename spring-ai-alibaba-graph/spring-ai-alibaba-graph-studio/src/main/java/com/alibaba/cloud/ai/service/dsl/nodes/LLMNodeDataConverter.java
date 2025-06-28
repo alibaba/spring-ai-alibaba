@@ -157,8 +157,8 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 				}
 
 				// output_key
-                String outputKey = (String) data.get("output_key");
-                nd.setOutputKey(outputKey);
+				String outputKey = (String) data.get("output_key");
+				nd.setOutputKey(outputKey);
 				return nd;
 			}
 
@@ -307,30 +307,27 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 
 	}
 
-    @Override
-    public String generateVarName(int count) {
-        return "LLMNode" + count;
-    }
+	@Override
+	public String generateVarName(int count) {
+		return "LLMNode" + count;
+	}
 
-    @Override
-    public void postProcess(LLMNodeData data, String varName) {
-        if (data.getOutputKey() == null) {
-            data.setOutputKey(varName + "_output");
-        }
-        data.setOutputs(List.of(
-                new Variable(data.getOutputKey(), VariableType.STRING.value())
-        ));
-        UnaryOperator<String> fixRefs = txt -> txt.replaceAll("#(\\d+)\\.", "#" + varName + ".");
-        if (data.getPromptTemplate() != null) {
-            data.getPromptTemplate().forEach(pt -> pt.setText(fixRefs.apply(pt.getText())));
-        }
-        if (data.getSystemPromptTemplate() != null) {
-            data.setSystemPromptTemplate(fixRefs.apply(data.getSystemPromptTemplate()));
-        }
-        if (data.getUserPromptTemplate() != null) {
-            data.setUserPromptTemplate(fixRefs.apply(data.getUserPromptTemplate()));
-        }
-    }
-
+	@Override
+	public void postProcess(LLMNodeData data, String varName) {
+		if (data.getOutputKey() == null) {
+			data.setOutputKey(varName + "_output");
+		}
+		data.setOutputs(List.of(new Variable(data.getOutputKey(), VariableType.STRING.value())));
+		UnaryOperator<String> fixRefs = txt -> txt.replaceAll("#(\\d+)\\.", "#" + varName + ".");
+		if (data.getPromptTemplate() != null) {
+			data.getPromptTemplate().forEach(pt -> pt.setText(fixRefs.apply(pt.getText())));
+		}
+		if (data.getSystemPromptTemplate() != null) {
+			data.setSystemPromptTemplate(fixRefs.apply(data.getSystemPromptTemplate()));
+		}
+		if (data.getUserPromptTemplate() != null) {
+			data.setUserPromptTemplate(fixRefs.apply(data.getUserPromptTemplate()));
+		}
+	}
 
 }

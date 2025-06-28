@@ -36,7 +36,7 @@ public class NodeData {
 	 */
 	protected List<Variable> outputs;
 
-    protected String varName;
+	protected String varName;
 
 	public NodeData() {
 
@@ -65,13 +65,13 @@ public class NodeData {
 		return this;
 	}
 
-    public String getVarName() {
-        return varName;
-    }
+	public String getVarName() {
+		return varName;
+	}
 
-    public void setVarName(String varName) {
-        this.varName = varName;
-    }
+	public void setVarName(String varName) {
+		this.varName = varName;
+	}
 
 	public static String defaultOutputKey(String nodeId) {
 		return nodeId + "_output";
