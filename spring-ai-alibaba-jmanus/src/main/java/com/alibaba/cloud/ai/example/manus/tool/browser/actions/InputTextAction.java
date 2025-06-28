@@ -39,8 +39,11 @@ public class InputTextAction extends BrowserAction {
 			return new ToolExecuteResult("Index and text are required for 'input_text' action");
 		}
 
-		// Get interactive elements (InteractiveElement), supports all frames (including iframe)
-		List<InteractiveElement> interactiveElements = getInteractiveElements(page); // Already supports recursion
+		// Get interactive elements (InteractiveElement), supports all frames (including
+		// iframe)
+		List<InteractiveElement> interactiveElements = getInteractiveElements(page); // Already
+																						// supports
+																						// recursion
 																						// frame
 		if (index < 0 || index >= interactiveElements.size()) {
 			return new ToolExecuteResult("Element with index " + index + " not found");
@@ -82,7 +85,8 @@ public class InputTextAction extends BrowserAction {
 				}
 			}
 		}
-		return new ToolExecuteResult("Successfully input: '" + text + "' to the specified element with index: " + index);
+		return new ToolExecuteResult(
+				"Successfully input: '" + text + "' to the specified element with index: " + index);
 	}
 
 }

@@ -18,18 +18,23 @@ package com.alibaba.cloud.ai.example.manus.recorder.entity;
 import java.time.LocalDateTime;
 
 /**
- * Records the thinking and action process of an agent in a single execution step. Exists as a sub-step of AgentExecutionRecord, focusing on recording processing messages during thinking and action phases.
+ * Records the thinking and action process of an agent in a single execution step. Exists
+ * as a sub-step of AgentExecutionRecord, focusing on recording processing messages during
+ * thinking and action phases.
  *
  * Data structure simplified into three main parts:
  *
- * 1. Basic Info - id: unique identifier of the record - stepNumber: step number - parentExecutionId: parent execution record ID
+ * 1. Basic Info - id: unique identifier of the record - stepNumber: step number -
+ * parentExecutionId: parent execution record ID
  *
- * 2. Think Phase - thinkStartTime: thinking start time - thinkInput: thinking input content - thinkOutput:
- * thinking output result - thinkEndTime: thinking end time
+ * 2. Think Phase - thinkStartTime: thinking start time - thinkInput: thinking input
+ * content - thinkOutput: thinking output result - thinkEndTime: thinking end time
  *
- * 3. Act Phase - actStartTime: action start time - toolName: tool name used - toolParameters: tool parameters -
- * actionNeeded: whether action execution is needed - actionDescription: action description - actionResult: action execution result - actEndTime:
- * action end time - status: execution status - errorMessage: error message (if any)
+ * 3. Act Phase - actStartTime: action start time - toolName: tool name used -
+ * toolParameters: tool parameters - actionNeeded: whether action execution is needed -
+ * actionDescription: action description - actionResult: action execution result -
+ * actEndTime: action end time - status: execution status - errorMessage: error message
+ * (if any)
  *
  * @see AgentExecutionRecord
  * @see JsonSerializable
@@ -137,7 +142,8 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * Save record to persistent storage. Empty implementation, to be overridden by specific storage implementations
+	 * Save record to persistent storage. Empty implementation, to be overridden by
+	 * specific storage implementations
 	 * @return Record ID after saving
 	 */
 	public Long save() {

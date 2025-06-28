@@ -119,14 +119,17 @@ public class ExecutionPlan {
 				+ (steps != null ? steps.size() : 0) + '}';
 	}
 
-	// state.append("Global Goal (The global goal is just a directional guidance, you don't need to complete the global goal in the current request, just focus on the currently executing step): ")
+	// state.append("Global Goal (The global goal is just a directional guidance, you
+	// don't need to complete the global goal in the current request, just focus on the
+	// currently executing step): ")
 	// .append("\n")
 	// .append(title)
 	// .append("\n");
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
 
-		state.append("- User Original Requirements (This requirement is the user's initial input, information can be referenced, but in the current interaction round only the current step requirements need to be completed!) :\n");
+		state.append(
+				"- User Original Requirements (This requirement is the user's initial input, information can be referenced, but in the current interaction round only the current step requirements need to be completed!) :\n");
 		state.append(title).append("\n");
 		if (userRequest != null && !userRequest.isEmpty()) {
 			state.append("").append(userRequest).append("\n\n");
@@ -147,7 +150,8 @@ public class ExecutionPlan {
 
 	/**
 	 * Get step execution status in string format
-	 * @param onlyCompletedAndFirstInProgress When true, only output all completed steps and the first step in progress
+	 * @param onlyCompletedAndFirstInProgress When true, only output all completed steps
+	 * and the first step in progress
 	 * @return Formatted step execution status string
 	 */
 	public String getStepsExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
@@ -157,13 +161,15 @@ public class ExecutionPlan {
 		for (int i = 0; i < steps.size(); i++) {
 			ExecutionStep step = steps.get(i);
 
-			// If onlyCompletedAndFirstInProgress is true, only show COMPLETED status steps and the first IN_PROGRESS status step
+			// If onlyCompletedAndFirstInProgress is true, only show COMPLETED status
+			// steps and the first IN_PROGRESS status step
 			if (onlyCompletedAndFirstInProgress) {
 				// If it's COMPLETED status, always show
 				if (step.getStatus() == AgentState.COMPLETED) {
 					// Do nothing, continue to show
 				}
-				// If it's IN_PROGRESS status and haven't found other IN_PROGRESS steps yet
+				// If it's IN_PROGRESS status and haven't found other IN_PROGRESS steps
+				// yet
 				else if (step.getStatus() == AgentState.IN_PROGRESS && !foundInProgress) {
 					foundInProgress = true; // Mark that IN_PROGRESS step has been found
 				}

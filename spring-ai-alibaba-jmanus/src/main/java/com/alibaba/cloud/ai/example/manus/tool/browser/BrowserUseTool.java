@@ -284,7 +284,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 		Map<String, Object> state = new HashMap<>();
 
 		try {
-			// Wait for page to load completely to avoid context destruction errors when getting information during navigation
+			// Wait for page to load completely to avoid context destruction errors when
+			// getting information during navigation
 			try {
 				Integer timeout = getBrowserTimeout();
 				page.waitForLoadState(com.microsoft.playwright.options.LoadState.DOMCONTENTLOADED,

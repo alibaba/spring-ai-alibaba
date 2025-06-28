@@ -22,8 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * MCP server configuration parsing object for parsing configuration format like: { "mcpServers": { "server-name": { "url":
- * "http://localhost:3000/sse", "env": { "API_KEY": "value" } } } }
+ * MCP server configuration parsing object for parsing configuration format like: {
+ * "mcpServers": { "server-name": { "url": "http://localhost:3000/sse", "env": {
+ * "API_KEY": "value" } } } }
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class McpServersConfig {
@@ -107,9 +108,9 @@ public class McpServersConfig {
 	}
 
 	/**
-	 * Convert to ServerParameters format JSON (for STUDIO type connection). Supports the following two formats: { "mcpServers": { "server-name":
-	 * { "command": "npx", "args": ["-y", "mcp-server"], "env": { "API_KEY": "value" } } }
-	 * }
+	 * Convert to ServerParameters format JSON (for STUDIO type connection). Supports the
+	 * following two formats: { "mcpServers": { "server-name": { "command": "npx", "args":
+	 * ["-y", "mcp-server"], "env": { "API_KEY": "value" } } } }
 	 *
 	 * Or:
 	 *

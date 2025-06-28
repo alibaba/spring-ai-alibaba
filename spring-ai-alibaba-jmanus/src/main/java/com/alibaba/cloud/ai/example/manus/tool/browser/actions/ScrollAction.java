@@ -36,7 +36,7 @@ public class ScrollAction extends BrowserAction {
 			return new ToolExecuteResult("Scroll amount is required for 'scroll' action");
 		}
 
-				Page page = getCurrentPage(); // Get Playwright Page instance
+		Page page = getCurrentPage(); // Get Playwright Page instance
 		page.evaluate("window.scrollBy(0, arguments[0])", scrollAmount); // Use Playwright
 		// Execute scroll
 

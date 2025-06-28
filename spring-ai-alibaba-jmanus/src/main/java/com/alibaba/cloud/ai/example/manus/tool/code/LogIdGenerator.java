@@ -39,7 +39,8 @@ public class LogIdGenerator {
 	private static final int SERIAL_LEN = Integer.BYTES;
 
 	/**
-	 * Total bytes must be a multiple of 3 to ensure base64 encoding doesn't need padding, otherwise special symbols = will be introduced in the encoded result
+	 * Total bytes must be a multiple of 3 to ensure base64 encoding doesn't need padding,
+	 * otherwise special symbols = will be introduced in the encoded result
 	 */
 	private static final int TOTAL_LEN = VERSION_LEN + TIME_LEN + IP_LEN + SERIAL_LEN;
 
@@ -50,8 +51,10 @@ public class LogIdGenerator {
 	private static final AtomicInteger SERIAL_GEN = new AtomicInteger(Integer.MIN_VALUE);
 
 	/**
-	 * Generate a UUID using snowflake algorithm approach, generating a globally roughly ordered UUID with version(2byte)+timestamp(8byte)+IP(4byte)+serial number(4byte)
-	 * Then use base64 encoding to make the final generated string only contain [0-9a-zA-Z]-_, without any other special symbols
+	 * Generate a UUID using snowflake algorithm approach, generating a globally roughly
+	 * ordered UUID with version(2byte)+timestamp(8byte)+IP(4byte)+serial number(4byte)
+	 * Then use base64 encoding to make the final generated string only contain
+	 * [0-9a-zA-Z]-_, without any other special symbols
 	 */
 	public static String generateUniqueId() {
 		byte[] array = new byte[TOTAL_LEN];
@@ -81,7 +84,8 @@ public class LogIdGenerator {
 	private static final String format = "%s.%s";
 
 	/**
-	 * Generate aibRpcId through unique id and corresponding increment id, note generation under concurrent situations
+	 * Generate aibRpcId through unique id and corresponding increment id, note generation
+	 * under concurrent situations
 	 * @param aibRpcId aibRpcId
 	 * @param incrementId incrementId
 	 * @return new aibRpcId

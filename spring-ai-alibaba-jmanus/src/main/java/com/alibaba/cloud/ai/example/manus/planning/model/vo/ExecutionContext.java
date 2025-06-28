@@ -19,11 +19,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Execution context class for passing and maintaining state information during the creation, execution, and summarization of plans.
- * This class serves as the core data carrier in the plan execution process, passing between various stages of
+ * Execution context class for passing and maintaining state information during the
+ * creation, execution, and summarization of plans. This class serves as the core data
+ * carrier in the plan execution process, passing between various stages of
  * {@link com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator}.
  *
- * Main responsibilities: - Store plan ID and plan entity information - Save user original request - Maintain plan execution status - Store execution result summary - Control whether execution summary generation is needed
+ * Main responsibilities: - Store plan ID and plan entity information - Save user original
+ * request - Maintain plan execution status - Store execution result summary - Control
+ * whether execution summary generation is needed
  *
  * @see com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan
  * @see com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator
@@ -47,13 +50,19 @@ public class ExecutionContext {
 	/** Result summary after plan execution completion */
 	private String resultSummary;
 
-	/** Whether to call large model to generate summary for execution results, true calls large model, false does not call and outputs results directly */
+	/**
+	 * Whether to call large model to generate summary for execution results, true calls
+	 * large model, false does not call and outputs results directly
+	 */
 	private boolean needSummary;
 
 	/** Flag indicating whether plan execution was successful */
 	private boolean success = false;
 
-	/** Whether to use memory, scenario is if only building plan, then memory should not be used, otherwise memory cannot be deleted */
+	/**
+	 * Whether to use memory, scenario is if only building plan, then memory should not be
+	 * used, otherwise memory cannot be deleted
+	 */
 	private boolean useMemory = false;
 
 	/**
@@ -167,7 +176,8 @@ public class ExecutionContext {
 	/**
 	 * Update current instance with content from another ExecutionContext instance
 	 * <p>
-	 * This method copies the plan entity, user request, and result summary from the passed context to the current instance
+	 * This method copies the plan entity, user request, and result summary from the
+	 * passed context to the current instance
 	 * @param context Source execution context instance
 	 */
 	public void updateContext(ExecutionContext context) {

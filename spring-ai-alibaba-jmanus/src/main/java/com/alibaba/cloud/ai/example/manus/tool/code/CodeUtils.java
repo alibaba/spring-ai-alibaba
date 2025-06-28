@@ -214,7 +214,8 @@ public class CodeUtils {
 	}
 
 	/**
-	 * Get shared file directory (create a shared folder in the input directory and return its path).
+	 * Get shared file directory (create a shared folder in the input directory and return
+	 * its path).
 	 * @param baseDir Base directory (if empty, use system property user.dir)
 	 * @param sharedFolderName Shared folder name (such as "shared")
 	 * @return Absolute path of the shared folder

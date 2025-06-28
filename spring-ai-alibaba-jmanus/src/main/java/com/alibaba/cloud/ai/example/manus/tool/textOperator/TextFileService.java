@@ -50,7 +50,10 @@ public class TextFileService implements ApplicationRunner {
 	/**
 	 * Set of supported text file extensions
 	 */
-	private static final Set<String> SUPPORTED_EXTENSIONS = new HashSet<>(Set.of(".txt", ".md", ".markdown", // Plain text and Markdown
+	private static final Set<String> SUPPORTED_EXTENSIONS = new HashSet<>(Set.of(".txt", ".md", ".markdown", // Plain
+																												// text
+																												// and
+																												// Markdown
 			".java", ".py", ".js", ".ts", ".jsx", ".tsx", // Common programming languages
 			".html", ".htm", ".css", ".scss", ".sass", ".less", // Web-related
 			".xml", ".json", ".yaml", ".yml", ".properties", // Configuration files

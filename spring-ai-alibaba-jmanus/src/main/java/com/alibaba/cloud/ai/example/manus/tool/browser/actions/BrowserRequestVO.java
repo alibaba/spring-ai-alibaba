@@ -23,9 +23,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class BrowserRequestVO {
 
 	/**
-	 * Browser operation type Supports: navigate, click, input_text, key_enter, screenshot, get_html, get_text,
-	 * execute_js, scroll, switch_tab, new_tab, close_tab, refresh, get_element_position,
-	 * move_to_and_click
+	 * Browser operation type Supports: navigate, click, input_text, key_enter,
+	 * screenshot, get_html, get_text, execute_js, scroll, switch_tab, new_tab, close_tab,
+	 * refresh, get_element_position, move_to_and_click
 	 */
 	private String action;
 
@@ -50,7 +50,8 @@ public class BrowserRequestVO {
 	private String script;
 
 	/**
-	 * Scroll pixels, used for scroll operations Positive scrolls down, negative scrolls up
+	 * Scroll pixels, used for scroll operations Positive scrolls down, negative scrolls
+	 * up
 	 */
 	@JsonProperty("scroll_amount")
 	private Integer scrollAmount;

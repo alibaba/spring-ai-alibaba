@@ -79,7 +79,8 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * Save execution records of the specified plan ID to persistent storage. This method will recursively call save methods of PlanExecutionRecord, AgentExecutionRecord and
+	 * Save execution records of the specified plan ID to persistent storage. This method
+	 * will recursively call save methods of PlanExecutionRecord, AgentExecutionRecord and
 	 * ThinkActRecord
 	 * @param planId Plan ID to save
 	 * @return Returns true if record is found and saved, false otherwise
@@ -91,13 +92,15 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 			return false;
 		}
 
-		// Call save method of PlanExecutionRecord, which will recursively call save methods of all sub-records
+		// Call save method of PlanExecutionRecord, which will recursively call save
+		// methods of all sub-records
 		record.save();
 		return true;
 	}
 
 	/**
-	 * Save all execution records to persistent storage. This method will iterate through all plan records and call their save methods
+	 * Save all execution records to persistent storage. This method will iterate through
+	 * all plan records and call their save methods
 	 */
 	@Override
 	public void saveAllExecutionRecords() {

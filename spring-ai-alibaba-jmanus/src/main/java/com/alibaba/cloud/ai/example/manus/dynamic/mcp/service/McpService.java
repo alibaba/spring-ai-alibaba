@@ -143,7 +143,8 @@ public class McpService {
 			catch (Exception e) {
 				logger.error("Failed to load MCP server configuration for: {}, error: {}", serverName, e.getMessage(),
 						e);
-				// Decide whether to continue processing other servers or throw exception based on requirements
+				// Decide whether to continue processing other servers or throw exception
+				// based on requirements
 				// Here we choose to continue processing other servers but log the error
 				// If strict mode is needed, uncomment the line below
 				// throw new IOException("Failed to load MCP server: " + serverName, e);
@@ -178,13 +179,15 @@ public class McpService {
 				// Check if URL path ends with /sse, throw error if not
 				String path = parsedUrl.getPath();
 				if (path == null || !path.endsWith("/sse")) {
-					throw new IllegalArgumentException("URL path must end with /sse, current path: " + path + " for server: " + serverName);
+					throw new IllegalArgumentException(
+							"URL path must end with /sse, current path: " + path + " for server: " + serverName);
 				}
 
 				// Remove trailing sse and pass as sseEndpoint
 				sseEndpoint = path;
 
-				// Remove leading slash because WebClient's baseUrl already contains the domain
+				// Remove leading slash because WebClient's baseUrl already contains the
+				// domain
 				if (sseEndpoint.startsWith("/")) {
 					sseEndpoint = sseEndpoint.substring(1);
 				}
@@ -302,8 +305,9 @@ public class McpService {
 
 					if (attempt < maxRetries) {
 						try {
-										// Wait before retrying to avoid immediate retry
-			Thread.sleep(1000 * attempt); // Incremental wait time: 1s, 2s, 3s
+							// Wait before retrying to avoid immediate retry
+							Thread.sleep(1000 * attempt); // Incremental wait time: 1s,
+															// 2s, 3s
 						}
 						catch (InterruptedException ie) {
 							Thread.currentThread().interrupt();
@@ -367,7 +371,8 @@ public class McpService {
 				String serverName = entry.getKey();
 				McpServerConfig serverConfig = entry.getValue();
 
-				// Use ServerConfig's toJson method to convert configuration to JSON string
+				// Use ServerConfig's toJson method to convert configuration to JSON
+				// string
 				String configJson = serverConfig.toJson();
 
 				// Find the corresponding MCP configuration entity

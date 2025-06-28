@@ -20,7 +20,8 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 
 /**
- * Plan execution recorder interface that defines methods for recording and retrieving plan execution details.
+ * Plan execution recorder interface that defines methods for recording and retrieving
+ * plan execution details.
  */
 public interface PlanExecutionRecorder {
 
@@ -62,15 +63,17 @@ public interface PlanExecutionRecorder {
 	PlanExecutionRecord getExecutionRecord(String planId);
 
 	/**
-	 * Saves the execution records for the specified plan ID to persistent storage. This method will recursively call
-	 * the save methods of PlanExecutionRecord, AgentExecutionRecord, and ThinkActRecord
+	 * Saves the execution records for the specified plan ID to persistent storage. This
+	 * method will recursively call the save methods of PlanExecutionRecord,
+	 * AgentExecutionRecord, and ThinkActRecord
 	 * @param planId The plan ID to save
 	 * @return true if records were found and saved, false otherwise
 	 */
 	boolean savePlanExecutionRecords(String planId);
 
 	/**
-	 * Saves all execution records to persistent storage. This method will iterate through all plan records and call their save methods
+	 * Saves all execution records to persistent storage. This method will iterate through
+	 * all plan records and call their save methods
 	 */
 	void saveAllExecutionRecords();
 

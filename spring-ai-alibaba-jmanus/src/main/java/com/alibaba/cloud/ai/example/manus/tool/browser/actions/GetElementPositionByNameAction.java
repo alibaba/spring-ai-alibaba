@@ -36,7 +36,8 @@ public class GetElementPositionByNameAction extends BrowserAction {
 	}
 
 	/**
-	 * Element position information class for storing global position and text information of each matched element
+	 * Element position information class for storing global position and text information
+	 * of each matched element
 	 */
 	public static class ElementPosition {
 
@@ -115,7 +116,8 @@ public class GetElementPositionByNameAction extends BrowserAction {
 	private void findAndProcessElementsByLocatorForFrame(Frame frame, String elementName, List<ElementPosition> results,
 			Set<String> uniqueSet, boolean isDebug) {
 
-		// Only find visible elements that contain elementName in text, excluding style tags
+		// Only find visible elements that contain elementName in text, excluding style
+		// tags
 		com.microsoft.playwright.Locator locator = frame.getByText(elementName);
 		int count = locator.count();
 		for (int i = 0; i < count; i++) {
@@ -141,7 +143,8 @@ public class GetElementPositionByNameAction extends BrowserAction {
 					double x = (double) box.x + (double) box.width / 2;
 					double y = (double) box.y + (double) box.height / 2;
 					if (isDebug) {
-						// Add red border to element and display elementText in top-right corner (red background, white text)
+						// Add red border to element and display elementText in top-right
+						// corner (red background, white text)
 						try {
 							String elementTextFinal = text.trim();
 							elementTextFinal = " (" + x + "," + y + ")" + elementTextFinal;

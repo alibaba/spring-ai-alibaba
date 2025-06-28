@@ -102,8 +102,10 @@ public class AgentServiceImpl implements AgentService {
 			return mapToAgentConfig(entity);
 		}
 		catch (Exception e) {
-			log.warn("Exception occurred during Agent creation: {}, error message: {}", config.getName(), e.getMessage());
-			// If it's a uniqueness constraint violation exception, try returning the existing Agent
+			log.warn("Exception occurred during Agent creation: {}, error message: {}", config.getName(),
+					e.getMessage());
+			// If it's a uniqueness constraint violation exception, try returning the
+			// existing Agent
 			if (e.getMessage() != null && e.getMessage().contains("Unique")) {
 				DynamicAgentEntity existingAgent = repository.findByAgentName(config.getName());
 				if (existingAgent != null) {
@@ -235,7 +237,8 @@ public class AgentServiceImpl implements AgentService {
 
 			});
 
-			log.info("Successfully loaded BaseAgent: {}, available tools count: {}", name, agent.getToolCallList().size());
+			log.info("Successfully loaded BaseAgent: {}, available tools count: {}", name,
+					agent.getToolCallList().size());
 
 			return agent;
 		}

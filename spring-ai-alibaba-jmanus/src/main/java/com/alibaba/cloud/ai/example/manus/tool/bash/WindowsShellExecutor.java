@@ -72,7 +72,8 @@ public class WindowsShellExecutor implements ShellCommandExecutor {
 
 				// Set timeout handling
 				try {
-					if (!command.startsWith("start /B")) { // Only set timeout for non-background commands
+					if (!command.startsWith("start /B")) { // Only set timeout for
+															// non-background commands
 						if (!currentProcess.waitFor(DEFAULT_TIMEOUT, TimeUnit.SECONDS)) {
 							log.warn("Command timed out. Sending termination signal to the process");
 							terminate();
@@ -99,7 +100,8 @@ public class WindowsShellExecutor implements ShellCommandExecutor {
 	public void terminate() {
 		if (currentProcess != null && currentProcess.isAlive()) {
 			try {
-				// Windows uses taskkill command to ensure process and its child processes are terminated
+				// Windows uses taskkill command to ensure process and its child processes
+				// are terminated
 				Runtime.getRuntime().exec("taskkill /F /T /PID " + currentProcess.pid());
 				// Wait for process termination
 				if (!currentProcess.waitFor(5, TimeUnit.SECONDS)) {
@@ -119,7 +121,12 @@ public class WindowsShellExecutor implements ShellCommandExecutor {
 		StringBuilder errorBuilder = new StringBuilder();
 
 		// Read standard output
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "GBK"))) { // Windows uses GBK encoding by default
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "GBK"))) { // Windows
+																													// uses
+																													// GBK
+																													// encoding
+																													// by
+																													// default
 			String line;
 			while ((line = reader.readLine()) != null) {
 				log.info(line);

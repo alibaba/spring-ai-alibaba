@@ -67,7 +67,8 @@ public class MacShellExecutor implements ShellCommandExecutor {
 
 				// Set timeout handling
 				try {
-					if (!command.endsWith("&")) { // Only set timeout for non-background commands
+					if (!command.endsWith("&")) { // Only set timeout for non-background
+													// commands
 						if (!currentProcess.waitFor(DEFAULT_TIMEOUT, TimeUnit.SECONDS)) {
 							log.warn("Command timed out. Sending SIGINT to the process");
 							terminate();

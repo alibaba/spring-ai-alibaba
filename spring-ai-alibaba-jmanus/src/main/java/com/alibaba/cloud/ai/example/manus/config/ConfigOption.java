@@ -37,14 +37,16 @@ public @interface ConfigOption {
 	/**
 	 * Option label
 	 * <p>
-	 * Supports internationalization key format: config.option.{group}.{subGroup}.{key}.{value}
+	 * Supports internationalization key format:
+	 * config.option.{group}.{subGroup}.{key}.{value}
 	 */
 	String label() default "";
 
 	/**
 	 * Option description
 	 * <p>
-	 * Supports internationalization key format: config.option.desc.{group}.{subGroup}.{key}.{value}
+	 * Supports internationalization key format:
+	 * config.option.desc.{group}.{subGroup}.{key}.{value}
 	 */
 	String description() default "";
 

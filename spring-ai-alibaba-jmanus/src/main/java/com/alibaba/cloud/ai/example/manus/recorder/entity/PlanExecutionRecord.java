@@ -22,20 +22,24 @@ import java.util.List;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState; // Added import
 
 /**
- * Plan execution record class for tracking and recording detailed information about PlanningFlow execution process.
+ * Plan execution record class for tracking and recording detailed information about
+ * PlanningFlow execution process.
  *
  * Data structure is divided into four main parts:
  *
- * 1. Basic Info - id: Unique identifier of the record - planId: Unique identifier of the plan - title: Plan title - startTime: Execution start time
- * - endTime: Execution end time - userRequest: User's original request
+ * 1. Basic Info - id: Unique identifier of the record - planId: Unique identifier of the
+ * plan - title: Plan title - startTime: Execution start time - endTime: Execution end
+ * time - userRequest: User's original request
  *
- * 2. Plan Structure - steps: Plan step list - stepStatuses: Step status list - stepNotes: Step notes list -
- * stepAgents: Smart agents associated with each step
+ * 2. Plan Structure - steps: Plan step list - stepStatuses: Step status list - stepNotes:
+ * Step notes list - stepAgents: Smart agents associated with each step
  *
- * 3. Execution Data - currentStepIndex: Current step index being executed - agentExecutionRecords:
- * Records of execution for each smart agent - executorKeys: List of executor keys - resultState: Shared result status
+ * 3. Execution Data - currentStepIndex: Current step index being executed -
+ * agentExecutionRecords: Records of execution for each smart agent - executorKeys: List
+ * of executor keys - resultState: Shared result status
  *
- * 4. Execution Result - completed: Whether completed - progress: Execution progress (percentage) - summary: Execution summary
+ * 4. Execution Result - completed: Whether completed - progress: Execution progress
+ * (percentage) - summary: Execution summary
  */
 public class PlanExecutionRecord {
 
@@ -141,8 +145,8 @@ public class PlanExecutionRecord {
 	}
 
 	/**
-	 * Save record to persistent storage. Empty implementation, to be overridden by specific storage implementations. 
-	 * Also recursively saves all AgentExecutionRecord
+	 * Save record to persistent storage. Empty implementation, to be overridden by
+	 * specific storage implementations. Also recursively saves all AgentExecutionRecord
 	 * @return Record ID after saving
 	 */
 	public Long save() {

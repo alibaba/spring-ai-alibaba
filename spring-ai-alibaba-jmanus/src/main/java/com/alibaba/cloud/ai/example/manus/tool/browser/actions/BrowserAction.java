@@ -50,7 +50,8 @@ public abstract class BrowserAction {
 
 	/**
 	 * Get browser operation timeout configuration
-	 * @return Timeout in milliseconds, returns default value of 30 seconds if not configured
+	 * @return Timeout in milliseconds, returns default value of 30 seconds if not
+	 * configured
 	 */
 	protected Integer getBrowserTimeoutMs() {
 		Integer timeout = getBrowserUseTool().getManusProperties().getBrowserRequestTimeout();

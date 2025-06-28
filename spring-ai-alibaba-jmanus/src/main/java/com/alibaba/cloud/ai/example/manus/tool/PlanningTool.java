@@ -181,7 +181,8 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 
 	public ToolExecuteResult createPlan(String planId, String title, List<String> steps) {
 		if (title == null || steps == null || steps.isEmpty()) {
-			log.info("Missing required parameters when creating plan: planId={}, title={}, steps={}", planId, title, steps);
+			log.info("Missing required parameters when creating plan: planId={}, title={}, steps={}", planId, title,
+					steps);
 			return new ToolExecuteResult("Required parameters missing");
 		}
 

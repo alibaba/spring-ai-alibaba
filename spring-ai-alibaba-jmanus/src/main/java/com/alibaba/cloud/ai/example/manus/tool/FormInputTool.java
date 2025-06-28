@@ -194,7 +194,9 @@ public class FormInputTool implements ToolCallBiFunctionDef<FormInputTool.UserFo
 	}
 
 	/**
-	 * Get the latest form structure defined by LLM (including description and input item labels and current values). This form structure will be used to present to users in the frontend.
+	 * Get the latest form structure defined by LLM (including description and input item
+	 * labels and current values). This form structure will be used to present to users in
+	 * the frontend.
 	 * @return latest UserFormInput object, or null if not yet defined.
 	 */
 	public UserFormInput getLatestUserFormInput() {
@@ -202,7 +204,8 @@ public class FormInputTool implements ToolCallBiFunctionDef<FormInputTool.UserFo
 	}
 
 	/**
-	 * Set user-submitted form input values. These values will update the value of corresponding input items in currentFormDefinition.
+	 * Set user-submitted form input values. These values will update the value of
+	 * corresponding input items in currentFormDefinition.
 	 * @param submittedItems list of input items submitted by user (label-value pairs).
 	 */
 	public void setUserFormInputValues(List<InputItem> submittedItems) {
@@ -283,7 +286,8 @@ public class FormInputTool implements ToolCallBiFunctionDef<FormInputTool.UserFo
 	}
 
 	/**
-	 * Get current tool state, including form description and input items (including user-entered values if any)
+	 * Get current tool state, including form description and input items (including
+	 * user-entered values if any)
 	 */
 	@Override
 	public String getCurrentToolStateString() {

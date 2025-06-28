@@ -23,8 +23,10 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Utility class specialized in handling interactive text elements in web pages. Provides functionality for finding, analyzing and processing text content in web pages.
- * Uses InteractiveElementRegistry to manage all interactive elements in the page, providing global index access capability.
+ * Utility class specialized in handling interactive text elements in web pages. Provides
+ * functionality for finding, analyzing and processing text content in web pages. Uses
+ * InteractiveElementRegistry to manage all interactive elements in the page, providing
+ * global index access capability.
  */
 public class InteractiveTextProcessor {
 
@@ -55,7 +57,8 @@ public class InteractiveTextProcessor {
 	/**
 	 * Get interactive element at specified index
 	 * @param index Global index
-	 * @return Interactive element corresponding to this index, returns empty if not exists
+	 * @return Interactive element corresponding to this index, returns empty if not
+	 * exists
 	 */
 	public Optional<InteractiveElement> getElementByIndex(int index) {
 		return elementRegistry.getElementById(index);

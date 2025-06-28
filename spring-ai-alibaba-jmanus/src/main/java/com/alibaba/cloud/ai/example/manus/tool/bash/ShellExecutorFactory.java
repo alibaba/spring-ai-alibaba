@@ -16,7 +16,8 @@
 package com.alibaba.cloud.ai.example.manus.tool.bash;
 
 /**
- * Shell executor factory class responsible for creating shell executors for corresponding operating systems
+ * Shell executor factory class responsible for creating shell executors for corresponding
+ * operating systems
  */
 public class ShellExecutorFactory {
 

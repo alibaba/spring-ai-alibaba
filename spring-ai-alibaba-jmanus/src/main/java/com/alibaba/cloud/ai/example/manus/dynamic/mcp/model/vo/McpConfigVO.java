@@ -44,7 +44,8 @@ public class McpConfigVO {
 		this.mcpServerName = entity.getMcpServerName();
 		this.connectionType = entity.getConnectionType();
 		this.connectionConfig = entity.getConnectionConfig();
-		this.toolNames = new ArrayList<>(); // Initialize as empty list, may need to get from other places in actual use
+		this.toolNames = new ArrayList<>(); // Initialize as empty list, may need to get
+											// from other places in actual use
 	}
 
 	// Static method to convert VO list to entity list

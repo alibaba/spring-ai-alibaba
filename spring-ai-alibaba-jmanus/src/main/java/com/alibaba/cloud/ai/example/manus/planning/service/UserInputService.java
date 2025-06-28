@@ -44,9 +44,12 @@ public class UserInputService {
 	public UserInputWaitState createUserInputWaitState(String planId, String message, FormInputTool formInputTool) {
 		UserInputWaitState waitState = new UserInputWaitState(planId, message, true);
 		if (formInputTool != null) {
-			// Assume FormInputTool has methods getFormDescription() and getFormInputs() to get form information
-			// This requires FormInputTool class to support these methods, or other ways to get this information
-			// This is indicative code, specific implementation depends on the actual structure of FormInputTool
+			// Assume FormInputTool has methods getFormDescription() and getFormInputs()
+			// to get form information
+			// This requires FormInputTool class to support these methods, or other ways
+			// to get this information
+			// This is indicative code, specific implementation depends on the actual
+			// structure of FormInputTool
 			FormInputTool.UserFormInput latestFormInput = formInputTool.getLatestUserFormInput();
 			if (latestFormInput != null) {
 				waitState.setFormDescription(latestFormInput.getDescription());

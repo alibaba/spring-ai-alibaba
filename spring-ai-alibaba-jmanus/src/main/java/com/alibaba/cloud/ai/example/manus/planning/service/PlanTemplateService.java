@@ -230,7 +230,8 @@ public class PlanTemplateService {
 	}
 
 	/**
-	 * Intelligently compare if two JSON strings are semantically identical, ignoring format differences (spaces, line breaks, etc.), only comparing actual content
+	 * Intelligently compare if two JSON strings are semantically identical, ignoring
+	 * format differences (spaces, line breaks, etc.), only comparing actual content
 	 * @param json1 First JSON string
 	 * @param json2 Second JSON string
 	 * @return Returns true if semantically identical, false otherwise

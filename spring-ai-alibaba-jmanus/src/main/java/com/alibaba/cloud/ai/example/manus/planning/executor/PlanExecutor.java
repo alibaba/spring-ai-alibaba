@@ -47,7 +47,8 @@ public class PlanExecutor {
 
 	protected final PlanExecutionRecorder recorder;
 
-	// Match square brackets at the beginning of strings, supporting Chinese and other characters
+	// Match square brackets at the beginning of strings, supporting Chinese and other
+	// characters
 	Pattern pattern = Pattern.compile("^\\s*\\[([^\\]]+)\\]");
 
 	private final List<DynamicAgentEntity> agents;
@@ -77,7 +78,8 @@ public class PlanExecutor {
 
 	/**
 	 * Execute all steps of the entire plan
-	 * @param context Execution context containing user request and execution process information
+	 * @param context Execution context containing user request and execution process
+	 * information
 	 */
 	public void executeAllSteps(ExecutionContext context) {
 		BaseAgent executor = null;

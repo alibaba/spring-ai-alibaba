@@ -120,7 +120,8 @@ public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
 		commandList.add(command);
 
 		try {
-			// Use ShellExecutorFactory to create executor for corresponding operating system
+			// Use ShellExecutorFactory to create executor for corresponding operating
+			// system
 			ShellCommandExecutor executor = ShellExecutorFactory.createExecutor();
 			log.info("Using shell executor for OS: {}", osName);
 			List<String> result = executor.execute(commandList, workingDirectoryPath);

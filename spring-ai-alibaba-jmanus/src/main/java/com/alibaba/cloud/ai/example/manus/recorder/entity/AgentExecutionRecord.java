@@ -20,19 +20,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Agent execution record class for tracking and recording detailed information about BaseAgent execution process.
+ * Agent execution record class for tracking and recording detailed information about
+ * BaseAgent execution process.
  *
  * Data structure is divided into three main parts:
  *
- * 1. Basic Info - id: unique identifier of the record - conversationId: conversation unique identifier - agentName: agent name -
- * agentDescription: agent description - startTime: execution start time - endTime: execution end time
+ * 1. Basic Info - id: unique identifier of the record - conversationId: conversation
+ * unique identifier - agentName: agent name - agentDescription: agent description -
+ * startTime: execution start time - endTime: execution end time
  *
- * 2. Execution Data - maxSteps: maximum execution steps - currentStep: current execution step - status:
- * execution status (IDLE, RUNNING, FINISHED) - thinkActSteps: think-act step record list, each element is a ThinkActRecord object -
- * agentRequest: input prompt template
+ * 2. Execution Data - maxSteps: maximum execution steps - currentStep: current execution
+ * step - status: execution status (IDLE, RUNNING, FINISHED) - thinkActSteps: think-act
+ * step record list, each element is a ThinkActRecord object - agentRequest: input prompt
+ * template
  *
- * 3. Execution Result - isCompleted: whether completed - isStuck: whether stuck - result: execution result -
- * errorMessage: error message (if any)
+ * 3. Execution Result - isCompleted: whether completed - isStuck: whether stuck - result:
+ * execution result - errorMessage: error message (if any)
  *
  * @see BaseAgent
  * @see ThinkActRecord
@@ -239,7 +242,8 @@ public class AgentExecutionRecord {
 	}
 
 	/**
-	 * Save record to persistent storage. Empty implementation, to be overridden by specific storage implementations. Also recursively saves all ThinkActRecords
+	 * Save record to persistent storage. Empty implementation, to be overridden by
+	 * specific storage implementations. Also recursively saves all ThinkActRecords
 	 * @return Record ID after saving
 	 */
 	public Long save() {

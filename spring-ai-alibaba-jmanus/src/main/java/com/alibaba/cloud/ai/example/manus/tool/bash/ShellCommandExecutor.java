@@ -18,7 +18,8 @@ package com.alibaba.cloud.ai.example.manus.tool.bash;
 import java.util.List;
 
 /**
- * Shell command executor interface. Provides cross-platform (Windows/Linux/Mac) shell command execution capability
+ * Shell command executor interface. Provides cross-platform (Windows/Linux/Mac) shell
+ * command execution capability
  */
 public interface ShellCommandExecutor {
 

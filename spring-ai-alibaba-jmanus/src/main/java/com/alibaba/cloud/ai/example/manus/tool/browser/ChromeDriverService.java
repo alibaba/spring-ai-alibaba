@@ -190,7 +190,9 @@ public class ChromeDriverService {
 			// Basic configuration
 			options.setArgs(Arrays.asList("--remote-allow-origins=*", "--disable-blink-features=AutomationControlled",
 					"--disable-infobars", "--disable-notifications", "--disable-dev-shm-usage",
-					"--lang=zh-CN,zh,en-US,en", "--user-agent=" + getRandomUserAgent(), "--window-size=1920,1080" // Default window size
+					"--lang=zh-CN,zh,en-US,en", "--user-agent=" + getRandomUserAgent(), "--window-size=1920,1080" // Default
+																													// window
+																													// size
 			));
 
 			// Decide whether to use headless mode based on configuration
