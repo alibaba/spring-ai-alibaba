@@ -13,13 +13,13 @@ spring:
     mcp:
       client:
         enabled: false
-  # H2 数据库配置
+  # H2 database configuration
   datasource:
     url: jdbc:h2:file:./h2-data/openmanus_db;MODE=MYSQL;DATABASE_TO_LOWER=TRUE
     driver-class-name: org.h2.Driver
     username: sa
     password: $FSD#@!@#!#$!12341234
-  # JPA 配置
+  # JPA configuration
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
@@ -28,7 +28,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-  # H2 控制台配置
+  # H2 console configuration
   h2:
     console:
       enabled: true

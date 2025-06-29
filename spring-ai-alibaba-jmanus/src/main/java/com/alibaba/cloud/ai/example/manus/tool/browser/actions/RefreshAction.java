@@ -28,8 +28,8 @@ public class RefreshAction extends BrowserAction {
 
 	@Override
 	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
-		page.reload(); // 刷新当前页面
+		Page page = getCurrentPage(); // Get Playwright Page instance
+		page.reload(); // Refresh current page
 
 		return new ToolExecuteResult("Refreshed current page");
 	}

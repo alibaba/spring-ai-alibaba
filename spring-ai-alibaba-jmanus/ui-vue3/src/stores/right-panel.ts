@@ -19,24 +19,24 @@ import { ref, reactive, computed, nextTick } from 'vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 
 export const useRightPanelStore = defineStore('rightPanel', () => {
-  // 基本状态
+  // Basic state
   const activeTab = ref('details')
 
-  // 计划数据映射 (类似 right-sidebar.js 的 planDataMap)
+  // Plan data mapping (similar to planDataMap in right-sidebar.js)
   const planDataMap = ref<Map<string, any>>(new Map())
   const currentDisplayedPlanId = ref<string>()
   const selectedStep = ref<any>()
 
-  // 滚动相关状态
+  // Scroll-related state
   const showScrollToBottomButton = ref(false)
   const isNearBottom = ref(true)
   const shouldAutoScrollToBottom = ref(true)
 
-  // 自动刷新相关状态
+  // Auto-refresh related state
   const autoRefreshTimer = ref<number | null>(null)
-  const AUTO_REFRESH_INTERVAL = 3000 // 3秒刷新一次步骤详情
+  const AUTO_REFRESH_INTERVAL = 3000 // Refresh step details every 3 seconds
 
-  // 代码和聊天预览相关状态
+  // Code and chat preview related state
   const codeContent = ref(`// Generated Spring Boot REST API
 @RestController
 @RequestMapping("/api/users")
@@ -116,17 +116,17 @@ public class UserController {
     },
   ])
 
-  // 预览标签页配置
+  // Preview tab configuration
   const previewTabs = [
     { id: 'details', name: '步骤执行详情', icon: 'carbon:events' },
     { id: 'chat', name: 'Chat', icon: 'carbon:chat' },
     { id: 'code', name: 'Code', icon: 'carbon:code' },
   ]
 
-  // DOM 元素引用（需要在组件中设置）
+  // DOM element reference (needs to be set in component)
   const scrollContainer = ref<HTMLElement>()
 
-  // 计算属性
+  // Computed properties
   const currentPlan = computed(() => {
     if (!currentDisplayedPlanId.value) return null
     return planDataMap.value.get(currentDisplayedPlanId.value)
@@ -139,47 +139,47 @@ public class UserController {
     return '等待执行'
   })
 
-  // Actions - 标签页管理
+  // Actions - Tab management
   const switchTab = (tabId: string) => {
     activeTab.value = tabId
   }
 
-  // Actions - 计划数据管理
+  // Actions - Plan data management
   const handlePlanUpdate = async (planData: any) => {
-    console.log('[RightPanelStore] 收到计划更新事件, planData:', planData)
+    console.log('[RightPanelStore] Received plan update event, planData:', planData)
 
-    // 验证数据有效性
+    // Validate data validity
     if (!planData || !planData.planId) {
       console.warn('[RightPanelStore] Invalid plan data received:', planData)
       return
     }
 
-    // 更新计划数据到本地映射
+    // Update plan data to local mapping
     planDataMap.value.set(planData.planId, planData)
-    console.log('[RightPanelStore] 计划数据已更新到 planDataMap:', planData.planId)
+    console.log('[RightPanelStore] Plan data updated to planDataMap:', planData.planId)
 
-    // 如果当前选中的步骤对应这个计划，重新加载步骤详情
+    // If currently selected step corresponds to this plan, reload step details
     if (selectedStep.value?.planId === planData.planId) {
-      console.log('[RightPanelStore] 刷新当前选中步骤的详情:', selectedStep.value.index)
+      console.log('[RightPanelStore] Refresh details of currently selected step:', selectedStep.value.index)
       showStepDetails(planData.planId, selectedStep.value.index)
     }
 
-    // 数据更新后，如果之前在底部则自动滚动到最新内容
+    // After data update, auto-scroll to latest content if previously at bottom
     autoScrollToBottomIfNeeded()
   }
 
   const updateDisplayedPlanProgress = (planData: any) => {
-    // 这里可以更新UI状态，比如进度条等
+    // Here you can update UI state, such as progress bars
     if (planData.steps && planData.steps.length > 0) {
       const totalSteps = planData.steps.length
       const currentStep = (planData.currentStepIndex || 0) + 1
-      console.log(`[RightPanelStore] 进度: ${currentStep} / ${totalSteps}`)
+      console.log(`[RightPanelStore] Progress: ${currentStep} / ${totalSteps}`)
     }
   }
 
-  // Actions - 步骤详情管理
+  // Actions - Step details management
   const showStepDetails = (planId: string, stepIndex: number) => {
-    console.log('[RightPanelStore] 显示步骤详情:', { planId, stepIndex })
+    console.log('[RightPanelStore] Show step details:', { planId, stepIndex })
 
     const planData = planDataMap.value.get(planId)
 
@@ -190,7 +190,7 @@ public class UserController {
         stepIndex,
         hasSteps: !!planData?.steps,
       })
-      stopAutoRefresh() // 停止自动刷新
+      stopAutoRefresh() // Stop auto refresh
       return
     }
 
@@ -199,7 +199,7 @@ public class UserController {
     const agentExecution =
       planData.agentExecutionSequence && planData.agentExecutionSequence[stepIndex]
 
-    // 判断步骤是否完成 - 多重条件判断
+    // Determine if step is completed - multiple condition checks
     const isStepCompleted =
       agentExecution?.isCompleted ||
       planData.completed ||
@@ -208,9 +208,9 @@ public class UserController {
     const isCurrent =
       !isStepCompleted && stepIndex === planData.currentStepIndex && !planData.completed
 
-    // 构造步骤详情对象，类似 right-sidebar.js 的逻辑
+    // Construct step details object, similar to right-sidebar.js logic
     selectedStep.value = {
-      planId: planId, // 确保包含planId
+      planId: planId, // Ensure planId is included
       index: stepIndex,
       title:
         typeof step === 'string'
@@ -235,7 +235,7 @@ public class UserController {
       planCompleted: planData.completed,
     })
 
-    // 如果步骤未完成且计划还在执行中，启动自动刷新
+    // If step is not completed and plan is still executing, start auto refresh
     if (
       !isStepCompleted &&
       !planData.completed &&
@@ -246,12 +246,12 @@ public class UserController {
       stopAutoRefresh()
     }
 
-    // 延迟检查滚动状态，确保DOM已更新
+    // Delay scroll state check to ensure DOM is updated
     setTimeout(() => {
       checkScrollState()
     }, 100)
 
-    // 数据更新后，如果之前在底部则自动滚动到最新内容
+    // After data update, auto-scroll to latest content if previously at bottom
     autoScrollToBottomIfNeeded()
   }
 
@@ -261,44 +261,44 @@ public class UserController {
     stopAutoRefresh()
   }
 
-  // Actions - 自动刷新管理
+  // Actions - Auto refresh management
   const startAutoRefresh = (planId: string, stepIndex: number) => {
-    console.log('[RightPanelStore] 启动自动刷新:', { planId, stepIndex })
+    console.log('[RightPanelStore] Start auto refresh:', { planId, stepIndex })
 
-    // 停止之前的刷新
+    // Stop previous refresh
     stopAutoRefresh()
 
     autoRefreshTimer.value = window.setInterval(() => {
-      console.log('[RightPanelStore] 执行自动刷新 - Step details')
+      console.log('[RightPanelStore] Execute auto refresh - Step details')
 
-      // 检查计划是否还在执行
+      // Check if plan is still executing
       const planData = planDataMap.value.get(planId)
       if (!planData || planData.completed) {
-        console.log('[RightPanelStore] 计划已完成，停止自动刷新')
+        console.log('[RightPanelStore] Plan completed, stop auto refresh')
         stopAutoRefresh()
         return
       }
 
-      // 检查步骤是否还在执行
+      // Check if step is still executing
       const agentExecution = planData.agentExecutionSequence?.[stepIndex]
       if (agentExecution?.isCompleted) {
-        console.log('[RightPanelStore] 步骤已完成，停止自动刷新')
+        console.log('[RightPanelStore] Step completed, stop auto refresh')
         stopAutoRefresh()
         return
       }
 
-      // 检查是否已经进入下一步
+      // Check if already moved to next step
       const currentStepIndex = planData.currentStepIndex ?? 0
       if (stepIndex < currentStepIndex) {
-        console.log('[RightPanelStore] 已进入下一步，停止自动刷新')
+        console.log('[RightPanelStore] Already moved to next step, stop auto refresh')
         stopAutoRefresh()
         return
       }
 
-      // 刷新步骤详情
+      // Refresh step details
       showStepDetails(planId, stepIndex)
 
-      // 数据更新后，如果之前在底部则自动滚动到最新内容
+      // After data update, auto-scroll to latest content if previously at bottom
       autoScrollToBottomIfNeeded()
     }, AUTO_REFRESH_INTERVAL)
   }
@@ -307,11 +307,11 @@ public class UserController {
     if (autoRefreshTimer.value) {
       clearInterval(autoRefreshTimer.value)
       autoRefreshTimer.value = null
-      console.log('[RightPanelStore] 自动刷新已停止')
+      console.log('[RightPanelStore] Auto refresh stopped')
     }
   }
 
-  // Actions - 滚动管理
+  // Actions - Scroll management
   const setScrollContainer = (element: HTMLElement | null) => {
     scrollContainer.value = element || undefined
   }
@@ -326,16 +326,16 @@ public class UserController {
     isNearBottom.value = isAtBottom
     showScrollToBottomButton.value = hasScrollableContent && !isAtBottom
 
-    // 更新自动滚动标记：如果用户滚动到底部，应该自动滚动
-    // 如果用户主动向上滚动离开底部，则停止自动滚动
+    // Update auto-scroll flag: should auto-scroll if user scrolls to bottom
+    // If user actively scrolls up away from bottom, stop auto-scrolling
     if (isAtBottom) {
       shouldAutoScrollToBottom.value = true
     } else if (scrollHeight - scrollTop - clientHeight > 100) {
-      // 如果用户明显向上滚动了（距离底部超过100px），则停止自动滚动
+      // If user clearly scrolled up (more than 100px from bottom), stop auto-scrolling
       shouldAutoScrollToBottom.value = false
     }
 
-    console.log('[RightPanelStore] 滚动状态检查:', {
+    console.log('[RightPanelStore] Scroll state check:', {
       scrollTop,
       scrollHeight,
       clientHeight,
@@ -354,7 +354,7 @@ public class UserController {
       behavior: 'smooth',
     })
 
-    // 滚动后重置状态
+    // Reset state after scrolling
     nextTick(() => {
       shouldAutoScrollToBottom.value = true
       checkScrollState()
@@ -367,12 +367,12 @@ public class UserController {
     nextTick(() => {
       if (scrollContainer.value) {
         scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
-        console.log('[RightPanelStore] 自动滚动到底部')
+        console.log('[RightPanelStore] Auto scroll to bottom')
       }
     })
   }
 
-  // Actions - 代码操作
+  // Actions - Code operations
   const copyCode = () => {
     navigator.clipboard.writeText(codeContent.value)
   }
@@ -387,7 +387,7 @@ public class UserController {
     URL.revokeObjectURL(url)
   }
 
-  // Actions - 数据清理
+  // Actions - Data cleanup
   const clearPlanData = () => {
     planDataMap.value.clear()
     selectedStep.value = null
@@ -395,7 +395,7 @@ public class UserController {
     stopAutoRefresh()
   }
 
-  // Actions - 工具函数
+  // Actions - Utility functions
   const formatJson = (jsonData: any): string => {
     if (jsonData === null || typeof jsonData === 'undefined' || jsonData === '') {
       return 'N/A'
@@ -404,12 +404,12 @@ public class UserController {
       const jsonObj = typeof jsonData === 'object' ? jsonData : JSON.parse(jsonData)
       return JSON.stringify(jsonObj, null, 2)
     } catch (e) {
-      // 如果解析失败，直接返回字符串形式（类似 right-sidebar.js 的 _escapeHtml）
+      // If parsing fails, return string format directly (similar to _escapeHtml in right-sidebar.js)
       return String(jsonData)
     }
   }
 
-  // Actions - 清理资源
+  // Actions - Resource cleanup
   const cleanup = () => {
     stopAutoRefresh()
     planDataMap.value.clear()
@@ -423,7 +423,7 @@ public class UserController {
   }
 
   return {
-    // 状态
+    // State
     activeTab,
     planDataMap,
     currentDisplayedPlanId,
@@ -438,7 +438,7 @@ public class UserController {
     previewTabs,
     scrollContainer,
 
-    // 计算属性
+    // Computed properties
     currentPlan,
     stepStatusText,
 

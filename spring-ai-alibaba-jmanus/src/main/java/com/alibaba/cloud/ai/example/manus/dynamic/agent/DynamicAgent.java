@@ -276,7 +276,7 @@ public class DynamicAgent extends ReActAgent {
 			String userInput = userMessage.getText();
 
 			if (!StringUtils.isBlank(userInput)) {
-				// 将用户输入添加到内存中
+				// Add user input to memory
 
 				llmService.getAgentMemory().add(getPlanId(), userMessage);
 
@@ -403,7 +403,7 @@ public class DynamicAgent extends ReActAgent {
 		if (context != null) {
 			return context.getFunctionInstance().getCurrentToolStateString();
 		}
-		// 如果没有找到对应的工具回调上下文，返回空字符串
+		// If corresponding tool callback context is not found, return empty string
 		return "";
 	}
 
@@ -414,12 +414,12 @@ public class DynamicAgent extends ReActAgent {
 		Map<String, Object> oldMap = getEnvData();
 		toolEnvDataMap.putAll(oldMap);
 
-		// 用新数据覆盖旧数据
+		// Overwrite old data with new data
 		for (String toolKey : availableToolKeys) {
 			String envData = collectEnvData(toolKey);
 			toolEnvDataMap.put(toolKey, envData);
 		}
-		log.debug("收集到的工具环境数据: {}", toolEnvDataMap);
+		log.debug("Collected tool environment data: {}", toolEnvDataMap);
 
 		setEnvData(toolEnvDataMap);
 	}
@@ -432,7 +432,7 @@ public class DynamicAgent extends ReActAgent {
 			if (value == null || value.toString().isEmpty()) {
 				continue; // Skip tools with no data
 			}
-			envDataStringBuilder.append(toolKey).append(" 的上下文信息：\n");
+			envDataStringBuilder.append(toolKey).append(" context information:\n");
 			envDataStringBuilder.append("    ").append(value.toString()).append("\n");
 		}
 

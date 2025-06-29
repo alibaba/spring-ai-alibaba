@@ -96,7 +96,7 @@ public class McpService {
 			String serverName = mcpConfigEntity.getMcpServerName();
 
 			try {
-				// 验证基础配置
+				// Validate basic configuration
 				if (mcpConfigEntity.getConnectionType() == null) {
 					logger.error("Connection type is required for server: {}", serverName);
 					throw new IOException("Connection type is required for server: " + serverName);
@@ -143,9 +143,10 @@ public class McpService {
 			catch (Exception e) {
 				logger.error("Failed to load MCP server configuration for: {}, error: {}", serverName, e.getMessage(),
 						e);
-				// 根据需求决定是否继续处理其他服务器还是抛出异常
-				// 这里选择继续处理其他服务器，但记录错误
-				// 如果需要严格模式，可以取消注释下面的行
+				// Decide whether to continue processing other servers or throw exception
+				// based on requirements
+				// Here we choose to continue processing other servers but log the error
+				// If strict mode is needed, uncomment the line below
 				// throw new IOException("Failed to load MCP server: " + serverName, e);
 			}
 		}
@@ -161,7 +162,7 @@ public class McpService {
 		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigEntity.getConnectionConfig())) {
 			McpServerConfig mcpServerConfig = jsonParser.readValueAs(McpServerConfig.class);
 
-			// 验证URL配置
+			// Validate URL configuration
 			if (mcpServerConfig.getUrl() == null || mcpServerConfig.getUrl().trim().isEmpty()) {
 				throw new IOException("Invalid or missing MCP server URL for server: " + serverName);
 			}
@@ -175,21 +176,23 @@ public class McpService {
 				baseUrl = parsedUrl.getProtocol() + "://" + parsedUrl.getHost()
 						+ (parsedUrl.getPort() == -1 ? "" : ":" + parsedUrl.getPort());
 
-				// 检查URL路径是否以/sse结尾，如果不是则抛出错误
+				// Check if URL path ends with /sse, throw error if not
 				String path = parsedUrl.getPath();
 				if (path == null || !path.endsWith("/sse")) {
-					throw new IllegalArgumentException("URL路径必须以/sse结尾，当前路径: " + path + " for server: " + serverName);
+					throw new IllegalArgumentException(
+							"URL path must end with /sse, current path: " + path + " for server: " + serverName);
 				}
 
-				// 去掉尾部的sse，作为sseEndpoint传入
+				// Remove trailing sse and pass as sseEndpoint
 				sseEndpoint = path;
 
-				// 移除开头的斜杠，因为WebClient的baseUrl已经包含了域名
+				// Remove leading slash because WebClient's baseUrl already contains the
+				// domain
 				if (sseEndpoint.startsWith("/")) {
 					sseEndpoint = sseEndpoint.substring(1);
 				}
 
-				// 如果去掉sse后为空，使用默认路径
+				// If empty after removing sse, use default path
 				if (sseEndpoint.isEmpty()) {
 					sseEndpoint = null;
 				}
@@ -202,7 +205,7 @@ public class McpService {
 			logger.info("Connecting to base URL: {}, SSE endpoint: {} for server: {}", baseUrl, sseEndpoint,
 					serverName);
 
-			// 创建WebClient并添加必要的请求头
+			// Create WebClient and add necessary request headers
 			WebClient.Builder webClientBuilder = WebClient.builder()
 				.baseUrl(baseUrl)
 				.defaultHeader("Accept", "text/event-stream")
@@ -230,7 +233,7 @@ public class McpService {
 		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigEntity.getConnectionConfig())) {
 			McpServerConfig mcpServerConfig = jsonParser.readValueAs(McpServerConfig.class);
 
-			// 提取和验证命令参数
+			// Extract and validate command parameters
 			String command = mcpServerConfig.getCommand();
 			if (command == null || command.trim().isEmpty()) {
 				throw new IOException("Missing required 'command' field in server configuration for " + serverName);
@@ -242,26 +245,26 @@ public class McpService {
 
 			logger.debug("Creating STUDIO connection for server: {} with command: {}", serverName, command);
 
-			// 使用Builder模式创建ServerParameters实例
+			// Use Builder pattern to create ServerParameters instance
 			ServerParameters.Builder builder = ServerParameters.builder(command);
 
-			// 添加参数
+			// Add parameters
 			if (args != null && !args.isEmpty()) {
 				builder.args(args);
 				logger.debug("Added {} arguments for server: {}", args.size(), serverName);
 			}
 
-			// 添加环境变量
+			// Add environment variables
 			if (env != null && !env.isEmpty()) {
 				builder.env(env);
 				logger.debug("Added {} environment variables for server: {}", env.size(), serverName);
 			}
 
-			// 构建ServerParameters实例
+			// Build ServerParameters instance
 			ServerParameters serverParameters = builder.build();
 			transport = new StdioClientTransport(serverParameters, new ObjectMapper());
 
-			// 配置MCP客户端
+			// Configure MCP client
 			McpServiceEntity mcpServiceEntity = configureMcpTransport(serverName, transport);
 			logger.info("STUDIO MCP Client configured successfully for server: {}", serverName);
 			return mcpServiceEntity;
@@ -281,7 +284,7 @@ public class McpService {
 				.clientInfo(new McpSchema.Implementation(mcpServerName, "1.0.0"))
 				.build();
 
-			// 重试机制：最多重试3次
+			// Retry mechanism: maximum 3 retries
 			int maxRetries = 3;
 			Exception lastException = null;
 
@@ -302,8 +305,9 @@ public class McpService {
 
 					if (attempt < maxRetries) {
 						try {
-							// 重试前等待一段时间，避免立即重试
-							Thread.sleep(1000 * attempt); // 递增等待时间：1s, 2s, 3s
+							// Wait before retrying to avoid immediate retry
+							Thread.sleep(1000 * attempt); // Incremental wait time: 1s,
+															// 2s, 3s
 						}
 						catch (InterruptedException ie) {
 							Thread.currentThread().interrupt();
@@ -333,7 +337,7 @@ public class McpService {
 			String type = mcpConfigVO.getConnectionType();
 			McpConfigType mcpConfigType = McpConfigType.valueOf(type);
 			if (McpConfigType.STUDIO.equals(mcpConfigType)) {
-				// STUDIO类型的连接需要特殊处理
+				// STUDIO type connections require special handling
 				mcpServerConfig.getMcpServers().forEach((name, config) -> {
 					if (config.getCommand() == null || config.getCommand().isEmpty()) {
 						throw new IllegalArgumentException(
@@ -346,7 +350,7 @@ public class McpService {
 				});
 			}
 			else if (McpConfigType.SSE.equals(mcpConfigType)) {
-				// SSE类型的连接需要特殊处理
+				// SSE type connections require special handling
 				mcpServerConfig.getMcpServers().forEach((name, config) -> {
 					if (config.getUrl() == null || config.getUrl().isEmpty()) {
 						throw new IllegalArgumentException(
@@ -362,15 +366,16 @@ public class McpService {
 				throw new UnsupportedOperationException("STREAMING connection type is not supported yet");
 			}
 
-			// 迭代处理每个MCP服务器配置
+			// Iterate through each MCP server configuration
 			for (Map.Entry<String, McpServerConfig> entry : mcpServerConfig.getMcpServers().entrySet()) {
 				String serverName = entry.getKey();
 				McpServerConfig serverConfig = entry.getValue();
 
-				// 使用ServerConfig的toJson方法将配置转换为JSON字符串
+				// Use ServerConfig's toJson method to convert configuration to JSON
+				// string
 				String configJson = serverConfig.toJson();
 
-				// 查找对应的MCP配置实体
+				// Find the corresponding MCP configuration entity
 				McpConfigEntity mcpConfigEntity = mcpConfigRepository.findByMcpServerName(serverName);
 				if (mcpConfigEntity == null) {
 					mcpConfigEntity = new McpConfigEntity();

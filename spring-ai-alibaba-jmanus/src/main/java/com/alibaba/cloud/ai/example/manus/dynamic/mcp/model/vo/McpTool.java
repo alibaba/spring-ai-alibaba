@@ -84,7 +84,7 @@ public class McpTool implements ToolCallBiFunctionDef<Map<String, Object>> {
 
 	@Override
 	public ToolExecuteResult apply(Map<String, Object> inputMap, ToolContext toolContext) {
-		// 将 Map 转换为 JSON 字符串，因为 ToolCallback 期望字符串输入
+		// Convert Map to JSON string, as ToolCallback expects string input
 		ObjectMapper objectMapper = new ObjectMapper();
 		String jsonInput;
 		try {
@@ -98,7 +98,7 @@ public class McpTool implements ToolCallBiFunctionDef<Map<String, Object>> {
 		if (result == null) {
 			result = "";
 		}
-		// 这里可以将结果存储到McpStateHolderService中
+		// Here we can store the result to McpStateHolderService
 		McpState mcpState = mcpStateHolderService.getMcpState(planId);
 		if (mcpState == null) {
 			mcpState = new McpState();

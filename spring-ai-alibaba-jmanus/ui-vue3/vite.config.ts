@@ -24,8 +24,8 @@ export default defineConfig({
     outDir: './ui',
   },
   server: {
-    open: true, // 启动时自动打开浏览器
-    host: true, // 允许外部访问
+    open: true, // Automatically open browser on startup
+    host: true, // Allow external access
     proxy: {
       '/api': {
         target: 'http://localhost:18080',

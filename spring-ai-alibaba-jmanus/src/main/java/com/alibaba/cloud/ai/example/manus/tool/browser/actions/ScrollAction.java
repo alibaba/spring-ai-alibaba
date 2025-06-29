@@ -36,9 +36,9 @@ public class ScrollAction extends BrowserAction {
 			return new ToolExecuteResult("Scroll amount is required for 'scroll' action");
 		}
 
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
-		page.evaluate("window.scrollBy(0, arguments[0])", scrollAmount); // 使用 Playwright
-																			// 执行滚动
+		Page page = getCurrentPage(); // Get Playwright Page instance
+		page.evaluate("window.scrollBy(0, arguments[0])", scrollAmount); // Use Playwright
+		// Execute scroll
 
 		String direction = scrollAmount > 0 ? "down" : "up";
 		return new ToolExecuteResult("Scrolled " + direction + " by " + Math.abs(scrollAmount) + " pixels");

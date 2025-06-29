@@ -32,7 +32,7 @@ public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.Python
 	private static final Logger log = LoggerFactory.getLogger(PythonExecute.class);
 
 	/**
-	 * 内部输入类，用于定义Python执行工具的输入参数
+	 * Internal input class for defining input parameters of Python execution tool
 	 */
 	public static class PythonInput {
 

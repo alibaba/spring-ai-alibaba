@@ -31,7 +31,7 @@ export const routes: Readonly<RouteRecordType[]> = [
     path: '/',
     name: 'Root',
     redirect: () => {
-      // 检查用户是否已经访问过首页
+      // Check if user has visited the homepage before
       const hasVisited = localStorage.getItem('hasVisitedHome') === 'true'
       return hasVisited ? '/direct' : '/home'
     },
