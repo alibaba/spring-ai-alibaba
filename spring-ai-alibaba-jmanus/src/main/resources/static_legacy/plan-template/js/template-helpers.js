@@ -1,11 +1,11 @@
 /**
- * 计划模板辅助函数 - 提供操作计划模板列表的功能
+ * Plan template helper functions - Provides functionality for operating plan template lists
  */
 
 /**
- * 将时间戳转换为相对时间字符串
- * @param {Date} date - 日期对象
- * @returns {string} - 相对时间字符串
+ * Convert timestamp to relative time string
+ * @param {Date} date - Date object
+ * @returns {string} - Relative time string
  */
 function getRelativeTimeString(date) {
     const now = new Date();
@@ -18,21 +18,21 @@ function getRelativeTimeString(date) {
     if (days > 30) {
         return date.toLocaleDateString('zh-CN');
     } else if (days > 0) {
-        return `${days}天前`;
+        return `${days} days ago`;
     } else if (hours > 0) {
-        return `${hours}小时前`;
+        return `${hours} hours ago`;
     } else if (minutes > 0) {
-        return `${minutes}分钟前`;
+        return `${minutes} minutes ago`;
     } else {
-        return '刚刚';
+        return 'Just now';
     }
 }
 
 /**
- * 截断文本至指定长度
- * @param {string} text - 文本内容
- * @param {number} maxLength - 最大长度
- * @returns {string} - 截断后的文本
+ * Truncate text to specified length
+ * @param {string} text - Text content
+ * @param {number} maxLength - Maximum length
+ * @returns {string} - Truncated text
  */
 function truncateText(text, maxLength) {
     if (!text) return '';
@@ -41,8 +41,8 @@ function truncateText(text, maxLength) {
 }
 
 /**
- * 处理计划模板项点击事件
- * @param {Object} template - 计划模板对象
+ * Handle plan template item click event
+ * @param {Object} template - Plan template object
  */
 async function handlePlanTemplateClick(template) {
     if (isGenerating || isExecuting) {
@@ -50,36 +50,36 @@ async function handlePlanTemplateClick(template) {
     }
     
     try {
-        // 设置当前计划模板ID
+        // Set current plan template ID
         currentPlanTemplateId = template.id;
         
-        // 获取计划模板的最新版本
+        // Get latest version of plan template
         const versionsResponse = await ManusAPI.getPlanVersions(template.id);
         planVersions = versionsResponse.versions || [];
         
         if (planVersions.length > 0) {
-            // 设置当前版本为最新版本
+            // Set current version to latest version
             currentVersionIndex = planVersions.length - 1;
             const latestVersion = planVersions[currentVersionIndex];
             
-            // 解析JSON并显示
+            // Parse JSON and display
             try {
                 currentPlanData = JSON.parse(latestVersion);
                 jsonEditor.value = JSON.stringify(currentPlanData, null, 2);
             } catch (e) {
-                console.warn('无法解析计划JSON:', e);
+                console.warn('Unable to parse plan JSON:', e);
                 jsonEditor.value = latestVersion;
             }
             
-            // 更新API URL
+            // Update API URL
             apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${template.id}`;
         }
         
-        // 直接调用updateUIState来更新UI状态，确保按钮文本正确显示
+        // Directly call updateUIState to update UI state, ensuring button text is displayed correctly
         updateUIState();
         
     } catch (error) {
-        console.error('加载计划模板失败:', error);
-        alert('加载计划模板失败: ' + error.message);
+        console.error('Failed to load plan template:', error);
+        alert('Failed to load plan template: ' + error.message);
     }
 }
