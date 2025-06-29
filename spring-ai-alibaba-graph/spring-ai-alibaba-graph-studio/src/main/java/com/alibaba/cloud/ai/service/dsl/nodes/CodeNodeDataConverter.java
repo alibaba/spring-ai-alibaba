@@ -104,4 +104,22 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 
 	}
 
+	@Override
+	public String generateVarName(int count) {
+		return "codeNode" + count;
+	}
+
+	@Override
+	public void postProcess(CodeNodeData nodeData, String varName) {
+		String origKey = nodeData.getOutputKey();
+		String newKey = varName + "_output";
+
+		if (origKey == null) {
+			nodeData.setOutputKey(newKey);
+		}
+		nodeData.setOutputs(
+				List.of(new Variable(nodeData.getOutputKey(), com.alibaba.cloud.ai.model.VariableType.STRING.value())));
+	}
+
+
 }
