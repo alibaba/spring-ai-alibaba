@@ -89,7 +89,7 @@ public class LlmNode implements NodeAction {
 				.startingNode("llmNode")
 				.startingState(state)
 				.mapResult(response -> Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages",
-						Objects.requireNonNull(response.getResult().getOutput().getText())))
+						Objects.requireNonNull(response.getResult().getOutput())))
 				.build(chatResponseFlux);
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", generator);
 		}

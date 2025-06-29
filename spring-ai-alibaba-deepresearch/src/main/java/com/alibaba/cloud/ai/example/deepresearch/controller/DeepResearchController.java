@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
 import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
+import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
@@ -54,11 +55,15 @@ public class DeepResearchController {
 
 	private final CompiledGraph compiledGraph;
 
+	private final SearchBeanUtil searchBeanUtil;
+
 	@Autowired
-	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph) throws GraphStateException {
+	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph, SearchBeanUtil searchBeanUtil)
+			throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 		this.compiledGraph = stateGraph
 			.compile(CompileConfig.builder().saverConfig(saverConfig).interruptBefore("human_feedback").build());
+		this.searchBeanUtil = searchBeanUtil;
 	}
 
 	/**
@@ -70,8 +75,11 @@ public class DeepResearchController {
 	 */
 	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest)
-			throws GraphRunnerException {
-		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
+			throws GraphRunnerException, IllegalArgumentException {
+		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest, searchBeanUtil);
+		if (searchBeanUtil.getSearchService(chatRequest.searchEngine()).isEmpty()) {
+			throw new IllegalArgumentException("Search Engine not available.");
+		}
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
 
 		Map<String, Object> objectMap = new HashMap<>();

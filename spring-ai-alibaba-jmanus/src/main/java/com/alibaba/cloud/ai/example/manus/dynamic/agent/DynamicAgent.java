@@ -58,6 +58,7 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
+import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 
 public class DynamicAgent extends ReActAgent {
 
@@ -104,8 +105,8 @@ public class DynamicAgent extends ReActAgent {
 	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
 			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
-			Map<String, Object> initialAgentSetting, UserInputService userInputService) {
-		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting);
+			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptLoader promptLoader) {
+		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptLoader);
 		this.agentName = name;
 		this.agentDescription = description;
 		this.nextStepPrompt = nextStepPrompt;
@@ -128,6 +129,7 @@ public class DynamicAgent extends ReActAgent {
 		}
 		catch (Exception e) {
 			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()), e);
+			log.info("Exception occurred", e);
 			thinkActRecord.recordError(e.getMessage());
 			return false;
 		}
@@ -260,7 +262,7 @@ public class DynamicAgent extends ReActAgent {
 		catch (Exception e) {
 
 			log.error(e.getMessage());
-
+			log.info("Exception occurred", e);
 			thinkActRecord.recordError(e.getMessage());
 			userInputService.removeFormInputTool(getPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error
@@ -349,14 +351,7 @@ public class DynamicAgent extends ReActAgent {
 	 * @return User message for current step environment data
 	 */
 	private Message currentStepEnvMessage() {
-		String envPrompt = """
-
-				当前步骤的环境信息是:
-				{current_step_env_data}
-
-				""";
-		PromptTemplate promptTemplate = new PromptTemplate(envPrompt);
-		Message stepEnvMessage = promptTemplate.createMessage(getMergedData());
+		Message stepEnvMessage = promptLoader.createUserMessage("agent/current-step-env.txt", getMergedData());
 		// mark as current step env data
 		stepEnvMessage.getMetadata().put(CURRENT_STEP_ENV_DATA_KEY, Boolean.TRUE);
 		return stepEnvMessage;

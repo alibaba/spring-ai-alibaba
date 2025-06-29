@@ -18,6 +18,7 @@
     "dev:server": "mvn spring-boot:run"
   },
   "dependencies": {
+    "@ant-design/icons-vue": "^7.0.1",
     "@antv/g2": "^5.1.19",
     "@iconify/vue": "^4.1.1",
     "ant-design-vue": "^4.0.8",
@@ -26,12 +27,11 @@
     "lodash": "^4.17.21",
     "monaco-editor": "^0.45.0",
     "nprogress": "^0.2.0",
-    "pinia": "^2.1.7",
+    "pinia": "^2.3.1",
     "vue": "^3.3.8",
     "vue-i18n": "^9.8.0",
     "vue-router": "^4.2.5",
-    "vue3-colorpicker": "^2.3.0",
-    "@ant-design/icons-vue": "^7.0.1"
+    "vue3-colorpicker": "^2.3.0"
   },
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.5.1",

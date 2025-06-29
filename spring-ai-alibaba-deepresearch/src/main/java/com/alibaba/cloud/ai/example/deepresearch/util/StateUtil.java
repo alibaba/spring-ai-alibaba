@@ -70,6 +70,10 @@ public class StateUtil {
 		return state.value("query", "草莓蛋糕怎么做呀");
 	}
 
+	public static List<String> getOptimizeQueries(OverAllState state) {
+		return state.value("optimize_queries", (List<String>) null);
+	}
+
 	public static Plan getPlan(OverAllState state) {
 		return state.value("current_plan", Plan.class).get();
 	}
@@ -79,7 +83,7 @@ public class StateUtil {
 	}
 
 	public static Integer getPlanMaxIterations(OverAllState state) {
-		return state.value("plan_max_iterations", 1);
+		return state.value("max_plan_iterations", 1);
 	}
 
 	public static Integer getMaxStepNum(OverAllState state) {

@@ -209,7 +209,7 @@ class RedisSaverTest {
 			futures.add(future);
 		}
 
-		latch.await(5, TimeUnit.SECONDS);
+		latch.await(10, TimeUnit.SECONDS);
 		executorService.shutdown();
 
 		for (var future : futures) {

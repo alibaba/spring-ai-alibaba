@@ -62,9 +62,11 @@
         <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-aliyunaisearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidutranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidumap</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-bravesearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-dingtalk</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-sensitivefilter</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-amap</module>
@@ -86,6 +88,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tavilysearch</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-searches</module>
 
         <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
@@ -148,6 +151,7 @@
         <!-- Nacos3 version -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-server</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-gateway</module>
 
         <!-- Spring AI Alibaba Nacos Prompt Template -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
@@ -161,6 +165,7 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-server</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-gateway</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
     </modules>
 
@@ -229,6 +234,18 @@
 
         <mysql.version>8.0.32</mysql.version>
 
+        <postgresql.version>42.4.4</postgresql.version>
+
+        <commons-collections.version>3.2.2</commons-collections.version>
+
+        <commons-io.version>2.14.0</commons-io.version>
+
+        <webdrivermanager.version>6.1.0</webdrivermanager.version>
+
+        <httpclient5.version>5.4.3</httpclient5.version>
+
+        <poi.version>5.4.0</poi.version>
+
         <mcp.version>0.10.0</mcp.version>
 
         <!-- CheckStyle Plugin -->
@@ -263,6 +280,7 @@
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
+        <spotless.version>2.44.5</spotless.version>
     </properties>
 
     <dependencyManagement>
@@ -341,6 +359,25 @@
                         </goals>
                         <phase>validate</phase>
                         <inherited>true</inherited>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless.version}</version>
+                <configuration>
+                    <java>
+                        <removeUnusedImports></removeUnusedImports>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>spotless-apply</id>
+                        <goals>
+                            <goal>apply</goal>
+                        </goals>
+                        <phase>process-sources</phase>
                     </execution>
                 </executions>
             </plugin>

@@ -22,11 +22,13 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+
 import com.alibaba.cloud.ai.graph.exception.Errors;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
+import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import com.alibaba.cloud.ai.graph.internal.node.SubStateGraphNode;
@@ -268,6 +270,21 @@ public class StateGraph {
 	}
 
 	/**
+	 * Adds a commandNode to the graph.
+	 * @param id the identifier of the node
+	 * @param action AsyncCommandAction action
+	 * @param mappings the mappings to be used for conditional edges
+	 * @return this state graph instance
+	 * @throws GraphStateException if the node identifier is invalid or the node already
+	 * exists
+	 */
+	public StateGraph addNode(String id, AsyncCommandAction action, Map<String, String> mappings)
+			throws GraphStateException {
+
+		return addNode(id, new CommandNode(id, action, mappings));
+	}
+
+	/**
 	 * Adds a node to the graph.
 	 * @param id the identifier of the node
 	 * @param action the asynchronous node action to be performed by the node
@@ -450,8 +467,23 @@ public class StateGraph {
 
 		edgeStart.validate(nodes);
 
+		validateNode(nodes);
+
 		for (Edge edge : edges.elements) {
 			edge.validate(nodes);
+		}
+	}
+
+	private void validateNode(Nodes nodes) throws GraphStateException {
+		List<CommandNode> commandNodeList = nodes.elements.stream().filter(node -> {
+			return node instanceof CommandNode commandNode;
+		}).map(node -> (CommandNode) node).toList();
+		for (CommandNode commandNode : commandNodeList) {
+			for (String key : commandNode.getMappings().keySet()) {
+				if (!nodes.anyMatchById(key)) {
+					throw Errors.missingNodeInEdgeMapping.exception(commandNode.id(), key);
+				}
+			}
 		}
 	}
 

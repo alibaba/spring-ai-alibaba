@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -28,7 +27,6 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,16 +44,10 @@ public class CoordinatorNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(CoordinatorNode.class);
 
-	private final ChatClient chatClient;
+	private final ChatClient coordinatorAgent;
 
-	public CoordinatorNode(ChatClient.Builder chatClientBuilder) {
-		this.chatClient = chatClientBuilder
-			.defaultOptions(ToolCallingChatOptions.builder()
-				.internalToolExecutionEnabled(false) // 禁用内部工具执行
-				.build())
-			// 当前CoordinatorNode节点只绑定一个计划工具
-			.defaultTools(new PlannerTool())
-			.build();
+	public CoordinatorNode(ChatClient coordinatorAgent) {
+		this.coordinatorAgent = coordinatorAgent;
 	}
 
 	@Override
@@ -70,7 +62,7 @@ public class CoordinatorNode implements NodeAction {
 		logger.debug("Current Coordinator messages: {}", messages);
 
 		// 发起调用并获取完整响应
-		ChatResponse response = chatClient.prompt().messages(messages).call().chatResponse();
+		ChatResponse response = coordinatorAgent.prompt().messages(messages).call().chatResponse();
 
 		String nextStep = END;
 		Map<String, Object> updated = new HashMap<>();
@@ -81,12 +73,7 @@ public class CoordinatorNode implements NodeAction {
 		// 判断是否触发工具调用
 		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
 			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
-			if (state.value("enable_background_investigation", true)) {
-				nextStep = "background_investigator";
-			}
-			else {
-				nextStep = "planner";
-			}
+			nextStep = "rewrite_multi_query";
 		}
 		else {
 			logger.warn("❌ 未触发工具调用");
