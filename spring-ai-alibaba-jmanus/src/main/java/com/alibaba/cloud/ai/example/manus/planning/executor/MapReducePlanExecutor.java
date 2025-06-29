@@ -169,8 +169,9 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			executor = executeDataPreparedPhase(mrNode.getDataPreparedSteps(), context, executor);
 		}
 
+		List<ExecutionStep> mapSteps = mrNode.getMapSteps();
 		// 2. 并行执行 Map 阶段
-		if (CollectionUtil.isNotEmpty(mrNode.getMapSteps())) {
+		if (CollectionUtil.isNotEmpty(mapSteps)) {
 			// 获取 MapReduceTool 的 ToolCallBackContext
 			ToolCallBackContext toolCallBackContext = null;
 			if (executor != null) {
@@ -184,7 +185,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			else {
 				logger.error("executor 为空，无法获取 MapReduceTool 的 ToolCallBackContext");
 			}
-			executor = executeMapPhase(mrNode.getMapSteps(), context, toolCallBackContext);
+			executor = executeMapPhase(mapSteps, context, toolCallBackContext);
 		}
 
 		// 3. 串行执行 Reduce 阶段
@@ -199,7 +200,6 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		return executor;
 	}
-
 	/**
 	 * 串行执行 Data Prepared 阶段
 	 */
@@ -237,6 +237,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			}
 		}
 
+			// 记录Reduce阶段完成状态 - 为每个Reduce步骤记录完成状态
+		for (ExecutionStep step : postProcessSteps) {
+			step.setAgent(executor);
+			recordStepEnd(step, context);
+		}
 		logger.info("Post Process 阶段执行完成");
 		return executor;
 	}
@@ -327,6 +332,8 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		// 记录Map阶段完成状态 - 为每个Map步骤记录完成状态
 		for (ExecutionStep step : mapSteps) {
+			step.setAgent(lastExecutor);
+			step.setResult("已经成功的执行了所有的Map任务");
 			recordStepEnd(step, context);
 		}
 
@@ -335,42 +342,15 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	}
 
 	/**
-	 * 复制 mapSteps 列表，并为特定任务目录调整步骤要求，同时读取并包含文档片段内容
+	 * 复制 mapSteps 列表
 	 */
 	private List<ExecutionStep> copyMapSteps(List<ExecutionStep> originalSteps, String taskDirectory) {
 		List<ExecutionStep> copiedSteps = new ArrayList<>();
 
-		// 读取任务目录中的 input.md 文件内容
-		String documentContent = "";
-		try {
-			Path inputFile = Paths.get(taskDirectory, "input.md");
-			if (Files.exists(inputFile)) {
-				documentContent = Files.readString(inputFile);
-				logger.debug("成功读取任务文档片段，长度: {} 字符", documentContent.length());
-			}
-			else {
-				logger.warn("任务目录中不存在 input.md 文件: {}", inputFile);
-				documentContent = "文档片段文件不存在";
-			}
-		}
-		catch (Exception e) {
-			logger.error("读取任务文档片段失败: {}", taskDirectory, e);
-			documentContent = "读取文档片段时发生错误: " + e.getMessage();
-		}
-
 		for (ExecutionStep originalStep : originalSteps) {
 			ExecutionStep copiedStep = new ExecutionStep();
 			copiedStep.setStepIndex(originalStep.getStepIndex());
-
-			// 调整步骤要求，只包含文档片段内容，不暴露路径和任务ID
-			String originalRequirement = originalStep.getStepRequirement();
-			StringBuilder modifiedRequirement = new StringBuilder();
-			modifiedRequirement.append(originalRequirement);
-			modifiedRequirement.append("\n\n=== 任务文档片段内容 ===\n");
-			modifiedRequirement.append(documentContent);
-			modifiedRequirement.append("\n=== 文档片段内容结束 ===");
-
-			copiedStep.setStepRequirement(modifiedRequirement.toString());
+			copiedStep.setStepRequirement(originalStep.getStepRequirement());
 
 			copiedSteps.add(copiedStep);
 		}
@@ -579,46 +559,39 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		}
 
 		// 添加简化的批次上下文信息
-		enhancedParams.append("=== Reduce批次 ").append(String.format("%03d", batchCounter)).append(" 上下文 ===\n");
+		enhancedParams.append("=== Reduce批次 ").append(String.format("%03d", batchCounter)).append(" 上下文 : \n");
 		
-		// 只包含input.md的内容，不包含状态数据
+		// 只包含output.md的内容，不包含状态数据
 		for (String taskDirectory : batchTaskDirectories) {
 			try {
 				Path taskPath = Paths.get(taskDirectory);
+				String taskId = taskPath.getFileName().toString();
 
-				// 读取任务的input.md文件（Map阶段的输入）
-				Path inputFile = taskPath.resolve("input.md");
-				if (Files.exists(inputFile)) {
-					String inputContent = Files.readString(inputFile);
-					enhancedParams.append(inputContent).append("\n\n");
+				// 读取任务的output.md文件（Map阶段的输出）
+				Path outputFile = taskPath.resolve("output.md");
+				if (Files.exists(outputFile)) {
+					String outputContent = Files.readString(outputFile);
+					enhancedParams.append("=== 任务ID: ").append(taskId).append(" ===\n");
+					enhancedParams.append(outputContent).append("\n");
+					enhancedParams.append("=== 任务ID: ").append(taskId).append(" 结束 ===\n\n");
 				}
 			}
 			catch (Exception e) {
-				logger.error("读取Map任务输入失败: {}", taskDirectory, e);
+				logger.error("读取Map任务输出失败: {}", taskDirectory, e);
 			}
 		}
 		
-		enhancedParams.append("=== Reduce批次 ").append(String.format("%03d", batchCounter)).append(" 上下文结束 ===\n");
-
 		// 创建修改后的步骤
-		ExecutionStep enhancedStep = new ExecutionStep();
-		enhancedStep.setStepIndex(step.getStepIndex());
-
-		StringBuilder enhancedRequirement = new StringBuilder();
-		enhancedRequirement.append(step.getStepRequirement());
-		enhancedRequirement.append("\n\n=== 当前批次处理说明 ===\n");
-		enhancedRequirement.append("这是第 ").append(batchCounter).append(" 个批次的Reduce处理。\n");
-		enhancedRequirement.append("批次包含 ").append(batchTaskDirectories.size()).append(" 个Map任务的结果。\n");
-		enhancedRequirement.append("=== 批次处理说明结束 ===\n\n");
-
-		enhancedStep.setStepRequirement(enhancedRequirement.toString());
+		// ExecutionStep enhancedStep = new ExecutionStep();
+		// enhancedStep.setStepIndex(step.getStepIndex());
+		// enhancedStep.setStepRequirement(step.getStepRequirement());
 
 		try {
 			// 临时设置增强的ExecutionParams
 			context.getPlan().setExecutionParams(enhancedParams.toString());
 
 			// 执行步骤
-			BaseAgent stepExecutor = executeStep(enhancedStep, context);
+			BaseAgent stepExecutor = executeStep(step, context);
 
 			logger.info("完成Reduce批次 {} 的处理，包含 {} 个Map任务", batchCounter, batchTaskDirectories.size());
 			return stepExecutor;

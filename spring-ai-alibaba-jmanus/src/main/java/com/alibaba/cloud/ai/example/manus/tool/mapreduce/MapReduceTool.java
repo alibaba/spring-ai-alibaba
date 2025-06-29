@@ -603,9 +603,9 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 		// 回退方案
 		StringBuilder sb = new StringBuilder();
-		sb.append("MapReduceTool 当前状态:\n");
-		sb.append("- Plan ID: ").append(planId != null ? planId : "未设置").append("\n");
-		sb.append("- 共享状态管理器: ").append(sharedStateManager != null ? "已连接" : "未连接").append("\n");
+		// sb.append("MapReduceTool 当前状态:\n");
+		// sb.append("- Plan ID: ").append(planId != null ? planId : "未设置").append("\n");
+		// sb.append("- 共享状态管理器: ").append(sharedStateManager != null ? "已连接" : "未连接").append("\n");
 		return sb.toString();
 	}
 

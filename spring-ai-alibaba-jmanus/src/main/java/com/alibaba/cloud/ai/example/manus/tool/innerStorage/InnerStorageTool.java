@@ -467,22 +467,22 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 	public String getCurrentToolStateString() {
 		try {
 			StringBuilder sb = new StringBuilder();
-			sb.append("InnerStorage 当前状态:\n");
-			sb.append("- Plan ID: ").append(planId != null ? planId : "未设置").append("\n");
-			sb.append("- 存储根目录: ").append(innerStorageService.getInnerStorageRoot()).append("\n");
+			// sb.append("InnerStorage 当前状态:\n");
+			// sb.append("- Plan ID: ").append(planId != null ? planId : "未设置").append("\n");
+			// sb.append("- 存储根目录: ").append(innerStorageService.getInnerStorageRoot()).append("\n");
 
-			// 获取当前目录下的所有文件信息
-			List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
+			// // 获取当前目录下的所有文件信息
+			// List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
 
-			if (files.isEmpty()) {
-				sb.append("- 内部文件: 无\n");
-			}
-			else {
-				sb.append("- 内部文件 (").append(files.size()).append("个):\n");
-				for (InnerStorageService.FileInfo file : files) {
-					sb.append("  ").append(file.toString()).append("\n");
-				}
-			}
+			// if (files.isEmpty()) {
+			// 	sb.append("- 内部文件: 无\n");
+			// }
+			// else {
+			// 	sb.append("- 内部文件 (").append(files.size()).append("个):\n");
+			// 	for (InnerStorageService.FileInfo file : files) {
+			// 		sb.append("  ").append(file.toString()).append("\n");
+			// 	}
+			// }
 
 			return sb.toString();
 		}

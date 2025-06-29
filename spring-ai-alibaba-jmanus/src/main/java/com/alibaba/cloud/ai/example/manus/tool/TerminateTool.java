@@ -95,16 +95,17 @@ public class TerminateTool implements ToolCallBiFunctionDef<TerminateTool.Termin
 
 	@Override
 	public String getCurrentToolStateString() {
-		return String.format("""
-				Termination Tool Status:
-				- Current State: %s
-				- Last Termination: %s
-				- Termination Message: %s
-				- Timestamp: %s
-				""", isTerminated ? "🛑 Terminated" : "⚡ Active",
-				isTerminated ? "Process was terminated" : "No termination recorded",
-				lastTerminationMessage.isEmpty() ? "N/A" : lastTerminationMessage,
-				terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp);
+		// return String.format("""
+		// 		Termination Tool Status:
+		// 		- Current State: %s
+		// 		- Last Termination: %s
+		// 		- Termination Message: %s
+		// 		- Timestamp: %s
+		// 		""", isTerminated ? "🛑 Terminated" : "⚡ Active",
+		// 		isTerminated ? "Process was terminated" : "No termination recorded",
+		// 		lastTerminationMessage.isEmpty() ? "N/A" : lastTerminationMessage,
+		// 		terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp);
+		return "";
 	}
 
 	public TerminateTool(String planId) {

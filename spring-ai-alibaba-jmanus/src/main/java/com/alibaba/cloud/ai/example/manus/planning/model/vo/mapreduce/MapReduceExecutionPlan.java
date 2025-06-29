@@ -134,12 +134,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	@JsonIgnore
 	public List<ExecutionStep> getAllSteps() {
 		// 预估总步骤数以优化性能
-		int estimatedSize = 0;
-		for (ExecutionNode node : steps) {
-			estimatedSize += node.getTotalStepCount();
-		}
 
-		List<ExecutionStep> allSteps = new ArrayList<>(estimatedSize);
+		List<ExecutionStep> allSteps = new ArrayList<>();
 
 		// 使用接口方法直接获取每个节点的所有步骤
 		for (ExecutionNode node : steps) {
@@ -234,6 +230,16 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 				sb.append("Reduce步骤数: ").append(mrNode.getReduceStepCount()).append("\n");
 				sb.append("后处理步骤数: ").append(mrNode.getPostProcessStepCount()).append("\n");
 
+				// 当 onlyCompletedAndFirstInProgress = true 时，需要判断当前执行阶段
+				boolean showReduceAndPostProcess = true;
+				if (onlyCompletedAndFirstInProgress) {
+					// 检查是否正在执行 Map 阶段的第一个步骤
+					boolean isMapPhaseFirstStep = isExecutingMapPhaseFirstStep(mrNode);
+					if (isMapPhaseFirstStep) {
+						showReduceAndPostProcess = false;
+					}
+				}
+
 				// 数据准备阶段
 				if (mrNode.getDataPreparedSteps() != null && !mrNode.getDataPreparedSteps().isEmpty()) {
 					sb.append("  数据准备阶段:\n");
@@ -246,14 +252,14 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 					appendFilteredSteps(sb, mrNode.getMapSteps(), onlyCompletedAndFirstInProgress);
 				}
 
-				// Reduce阶段
-				if (mrNode.getReduceSteps() != null && !mrNode.getReduceSteps().isEmpty()) {
+				// Reduce阶段 - 根据条件决定是否显示
+				if (showReduceAndPostProcess && mrNode.getReduceSteps() != null && !mrNode.getReduceSteps().isEmpty()) {
 					sb.append("  Reduce阶段:\n");
 					appendFilteredSteps(sb, mrNode.getReduceSteps(), onlyCompletedAndFirstInProgress);
 				}
 
-				// 后处理阶段
-				if (mrNode.getPostProcessSteps() != null && !mrNode.getPostProcessSteps().isEmpty()) {
+				// 后处理阶段 - 根据条件决定是否显示
+				if (showReduceAndPostProcess && mrNode.getPostProcessSteps() != null && !mrNode.getPostProcessSteps().isEmpty()) {
 					sb.append("  后处理阶段:\n");
 					appendFilteredSteps(sb, mrNode.getPostProcessSteps(), onlyCompletedAndFirstInProgress);
 				}
@@ -400,6 +406,37 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 				}
 			}
 		}
+	}
+
+	/**
+	 * 判断是否正在执行Map阶段的第一个步骤
+	 * @param mrNode MapReduce节点
+	 * @return 如果正在执行Map阶段的第一个步骤则返回true
+	 */
+	private boolean isExecutingMapPhaseFirstStep(MapReduceNode mrNode) {
+		// 检查数据准备阶段是否全部完成
+		boolean dataPreparedCompleted = true;
+		if (mrNode.getDataPreparedSteps() != null && !mrNode.getDataPreparedSteps().isEmpty()) {
+			for (ExecutionStep step : mrNode.getDataPreparedSteps()) {
+				if (step.getStatus() != AgentState.COMPLETED) {
+					dataPreparedCompleted = false;
+					break;
+				}
+			}
+		}
+		
+		// 检查Map阶段是否有第一个步骤正在执行或即将执行
+		boolean mapFirstStepInProgress = false;
+		if (mrNode.getMapSteps() != null && !mrNode.getMapSteps().isEmpty()) {
+			ExecutionStep firstMapStep = mrNode.getMapSteps().get(0);
+			// 如果第一个Map步骤是NOT_STARTED状态，说明即将执行
+			if (firstMapStep.getStatus() == AgentState.NOT_STARTED) {
+				mapFirstStepInProgress = true;
+			}
+		}
+		
+		// 只有当数据准备阶段全部完成，且Map阶段的第一个步骤即将执行时，才返回true
+		return dataPreparedCompleted && mapFirstStepInProgress;
 	}
 
 }
