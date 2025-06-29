@@ -22,87 +22,90 @@ import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
- * Documentation enum for graph edge observation operations.
- * Defines observation conventions and key names for edge-specific metrics and tracing.
- * Provides both low and high cardinality key names for different observation granularities.
+ * Documentation enum for graph edge observation operations. Defines observation
+ * conventions and key names for edge-specific metrics and tracing. Provides both low and
+ * high cardinality key names for different observation granularities.
  *
  * @author XiaoYunTao
  * @since 2025/6/29
  */
 public enum GraphEdgeObservationDocumentation implements ObservationDocumentation {
 
-    /**
-     * Represents a graph edge observation operation.
-     * Defines the default convention and key names for edge observations.
-     */
-    GRAPH_EDGE {
-        @Override
-        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
-            return GraphEdgeObservationConvention.class;
-        }
+	/**
+	 * Represents a graph edge observation operation. Defines the default convention and
+	 * key names for edge observations.
+	 */
+	GRAPH_EDGE {
+		@Override
+		public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+			return GraphEdgeObservationConvention.class;
+		}
 
-        @Override
-        public KeyName[] getLowCardinalityKeyNames() {
-            return GraphObservationDocumentation.LowCardinalityKeyNames.values();
-        }
+		@Override
+		public KeyName[] getLowCardinalityKeyNames() {
+			return GraphObservationDocumentation.LowCardinalityKeyNames.values();
+		}
 
-        @Override
-        public KeyName[] getHighCardinalityKeyNames() {
-            return GraphObservationDocumentation.HighCardinalityKeyNames.values();
-        }
-    };
+		@Override
+		public KeyName[] getHighCardinalityKeyNames() {
+			return GraphObservationDocumentation.HighCardinalityKeyNames.values();
+		}
+	};
 
-    /**
-     * Low cardinality key names for graph edge observations.
-     * These keys have limited unique values and are suitable for grouping and filtering.
-     */
-    public enum LowCardinalityKeyNames implements KeyName {
-        
-        /**
-         * Represents the kind/type of the AI operation.
-         */
-        SPRING_AI_ALIBABA_KIND {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.kind";
-            }
-        },
-        
-        /**
-         * Represents the name of the graph edge being observed.
-         */
-        GRAPH_NAME {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.graph.edge.name";
-            }
-        }
-    }
+	/**
+	 * Low cardinality key names for graph edge observations. These keys have limited
+	 * unique values and are suitable for grouping and filtering.
+	 */
+	public enum LowCardinalityKeyNames implements KeyName {
 
-    /**
-     * High cardinality key names for graph edge observations.
-     * These keys have many unique values and provide detailed observation data.
-     */
-    public enum HighCardinalityKeyNames implements KeyName {
-        
-        /**
-         * Represents the current state of the graph edge execution.
-         */
-        GRAPH_NODE_STATE {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.graph.edge.state";
-            }
-        },
-        
-        /**
-         * Represents the output data from the graph edge execution.
-         */
-        GRAPH_NODE_OUTPUT {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.graph.edge.output";
-            }
-        }
-    }
+		/**
+		 * Represents the kind/type of the AI operation.
+		 */
+		SPRING_AI_ALIBABA_KIND {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.kind";
+			}
+		},
+
+		/**
+		 * Represents the name of the graph edge being observed.
+		 */
+		GRAPH_NAME {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.graph.edge.name";
+			}
+		}
+
+	}
+
+	/**
+	 * High cardinality key names for graph edge observations. These keys have many unique
+	 * values and provide detailed observation data.
+	 */
+	public enum HighCardinalityKeyNames implements KeyName {
+
+		/**
+		 * Represents the current state of the graph edge execution.
+		 */
+		GRAPH_NODE_STATE {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.graph.edge.state";
+			}
+		},
+
+		/**
+		 * Represents the output data from the graph edge execution.
+		 */
+		GRAPH_NODE_OUTPUT {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.graph.edge.output";
+			}
+		}
+
+	}
+
 }

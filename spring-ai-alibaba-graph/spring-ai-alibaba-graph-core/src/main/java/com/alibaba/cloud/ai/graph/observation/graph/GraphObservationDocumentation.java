@@ -21,68 +21,73 @@ import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
- * Documentation for graph observation conventions.
- * Defines key names for low and high cardinality metrics in graph observations.
+ * Documentation for graph observation conventions. Defines key names for low and high
+ * cardinality metrics in graph observations.
  */
 public enum GraphObservationDocumentation implements ObservationDocumentation {
 
-    /** Graph observation documentation entry */
-    GRAPH {
-        @Override
-        public Class<? extends ObservationConvention<? extends Context>> getDefaultConvention() {
-            return GraphObservationConvention.class;
-        }
+	/** Graph observation documentation entry */
+	GRAPH {
+		@Override
+		public Class<? extends ObservationConvention<? extends Context>> getDefaultConvention() {
+			return GraphObservationConvention.class;
+		}
 
-        @Override
-        public KeyName[] getLowCardinalityKeyNames() {
-            return LowCardinalityKeyNames.values();
-        }
+		@Override
+		public KeyName[] getLowCardinalityKeyNames() {
+			return LowCardinalityKeyNames.values();
+		}
 
-        @Override
-        public KeyName[] getHighCardinalityKeyNames() {
-            return HighCardinalityKeyNames.values();
-        }
-    };
+		@Override
+		public KeyName[] getHighCardinalityKeyNames() {
+			return HighCardinalityKeyNames.values();
+		}
+	};
 
-    /**
-     * Low cardinality key names for graph observations.
-     * These keys have limited unique values and are suitable for grouping and filtering.
-     */
-    public enum LowCardinalityKeyNames implements KeyName {
-        /** Spring AI Alibaba kind identifier */
-        SPRING_AI_ALIBABA_KIND {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.kind";
-            }
-        },
-        /** Graph name identifier */
-        GRAPH_NAME {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.graph.name";
-            }
-        }
-    }
+	/**
+	 * Low cardinality key names for graph observations. These keys have limited unique
+	 * values and are suitable for grouping and filtering.
+	 */
+	public enum LowCardinalityKeyNames implements KeyName {
 
-    /**
-     * High cardinality key names for graph observations.
-     * These keys may have many unique values and are suitable for detailed analysis.
-     */
-    public enum HighCardinalityKeyNames implements KeyName {
-        /** Graph node state information */
-        GRAPH_NODE_STATE {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.graph.state";
-            }
-        },
-        /** Graph node output information */
-        GRAPH_NODE_OUTPUT {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.graph.output";
-            }
-        }
-    }
-} 
+		/** Spring AI Alibaba kind identifier */
+		SPRING_AI_ALIBABA_KIND {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.kind";
+			}
+		},
+		/** Graph name identifier */
+		GRAPH_NAME {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.graph.name";
+			}
+		}
+
+	}
+
+	/**
+	 * High cardinality key names for graph observations. These keys may have many unique
+	 * values and are suitable for detailed analysis.
+	 */
+	public enum HighCardinalityKeyNames implements KeyName {
+
+		/** Graph node state information */
+		GRAPH_NODE_STATE {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.graph.state";
+			}
+		},
+		/** Graph node output information */
+		GRAPH_NODE_OUTPUT {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.graph.output";
+			}
+		}
+
+	}
+
+}

@@ -20,65 +20,70 @@ import io.micrometer.observation.Observation;
 import java.util.Map;
 
 /**
- * Context class for graph observation operations.
- * This class extends Observation.Context to provide graph-specific observation data
- * including graph name, state, and output information for monitoring and metrics collection.
+ * Context class for graph observation operations. This class extends Observation.Context
+ * to provide graph-specific observation data including graph name, state, and output
+ * information for monitoring and metrics collection.
  *
  * @author XiaoYunTao
  * @since 2025/6/29
  */
 public class GraphObservationContext extends Observation.Context {
 
-    private final String graphName;
-    private final Map<String, Object> state;
-    private final Map<String, Object> output;
+	private final String graphName;
 
-    public GraphObservationContext(String graphName, Map<String, Object> state, Map<String, Object> output) {
-        this.graphName = graphName;
-        this.state = state;
-        this.output = output;
-    }
+	private final Map<String, Object> state;
 
-    public String getGraphName() {
-        return this.graphName;
-    }
+	private final Map<String, Object> output;
 
-    public Map<String, Object> getState() {
-        return this.state;
-    }
+	public GraphObservationContext(String graphName, Map<String, Object> state, Map<String, Object> output) {
+		this.graphName = graphName;
+		this.state = state;
+		this.output = output;
+	}
 
-    public Map<String, Object> getOutput() {
-        return this.output;
-    }
+	public String getGraphName() {
+		return this.graphName;
+	}
 
-    public static Builder builder() {
-        return new Builder();
-    }
+	public Map<String, Object> getState() {
+		return this.state;
+	}
 
-    public static final class Builder {
-        private String graphName;
-        private Map<String, Object> state;
-        private Map<String, Object> output;
+	public Map<String, Object> getOutput() {
+		return this.output;
+	}
 
-        public Builder graphName(String graphName) {
-            this.graphName = graphName;
-            return this;
-        }
+	public static Builder builder() {
+		return new Builder();
+	}
 
-        public Builder state(Map<String, Object> state) {
-            this.state = state;
-            return this;
-        }
+	public static final class Builder {
 
-        public Builder output(Map<String, Object> output) {
-            this.output = output;
-            return this;
-        }
+		private String graphName;
 
-        public GraphObservationContext build() {
-            return new GraphObservationContext(this.graphName, this.state, this.output);
-        }
-    }
+		private Map<String, Object> state;
 
+		private Map<String, Object> output;
+
+		public Builder graphName(String graphName) {
+			this.graphName = graphName;
+			return this;
+		}
+
+		public Builder state(Map<String, Object> state) {
+			this.state = state;
+			return this;
+		}
+
+		public Builder output(Map<String, Object> output) {
+			this.output = output;
+			return this;
+		}
+
+		public GraphObservationContext build() {
+			return new GraphObservationContext(this.graphName, this.state, this.output);
+		}
+
+	}
 
 }

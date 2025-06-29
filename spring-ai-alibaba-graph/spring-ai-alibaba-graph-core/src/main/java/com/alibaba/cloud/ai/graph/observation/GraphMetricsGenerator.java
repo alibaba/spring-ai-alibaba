@@ -30,85 +30,83 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Utility class for generating metrics from graph observation contexts.
- * Creates counters for graph nodes, edges, and overall graph operations.
- * Supports success/failure tracking and custom tagging for metric aggregation.
+ * Utility class for generating metrics from graph observation contexts. Creates counters
+ * for graph nodes, edges, and overall graph operations. Supports success/failure tracking
+ * and custom tagging for metric aggregation.
  *
  * @author XiaoYunTao
  * @since 2025/6/28
  */
 public class GraphMetricsGenerator {
 
-    private static final String DESCRIPTION = "Counts the number of times a graph is used";
+	private static final String DESCRIPTION = "Counts the number of times a graph is used";
 
-    private GraphMetricsGenerator() {}
+	private GraphMetricsGenerator() {
+	}
 
-    /**
-     * Generates metrics for a graph node observation context.
-     * Creates a counter with node-specific tags and success/failure tracking.
-     *
-     * @param context the node observation context
-     * @param meterRegistry the meter registry for metric registration
-     * @param isSuccess whether the node operation was successful
-     */
-    public static void generate(GraphNodeObservationContext context, MeterRegistry meterRegistry, boolean isSuccess) {
-        Counter.builder(SpringAiAlibabaObservationMetricNames.GRAPH_NODE.value())
-                .tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_NODE_NAME.value(), context.getNodeName())
-                .tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_NODE_SUCCESS.value(), String.valueOf(isSuccess))
-                .description(DESCRIPTION)
-                .tags(createTags(context))
-                .register(meterRegistry)
-                .increment();
-    }
+	/**
+	 * Generates metrics for a graph node observation context. Creates a counter with
+	 * node-specific tags and success/failure tracking.
+	 * @param context the node observation context
+	 * @param meterRegistry the meter registry for metric registration
+	 * @param isSuccess whether the node operation was successful
+	 */
+	public static void generate(GraphNodeObservationContext context, MeterRegistry meterRegistry, boolean isSuccess) {
+		Counter.builder(SpringAiAlibabaObservationMetricNames.GRAPH_NODE.value())
+			.tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_NODE_NAME.value(), context.getNodeName())
+			.tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_NODE_SUCCESS.value(), String.valueOf(isSuccess))
+			.description(DESCRIPTION)
+			.tags(createTags(context))
+			.register(meterRegistry)
+			.increment();
+	}
 
-    /**
-     * Generates metrics for a graph observation context.
-     * Creates a counter with graph-specific tags and success/failure tracking.
-     *
-     * @param context the graph observation context
-     * @param meterRegistry the meter registry for metric registration
-     * @param isSuccess whether the graph operation was successful
-     */
-    public static void generate(GraphObservationContext context, MeterRegistry meterRegistry, boolean isSuccess) {
-        Counter.builder(SpringAiAlibabaObservationMetricNames.GRAPH.value())
-                .tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_NAME.value(), context.getGraphName())
-                .tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_SUCCESS.value(), String.valueOf(isSuccess))
-                .description(DESCRIPTION)
-                .tags(createTags(context))
-                .register(meterRegistry)
-                .increment();
-    }
+	/**
+	 * Generates metrics for a graph observation context. Creates a counter with
+	 * graph-specific tags and success/failure tracking.
+	 * @param context the graph observation context
+	 * @param meterRegistry the meter registry for metric registration
+	 * @param isSuccess whether the graph operation was successful
+	 */
+	public static void generate(GraphObservationContext context, MeterRegistry meterRegistry, boolean isSuccess) {
+		Counter.builder(SpringAiAlibabaObservationMetricNames.GRAPH.value())
+			.tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_NAME.value(), context.getGraphName())
+			.tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_SUCCESS.value(), String.valueOf(isSuccess))
+			.description(DESCRIPTION)
+			.tags(createTags(context))
+			.register(meterRegistry)
+			.increment();
+	}
 
-    /**
-     * Generates metrics for a graph edge observation context.
-     * Creates a counter with edge-specific tags and success/failure tracking.
-     *
-     * @param context the edge observation context
-     * @param meterRegistry the meter registry for metric registration
-     * @param isSuccess whether the edge operation was successful
-     */
-    public static void generate(GraphEdgeObservationContext context, MeterRegistry meterRegistry, boolean isSuccess) {
-        Counter.builder(SpringAiAlibabaObservationMetricNames.GRAPH_EDGE.value())
-                .tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_EDGE_NAME.value(), context.getGraphEdgeName())
-                .tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_EDGE_SUCCESS.value(), String.valueOf(isSuccess))
-                .description(DESCRIPTION)
-                .tags(createTags(context))
-                .register(meterRegistry)
-                .increment();
-    }
+	/**
+	 * Generates metrics for a graph edge observation context. Creates a counter with
+	 * edge-specific tags and success/failure tracking.
+	 * @param context the edge observation context
+	 * @param meterRegistry the meter registry for metric registration
+	 * @param isSuccess whether the edge operation was successful
+	 */
+	public static void generate(GraphEdgeObservationContext context, MeterRegistry meterRegistry, boolean isSuccess) {
+		Counter.builder(SpringAiAlibabaObservationMetricNames.GRAPH_EDGE.value())
+			.tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_EDGE_NAME.value(), context.getGraphEdgeName())
+			.tag(SpringAiAlibabaObservationMetricAttributes.GRAPH_EDGE_SUCCESS.value(), String.valueOf(isSuccess))
+			.description(DESCRIPTION)
+			.tags(createTags(context))
+			.register(meterRegistry)
+			.increment();
+	}
 
-    /**
-     * Creates tags from the low cardinality key-values of an observation context.
-     * Converts KeyValue objects to Tag objects for metric registration.
-     *
-     * @param context the observation context containing key-values
-     * @return a list of tags created from the context's key-values
-     */
-    private static List<Tag> createTags(Observation.Context context) {
-        List<Tag> tags = new ArrayList<>();
-        for (KeyValue keyValue : context.getLowCardinalityKeyValues()) {
-            tags.add(Tag.of(keyValue.getKey(), keyValue.getValue()));
-        }
-        return tags;
-    }
+	/**
+	 * Creates tags from the low cardinality key-values of an observation context.
+	 * Converts KeyValue objects to Tag objects for metric registration.
+	 * @param context the observation context containing key-values
+	 * @return a list of tags created from the context's key-values
+	 */
+	private static List<Tag> createTags(Observation.Context context) {
+		List<Tag> tags = new ArrayList<>();
+		for (KeyValue keyValue : context.getLowCardinalityKeyValues()) {
+			tags.add(Tag.of(keyValue.getKey(), keyValue.getValue()));
+		}
+		return tags;
+	}
+
 }

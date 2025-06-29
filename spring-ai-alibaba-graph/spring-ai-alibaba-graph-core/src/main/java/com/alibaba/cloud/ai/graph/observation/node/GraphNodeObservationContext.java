@@ -20,137 +20,139 @@ import io.micrometer.observation.Observation;
 import java.util.Map;
 
 /**
- * Context class for graph node observation operations.
- * Provides node-specific observation data including node name, event type, state, and output information.
- * Extends Observation.Context to integrate with Micrometer's observation framework.
+ * Context class for graph node observation operations. Provides node-specific observation
+ * data including node name, event type, state, and output information. Extends
+ * Observation.Context to integrate with Micrometer's observation framework.
  */
 public class GraphNodeObservationContext extends Observation.Context {
-    private final String nodeName;
-    private final String event;
-    private final Map<String, Object> state;
-    private final Map<String, Object> output;
 
-    /**
-     * Constructs a new GraphNodeObservationContext with the specified parameters.
-     *
-     * @param nodeName the name of the graph node being observed
-     * @param event the type of event occurring on the node
-     * @param state the current state of the node execution
-     * @param output the output data from the node execution
-     */
-    public GraphNodeObservationContext(String nodeName, String event, Map<String, Object> state, Map<String, Object> output) {
-        this.nodeName = nodeName;
-        this.event = event;
-        this.state = state;
-        this.output = output;
-    }
+	private final String nodeName;
 
-    /**
-     * Gets the output data from the node execution.
-     *
-     * @return the node output as a map of key-value pairs
-     */
-    public Map<String, Object> getOutput() {
-        return this.output;
-    }
+	private final String event;
 
-    /**
-     * Gets the name of the graph node being observed.
-     *
-     * @return the node name
-     */
-    public String getNodeName() {
-        return this.nodeName;
-    }
+	private final Map<String, Object> state;
 
-    /**
-     * Gets the type of event occurring on the node.
-     *
-     * @return the event type
-     */
-    public String getEvent() {
-        return this.event;
-    }
+	private final Map<String, Object> output;
 
-    /**
-     * Gets the current state of the node execution.
-     *
-     * @return the node state as a map of key-value pairs
-     */
-    public Map<String, Object> getState() {
-        return this.state;
-    }
+	/**
+	 * Constructs a new GraphNodeObservationContext with the specified parameters.
+	 * @param nodeName the name of the graph node being observed
+	 * @param event the type of event occurring on the node
+	 * @param state the current state of the node execution
+	 * @param output the output data from the node execution
+	 */
+	public GraphNodeObservationContext(String nodeName, String event, Map<String, Object> state,
+			Map<String, Object> output) {
+		this.nodeName = nodeName;
+		this.event = event;
+		this.state = state;
+		this.output = output;
+	}
 
-    /**
-     * Creates a new Builder instance for constructing GraphNodeObservationContext objects.
-     *
-     * @return a new Builder instance
-     */
-    public static Builder builder() {
-        return new Builder();
-    }
+	/**
+	 * Gets the output data from the node execution.
+	 * @return the node output as a map of key-value pairs
+	 */
+	public Map<String, Object> getOutput() {
+		return this.output;
+	}
 
-    /**
-     * Builder class for constructing GraphNodeObservationContext instances.
-     * Provides a fluent API for setting node observation context properties.
-     */
-    public static final class Builder {
-        private String nodeName;
-        private String event;
-        private Map<String, Object> state;
-        private Map<String, Object> output;
+	/**
+	 * Gets the name of the graph node being observed.
+	 * @return the node name
+	 */
+	public String getNodeName() {
+		return this.nodeName;
+	}
 
-        /**
-         * Sets the node name for the observation context.
-         *
-         * @param nodeId the name of the graph node
-         * @return this builder instance for method chaining
-         */
-        public Builder nodeName(String nodeId) {
-            this.nodeName = nodeId;
-            return this;
-        }
+	/**
+	 * Gets the type of event occurring on the node.
+	 * @return the event type
+	 */
+	public String getEvent() {
+		return this.event;
+	}
 
-        /**
-         * Sets the event type for the observation context.
-         *
-         * @param event the type of event occurring on the node
-         * @return this builder instance for method chaining
-         */
-        public Builder event(String event) {
-            this.event = event;
-            return this;
-        }
+	/**
+	 * Gets the current state of the node execution.
+	 * @return the node state as a map of key-value pairs
+	 */
+	public Map<String, Object> getState() {
+		return this.state;
+	}
 
-        /**
-         * Sets the state for the observation context.
-         *
-         * @param state the current state of the node execution
-         * @return this builder instance for method chaining
-         */
-        public Builder state(Map<String, Object> state) {
-            this.state = state;
-            return this;
-        }
+	/**
+	 * Creates a new Builder instance for constructing GraphNodeObservationContext
+	 * objects.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
 
-        /**
-         * Sets the output for the observation context.
-         *
-         * @param output the output data from the node execution
-         * @return this builder instance for method chaining
-         */
-        public Builder output(Map<String, Object> output) {
-            this.output = output;
-            return this;
-        }
+	/**
+	 * Builder class for constructing GraphNodeObservationContext instances. Provides a
+	 * fluent API for setting node observation context properties.
+	 */
+	public static final class Builder {
 
-        /**
-         * Builds and returns a new GraphNodeObservationContext instance with the configured properties.
-         *
-         * @return a new GraphNodeObservationContext instance
-         */
-        public GraphNodeObservationContext build() {
-            return new GraphNodeObservationContext(nodeName, event, state, output);
-        }
-    }
-} 
+		private String nodeName;
+
+		private String event;
+
+		private Map<String, Object> state;
+
+		private Map<String, Object> output;
+
+		/**
+		 * Sets the node name for the observation context.
+		 * @param nodeId the name of the graph node
+		 * @return this builder instance for method chaining
+		 */
+		public Builder nodeName(String nodeId) {
+			this.nodeName = nodeId;
+			return this;
+		}
+
+		/**
+		 * Sets the event type for the observation context.
+		 * @param event the type of event occurring on the node
+		 * @return this builder instance for method chaining
+		 */
+		public Builder event(String event) {
+			this.event = event;
+			return this;
+		}
+
+		/**
+		 * Sets the state for the observation context.
+		 * @param state the current state of the node execution
+		 * @return this builder instance for method chaining
+		 */
+		public Builder state(Map<String, Object> state) {
+			this.state = state;
+			return this;
+		}
+
+		/**
+		 * Sets the output for the observation context.
+		 * @param output the output data from the node execution
+		 * @return this builder instance for method chaining
+		 */
+		public Builder output(Map<String, Object> output) {
+			this.output = output;
+			return this;
+		}
+
+		/**
+		 * Builds and returns a new GraphNodeObservationContext instance with the
+		 * configured properties.
+		 * @return a new GraphNodeObservationContext instance
+		 */
+		public GraphNodeObservationContext build() {
+			return new GraphNodeObservationContext(nodeName, event, state, output);
+		}
+
+	}
+
+}

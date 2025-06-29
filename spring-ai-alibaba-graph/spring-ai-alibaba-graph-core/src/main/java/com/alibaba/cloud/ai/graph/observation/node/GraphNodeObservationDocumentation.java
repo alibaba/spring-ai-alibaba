@@ -22,102 +22,105 @@ import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
- * Documentation enum for graph node observation operations.
- * Defines observation conventions and key names for node-specific metrics and tracing.
- * Provides both low and high cardinality key names for different observation granularities.
+ * Documentation enum for graph node observation operations. Defines observation
+ * conventions and key names for node-specific metrics and tracing. Provides both low and
+ * high cardinality key names for different observation granularities.
  *
  * @author XiaoYunTao
  * @since 2025/6/28
  */
 public enum GraphNodeObservationDocumentation implements ObservationDocumentation {
 
-    /**
-     * Represents a graph node observation operation.
-     * Defines the default convention and key names for node observations.
-     */
-    GRAPH_NODE {
-        @Override
-        public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
-            return GraphNodeObservationConvention.class;
-        }
+	/**
+	 * Represents a graph node observation operation. Defines the default convention and
+	 * key names for node observations.
+	 */
+	GRAPH_NODE {
+		@Override
+		public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
+			return GraphNodeObservationConvention.class;
+		}
 
-        @Override
-        public KeyName[] getLowCardinalityKeyNames() {
-            return GraphObservationDocumentation.LowCardinalityKeyNames.values();
-        }
+		@Override
+		public KeyName[] getLowCardinalityKeyNames() {
+			return GraphObservationDocumentation.LowCardinalityKeyNames.values();
+		}
 
-        @Override
-        public KeyName[] getHighCardinalityKeyNames() {
-            return GraphObservationDocumentation.HighCardinalityKeyNames.values();
-        }
+		@Override
+		public KeyName[] getHighCardinalityKeyNames() {
+			return GraphObservationDocumentation.HighCardinalityKeyNames.values();
+		}
 
-        @Override
-        public Observation.Event[] getEvents() {
-            return new Observation.Event[0];
-        }
-    };
+		@Override
+		public Observation.Event[] getEvents() {
+			return new Observation.Event[0];
+		}
+	};
 
-    /**
-     * Low cardinality key names for graph node observations.
-     * These keys have limited unique values and are suitable for grouping and filtering.
-     */
-    public enum LowCardinalityKeyNames implements KeyName {
-        
-        /**
-         * Represents the kind/type of the AI operation.
-         */
-        SPRING_AI_ALIBABA_KIND {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.kind";
-            }
-        },
-        
-        /**
-         * Represents the name of the graph node being observed.
-         */
-        GRAPH_NODE_NAME {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.graph.node.name";
-            }
-        },
-        
-        /**
-         * Represents the type of event occurring on the graph node.
-         */
-        GRAPH_EVENT {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.graph.event";
-            }
-        }
-    }
+	/**
+	 * Low cardinality key names for graph node observations. These keys have limited
+	 * unique values and are suitable for grouping and filtering.
+	 */
+	public enum LowCardinalityKeyNames implements KeyName {
 
-    /**
-     * High cardinality key names for graph node observations.
-     * These keys have many unique values and provide detailed observation data.
-     */
-    public enum HighCardinalityKeyNames implements KeyName {
-        
-        /**
-         * Represents the current state of the graph node execution.
-         */
-        GRAPH_NODE_STATE {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.graph.node.state";
-            }
-        },
-        
-        /**
-         * Represents the output data from the graph node execution.
-         */
-        GRAPH_NODE_OUTPUT {
-            @Override
-            public String asString() {
-                return "spring.ai.alibaba.graph.node.output";
-            }
-        }
-    }
+		/**
+		 * Represents the kind/type of the AI operation.
+		 */
+		SPRING_AI_ALIBABA_KIND {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.kind";
+			}
+		},
+
+		/**
+		 * Represents the name of the graph node being observed.
+		 */
+		GRAPH_NODE_NAME {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.graph.node.name";
+			}
+		},
+
+		/**
+		 * Represents the type of event occurring on the graph node.
+		 */
+		GRAPH_EVENT {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.graph.event";
+			}
+		}
+
+	}
+
+	/**
+	 * High cardinality key names for graph node observations. These keys have many unique
+	 * values and provide detailed observation data.
+	 */
+	public enum HighCardinalityKeyNames implements KeyName {
+
+		/**
+		 * Represents the current state of the graph node execution.
+		 */
+		GRAPH_NODE_STATE {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.graph.node.state";
+			}
+		},
+
+		/**
+		 * Represents the output data from the graph node execution.
+		 */
+		GRAPH_NODE_OUTPUT {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.graph.node.output";
+			}
+		}
+
+	}
+
 }

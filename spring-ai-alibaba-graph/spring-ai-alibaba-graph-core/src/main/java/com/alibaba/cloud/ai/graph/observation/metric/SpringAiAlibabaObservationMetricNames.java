@@ -16,47 +16,46 @@
 package com.alibaba.cloud.ai.graph.observation.metric;
 
 /**
- * Enumeration defining metric names for Spring AI Alibaba graph observations.
- * Provides standardized metric names for graph, node, and edge operations.
- * Used for identifying and categorizing different types of observation metrics.
+ * Enumeration defining metric names for Spring AI Alibaba graph observations. Provides
+ * standardized metric names for graph, node, and edge operations. Used for identifying
+ * and categorizing different types of observation metrics.
  *
  * @author XiaoYunTao
  * @since 2025/6/28
  */
 public enum SpringAiAlibabaObservationMetricNames {
 
-    /**
-     * Metric name for graph operations.
-     */
-    GRAPH("spring.ai.alibaba.graph"),
+	/**
+	 * Metric name for graph operations.
+	 */
+	GRAPH("spring.ai.alibaba.graph"),
 
-    /**
-     * Metric name for graph node operations.
-     */
-    GRAPH_NODE("spring.ai.alibaba.graph.node"),
+	/**
+	 * Metric name for graph node operations.
+	 */
+	GRAPH_NODE("spring.ai.alibaba.graph.node"),
 
-    /**
-     * Metric name for graph edge operations.
-     */
-    GRAPH_EDGE("spring.ai.alibaba.graph.edge");
+	/**
+	 * Metric name for graph edge operations.
+	 */
+	GRAPH_EDGE("spring.ai.alibaba.graph.edge");
 
-    private final String value;
+	private final String value;
 
-    /**
-     * Constructs a new SpringAiAlibabaObservationMetricNames with the specified value.
-     *
-     * @param value the string representation of this metric name
-     */
-    SpringAiAlibabaObservationMetricNames(String value) {
-        this.value = value;
-    }
+	/**
+	 * Constructs a new SpringAiAlibabaObservationMetricNames with the specified value.
+	 * @param value the string representation of this metric name
+	 */
+	SpringAiAlibabaObservationMetricNames(String value) {
+		this.value = value;
+	}
 
-    /**
-     * Gets the string value of this metric name.
-     *
-     * @return the string representation of this metric name
-     */
-    public String value() {
-        return value;
-    }
+	/**
+	 * Gets the string value of this metric name.
+	 * @return the string representation of this metric name
+	 */
+	public String value() {
+		return value;
+	}
+
 }

@@ -23,61 +23,60 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handler for graph node observation events.
- * Processes node observation lifecycle events and generates metrics for node operations.
- * Logs node execution details and delegates metric generation to GraphMetricsGenerator.
+ * Handler for graph node observation events. Processes node observation lifecycle events
+ * and generates metrics for node operations. Logs node execution details and delegates
+ * metric generation to GraphMetricsGenerator.
  *
  * @author XiaoYunTao
  * @since 2025/6/28
  */
 public class GraphNodeObservationHandler implements ObservationHandler<GraphNodeObservationContext> {
 
-    private static final Logger logger = LoggerFactory.getLogger(GraphNodeObservationHandler.class);
+	private static final Logger logger = LoggerFactory.getLogger(GraphNodeObservationHandler.class);
 
-    private final MeterRegistry meterRegistry;
+	private final MeterRegistry meterRegistry;
 
-    /**
-     * Constructs a new GraphNodeObservationHandler with the specified meter registry.
-     *
-     * @param meterRegistry the meter registry for metric collection
-     */
-    public GraphNodeObservationHandler(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-    }
+	/**
+	 * Constructs a new GraphNodeObservationHandler with the specified meter registry.
+	 * @param meterRegistry the meter registry for metric collection
+	 */
+	public GraphNodeObservationHandler(MeterRegistry meterRegistry) {
+		this.meterRegistry = meterRegistry;
+	}
 
-    /**
-     * Handles the completion of a graph node observation.
-     * Logs successful node execution details and generates success metrics.
-     *
-     * @param context the node observation context containing execution details
-     */
-    @Override
-    public void onStop(GraphNodeObservationContext context) {
-        logger.info("Graph nodeName: {} event: {} state: {} output : {}", context.getNodeName(), context.getEvent(), context.getState().toString(), context.getOutput().toString());
-        GraphMetricsGenerator.generate(context, meterRegistry, true);
-    }
+	/**
+	 * Handles the completion of a graph node observation. Logs successful node execution
+	 * details and generates success metrics.
+	 * @param context the node observation context containing execution details
+	 */
+	@Override
+	public void onStop(GraphNodeObservationContext context) {
+		logger.info("Graph nodeName: {} event: {} state: {} output : {}", context.getNodeName(), context.getEvent(),
+				context.getState().toString(), context.getOutput().toString());
+		GraphMetricsGenerator.generate(context, meterRegistry, true);
+	}
 
-    /**
-     * Handles errors during graph node observation.
-     * Logs error details and generates failure metrics.
-     *
-     * @param context the node observation context containing error details
-     */
-    @Override
-    public void onError(GraphNodeObservationContext context) {
-        logger.error("Graph nodeName: {} event: {} state: {} output : {}", context.getNodeName(), context.getEvent(), context.getState().toString(), context.getOutput().toString());
-        GraphMetricsGenerator.generate(context, meterRegistry, false);
-    }
+	/**
+	 * Handles errors during graph node observation. Logs error details and generates
+	 * failure metrics.
+	 * @param context the node observation context containing error details
+	 */
+	@Override
+	public void onError(GraphNodeObservationContext context) {
+		logger.error("Graph nodeName: {} event: {} state: {} output : {}", context.getNodeName(), context.getEvent(),
+				context.getState().toString(), context.getOutput().toString());
+		GraphMetricsGenerator.generate(context, meterRegistry, false);
+	}
 
-    /**
-     * Determines if this handler supports the given observation context.
-     * Returns true if the context is an instance of GraphNodeObservationContext.
-     *
-     * @param context the observation context to check
-     * @return true if this handler supports the context, false otherwise
-     */
-    @Override
-    public boolean supportsContext(Observation.Context context) {
-        return context instanceof GraphNodeObservationContext;
-    }
+	/**
+	 * Determines if this handler supports the given observation context. Returns true if
+	 * the context is an instance of GraphNodeObservationContext.
+	 * @param context the observation context to check
+	 * @return true if this handler supports the context, false otherwise
+	 */
+	@Override
+	public boolean supportsContext(Observation.Context context) {
+		return context instanceof GraphNodeObservationContext;
+	}
+
 }

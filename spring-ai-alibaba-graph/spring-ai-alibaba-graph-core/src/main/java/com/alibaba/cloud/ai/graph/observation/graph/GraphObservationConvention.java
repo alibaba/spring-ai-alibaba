@@ -19,24 +19,25 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 
 /**
- * Interface for graph observation conventions.
- * This interface extends ObservationConvention to provide graph-specific observation
- * conventions for monitoring and metrics collection. It defines how graph observation
- * contexts should be handled and provides a default implementation for context support.
+ * Interface for graph observation conventions. This interface extends
+ * ObservationConvention to provide graph-specific observation conventions for monitoring
+ * and metrics collection. It defines how graph observation contexts should be handled and
+ * provides a default implementation for context support.
  *
  * @author XiaoYunTao
  * @since 2025/6/29
  */
 public interface GraphObservationConvention extends ObservationConvention<GraphObservationContext> {
 
-    /**
-     * Determines whether this convention supports the given observation context.
-     * The default implementation checks if the context is an instance of GraphObservationContext.
-     *
-     * @param context the observation context to check
-     * @return true if this convention supports the context, false otherwise
-     */
-    default boolean supportsContext(Observation.Context context) {
-        return context instanceof GraphObservationContext;
-    }
+	/**
+	 * Determines whether this convention supports the given observation context. The
+	 * default implementation checks if the context is an instance of
+	 * GraphObservationContext.
+	 * @param context the observation context to check
+	 * @return true if this convention supports the context, false otherwise
+	 */
+	default boolean supportsContext(Observation.Context context) {
+		return context instanceof GraphObservationContext;
+	}
+
 }

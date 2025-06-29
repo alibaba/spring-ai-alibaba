@@ -20,116 +20,116 @@ import io.micrometer.observation.Observation;
 import java.util.Map;
 
 /**
- * Context class for graph edge observation operations.
- * Provides edge-specific observation data including edge name, state, and next node information.
+ * Context class for graph edge observation operations. Provides edge-specific observation
+ * data including edge name, state, and next node information.
  *
  * @author XiaoYunTao
  * @since 2025/6/29
  */
 public class GraphEdgeObservationContext extends Observation.Context {
 
-    private final String graphEdgeName;
-    private final Map<String, Object> state;
-    private final String nextNode;
+	private final String graphEdgeName;
 
-    /**
-     * Constructs a new GraphEdgeObservationContext with the specified parameters.
-     *
-     * @param graphEdgeName the name of the graph edge being observed
-     * @param state the current state of the edge execution
-     * @param nextNode the next node in the graph flow
-     */
-    public GraphEdgeObservationContext(String graphEdgeName, Map<String, Object> state, String nextNode) {
-        this.graphEdgeName = graphEdgeName;
-        this.state = state;
-        this.nextNode = nextNode;
-    }
+	private final Map<String, Object> state;
 
-    /**
-     * Gets the name of the graph edge being observed.
-     *
-     * @return the graph edge name
-     */
-    public String getGraphEdgeName() {
-        return this.graphEdgeName;
-    }
+	private final String nextNode;
 
-    /**
-     * Gets the current state of the edge execution.
-     *
-     * @return the edge state as a map of key-value pairs
-     */
-    public Map<String, Object> getState() {
-        return this.state;
-    }
+	/**
+	 * Constructs a new GraphEdgeObservationContext with the specified parameters.
+	 * @param graphEdgeName the name of the graph edge being observed
+	 * @param state the current state of the edge execution
+	 * @param nextNode the next node in the graph flow
+	 */
+	public GraphEdgeObservationContext(String graphEdgeName, Map<String, Object> state, String nextNode) {
+		this.graphEdgeName = graphEdgeName;
+		this.state = state;
+		this.nextNode = nextNode;
+	}
 
-    /**
-     * Gets the next node in the graph flow.
-     *
-     * @return the next node identifier
-     */
-    public String getNextNode() {
-        return this.nextNode;
-    }
+	/**
+	 * Gets the name of the graph edge being observed.
+	 * @return the graph edge name
+	 */
+	public String getGraphEdgeName() {
+		return this.graphEdgeName;
+	}
 
-    /**
-     * Creates a new Builder instance for constructing GraphEdgeObservationContext objects.
-     *
-     * @return a new Builder instance
-     */
-    public static Builder builder() {
-        return new Builder();
-    }
+	/**
+	 * Gets the current state of the edge execution.
+	 * @return the edge state as a map of key-value pairs
+	 */
+	public Map<String, Object> getState() {
+		return this.state;
+	}
 
-    /**
-     * Builder class for constructing GraphEdgeObservationContext instances.
-     * Provides a fluent API for setting edge observation context properties.
-     */
-    public static final class Builder {
-        private String graphEdgeName;
-        private Map<String, Object> state;
-        private String nextNode;
+	/**
+	 * Gets the next node in the graph flow.
+	 * @return the next node identifier
+	 */
+	public String getNextNode() {
+		return this.nextNode;
+	}
 
-        /**
-         * Sets the graph edge name for the observation context.
-         *
-         * @param graphEdgeName the name of the graph edge
-         * @return this builder instance for method chaining
-         */
-        public Builder graphEdgeName(String graphEdgeName) {
-            this.graphEdgeName = graphEdgeName;
-            return this;
-        }
+	/**
+	 * Creates a new Builder instance for constructing GraphEdgeObservationContext
+	 * objects.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
 
-        /**
-         * Sets the state for the observation context.
-         *
-         * @param state the current state of the edge execution
-         * @return this builder instance for method chaining
-         */
-        public Builder state(Map<String, Object> state) {
-            this.state = state;
-            return this;
-        }
+	/**
+	 * Builder class for constructing GraphEdgeObservationContext instances. Provides a
+	 * fluent API for setting edge observation context properties.
+	 */
+	public static final class Builder {
 
-        /**
-         * Sets the next node for the observation context.
-         *
-         * @param nextNode the next node in the graph flow
-         * @return this builder instance for method chaining
-         */
-        public Builder nextNode(String nextNode) {
-            this.nextNode = nextNode;
-            return this;
-        }
+		private String graphEdgeName;
 
-        /**
-         * Builds and returns a new GraphEdgeObservationContext instance with the configured properties.
-         *
-         * @return a new GraphEdgeObservationContext instance
-         */
-        public GraphEdgeObservationContext build() {
-            return new GraphEdgeObservationContext(graphEdgeName, state, nextNode);
-        }
-    }
+		private Map<String, Object> state;
+
+		private String nextNode;
+
+		/**
+		 * Sets the graph edge name for the observation context.
+		 * @param graphEdgeName the name of the graph edge
+		 * @return this builder instance for method chaining
+		 */
+		public Builder graphEdgeName(String graphEdgeName) {
+			this.graphEdgeName = graphEdgeName;
+			return this;
+		}
+
+		/**
+		 * Sets the state for the observation context.
+		 * @param state the current state of the edge execution
+		 * @return this builder instance for method chaining
+		 */
+		public Builder state(Map<String, Object> state) {
+			this.state = state;
+			return this;
+		}
+
+		/**
+		 * Sets the next node for the observation context.
+		 * @param nextNode the next node in the graph flow
+		 * @return this builder instance for method chaining
+		 */
+		public Builder nextNode(String nextNode) {
+			this.nextNode = nextNode;
+			return this;
+		}
+
+		/**
+		 * Builds and returns a new GraphEdgeObservationContext instance with the
+		 * configured properties.
+		 * @return a new GraphEdgeObservationContext instance
+		 */
+		public GraphEdgeObservationContext build() {
+			return new GraphEdgeObservationContext(graphEdgeName, state, nextNode);
+		}
+
+	}
+
 }

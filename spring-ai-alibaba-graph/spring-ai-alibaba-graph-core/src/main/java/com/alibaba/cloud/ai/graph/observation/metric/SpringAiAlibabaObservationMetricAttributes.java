@@ -17,61 +17,61 @@ package com.alibaba.cloud.ai.graph.observation.metric;
 
 /**
  * Enumeration defining metric attributes for Spring AI Alibaba graph observations.
- * Provides standardized attribute names for graph, node, and edge metrics.
- * Used for tagging and categorizing observation metrics in monitoring systems.
+ * Provides standardized attribute names for graph, node, and edge metrics. Used for
+ * tagging and categorizing observation metrics in monitoring systems.
  *
  * @author XiaoYunTao
  * @since 2025/6/28
  */
 public enum SpringAiAlibabaObservationMetricAttributes {
 
-    /**
-     * Attribute for the name of a graph operation.
-     */
-    GRAPH_NAME("spring.ai.alibaba.graph.name"),
+	/**
+	 * Attribute for the name of a graph operation.
+	 */
+	GRAPH_NAME("spring.ai.alibaba.graph.name"),
 
-    /**
-     * Attribute indicating the success status of a graph operation.
-     */
-    GRAPH_SUCCESS("spring.ai.alibaba.graph.success"),
+	/**
+	 * Attribute indicating the success status of a graph operation.
+	 */
+	GRAPH_SUCCESS("spring.ai.alibaba.graph.success"),
 
-    /**
-     * Attribute for the name of a graph node operation.
-     */
-    GRAPH_NODE_NAME("spring.ai.alibaba.graph.node.name"),
+	/**
+	 * Attribute for the name of a graph node operation.
+	 */
+	GRAPH_NODE_NAME("spring.ai.alibaba.graph.node.name"),
 
-    /**
-     * Attribute indicating the success status of a graph node operation.
-     */
-    GRAPH_NODE_SUCCESS("spring.ai.alibaba.graph.node.success"),
+	/**
+	 * Attribute indicating the success status of a graph node operation.
+	 */
+	GRAPH_NODE_SUCCESS("spring.ai.alibaba.graph.node.success"),
 
-    /**
-     * Attribute for the name of a graph edge operation.
-     */
-    GRAPH_EDGE_NAME("spring.ai.alibaba.graph.edge.name"),
+	/**
+	 * Attribute for the name of a graph edge operation.
+	 */
+	GRAPH_EDGE_NAME("spring.ai.alibaba.graph.edge.name"),
 
-    /**
-     * Attribute indicating the success status of a graph edge operation.
-     */
-    GRAPH_EDGE_SUCCESS("spring.ai.alibaba.graph.edge.success");
+	/**
+	 * Attribute indicating the success status of a graph edge operation.
+	 */
+	GRAPH_EDGE_SUCCESS("spring.ai.alibaba.graph.edge.success");
 
-    private final String value;
+	private final String value;
 
-    /**
-     * Constructs a new SpringAiAlibabaObservationMetricAttributes with the specified value.
-     *
-     * @param value the string representation of this attribute
-     */
-    SpringAiAlibabaObservationMetricAttributes(String value) {
-        this.value = value;
-    }
+	/**
+	 * Constructs a new SpringAiAlibabaObservationMetricAttributes with the specified
+	 * value.
+	 * @param value the string representation of this attribute
+	 */
+	SpringAiAlibabaObservationMetricAttributes(String value) {
+		this.value = value;
+	}
 
-    /**
-     * Gets the string value of this attribute.
-     *
-     * @return the string representation of this attribute
-     */
-    public String value() {
-        return value;
-    }
+	/**
+	 * Gets the string value of this attribute.
+	 * @return the string representation of this attribute
+	 */
+	public String value() {
+		return value;
+	}
+
 }

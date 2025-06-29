@@ -19,24 +19,24 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 
 /**
- * Convention interface for graph edge observation operations.
- * Defines the contract for customizing edge observation behavior and metadata.
- * Extends ObservationConvention to provide edge-specific observation conventions.
+ * Convention interface for graph edge observation operations. Defines the contract for
+ * customizing edge observation behavior and metadata. Extends ObservationConvention to
+ * provide edge-specific observation conventions.
  *
  * @author XiaoYunTao
  * @since 2025/6/29
  */
 public interface GraphEdgeObservationConvention extends ObservationConvention<GraphEdgeObservationContext> {
-    
-    /**
-     * Determines if this convention supports the given observation context.
-     * Returns true if the context is an instance of GraphEdgeObservationContext.
-     *
-     * @param context the observation context to check
-     * @return true if this convention supports the context, false otherwise
-     */
-    @Override
-    default boolean supportsContext(Observation.Context context) {
-        return context instanceof GraphEdgeObservationContext;
-    }
+
+	/**
+	 * Determines if this convention supports the given observation context. Returns true
+	 * if the context is an instance of GraphEdgeObservationContext.
+	 * @param context the observation context to check
+	 * @return true if this convention supports the context, false otherwise
+	 */
+	@Override
+	default boolean supportsContext(Observation.Context context) {
+		return context instanceof GraphEdgeObservationContext;
+	}
+
 }

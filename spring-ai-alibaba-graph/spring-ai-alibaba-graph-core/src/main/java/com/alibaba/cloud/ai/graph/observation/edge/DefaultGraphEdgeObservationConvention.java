@@ -22,74 +22,76 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
- * Default implementation of GraphEdgeObservationConvention.
- * Provides standard observation conventions for graph edge operations with configurable naming.
+ * Default implementation of GraphEdgeObservationConvention. Provides standard observation
+ * conventions for graph edge operations with configurable naming.
  *
  * @author XiaoYunTao
  * @since 2025/6/29
  */
 public class DefaultGraphEdgeObservationConvention implements GraphEdgeObservationConvention {
-    
-    /** Default operation name for graph edge observations */
-    public static final String DEFAULT_OPERATION_NAME = "spring.ai.alibaba.graph.edge";
 
-    private String name;
+	/** Default operation name for graph edge observations */
+	public static final String DEFAULT_OPERATION_NAME = "spring.ai.alibaba.graph.edge";
 
-    /**
-     * Constructs a default convention with the default operation name.
-     */
-    public DefaultGraphEdgeObservationConvention() {
-        this(DEFAULT_OPERATION_NAME);
-    }
+	private String name;
 
-    /**
-     * Constructs a convention with a custom operation name.
-     *
-     * @param name the custom operation name
-     */
-    public DefaultGraphEdgeObservationConvention(String name) {
-        this.name = name;
-    }
+	/**
+	 * Constructs a default convention with the default operation name.
+	 */
+	public DefaultGraphEdgeObservationConvention() {
+		this(DEFAULT_OPERATION_NAME);
+	}
 
-    @Override
-    public String getName() {
-        return this.name;
-    }
+	/**
+	 * Constructs a convention with a custom operation name.
+	 * @param name the custom operation name
+	 */
+	public DefaultGraphEdgeObservationConvention(String name) {
+		this.name = name;
+	}
 
-    /**
-     * Generates a contextual name for the edge observation.
-     * Combines the operation name with the edge name if available.
-     */
-    @Override
-    @Nullable
-    public String getContextualName(GraphEdgeObservationContext context) {
-        if (StringUtils.hasText(context.getName())) {
-            return "%s %s".formatted(DEFAULT_OPERATION_NAME, context.getName());
-        }
-        return DEFAULT_OPERATION_NAME;
-    }
+	@Override
+	public String getName() {
+		return this.name;
+	}
 
-    /**
-     * Provides low cardinality key values for edge metrics.
-     * Includes graph kind and edge name for grouping and filtering.
-     */
-    @Override
-    public KeyValues getLowCardinalityKeyValues(GraphEdgeObservationContext context) {
-        return KeyValues.of(
-                KeyValue.of(GraphEdgeObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_ALIBABA_KIND, SpringAiAlibabaKind.GRAPH.getValue()),
-                KeyValue.of(GraphEdgeObservationDocumentation.LowCardinalityKeyNames.GRAPH_NAME, context.getGraphEdgeName())
-        );
-    }
+	/**
+	 * Generates a contextual name for the edge observation. Combines the operation name
+	 * with the edge name if available.
+	 */
+	@Override
+	@Nullable
+	public String getContextualName(GraphEdgeObservationContext context) {
+		if (StringUtils.hasText(context.getName())) {
+			return "%s %s".formatted(DEFAULT_OPERATION_NAME, context.getName());
+		}
+		return DEFAULT_OPERATION_NAME;
+	}
 
-    /**
-     * Provides high cardinality key values for detailed edge analysis.
-     * Includes edge state and next node information.
-     */
-    @Override
-    public KeyValues getHighCardinalityKeyValues(GraphEdgeObservationContext context) {
-        return KeyValues.of(
-                KeyValue.of(GraphEdgeObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_STATE, context.getState().toString()),
-                KeyValue.of(GraphEdgeObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_OUTPUT, context.getNextNode())
-        );
-    }
+	/**
+	 * Provides low cardinality key values for edge metrics. Includes graph kind and edge
+	 * name for grouping and filtering.
+	 */
+	@Override
+	public KeyValues getLowCardinalityKeyValues(GraphEdgeObservationContext context) {
+		return KeyValues.of(
+				KeyValue.of(GraphEdgeObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_ALIBABA_KIND,
+						SpringAiAlibabaKind.GRAPH.getValue()),
+				KeyValue.of(GraphEdgeObservationDocumentation.LowCardinalityKeyNames.GRAPH_NAME,
+						context.getGraphEdgeName()));
+	}
+
+	/**
+	 * Provides high cardinality key values for detailed edge analysis. Includes edge
+	 * state and next node information.
+	 */
+	@Override
+	public KeyValues getHighCardinalityKeyValues(GraphEdgeObservationContext context) {
+		return KeyValues.of(
+				KeyValue.of(GraphEdgeObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_STATE,
+						context.getState().toString()),
+				KeyValue.of(GraphEdgeObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_OUTPUT,
+						context.getNextNode()));
+	}
+
 }

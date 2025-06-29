@@ -16,47 +16,46 @@
 package com.alibaba.cloud.ai.graph.observation;
 
 /**
- * Enumeration defining the types of AI operations in Spring AI Alibaba.
- * Provides standardized identifiers for different graph-related observation kinds.
- * Used for categorizing and filtering observation metrics and traces.
+ * Enumeration defining the types of AI operations in Spring AI Alibaba. Provides
+ * standardized identifiers for different graph-related observation kinds. Used for
+ * categorizing and filtering observation metrics and traces.
  *
  * @author XiaoYunTao
  * @since 2025/6/28
  */
 public enum SpringAiAlibabaKind {
 
-    /**
-     * Represents a complete graph operation.
-     */
-    GRAPH("graph"),
+	/**
+	 * Represents a complete graph operation.
+	 */
+	GRAPH("graph"),
 
-    /**
-     * Represents a graph node operation.
-     */
-    GRAPH_NODE("graph_node"),
+	/**
+	 * Represents a graph node operation.
+	 */
+	GRAPH_NODE("graph_node"),
 
-    /**
-     * Represents a graph edge operation.
-     */
-    GRAPH_EDGE("graph_edge");
+	/**
+	 * Represents a graph edge operation.
+	 */
+	GRAPH_EDGE("graph_edge");
 
-    private final String value;
+	private final String value;
 
-    /**
-     * Constructs a new SpringAiAlibabaKind with the specified value.
-     *
-     * @param value the string representation of this kind
-     */
-    SpringAiAlibabaKind(String value){
-        this.value = value;
-    }
+	/**
+	 * Constructs a new SpringAiAlibabaKind with the specified value.
+	 * @param value the string representation of this kind
+	 */
+	SpringAiAlibabaKind(String value) {
+		this.value = value;
+	}
 
-    /**
-     * Gets the string value of this kind.
-     *
-     * @return the string representation of this kind
-     */
-    public String getValue(){
-        return this.value;
-    }
+	/**
+	 * Gets the string value of this kind.
+	 * @return the string representation of this kind
+	 */
+	public String getValue() {
+		return this.value;
+	}
+
 }

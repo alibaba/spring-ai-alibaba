@@ -19,21 +19,21 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 
 /**
- * Convention interface for graph node observation operations.
- * Defines the contract for customizing node observation behavior and metadata.
- * Extends ObservationConvention to provide node-specific observation conventions.
+ * Convention interface for graph node observation operations. Defines the contract for
+ * customizing node observation behavior and metadata. Extends ObservationConvention to
+ * provide node-specific observation conventions.
  */
 public interface GraphNodeObservationConvention extends ObservationConvention<GraphNodeObservationContext> {
 
-    /**
-     * Determines if this convention supports the given observation context.
-     * Returns true if the context is an instance of GraphNodeObservationContext.
-     *
-     * @param context the observation context to check
-     * @return true if this convention supports the context, false otherwise
-     */
-    @Override
-    default boolean supportsContext(Observation.Context context) {
-        return context instanceof GraphNodeObservationContext;
-    }
-} 
+	/**
+	 * Determines if this convention supports the given observation context. Returns true
+	 * if the context is an instance of GraphNodeObservationContext.
+	 * @param context the observation context to check
+	 * @return true if this convention supports the context, false otherwise
+	 */
+	@Override
+	default boolean supportsContext(Observation.Context context) {
+		return context instanceof GraphNodeObservationContext;
+	}
+
+}

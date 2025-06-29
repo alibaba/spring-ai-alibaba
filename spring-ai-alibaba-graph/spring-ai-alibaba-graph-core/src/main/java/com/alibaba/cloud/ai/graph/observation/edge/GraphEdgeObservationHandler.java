@@ -24,61 +24,60 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handler for graph edge observation events.
- * Processes edge observation lifecycle events and generates metrics for edge operations.
- * Logs edge execution details and delegates metric generation to GraphMetricsGenerator.
+ * Handler for graph edge observation events. Processes edge observation lifecycle events
+ * and generates metrics for edge operations. Logs edge execution details and delegates
+ * metric generation to GraphMetricsGenerator.
  *
  * @author XiaoYunTao
  * @since 2025/6/29
  */
 public class GraphEdgeObservationHandler implements ObservationHandler<GraphEdgeObservationContext> {
 
-    private static final Logger logger = LoggerFactory.getLogger(GraphObservationHandler.class);
+	private static final Logger logger = LoggerFactory.getLogger(GraphObservationHandler.class);
 
-    private final MeterRegistry meterRegistry;
+	private final MeterRegistry meterRegistry;
 
-    /**
-     * Constructs a new GraphEdgeObservationHandler with the specified meter registry.
-     *
-     * @param meterRegistry the meter registry for metric collection
-     */
-    public GraphEdgeObservationHandler(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-    }
+	/**
+	 * Constructs a new GraphEdgeObservationHandler with the specified meter registry.
+	 * @param meterRegistry the meter registry for metric collection
+	 */
+	public GraphEdgeObservationHandler(MeterRegistry meterRegistry) {
+		this.meterRegistry = meterRegistry;
+	}
 
-    /**
-     * Handles the completion of a graph edge observation.
-     * Logs successful edge execution details and generates success metrics.
-     *
-     * @param context the edge observation context containing execution details
-     */
-    @Override
-    public void onStop(GraphEdgeObservationContext context) {
-        logger.info("Graph graphName: {} state: {} nextNode : {}", context.getGraphEdgeName(), context.getState().toString(), context.getNextNode());
-        GraphMetricsGenerator.generate(context, meterRegistry, true);
-    }
+	/**
+	 * Handles the completion of a graph edge observation. Logs successful edge execution
+	 * details and generates success metrics.
+	 * @param context the edge observation context containing execution details
+	 */
+	@Override
+	public void onStop(GraphEdgeObservationContext context) {
+		logger.info("Graph graphName: {} state: {} nextNode : {}", context.getGraphEdgeName(),
+				context.getState().toString(), context.getNextNode());
+		GraphMetricsGenerator.generate(context, meterRegistry, true);
+	}
 
-    /**
-     * Handles errors during graph edge observation.
-     * Logs error details and generates failure metrics.
-     *
-     * @param context the edge observation context containing error details
-     */
-    @Override
-    public void onError(GraphEdgeObservationContext context) {
-        logger.info("Graph graphName: {} state: {} nextNode : {}", context.getGraphEdgeName(), context.getState().toString(), context.getNextNode());
-        GraphMetricsGenerator.generate(context, meterRegistry, false);
-    }
+	/**
+	 * Handles errors during graph edge observation. Logs error details and generates
+	 * failure metrics.
+	 * @param context the edge observation context containing error details
+	 */
+	@Override
+	public void onError(GraphEdgeObservationContext context) {
+		logger.info("Graph graphName: {} state: {} nextNode : {}", context.getGraphEdgeName(),
+				context.getState().toString(), context.getNextNode());
+		GraphMetricsGenerator.generate(context, meterRegistry, false);
+	}
 
-    /**
-     * Determines if this handler supports the given observation context.
-     * Returns true if the context is an instance of GraphEdgeObservationContext.
-     *
-     * @param context the observation context to check
-     * @return true if this handler supports the context, false otherwise
-     */
-    @Override
-    public boolean supportsContext(Observation.Context context) {
-        return context instanceof GraphEdgeObservationContext;
-    }
+	/**
+	 * Determines if this handler supports the given observation context. Returns true if
+	 * the context is an instance of GraphEdgeObservationContext.
+	 * @param context the observation context to check
+	 * @return true if this handler supports the context, false otherwise
+	 */
+	@Override
+	public boolean supportsContext(Observation.Context context) {
+		return context instanceof GraphEdgeObservationContext;
+	}
+
 }
