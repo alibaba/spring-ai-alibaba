@@ -1,5 +1,13 @@
 server:
   port: 8080 # 服务器端口配置
+rest:
+  connect:
+    timeout: 600 # 连接超时时间（秒）
+  read:
+    timeout: 600 # 读取超时时间（秒）
+webclient:
+  response:
+    timeout: 600 # 响应超时时间（秒）
 spring:
   main:
     banner-mode: off
