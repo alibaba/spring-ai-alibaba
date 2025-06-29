@@ -1,5 +1,5 @@
 /**
- * admin-core.js - 管理界面核心功能协调
+ * admin-core.js - Admin interface core functionality coordination
  */
 class AdminCore {
     constructor() {
@@ -8,17 +8,17 @@ class AdminCore {
     }
 
     /**
-     * 初始化面板显示
+     * Initialize panel display
      */
     initializePanels() {
-        // 获取所有配置面板和类别项
+        // Get all configuration panels and category items
         const panels = document.querySelectorAll('.config-panel');
         const categories = document.querySelectorAll('.category-item');
 
-        // 设置初始激活状态
+        // Set initial active state
         this.setActivePanel('basic');
 
-        // 绑定类别切换事件
+        // Bind category switching events
         categories.forEach(category => {
             category.addEventListener('click', () => {
                 const categoryId = category.dataset.category;
@@ -28,7 +28,7 @@ class AdminCore {
     }
 
     /**
-     * 设置当前激活的面板
+     * Set currently active panel
      */
     setActivePanel(categoryId) {
         // 更新类别项的激活状态

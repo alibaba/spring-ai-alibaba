@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Windows命令执行器实现
+ * Windows command executor implementation
  */
 public class WindowsShellExecutor implements ShellCommandExecutor {
 
@@ -34,7 +34,7 @@ public class WindowsShellExecutor implements ShellCommandExecutor {
 
 	private Process currentProcess;
 
-	private static final int DEFAULT_TIMEOUT = 60; // 默认超时时间(秒)
+	private static final int DEFAULT_TIMEOUT = 60; // Default timeout (seconds)
 
 	private BufferedWriter processInput;
 
@@ -42,18 +42,18 @@ public class WindowsShellExecutor implements ShellCommandExecutor {
 	public List<String> execute(List<String> commands, String workingDir) {
 		return commands.stream().map(command -> {
 			try {
-				// 如果是空命令，返回当前进程的额外日志
+				// If empty command, return additional logs from current process
 				if (command.trim().isEmpty() && currentProcess != null) {
 					return processOutput(currentProcess);
 				}
 
-				// 如果是ctrl+c命令，发送中断信号
+				// If ctrl+c command, send interrupt signal
 				if ("ctrl+c".equalsIgnoreCase(command.trim()) && currentProcess != null) {
 					terminate();
 					return "Process terminated by ctrl+c";
 				}
 
-				// Windows的后台运行命令需要特殊处理
+				// Windows background commands need special handling
 				if (command.endsWith("&")) {
 					command = "start /B " + command.substring(0, command.length() - 1);
 				}
@@ -63,20 +63,21 @@ public class WindowsShellExecutor implements ShellCommandExecutor {
 					pb.directory(new File(workingDir));
 				}
 
-				// Windows特定环境变量设置
+				// Windows-specific environment variable setup
 				pb.environment().put("PATHEXT", ".COM;.EXE;.BAT;.CMD");
 				pb.environment().put("SystemRoot", System.getenv("SystemRoot"));
 
 				currentProcess = pb.start();
 				processInput = new BufferedWriter(new OutputStreamWriter(currentProcess.getOutputStream()));
 
-				// 设置超时处理
+				// Set timeout handling
 				try {
-					if (!command.startsWith("start /B")) { // 不是后台命令才设置超时
+					if (!command.startsWith("start /B")) { // Only set timeout for
+															// non-background commands
 						if (!currentProcess.waitFor(DEFAULT_TIMEOUT, TimeUnit.SECONDS)) {
 							log.warn("Command timed out. Sending termination signal to the process");
 							terminate();
-							// 在后台重试命令
+							// Retry command in background
 							command = "start /B " + command;
 							return execute(Collections.singletonList(command), workingDir).get(0);
 						}
@@ -99,9 +100,10 @@ public class WindowsShellExecutor implements ShellCommandExecutor {
 	public void terminate() {
 		if (currentProcess != null && currentProcess.isAlive()) {
 			try {
-				// Windows下使用taskkill命令确保进程及其子进程被终止
+				// Windows uses taskkill command to ensure process and its child processes
+				// are terminated
 				Runtime.getRuntime().exec("taskkill /F /T /PID " + currentProcess.pid());
-				// 等待进程终止
+				// Wait for process termination
 				if (!currentProcess.waitFor(5, TimeUnit.SECONDS)) {
 					currentProcess.destroyForcibly();
 				}
@@ -118,8 +120,13 @@ public class WindowsShellExecutor implements ShellCommandExecutor {
 		StringBuilder outputBuilder = new StringBuilder();
 		StringBuilder errorBuilder = new StringBuilder();
 
-		// 读取标准输出
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "GBK"))) { // Windows默认使用GBK编码
+		// Read standard output
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "GBK"))) { // Windows
+																													// uses
+																													// GBK
+																													// encoding
+																													// by
+																													// default
 			String line;
 			while ((line = reader.readLine()) != null) {
 				log.info(line);
@@ -127,7 +134,7 @@ public class WindowsShellExecutor implements ShellCommandExecutor {
 			}
 		}
 
-		// 读取错误输出
+		// Read error output
 		try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream(), "GBK"))) {
 			String line;
 			while ((line = errorReader.readLine()) != null) {

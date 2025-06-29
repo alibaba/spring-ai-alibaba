@@ -62,12 +62,12 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 	}
 
 	/**
-	 * 获取浏览器操作的超时时间配置
-	 * @return 超时时间（秒），如果未配置则返回默认值30秒
+	 * Get browser operation timeout configuration
+	 * @return Timeout in seconds, returns default value of 30 seconds if not configured
 	 */
 	private Integer getBrowserTimeout() {
 		Integer timeout = getManusProperties().getBrowserRequestTimeout();
-		return timeout != null ? timeout : 30; // 默认超时时间为 30 秒
+		return timeout != null ? timeout : 30; // Default timeout is 30 seconds
 	}
 
 	private final String PARAMETERS = """
@@ -208,7 +208,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 	public ToolExecuteResult run(BrowserRequestVO requestVO) {
 		log.info("BrowserUseTool requestVO: action={}", requestVO.getAction());
 
-		// 从RequestVO中获取参数
+		// Get parameters from RequestVO
 		String action = requestVO.getAction();
 		try {
 			if (action == null) {
@@ -284,7 +284,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 		Map<String, Object> state = new HashMap<>();
 
 		try {
-			// 等待页面加载完成，避免在导航过程中获取信息时出现上下文销毁错误
+			// Wait for page to load completely to avoid context destruction errors when
+			// getting information during navigation
 			try {
 				Integer timeout = getBrowserTimeout();
 				page.waitForLoadState(com.microsoft.playwright.options.LoadState.DOMCONTENTLOADED,
@@ -294,7 +295,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 				log.warn("Page load state wait timeout or failed, continuing anyway: {}", loadException.getMessage());
 			}
 
-			// 获取基本信息
+			// Get basic information
 			String currentUrl = page.url();
 			String title = page.title();
 			state.put("url", currentUrl);
@@ -363,10 +364,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 	public String getCurrentToolStateString() {
 		DriverWrapper driver = getDriver();
 		Map<String, Object> state = getCurrentState(driver.getCurrentPage());
-		// 构建URL和标题信息
+		// Build URL and title information
 		String urlInfo = String.format("\n   URL: %s\n   Title: %s", state.get("url"), state.get("title"));
 
-		// 构建标签页信息
+		// Build tab information
 		List<Map<String, Object>> tabs = (List<Map<String, Object>>) state.get("tabs");
 		String tabsInfo = (tabs != null) ? String.format("\n   %d tab(s) available", tabs.size()) : "";
 		if (tabs != null) {
@@ -388,10 +389,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 			contentBelow = pixelsBelow > 0 ? String.format(" (%d pixels)", pixelsBelow) : "";
 		}
 
-		// 获取交互元素信息
+		// Get interactive element information
 		String elementsInfo = (String) state.get("interactive_elements");
 
-		// 构建最终的状态字符串
+		// Build final status string
 		String retString = String.format("""
 
 				- Current URL and page title:
@@ -413,7 +414,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 		return retString;
 	}
 
-	// cleanup 方法已经存在，只需确保它符合接口规范
+	// cleanup method already exists, just ensure it conforms to interface specification
 	@Override
 	public void cleanup(String planId) {
 		if (planId != null) {
