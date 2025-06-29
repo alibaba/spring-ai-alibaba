@@ -658,22 +658,22 @@ public class StateGraphTest {
 		CompiledGraph app = workflow
 			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
 				@Override
-				public void onComplete(String nodeId, Map<String, Object> state,RunnableConfig config) {
+				public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
 					log.info("listener1 ,node = {},state = {}", nodeId, state);
 				}
 
 				@Override
-				public void onStart(String nodeId, Map<String, Object> state,RunnableConfig config) {
+				public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
 					log.info("listener1 ,node = {},state = {}", nodeId, state);
 				}
 			}).withLifecycleListener(new GraphLifecycleListener() {
 				@Override
-				public void onStart(String nodeId, Map<String, Object> state,RunnableConfig config) {
+				public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
 					log.info("listener2 ,node = {},state = {}", nodeId, state);
 				}
 
 				@Override
-				public void onComplete(String nodeId, Map<String, Object> state,RunnableConfig config) {
+				public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
 					log.info("listener2 ,node = {},state = {}", nodeId, state);
 				}
 			}).build());
@@ -701,12 +701,12 @@ public class StateGraphTest {
 		CompiledGraph app = workflow
 			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
 				@Override
-				public void onComplete(String nodeId, Map<String, Object> state,RunnableConfig config) {
+				public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
 					log.info("node = {},state = {}", nodeId, state);
 				}
 
 				@Override
-				public void onStart(String nodeId, Map<String, Object> state,RunnableConfig config) {
+				public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
 					log.info("node = {},state = {}", nodeId, state);
 				}
 			}).build());
@@ -735,17 +735,17 @@ public class StateGraphTest {
 		CompiledGraph app = workflow
 			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
 				@Override
-				public void onComplete(String nodeId, Map<String, Object> state,RunnableConfig config) {
+				public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
 					log.info("node = {},state = {}", nodeId, state);
 				}
 
 				@Override
-				public void onStart(String nodeId, Map<String, Object> state,RunnableConfig config) {
+				public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
 					log.info("node = {},state = {}", nodeId, state);
 				}
 
 				@Override
-				public void onError(String nodeId, Map<String, Object> state, Throwable ex,RunnableConfig config) {
+				public void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
 					log.error("node = {},state = {}", nodeId, state, ex);
 				}
 			}).build());
@@ -756,23 +756,24 @@ public class StateGraphTest {
 
 	@Test
 	public void testCommandEdgeGraph() throws Exception {
-		StateGraph workflow = new StateGraph(() ->
-				Map.of("prop1", new ReplaceStrategy(),
-						"input", new ReplaceStrategy()))
+		StateGraph workflow = new StateGraph(
+				() -> Map.of("prop1", new ReplaceStrategy(), "input", new ReplaceStrategy()))
 
 			.addNode("agent_1", node_async(state -> {
-			log.info("agent_1\n{}", state);
+				log.info("agent_1\n{}", state);
 
-			return Map.of("prop1", "agent_1");
-		})).addNode("agent_2", node_async(state -> {
-			log.info("agent_2\n{}", state);
+				return Map.of("prop1", "agent_1");
+			}))
+			.addNode("agent_2", node_async(state -> {
+				log.info("agent_2\n{}", state);
 
-			return Map.of("prop1", "agent_2");
-		})).addNode("agent_3", node_async(state -> {
-			log.info("agent_3\n{}", state);
-			assertEquals("command content", state.value("prop1", String.class).get());
-			return Map.of("prop1", "agent_3");
-		}))
+				return Map.of("prop1", "agent_2");
+			}))
+			.addNode("agent_3", node_async(state -> {
+				log.info("agent_3\n{}", state);
+				assertEquals("command content", state.value("prop1", String.class).get());
+				return Map.of("prop1", "agent_3");
+			}))
 			.addConditionalEdges("agent_2",
 					AsyncCommandAction
 						.node_async((state, config) -> new Command("agent_2", Map.of("prop1", "command content"))),

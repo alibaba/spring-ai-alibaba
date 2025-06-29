@@ -78,6 +78,7 @@ public class StateGraph {
 	 * Constant representing the NODE_AFTER of the graph.
 	 */
 	public static final String NODE_AFTER = "__NODE_AFTER__";
+
 	/**
 	 * Collection of nodes in the graph.
 	 */

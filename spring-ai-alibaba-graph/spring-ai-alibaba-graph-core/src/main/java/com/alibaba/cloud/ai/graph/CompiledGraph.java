@@ -120,10 +120,12 @@ public class CompiledGraph {
 	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) throws GraphStateException {
 		this.stateGraph = stateGraph;
 		this.keyStrategyMap = Objects.isNull(stateGraph.getOverAllStateFactory())
-				? stateGraph.getKeyStrategyFactory().apply().entrySet()
-				.stream()
-				.map(e -> Map.entry(e.getKey(), e.getValue()))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+				? stateGraph.getKeyStrategyFactory()
+					.apply()
+					.entrySet()
+					.stream()
+					.map(e -> Map.entry(e.getKey(), e.getValue()))
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
 				: stateGraph.getOverAllStateFactory().create().keyStrategies();
 
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
@@ -980,10 +982,10 @@ public class CompiledGraph {
 				else if (ERROR.equals(scene)) {
 					listener.onError(this.currentNodeId, this.currentState, e, this.config);
 				}
-				else if(NODE_BEFORE.equals(scene)){
+				else if (NODE_BEFORE.equals(scene)) {
 					listener.before(this.currentNodeId, this.currentState, this.config, SystemClock.now());
 				}
-				else if(NODE_AFTER.equals(scene)){
+				else if (NODE_AFTER.equals(scene)) {
 					listener.after(this.currentNodeId, this.currentState, this.config, SystemClock.now());
 				}
 

@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.graph.utils;
 
-
 import java.sql.Timestamp;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,12 +24,17 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * <p>
- * Optimization for performance issues with System.currentTimeMillis() in high concurrency scenarios. This approach is also used to implement timestamps in Redis's LRU list (very efficient and useful)
+ * Optimization for performance issues with System.currentTimeMillis() in high concurrency
+ * scenarios. This approach is also used to implement timestamps in Redis's LRU list (very
+ * efficient and useful)
  * </p>
  * <p>
- * Invoking System.currentTimeMillis() is much more time-consuming compared to creating a regular object<br>
- * The reason System.currentTimeMillis() is slow is because it interacts with the operating system<br>
- * The clock is updated periodically in the background, and the thread is automatically reclaimed when the JVM exits<br>
+ * Invoking System.currentTimeMillis() is much more time-consuming compared to creating a
+ * regular object<br>
+ * The reason System.currentTimeMillis() is slow is because it interacts with the
+ * operating system<br>
+ * The clock is updated periodically in the background, and the thread is automatically
+ * reclaimed when the JVM exits<br>
  * Performance comparison data:<br>
  * 1 Billion calls: 43410 vs 206, a difference of 210.73%<br>
  * 100 Million calls: 4699 vs 29, a difference of 162.03%<br>
@@ -42,43 +46,46 @@ import java.util.concurrent.atomic.AtomicLong;
  * @version 1.0.0.1
  */
 public class SystemClock {
-    private final long period;
-    private final AtomicLong now;
 
-    private SystemClock(long period) {
-        this.period = period;
-        this.now = new AtomicLong(System.currentTimeMillis());
-        scheduleClockUpdating();
-    }
+	private final long period;
 
-    private static SystemClock instance() {
-        return InstanceHolder.INSTANCE;
-    }
+	private final AtomicLong now;
 
-    public static long now() {
-        return instance().currentTimeMillis();
-    }
+	private SystemClock(long period) {
+		this.period = period;
+		this.now = new AtomicLong(System.currentTimeMillis());
+		scheduleClockUpdating();
+	}
 
-    public static String nowDate() {
-        return new Timestamp(instance().currentTimeMillis()).toString();
-    }
+	private static SystemClock instance() {
+		return InstanceHolder.INSTANCE;
+	}
 
-    private void scheduleClockUpdating() {
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "System Clock");
-            thread.setDaemon(true);
-            return thread;
-        });
-        scheduler.scheduleAtFixedRate(() ->
-                now.set(System.currentTimeMillis()), period, period, TimeUnit.MILLISECONDS);
-    }
+	public static long now() {
+		return instance().currentTimeMillis();
+	}
 
-    private long currentTimeMillis() {
-        return now.get();
-    }
+	public static String nowDate() {
+		return new Timestamp(instance().currentTimeMillis()).toString();
+	}
 
-    private static class InstanceHolder {
+	private void scheduleClockUpdating() {
+		ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
+			Thread thread = new Thread(runnable, "System Clock");
+			thread.setDaemon(true);
+			return thread;
+		});
+		scheduler.scheduleAtFixedRate(() -> now.set(System.currentTimeMillis()), period, period, TimeUnit.MILLISECONDS);
+	}
 
-        public static final SystemClock INSTANCE = new SystemClock(1);
-    }
+	private long currentTimeMillis() {
+		return now.get();
+	}
+
+	private static class InstanceHolder {
+
+		public static final SystemClock INSTANCE = new SystemClock(1);
+
+	}
+
 }
