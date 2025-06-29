@@ -30,7 +30,7 @@ jobs:
       issues: write
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: springaialibaba/actbot@3c2c64f9091a579f13f1945064e6495070473fdf
+      - uses: springaialibaba/actbot@52de9fc5202d41a929d42a7eecb39998fe44ce68
         name: Actbot Action
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
