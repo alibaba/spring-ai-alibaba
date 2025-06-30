@@ -39,7 +39,8 @@ public class LogIdGenerator {
 	private static final int SERIAL_LEN = Integer.BYTES;
 
 	/**
-	 * 总字节数一定要是3的倍数，确保base64编码不用padding，否则会在编码结果中引入特殊符号=
+	 * Total bytes must be a multiple of 3 to ensure base64 encoding doesn't need padding,
+	 * otherwise special symbols = will be introduced in the encoded result
 	 */
 	private static final int TOTAL_LEN = VERSION_LEN + TIME_LEN + IP_LEN + SERIAL_LEN;
 
@@ -50,8 +51,10 @@ public class LogIdGenerator {
 	private static final AtomicInteger SERIAL_GEN = new AtomicInteger(Integer.MIN_VALUE);
 
 	/**
-	 * 生成一个uuid 这里采用雪花算法的思路，用版本(2byte)+时间戳(8byte)+IP(4byte)+序列号(4byte)的方式生成一个全局大致有序的uuid
-	 * 然后用base64进行编码，使得最后生成的字符串只包含[0-9a-zA-Z]-_，不含其他任何特殊符号
+	 * Generate a UUID using snowflake algorithm approach, generating a globally roughly
+	 * ordered UUID with version(2byte)+timestamp(8byte)+IP(4byte)+serial number(4byte)
+	 * Then use base64 encoding to make the final generated string only contain
+	 * [0-9a-zA-Z]-_, without any other special symbols
 	 */
 	public static String generateUniqueId() {
 		byte[] array = new byte[TOTAL_LEN];
@@ -81,13 +84,14 @@ public class LogIdGenerator {
 	private static final String format = "%s.%s";
 
 	/**
-	 * 通过uniaue id 和对应的increment id 生成 aibRpcId，注意并发情况下的生成
+	 * Generate aibRpcId through unique id and corresponding increment id, note generation
+	 * under concurrent situations
 	 * @param aibRpcId aibRpcId
 	 * @param incrementId incrementId
 	 * @return new aibRpcId
 	 */
 	public static String generateSubAibRpcId(String aibRpcId, AtomicLong incrementId) {
-		// 为空则生成默认初始rpcid
+		// If empty, generate default initial rpcid
 		if (StringUtils.isEmpty(aibRpcId)) {
 			return DEFAULT_INIT_AIB_RPC_ID;
 		}
@@ -95,12 +99,12 @@ public class LogIdGenerator {
 	}
 
 	/**
-	 * 默认向下加载一层
+	 * Default load one level down
 	 * @param aibRpcId aibRpcId
 	 * @return new aibRpcId
 	 */
 	public static String generateSubAibRpcId(String aibRpcId) {
-		// 为空则生成默认初始rpcid
+		// If empty, generate default initial rpcid
 		if (StringUtils.isEmpty(aibRpcId)) {
 			return DEFAULT_INIT_AIB_RPC_ID;
 		}
@@ -108,12 +112,12 @@ public class LogIdGenerator {
 	}
 
 	/**
-	 * 默认向下加载一层
+	 * Default load one level down
 	 * @param aibRpcId aibRpcId
 	 * @return new aibRpcId
 	 */
 	public static String generateSubAibRpcId(String aibRpcId, Long subRpcIdIndex) {
-		// 为空则生成默认初始rpcid
+		// If empty, generate default initial rpcid
 		if (StringUtils.isEmpty(aibRpcId)) {
 			return DEFAULT_INIT_AIB_RPC_ID;
 		}

@@ -34,7 +34,6 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,18 +44,14 @@ import java.util.HashMap;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class BrowserUseTool implements ToolCallBiFunctionDef {
+public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
 	private final ChromeDriverService chromeDriverService;
 
 	private String planId;
-
-	// Initialize ObjectMapper instance
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
@@ -67,12 +62,12 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	}
 
 	/**
-	 * 获取浏览器操作的超时时间配置
-	 * @return 超时时间（秒），如果未配置则返回默认值30秒
+	 * Get browser operation timeout configuration
+	 * @return Timeout in seconds, returns default value of 30 seconds if not configured
 	 */
 	private Integer getBrowserTimeout() {
 		Integer timeout = getManusProperties().getBrowserRequestTimeout();
-		return timeout != null ? timeout : 30; // 默认超时时间为 30 秒
+		return timeout != null ? timeout : 30; // Default timeout is 30 seconds
 	}
 
 	private final String PARAMETERS = """
@@ -210,30 +205,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return instance;
 	}
 
-	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(
-			ChromeDriverService chromeDriverService) {
-		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
-	}
+	public ToolExecuteResult run(BrowserRequestVO requestVO) {
+		log.info("BrowserUseTool requestVO: action={}", requestVO.getAction());
 
-	public ToolExecuteResult run(String toolInput) {
-		log.info("BrowserUseTool toolInput:" + toolInput);
-
-		// 直接将JSON字符串解析为BrowserRequestVO对象
-		BrowserRequestVO requestVO;
-		// Add exception handling for JSON deserialization
-		try {
-			requestVO = objectMapper.readValue(toolInput, BrowserRequestVO.class);
-		}
-		catch (Exception e) {
-			log.error("Error deserializing JSON", e);
-			return new ToolExecuteResult("Error deserializing JSON: " + e.getMessage());
-		}
-
-		// 从RequestVO中获取参数
+		// Get parameters from RequestVO
 		String action = requestVO.getAction();
 		try {
 			if (action == null) {
@@ -309,7 +284,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		Map<String, Object> state = new HashMap<>();
 
 		try {
-			// 等待页面加载完成，避免在导航过程中获取信息时出现上下文销毁错误
+			// Wait for page to load completely to avoid context destruction errors when
+			// getting information during navigation
 			try {
 				Integer timeout = getBrowserTimeout();
 				page.waitForLoadState(com.microsoft.playwright.options.LoadState.DOMCONTENTLOADED,
@@ -319,13 +295,13 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 				log.warn("Page load state wait timeout or failed, continuing anyway: {}", loadException.getMessage());
 			}
 
-			// 获取基本信息
+			// Get basic information
 			String currentUrl = page.url();
 			String title = page.title();
 			state.put("url", currentUrl);
 			state.put("title", title);
 
-			// 获取标签页信息
+			// Get tab information
 			List<Map<String, Object>> tabs = getTabsInfo(page);
 			state.put("tabs", tabs);
 
@@ -345,9 +321,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String t, ToolContext u) {
-
-		return run(t);
+	public ToolExecuteResult apply(BrowserRequestVO requestVO, ToolContext u) {
+		return run(requestVO);
 	}
 
 	@Override
@@ -371,8 +346,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
+	public Class<BrowserRequestVO> getInputType() {
+		return BrowserRequestVO.class;
 	}
 
 	@Override
@@ -389,10 +364,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	public String getCurrentToolStateString() {
 		DriverWrapper driver = getDriver();
 		Map<String, Object> state = getCurrentState(driver.getCurrentPage());
-		// 构建URL和标题信息
+		// Build URL and title information
 		String urlInfo = String.format("\n   URL: %s\n   Title: %s", state.get("url"), state.get("title"));
 
-		// 构建标签页信息
+		// Build tab information
 		List<Map<String, Object>> tabs = (List<Map<String, Object>>) state.get("tabs");
 		String tabsInfo = (tabs != null) ? String.format("\n   %d tab(s) available", tabs.size()) : "";
 		if (tabs != null) {
@@ -403,7 +378,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 				tabsInfo += String.format("\n   [%d] %s: %s", i, tabTitle, tabUrl);
 			}
 		}
-		// 获取滚动信息
+		// Get scroll information
 		Map<String, Object> scrollInfo = (Map<String, Object>) state.get("scroll_info");
 		String contentAbove = "";
 		String contentBelow = "";
@@ -414,10 +389,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			contentBelow = pixelsBelow > 0 ? String.format(" (%d pixels)", pixelsBelow) : "";
 		}
 
-		// 获取交互元素信息
+		// Get interactive element information
 		String elementsInfo = (String) state.get("interactive_elements");
 
-		// 构建最终的状态字符串
+		// Build final status string
 		String retString = String.format("""
 
 				- Current URL and page title:
@@ -439,7 +414,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return retString;
 	}
 
-	// cleanup 方法已经存在，只需确保它符合接口规范
+	// cleanup method already exists, just ensure it conforms to interface specification
 	@Override
 	public void cleanup(String planId) {
 		if (planId != null) {

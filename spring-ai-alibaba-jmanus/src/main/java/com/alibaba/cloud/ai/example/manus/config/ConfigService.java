@@ -54,11 +54,11 @@ public class ConfigService {
 
 	@PostConstruct
 	public void init() {
-		// 只获取带有@ConfigurationProperties注解的Bean
+		// Only get beans with @ConfigurationProperties annotation
 		Map<String, Object> configBeans = applicationContext.getBeansWithAnnotation(ConfigurationProperties.class);
 		log.info("Found {} configuration beans", configBeans.size());
 
-		// 初始化每个配置Bean
+		// Initialize each configuration bean
 		configBeans.values().forEach(this::initializeConfig);
 	}
 
@@ -69,9 +69,9 @@ public class ConfigService {
 				ConfigProperty annotation = field.getAnnotation(ConfigProperty.class);
 				String configPath = annotation.path();
 
-				// 检查配置是否已存在
+				// Check if configuration already exists
 				if (!configRepository.existsByConfigPath(configPath)) {
-					// 创建新的配置实体
+					// Create new configuration entity
 					ConfigEntity entity = new ConfigEntity();
 					entity.setConfigGroup(annotation.group());
 					entity.setConfigSubGroup(annotation.subGroup());
@@ -81,7 +81,7 @@ public class ConfigService {
 					entity.setDefaultValue(annotation.defaultValue());
 					entity.setInputType(annotation.inputType());
 
-					// 尝试从环境中获取配置值
+					// Try to get configuration value from environment
 					String value = environment.getProperty(configPath);
 					if (value != null) {
 						entity.setConfigValue(value);
@@ -90,9 +90,9 @@ public class ConfigService {
 						entity.setConfigValue(annotation.defaultValue());
 					}
 
-					// 如果是SELECT类型，保存选项JSON
+					// If it's SELECT type, save options JSON
 					if (annotation.inputType().name().equals("SELECT") && annotation.options().length > 0) {
-						// 将选项转换为JSON字符串
+						// Convert options to JSON string
 						ConfigOption[] options = annotation.options();
 						StringBuilder optionsJson = new StringBuilder("[");
 						for (int i = 0; i < options.length; i++) {
@@ -111,24 +111,24 @@ public class ConfigService {
 						entity.setOptionsJson(optionsJson.toString());
 					}
 
-					// 保存配置
+					// Save configuration
 					log.debug("Creating new config: {}", configPath);
 					configRepository.save(entity);
 
-					// 设置字段值
+					// Set field value
 					setFieldValue(bean, field, entity.getConfigValue());
 				}
 			});
 	}
 
 	public String getConfigValue(String configPath) {
-		// 检查缓存
+		// Check cache
 		ConfigCacheEntry<String> cacheEntry = configCache.get(configPath);
 		if (cacheEntry != null && !cacheEntry.isExpired()) {
 			return cacheEntry.getValue();
 		}
 
-		// 如果缓存不存在或已过期，从数据库获取
+		// If cache doesn't exist or is expired, get from database
 		Optional<ConfigEntity> configOpt = configRepository.findByConfigPath(configPath);
 		if (configOpt.isPresent()) {
 			String value = configOpt.get().getConfigValue();
@@ -146,10 +146,10 @@ public class ConfigService {
 		entity.setConfigValue(newValue);
 		configRepository.save(entity);
 
-		// 更新缓存
+		// Update cache
 		configCache.put(configPath, new ConfigCacheEntry<>(newValue));
 
-		// 更新所有使用此配置的Bean
+		// Update all beans using this configuration
 		Map<String, Object> configBeans = applicationContext.getBeansWithAnnotation(ConfigurationProperties.class);
 		configBeans.values().forEach(bean -> updateBeanConfig(bean, configPath, newValue));
 	}
@@ -165,7 +165,7 @@ public class ConfigService {
 		try {
 			field.setAccessible(true);
 
-			// 根据字段类型转换值
+			// Convert value based on field type
 			Object convertedValue = convertValue(value, field.getType());
 			field.set(bean, convertedValue);
 
@@ -215,23 +215,23 @@ public class ConfigService {
 		entity.setConfigValue(entity.getDefaultValue());
 		configRepository.save(entity);
 
-		// 更新所有使用此配置的Bean
+		// Update all beans using this configuration
 		Map<String, Object> configBeans = applicationContext.getBeansWithAnnotation(ConfigurationProperties.class);
 		configBeans.values().forEach(bean -> updateBeanConfig(bean, configPath, entity.getDefaultValue()));
 	}
 
 	/**
-	 * 根据配置组名获取配置项
-	 * @param groupName 配置组名
-	 * @return 该组的所有配置项
+	 * Get configuration items by configuration group name
+	 * @param groupName Configuration group name
+	 * @return All configuration items in this group
 	 */
 	public List<ConfigEntity> getConfigsByGroup(String groupName) {
 		return configRepository.findByConfigGroup(groupName);
 	}
 
 	/**
-	 * 批量更新配置项
-	 * @param configs 需要更新的配置项列表
+	 * Batch update configuration items
+	 * @param configs List of configuration items to update
 	 */
 	@Transactional
 	public void batchUpdateConfigs(List<ConfigEntity> configs) {
@@ -239,11 +239,11 @@ public class ConfigService {
 			ConfigEntity existingConfig = configRepository.findById(config.getId())
 				.orElseThrow(() -> new IllegalArgumentException("Config not found with ID: " + config.getId()));
 
-			// 只更新配置值
+			// Only update configuration value
 			existingConfig.setConfigValue(config.getConfigValue());
 			configRepository.save(existingConfig);
 
-			// 更新所有使用此配置的Bean
+			// Update all beans using this configuration
 			Map<String, Object> configBeans = applicationContext.getBeansWithAnnotation(ConfigurationProperties.class);
 			configBeans.values()
 				.forEach(bean -> updateBeanConfig(bean, existingConfig.getConfigPath(),

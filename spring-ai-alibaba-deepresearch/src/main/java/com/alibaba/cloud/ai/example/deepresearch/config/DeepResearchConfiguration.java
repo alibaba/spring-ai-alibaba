@@ -21,7 +21,9 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatche
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.RewriteAndMultiQueryDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
+
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
@@ -33,9 +35,11 @@ import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.RewriteAndMultiQueryNode;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
+import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
@@ -44,12 +48,12 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -73,8 +77,8 @@ public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
-	@Autowired(required = false)
-	private TavilySearchService tavilySearchService;
+	@Autowired
+	private SearchBeanUtil searchBeanUtil;
 
 	@Autowired
 	private ChatClient coderAgent;
@@ -90,6 +94,10 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private ChatClient plannerAgent;
+
+	@Qualifier("chatClientBuilder")
+	@Autowired
+	private ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
 
 	@Autowired
 	private DeepResearchProperties deepResearchProperties;
@@ -110,12 +118,14 @@ public class DeepResearchConfiguration {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			// 条件边控制：跳转下一个节点
 			keyStrategyHashMap.put("coordinator_next_node", new ReplaceStrategy());
+			keyStrategyHashMap.put("rewrite_multi_query_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("planner_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("information_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("human_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("research_team_next_node", new ReplaceStrategy());
 			// 用户输入
 			keyStrategyHashMap.put("query", new ReplaceStrategy());
+			keyStrategyHashMap.put("optimize_queries", new ReplaceStrategy());
 			keyStrategyHashMap.put("thread_id", new ReplaceStrategy());
 			keyStrategyHashMap.put("enable_background_investigation", new ReplaceStrategy());
 			keyStrategyHashMap.put("auto_accepted_plan", new ReplaceStrategy());
@@ -149,8 +159,9 @@ public class DeepResearchConfiguration {
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
+			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
 			.addNode("background_investigator",
-					node_async(new BackgroundInvestigationNode(tavilySearchService, jinaCrawlerService)))
+					node_async(new BackgroundInvestigationNode(searchBeanUtil, jinaCrawlerService)))
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
@@ -164,6 +175,8 @@ public class DeepResearchConfiguration {
 
 		stateGraph.addEdge(START, "coordinator")
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
+					Map.of("rewrite_multi_query", "rewrite_multi_query", END, END))
+			.addConditionalEdges("rewrite_multi_query", edge_async(new RewriteAndMultiQueryDispatcher()),
 					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 			.addEdge("background_investigator", "planner")
 			.addEdge("planner", "information")

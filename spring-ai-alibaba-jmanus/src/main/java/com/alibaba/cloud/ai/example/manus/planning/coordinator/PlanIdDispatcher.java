@@ -20,42 +20,43 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * ID转换器，用于处理和转换planId与planTemplateId之间的关系
- * 这个类帮助系统在新旧接口之间进行兼容，允许同时支持使用planId和planTemplateId
+ * ID converter, used to handle and convert the relationship between planId and
+ * planTemplateId This class helps the system to be compatible with the old and new
+ * interfaces, allowing both planId and planTemplateId to be supported
  */
 @Component
 public class PlanIdDispatcher {
 
 	private static final Logger logger = LoggerFactory.getLogger(PlanIdDispatcher.class);
 
-	// planId前缀常量
+	// planId prefix constant
 	private static final String PLAN_ID_PREFIX = "plan-";
 
-	// planTemplateId前缀常量
+	// planTemplateId prefix constant
 	private static final String PLAN_TEMPLATE_ID_PREFIX = "planTemplate-";
 
 	/**
-	 * 检查ID是否为planTemplateId格式
-	 * @param id 待检查的ID
-	 * @return 如果是planTemplateId格式则返回true，否则返回false
+	 * Check if the ID is in planTemplateId format
+	 * @param id ID to check
+	 * @return true if the ID is in planTemplateId format, false otherwise
 	 */
 	public boolean isPlanTemplateId(String id) {
 		return id != null && id.startsWith(PLAN_TEMPLATE_ID_PREFIX);
 	}
 
 	/**
-	 * 检查ID是否为planId格式
-	 * @param id 待检查的ID
-	 * @return 如果是planId格式则返回true，否则返回false
+	 * Check if the ID is in planId format
+	 * @param id ID to check
+	 * @return true if the ID is in planId format, false otherwise
 	 */
 	public boolean isPlanId(String id) {
 		return id != null && id.startsWith(PLAN_ID_PREFIX);
 	}
 
 	/**
-	 * 将planTemplateId转换为planId 由于一个planTemplate可以生成多个plan，所以每次生成唯一的planId
-	 * @param planTemplateId 计划模板ID
-	 * @return 转换后的唯一planId
+	 * Convert planTemplateId to planId
+	 * @param planTemplateId planTemplateId to convert
+	 * @return converted planId
 	 */
 	public String toPlanId(String planTemplateId) {
 		if (planTemplateId == null) {
@@ -63,27 +64,27 @@ public class PlanIdDispatcher {
 		}
 
 		if (isPlanId(planTemplateId)) {
-			return planTemplateId; // 已经是planId格式，直接返回
+			return planTemplateId; // Already in planId format, return directly
 		}
 
-		// 无论是否为planTemplateId格式，都生成新的唯一planId
-		// 使用时间戳和随机数确保唯一性
+		// Generate a new unique planId for both planTemplateId and planId formats
+		// Use timestamp and random number to ensure uniqueness
 		String uniqueId = PLAN_ID_PREFIX + System.currentTimeMillis() + "-" + (int) (Math.random() * 1000);
 
 		if (isPlanTemplateId(planTemplateId)) {
-			logger.debug("从planTemplateId [{}] 生成新的唯一planId [{}]", planTemplateId, uniqueId);
+			logger.debug("Generated new unique planId [{}] from planTemplateId [{}]", uniqueId, planTemplateId);
 		}
 		else {
-			logger.warn("未知ID格式 [{}]，生成新的唯一planId [{}]", planTemplateId, uniqueId);
+			logger.warn("Unknown ID format [{}], generated new unique planId [{}]", planTemplateId, uniqueId);
 		}
 
 		return uniqueId;
 	}
 
 	/**
-	 * 将planId转换为planTemplateId 如果输入已经是planTemplateId格式则直接返回
-	 * @param planId 计划ID
-	 * @return 转换后的planTemplateId
+	 * Convert planId to planTemplateId
+	 * @param planId planId to convert
+	 * @return converted planTemplateId
 	 */
 	public String toPlanTemplateId(String planId) {
 		if (planId == null) {
@@ -91,46 +92,47 @@ public class PlanIdDispatcher {
 		}
 
 		if (isPlanTemplateId(planId)) {
-			return planId; // 已经是planTemplateId格式，直接返回
+			return planId; // Already in planTemplateId format, return directly
 		}
 
 		if (isPlanId(planId)) {
-			// 提取ID的数字部分并创建新的planTemplateId
+			// Extract the numeric part of the ID and create a new planTemplateId
 			String numericPart = planId.substring(PLAN_ID_PREFIX.length());
 			String planTemplateId = PLAN_TEMPLATE_ID_PREFIX + numericPart;
-			logger.debug("转换planId [{}] 到 planTemplateId [{}]", planId, planTemplateId);
+			logger.debug("Converted planId [{}] to planTemplateId [{}]", planId, planTemplateId);
 			return planTemplateId;
 		}
 
-		// 对于不符合任何已知格式的ID，添加planTemplateId前缀
-		logger.warn("未知ID格式 [{}]，添加planTemplateId前缀", planId);
+		// For IDs that do not match any known formats, add the planTemplateId prefix
+		logger.warn("Unknown ID format [{}], added planTemplateId prefix", planId);
 		return PLAN_TEMPLATE_ID_PREFIX + planId;
 	}
 
 	/**
-	 * 生成新的planTemplateId
-	 * @return 新生成的planTemplateId
+	 * Generate a new planTemplateId
+	 * @return new planTemplateId
 	 */
 	public String generatePlanTemplateId() {
 		String planTemplateId = PLAN_TEMPLATE_ID_PREFIX + System.currentTimeMillis();
-		logger.debug("生成新的planTemplateId: {}", planTemplateId);
+		logger.debug("Generated new planTemplateId: {}", planTemplateId);
 		return planTemplateId;
 	}
 
 	/**
-	 * 生成新的planId
-	 * @return 新生成的planId
+	 * Generate a new planId
+	 * @return new planId
 	 */
 	public String generatePlanId() {
 		String planId = PLAN_ID_PREFIX + System.currentTimeMillis();
-		logger.debug("生成新的planId: {}", planId);
+		logger.debug("Generated new planId: {}", planId);
 		return planId;
 	}
 
 	/**
-	 * 根据现有ID生成对应的另一种类型ID 如果是planId，则转换为planTemplateId 如果是planTemplateId，则转换为planId
-	 * @param id 现有ID
-	 * @return 转换后的ID
+	 * Generate an ID of the other type based on the existing ID If it is a planId,
+	 * convert it to planTemplateId If it is a planTemplateId, convert it to planId
+	 * @param id existing ID
+	 * @return converted ID
 	 */
 	public String convertId(String id) {
 		if (id == null) {
@@ -144,8 +146,8 @@ public class PlanIdDispatcher {
 			return toPlanId(id);
 		}
 		else {
-			// 无法确定ID类型，返回原ID
-			logger.warn("无法确定ID类型 [{}]，返回原ID", id);
+			// Unable to determine the ID type, return the original ID
+			logger.warn("Unable to determine the ID type [{}], return the original ID", id);
 			return id;
 		}
 	}

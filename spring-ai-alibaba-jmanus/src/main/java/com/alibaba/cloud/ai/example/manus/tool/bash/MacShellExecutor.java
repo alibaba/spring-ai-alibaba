@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Mac命令执行器实现
+ * Mac command executor implementation
  */
 public class MacShellExecutor implements ShellCommandExecutor {
 
@@ -34,7 +34,7 @@ public class MacShellExecutor implements ShellCommandExecutor {
 
 	private Process currentProcess;
 
-	private static final int DEFAULT_TIMEOUT = 60; // 默认超时时间(秒)
+	private static final int DEFAULT_TIMEOUT = 60; // Default timeout in seconds
 
 	private BufferedWriter processInput;
 
@@ -42,12 +42,12 @@ public class MacShellExecutor implements ShellCommandExecutor {
 	public List<String> execute(List<String> commands, String workingDir) {
 		return commands.stream().map(command -> {
 			try {
-				// 如果是空命令，返回当前进程的额外日志
+				// If empty command, return additional logs from current process
 				if (command.trim().isEmpty() && currentProcess != null) {
 					return processOutput(currentProcess);
 				}
 
-				// 如果是ctrl+c命令，发送中断信号
+				// If ctrl+c command, send interrupt signal
 				if ("ctrl+c".equalsIgnoreCase(command.trim()) && currentProcess != null) {
 					terminate();
 					return "Process terminated by ctrl+c";
@@ -58,20 +58,21 @@ public class MacShellExecutor implements ShellCommandExecutor {
 					pb.directory(new File(workingDir));
 				}
 
-				// 设置环境变量
+				// Set environment variables
 				pb.environment().put("LANG", "en_US.UTF-8");
 				pb.environment().put("PATH", System.getenv("PATH") + ":/usr/local/bin");
 
 				currentProcess = pb.start();
 				processInput = new BufferedWriter(new OutputStreamWriter(currentProcess.getOutputStream()));
 
-				// 设置超时处理
+				// Set timeout handling
 				try {
-					if (!command.endsWith("&")) { // 不是后台命令才设置超时
+					if (!command.endsWith("&")) { // Only set timeout for non-background
+													// commands
 						if (!currentProcess.waitFor(DEFAULT_TIMEOUT, TimeUnit.SECONDS)) {
 							log.warn("Command timed out. Sending SIGINT to the process");
 							terminate();
-							// 在后台重试命令
+							// Retry command in background
 							if (!command.endsWith("&")) {
 								command += " &";
 							}
@@ -95,12 +96,12 @@ public class MacShellExecutor implements ShellCommandExecutor {
 	@Override
 	public void terminate() {
 		if (currentProcess != null && currentProcess.isAlive()) {
-			// 首先尝试发送SIGINT (ctrl+c)
+			// First try to send SIGINT (ctrl+c)
 			currentProcess.destroy();
 			try {
-				// 等待进程响应SIGINT
+				// Wait for process to respond to SIGINT
 				if (!currentProcess.waitFor(5, TimeUnit.SECONDS)) {
-					// 如果进程没有响应SIGINT，强制终止
+					// If process doesn't respond to SIGINT, force terminate
 					currentProcess.destroyForcibly();
 				}
 			}
@@ -116,7 +117,7 @@ public class MacShellExecutor implements ShellCommandExecutor {
 		StringBuilder outputBuilder = new StringBuilder();
 		StringBuilder errorBuilder = new StringBuilder();
 
-		// 读取标准输出
+		// Read standard output
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"))) {
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -125,7 +126,7 @@ public class MacShellExecutor implements ShellCommandExecutor {
 			}
 		}
 
-		// 读取错误输出
+		// Read error output
 		try (BufferedReader errorReader = new BufferedReader(
 				new InputStreamReader(process.getErrorStream(), "UTF-8"))) {
 			String line;
