@@ -69,15 +69,16 @@ public class SummaryWorkflow {
 
 	/**
 	 * 执行内容总结工作流
+	 * @param planId 调用者的计划ID，确保子进程能找到对应的目录
 	 * @param fileName 文件名
 	 * @param content 文件内容
 	 * @param queryKey 查询关键词
 	 * @return 总结结果的Future
 	 */
-	public CompletableFuture<String> executeSummaryWorkflow(String fileName, String content, String queryKey) {
+	public CompletableFuture<String> executeSummaryWorkflow(String planId, String fileName, String content, String queryKey) {
 
-		// 1. 构建MapReduce执行计划
-		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(fileName, content, queryKey);
+		// 1. 构建MapReduce执行计划，使用调用者的planId
+		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(planId, fileName, content, queryKey);
 
 		// 2. 直接执行计划
 		return executeMapReducePlan(executionPlan);
@@ -85,17 +86,18 @@ public class SummaryWorkflow {
 
 	/**
 	 * 构建基于MapReduce的总结执行计划
+	 * @param planId 使用调用者提供的计划ID，确保子进程能找到对应的目录
+	 * @param fileName 文件名
+	 * @param content 文件内容（暂未直接使用，但保留为扩展参数）
+	 * @param queryKey 查询关键词
 	 */
-	private MapReduceExecutionPlan buildSummaryExecutionPlan(String fileName, String content, String queryKey) {
-
-		// 生成新的计划ID
-		String planId = planIdDispatcher.generatePlanId();
+	private MapReduceExecutionPlan buildSummaryExecutionPlan(String planId, String fileName, String content, String queryKey) {
 
 		try {
-			// 格式化列名 - 现在只需要两个参数：planId, fileName, queryKey
-			// 移除了 columnString 参数，因为模板中不再使用
+			// 使用调用者提供的planId，而不是生成新的
+			logger.info("Building summary execution plan with provided planId: {}", planId);
 			
-			// 生成计划JSON
+			// 生成计划JSON，使用传入的planId
 			String planJson = String.format(SUMMARY_PLAN_TEMPLATE, planId, fileName, queryKey);
 
 			// 解析JSON为MapReduceExecutionPlan对象
@@ -105,7 +107,7 @@ public class SummaryWorkflow {
 
 		}
 		catch (Exception e) {
-			logger.error("构建总结执行计划失败", e);
+			logger.error("构建总结执行计划失败，planId: {}", planId, e);
 			throw new RuntimeException("构建MapReduce总结执行计划失败: " + e.getMessage(), e);
 		}
 	}

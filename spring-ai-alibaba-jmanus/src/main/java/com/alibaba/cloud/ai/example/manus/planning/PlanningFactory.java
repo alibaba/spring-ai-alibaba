@@ -26,8 +26,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderServ
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
-import com.alibaba.cloud.ai.example.manus.planning.executor.MapReducePlanExecutor;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
+import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -134,7 +133,7 @@ public class PlanningFactory {
 		this.innerStorageService = innerStorageService;
 	}
 
-	// 这里修改Mapreduce的逻辑
+	// Use the enhanced PlanningCoordinator with dynamic executor selection
 	public PlanningCoordinator createPlanningCoordinator(String planId) {
 
 		// Add all dynamic agents from the database
@@ -142,12 +141,14 @@ public class PlanningFactory {
 
 		PlanningToolInterface planningTool = new MapReducePlanningTool();
 
-		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder,promptLoader);
-		PlanExecutorInterface planExecutor = new MapReducePlanExecutor(agentEntities, recorder, agentService,
-				llmService);
-		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder,promptLoader);
+		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptLoader);
+		
+		// Create PlanExecutorFactory for dynamic executor selection
+		PlanExecutorFactory planExecutorFactory = new PlanExecutorFactory(agentEntities, llmService, agentService, recorder);
+		
+		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptLoader);
 
-		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
+		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory, planFinalizer);
 
 		return planningCoordinator;
 	}
@@ -219,26 +220,20 @@ public class PlanningFactory {
 
 	@Bean
 	public RestClient.Builder createRestClient() {
-		// 1. Configure the timeout (unit: milliseconds)
-		int connectionTimeout = 600000; // Connection timeout
-		int readTimeout = 600000; // Response read timeout
-		int writeTimeout = 600000; // Request write timeout
-
-		// 2. Create RequestConfig and set the timeout
+		// Create RequestConfig and set the timeout (10 minutes for all timeouts)
 		RequestConfig requestConfig = RequestConfig.custom()
-			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection
-																	// timeout
+			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection timeout
 			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
 			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
 			.build();
 
-		// 3. Create CloseableHttpClient and apply the configuration
+		// Create CloseableHttpClient and apply the configuration
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
 
-		// 4. Use HttpComponentsClientHttpRequestFactory to wrap HttpClient
+		// Use HttpComponentsClientHttpRequestFactory to wrap HttpClient
 		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
 
-		// 5. Create RestClient and set the request factory
+		// Create RestClient and set the request factory
 		return RestClient.builder().requestFactory(requestFactory);
 	}
 

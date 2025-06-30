@@ -96,10 +96,11 @@ class SummaryWorkflowSpringTest {
 			log.info("Step 1: Execute summary workflow with test content");
 			
 			String queryKey = "Spring AI features";
+			String testPlanId = planIdDispatcher.generatePlanId();
 			
 			// Execute the summary workflow
 			CompletableFuture<String> resultFuture = summaryWorkflow.executeSummaryWorkflow(
-					TEST_FILE_NAME, TEST_CONTENT, queryKey);
+					testPlanId, TEST_FILE_NAME, TEST_CONTENT, queryKey);
 			
 			// Wait for completion with timeout
 			String result = resultFuture.get(30, TimeUnit.SECONDS);
@@ -135,8 +136,9 @@ class SummaryWorkflowSpringTest {
 				log.info("Step {}: Testing with query key: {}", 
 						Arrays.asList(queryKeys).indexOf(queryKey) + 1, queryKey);
 				
+				String testPlanId = planIdDispatcher.generatePlanId();
 				CompletableFuture<String> resultFuture = summaryWorkflow.executeSummaryWorkflow(
-						"test_" + queryKey.replace(" ", "_") + ".md", TEST_CONTENT, queryKey);
+						testPlanId, "test_" + queryKey.replace(" ", "_") + ".md", TEST_CONTENT, queryKey);
 				
 				String result = resultFuture.get(25, TimeUnit.SECONDS);
 				
@@ -194,8 +196,9 @@ class SummaryWorkflowSpringTest {
 		try {
 			// Test with empty content
 			log.info("Step 1: Testing with empty content");
+			String testPlanId1 = planIdDispatcher.generatePlanId();
 			CompletableFuture<String> emptyResultFuture = summaryWorkflow.executeSummaryWorkflow(
-					"empty.md", "", "test query");
+					testPlanId1, "empty.md", "", "test query");
 			
 			String emptyResult = emptyResultFuture.get(15, TimeUnit.SECONDS);
 			Assertions.assertNotNull(emptyResult, "Empty content result should not be null");
@@ -203,16 +206,18 @@ class SummaryWorkflowSpringTest {
 			// Test with very long query key
 			log.info("Step 2: Testing with long query key");
 			String longQueryKey = "This is a very long query key that tests the system's ability to handle extended input parameters and validate proper processing of verbose search criteria";
+			String testPlanId2 = planIdDispatcher.generatePlanId();
 			CompletableFuture<String> longQueryFuture = summaryWorkflow.executeSummaryWorkflow(
-					"long_query_test.md", SHORT_CONTENT, longQueryKey);
+					testPlanId2, "long_query_test.md", SHORT_CONTENT, longQueryKey);
 			
 			String longQueryResult = longQueryFuture.get(20, TimeUnit.SECONDS);
 			Assertions.assertNotNull(longQueryResult, "Long query result should not be null");
 			
 			// Test with special characters in filename
 			log.info("Step 3: Testing with special characters in filename");
+			String testPlanId3 = planIdDispatcher.generatePlanId();
 			CompletableFuture<String> specialCharFuture = summaryWorkflow.executeSummaryWorkflow(
-					"test-文件_名称@2024.md", SHORT_CONTENT, "special test");
+					testPlanId3, "test-文件_名称@2024.md", SHORT_CONTENT, "special test");
 			
 			String specialCharResult = specialCharFuture.get(15, TimeUnit.SECONDS);
 			Assertions.assertNotNull(specialCharResult, "Special character filename result should not be null");
@@ -238,7 +243,9 @@ class SummaryWorkflowSpringTest {
 			
 			for (int i = 0; i < concurrentCount; i++) {
 				final int index = i;
+				String testPlanId = planIdDispatcher.generatePlanId();
 				futures[i] = summaryWorkflow.executeSummaryWorkflow(
+						testPlanId,
 						"concurrent_test_" + index + ".md", 
 						TEST_CONTENT, 
 						"concurrent query " + index);
@@ -309,9 +316,10 @@ class SummaryWorkflowSpringTest {
 			log.info("Step 1: Measure workflow execution time");
 			
 			long startTime = System.currentTimeMillis();
+			String testPlanId = planIdDispatcher.generatePlanId();
 			
 			CompletableFuture<String> resultFuture = summaryWorkflow.executeSummaryWorkflow(
-					"performance_test.md", TEST_CONTENT, "performance measurement");
+					testPlanId, "performance_test.md", TEST_CONTENT, "performance measurement");
 			
 			String result = resultFuture.get(45, TimeUnit.SECONDS);
 			

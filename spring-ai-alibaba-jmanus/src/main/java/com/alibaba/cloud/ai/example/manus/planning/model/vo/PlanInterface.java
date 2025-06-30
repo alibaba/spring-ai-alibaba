@@ -43,6 +43,18 @@ public interface PlanInterface {
 	void setPlanId(String planId);
 
 	/**
+	 * 获取计划类型
+	 * @return 计划类型
+	 */
+	String getPlanType();
+
+	/**
+	 * 设置计划类型
+	 * @param planType 计划类型
+	 */
+	void setPlanType(String planType);
+
+	/**
 	 * 获取计划标题
 	 * @return 计划标题
 	 */

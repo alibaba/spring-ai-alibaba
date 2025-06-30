@@ -28,15 +28,15 @@ import org.slf4j.LoggerFactory;
  * Enhanced Planning Coordinator that uses PlanExecutorFactory
  * to dynamically select the appropriate executor based on plan type
  */
-public class PlanningCoordinator {
+public class EnhancedPlanningCoordinator {
 
-    private static final Logger log = LoggerFactory.getLogger(PlanningCoordinator.class);
+    private static final Logger log = LoggerFactory.getLogger(EnhancedPlanningCoordinator.class);
 
     private final PlanCreator planCreator;
     private final PlanExecutorFactory planExecutorFactory;
     private final PlanFinalizer planFinalizer;
 
-    public PlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
+    public EnhancedPlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
                                      PlanFinalizer planFinalizer) {
         this.planCreator = planCreator;
         this.planExecutorFactory = planExecutorFactory;
