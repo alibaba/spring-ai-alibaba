@@ -77,6 +77,8 @@ public abstract class BaseAgent {
 
 	private int currentStep = 0;
 
+	private String model;
+
 	// Change the data map to an immutable object and initialize it properly
 	private final Map<String, Object> initSettingData;
 
@@ -370,4 +372,11 @@ public abstract class BaseAgent {
 		this.envData = Collections.unmodifiableMap(new HashMap<>(envData));
 	}
 
+	public String getModel() {
+		return model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
 }
