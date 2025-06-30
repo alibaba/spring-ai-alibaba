@@ -139,7 +139,7 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 	private String planId;
 
 	// get_lines 操作的最大行数限制
-	private static final int MAX_LINES_LIMIT = 100;
+	private static final int MAX_LINES_LIMIT = 500;
 
 	public InnerStorageTool(InnerStorageService innerStorageService) {
 		this.innerStorageService = innerStorageService;
