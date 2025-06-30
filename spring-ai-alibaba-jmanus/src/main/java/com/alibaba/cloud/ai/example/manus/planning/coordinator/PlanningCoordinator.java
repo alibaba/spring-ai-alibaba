@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 
 /**
- * 计划流程的总协调器 负责协调计划的创建、执行和总结三个主要步骤
+ * The coordinator of the planning process, responsible for coordinating the creation, execution and summary of the plan
  */
 public class PlanningCoordinator {
 
@@ -38,46 +38,46 @@ public class PlanningCoordinator {
 	}
 
 	/**
-	 * 仅创建计划，不执行
-	 * @param context 执行上下文
-	 * @return 执行上下文
+	 * Create a plan only, without executing it
+	 * @param context execution context
+	 * @return execution context
 	 */
 	public ExecutionContext createPlan(ExecutionContext context) {
-		// 只执行创建计划步骤
+		// Only execute the create plan step
 		context.setUseMemory(false);
 		planCreator.createPlan(context);
 		return context;
 	}
 
 	/**
-	 * 执行完整的计划流程
-	 * @param context 执行上下文
-	 * @return 执行总结
+	 * Execute the complete plan process
+	 * @param context execution context
+	 * @return execution summary
 	 */
 	public ExecutionContext executePlan(ExecutionContext context) {
 		context.setUseMemory(true);
-		// 1. 创建计划
+		// 1. Create a plan
 		planCreator.createPlan(context);
 
-		// 2. 执行计划
+		// 2. Execute the plan
 		planExecutor.executeAllSteps(context);
 
-		// 3. 生成总结
+		// 3. Generate a summary
 		planFinalizer.generateSummary(context);
 
 		return context;
 	}
 
 	/**
-	 * 执行已有计划（跳过创建计划步骤）
-	 * @param context 包含现有计划的执行上下文
-	 * @return 执行总结
+	 * Execute an existing plan (skip the create plan step)
+	 * @param context execution context containing the existing plan
+	 * @return execution summary
 	 */
 	public ExecutionContext executeExistingPlan(ExecutionContext context) {
-		// 1. 执行计划
+		// 1. Execute the plan
 		planExecutor.executeAllSteps(context);
 
-		// 2. 生成总结
+		// 2. Generate a summary
 		planFinalizer.generateSummary(context);
 
 		return context;

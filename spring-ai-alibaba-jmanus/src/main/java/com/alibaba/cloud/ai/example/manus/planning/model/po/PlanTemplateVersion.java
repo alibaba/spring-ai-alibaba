@@ -25,7 +25,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * 计划模板版本实体类，用于存储计划模板的各个版本
+ * The entity class for the plan template version, used to store the version information of the plan template
  */
 @Entity
 @Table(name = "plan_template_version")
@@ -47,7 +47,7 @@ public class PlanTemplateVersion {
 	@Column(name = "create_time", nullable = false)
 	private LocalDateTime createTime;
 
-	// 构造函数
+	// Constructor
 	public PlanTemplateVersion() {
 	}
 
@@ -58,7 +58,7 @@ public class PlanTemplateVersion {
 		this.createTime = LocalDateTime.now();
 	}
 
-	// Getters and Setters
+	// Getters and setters
 	public Long getId() {
 		return id;
 	}

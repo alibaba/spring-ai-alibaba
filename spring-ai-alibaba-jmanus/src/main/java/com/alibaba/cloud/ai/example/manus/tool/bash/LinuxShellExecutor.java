@@ -42,12 +42,12 @@ public class LinuxShellExecutor implements ShellCommandExecutor {
 	public List<String> execute(List<String> commands, String workingDir) {
 		return commands.stream().map(command -> {
 			try {
-				// 如果是空命令，返回当前进程的额外日志
+				// If the command is empty, return the extra logs of the current process
 				if (command.trim().isEmpty() && currentProcess != null) {
 					return processOutput(currentProcess);
 				}
 
-				// 如果是ctrl+c命令，发送中断信号
+				// If the command is ctrl+c, send the interrupt signal
 				if ("ctrl+c".equalsIgnoreCase(command.trim()) && currentProcess != null) {
 					terminate();
 					return "Process terminated by ctrl+c";
@@ -58,7 +58,7 @@ public class LinuxShellExecutor implements ShellCommandExecutor {
 					pb.directory(new File(workingDir));
 				}
 
-				// 设置Linux环境变量
+				// Set Linux environment variables
 				pb.environment().put("LANG", "en_US.UTF-8");
 				pb.environment().put("SHELL", "/bin/bash");
 				pb.environment().put("PATH", System.getenv("PATH") + ":/usr/local/bin");
@@ -66,13 +66,13 @@ public class LinuxShellExecutor implements ShellCommandExecutor {
 				currentProcess = pb.start();
 				processInput = new BufferedWriter(new OutputStreamWriter(currentProcess.getOutputStream()));
 
-				// 设置超时处理
+				// Set timeout processing
 				try {
-					if (!command.endsWith("&")) { // 不是后台命令才设置超时
+					if (!command.endsWith("&")) { // Only set timeout if the command is not a background command
 						if (!currentProcess.waitFor(DEFAULT_TIMEOUT, TimeUnit.SECONDS)) {
 							log.warn("Command timed out. Sending SIGINT to the process");
 							terminate();
-							// 在后台重试命令
+							// Retry the command in the background
 							if (!command.endsWith("&")) {
 								command += " &";
 							}

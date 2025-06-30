@@ -83,7 +83,7 @@ public class DynamicAgentEntity {
 	}
 
 	/**
-	 * 以后不用这个了， 把两段合并为一段 nextStepPrompt 。 目前实现会忽略这个内容了。
+	 * This is no longer used, merge the two parts into one nextStepPrompt. The current implementation will ignore this content.
 	 * @return
 	 */
 	@Deprecated
@@ -92,7 +92,7 @@ public class DynamicAgentEntity {
 	}
 
 	/**
-	 * 以后不用这个了， 把两段合并为一段 nextStepPrompt 。 目前实现会忽略这个内容了。
+	 * This is no longer used, merge the two parts into one nextStepPrompt. The current implementation will ignore this content.
 	 * @return
 	 */
 	@Deprecated

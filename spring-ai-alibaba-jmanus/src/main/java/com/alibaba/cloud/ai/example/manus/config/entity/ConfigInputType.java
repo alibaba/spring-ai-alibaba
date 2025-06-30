@@ -18,27 +18,27 @@ package com.alibaba.cloud.ai.example.manus.config.entity;
 public enum ConfigInputType {
 
 	/**
-	 * 文本输入框
+	 * Text input box
 	 */
 	TEXT,
 
 	/**
-	 * 下拉选择框
+	 * Dropdown select box
 	 */
 	SELECT,
 
 	/**
-	 * 多选框
+	 * Multiple choice box
 	 */
 	CHECKBOX,
 
 	/**
-	 * 单选框（是/否）
+	 * Single choice box (yes/no)
 	 */
 	BOOLEAN,
 
 	/**
-	 * 数字输入框
+	 * Number input box
 	 */
 	NUMBER
 
