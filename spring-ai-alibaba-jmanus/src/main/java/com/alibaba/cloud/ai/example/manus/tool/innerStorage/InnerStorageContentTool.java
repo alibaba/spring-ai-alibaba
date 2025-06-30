@@ -41,6 +41,8 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 	 */
 	public static class InnerStorageContentInput {
 
+		private String action;
+
 		@com.fasterxml.jackson.annotation.JsonProperty("file_name")
 		private String fileName;
 
@@ -56,6 +58,14 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 		private Integer endLine;
 
 		public InnerStorageContentInput() {
+		}
+
+		public String getAction() {
+			return action;
+		}
+
+		public void setAction(String action) {
+			this.action = action;
 		}
 
 		public String getFileName() {
@@ -112,60 +122,38 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 
 	private static final String TOOL_DESCRIPTION = """
 			内部存储内容获取工具，专门用于智能内容提取和结构化输出。
-			支持两种模式：
-			1. 智能内容提取模式：根据文件名或索引获取详细内容，**必须提供** query_key 和 columns 参数进行AI智能提取和结构化输出
-			2. 按行获取模式：根据文件名或索引获取指定行号范围的原始内容，需要提供 start_line 和 end_line 参数，单次请求最多能返回500行数据。
+			智能内容提取模式：根据文件名获取详细内容，**必须提供** query_key 和 columns 参数进行智能提取和结构化输出
 			
-			支持按文件名模糊匹配或按索引号精确查找。
-
-			当返回内容过长时，工具会自动存储详细内容并返回摘要和内容ID，以降低上下文压力。
+			支持按文件名模糊匹配。
 			""";
 
 	private static final String PARAMETERS = """
 			{
-			    "oneOf": [
-			        {
-			            "type": "object",
-			            "properties": {
-			                "file_name": {
-			                    "type": "string",
-			                    "description": "文件名（带扩展名）或文件索引号（如 '1', '2'）"
-			                },
-			                "query_key": {
-			                    "type": "string",
-			                    "description": "相关问题或希望提取的内容关键词，必须提供"
-			                },
-			                "columns": {
-			                    "type": "array",
-			                    "items": {
-			                        "type": "string"
-			                    },
-			                    "description": "返回结果的列名，用于结构化输出，必须提供。返回的结果可以是一个列表"
-			                }
-			            },
-			            "required": ["file_name", "query_key", "columns"],
-			            "additionalProperties": false
+			    "type": "object",
+			    "properties": {
+			        "action": {
+			            "type": "string",
+			            "enum": ["get_content"],
+			            "description": "操作类型，目前支持 get_content"
 			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "file_name": {
-			                    "type": "string",
-			                    "description": "文件名（带扩展名）或文件索引号（如 '1', '2'）"
-			                },
-			                "start_line": {
-			                    "type": "integer",
-			                    "description": "起始行号（从1开始）"
-			                },
-			                "end_line": {
-			                    "type": "integer",
-			                    "description": "结束行号（包含该行）。注意：单次最多返回500行，可多次调用获取更多内容"
-			                }
+			        "file_name": {
+			            "type": "string",
+			            "description": "文件名（带扩展名）"
+			        },
+			        "query_key": {
+			            "type": "string",
+			            "description": "相关问题或希望提取的内容关键词，必须提供"
+			        },
+			        "columns": {
+			            "type": "array",
+			            "items": {
+			                "type": "string"
 			            },
-			            "required": ["file_name", "start_line", "end_line"],
-			            "additionalProperties": false
+			            "description": "返回结果的列名，用于结构化输出，必须提供。返回的结果可以是一个列表"
 			        }
-			    ]
+			    },
+			    "required": ["action", "file_name", "query_key", "columns"],
+			    "additionalProperties": false
 			}
 			""";
 
@@ -214,17 +202,11 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 	 * 执行内部存储内容获取操作
 	 */
 	public ToolExecuteResult run(InnerStorageContentInput input) {
-		log.info("InnerStorageContentTool input: fileName={}, queryKey={}, columns={}, startLine={}, endLine={}", 
-				input.getFileName(), input.getQueryKey(), input.getColumns(), input.getStartLine(), input.getEndLine());
+		log.info("InnerStorageContentTool input: action={}, fileName={}, queryKey={}, columns={}", 
+				input.getAction(), input.getFileName(), input.getQueryKey(), input.getColumns());
 		try {
-			// Check operation mode based on input parameters
-			boolean isTextByLinesMode = input.getStartLine() != null && input.getEndLine() != null;
-			
-			if (isTextByLinesMode) {
-				return getTextByLines(input.getFileName(), input.getStartLine(), input.getEndLine());
-			} else {
-				return getStoredContent(input.getFileName(), input.getQueryKey(), input.getColumns());
-			}
+			// Only support intelligent content extraction mode
+			return getStoredContent(input.getFileName(), input.getQueryKey(), input.getColumns());
 		}
 		catch (Exception e) {
 			log.error("InnerStorageContentTool执行失败", e);
@@ -286,7 +268,7 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 			}
 
 			if (fileContent == null) {
-				return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内容。" + "请使用文件索引号（如 '1', '2'）或文件名的一部分来查找内容。");
+				return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内容。" + "请使用文件名的一部分来查找内容。");
 			}
 
 			// 委托给 SummaryWorkflow 进行处理
@@ -305,108 +287,6 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 		catch (Exception e) {
 			log.error("SummaryWorkflow 执行失败", e);
 			return new ToolExecuteResult("内容处理失败: " + e.getMessage());
-		}
-	}
-
-	/**
-	 * Get text content by line numbers from inner storage files
-	 */
-	private ToolExecuteResult getTextByLines(String fileName, Integer startLine, Integer endLine) {
-		if (fileName == null || fileName.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：file_name参数是必需的");
-		}
-
-		// Parameter validation similar to TextFileOperator
-		if (startLine < 1 || endLine < 1) {
-			return new ToolExecuteResult("错误：行号必须大于0");
-		}
-		if (startLine > endLine) {
-			return new ToolExecuteResult("错误：起始行号不能大于结束行号");
-		}
-
-		// Check 500-line limit
-		int requestedLines = endLine - startLine + 1;
-		if (requestedLines > 500) {
-			return new ToolExecuteResult("错误：单次最多返回500行内容。请求行数: " + requestedLines + "。请分批获取内容。");
-		}
-
-		try {
-			String fileContent = null;
-			String actualFileName = null;
-
-			// Try to get file content by numeric index
-			try {
-				int index = Integer.parseInt(fileName) - 1; // Convert to 0-based index
-				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
-
-				if (index >= 0 && index < files.size()) {
-					InnerStorageService.FileInfo file = files.get(index);
-					Path planDir = innerStorageService.getPlanDirectory(planId);
-					Path filePath = planDir.resolve(file.getRelativePath());
-
-					if (Files.exists(filePath)) {
-						fileContent = Files.readString(filePath);
-						actualFileName = file.getRelativePath();
-					}
-				}
-			}
-			catch (NumberFormatException e) {
-				// Not a number, try to find by file name
-				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
-				for (InnerStorageService.FileInfo file : files) {
-					if (file.getRelativePath().contains(fileName)) {
-						Path planDir = innerStorageService.getPlanDirectory(planId);
-						Path filePath = planDir.resolve(file.getRelativePath());
-
-						if (Files.exists(filePath)) {
-							fileContent = Files.readString(filePath);
-							actualFileName = file.getRelativePath();
-							break;
-						}
-					}
-				}
-			}
-
-			if (fileContent == null) {
-				return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内容。" + 
-					"请使用文件索引号（如 '1', '2'）或文件名的一部分来查找内容。");
-			}
-
-			// Split content into lines
-			String[] lines = fileContent.split("\n");
-
-			if (lines.length == 0) {
-				return new ToolExecuteResult("文件 '" + actualFileName + "' 是空文件");
-			}
-
-			// Validate line number range
-			if (startLine > lines.length) {
-				return new ToolExecuteResult("错误：起始行号 " + startLine + " 超出文件范围。文件只有 " + lines.length + " 行。");
-			}
-
-			// Adjust endLine if it exceeds file length
-			int actualEndLine = Math.min(endLine, lines.length);
-
-			// Extract lines (convert to 0-based indexing)
-			StringBuilder result = new StringBuilder();
-			result.append("文件: ").append(actualFileName).append("\n");
-			result.append("行号范围: ").append(startLine).append(" - ").append(actualEndLine).append("\n");
-			result.append("内容:\n");
-
-			for (int i = startLine - 1; i < actualEndLine; i++) {
-				result.append(String.format("%d: %s\n", i + 1, lines[i]));
-			}
-
-			return new ToolExecuteResult(result.toString());
-
-		}
-		catch (IOException e) {
-			log.error("获取文件行内容失败", e);
-			return new ToolExecuteResult("获取文件行内容失败: " + e.getMessage());
-		}
-		catch (Exception e) {
-			log.error("处理文件行内容失败", e);
-			return new ToolExecuteResult("处理文件行内容失败: " + e.getMessage());
 		}
 	}
 
