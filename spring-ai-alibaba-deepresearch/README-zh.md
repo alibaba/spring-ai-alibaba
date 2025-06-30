@@ -1,20 +1,20 @@
 本项目利用 spring-ai-alibaba-graph 实现深度研究
 
+## 架构图
+
+![架构图](../docs/imgs/Snipaste_2025-06-30_21-11-20.jpg)
+
+> 上图展示了 deepresearch 的核心模块分层与主要调用关系。
+
+## 主要流程图
+
+![主要流程图](../docs/imgs/202506302113562.png)
+
+> 上图展示了用户请求在 deepresearch 系统中的主要流转流程。
+
 <video width="640" height="360" controls>
   <source src="../docs/video/deepresearh-display.mp4" type="video/mp4">
 </video>
-
-## 流程大纲
-
-<p align="center">
-    <img src="../docs/imgs/202506052122988.png" alt="architecture" style="max-width: 740px; height: 508px" /> 
-</p>
-
-### 整体架构图：
-
-<p align="center">
-    <img src="../docs/imgs/202506052123329.png" alt="architecture" style="max-width: 740px; height: 508px" /> 
-</p>
 
 ### 配置
 
