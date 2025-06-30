@@ -37,9 +37,9 @@ public class ClickByElementAction extends BrowserAction {
 			return new ToolExecuteResult("Index is required for 'click' action");
 		}
 
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		Page page = getCurrentPage(); // Get Playwright Page instance
 
-		// 获取交互元素（InteractiveElement）
+		// Get interactive elements (InteractiveElement)
 		List<InteractiveElement> interactiveElements = getInteractiveElements(page);
 
 		if (index < 0 || index >= interactiveElements.size()) {

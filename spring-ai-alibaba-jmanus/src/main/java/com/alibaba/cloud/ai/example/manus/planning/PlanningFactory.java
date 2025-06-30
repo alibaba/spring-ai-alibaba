@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.executor.MapReducePlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
+import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
@@ -118,6 +119,9 @@ public class PlanningFactory {
 	@Autowired
 	@Lazy
 	private SummaryWorkflow summaryWorkflow;
+
+	@Autowired
+	private PromptLoader promptLoader;
 
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,

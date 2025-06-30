@@ -37,7 +37,7 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 	private ExecutionPlan currentPlan;
 
 	/**
-	 * 内部输入类，用于定义规划工具的输入参数
+	 * Internal input class for defining planning tool input parameters
 	 */
 	public static class PlanningInput {
 
@@ -164,17 +164,17 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 			// case "mark_step" -> markStep(planId, stepIndex, stepStatus, stepNotes);
 			// case "delete" -> deletePlan(planId);
 			default -> {
-				log.info("收到无效的命令: {}", command);
+				log.info("Received invalid command: {}", command);
 				throw new IllegalArgumentException("Invalid command: " + command);
 			}
 		};
 	}
 
 	/**
-	 * 创建单个执行步骤
-	 * @param step 步骤描述
-	 * @param index 步骤索引
-	 * @return 创建的ExecutionStep实例
+	 * Create a single execution step
+	 * @param step step description
+	 * @param index step index
+	 * @return created ExecutionStep instance
 	 */
 	private ExecutionStep createExecutionStep(String step, int index) {
 		ExecutionStep executionStep = new ExecutionStep();
@@ -184,12 +184,13 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 
 	public ToolExecuteResult createPlan(String planId, String title, List<String> steps) {
 		if (title == null || steps == null || steps.isEmpty()) {
-			log.info("创建计划时缺少必要参数: planId={}, title={}, steps={}", planId, title, steps);
+			log.info("Missing required parameters when creating plan: planId={}, title={}, steps={}", planId, title,
+					steps);
 			return new ToolExecuteResult("Required parameters missing");
 		}
 
 		ExecutionPlan plan = new ExecutionPlan(planId, title);
-		// 使用新的createExecutionStep方法创建并添加步骤
+		// Use the new createExecutionStep method to create and add steps
 		int index = 0;
 		for (String step : steps) {
 			plan.addStep(createExecutionStep(step, index++));

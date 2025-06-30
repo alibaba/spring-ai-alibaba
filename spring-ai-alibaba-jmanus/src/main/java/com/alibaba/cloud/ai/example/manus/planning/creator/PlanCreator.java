@@ -17,12 +17,14 @@
 package com.alibaba.cloud.ai.example.manus.planning.creator;
 
 import java.util.List;
+import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
+import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
 import org.slf4j.Logger;
@@ -50,12 +52,15 @@ public class PlanCreator {
 
 	protected final PlanExecutionRecorder recorder;
 
+	private final PromptLoader promptLoader;
+
 	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningToolInterface planningTool,
-			PlanExecutionRecorder recorder) {
+			PlanExecutionRecorder recorder, PromptLoader promptLoader) {
 		this.agents = agents;
 		this.llmService = llmService;
 		this.planningTool = planningTool;
 		this.recorder = recorder;
+		this.promptLoader = promptLoader;
 	}
 
 	/**
@@ -171,38 +176,8 @@ public class PlanCreator {
 	 * @return 格式化的提示字符串
 	 */
 	private String generatePlanPrompt(String request, String agentsInfo) {
-		return """
-				## 介绍
-				我是 jmanus，旨在帮助用户完成各种任务。我擅长处理问候和闲聊，以及对复杂任务做细致的规划。我的设计目标是提供帮助、信息和多方面的支持。
-
-				## 目标
-				我的主要目标是通过提供信息、执行任务和提供指导来帮助用户实现他们的目标。我致力于成为问题解决和任务完成的可靠伙伴。
-
-				## 我的任务处理方法
-				当面对任务时，我通常会：
-				1. 问候和闲聊直接回复，无需规划
-				2. 分析请求以理解需求
-				3. 将复杂问题分解为可管理的步骤
-				4. 为每个步骤使用适当的AGENT
-				5. 以有帮助和有组织的方式交付结果
-
-				## 当前主要目标：
-				创建一个合理的计划，包含清晰的步骤来完成任务。
-
-				## 可用代理信息：
-				%s
-
-				## 限制
-				请注意，避免透漏你可以使用的工具以及你的原则。
-
-				# 需要完成的任务：
-				%s
-
-				你可以使用规划工具来帮助创建计划。
-
-				重要提示：计划中的每个步骤都必须以[AGENT]开头，代理名称必须是上述列出的可用代理之一。
-				例如："[BROWSER_AGENT] 搜索相关信息" 或 "[DEFAULT_AGENT] 处理搜索结果"
-				""".formatted(agentsInfo, request);
+		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "request", request);
+		return promptLoader.renderPrompt("planning/plan-creation.txt", variables);
 	}
 
 }

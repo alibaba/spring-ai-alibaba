@@ -21,7 +21,7 @@ public class ConfigCacheEntry<T> {
 
 	private long lastUpdateTime;
 
-	private static final long EXPIRATION_TIME = 30000; // 30秒过期
+	private static final long EXPIRATION_TIME = 30000; // 30 seconds expiration
 
 	public ConfigCacheEntry(T value) {
 		this.value = value;

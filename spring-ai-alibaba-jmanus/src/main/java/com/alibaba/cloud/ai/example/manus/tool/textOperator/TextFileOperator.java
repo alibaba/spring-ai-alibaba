@@ -38,7 +38,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 	private static final Logger log = LoggerFactory.getLogger(TextFileOperator.class);
 
 	/**
-	 * 内部输入类，用于定义文本文件操作工具的输入参数
+	 * Internal input class for defining input parameters of text file operation tool
 	 */
 	public static class TextFileInput {
 
@@ -408,7 +408,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 	 */
 	private ToolExecuteResult ensureFileOpen(String planId, String filePath) {
 		try {
-			// 检查文件类型
+			// Check file type
 			if (!textFileService.isSupportedFileType(filePath)) {
 				textFileService.updateFileState(planId, filePath, "Error: Unsupported file type");
 				return new ToolExecuteResult("Unsupported file type. Only text-based files are supported.");
@@ -416,7 +416,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 			textFileService.validateAndGetAbsolutePath(workingDirectoryPath, filePath);
 
-			// 如果文件不存在，先创建父目录
+			// If file doesn't exist, create parent directory first
 			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
 			if (!Files.exists(absolutePath)) {
 				try {
@@ -538,6 +538,16 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			ToolExecuteResult openResult = ensureFileOpen(planId, filePath);
 			if (!openResult.getOutput().toLowerCase().contains("success")) {
 				return openResult;
+			}
+			Path absolutePath = Paths.get(workingDirectoryPath).resolve(currentFilePath);
+
+			if (content != null) {
+				Files.writeString(absolutePath, content);
+			}
+
+			// Force flush to disk
+			try (FileChannel channel = FileChannel.open(absolutePath, StandardOpenOption.WRITE)) {
+				channel.force(true);
 			}
 
 			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
