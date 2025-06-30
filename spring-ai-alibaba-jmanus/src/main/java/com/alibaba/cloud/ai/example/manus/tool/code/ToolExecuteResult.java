@@ -31,12 +31,12 @@ public class ToolExecuteResult {
 	}
 
 	/**
-	 * 工具返回的内容
+	 * Content returned by the tool
 	 */
 	private String output;
 
 	/**
-	 * 是否中断
+	 * Whether interrupted
 	 */
 	private boolean interrupted;
 

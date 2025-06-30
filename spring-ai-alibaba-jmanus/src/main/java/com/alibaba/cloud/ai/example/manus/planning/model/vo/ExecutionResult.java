@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 计划执行的整体结果
+ * The overall result of the plan execution
  */
 public class ExecutionResult {
 
@@ -31,7 +31,7 @@ public class ExecutionResult {
 
 	private boolean success;
 
-	// Getters and Setters
+	// Getters and setters
 	public String getPlanId() {
 		return planId;
 	}

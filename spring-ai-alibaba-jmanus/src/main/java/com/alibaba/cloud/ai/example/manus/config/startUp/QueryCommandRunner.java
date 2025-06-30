@@ -47,13 +47,13 @@ public class QueryCommandRunner implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		// 只有当启用了控制台查询模式时才执行
+		// Execute only when console query mode is enabled
 		if (!manusProperties.getConsoleQuery()) {
-			logger.info("控制台交互模式未启用，跳过命令行查询");
+			logger.info("Console interactive mode not enabled, skipping command line query");
 			return;
 		}
 
-		logger.info("启动控制台交互模式，请输入查询...");
+		logger.info("Starting console interactive mode, please enter query...");
 		Scanner scanner = new Scanner(System.in);
 		while (true) {
 			System.out.println("Enter your query (or type 'exit' to quit): ");
@@ -64,7 +64,7 @@ public class QueryCommandRunner implements CommandLineRunner {
 				break;
 			}
 
-			// 使用 PlanIdDispatcher 生成唯一的计划ID
+			// Use PlanIdDispatcher to generate unique plan ID
 			String planId = planIdDispatcher.generatePlanId();
 			PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planId);
 			ExecutionContext context = new ExecutionContext();
@@ -76,7 +76,7 @@ public class QueryCommandRunner implements CommandLineRunner {
 				System.out.println("Execution Context: " + executionContext.getResultSummary());
 			}
 			catch (Exception e) {
-				logger.error("执行查询时发生错误", e);
+				logger.error("Error occurred while executing query", e);
 				System.out.println("Error: " + e.getMessage());
 			}
 		}

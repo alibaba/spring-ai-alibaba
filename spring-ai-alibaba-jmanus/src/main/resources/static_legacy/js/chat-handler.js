@@ -170,17 +170,17 @@ class ChatHandler {
                             thinkInput: latestThinkAct.thinkInput || '',
                             thinkOutput: latestThinkAct.thinkOutput || ''
                         };
-                    } else if (latestThinkAct) { // 当 latestThinkAct 不为 null
+                    } else if (latestThinkAct) { // When latestThinkAct is not null
                         lastStepActions[index] = {
-                            actionDescription: '思考中', // actionDescription 为 "思考中"
-                            toolParameters: "等待决策中", // toolParameters 保持 "无工具" 或根据需要调整
-                            thinkInput: latestThinkAct.thinkInput || '', // thinkInput 使用 latestThinkAct.thinkInput
-                            thinkOutput: latestThinkAct.thinkOutput || '' // thinkOutput 保持不变
+                            actionDescription: 'Thinking', // actionDescription is "Thinking"
+                            toolParameters: "Waiting for decision", // toolParameters remains "No tool" or adjust as needed
+                            thinkInput: latestThinkAct.thinkInput || '', // thinkInput uses latestThinkAct.thinkInput
+                            thinkOutput: latestThinkAct.thinkOutput || '' // thinkOutput remains unchanged
                         };
                     } else {
                         lastStepActions[index] = {
-                            actionDescription: '执行完成',
-                            toolParameters: "无工具",
+                            actionDescription: 'Execution completed',
+                            toolParameters: "No tools",
                             thinkInput: '',
                             thinkOutput: ''
                         };
@@ -206,7 +206,7 @@ class ChatHandler {
             // 获取该步骤的最后执行动作（现在使用局部变量）
             const lastAction = lastStepActions[index];
 
-            // 简化逻辑：如果有lastAction就显示动作信息，不区分是否是当前步骤
+            // Simplified logic: if there's lastAction, show action info, regardless of whether it's the current step
             if (lastAction) {
                 const actionInfoDiv = document.createElement('div');
                 actionInfoDiv.className = 'action-info';
@@ -217,11 +217,11 @@ class ChatHandler {
                     </div>
                     <div class="tool-params">
                         <span class="icon">⚙️</span>
-                        参数: ${ChatHandler.#escapeHtml(lastAction.toolParameters)}
+                        Parameters: ${ChatHandler.#escapeHtml(lastAction.toolParameters)}
                     </div>
                     <div class="think-details" style="margin-top: 8px; border-top: 1px dashed #e8eaed; padding-top: 6px;">
                         <div class="think-output" style="font-size: 12px; color: #5f6368;">
-                            <span style="font-weight: bold;">思考输出:</span>
+                            <span style="font-weight: bold;">Think Output:</span>
                             <span>${ChatHandler.#escapeHtml(lastAction.thinkOutput || '')}</span>
                         </div>
                     </div>
@@ -295,7 +295,7 @@ class ChatHandler {
         this.#userInputFormContainer = document.createElement('div');
         this.#userInputFormContainer.className = 'user-input-form-container';
 
-        let formHTML = `<p class="user-input-message">${userInputState.message || '请输入所需信息:'}</p>`;
+        let formHTML = `<p class="user-input-message">${userInputState.message || 'Please enter required information:'}</p>`;
         if (userInputState.formDescription) {
             formHTML += `<p class="form-description">${userInputState.formDescription}</p>`;
         }
@@ -314,12 +314,12 @@ class ChatHandler {
         } else {
             formHTML += `
                 <div class="form-group">
-                    <label for="form-input-genericInput">输入:</label>
+                    <label for="form-input-genericInput">Input:</label>
                     <input type="text" id="form-input-genericInput" name="genericInput">
                 </div>
             `;
         }
-        formHTML += '<button type="submit" class="submit-user-input-btn">提交</button>';
+        formHTML += '<button type="submit" class="submit-user-input-btn">Submit</button>';
         formHTML += '</form>';
 
         this.#userInputFormContainer.innerHTML = formHTML;
@@ -340,15 +340,15 @@ class ChatHandler {
                          if (currentChatAreaParam) currentChatAreaParam.appendChild(this.#userInputFormContainer); // Fallback
                     }
                 } else {
-                    console.warn('无法找到当前步骤的ai-section来放置用户输入表单，将放置在聊天区域底部。');
+                    console.warn('Unable to find current step ai-section to place user input form, will place at bottom of chat area.');
                     if (currentChatAreaParam) currentChatAreaParam.appendChild(this.#userInputFormContainer); // Fallback
                 }
             } else {
-                console.warn('无法找到ai-steps-container来放置用户输入表单，将放置在聊天区域底部。');
+                console.warn('Unable to find ai-steps-container to place user input form, will place at bottom of chat area.');
                 if (currentChatAreaParam) currentChatAreaParam.appendChild(this.#userInputFormContainer); // Fallback
             }
         } else {
-            console.warn('无法找到dialogRoundContainer来放置用户输入表单，将放置在聊天区域底部。');
+            console.warn('Unable to find dialogRoundContainer to place user input form, will place at bottom of chat area.');
             if (currentChatAreaParam) currentChatAreaParam.appendChild(this.#userInputFormContainer); // Fallback
         }
 
@@ -365,7 +365,7 @@ class ChatHandler {
 
             try {
                 form.querySelector('.submit-user-input-btn').disabled = true;
-                form.querySelector('.submit-user-input-btn').textContent = '提交中...';
+                form.querySelector('.submit-user-input-btn').textContent = 'Submitting...';
 
                 await ManusAPI.submitFormInput(this.#planExecutionManager.getActivePlanId(), inputs);
                 // 3) Remove user input form when submit button clicked (already implemented)
@@ -382,7 +382,7 @@ class ChatHandler {
                 }
                 form.appendChild(errorMsg);
                 form.querySelector('.submit-user-input-btn').disabled = false;
-                form.querySelector('.submit-user-input-btn').textContent = '提交';
+                form.querySelector('.submit-user-input-btn').textContent = 'Submit';
             }
         });
     }
