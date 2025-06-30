@@ -37,7 +37,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
- * 负责创建执行计划的类
+ * The class responsible for creating the execution plan
  */
 public class PlanCreator {
 
@@ -63,9 +63,10 @@ public class PlanCreator {
 	}
 
 	/**
-	 * 根据用户请求创建执行计划
-	 * @param context 执行上下文，包含用户请求和执行的过程信息
-	 * @return 计划创建结果
+	 * Create an execution plan based on the user request
+	 * @param context execution context, containing the user request and the execution
+	 * process information
+	 * @return plan creation result
 	 */
 	public void createPlan(ExecutionContext context) {
 		boolean useMemory = context.isUseMemory();
@@ -74,21 +75,21 @@ public class PlanCreator {
 			throw new IllegalArgumentException("Plan ID cannot be null or empty");
 		}
 		try {
-			// 构建代理信息
+			// Build agent information
 			String agentsInfo = buildAgentsInfo(agents);
-			// 生成计划提示
+			// Generate plan prompt
 			String planPrompt = generatePlanPrompt(context.getUserRequest(), agentsInfo);
 
 			ExecutionPlan executionPlan = null;
 			String outputText = null;
 
-			// 重试机制：最多尝试3次直到获取到有效的执行计划
+			// Retry mechanism: up to 3 attempts until a valid execution plan is obtained
 			int maxRetries = 3;
 			for (int attempt = 1; attempt <= maxRetries; attempt++) {
 				try {
 					log.info("Attempting to create plan, attempt: {}/{}", attempt, maxRetries);
 
-					// 使用 LLM 生成计划
+					// Use LLM to generate the plan
 					PromptTemplate promptTemplate = new PromptTemplate(planPrompt);
 					Prompt prompt = promptTemplate.create();
 
@@ -107,7 +108,7 @@ public class PlanCreator {
 					executionPlan = planningTool.getCurrentPlan();
 
 					if (executionPlan != null) {
-						// 设置计划的用户输入部分，方便后期存储和使用。
+						// Set the user input part of the plan, for later storage and use.
 						executionPlan.setUserRequest(context.getUserRequest());
 						log.info("Plan created successfully on attempt {}: {}", attempt, executionPlan);
 						break;
@@ -130,7 +131,7 @@ public class PlanCreator {
 			}
 
 			ExecutionPlan currentPlan;
-			// 检查计划是否创建成功
+			// Check if the plan is created successfully
 			if (executionPlan != null) {
 				currentPlan = planningTool.getCurrentPlan();
 				currentPlan.setPlanId(planId);
@@ -146,15 +147,15 @@ public class PlanCreator {
 		}
 		catch (Exception e) {
 			log.error("Error creating plan for request: {}", context.getUserRequest(), e);
-			// 处理异常情况
+			// Handle the exception
 			throw new RuntimeException("Failed to create plan", e);
 		}
 	}
 
 	/**
-	 * 构建代理信息字符串
-	 * @param agents 代理列表
-	 * @return 格式化的代理信息
+	 * Build the agent information string
+	 * @param agents agent list
+	 * @return formatted agent information
 	 */
 	private String buildAgentsInfo(List<DynamicAgentEntity> agents) {
 		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
@@ -169,10 +170,10 @@ public class PlanCreator {
 	}
 
 	/**
-	 * 生成计划提示
-	 * @param request 用户请求
-	 * @param agentsInfo 代理信息
-	 * @return 格式化的提示字符串
+	 * Generate the plan prompt
+	 * @param request user request
+	 * @param agentsInfo agent information
+	 * @return formatted prompt string
 	 */
 	private String generatePlanPrompt(String request, String agentsInfo) {
 		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "request", request);
