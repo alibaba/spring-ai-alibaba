@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.web.client.RestClientCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -25,17 +26,25 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 
 @Configuration
 public class RestConfiguration {
+
+	@Value("${rest.connect.timeout:600}")
+	private long connectTimeout;
+
+	@Value("${rest.read.timeout:600}")
+	private long readTimeout;
+
+	@Value("${webclient.response.timeout:600}")
+	private long responseTimeout;
 
 	@Bean
 	public RestClientCustomizer restClientCustomizer() {
 		return restClientBuilder -> restClientBuilder
 			.requestFactory(ClientHttpRequestFactoryBuilder.reactor().withCustomizer(factory -> {
-				factory.setConnectTimeout(Duration.of(10, ChronoUnit.MINUTES));
-				factory.setReadTimeout(Duration.of(10, ChronoUnit.MINUTES));
+				factory.setConnectTimeout(Duration.ofSeconds(connectTimeout));
+				factory.setReadTimeout(Duration.ofSeconds(readTimeout));
 			}).build());
 	}
 
@@ -44,7 +53,7 @@ public class RestConfiguration {
 
 		return WebClient.builder()
 			.clientConnector(new ReactorClientHttpConnector(
-					HttpClient.create().responseTimeout(Duration.of(600, ChronoUnit.SECONDS))));
+					HttpClient.create().responseTimeout(Duration.ofSeconds(responseTimeout))));
 	}
 
 }
