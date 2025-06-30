@@ -44,20 +44,22 @@ public class SummaryWorkflow {
 			      "type": "mapreduce",
 			      "dataPreparedSteps": [
 			        {
-			            "stepRequirement": "[DEFAULT_AGENT] 使用map_reduce_tool，对 %s 进行内容分割",
-			            "outputColumns": "文件名"
+			          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] 使用map_reduce_tool，对 %s 进行内容分割"
 			        }
 			      ],
 			      "mapSteps": [
 			        {
-			            "stepRequirement": "[DEFAULT_AGENT] 分析文件，找到与 %s 相关的关键信息，以 %s 为标题提取为列表后输出到文件，信息要全面，包含所有数据，事实和观点等，全面的信息，不要遗漏",
-			            "outputColumns": "文件名"
+			          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] 分析文件，找到与 %s 相关的关键信息，信息要全面，包含所有数据，事实和观点等，全面的信息，不要遗漏"
 			        }
 			      ],
 			      "reduceSteps": [
 			        {
-			            "stepRequirement": "[DEFAULT_AGENT] 合并该分片的信息到文件中，在保持信息完整性的前提下，合并所有内容，同时也要去掉未找到内容的那些结果",
-			            "outputColumns": "文件名"
+			          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] 合并该分片的信息到文件中，在保持信息完整性的前提下，合并所有内容，同时也要去掉未找到内容的那些结果"
+			        }
+			      ],
+			      "postProcessSteps": [
+			        {
+			          "stepRequirement": "[MAPREDUCE_FIN_AGENT] 将 innerStorage 的内容导出到外部文件，根据用户需求进行后处理和格式化"
 			        }
 			      ]
 			    }
@@ -70,14 +72,12 @@ public class SummaryWorkflow {
 	 * @param fileName 文件名
 	 * @param content 文件内容
 	 * @param queryKey 查询关键词
-	 * @param columns 输出列名
 	 * @return 总结结果的Future
 	 */
-	public CompletableFuture<String> executeSummaryWorkflow(String fileName, String content, String queryKey,
-			List<String> columns) {
+	public CompletableFuture<String> executeSummaryWorkflow(String fileName, String content, String queryKey) {
 
 		// 1. 构建MapReduce执行计划
-		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(fileName, content, queryKey, columns);
+		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(fileName, content, queryKey);
 
 		// 2. 直接执行计划
 		return executeMapReducePlan(executionPlan);
@@ -86,18 +86,17 @@ public class SummaryWorkflow {
 	/**
 	 * 构建基于MapReduce的总结执行计划
 	 */
-	private MapReduceExecutionPlan buildSummaryExecutionPlan(String fileName, String content, String queryKey,
-			List<String> columns) {
+	private MapReduceExecutionPlan buildSummaryExecutionPlan(String fileName, String content, String queryKey) {
 
 		// 生成新的计划ID
 		String planId = planIdDispatcher.generatePlanId();
 
 		try {
-			// 格式化列名
-			String columnString = String.join(",", columns);
-
+			// 格式化列名 - 现在只需要两个参数：planId, fileName, queryKey
+			// 移除了 columnString 参数，因为模板中不再使用
+			
 			// 生成计划JSON
-			String planJson = String.format(SUMMARY_PLAN_TEMPLATE, planId, fileName, queryKey, columnString);
+			String planJson = String.format(SUMMARY_PLAN_TEMPLATE, planId, fileName, queryKey);
 
 			// 解析JSON为MapReduceExecutionPlan对象
 			MapReduceExecutionPlan plan = objectMapper.readValue(planJson, MapReduceExecutionPlan.class);
@@ -187,14 +186,13 @@ public class SummaryWorkflow {
 						      "type": "SEQUENTIAL",
 						      "steps": [
 						        {
-						          "stepRequirement": "[DEFAULT_AGENT] 使用inner_storage_content_tool执行快速总结",
-						          "outputColumns": "%s"
+						          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] 使用inner_storage_tool执行快速总结"
 						        }
 						      ]
 						    }
 						  ]
 						}
-						""", planId, fileName, String.join(",", columns));
+						""", planId, fileName);
 
 				MapReduceExecutionPlan quickPlan = objectMapper.readValue(quickPlanJson, MapReduceExecutionPlan.class);
 

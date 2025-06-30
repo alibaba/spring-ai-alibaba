@@ -235,9 +235,9 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 			}
 
 			// 委托给 SummaryWorkflow 进行处理
-			log.info("委托给 SummaryWorkflow 处理文件内容提取：文件={}, 查询关键词={}, 输出列={}", actualFileName, queryKey, columns);
+			log.info("委托给 SummaryWorkflow 处理文件内容提取：文件={}, 查询关键词={}", actualFileName, queryKey);
 
-			String result = summaryWorkflow.executeSummaryWorkflow(actualFileName, fileContent, queryKey, columns)
+			String result = summaryWorkflow.executeSummaryWorkflow(actualFileName, fileContent, queryKey)
 				.get(); // 阻塞等待结果
 
 			return new ToolExecuteResult(result);
