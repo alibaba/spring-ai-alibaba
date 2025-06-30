@@ -1,7 +1,5 @@
 # Spring AI Alibaba JManus
 
-![image](https://github.com/user-attachments/assets/30589a67-0267-43f5-8bf8-11935d55a1c7)
-
 <div align="center">
 
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
@@ -18,6 +16,8 @@
 [About](#-about) • [Quick Start](#-quick-start) • [Contributing](#-contributing)
 
 </div>
+
+![image](https://github.com/user-attachments/assets/30589a67-0267-43f5-8bf8-11935d55a1c7)
 
 ---
 
