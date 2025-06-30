@@ -78,18 +78,7 @@ public class PlanTemplateController {
 		return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(plan);
 	}
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
-
-	/**
-	 * 将计划对象序列化为JSON字符串
-	 * @param plan 计划对象
-	 * @return 格式化的JSON字符串（带缩进和换行）
-	 * @throws Exception 序列化失败时抛出异常
-	 */
-	private String planToJson(PlanInterface plan) throws Exception {
-		return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(plan);
-	}
-
+	
 	/**
 	 * Generate plan
 	 * @param request Request containing plan requirements and optional JSON data
