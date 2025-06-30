@@ -24,26 +24,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author huangzhen
  * @since 2025/6/20
  */
-public record ReportResponse(
-		/**
-		 * 线程ID，用于标识当前对话的唯一性
-		 */
-		@JsonProperty("thread_id") String threadId,
+public class ReportResponse extends BaseResponse {
 
-		/**
-		 * 状态
-		 */
-		@JsonProperty("status") String status,
+	/**
+	 * 报告内容
+	 */
+	@JsonProperty("report")
+	String report;
 
-		/**
-		 * 消息
-		 */
-		@JsonProperty("message") String message,
-
-		/**
-		 * 报告内容
-		 */
-		@JsonProperty("report") String report) {
+	public ReportResponse(String threadId, String status, String message, String report) {
+		super(threadId, status, message);
+		this.report = report;
+	}
 
 	public static ReportResponse success(String threadId, String report) {
 		return new ReportResponse(threadId, "success", "Report retrieved successfully", report);
@@ -52,4 +44,5 @@ public record ReportResponse(
 	public static ReportResponse error(String threadId, String message) {
 		return new ReportResponse(threadId, "error", message, null);
 	}
+
 }

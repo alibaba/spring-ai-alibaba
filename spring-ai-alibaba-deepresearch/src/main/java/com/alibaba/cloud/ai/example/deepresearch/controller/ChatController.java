@@ -48,17 +48,17 @@ import java.util.Map;
  * @since 2025/5/17 19:27
  */
 @RestController
-@RequestMapping("/deep-research")
-public class DeepResearchController {
+@RequestMapping("/chat")
+public class ChatController {
 
-	private static final Logger logger = LoggerFactory.getLogger(DeepResearchController.class);
+	private static final Logger logger = LoggerFactory.getLogger(ChatController.class);
 
 	private final CompiledGraph compiledGraph;
 
 	private final SearchBeanUtil searchBeanUtil;
 
 	@Autowired
-	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph, SearchBeanUtil searchBeanUtil)
+	public ChatController(@Qualifier("deepResearch") StateGraph stateGraph, SearchBeanUtil searchBeanUtil)
 			throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 		this.compiledGraph = stateGraph
@@ -73,7 +73,7 @@ public class DeepResearchController {
 	 * ServerSentEvent<String>. Supports both initial questions and human feedback
 	 * handling.
 	 */
-	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest)
 			throws GraphRunnerException, IllegalArgumentException {
 		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest, searchBeanUtil);
@@ -104,7 +104,7 @@ public class DeepResearchController {
 			.doOnError(e -> logger.error("Error occurred during streaming", e));
 	}
 
-	@RequestMapping(value = "/chat/resume", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@PostMapping(value = "/resume", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> resume(@RequestBody(required = false) FeedbackRequest humanFeedback)
 			throws GraphRunnerException {
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(humanFeedback.threadId()).build();

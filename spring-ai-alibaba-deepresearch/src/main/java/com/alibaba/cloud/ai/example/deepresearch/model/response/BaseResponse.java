@@ -24,21 +24,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author huangzhen
  * @since 2025/6/20
  */
-public record BaseResponse(
-		/**
-		 * 线程ID，用于标识当前对话的唯一性
-		 */
-		@JsonProperty("thread_id") String threadId,
+public class BaseResponse {
 
-		/**
-		 * 状态
-		 */
-		@JsonProperty("status") String status,
+	/**
+	 * 线程ID，用于标识当前对话的唯一性
+	 */
+	@JsonProperty("thread_id")
+	String threadId;
 
-		/**
-		 * 消息
-		 */
-		@JsonProperty("message") String message) {
+	/**
+	 * 状态
+	 */
+	@JsonProperty("status")
+	String status;
+
+	/**
+	 * 消息
+	 */
+	@JsonProperty("message")
+	String message;
+
+	public BaseResponse(String threadId, String status, String message) {
+		this.threadId = threadId;
+		this.status = status;
+		this.message = message;
+	}
 
 	public static BaseResponse success(String threadId, String message) {
 		return new BaseResponse(threadId, "success", message);
@@ -47,4 +57,5 @@ public record BaseResponse(
 	public static BaseResponse error(String threadId, String message) {
 		return new BaseResponse(threadId, "error", message);
 	}
+
 }
