@@ -4,18 +4,6 @@
   <source src="../docs/video/deepresearh-display.mp4" type="video/mp4">
 </video>
 
-## 流程大纲
-
-<p align="center">
-    <img src="../docs/imgs/202506052122988.png" alt="architecture" style="max-width: 740px; height: 508px" /> 
-</p>
-
-### 整体架构图：
-
-<p align="center">
-    <img src="../docs/imgs/202506052123329.png" alt="architecture" style="max-width: 740px; height: 508px" /> 
-</p>
-
 ### 配置
 
 #### 必配
