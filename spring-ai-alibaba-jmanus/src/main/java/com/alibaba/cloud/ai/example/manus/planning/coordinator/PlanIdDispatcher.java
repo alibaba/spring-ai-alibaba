@@ -75,7 +75,7 @@ public class PlanIdDispatcher {
 			logger.debug("Generated new unique planId [{}] from planTemplateId [{}]", uniqueId, planTemplateId);
 		}
 		else {
-			logger.warn("Unknown ID format [{}]，generated new unique planId [{}]", planTemplateId, uniqueId);
+			logger.warn("Unknown ID format [{}], generated new unique planId [{}]", planTemplateId, uniqueId);
 		}
 
 		return uniqueId;
@@ -104,7 +104,7 @@ public class PlanIdDispatcher {
 		}
 
 		// For IDs that do not match any known formats, add the planTemplateId prefix
-		logger.warn("Unknown ID format [{}]，added planTemplateId prefix", planId);
+		logger.warn("Unknown ID format [{}], added planTemplateId prefix", planId);
 		return PLAN_TEMPLATE_ID_PREFIX + planId;
 	}
 
@@ -147,7 +147,7 @@ public class PlanIdDispatcher {
 		}
 		else {
 			// Unable to determine the ID type, return the original ID
-			logger.warn("Unable to determine the ID type [{}]，return the original ID", id);
+			logger.warn("Unable to determine the ID type [{}], return the original ID", id);
 			return id;
 		}
 	}

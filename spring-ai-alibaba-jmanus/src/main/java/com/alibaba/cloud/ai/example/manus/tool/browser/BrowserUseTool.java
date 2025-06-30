@@ -378,7 +378,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 				tabsInfo += String.format("\n   [%d] %s: %s", i, tabTitle, tabUrl);
 			}
 		}
-		// 获取滚动信息
+		// Get scroll information
 		Map<String, Object> scrollInfo = (Map<String, Object>) state.get("scroll_info");
 		String contentAbove = "";
 		String contentBelow = "";

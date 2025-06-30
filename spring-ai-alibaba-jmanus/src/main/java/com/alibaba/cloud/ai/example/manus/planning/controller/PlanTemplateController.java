@@ -454,7 +454,7 @@ public class PlanTemplateController {
 	public ResponseEntity<Map<String, Object>> updatePlanTemplate(@RequestBody Map<String, String> request) {
 		String planId = request.get("planId");
 		String query = request.get("query");
-		String existingJson = request.get("existingJson"); // 获取可能存在的JSON数据
+		String existingJson = request.get("existingJson"); // Get possible existing JSON
 
 		if (planId == null || planId.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Plan template ID cannot be empty"));
