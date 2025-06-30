@@ -1,7 +1,7 @@
 
 
 /**
- * 计划模板管理器 - 负责协调和初始化所有计划模板相关的组件
+ * Plan Template Manager - Responsible for coordinating and initializing all plan template related components
  */
 class PlanTemplateManager {
     constructor() {
@@ -11,10 +11,10 @@ class PlanTemplateManager {
     }
 
     /**
-     * 初始化 PlanTemplateManager 并设置所有组件
+     * Initialize PlanTemplateManager and set up all components
      */
     async init() {
-        console.log('初始化');
+        console.log('Initializing');
         let chatAreaContainer = document.querySelector('.chat-area');
 
         if (!chatAreaContainer) {
@@ -23,41 +23,41 @@ class PlanTemplateManager {
         }
         try {
            
-            // 1. 初始化 UI 模块（包含基础事件系统）
+            // 1. Initialize UI module (including basic event system)
             const planExecutionManager = new PlanExecutionManagerController();
             planExecutionManager.init();
-            console.log('UI 模块初始化完成');
+            console.log('UI module initialization completed');
 
             const chatHandler = new ChatHandler(planExecutionManager);
             console.log('PlanTemplateManager: ChatHandler initialized.');
 
-            // 3. 初始化侧边栏管理器
+            // 3. Initialize sidebar manager
             const sidebarManager = new SidebarManager();
             sidebarManager.init();
-            console.log('边栏管理器初始化完成');
+            console.log('Sidebar manager initialization completed');
 
-            // 4. 初始化右侧边栏
+            // 4. Initialize right sidebar
             const rightSidebar = new RightSidebarController();
             rightSidebar.init();
-            console.log('右侧边栏初始化完成 (from PlanTemplateManager)');
+            console.log('Right sidebar initialization completed (from PlanTemplateManager)');
 
-            // 6. 初始化计划提示生成器
+            // 6. Initialize plan prompt generator
             this.planPromptGenerator = new PlanPromptGenerator();
             this.planPromptGenerator.init();
-            console.log('PlanPromptGenerator 初始化完成');
+            console.log('PlanPromptGenerator initialization completed');
 
-            // 7. 初始化处理器
+            // 7. Initialize handler
             this.planTemplateHandler = new PlanTemplateHandler();
             this.planTemplateHandler.init();
-            console.log('PlanTemplateHandler 初始化完成');
+            console.log('PlanTemplateHandler initialization completed');
 
             const planTemplateExecutionController = new PlanTemplateExecutionController();
             planTemplateExecutionController.init();
-            console.log('PlanTemplateExecutionController 初始化完成');
+            console.log('PlanTemplateExecutionController initialization completed');
 
             this.planTemplateListUIHandler = new PlanTemplateListUIHandler();
             this.planTemplateListUIHandler.init();
-            console.log('PlanTemplateListUIHandler 初始化完成 from main');
+            console.log('PlanTemplateListUIHandler initialization completed from main');
 
         } catch (e) {
             console.error('PlanTemplateManager: Error during initialization:', e);
@@ -65,24 +65,24 @@ class PlanTemplateManager {
     }
 
     /**
-     * 获取计划提示生成器实例
-     * @returns {PlanPromptGenerator} 计划提示生成器实例
+     * Get plan prompt generator instance
+     * @returns {PlanPromptGenerator} Plan prompt generator instance
      */
     getPlanPromptGenerator() {
         return this.planPromptGenerator;
     }
 
     /**
-     * 获取计划模板处理器实例
-     * @returns {PlanTemplateHandler} 计划模板处理器实例
+     * Get plan template handler instance
+     * @returns {PlanTemplateHandler} Plan template handler instance
      */
     getPlanTemplateHandler() {
         return this.planTemplateHandler;
     }
 
     /**
-     * 获取计划模板列表UI处理器实例
-     * @returns {PlanTemplateListUIHandler} 计划模板列表UI处理器实例
+     * Get plan template list UI handler instance
+     * @returns {PlanTemplateListUIHandler} Plan template list UI handler instance
      */
     getPlanTemplateListUIHandler() {
         return this.planTemplateListUIHandler;
@@ -90,7 +90,7 @@ class PlanTemplateManager {
 }
 
 /**
- * 边栏管理器 - 负责左右侧边栏的折叠/展开功能
+ * Sidebar Manager - Responsible for left and right sidebar collapse/expand functionality
  */
 class SidebarManager {
     constructor() {
@@ -99,36 +99,36 @@ class SidebarManager {
     }
 
     /**
-     * 初始化边栏管理器 - 只处理左侧边栏，右侧边栏由 RightSidebarController 处理
+     * Initialize sidebar manager - Only handles left sidebar, right sidebar is handled by RightSidebarController
      */
     init() {
-        // 获取左侧边栏切换按钮和侧边栏元素
+        // Get left sidebar toggle button and sidebar elements
         this.toggleLeftSidebarBtn = document.getElementById('toggleLeftSidebarBtn');
         this.leftSidebar = document.getElementById('leftSidebar');
 
-        // 绑定左侧边栏切换按钮事件
+        // Bind left sidebar toggle button event
         if (this.toggleLeftSidebarBtn && this.leftSidebar) {
             this.toggleLeftSidebarBtn.addEventListener('click', this.handleToggleLeftSidebar.bind(this));
-            console.log('左侧边栏切换按钮事件绑定成功');
+            console.log('Left sidebar toggle button event binding successful');
         } else {
-            console.warn('SidebarManager: 左侧边栏或切换按钮未找到');
+            console.warn('SidebarManager: Left sidebar or toggle button not found');
         }
 
-        console.log('SidebarManager 初始化完成 (仅处理左侧边栏)');
+        console.log('SidebarManager initialization completed (only handles left sidebar)');
     }
 
     /**
-     * 处理左侧边栏折叠/展开
+     * Handle left sidebar collapse/expand
      */
     handleToggleLeftSidebar() {
         if (!this.leftSidebar) {
-            console.warn('SidebarManager: 左侧边栏元素未找到');
+            console.warn('SidebarManager: Left sidebar element not found');
             return;
         }
         
         this.leftSidebar.classList.toggle('collapsed');
         
-        // 可以根据需要调整主内容区域的边距或宽度
+        // Can adjust main content area margins or width as needed
         const mainContent = document.getElementById('mainContent') || document.querySelector('.main-content-wrapper');
         if (mainContent) {
             mainContent.classList.toggle('left-collapsed');
@@ -136,12 +136,12 @@ class SidebarManager {
     }
 }
 document.addEventListener('DOMContentLoaded', () => {
-    // 创建 PlanTemplateManager 实例并初始化
+    // Create PlanTemplateManager instance and initialize
     const planTemplateManager = new PlanTemplateManager();
     planTemplateManager.init();
-    console.log('PlanTemplateManager 初始化完成');
+    console.log('PlanTemplateManager initialization completed');
     
-    // 将实例暴露到全局作用域，以便其他脚本可以访问
+    // Expose instance to global scope so other scripts can access it
     if (typeof window !== 'undefined') {
         window.planTemplateManager = planTemplateManager;
     }

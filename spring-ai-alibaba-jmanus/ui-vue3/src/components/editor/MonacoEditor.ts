@@ -46,7 +46,7 @@ export default function useMonaco(language = 'json') {
         theme: 'vs-dark',
         multiCursorModifier: 'ctrlCmd',
         tabSize: 2,
-        automaticLayout: true, // 自适应宽高
+        automaticLayout: true, // Auto-adapt width and height
         ...editorOption,
       })
     return monacoEditor

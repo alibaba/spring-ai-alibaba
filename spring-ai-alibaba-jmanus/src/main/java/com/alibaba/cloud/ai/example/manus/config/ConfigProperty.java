@@ -24,13 +24,14 @@ import java.lang.annotation.Target;
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigInputType;
 
 /**
- * 配置属性注解，支持三级配置结构：group.subgroup.key
+ * Configuration property annotation, supporting three-level configuration structure:
+ * group.subgroup.key
  * <p>
- * 配置层级结构：
+ * Configuration hierarchy:
  * <ul>
- * <li>group: 顶层分组，如 browser, network, security 等</li>
- * <li>subGroup: 二级分组，如 browser.settings, browser.proxy 等</li>
- * <li>key: 具体配置项</li>
+ * <li>group: Top-level group, such as browser, network, security, etc.</li>
+ * <li>subGroup: Secondary group, such as browser.settings, browser.proxy, etc.</li>
+ * <li>key: Specific configuration item</li>
  * </ul>
  */
 @Target(ElementType.FIELD)
@@ -38,48 +39,49 @@ import com.alibaba.cloud.ai.example.manus.config.entity.ConfigInputType;
 public @interface ConfigProperty {
 
 	/**
-	 * 顶层分组
+	 * Top-level group
 	 */
 	String group();
 
 	/**
-	 * 二级分组
+	 * Secondary group
 	 */
 	String subGroup();
 
 	/**
-	 * 配置项key
+	 * Configuration item key
 	 */
 	String key();
 
 	/**
-	 * 配置项YAML完整路径，用来从yml里面找到特定的配置项作为默认值放到数据库里
+	 * Configuration item YAML full path, used to find specific configuration items as
+	 * default values in the database
 	 */
 	String path();
 
 	/**
-	 * 配置项描述
+	 * Configuration item description
 	 * <p>
-	 * 支持国际化key格式：config.desc.{group}.{subGroup}.{key}
+	 * Supports internationalization key format: config.desc.{group}.{subGroup}.{key}
 	 */
 	String description() default "";
 
 	/**
-	 * 配置项默认值
+	 * Configuration item default value
 	 */
 	String defaultValue() default "";
 
 	/**
-	 * 配置项输入类型
+	 * Configuration item input type
 	 * <p>
-	 * 默认为文本输入框
+	 * Default is text input box
 	 */
 	ConfigInputType inputType() default ConfigInputType.TEXT;
 
 	/**
-	 * 下拉框选项
+	 * Dropdown box options
 	 * <p>
-	 * 仅在 inputType = SELECT 时生效
+	 * Only effective when inputType = SELECT
 	 */
 	ConfigOption[] options() default {};
 

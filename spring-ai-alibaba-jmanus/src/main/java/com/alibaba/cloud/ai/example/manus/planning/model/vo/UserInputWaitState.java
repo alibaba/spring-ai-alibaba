@@ -27,9 +27,9 @@ public class UserInputWaitState implements Serializable {
 
 	private boolean waiting;
 
-	private String formDescription; // 新增字段：表单描述
+	private String formDescription;
 
-	private List<Map<String, String>> formInputs; // 新增字段：表单输入项
+	private List<Map<String, String>> formInputs;
 
 	public UserInputWaitState() {
 	}
