@@ -1,4 +1,4 @@
-# Spring AI Alibaba Java Manus
+# Spring AI Alibaba JManus
 
 <div align="center">
 
