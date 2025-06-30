@@ -13,13 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.dbconnector;
 
-import com.alibaba.druid.pool.DruidDataSource;
-import com.alibaba.druid.pool.DruidDataSourceFactory;
-import lombok.extern.slf4j.Slf4j;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -27,9 +23,22 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.sql.DataSource;
+
+import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.pool.DruidDataSourceFactory;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class AbstractDBConnectionPool implements DBConnectionPool {
+
+	/**
+	 * DataSource cache to ensure that each configuration creates DataSource only once.
+	 */
+	private static final ConcurrentHashMap<String, DataSource> DATA_SOURCE_CACHE = new ConcurrentHashMap<>();
 
 	/**
 	 * 方言
@@ -74,9 +83,23 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 
 	public Connection getConnection(DbConfig config) {
 		String jdbcUrl = config.getUrl();
-		DataSource dataSource = null;
 		try {
-			dataSource = createdDataSource(jdbcUrl, config.getUsername(), config.getPassword());
+			// Generate cache key based on connection parameters
+			String cacheKey = generateCacheKey(jdbcUrl, config.getUsername(), config.getPassword());
+
+			// Use computeIfAbsent to ensure thread safety and avoid duplicate DataSource
+			// creation
+			DataSource dataSource = DATA_SOURCE_CACHE.computeIfAbsent(cacheKey, key -> {
+				try {
+					log.debug("Creating new DataSource for key: {}", key);
+					return createdDataSource(jdbcUrl, config.getUsername(), config.getPassword());
+				}
+				catch (Exception e) {
+					log.error("Failed to create DataSource for key: {}", key, e);
+					throw new RuntimeException("Failed to create DataSource", e);
+				}
+			});
+
 			return dataSource.getConnection();
 		}
 		catch (SQLException e) {
@@ -86,6 +109,31 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * Generate cache key based on connection parameters.
+	 * @param url the database URL
+	 * @param username the database username
+	 * @param password the database password
+	 * @return the cache key
+	 */
+	private String generateCacheKey(String url, String username, String password) {
+		return url + "|" + username + "|" + Objects.hashCode(password);
+	}
+
+	/**
+	 * Clear DataSource cache and close all cached DataSource instances. This method is
+	 * useful for resource cleanup in special scenarios.
+	 */
+	public static void clearDataSourceCache() {
+		DATA_SOURCE_CACHE.values().forEach(dataSource -> {
+			if (dataSource instanceof DruidDataSource) {
+				((DruidDataSource) dataSource).close();
+			}
+		});
+		DATA_SOURCE_CACHE.clear();
+		log.info("DataSource cache cleared");
 	}
 
 	public DataSource createdDataSource(String url, String username, String password) throws Exception {
