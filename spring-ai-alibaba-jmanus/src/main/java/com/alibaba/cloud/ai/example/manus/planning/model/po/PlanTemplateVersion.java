@@ -25,7 +25,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * The entity class for the plan template version, used to store the version information of the plan template
+ * The entity class for the plan template version, used to store the version information
+ * of the plan template
  */
 @Entity
 @Table(name = "plan_template_version")

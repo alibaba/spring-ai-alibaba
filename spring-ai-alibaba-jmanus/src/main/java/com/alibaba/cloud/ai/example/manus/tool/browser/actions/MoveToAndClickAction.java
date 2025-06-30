@@ -44,7 +44,8 @@ public class MoveToAndClickAction extends BrowserAction {
 
 		String clickResultMessage = clickAndSwitchToNewTabIfOpened(page, () -> {
 			try {
-				// 1. Scroll to the target position (make the target point as close to the center of the viewport as possible)
+				// 1. Scroll to the target position (make the target point as close to the
+				// center of the viewport as possible)
 
 				Object result = null;
 				String markerId = "__move_click_marker__";

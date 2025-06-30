@@ -16,7 +16,8 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 
 /**
- * MCP configuration request value object, used to receive configuration information passed from the front end
+ * MCP configuration request value object, used to receive configuration information
+ * passed from the front end
  */
 public class McpConfigRequestVO {
 

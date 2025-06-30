@@ -89,9 +89,12 @@ public abstract class BaseAgent {
 	/**
 	 * Get the name of the agent
 	 *
-	 * Implementation requirements: 1. Return a short but descriptive name 2. The name should reflect the main functionality or characteristics of the agent 3. The name should be unique for easy logging and debugging
+	 * Implementation requirements: 1. Return a short but descriptive name 2. The name
+	 * should reflect the main functionality or characteristics of the agent 3. The name
+	 * should be unique for easy logging and debugging
 	 *
-	 * Example implementations: - ToolCallAgent returns "ToolCallAgent" - BrowserAgent returns "BrowserAgent"
+	 * Example implementations: - ToolCallAgent returns "ToolCallAgent" - BrowserAgent
+	 * returns "BrowserAgent"
 	 * @return The name of the agent
 	 */
 	public abstract String getName();
@@ -99,9 +102,13 @@ public abstract class BaseAgent {
 	/**
 	 * Get the detailed description of the agent
 	 *
-	 * Implementation requirements: 1. Return a detailed description of the agent's functionality 2. The description should include the agent's main responsibilities and capabilities 3. Should explain how this agent differs from other agents
+	 * Implementation requirements: 1. Return a detailed description of the agent's
+	 * functionality 2. The description should include the agent's main responsibilities
+	 * and capabilities 3. Should explain how this agent differs from other agents
 	 *
-	 * Example implementations: - ToolCallAgent: "Agent responsible for managing and executing tool calls, supporting multi-tool combination calls" - ReActAgent: "Agent that implements alternating execution of reasoning and acting"
+	 * Example implementations: - ToolCallAgent: "Agent responsible for managing and
+	 * executing tool calls, supporting multi-tool combination calls" - ReActAgent: "Agent
+	 * that implements alternating execution of reasoning and acting"
 	 * @return The detailed description text of the agent
 	 */
 	public abstract String getDescription();
@@ -109,10 +116,13 @@ public abstract class BaseAgent {
 	/**
 	 * Add thinking prompts to the message list to build the agent's thinking chain
 	 *
-	 * Implementation requirements: 1. Generate appropriate system prompts based on current context and state 2. Prompts should guide the agent on how to think and make decisions 3. Can recursively build prompt chains to form hierarchical thinking processes 4.
-	 * Return the added system prompt message object
+	 * Implementation requirements: 1. Generate appropriate system prompts based on
+	 * current context and state 2. Prompts should guide the agent on how to think and
+	 * make decisions 3. Can recursively build prompt chains to form hierarchical thinking
+	 * processes 4. Return the added system prompt message object
 	 *
-	 * Subclass implementation reference: 1. ReActAgent: Implement basic thinking-action loop prompts 2. ToolCallAgent: Add tool selection and execution related prompts
+	 * Subclass implementation reference: 1. ReActAgent: Implement basic thinking-action
+	 * loop prompts 2. ToolCallAgent: Add tool selection and execution related prompts
 	 * @return The added system prompt message object
 	 */
 	protected Message getThinkMessage() {
@@ -122,7 +132,8 @@ public abstract class BaseAgent {
 		String osArch = System.getProperty("os.arch");
 
 		// Get current date time, format as yyyy-MM-dd
-		String currentDateTime = java.time.LocalDate.now().toString(); // Format as yyyy-MM-dd
+		String currentDateTime = java.time.LocalDate.now().toString(); // Format as
+																		// yyyy-MM-dd
 		boolean isDebugModel = manusProperties.getBrowserDebug();
 		String detailOutput = "";
 		if (isDebugModel) {
@@ -152,9 +163,13 @@ public abstract class BaseAgent {
 	/**
 	 * Get the next step prompt message
 	 *
-	 * Implementation requirements: 1. Generate a prompt message that guides the agent to perform the next step 2. The prompt should be based on the current execution state and context 3. The message should clearly guide the agent on what task to perform
+	 * Implementation requirements: 1. Generate a prompt message that guides the agent to
+	 * perform the next step 2. The prompt should be based on the current execution state
+	 * and context 3. The message should clearly guide the agent on what task to perform
 	 *
-	 * Subclass implementation reference: 1. ToolCallAgent: Return prompts related to tool selection and execution 2. ReActAgent: Return prompts related to reasoning or action decision
+	 * Subclass implementation reference: 1. ToolCallAgent: Return prompts related to tool
+	 * selection and execution 2. ReActAgent: Return prompts related to reasoning or
+	 * action decision
 	 * @return The next step prompt message object
 	 */
 	protected abstract Message getNextStepWithEnvMessage();
@@ -235,7 +250,8 @@ public abstract class BaseAgent {
 			agentRecord.setEndTime(LocalDateTime.now());
 			agentRecord.setResult(String.format("执行失败 [错误: %s]", e.getMessage()));
 			results.add("Execution failed: " + e.getMessage());
-			throw e; // Re-throw the exception to let the caller know that an error occurred
+			throw e; // Re-throw the exception to let the caller know that an error
+						// occurred
 		}
 		finally {
 			state = AgentState.COMPLETED; // Reset state after execution
@@ -274,7 +290,8 @@ public abstract class BaseAgent {
 	 * @return true if the agent is stuck, false otherwise
 	 */
 	protected boolean isStuck() {
-		// Currently, if the agent does not call the tool three times, it is considered stuck and the current step is exited.
+		// Currently, if the agent does not call the tool three times, it is considered
+		// stuck and the current step is exited.
 		List<Message> memoryEntries = llmService.getAgentMemory().get(getPlanId());
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
@@ -307,10 +324,13 @@ public abstract class BaseAgent {
 	/**
 	 * Get the data context of the agent
 	 *
-	 * Implementation requirements: 1. Return all the context data needed for the agent's execution 2. Data can include: - Current execution state - Step information - Intermediate results - Configuration parameters 3.
-	 * Data is set through setData() when run() is executed
+	 * Implementation requirements: 1. Return all the context data needed for the agent's
+	 * execution 2. Data can include: - Current execution state - Step information -
+	 * Intermediate results - Configuration parameters 3. Data is set through setData()
+	 * when run() is executed
 	 *
-	 * Do not modify the implementation of this method. If you need to pass context, inherit and modify setData() to improve getData() efficiency.
+	 * Do not modify the implementation of this method. If you need to pass context,
+	 * inherit and modify setData() to improve getData() efficiency.
 	 * @return A Map object containing the agent's context data
 	 */
 	protected final Map<String, Object> getInitSettingData() {

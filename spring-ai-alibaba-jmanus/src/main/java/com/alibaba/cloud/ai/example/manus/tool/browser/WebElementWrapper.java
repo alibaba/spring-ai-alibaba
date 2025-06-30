@@ -20,8 +20,9 @@ import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Page;
 
 /**
- * A wrapper class for WebElement, which contains both the element itself and its detailed information. This class allows
- * obtaining an ElementHandle and its related information in one operation when processing web elements.
+ * A wrapper class for WebElement, which contains both the element itself and its detailed
+ * information. This class allows obtaining an ElementHandle and its related information
+ * in one operation when processing web elements.
  */
 public class WebElementWrapper {
 
@@ -29,9 +30,11 @@ public class WebElementWrapper {
 
 	private final String elementInfoString;
 
-	private Frame iframeElement; // The iframe element that the element belongs to, or null if in the main document
+	private Frame iframeElement; // The iframe element that the element belongs to, or
+									// null if in the main document
 
-	private String iframePath; // The path of the iframe, such as "0/2/1" representing the second iframe in the third iframe in the first iframe
+	private String iframePath; // The path of the iframe, such as "0/2/1" representing the
+								// second iframe in the third iframe in the first iframe
 
 	/**
 	 * Construct a new WebElementWrapper instance
@@ -50,7 +53,8 @@ public class WebElementWrapper {
 	 * @param element ElementHandle object
 	 * @param elementInfoString The detailed information string of the element
 	 * @param iframeElement The iframe element that the element belongs to
-	 * @param iframePath The path of the iframe, such as "0/2/1" representing the second iframe in the third iframe in the first iframe
+	 * @param iframePath The path of the iframe, such as "0/2/1" representing the second
+	 * iframe in the third iframe in the first iframe
 	 */
 	public WebElementWrapper(ElementHandle element, String elementInfoString, Frame iframeElement, String iframePath) {
 		this.element = element;
@@ -77,7 +81,8 @@ public class WebElementWrapper {
 
 	/**
 	 * Get the iframe element that the element belongs to
-	 * @return The iframe element that the element belongs to, or null if in the main document
+	 * @return The iframe element that the element belongs to, or null if in the main
+	 * document
 	 */
 	public Frame getIframeElement() {
 		return iframeElement;
@@ -93,7 +98,8 @@ public class WebElementWrapper {
 
 	/**
 	 * Get the path of the iframe
-	 * @return The path of the iframe, such as "0/2/1" representing the second iframe in the third iframe in the first iframe
+	 * @return The path of the iframe, such as "0/2/1" representing the second iframe in
+	 * the third iframe in the first iframe
 	 */
 	public String getIframePath() {
 		return iframePath;

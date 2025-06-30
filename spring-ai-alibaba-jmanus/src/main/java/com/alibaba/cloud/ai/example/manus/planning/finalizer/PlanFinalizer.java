@@ -54,7 +54,8 @@ public class PlanFinalizer {
 
 	/**
 	 * Generate the execution summary of the plan
-	 * @param context execution context, containing the user request and the execution process information
+	 * @param context execution context, containing the user request and the execution
+	 * process information
 	 */
 	public void generateSummary(ExecutionContext context) {
 		if (context == null || context.getPlan() == null) {

@@ -31,7 +31,8 @@ import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplateVersion;
 public interface PlanTemplateVersionRepository extends JpaRepository<PlanTemplateVersion, Long> {
 
 	/**
-	 * Find all versions of the plan template by the plan template ID, sorted by the version index
+	 * Find all versions of the plan template by the plan template ID, sorted by the
+	 * version index
 	 * @param planTemplateId the plan template ID
 	 * @return the list of versions
 	 */
@@ -46,7 +47,8 @@ public interface PlanTemplateVersionRepository extends JpaRepository<PlanTemplat
 	Integer findMaxVersionIndexByPlanTemplateId(@Param("planTemplateId") String planTemplateId);
 
 	/**
-	 * Find the specific version of the plan template by the plan template ID and the version index
+	 * Find the specific version of the plan template by the plan template ID and the
+	 * version index
 	 * @param planTemplateId the plan template ID
 	 * @param versionIndex the version index
 	 * @return the plan template version entity

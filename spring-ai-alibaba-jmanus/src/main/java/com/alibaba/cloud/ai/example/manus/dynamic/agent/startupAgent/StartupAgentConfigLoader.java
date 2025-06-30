@@ -31,7 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * StartupAgent configuration loader
  *
- * Responsible for loading the description and prompt content of startupAgent from the configuration file, supporting caching mechanism to improve performance
+ * Responsible for loading the description and prompt content of startupAgent from the
+ * configuration file, supporting caching mechanism to improve performance
  */
 @Component
 public class StartupAgentConfigLoader {
@@ -141,8 +142,10 @@ public class StartupAgentConfigLoader {
 				return List.of();
 			}
 
-			// Here is a simplified implementation, directly returning the known agent list
-			// In actual projects, it can be dynamically discovered by scanning the file system
+			// Here is a simplified implementation, directly returning the known agent
+			// list
+			// In actual projects, it can be dynamically discovered by scanning the file
+			// system
 			return Arrays.asList("default_agent", "text_file_agent", "browser_agent");
 		}
 		catch (Exception e) {

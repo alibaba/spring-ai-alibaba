@@ -164,7 +164,8 @@ public class ManusController {
 			return ResponseEntity.ok(Map.of("message", "执行记录已成功删除", "planId", planId));
 		}
 		catch (Exception e) {
-			return ResponseEntity.internalServerError().body(Map.of("error", "Failed to delete record: " + e.getMessage()));
+			return ResponseEntity.internalServerError()
+				.body(Map.of("error", "Failed to delete record: " + e.getMessage()));
 		}
 	}
 

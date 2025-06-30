@@ -20,8 +20,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * ID converter, used to handle and convert the relationship between planId and planTemplateId
- * This class helps the system to be compatible with the old and new interfaces, allowing both planId and planTemplateId to be supported
+ * ID converter, used to handle and convert the relationship between planId and
+ * planTemplateId This class helps the system to be compatible with the old and new
+ * interfaces, allowing both planId and planTemplateId to be supported
  */
 @Component
 public class PlanIdDispatcher {
@@ -128,9 +129,8 @@ public class PlanIdDispatcher {
 	}
 
 	/**
-	 * Generate an ID of the other type based on the existing ID
-	 * If it is a planId, convert it to planTemplateId
-	 * If it is a planTemplateId, convert it to planId
+	 * Generate an ID of the other type based on the existing ID If it is a planId,
+	 * convert it to planTemplateId If it is a planTemplateId, convert it to planId
 	 * @param id existing ID
 	 * @return converted ID
 	 */

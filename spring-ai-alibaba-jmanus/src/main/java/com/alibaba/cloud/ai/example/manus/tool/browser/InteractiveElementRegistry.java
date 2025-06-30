@@ -29,7 +29,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * A class that manages a collection of interactive elements on a page, providing global index access.
+ * A class that manages a collection of interactive elements on a page, providing global
+ * index access.
  */
 public class InteractiveElementRegistry {
 

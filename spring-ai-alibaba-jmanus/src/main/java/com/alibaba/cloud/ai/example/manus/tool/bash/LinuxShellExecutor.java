@@ -68,7 +68,8 @@ public class LinuxShellExecutor implements ShellCommandExecutor {
 
 				// Set timeout processing
 				try {
-					if (!command.endsWith("&")) { // Only set timeout if the command is not a background command
+					if (!command.endsWith("&")) { // Only set timeout if the command is
+													// not a background command
 						if (!currentProcess.waitFor(DEFAULT_TIMEOUT, TimeUnit.SECONDS)) {
 							log.warn("Command timed out. Sending SIGINT to the process");
 							terminate();

@@ -202,7 +202,8 @@ public class PlanningFactory {
 
 		// 2. Create RequestConfig and set the timeout
 		RequestConfig requestConfig = RequestConfig.custom()
-			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection timeout
+			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection
+																	// timeout
 			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
 			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
 			.build();

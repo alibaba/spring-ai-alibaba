@@ -73,7 +73,8 @@ public class PlanTemplateController {
 	@PostMapping("/generate")
 	public ResponseEntity<Map<String, Object>> generatePlan(@RequestBody Map<String, String> request) {
 		String query = request.get("query");
-		String existingJson = request.get("existingJson"); // Get possible existing JSON data
+		String existingJson = request.get("existingJson"); // Get possible existing JSON
+															// data
 
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Plan description cannot be empty"));
@@ -83,7 +84,8 @@ public class PlanTemplateController {
 		// If there is existing JSON data, add it to the user request
 		String enhancedQuery;
 		if (existingJson != null && !existingJson.trim().isEmpty()) {
-			// Escape curly braces in JSON to prevent String.format from misinterpreting them as placeholders
+			// Escape curly braces in JSON to prevent String.format from misinterpreting
+			// them as placeholders
 			String escapedJson = existingJson.replace("{", "\\{").replace("}", "\\}");
 			enhancedQuery = String.format("参照过去的执行计划 %s 。以及用户的新的query：%s。构建一个新的执行计划。", escapedJson, query);
 		}
@@ -95,7 +97,8 @@ public class PlanTemplateController {
 		// Use PlanIdDispatcher to generate a unique plan template ID
 		String planTemplateId = planIdDispatcher.generatePlanTemplateId();
 		context.setPlanId(planTemplateId);
-		context.setNeedSummary(false); // We don't need to generate a summary, because we only need the plan
+		context.setNeedSummary(false); // We don't need to generate a summary, because we
+										// only need the plan
 
 		// Get planning flow
 		PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planTemplateId);
@@ -107,7 +110,8 @@ public class PlanTemplateController {
 
 			// Get the generated plan from the recorder
 			if (context.getPlan() == null) {
-				return ResponseEntity.internalServerError().body(Map.of("error", "Plan generation failed, cannot get plan data"));
+				return ResponseEntity.internalServerError()
+					.body(Map.of("error", "Plan generation failed, cannot get plan data"));
 			}
 
 			// Get plan JSON
@@ -129,7 +133,8 @@ public class PlanTemplateController {
 		}
 		catch (Exception e) {
 			logger.error("Plan generation failed", e);
-			return ResponseEntity.internalServerError().body(Map.of("error", "Plan generation failed: " + e.getMessage()));
+			return ResponseEntity.internalServerError()
+				.body(Map.of("error", "Plan generation failed: " + e.getMessage()));
 		}
 	}
 
@@ -187,7 +192,8 @@ public class PlanTemplateController {
 			// Get the latest version of the plan JSON
 			List<String> versions = planTemplateService.getPlanVersions(planTemplateId);
 			if (versions.isEmpty()) {
-				return ResponseEntity.internalServerError().body(Map.of("error", "Plan template has no executable version"));
+				return ResponseEntity.internalServerError()
+					.body(Map.of("error", "Plan template has no executable version"));
 			}
 			String planJson = planTemplateService.getPlanVersion(planTemplateId, versions.size() - 1);
 			if (planJson == null || planJson.trim().isEmpty()) {
@@ -248,7 +254,8 @@ public class PlanTemplateController {
 		}
 		catch (Exception e) {
 			logger.error("Plan execution failed", e);
-			return ResponseEntity.internalServerError().body(Map.of("error", "Plan execution failed: " + e.getMessage()));
+			return ResponseEntity.internalServerError()
+				.body(Map.of("error", "Plan execution failed: " + e.getMessage()));
 		}
 	}
 
@@ -395,7 +402,8 @@ public class PlanTemplateController {
 		}
 		catch (Exception e) {
 			logger.error("Failed to get plan version", e);
-			return ResponseEntity.internalServerError().body(Map.of("error", "Failed to get plan version: " + e.getMessage()));
+			return ResponseEntity.internalServerError()
+				.body(Map.of("error", "Failed to get plan version: " + e.getMessage()));
 		}
 	}
 
@@ -407,7 +415,8 @@ public class PlanTemplateController {
 	public ResponseEntity<Map<String, Object>> getAllPlanTemplates() {
 		try {
 			// Use PlanTemplateService to get all plan templates
-			// Since there is no direct method to get all templates, we use the findAll method of PlanTemplateRepository
+			// Since there is no direct method to get all templates, we use the findAll
+			// method of PlanTemplateRepository
 			List<PlanTemplate> templates = planTemplateService.getAllPlanTemplates();
 
 			// Build response data
@@ -430,13 +439,15 @@ public class PlanTemplateController {
 		}
 		catch (Exception e) {
 			logger.error("Failed to get plan template list", e);
-			return ResponseEntity.internalServerError().body(Map.of("error", "Failed to get plan template list: " + e.getMessage()));
+			return ResponseEntity.internalServerError()
+				.body(Map.of("error", "Failed to get plan template list: " + e.getMessage()));
 		}
 	}
 
 	/**
 	 * Update plan template
-	 * @param request Request containing plan template ID, plan requirements and optional JSON data
+	 * @param request Request containing plan template ID, plan requirements and optional
+	 * JSON data
 	 * @return Updated plan JSON data
 	 */
 	@PostMapping("/update")
@@ -463,7 +474,8 @@ public class PlanTemplateController {
 		// If there is existing JSON data, add it to the user request
 		String enhancedQuery;
 		if (existingJson != null && !existingJson.trim().isEmpty()) {
-			// Escape curly braces in JSON to prevent String.format from misinterpreting them as placeholders
+			// Escape curly braces in JSON to prevent String.format from misinterpreting
+			// them as placeholders
 			String escapedJson = existingJson.replace("{", "\\{").replace("}", "\\}");
 			enhancedQuery = String.format("参照过去的执行计划 %s 。以及用户的新的query：%s。更新这个执行计划。", escapedJson, query);
 		}
@@ -474,7 +486,8 @@ public class PlanTemplateController {
 
 		// Use the existing plan template ID
 		context.setPlanId(planId);
-		context.setNeedSummary(false); // We don't need to generate a summary, because we only need the plan
+		context.setNeedSummary(false); // We don't need to generate a summary, because we
+										// only need the plan
 
 		// Get planning flow
 		PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planId);
@@ -486,7 +499,8 @@ public class PlanTemplateController {
 
 			// Get the generated plan from the recorder
 			if (context.getPlan() == null) {
-				return ResponseEntity.internalServerError().body(Map.of("error", "Plan update failed, cannot get plan data"));
+				return ResponseEntity.internalServerError()
+					.body(Map.of("error", "Plan update failed, cannot get plan data"));
 			}
 
 			// Get plan JSON
@@ -508,7 +522,8 @@ public class PlanTemplateController {
 		}
 		catch (Exception e) {
 			logger.error("Failed to update plan template", e);
-			return ResponseEntity.internalServerError().body(Map.of("error", "Failed to update plan template: " + e.getMessage()));
+			return ResponseEntity.internalServerError()
+				.body(Map.of("error", "Failed to update plan template: " + e.getMessage()));
 		}
 	}
 
@@ -537,7 +552,8 @@ public class PlanTemplateController {
 
 			if (deleted) {
 				logger.info("Plan template deleted successfully: {}", planId);
-				return ResponseEntity.ok(Map.of("status", "success", "message", "Plan template deleted", "planId", planId));
+				return ResponseEntity
+					.ok(Map.of("status", "success", "message", "Plan template deleted", "planId", planId));
 			}
 			else {
 				logger.error("Failed to delete plan template: {}", planId);
@@ -546,7 +562,8 @@ public class PlanTemplateController {
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete plan template", e);
-			return ResponseEntity.internalServerError().body(Map.of("error", "Failed to delete plan template: " + e.getMessage()));
+			return ResponseEntity.internalServerError()
+				.body(Map.of("error", "Failed to delete plan template: " + e.getMessage()));
 		}
 	}
 

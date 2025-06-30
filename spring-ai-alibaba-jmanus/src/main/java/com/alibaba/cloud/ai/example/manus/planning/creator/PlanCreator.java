@@ -64,7 +64,8 @@ public class PlanCreator {
 
 	/**
 	 * Create an execution plan based on the user request
-	 * @param context execution context, containing the user request and the execution process information
+	 * @param context execution context, containing the user request and the execution
+	 * process information
 	 * @return plan creation result
 	 */
 	public void createPlan(ExecutionContext context) {

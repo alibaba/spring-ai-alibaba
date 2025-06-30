@@ -90,12 +90,14 @@ public class McpServerConfigurationLoader implements EnvironmentPostProcessor {
 					objectMapper.writerWithDefaultPrettyPrinter().writeValue(tempConfigPath.toFile(), rootNode);
 					logger.debug("Processed configuration content: {}", objectMapper.writeValueAsString(rootNode));
 
-					// Set the system property to point to the new configuration file location
+					// Set the system property to point to the new configuration file
+					// location
 					String newConfigPath = "file:" + tempConfigPath.toAbsolutePath();
 					System.setProperty("spring.ai.mcp.client.stdio.servers-configuration", newConfigPath);
 					logger.info("Updated configuration file path: {}", newConfigPath);
 
-					logger.info("MCP server configuration processing completed, current operating system: {}", getOsType());
+					logger.info("MCP server configuration processing completed, current operating system: {}",
+							getOsType());
 				}
 				else {
 					logger.warn("mcpServers node not found in configuration file");

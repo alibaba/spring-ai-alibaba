@@ -21,7 +21,8 @@ import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 
 /**
- * The coordinator of the planning process, responsible for coordinating the creation, execution and summary of the plan
+ * The coordinator of the planning process, responsible for coordinating the creation,
+ * execution and summary of the plan
  */
 public class PlanningCoordinator {
 

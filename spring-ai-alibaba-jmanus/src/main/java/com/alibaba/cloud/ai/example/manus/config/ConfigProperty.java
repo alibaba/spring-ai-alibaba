@@ -24,7 +24,8 @@ import java.lang.annotation.Target;
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigInputType;
 
 /**
- * Configuration property annotation, supporting three-level configuration structure: group.subgroup.key
+ * Configuration property annotation, supporting three-level configuration structure:
+ * group.subgroup.key
  * <p>
  * Configuration hierarchy:
  * <ul>
@@ -53,7 +54,8 @@ public @interface ConfigProperty {
 	String key();
 
 	/**
-	 * Configuration item YAML full path, used to find specific configuration items as default values in the database
+	 * Configuration item YAML full path, used to find specific configuration items as
+	 * default values in the database
 	 */
 	String path();
 
