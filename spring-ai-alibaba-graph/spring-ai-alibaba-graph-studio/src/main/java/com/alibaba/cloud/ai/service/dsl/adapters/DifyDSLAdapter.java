@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.service.dsl.adapters;
 import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppMetadata;
 import com.alibaba.cloud.ai.model.Variable;
-import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.model.workflow.Edge;
 import com.alibaba.cloud.ai.model.workflow.Graph;
@@ -26,12 +25,6 @@ import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
-import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
-import com.alibaba.cloud.ai.model.workflow.nodedata.DocumentExtractorNodeData;
-import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
-import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
-import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
-import com.alibaba.cloud.ai.model.workflow.nodedata.StartNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
@@ -50,7 +43,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -148,55 +140,12 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		Graph graph = constructGraph((Map<String, Object>) workflowData.get("graph"));
 		workflow.setGraph(graph);
 		// register overAllState output key
-		List<Variable> extraVars = graph.getNodes().stream().map(Node::getData).flatMap(nd -> {
-			if (nd instanceof StartNodeData start) {
-				return Optional.ofNullable(start.getStartInputs())
-					.stream()
-					.flatMap(List::stream)
-					.map(input -> new Variable(input.getVariable(), VariableType.STRING.value()));
-			}
-			if (nd instanceof BranchNodeData branch) {
-				Stream<Variable> outputVars = Optional.ofNullable(branch.getOutputs())
-					.stream()
-					.flatMap(List::stream)
-					.map(output -> new Variable(output.getName(), VariableType.STRING.value()));
-
-				Stream<Variable> outputKeyVar = Optional.ofNullable(branch.getOutputKey())
-					.map(k -> new Variable(k, VariableType.STRING.value()))
-					.stream();
-
-				return Stream.concat(outputVars, outputKeyVar);
-			}
-			if (nd instanceof DocumentExtractorNodeData) {
-				return Stream.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA);
-			}
-			if (nd instanceof HttpNodeData http) {
-				return Optional.ofNullable(http.getOutputKey())
-					.map(k -> new Variable(k, VariableType.STRING.value()))
-					.stream();
-			}
-			if (nd instanceof LLMNodeData llm) {
-				return Optional.ofNullable(llm.getOutputKey())
-					.map(k -> new Variable(k, VariableType.STRING.value()))
-					.stream();
-			}
-			if (nd instanceof VariableAggregatorNodeData agg) {
-				return Optional.ofNullable(agg.getOutputKey()).map(k -> new Variable(k, agg.getOutputType())).stream();
-			}
-			if (nd instanceof QuestionClassifierNodeData classifier) {
-				Stream<Variable> outputKeyVar = Optional.ofNullable(classifier.getOutputKey())
-					.map(k -> new Variable(k, VariableType.STRING.value()))
-					.stream();
-
-				Stream<Variable> inputVars = Optional.ofNullable(classifier.getInputs())
-					.orElse(List.of())
-					.stream()
-					.map(sel -> new Variable(sel.getName(), VariableType.STRING.value()));
-
-				return Stream.concat(outputKeyVar, inputVars);
-			}
-			return Stream.empty();
-			// todo： other node may create overallstate variables
+		List<Variable> extraVars = graph.getNodes().stream().flatMap(node -> {
+			NodeType type = NodeType.fromValue(node.getType())
+				.orElseThrow(() -> new IllegalArgumentException("Unsupported NodeType: " + node.getType()));
+			@SuppressWarnings("unchecked")
+			NodeDataConverter<NodeData> conv = (NodeDataConverter<NodeData>) getNodeDataConverter(type);
+			return conv.extractWorkflowVars(node.getData());
 		}).toList();
 
 		List<Variable> allVars = new ArrayList<>(Stream.concat(convVars.stream(), extraVars.stream())
@@ -228,10 +177,14 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 	}
 
 	private List<Node> constructNodes(List<Map<String, Object>> nodeMaps) {
-		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+				false);
+
+		Map<NodeType, Integer> counters = new HashMap<>();
 		List<Node> nodes = new ArrayList<>();
+
 		for (Map<String, Object> nodeMap : nodeMaps) {
+			@SuppressWarnings("unchecked")
 			Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
 			String difyNodeType = (String) nodeDataMap.get("type");
 			if (difyNodeType == null || difyNodeType.isBlank()) {
@@ -244,17 +197,67 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			// determine the type of dify node is supported yet
 			NodeType nodeType = NodeType.fromDifyValue(difyNodeType)
 				.orElseThrow(() -> new NotImplementedException("unsupported node type " + difyNodeType));
+
 			// convert node map to workflow node using jackson
 			nodeMap.remove("data");
-			Node n = objectMapper.convertValue(nodeMap, Node.class);
+			Node node = objectMapper.convertValue(nodeMap, Node.class);
 			// set title and desc
-			n.setTitle((String) nodeDataMap.get("title")).setDesc((String) nodeDataMap.get("desc"));
+			node.setTitle((String) nodeDataMap.get("title")).setDesc((String) nodeDataMap.get("desc"));
+
 			// convert node data using specific WorkflowNodeDataConverter
-			NodeDataConverter<?> nodeDataConverter = getNodeDataConverter(nodeType);
-			n.setData(nodeDataConverter.parseMapData(nodeDataMap, DSLDialectType.DIFY));
-			n.setType(nodeType.value());
-			nodes.add(n);
+			@SuppressWarnings("unchecked")
+			NodeDataConverter<NodeData> converter = (NodeDataConverter<NodeData>) getNodeDataConverter(nodeType);
+
+			NodeData data = converter.parseMapData(nodeDataMap, DSLDialectType.DIFY);
+
+			// Generate a readable varName and inject it into NodeData
+			int count = counters.merge(nodeType, 1, Integer::sum);
+			String varName = converter.generateVarName(count);
+			data.setVarName(varName);
+
+			// Post-processing: Overwrite the default outputKey and refresh the outputs
+			converter.postProcess(data, varName);
+
+			node.setData(data);
+			node.setType(nodeType.value());
+			nodes.add(node);
 		}
+
+		Map<String, String> idToOutputKey = nodes.stream().collect(Collectors.toMap(Node::getId, n -> {
+			try {
+				return ((VariableAggregatorNodeData) n.getData()).getOutputKey();
+			}
+			catch (ClassCastException e) {
+				return n.getData().getOutputs().get(0).getName();
+			}
+		}));
+
+		// Replace all variable paths in all aggregation nodes.
+		for (Node node : nodes) {
+			if (node.getData() instanceof VariableAggregatorNodeData agg) {
+				List<List<String>> newVars = agg.getVariables().stream().map(path -> {
+					String srcId = path.get(0);
+					String tail = path.get(1);
+					String mapped = idToOutputKey.getOrDefault(srcId, srcId);
+					return List.of(mapped, tail);
+				}).toList();
+				agg.setVariables(newVars);
+
+				var adv = agg.getAdvancedSettings();
+				if (adv != null && adv.getGroups() != null) {
+					for (var group : adv.getGroups()) {
+						List<List<String>> newGroupVars = group.getVariables().stream().map(path -> {
+							String srcId = path.get(0);
+							String tail = path.get(1);
+							String mapped = idToOutputKey.getOrDefault(srcId, srcId);
+							return List.of(mapped, tail);
+						}).toList();
+						group.setVariables(newGroupVars);
+					}
+				}
+			}
+		}
+
 		return nodes;
 	}
 
