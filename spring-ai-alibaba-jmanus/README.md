@@ -17,7 +17,7 @@
 
 </div>
 
-![image](https://github.com/user-attachments/assets/30589a67-0267-43f5-8bf8-11935d55a1c7)
+![image](https://github.com/user-attachments/assets/07feeb29-c410-4f56-89bf-532210bc1b63)
 
 ---
 
