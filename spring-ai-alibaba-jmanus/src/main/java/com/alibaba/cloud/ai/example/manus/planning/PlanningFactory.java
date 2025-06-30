@@ -142,10 +142,10 @@ public class PlanningFactory {
 
 		PlanningToolInterface planningTool = new MapReducePlanningTool();
 
-		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder);
+		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder,promptLoader);
 		PlanExecutorInterface planExecutor = new MapReducePlanExecutor(agentEntities, recorder, agentService,
 				llmService);
-		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder);
+		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder,promptLoader);
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
 

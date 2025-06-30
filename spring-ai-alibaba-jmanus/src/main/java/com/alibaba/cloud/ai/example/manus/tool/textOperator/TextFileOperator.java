@@ -283,7 +283,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			String action = (String) toolInputMap.get("action");
 			String filePath = (String) toolInputMap.get("file_path");
 
-			// 基本参数验证
+			// Basic parameter validation
 			if (action == null) {
 				return new ToolExecuteResult("错误：action参数是必需的");
 			}
@@ -348,7 +348,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			String action = input.getAction();
 			String filePath = input.getFilePath();
 
-			// 基本参数验证
+			// Basic parameter validation
 			if (action == null) {
 				return new ToolExecuteResult("错误：action参数是必需的");
 			}
@@ -443,7 +443,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 	private ToolExecuteResult replaceText(String planId, String filePath, String sourceText, String targetText) {
 		try {
-			// 自动打开文件
+			// Automatically open file
 			ToolExecuteResult openResult = ensureFileOpen(planId, filePath);
 			if (!openResult.getOutput().toLowerCase().contains("success")) {
 				return openResult;
@@ -454,7 +454,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			String newContent = content.replace(sourceText, targetText);
 			Files.writeString(absolutePath, newContent);
 
-			// 自动保存文件
+			// Automatically save file
 			try (FileChannel channel = FileChannel.open(absolutePath, StandardOpenOption.WRITE)) {
 				channel.force(true);
 			}
@@ -470,7 +470,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 	private ToolExecuteResult getTextByLines(String planId, String filePath, Integer startLine, Integer endLine) {
 		try {
-			// 参数验证
+			// Parameter validation
 			if (startLine < 1 || endLine < 1) {
 				return new ToolExecuteResult("错误：行号必须从1开始");
 			}
@@ -478,13 +478,13 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 				return new ToolExecuteResult("错误：起始行号不能大于结束行号");
 			}
 
-			// 检查500行限制
+			// Check 500-line limit
 			int requestedLines = endLine - startLine + 1;
 			if (requestedLines > 500) {
 				return new ToolExecuteResult("错误：单次最多返回500行内容。请调整行号范围或分多次调用。当前请求行数：" + requestedLines);
 			}
 
-			// 自动打开文件
+			// Automatically open file
 			ToolExecuteResult openResult = ensureFileOpen(planId, filePath);
 			if (!openResult.getOutput().toLowerCase().contains("success")) {
 				return openResult;
@@ -498,12 +498,12 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 				return new ToolExecuteResult("文件为空");
 			}
 
-			// 验证行号范围
+			// Validate line number range
 			if (startLine > lines.size()) {
 				return new ToolExecuteResult("错误：起始行号超出文件范围（文件共" + lines.size() + "行）");
 			}
 
-			// 调整结束行号（不超过文件总行数）
+			// Adjust end line number (not exceeding total file lines)
 			int actualEndLine = Math.min(endLine, lines.size());
 
 			StringBuilder result = new StringBuilder();
@@ -514,7 +514,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 				result.append(String.format("%4d: %s\n", i + 1, lines.get(i)));
 			}
 
-			// 如果文件还有更多内容，提示用户
+			// If file has more content, prompt user
 			if (actualEndLine < lines.size()) {
 				result.append("\n提示：文件还有更多内容（第")
 					.append(actualEndLine + 1)
@@ -534,28 +534,24 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 	private ToolExecuteResult getAllText(String planId, String filePath) {
 		try {
-			// 自动打开文件
+			// Automatically open file
 			ToolExecuteResult openResult = ensureFileOpen(planId, filePath);
 			if (!openResult.getOutput().toLowerCase().contains("success")) {
 				return openResult;
 			}
-			Path absolutePath = Paths.get(workingDirectoryPath).resolve(currentFilePath);
 
-			if (content != null) {
-				Files.writeString(absolutePath, content);
-			}
-
-			// Force flush to disk
-			try (FileChannel channel = FileChannel.open(absolutePath, StandardOpenOption.WRITE)) {
-				channel.force(true);
-			}
-
+			// Read file content
 			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
 			String content = Files.readString(absolutePath);
 
+			// Force flush to disk to ensure data consistency
+			try (FileChannel channel = FileChannel.open(absolutePath, StandardOpenOption.READ)) {
+				channel.force(true);
+			}
+
 			textFileService.updateFileState(planId, filePath, "Success: Retrieved all text");
 
-			// 使用 InnerStorageService 智能处理内容
+			// Use InnerStorageService to intelligently process content
 			InnerStorageService.SmartProcessResult processedResult = innerStorageService.processContent(planId, content,
 					"get_all_text");
 
@@ -574,7 +570,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 				return new ToolExecuteResult("Error: No content to append");
 			}
 
-			// 自动打开文件
+			// Automatically open file
 			ToolExecuteResult openResult = ensureFileOpen(planId, filePath);
 			if (!openResult.getOutput().toLowerCase().contains("success")) {
 				return openResult;
@@ -583,7 +579,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
 			Files.writeString(absolutePath, "\n" + content, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
-			// 自动保存文件
+			// Automatically save file
 			try (FileChannel channel = FileChannel.open(absolutePath, StandardOpenOption.WRITE)) {
 				channel.force(true);
 			}
@@ -599,7 +595,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 	private ToolExecuteResult countWords(String planId, String filePath) {
 		try {
-			// 自动打开文件
+			// Automatically open file
 			ToolExecuteResult openResult = ensureFileOpen(planId, filePath);
 			if (!openResult.getOutput().toLowerCase().contains("success")) {
 				return openResult;
