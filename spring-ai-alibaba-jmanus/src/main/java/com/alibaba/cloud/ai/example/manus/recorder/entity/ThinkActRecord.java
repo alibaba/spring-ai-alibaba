@@ -150,11 +150,16 @@ public class ThinkActRecord {
 		// If ID is null, generate a random ID
 		if (this.id == null) {
 			// Use combination of timestamp and random number to generate ID
-			long timestamp = System.currentTimeMillis();
-			int random = (int) (Math.random() * 1000000);
-			this.id = timestamp * 1000 + random;
+			this.id = generateId();
 		}
 		return this.id;
+	}
+
+	// 根据save方法中的逻辑生产ID
+	public Long generateId() {
+		long timestamp = System.currentTimeMillis();
+		int random = (int) (Math.random() * 1000000);
+		return timestamp * 1000 + random;
 	}
 
 	// Getters and setters

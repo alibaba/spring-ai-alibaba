@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder;
 
-import org.springframework.stereotype.Component;
-
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
@@ -27,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-@Component
+//@Component
 public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	private final Map<String, PlanExecutionRecord> planRecords = new ConcurrentHashMap<>();
