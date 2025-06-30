@@ -34,7 +34,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
- * 负责生成计划执行总结的类
+ * The class responsible for generating the execution summary of the plan
  */
 public class PlanFinalizer {
 
@@ -53,8 +53,9 @@ public class PlanFinalizer {
 	}
 
 	/**
-	 * 生成计划执行总结
-	 * @param context 执行上下文，包含用户请求和执行的过程信息
+	 * Generate the execution summary of the plan
+	 * @param context execution context, containing the user request and the execution
+	 * process information
 	 */
 	public void generateSummary(ExecutionContext context) {
 		if (context == null || context.getPlan() == null) {

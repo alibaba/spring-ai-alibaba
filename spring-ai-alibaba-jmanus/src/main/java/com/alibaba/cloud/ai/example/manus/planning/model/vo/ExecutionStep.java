@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * 单个步骤的执行结果
+ * The result of a single step execution
  */
 public class ExecutionStep {
 

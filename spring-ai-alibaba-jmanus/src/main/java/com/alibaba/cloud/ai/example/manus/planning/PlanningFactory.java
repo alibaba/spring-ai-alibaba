@@ -195,12 +195,12 @@ public class PlanningFactory {
 			String serviceGroup = toolCallback.getServiceGroup();
 			ToolCallback[] tCallbacks = toolCallback.getAsyncMcpToolCallbackProvider().getToolCallbacks();
 			for (ToolCallback tCallback : tCallbacks) {
-				// 这里的 serviceGroup 是工具的名称
+				// The serviceGroup is the name of the tool
 				toolDefinitions.add(new McpTool(tCallback, serviceGroup, planId, mcpStateHolderService));
 			}
 		}
 
-		// 为每个工具创建 FunctionToolCallback
+		// Create FunctionToolCallback for each tool
 		for (ToolCallBiFunctionDef<?> toolDefinition : toolDefinitions) {
 			FunctionToolCallback<?, ToolExecuteResult> functionToolcallback = FunctionToolCallback
 				.builder(toolDefinition.getName(), toolDefinition)
@@ -219,20 +219,26 @@ public class PlanningFactory {
 
 	@Bean
 	public RestClient.Builder createRestClient() {
-		// 创建 RequestConfig 并设置超时
+		// 1. Configure the timeout (unit: milliseconds)
+		int connectionTimeout = 600000; // Connection timeout
+		int readTimeout = 600000; // Response read timeout
+		int writeTimeout = 600000; // Request write timeout
+
+		// 2. Create RequestConfig and set the timeout
 		RequestConfig requestConfig = RequestConfig.custom()
-			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
+			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection
+																	// timeout
 			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
 			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
 			.build();
 
-		// 3. 创建 CloseableHttpClient 并应用配置
+		// 3. Create CloseableHttpClient and apply the configuration
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
 
-		// 4. 使用 HttpComponentsClientHttpRequestFactory 包装 HttpClient
+		// 4. Use HttpComponentsClientHttpRequestFactory to wrap HttpClient
 		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
 
-		// 5. 创建 RestClient 并设置请求工厂
+		// 5. Create RestClient and set the request factory
 		return RestClient.builder().requestFactory(requestFactory);
 	}
 
