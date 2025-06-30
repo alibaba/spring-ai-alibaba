@@ -243,7 +243,7 @@ public class CompiledGraph {
 	 * Update the state of the graph with the given values. If asNode is given, it will be
 	 * used to determine the next node to run. If not given, the next node will be
 	 * determined by the state graph.
-	 * @param config the RunnableConfig containg the graph state
+	 * @param config the RunnableConfig containing the graph state
 	 * @param values the values to be updated
 	 * @param asNode the node id to be used for the next node. can be null
 	 * @return the updated RunnableConfig
@@ -276,7 +276,7 @@ public class CompiledGraph {
 
 	/***
 	 * Update the state of the graph with the given values.
-	 * @param config the RunnableConfig containg the graph state
+	 * @param config the RunnableConfig containing the graph state
 	 * @param values the values to be updated
 	 * @return the updated RunnableConfig
 	 * @throws Exception when something goes wrong
