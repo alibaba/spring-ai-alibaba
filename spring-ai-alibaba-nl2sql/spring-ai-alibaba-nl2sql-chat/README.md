@@ -202,6 +202,16 @@ chatbi:
     connectiontype: jdbc
     dialecttype: mysql      # 可选：mysql、postgresql
     schema: ${DB_SCHEMA}    # PostgreSQL需要
+
+# REST超时配置
+rest:
+  connect:
+    timeout: 600 # 连接超时时间（秒），默认10分钟
+  read:
+    timeout: 600 # 读取超时时间（秒），默认10分钟
+webclient:
+  response:
+    timeout: 600 # 响应超时时间（秒），默认10分钟
 ```
 
 > 🔒 **安全建议**
