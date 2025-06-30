@@ -50,9 +50,9 @@ public class MapReduceToolTest {
 
 	@BeforeEach
 	void setUp() {
-		// 创建模拟的 ManusProperties，避免 ConfigService 依赖
-		// 由于 CodeUtils.getWorkingDirectory() 会在 baseDir 下添加 "extensions" 目录
-		// 我们需要确保最终的工作目录指向 tempDir/extensions
+		// Create mock ManusProperties to avoid ConfigService dependency
+		// Since CodeUtils.getWorkingDirectory() adds "extensions" directory under baseDir
+		// We need to ensure the final working directory points to tempDir/extensions
 		manusProperties = new ManusProperties() {
 			private String baseDir = tempDir.toString();
 
@@ -62,8 +62,11 @@ public class MapReduceToolTest {
 			}
 		};
 
-		// 创建 MapReduceTool 实例
-		mapReduceTool = new MapReduceTool(testPlanId, manusProperties);
+		// Create MapReduceSharedStateManager instance
+		MapReduceSharedStateManager sharedStateManager = new MapReduceSharedStateManager();
+
+		// Create MapReduceTool instance using correct constructor
+		mapReduceTool = new MapReduceTool(testPlanId, manusProperties, sharedStateManager);
 	}
 
 	@Test

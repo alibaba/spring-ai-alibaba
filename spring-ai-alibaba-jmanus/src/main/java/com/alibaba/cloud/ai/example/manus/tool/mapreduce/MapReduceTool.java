@@ -34,7 +34,8 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * 数据分割工具，用于MapReduce流程中的数据准备阶段 负责验证文件存在性、识别表格头部信息并进行数据分割处理
+ * Data split tool for MapReduce workflow data preparation phase
+ * Responsible for validating file existence, identifying table header information and performing data split processing
  */
 public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapReduceInput> {
 
@@ -43,67 +44,74 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	// ==================== 配置常量 ====================
 
 	/**
-	 * 支持的操作类型：数据分割
+	 * Supported operation type: data splitting
 	 */
 	private static final String ACTION_SPLIT_DATA = "split_data";
 
 	/**
-	 * 支持的操作类型：记录Map输出
+	 * Supported operation type: record Map output
 	 */
 	private static final String ACTION_RECORD_MAP_OUTPUT = "record_map_output";
 
 	/**
-	 * 默认的计划ID前缀 当planId为空时，使用此前缀 + 时间戳生成默认ID
+	 * Default plan ID prefix
+	 * When planId is empty, use this prefix + timestamp to generate default ID
 	 */
 	private static final String DEFAULT_PLAN_ID_PREFIX = "plan-";
 
 	/**
-	 * 任务目录名称 所有任务都存储在此目录下
+	 * Task directory name
+	 * All tasks are stored under this directory
 	 */
 	private static final String TASKS_DIRECTORY_NAME = "tasks";
 
 	/**
-	 * 任务ID格式模板 用于生成递增的任务ID，如 task_001, task_002
+	 * Task ID format template
+	 * Used to generate incremental task IDs like task_001, task_002
 	 */
 	private static final String TASK_ID_FORMAT = "task_%03d";
 
 	/**
-	 * 任务输入文件名 存储分割后的文档片段内容
+	 * Task input file name
+	 * Stores document fragment content after splitting
 	 */
 	private static final String TASK_INPUT_FILE_NAME = "input.md";
 
 	/**
-	 * 任务状态文件名 存储任务的执行状态信息
+	 * Task status file name
+	 * Stores task execution status information
 	 */
 	private static final String TASK_STATUS_FILE_NAME = "status.json";
 
 	/**
-	 * 任务输出文件名 存储Map阶段处理完成后的结果
+	 * Task output file name
+	 * Stores results after Map stage processing completion
 	 */
 	private static final String TASK_OUTPUT_FILE_NAME = "output.md";
 
 	/**
-	 * 默认的文件分割大小（字符数） 每个任务处理的文件字符数，可根据实际需求调整
+	 * Default file split size (character count)
+	 * Number of file characters each task processes, adjustable based on actual needs
 	 */
 	private static final int DEFAULT_SPLIT_SIZE = 5000;
 
 	/**
-	 * 任务状态：待处理
+	 * Task status: pending
 	 */
 	private static final String TASK_STATUS_PENDING = "pending";
 
 	/**
-	 * 任务状态：已完成
+	 * Task status: completed
 	 */
 	private static final String TASK_STATUS_COMPLETED = "completed";
 
 	/**
-	 * 任务状态：失败
+	 * Task status: failed
 	 */
 	private static final String TASK_STATUS_FAILED = "failed";
 
 	/**
-	 * 内部输入类，用于定义MapReduce工具的输入参数
+	 * Internal input class for defining MapReduce tool input parameters
 	 */
 	public static class MapReduceInput {
 
@@ -178,24 +186,24 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	private static final String TOOL_NAME = "map_reduce_tool";
 
 	private static final String TOOL_DESCRIPTION = """
-			数据分割工具，用于MapReduce流程中的数据准备阶段和任务状态管理。
-			支持的操作：
-			- split_data: 自动完成验证文件存在性并进行数据分割处理，支持CSV、TSV、TXT等文本格式的数据文件。
-			  输出目录采用inner_storage/{planId}/tasks/task_{taskId}模式，与InnerStorageService统一管理，
-			  每个任务都有独立的目录，包含input.md（分割的文档片段）文件。
-			- record_map_output: 接受Map阶段处理完成后的内容，自动生成文件名并创建输出文件，记录任务状态。
-			  工具会自动在inner_storage/{planId}/tasks/task_{taskId}目录下创建标准化文件结构：
-			  input.md（文档片段）、status.json（任务状态）、output.md（模型处理结果），
-			  每个任务都有独立的目录和统一的文件命名。
+			Data split tool for MapReduce workflow data preparation stage and task status management.
+			Supported operations:
+			- split_data: Automatically complete file existence validation and perform data split processing, supports CSV, TSV, TXT and other text format data files.
+			  Output directory uses inner_storage/{planId}/tasks/task_{taskId} pattern, unified management with InnerStorageService,
+			  each task has independent directory containing input.md (split document fragments) file.
+			- record_map_output: Accepts content after Map stage processing completion, automatically generates filename and creates output file, records task status.
+			  Tool automatically creates standardized file structure under inner_storage/{planId}/tasks/task_{taskId} directory:
+			  input.md (document fragments), status.json (task status), output.md (model processing results),
+			  each task has independent directory and unified file naming.
 
-			任务管理特性：
-			- 自动生成递增的任务ID
-			- 每个任务创建独立的目录：inner_storage/{planId}/tasks/task_{taskId}
-			- 标准化目录结构：每个任务目录包含input.md（文档片段）、status.json（状态文件）、output.md（模型输出）
-			- 统一的文件命名，便于批量处理和管理
-			- 与InnerStorageService统一存储管理
-			- 通过 getSplitResults() 方法获取分割文件列表用于任务分配
-			- 支持Map阶段完成后的自动文件创建和状态记录管理
+			Task management features:
+			- Automatically generate incremental task IDs
+			- Create independent directory for each task: inner_storage/{planId}/tasks/task_{taskId}
+			- Standardized directory structure: each task directory contains input.md (document fragments), status.json (status file), output.md (model output)
+			- Unified file naming for easy batch processing and management
+			- Unified storage management with InnerStorageService
+			- Get split file list for task assignment through getSplitResults() method
+			- Support automatic file creation and status record management after Map stage completion
 			""";
 
 	private static final String PARAMETERS = """
@@ -335,14 +343,14 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	}
 
 	/**
-	 * 执行MapReduce操作，接受强类型输入对象
+	 * Execute MapReduce operation, accepts strongly typed input object
 	 */
 	public ToolExecuteResult run(MapReduceInput input) {
 		log.info("MapReduceTool input: action={}, filePath={}", input.getAction(), input.getFilePath());
 		try {
 			String action = input.getAction();
 			if (action == null) {
-				return new ToolExecuteResult("错误：action参数是必需的");
+				return new ToolExecuteResult("Error: action parameter is required");
 			}
 
 			return switch (action) {
@@ -351,10 +359,10 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 					List<String> columns = input.getReturnColumns();
 
 					if (filePath == null) {
-						yield new ToolExecuteResult("错误：file_path参数是必需的");
+						yield new ToolExecuteResult("Error: file_path parameter is required");
 					}
 
-					// 存储返回列信息
+					// Store return column information
 					if (columns != null && sharedStateManager != null) {
 						sharedStateManager.setReturnColumns(planId, columns);
 					}
@@ -367,110 +375,119 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 					String status = input.getStatus();
 
 					if (content == null) {
-						yield new ToolExecuteResult("错误：content参数是必需的");
+						yield new ToolExecuteResult("Error: content parameter is required");
 					}
 					if (taskId == null) {
-						yield new ToolExecuteResult("错误：task_id参数是必需的");
+						yield new ToolExecuteResult("Error: task_id parameter is required");
 					}
 					if (status == null) {
-						yield new ToolExecuteResult("错误：status参数是必需的");
+						yield new ToolExecuteResult("Error: status parameter is required");
 					}
 
 					yield recordMapTaskOutput(content, taskId, status);
 				}
 				default -> new ToolExecuteResult(
-						"未知操作: " + action + "。支持的操作: " + ACTION_SPLIT_DATA + ", " + ACTION_RECORD_MAP_OUTPUT);
+						"Unknown operation: " + action + ". Supported operations: " + ACTION_SPLIT_DATA + ", " + ACTION_RECORD_MAP_OUTPUT);
 			};
 
 		}
 		catch (Exception e) {
-			log.error("MapReduceTool执行失败", e);
-			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
+			log.error("MapReduceTool execution failed", e);
+			return new ToolExecuteResult("Tool execution failed: " + e.getMessage());
 		}
 	}
 
 	/**
-	 * 处理文件或目录的完整流程：验证存在性 -> 分割数据
+	 * Process complete workflow for file or directory: validate existence -> split data
 	 */
 	private ToolExecuteResult processFileOrDirectory(String filePath) {
 		try {
-			// 确保 planId 存在，如果为空则使用默认值
+			// Ensure planId exists, use default if empty
 			if (planId == null || planId.trim().isEmpty()) {
 				planId = DEFAULT_PLAN_ID_PREFIX + System.currentTimeMillis();
-				log.info("planId 为空，使用默认值: {}", planId);
+				log.info("planId is empty, using default value: {}", planId);
 			}
 
-			// 验证文件或文件夹存在性
-			// 确保工作目录已初始化
+			// Validate file or folder existence
+			// Ensure working directory is initialized
 			if (workingDirectoryPath == null) {
 				if (manusProperties != null) {
 					workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 				}
 				else {
-					// 如果没有 manusProperties，使用默认方式
+					// If no manusProperties, use default method
 					workingDirectoryPath = CodeUtils.getWorkingDirectory(null);
 				}
 			}
 
-			// 根据路径类型进行处理
+			// Process based on path type
 			Path path;
 			if (Paths.get(filePath).isAbsolute()) {
-				// 如果是绝对路径，直接使用
+				// If absolute path, use directly
 				path = Paths.get(filePath);
 			}
 			else {
-				// 如果是相对路径，基于工作目录解析
+				// If relative path, resolve based on working directory
 				path = Paths.get(workingDirectoryPath).resolve(filePath);
 			}
 
 			if (!Files.exists(path)) {
-				return new ToolExecuteResult("错误：文件或目录不存在: " + path.toAbsolutePath().toString());
+				return new ToolExecuteResult("Error: File or directory does not exist: " + path.toAbsolutePath().toString());
 			}
 
 			boolean isFile = Files.isRegularFile(path);
 			boolean isDirectory = Files.isDirectory(path);
 
-			// 确定输出目录 - 存储到 inner_storage/{planId}/tasks 目录
+			// Determine output directory - store to inner_storage/{planId}/tasks directory
 			Path planDir = getPlanDirectory(planId);
 			Path tasksPath = planDir.resolve(TASKS_DIRECTORY_NAME);
 			ensureDirectoryExists(tasksPath);
 
 			List<String> allTaskDirs = new ArrayList<>();
 
+			// Check if infinite context is enabled for enhanced processing
+			boolean infiniteContextEnabled = isInfiniteContextEnabled();
+			if (infiniteContextEnabled) {
+				log.info("Infinite context enabled for plan: {}, parallel threads: {}, context size: {}", 
+					planId, getInfiniteContextParallelThreads(), getInfiniteContextTaskContextSize());
+			}
+
 			if (isFile && isTextFile(path.toString())) {
-				// 处理单个文件
-				SplitResult result = splitSingleFileToTasks(path, null, DEFAULT_SPLIT_SIZE, tasksPath, null);
+				// Process single file with dynamic split size
+				int splitSize = infiniteContextEnabled ? getInfiniteContextTaskContextSize() : getSplitSize();
+				SplitResult result = splitSingleFileToTasks(path, null, splitSize, tasksPath, null);
 				allTaskDirs.addAll(result.taskDirs);
 
 			}
 			else if (isDirectory) {
-				// 处理文件夹中的所有文本文件
+				// Process all text files in directory with dynamic split size
+				int splitSize = infiniteContextEnabled ? getInfiniteContextTaskContextSize() : getSplitSize();
 				List<Path> textFiles = Files.list(path)
 					.filter(Files::isRegularFile)
 					.filter(p -> isTextFile(p.toString()))
 					.collect(Collectors.toList());
 
 				for (Path file : textFiles) {
-					SplitResult result = splitSingleFileToTasks(file, null, DEFAULT_SPLIT_SIZE, tasksPath, null);
+					SplitResult result = splitSingleFileToTasks(file, null, splitSize, tasksPath, null);
 					allTaskDirs.addAll(result.taskDirs);
 				}
 			}
 
-			// 更新分割结果
+			// Update split results
 			if (sharedStateManager != null) {
 				sharedStateManager.setSplitResults(planId, allTaskDirs);
 			}
 
-			// 生成简洁的返回结果
+			// Generate concise return result
 			StringBuilder result = new StringBuilder();
-			result.append("切分文件成功");
-			result.append("，创建了").append(allTaskDirs.size()).append("个任务目录");
+			result.append("File splitting successful");
+			result.append(", created ").append(allTaskDirs.size()).append(" task directories");
 
-			// 如果有返回列要求，添加返回列信息
+			// If return columns are required, add return column information
 			if (sharedStateManager != null) {
 				List<String> returnColumns = sharedStateManager.getReturnColumns(planId);
 				if (!returnColumns.isEmpty()) {
-					result.append("，返回列：").append(returnColumns);
+					result.append(", return columns: ").append(returnColumns);
 				}
 			}
 
@@ -482,14 +499,14 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 		}
 		catch (Exception e) {
-			String error = "处理失败: " + e.getMessage();
+			String error = "Processing failed: " + e.getMessage();
 			log.error(error, e);
 			return new ToolExecuteResult(error);
 		}
 	}
 
 	/**
-	 * 分割结果类
+	 * Split results class
 	 */
 	private static class SplitResult {
 
@@ -502,7 +519,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	}
 
 	/**
-	 * 将单个文件分割成任务目录结构
+	 * Split single file into task directory structure
 	 */
 	private SplitResult splitSingleFileToTasks(Path filePath, String headers, int splitSize, Path tasksPath,
 			String delimiter) throws IOException {
@@ -514,22 +531,22 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			StringBuilder currentContent = new StringBuilder();
 
 			while ((line = reader.readLine()) != null) {
-				// 添加行内容和换行符
+				// Add line content and newline character
 				String lineWithNewline = line + "\n";
 
-				// 检查添加这一行后是否会超过字符数限制
+				// Check if adding this line would exceed character limit
 				if (currentContent.length() + lineWithNewline.length() > splitSize && currentContent.length() > 0) {
-					// 如果会超过限制且当前内容不为空，先保存当前内容
+					// If would exceed limit and current content is not empty, save current content first
 					String taskDir = createTaskDirectory(tasksPath, currentContent.toString(), fileName);
 					taskDirs.add(taskDir);
 					currentContent = new StringBuilder();
 				}
 
-				// 添加当前行
+				// Add current line
 				currentContent.append(lineWithNewline);
 			}
 
-			// 处理剩余内容
+			// Process remaining content
 			if (currentContent.length() > 0) {
 				String taskDir = createTaskDirectory(tasksPath, currentContent.toString(), fileName);
 				taskDirs.add(taskDir);
@@ -540,36 +557,36 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	}
 
 	/**
-	 * 创建任务目录结构
+	 * Create task directory structure
 	 */
 	private String createTaskDirectory(Path tasksPath, String content, String originalFileName) throws IOException {
-		// 生成任务ID
+		// Generate task ID
 		String taskId = null;
 		if (sharedStateManager != null) {
 			taskId = sharedStateManager.getNextTaskId(planId);
 		}
 		else {
-			// 回退方案：使用默认格式
+			// Fallback solution: use default format
 			taskId = String.format(TASK_ID_FORMAT, 1);
 		}
 
 		Path taskDir = tasksPath.resolve(taskId);
 		ensureDirectoryExists(taskDir);
 
-		// 创建 input.md 文件
+		// Create input.md file
 		Path inputFile = taskDir.resolve(TASK_INPUT_FILE_NAME);
 		StringBuilder inputContent = new StringBuilder();
-		inputContent.append("# 文档片段\n\n");
-		inputContent.append("**原始文件:** ").append(originalFileName).append("\n\n");
-		inputContent.append("**任务ID:** ").append(taskId).append("\n\n");
-		inputContent.append("## 内容\n\n");
+		inputContent.append("# Document Fragment\n\n");
+		inputContent.append("**Original File:** ").append(originalFileName).append("\n\n");
+		inputContent.append("**Task ID:** ").append(taskId).append("\n\n");
+		inputContent.append("## Content\n\n");
 		inputContent.append("```\n");
 		inputContent.append(content);
 		inputContent.append("```\n");
 
 		Files.write(inputFile, inputContent.toString().getBytes());
 
-		// 创建初始状态文件 status.json
+		// Create initial status file status.json
 		Path statusFile = taskDir.resolve(TASK_STATUS_FILE_NAME);
 		TaskStatus initialStatus = new TaskStatus();
 		initialStatus.taskId = taskId;
@@ -584,7 +601,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	}
 
 	/**
-	 * 判断是否为文本文件
+	 * Check if file is a text file
 	 */
 	private boolean isTextFile(String fileName) {
 		String lowercaseFileName = fileName.toLowerCase();
@@ -601,17 +618,17 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			return sharedStateManager.getCurrentToolStateString(planId);
 		}
 
-		// 回退方案
+		// Fallback solution
 		StringBuilder sb = new StringBuilder();
-		// sb.append("MapReduceTool 当前状态:\n");
-		// sb.append("- Plan ID: ").append(planId != null ? planId : "未设置").append("\n");
-		// sb.append("- 共享状态管理器: ").append(sharedStateManager != null ? "已连接" : "未连接").append("\n");
+		// sb.append("MapReduceTool current status:\n");
+		// sb.append("- Plan ID: ").append(planId != null ? planId : "Not set").append("\n");
+		// sb.append("- Shared state manager: ").append(sharedStateManager != null ? "Connected" : "Not connected").append("\n");
 		return sb.toString();
 	}
 
 	@Override
 	public void cleanup(String planId) {
-		// 清理共享状态
+		// Clean up shared state
 		if (sharedStateManager != null && planId != null) {
 			sharedStateManager.cleanupPlanState(planId);
 		}
@@ -624,7 +641,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	}
 
 	/**
-	 * 获取任务目录列表
+	 * Get task directory list
 	 */
 	public List<String> getSplitResults() {
 		if (sharedStateManager != null && planId != null) {
@@ -634,16 +651,16 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	}
 
 	/**
-	 * 获取内部存储的根目录路径
+	 * Get inner storage root directory path
 	 */
 	private Path getInnerStorageRoot() {
 		if (workingDirectoryPath == null) {
-			// 使用 CodeUtils.getWorkingDirectory 来获取工作目录，与 InnerStorageService 保持一致
+			// Use CodeUtils.getWorkingDirectory to get working directory, consistent with InnerStorageService
 			if (manusProperties != null) {
 				workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 			}
 			else {
-				// 如果没有 manusProperties，使用默认方式
+				// If no manusProperties, use default method
 				workingDirectoryPath = CodeUtils.getWorkingDirectory(null);
 			}
 		}
@@ -651,14 +668,14 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	}
 
 	/**
-	 * 获取计划目录路径
+	 * Get plan directory path
 	 */
 	private Path getPlanDirectory(String planId) {
 		return getInnerStorageRoot().resolve(planId);
 	}
 
 	/**
-	 * 确保目录存在
+	 * Ensure directory exists
 	 */
 	private void ensureDirectoryExists(Path directory) throws IOException {
 		if (!Files.exists(directory)) {
@@ -668,49 +685,53 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	}
 
 	/**
-	 * 记录Map任务的输出结果和状态
+	 * Record Map task output result and status
 	 */
 	private ToolExecuteResult recordMapTaskOutput(String content, String taskId, String status) {
 		try {
-			// 确保 planId 存在
+			// Get timeout configuration for this operation
+			Integer timeout = getMapReduceTimeout();
+			log.debug("Recording Map task output with timeout: {} seconds", timeout);
+			
+			// Ensure planId exists
 			if (planId == null || planId.trim().isEmpty()) {
-				return new ToolExecuteResult("错误：planId未设置，无法记录任务状态");
+				return new ToolExecuteResult("Error: planId not set, cannot record task status");
 			}
-			// 定位任务目录
+			// Locate task directory
 			Path planDir = getPlanDirectory(planId);
 			Path taskDir = planDir.resolve(TASKS_DIRECTORY_NAME).resolve(taskId);
 
 			if (!Files.exists(taskDir)) {
-				return new ToolExecuteResult("错误：任务目录不存在: " + taskId);
+				return new ToolExecuteResult("Error: Task directory does not exist: " + taskId);
 			}
 
-			// 创建 output.md 文件
+			// Create output.md file
 			Path outputFile = taskDir.resolve(TASK_OUTPUT_FILE_NAME);
-			// 直接写入处理内容，不添加额外的元数据信息
+			// Write processing content directly without adding extra metadata information
 			Files.write(outputFile, content.getBytes());
 			String outputFilePath = outputFile.toAbsolutePath().toString();
-			// 更新任务状态文件
+			// Update task status file
 			Path statusFile = taskDir.resolve(TASK_STATUS_FILE_NAME);
 			TaskStatus taskStatus;
 
 			if (Files.exists(statusFile)) {
-				// 读取现有状态
+				// Read existing status
 				String existingStatusJson = new String(Files.readAllBytes(statusFile));
 				taskStatus = objectMapper.readValue(existingStatusJson, TaskStatus.class);
 			}
 			else {
-				// 创建新状态
+				// Create new status
 				taskStatus = new TaskStatus();
 				taskStatus.taskId = taskId;
 				taskStatus.inputFile = taskDir.resolve(TASK_INPUT_FILE_NAME).toAbsolutePath().toString();
 			}
 
-			// 更新状态信息
+			// Update status information
 			taskStatus.outputFilePath = outputFilePath;
 			taskStatus.status = status;
 			taskStatus.timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
-			// 存储到共享状态管理器中
+			// Store in shared state manager
 			if (sharedStateManager != null) {
 				MapReduceSharedStateManager.TaskStatus sharedTaskStatus = new MapReduceSharedStateManager.TaskStatus();
 				sharedTaskStatus.taskId = taskStatus.taskId;
@@ -721,23 +742,23 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 				sharedStateManager.recordMapTaskStatus(planId, taskId, sharedTaskStatus);
 			}
 
-			// 写入更新后的状态文件
+			// Write updated status file
 			String statusJson = objectMapper.writeValueAsString(taskStatus);
 			Files.write(statusFile, statusJson.getBytes());
-			String result = String.format("任务 %s 状态已记录：%s，输出文件：%s", taskId, status, TASK_OUTPUT_FILE_NAME);
+			String result = String.format("Task %s status recorded: %s, output file: %s", taskId, status, TASK_OUTPUT_FILE_NAME);
 			log.info(result);
 			return new ToolExecuteResult(result);
 
 		}
 		catch (Exception e) {
-			String error = "记录Map任务状态失败: " + e.getMessage();
+			String error = "Recording Map task status failed: " + e.getMessage();
 			log.error(error, e);
 			return new ToolExecuteResult(error);
 		}
 	}
 
 	/**
-	 * 任务状态内部类
+	 * Task status internal class
 	 */
 	@SuppressWarnings("unused")
 	private static class TaskStatus {
@@ -752,6 +773,68 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 		public String timestamp;
 
+	}
+
+	/**
+	 * Get MapReduce operation timeout configuration
+	 * @return Timeout in seconds, returns default value of 300 seconds if not configured
+	 */
+	private Integer getMapReduceTimeout() {
+		// For now, use default timeout until the configuration is added to ManusProperties
+		return 300; // Default timeout is 5 minutes
+	}
+
+	/**
+	 * Get split size configuration for MapReduce operations
+	 * @return Split size in characters, returns default value if not configured
+	 */
+	private Integer getSplitSize() {
+		// For now, use default split size until the configuration is added to ManusProperties
+		return DEFAULT_SPLIT_SIZE;
+	}
+
+	/**
+	 * Check if infinite context is enabled
+	 * @return true if infinite context is enabled, false otherwise
+	 */
+	private boolean isInfiniteContextEnabled() {
+		if (manusProperties != null) {
+			Boolean enabled = manusProperties.getInfiniteContextEnabled();
+			return enabled != null ? enabled : false;
+		}
+		return false;
+	}
+
+	/**
+	 * Get infinite context parallel thread count
+	 * @return Number of parallel threads for infinite context processing
+	 */
+	private Integer getInfiniteContextParallelThreads() {
+		if (manusProperties != null) {
+			Integer threads = manusProperties.getInfiniteContextParallelThreads();
+			return threads != null ? threads : 4; // Default 4 threads
+		}
+		return 4; // Default 4 threads
+	}
+
+	/**
+	 * Get infinite context task context size
+	 * @return Context size for infinite context tasks
+	 */
+	private Integer getInfiniteContextTaskContextSize() {
+		if (manusProperties != null) {
+			Integer contextSize = manusProperties.getInfiniteContextTaskContextSize();
+			return contextSize != null ? contextSize : 8192; // Default 8192 characters
+		}
+		return 8192; // Default 8192 characters
+	}
+
+	/**
+	 * Get ManusProperties instance - provides access to all configuration values
+	 * @return ManusProperties instance for configuration access
+	 */
+	public ManusProperties getManusProperties() {
+		return this.manusProperties;
 	}
 
 }

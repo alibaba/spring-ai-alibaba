@@ -18,12 +18,13 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -142,15 +143,41 @@ public class StartupAgentConfigLoader {
 				return List.of();
 			}
 
-			// Here is a simplified implementation, directly returning the known agent
-			// list
-			// In actual projects, it can be dynamically discovered by scanning the file
-			// system
-			return Arrays.asList("default_agent", "text_file_agent", "browser_agent");
+			// Automatically scan for agent directories by looking for agent-config.yml files
+			List<String> agentList = new java.util.ArrayList<>();
+			
+			// Use Spring's PathMatchingResourcePatternResolver to scan for directories with agent-config.yml
+			PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+			
+			// Scan for all agent-config.yml files in subdirectories
+			String pattern = CONFIG_BASE_PATH + "*/agent-config.yml";
+			Resource[] resources = resolver.getResources("classpath:" + pattern);
+			
+			for (Resource resource : resources) {
+				try {
+					String path = resource.getURL().getPath();
+					// Extract directory name from path like "/startup-agents/agent_name/agent-config.yml"
+					String[] pathParts = path.split("/");
+					for (int i = 0; i < pathParts.length - 1; i++) {
+						if ("startup-agents".equals(pathParts[i]) && i + 1 < pathParts.length) {
+							String agentDirName = pathParts[i + 1];
+							if (!agentList.contains(agentDirName)) {
+								agentList.add(agentDirName);
+								log.debug("Found startup agent: {}", agentDirName);
+							}
+							break;
+						}
+					}
+				} catch (Exception e) {
+					log.warn("Failed to process resource: {}", resource, e);
+				}
+			}
+			
+			log.info("Scanned {} startup agents: {}", agentList.size(), agentList);
+			return agentList;
 		}
 		catch (Exception e) {
-			log.error("Failed to scan Agent configuration directory", e);
-			return List.of();
+			throw new RuntimeException("Failed to scan StartupAgent configuration directory", e);
 		}
 	}
 

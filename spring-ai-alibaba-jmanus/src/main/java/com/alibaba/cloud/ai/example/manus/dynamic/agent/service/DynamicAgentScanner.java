@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -62,58 +61,107 @@ public class DynamicAgentScanner {
 		ConfigEntity resetConfig = configService.getConfig("manus.resetAgents")
 			.orElseThrow(() -> new IllegalStateException("Cannot find reset configuration item"));
 
-		// Create scanner
-		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
-		scanner.addIncludeFilter(new AnnotationTypeFilter(DynamicAgentDefinition.class));
-		Set<BeanDefinition> candidates = scanner.findCandidateComponents(basePackage);
+		// First, check if there are any classes still using the old @DynamicAgentDefinition annotation
+		checkForDeprecatedAnnotationUsage();
 
 		if (Boolean.parseBoolean(resetConfig.getConfigValue())) {
-			log.info("Starting to reset all dynamic agents...");
+			log.info("Starting to scan and save dynamic agents from YAML configuration files...");
 
-			// Force update all dynamic agents scanned
-			for (BeanDefinition beanDefinition : candidates) {
-				try {
-					Class<?> clazz = Class.forName(beanDefinition.getBeanClassName());
-					DynamicAgentDefinition annotation = clazz.getAnnotation(DynamicAgentDefinition.class);
-					if (annotation != null) {
-						saveDynamicAgent(annotation, clazz);
-					}
-				}
-				catch (ClassNotFoundException e) {
-					log.error("Failed to load class: {}", beanDefinition.getBeanClassName(), e);
-				}
-			}
-
-			// Scan and save StartupAgent loaded from configuration file
+			// Only scan and save StartupAgent loaded from configuration file
 			scanAndSaveStartupAgents();
 
 			// After reset, set the configuration to false
 			configService.updateConfig("manus.resetAgents", "false");
-			log.info("Dynamic agent reset completed");
+			log.info("Dynamic agent scanning from YAML files completed");
 		}
 		else {
 			log.info("Skipping dynamic agent reset");
 		}
 	}
 
-	private void saveDynamicAgent(DynamicAgentDefinition annotation, Class<?> clazz) {
-		// Check if there is a dynamic agent with the same name
-		DynamicAgentEntity existingEntity = repository.findByAgentName(annotation.agentName());
+	/**
+	 * Check if there are any classes still using the deprecated @DynamicAgentDefinition annotation
+	 * and throw runtime exception to prevent system startup
+	 */
+	private void checkForDeprecatedAnnotationUsage() {
+		log.info("Checking for deprecated @DynamicAgentDefinition annotation usage...");
+		
+		// Create scanner to detect old annotation usage
+		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+		scanner.addIncludeFilter(new AnnotationTypeFilter(DynamicAgentDefinition.class));
+		Set<BeanDefinition> candidates = scanner.findCandidateComponents(basePackage);
 
-		// Create or update dynamic agent entity
-		DynamicAgentEntity entity = (existingEntity != null) ? existingEntity : new DynamicAgentEntity();
+		if (!candidates.isEmpty()) {
+			StringBuilder errorMessage = new StringBuilder();
+			errorMessage.append("\n\n========================================\n");
+			errorMessage.append("❌ DEPRECATED ANNOTATION DETECTED!\n");
+			errorMessage.append("========================================\n\n");
+			errorMessage.append("The following classes are still using the deprecated @DynamicAgentDefinition annotation:\n\n");
 
-		// Update all fields
-		entity.setAgentName(annotation.agentName());
-		entity.setAgentDescription(annotation.agentDescription());
-		entity.setNextStepPrompt(annotation.nextStepPrompt());
-		entity.setAvailableToolKeys(Arrays.asList(annotation.availableToolKeys()));
-		entity.setClassName(clazz.getName());
+			for (BeanDefinition beanDefinition : candidates) {
+				errorMessage.append("  ❌ ").append(beanDefinition.getBeanClassName()).append("\n");
+			}
 
-		// Save or update entity
-		repository.save(entity);
-		String action = (existingEntity != null) ? "Updated" : "Created";
-		log.info("{} dynamic agent: {}", action, entity.getAgentName());
+			errorMessage.append("\n📋 MIGRATION GUIDE:\n");
+			errorMessage.append("----------------------------------------\n");
+			errorMessage.append("Please migrate these agents to YAML configuration format:\n\n");
+			
+			errorMessage.append("1️⃣ Remove @DynamicAgentDefinition annotation from Java classes\n");
+			errorMessage.append("2️⃣ Create YAML config file for each agent:\n");
+			errorMessage.append("   📁 src/main/resources/prompts/startup-agents/{agent_name}/agent-config.yml\n\n");
+			
+			errorMessage.append("3️⃣ YAML file format example:\n");
+			errorMessage.append("   ```yaml\n");
+			errorMessage.append("   # Agent Configuration\n");
+			errorMessage.append("   agentName: YOUR_AGENT_NAME\n");
+			errorMessage.append("   agentDescription: Your agent description here\n");
+			errorMessage.append("   availableToolKeys:\n");
+			errorMessage.append("     - tool1\n");
+			errorMessage.append("     - tool2\n");
+			errorMessage.append("   \n");
+			errorMessage.append("   # Next Step Prompt Configuration\n");
+			errorMessage.append("   nextStepPrompt: |\n");
+			errorMessage.append("     Your multi-line prompt content here...\n");
+			errorMessage.append("   ```\n\n");
+			
+			errorMessage.append("4️⃣ Directory naming convention:\n");
+			errorMessage.append("   - Use lowercase with underscores: agent_name\n");
+			errorMessage.append("   - Examples: map_task_agent, reduce_task_agent\n\n");
+			
+			errorMessage.append("5️⃣ Example migration for existing agents:\n");
+			for (BeanDefinition beanDefinition : candidates) {
+				try {
+					Class<?> clazz = Class.forName(beanDefinition.getBeanClassName());
+					DynamicAgentDefinition annotation = clazz.getAnnotation(DynamicAgentDefinition.class);
+					if (annotation != null) {
+						String agentName = annotation.agentName().toLowerCase().replace("_", "_");
+						errorMessage.append("   📂 ").append(clazz.getSimpleName()).append(" → ")
+								.append("src/main/resources/prompts/startup-agents/")
+								.append(agentName.toLowerCase()).append("/agent-config.yml\n");
+					}
+				}
+				catch (ClassNotFoundException e) {
+					log.warn("Could not load class for migration example: {}", beanDefinition.getBeanClassName());
+				}
+			}
+			
+			errorMessage.append("\n6️⃣ After migration:\n");
+			errorMessage.append("   - Delete or empty the Java class (remove annotation and content)\n");
+			errorMessage.append("   - The YAML configuration will be automatically loaded\n");
+			errorMessage.append("   - Test your agents to ensure they work correctly\n\n");
+			
+			errorMessage.append("📚 Reference examples:\n");
+			errorMessage.append("   - Check existing YAML configs in: src/main/resources/prompts/startup-agents/\n");
+			errorMessage.append("   - Examples: text_file_agent, browser_agent, default_agent\n\n");
+			
+			errorMessage.append("========================================\n");
+			errorMessage.append("System startup will be blocked until migration is complete!\n");
+			errorMessage.append("========================================\n");
+
+			throw new RuntimeException(errorMessage.toString());
+		}
+
+		log.info("✅ No deprecated @DynamicAgentDefinition annotations found. System can start normally.");
 	}
 
 	/**

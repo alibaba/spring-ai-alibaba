@@ -198,4 +198,65 @@ public class ManusProperties {
 		this.userInputTimeout = userInputTimeout;
 	}
 
+	// Infinite Context SubGroup
+	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "enabled", path = "manus.infiniteContext.enabled",
+			description = "是否开启无限上下文", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+	private volatile Boolean infiniteContextEnabled;
+
+	public Boolean getInfiniteContextEnabled() {
+		String configPath = "manus.infiniteContext.enabled";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			infiniteContextEnabled = Boolean.valueOf(value);
+		}
+		return infiniteContextEnabled;
+	}
+
+	public void setInfiniteContextEnabled(Boolean infiniteContextEnabled) {
+		this.infiniteContextEnabled = infiniteContextEnabled;
+	}
+
+	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "parallelThreads", path = "manus.infiniteContext.parallelThreads",
+			description = "并行处理线程数", defaultValue = "4", inputType = ConfigInputType.NUMBER)
+	private volatile Integer infiniteContextParallelThreads;
+
+	public Integer getInfiniteContextParallelThreads() {
+		String configPath = "manus.infiniteContext.parallelThreads";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			infiniteContextParallelThreads = Integer.valueOf(value);
+		}
+		// Ensure a default value if not configured and not set
+		if (infiniteContextParallelThreads == null) {
+			infiniteContextParallelThreads = 4;
+		}
+		return infiniteContextParallelThreads;
+	}
+
+	public void setInfiniteContextParallelThreads(Integer infiniteContextParallelThreads) {
+		this.infiniteContextParallelThreads = infiniteContextParallelThreads;
+	}
+
+	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "taskContextSize", path = "manus.infiniteContext.taskContextSize",
+			description = "单个任务的处理的上下文配置大小", defaultValue = "8192", inputType = ConfigInputType.NUMBER)
+	private volatile Integer infiniteContextTaskContextSize;
+
+	public Integer getInfiniteContextTaskContextSize() {
+		String configPath = "manus.infiniteContext.taskContextSize";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			infiniteContextTaskContextSize = Integer.valueOf(value);
+		}
+		// Ensure a default value if not configured and not set
+		if (infiniteContextTaskContextSize == null) {
+			infiniteContextTaskContextSize = 8192;
+		}
+		return infiniteContextTaskContextSize;
+	}
+
+	public void setInfiniteContextTaskContextSize(Integer infiniteContextTaskContextSize) {
+		this.infiniteContextTaskContextSize = infiniteContextTaskContextSize;
+	}
+
 }

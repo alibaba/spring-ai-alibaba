@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * InnerStorageTool 测试类
+ * InnerStorageTool test class
  */
 public class InnerStorageToolTest {
 
@@ -51,7 +51,7 @@ public class InnerStorageToolTest {
 
 	@BeforeEach
 	void setUp() {
-		// 创建模拟的 ManusProperties，避免 ConfigService 依赖
+		// Create mock ManusProperties to avoid ConfigService dependency
 		ManusProperties mockManusProperties = new ManusProperties() {
 			private String baseDir = tempDir.toString();
 
@@ -61,17 +61,17 @@ public class InnerStorageToolTest {
 			}
 		};
 
-		// 创建 InnerStorageService
+		// Create InnerStorageService
 		innerStorageService = new InnerStorageService(mockManusProperties);
 
-		// 使用测试专用构造函数创建 InnerStorageTool，直接指定工作目录
-		innerStorageTool = new InnerStorageTool(innerStorageService, null, tempDir.toString());
+		// Use correct constructor to create InnerStorageTool
+		innerStorageTool = new InnerStorageTool(innerStorageService);
 		innerStorageTool.setPlanId(testPlanId);
 	}
 
 	@Test
 	void testAppendToFile() throws Exception {
-		// 追加内容到文件
+		// Append content to file
 		Map<String, Object> input = new HashMap<>();
 		input.put("action", "append");
 		input.put("file_name", "test.txt");
@@ -85,7 +85,7 @@ public class InnerStorageToolTest {
 
 	@Test
 	void testGetFileLines() throws Exception {
-		// 添加多行内容
+		// Add multi-line content
 		Map<String, Object> appendInput = new HashMap<>();
 		appendInput.put("action", "append");
 		appendInput.put("file_name", "multiline.txt");
@@ -94,7 +94,7 @@ public class InnerStorageToolTest {
 		InnerStorageTool.InnerStorageInput appendStorageInput = createInnerStorageInput(appendInput);
 		innerStorageTool.run(appendStorageInput);
 
-		// 获取指定行
+		// Get specified lines
 		Map<String, Object> getInput = new HashMap<>();
 		getInput.put("action", "get_lines");
 		getInput.put("file_name", "multiline.txt");
@@ -111,7 +111,7 @@ public class InnerStorageToolTest {
 
 	@Test
 	void testReplaceText() throws Exception {
-		// 创建包含特定文本的文件
+		// Create file with specific text
 		Map<String, Object> appendInput = new HashMap<>();
 		appendInput.put("action", "append");
 		appendInput.put("file_name", "replace_test.txt");
@@ -120,7 +120,7 @@ public class InnerStorageToolTest {
 		InnerStorageTool.InnerStorageInput appendStorageInput = createInnerStorageInput(appendInput);
 		innerStorageTool.run(appendStorageInput);
 
-		// 替换文本
+		// Replace text
 		Map<String, Object> replaceInput = new HashMap<>();
 		replaceInput.put("action", "replace");
 		replaceInput.put("file_name", "replace_test.txt");
@@ -132,7 +132,7 @@ public class InnerStorageToolTest {
 
 		assertTrue(result.getOutput().contains("文本替换成功"));
 
-		// 验证替换结果
+		// Verify replacement result
 		Map<String, Object> getInput = new HashMap<>();
 		getInput.put("action", "get_lines");
 		getInput.put("file_name", "replace_test.txt");
@@ -153,10 +153,10 @@ public class InnerStorageToolTest {
 
 	@Test
 	void testErrorHandling() throws Exception {
-		// 测试缺少必需参数的情况
+		// Test case with missing required parameters
 		Map<String, Object> input = new HashMap<>();
 		input.put("action", "append");
-		// 缺少 file_name
+		// Missing file_name
 
 		InnerStorageTool.InnerStorageInput storageInput = createInnerStorageInput(input);
 		ToolExecuteResult result = innerStorageTool.run(storageInput);
@@ -166,7 +166,7 @@ public class InnerStorageToolTest {
 
 	@Test
 	void testSearchContent() throws Exception {
-		// 创建包含搜索目标的文件
+		// Create file with search target content
 		Map<String, Object> appendInput = new HashMap<>();
 		appendInput.put("action", "append");
 		appendInput.put("file_name", "search_test.txt");
@@ -175,7 +175,7 @@ public class InnerStorageToolTest {
 		InnerStorageTool.InnerStorageInput appendStorageInput = createInnerStorageInput(appendInput);
 		innerStorageTool.run(appendStorageInput);
 
-		// 搜索关键词
+		// Search keywords
 		Map<String, Object> searchInput = new HashMap<>();
 		searchInput.put("action", "search");
 		searchInput.put("keyword", "Java");
@@ -189,7 +189,7 @@ public class InnerStorageToolTest {
 
 	@Test
 	void testListStoredContents() throws Exception {
-		// 创建测试文件
+		// Create test file
 		Map<String, Object> appendInput = new HashMap<>();
 		appendInput.put("action", "append");
 		appendInput.put("file_name", "list_test.txt");
@@ -198,7 +198,7 @@ public class InnerStorageToolTest {
 		InnerStorageTool.InnerStorageInput appendStorageInput = createInnerStorageInput(appendInput);
 		innerStorageTool.run(appendStorageInput);
 
-		// 列出内容
+		// List contents
 		Map<String, Object> listInput = new HashMap<>();
 		listInput.put("action", "list_contents");
 
@@ -211,7 +211,7 @@ public class InnerStorageToolTest {
 
 	@Test
 	void testGetStoredContent() throws Exception {
-		// 创建测试文件
+		// Create test file
 		Map<String, Object> appendInput = new HashMap<>();
 		appendInput.put("action", "append");
 		appendInput.put("file_name", "content_test.txt");
@@ -220,7 +220,7 @@ public class InnerStorageToolTest {
 		InnerStorageTool.InnerStorageInput appendStorageInput = createInnerStorageInput(appendInput);
 		innerStorageTool.run(appendStorageInput);
 
-		// 通过索引获取内容
+		// Get content by index
 		Map<String, Object> getInput = new HashMap<>();
 		getInput.put("action", "get_content");
 		getInput.put("content_id", "1");
@@ -233,7 +233,7 @@ public class InnerStorageToolTest {
 
 	@Test
 	void testSmartContentProcessing() throws Exception {
-		// 添加长内容
+		// Add long content
 		Map<String, Object> appendInput = new HashMap<>();
 		appendInput.put("action", "append");
 		appendInput.put("file_name", "long_content.txt");
@@ -242,7 +242,7 @@ public class InnerStorageToolTest {
 		InnerStorageTool.InnerStorageInput appendStorageInput = createInnerStorageInput(appendInput);
 		ToolExecuteResult result = innerStorageTool.run(appendStorageInput);
 
-		// 当内容过长时，应该返回摘要
+		// When content is too long, should return summary
 		assertTrue(result.getOutput().contains("操作完成") || result.getOutput().contains("文件创建成功"));
 	}
 
