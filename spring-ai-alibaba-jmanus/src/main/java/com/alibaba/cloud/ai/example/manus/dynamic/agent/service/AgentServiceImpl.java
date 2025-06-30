@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,6 +44,14 @@ import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackC
 public class AgentServiceImpl implements AgentService {
 
 	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT";
+	
+	// MapReduce protected agent names - cannot be deleted by users
+	private static final String[] PROTECTED_MAPREDUCE_AGENTS = {
+		"MAPREDUCE_DATA_PREPARE_AGENT",
+		"MAPREDUCE_FIN_AGENT", 
+		"MAPREDUCE_MAP_TASK_AGENT",
+		"MAPREDUCE_REDUCE_TASK_AGENT"
+	};
 
 	private static final Logger log = LoggerFactory.getLogger(AgentServiceImpl.class);
 
@@ -131,8 +140,14 @@ public class AgentServiceImpl implements AgentService {
 		DynamicAgentEntity entity = repository.findById(Long.parseLong(id))
 			.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
 
+		// Protect default agent from deletion
 		if (DEFAULT_AGENT_NAME.equals(entity.getAgentName())) {
 			throw new IllegalArgumentException("Cannot delete default Agent");
+		}
+		
+		// Protect MapReduce system agents from deletion
+		if (Arrays.asList(PROTECTED_MAPREDUCE_AGENTS).contains(entity.getAgentName())) {
+			throw new IllegalArgumentException("Cannot delete protected system Agent: " + entity.getAgentName());
 		}
 
 		repository.deleteById(Long.parseLong(id));

@@ -40,7 +40,7 @@ public class MoveToAndClickAction extends BrowserAction {
 		}
 
 		Page page = getCurrentPage(); // Get the Playwright Page instance
-		boolean isDebug = getBrowserUseTool().getManusProperties().getBrowserDebug();
+		boolean isDebug = getBrowserUseTool().getManusProperties().getDebugDetail();
 
 		String clickResultMessage = clickAndSwitchToNewTabIfOpened(page, () -> {
 			try {

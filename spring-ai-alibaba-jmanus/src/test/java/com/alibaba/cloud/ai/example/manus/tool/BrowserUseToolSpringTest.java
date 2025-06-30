@@ -91,7 +91,7 @@ class BrowserUseToolSpringTest {
 	void setUp() {
 
 		manusProperties.setBrowserHeadless(false);
-		manusProperties.setBrowserDebug(true);
+		manusProperties.setDebugDetail(true);
 		chromeDriverService.setManusProperties(manusProperties);
 		browserUseTool = new BrowserUseTool(chromeDriverService, innerStorageService);
 		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties, promptLoader);
