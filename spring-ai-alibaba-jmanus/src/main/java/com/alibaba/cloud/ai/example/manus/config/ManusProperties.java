@@ -90,11 +90,6 @@ public class ManusProperties {
 			inputType = ConfigInputType.NUMBER)
 	private volatile Integer browserRequestTimeout;
 
-	@ConfigProperty(group = "manus", subGroup = "browser", key = "debug", path = "manus.browser.debug",
-			description = "浏览器debug模式", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
-			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
-	private volatile Boolean browserDebug;
-
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "maxSteps", path = "manus.maxSteps",
 			description = "智能体执行最大步数", defaultValue = "20", inputType = ConfigInputType.NUMBER)
 	private volatile Integer maxSteps;
@@ -112,19 +107,6 @@ public class ManusProperties {
 		this.browserRequestTimeout = browserRequestTimeout;
 	}
 
-	public Boolean getBrowserDebug() {
-		String configPath = "manus.browser.debug";
-		String value = configService.getConfigValue(configPath);
-		if (value != null) {
-			browserDebug = Boolean.valueOf(value);
-		}
-		return browserDebug;
-	}
-
-	public void setBrowserDebug(Boolean browserDebug) {
-		this.browserDebug = browserDebug;
-	}
-
 	public Integer getMaxSteps() {
 		String configPath = "manus.maxSteps";
 		String value = configService.getConfigValue(configPath);
@@ -138,27 +120,32 @@ public class ManusProperties {
 		this.maxSteps = maxSteps;
 	}
 
-	@ConfigProperty(group = "manus", subGroup = "agent", key = "resetAgents", path = "manus.resetAgents",
-			description = "重置所有agent", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
+	@ConfigProperty(group = "manus", subGroup = "agents", key = "forceOverrideFromYaml", path = "manus.agents.forceOverrideFromYaml",
+			description = "强制使用YAML配置文件覆盖同名Agent", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
-	private volatile Boolean resetAgents;
+	private volatile Boolean forceOverrideFromYaml;
 
-	public Boolean getResetAgents() {
-		String configPath = "manus.resetAgents";
+	public Boolean getForceOverrideFromYaml() {
+		String configPath = "manus.agents.forceOverrideFromYaml";
 		String value = configService.getConfigValue(configPath);
 		if (value != null) {
-			resetAgents = Boolean.valueOf(value);
+			forceOverrideFromYaml = Boolean.valueOf(value);
 		}
-		return resetAgents;
+		return forceOverrideFromYaml;
 	}
 
-	public void setResetAgents(Boolean resetAgents) {
-		this.resetAgents = resetAgents;
+	public void setForceOverrideFromYaml(Boolean forceOverrideFromYaml) {
+		this.forceOverrideFromYaml = forceOverrideFromYaml;
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "general", key = "baseDir", path = "manus.baseDir",
 			description = "manus根目录", defaultValue = "", inputType = ConfigInputType.TEXT)
 	private volatile String baseDir = "";
+
+	@ConfigProperty(group = "manus", subGroup = "general", key = "debugDetail", path = "manus.general.debugDetail",
+			description = "debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+	private volatile Boolean debugDetail;
 
 	public String getBaseDir() {
 		String configPath = "manus.baseDir";
@@ -171,6 +158,19 @@ public class ManusProperties {
 
 	public void setBaseDir(String baseDir) {
 		this.baseDir = baseDir;
+	}
+
+	public Boolean getDebugDetail() {
+		String configPath = "manus.general.debugDetail";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			debugDetail = Boolean.valueOf(value);
+		}
+		return debugDetail;
+	}
+
+	public void setDebugDetail(Boolean debugDetail) {
+		this.debugDetail = debugDetail;
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "userInputTimeout",

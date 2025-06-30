@@ -57,25 +57,25 @@ public class DynamicAgentScanner {
 
 	@PostConstruct
 	public void scanAndSaveAgents() {
-		// Check if reset is needed
-		ConfigEntity resetConfig = configService.getConfig("manus.resetAgents")
-			.orElseThrow(() -> new IllegalStateException("Cannot find reset configuration item"));
+		// Check configuration for YAML-based agent override behavior
+		ConfigEntity overrideConfig = configService.getConfig("manus.agents.forceOverrideFromYaml")
+			.orElseThrow(() -> new IllegalStateException("Cannot find agent override configuration item"));
 
 		// First, check if there are any classes still using the old @DynamicAgentDefinition annotation
 		checkForDeprecatedAnnotationUsage();
 
-		if (Boolean.parseBoolean(resetConfig.getConfigValue())) {
-			log.info("Starting to scan and save dynamic agents from YAML configuration files...");
-
-			// Only scan and save StartupAgent loaded from configuration file
+		boolean shouldOverrideFromYaml = Boolean.parseBoolean(overrideConfig.getConfigValue());
+		
+		if (shouldOverrideFromYaml) {
+			log.info("✅ Force override from YAML enabled - Starting to scan and override agents from YAML configuration files...");
+			
+			// Scan and save/override StartupAgent loaded from configuration file
 			scanAndSaveStartupAgents();
-
-			// After reset, set the configuration to false
-			configService.updateConfig("manus.resetAgents", "false");
-			log.info("Dynamic agent scanning from YAML files completed");
+			
+			log.info("✅ Dynamic agent override from YAML files completed");
 		}
 		else {
-			log.info("Skipping dynamic agent reset");
+			log.info("⏭️ Force override from YAML disabled - Skipping agent override from YAML files");
 		}
 	}
 
@@ -165,29 +165,43 @@ public class DynamicAgentScanner {
 	}
 
 	/**
-	 * Scan and save StartupAgent loaded from configuration file
+	 * Scan and save/override StartupAgent loaded from configuration file
 	 */
 	private void scanAndSaveStartupAgents() {
-		log.info("Starting to scan StartupAgent configuration file...");
+		log.info("🔍 Starting to scan YAML agent configuration files...");
 
 		List<String> agentDirs = startupAgentConfigLoader.scanAvailableAgents();
+		int processedCount = 0;
+		int overriddenCount = 0;
+		int createdCount = 0;
+		
 		for (String agentDir : agentDirs) {
 			try {
 				StartupAgentConfigLoader.AgentConfig agentConfig = startupAgentConfigLoader.loadAgentConfig(agentDir);
 				if (agentConfig != null) {
+					// Check if this is an override or new creation
+					DynamicAgentEntity existingEntity = repository.findByAgentName(agentConfig.getAgentName());
+					if (existingEntity != null) {
+						overriddenCount++;
+					} else {
+						createdCount++;
+					}
+					
 					saveStartupAgent(agentConfig);
+					processedCount++;
 				}
 			}
 			catch (Exception e) {
-				log.error("Failed to load StartupAgent configuration: {}", agentDir, e);
+				log.error("❌ Failed to load YAML agent configuration: {}", agentDir, e);
 			}
 		}
 
-		log.info("StartupAgent configuration file scanning completed, processed {} agents", agentDirs.size());
+		log.info("✅ YAML agent configuration scanning completed - Total: {}, Created: {}, Overridden: {}", 
+				processedCount, createdCount, overriddenCount);
 	}
 
 	/**
-	 * Save StartupAgent loaded from configuration file
+	 * Save/Override StartupAgent loaded from configuration file
 	 */
 	private void saveStartupAgent(StartupAgentConfigLoader.AgentConfig agentConfig) {
 		// Check if there is a dynamic agent with the same name
@@ -196,17 +210,17 @@ public class DynamicAgentScanner {
 		// Create or update dynamic agent entity
 		DynamicAgentEntity entity = (existingEntity != null) ? existingEntity : new DynamicAgentEntity();
 
-		// Update all fields
+		// Update all fields (force override if exists)
 		entity.setAgentName(agentConfig.getAgentName());
 		entity.setAgentDescription(agentConfig.getAgentDescription());
 		entity.setNextStepPrompt(agentConfig.getNextStepPrompt());
 		entity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
-		entity.setClassName(""); // StartupAgent does not have a corresponding Java class
+		entity.setClassName(""); // YAML-based agents do not have corresponding Java classes
 
 		// Save or update entity
 		repository.save(entity);
-		String action = (existingEntity != null) ? "Updated" : "Created";
-		log.info("{} StartupAgent based on configuration file: {}", action, entity.getAgentName());
+		String action = (existingEntity != null) ? "🔄 Overridden" : "✨ Created";
+		log.info("{} agent from YAML config: {}", action, entity.getAgentName());
 	}
 
 }
