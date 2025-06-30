@@ -419,9 +419,25 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 					workingDirectoryPath = CodeUtils.getWorkingDirectory(null);
 				}
 			}
-
-			// Process based on path type
-			Path path;
+		// Process based on path type
+		Path path = null;
+		boolean foundInInnerStorage = false;
+		
+		// First, try to find file in inner storage directory (similar to InnerStorageTool)
+		if (!Paths.get(filePath).isAbsolute()) {
+			// Check in inner storage first
+			Path planDir = getPlanDirectory(planId);
+			Path innerStoragePath = planDir.resolve(filePath);
+			
+			if (Files.exists(innerStoragePath)) {
+				path = innerStoragePath;
+				foundInInnerStorage = true;
+				log.info("Found file in inner storage: {}", path.toAbsolutePath());
+			}
+		}
+		
+		// If not found in inner storage, try working directory
+		if (path == null) {
 			if (Paths.get(filePath).isAbsolute()) {
 				// If absolute path, use directly
 				path = Paths.get(filePath);
@@ -430,10 +446,22 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 				// If relative path, resolve based on working directory
 				path = Paths.get(workingDirectoryPath).resolve(filePath);
 			}
-
-			if (!Files.exists(path)) {
-				return new ToolExecuteResult("Error: File or directory does not exist: " + path.toAbsolutePath().toString());
+			log.info("Checking file in working directory: {}", path.toAbsolutePath());
+		}
+		if (!Files.exists(path)) {
+			String errorMsg = "Error: File or directory does not exist: " + path.toAbsolutePath().toString();
+			if (!foundInInnerStorage) {
+				// Also check if file exists in inner storage and provide helpful message
+				Path planDir = getPlanDirectory(planId);
+				Path innerStoragePath = planDir.resolve(filePath);
+				if (Files.exists(innerStoragePath)) {
+					errorMsg += "\nNote: File exists in inner storage at: " + innerStoragePath.toAbsolutePath().toString();
+				} else {
+					errorMsg += "\nSearched in: working directory and inner storage (" + planDir.toAbsolutePath().toString() + ")";
+				}
 			}
+			return new ToolExecuteResult(errorMsg);
+		}
 
 			boolean isFile = Files.isRegularFile(path);
 			boolean isDirectory = Files.isDirectory(path);

@@ -12,8 +12,9 @@ nextStepPrompt: |
 
   标准工作流程：
   1) 验证文件或文件夹是否存在，使用 inner_storage_tool 工具来做。
-  2) 使用 inner_storage_tool 工具，读取前100行查找表格头部信息
+  2) 使用 inner_storage_tool 工具，读取前50行查找表格头部信息
   3) 使用表格头部信息（如果存在）和文件/文件夹路径调用  map_reduce_tool 的split_data功能进行数据分割处理
+  4) 如果分割成功，就调用 terminate 工具终结任务
 
   为完成数据准备任务，下一步应该做什么？
 
