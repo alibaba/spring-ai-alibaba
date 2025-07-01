@@ -145,18 +145,27 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * Save record to persistent storage. Empty implementation, to be overridden by
-	 * specific storage implementations
-	 * @return Record ID after saving
+	 * Generate unique ID if not already set
+	 * @return Generated or existing ID
 	 */
-	public Long save() {
-		// If ID is null, generate a random ID
+	private Long ensureIdGenerated() {
 		if (this.id == null) {
 			// Use combination of timestamp and random number to generate ID
 			long timestamp = System.currentTimeMillis();
 			int random = (int) (Math.random() * 1000000);
 			this.id = timestamp * 1000 + random;
 		}
+		return this.id;
+	}
+
+	/**
+	 * Save record to persistent storage. Empty implementation, to be overridden by
+	 * specific storage implementations
+	 * @return Record ID after saving
+	 */
+	public Long save() {
+		// Ensure ID is generated before saving
+		ensureIdGenerated();
 
 		// Save sub-plan execution record if exists
 		if (subPlanExecutionRecord != null) {
@@ -169,7 +178,8 @@ public class ThinkActRecord {
 	// Getters and setters
 
 	public Long getId() {
-		return id;
+		// Ensure ID is generated when accessing
+		return ensureIdGenerated();
 	}
 
 	public void setId(Long id) {
