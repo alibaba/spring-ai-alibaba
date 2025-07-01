@@ -19,30 +19,41 @@ package com.alibaba.cloud.ai.example.deepresearch.model.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 报告响应类
+ * 基础响应类
  *
  * @author huangzhen
  * @since 2025/6/20
  */
-public class ReportResponse extends BaseResponse {
+public record ReportResponse<T>(
 
-	/**
-	 * 报告内容
-	 */
-	@JsonProperty("report")
-	String report;
+		/**
+		 * 线程ID，用于标识当前对话的唯一性
+		 */
+		@JsonProperty("thread_id") String threadId,
 
-	public ReportResponse(String threadId, String status, String message, String report) {
-		super(threadId, status, message);
-		this.report = report;
+		/**
+		 * 状态
+		 */
+		@JsonProperty("status") String status,
+
+		/**
+		 * 消息
+		 */
+		@JsonProperty("message") String message,
+
+		/**
+		 * 数据
+		 */
+		@JsonProperty("report_information") T data) {
+	public static <T> ReportResponse<T> success(String threadId, String message, T data) {
+		return new ReportResponse(threadId, "success", message, data);
 	}
 
-	public static ReportResponse success(String threadId, String report) {
-		return new ReportResponse(threadId, "success", "Report retrieved successfully", report);
+	public static <T> ReportResponse<T> notfound(String threadId, String message) {
+		return new ReportResponse(threadId, "notfound", message, null);
 	}
 
 	public static ReportResponse error(String threadId, String message) {
 		return new ReportResponse(threadId, "error", message, null);
 	}
-
 }

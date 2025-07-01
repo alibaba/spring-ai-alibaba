@@ -16,10 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.dto.ExportData;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ExportRequest;
-import com.alibaba.cloud.ai.example.deepresearch.model.response.BaseResponse;
-import com.alibaba.cloud.ai.example.deepresearch.model.response.ExistsResponse;
-import com.alibaba.cloud.ai.example.deepresearch.model.response.ExportResponse;
 import com.alibaba.cloud.ai.example.deepresearch.model.response.ReportResponse;
 import com.alibaba.cloud.ai.example.deepresearch.service.ExportService;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
@@ -31,8 +29,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
+
+import java.util.Optional;
 
 /**
  * 报告查询控制器
@@ -61,17 +68,14 @@ public class ReportController {
 	 * @return 报告内容
 	 */
 	@GetMapping("/{threadId}")
-	public ResponseEntity<ReportResponse> getReport(@PathVariable String threadId) {
+	public ResponseEntity<ReportResponse<String>> getReport(@PathVariable String threadId) {
 		try {
 			logger.info("Querying report for thread ID: {}", threadId);
-			String report = reportService.getReport(threadId);
-
-			if (report != null) {
-				return ResponseEntity.ok(ReportResponse.success(threadId, report));
-			}
-			else {
-				return ResponseEntity.notFound().build();
-			}
+			return Optional.ofNullable(reportService.getReport(threadId))
+				.map(report -> ResponseEntity
+					.ok(ReportResponse.success(threadId, "Report retrieved successfully", report)))
+				.orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(ReportResponse.notfound(threadId, "Report not found")));
 		}
 		catch (Exception e) {
 			logger.error("Failed to get report for thread ID: {}", threadId, e);
@@ -86,17 +90,17 @@ public class ReportController {
 	 * @return 是否存在
 	 */
 	@GetMapping("/{threadId}/exists")
-	public ResponseEntity<ExistsResponse> existsReport(@PathVariable String threadId) {
+	public ResponseEntity<ReportResponse<Boolean>> existsReport(@PathVariable String threadId) {
 		try {
 			logger.info("Checking if report exists for thread ID: {}", threadId);
 			boolean exists = reportService.existsReport(threadId);
 
-			return ResponseEntity.ok(ExistsResponse.success(threadId, exists));
+			return ResponseEntity.ok(ReportResponse.success(threadId, "whether the report exists", exists));
 		}
 		catch (Exception e) {
 			logger.error("Failed to check if report exists for thread ID: {}", threadId, e);
 			return ResponseEntity.internalServerError()
-				.body(ExistsResponse.error(threadId, "Check failed: " + e.getMessage()));
+				.body(ReportResponse.error(threadId, "Check failed: " + e.getMessage()));
 		}
 	}
 
@@ -106,21 +110,22 @@ public class ReportController {
 	 * @return 删除结果
 	 */
 	@DeleteMapping("/{threadId}")
-	public ResponseEntity<BaseResponse> deleteReport(@PathVariable String threadId) {
+	public ResponseEntity<ReportResponse> deleteReport(@PathVariable String threadId) {
 		try {
 			logger.info("Deleting report for thread ID: {}", threadId);
 
 			if (!reportService.existsReport(threadId)) {
-				return ResponseEntity.notFound().build();
+				return ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(ReportResponse.notfound(threadId, "Report not found"));
 			}
 
 			reportService.deleteReport(threadId);
-			return ResponseEntity.ok(BaseResponse.success(threadId, "Report deleted successfully"));
+			return ResponseEntity.ok(ReportResponse.success(threadId, "Report deleted successfully", null));
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete report for thread ID: {}", threadId, e);
 			return ResponseEntity.internalServerError()
-				.body(BaseResponse.error(threadId, "Failed to delete report: " + e.getMessage()));
+				.body(ReportResponse.error(threadId, "Failed to delete report: " + e.getMessage()));
 		}
 	}
 
@@ -130,9 +135,9 @@ public class ReportController {
 	 * @return 导出文件的元数据信息
 	 */
 	@PostMapping("/export")
-	public ResponseEntity<ExportResponse> exportReport(@RequestBody ExportRequest request) {
+	public ResponseEntity<ReportResponse> exportReport(@RequestBody ExportRequest request) {
 		if (request == null) {
-			return ResponseEntity.badRequest().body(ExportResponse.error("Report request cannot be null"));
+			return ResponseEntity.badRequest().body(ReportResponse.error(null, "Report request cannot be null"));
 		}
 
 		try {
@@ -143,34 +148,36 @@ public class ReportController {
 
 			// 检查线程ID对应的报告是否存在
 			if (!exportService.existsReportByThreadId(threadId)) {
-				return ResponseEntity.badRequest()
-					.body(ExportResponse.error("Report not found for thread: " + threadId));
+				return ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(ReportResponse.error(threadId, "Report not found for thread: " + threadId));
 			}
 
 			// 检查请求的格式是否支持
 			if (!exportService.isSupportedFormat(format)) {
 				return ResponseEntity.badRequest()
-					.body(ExportResponse
-						.error("Unsupported format: " + format + ", only markdown and pdf are supported"));
+					.body(ReportResponse.error(threadId,
+							"Unsupported format: " + format + ", only markdown and pdf are supported"));
 			}
 
 			// 实际保存文件
 			String filePath = exportReport(threadId, format);
 			if (filePath == null) {
 				return ResponseEntity.badRequest()
-					.body(ExportResponse.error("Failed to export report to format: " + format));
+					.body(ReportResponse.error(threadId, "Failed to export report to format: " + format));
 			}
 
 			// 构建下载URL
 			String downloadUrl = "/api/reports/download/" + threadId + "?format=" + format;
 
 			// 构建成功响应
-			ExportResponse response = ExportResponse.success(threadId, format, filePath, downloadUrl);
+			ReportResponse<ExportData> response = ReportResponse.success(threadId, "Report exported successfully",
+					ExportData.success(format, filePath, downloadUrl));
 			return ResponseEntity.ok(response);
 		}
 		catch (Exception e) {
 			logger.error("Failed to export report", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ExportResponse.error(e.getMessage()));
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(ReportResponse.error(null, e.getMessage()));
 		}
 	}
 
@@ -190,8 +197,8 @@ public class ReportController {
 			// 检查格式是否支持
 			if (!exportService.isSupportedFormat(format)) {
 				return ResponseEntity.badRequest()
-					.body(ExportResponse
-						.error("Unsupported format: " + format + ", only markdown and pdf are supported"));
+					.body(ReportResponse.error(threadId,
+							"Unsupported format: " + format + ", only markdown and pdf are supported"));
 			}
 
 			// 统一使用markdown作为键
@@ -203,7 +210,8 @@ public class ReportController {
 		}
 		catch (Exception e) {
 			logger.error("Failed to download report", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ExportResponse.error(e.getMessage()));
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(ReportResponse.error(threadId, e.getMessage()));
 		}
 	}
 
@@ -239,8 +247,7 @@ public class ReportController {
 	 */
 	private String exportReport(String threadId, String format) {
 		if ("markdown".equals(format) || "md".equals(format)) {
-			String filePath = exportService.saveAsMarkdown(threadId);
-			return filePath;
+			return exportService.saveAsMarkdown(threadId);
 		}
 		else if ("pdf".equals(format)) {
 			return exportService.saveAsPdf(threadId);
