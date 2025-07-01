@@ -183,7 +183,7 @@ public class AgentServiceImpl implements AgentService {
 		entity = mergePrompts(entity, config.getName());
 		entity.setNextStepPrompt(nextStepPrompt);
 		entity.setModelName(config.getModelName());
-		entity.setModelControlledByPlan(config.getModelControlledByPlan());
+		entity.setModelControlledByPlan(config.getModelControlledByPlan() != null && config.getModelControlledByPlan());
 
 		// 1. Create new collection to ensure uniqueness and order
 		java.util.Set<String> toolSet = new java.util.LinkedHashSet<>();

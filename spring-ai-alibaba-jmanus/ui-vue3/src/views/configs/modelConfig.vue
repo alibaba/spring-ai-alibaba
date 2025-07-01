@@ -100,7 +100,7 @@
           <textarea 
             v-model="selectedModel.description"
             rows="3"
-            placeholder="描述这个Model的功能和用途"
+            placeholder="描述这个Model及适用场景"
             required
           ></textarea>
         </div>
@@ -131,7 +131,7 @@
           <textarea
             v-model="newModel.description"
             rows="3"
-            placeholder="描述这个Model的功能和用途"
+            placeholder="描述这个Model及适用场景"
             required
           ></textarea>
         </div>

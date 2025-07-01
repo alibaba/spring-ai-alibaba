@@ -128,8 +128,8 @@
           <div class="form-item">
             <label>模型选择</label>
               <Switch
-                  :enabled="selectedAgent.modelControlledByPlan"
-                  label="由计划控制"
+                  :enabled="modelControlledByPlan"
+                  label="由计划控制（根据Model配置，由计划控制模型调用）"
                   @update:switchValue="updateSwitchValue($event)"
               />
             </div>
@@ -139,7 +139,7 @@
             <input
                 type="text"
                 v-model="selectedAgent.modelName"
-                placeholder="输入Agent名称"
+                placeholder="输入Model名称（为空时调用默认Model）"
                 required
             />
           </div>
@@ -269,6 +269,7 @@ const showModal = ref(false)
 const showDeleteModal = ref(false)
 const showToolModal = ref(false)
 const showModelInput = ref(false)
+const modelControlledByPlan = ref(false)
 
 // 新建Agent表单数据
 const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
@@ -281,7 +282,10 @@ const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
 
 // 更新配置值
 const updateSwitchValue = (value: boolean) => {
+  modelControlledByPlan.value = value
   showModelInput.value = !value
+  if (!selectedAgent.value) return
+  selectedAgent.value.modelControlledByPlan = value
 }
 
 // 计算属性
@@ -466,6 +470,7 @@ const selectAgent = async (agent: Agent) => {
       availableTools: Array.isArray(detailedAgent.availableTools) ? detailedAgent.availableTools : []
     }
     showModelInput.value = !detailedAgent.modelControlledByPlan
+    modelControlledByPlan.value = detailedAgent.modelControlledByPlan
   } catch (err: any) {
     console.error('加载Agent详情失败:', err)
     showMessage('加载Agent详情失败: ' + err.message, 'error')
@@ -475,6 +480,7 @@ const selectAgent = async (agent: Agent) => {
       availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
     }
     showModelInput.value = !agent.modelControlledByPlan
+    modelControlledByPlan.value = agent.modelControlledByPlan
   }
 }
 

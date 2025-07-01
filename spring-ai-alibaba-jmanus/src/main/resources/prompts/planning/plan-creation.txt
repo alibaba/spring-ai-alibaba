@@ -30,5 +30,5 @@
 
 你可以使用规划工具来帮助创建计划。
 
-重要提示：计划中的每个步骤都必须以[AGENT](MODEL)开头，代理名称与模型名称必须是上述列出的可用代理之一。
-例如："[BROWSER_AGENT](qwen-plus) 搜索相关信息" 或 "[DEFAULT_AGENT](qwen-plus) 处理搜索结果"
+重要提示：计划中的每个步骤都必须以[AGENT](MODEL)开头，代理名称与模型名称必须是上述列出的可用代理之一，若无可用模型信息，则默认default_model。
+例如："[BROWSER_AGENT](qwen-plus) 搜索相关信息" 或 "[DEFAULT_AGENT](default_model) 处理搜索结果"

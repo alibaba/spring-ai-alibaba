@@ -166,16 +166,17 @@ public class DynamicAgent extends ReActAgent {
 			if (modelControlledByPlan) {
 				modelName = getModel();
 			}
-			if (StrUtil.isNotBlank(modelName)) {
+			if (StrUtil.isNotBlank(modelName) && !"default_model".equals(modelName)) {
 				builder.model(modelName);
 			}
-			planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId()).setModelName(modelName);
 			ChatOptions chatOptions = builder.build();
 			userPrompt = new Prompt(messages, chatOptions);
 			List<ToolCallback> callbacks = getToolCallList();
 			ChatClient chatClient = llmService.getAgentChatClient();
 			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
-
+			String model = response.getMetadata().getModel();
+			planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId()).setModelName(model);
+			planExecutionRecorder.getExecutionRecord(getPlanId()).setModelName(model);
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
 
