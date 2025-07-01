@@ -90,10 +90,6 @@ public class DefaultGraphObservationConvention implements GraphObservationConven
 		KeyValues keyValues = KeyValues.of(
 				KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_STATE,
 						context.getState().toString()));
-		if (context.getResult() != null) {
-			keyValues.and(KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_RESULT,
-					context.getResult().toString()));
-		}
 		if (context.getOutput() != null) {
 			keyValues.and(KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_OUTPUT,
 					context.getOutput().toString()));

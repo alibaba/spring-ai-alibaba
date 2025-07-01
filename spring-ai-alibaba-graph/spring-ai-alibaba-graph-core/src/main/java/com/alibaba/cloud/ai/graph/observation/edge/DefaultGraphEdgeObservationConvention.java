@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.observation.edge;
 
 import com.alibaba.cloud.ai.graph.observation.SpringAiAlibabaKind;
+import com.alibaba.cloud.ai.graph.observation.edge.GraphEdgeObservationDocumentation.HighCardinalityKeyNames;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import org.springframework.lang.Nullable;
@@ -87,11 +88,15 @@ public class DefaultGraphEdgeObservationConvention implements GraphEdgeObservati
 	 */
 	@Override
 	public KeyValues getHighCardinalityKeyValues(GraphEdgeObservationContext context) {
-		return KeyValues.of(
-				KeyValue.of(GraphEdgeObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_STATE,
-						context.getState().toString()),
-				KeyValue.of(GraphEdgeObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_OUTPUT,
-						context.getNextNode()));
+		KeyValues keyValues = KeyValues.of(
+				KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_STATE,
+						context.getState().toString()));
+		
+		if (null != context.getNextNode()) {
+			keyValues.and(KeyValue.of(GraphEdgeObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_OUTPUT,
+					context.getNextNode()));
+		}
+		return keyValues;
 	}
 
 }
