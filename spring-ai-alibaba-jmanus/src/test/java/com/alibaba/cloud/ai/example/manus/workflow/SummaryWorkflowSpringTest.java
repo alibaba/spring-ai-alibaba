@@ -12,7 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -25,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @ActiveProfiles("test")
 @Disabled("For local testing only, skip in CI environment") // Add this line for CI compatibility
 class SummaryWorkflowSpringTest {
-
+	
 	private static final Logger log = LoggerFactory.getLogger(SummaryWorkflowSpringTest.class);
 
 	@Autowired
@@ -166,11 +165,11 @@ class SummaryWorkflowSpringTest {
 			log.info("Step 1: Execute quick summary workflow");
 			
 			String queryKey = "framework overview";
-			List<String> columns = Arrays.asList("Feature", "Description", "Benefits");
 			
-			// Execute the quick summary workflow
-			CompletableFuture<String> resultFuture = summaryWorkflow.executeQuickSummary(
-					"quick_test.md", SHORT_CONTENT, queryKey, columns);
+			// Execute the quick summary workflow using the main workflow method
+			String planId = "test_quick_summary_" + System.currentTimeMillis();
+			CompletableFuture<String> resultFuture = summaryWorkflow.executeSummaryWorkflow(
+					planId, "quick_test.md", SHORT_CONTENT, queryKey);
 			
 			// Wait for completion with timeout
 			String result = resultFuture.get(20, TimeUnit.SECONDS);

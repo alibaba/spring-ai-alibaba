@@ -2,9 +2,7 @@ package com.alibaba.cloud.ai.example.manus.workflow;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -12,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -25,9 +22,6 @@ public class SummaryWorkflow {
 
 	@Autowired
 	private PlanningFactory planningFactory;
-
-	@Autowired
-	private PlanIdDispatcher planIdDispatcher;
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -73,15 +67,16 @@ public class SummaryWorkflow {
 	 * @param fileName 文件名
 	 * @param content 文件内容
 	 * @param queryKey 查询关键词
+	 * @param thinkActRecordId Think-act记录ID，用于子计划执行追踪
 	 * @return 总结结果的Future
 	 */
-	public CompletableFuture<String> executeSummaryWorkflow(String planId, String fileName, String content, String queryKey) {
+	public CompletableFuture<String> executeSummaryWorkflow(String planId, String fileName, String content, String queryKey, Long thinkActRecordId) {
 
 		// 1. 构建MapReduce执行计划，使用调用者的planId
 		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(planId, fileName, content, queryKey);
 
-		// 2. 直接执行计划
-		return executeMapReducePlan(executionPlan);
+		// 2. 直接执行计划，传递thinkActRecordId
+		return executeMapReducePlanWithContext(executionPlan, thinkActRecordId);
 	}
 
 	/**
@@ -113,9 +108,9 @@ public class SummaryWorkflow {
 	}
 
 	/**
-	 * 执行MapReduce计划
+	 * 执行MapReduce计划 - 支持子计划上下文
 	 */
-	private CompletableFuture<String> executeMapReducePlan(MapReduceExecutionPlan executionPlan) {
+	private CompletableFuture<String> executeMapReducePlanWithContext(MapReduceExecutionPlan executionPlan, Long thinkActRecordId) {
 		return CompletableFuture.supplyAsync(() -> {
 			try {
 				// 获取规划协调器
@@ -128,6 +123,11 @@ public class SummaryWorkflow {
 				context.setPlan(executionPlan);
 				context.setNeedSummary(true);
 				context.setUserRequest("执行基于MapReduce的内容智能总结");
+				
+				// 设置think-act记录ID以支持子计划执行
+				if (thinkActRecordId != null) {
+					context.setThinkActRecordId(thinkActRecordId);
+				}
 
 				// 执行计划（跳过创建计划步骤，直接执行）
 				planningCoordinator.executeExistingPlan(context);
@@ -164,56 +164,6 @@ public class SummaryWorkflow {
 			catch (Exception e) {
 				logger.error("MapReduce总结计划执行失败", e);
 				return "❌ MapReduce内容总结执行失败: " + e.getMessage();
-			}
-		});
-	}
-
-	/**
-	 * 创建快速总结工作流（用于小文件）
-	 */
-	public CompletableFuture<String> executeQuickSummary(String fileName, String content, String queryKey,
-			List<String> columns) {
-		return CompletableFuture.supplyAsync(() -> {
-			try {
-				String planId = planIdDispatcher.generatePlanId();
-
-				// 使用简化的JSON模板
-				String quickPlanJson = String.format("""
-						{
-						  "planType": "advanced",
-						  "planId": "%s",
-						  "title": "快速内容总结 - %s",
-						  "steps": [
-						    {
-						      "type": "SEQUENTIAL",
-						      "steps": [
-						        {
-						          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] 使用inner_storage_tool执行快速总结"
-						        }
-						      ]
-						    }
-						  ]
-						}
-						""", planId, fileName);
-
-				MapReduceExecutionPlan quickPlan = objectMapper.readValue(quickPlanJson, MapReduceExecutionPlan.class);
-
-				// 嵌入工具调用
-				ExecutionStep step = quickPlan.getAllSteps().get(0);
-				step.setStepRequirement(step.getStepRequirement() + " " + String.format("""
-						{
-						    "action": "append",
-						    "file_name": "quick_summary_%s.md",
-						    "content": "# 快速总结\\n\\n文件: %s\\n关键词: %s\\n输出列: %s\\n\\n内容:\\n%s"
-						}
-						""", planId, fileName, queryKey, String.join(", ", columns), content));
-
-				return executeMapReducePlan(quickPlan).get();
-
-			}
-			catch (Exception e) {
-				logger.error("快速总结执行失败", e);
-				return "❌ 快速总结执行失败: " + e.getMessage();
 			}
 		});
 	}

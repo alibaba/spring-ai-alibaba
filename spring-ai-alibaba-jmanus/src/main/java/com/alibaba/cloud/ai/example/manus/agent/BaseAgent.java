@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +66,9 @@ public abstract class BaseAgent {
 	private static final Logger log = LoggerFactory.getLogger(BaseAgent.class);
 
 	private String planId = null;
+
+	// Think-act record ID for sub-plan executions triggered by tool calls
+	private Long thinkActRecordId = null;
 
 	private AgentState state = AgentState.NOT_STARTED;
 
@@ -201,7 +205,12 @@ public abstract class BaseAgent {
 		agentRecord.setStatus(state.toString());
 		// Record execution in recorder if we have a plan ID
 		if (planId != null && planExecutionRecorder != null) {
-			planExecutionRecorder.recordAgentExecution(planId, agentRecord);
+			// Use unified method that handles both main plan and sub-plan cases
+			PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId, thinkActRecordId);
+			
+			if (planRecord != null) {
+				planExecutionRecorder.recordAgentExecution(planRecord, agentRecord);
+			}
 		}
 		List<String> results = new ArrayList<>();
 		try {
@@ -318,6 +327,22 @@ public abstract class BaseAgent {
 
 	public void setPlanId(String planId) {
 		this.planId = planId;
+	}
+
+	public Long getThinkActRecordId() {
+		return thinkActRecordId;
+	}
+
+	public void setThinkActRecordId(Long thinkActRecordId) {
+		this.thinkActRecordId = thinkActRecordId;
+	}
+
+	/**
+	 * Check if this agent is executing a sub-plan triggered by a tool call
+	 * @return true if this is a sub-plan execution, false otherwise
+	 */
+	public boolean isSubPlanExecution() {
+		return thinkActRecordId != null;
 	}
 
 	public AgentState getState() {

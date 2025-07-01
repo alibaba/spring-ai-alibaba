@@ -163,7 +163,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 				mrNode.getDataPreparedStepCount(), mrNode.getMapStepCount(), mrNode.getReduceStepCount(), mrNode.getPostProcessStepCount());
 
 		BaseAgent executor = lastExecutor;
-
+		
 		// 1. 串行执行 Data Prepared 阶段
 		if (CollectionUtil.isNotEmpty(mrNode.getDataPreparedSteps())) {
 			executor = executeDataPreparedPhase(mrNode.getDataPreparedSteps(), context, executor);

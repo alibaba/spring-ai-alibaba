@@ -142,13 +142,15 @@ public class PlanningFactory {
 		PlanningToolInterface planningTool = new MapReducePlanningTool();
 
 		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptLoader);
-		
+
 		// Create PlanExecutorFactory for dynamic executor selection
-		PlanExecutorFactory planExecutorFactory = new PlanExecutorFactory(agentEntities, llmService, agentService, recorder);
-		
+		PlanExecutorFactory planExecutorFactory = new PlanExecutorFactory(agentEntities, llmService, agentService,
+				recorder);
+
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptLoader);
 
-		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory, planFinalizer);
+		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
+				planFinalizer);
 
 		return planningCoordinator;
 	}
@@ -185,7 +187,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new DocLoaderTool());
 		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService));
 		toolDefinitions.add(new InnerStorageTool(innerStorageService));
-		toolDefinitions.add(new InnerStorageContentTool(innerStorageService, summaryWorkflow));
+		toolDefinitions.add(new InnerStorageContentTool(innerStorageService, summaryWorkflow, recorder));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
@@ -204,12 +206,12 @@ public class PlanningFactory {
 		// Create FunctionToolCallback for each tool
 		for (ToolCallBiFunctionDef<?> toolDefinition : toolDefinitions) {
 			FunctionToolCallback<?, ToolExecuteResult> functionToolcallback = FunctionToolCallback
-				.builder(toolDefinition.getName(), toolDefinition)
-				.description(toolDefinition.getDescription())
-				.inputSchema(toolDefinition.getParameters())
-				.inputType(toolDefinition.getInputType())
-				.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
-				.build();
+					.builder(toolDefinition.getName(), toolDefinition)
+					.description(toolDefinition.getDescription())
+					.inputSchema(toolDefinition.getParameters())
+					.inputType(toolDefinition.getInputType())
+					.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
+					.build();
 			toolDefinition.setPlanId(planId);
 			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
 					toolDefinition);
@@ -222,10 +224,10 @@ public class PlanningFactory {
 	public RestClient.Builder createRestClient() {
 		// Create RequestConfig and set the timeout (10 minutes for all timeouts)
 		RequestConfig requestConfig = RequestConfig.custom()
-			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection timeout
-			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-			.build();
+				.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection timeout
+				.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+				.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+				.build();
 
 		// Create CloseableHttpClient and apply the configuration
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();

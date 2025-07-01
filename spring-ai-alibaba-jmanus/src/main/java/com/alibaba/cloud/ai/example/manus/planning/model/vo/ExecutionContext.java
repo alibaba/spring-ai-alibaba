@@ -41,6 +41,9 @@ public class ExecutionContext {
 	/** Unique identifier of the plan */
 	private String planId;
 
+	/** Think-act record ID for sub-plan executions triggered by tool calls */
+	private Long thinkActRecordId;
+
 	/** Execution plan entity containing detailed plan information and execution steps */
 	private PlanInterface plan;
 
@@ -79,6 +82,30 @@ public class ExecutionContext {
 	 */
 	public void setPlanId(String planId) {
 		this.planId = planId;
+	}
+
+	/**
+	 * Get think-act record ID
+	 * @return Think-act record ID for sub-plan executions
+	 */
+	public Long getThinkActRecordId() {
+		return thinkActRecordId;
+	}
+
+	/**
+	 * Set think-act record ID
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions
+	 */
+	public void setThinkActRecordId(Long thinkActRecordId) {
+		this.thinkActRecordId = thinkActRecordId;
+	}
+
+	/**
+	 * Check if this is a sub-plan execution context
+	 * @return true if this is a sub-plan execution, false otherwise
+	 */
+	public boolean isSubPlanExecution() {
+		return thinkActRecordId != null;
 	}
 
 	/**

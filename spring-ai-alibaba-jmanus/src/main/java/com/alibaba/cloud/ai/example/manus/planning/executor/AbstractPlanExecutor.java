@@ -178,7 +178,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	 * 获取或创建计划执行记录
 	 */
 	protected PlanExecutionRecord getOrCreatePlanExecutionRecord(ExecutionContext context) {
-		PlanExecutionRecord record = getRecorder().getExecutionRecord(context.getPlanId());
+		PlanExecutionRecord record = getRecorder().getExecutionRecord(context.getPlanId(), context.getThinkActRecordId());
 		if (record == null) {
 			record = new PlanExecutionRecord(context.getPlanId());
 		}

@@ -54,6 +54,7 @@ import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackC
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
@@ -122,7 +123,12 @@ public class DynamicAgent extends ReActAgent {
 		AgentExecutionRecord planExecutionRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId());
 		thinkActRecord = new ThinkActRecord(planExecutionRecord.getId());
 		thinkActRecord.setActStartTime(LocalDateTime.now());
-		planExecutionRecorder.recordThinkActExecution(getPlanId(), planExecutionRecord.getId(), thinkActRecord);
+		
+		// Get the plan execution record using new unified API with thinkActRecordId from parent class
+		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(getPlanId(), getThinkActRecordId());
+		if (planRecord != null) {
+			planExecutionRecorder.recordThinkActExecution(planRecord, planExecutionRecord.getId(), thinkActRecord);
+		}
 
 		try {
 			return executeWithRetry(3);

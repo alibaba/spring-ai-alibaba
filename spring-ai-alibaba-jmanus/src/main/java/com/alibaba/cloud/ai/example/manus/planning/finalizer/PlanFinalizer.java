@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -109,7 +110,10 @@ public class PlanFinalizer {
 	 * @param summary The summary of the plan execution
 	 */
 	private void recordPlanCompletion(ExecutionContext context, String summary) {
-		recorder.recordPlanCompletion(context.getPlan().getPlanId(), summary);
+		PlanExecutionRecord planRecord = recorder.getExecutionRecord(context.getPlan().getPlanId(), null);
+		if (planRecord != null) {
+			recorder.recordPlanCompletion(planRecord, summary);
+		}
 
 		log.info("Plan completed with ID: {} and summary: {}", context.getPlan().getPlanId(), summary);
 	}

@@ -116,7 +116,7 @@ public class ManusController {
 	 */
 	@GetMapping("/details/{planId}")
 	public synchronized ResponseEntity<?> getExecutionDetails(@PathVariable("planId") String planId) {
-		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
+		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId, null);
 
 		if (planRecord == null) {
 			return ResponseEntity.notFound().build();
@@ -154,7 +154,7 @@ public class ManusController {
 	 */
 	@DeleteMapping("/details/{planId}")
 	public ResponseEntity<Map<String, String>> removeExecutionDetails(@PathVariable("planId") String planId) {
-		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
+		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId, null);
 		if (planRecord == null) {
 			return ResponseEntity.notFound().build();
 		}

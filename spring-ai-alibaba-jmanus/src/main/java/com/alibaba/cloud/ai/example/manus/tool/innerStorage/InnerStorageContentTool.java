@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
 
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
@@ -111,11 +112,14 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 
 	private final InnerStorageService innerStorageService;
 	private final SummaryWorkflow summaryWorkflow;
+	private final PlanExecutionRecorder planExecutionRecorder;
 	private String planId;
 
-	public InnerStorageContentTool(InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow) {
+	public InnerStorageContentTool(InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow, 
+			PlanExecutionRecorder planExecutionRecorder) {
 		this.innerStorageService = innerStorageService;
 		this.summaryWorkflow = summaryWorkflow;
+		this.planExecutionRecorder = planExecutionRecorder;
 	}
 
 	private static final String TOOL_NAME = "inner_storage_content_tool";
@@ -274,7 +278,10 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 			// 委托给 SummaryWorkflow 进行处理
 			log.info("委托给 SummaryWorkflow 处理文件内容提取：文件={}, 查询关键词={}", actualFileName, queryKey);
 
-			String result = summaryWorkflow.executeSummaryWorkflow(planId, actualFileName, fileContent, queryKey)
+			// 获取当前的 think-act 记录ID
+			Long thinkActRecordId = getCurrentThinkActRecordId();
+
+			String result = summaryWorkflow.executeSummaryWorkflow(planId, actualFileName, fileContent, queryKey, thinkActRecordId)
 				.get(); // 阻塞等待结果
 
 			return new ToolExecuteResult(result);
@@ -288,6 +295,32 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 			log.error("SummaryWorkflow 执行失败", e);
 			return new ToolExecuteResult("内容处理失败: " + e.getMessage());
 		}
+	}
+
+	/**
+	 * 获取当前的 think-act 记录ID
+	 * @return 当前 think-act 记录ID，如果没有则返回 null
+	 */
+	private Long getCurrentThinkActRecordId() {
+		try {
+			// 获取当前计划的执行记录
+			com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord currentAgentRecord = 
+				planExecutionRecorder.getCurrentAgentExecutionRecord(planId);
+			
+			if (currentAgentRecord != null && currentAgentRecord.getThinkActSteps() != null && 
+				!currentAgentRecord.getThinkActSteps().isEmpty()) {
+				// 获取最后一个 think-act 记录（当前正在执行的）
+				List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord> steps = 
+					currentAgentRecord.getThinkActSteps();
+				com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord lastStep = 
+					steps.get(steps.size() - 1);
+				return lastStep.getId();
+			}
+		} catch (Exception e) {
+			log.warn("Failed to get current think-act record ID: {}", e.getMessage());
+		}
+		
+		return null;
 	}
 
 	@Override
