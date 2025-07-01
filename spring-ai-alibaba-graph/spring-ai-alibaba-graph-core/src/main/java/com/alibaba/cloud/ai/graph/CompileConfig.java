@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import io.micrometer.observation.ObservationRegistry;
 
 import java.util.Collection;
 import java.util.Deque;
@@ -47,6 +48,8 @@ public class CompileConfig {
 	private Set<String> interruptsAfter = Set.of();
 
 	private boolean releaseThread = false;
+	
+	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 	/**
 	 * Returns the current state of the thread release flag.
@@ -65,7 +68,15 @@ public class CompileConfig {
 	public Queue<GraphLifecycleListener> lifecycleListeners() {
 		return lifecycleListeners;
 	}
-
+	
+	/**
+	 * Gets observation registry for monitoring and tracing.
+	 * @return The observation registry instance.
+	 */
+	public ObservationRegistry observationRegistry() {
+		return observationRegistry;
+	}
+	
 	/**
 	 * Returns the array of interrupts that will occur before the specified node
 	 * (deprecated).
@@ -168,6 +179,16 @@ public class CompileConfig {
 			this.config.releaseThread = releaseThread;
 			return this;
 		}
+		
+		/**
+		 * Sets the observation registry for monitoring and tracing.
+		 * @param observationRegistry The ObservationRegistry to use.
+		 * @return This builder instance for method chaining.
+		 */
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.config.observationRegistry = observationRegistry;
+			return this;
+		}
 
 		/**
 		 * Sets the saver configuration for checkpoints.
@@ -261,6 +282,7 @@ public class CompileConfig {
 		this.interruptsAfter = config.interruptsAfter;
 		this.releaseThread = config.releaseThread;
 		this.lifecycleListeners = config.lifecycleListeners;
+		this.observationRegistry = config.observationRegistry;
 	}
 
 }

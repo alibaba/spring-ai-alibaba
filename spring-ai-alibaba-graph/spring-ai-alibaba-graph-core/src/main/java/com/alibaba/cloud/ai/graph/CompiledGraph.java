@@ -30,22 +30,14 @@ import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
-import com.alibaba.cloud.ai.graph.observation.edge.DefaultGraphEdgeObservationConvention;
-import com.alibaba.cloud.ai.graph.observation.edge.GraphEdgeObservationConvention;
-import com.alibaba.cloud.ai.graph.observation.graph.DefaultGraphObservationConvention;
-import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationConvention;
-import com.alibaba.cloud.ai.graph.observation.node.DefaultGraphNodeObservationConvention;
-import com.alibaba.cloud.ai.graph.observation.node.GraphNodeObservationConvention;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
 import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import com.alibaba.fastjson.JSON;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.Observation.Scope;
-import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
@@ -128,25 +120,8 @@ public class CompiledGraph {
 	public final CompileConfig compileConfig;
 
 	/**
-	 * Observation registry used for instrumentation.
-	 */
-	private ObservationRegistry observationRegistry;
-
-	private static final GraphObservationConvention DEFAULT_GRAPH_OBSERVATION_CONVENTION = new DefaultGraphObservationConvention();
-
-	private GraphObservationConvention graphObservationConvention = DEFAULT_GRAPH_OBSERVATION_CONVENTION;
-
-	private static final GraphNodeObservationConvention DEFAULT_NODE_OBSERVATION_CONVENTION = new DefaultGraphNodeObservationConvention();
-
-	private GraphNodeObservationConvention graphNodeObservationConvention = DEFAULT_NODE_OBSERVATION_CONVENTION;
-
-	private static final GraphEdgeObservationConvention DEFAULT_EDGE_OBSERVATION_CONVENTION = new DefaultGraphEdgeObservationConvention();
-
-	private GraphEdgeObservationConvention graphEdgeObservationConvention = DEFAULT_EDGE_OBSERVATION_CONVENTION;
-
-	/**
 	 * Constructs a CompiledGraph with the given StateGraph.
-	 * 
+	 *
 	 * @param stateGraph    the StateGraph to be used in this CompiledGraph
 	 * @param compileConfig the compile config
 	 * @throws GraphStateException the graph state exception
@@ -186,12 +161,10 @@ public class CompiledGraph {
 		for (var n : processedData.nodes().elements) {
 			var factory = n.actionFactory();
 			Objects.requireNonNull(factory, format("action factory for node id '%s' is null!", n.id()));
-			AsyncNodeActionWithConfig originalAction = factory.apply(compileConfig);
-			// wraps nodeAction
-			AsyncNodeActionWithConfig wrappedAction = wrapAsyncNodeActionWithTracing(
-					n.id(),
-					originalAction);
-			nodes.put(n.id(), wrappedAction);
+			AsyncNodeActionWithConfig action = factory.apply(compileConfig);
+			// Wrap node action with tracing
+			action = wrapAsyncNodeActionWithTracing(n.id(), action);
+			nodes.put(n.id(), action);
 		}
 
 		// EVALUATE EDGES
@@ -199,9 +172,9 @@ public class CompiledGraph {
 			var targets = e.targets();
 			if (targets.size() == 1) {
 				EdgeValue edgeValue = targets.get(0);
-				// 包裹 edge 的 action
 				if (nodes.containsKey(edgeValue.id())) {
 					AsyncNodeActionWithConfig originalAction = nodes.get(edgeValue.id());
+					// Wrap edge action with tracing
 					AsyncNodeActionWithConfig wrappedEdgeAction = wrapAsyncEdgeActionWithTracing(
 							edgeValue.id(),
 							originalAction);
@@ -236,17 +209,14 @@ public class CompiledGraph {
 				}
 
 				var actions = parallelNodeStream.get()
-						// .map( target -> nodes.remove(target.id()) )
 						.map(target -> nodes.get(target.id()))
 						.toList();
 
 				var parallelNode = new ParallelNode(e.sourceId(), actions, keyStrategyMap);
 
-				AsyncNodeActionWithConfig wrappedParallelNodeAction = wrapAsyncEdgeActionWithTracing(
-						parallelNode.id(),
-						parallelNode.actionFactory().apply(compileConfig));
-
-				nodes.put(parallelNode.id(), wrappedParallelNodeAction);
+				AsyncNodeActionWithConfig parallelNodeAction = parallelNode.actionFactory().apply(compileConfig);
+				parallelNodeAction = wrapAsyncEdgeActionWithTracing(parallelNode.id(), parallelNodeAction);
+				nodes.put(parallelNode.id(), parallelNodeAction);
 
 				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
 
@@ -270,7 +240,7 @@ public class CompiledGraph {
 	 * Same of {@link #stateOf(RunnableConfig)} but throws an IllegalStateException
 	 * if
 	 * checkpoint is not found.
-	 * 
+	 *
 	 * @param config the RunnableConfig
 	 * @return the StateSnapshot of the given RunnableConfig
 	 * @throws IllegalStateException if the saver is not defined, or no checkpoint
@@ -283,7 +253,7 @@ public class CompiledGraph {
 
 	/**
 	 * Get the StateSnapshot of the given RunnableConfig.
-	 * 
+	 *
 	 * @param config the RunnableConfig
 	 * @return an Optional of StateSnapshot of the given RunnableConfig
 	 * @throws IllegalStateException if the saver is not defined
@@ -302,7 +272,7 @@ public class CompiledGraph {
 	 * will be
 	 * used to determine the next node to run. If not given, the next node will be
 	 * determined by the state graph.
-	 * 
+	 *
 	 * @param config the RunnableConfig containing the graph state
 	 * @param values the values to be updated
 	 * @param asNode the node id to be used for the next node. can be null
@@ -336,7 +306,7 @@ public class CompiledGraph {
 
 	/***
 	 * Update the state of the graph with the given values.
-	 * 
+	 *
 	 * @param config the RunnableConfig containing the graph state
 	 * @param values the values to be updated
 	 * @return the updated RunnableConfig
@@ -348,7 +318,7 @@ public class CompiledGraph {
 
 	/**
 	 * Sets the maximum number of iterations for the graph execution.
-	 * 
+	 *
 	 * @param maxIterations the maximum number of iterations
 	 * @throws IllegalArgumentException if maxIterations is less than or equal to 0
 	 */
@@ -389,7 +359,7 @@ public class CompiledGraph {
 
 	/**
 	 * Determines the next node ID based on the current node ID and state.
-	 * 
+	 *
 	 * @param nodeId the current node ID
 	 * @param state  the current state
 	 * @return the next node command
@@ -432,7 +402,7 @@ public class CompiledGraph {
 
 	/**
 	 * Gets initial state.
-	 * 
+	 *
 	 * @param inputs the inputs
 	 * @param config the config
 	 * @return the initial state
@@ -447,7 +417,7 @@ public class CompiledGraph {
 
 	/**
 	 * Clone state over all state.
-	 * 
+	 *
 	 * @param data the data
 	 * @return the over all state
 	 */
@@ -457,7 +427,7 @@ public class CompiledGraph {
 
 	/**
 	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
-	 * 
+	 *
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
@@ -472,7 +442,7 @@ public class CompiledGraph {
 
 	/**
 	 * Stream async generator.
-	 * 
+	 *
 	 * @param overAllState the over all state
 	 * @param config       the config
 	 * @return the async generator
@@ -487,7 +457,7 @@ public class CompiledGraph {
 
 	/**
 	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
-	 * 
+	 *
 	 * @param inputs the input map
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
@@ -497,7 +467,7 @@ public class CompiledGraph {
 
 	/**
 	 * Stream async generator.
-	 * 
+	 *
 	 * @return the async generator
 	 */
 	public AsyncGenerator<NodeOutput> stream() throws GraphRunnerException {
@@ -507,7 +477,7 @@ public class CompiledGraph {
 	/**
 	 * Invokes the graph execution with the provided inputs and returns the final
 	 * state.
-	 * 
+	 *
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return an Optional containing the final state if present, otherwise an empty
@@ -516,7 +486,8 @@ public class CompiledGraph {
 	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config)
 			throws GraphRunnerException {
 
-		Observation graphObservation = Observation.start("spring.ai.alibaba.graph", this.observationRegistry)
+		Observation graphObservation = Observation
+				.start("spring.ai.alibaba.graph", this.compileConfig.observationRegistry())
 				.contextualName(stateGraph.getName())
 				.lowCardinalityKeyValue("spring.ai.alibaba.graph.graphName", stateGraph.getName())
 				.highCardinalityKeyValue("spring.ai.alibaba.graph.inputs", JSON.toJSONString(inputs));
@@ -539,7 +510,7 @@ public class CompiledGraph {
 
 	/**
 	 * Invoke optional.
-	 * 
+	 *
 	 * @param overAllState the over all state
 	 * @param config       the config
 	 * @return the optional
@@ -551,13 +522,14 @@ public class CompiledGraph {
 	/**
 	 * Invokes the graph execution with the provided inputs and returns the final
 	 * state.
-	 * 
+	 *
 	 * @param inputs the input map
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 *         Optional
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs) throws GraphRunnerException {
-		Observation graphObservation = Observation.start("spring.ai.alibaba.graph", this.observationRegistry)
+		Observation graphObservation = Observation
+				.start("spring.ai.alibaba.graph", this.compileConfig.observationRegistry())
 				.contextualName(stateGraph.getName())
 				.lowCardinalityKeyValue("spring.ai.alibaba.graph.graphName", stateGraph.getName())
 				.highCardinalityKeyValue("spring.ai.alibaba.graph.inputs", JSON.toJSONString(inputs));
@@ -592,7 +564,7 @@ public class CompiledGraph {
 
 	/**
 	 * Experimental API
-	 * 
+	 *
 	 * @param feedback the feedback
 	 * @param config   the config
 	 * @return the optional
@@ -609,7 +581,7 @@ public class CompiledGraph {
 
 	/**
 	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
-	 * 
+	 *
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
@@ -626,7 +598,7 @@ public class CompiledGraph {
 
 	/**
 	 * Generates a drawable graph representation of the state graph.
-	 * 
+	 *
 	 * @param type                  the type of graph representation to generate
 	 * @param title                 the title of the graph
 	 * @param printConditionalEdges whether to print conditional edges
@@ -642,7 +614,7 @@ public class CompiledGraph {
 
 	/**
 	 * Get the last StateSnapshot of the given RunnableConfig.
-	 * 
+	 *
 	 * @param config - the RunnableConfig
 	 * @return the last StateSnapshot of the given RunnableConfig if any
 	 */
@@ -652,7 +624,7 @@ public class CompiledGraph {
 
 	/**
 	 * Generates a drawable graph representation of the state graph.
-	 * 
+	 *
 	 * @param type  the type of graph representation to generate
 	 * @param title the title of the graph
 	 * @return a diagram code of the state graph
@@ -667,31 +639,12 @@ public class CompiledGraph {
 	/**
 	 * Generates a drawable graph representation of the state graph with default
 	 * title.
-	 * 
+	 *
 	 * @param type the type of graph representation to generate
 	 * @return a diagram code of the state graph
 	 */
 	public GraphRepresentation getGraph(GraphRepresentation.Type type) {
 		return getGraph(type, "Graph Diagram", true);
-	}
-
-	public void setObservationRegistry(final ObservationRegistry observationRegistry) {
-		this.observationRegistry = observationRegistry;
-	}
-
-	public void setGraphObservationConvention(final GraphObservationConvention graphObservationConvention) {
-		Assert.notNull(graphObservationConvention, "graphObservationConvention cannot be null");
-		this.graphObservationConvention = graphObservationConvention;
-	}
-
-	public void setGraphNodeObservationConvention(final GraphNodeObservationConvention graphNodeObservationConvention) {
-		Assert.notNull(graphNodeObservationConvention, "graphNodeObservationConvention cannot be null");
-		this.graphNodeObservationConvention = graphNodeObservationConvention;
-	}
-
-	public void setGraphEdgeObservationConvention(final GraphEdgeObservationConvention graphEdgeObservationConvention) {
-		Assert.notNull(graphEdgeObservationConvention, "graphEdgeObservationConvention cannot be null");
-		this.graphEdgeObservationConvention = graphEdgeObservationConvention;
 	}
 
 	/**
@@ -738,7 +691,7 @@ public class CompiledGraph {
 
 		/**
 		 * Instantiates a new Async node generator.
-		 * 
+		 *
 		 * @param overAllState the over all state
 		 * @param config       the config
 		 */
@@ -788,7 +741,7 @@ public class CompiledGraph {
 
 		/**
 		 * Build node output output.
-		 * 
+		 *
 		 * @param nodeId the node id
 		 * @return the output
 		 */
@@ -799,7 +752,7 @@ public class CompiledGraph {
 
 		/**
 		 * Clone state over all state.
-		 * 
+		 *
 		 * @param data the data
 		 * @return the over all state
 		 */
@@ -809,7 +762,7 @@ public class CompiledGraph {
 
 		/**
 		 * Build state snapshot output.
-		 * 
+		 *
 		 * @param checkpoint the checkpoint
 		 * @return the output
 		 */
@@ -821,7 +774,7 @@ public class CompiledGraph {
 
 		/**
 		 * Gets embed generator from partial state.
-		 * 
+		 *
 		 * @param partialState the partial state containing generator instances
 		 * @return an Optional containing Data with the generator if found, empty
 		 *         otherwise
@@ -868,7 +821,7 @@ public class CompiledGraph {
 
 		/**
 		 * Processes output data from generator.
-		 * 
+		 *
 		 * @param data             output data from generator
 		 * @param partialState     partial state
 		 * @param generatorEntries generator entries list
@@ -995,7 +948,9 @@ public class CompiledGraph {
 			throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 		}
 
-		/** evaluate Action without nested support */
+		/**
+		 * evaluate Action without nested support
+		 */
 		private CompletableFuture<Output> evaluateActionWithoutNested(AsyncNodeAction action, OverAllState withState) {
 
 			return action.apply(withState).thenApply(partialState -> {
@@ -1137,12 +1092,13 @@ public class CompiledGraph {
 			String nodeId,
 			AsyncNodeActionWithConfig originalAction) {
 		return (state, config) -> {
-			Observation nodeObservation = Observation.start("spring.ai.alibaba.graph.node", this.observationRegistry)
+			Observation nodeObservation = Observation
+					.start("spring.ai.alibaba.graph.node", this.compileConfig.observationRegistry())
 					.contextualName(nodeId)
 					.lowCardinalityKeyValue("spring.ai.alibaba.graph.graphName", stateGraph.getName())
 					.lowCardinalityKeyValue("spring.ai.alibaba.graph.nodeName", nodeId)
 					.lowCardinalityKeyValue("spring.ai.alibaba.graph.nodeId", nodeId)
-					.lowCardinalityKeyValue("spring.ai.alibaba.graph.node.state", JSON.toJSONString(state));
+					.highCardinalityKeyValue("spring.ai.alibaba.graph.node.state", JSON.toJSONString(state));
 			Scope scope = nodeObservation.openScope();
 			return originalAction.apply(state, config)
 					.whenComplete((result, ex) -> {
@@ -1166,7 +1122,8 @@ public class CompiledGraph {
 			String edgeId,
 			AsyncNodeActionWithConfig originalAction) {
 		return (state, config) -> {
-			Observation edgeObservation = Observation.start("spring.ai.alibaba.graph.edge", this.observationRegistry)
+			Observation edgeObservation = Observation
+					.start("spring.ai.alibaba.graph.edge", this.compileConfig.observationRegistry())
 					.contextualName(edgeId)
 					.lowCardinalityKeyValue("spring.ai.alibaba.graph.graphName", stateGraph.getName())
 					.lowCardinalityKeyValue("spring.ai.alibaba.graph.edgeId", edgeId)
@@ -1189,13 +1146,15 @@ public class CompiledGraph {
 
 }
 
-/** The type Processed nodes edges and config. */
+/**
+ * The type Processed nodes edges and config.
+ */
 record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edges, Set<String> interruptsBefore,
 		Set<String> interruptsAfter) {
 
 	/**
 	 * Instantiates a new Processed nodes edges and config.
-	 * 
+	 *
 	 * @param stateGraph the state graph
 	 * @param config     the config
 	 */
@@ -1205,7 +1164,7 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 
 	/**
 	 * Process processed nodes edges and config.
-	 * 
+	 *
 	 * @param stateGraph the state graph
 	 * @param config     the config
 	 * @return the processed nodes edges and config

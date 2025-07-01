@@ -24,10 +24,12 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
+import com.alibaba.cloud.ai.graph.observation.GraphObservationLifecycleListener;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,13 +44,18 @@ public class CustomerServiceController {
 	private CompiledGraph compiledGraph;
 
 	public CustomerServiceController(@Qualifier("workflowGraph") StateGraph stateGraph,
-			ObservationRegistry observationRegistry) throws GraphStateException {
+			ObjectProvider<ObservationRegistry> observationRegistry) throws GraphStateException {
+		// 写法1
+//		this.compiledGraph = stateGraph.compile(CompileConfig.builder()
+//				 .withLifecycleListener(new GraphObservationLifecycleListener(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP)))
+//				.build());
+		// 写法2
 		this.compiledGraph = stateGraph.compile(CompileConfig.builder()
-			// .withLifecycleListener(new
-			// GraphObservationLifecycleListener(observationRegistry))
-			.build());
-
-		this.compiledGraph.setObservationRegistry(observationRegistry);
+				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+				.build());
+		
+		// 写法3
+//		this.compiledGraph = stateGraph.compile(CompileConfig.builder()
 	}
 
 	@GetMapping("/chat")
