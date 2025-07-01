@@ -70,7 +70,7 @@ public class ToolNodeSection implements NodeSection {
 		sb.append(".toolCallbackResolver(toolCallbackResolver)\n");
 
 		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
 
 		return sb.toString();
 	}

@@ -30,7 +30,7 @@ public class GetHtmlAction extends BrowserAction {
 
 	@Override
 	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		Page page = getCurrentPage(); // Get Playwright Page instance
 		StringBuilder allHtml = new StringBuilder();
 		for (com.microsoft.playwright.Frame frame : page.frames()) {
 			try {
@@ -41,7 +41,7 @@ public class GetHtmlAction extends BrowserAction {
 				}
 			}
 			catch (Exception e) {
-				// 忽略异常
+				// Ignore exceptions
 			}
 		}
 		String result = allHtml.toString();

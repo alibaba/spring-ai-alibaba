@@ -28,8 +28,8 @@ public class ScreenShotAction extends BrowserAction {
 
 	@Override
 	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
-		byte[] screenshot = page.screenshot(); // 捕获屏幕截图
+		Page page = getCurrentPage(); // Get Playwright's Page instance
+		byte[] screenshot = page.screenshot(); // Capture screenshot
 		String base64Screenshot = java.util.Base64.getEncoder().encodeToString(screenshot);
 
 		return new ToolExecuteResult("Screenshot captured (base64 length: " + base64Screenshot.length() + ")");

@@ -29,9 +29,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * StartupAgent配置加载器
+ * StartupAgent configuration loader
  *
- * 负责从配置文件中加载startupAgent的描述和提示内容 支持缓存机制，提高性能
+ * Responsible for loading the description and prompt content of startupAgent from the
+ * configuration file, supporting caching mechanism to improve performance
  */
 @Component
 public class StartupAgentConfigLoader {
@@ -40,62 +41,62 @@ public class StartupAgentConfigLoader {
 
 	private static final String CONFIG_BASE_PATH = "prompts/startup-agents/";
 
-	// 缓存配置内容
+	// Cache configuration content
 	private final Map<String, String> cache = new ConcurrentHashMap<>();
 
 	/**
-	 * 从指定路径加载配置内容
-	 * @param configPath 配置文件路径
-	 * @return 配置内容
+	 * Load configuration content from the specified path
+	 * @param configPath Configuration file path
+	 * @return Configuration content
 	 */
 	private String loadConfigContent(String configPath) {
 		try {
 			ClassPathResource resource = new ClassPathResource(configPath);
 			if (!resource.exists()) {
-				log.warn("配置文件不存在: {}", configPath);
+				log.warn("Configuration file does not exist: {}", configPath);
 				return "";
 			}
 
 			byte[] bytes = resource.getInputStream().readAllBytes();
 			String content = new String(bytes, StandardCharsets.UTF_8);
 
-			log.debug("成功加载配置文件: {}", configPath);
+			log.debug("Successfully loaded configuration file: {}", configPath);
 			return content.trim();
 
 		}
 		catch (IOException e) {
-			log.error("加载配置文件失败: {}", configPath, e);
+			log.error("Failed to load configuration file: {}", configPath, e);
 			return "";
 		}
 	}
 
 	/**
-	 * 清空缓存
+	 * Clear cache
 	 */
 	public void clearCache() {
 		cache.clear();
-		log.info("StartupAgent配置缓存已清空");
+		log.info("StartupAgent configuration cache cleared");
 	}
 
 	/**
-	 * 获取缓存大小
-	 * @return 缓存条目数量
+	 * Get cache size
+	 * @return Cache entry count
 	 */
 	public int getCacheSize() {
 		return cache.size();
 	}
 
 	/**
-	 * 加载agent配置信息
-	 * @param agentName agent名称
-	 * @return agent配置
+	 * Load agent configuration information
+	 * @param agentName agent name
+	 * @return agent configuration
 	 */
 	public AgentConfig loadAgentConfig(String agentName) {
 		String configPath = CONFIG_BASE_PATH + agentName.toLowerCase() + "/agent-config.yml";
 		String configContent = loadConfigContent(configPath);
 
 		if (configContent.isEmpty()) {
-			log.warn("Agent配置文件不存在或为空: {}", configPath);
+			log.warn("Agent configuration file does not exist or is empty: {}", configPath);
 			return null;
 		}
 
@@ -104,7 +105,7 @@ public class StartupAgentConfigLoader {
 			Map<String, Object> yamlData = yaml.load(configContent);
 
 			if (yamlData == null) {
-				log.warn("YAML配置文件解析结果为空: {}", configPath);
+				log.warn("YAML configuration file parsing result is empty: {}", configPath);
 				return null;
 			}
 
@@ -113,7 +114,7 @@ public class StartupAgentConfigLoader {
 			config.setAgentDescription((String) yamlData.getOrDefault("agentDescription", ""));
 			config.setNextStepPrompt((String) yamlData.getOrDefault("nextStepPrompt", ""));
 
-			// 处理工具列表
+			// Process tool list
 			Object toolKeysObj = yamlData.get("availableToolKeys");
 			if (toolKeysObj instanceof List) {
 				@SuppressWarnings("unchecked")
@@ -124,35 +125,37 @@ public class StartupAgentConfigLoader {
 			return config;
 		}
 		catch (Exception e) {
-			log.error("解析Agent YAML配置文件失败: {}", configPath, e);
+			log.error("Failed to parse Agent YAML configuration file: {}", configPath, e);
 			return null;
 		}
 	}
 
 	/**
-	 * 扫描所有可用的startup agent配置目录
-	 * @return agent目录名称列表
+	 * Scan all available startup agent configuration directories
+	 * @return agent directory name list
 	 */
 	public List<String> scanAvailableAgents() {
 		try {
 			ClassPathResource baseResource = new ClassPathResource(CONFIG_BASE_PATH);
 			if (!baseResource.exists()) {
-				log.warn("StartupAgent配置基础目录不存在: {}", CONFIG_BASE_PATH);
+				log.warn("StartupAgent configuration base directory does not exist: {}", CONFIG_BASE_PATH);
 				return List.of();
 			}
 
-			// 这里简化实现，直接返回已知的agent列表
-			// 实际项目中可以通过扫描文件系统来动态发现
+			// Here is a simplified implementation, directly returning the known agent
+			// list
+			// In actual projects, it can be dynamically discovered by scanning the file
+			// system
 			return Arrays.asList("default_agent", "text_file_agent", "browser_agent");
 		}
 		catch (Exception e) {
-			log.error("扫描Agent配置目录失败", e);
+			log.error("Failed to scan Agent configuration directory", e);
 			return List.of();
 		}
 	}
 
 	/**
-	 * Agent配置类
+	 * Agent configuration class
 	 */
 	public static class AgentConfig {
 
