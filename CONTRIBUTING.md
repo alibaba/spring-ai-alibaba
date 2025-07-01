@@ -51,6 +51,10 @@ As one of the implementations of Spring AI, Spring AI Alibaba directly follows t
 
 Develop your feature, and **after development, we recommend using the `mvn clean package` command to ensure that the modified code can be compiled locally. This command will also automatically format the code in the Spring way**. Then commit your code. Before committing, please create a new branch related to this feature and use this branch for code submission.
 
+#### Code Formatting Check
+
+Before committing your code, please make sure to run `mvn spring-javaformat:apply` to format your code and ensure it adheres to the unified Spring code style.
+
 ### Development
 
 Develop your feature, and **after completing development, it's recommended to use the `mvn clean package` command to ensure that the modified code compiles successfully locally. This command also automatically formats the code according to Spring standards.** Before committing your code, please create a new branch specific to your feature and commit your changes to this branch.
