@@ -62,14 +62,14 @@ public class CodeExecutorNodeAction implements NodeAction {
 			CodeLanguage.JAVA.getValue());
 
 	public CodeExecutorNodeAction(CodeExecutor codeExecutor, String codeLanguage, String code,
-                                  CodeExecutionConfig config, Map<String, Object> params, String outputKey) {
+			CodeExecutionConfig config, Map<String, Object> params, String outputKey) {
 		this.codeExecutor = codeExecutor;
 		this.codeLanguage = codeLanguage;
 		this.code = code;
 		this.codeExecutionConfig = config;
 		this.params = params;
-        this.outputKey = outputKey;
-    }
+		this.outputKey = outputKey;
+	}
 
 	private Map<String, Object> executeWorkflowCodeTemplate(CodeLanguage language, String code, List<Object> inputs)
 			throws Exception {
@@ -106,7 +106,8 @@ public class CodeExecutorNodeAction implements NodeAction {
 				inputs.add(state.data().get((String) params.get(key)));
 			}
 		}
-		Map<String, Object> resultObjectMap = executeWorkflowCodeTemplate(CodeLanguage.fromValue(codeLanguage), code, inputs);
+		Map<String, Object> resultObjectMap = executeWorkflowCodeTemplate(CodeLanguage.fromValue(codeLanguage), code,
+				inputs);
 		Map<String, Object> updatedState = new HashMap<>();
 		if (StringUtils.hasLength(this.outputKey)) {
 			updatedState.put(this.outputKey, resultObjectMap);

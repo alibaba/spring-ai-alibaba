@@ -117,9 +117,7 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 		if (origKey == null) {
 			nodeData.setOutputKey(newKey);
 		}
-		nodeData.setOutputs(
-				List.of(new Variable(nodeData.getOutputKey(), com.alibaba.cloud.ai.model.VariableType.STRING.value())));
+		nodeData.setOutputs(List.of(new Variable(nodeData.getOutputKey(), VariableType.STRING.value())));
 	}
-
 
 }
