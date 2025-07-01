@@ -88,10 +88,9 @@ public class DefaultGraphEdgeObservationConvention implements GraphEdgeObservati
 	 */
 	@Override
 	public KeyValues getHighCardinalityKeyValues(GraphEdgeObservationContext context) {
-		KeyValues keyValues = KeyValues.of(
-				KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_STATE,
-						context.getState().toString()));
-		
+		KeyValues keyValues = KeyValues
+			.of(KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_STATE, context.getState().toString()));
+
 		if (null != context.getNextNode()) {
 			keyValues.and(KeyValue.of(GraphEdgeObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_OUTPUT,
 					context.getNextNode()));

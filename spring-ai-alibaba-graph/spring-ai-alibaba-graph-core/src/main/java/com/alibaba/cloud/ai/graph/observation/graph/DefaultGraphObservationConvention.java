@@ -87,12 +87,10 @@ public class DefaultGraphObservationConvention implements GraphObservationConven
 	 */
 	@Override
 	public KeyValues getHighCardinalityKeyValues(GraphObservationContext context) {
-		KeyValues keyValues = KeyValues.of(
-				KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_STATE,
-						context.getState().toString()));
+		KeyValues keyValues = KeyValues
+			.of(KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_STATE, context.getState().toString()));
 		if (context.getOutput() != null) {
-			keyValues.and(KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_OUTPUT,
-					context.getOutput().toString()));
+			keyValues.and(KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_OUTPUT, context.getOutput().toString()));
 		}
 		return keyValues;
 	}

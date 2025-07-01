@@ -48,7 +48,7 @@ public class CompileConfig {
 	private Set<String> interruptsAfter = Set.of();
 
 	private boolean releaseThread = false;
-	
+
 	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 	/**
@@ -68,7 +68,7 @@ public class CompileConfig {
 	public Queue<GraphLifecycleListener> lifecycleListeners() {
 		return lifecycleListeners;
 	}
-	
+
 	/**
 	 * Gets observation registry for monitoring and tracing.
 	 * @return The observation registry instance.
@@ -76,7 +76,7 @@ public class CompileConfig {
 	public ObservationRegistry observationRegistry() {
 		return observationRegistry;
 	}
-	
+
 	/**
 	 * Returns the array of interrupts that will occur before the specified node
 	 * (deprecated).
@@ -179,7 +179,7 @@ public class CompileConfig {
 			this.config.releaseThread = releaseThread;
 			return this;
 		}
-		
+
 		/**
 		 * Sets the observation registry for monitoring and tracing.
 		 * @param observationRegistry The ObservationRegistry to use.

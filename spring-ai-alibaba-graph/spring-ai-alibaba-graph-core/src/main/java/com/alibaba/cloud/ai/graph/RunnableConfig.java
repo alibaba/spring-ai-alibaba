@@ -39,7 +39,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	private final CompiledGraph.StreamMode streamMode;
 
 	private final Map<String, Object> metadata;
-	
+
 	/**
 	 * Returns the stream mode of the compiled graph.
 	 * @return {@code StreamMode} representing the current stream mode.
@@ -65,7 +65,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	public Optional<String> checkPointId() {
 		return ofNullable(checkPointId);
 	}
-	
+
 	/**
 	 * Returns an {@code Optional} describing the next node in the sequence, or an empty
 	 * {@code Optional} if there is no such node.
@@ -101,7 +101,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		}
 		return RunnableConfig.builder(this).checkPointId(checkPointId).build();
 	}
-	
+
 	/**
 	 * return metadata value for key
 	 * @param key given metadata key
@@ -218,6 +218,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		public RunnableConfig build() {
 			return new RunnableConfig(this);
 		}
+
 	}
 
 	/**
