@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import io.micrometer.observation.ObservationRegistry;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,6 +41,8 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	private final CompiledGraph.StreamMode streamMode;
 
 	private final Map<String, Object> metadata;
+	
+	private final ObservationRegistry observationRegistry;
 
 	/**
 	 * Returns the stream mode of the compiled graph.
@@ -65,7 +69,11 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	public Optional<String> checkPointId() {
 		return ofNullable(checkPointId);
 	}
-
+	
+	public Optional<ObservationRegistry> observationRegistry() {
+		return ofNullable(observationRegistry);
+	}
+	
 	/**
 	 * Returns an {@code Optional} describing the next node in the sequence, or an empty
 	 * {@code Optional} if there is no such node.
@@ -100,9 +108,15 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 			return this;
 		}
 		return RunnableConfig.builder(this).checkPointId(checkPointId).build();
-
 	}
-
+	
+	public RunnableConfig withObservationRegistry(final ObservationRegistry observationRegistry) {
+		if (Objects.equals(this.observationRegistry, observationRegistry)) {
+			return this;
+		}
+		return RunnableConfig.builder(this).observationRegistry(observationRegistry).build();
+	}
+	
 	/**
 	 * return metadata value for key
 	 * @param key given metadata key
@@ -144,6 +158,8 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 		private String checkPointId;
 
+		private ObservationRegistry observationRegistry;
+
 		private String nextNode;
 
 		private CompiledGraph.StreamMode streamMode = CompiledGraph.StreamMode.VALUES;
@@ -168,6 +184,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 			this.nextNode = config.nextNode;
 			this.streamMode = config.streamMode;
 			this.metadata = config.metadata;
+			this.observationRegistry = config.observationRegistry;
 		}
 
 		/**
@@ -188,6 +205,11 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 */
 		public Builder checkPointId(String checkPointId) {
 			this.checkPointId = checkPointId;
+			return this;
+		}
+		
+		public Builder observationRegistry(final ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
 			return this;
 		}
 
@@ -219,7 +241,6 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		public RunnableConfig build() {
 			return new RunnableConfig(this);
 		}
-
 	}
 
 	/**
@@ -230,6 +251,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	private RunnableConfig(Builder builder) {
 		this.threadId = builder.threadId;
 		this.checkPointId = builder.checkPointId;
+		this.observationRegistry = builder.observationRegistry;
 		this.nextNode = builder.nextNode;
 		this.streamMode = builder.streamMode;
 		this.metadata = ofNullable(builder.metadata).map(Map::copyOf).orElse(null);

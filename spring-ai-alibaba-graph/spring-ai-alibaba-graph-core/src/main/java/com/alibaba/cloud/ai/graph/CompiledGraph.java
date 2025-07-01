@@ -30,11 +30,17 @@ import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.observation.graph.DefaultGraphObservationConvention;
+import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationContext;
+import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationConvention;
+import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationDocumentation;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
 import com.alibaba.cloud.ai.graph.utils.SystemClock;
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
@@ -52,12 +58,17 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.*;
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
@@ -110,6 +121,15 @@ public class CompiledGraph {
 	 * The Compile config.
 	 */
 	public final CompileConfig compileConfig;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private ObservationRegistry observationRegistry;
+
+	private static final GraphObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultGraphObservationConvention();
+
+	private GraphObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
 	 * Constructs a CompiledGraph with the given StateGraph.
@@ -448,7 +468,30 @@ public class CompiledGraph {
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config)
 			throws GraphRunnerException {
-		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
+
+		GraphObservationContext observationContext = GraphObservationContext.builder()
+			.graphName(stateGraph.getName())
+			.state(inputs)
+			.build();
+
+		GraphObservationDocumentation.GRAPH
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				// Create initial state
+				try {
+					Optional<OverAllState> overAllState = stream(inputs, config).stream()
+						.reduce((a, b) -> b)
+						.map(NodeOutput::state);
+					observationContext.setResult(overAllState);
+				}
+				catch (GraphRunnerException e) {
+					observationContext.setError(e);
+					throw new RuntimeException(e);
+				}
+			});
+
+		return (Optional<OverAllState>) observationContext.getResult();
 	}
 
 	/**
@@ -468,7 +511,30 @@ public class CompiledGraph {
 	 * Optional
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs) throws GraphRunnerException {
-		return this.invoke(stateCreate(inputs), RunnableConfig.builder().build());
+		
+		GraphObservationContext observationContext = GraphObservationContext.builder()
+				.graphName(stateGraph.getName())
+				.state(inputs)
+				.build();
+		final AtomicReference<Optional<OverAllState>> result = new AtomicReference<>();
+		GraphObservationDocumentation.GRAPH
+				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+						this.observationRegistry)
+				.observe(() -> {
+					// Create initial state
+					try {
+						result.set(this.invoke(stateCreate(inputs), RunnableConfig.builder().build()));
+						observationContext.setResult(result.get());
+					}
+					catch (GraphRunnerException e) {
+						observationContext.setError(e);
+						throw new RuntimeException(e);
+					}
+				});
+		
+		return result.get();
+		
+//		return this.invoke(stateCreate(inputs), RunnableConfig.builder().build());
 	}
 
 	private OverAllState stateCreate(Map<String, Object> inputs) {
@@ -559,6 +625,15 @@ public class CompiledGraph {
 	 */
 	public GraphRepresentation getGraph(GraphRepresentation.Type type) {
 		return getGraph(type, "Graph Diagram", true);
+	}
+
+	public void setObservationRegistry(final ObservationRegistry observationRegistry) {
+		this.observationRegistry = observationRegistry;
+	}
+
+	public void setObservationConvention(final GraphObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 	/**

@@ -81,6 +81,13 @@ public enum GraphObservationDocumentation implements ObservationDocumentation {
 			}
 		},
 		/** Graph node output information */
+		GRAPH_NODE_RESULT {
+			@Override
+			public String asString() {
+				return "spring.ai.alibaba.graph.result";
+			}
+		},
+		/** Graph node output information */
 		GRAPH_NODE_OUTPUT {
 			@Override
 			public String asString() {

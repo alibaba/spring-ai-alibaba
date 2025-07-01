@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.observation.graph;
 
 import io.micrometer.observation.Observation;
+import org.springframework.lang.Nullable;
 
 import java.util.Map;
 
@@ -35,6 +36,9 @@ public class GraphObservationContext extends Observation.Context {
 
 	private final Map<String, Object> output;
 
+	@Nullable
+	private Object result;
+
 	public GraphObservationContext(String graphName, Map<String, Object> state, Map<String, Object> output) {
 		this.graphName = graphName;
 		this.state = state;
@@ -51,6 +55,15 @@ public class GraphObservationContext extends Observation.Context {
 
 	public Map<String, Object> getOutput() {
 		return this.output;
+	}
+
+	@Nullable
+	public Object getResult() {
+		return result;
+	}
+
+	public void setResult(@Nullable final Object result) {
+		this.result = result;
 	}
 
 	public static Builder builder() {

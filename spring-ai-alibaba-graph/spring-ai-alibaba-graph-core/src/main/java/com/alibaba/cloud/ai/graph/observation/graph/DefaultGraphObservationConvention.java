@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.observation.graph;
 
 import com.alibaba.cloud.ai.graph.observation.SpringAiAlibabaKind;
+import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationDocumentation.HighCardinalityKeyNames;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import org.springframework.lang.Nullable;
@@ -63,7 +64,7 @@ public class DefaultGraphObservationConvention implements GraphObservationConven
 	@Nullable
 	public String getContextualName(GraphObservationContext context) {
 		if (StringUtils.hasText(context.getName())) {
-			return "%s %s".formatted(DEFAULT_OPERATION_NAME, context.getName());
+			return "%s.%s".formatted(DEFAULT_OPERATION_NAME, context.getName());
 		}
 		return DEFAULT_OPERATION_NAME;
 	}
@@ -86,11 +87,18 @@ public class DefaultGraphObservationConvention implements GraphObservationConven
 	 */
 	@Override
 	public KeyValues getHighCardinalityKeyValues(GraphObservationContext context) {
-		return KeyValues.of(
-				KeyValue.of(GraphObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_STATE,
-						context.getState().toString()),
-				KeyValue.of(GraphObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_OUTPUT,
-						context.getOutput().toString()));
+		KeyValues keyValues = KeyValues.of(
+				KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_STATE,
+						context.getState().toString()));
+		if (context.getResult() != null) {
+			keyValues.and(KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_RESULT,
+					context.getResult().toString()));
+		}
+		if (context.getOutput() != null) {
+			keyValues.and(KeyValue.of(HighCardinalityKeyNames.GRAPH_NODE_OUTPUT,
+					context.getOutput().toString()));
+		}
+		return keyValues;
 	}
 
 }
