@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
@@ -72,6 +73,10 @@ public class DynamicAgent extends ReActAgent {
 
 	private final String nextStepPrompt;
 
+	private String modelName;
+
+	private final boolean modelControlledByPlan;
+
 	private ToolCallbackProvider toolCallbackProvider;
 
 	private final List<String> availableToolKeys;
@@ -103,7 +108,7 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
+			ManusProperties manusProperties, String name, String description, String nextStepPrompt, String modelName, boolean modelControlledByPlan,
 			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
 			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptLoader promptLoader) {
 		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptLoader);
@@ -113,6 +118,8 @@ public class DynamicAgent extends ReActAgent {
 		this.availableToolKeys = availableToolKeys;
 		this.toolCallingManager = toolCallingManager;
 		this.userInputService = userInputService;
+		this.modelName = modelName;
+		this.modelControlledByPlan = modelControlledByPlan;
 	}
 
 	@Override
@@ -154,12 +161,22 @@ public class DynamicAgent extends ReActAgent {
 			messages.addAll(historyMem);
 			messages.add(currentStepEnvMessage);
 			// Call the LLM
-			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
+			ToolCallingChatOptions.Builder builder = ToolCallingChatOptions.builder();
+			builder.internalToolExecutionEnabled(false);
+			if (modelControlledByPlan) {
+				modelName = getModel();
+			}
+			if (StrUtil.isNotBlank(modelName) && !"default_model".equals(modelName)) {
+				builder.model(modelName);
+			}
+			ChatOptions chatOptions = builder.build();
 			userPrompt = new Prompt(messages, chatOptions);
 			List<ToolCallback> callbacks = getToolCallList();
 			ChatClient chatClient = llmService.getAgentChatClient();
 			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
-
+			String model = response.getMetadata().getModel();
+			planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId()).setModelName(model);
+			planExecutionRecorder.getExecutionRecord(getPlanId()).setModelName(model);
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
 

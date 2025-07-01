@@ -31,6 +31,8 @@ public class ExecutionStep {
 
 	private BaseAgent agent;
 
+	private String model;
+
 	public Integer getStepIndex() {
 		return stepIndex;
 	}
@@ -61,6 +63,14 @@ public class ExecutionStep {
 
 	public void setStepRequirement(String stepRequirement) {
 		this.stepRequirement = stepRequirement;
+	}
+
+	public String getModel() {
+		return model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
 	}
 
 	public String getStepInStr() {

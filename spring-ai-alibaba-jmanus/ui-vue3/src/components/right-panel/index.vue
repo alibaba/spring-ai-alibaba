@@ -122,6 +122,10 @@
               }}</span>
             </div>
             <div class="info-item">
+              <span class="label">调用模型:</span>
+              <span class="value">{{ rightPanelStore.selectedStep.agentExecution.modelName }}</span>
+            </div>
+            <div class="info-item">
               <span class="label">请求:</span>
               <span class="value">{{
                 rightPanelStore.selectedStep.agentExecution.agentRequest || ''

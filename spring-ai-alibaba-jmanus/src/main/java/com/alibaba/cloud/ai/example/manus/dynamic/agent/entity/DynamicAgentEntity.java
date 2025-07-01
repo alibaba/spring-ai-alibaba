@@ -57,6 +57,12 @@ public class DynamicAgentEntity {
 	@Column(nullable = false)
 	private String className;
 
+	@Column(nullable = true)
+	private String modelName;
+
+	@Column(nullable = true)
+	private boolean modelControlledByPlan = false;
+
 	// Getters and Setters
 	public Long getId() {
 		return id;
@@ -126,4 +132,19 @@ public class DynamicAgentEntity {
 		this.className = className;
 	}
 
+	public String getModelName() {
+		return modelName;
+	}
+
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
+	}
+
+	public boolean isModelControlledByPlan() {
+		return modelControlledByPlan;
+	}
+
+	public void setModelControlledByPlan(boolean modelControlledByPlan) {
+		this.modelControlledByPlan = modelControlledByPlan;
+	}
 }

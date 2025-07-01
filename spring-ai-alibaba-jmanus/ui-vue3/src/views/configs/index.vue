@@ -46,6 +46,7 @@
       <div class="config-details">
         <BasicConfig v-if="activeCategory === 'basic'" />
         <AgentConfig v-if="activeCategory === 'agent'" />
+        <ModelConfig v-if="activeCategory === 'model'" />
         <McpConfig v-if="activeCategory === 'mcp'" />
       </div>
     </div>
@@ -57,12 +58,14 @@ import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import BasicConfig from './basicConfig.vue'
 import AgentConfig from './agentConfig.vue'
+import ModelConfig from './modelConfig.vue'
 import McpConfig from './mcpConfig.vue'
 
 const activeCategory = ref('basic')
 const categories = [
   { key: 'basic', label: '基础配置', icon: 'carbon:settings' },
   { key: 'agent', label: 'Agent配置', icon: 'carbon:bot' },
+  { key: 'model', label: 'Model配置', icon: 'carbon:build-image' },
   { key: 'mcp', label: 'Tools/MCP配置', icon: 'carbon:tool-box' },
 ]
 </script>

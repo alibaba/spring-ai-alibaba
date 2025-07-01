@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
@@ -45,6 +46,8 @@ public class PlanCreator {
 
 	private final List<DynamicAgentEntity> agents;
 
+	private final List<DynamicModelEntity> models;
+
 	private final LlmService llmService;
 
 	private final PlanningTool planningTool;
@@ -53,13 +56,14 @@ public class PlanCreator {
 
 	private final PromptLoader promptLoader;
 
-	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningTool planningTool,
+	public PlanCreator(List<DynamicAgentEntity> agents, List<DynamicModelEntity> models, LlmService llmService, PlanningTool planningTool,
 			PlanExecutionRecorder recorder, PromptLoader promptLoader) {
 		this.agents = agents;
 		this.llmService = llmService;
 		this.planningTool = planningTool;
 		this.recorder = recorder;
 		this.promptLoader = promptLoader;
+		this.models = models;
 	}
 
 	/**
@@ -77,8 +81,10 @@ public class PlanCreator {
 		try {
 			// Build agent information
 			String agentsInfo = buildAgentsInfo(agents);
+			// Build model information
+			String modelsInfo = buildModelsInfo(models);
 			// Generate plan prompt
-			String planPrompt = generatePlanPrompt(context.getUserRequest(), agentsInfo);
+			String planPrompt = generatePlanPrompt(context.getUserRequest(), agentsInfo, modelsInfo);
 
 			ExecutionPlan executionPlan = null;
 			String outputText = null;
@@ -170,13 +176,32 @@ public class PlanCreator {
 	}
 
 	/**
+	 * Build the model information string
+	 * @param models models list
+	 * @return formatted model information
+	 */
+	private String buildModelsInfo(List<DynamicModelEntity> models) {
+		StringBuilder modelsInfo = new StringBuilder("Available Models:\n");
+		for (DynamicModelEntity model : models) {
+			modelsInfo.append("- Model Name: ")
+					.append(model.getModelName())
+					.append("\n  Description: ")
+					.append(model.getModelDescription())
+					.append("\n");
+		}
+		return modelsInfo.toString();
+	}
+
+	/**
 	 * Generate the plan prompt
-	 * @param request user request
+	 *
+	 * @param request    user request
 	 * @param agentsInfo agent information
+	 * @param modelsInfo
 	 * @return formatted prompt string
 	 */
-	private String generatePlanPrompt(String request, String agentsInfo) {
-		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "request", request);
+	private String generatePlanPrompt(String request, String agentsInfo, String modelsInfo) {
+		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "modelsInfo", modelsInfo, "request", request);
 		return promptLoader.renderPrompt("planning/plan-creation.txt", variables);
 	}
 
