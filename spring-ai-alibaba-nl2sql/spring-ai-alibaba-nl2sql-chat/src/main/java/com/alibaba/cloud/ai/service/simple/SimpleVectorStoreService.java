@@ -169,8 +169,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		String text = Optional.ofNullable(tableInfoBO.getDescription()).orElse(tableInfoBO.getName());
 		Map<String, Object> metadata = Map.of("schema", Optional.ofNullable(tableInfoBO.getSchema()).orElse(""), "name",
 				tableInfoBO.getName(), "description", Optional.ofNullable(tableInfoBO.getDescription()).orElse(""),
-				"foreignKey", tableInfoBO.getForeignKey(), "primaryKey", tableInfoBO.getPrimaryKey(), "vectorType",
-				"table");
+				"foreignKey", Optional.ofNullable(tableInfoBO.getForeignKey()).orElse(""), "primaryKey",
+				Optional.ofNullable(tableInfoBO.getPrimaryKey()).orElse(""), "vectorType", "table");
 		return new Document(tableInfoBO.getName(), text, metadata);
 	}
 
