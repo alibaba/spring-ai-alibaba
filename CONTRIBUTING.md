@@ -55,10 +55,6 @@ Develop your feature, and **after development, we recommend using the `mvn clean
 
 Before committing your code, please make sure to run `mvn spring-javaformat:apply` to format your code and ensure it adheres to the unified Spring code style.
 
-### Development
-
-Develop your feature, and **after completing development, it's recommended to use the `mvn clean package` command to ensure that the modified code compiles successfully locally. This command also automatically formats the code according to Spring standards.** Before committing your code, please create a new branch specific to your feature and commit your changes to this branch.
-
 ### Local CI
 
 After completing development in your local BOE environment, it's strongly recommended to run the provided `make` command in the project's `tools/make` directory to perform local Continuous Integration (CI) checks. This ensures your code adheres to the project's standards and guidelines. If you have questions about local CI, you can enter `make help` in the console for more detailed information.
