@@ -46,13 +46,13 @@ public class LlmService {
 	public LlmService(ChatModel chatModel) {
 
 		this.chatModel = chatModel;
-		// 执行和总结规划，用相同的memory
+		// Execute and summarize planning, use the same memory
 		this.planningChatClient = ChatClient.builder(chatModel)
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
 			.build();
 
-		// // 每个agent执行过程中，用独立的memroy
+		// Each agent execution process uses independent memory
 
 		this.agentExecutionClient = ChatClient.builder(chatModel)
 			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())

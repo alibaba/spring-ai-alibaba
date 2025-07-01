@@ -25,17 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
 public class VariableAggregatorNodeSection implements NodeSection {
-
-	private final Map<String, String> varNames;
-
-	public VariableAggregatorNodeSection(Map<String, String> varNames) {
-		this.varNames = varNames;
-	}
 
 	@Override
 	public boolean support(NodeType nodeType) {
@@ -97,7 +90,7 @@ public class VariableAggregatorNodeSection implements NodeSection {
 		}
 
 		sb.append("    .build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));\n\n", id, varName));
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));\n\n", varName, varName));
 
 		return sb.toString();
 	}

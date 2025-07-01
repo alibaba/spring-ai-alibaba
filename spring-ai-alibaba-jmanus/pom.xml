@@ -20,12 +20,12 @@
         <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
-        <!-- Spring AI Alibaba 正在适配 Spring AI M8 最新代码可能会运行失败 -->
+        <!-- Spring AI Alibaba is adapting to Spring AI M8, latest code may fail to run -->
         <spring-ai-alibaba.version>1.0.0.3-SNAPSHOT</spring-ai-alibaba.version>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <moditect-maven-plugin.version>1.2.0.Final</moditect-maven-plugin.version>
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
-        
+
         <webdrivermanager.version>6.1.0</webdrivermanager.version>
 
         <!-- CheckStyle Maven Plugin -->
@@ -87,7 +87,7 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
         </dependency>
-        <!-- 
+        <!--
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-document-parser-tika</artifactId>
@@ -124,7 +124,7 @@
             <version>${webdrivermanager.version}</version>
         </dependency>
 
-        <!-- Playwright 用于浏览器自动化 -->
+        <!-- Playwright for browser automation -->
         <dependency>
             <groupId>com.microsoft.playwright</groupId>
             <artifactId>playwright</artifactId>
@@ -148,13 +148,13 @@
             <version>33.4.0-jre</version>
         </dependency>
 
-        <!-- HttpClient 核心库 -->
+        <!-- HttpClient core library -->
         <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
             <artifactId>httpclient5</artifactId>
         </dependency>
 
-        <!-- 如果需要使用 HttpClient 连接池管理 -->
+        <!-- If you need to use HttpClient connection pool management -->
         <dependency>
             <groupId>org.apache.httpcomponents.core5</groupId>
             <artifactId>httpcore5</artifactId>
@@ -187,14 +187,14 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Mockito 测试框架 -->
+        <!-- Mockito testing framework -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- Mockito JUnit Jupiter 集成 -->
+        <!-- Mockito JUnit Jupiter integration -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>

@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * VO对象，用于McpConfig的前端展示
+ * VO object for frontend display of McpConfig
  */
 public class McpConfigVO {
 
@@ -34,7 +34,7 @@ public class McpConfigVO {
 
 	private String connectionConfig;
 
-	private List<String> toolNames; // 添加工具名称列表，用于前端展示
+	private List<String> toolNames; // Add tool name list for frontend display
 
 	public McpConfigVO() {
 	}
@@ -44,10 +44,11 @@ public class McpConfigVO {
 		this.mcpServerName = entity.getMcpServerName();
 		this.connectionType = entity.getConnectionType();
 		this.connectionConfig = entity.getConnectionConfig();
-		this.toolNames = new ArrayList<>(); // 初始化为空列表，实际使用时可能需要从其他地方获取
+		this.toolNames = new ArrayList<>(); // Initialize as empty list, may need to get
+											// from other places in actual use
 	}
 
-	// 将VO列表转换为实体列表的静态方法
+	// Static method to convert VO list to entity list
 	public static List<McpConfigVO> fromEntities(List<McpConfigEntity> entities) {
 		List<McpConfigVO> vos = new ArrayList<>();
 		if (entities != null) {
