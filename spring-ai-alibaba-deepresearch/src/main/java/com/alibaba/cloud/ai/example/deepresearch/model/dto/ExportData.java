@@ -14,26 +14,15 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.model.response;
+package com.alibaba.cloud.ai.example.deepresearch.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/**
- * 报告导出响应
- *
- * @author sixiyida
- * @since 2025/6/20
- */
-public record ExportResponse(
+public record ExportData(
 		/**
 		 * 操作是否成功
 		 */
 		@JsonProperty("success") boolean success,
-
-		/**
-		 * 线程ID，用于标识当前对话的唯一性
-		 */
-		@JsonProperty("thread_id") String threadId,
 
 		/**
 		 * 导出格式
@@ -54,12 +43,11 @@ public record ExportResponse(
 		 * 错误信息，仅当success为false时有值
 		 */
 		@JsonProperty("error") String error) {
-
-	public static ExportResponse success(String threadId, String format, String filePath, String downloadUrl) {
-		return new ExportResponse(true, threadId, format, filePath, downloadUrl, null);
+	public static ExportData success(String format, String filePath, String downloadUrl) {
+		return new ExportData(true, format, filePath, downloadUrl, null);
 	}
 
-	public static ExportResponse error(String errorMessage) {
-		return new ExportResponse(false, null, null, null, null, errorMessage);
+	public static ExportData error(String errorMessage) {
+		return new ExportData(false, null, null, null, errorMessage);
 	}
 }
