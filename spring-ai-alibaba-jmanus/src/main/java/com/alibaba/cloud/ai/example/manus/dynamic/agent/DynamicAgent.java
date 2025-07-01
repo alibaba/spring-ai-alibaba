@@ -122,6 +122,7 @@ public class DynamicAgent extends ReActAgent {
 		AgentExecutionRecord planExecutionRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId());
 		thinkActRecord = new ThinkActRecord(planExecutionRecord.getId());
 		thinkActRecord.setActStartTime(LocalDateTime.now());
+		thinkActRecord.setId(thinkActRecord.generateId());
 		planExecutionRecorder.recordThinkActExecution(getPlanId(), planExecutionRecord.getId(), thinkActRecord);
 
 		try {
