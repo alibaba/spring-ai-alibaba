@@ -33,6 +33,10 @@ public class AgentConfig {
 
 	private String className;
 
+	private String modelName;
+
+	private Boolean modelControlledByPlan;
+
 	// Getters and Setters
 	public String getId() {
 		return id;
@@ -90,4 +94,19 @@ public class AgentConfig {
 		this.className = className;
 	}
 
+	public String getModelName() {
+		return modelName;
+	}
+
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
+	}
+
+	public Boolean getModelControlledByPlan() {
+		return modelControlledByPlan;
+	}
+
+	public void setModelControlledByPlan(Boolean modelControlledByPlan) {
+		this.modelControlledByPlan = modelControlledByPlan;
+	}
 }

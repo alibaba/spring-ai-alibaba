@@ -18,9 +18,9 @@ package com.alibaba.cloud.ai.example.manus.planning;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicModelLoader;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.service.DynamicModelLoader;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpTool;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;

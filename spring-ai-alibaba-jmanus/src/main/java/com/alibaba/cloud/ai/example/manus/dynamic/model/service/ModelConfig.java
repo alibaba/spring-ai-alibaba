@@ -13,12 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.dynamic.agent.repository;
+package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicModelEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import java.util.List;
 
-@Repository
-public interface DynamicModelRepository extends JpaRepository<DynamicModelEntity, Long> {
+public class ModelConfig {
+
+	private String id;
+
+	private String name;
+
+	private String description;
+
+	// Getters and Setters
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
 }

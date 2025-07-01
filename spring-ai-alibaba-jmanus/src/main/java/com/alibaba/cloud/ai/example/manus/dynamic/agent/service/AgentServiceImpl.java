@@ -171,6 +171,8 @@ public class AgentServiceImpl implements AgentService {
 		config.setNextStepPrompt(entity.getNextStepPrompt());
 		config.setAvailableTools(entity.getAvailableToolKeys());
 		config.setClassName(entity.getClassName());
+		config.setModelName(entity.getModelName());
+		config.setModelControlledByPlan(entity.isModelControlledByPlan());
 		return config;
 	}
 
@@ -180,6 +182,8 @@ public class AgentServiceImpl implements AgentService {
 		String nextStepPrompt = config.getNextStepPrompt();
 		entity = mergePrompts(entity, config.getName());
 		entity.setNextStepPrompt(nextStepPrompt);
+		entity.setModelName(config.getModelName());
+		entity.setModelControlledByPlan(config.getModelControlledByPlan());
 
 		// 1. Create new collection to ensure uniqueness and order
 		java.util.Set<String> toolSet = new java.util.LinkedHashSet<>();

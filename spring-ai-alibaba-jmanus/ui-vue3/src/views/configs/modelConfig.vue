@@ -16,48 +16,40 @@
 <template>
   <div class="config-panel">
     <div class="panel-header">
-      <h2>Agent配置</h2>
+      <h2>Model配置</h2>
       <div class="panel-actions">
         <button class="action-btn" @click="handleImport">
           <Icon icon="carbon:upload" />
           导入
         </button>
-        <button class="action-btn" @click="handleExport" :disabled="!selectedAgent">
+        <button class="action-btn" @click="handleExport" :disabled="!selectedModel">
           <Icon icon="carbon:download" />
           导出
         </button>
       </div>
     </div>
 
-    <div class="agent-layout">
-      <!-- Agent列表 -->
-      <div class="agent-list">
+    <div class="model-layout">
+      <!-- Model列表 -->
+      <div class="model-list">
         <div class="list-header">
-          <h3>已配置的Agent</h3>
-          <span class="agent-count">({{ agents.length }})</span>
+          <h3>已配置的Model</h3>
+          <span class="model-count">({{ models.length }})</span>
         </div>
         
-        <div class="agents-container" v-if="!loading">
+        <div class="models-container" v-if="!loading">
           <div
-            v-for="agent in agents"
-            :key="agent.id"
-            class="agent-card"
-            :class="{ active: selectedAgent?.id === agent.id }"
-            @click="selectAgent(agent)"
+            v-for="model in models"
+            :key="model.id"
+            class="model-card"
+            :class="{ active: selectedModel?.id === model.id }"
+            @click="selectModel(model)"
           >
-            <div class="agent-card-header">
-              <span class="agent-name">{{ agent.name }}</span>
+            <div class="model-card-header">
+              <span class="model-name">{{ model.name }}</span>
               <Icon icon="carbon:chevron-right" />
             </div>
-            <p class="agent-desc">{{ agent.description }}</p>
-            <div class="agent-tools" v-if="agent.availableTools && Array.isArray(agent.availableTools) && agent.availableTools.length > 0">
-              <span v-for="tool in agent.availableTools.slice(0, 3)" :key="tool" class="tool-tag">
-                {{ getToolDisplayName(tool) }}
-              </span>
-              <span v-if="agent.availableTools.length > 3" class="tool-more">
-                +{{ agent.availableTools.length - 3 }}
-              </span>
-            </div>
+            <p class="model-desc">{{ model.description }}</p>
           </div>
         </div>
 
@@ -66,21 +58,21 @@
           加载中...
         </div>
 
-        <div v-if="!loading && agents.length === 0" class="empty-state">
+        <div v-if="!loading && models.length === 0" class="empty-state">
           <Icon icon="carbon:bot" class="empty-icon" />
-          <p>暂无Agent配置</p>
+          <p>暂无Model配置</p>
         </div>
 
-        <button class="add-btn" @click="showAddAgentModal">
+        <button class="add-btn" @click="showAddModelModal">
           <Icon icon="carbon:add" />
-          新建Agent
+          新建Model
         </button>
       </div>
 
-      <!-- Agent详情 -->
-      <div class="agent-detail" v-if="selectedAgent">
+      <!-- Model详情 -->
+      <div class="model-detail" v-if="selectedModel">
         <div class="detail-header">
-          <h3>{{ selectedAgent.name }}</h3>
+          <h3>{{ selectedModel.name }}</h3>
           <div class="detail-actions">
             <button class="action-btn primary" @click="handleSave">
               <Icon icon="carbon:save" />
@@ -94,11 +86,11 @@
         </div>
 
         <div class="form-item">
-          <label>Agent名称 <span class="required">*</span></label>
+          <label>Model名称 <span class="required">*</span></label>
           <input 
             type="text" 
-            v-model="selectedAgent.name" 
-            placeholder="输入Agent名称"
+            v-model="selectedModel.name"
+            placeholder="输入Model名称"
             required
           />
         </div>
@@ -106,128 +98,51 @@
         <div class="form-item">
           <label>描述 <span class="required">*</span></label>
           <textarea 
-            v-model="selectedAgent.description" 
+            v-model="selectedModel.description"
             rows="3"
-            placeholder="描述这个Agent的功能和用途"
+            placeholder="描述这个Model的功能和用途"
             required
           ></textarea>
         </div>
-        
-        <div class="form-item">
-          <label>Agent提示词（人设，要求，以及下一步动作的指导）</label>
-          <textarea
-            v-model="selectedAgent.nextStepPrompt"
-            rows="8"
-            placeholder="设置Agent的人设、要求以及下一步动作的指导..."
-          ></textarea>
-        </div>
 
-        <div class="tools-section">
-          <h4>模型配置</h4>
-
-          <div class="form-item">
-            <label>模型选择</label>
-              <Switch
-                  :enabled="selectedAgent.modelControlledByPlan"
-                  label="由计划控制"
-                  @update:switchValue="updateSwitchValue($event)"
-              />
-            </div>
-
-          <div class="form-item" v-if="showModelInput">
-            <label>模型名称</label>
-            <input
-                type="text"
-                v-model="selectedAgent.modelName"
-                placeholder="输入Agent名称"
-                required
-            />
-          </div>
-        </div>
-
-        <!-- 工具分配区域 -->
-        <div class="tools-section">
-          <h4>工具配置</h4>
-          
-          <!-- 已分配的工具 -->
-          <div class="assigned-tools">
-            <div class="section-header">
-              <span>已分配工具 ({{ (selectedAgent.availableTools || []).length }})</span>
-              <button class="action-btn small" @click="showToolSelectionModal" v-if="availableTools.length > 0">
-                <Icon icon="carbon:add" />
-                添加/删除工具
-              </button>
-            </div>
-            
-            <div class="tools-grid">
-              <div v-for="toolId in (selectedAgent.availableTools || [])" :key="toolId" class="tool-item assigned">
-                <div class="tool-info">
-                  <span class="tool-name">{{ getToolDisplayName(toolId) }}</span>
-                  <span class="tool-desc">{{ getToolDescription(toolId) }}</span>
-                </div>
-              </div>
-              
-              <div v-if="!selectedAgent.availableTools || selectedAgent.availableTools.length === 0" class="no-tools">
-                <Icon icon="carbon:tool-box" />
-                <span>暂无分配的工具</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
-      
+
       <!-- 空状态 -->
       <div v-else class="no-selection">
         <Icon icon="carbon:bot" class="placeholder-icon" />
-        <p>请选择一个Agent进行配置</p>
+        <p>请选择一个Model进行配置</p>
       </div>
     </div>
 
-    <!-- 新建Agent弹窗 -->
-    <Modal v-model="showModal" title="新建Agent" @confirm="handleAddAgent">
+    <!-- 新建Model弹窗 -->
+    <Modal v-model="showModal" title="新建Model" @confirm="handleAddModel">
       <div class="modal-form">
         <div class="form-item">
-          <label>Agent名称 <span class="required">*</span></label>
+          <label>Model名称 <span class="required">*</span></label>
           <input 
             type="text" 
-            v-model="newAgent.name" 
-            placeholder="输入Agent名称"
+            v-model="newModel.name"
+            placeholder="输入Model名称"
             required 
           />
         </div>
         <div class="form-item">
           <label>描述 <span class="required">*</span></label>
           <textarea
-            v-model="newAgent.description"
+            v-model="newModel.description"
             rows="3"
-            placeholder="描述这个Agent的功能和用途"
+            placeholder="描述这个Model的功能和用途"
             required
-          ></textarea>
-        </div>
-        <div class="form-item">
-          <label>Agent提示词（人设，要求，以及下一步动作的指导）</label>
-          <textarea
-            v-model="newAgent.nextStepPrompt"
-            rows="8"
-            placeholder="设置Agent的人设、要求以及下一步动作的指导..."
           ></textarea>
         </div>
       </div>
     </Modal>
 
-    <!-- 工具选择弹窗 -->
-    <ToolSelectionModal
-      v-model="showToolModal"
-      :tools="availableTools"
-      :selected-tool-ids="selectedAgent?.availableTools || []"
-      @confirm="handleToolSelectionConfirm"
-    />
-
     <!-- 删除确认弹窗 -->
     <Modal v-model="showDeleteModal" title="删除确认">
       <div class="delete-confirm">
         <Icon icon="carbon:warning" class="warning-icon" />
-        <p>确定要删除 <strong>{{ selectedAgent?.name }}</strong> 吗？</p>
+        <p>确定要删除 <strong>{{ selectedModel?.name }}</strong> 吗？</p>
         <p class="warning-text">此操作不可恢复。</p>
       </div>
       <template #footer>
@@ -253,56 +168,23 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
-import Switch from '@/components/switch/index.vue'
 import Modal from '@/components/modal/index.vue'
-import ToolSelectionModal from '@/components/tool-selection-modal/index.vue'
-import { AgentApiService, type Agent, type Tool } from '@/api/agent-api-service'
+import { ModelApiService, type Model } from '@/api/model-api-service'
 
 // 响应式数据
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
-const agents = reactive<Agent[]>([])
-const selectedAgent = ref<Agent | null>(null)
-const availableTools = reactive<Tool[]>([])
+const models = reactive<Model[]>([])
+const selectedModel = ref<Model | null>(null)
 const showModal = ref(false)
 const showDeleteModal = ref(false)
-const showToolModal = ref(false)
-const showModelInput = ref(false)
 
-// 新建Agent表单数据
-const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
+// 新建Model表单数据
+const newModel = reactive<Omit<Model, 'id'>>({
   name: '',
-  description: '',
-  nextStepPrompt: '',
-  modelName: '',
-  modelControlledByPlan: false
+  description: ''
 })
-
-// 更新配置值
-const updateSwitchValue = (value: boolean) => {
-  showModelInput.value = !value
-}
-
-// 计算属性
-const unassignedTools = computed(() => {
-  if (!selectedAgent.value || !selectedAgent.value.availableTools || !Array.isArray(selectedAgent.value.availableTools)) {
-    return availableTools
-  }
-  return availableTools.filter(tool => !selectedAgent.value!.availableTools.includes(tool.key))
-})
-
-// 工具显示名称获取
-const getToolDisplayName = (toolId: string): string => {
-  const tool = availableTools.find(t => t.key === toolId)
-  return tool ? tool.name : toolId
-}
-
-// 工具描述获取
-const getToolDescription = (toolId: string): string => {
-  const tool = availableTools.find(t => t.key === toolId)
-  return tool ? tool.description : ''
-}
 
 // 消息提示
 const showMessage = (msg: string, type: 'success' | 'error') => {
@@ -319,246 +201,120 @@ const showMessage = (msg: string, type: 'success' | 'error') => {
 const loadData = async () => {
   loading.value = true
   try {
-    // 并行加载Agent列表和可用工具
-    const [loadedAgents, loadedTools] = await Promise.all([
-      AgentApiService.getAllAgents(),
-      AgentApiService.getAvailableTools()
+    // 并行加载Model列表和可用工具
+    const [loadedModels] = await Promise.all([
+      ModelApiService.getAllModels()
     ])
-    
-    // 确保每个agent都有availableTools数组
-    const normalizedAgents = loadedAgents.map(agent => ({
-      ...agent,
-      availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
+
+    const normalizedModels = loadedModels.map(model => ({
+      ...model
     }))
     
-    agents.splice(0, agents.length, ...normalizedAgents)
-    availableTools.splice(0, availableTools.length, ...loadedTools)
+    models.splice(0, models.length, ...normalizedModels)
     
-    // 选中第一个Agent
-    if (normalizedAgents.length > 0) {
-      await selectAgent(normalizedAgents[0])
+    // 选中第一个Model
+    if (normalizedModels.length > 0) {
+      await selectModel(normalizedModels[0])
     }
   } catch (err: any) {
     console.error('加载数据失败:', err)
     showMessage('加载数据失败: ' + err.message, 'error')
     
-    // 提供演示数据作为后备
-    const demoTools = [
-      {
-        key: 'search-web',
-        name: '网络搜索',
-        description: '在互联网上搜索信息',
-        enabled: true,
-        serviceGroup: '搜索服务'
-      },
-      {
-        key: 'search-local',
-        name: '本地搜索',
-        description: '在本地文件中搜索内容',
-        enabled: true,
-        serviceGroup: '搜索服务'
-      },
-      {
-        key: 'file-read',
-        name: '读取文件',
-        description: '读取本地或远程文件内容',
-        enabled: true,
-        serviceGroup: '文件服务'
-      },
-      {
-        key: 'file-write',
-        name: '写入文件',
-        description: '创建或修改文件内容',
-        enabled: true,
-        serviceGroup: '文件服务'
-      },
-      {
-        key: 'file-delete',
-        name: '删除文件',
-        description: '删除指定的文件',
-        enabled: false,
-        serviceGroup: '文件服务'
-      },
-      {
-        key: 'calculator',
-        name: '计算器',
-        description: '执行数学计算',
-        enabled: true,
-        serviceGroup: '计算服务'
-      },
-      {
-        key: 'code-execute',
-        name: '代码执行',
-        description: '执行Python或JavaScript代码',
-        enabled: true,
-        serviceGroup: '计算服务'
-      },
-      {
-        key: 'weather',
-        name: '天气查询',
-        description: '获取指定地区的天气信息',
-        enabled: true,
-        serviceGroup: '信息服务'
-      },
-      {
-        key: 'currency',
-        name: '汇率查询',
-        description: '查询货币汇率信息',
-        enabled: true,
-        serviceGroup: '信息服务'
-      },
-      {
-        key: 'email',
-        name: '发送邮件',
-        description: '发送电子邮件',
-        enabled: false,
-        serviceGroup: '通信服务'
-      },
-      {
-        key: 'sms',
-        name: '发送短信',
-        description: '发送短信消息',
-        enabled: false,
-        serviceGroup: '通信服务'
-      }
-    ]
-    
-    const demoAgents = [
+    const demoModels = [
       {
         id: 'demo-1',
         name: '通用助手',
         description: '一个能够处理各种任务的智能助手',
-        nextStepPrompt: 'You are a helpful assistant that can answer questions and help with various tasks. What would you like me to help you with next?',
-        availableTools: ['search-web', 'calculator', 'weather'],
-        modelControlledByPlan: false
       },
       {
         id: 'demo-2',
         name: '数据分析师',
-        description: '专门用于数据分析和可视化的Agent',
-        nextStepPrompt: 'You are a data analyst assistant specialized in analyzing data and creating visualizations. Please provide the data you would like me to analyze.',
-        availableTools: ['file-read', 'file-write', 'calculator', 'code-execute'],
-        modelControlledByPlan: false
+        description: '专门用于数据分析和可视化的Model',
       }
     ]
-    availableTools.splice(0, availableTools.length, ...demoTools)
-    agents.splice(0, agents.length, ...demoAgents)
+    models.splice(0, models.length, ...demoModels)
     
-    if (demoAgents.length > 0) {
-      selectedAgent.value = demoAgents[0]
+    if (demoModels.length > 0) {
+      selectedModel.value = demoModels[0]
     }
   } finally {
     loading.value = false
   }
 }
 
-// 选择Agent
-const selectAgent = async (agent: Agent) => {
-  if (!agent) return
+// 选择Model
+const selectModel = async (model: Model) => {
+  if (!model) return
   
   try {
     // 加载详细信息
-    const detailedAgent = await AgentApiService.getAgentById(agent.id)
-    console.log('加载Agent详情:', detailedAgent)
-    // 确保availableTools是数组
-    selectedAgent.value = {
-      ...detailedAgent,
-      availableTools: Array.isArray(detailedAgent.availableTools) ? detailedAgent.availableTools : []
+    const detailedModel = await ModelApiService.getModelById(model.id)
+    selectedModel.value = {
+      ...detailedModel
     }
-    showModelInput.value = !detailedAgent.modelControlledByPlan
   } catch (err: any) {
-    console.error('加载Agent详情失败:', err)
-    showMessage('加载Agent详情失败: ' + err.message, 'error')
+    console.error('加载Model详情失败:', err)
+    showMessage('加载Model详情失败: ' + err.message, 'error')
     // 使用基本信息作为后备
-    selectedAgent.value = {
-      ...agent,
-      availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
+    selectedModel.value = {
+      ...model
     }
-    showModelInput.value = !agent.modelControlledByPlan
   }
 }
 
-// 显示新建Agent弹窗
-const showAddAgentModal = () => {
-  newAgent.name = ''
-  newAgent.description = ''
-  newAgent.nextStepPrompt = ''
+// 显示新建Model弹窗
+const showAddModelModal = () => {
+  newModel.name = ''
+  newModel.description = ''
+  newModel.nextStepPrompt = ''
   showModal.value = true
 }
 
-// 创建新Agent
-const handleAddAgent = async () => {
-  if (!newAgent.name.trim() || !newAgent.description.trim()) {
+// 创建新Model
+const handleAddModel = async () => {
+  if (!newModel.name.trim() || !newModel.description.trim()) {
     showMessage('请填写必要的字段', 'error')
     return
   }
 
   try {
-    const agentData: Omit<Agent, 'id'> = {
-      name: newAgent.name.trim(),
-      description: newAgent.description.trim(),
-      nextStepPrompt: newAgent.nextStepPrompt?.trim() || '',
-      availableTools: []
+    const modelData: Omit<Model, 'id'> = {
+      name: newModel.name.trim(),
+      description: newModel.description.trim()
     }
 
-    const createdAgent = await AgentApiService.createAgent(agentData)
-    agents.push(createdAgent)
-    selectedAgent.value = createdAgent
+    const createdModel = await ModelApiService.createModel(modelData)
+    models.push(createdModel)
+    selectedModel.value = createdModel
     showModal.value = false
-    showMessage('Agent创建成功', 'success')
+    showMessage('Model创建成功', 'success')
   } catch (err: any) {
-    showMessage('创建Agent失败: ' + err.message, 'error')
+    showMessage('创建Model失败: ' + err.message, 'error')
   }
 }
 
-// 显示工具选择弹窗
-const showToolSelectionModal = () => {
-  showToolModal.value = true
-}
-
-// 处理工具选择确认
-const handleToolSelectionConfirm = (selectedToolIds: string[]) => {
-  if (selectedAgent.value) {
-    selectedAgent.value.availableTools = [...selectedToolIds]
-  }
-}
-
-// 添加工具
-const addTool = (toolId: string) => {
-  if (selectedAgent.value) {
-    if (!selectedAgent.value.availableTools) {
-      selectedAgent.value.availableTools = []
-    }
-    if (!selectedAgent.value.availableTools.includes(toolId)) {
-      selectedAgent.value.availableTools.push(toolId)
-    }
-  }
-}
-
-
-
-// 保存Agent
+// 保存Model
 const handleSave = async () => {
-  if (!selectedAgent.value) return
+  if (!selectedModel.value) return
 
-  if (!selectedAgent.value.name.trim() || !selectedAgent.value.description.trim()) {
+  if (!selectedModel.value.name.trim() || !selectedModel.value.description.trim()) {
     showMessage('请填写必要的字段', 'error')
     return
   }
 
   try {
-    const savedAgent = await AgentApiService.updateAgent(selectedAgent.value.id, selectedAgent.value)
+    const savedModel = await ModelApiService.updateModel(selectedModel.value.id, selectedModel.value)
     
     // 更新本地列表中的数据
-    const index = agents.findIndex(a => a.id === savedAgent.id)
+    const index = models.findIndex(a => a.id === savedModel.id)
     if (index !== -1) {
-      agents[index] = savedAgent
+      models[index] = savedModel
     }
     
-    selectedAgent.value = savedAgent
-    showMessage('Agent保存成功', 'success')
+    selectedModel.value = savedModel
+    showMessage('Model保存成功', 'success')
   } catch (err: any) {
-    showMessage('保存Agent失败: ' + err.message, 'error')
+    showMessage('保存Model失败: ' + err.message, 'error')
   }
 }
 
@@ -567,29 +323,29 @@ const showDeleteConfirm = () => {
   showDeleteModal.value = true
 }
 
-// 删除Agent
+// 删除Model
 const handleDelete = async () => {
-  if (!selectedAgent.value) return
+  if (!selectedModel.value) return
 
   try {
-    await AgentApiService.deleteAgent(selectedAgent.value.id)
+    await ModelApiService.deleteModel(selectedModel.value.id)
     
     // 从列表中移除
-    const index = agents.findIndex(a => a.id === selectedAgent.value!.id)
+    const index = models.findIndex(a => a.id === selectedModel.value!.id)
     if (index !== -1) {
-      agents.splice(index, 1)
+      models.splice(index, 1)
     }
 
-    // 选择其他Agent或清除选中状态
-    selectedAgent.value = agents.length > 0 ? agents[0] : null
+    // 选择其他Model或清除选中状态
+    selectedModel.value = models.length > 0 ? models[0] : null
     showDeleteModal.value = false
-    showMessage('Agent删除成功', 'success')
+    showMessage('Model删除成功', 'success')
   } catch (err: any) {
-    showMessage('删除Agent失败: ' + err.message, 'error')
+    showMessage('删除Model失败: ' + err.message, 'error')
   }
 }
 
-// 导入Agent
+// 导入Model
 const handleImport = () => {
   const input = document.createElement('input')
   input.type = 'file'
@@ -600,20 +356,20 @@ const handleImport = () => {
       const reader = new FileReader()
       reader.onload = async (e) => {
         try {
-          const agentData = JSON.parse(e.target?.result as string)
+          const modelData = JSON.parse(e.target?.result as string)
           // 基本验证
-          if (!agentData.name || !agentData.description) {
-            throw new Error('Agent配置格式不正确：缺少必要字段')
+          if (!modelData.name || !modelData.description) {
+            throw new Error('Model配置格式不正确：缺少必要字段')
           }
           
           // 移除id字段，让后端分配新的id
-          const { id, ...importData } = agentData
-          const savedAgent = await AgentApiService.createAgent(importData)
-          agents.push(savedAgent)
-          selectedAgent.value = savedAgent
-          showMessage('Agent导入成功', 'success')
+          const { id, ...importData } = modelData
+          const savedModel = await ModelApiService.createModel(importData)
+          models.push(savedModel)
+          selectedModel.value = savedModel
+          showMessage('Model导入成功', 'success')
         } catch (err: any) {
-          showMessage('导入Agent失败: ' + err.message, 'error')
+          showMessage('导入Model失败: ' + err.message, 'error')
         }
       }
       reader.readAsText(file)
@@ -622,22 +378,22 @@ const handleImport = () => {
   input.click()
 }
 
-// 导出Agent
+// 导出Model
 const handleExport = () => {
-  if (!selectedAgent.value) return
+  if (!selectedModel.value) return
 
   try {
-    const jsonString = JSON.stringify(selectedAgent.value, null, 2)
+    const jsonString = JSON.stringify(selectedModel.value, null, 2)
     const dataBlob = new Blob([jsonString], { type: 'application/json' })
     const url = URL.createObjectURL(dataBlob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `agent-${selectedAgent.value.name}-${new Date().toISOString().split('T')[0]}.json`
+    link.download = `model-${selectedModel.value.name}-${new Date().toISOString().split('T')[0]}.json`
     link.click()
     URL.revokeObjectURL(url)
-    showMessage('Agent导出成功', 'success')
+    showMessage('Model导出成功', 'success')
   } catch (err: any) {
-    showMessage('导出Agent失败: ' + err.message, 'error')
+    showMessage('导出Model失败: ' + err.message, 'error')
   }
 }
 
@@ -678,14 +434,14 @@ onMounted(() => {
   gap: 12px;
 }
 
-.agent-layout {
+.model-layout {
   display: flex;
   gap: 30px;
   flex: 1;
   min-height: 0;
 }
 
-.agent-list {
+.model-list {
   width: 320px;
   flex-shrink: 0;
   display: flex;
@@ -704,12 +460,12 @@ onMounted(() => {
   font-size: 18px;
 }
 
-.agent-count {
+.model-count {
   color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
 }
 
-.agents-container {
+.models-container {
   flex: 1;
   overflow-y: auto;
   margin-bottom: 16px;
@@ -750,7 +506,7 @@ onMounted(() => {
   margin-top: 8px;
 }
 
-.agent-card {
+.model-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
@@ -770,26 +526,26 @@ onMounted(() => {
   }
 }
 
-.agent-card-header {
+.model-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
 }
 
-.agent-name {
+.model-name {
   font-weight: 500;
   font-size: 16px;
 }
 
-.agent-desc {
+.model-desc {
   color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
   line-height: 1.4;
   margin-bottom: 12px;
 }
 
-.agent-tools {
+.model-tools {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -838,7 +594,7 @@ onMounted(() => {
   }
 }
 
-.agent-detail {
+.model-detail {
   flex: 1;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
