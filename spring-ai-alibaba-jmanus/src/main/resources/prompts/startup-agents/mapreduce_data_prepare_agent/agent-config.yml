@@ -1,6 +1,6 @@
 # MAPREDUCE_DATA_PREPARE_AGENT 配置
 agentName: MAPREDUCE_DATA_PREPARE_AGENT
-agentDescription: 一个数据准备代理，负责验证文件/文件夹存在性、识别表格头部信息并调用分割工具进行数据分割处理，固定的用于MapReduce 的开始的 Preparation  准备 环节。
+agentDescription: 一个数据准备代理，负责验证文件/文件夹存在性并调用分割工具进行数据分割处理，固定的用于MapReduce 的开始的 Preparation  准备 环节。
 availableToolKeys:
 - map_reduce_tool
 - terminate
@@ -18,11 +18,9 @@ nextStepPrompt: |
 
   请记住：
   1. 首先验证目标文件或文件夹是否存在
-  4. 如果没有找到表格头部，也要调用分割工具但不提供头部信息
   5. 重要：你必须在回复中使用至少一个工具才能取得进展！
 
   逐步思考：
   1. 文件/文件夹路径是什么？
   2. 目标是否存在？
-  3. 是否能识别到表格头部？
-  4. 如何正确调用分割工具？
+  3. 如何正确调用分割工具？

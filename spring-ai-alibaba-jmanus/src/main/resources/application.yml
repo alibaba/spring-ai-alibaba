@@ -24,14 +24,14 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
   # H2 console configuration
   h2:
     console:
-      enabled: true
+      enabled: false
       path: /h2-console
 logging:
   file:

@@ -3,6 +3,7 @@ package com.alibaba.cloud.ai.example.manus.workflow;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -53,7 +55,7 @@ public class SummaryWorkflow {
 			      ],
 				  "postProcessSteps": [
 					{
-					  "stepRequirement": "[MAPREDUCE_FIN_AGENT] 对合并后的结果进行后处理"
+					  "stepRequirement": "[MAPREDUCE_FIN_AGENT] 当导出完成后，读取导出的结果后，完整输出所有导出的内容"
 					}
 				  ]
 
@@ -64,18 +66,20 @@ public class SummaryWorkflow {
 
 	/**
 	 * 执行内容总结工作流
-	 * @param planId 调用者的计划ID，确保子进程能找到对应的目录
-	 * @param fileName 文件名
-	 * @param content 文件内容
-	 * @param queryKey 查询关键词
+	 * 
+	 * @param planId           调用者的计划ID，确保子进程能找到对应的目录
+	 * @param fileName         文件名
+	 * @param content          文件内容
+	 * @param queryKey         查询关键词
 	 * @param thinkActRecordId Think-act记录ID，用于子计划执行追踪
 	 * @return 总结结果的Future
 	 */
-	public CompletableFuture<String> executeSummaryWorkflow(String planId, String fileName, String content, String queryKey, Long thinkActRecordId
-	, String terminateColumnsString) {
+	public CompletableFuture<String> executeSummaryWorkflow(String planId, String fileName, String content,
+			String queryKey, Long thinkActRecordId, String terminateColumnsString) {
 
 		// 1. 构建MapReduce执行计划，使用调用者的planId
-		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(planId, fileName, content, queryKey, terminateColumnsString);
+		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(planId, fileName, content, queryKey,
+				terminateColumnsString);
 
 		// 2. 直接执行计划，传递thinkActRecordId
 		return executeMapReducePlanWithContext(executionPlan, thinkActRecordId);
@@ -83,17 +87,19 @@ public class SummaryWorkflow {
 
 	/**
 	 * 构建基于MapReduce的总结执行计划
-	 * @param planId 使用调用者提供的计划ID，确保子进程能找到对应的目录
+	 * 
+	 * @param planId   使用调用者提供的计划ID，确保子进程能找到对应的目录
 	 * @param fileName 文件名
-	 * @param content 文件内容（暂未直接使用，但保留为扩展参数）
+	 * @param content  文件内容（暂未直接使用，但保留为扩展参数）
 	 * @param queryKey 查询关键词
 	 */
-	private MapReduceExecutionPlan buildSummaryExecutionPlan(String planId, String fileName, String content, String queryKey, String terminateColumnsString) {
+	private MapReduceExecutionPlan buildSummaryExecutionPlan(String planId, String fileName, String content,
+			String queryKey, String terminateColumnsString) {
 
 		try {
 			// 使用调用者提供的planId，而不是生成新的
 			logger.info("Building summary execution plan with provided planId: {}", planId);
-			
+
 			// 生成计划JSON，使用传入的planId
 			String planJson = String.format(SUMMARY_PLAN_TEMPLATE, planId, fileName, queryKey);
 
@@ -116,8 +122,7 @@ public class SummaryWorkflow {
 
 			return plan;
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("构建总结执行计划失败，planId: {}", planId, e);
 			throw new RuntimeException("构建MapReduce总结执行计划失败: " + e.getMessage(), e);
 		}
@@ -126,12 +131,13 @@ public class SummaryWorkflow {
 	/**
 	 * 执行MapReduce计划 - 支持子计划上下文
 	 */
-	private CompletableFuture<String> executeMapReducePlanWithContext(MapReduceExecutionPlan executionPlan, Long thinkActRecordId) {
+	private CompletableFuture<String> executeMapReducePlanWithContext(MapReduceExecutionPlan executionPlan,
+			Long thinkActRecordId) {
 		return CompletableFuture.supplyAsync(() -> {
 			try {
 				// 获取规划协调器
 				PlanningCoordinator planningCoordinator = planningFactory
-					.createPlanningCoordinator(executionPlan.getPlanId());
+						.createPlanningCoordinator(executionPlan.getPlanId());
 
 				// 创建执行上下文
 				ExecutionContext context = new ExecutionContext();
@@ -140,20 +146,21 @@ public class SummaryWorkflow {
 				context.setPlan(executionPlan);
 				context.setNeedSummary(false);
 				context.setUserRequest("执行基于MapReduce的内容智能总结");
-				
+
 				// 设置think-act记录ID以支持子计划执行
 				if (thinkActRecordId != null) {
 					context.setThinkActRecordId(thinkActRecordId);
 				}
 
 				// 执行计划（跳过创建计划步骤，直接执行）
-					planningCoordinator.executeExistingPlan(context);
+				planningCoordinator.executeExistingPlan(context);
 
 				logger.info("MapReduce总结计划执行成功: {}", executionPlan.getPlanId());
 
-				return "getContent 执行成功 ， 执行的结果日志： "+context.getResultSummary();
-			}
-			catch (Exception e) {
+				List<ExecutionStep> allSteps = context.getPlan().getAllSteps();
+				ExecutionStep lastStep = allSteps.get(allSteps.size() - 1);
+				return "getContent 执行成功 ， 执行的结果日志： " + lastStep.getResult();
+			} catch (Exception e) {
 				logger.error("MapReduce总结计划执行失败", e);
 				return "❌ MapReduce内容总结执行失败: " + e.getMessage();
 			}
