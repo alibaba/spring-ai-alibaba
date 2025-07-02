@@ -29,7 +29,7 @@ import java.util.Map;
 
 /**
  * This repository class is responsible for loading agent model parameters from a JSON
- * configuration file. It reads the models defined in the "agents-config.json" file and
+ * configuration file. It reads the models defined in the "model-config.json" file and
  * provides methods to access them.
  *
  * The JSON structure is expected to have a key "models" which maps to a list of
@@ -47,7 +47,7 @@ public class ModelParamRepositoryImpl implements ModelParamRepository {
 
 	private final Map<String, List<AgentModel>> modelSet;
 
-	public ModelParamRepositoryImpl(@Value("classpath:agents-config.json") Resource agentsConfig,
+	public ModelParamRepositoryImpl(@Value("classpath:model-config.json") Resource agentsConfig,
 			ObjectMapper objectMapper) {
 		try {
 			this.modelSet = objectMapper.readValue(ResourceUtil.loadResourceAsString(agentsConfig),
