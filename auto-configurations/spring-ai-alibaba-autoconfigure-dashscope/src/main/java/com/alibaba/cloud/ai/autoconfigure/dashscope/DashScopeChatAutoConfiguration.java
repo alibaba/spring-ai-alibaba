@@ -17,9 +17,10 @@ package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.model.SpringAIAlibabaModels;
 import io.micrometer.observation.ObservationRegistry;
-
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
@@ -28,6 +29,7 @@ import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,6 +37,7 @@ import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfigura
 import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -53,7 +56,7 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 // @formatter:off
 @ConditionalOnClass(DashScopeApi.class)
 @ConditionalOnDashScopeEnabled
-@ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
+@Conditional(DashScopeChatAutoConfiguration.Condition.class)
 @AutoConfiguration(after = {
 		RestClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class,
@@ -136,5 +139,30 @@ public class DashScopeChatAutoConfiguration {
 					.build();
 		}
 
+		public static class Condition extends AllNestedConditions {
+
+			public Condition() {
+				super(ConfigurationPhase.PARSE_CONFIGURATION);
+			}
+
+			/**
+			 * Enable this when `spring.ai.dashscope.chat.enabled` is not set or is set to `true`.
+			 */
+			@ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+					matchIfMissing = true)
+			static class Enabled {
+
+			}
+
+			/**
+			 * Enable this when `spring.ai.model.chat` is not specified or is set to `dashscope`.
+			 */
+			@ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIAlibabaModels.DASHSCOPE,
+					matchIfMissing = true)
+			static class ModelSpecified {
+
+			}
+
+		}
 }
 // @formatter:on
