@@ -137,8 +137,13 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			Map<String, Object> initSettings) {
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
-				return agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getPlanId(),
+				BaseAgent executor = agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getPlanId(),
 						initSettings);
+				// Set thinkActRecordId from context for sub-plan executions
+				if (context.getThinkActRecordId() != null) {
+					executor.setThinkActRecordId(context.getThinkActRecordId());
+				}
+				return executor;
 			}
 		}
 		throw new IllegalArgumentException(
@@ -178,11 +183,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	 * 获取或创建计划执行记录
 	 */
 	protected PlanExecutionRecord getOrCreatePlanExecutionRecord(ExecutionContext context) {
-		PlanExecutionRecord record = getRecorder().getExecutionRecord(context.getPlanId(), context.getThinkActRecordId());
-		if (record == null) {
-			record = new PlanExecutionRecord(context.getPlanId());
-		}
-		getRecorder().recordPlanExecution(record);
+		PlanExecutionRecord record = getRecorder().getOrCreatePlanExecutionRecord(context.getPlanId(), context.getThinkActRecordId());
 		return record;
 	}
 

@@ -120,8 +120,9 @@ public class SummaryWorkflow {
 				// 创建执行上下文
 				ExecutionContext context = new ExecutionContext();
 				context.setPlanId(executionPlan.getPlanId());
+				context.setThinkActRecordId(thinkActRecordId);
 				context.setPlan(executionPlan);
-				context.setNeedSummary(true);
+				context.setNeedSummary(false);
 				context.setUserRequest("执行基于MapReduce的内容智能总结");
 				
 				// 设置think-act记录ID以支持子计划执行
@@ -130,36 +131,11 @@ public class SummaryWorkflow {
 				}
 
 				// 执行计划（跳过创建计划步骤，直接执行）
-				planningCoordinator.executeExistingPlan(context);
+					planningCoordinator.executeExistingPlan(context);
 
 				logger.info("MapReduce总结计划执行成功: {}", executionPlan.getPlanId());
 
-				// 返回执行状态和结果摘要
-				return String.format("""
-						✅ MapReduce内容总结执行完成
-
-						📋 执行计划信息:
-						- 计划ID: %s
-						- 计划标题: %s
-						- 总步骤数: %d
-						- 节点数量: %d
-
-						📊 处理结果:
-						- 数据准备阶段：内容预处理和结构分析完成
-						- Map阶段：并行信息提取和分类完成
-						- Reduce阶段：数据汇总和报告生成完成
-
-						💡 建议文件:
-						- content_analysis_%s.md - 初步分析结果
-						- content_structure_%s.md - 结构分析结果
-						- data_preparation_%s.json - 数据准备信息
-						- final_summary_report_%s.md - 最终总结报告
-
-						📈 执行参数: %s
-						""", executionPlan.getPlanId(), executionPlan.getTitle(), executionPlan.getTotalStepCount(),
-						executionPlan.getNodeCount(), executionPlan.getPlanId(), executionPlan.getPlanId(),
-						executionPlan.getPlanId(), executionPlan.getPlanId(), executionPlan.getExecutionParams());
-
+				return "getContent 执行成功 ， 执行的结果日志： "+context.getResultSummary();
 			}
 			catch (Exception e) {
 				logger.error("MapReduce总结计划执行失败", e);

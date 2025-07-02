@@ -50,6 +50,7 @@ import java.nio.file.Paths;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.stringtemplate.v4.compiler.CodeGenerator.conditional_return;
 
 /**
  * 负责执行 MapReduce 模式计划的执行器 支持并行执行 Map 阶段和串行执行 Reduce 阶段
@@ -749,6 +750,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		copiedContext.setNeedSummary(originalContext.isNeedSummary());
 		copiedContext.setSuccess(originalContext.isSuccess());
 		copiedContext.setUseMemory(originalContext.isUseMemory());
+		copiedContext.setThinkActRecordId(originalContext.getThinkActRecordId());
 
 		// 复制工具上下文
 		if (originalContext.getToolsContext() != null) {

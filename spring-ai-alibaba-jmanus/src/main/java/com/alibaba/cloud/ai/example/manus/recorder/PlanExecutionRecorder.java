@@ -56,6 +56,14 @@ public interface PlanExecutionRecorder {
 	void recordPlanCompletion(PlanExecutionRecord planExecutionRecord, String summary);
 
 	/**
+	 * Gets or creates plan execution record with optional sub-plan support (creates by default)
+	 * @param planId Plan ID
+	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for sub-plan)
+	 * @return Plan execution record
+	 */
+	PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, Long thinkActRecordId);
+
+	/**
 	 * Gets plan execution record with optional sub-plan support
 	 * @param planId Plan ID
 	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for sub-plan)
@@ -98,23 +106,5 @@ public interface PlanExecutionRecorder {
 	 */
 	void removeExecutionRecord(String planId);
 
-	/**
-	 * Gets or creates a sub-plan execution record triggered by a tool call within a think-act record
-	 * @param parentPlanId Parent plan ID
-	 * @param parentAgentExecutionId Parent agent execution ID  
-	 * @param thinkActRecordId Think-act record ID that triggered the sub-plan
-	 * @param subPlanId Sub-plan ID (optional, will be generated if null)
-	 * @return Sub-plan execution record
-	 */
-	PlanExecutionRecord getOrCreateSubPlanExecution(String parentPlanId, Long parentAgentExecutionId, Long thinkActRecordId, String subPlanId);
-
-	/**
-	 * Gets an existing sub-plan execution record
-	 * @param parentPlanId Parent plan ID
-	 * @param parentAgentExecutionId Parent agent execution ID  
-	 * @param thinkActRecordId Think-act record ID that triggered the sub-plan
-	 * @return Sub-plan execution record, or null if not found
-	 */
-	PlanExecutionRecord getSubPlanExecution(String parentPlanId, Long parentAgentExecutionId, Long thinkActRecordId);
 
 }

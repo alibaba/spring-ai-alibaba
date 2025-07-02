@@ -49,6 +49,12 @@ public class PlanExecutionRecord {
 	// Unique identifier for the plan
 	private String planId;
 
+	// Parent plan ID for sub-plans (null for main plans)
+	private String parentPlanId;
+
+	// Think-act record ID that triggered this sub-plan (null for main plans)
+	private Long thinkActRecordId;
+
 	// Plan title
 	private String title;
 
@@ -183,6 +189,22 @@ public class PlanExecutionRecord {
 
 	public void setPlanId(String planId) {
 		this.planId = planId;
+	}
+
+	public String getParentPlanId() {
+		return parentPlanId;
+	}
+
+	public void setParentPlanId(String parentPlanId) {
+		this.parentPlanId = parentPlanId;
+	}
+
+	public Long getThinkActRecordId() {
+		return thinkActRecordId;
+	}
+
+	public void setThinkActRecordId(Long thinkActRecordId) {
+		this.thinkActRecordId = thinkActRecordId;
 	}
 
 	public String getTitle() {

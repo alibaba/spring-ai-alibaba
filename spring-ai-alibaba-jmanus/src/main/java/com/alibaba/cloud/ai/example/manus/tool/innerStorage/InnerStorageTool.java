@@ -566,10 +566,26 @@ public class InnerStorageTool implements ToolCallBiFunctionDef<InnerStorageTool.
 			// 复制文件
 			Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
 
+			// 读取文件内容
+			String fileContent = Files.readString(sourceFile);
+
 			log.info("成功导出文件：{} -> {}", actualFileName, targetFile.toString());
 
-			return new ToolExecuteResult(String.format("文件导出成功：\n" + "- 源文件: %s\n" + "- 目标文件: %s\n" + "- 文件大小: %d 字节",
-					actualFileName, targetFile.toString(), Files.size(targetFile)));
+			// 构建详细的返回结果
+			StringBuilder result = new StringBuilder();
+			
+			result.append("结果内容:\n");
+			result.append("-".repeat(50)).append("\n");
+			result.append(fileContent);
+			if (!fileContent.endsWith("\n")) {
+				result.append("\n");
+			}
+			result.append("-".repeat(50)).append("\n");
+
+
+			result.append("- 也可以访问路径来获得详细文件内容 : ").append(targetFile.toString()).append("\n");
+
+			return new ToolExecuteResult(result.toString());
 
 		}
 		catch (IOException e) {

@@ -41,8 +41,6 @@ public class ExecutionContext {
 	/** Unique identifier of the plan */
 	private String planId;
 
-	/** Think-act record ID for sub-plan executions triggered by tool calls */
-	private Long thinkActRecordId;
 
 	/** Execution plan entity containing detailed plan information and execution steps */
 	private PlanInterface plan;
@@ -50,6 +48,7 @@ public class ExecutionContext {
 	/** User's original request content */
 	private String userRequest;
 
+	private Long thinkActRecordId;
 	/** Result summary after plan execution completion */
 	private String resultSummary;
 
@@ -101,14 +100,6 @@ public class ExecutionContext {
 	}
 
 	/**
-	 * Check if this is a sub-plan execution context
-	 * @return true if this is a sub-plan execution, false otherwise
-	 */
-	public boolean isSubPlanExecution() {
-		return thinkActRecordId != null;
-	}
-
-	/**
 	 * Get execution plan entity
 	 * @return Execution plan entity object
 	 */
@@ -131,6 +122,7 @@ public class ExecutionContext {
 	public boolean isNeedSummary() {
 		return needSummary;
 	}
+
 
 	/**
 	 * Set whether execution result summary generation is needed
