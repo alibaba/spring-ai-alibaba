@@ -75,7 +75,8 @@ public class HumanNodeSection implements NodeSection {
 			.append(updateLambda)
 			.append(");\n");
 
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, varName));
+		sb.append(
+				String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", varName, varName));
 
 		return sb.toString();
 	}

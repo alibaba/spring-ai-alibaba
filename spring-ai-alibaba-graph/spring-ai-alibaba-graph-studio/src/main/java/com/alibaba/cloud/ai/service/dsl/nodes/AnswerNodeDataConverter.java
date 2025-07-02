@@ -61,8 +61,7 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 					String[] splits = variable.split("\\.", 2);
 					return new VariableSelector(splits[0], splits[1]);
 				}).toList();
-				String nodeId = (String) data.get("id");
-				String outputKey = (String) data.getOrDefault("output_key", nodeId + "_output");
+				String outputKey = (String) data.get("output_key");
 
 				AnswerNodeData nd = new AnswerNodeData(inputs, AnswerNodeData.DEFAULT_OUTPUTS).setAnswer(tmpl);
 				nd.setOutputKey(outputKey);
@@ -90,6 +89,11 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 			this.dialectConverter = dialectConverter;
 		}
 
+	}
+
+	@Override
+	public String generateVarName(int count) {
+		return "answerNode" + count;
 	}
 
 }

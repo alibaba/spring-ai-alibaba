@@ -18,10 +18,14 @@ package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderService;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 
-public class McpTool implements ToolCallBiFunctionDef {
+import java.util.Map;
+
+public class McpTool implements ToolCallBiFunctionDef<Map<String, Object>> {
 
 	private final ToolCallback toolCallback;
 
@@ -55,8 +59,8 @@ public class McpTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
+	public Class<Map<String, Object>> getInputType() {
+		return (Class<Map<String, Object>>) (Class<?>) Map.class;
 	}
 
 	@Override
@@ -79,12 +83,22 @@ public class McpTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		String result = toolCallback.call(s, toolContext);
+	public ToolExecuteResult apply(Map<String, Object> inputMap, ToolContext toolContext) {
+		// Convert Map to JSON string, as ToolCallback expects string input
+		ObjectMapper objectMapper = new ObjectMapper();
+		String jsonInput;
+		try {
+			jsonInput = objectMapper.writeValueAsString(inputMap);
+		}
+		catch (JsonProcessingException e) {
+			return new ToolExecuteResult("Error: Failed to serialize input to JSON - " + e.getMessage());
+		}
+
+		String result = toolCallback.call(jsonInput, toolContext);
 		if (result == null) {
 			result = "";
 		}
-		// 这里可以将结果存储到McpStateHolderService中
+		// Here we can store the result to McpStateHolderService
 		McpState mcpState = mcpStateHolderService.getMcpState(planId);
 		if (mcpState == null) {
 			mcpState = new McpState();

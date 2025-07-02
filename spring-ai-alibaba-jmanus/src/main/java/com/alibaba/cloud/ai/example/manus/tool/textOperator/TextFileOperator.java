@@ -31,11 +31,73 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class TextFileOperator implements ToolCallBiFunctionDef {
+public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.TextFileInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(TextFileOperator.class);
+
+	/**
+	 * Internal input class for defining input parameters of text file operation tool
+	 */
+	public static class TextFileInput {
+
+		private String action;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("file_path")
+		private String filePath;
+
+		private String content;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("source_text")
+		private String sourceText;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("target_text")
+		private String targetText;
+
+		public TextFileInput() {
+		}
+
+		public String getAction() {
+			return action;
+		}
+
+		public void setAction(String action) {
+			this.action = action;
+		}
+
+		public String getFilePath() {
+			return filePath;
+		}
+
+		public void setFilePath(String filePath) {
+			this.filePath = filePath;
+		}
+
+		public String getContent() {
+			return content;
+		}
+
+		public void setContent(String content) {
+			this.content = content;
+		}
+
+		public String getSourceText() {
+			return sourceText;
+		}
+
+		public void setSourceText(String sourceText) {
+			this.sourceText = sourceText;
+		}
+
+		public String getTargetText() {
+			return targetText;
+		}
+
+		public void setTargetText(String targetText) {
+			this.targetText = targetText;
+		}
+
+	}
 
 	private final String workingDirectoryPath;
 
@@ -49,7 +111,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 	}
 
-	private final String PARAMETERS = """
+	private static final String PARAMETERS = """
 			{
 			    "type": "object",
 			    "properties": {
@@ -78,9 +140,9 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 			}
 			""";
 
-	private final String TOOL_NAME = "text_file_operator";
+	private static final String TOOL_NAME = "text_file_operator";
 
-	private final String TOOL_DESCRIPTION = """
+	private static final String TOOL_DESCRIPTION = """
 			对文本文件（包括 md、html、css、java 等）执行各种操作：
 			- open: 打开并读取文本文件，您必须先打开文件！
 			- replace: 替换文件中的特定文本
@@ -105,14 +167,6 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 				PARAMETERS);
 		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
 		return functionTool;
-	}
-
-	public FunctionToolCallback getFunctionToolCallback(TextFileService textFileService) {
-		return FunctionToolCallback.builder(TOOL_NAME, new TextFileOperator(textFileService))
-			.description(TOOL_DESCRIPTION)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
 	}
 
 	public ToolExecuteResult run(String toolInput) {
@@ -158,9 +212,48 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		}
 	}
 
+	public ToolExecuteResult runTyped(TextFileInput input) {
+		log.info("TextFileOperator typed input: action={}, filePath={}", input.getAction(), input.getFilePath());
+		try {
+			String planId = this.planId;
+			String action = input.getAction();
+			String filePath = input.getFilePath();
+
+			return switch (action) {
+				case "open" -> openFile(planId, filePath);
+				case "replace" -> {
+					String sourceText = input.getSourceText();
+					String targetText = input.getTargetText();
+					yield replaceText(planId, sourceText, targetText);
+				}
+				case "get_text" -> getCurrentText(planId);
+				case "save" -> {
+					String content = input.getContent();
+					yield saveAndClose(planId, content);
+				}
+				case "append" -> {
+					String appendContent = input.getContent();
+					yield appendToFile(planId, appendContent);
+				}
+				case "count_words" -> countWords(planId);
+				default -> {
+					textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+							"Error: Unknown action");
+					yield new ToolExecuteResult("Unknown action: " + action);
+				}
+			};
+		}
+		catch (Exception e) {
+			String planId = this.planId;
+			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+					"Error: " + e.getMessage());
+			return new ToolExecuteResult("Error: " + e.getMessage());
+		}
+	}
+
 	private ToolExecuteResult openFile(String planId, String filePath) {
 		try {
-			// 检查文件类型
+			// Check file type
 			if (!textFileService.isSupportedFileType(filePath)) {
 				textFileService.updateFileState(planId, filePath, "Error: Unsupported file type");
 				return new ToolExecuteResult("Unsupported file type. Only text-based files are supported.");
@@ -168,7 +261,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 			textFileService.validateAndGetAbsolutePath(workingDirectoryPath, filePath);
 
-			// 如果文件不存在，先创建父目录
+			// If file doesn't exist, create parent directory first
 			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
 			if (!Files.exists(absolutePath)) {
 				try {
@@ -250,7 +343,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 				Files.writeString(absolutePath, content);
 			}
 
-			// 强制刷新到磁盘
+			// Force flush to disk
 			try (FileChannel channel = FileChannel.open(absolutePath, StandardOpenOption.WRITE)) {
 				channel.force(true);
 			}
@@ -359,8 +452,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
+	public Class<TextFileInput> getInputType() {
+		return TextFileInput.class;
 	}
 
 	@Override
@@ -369,8 +462,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		return run(s);
+	public ToolExecuteResult apply(TextFileInput input, ToolContext toolContext) {
+		return runTyped(input);
 	}
 
 	@Override

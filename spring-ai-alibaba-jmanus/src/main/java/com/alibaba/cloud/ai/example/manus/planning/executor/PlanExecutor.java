@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 负责执行计划的类
+ * Class responsible for executing plans
  */
 public class PlanExecutor {
 
@@ -47,7 +47,8 @@ public class PlanExecutor {
 
 	protected final PlanExecutionRecorder recorder;
 
-	// 匹配字符串开头的方括号，支持中文和其他字符
+	// Match square brackets at the beginning of strings, supporting Chinese and other
+	// characters
 	Pattern pattern = Pattern.compile("^\\s*\\[([^\\]]+)\\]");
 
 	private final List<DynamicAgentEntity> agents;
@@ -76,8 +77,9 @@ public class PlanExecutor {
 	}
 
 	/**
-	 * 执行整个计划的所有步骤
-	 * @param context 执行上下文，包含用户请求和执行的过程信息
+	 * Execute all steps of the entire plan
+	 * @param context Execution context containing user request and execution process
+	 * information
 	 */
 	public void executeAllSteps(ExecutionContext context) {
 		BaseAgent executor = null;
@@ -107,10 +109,10 @@ public class PlanExecutor {
 	}
 
 	/**
-	 * 执行单个步骤
-	 * @param executor 执行器
-	 * @param stepInfo 步骤信息
-	 * @return 步骤执行结果
+	 * Execute a single step
+	 * @param step Step information
+	 * @param context Execution context
+	 * @return Step execution result
 	 */
 	private BaseAgent executeStep(ExecutionStep step, ExecutionContext context) {
 
@@ -155,19 +157,19 @@ public class PlanExecutor {
 	private String getStepFromStepReq(String stepRequirement) {
 		Matcher matcher = pattern.matcher(stepRequirement);
 		if (matcher.find()) {
-			// 对匹配到的内容进行trim和转小写处理
+			// Trim and convert to lowercase for matched content
 			return matcher.group(1).trim().toLowerCase();
 		}
 		return "DEFAULT_AGENT"; // Default agent if no match found
 	}
 
 	/**
-	 * 获取步骤的执行器
-	 * @param stepType 步骤类型
-	 * @return 对应的执行器
+	 * Get executor for the step
+	 * @param stepType Step type
+	 * @return Corresponding executor
 	 */
 	private BaseAgent getExecutorForStep(String stepType, ExecutionContext context, Map<String, Object> initSettings) {
-		// 根据步骤类型获取对应的执行器
+		// Get corresponding executor based on step type
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
 				return agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getPlanId(),
@@ -214,7 +216,7 @@ public class PlanExecutor {
 	}
 
 	private void recordStepStart(ExecutionStep step, ExecutionContext context) {
-		// 更新 PlanExecutionRecord 中的当前步骤索引
+		// Update current step index in PlanExecutionRecord
 		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(context);
 		if (record != null) {
 			int currentStepIndex = step.getStepIndex();
@@ -225,17 +227,17 @@ public class PlanExecutor {
 	}
 
 	/**
-	 * 记录步骤执行完成
-	 * @param step 执行的步骤
-	 * @param context 执行上下文
+	 * Record step execution completion
+	 * @param step Executed step
+	 * @param context Execution context
 	 */
 	private void recordStepEnd(ExecutionStep step, ExecutionContext context) {
-		// 更新 PlanExecutionRecord 中的步骤状态
+		// Update step status in PlanExecutionRecord
 		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(context);
 		if (record != null) {
 			int currentStepIndex = step.getStepIndex();
 			record.setCurrentStepIndex(currentStepIndex);
-			// 重新获取所有步骤状态
+			// Retrieve all step statuses
 			retrieveExecutionSteps(context, record);
 			getRecorder().recordPlanExecution(record);
 		}

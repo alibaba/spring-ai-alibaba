@@ -20,29 +20,29 @@ import { PlanActApiService } from '@/api/plan-act-api-service'
 import type { PlanTemplate } from '@/types/plan-template'
 
 export const useSidebarStore = defineStore('sidebar', () => {
-  // 基本状态
-  const isCollapsed = ref(true) // 默认隐藏侧边栏
+  // Basic state
+  const isCollapsed = ref(true) // Default to hide sidebar
   const currentTab = ref<'list' | 'config'>('list')
 
-  // 模板列表相关状态
+  // Template list related state
   const currentPlanTemplateId = ref<string | null>(null)
   const planTemplateList = ref<PlanTemplate[]>([])
   const selectedTemplate = ref<PlanTemplate | null>(null)
   const isLoading = ref(false)
   const errorMessage = ref<string>('')
 
-  // 配置相关状态
+  // Configuration related state
   const jsonContent = ref('')
   const generatorPrompt = ref('')
   const executionParams = ref('')
   const isGenerating = ref(false)
   const isExecuting = ref(false)
 
-  // 版本控制
+  // Version control
   const planVersions = ref<string[]>([])
   const currentVersionIndex = ref(-1)
 
-  // 计算属性
+  // Computed properties
   const sortedTemplates = computed(() => {
     return [...planTemplateList.value].sort((a, b) => {
       const timeA = new Date(a.updateTime || a.createTime)
@@ -90,20 +90,20 @@ export const useSidebarStore = defineStore('sidebar', () => {
     errorMessage.value = ''
 
     try {
-      console.log('[SidebarStore] 开始加载计划模板列表...')
+      console.log('[SidebarStore] Starting to load plan template list...')
       const response = await PlanActApiService.getAllPlanTemplates()
 
       if (response && response.templates && Array.isArray(response.templates)) {
         planTemplateList.value = response.templates
-        console.log(`[SidebarStore] 成功加载 ${response.templates.length} 个计划模板`)
+        console.log(`[SidebarStore] Successfully loaded ${response.templates.length} plan templates`)
       } else {
         planTemplateList.value = []
-        console.warn('[SidebarStore] API 返回的数据格式异常，使用空列表', response)
+        console.warn('[SidebarStore] API returned abnormal data format, using empty list', response)
       }
     } catch (error: any) {
-      console.error('[SidebarStore] 加载计划模板列表失败:', error)
+      console.error('[SidebarStore] Failed to load plan template list:', error)
       planTemplateList.value = []
-      errorMessage.value = `加载失败: ${error.message}`
+      errorMessage.value = `Load failed: ${error.message}`
     } finally {
       isLoading.value = false
     }
@@ -114,9 +114,9 @@ export const useSidebarStore = defineStore('sidebar', () => {
     selectedTemplate.value = template
     currentTab.value = 'config'
 
-    // 加载模板数据
+    // Load template data
     await loadTemplateData(template)
-    console.log(`[SidebarStore] 选择了计划模板: ${template.id}`)
+    console.log(`[SidebarStore] Selected plan template: ${template.id}`)
   }
 
   const loadTemplateData = async (template: PlanTemplate) => {
@@ -129,7 +129,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
         jsonContent.value = latestContent
         currentVersionIndex.value = planVersions.value.length - 1
 
-        // 解析并设置提示信息
+        // Parse and set prompt information
         try {
           const parsed = JSON.parse(latestContent)
           if (parsed.prompt) {
@@ -139,7 +139,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
             executionParams.value = parsed.params
           }
         } catch (e) {
-          console.warn('无法解析JSON内容获取提示信息')
+          console.warn('Unable to parse JSON content to get prompt information')
         }
       } else {
         jsonContent.value = ''
@@ -147,7 +147,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
         executionParams.value = ''
       }
     } catch (error: any) {
-      console.error('加载模板数据失败:', error)
+      console.error('Failed to load template data:', error)
       throw error
     }
   }
@@ -170,12 +170,12 @@ export const useSidebarStore = defineStore('sidebar', () => {
     currentVersionIndex.value = -1
     currentTab.value = 'config'
 
-    console.log('[SidebarStore] 创建新的空白计划模板，切换到配置标签页')
+    console.log('[SidebarStore] Created new empty plan template, switching to config tab')
   }
 
   const deleteTemplate = async (template: PlanTemplate) => {
     if (!template || !template.id) {
-      console.warn('[SidebarStore] deleteTemplate: 无效的模板对象或ID')
+      console.warn('[SidebarStore] deleteTemplate: Invalid template object or ID')
       return
     }
 
@@ -183,16 +183,16 @@ export const useSidebarStore = defineStore('sidebar', () => {
       await PlanActApiService.deletePlanTemplate(template.id)
 
       if (currentPlanTemplateId.value === template.id) {
-        // 如果删除的是当前选中的模板，清空选择和相关内容
+        // If deleting the currently selected template, clear selection and related content
         clearSelection()
       }
 
-      // 重新加载列表
+      // Reload list
       await loadPlanTemplateList()
-      console.log(`[SidebarStore] 计划模板 ${template.id} 已删除`)
+      console.log(`[SidebarStore] Plan template ${template.id} has been deleted`)
     } catch (error: any) {
-      console.error('删除计划模板失败:', error)
-      // 即使出错也刷新列表以确保一致性
+      console.error('Failed to delete plan template:', error)
+      // Refresh list even if error occurs to ensure consistency
       await loadPlanTemplateList()
       throw error
     }
@@ -232,13 +232,13 @@ export const useSidebarStore = defineStore('sidebar', () => {
 
     const content = jsonContent.value.trim()
     if (!content) {
-      throw new Error('内容不能为空')
+      throw new Error('Content cannot be empty')
     }
 
     try {
       JSON.parse(content)
     } catch (e: any) {
-      throw new Error('格式无效，请修正后再保存。\n错误: ' + e.message)
+      throw new Error('Invalid format, please correct and save.\nError: ' + e.message)
     }
 
     try {
@@ -247,7 +247,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
         content
       )
 
-      // 保存到本地版本历史
+      // Save to local version history
       if (currentVersionIndex.value < planVersions.value.length - 1) {
         planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
       }
@@ -256,7 +256,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
 
       return saveResult
     } catch (error: any) {
-      console.error('保存计划修改失败:', error)
+      console.error('Failed to save plan template:', error)
       throw error
     }
   }
@@ -270,14 +270,14 @@ export const useSidebarStore = defineStore('sidebar', () => {
       const response = await PlanActApiService.generatePlan(generatorPrompt.value)
       jsonContent.value = response.planJson || ''
 
-      // 如果是新建的模板，更新模板信息
+      // If it's a new template, update template information
       if (selectedTemplate.value && selectedTemplate.value.id.startsWith('new-')) {
-        let title = '新建计划模板'
+        let title = 'New Plan Template'
         try {
           const planData = JSON.parse(response.planJson || '{}')
           title = planData.title || title
         } catch (e) {
-          console.warn('无法解析计划JSON获取标题')
+          console.warn('Unable to parse plan JSON to get title')
         }
 
         selectedTemplate.value = {
@@ -293,7 +293,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
         await loadPlanTemplateList()
       }
 
-      // 保存到版本历史
+      // Save to version history
       if (currentVersionIndex.value < planVersions.value.length - 1) {
         planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
       }
@@ -302,7 +302,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
 
       return response
     } catch (error: any) {
-      console.error('生成计划失败:', error)
+      console.error('Failed to generate plan:', error)
       throw error
     } finally {
       isGenerating.value = false
@@ -323,7 +323,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
       )
       jsonContent.value = response.planJson || ''
 
-      // 保存到版本历史
+      // Save to version history
       if (currentVersionIndex.value < planVersions.value.length - 1) {
         planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
       }
@@ -332,7 +332,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
 
       return response
     } catch (error: any) {
-      console.error('更新计划失败:', error)
+      console.error('Failed to update plan:', error)
       throw error
     } finally {
       isGenerating.value = false
@@ -363,7 +363,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
         }
       }
 
-      const title = selectedTemplate.value.title || planData.title || '执行计划'
+      const title = selectedTemplate.value.title || planData.title || 'Execution Plan'
 
       return {
         title,
@@ -371,7 +371,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
         params: executionParams.value.trim() || undefined,
       }
     } catch (error: any) {
-      console.error('准备计划执行失败:', error)
+      console.error('Failed to prepare plan execution:', error)
       isExecuting.value = false
       throw error
     }
@@ -382,7 +382,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
   }
 
   return {
-    // 状态
+    // State
     isCollapsed,
     currentTab,
     currentPlanTemplateId,
@@ -398,7 +398,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
     planVersions,
     currentVersionIndex,
 
-    // 计算属性
+    // Computed properties
     sortedTemplates,
     canRollback,
     canRestore,
