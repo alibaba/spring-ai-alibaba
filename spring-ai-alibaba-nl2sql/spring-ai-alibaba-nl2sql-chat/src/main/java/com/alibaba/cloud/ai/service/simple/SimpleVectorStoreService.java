@@ -15,9 +15,6 @@
  */
 package com.alibaba.cloud.ai.service.simple;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions;
 import com.alibaba.cloud.ai.dbconnector.DbAccessor;
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.dbconnector.bo.ColumnInfoBO;
@@ -30,13 +27,11 @@ import com.alibaba.cloud.ai.request.SearchRequest;
 import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
 import com.google.gson.Gson;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -55,18 +50,15 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 	private final DbConfig dbConfig;
 
-	private DashScopeEmbeddingModel embeddingModel;
+	private final EmbeddingModel embeddingModel;
 
 	@Autowired
-	public SimpleVectorStoreService(@Value("${spring.ai.dashscope.api-key:default_api_key}") String apiKey, Gson gson,
-			DbAccessor dbAccessor, DbConfig dbConfig) {
+	public SimpleVectorStoreService(EmbeddingModel embeddingModel, Gson gson, DbAccessor dbAccessor,
+			DbConfig dbConfig) {
 		this.gson = gson;
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
-
-		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
-		embeddingModel = new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED,
-				DashScopeEmbeddingOptions.builder().withModel("text-embedding-v2").build());
+		this.embeddingModel = embeddingModel;
 		this.vectorStore = SimpleVectorStore.builder(embeddingModel).build();
 	}
 
@@ -198,13 +190,15 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			}
 			else if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
 				FilterExpressionBuilder b = new FilterExpressionBuilder();
-				Filter.Expression expression = b.eq("vectorType", "column").build();
+				Filter.Expression expression = b.eq("vectorType", deleteRequest.getVectorType()).build();
 				List<Document> documents = vectorStore
 					.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
 						.topK(Integer.MAX_VALUE)
 						.filterExpression(expression)
 						.build());
-				vectorStore.delete(documents.stream().map(Document::getId).toList());
+				if (documents != null && !documents.isEmpty()) {
+					vectorStore.delete(documents.stream().map(Document::getId).toList());
+				}
 			}
 			else {
 				throw new IllegalArgumentException("Either id or vectorType must be specified.");
