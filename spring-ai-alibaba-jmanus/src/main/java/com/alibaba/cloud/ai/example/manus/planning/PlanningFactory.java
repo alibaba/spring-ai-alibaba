@@ -176,13 +176,13 @@ public class PlanningFactory {
 
 	}
 
-	public Map<String, ToolCallBackContext> toolCallbackMap(String planId) {
+	public Map<String, ToolCallBackContext> toolCallbackMap(String planId, List<String> terminateColumns) {
 		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
 		List<ToolCallBiFunctionDef<?>> toolDefinitions = new ArrayList<>();
 
-		// 添加所有工具定义
+		// Add all tool definitions
 		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService));
-		toolDefinitions.add(new TerminateTool(planId));
+		toolDefinitions.add(new TerminateTool(planId, terminateColumns));
 		toolDefinitions.add(new Bash(manusProperties));
 		toolDefinitions.add(new DocLoaderTool());
 		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService));
@@ -191,7 +191,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
-		toolDefinitions.add(new MapReduceTool(planId, manusProperties, sharedStateManager));
+		toolDefinitions.add(new MapReduceTool(planId, manusProperties, sharedStateManager, terminateColumns));
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {

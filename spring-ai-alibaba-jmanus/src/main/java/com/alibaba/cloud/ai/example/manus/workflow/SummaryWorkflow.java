@@ -50,7 +50,13 @@ public class SummaryWorkflow {
 			        {
 			          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] 合并该分片的信息到文件中，在保持信息完整性的前提下，合并所有内容，同时也要去掉未找到内容的那些结果"
 			        }
-			      ]
+			      ],
+				  "postProcessSteps": [
+					{
+					  "stepRequirement": "[MAPREDUCE_FIN_AGENT] 对合并后的结果进行后处理"
+					}
+				  ]
+
 			    }
 			  ]
 			}
@@ -65,10 +71,11 @@ public class SummaryWorkflow {
 	 * @param thinkActRecordId Think-act记录ID，用于子计划执行追踪
 	 * @return 总结结果的Future
 	 */
-	public CompletableFuture<String> executeSummaryWorkflow(String planId, String fileName, String content, String queryKey, Long thinkActRecordId) {
+	public CompletableFuture<String> executeSummaryWorkflow(String planId, String fileName, String content, String queryKey, Long thinkActRecordId
+	, String terminateColumnsString) {
 
 		// 1. 构建MapReduce执行计划，使用调用者的planId
-		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(planId, fileName, content, queryKey);
+		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(planId, fileName, content, queryKey, terminateColumnsString);
 
 		// 2. 直接执行计划，传递thinkActRecordId
 		return executeMapReducePlanWithContext(executionPlan, thinkActRecordId);
@@ -81,7 +88,7 @@ public class SummaryWorkflow {
 	 * @param content 文件内容（暂未直接使用，但保留为扩展参数）
 	 * @param queryKey 查询关键词
 	 */
-	private MapReduceExecutionPlan buildSummaryExecutionPlan(String planId, String fileName, String content, String queryKey) {
+	private MapReduceExecutionPlan buildSummaryExecutionPlan(String planId, String fileName, String content, String queryKey, String terminateColumnsString) {
 
 		try {
 			// 使用调用者提供的planId，而不是生成新的
@@ -92,6 +99,20 @@ public class SummaryWorkflow {
 
 			// 解析JSON为MapReduceExecutionPlan对象
 			MapReduceExecutionPlan plan = objectMapper.readValue(planJson, MapReduceExecutionPlan.class);
+			plan.getMapReduceNodes().forEach(node -> node.getMapSteps().forEach(step -> {
+				// 设置终止工具的列信息
+				step.setTerminateColumns(terminateColumnsString);
+			}));
+
+			plan.getMapReduceNodes().forEach(node -> node.getReduceSteps().forEach(step -> {
+				// 设置终止工具的列信息
+				step.setTerminateColumns(terminateColumnsString);
+			}));
+
+			plan.getMapReduceNodes().forEach(node -> node.getPostProcessSteps().forEach(step -> {
+				// 设置终止工具的列信息
+				step.setTerminateColumns(terminateColumnsString + ", fileURL");
+			}));
 
 			return plan;
 

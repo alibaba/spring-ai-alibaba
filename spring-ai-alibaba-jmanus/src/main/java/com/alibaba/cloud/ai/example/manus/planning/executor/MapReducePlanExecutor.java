@@ -391,7 +391,6 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		MapReduceTool mapReduceTool = (MapReduceTool) mapReduceToolFunc;
 
-		// 获取所有Map任务目录，为什么这里是空啊？好奇怪好奇怪
 		List<String> taskDirectories = mapReduceTool.getSplitResults();
 		if (taskDirectories.isEmpty()) {
 			logger.warn("没有找到Map任务结果，Reduce阶段跳过");

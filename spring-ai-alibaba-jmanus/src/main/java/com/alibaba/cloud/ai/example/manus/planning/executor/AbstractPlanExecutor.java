@@ -83,6 +83,8 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 		try {
 			String stepType = getStepFromStepReq(step.getStepRequirement());
 			int stepIndex = step.getStepIndex();
+			String columnsInString = step.getTerminateColumns();
+			List<String> columns = parseColumns(columnsInString);
 
 			String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
 			String stepText = step.getStepRequirement();
@@ -93,7 +95,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			initSettings.put(STEP_TEXT_KEY, stepText);
 			initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
 
-			BaseAgent executor = getExecutorForStep(stepType, context, initSettings);
+			BaseAgent executor = getExecutorForStep(stepType, context, initSettings, columns);
 			if (executor == null) {
 				logger.error("No executor found for step type: {}", stepType);
 				step.setResult("No executor found for step type: " + stepType);
@@ -134,11 +136,11 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	 * 获取步骤的执行器
 	 */
 	protected BaseAgent getExecutorForStep(String stepType, ExecutionContext context,
-			Map<String, Object> initSettings) {
+			Map<String, Object> initSettings,List<String> columns) {
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
 				BaseAgent executor = agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getPlanId(),
-						initSettings);
+						initSettings, columns);
 				// Set thinkActRecordId from context for sub-plan executions
 				if (context.getThinkActRecordId() != null) {
 					executor.setThinkActRecordId(context.getThinkActRecordId());
@@ -211,6 +213,29 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			retrieveExecutionSteps(context, record);
 			getRecorder().recordPlanExecution(record);
 		}
+	}
+
+	/**
+	 * Parse columns string by splitting with comma or Chinese comma
+	 * @param columnsInString the columns string to parse
+	 * @return list of column names
+	 */
+	protected List<String> parseColumns(String columnsInString) {
+		List<String> columns = new ArrayList<>();
+		if (columnsInString == null || columnsInString.trim().isEmpty()) {
+			return columns;
+		}
+		
+		// Split by comma (,) or Chinese comma (，)
+		String[] parts = columnsInString.split("[,，]");
+		for (String part : parts) {
+			String trimmed = part.trim();
+			if (!trimmed.isEmpty()) {
+				columns.add(trimmed);
+			}
+		}
+		
+		return columns;
 	}
 
 	/**

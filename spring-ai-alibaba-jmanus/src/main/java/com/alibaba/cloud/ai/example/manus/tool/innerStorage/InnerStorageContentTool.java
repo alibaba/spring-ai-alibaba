@@ -33,7 +33,8 @@ import org.springframework.ai.openai.api.OpenAiApi;
  * 内部存储内容获取工具，专门用于智能内容提取和结构化输出
  * 支持AI智能分析和数据提取功能
  */
-public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStorageContentTool.InnerStorageContentInput> {
+public class InnerStorageContentTool
+		implements ToolCallBiFunctionDef<InnerStorageContentTool.InnerStorageContentInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(InnerStorageContentTool.class);
 
@@ -115,7 +116,7 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 	private final PlanExecutionRecorder planExecutionRecorder;
 	private String planId;
 
-	public InnerStorageContentTool(InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow, 
+	public InnerStorageContentTool(InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow,
 			PlanExecutionRecorder planExecutionRecorder) {
 		this.innerStorageService = innerStorageService;
 		this.summaryWorkflow = summaryWorkflow;
@@ -127,7 +128,7 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 	private static final String TOOL_DESCRIPTION = """
 			内部存储内容获取工具，专门用于智能内容提取和结构化输出。
 			智能内容提取模式：根据文件名获取详细内容，**必须提供** query_key 和 columns 参数进行智能提取和结构化输出
-			
+
 			支持按文件名模糊匹配。
 			""";
 
@@ -206,13 +207,12 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 	 * 执行内部存储内容获取操作
 	 */
 	public ToolExecuteResult run(InnerStorageContentInput input) {
-		log.info("InnerStorageContentTool input: action={}, fileName={}, queryKey={}, columns={}", 
+		log.info("InnerStorageContentTool input: action={}, fileName={}, queryKey={}, columns={}",
 				input.getAction(), input.getFileName(), input.getQueryKey(), input.getColumns());
 		try {
 			// Only support intelligent content extraction mode
 			return getStoredContent(input.getFileName(), input.getQueryKey(), input.getColumns());
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("InnerStorageContentTool执行失败", e);
 			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
 		}
@@ -253,8 +253,7 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 						actualFileName = file.getRelativePath();
 					}
 				}
-			}
-			catch (NumberFormatException e) {
+			} catch (NumberFormatException e) {
 				// 不是数字，尝试按文件名查找
 				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
 				for (InnerStorageService.FileInfo file : files) {
@@ -280,18 +279,18 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 
 			// 获取当前的 think-act 记录ID
 			Long thinkActRecordId = getCurrentThinkActRecordId();
-
-			String result = summaryWorkflow.executeSummaryWorkflow(planId, actualFileName, fileContent, queryKey, thinkActRecordId)
-				.get(); // 阻塞等待结果
-
+			String terminateColumnsString = String.join(",", columns);
+			String result = summaryWorkflow
+					.executeSummaryWorkflow(planId, actualFileName, fileContent, queryKey, thinkActRecordId,
+							terminateColumnsString)
+					.get(); // 阻塞等待结果
+   
 			return new ToolExecuteResult(result);
 
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			log.error("获取存储内容失败", e);
 			return new ToolExecuteResult("获取内容失败: " + e.getMessage());
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("SummaryWorkflow 执行失败", e);
 			return new ToolExecuteResult("内容处理失败: " + e.getMessage());
 		}
@@ -299,27 +298,28 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 
 	/**
 	 * 获取当前的 think-act 记录ID
+	 * 
 	 * @return 当前 think-act 记录ID，如果没有则返回 null
 	 */
 	private Long getCurrentThinkActRecordId() {
 		try {
 			// 获取当前计划的执行记录
-			com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord currentAgentRecord = 
-				planExecutionRecorder.getCurrentAgentExecutionRecord(planId);
-			
-			if (currentAgentRecord != null && currentAgentRecord.getThinkActSteps() != null && 
-				!currentAgentRecord.getThinkActSteps().isEmpty()) {
+			com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord currentAgentRecord = planExecutionRecorder
+					.getCurrentAgentExecutionRecord(planId);
+
+			if (currentAgentRecord != null && currentAgentRecord.getThinkActSteps() != null &&
+					!currentAgentRecord.getThinkActSteps().isEmpty()) {
 				// 获取最后一个 think-act 记录（当前正在执行的）
-				List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord> steps = 
-					currentAgentRecord.getThinkActSteps();
-				com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord lastStep = 
-					steps.get(steps.size() - 1);
+				List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord> steps = currentAgentRecord
+						.getThinkActSteps();
+				com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord lastStep = steps
+						.get(steps.size() - 1);
 				return lastStep.getId();
 			}
 		} catch (Exception e) {
 			log.warn("Failed to get current think-act record ID: {}", e.getMessage());
 		}
-		
+
 		return null;
 	}
 
@@ -336,8 +336,7 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 
 			if (files.isEmpty()) {
 				sb.append("- 内部文件: 无\n");
-			}
-			else {
+			} else {
 				sb.append("- 内部文件 (").append(files.size()).append("个):\n");
 				for (InnerStorageService.FileInfo file : files) {
 					sb.append("  ").append(file.toString()).append("\n");
@@ -345,8 +344,7 @@ public class InnerStorageContentTool implements ToolCallBiFunctionDef<InnerStora
 			}
 
 			return sb.toString();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("获取工具状态失败", e);
 			return "InnerStorageContent 状态获取失败: " + e.getMessage();
 		}

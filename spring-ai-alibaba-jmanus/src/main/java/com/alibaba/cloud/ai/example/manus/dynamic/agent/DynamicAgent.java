@@ -56,7 +56,7 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
-import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
+import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
@@ -213,54 +213,60 @@ public class DynamicAgent extends ReActAgent {
 			thinkActRecord.finishAction(llmCallResponse, "SUCCESS");
 			String toolcallName = toolCall.name();
 
+			// Get the tool instance based on toolCallName
+			ToolCallBiFunctionDef<?> toolInstance = getToolCallBackContext(toolcallName).getFunctionInstance();
+			
 			// Handle FormInputTool logic
-			if (FormInputTool.name.equals(toolcallName)) {
-				ToolCallBiFunctionDef formInputToolDef = getToolCallBackContext(toolcallName).getFunctionInstance();
-				if (formInputToolDef instanceof FormInputTool) {
-					FormInputTool formInputTool = (FormInputTool) formInputToolDef;
-					// Check if the tool is waiting for user input
-					if (formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) {
-						log.info("FormInputTool is awaiting user input for planId: {}", getPlanId());
-						userInputService.storeFormInputTool(getPlanId(), formInputTool);
-						// Wait for user input or timeout
-						waitForUserInputOrTimeout(formInputTool);
+			if (toolInstance instanceof FormInputTool) {
+				FormInputTool formInputTool = (FormInputTool) toolInstance;
+				// Check if the tool is waiting for user input
+				if (formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) {
+					log.info("FormInputTool is awaiting user input for planId: {}", getPlanId());
+					userInputService.storeFormInputTool(getPlanId(), formInputTool);
+					// Wait for user input or timeout
+					waitForUserInputOrTimeout(formInputTool);
 
-						// After waiting, check the state again
-						if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_RECEIVED) {
-							log.info("User input received for planId: {}", getPlanId());
-							// The UserInputService.submitUserInputs would have updated
-							// the tool's internal state.
-							// We can now get the updated state string for the LLM.
+					// After waiting, check the state again
+					if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_RECEIVED) {
+						log.info("User input received for planId: {}", getPlanId());
+						// The UserInputService.submitUserInputs would have updated
+						// the tool's internal state.
+						// We can now get the updated state string for the LLM.
 
-							UserMessage userMessage = UserMessage.builder()
-								.text("User input received for form: " + formInputTool.getCurrentToolStateString())
-								.build();
-							processUserInputToMemory(userMessage); // Process user input
-																	// to memory
-							llmCallResponse = formInputTool.getCurrentToolStateString();
+						UserMessage userMessage = UserMessage.builder()
+							.text("User input received for form: " + formInputTool.getCurrentToolStateString())
+							.build();
+						processUserInputToMemory(userMessage); // Process user input
+																// to memory
+						llmCallResponse = formInputTool.getCurrentToolStateString();
 
-						}
-						else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
-							log.warn("Input timeout occurred for FormInputTool for planId: {}", getPlanId());
-							// Handle input timeout
+					}
+					else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
+						log.warn("Input timeout occurred for FormInputTool for planId: {}", getPlanId());
+						// Handle input timeout
 
-							UserMessage userMessage = UserMessage.builder()
-								.text("Input timeout occurred for form: ")
-								.build();
-							processUserInputToMemory(userMessage);
-							userInputService.removeFormInputTool(getPlanId()); // Clean up
-							return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS); // Or
-																											// FAILED
-						}
+						UserMessage userMessage = UserMessage.builder()
+							.text("Input timeout occurred for form: ")
+							.build();
+						processUserInputToMemory(userMessage);
+						userInputService.removeFormInputTool(getPlanId()); // Clean up
+						return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS); // Or
+																										// FAILED
 					}
 				}
 			}
 
-			// If the tool is TerminateTool, return completed state
-			if (TerminateTool.name.equals(toolcallName)) {
-				userInputService.removeFormInputTool(getPlanId()); // Clean up any pending
-																	// form
-				return new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
+			// Handle TerminableTool logic
+			if (toolInstance instanceof TerminableTool) {
+				TerminableTool terminableTool = (TerminableTool) toolInstance;
+				// Use canTerminate() to decide whether to terminate
+				if (terminableTool.canTerminate()) {
+					log.info("TerminableTool can terminate for planId: {}", getPlanId());
+					userInputService.removeFormInputTool(getPlanId()); // Clean up any pending form
+					return new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
+				} else {
+					log.info("TerminableTool cannot terminate yet for planId: {}", getPlanId());
+				}
 			}
 
 			return new AgentExecResult(llmCallResponse, AgentState.IN_PROGRESS);
@@ -382,15 +388,6 @@ public class DynamicAgent extends ReActAgent {
 			if (toolCallBackContext.containsKey(toolKey)) {
 				ToolCallBackContext toolCallback = toolCallBackContext.get(toolKey);
 				if (toolCallback != null) {
-					// 特殊处理 TerminateTool，如果当前 agent 有 outputColumns，则创建新的实例
-					if (TerminateTool.name.equals(toolKey)) {
-
-						ToolCallBiFunctionDef functionInstance = toolCallback.getFunctionInstance();
-						if (!(functionInstance instanceof com.alibaba.cloud.ai.example.manus.tool.TerminateTool)) {
-							log.warn("Expected TerminateTool instance, but got: {}", functionInstance.getClass());
-							continue;
-						}
-					}
 					toolCallbacks.add(toolCallback.getToolCallback());
 				}
 			}

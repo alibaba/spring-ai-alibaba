@@ -23,11 +23,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
@@ -36,8 +36,11 @@ import org.springframework.ai.openai.api.OpenAiApi;
 /**
  * Data split tool for MapReduce workflow data preparation phase
  * Responsible for validating file existence, identifying table header information and performing data split processing
+ * 
+ * Supports class-level terminate columns configuration that takes precedence over input parameters.
+ * When class-level terminateColumns is specified, input parameter terminate_columns will be ignored.
  */
-public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapReduceInput> {
+public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapReduceInput>, TerminableTool {
 
 	private static final Logger log = LoggerFactory.getLogger(MapReduceTool.class);
 
@@ -120,10 +123,12 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 		@com.fasterxml.jackson.annotation.JsonProperty("file_path")
 		private String filePath;
 
-		@com.fasterxml.jackson.annotation.JsonProperty("return_columns")
-		private List<String> returnColumns;
+		@com.fasterxml.jackson.annotation.JsonProperty("terminate_columns")
+		private List<String> terminateColumns;
 
 		private String content;
+
+		private List<List<Object>> data;
 
 		@com.fasterxml.jackson.annotation.JsonProperty("task_id")
 		private String taskId;
@@ -149,12 +154,12 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			this.filePath = filePath;
 		}
 
-		public List<String> getReturnColumns() {
-			return returnColumns;
+		public List<String> getTerminateColumns() {
+			return terminateColumns;
 		}
 
-		public void setReturnColumns(List<String> returnColumns) {
-			this.returnColumns = returnColumns;
+		public void setTerminateColumns(List<String> terminateColumns) {
+			this.terminateColumns = terminateColumns;
 		}
 
 		public String getContent() {
@@ -179,6 +184,14 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 		public void setStatus(String status) {
 			this.status = status;
+		}
+
+		public List<List<Object>> getData() {
+			return data;
+		}
+
+		public void setData(List<List<Object>> data) {
+			this.data = data;
 		}
 
 	}
@@ -206,7 +219,28 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			- Support automatic file creation and status record management after Map stage completion
 			""";
 
-	private static final String PARAMETERS = """
+	/**
+	 * Generate parameters JSON with dynamic terminate columns support like TerminateTool
+	 * @param terminateColumns the columns for structured output
+	 * @return JSON string for parameters schema
+	 */
+	private static String generateParametersJson(List<String> terminateColumns) {
+		// If terminateColumns is null or empty, use "content" as default column
+		List<String> effectiveColumns = (terminateColumns == null || terminateColumns.isEmpty()) ? 
+			List.of("content") : terminateColumns;
+		
+		// Generate default columns array as JSON string
+		StringBuilder defaultColumnsBuilder = new StringBuilder();
+		defaultColumnsBuilder.append("[");
+		for (int i = 0; i < effectiveColumns.size(); i++) {
+			defaultColumnsBuilder.append("\"").append(effectiveColumns.get(i)).append("\"");
+			if (i < effectiveColumns.size() - 1) {
+				defaultColumnsBuilder.append(", ");
+			}
+		}
+		defaultColumnsBuilder.append("]");
+
+		return """
 			{
 			    "oneOf": [
 			        {
@@ -220,26 +254,37 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			                    "type": "string",
 			                    "description": "要处理的文件或文件夹路径"
 			                },
-			                "return_columns": {
+			                "terminate_columns": {
 			                    "type": "array",
 			                    "items": {
 			                        "type": "string"
 			                    },
-			                    "description": "返回结果的列名，用于结构化输出"
+			                    "description": "终止结果的列名，用于结构化输出"
 			                }
 			            },
 			            "required": ["action", "file_path"],
 			            "additionalProperties": false
-			        },		        {
+			        },
+			        {
 			           "type": "object",
 			           "properties": {
 			               "action": {
 			                   "type": "string",
 			                   "const": "record_map_output"
 			               },
-			               "content": {
-			                   "type": "string",
-			                   "description": "Map阶段处理完成后的输出内容"
+			               "terminate_columns": {
+			                   "type": "array",
+			                   "items": {"type": "string"},
+			                   "description": "Column names for the structured output data",
+			                   "default": %s
+			               },
+			               "data": {
+			                   "type": "array",
+			                   "items": {
+			                       "type": "array",
+			                       "items": {}
+			                   },
+			                   "description": "Data rows corresponding to the columns"
 			               },
 			               "task_id": {
 			                   "type": "string",
@@ -251,12 +296,13 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			                   "description": "任务状态"
 			               }
 			           },
-			           "required": ["action", "content", "task_id", "status"],
+			           "required": ["action", "terminate_columns", "data", "task_id", "status"],
 			           "additionalProperties": false
 			       }
 			    ]
 			}
-			""";
+			""".formatted(defaultColumnsBuilder.toString());
+	}
 
 	private String planId;
 
@@ -267,31 +313,48 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	// 共享状态管理器，用于管理多个Agent实例间的共享状态
 	private MapReduceSharedStateManager sharedStateManager;
 
+	// Class-level terminate columns configuration - takes precedence over input parameters
+	private List<String> terminateColumns;
+
+	// Track if map output recording has completed, allowing termination
+	private volatile boolean mapOutputRecorded = false;
+
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
-	// public MapReduceTool() {
-	// // 注意：默认构造函数中无法注入依赖，需要后续设置
-	// }
-
-	// public MapReduceTool(ManusProperties manusProperties) {
-	// this.manusProperties = manusProperties;
-	// this.workingDirectoryPath =
-	// CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
-	// }
-
-	// public MapReduceTool(String planId, ManusProperties manusProperties) {
-	// this.planId = planId;
-	// this.manusProperties = manusProperties;
-	// this.workingDirectoryPath =
-	// CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
-	// }
-
+	// Backward compatibility constructor without terminateColumns
 	public MapReduceTool(String planId, ManusProperties manusProperties,
 			MapReduceSharedStateManager sharedStateManager) {
+		this(planId, manusProperties, sharedStateManager, (List<String>) null);
+	}
+
+	// Convenience constructor with comma-separated string
+	public MapReduceTool(String planId, ManusProperties manusProperties,
+			MapReduceSharedStateManager sharedStateManager, String terminateColumnsString) {
 		this.planId = planId;
 		this.manusProperties = manusProperties;
 		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 		this.sharedStateManager = sharedStateManager;
+		
+		// Parse comma-separated string into List<String>
+		if (terminateColumnsString != null && !terminateColumnsString.trim().isEmpty()) {
+			this.terminateColumns = Arrays.asList(terminateColumnsString.split(","))
+				.stream()
+				.map(String::trim)
+				.filter(s -> !s.isEmpty())
+				.collect(Collectors.toList());
+		} else {
+			this.terminateColumns = null;
+		}
+	}
+
+	// Main constructor with List<String> terminateColumns
+	public MapReduceTool(String planId, ManusProperties manusProperties,
+			MapReduceSharedStateManager sharedStateManager, List<String> terminateColumns) {
+		this.planId = planId;
+		this.manusProperties = manusProperties;
+		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+		this.sharedStateManager = sharedStateManager;
+		this.terminateColumns = terminateColumns;
 	}
 
 	/**
@@ -313,7 +376,12 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		// Get terminate columns from shared state manager if available
+		List<String> terminateColumns = null;
+		if (sharedStateManager != null && planId != null) {
+			terminateColumns = sharedStateManager.getReturnColumns(planId);
+		}
+		return generateParametersJson(terminateColumns);
 	}
 
 	@Override
@@ -337,8 +405,14 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	}
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
+		// Use default terminate columns for static tool definition
+		return getToolDefinition(null);
+	}
+
+	public static OpenAiApi.FunctionTool getToolDefinition(List<String> terminateColumns) {
+		String parameters = generateParametersJson(terminateColumns);
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(TOOL_DESCRIPTION, TOOL_NAME,
-				PARAMETERS);
+				parameters);
 		return new OpenAiApi.FunctionTool(function);
 	}
 
@@ -356,26 +430,48 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			return switch (action) {
 				case ACTION_SPLIT_DATA -> {
 					String filePath = input.getFilePath();
-					List<String> columns = input.getReturnColumns();
+					List<String> inputTerminateColumns = input.getTerminateColumns();
 
 					if (filePath == null) {
 						yield new ToolExecuteResult("Error: file_path parameter is required");
 					}
 
-					// Store return column information
-					if (columns != null && sharedStateManager != null) {
-						sharedStateManager.setReturnColumns(planId, columns);
+					// Use class-level terminateColumns if specified, otherwise use input parameter
+					List<String> effectiveTerminateColumns = null;
+					if (this.terminateColumns != null && !this.terminateColumns.isEmpty()) {
+						// Use class-level terminate columns directly
+						effectiveTerminateColumns = new ArrayList<>(this.terminateColumns);
+					} else if (inputTerminateColumns != null) {
+						effectiveTerminateColumns = inputTerminateColumns;
+					}
+
+					// Store terminate column information
+					if (effectiveTerminateColumns != null && sharedStateManager != null) {
+						sharedStateManager.setReturnColumns(planId, effectiveTerminateColumns);
 					}
 
 					yield processFileOrDirectory(filePath);
 				}
 				case ACTION_RECORD_MAP_OUTPUT -> {
-					String content = input.getContent();
+					List<String> inputTerminateColumns = input.getTerminateColumns();
+					List<List<Object>> data = input.getData();
 					String taskId = input.getTaskId();
 					String status = input.getStatus();
 
-					if (content == null) {
-						yield new ToolExecuteResult("Error: content parameter is required");
+					// Use class-level terminateColumns if specified, otherwise use input parameter
+					List<String> effectiveTerminateColumns = null;
+					if (this.terminateColumns != null && !this.terminateColumns.isEmpty()) {
+						// Use class-level terminate columns directly
+						effectiveTerminateColumns = new ArrayList<>(this.terminateColumns);
+					} else if (inputTerminateColumns != null) {
+						effectiveTerminateColumns = inputTerminateColumns;
+					}
+
+					if (effectiveTerminateColumns == null || effectiveTerminateColumns.isEmpty()) {
+						yield new ToolExecuteResult("Error: terminate_columns parameter is required");
+					}
+					if (data == null || data.isEmpty()) {
+						yield new ToolExecuteResult("Error: data parameter is required");
 					}
 					if (taskId == null) {
 						yield new ToolExecuteResult("Error: task_id parameter is required");
@@ -383,7 +479,14 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 					if (status == null) {
 						yield new ToolExecuteResult("Error: status parameter is required");
 					}
+					
+					// Validate status values
+					if (!TASK_STATUS_COMPLETED.equals(status) && !TASK_STATUS_FAILED.equals(status)) {
+						yield new ToolExecuteResult("Error: status must be either '" + TASK_STATUS_COMPLETED + "' or '" + TASK_STATUS_FAILED + "'");
+					}
 
+					// Convert structured data to content string
+					String content = formatStructuredData(effectiveTerminateColumns, data);
 					yield recordMapTaskOutput(content, taskId, status);
 				}
 				default -> new ToolExecuteResult(
@@ -511,11 +614,11 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			result.append("File splitting successful");
 			result.append(", created ").append(allTaskDirs.size()).append(" task directories");
 
-			// If return columns are required, add return column information
+			// If terminate columns are required, add terminate column information
 			if (sharedStateManager != null) {
-				List<String> returnColumns = sharedStateManager.getReturnColumns(planId);
-				if (!returnColumns.isEmpty()) {
-					result.append(", return columns: ").append(returnColumns);
+				List<String> terminateColumns = sharedStateManager.getReturnColumns(planId);
+				if (!terminateColumns.isEmpty()) {
+					result.append(", terminate columns: ").append(terminateColumns);
 				}
 			}
 
@@ -638,6 +741,23 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 				|| lowercaseFileName.endsWith(".log") || lowercaseFileName.endsWith(".json")
 				|| lowercaseFileName.endsWith(".xml") || lowercaseFileName.endsWith(".yaml")
 				|| lowercaseFileName.endsWith(".yml") || lowercaseFileName.endsWith(".md");
+	}
+
+	/**
+	 * Format structured data similar to TerminateTool
+	 * @param terminateColumns the column names
+	 * @param data the data rows
+	 * @return formatted string representation of the structured data
+	 */
+	private String formatStructuredData(List<String> terminateColumns, List<List<Object>> data) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Structured Map output data:\n");
+		sb.append("Columns: ").append(terminateColumns).append("\n");
+		sb.append("Data:\n");
+		for (List<Object> row : data) {
+			sb.append("  ").append(row).append("\n");
+		}
+		return sb.toString();
 	}
 
 	@Override
@@ -773,6 +893,10 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			// Write updated status file
 			String statusJson = objectMapper.writeValueAsString(taskStatus);
 			Files.write(statusFile, statusJson.getBytes());
+			
+			// Mark that map output has been recorded, allowing termination
+			this.mapOutputRecorded = true;
+			
 			String result = String.format("Task %s status recorded: %s, output file: %s", taskId, status, TASK_OUTPUT_FILE_NAME);
 			log.info(result);
 			return new ToolExecuteResult(result);
@@ -863,6 +987,34 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	 */
 	public ManusProperties getManusProperties() {
 		return this.manusProperties;
+	}
+
+	/**
+	 * Get class-level terminate columns configuration
+	 * @return terminate columns as comma-separated string
+	 */
+	public String getTerminateColumns() {
+		if (this.terminateColumns == null || this.terminateColumns.isEmpty()) {
+			return null;
+		}
+		return String.join(",", this.terminateColumns);
+	}
+
+	/**
+	 * Get class-level terminate columns configuration as List
+	 * @return terminate columns as List<String>
+	 */
+	public List<String> getTerminateColumnsList() {
+		return this.terminateColumns == null ? null : new ArrayList<>(this.terminateColumns);
+	}
+
+	// ==================== TerminableTool interface implementation ====================
+
+	@Override
+	public boolean canTerminate() {
+		// MapReduceTool can be terminated only after map output has been recorded
+		// This ensures that the tool completes its processing cycle before termination
+		return mapOutputRecorded;
 	}
 
 }

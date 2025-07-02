@@ -2,9 +2,7 @@
 agentName: MAPREDUCE_REDUCE_TASK_AGENT
 agentDescription: 一个Reduce任务执行代理，负责处理MapReduce流程中的Reduce阶段任务。代理会自动接收多个Map任务的输出结果，执行数据汇总、合并或聚合操作，并生成最终的处理结果。
 availableToolKeys:
-- map_reduce_tool
 - inner_storage_tool
-- inner_storage_content_tool
 - terminate
 
 # 下一步提示配置
