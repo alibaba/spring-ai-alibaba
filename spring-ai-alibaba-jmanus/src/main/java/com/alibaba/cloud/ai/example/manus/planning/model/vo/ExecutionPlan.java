@@ -21,7 +21,7 @@ import java.util.List;
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 
 /**
- * 计划实体类，用于管理执行计划的相关信息
+ * Plan entity class for managing execution plan related information
  */
 public class ExecutionPlan {
 
@@ -33,7 +33,7 @@ public class ExecutionPlan {
 
 	private String planningThinking;
 
-	// 使用简单字符串存储执行参数
+	// Use simple string to store execution parameters
 	private String executionParams;
 
 	private List<ExecutionStep> steps;
@@ -98,16 +98,16 @@ public class ExecutionPlan {
 	}
 
 	/**
-	 * 获取用户请求
-	 * @return 用户请求字符串
+	 * Get user request
+	 * @return User request string
 	 */
 	public String getUserRequest() {
 		return userRequest;
 	}
 
 	/**
-	 * 设置用户请求
-	 * @param userRequest 用户请求字符串
+	 * Set user request
+	 * @param userRequest User request string
 	 */
 	public void setUserRequest(String userRequest) {
 		this.userRequest = userRequest;
@@ -119,36 +119,40 @@ public class ExecutionPlan {
 				+ (steps != null ? steps.size() : 0) + '}';
 	}
 
-	// state.append("全局目标 (全局目标只是一个方向性指导，你在当前请求内不需要完成全局目标，只需要关注当前正在执行的步骤即可): ")
+	// state.append("Global Goal (The global goal is just a directional guidance, you
+	// don't need to complete the global goal in the current request, just focus on the
+	// currently executing step): ")
 	// .append("\n")
 	// .append(title)
 	// .append("\n");
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
 
-		state.append("- 用户原始需求 (这个需求是用户最初的输入，信息可以参考，但当前交互轮次中只需要完成当前步骤要求即可!) :\n");
+		state.append(
+				"- User Original Requirements (This requirement is the user's initial input, information can be referenced, but in the current interaction round only the current step requirements need to be completed!) :\n");
 		state.append(title).append("\n");
 		if (userRequest != null && !userRequest.isEmpty()) {
 			state.append("").append(userRequest).append("\n\n");
 		}
-		state.append("\n- 执行参数: ").append("\n");
+		state.append("\n- Execution Parameters: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
 			state.append(executionParams).append("\n\n");
 		}
 		else {
-			state.append("未提供执行参数。\n\n");
+			state.append("No execution parameters provided.\n\n");
 		}
 
-		state.append("- 历史执行过的步骤记录:\n");
+		state.append("- Historical Executed Step Records:\n");
 		state.append(getStepsExecutionStateStringFormat(onlyCompletedAndFirstInProgress));
 
 		return state.toString();
 	}
 
 	/**
-	 * 获取步骤执行状态的字符串格式
-	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
-	 * @return 格式化的步骤执行状态字符串
+	 * Get step execution status in string format
+	 * @param onlyCompletedAndFirstInProgress When true, only output all completed steps
+	 * and the first step in progress
+	 * @return Formatted step execution status string
 	 */
 	public String getStepsExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
@@ -157,19 +161,21 @@ public class ExecutionPlan {
 		for (int i = 0; i < steps.size(); i++) {
 			ExecutionStep step = steps.get(i);
 
-			// 如果onlyCompletedAndFirstInProgress为true，则只显示COMPLETED状态的步骤和第一个IN_PROGRESS状态的步骤
+			// If onlyCompletedAndFirstInProgress is true, only show COMPLETED status
+			// steps and the first IN_PROGRESS status step
 			if (onlyCompletedAndFirstInProgress) {
-				// 如果是COMPLETED状态，始终显示
+				// If it's COMPLETED status, always show
 				if (step.getStatus() == AgentState.COMPLETED) {
-					// 什么都不做，继续显示
+					// Do nothing, continue to show
 				}
-				// 如果是IN_PROGRESS状态，且还没找到其他IN_PROGRESS的步骤
+				// If it's IN_PROGRESS status and haven't found other IN_PROGRESS steps
+				// yet
 				else if (step.getStatus() == AgentState.IN_PROGRESS && !foundInProgress) {
-					foundInProgress = true; // 标记已找到IN_PROGRESS步骤
+					foundInProgress = true; // Mark that IN_PROGRESS step has been found
 				}
-				// 其他所有情况（不是COMPLETED且不是第一个IN_PROGRESS）
+				// All other cases (not COMPLETED and not the first IN_PROGRESS)
 				else {
-					continue; // 跳过不符合条件的步骤
+					continue; // Skip steps that don't meet the criteria
 				}
 			}
 
@@ -182,19 +188,19 @@ public class ExecutionPlan {
 			};
 
 			state.append(i + 1)
-				.append(".  **步骤 ")
+				.append(".  **Step ")
 				.append(i)
 				.append(":**\n")
-				.append("    *   **状态:** ")
+				.append("    *   **Status:** ")
 				.append(symbol)
 				.append("\n")
-				.append("    *   **操作:** ")
+				.append("    *   **Action:** ")
 				.append(step.getStepRequirement())
 				.append("\n");
 
 			String result = step.getResult();
 			if (result != null && !result.isEmpty()) {
-				state.append("    *   **结果:** ").append(result).append("\n\n");
+				state.append("    *   **Result:** ").append(result).append("\n\n");
 			}
 
 		}
@@ -202,16 +208,16 @@ public class ExecutionPlan {
 	}
 
 	/**
-	 * 获取所有步骤执行状态的字符串格式（兼容旧版本）
-	 * @return 格式化的步骤执行状态字符串
+	 * Get all step execution status in string format (compatible with old version)
+	 * @return Formatted step execution status string
 	 */
 	public String getStepsExecutionStateStringFormat() {
 		return getStepsExecutionStateStringFormat(false);
 	}
 
 	/**
-	 * 将计划转换为JSON字符串
-	 * @return 计划的JSON字符串表示
+	 * Convert plan to JSON string
+	 * @return JSON string representation of the plan
 	 */
 	public String toJson() {
 		StringBuilder json = new StringBuilder();
@@ -219,7 +225,7 @@ public class ExecutionPlan {
 		json.append("  \"planId\": \"").append(planId).append("\",\n");
 		json.append("  \"title\": \"").append(title).append("\",\n");
 
-		// 添加步骤数组
+		// Add steps array
 		json.append("  \"steps\": [\n");
 		for (int i = 0; i < steps.size(); i++) {
 			json.append(steps.get(i).toJson());
@@ -235,33 +241,33 @@ public class ExecutionPlan {
 	}
 
 	/**
-	 * 从JSON字符串解析并创建ExecutionPlan对象
-	 * @param planJson JSON字符串
-	 * @param newPlanId 新的计划ID（可选，如果提供将覆盖JSON中的planId）
-	 * @return 解析后的ExecutionPlan对象
-	 * @throws Exception 如果解析失败则抛出异常
+	 * Parse JSON string and create ExecutionPlan object
+	 * @param planJson JSON string
+	 * @param newPlanId New plan ID (optional, will override planId in JSON if provided)
+	 * @return Parsed ExecutionPlan object
+	 * @throws Exception Throws exception if parsing fails
 	 */
 	public static ExecutionPlan fromJson(String planJson, String newPlanId) throws Exception {
 		com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 		com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(planJson);
 
-		// 获取计划标题
-		String title = rootNode.has("title") ? rootNode.get("title").asText() : "来自模板的计划";
+		// Get plan title
+		String title = rootNode.has("title") ? rootNode.get("title").asText() : "Plan from Template";
 
-		// 使用新的计划ID或从JSON中获取
+		// Use new plan ID or get from JSON
 		String planId = (newPlanId != null && !newPlanId.isEmpty()) ? newPlanId
 				: (rootNode.has("planId") ? rootNode.get("planId").asText() : "unknown-plan");
 
-		// 创建新的ExecutionPlan对象
+		// Create new ExecutionPlan object
 		ExecutionPlan plan = new ExecutionPlan(planId, title);
 
-		// 如果有计划步骤，添加到计划中
+		// If there are plan steps, add them to the plan
 		if (rootNode.has("steps") && rootNode.get("steps").isArray()) {
 			com.fasterxml.jackson.databind.JsonNode stepsNode = rootNode.get("steps");
 			int stepIndex = 0;
 			for (com.fasterxml.jackson.databind.JsonNode stepNode : stepsNode) {
 				if (stepNode.has("stepRequirement")) {
-					// 调用ExecutionStep的fromJson方法创建步骤
+					// Call ExecutionStep's fromJson method to create step
 					ExecutionStep step = ExecutionStep.fromJson(stepNode);
 					Integer stepIndexValFromJson = step.getStepIndex();
 					if (stepIndexValFromJson != null) {

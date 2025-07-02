@@ -34,7 +34,7 @@ public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
 	private static final Logger log = LoggerFactory.getLogger(Bash.class);
 
 	/**
-	 * 内部输入类，用于定义Bash工具的输入参数
+	 * Internal input class for defining Bash tool input parameters
 	 */
 	public static class BashInput {
 
@@ -60,11 +60,11 @@ public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
 	private ManusProperties manusProperties;
 
 	/**
-	 * bash执行工作目录
+	 * bash execution working directory
 	 */
 	private String workingDirectoryPath;
 
-	// 添加操作系统信息
+	// Add operating system information
 	private static final String osName = System.getProperty("os.name");
 
 	private static String PARAMETERS = """
@@ -120,7 +120,8 @@ public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
 		commandList.add(command);
 
 		try {
-			// 使用ShellExecutorFactory创建对应操作系统的执行器
+			// Use ShellExecutorFactory to create executor for corresponding operating
+			// system
 			ShellCommandExecutor executor = ShellExecutorFactory.createExecutor();
 			log.info("Using shell executor for OS: {}", osName);
 			List<String> result = executor.execute(commandList, workingDirectoryPath);

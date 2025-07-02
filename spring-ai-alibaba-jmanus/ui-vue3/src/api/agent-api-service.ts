@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// 定义接口类型
+// Define interface types
 export interface Agent {
   id: string
   name: string
@@ -38,29 +38,29 @@ export interface ApiResponse<T> {
 }
 
 /**
- * Agent API 服务类
- * 负责与后端 AgentController 进行交互
+ * Agent API service class
+ * Responsible for interacting with backend AgentController
  */
 export class AgentApiService {
   private static readonly BASE_URL = '/api/agents'
 
   /**
-   * 处理 HTTP 响应
+   * Handle HTTP response
    */
   private static async handleResponse(response: Response) {
     if (!response.ok) {
       try {
         const errorData = await response.json()
-        throw new Error(errorData.message || `API请求失败: ${response.status}`)
+        throw new Error(errorData.message || `API request failed: ${response.status}`)
       } catch (e) {
-        throw new Error(`API请求失败: ${response.status} ${response.statusText}`)
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`)
       }
     }
     return response
   }
 
   /**
-   * 获取所有 Agent 列表
+   * Get all Agent list
    */
   static async getAllAgents(): Promise<Agent[]> {
     try {
@@ -68,13 +68,13 @@ export class AgentApiService {
       const result = await this.handleResponse(response)
       return await result.json()
     } catch (error) {
-      console.error('获取Agent列表失败:', error)
+      console.error('Failed to get Agent list:', error)
       throw error
     }
   }
 
   /**
-   * 根据 ID 获取 Agent 详情
+   * Get Agent details by ID
    */
   static async getAgentById(id: string): Promise<Agent> {
     try {
@@ -82,13 +82,13 @@ export class AgentApiService {
       const result = await this.handleResponse(response)
       return await result.json()
     } catch (error) {
-      console.error(`获取Agent[${id}]详情失败:`, error)
+      console.error(`Failed to get Agent[${id}] details:`, error)
       throw error
     }
   }
 
   /**
-   * 创建新的 Agent
+   * Create new Agent
    */
   static async createAgent(agentConfig: Omit<Agent, 'id'>): Promise<Agent> {
     try {
@@ -102,13 +102,13 @@ export class AgentApiService {
       const result = await this.handleResponse(response)
       return await result.json()
     } catch (error) {
-      console.error('创建Agent失败:', error)
+      console.error('Failed to create Agent:', error)
       throw error
     }
   }
 
   /**
-   * 更新 Agent 配置
+   * Update Agent configuration
    */
   static async updateAgent(id: string, agentConfig: Agent): Promise<Agent> {
     try {
@@ -122,13 +122,13 @@ export class AgentApiService {
       const result = await this.handleResponse(response)
       return await result.json()
     } catch (error) {
-      console.error(`更新Agent[${id}]失败:`, error)
+      console.error(`Failed to update Agent[${id}]:`, error)
       throw error
     }
   }
 
   /**
-   * 删除 Agent
+   * Delete Agent
    */
   static async deleteAgent(id: string): Promise<void> {
     try {
@@ -136,17 +136,17 @@ export class AgentApiService {
         method: 'DELETE'
       })
       if (response.status === 400) {
-        throw new Error('不能删除默认Agent')
+        throw new Error('Cannot delete default Agent')
       }
       await this.handleResponse(response)
     } catch (error) {
-      console.error(`删除Agent[${id}]失败:`, error)
+      console.error(`Failed to delete Agent[${id}]:`, error)
       throw error
     }
   }
 
   /**
-   * 获取所有可用工具列表
+   * Get all available tools list
    */
   static async getAvailableTools(): Promise<Tool[]> {
     try {
@@ -154,15 +154,15 @@ export class AgentApiService {
       const result = await this.handleResponse(response)
       return await result.json()
     } catch (error) {
-      console.error('获取可用工具列表失败:', error)
+      console.error('Failed to get available tools list:', error)
       throw error
     }
   }
 }
 
 /**
- * Agent 配置管理模型类
- * 提供 Agent 配置的 CRUD 操作和本地状态管理
+ * Agent configuration management model class
+ * Provides CRUD operations and local state management for Agent configuration
  */
 export class AgentConfigModel {
   public agents: Agent[] = []
@@ -170,65 +170,65 @@ export class AgentConfigModel {
   public availableTools: Tool[] = []
 
   /**
-   * 加载所有 Agent 列表
+   * Load all Agent list
    */
   async loadAgents(): Promise<Agent[]> {
     try {
       this.agents = await AgentApiService.getAllAgents()
       return this.agents
     } catch (error) {
-      console.error('加载Agent列表失败:', error)
+      console.error('Failed to load Agent list:', error)
       throw error
     }
   }
 
   /**
-   * 加载 Agent 详情
+   * Load Agent details
    */
   async loadAgentDetails(id: string): Promise<Agent> {
     try {
       this.currentAgent = await AgentApiService.getAgentById(id)
       return this.currentAgent
     } catch (error) {
-      console.error('加载Agent详情失败:', error)
+      console.error('Failed to load Agent details:', error)
       throw error
     }
   }
 
   /**
-   * 加载可用工具列表
+   * Load available tools list
    */
   async loadAvailableTools(): Promise<Tool[]> {
     try {
       this.availableTools = await AgentApiService.getAvailableTools()
       return this.availableTools
     } catch (error) {
-      console.error('加载可用工具列表失败:', error)
+      console.error('Failed to load available tools list:', error)
       throw error
     }
   }
 
   /**
-   * 保存 Agent 配置
+   * Save Agent configuration
    */
   async saveAgent(agentData: Agent, isImport = false): Promise<Agent> {
     try {
       let result: Agent
 
       if (isImport) {
-        // 导入时创建新的 Agent，移除 ID
+        // Import new Agent, remove ID
         const importData = { ...agentData }
         delete (importData as any).id
         result = await AgentApiService.createAgent(importData)
       } else if (agentData.id) {
-        // 更新现有 Agent
+        // Update existing Agent
         result = await AgentApiService.updateAgent(agentData.id, agentData)
       } else {
-        // 创建新 Agent
+        // Create new Agent
         result = await AgentApiService.createAgent(agentData)
       }
 
-      // 更新本地数据
+      // Update local data
       const index = this.agents.findIndex(agent => agent.id === result.id)
       if (index !== -1) {
         this.agents[index] = result
@@ -238,38 +238,38 @@ export class AgentConfigModel {
 
       return result
     } catch (error) {
-      console.error('保存Agent失败:', error)
+      console.error('Failed to save Agent:', error)
       throw error
     }
   }
 
   /**
-   * 删除 Agent
+   * Delete Agent
    */
   async deleteAgent(id: string): Promise<void> {
     try {
       await AgentApiService.deleteAgent(id)
       this.agents = this.agents.filter(agent => agent.id !== id)
       
-      // 如果删除的是当前选中的 Agent，清除选中状态
+      // If deleted is the current selected Agent, clear selection
       if (this.currentAgent?.id === id) {
         this.currentAgent = null
       }
     } catch (error) {
-      console.error('删除Agent失败:', error)
+      console.error('Failed to delete Agent:', error)
       throw error
     }
   }
 
   /**
-   * 通过 ID 查找 Agent
+   * Find Agent by ID
    */
   findAgentById(id: string): Agent | undefined {
     return this.agents.find(agent => agent.id === id)
   }
 
   /**
-   * 添加工具到 Agent
+   * Add tool to Agent
    */
   addToolToAgent(agentId: string, toolId: string): boolean {
     const agent = this.findAgentById(agentId)
@@ -281,7 +281,7 @@ export class AgentConfigModel {
   }
 
   /**
-   * 从 Agent 移除工具
+   * Remove tool from Agent
    */
   removeToolFromAgent(agentId: string, toolId: string): boolean {
     const agent = this.findAgentById(agentId)
@@ -296,29 +296,29 @@ export class AgentConfigModel {
   }
 
   /**
-   * 导出 Agent 配置为 JSON
+   * Export Agent configuration as JSON
    */
   exportAgent(agent: Agent): string {
     return JSON.stringify(agent, null, 2)
   }
 
   /**
-   * 从 JSON 字符串导入 Agent 配置
+   * Import Agent configuration from JSON string
    */
   parseAgentFromJson(jsonString: string): Agent {
     try {
       const agent = JSON.parse(jsonString)
-      // 基本验证
+      // Basic validation
       if (!agent.name || !agent.description) {
-        throw new Error('Agent 配置格式不正确：缺少必要字段')
+        throw new Error('Agent configuration format is incorrect: missing required fields')
       }
       return agent
     } catch (error) {
-      console.error('解析 Agent JSON 失败:', error)
-      throw new Error('Agent 配置格式不正确')
+      console.error('Failed to parse Agent JSON:', error)
+      throw new Error('Agent configuration format is incorrect')
     }
   }
 }
 
-// 默认导出一个实例，便于使用
+// Default export an instance for use
 export default new AgentConfigModel()

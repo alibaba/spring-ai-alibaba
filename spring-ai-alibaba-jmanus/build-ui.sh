@@ -15,23 +15,23 @@
 #  */
 #!/bin/bash
 
-# 构建前端UI并部署到Spring Boot静态资源目录
-# 适用于 macOS
+# Build frontend UI and deploy to Spring Boot static resources directory
+# For macOS
 
-set -e  # 遇到错误立即退出
+set -e  # Exit immediately on error
 
-# 获取脚本所在目录的绝对路径
+# Get the absolute path of the script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
 
-# 定义颜色输出
+# Define color output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 输出带颜色的日志
+# Output colored logs
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
@@ -48,141 +48,141 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 检查必要的命令是否存在
+# Check if necessary commands exist
 check_commands() {
-    log_info "检查必要的命令..."
-    
+    log_info "Checking necessary commands..."
+
     if ! command -v pnpm &> /dev/null; then
-        log_error "pnpm 未安装，请先安装 pnpm"
-        log_info "安装命令: npm install -g pnpm"
+        log_error "pnpm is not installed, please install pnpm first"
+        log_info "Installation command: npm install -g pnpm"
         exit 1
     fi
-    
-    log_success "命令检查完成"
+
+    log_success "Command check completed"
 }
 
-# 检查目录结构
+# Check directory structure
 check_directories() {
-    log_info "检查项目目录结构..."
-    
+    log_info "Checking project directory structure..."
+
     if [ ! -d "$PROJECT_ROOT/ui-vue3" ]; then
-        log_error "ui-vue3 目录不存在: $PROJECT_ROOT/ui-vue3"
+        log_error "ui-vue3 directory does not exist: $PROJECT_ROOT/ui-vue3"
         exit 1
     fi
-    
+
     if [ ! -f "$PROJECT_ROOT/ui-vue3/package.json" ]; then
-        log_error "ui-vue3/package.json 文件不存在"
+        log_error "ui-vue3/package.json file does not exist"
         exit 1
     fi
-    
+
     if [ ! -d "$PROJECT_ROOT/src/main/resources" ]; then
-        log_error "Spring Boot resources 目录不存在: $PROJECT_ROOT/src/main/resources"
+        log_error "Spring Boot resources directory does not exist: $PROJECT_ROOT/src/main/resources"
         exit 1
     fi
-    
-    log_success "目录结构检查完成"
+
+    log_success "Directory structure check completed"
 }
 
-# 构建前端项目
+# Build frontend project
 build_frontend() {
-    log_info "开始构建前端项目..."
-    
+    log_info "Starting frontend project build..."
+
     cd "$PROJECT_ROOT/ui-vue3"
-    
-    # 检查是否存在 node_modules，如果不存在则安装依赖
+
+    # Check if node_modules exists, install dependencies if not
     if [ ! -d "node_modules" ]; then
-        log_warning "node_modules 不存在，正在安装依赖..."
+        log_warning "node_modules does not exist, installing dependencies..."
         pnpm install
     fi
-    
-    # 运行构建命令
-    log_info "运行 pnpm run build..."
+
+    # Run build command
+    log_info "Running pnpm run build..."
     pnpm run build
-    
-    # 检查构建结果
+
+    # Check build result
     if [ ! -d "ui" ]; then
-        log_error "构建失败，ui 目录不存在"
+        log_error "Build failed, ui directory does not exist"
         exit 1
     fi
-    
-    log_success "前端项目构建完成"
+
+    log_success "Frontend project build completed"
 }
 
-# 清空静态资源目录
+# Clear static resources directory
 clean_static_directory() {
-    log_info "清空静态资源目录..."
-    
+    log_info "Clearing static resources directory..."
+
     STATIC_DIR="$PROJECT_ROOT/src/main/resources/static"
-    
-    # 创建目录（如果不存在）
+
+    # Create directory (if it doesn't exist)
     mkdir -p "$STATIC_DIR"
-    
-    # 清空目录内容
+
+    # Clear directory contents
     if [ "$(ls -A $STATIC_DIR)" ]; then
-        log_warning "删除 $STATIC_DIR 中的现有文件..."
+        log_warning "Deleting existing files in $STATIC_DIR..."
         rm -rf "$STATIC_DIR"/*
-        log_success "静态资源目录已清空"
+        log_success "Static resources directory cleared"
     else
-        log_info "静态资源目录已经是空的"
+        log_info "Static resources directory is already empty"
     fi
 }
 
-# 拷贝构建文件
+# Copy build files
 copy_build_files() {
-    log_info "拷贝构建文件到静态资源目录..."
-    
+    log_info "Copying build files to static resources directory..."
+
     SOURCE_DIR="$PROJECT_ROOT/ui-vue3/ui"
     TARGET_DIR="$PROJECT_ROOT/src/main/resources/static/"
-    
+
     if [ ! -d "$SOURCE_DIR" ]; then
-        log_error "源目录不存在: $SOURCE_DIR"
+        log_error "Source directory does not exist: $SOURCE_DIR"
         exit 1
     fi
-    
-    # 拷贝文件
+
+    # Copy files
     cp -r "$SOURCE_DIR" "$TARGET_DIR/"
-    
-    # 验证拷贝结果
+
+    # Verify copy result
     if [ "$(ls -A $TARGET_DIR)" ]; then
-        log_success "文件拷贝完成"
-        log_info "拷贝的文件:"
+        log_success "File copy completed"
+        log_info "Copied files:"
         ls -la "$TARGET_DIR"
     else
-        log_error "文件拷贝失败，目标目录为空"
+        log_error "File copy failed, target directory is empty"
         exit 1
     fi
 }
 
-# 显示构建摘要
+# Show build summary
 show_summary() {
-    log_success "=== 构建完成 ==="
-    log_info "前端文件已成功部署到: $PROJECT_ROOT/src/main/resources/static/"
-    log_info "现在可以运行 Spring Boot 应用了"
+    log_success "=== Build Completed ==="
+    log_info "Frontend files successfully deployed to: $PROJECT_ROOT/src/main/resources/static/"
+    log_info "You can now run the Spring Boot application"
     log_info ""
-    log_info "启动命令示例:"
+    log_info "Example startup commands:"
     log_info "  mvn spring-boot:run"
-    log_info "  或者"
+    log_info "  or"
     log_info "  java -jar target/spring-ai-alibaba-jmanus-*.jar"
 }
 
-# 主函数
+# Main function
 main() {
-    log_info "开始前端构建和部署流程..."
-    log_info "项目根目录: $PROJECT_ROOT"
+    log_info "Starting frontend build and deployment process..."
+    log_info "Project root directory: $PROJECT_ROOT"
     echo ""
-    
+
     check_commands
     check_directories
     build_frontend
     clean_static_directory
     copy_build_files
     show_summary
-    
-    log_success "所有步骤完成！"
+
+    log_success "All steps completed!"
 }
 
-# 错误处理
-trap 'log_error "脚本执行过程中发生错误，退出码: $?"' ERR
+# Error handling
+trap 'log_error "Error occurred during script execution, exit code: $?"' ERR
 
-# 运行主函数
+# Run main function
 main "$@"

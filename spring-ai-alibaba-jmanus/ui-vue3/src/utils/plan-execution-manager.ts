@@ -19,7 +19,7 @@ import { PlanActApiService } from '@/api/plan-act-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { CommonApiService } from '@/api/common-api-service'
 
-// 定义事件回调接口
+// Define event callback interface
 interface EventCallbacks {
   onPlanUpdate?: (data: any) => void
   onPlanCompleted?: (data: any) => void
@@ -49,7 +49,7 @@ export class PlanExecutionManager {
   private static instance: PlanExecutionManager | null = null
   private readonly POLL_INTERVAL = 5000
 
-  // 响应式状态
+  // Reactive state
   private state = reactive<ExecutionState>({
     activePlanId: null,
     lastSequenceSize: 0,
@@ -57,16 +57,16 @@ export class PlanExecutionManager {
     pollTimer: null
   })
 
-  // 事件回调
+  // Event callbacks
   private callbacks: EventCallbacks = {}
 
   private constructor() {
-    // 移除 window 事件监听器初始化
+    // Remove window event listener initialization
     console.log('[PlanExecutionManager] Initialized with callback-based event system')
   }
 
   /**
-   * 获取单例实例
+   * Get singleton instance
    */
   public static getInstance(): PlanExecutionManager {
     if (!PlanExecutionManager.instance) {
@@ -76,21 +76,21 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 获取当前活动的计划ID
+   * Get current active plan ID
    */
   public getActivePlanId(): string | null {
     return this.state.activePlanId
   }
 
   /**
-   * 获取当前状态（响应式）
+   * Get current state (reactive)
    */
   public getState() {
     return this.state
   }
 
   /**
-   * 设置事件回调
+   * Set event callbacks
    */
   public setEventCallbacks(callbacks: EventCallbacks): void {
     this.callbacks = { ...this.callbacks, ...callbacks }
@@ -98,7 +98,7 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 处理用户消息发送请求
+   * Handle user message send request
    */
   public async handleUserMessageSendRequested(query: string): Promise<void> {
     if (!this.validateAndPrepareUIForNewRequest(query)) {
@@ -107,15 +107,15 @@ export class PlanExecutionManager {
 
     try {
       const response = await this.sendUserMessageAndSetPlanId(query)
-      
+
       if (this.state.activePlanId) {
         this.initiatePlanExecutionSequence(query, this.state.activePlanId)
       } else {
-        throw new Error('未能获取有效的计划ID')
+        throw new Error('Failed to get valid plan ID')
       }
     } catch (error: any) {
       this.emitMessageUpdate({
-        content: `发送失败: ${error.message}`,
+        content: `Send failed: ${error.message}`,
         type: 'error',
         planId: this.state.activePlanId
       })
@@ -125,11 +125,11 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 处理计划执行请求
+   * Handle plan execution request
    */
   public handlePlanExecutionRequested(planId: string, query?: string): void {
     console.log('[PlanExecutionManager] Received plan execution request:', { planId, query })
-    
+
     if (planId) {
       this.state.activePlanId = planId
       this.initiatePlanExecutionSequence(query || '执行计划', planId)
@@ -139,7 +139,7 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 验证请求并准备UI
+   * Validate request and prepare UI
    */
   private validateAndPrepareUIForNewRequest(query: string): boolean {
     if (!query) {
@@ -149,39 +149,39 @@ export class PlanExecutionManager {
 
     if (this.state.activePlanId) {
       this.emitMessageUpdate({
-        content: '当前有任务正在执行，请等待完成后再提交新任务',
+        content: 'There is a task currently executing, please wait for completion before submitting a new task',
         type: 'error',
         planId: this.state.activePlanId
       })
       return false
     }
 
-    // 清空输入并设置为禁用状态
+    // Clear input and set to disabled state
     this.emitChatInputClear()
-    this.emitChatInputUpdateState({ enabled: false, placeholder: '处理中...' })
-    
+    this.emitChatInputUpdateState({ enabled: false, placeholder: 'Processing...' })
+
     return true
   }
 
   /**
-   * 发送用户消息并设置计划ID
+   * Send user message and set plan ID
    */
   private async sendUserMessageAndSetPlanId(query: string): Promise<any> {
     try {
-      // 使用直接执行模式API发送消息
+      // Use direct execution mode API to send message
       const response = await DirectApiService.sendMessage(query)
-      
+
       if (response && response.planId) {
         this.state.activePlanId = response.planId
         return response
       } else if (response && response.planTemplateId) {
-        // 如果响应中有planTemplateId而不是planId
+        // If response contains planTemplateId instead of planId
         this.state.activePlanId = response.planTemplateId
         return { ...response, planId: response.planTemplateId }
       }
-      
+
       console.error('[PlanExecutionManager] Failed to get planId from response:', response)
-      throw new Error('未能从API响应中获取有效的 planId')
+      throw new Error('Failed to get valid planId from API response')
     } catch (error: any) {
       console.error('[PlanExecutionManager] API call failed:', error)
       throw error
@@ -189,7 +189,7 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 启动计划执行序列
+   * Start plan execution sequence
    */
   public initiatePlanExecutionSequence(query: string, planId: string): void {
     this.emitDialogRoundStart({
@@ -200,14 +200,14 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 处理计划完成的通用逻辑
+   * Handle plan completion common logic
    */
   private handlePlanCompletion(details: PlanDetails): void {
     this.emitPlanCompleted({ ...details, planId: this.state.activePlanId })
     this.state.lastSequenceSize = 0
     this.stopPolling()
 
-    // 延迟删除计划执行记录
+    // Delay deletion of plan execution record
     try {
       setTimeout(async () => {
         if (this.state.activePlanId) {
@@ -215,12 +215,12 @@ export class PlanExecutionManager {
             await PlanActApiService.deletePlanTemplate(this.state.activePlanId)
             console.log(`[PlanExecutionManager] Plan template ${this.state.activePlanId} deleted successfully`)
           } catch (error: any) {
-            console.log(`删除计划执行记录失败: ${error.message}`)
+            console.log(`Delete plan execution record failed: ${error.message}`)
           }
         }
       }, 5000)
     } catch (error: any) {
-      console.log(`删除计划执行记录失败: ${error.message}`)
+      console.log(`Delete plan execution record failed: ${error.message}`)
     }
 
     if (details.completed) {
@@ -230,11 +230,11 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 轮询计划执行状态
+   * Poll plan execution status
    */
   private async pollPlanStatus(): Promise<void> {
     if (!this.state.activePlanId) return
-    
+
     if (this.state.isPolling) {
       console.log('[PlanExecutionManager] Previous polling still in progress, skipping')
       return
@@ -242,12 +242,12 @@ export class PlanExecutionManager {
 
     try {
       this.state.isPolling = true
-      
-      // 这里需要实现获取计划详情的API调用
-      // 由于原始代码调用 ManusAPI.getDetails，我们需要使用现有的API服务
-      // 暂时使用 PlanActApiService 的相关方法
+
+      // Here we need to implement the API call to get plan details
+      // Since the original code calls ManusAPI.getDetails, we need to use the existing API services
+      // For now, we'll use the relevant methods of PlanActApiService
       const details = await this.getPlanDetails(this.state.activePlanId)
-      
+
       if (!details) {
         console.warn('[PlanExecutionManager] No details received from API')
         return
@@ -274,11 +274,11 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 获取计划详情（需要根据实际API调整）
+   * Get plan details (needs to be adjusted based on actual API)
    */
   private async getPlanDetails(planId: string): Promise<PlanDetails | null> {
     try {
-      // 使用 CommonApiService 的 getDetails 方法
+      // Use CommonApiService's getDetails method
       const details = await CommonApiService.getDetails(planId)
       return details
     } catch (error: any) {
@@ -288,22 +288,22 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 开始轮询计划执行状态
+   * Start polling plan execution status
    */
   public startPolling(): void {
     if (this.state.pollTimer) {
       clearInterval(this.state.pollTimer)
     }
-    
+
     this.state.pollTimer = window.setInterval(() => {
       this.pollPlanStatus()
     }, this.POLL_INTERVAL)
-    
+
     console.log('[PlanExecutionManager] Started polling')
   }
 
   /**
-   * 立即轮询计划执行状态（用于手动触发刷新）
+   * Immediately poll plan execution status (for manual refresh trigger)
    */
   public async pollPlanStatusImmediately(): Promise<void> {
     console.log('[PlanExecutionManager] Polling plan status immediately')
@@ -311,7 +311,7 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 停止轮询
+   * Stop polling
    */
   public stopPolling(): void {
     if (this.state.pollTimer) {
@@ -322,7 +322,7 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 清理资源
+   * Clean up resources
    */
   public cleanup(): void {
     this.stopPolling()
@@ -331,7 +331,7 @@ export class PlanExecutionManager {
     this.state.isPolling = false
   }
 
-  // Event emission helpers - 使用回调函数替代 window 事件
+  // Event emission helpers - Use callback functions instead of window events
   private emitMessageUpdate(data: any): void {
     if (this.callbacks.onMessageUpdate) {
       this.callbacks.onMessageUpdate(data)
@@ -369,5 +369,5 @@ export class PlanExecutionManager {
   }
 }
 
-// 导出单例实例
+// Export singleton instance
 export const planExecutionManager = PlanExecutionManager.getInstance()

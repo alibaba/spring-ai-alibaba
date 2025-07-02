@@ -23,31 +23,32 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * 表示单个交互式元素的类，持有元素的Locator。
+ * Class representing a single interactive element, holding the element's Locator.
  */
 public class InteractiveElement {
 
 	private static final Logger log = LoggerFactory.getLogger(InteractiveElement.class);
 
-	// 全局索引
-	private final int index;
+	// Global index
+	private int index;
 
-	// 元素定位器
-	private final Locator locator;
+	// Element locator
+	private Locator locator;
 
-	// 元素类型信息
-	private final String tagName;
+	// Element type information
+	private String tagName;
 
-	// 元素文本信息（如果有）
+	// Element text information (if any)
 	private String text;
 
-	// HTML结构信息
+	// HTML structure information
 	private String outerHtml;
 
 	/**
-	 * @param index 全局索引
-	 * @param frame 元素所在的frame
-	 * @param elementMap 元素的其余参数
+	 * Construct an InteractiveElement instance
+	 * @param index Global index
+	 * @param frame Frame where the element is located
+	 * @param elementMap Other parameters of the element
 	 */
 	public InteractiveElement(int index, Frame frame, Map<String, Object> elementMap) {
 		this.index = index;
@@ -65,54 +66,54 @@ public class InteractiveElement {
 	}
 
 	/**
-	 * 获取元素的全局索引
-	 * @return 元素索引
+	 * Get the global index of the element
+	 * @return Element index
 	 */
 	public int getIndex() {
 		return index;
 	}
 
 	/**
-	 * 获取元素的Locator
-	 * @return 元素定位器
+	 * Get the element's Locator
+	 * @return Element locator
 	 */
 	public Locator getLocator() {
 		return locator;
 	}
 
 	/**
-	 * 获取元素的标签名
-	 * @return 元素的HTML标签名
+	 * Get the element's tag name
+	 * @return Element's HTML tag name
 	 */
 	public String getTagName() {
 		return tagName;
 	}
 
 	/**
-	 * 获取元素的文本内容
-	 * @return 元素文本
+	 * Get the element's text content
+	 * @return Element text
 	 */
 	public String getText() {
 		return text;
 	}
 
 	/**
-	 * 获取元素的HTML结构
-	 * @return 元素的outerHTML
+	 * Get the element's HTML structure
+	 * @return Element's outerHTML
 	 */
 	public String getOuterHtml() {
 		return outerHtml;
 	}
 
 	/**
-	 * 创建元素信息的字符串表示形式
-	 * @return 格式化的元素信息
+	 * Create a string representation of element information
+	 * @return Formatted element information
 	 */
 	@Override
 	public String toString() {
 		String content = text.isEmpty() ? outerHtml : text;
 
-		// 如果使用的是outerHtml，移除jmanus-id属性和style属性
+		// If using outerHtml, remove jmanus-id attribute and style attribute
 		if (text.isEmpty() && content != null) {
 			content = content.replaceAll("\\s+jmanus-id=\"[^\"]*\"", "");
 			content = content.replaceAll("\\s+style=\"[^\"]*\"", "");

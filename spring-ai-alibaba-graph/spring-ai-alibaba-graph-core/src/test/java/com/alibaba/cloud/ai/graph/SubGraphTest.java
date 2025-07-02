@@ -15,8 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -466,6 +465,59 @@ public class SubGraphTest {
 			.map(NodeOutput::state);
 
 		assertTrue(result.isPresent());
+	}
+
+	@Test
+	public void testCommandNodeSubGraph() throws Exception {
+		StateGraph childGraph = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+			stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+			return stringKeyStrategyHashMap;
+		});
+		childGraph.addNode("node1", _makeNode("node1"));
+		childGraph.addNode("node2", _makeNode("node2"));
+		CommandAction commandAction = new CommandAction() {
+			@Override
+			public Command apply(OverAllState state, RunnableConfig config) throws Exception {
+				return new Command("node1", Map.of("messages", "go to node 1"));
+			}
+		};
+		childGraph.addNode("commandNode", AsyncCommandAction.node_async(commandAction),
+				Map.of("node1", "node1", "node2", "node2"));
+
+		childGraph.addEdge(START, "commandNode");
+		childGraph.addEdge("node1", "node2");
+		childGraph.addEdge("node2", END);
+
+		StateGraph parentGraph = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+			stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+			return stringKeyStrategyHashMap;
+		});
+
+		parentGraph.addNode("p_node1", _makeNode("p_node1"));
+		parentGraph.addNode("p_node2", _makeNode("p_node2"));
+
+		parentGraph.addNode("c_graph", childGraph);
+
+		parentGraph.addNode("p_command_node", AsyncCommandAction.node_async(new CommandAction() {
+			@Override
+			public Command apply(OverAllState state, RunnableConfig config) throws Exception {
+				return new Command("p_node1", Map.of("messages", "go to p_node1"));
+			}
+		}), Map.of("p_node1", "p_node1", "p_node2", "p_node2"));
+
+		parentGraph.addEdge(START, "p_command_node");
+		parentGraph.addEdge("p_node1", "p_node2");
+		parentGraph.addEdge("p_node2", "c_graph");
+		parentGraph.addEdge("c_graph", END);
+
+		CompiledGraph compile = parentGraph.compile();
+		System.out.println(compile.getGraph(GraphRepresentation.Type.PLANTUML).content());
+		OverAllState state = compile.invoke(Map.of()).orElseThrow();
+		assertEquals(
+				Map.of("messages", List.of("go to p_node1", "p_node1", "p_node2", "go to node 1", "node1", "node2")),
+				state.data());
 	}
 
 }

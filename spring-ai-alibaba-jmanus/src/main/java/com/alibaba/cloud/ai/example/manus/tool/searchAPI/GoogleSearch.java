@@ -299,7 +299,7 @@ public class GoogleSearch implements ToolCallBiFunctionDef<GoogleSearch.GoogleSe
 	}
 
 	/**
-	 * 内部输入类，用于定义谷歌搜索工具的输入参数
+	 * Internal input class for defining input parameters of Google search tool
 	 */
 	public static class GoogleSearchInput {
 

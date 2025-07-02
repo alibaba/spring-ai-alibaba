@@ -19,12 +19,13 @@ package com.alibaba.cloud.ai.example.deepresearch.model.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 报告响应类
+ * 基础响应类
  *
  * @author huangzhen
  * @since 2025/6/20
  */
-public record ReportResponse(
+public record ReportResponse<T>(
+
 		/**
 		 * 线程ID，用于标识当前对话的唯一性
 		 */
@@ -41,12 +42,15 @@ public record ReportResponse(
 		@JsonProperty("message") String message,
 
 		/**
-		 * 报告内容
+		 * 数据
 		 */
-		@JsonProperty("report") String report) {
+		@JsonProperty("report_information") T data) {
+	public static <T> ReportResponse<T> success(String threadId, String message, T data) {
+		return new ReportResponse(threadId, "success", message, data);
+	}
 
-	public static ReportResponse success(String threadId, String report) {
-		return new ReportResponse(threadId, "success", "Report retrieved successfully", report);
+	public static <T> ReportResponse<T> notfound(String threadId, String message) {
+		return new ReportResponse(threadId, "notfound", message, null);
 	}
 
 	public static ReportResponse error(String threadId, String message) {
