@@ -1,7 +1,7 @@
 # Spring AI Alibaba Graph Studio
 
 基于 [Spring Initializr](https://start.spring.io/) 扩展的 **Graph Studio** 模块，提供从自定义 DSL → Java 源码 → 可运行 `CompiledGraph` 的一站式解决方案。
-开发者只需编写或从dify等平拍导出一段 YAML/JSON DSL，就能一键生成包含文档抽取、HTTP 调用、RAG 检索、LLM 推理等节点的 Spring Boot + Soring AI Alibaba Graph项目。
+开发者只需编写或从dify等平拍导出一段 YAML/JSON DSL，就能一键生成包含文档抽取、HTTP 调用、RAG 检索、LLM 推理等节点的 Spring Boot + Spring AI Alibaba Graph项目。
 
 ---
 
