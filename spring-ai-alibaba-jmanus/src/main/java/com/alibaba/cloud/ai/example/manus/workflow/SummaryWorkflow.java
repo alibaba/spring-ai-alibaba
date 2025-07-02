@@ -50,11 +50,6 @@ public class SummaryWorkflow {
 			        {
 			          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] 合并该分片的信息到文件中，在保持信息完整性的前提下，合并所有内容，同时也要去掉未找到内容的那些结果"
 			        }
-			      ],
-			      "postProcessSteps": [
-			        {
-			          "stepRequirement": "[MAPREDUCE_FIN_AGENT] 将 innerStorage 的内容导出到外部文件，根据用户需求进行后处理和格式化"
-			        }
 			      ]
 			    }
 			  ]
