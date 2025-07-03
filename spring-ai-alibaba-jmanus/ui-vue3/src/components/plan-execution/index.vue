@@ -19,10 +19,11 @@
       ref="chatRef"
       :initial-prompt="initialPrompt"
       @user-message-send-requested="handleMessageSent"
-      @plan-update="handlePlanUpdate"
-      @plan-completed="handlePlanCompleted"
+      @input-clear="handleInputClear"
+      @input-update-state="handleInputUpdateState"
+      @input-focus="handleInputFocus"
       @step-selected="handleStepSelected"
-      @dialog-round-start="handleDialogRoundStart"
+      @sub-plan-step-selected="handleSubPlanStepSelected"
     />
 
     <!-- Input Area -->
@@ -64,10 +65,8 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: '向 JTaskPilot 发送消息',
 })
 
-// 定义 emits - 移除 plan-update 和 step-selected，因为现在直接使用 store
+// 定义 emits
 interface Emits {
-  (e: 'plan-completed', result: any): void
-  (e: 'dialog-round-start', planId: string, query: string): void
   (e: 'message-sent', message: string): void
 }
 
@@ -183,9 +182,6 @@ const handlePlanManagerCompleted = (rootPlanId: string) => {
 
   // Update loading state
   isLoading.value = false
-
-  // Emit event to parent component
-  emit('plan-completed', result)
 }
 
 /**
@@ -207,11 +203,9 @@ const handlePlanManagerDialogStart = (rootPlanId: string) => {
   // 更新加载状态
   isLoading.value = true
 
-  // 向父组件发射事件
+  // 记录对话轮次状态
   const planData = planExecutionManager.getCachedPlanRecord(rootPlanId)
-  const planId = planData?.currentPlanId || rootPlanId
-  const query = planData?.userRequest || '执行计划'
-  emit('dialog-round-start', planId, query)
+  console.log('[PlanExecutionComponent] Dialog round started with plan data:', planData)
 }
 
 /**
@@ -326,15 +320,6 @@ const handleMessageSent = (message: string) => {
   handleUserMessageSendRequested(message)
 }
 
-const handlePlanUpdate = (planData: any) => {
-  console.log('[PlanExecutionComponent] Plan updated:', planData)
-}
-
-const handlePlanCompleted = (result: any) => {
-  console.log('[PlanExecutionComponent] Plan completed:', result)
-  emit('plan-completed', result)
-}
-
 const handleStepSelected = (planId: string, stepIndex: number) => {
   console.log('[PlanExecutionComponent] Step selected:', planId, stepIndex)
 
@@ -347,9 +332,20 @@ const handleStepSelected = (planId: string, stepIndex: number) => {
   }
 }
 
-const handleDialogRoundStart = (planId: string, query: string) => {
-  console.log('[PlanExecutionComponent] Dialog round started:', planId, query)
-  emit('dialog-round-start', planId, query)
+const handleSubPlanStepSelected = (parentPlanId: string, subPlanId: string, stepIndex: number, subStepIndex: number) => {
+  console.log('[PlanExecutionComponent] Sub plan step selected:', {
+    parentPlanId,
+    subPlanId,
+    stepIndex,
+    subStepIndex
+  })
+
+  // 可以在这里添加子计划步骤选择的处理逻辑
+  if (planExecutionManager.getActivePlanId() === parentPlanId) {
+    planExecutionManager.pollPlanStatusImmediately().catch(error => {
+      console.warn('[PlanExecutionComponent] Failed to refresh progress immediately:', error)
+    })
+  }
 }
 
 // 暴露给父组件的方法

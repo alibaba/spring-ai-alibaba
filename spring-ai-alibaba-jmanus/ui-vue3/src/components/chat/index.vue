@@ -709,31 +709,6 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
   }
 }
 
-// 旧的handlePlanUpdate函数已移除，保留计算进度和更新步骤动作的函数
-
-// 计算执行进度（基于 chat-handler.js 逻辑）
-const calculateProgress = (planDetails: any) => {
-  const totalSteps = planDetails.steps?.length || 0
-  const currentStep = planDetails.currentStepIndex ?? 0
-
-  if (totalSteps === 0) {
-    return { percentage: 0, text: '准备中...' }
-  }
-
-  const percentage = Math.min(Math.round((currentStep / totalSteps) * 80) + 20, 95)
-  let text = `执行步骤 ${currentStep + 1}/${totalSteps}`
-
-  if (planDetails.steps[currentStep]) {
-    const stepTitle =
-      planDetails.steps[currentStep].title ||
-      planDetails.steps[currentStep].description ||
-      planDetails.steps[currentStep]
-    text += `: ${stepTitle}`
-  }
-
-  return { percentage, text }
-}
-
 // 更新步骤执行动作（基于 chat-handler.js 逻辑）
 const updateStepActions = (message: Message, planDetails: any) => {
   if (!message.planExecution?.steps) return

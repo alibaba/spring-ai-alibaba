@@ -78,9 +78,6 @@ const currentInput = ref('')
 const defaultPlaceholder = computed(() => props.placeholder || t('input.placeholder'))
 const currentPlaceholder = ref(defaultPlaceholder.value)
 
-// 监听全局事件来清空输入和更新状态
-const eventBus = ref<any>()
-
 const adjustInputHeight = () => {
   nextTick(() => {
     if (inputRef.value) {
@@ -138,13 +135,6 @@ const updateState = (enabled: boolean, placeholder?: string) => {
   emit('update-state', enabled, placeholder)
 }
 
-/**
- * 聚焦输入框
- */
-const focus = () => {
-  inputRef.value?.focus()
-  emit('focus')
-}
 
 /**
  * 获取当前输入框的值
