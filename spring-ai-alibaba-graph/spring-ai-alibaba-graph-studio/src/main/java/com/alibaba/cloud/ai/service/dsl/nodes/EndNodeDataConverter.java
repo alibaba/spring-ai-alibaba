@@ -89,4 +89,9 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 
 	}
 
+	@Override
+	public String generateVarName(int count) {
+		return "end" + count;
+	}
+
 }

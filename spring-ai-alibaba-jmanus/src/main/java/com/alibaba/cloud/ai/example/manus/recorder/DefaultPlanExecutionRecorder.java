@@ -79,10 +79,11 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * 将指定计划ID的执行记录保存到持久化存储 此方法会递归调用 PlanExecutionRecord、AgentExecutionRecord 和
-	 * ThinkActRecord 的 save 方法
-	 * @param planId 要保存的计划ID
-	 * @return 如果找到并保存了记录则返回 true，否则返回 false
+	 * Save execution records of the specified plan ID to persistent storage. This method
+	 * will recursively call save methods of PlanExecutionRecord, AgentExecutionRecord and
+	 * ThinkActRecord
+	 * @param planId Plan ID to save
+	 * @return Returns true if record is found and saved, false otherwise
 	 */
 	@Override
 	public boolean savePlanExecutionRecords(String planId) {
@@ -91,13 +92,15 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 			return false;
 		}
 
-		// 调用 PlanExecutionRecord 的 save 方法，它会递归调用所有子记录的 save 方法
+		// Call save method of PlanExecutionRecord, which will recursively call save
+		// methods of all sub-records
 		record.save();
 		return true;
 	}
 
 	/**
-	 * 将所有执行记录保存到持久化存储 此方法会遍历所有计划记录并调用它们的 save 方法
+	 * Save all execution records to persistent storage. This method will iterate through
+	 * all plan records and call their save methods
 	 */
 	@Override
 	public void saveAllExecutionRecords() {
@@ -108,7 +111,7 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	@Override
 	public AgentExecutionRecord getCurrentAgentExecutionRecord(String planId) {
-		// 自动清理超过30分钟的计划记录
+		// Automatically clean plan records older than 30 minutes
 		cleanOutdatedPlans(30);
 
 		PlanExecutionRecord planRecord = planRecords.get(planId);
@@ -123,15 +126,15 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * 清理超过指定分钟数的过期计划记录
-	 * @param expirationMinutes 过期时间（分钟）
+	 * Clean expired plan records that exceed the specified number of minutes
+	 * @param expirationMinutes Expiration time (minutes)
 	 */
 	private void cleanOutdatedPlans(int expirationMinutes) {
 		LocalDateTime currentTime = LocalDateTime.now();
 
 		planRecords.entrySet().removeIf(entry -> {
 			PlanExecutionRecord record = entry.getValue();
-			// 检查记录创建时间是否超过了指定的过期时间
+			// Check if record creation time has exceeded the specified expiration time
 			if (record != null && record.getStartTime() != null) {
 				LocalDateTime expirationTime = record.getStartTime().plusMinutes(expirationMinutes);
 				return currentTime.isAfter(expirationTime);
@@ -141,8 +144,8 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * 删除指定计划ID的执行记录
-	 * @param planId 要删除的计划ID
+	 * Delete execution record of the specified plan ID
+	 * @param planId Plan ID to delete
 	 */
 	@Override
 	public void removeExecutionRecord(String planId) {

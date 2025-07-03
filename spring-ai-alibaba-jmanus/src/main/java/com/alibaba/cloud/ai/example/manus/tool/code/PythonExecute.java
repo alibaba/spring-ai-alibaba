@@ -32,7 +32,7 @@ public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.Python
 	private static final Logger log = LoggerFactory.getLogger(PythonExecute.class);
 
 	/**
-	 * 内部输入类，用于定义Python执行工具的输入参数
+	 * Internal input class for defining input parameters of Python execution tool
 	 */
 	public static class PythonInput {
 
@@ -147,7 +147,7 @@ public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.Python
 				String result = codeExecutionResult.getLogs();
 				this.lastExecutionResult = result;
 
-				// 检查执行结果中是否包含 Python 错误信息
+				// Check if the execution result contains Python error information
 				if (result.contains("SyntaxError") || result.contains("IndentationError")
 						|| result.contains("NameError") || result.contains("TypeError") || result.contains("ValueError")
 						|| result.contains("ImportError")) {
@@ -175,7 +175,7 @@ public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.Python
 	}
 
 	private String extractErrorMessage(String output) {
-		// 从 Python 错误输出中提取错误信息
+		// Extract error information from Python error output
 		String[] lines = output.split("\n");
 		StringBuilder errorMsg = new StringBuilder();
 		boolean foundError = false;
@@ -233,7 +233,7 @@ public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.Python
 			String result = codeExecutionResult.getLogs();
 			this.lastExecutionResult = result;
 
-			// 检查执行结果中是否包含 Python 错误信息
+			// Check if the execution result contains Python error information
 			if (result.contains("SyntaxError") || result.contains("IndentationError") || result.contains("NameError")
 					|| result.contains("TypeError") || result.contains("ValueError")
 					|| result.contains("ImportError")) {

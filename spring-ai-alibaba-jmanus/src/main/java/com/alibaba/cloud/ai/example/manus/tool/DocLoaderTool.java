@@ -33,7 +33,7 @@ public class DocLoaderTool implements ToolCallBiFunctionDef<DocLoaderTool.DocLoa
 	private static final Logger log = LoggerFactory.getLogger(DocLoaderTool.class);
 
 	/**
-	 * 内部输入类，用于定义文档加载工具的输入参数
+	 * Internal input class for defining input parameters of the document loading tool
 	 */
 	public static class DocLoaderInput {
 
@@ -101,7 +101,7 @@ public class DocLoaderTool implements ToolCallBiFunctionDef<DocLoaderTool.DocLoa
 	}
 
 	/**
-	 * 获取用于 Spring AI 的 FunctionToolCallback
+	 * Get FunctionToolCallback for Spring AI
 	 */
 	public static FunctionToolCallback<DocLoaderInput, ToolExecuteResult> getFunctionToolCallback() {
 		return FunctionToolCallback.builder(name, new DocLoaderTool()::apply)

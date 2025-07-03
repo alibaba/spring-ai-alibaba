@@ -51,7 +51,7 @@ public class JsonProcessorRemoveService implements Function<JsonProcessorRemoveS
 	}
 
 	@JsonClassDescription("JsonProcessorRemoveService request")
-	record JsonRemoveRequest(@JsonProperty("content") String content, @JsonProperty("value") String field) {
+	public record JsonRemoveRequest(@JsonProperty("content") String content, @JsonProperty("value") String field) {
 	}
 
 }
