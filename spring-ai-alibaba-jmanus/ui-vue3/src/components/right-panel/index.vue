@@ -64,7 +64,6 @@
       <!-- Code Preview -->
       <div v-if="activeTab === 'code'" class="code-preview">
         <MonacoEditor
-          v-model="codeContent"
           :language="codeLanguage"
           :theme="'vs-dark'"
           :height="'100%'"
@@ -80,21 +79,7 @@
       <!-- Chat Preview -->
       <div v-else-if="activeTab === 'chat'" class="chat-preview">
         <div class="chat-bubbles">
-          <div
-            v-for="bubble in chatBubbles"
-            :key="bubble.id"
-            class="chat-bubble"
-            :class="bubble.type"
-          >
-            <div class="bubble-header">
-              <Icon :icon="bubble.icon" />
-              <span>{{ bubble.title }}</span>
-              <span class="timestamp">{{ bubble.timestamp }}</span>
-            </div>
-            <div class="bubble-content">
-              {{ bubble.content }}
-            </div>
-          </div>
+          <!-- Chat bubbles content removed as chatBubbles is no longer available -->
         </div>
       </div>
 
@@ -412,84 +397,7 @@ const autoRefreshTimer = ref<number | null>(null)
 const AUTO_REFRESH_INTERVAL = 3000 // Refresh step details every 3 seconds
 
 // Code and chat preview related state
-const codeContent = ref(`// Generated Spring Boot REST API
-@RestController
-@RequestMapping("/api/users")
-public class UserController {
-
-    @Autowired
-    private UserService userService;
-
-    @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.findAll();
-        return ResponseEntity.ok(users);
-    }
-
-    @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        User savedUser = userService.save(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        Optional<User> user = userService.findById(id);
-        return user.map(ResponseEntity::ok)
-                  .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        if (!userService.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        user.setId(id);
-        User updatedUser = userService.save(user);
-        return ResponseEntity.ok(updatedUser);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        if (!userService.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        userService.deleteById(id);
-        return ResponseEntity.noContent().build();
-    }
-}`)
-
 const codeLanguage = ref('java')
-
-const chatBubbles = ref([
-  {
-    id: '1',
-    type: 'thinking',
-    icon: 'carbon:thinking',
-    title: '分析需求',
-    content:
-      '将您的请求分解为可操作的步骤：1) 创建用户实体，2) 实现用户服务，3) 构建 REST 端点，4) 添加验证和错误处理。',
-    timestamp: '2 分钟前',
-  },
-  {
-    id: '2',
-    type: 'progress',
-    icon: 'carbon:in-progress',
-    title: '生成代码',
-    content:
-      '创建具有用户管理 CRUD 操作的 Spring Boot REST API。包括正确的 HTTP 状态代码和错误处理。',
-    timestamp: '1 分钟前',
-  },
-  {
-    id: '3',
-    type: 'success',
-    icon: 'carbon:checkmark',
-    title: '代码已生成',
-    content:
-      '成功生成具有所有 CRUD 操作的 UserController。代码包含正确的 REST 约定、错误处理，并遵循 Spring Boot 最佳实践。',
-    timestamp: '刚刚',
-  },
-])
 
 // Preview tab configuration
 const previewTabs = [
@@ -498,11 +406,6 @@ const previewTabs = [
   { id: 'code', name: 'Code', icon: 'carbon:code' },
 ]
 
-// Computed properties
-const currentPlan = computed(() => {
-  if (!currentDisplayedPlanId.value) return null
-  return planDataMap.value.get(currentDisplayedPlanId.value)
-})
 
 const stepStatusText = computed(() => {
   if (!selectedStep.value) return ''
@@ -704,11 +607,94 @@ const showStepDetails = (planId: string, stepIndex: number) => {
   autoScrollToBottomIfNeeded()
 }
 
-const clearSelectedStep = () => {
-  selectedStep.value = null
-  currentDisplayedPlanId.value = undefined
-  stopAutoRefresh()
+// Actions - Step selection handling (callable methods for external components)
+/**
+ * Handle step selection - reuses handlePlanUpdate logic for data loading and display
+ * This method can be called from parent components to display specific step details
+ * @param planId - The plan ID to display
+ * @param stepIndex - The step index to display
+ */
+const handleStepSelected = (planId: string, stepIndex: number) => {
+  console.log('[RightPanel] Step selected:', { planId, stepIndex })
+  
+  // Use existing plan data if available, otherwise trigger plan update
+  const existingPlanData = planDataMap.value.get(planId)
+  if (existingPlanData) {
+    // Direct display using existing data
+    showStepDetails(planId, stepIndex)
+  } else {
+    // Load plan data from plan execution manager first
+    const planData = planExecutionManager.getCachedPlanRecord(planId)
+    if (planData) {
+      handlePlanUpdate(planData).then(() => {
+        showStepDetails(planId, stepIndex)
+      }).catch((error) => {
+        console.error('[RightPanel] Error loading plan data for step selection:', error)
+      })
+    } else {
+      console.warn('[RightPanel] Plan data not found in manager:', planId)
+    }
+  }
 }
+
+/**
+ * Handle sub-plan step selection - reuses handlePlanUpdate logic for nested plan display
+ * This method can be called from parent components to display specific sub-plan step details
+ * @param parentPlanId - The parent plan ID
+ * @param subPlanId - The sub-plan ID to display
+ * @param stepIndex - The parent step index
+ * @param subStepIndex - The sub-step index to display
+ */
+const handleSubPlanStepSelected = (parentPlanId: string, subPlanId: string, stepIndex: number, subStepIndex: number) => {
+  console.log('[RightPanel] Sub plan step selected:', {
+    parentPlanId,
+    subPlanId, 
+    stepIndex,
+    subStepIndex
+  })
+  
+  // Check if sub-plan data is already available in planDataMap
+  const subPlanData = planDataMap.value.get(subPlanId)
+  if (subPlanData) {
+    // Direct display using existing sub-plan data
+    showStepDetails(subPlanId, subStepIndex)
+  } else {
+    // First ensure parent plan is loaded to access sub-plan data
+    const parentPlanData = planDataMap.value.get(parentPlanId)
+    if (parentPlanData) {
+      // Parent plan exists, try to find and load sub-plan data
+      const agentExecution = parentPlanData.agentExecutionSequence?.[stepIndex]
+      const thinkActStep = agentExecution?.thinkActSteps?.find((step: any) => 
+        step.subPlanExecutionRecord?.planId === subPlanId
+      )
+      
+      if (thinkActStep?.subPlanExecutionRecord) {
+        // Add sub-plan to planDataMap and display
+        planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
+        showStepDetails(subPlanId, subStepIndex)
+      } else {
+        console.warn('[RightPanel] Sub-plan not found in parent plan data:', {
+          parentPlanId,
+          subPlanId,
+          stepIndex
+        })
+      }
+    } else {
+      // Load parent plan first from plan execution manager
+      const parentPlan = planExecutionManager.getCachedPlanRecord(parentPlanId)
+      if (parentPlan) {
+        handlePlanUpdate(parentPlan).then(() => {
+          handleSubPlanStepSelected(parentPlanId, subPlanId, stepIndex, subStepIndex)
+        }).catch((error) => {
+          console.error('[RightPanel] Error loading parent plan data for sub-plan step selection:', error)
+        })
+      } else {
+        console.warn('[RightPanel] Parent plan data not found in manager:', parentPlanId)
+      }
+    }
+  }
+}
+
 
 // Actions - Auto refresh management
 const startAutoRefresh = (planId: string, stepIndex: number) => {
@@ -823,26 +809,13 @@ const autoScrollToBottomIfNeeded = () => {
 
 // Actions - Code operations
 const copyCode = () => {
-  navigator.clipboard.writeText(codeContent.value)
+  console.warn('Copy code functionality is disabled as codeContent is removed.')
 }
 
 const downloadCode = () => {
-  const blob = new Blob([codeContent.value], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'UserController.java'
-  a.click()
-  URL.revokeObjectURL(url)
+  console.warn('Download code functionality is disabled as codeContent is removed.')
 }
 
-// Actions - Data cleanup
-const clearPlanData = () => {
-  planDataMap.value.clear()
-  selectedStep.value = null
-  currentDisplayedPlanId.value = undefined
-  stopAutoRefresh()
-}
 
 // Actions - Utility functions
 const formatJson = (jsonData: any): string => {
@@ -961,6 +934,8 @@ defineExpose({
   handlePlanUpdate,
   showStepDetails,
   updateDisplayedPlanProgress,
+  handleStepSelected,
+  handleSubPlanStepSelected,
 })
 </script>
 
