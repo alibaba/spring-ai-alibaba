@@ -17,6 +17,7 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, computed, nextTick } from 'vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
+import type { PlanExecutionRecord } from '@/types/plan-execution-record'
 
 export const useRightPanelStore = defineStore('rightPanel', () => {
   // Basic state
@@ -145,18 +146,18 @@ public class UserController {
   }
 
   // Actions - Plan data management
-  const handlePlanUpdate = async (planData: any) => {
+  const handlePlanUpdate = async (planData: PlanExecutionRecord) => {
     console.log('[RightPanelStore] Received plan update event, planData:', planData)
 
     // Validate data validity
-    if (!planData || !planData.planId) {
+    if (!planData || !planData.currentPlanId) {
       console.warn('[RightPanelStore] Invalid plan data received:', planData)
       return
     }
 
     // Update plan data to local mapping
-    planDataMap.value.set(planData.planId, planData)
-    console.log('[RightPanelStore] Plan data updated to planDataMap:', planData.planId)
+    planDataMap.value.set(planData.currentPlanId, planData)
+    console.log('[RightPanelStore] Plan data updated to planDataMap:', planData.currentPlanId)
 
     // Process sub-plan data from agentExecutionSequence if exists
     if (planData.agentExecutionSequence) {
@@ -164,7 +165,7 @@ public class UserController {
         if (agentExecution.thinkActSteps) {
           agentExecution.thinkActSteps.forEach((thinkActStep: any, stepIndex: number) => {
             if (thinkActStep.subPlanExecutionRecord) {
-              const subPlanId = thinkActStep.subPlanExecutionRecord.planId
+              const subPlanId = thinkActStep.subPlanExecutionRecord.currentPlanId
               if (subPlanId) {
                 console.log(`[RightPanelStore] Processing sub-plan from agent ${agentIndex}, step ${stepIndex}:`, subPlanId)
                 planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
@@ -176,9 +177,9 @@ public class UserController {
     }
 
     // If currently selected step corresponds to this plan, reload step details
-    if (selectedStep.value?.planId === planData.planId) {
+    if (selectedStep.value?.planId === planData.currentPlanId) {
       console.log('[RightPanelStore] Refresh details of currently selected step:', selectedStep.value.index)
-      showStepDetails(planData.planId, selectedStep.value.index)
+      showStepDetails(planData.currentPlanId, selectedStep.value.index)
     }
 
     // After data update, auto-scroll to latest content if previously at bottom

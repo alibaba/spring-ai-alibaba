@@ -355,6 +355,7 @@ import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
 import { useRightPanelStore } from '@/stores/right-panel'
+import type { PlanExecutionRecord } from '@/types/plan-execution-record'
 
 interface Message {
   id: string
@@ -973,32 +974,32 @@ const handleDialogRoundStart = (planId: string, query: string) => {
 }
 
 // 处理计划更新
-const handlePlanUpdate = (planDetails: any) => {
+const handlePlanUpdate = (planDetails: PlanExecutionRecord) => {
   console.log('[ChatComponent] Processing plan update:', planDetails)
   console.log('[ChatComponent] Plan steps:', planDetails?.steps)
   console.log('[ChatComponent] Plan completed:', planDetails?.completed)
 
-  if (!planDetails || !planDetails.planId) {
-    console.warn('[ChatComponent] Plan update missing planId')
+  if (!planDetails || !planDetails.currentPlanId) {
+    console.warn('[ChatComponent] Plan update missing currentPlanId')
     return
   }
 
   // 直接使用right-panel store处理计划更新，替代emit事件
   rightPanelStore.handlePlanUpdate(planDetails)
 
-  // 找到对应的消息
+  // 找到对应的消息 - 使用 currentPlanId 字段
   const messageIndex = messages.value.findIndex(
-    m => m.planId === planDetails.planId && m.type === 'assistant'
+    m => m.planId === planDetails.currentPlanId && m.type === 'assistant'
   )
   let message
 
   if (messageIndex !== -1) {
     message = messages.value[messageIndex]
-    console.log('[ChatComponent] Found existing assistant message for planId:', planDetails.planId)
+    console.log('[ChatComponent] Found existing assistant message for currentPlanId:', planDetails.currentPlanId)
   } else {
     console.warn(
-      '[ChatComponent] No existing assistant message found for planId:',
-      planDetails.planId
+      '[ChatComponent] No existing assistant message found for currentPlanId:',
+      planDetails.currentPlanId
     )
     console.log(
       '[ChatComponent] Current messages:',
@@ -1022,10 +1023,10 @@ const handlePlanUpdate = (planDetails: any) => {
     if (lastAssistantIndex !== -1) {
       message = messages.value[lastAssistantIndex]
       // 更新 planId 以确保后续更新能找到它
-      message.planId = planDetails.planId
+      message.planId = planDetails.currentPlanId
       console.log(
         '[ChatComponent] Using last assistant message and updating planId to:',
-        planDetails.planId
+        planDetails.currentPlanId
       )
     } else {
       console.error('[ChatComponent] No assistant message found at all, this should not happen')
@@ -1093,7 +1094,7 @@ const handlePlanUpdate = (planDetails: any) => {
   message.progressText = progress.text
 
   // 处理执行序列和步骤动作 - 参考chat-handler.js的逻辑
-  if (planDetails.agentExecutionSequence?.length > 0) {
+  if (planDetails.agentExecutionSequence && planDetails.agentExecutionSequence.length > 0) {
     console.log(
       '[ChatComponent] 发现执行序列数据，数量:',
       planDetails.agentExecutionSequence.length
@@ -1112,10 +1113,10 @@ const handlePlanUpdate = (planDetails: any) => {
     const currentStepIndex = planDetails.currentStepIndex || 0
     if (currentStepIndex >= 0 && currentStepIndex < planDetails.agentExecutionSequence.length) {
       const currentExecution = planDetails.agentExecutionSequence[currentStepIndex]
-      if (currentExecution?.thinkActSteps?.length > 0) {
+      if (currentExecution && currentExecution.thinkActSteps && currentExecution.thinkActSteps.length > 0) {
         const latestThinkAct =
           currentExecution.thinkActSteps[currentExecution.thinkActSteps.length - 1]
-        if (latestThinkAct?.thinkOutput) {
+        if (latestThinkAct && latestThinkAct.thinkOutput) {
           // 如果思考输出太长，截断它
           const maxLength = 150
           const displayOutput =
@@ -1140,8 +1141,8 @@ const handlePlanUpdate = (planDetails: any) => {
 
     // 将用户输入等待状态附加到消息上
     message.userInputWaitState = {
-      message: planDetails.userInputWaitState.message,
-      formDescription: planDetails.userInputWaitState.formDescription,
+      message: planDetails.userInputWaitState.message || '',
+      formDescription: planDetails.userInputWaitState.formDescription || '',
       formInputs:
         planDetails.userInputWaitState.formInputs?.map((input: any) => ({
           label: input.label,
