@@ -63,7 +63,7 @@
 
                 <!-- 步骤执行详情 -->
                 <div class="steps-container" v-if="message.steps && message.steps.length > 0">
-                  <h4 class="steps-title">步骤执行详情</h4>
+                  <h4 class="steps-title">{{ $t('chat.stepExecutionDetails') }}</h4>
 
                   <!-- 遍历所有步骤 -->
                   <div
@@ -91,15 +91,15 @@
                         {{ step.title || step.description || step || `步骤 ${index + 1}` }}
                       </span>
                       <span v-if="index === message.currentStepIndex" class="step-status current">
-                        执行中
+                        {{ $t('chat.status.executing') }}
                       </span>
                       <span
                         v-else-if="index < (message.currentStepIndex || 0)"
                         class="step-status completed"
                       >
-                        已完成
+                        {{ $t('chat.status.completed') }}
                       </span>
-                      <span v-else class="step-status pending"> 待执行 </span>
+                      <span v-else class="step-status pending"> {{ $t('chat.status.pending') }} </span>
                     </div>
 
                     <!-- 显示步骤执行动作信息 -->
@@ -122,7 +122,7 @@
 
                       <div v-if="message.stepActions[index]?.toolParameters" class="tool-params">
                         <span class="tool-icon">⚙️</span>
-                        <span class="param-label">参数:</span>
+                        <span class="param-label">{{ $t('common.parameters') }}:</span>
                         <pre class="param-content">{{
                           message.stepActions[index]?.toolParameters
                         }}</pre>
@@ -131,7 +131,7 @@
                       <div v-if="message.stepActions[index]?.thinkOutput" class="think-details">
                         <div class="think-header">
                           <span class="think-icon">💭</span>
-                          <span class="think-label">思考输出:</span>
+                          <span class="think-label">{{ $t('chat.thinkingOutput') }}:</span>
                         </div>
                         <div class="think-output">
                           <pre class="think-content">{{
@@ -188,7 +188,7 @@
                       class="user-input-form-container"
                     >
                       <p class="user-input-message">
-                        {{ message.userInputWaitState.message || '请输入所需信息:' }}
+                        {{ message.userInputWaitState.message || $t('chat.userInput.message') }}
                       </p>
                       <p v-if="message.userInputWaitState.formDescription" class="form-description">
                         {{ message.userInputWaitState.formDescription }}
@@ -220,7 +220,7 @@
                         </div>
 
                         <div v-else class="form-group">
-                          <label for="form-input-genericInput">输入:</label>
+                          <label for="form-input-genericInput">{{ $t('common.input') }}:</label>
                           <input
                             type="text"
                             id="form-input-genericInput"
@@ -230,7 +230,7 @@
                           />
                         </div>
 
-                        <button type="submit" class="submit-user-input-btn">提交</button>
+                        <button type="submit" class="submit-user-input-btn">{{ $t('chat.userInput.submit') }}</button>
                       </form>
                     </div>
                   </div>
@@ -350,6 +350,9 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'

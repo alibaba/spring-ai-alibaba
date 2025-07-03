@@ -48,7 +48,7 @@
           <input 
             v-model="searchQuery"
             type="text" 
-            placeholder="搜索配置项..."
+                            :placeholder="$t('config.search')"
             class="search-input"
           />
           <span class="search-icon">🔍</span>
@@ -59,7 +59,7 @@
     <!-- 加载状态 -->
     <div v-if="initialLoading" class="loading-container">
       <div class="loading-spinner"></div>
-      <p>正在加载配置...</p>
+      <p>{{ $t('config.loading') }}</p>
     </div>
 
     <!-- 配置组 -->
@@ -78,9 +78,9 @@
               @click="resetGroupConfigs(group.name)"
               class="reset-btn"
               :disabled="loading"
-              title="重置该组所有配置为默认值"
+              :title="$t('config.resetGroupConfirm')"
             >
-              重置
+              {{ $t('config.reset') }}
             </button>
           </div>
           <div class="group-divider"></div>
@@ -129,8 +129,8 @@
                       <div class="config-item-header">
                         <label class="config-label">
                           {{ item.description || item.displayName }}
-                          <span class="type-badge boolean">{{ item.inputType === 'CHECKBOX' ? '选择' : '布尔' }}</span>
-                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">已修改</span>
+                          <span class="type-badge boolean">{{ item.inputType === 'CHECKBOX' ? $t('config.types.checkbox') : $t('config.types.boolean') }}</span>
+                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
                         <span class="config-key" :title="item.configKey">{{ item.configKey }}</span>
                       </div>
@@ -171,8 +171,8 @@
                       <div class="config-item-header">
                         <label class="config-label">
                           {{ item.description || item.displayName }}
-                          <span class="type-badge select">选择</span>
-                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">已修改</span>
+                          <span class="type-badge select">{{ $t('config.types.select') }}</span>
+                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
                         <span class="config-key" :title="item.configKey">{{ item.configKey }}</span>
                       </div>
@@ -202,8 +202,8 @@
                       <div class="config-item-header">
                         <label class="config-label">
                           {{ item.description || item.displayName }}
-                          <span class="type-badge textarea">多行</span>
-                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">已修改</span>
+                          <span class="type-badge textarea">{{ $t('config.types.textarea') }}</span>
+                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
                         <span class="config-key" :title="item.configKey">{{ item.configKey }}</span>
                       </div>
@@ -227,13 +227,13 @@
                       <div class="config-item-header">
                         <label class="config-label">
                           {{ item.description || item.displayName }}
-                          <span class="type-badge number">数值</span>
-                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">已修改</span>
+                          <span class="type-badge number">{{ $t('config.types.number') }}</span>
+                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
                         <span class="config-key" :title="item.configKey">{{ item.configKey }}</span>
                         <div class="config-meta" v-if="item.min || item.max">
                           <span class="range-info">
-                            范围: {{ item.min || 0 }} - {{ item.max || '∞' }}
+                            {{ $t('config.range') }}: {{ item.min || 0 }} - {{ item.max || '∞' }}
                           </span>
                         </div>
                       </div>
@@ -259,8 +259,8 @@
                       <div class="config-item-header">
                         <label class="config-label">
                           {{ item.description || item.displayName }}
-                          <span class="type-badge string">{{ item.inputType === 'TEXT' ? '文本' : '字符串' }}</span>
-                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">已修改</span>
+                          <span class="type-badge string">{{ item.inputType === 'TEXT' ? $t('config.types.text') : $t('config.types.string') }}</span>
+                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
                         <span class="config-key" :title="item.configKey">{{ item.configKey }}</span>
                       </div>
@@ -285,7 +285,7 @@
 
     <!-- 空状态 -->
     <div v-else class="empty-state">
-      <p>未找到配置项</p>
+      <p>{{ $t('config.notFound') }}</p>
     </div>
 
     <!-- 消息提示 -->
@@ -302,6 +302,9 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import Switch from '@/components/switch/index.vue'
 import Flex from '@/components/flex/index.vue'
 import { AdminApiService, type ConfigItem } from '@/api/admin-api-service'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // 定义扩展的配置项接口
 interface ExtendedConfigItem extends ConfigItem {

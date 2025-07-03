@@ -355,8 +355,8 @@
 
           <div v-else class="no-selection">
             <Icon icon="carbon:events" class="empty-icon" />
-            <h3>未选择执行步骤</h3>
-            <p>请在左侧聊天区域点击任意执行步骤查看详情</p>
+            <h3>{{ $t('rightPanel.noStepSelected') }}</h3>
+            <p>{{ $t('rightPanel.selectStepHint') }}</p>
           </div>
         </div>
 
@@ -385,12 +385,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import MonacoEditor from '@/components/editor/index.vue'
 import { useRightPanelStore } from '@/stores/right-panel'
 
 // 使用 Pinia store
 const rightPanelStore = useRightPanelStore()
+const { t } = useI18n()
 
 // DOM 元素引用
 const scrollContainer = ref<HTMLElement>()
