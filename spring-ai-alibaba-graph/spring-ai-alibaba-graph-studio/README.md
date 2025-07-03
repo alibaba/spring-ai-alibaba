@@ -1,11 +1,13 @@
-# Spring AI Alibaba Graph Studio
+# Spring AI Alibaba Graph Studio 
+
+## 一、DSL导出离线项目
 
 基于 [Spring Initializr](https://start.spring.io/) 扩展的 **Graph Studio** 模块，提供从自定义 DSL → Java 源码 → 可运行 `CompiledGraph` 的一站式解决方案。
 开发者只需编写或从dify等平拍导出一段 YAML/JSON DSL，就能一键生成包含文档抽取、HTTP 调用、RAG 检索、LLM 推理等节点的 Spring Boot + Spring AI Alibaba Graph项目。
 
 ---
 
-## ✨ 核心架构
+### ✨ 核心架构
 
 ```text
 ┌───────────────┐    1. POST /starter.zip     ┌────────────────────────┐
@@ -42,7 +44,7 @@
 
 ---
 
-## 🚀 快速开始
+### 🚀 快速开始
 
 1. 克隆仓库并启动服务：
    ```bash
@@ -68,7 +70,7 @@
 
 ---
 
-## 📝 DSL 示例  [客户评价处理工作流]
+### 📝 DSL 示例  [客户评价处理工作流]
 
 ```yaml
 app:
@@ -589,7 +591,7 @@ workflow:
 
 ---
 
-## 🛠 扩展指南
+### 🛠 扩展指南
 
 - **新增节点**：实现 `XxxNodeDataConverter` + `XxxNodeSection`。
 - **自定义 Adapter**：注册新的 `DSLAdapter` 支持更多方言。
@@ -597,6 +599,12 @@ workflow:
 - **自定义依赖**: 在 `initializr.yml` 中添加对应依赖。
 
 ---
+
+## 二、导入DSL生成APP并直接运行
+
+开发中...
+
+------
 
 ## 🤝 贡献
 
