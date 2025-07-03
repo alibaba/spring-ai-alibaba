@@ -36,82 +36,75 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class GraphObservationAutoConfigurationTest {
 
-    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-        .withConfiguration(AutoConfigurations.of(GraphObservationAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(GraphObservationAutoConfiguration.class));
 
-    @Test
-    void shouldAutoConfigureWhenEnabled() {
-        this.contextRunner
-            .withPropertyValues("spring.ai.alibaba.graph.observation.enabled=true")
-            .withUserConfiguration(TestConfiguration.class)
-            .run(context -> {
-                assertThat(context).hasSingleBean(GraphObservationLifecycleListener.class);
-                assertThat(context).hasSingleBean(CompileConfig.class);
-                assertThat(context).hasBean("observationGraphCompileConfig");
-            });
-    }
+	@Test
+	void shouldAutoConfigureWhenEnabled() {
+		this.contextRunner.withPropertyValues("spring.ai.alibaba.graph.observation.enabled=true")
+			.withUserConfiguration(TestConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasSingleBean(GraphObservationLifecycleListener.class);
+				assertThat(context).hasSingleBean(CompileConfig.class);
+				assertThat(context).hasBean("observationGraphCompileConfig");
+			});
+	}
 
-    @Test
-    void shouldNotAutoConfigureWhenDisabled() {
-        this.contextRunner
-            .withPropertyValues("spring.ai.alibaba.graph.observation.enabled=false")
-            .run(context -> {
-                assertThat(context).doesNotHaveBean(GraphObservationLifecycleListener.class);
-                assertThat(context).doesNotHaveBean(CompileConfig.class);
-            });
-    }
+	@Test
+	void shouldNotAutoConfigureWhenDisabled() {
+		this.contextRunner.withPropertyValues("spring.ai.alibaba.graph.observation.enabled=false").run(context -> {
+			assertThat(context).doesNotHaveBean(GraphObservationLifecycleListener.class);
+			assertThat(context).doesNotHaveBean(CompileConfig.class);
+		});
+	}
 
-    @Test
-    void shouldAutoConfigureWithDefaultProperties() {
-        this.contextRunner
-            .withUserConfiguration(TestConfiguration.class)
-            .run(context -> {
-                assertThat(context).hasSingleBean(GraphObservationLifecycleListener.class);
-                assertThat(context).hasSingleBean(CompileConfig.class);
-                
-                GraphObservationProperties properties = context.getBean(GraphObservationProperties.class);
-                assertThat(properties.isEnabled()).isTrue();
-            });
-    }
+	@Test
+	void shouldAutoConfigureWithDefaultProperties() {
+		this.contextRunner.withUserConfiguration(TestConfiguration.class).run(context -> {
+			assertThat(context).hasSingleBean(GraphObservationLifecycleListener.class);
+			assertThat(context).hasSingleBean(CompileConfig.class);
 
-    @Test
-    void shouldConfigureObservationHandlersWhenMeterRegistryPresent() {
-        this.contextRunner
-            .withUserConfiguration(TestConfigurationWithMeterRegistry.class)
-            .run(context -> {
-                assertThat(context).hasBean("graphObservationHandler");
-                assertThat(context).hasBean("graphNodeObservationHandler");
-                assertThat(context).hasBean("graphEdgeObservationHandler");
-            });
-    }
+			GraphObservationProperties properties = context.getBean(GraphObservationProperties.class);
+			assertThat(properties.isEnabled()).isTrue();
+		});
+	}
 
-    @Test
-    void shouldNotConfigureObservationHandlersWhenMeterRegistryAbsent() {
-        this.contextRunner
-            .withUserConfiguration(TestConfiguration.class)
-            .run(context -> {
-                assertThat(context).doesNotHaveBean("graphObservationHandler");
-                assertThat(context).doesNotHaveBean("graphNodeObservationHandler");
-                assertThat(context).doesNotHaveBean("graphEdgeObservationHandler");
-            });
-    }
+	@Test
+	void shouldConfigureObservationHandlersWhenMeterRegistryPresent() {
+		this.contextRunner.withUserConfiguration(TestConfigurationWithMeterRegistry.class).run(context -> {
+			assertThat(context).hasBean("graphObservationHandler");
+			assertThat(context).hasBean("graphNodeObservationHandler");
+			assertThat(context).hasBean("graphEdgeObservationHandler");
+		});
+	}
 
-    @Configuration(proxyBeanMethods = false)
-    static class TestConfiguration {
+	@Test
+	void shouldNotConfigureObservationHandlersWhenMeterRegistryAbsent() {
+		this.contextRunner.withUserConfiguration(TestConfiguration.class).run(context -> {
+			assertThat(context).doesNotHaveBean("graphObservationHandler");
+			assertThat(context).doesNotHaveBean("graphNodeObservationHandler");
+			assertThat(context).doesNotHaveBean("graphEdgeObservationHandler");
+		});
+	}
 
-        @Bean
-        ObservationRegistry observationRegistry() {
-            return ObservationRegistry.create();
-        }
-    }
+	@Configuration(proxyBeanMethods = false)
+	static class TestConfiguration {
 
-    @Configuration(proxyBeanMethods = false)
-    static class TestConfigurationWithMeterRegistry extends TestConfiguration {
+		@Bean
+		ObservationRegistry observationRegistry() {
+			return ObservationRegistry.create();
+		}
 
-        @Bean
-        MeterRegistry meterRegistry() {
-            return new SimpleMeterRegistry();
-        }
-    }
+	}
 
-} 
+	@Configuration(proxyBeanMethods = false)
+	static class TestConfigurationWithMeterRegistry extends TestConfiguration {
+
+		@Bean
+		MeterRegistry meterRegistry() {
+			return new SimpleMeterRegistry();
+		}
+
+	}
+
+}

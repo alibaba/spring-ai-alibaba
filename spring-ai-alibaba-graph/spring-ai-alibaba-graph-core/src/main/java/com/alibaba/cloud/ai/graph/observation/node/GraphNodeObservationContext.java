@@ -32,7 +32,7 @@ public class GraphNodeObservationContext extends Observation.Context {
 
 	private final Map<String, Object> state;
 
-	private final Map<String, Object> output;
+	private Object output;
 
 	/**
 	 * Constructs a new GraphNodeObservationContext with the specified parameters.
@@ -41,11 +41,14 @@ public class GraphNodeObservationContext extends Observation.Context {
 	 * @param state the current state of the node execution
 	 * @param output the output data from the node execution
 	 */
-	public GraphNodeObservationContext(String nodeName, String event, Map<String, Object> state,
-			Map<String, Object> output) {
+	public GraphNodeObservationContext(String nodeName, String event, Map<String, Object> state, Object output) {
 		this.nodeName = nodeName;
 		this.event = event;
 		this.state = state;
+		this.output = output;
+	}
+
+	public void setOutput(final Object output) {
 		this.output = output;
 	}
 
@@ -53,7 +56,7 @@ public class GraphNodeObservationContext extends Observation.Context {
 	 * Gets the output data from the node execution.
 	 * @return the node output as a map of key-value pairs
 	 */
-	public Map<String, Object> getOutput() {
+	public Object getOutput() {
 		return this.output;
 	}
 
@@ -102,7 +105,7 @@ public class GraphNodeObservationContext extends Observation.Context {
 
 		private Map<String, Object> state;
 
-		private Map<String, Object> output;
+		private Object output;
 
 		/**
 		 * Sets the node name for the observation context.
@@ -139,7 +142,7 @@ public class GraphNodeObservationContext extends Observation.Context {
 		 * @param output the output data from the node execution
 		 * @return this builder instance for method chaining
 		 */
-		public Builder output(Map<String, Object> output) {
+		public Builder output(Object output) {
 			this.output = output;
 			return this;
 		}

@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.observation.node;
 
-import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationDocumentation;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
@@ -36,6 +35,7 @@ public enum GraphNodeObservationDocumentation implements ObservationDocumentatio
 	 * key names for node observations.
 	 */
 	GRAPH_NODE {
+
 		@Override
 		public Class<? extends ObservationConvention<? extends Observation.Context>> getDefaultConvention() {
 			return GraphNodeObservationConvention.class;
@@ -43,12 +43,12 @@ public enum GraphNodeObservationDocumentation implements ObservationDocumentatio
 
 		@Override
 		public KeyName[] getLowCardinalityKeyNames() {
-			return GraphObservationDocumentation.LowCardinalityKeyNames.values();
+			return LowCardinalityKeyNames.values();
 		}
 
 		@Override
 		public KeyName[] getHighCardinalityKeyNames() {
-			return GraphObservationDocumentation.HighCardinalityKeyNames.values();
+			return HighCardinalityKeyNames.values();
 		}
 
 		@Override

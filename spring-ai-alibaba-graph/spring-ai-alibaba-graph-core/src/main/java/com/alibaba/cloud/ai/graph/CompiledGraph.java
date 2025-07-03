@@ -33,9 +33,6 @@ import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
 import com.alibaba.cloud.ai.graph.utils.SystemClock;
-import com.alibaba.fastjson.JSON;
-import io.micrometer.observation.Observation;
-import io.micrometer.observation.Observation.Scope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -55,7 +52,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -160,25 +156,14 @@ public class CompiledGraph {
 		for (var n : processedData.nodes().elements) {
 			var factory = n.actionFactory();
 			Objects.requireNonNull(factory, format("action factory for node id '%s' is null!", n.id()));
-			AsyncNodeActionWithConfig action = factory.apply(compileConfig);
-			// Wrap node action with tracing
-			action = wrapAsyncNodeActionWithTracing(n.id(), action);
-			nodes.put(n.id(), action);
+			nodes.put(n.id(), factory.apply(compileConfig));
 		}
 
 		// EVALUATE EDGES
 		for (var e : processedData.edges().elements) {
 			var targets = e.targets();
 			if (targets.size() == 1) {
-				EdgeValue edgeValue = targets.get(0);
-				if (nodes.containsKey(edgeValue.id())) {
-					AsyncNodeActionWithConfig originalAction = nodes.get(edgeValue.id());
-					// Wrap edge action with tracing
-					AsyncNodeActionWithConfig wrappedEdgeAction = wrapAsyncEdgeActionWithTracing(edgeValue.id(),
-							originalAction);
-					nodes.put(edgeValue.id(), wrappedEdgeAction);
-				}
-				edges.put(e.sourceId(), edgeValue);
+				edges.put(e.sourceId(), targets.get(0));
 			}
 			else {
 				Supplier<Stream<EdgeValue>> parallelNodeStream = () -> targets.stream()
@@ -207,19 +192,21 @@ public class CompiledGraph {
 					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
 				}
 
-				var actions = parallelNodeStream.get().map(target -> nodes.get(target.id())).toList();
+				var actions = parallelNodeStream.get()
+					// .map( target -> nodes.remove(target.id()) )
+					.map(target -> nodes.get(target.id()))
+					.toList();
 
 				var parallelNode = new ParallelNode(e.sourceId(), actions, keyStrategyMap);
 
-				AsyncNodeActionWithConfig parallelNodeAction = parallelNode.actionFactory().apply(compileConfig);
-				parallelNodeAction = wrapAsyncEdgeActionWithTracing(parallelNode.id(), parallelNodeAction);
-				nodes.put(parallelNode.id(), parallelNodeAction);
+				nodes.put(parallelNode.id(), parallelNode.actionFactory().apply(compileConfig));
 
 				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
 
 				edges.put(parallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
 
 			}
+
 		}
 	}
 
@@ -465,29 +452,7 @@ public class CompiledGraph {
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config)
 			throws GraphRunnerException {
-
-		Observation graphObservation = Observation
-			.start("spring.ai.alibaba.graph", this.compileConfig.observationRegistry())
-			.contextualName(stateGraph.getName())
-			.lowCardinalityKeyValue("spring.ai.alibaba.graph.graphName", stateGraph.getName())
-			.highCardinalityKeyValue("spring.ai.alibaba.graph.inputs", JSON.toJSONString(inputs));
-		try (Observation.Scope scope = graphObservation.openScope()) {
-			Optional<OverAllState> overAllState = stream(inputs, config).stream()
-				.reduce((a, b) -> b)
-				.map(NodeOutput::state);
-			if (overAllState.isPresent()) {
-				graphObservation.highCardinalityKeyValue("spring.ai.alibaba.graph.outputs",
-						JSON.toJSONString(overAllState.get().data()));
-			}
-			return overAllState;
-		}
-		catch (GraphRunnerException e) {
-			graphObservation.error(e);
-			throw e;
-		}
-		finally {
-			graphObservation.stop();
-		}
+		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
 	/**
@@ -507,27 +472,7 @@ public class CompiledGraph {
 	 * Optional
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs) throws GraphRunnerException {
-		Observation graphObservation = Observation
-			.start("spring.ai.alibaba.graph", this.compileConfig.observationRegistry())
-			.contextualName(stateGraph.getName())
-			.lowCardinalityKeyValue("spring.ai.alibaba.graph.graphName", stateGraph.getName())
-			.highCardinalityKeyValue("spring.ai.alibaba.graph.inputs", JSON.toJSONString(inputs));
-		try (Observation.Scope scope = graphObservation.openScope()) {
-			final AtomicReference<Optional<OverAllState>> result = new AtomicReference<>();
-			result.set(this.invoke(stateCreate(inputs), RunnableConfig.builder().build()));
-			if (result.get().isPresent()) {
-				graphObservation.highCardinalityKeyValue("spring.ai.alibaba.graph.outputs",
-						JSON.toJSONString(result.get().get().data()));
-			}
-			return result.get();
-		}
-		catch (GraphRunnerException e) {
-			graphObservation.error(e);
-			throw new RuntimeException(e);
-		}
-		finally {
-			graphObservation.stop();
-		}
+		return this.invoke(stateCreate(inputs), RunnableConfig.builder().build());
 	}
 
 	private OverAllState stateCreate(Map<String, Object> inputs) {
@@ -1058,65 +1003,6 @@ public class CompiledGraph {
 			}
 		}
 
-	}
-
-	/**
-	 * Wraps the AsyncNodeActionWithConfig of a node to add pre- and post-execution
-	 * tracing logs.
-	 */
-	private AsyncNodeActionWithConfig wrapAsyncNodeActionWithTracing(String nodeId,
-			AsyncNodeActionWithConfig originalAction) {
-		return (state, config) -> {
-			Observation nodeObservation = Observation
-				.start("spring.ai.alibaba.graph.node", this.compileConfig.observationRegistry())
-				.contextualName(nodeId)
-				.lowCardinalityKeyValue("spring.ai.alibaba.graph.graphName", stateGraph.getName())
-				.lowCardinalityKeyValue("spring.ai.alibaba.graph.nodeName", nodeId)
-				.lowCardinalityKeyValue("spring.ai.alibaba.graph.nodeId", nodeId)
-				.highCardinalityKeyValue("spring.ai.alibaba.graph.node.state", JSON.toJSONString(state));
-			Scope scope = nodeObservation.openScope();
-			return originalAction.apply(state, config).whenComplete((result, ex) -> {
-				if (result != null) {
-					nodeObservation.lowCardinalityKeyValue("spring.ai.alibaba.graph.node.outputs",
-							JSON.toJSONString(result));
-				}
-				if (ex != null) {
-					nodeObservation
-						.error(ex instanceof CompletionException && ex.getCause() != null ? ex.getCause() : ex);
-				}
-				nodeObservation.stop();
-				scope.close();
-			});
-		};
-	}
-
-	/**
-	 * Wraps the AsyncNodeActionWithConfig of an edge to add pre- and post-execution
-	 * tracing logs.
-	 */
-	private AsyncNodeActionWithConfig wrapAsyncEdgeActionWithTracing(String edgeId,
-			AsyncNodeActionWithConfig originalAction) {
-		return (state, config) -> {
-			Observation edgeObservation = Observation
-				.start("spring.ai.alibaba.graph.edge", this.compileConfig.observationRegistry())
-				.contextualName(edgeId)
-				.lowCardinalityKeyValue("spring.ai.alibaba.graph.graphName", stateGraph.getName())
-				.lowCardinalityKeyValue("spring.ai.alibaba.graph.edgeId", edgeId)
-				.highCardinalityKeyValue("spring.ai.alibaba.graph.edge.state", JSON.toJSONString(state));
-			Scope scope = edgeObservation.openScope();
-			return originalAction.apply(state, config).whenComplete((result, ex) -> {
-				if (result != null) {
-					edgeObservation.highCardinalityKeyValue("spring.ai.alibaba.graph.edge.outputs",
-							JSON.toJSONString(result));
-				}
-				if (ex != null) {
-					edgeObservation
-						.error(ex instanceof CompletionException && ex.getCause() != null ? ex.getCause() : ex);
-				}
-				edgeObservation.stop();
-				scope.close();
-			});
-		};
 	}
 
 }

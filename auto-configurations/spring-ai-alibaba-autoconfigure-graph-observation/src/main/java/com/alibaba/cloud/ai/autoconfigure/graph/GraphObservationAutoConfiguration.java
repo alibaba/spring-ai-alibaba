@@ -35,24 +35,23 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Auto-configuration for Graph observation functionality.
- * 
- * Provides automatic setup of:
- * - GraphObservationLifecycleListener for lifecycle events
- * - ObservationHandlers for different graph components (when dependencies are available)
- * - Default CompileConfig with observation support
- * 
+ *
+ * Provides automatic setup of: - GraphObservationLifecycleListener for lifecycle events -
+ * ObservationHandlers for different graph components (when dependencies are available) -
+ * Default CompileConfig with observation support
+ *
  * @author sixiyida
  * @since 2025/7/3
  */
 @AutoConfiguration
-@ConditionalOnClass({StateGraph.class, ObservationRegistry.class})
+@ConditionalOnClass({ StateGraph.class, ObservationRegistry.class })
 @EnableConfigurationProperties(GraphObservationProperties.class)
-@ConditionalOnProperty(prefix = GraphObservationProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = GraphObservationProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class GraphObservationAutoConfiguration {
 
 	/**
 	 * Creates a GraphObservationLifecycleListener that monitors graph lifecycle events.
-	 * 
 	 * @param observationRegistry the observation registry for creating observations
 	 * @return configured GraphObservationLifecycleListener
 	 */
@@ -60,25 +59,22 @@ public class GraphObservationAutoConfiguration {
 	@ConditionalOnMissingBean
 	public GraphObservationLifecycleListener graphObservationLifecycleListener(
 			ObjectProvider<ObservationRegistry> observationRegistry) {
-		return new GraphObservationLifecycleListener(
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		return new GraphObservationLifecycleListener(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 	}
 
 	/**
 	 * Creates a default CompileConfig with observation support.
-	 * 
 	 * @param observationRegistry the observation registry
 	 * @param graphObservationLifecycleListeners the graph observation lifecycle listener
 	 * @return configured CompileConfig with observation support
 	 */
 	@Bean
 	@ConditionalOnMissingBean
-	public CompileConfig observationGraphCompileConfig(
-			ObjectProvider<ObservationRegistry> observationRegistry,
+	public CompileConfig observationGraphCompileConfig(ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<GraphObservationLifecycleListener> graphObservationLifecycleListeners) {
 
 		CompileConfig.Builder builder = CompileConfig.builder()
-				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		graphObservationLifecycleListeners.ifUnique(builder::withLifecycleListener);
 
@@ -86,8 +82,8 @@ public class GraphObservationAutoConfiguration {
 	}
 
 	/**
-	 * Configuration for observation handlers.
-	 * Only enabled when MeterRegistry is available on the classpath and as a bean.
+	 * Configuration for observation handlers. Only enabled when MeterRegistry is
+	 * available on the classpath and as a bean.
 	 */
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnClass(MeterRegistry.class)
@@ -96,7 +92,6 @@ public class GraphObservationAutoConfiguration {
 
 		/**
 		 * Creates GraphObservationHandler for graph-level observations.
-		 * 
 		 * @param meterRegistry the meter registry for metrics
 		 * @return configured GraphObservationHandler
 		 */
@@ -108,7 +103,6 @@ public class GraphObservationAutoConfiguration {
 
 		/**
 		 * Creates GraphNodeObservationHandler for node-level observations.
-		 * 
 		 * @param meterRegistry the meter registry for metrics
 		 * @return configured GraphNodeObservationHandler
 		 */
@@ -120,7 +114,6 @@ public class GraphObservationAutoConfiguration {
 
 		/**
 		 * Creates GraphEdgeObservationHandler for edge-level observations.
-		 * 
 		 * @param meterRegistry the meter registry for metrics
 		 * @return configured GraphEdgeObservationHandler
 		 */
@@ -129,6 +122,7 @@ public class GraphObservationAutoConfiguration {
 		public GraphEdgeObservationHandler graphEdgeObservationHandler(MeterRegistry meterRegistry) {
 			return new GraphEdgeObservationHandler(meterRegistry);
 		}
+
 	}
 
-} 
+}

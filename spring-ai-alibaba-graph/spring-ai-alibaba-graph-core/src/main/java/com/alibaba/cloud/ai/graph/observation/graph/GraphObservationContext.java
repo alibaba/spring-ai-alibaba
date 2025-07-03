@@ -33,9 +33,9 @@ public class GraphObservationContext extends Observation.Context {
 
 	private final Map<String, Object> state;
 
-	private final Map<String, Object> output;
+	private Object output;
 
-	public GraphObservationContext(String graphName, Map<String, Object> state, Map<String, Object> output) {
+	public GraphObservationContext(String graphName, Map<String, Object> state, Object output) {
 		this.graphName = graphName;
 		this.state = state;
 		this.output = output;
@@ -49,8 +49,12 @@ public class GraphObservationContext extends Observation.Context {
 		return this.state;
 	}
 
-	public Map<String, Object> getOutput() {
+	public Object getOutput() {
 		return this.output;
+	}
+
+	public void setOutput(final Object output) {
+		this.output = output;
 	}
 
 	public static Builder builder() {
@@ -63,7 +67,7 @@ public class GraphObservationContext extends Observation.Context {
 
 		private Map<String, Object> state;
 
-		private Map<String, Object> output;
+		private Object output;
 
 		public Builder graphName(String graphName) {
 			this.graphName = graphName;
@@ -75,7 +79,7 @@ public class GraphObservationContext extends Observation.Context {
 			return this;
 		}
 
-		public Builder output(Map<String, Object> output) {
+		public Builder output(Object output) {
 			this.output = output;
 			return this;
 		}

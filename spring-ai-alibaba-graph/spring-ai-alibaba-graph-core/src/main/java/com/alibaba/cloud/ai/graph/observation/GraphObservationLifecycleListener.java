@@ -17,8 +17,8 @@ package com.alibaba.cloud.ai.graph.observation;
 
 import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.observation.graph.DefaultGraphObservationConvention;
 import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationContext;
-import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationDocumentation;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 
@@ -30,6 +30,8 @@ import java.util.Map;
  * tracking for start, before, after, error, and complete events.
  */
 public class GraphObservationLifecycleListener implements GraphLifecycleListener {
+
+	private static final DefaultGraphObservationConvention DEFAULT_GRAPH_OBSERVATION_CONVENTION = new DefaultGraphObservationConvention();
 
 	private final ObservationRegistry observationRegistry;
 
@@ -52,8 +54,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	@Override
 	public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
 		Observation
-			.start(GraphObservationDocumentation.GRAPH.getName(),
-					() -> new GraphObservationContext(nodeId, state, null), observationRegistry)
+			.start(DEFAULT_GRAPH_OBSERVATION_CONVENTION, () -> new GraphObservationContext(nodeId, state, null),
+					observationRegistry)
 			.stop();
 	}
 
@@ -68,8 +70,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	@Override
 	public void before(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
 		Observation
-			.start(GraphObservationDocumentation.GRAPH.getName(),
-					() -> new GraphObservationContext(nodeId, state, null), observationRegistry)
+			.start(DEFAULT_GRAPH_OBSERVATION_CONVENTION, () -> new GraphObservationContext(nodeId, state, null),
+					observationRegistry)
 			.stop();
 	}
 
@@ -84,8 +86,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	@Override
 	public void after(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
 		Observation
-			.start(GraphObservationDocumentation.GRAPH.getName(),
-					() -> new GraphObservationContext(nodeId, state, Map.of("output", "hello!")), observationRegistry)
+			.start(DEFAULT_GRAPH_OBSERVATION_CONVENTION, () -> new GraphObservationContext(nodeId, state, state),
+					observationRegistry)
 			.stop();
 	}
 
@@ -100,8 +102,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	@Override
 	public void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
 		Observation
-			.start(GraphObservationDocumentation.GRAPH.getName(),
-					() -> new GraphObservationContext(nodeId, state, null), observationRegistry)
+			.start(DEFAULT_GRAPH_OBSERVATION_CONVENTION, () -> new GraphObservationContext(nodeId, state, null),
+					observationRegistry)
 			.stop();
 	}
 
@@ -115,8 +117,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	@Override
 	public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
 		Observation
-			.start(GraphObservationDocumentation.GRAPH.getName(),
-					() -> new GraphObservationContext(nodeId, state, Map.of("output", "hello!")), observationRegistry)
+			.start(DEFAULT_GRAPH_OBSERVATION_CONVENTION, () -> new GraphObservationContext(nodeId, state, state),
+					observationRegistry)
 			.stop();
 	}
 

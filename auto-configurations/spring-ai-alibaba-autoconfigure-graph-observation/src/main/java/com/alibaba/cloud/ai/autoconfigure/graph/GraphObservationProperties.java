@@ -19,7 +19,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Configuration properties for Graph observation functionality.
- * 
+ *
  * @author sixiyida
  * @since 2025/7/3
  */
@@ -41,4 +41,4 @@ public class GraphObservationProperties {
 		this.enabled = enabled;
 	}
 
-} 
+}

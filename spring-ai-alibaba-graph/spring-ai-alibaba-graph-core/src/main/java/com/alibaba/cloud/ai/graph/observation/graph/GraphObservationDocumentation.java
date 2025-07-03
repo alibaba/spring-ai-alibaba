@@ -28,6 +28,7 @@ public enum GraphObservationDocumentation implements ObservationDocumentation {
 
 	/** Graph observation documentation entry */
 	GRAPH {
+
 		@Override
 		public Class<? extends ObservationConvention<? extends Context>> getDefaultConvention() {
 			return GraphObservationConvention.class;
