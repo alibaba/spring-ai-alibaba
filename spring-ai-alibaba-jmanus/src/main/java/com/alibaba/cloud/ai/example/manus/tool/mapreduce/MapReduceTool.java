@@ -22,10 +22,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
  * Supports class-level terminate columns configuration that takes precedence over input parameters.
  * When class-level terminateColumns is specified, input parameter terminate_columns will be ignored.
  */
-public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapReduceInput>, TerminableTool {
+public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput> implements TerminableTool {
 
 	private static final Logger log = LoggerFactory.getLogger(MapReduceTool.class);
 
@@ -304,9 +304,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			""".formatted(defaultColumnsBuilder.toString());
 	}
 
-	private String planId;
-
-	private String workingDirectoryPath;
+	private UnifiedDirectoryManager unifiedDirectoryManager;
 
 	private ManusProperties manusProperties;
 
@@ -323,16 +321,16 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 	// Backward compatibility constructor without terminateColumns
 	public MapReduceTool(String planId, ManusProperties manusProperties,
-			MapReduceSharedStateManager sharedStateManager) {
-		this(planId, manusProperties, sharedStateManager, (List<String>) null);
+			MapReduceSharedStateManager sharedStateManager, UnifiedDirectoryManager unifiedDirectoryManager) {
+		this(planId, manusProperties, sharedStateManager, unifiedDirectoryManager, (List<String>) null);
 	}
 
 	// Convenience constructor with comma-separated string
 	public MapReduceTool(String planId, ManusProperties manusProperties,
-			MapReduceSharedStateManager sharedStateManager, String terminateColumnsString) {
-		this.planId = planId;
+			MapReduceSharedStateManager sharedStateManager, UnifiedDirectoryManager unifiedDirectoryManager, String terminateColumnsString) {
+		this.currentPlanId = planId;
 		this.manusProperties = manusProperties;
-		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
 		
 		// Parse comma-separated string into List<String>
@@ -349,10 +347,10 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 	// Main constructor with List<String> terminateColumns
 	public MapReduceTool(String planId, ManusProperties manusProperties,
-			MapReduceSharedStateManager sharedStateManager, List<String> terminateColumns) {
-		this.planId = planId;
+			MapReduceSharedStateManager sharedStateManager, UnifiedDirectoryManager unifiedDirectoryManager, List<String> terminateColumns) {
+		this.currentPlanId = planId;
 		this.manusProperties = manusProperties;
-		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
 		this.terminateColumns = terminateColumns;
 	}
@@ -378,8 +376,8 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	public String getParameters() {
 		// Get terminate columns from shared state manager if available
 		List<String> terminateColumns = null;
-		if (sharedStateManager != null && planId != null) {
-			terminateColumns = sharedStateManager.getReturnColumns(planId);
+		if (sharedStateManager != null && currentPlanId != null) {
+			terminateColumns = sharedStateManager.getReturnColumns(currentPlanId);
 		}
 		return generateParametersJson(terminateColumns);
 	}
@@ -387,16 +385,6 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	@Override
 	public Class<MapReduceInput> getInputType() {
 		return MapReduceInput.class;
-	}
-
-	@Override
-	public boolean isReturnDirect() {
-		return false;
-	}
-
-	@Override
-	public void setPlanId(String planId) {
-		this.planId = planId;
 	}
 
 	@Override
@@ -419,6 +407,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	/**
 	 * Execute MapReduce operation, accepts strongly typed input object
 	 */
+	@Override
 	public ToolExecuteResult run(MapReduceInput input) {
 		log.info("MapReduceTool input: action={}, filePath={}", input.getAction(), input.getFilePath());
 		try {
@@ -447,7 +436,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 					// Store terminate column information
 					if (effectiveTerminateColumns != null && sharedStateManager != null) {
-						sharedStateManager.setReturnColumns(planId, effectiveTerminateColumns);
+						sharedStateManager.setReturnColumns(currentPlanId, effectiveTerminateColumns);
 					}
 
 					yield processFileOrDirectory(filePath);
@@ -506,22 +495,14 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	private ToolExecuteResult processFileOrDirectory(String filePath) {
 		try {
 			// Ensure planId exists, use default if empty
-			if (planId == null || planId.trim().isEmpty()) {
-				planId = DEFAULT_PLAN_ID_PREFIX + System.currentTimeMillis();
-				log.info("planId is empty, using default value: {}", planId);
+			if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
+				currentPlanId = DEFAULT_PLAN_ID_PREFIX + System.currentTimeMillis();
+				log.info("currentPlanId is empty, using default value: {}", currentPlanId);
 			}
 
 			// Validate file or folder existence
-			// Ensure working directory is initialized
-			if (workingDirectoryPath == null) {
-				if (manusProperties != null) {
-					workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
-				}
-				else {
-					// If no manusProperties, use default method
-					workingDirectoryPath = CodeUtils.getWorkingDirectory(null);
-				}
-			}
+			// Use UnifiedDirectoryManager to get working directory path
+			String workingDirectoryPath = unifiedDirectoryManager.getWorkingDirectoryPath();
 		// Process based on path type
 		Path path = null;
 		boolean foundInInnerStorage = false;
@@ -529,7 +510,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 		// First, try to find file in inner storage directory (similar to InnerStorageTool)
 		if (!Paths.get(filePath).isAbsolute()) {
 			// Check in inner storage first
-			Path planDir = getPlanDirectory(planId);
+			Path planDir = getPlanDirectory(rootPlanId);
 			Path innerStoragePath = planDir.resolve(filePath);
 			
 			if (Files.exists(innerStoragePath)) {
@@ -555,7 +536,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			String errorMsg = "Error: File or directory does not exist: " + path.toAbsolutePath().toString();
 			if (!foundInInnerStorage) {
 				// Also check if file exists in inner storage and provide helpful message
-				Path planDir = getPlanDirectory(planId);
+				Path planDir = getPlanDirectory(currentPlanId);
 				Path innerStoragePath = planDir.resolve(filePath);
 				if (Files.exists(innerStoragePath)) {
 					errorMsg += "\nNote: File exists in inner storage at: " + innerStoragePath.toAbsolutePath().toString();
@@ -570,7 +551,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			boolean isDirectory = Files.isDirectory(path);
 
 			// Determine output directory - store to inner_storage/{planId}/tasks directory
-			Path planDir = getPlanDirectory(planId);
+			Path planDir = getPlanDirectory(currentPlanId);
 			Path tasksPath = planDir.resolve(TASKS_DIRECTORY_NAME);
 			ensureDirectoryExists(tasksPath);
 
@@ -580,7 +561,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			boolean infiniteContextEnabled = isInfiniteContextEnabled();
 			if (infiniteContextEnabled) {
 				log.info("Infinite context enabled for plan: {}, parallel threads: {}, context size: {}", 
-					planId, getInfiniteContextParallelThreads(), getInfiniteContextTaskContextSize());
+					currentPlanId, getInfiniteContextParallelThreads(), getInfiniteContextTaskContextSize());
 			}
 
 			if (isFile && isTextFile(path.toString())) {
@@ -606,7 +587,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 			// Update split results
 			if (sharedStateManager != null) {
-				sharedStateManager.setSplitResults(planId, allTaskDirs);
+				sharedStateManager.setSplitResults(currentPlanId, allTaskDirs);
 			}
 
 			// Generate concise return result
@@ -616,7 +597,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 			// If terminate columns are required, add terminate column information
 			if (sharedStateManager != null) {
-				List<String> terminateColumns = sharedStateManager.getReturnColumns(planId);
+				List<String> terminateColumns = sharedStateManager.getReturnColumns(currentPlanId);
 				if (!terminateColumns.isEmpty()) {
 					result.append(", terminate columns: ").append(terminateColumns);
 				}
@@ -624,7 +605,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 			String resultStr = result.toString();
 			if (sharedStateManager != null) {
-				sharedStateManager.setLastOperationResult(planId, resultStr);
+				sharedStateManager.setLastOperationResult(currentPlanId, resultStr);
 			}
 			
 			// Mark that split data operation has completed, allowing termination
@@ -698,7 +679,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 		// Generate task ID
 		String taskId = null;
 		if (sharedStateManager != null) {
-			taskId = sharedStateManager.getNextTaskId(planId);
+			taskId = sharedStateManager.getNextTaskId(currentPlanId);
 		}
 		else {
 			// Fallback solution: use default format
@@ -766,14 +747,14 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 
 	@Override
 	public String getCurrentToolStateString() {
-		if (sharedStateManager != null && planId != null) {
-			return sharedStateManager.getCurrentToolStateString(planId);
+		if (sharedStateManager != null && currentPlanId != null) {
+			return sharedStateManager.getCurrentToolStateString(currentPlanId);
 		}
 
 		// Fallback solution
 		StringBuilder sb = new StringBuilder();
 		// sb.append("MapReduceTool current status:\n");
-		// sb.append("- Plan ID: ").append(planId != null ? planId : "Not set").append("\n");
+		// sb.append("- Plan ID: ").append(currentPlanId != null ? currentPlanId : "Not set").append("\n");
 		// sb.append("- Shared state manager: ").append(sharedStateManager != null ? "Connected" : "Not connected").append("\n");
 		return sb.toString();
 	}
@@ -796,8 +777,8 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	 * Get task directory list
 	 */
 	public List<String> getSplitResults() {
-		if (sharedStateManager != null && planId != null) {
-			return sharedStateManager.getSplitResults(planId);
+		if (sharedStateManager != null && currentPlanId != null) {
+			return sharedStateManager.getSplitResults(currentPlanId);
 		}
 		return new ArrayList<>();
 	}
@@ -806,17 +787,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	 * Get inner storage root directory path
 	 */
 	private Path getInnerStorageRoot() {
-		if (workingDirectoryPath == null) {
-			// Use CodeUtils.getWorkingDirectory to get working directory, consistent with InnerStorageService
-			if (manusProperties != null) {
-				workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
-			}
-			else {
-				// If no manusProperties, use default method
-				workingDirectoryPath = CodeUtils.getWorkingDirectory(null);
-			}
-		}
-		return Paths.get(workingDirectoryPath, "inner_storage");
+		return unifiedDirectoryManager.getInnerStorageRoot();
 	}
 
 	/**
@@ -830,10 +801,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 	 * Ensure directory exists
 	 */
 	private void ensureDirectoryExists(Path directory) throws IOException {
-		if (!Files.exists(directory)) {
-			Files.createDirectories(directory);
-			log.debug("Created directory: {}", directory);
-		}
+		unifiedDirectoryManager.ensureDirectoryExists(directory);
 	}
 
 	/**
@@ -846,11 +814,11 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			log.debug("Recording Map task output with timeout: {} seconds", timeout);
 			
 			// Ensure planId exists
-			if (planId == null || planId.trim().isEmpty()) {
-				return new ToolExecuteResult("Error: planId not set, cannot record task status");
+			if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
+				return new ToolExecuteResult("Error: currentPlanId not set, cannot record task status");
 			}
 			// Locate task directory
-			Path planDir = getPlanDirectory(planId);
+			Path planDir = getPlanDirectory(currentPlanId);
 			Path taskDir = planDir.resolve(TASKS_DIRECTORY_NAME).resolve(taskId);
 
 			if (!Files.exists(taskDir)) {
@@ -891,7 +859,7 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 				sharedTaskStatus.outputFilePath = taskStatus.outputFilePath;
 				sharedTaskStatus.status = taskStatus.status;
 				sharedTaskStatus.timestamp = taskStatus.timestamp;
-				sharedStateManager.recordMapTaskStatus(planId, taskId, sharedTaskStatus);
+				sharedStateManager.recordMapTaskStatus(currentPlanId, taskId, sharedTaskStatus);
 			}
 
 			// Write updated status file

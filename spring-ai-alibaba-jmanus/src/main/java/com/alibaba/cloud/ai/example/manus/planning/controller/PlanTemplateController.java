@@ -110,7 +110,8 @@ public class PlanTemplateController {
 
 		// Use PlanIdDispatcher to generate a unique plan template ID
 		String planTemplateId = planIdDispatcher.generatePlanTemplateId();
-		context.setPlanId(planTemplateId);
+		context.setCurrentPlanId(planTemplateId);
+		context.setRootPlanId(planTemplateId);
 		context.setNeedSummary(false); // We don't need to generate a summary, because we
 										// only need the plan
 
@@ -228,7 +229,8 @@ public class PlanTemplateController {
 			// Get planning flow, using the new plan ID
 			PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(newPlanId);
 			ExecutionContext context = new ExecutionContext();
-			context.setPlanId(newPlanId);
+			context.setCurrentPlanId(newPlanId);
+			context.setRootPlanId(newPlanId	);
 			context.setNeedSummary(true); // We need to generate a summary
 
 			try {
@@ -236,7 +238,7 @@ public class PlanTemplateController {
 				PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
 
 				// 设置新的计划ID，覆盖JSON中的ID
-				plan.setPlanId(newPlanId);
+				plan.setCurrentPlanId(newPlanId);
 				// 设置URL参数到计划中
 				if (rawParam != null && !rawParam.isEmpty()) {
 					logger.info("Set execution parameters to plan: {}", rawParam);
@@ -510,7 +512,8 @@ public class PlanTemplateController {
 		context.setUserRequest(enhancedQuery);
 
 		// Use the existing plan template ID
-		context.setPlanId(planId);
+		context.setCurrentPlanId(planId);
+		context.setRootPlanId(planId);	
 		context.setNeedSummary(false); // We don't need to generate a summary, because we
 										// only need the plan
 

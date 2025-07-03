@@ -742,7 +742,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		ExecutionContext copiedContext = new ExecutionContext();
 
 		// 复制基本属性
-		copiedContext.setPlanId(originalContext.getPlanId());
+		copiedContext.setCurrentPlanId(originalContext.getCurrentPlanId());
 		copiedContext.setUserRequest(originalContext.getUserRequest());
 		copiedContext.setResultSummary(originalContext.getResultSummary());
 		copiedContext.setNeedSummary(originalContext.isNeedSummary());
@@ -780,7 +780,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			MapReduceExecutionPlan copiedMapReducePlan = new MapReduceExecutionPlan();
 
 			// 复制MapReduceExecutionPlan的所有属性
-			copiedMapReducePlan.setPlanId(originalMapReducePlan.getPlanId());
+			copiedMapReducePlan.setCurrentPlanId(originalMapReducePlan.getCurrentPlanId());
 			copiedMapReducePlan.setTitle(originalMapReducePlan.getTitle());
 			copiedMapReducePlan.setPlanningThinking(originalMapReducePlan.getPlanningThinking());
 			copiedMapReducePlan.setUserRequest(originalMapReducePlan.getUserRequest());
@@ -796,7 +796,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			ExecutionPlan copiedExecutionPlan = new ExecutionPlan();
 
 			// 复制ExecutionPlan的所有属性
-			copiedExecutionPlan.setPlanId(originalExecutionPlan.getPlanId());
+			copiedExecutionPlan.setCurrentPlanId(originalExecutionPlan.getCurrentPlanId());
 			copiedExecutionPlan.setTitle(originalExecutionPlan.getTitle());
 			copiedExecutionPlan.setPlanningThinking(originalExecutionPlan.getPlanningThinking());
 			copiedExecutionPlan.setUserRequest(originalExecutionPlan.getUserRequest());

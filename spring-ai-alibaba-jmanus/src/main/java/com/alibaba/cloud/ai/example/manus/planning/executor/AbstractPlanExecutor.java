@@ -139,7 +139,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			Map<String, Object> initSettings,List<String> columns) {
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
-				BaseAgent executor = agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getPlanId(),
+				BaseAgent executor = agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getCurrentPlanId(),context.getPlan().getRootPlanId(),
 						initSettings, columns);
 				// Set thinkActRecordId from context for sub-plan executions
 				if (context.getThinkActRecordId() != null) {
@@ -162,7 +162,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	protected void recordPlanExecutionStart(ExecutionContext context) {
 		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(context);
 
-		record.setPlanId(context.getPlan().getPlanId());
+		record.setCurrentPlanId(context.getPlan().getCurrentPlanId());
 		record.setStartTime(LocalDateTime.now());
 		record.setTitle(context.getPlan().getTitle());
 		record.setUserRequest(context.getUserRequest());
@@ -185,7 +185,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	 * 获取或创建计划执行记录
 	 */
 	protected PlanExecutionRecord getOrCreatePlanExecutionRecord(ExecutionContext context) {
-		PlanExecutionRecord record = getRecorder().getOrCreatePlanExecutionRecord(context.getPlanId(), context.getThinkActRecordId());
+		PlanExecutionRecord record = getRecorder().getOrCreatePlanExecutionRecord(context.getCurrentPlanId(), context.getRootPlanId(), context.getThinkActRecordId());
 		return record;
 	}
 
@@ -242,7 +242,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	 * 执行完成后的清理工作
 	 */
 	protected void performCleanup(ExecutionContext context, BaseAgent lastExecutor) {
-		String planId = context.getPlanId();
+		String planId = context.getCurrentPlanId();
 		llmService.clearAgentMemory(planId);
 		if (lastExecutor != null) {
 			lastExecutor.clearUp(planId);

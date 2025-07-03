@@ -65,11 +65,11 @@ public class PlanExecutorFactory {
 
         String planType = plan.getPlanType();
         if (planType == null || planType.trim().isEmpty()) {
-            log.warn("Plan type is null or empty, defaulting to simple executor for plan: {}", plan.getPlanId());
+            log.warn("Plan type is null or empty, defaulting to simple executor for plan: {}", plan.getCurrentPlanId());
             planType = "simple";
         }
 
-        log.info("Creating executor for plan type: {} (planId: {})", planType, plan.getPlanId());
+        log.info("Creating executor for plan type: {} (planId: {})", planType, plan.getCurrentPlanId());
 
         return switch (planType.toLowerCase()) {
             case "simple" -> createSimpleExecutor();

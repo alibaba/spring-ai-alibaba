@@ -23,12 +23,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.ai.chat.model.ToolContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.*;
 
-public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.PlanningInput>, PlanningToolInterface {
+public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> implements PlanningToolInterface {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanningTool.class);
 
@@ -94,7 +93,7 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 	}
 
 	public String getCurrentPlanId() {
-		return currentPlan != null ? currentPlan.getPlanId() : null;
+		return currentPlan != null ? currentPlan.getCurrentPlanId() : null;
 	}
 
 	public ExecutionPlan getCurrentPlan() {
@@ -151,6 +150,7 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 			.build();
 	}
 
+	@Override
 	public ToolExecuteResult run(PlanningInput input) {
 		String command = input.getCommand();
 		String planId = input.getPlanId();
@@ -189,7 +189,7 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 			return new ToolExecuteResult("Required parameters missing");
 		}
 
-		ExecutionPlan plan = new ExecutionPlan(planId, title);
+		ExecutionPlan plan = new ExecutionPlan(planId,planId, title);
 		// Use the new createExecutionStep method to create and add steps
 		int index = 0;
 		for (String step : steps) {
@@ -201,11 +201,6 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 	}
 
 	// ToolCallBiFunctionDef interface methods
-	@Override
-	public ToolExecuteResult apply(PlanningInput input, ToolContext toolContext) {
-		return run(input);
-	}
-
 	@Override
 	public String getName() {
 		return name;
@@ -232,11 +227,6 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 	}
 
 	@Override
-	public void setPlanId(String planId) {
-		// Implementation can be added if needed
-	}
-
-	@Override
 	public String getCurrentToolStateString() {
 		if (currentPlan != null) {
 			return "Current plan: " + currentPlan.getPlanExecutionStateStringFormat(false);
@@ -257,7 +247,7 @@ public class PlanningTool implements ToolCallBiFunctionDef<PlanningTool.Planning
 	// PlanningToolInterface methods
 	@Override
 	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, (String input, ToolContext context) -> apply(input))
+		return FunctionToolCallback.<String, ToolExecuteResult>builder(name, (String input) -> apply(input))
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)

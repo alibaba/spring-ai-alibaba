@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.tool.mapreduce;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,8 @@ public class MapReduceToolTest {
 	private MapReduceTool mapReduceTool;
 
 	private ManusProperties manusProperties;
+
+	private UnifiedDirectoryManager unifiedDirectoryManager;
 
 	private final String testPlanId = "test-plan-001";
 
@@ -65,8 +68,11 @@ public class MapReduceToolTest {
 		// Create MapReduceSharedStateManager instance
 		MapReduceSharedStateManager sharedStateManager = new MapReduceSharedStateManager();
 
+		// Create UnifiedDirectoryManager
+		unifiedDirectoryManager = new UnifiedDirectoryManager(manusProperties);
+
 		// Create MapReduceTool instance using correct constructor
-		mapReduceTool = new MapReduceTool(testPlanId, manusProperties, sharedStateManager);
+		mapReduceTool = new MapReduceTool(testPlanId, manusProperties, sharedStateManager, unifiedDirectoryManager);
 	}
 
 	@Test

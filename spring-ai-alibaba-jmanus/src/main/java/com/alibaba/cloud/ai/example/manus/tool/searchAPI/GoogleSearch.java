@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.searchAPI;
 
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiProperties;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiService;
@@ -27,10 +27,9 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
-public class GoogleSearch implements ToolCallBiFunctionDef<GoogleSearch.GoogleSearchInput> {
+public class GoogleSearch extends AbstractBaseTool<GoogleSearch.GoogleSearchInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(GoogleSearch.class);
 
@@ -184,15 +183,6 @@ public class GoogleSearch implements ToolCallBiFunctionDef<GoogleSearch.GoogleSe
 	}
 
 	@Override
-	public boolean isReturnDirect() {
-		return false;
-	}
-
-	@Override
-	public ToolExecuteResult apply(GoogleSearchInput input, ToolContext toolContext) {
-		return run(input);
-	}
-
 	public ToolExecuteResult run(GoogleSearchInput input) {
 		String query = input.getQuery();
 		Integer numResults = input.getNumResults() != null ? input.getNumResults() : 2;
@@ -290,12 +280,6 @@ public class GoogleSearch implements ToolCallBiFunctionDef<GoogleSearch.GoogleSe
 	@Override
 	public String getServiceGroup() {
 		return "default-service-group";
-	}
-
-	// Implement the setPlanId method to satisfy the interface
-	@Override
-	public void setPlanId(String planId) {
-		// No operation needed as planId is no longer used
 	}
 
 	/**

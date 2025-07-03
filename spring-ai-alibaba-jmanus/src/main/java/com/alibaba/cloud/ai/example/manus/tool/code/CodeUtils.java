@@ -213,37 +213,5 @@ public class CodeUtils {
 		return resultList.stream().collect(Collectors.joining("\n"));
 	}
 
-	/**
-	 * Get shared file directory (create a shared folder in the input directory and return
-	 * its path).
-	 * @param baseDir Base directory (if empty, use system property user.dir)
-	 * @param sharedFolderName Shared folder name (such as "shared")
-	 * @return Absolute path of the shared folder
-	 */
-	public static String getSharedDirectory(String baseDir, String sharedFolderName) {
-		if (baseDir == null || baseDir.isEmpty()) {
-			baseDir = System.getProperty("user.dir");
-		}
-		String sharedDir = Paths.get(baseDir, sharedFolderName).toString();
-		try {
-			Files.createDirectories(Paths.get(sharedDir));
-		}
-		catch (IOException e) {
-			log.error("Failed to create shared directory: {}", sharedDir, e);
-		}
-		return sharedDir;
-	}
-
-	/**
-	 * Get working directory (absolute path of the extensions directory).
-	 * @param baseDir Base directory (if empty, use system property user.dir)
-	 * @return Absolute path of the working directory
-	 */
-	public static String getWorkingDirectory(String baseDir) {
-		if (baseDir == null || baseDir.isEmpty()) {
-			baseDir = System.getProperty("user.dir");
-		}
-		return Paths.get(baseDir, "extensions").toString();
-	}
 
 }

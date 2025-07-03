@@ -39,7 +39,9 @@ public class ExecutionContext {
 	 * Tool context for storing context information of tool execution
 	 */
 	/** Unique identifier of the plan */
-	private String planId;
+	private String currentPlanId;
+
+	private String rootPlanId;
 
 
 	/** Execution plan entity containing detailed plan information and execution steps */
@@ -71,17 +73,26 @@ public class ExecutionContext {
 	 * Get plan ID
 	 * @return Unique identifier of the plan
 	 */
-	public String getPlanId() {
-		return planId;
+	public String getCurrentPlanId() {
+		return currentPlanId;
 	}
 
 	/**
 	 * Set plan ID
-	 * @param planId Unique identifier of the plan
+	 * @param currentPlanId Unique identifier of the plan
 	 */
-	public void setPlanId(String planId) {
-		this.planId = planId;
+	public void setCurrentPlanId(String currentPlanId) {
+		this.currentPlanId = currentPlanId;
 	}
+
+	public String getRootPlanId() {
+		return rootPlanId;
+	}
+
+	public void setRootPlanId(String parentPlanId) {
+		this.rootPlanId = parentPlanId;
+	}
+
 
 	/**
 	 * Get think-act record ID

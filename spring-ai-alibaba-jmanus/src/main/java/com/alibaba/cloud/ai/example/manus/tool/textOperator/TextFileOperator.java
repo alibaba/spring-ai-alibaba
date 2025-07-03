@@ -20,20 +20,18 @@ import java.nio.channels.FileChannel;
 import java.nio.file.*;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
-public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.TextFileInput> {
+public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFileInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(TextFileOperator.class);
 
@@ -122,19 +120,17 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 
 	}
 
-	private final String workingDirectoryPath;
+	private final UnifiedDirectoryManager unifiedDirectoryManager;
 
 	private final TextFileService textFileService;
 
-	private final InnerStorageService innerStorageService;
+	private final SmartContentSavingService innerStorageService;
 
-	private String planId;
-
-	public TextFileOperator(TextFileService textFileService, InnerStorageService innerStorageService) {
+	public TextFileOperator(TextFileService textFileService, SmartContentSavingService innerStorageService, 
+			UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.textFileService = textFileService;
 		this.innerStorageService = innerStorageService;
-		ManusProperties manusProperties = textFileService.getManusProperties();
-		workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
+		this.unifiedDirectoryManager = unifiedDirectoryManager;
 	}
 
 	private final String PARAMETERS = """
@@ -278,7 +274,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput,
 					new TypeReference<Map<String, Object>>() {
 					});
-			String planId = this.planId;
+			String planId = this.currentPlanId;
 
 			String action = (String) toolInputMap.get("action");
 			String filePath = (String) toolInputMap.get("file_path");
@@ -331,7 +327,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			};
 		}
 		catch (Exception e) {
-			String planId = this.planId;
+			String planId = this.currentPlanId;
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
 			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
@@ -341,10 +337,11 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 	/**
 	 * 执行文本文件操作，接受强类型输入对象
 	 */
+	@Override
 	public ToolExecuteResult run(TextFileInput input) {
 		log.info("TextFileOperator input: action={}, filePath={}", input.getAction(), input.getFilePath());
 		try {
-			String planId = this.planId;
+			String planId = this.currentPlanId;
 			String action = input.getAction();
 			String filePath = input.getFilePath();
 
@@ -396,7 +393,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			};
 		}
 		catch (Exception e) {
-			String planId = this.planId;
+			String planId = this.currentPlanId;
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
 			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
@@ -414,10 +411,12 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 				return new ToolExecuteResult("Unsupported file type. Only text-based files are supported.");
 			}
 
-			textFileService.validateAndGetAbsolutePath(workingDirectoryPath, filePath);
+			// Use UnifiedDirectoryManager to validate and get the absolute path
+			Path workingDirectory = unifiedDirectoryManager.getWorkingDirectory();
+			textFileService.validateAndGetAbsolutePath(workingDirectory.toString(), filePath);
 
 			// If file doesn't exist, create parent directory first
-			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
+			Path absolutePath = workingDirectory.resolve(filePath);
 			if (!Files.exists(absolutePath)) {
 				try {
 					Files.createDirectories(absolutePath.getParent());
@@ -449,7 +448,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 				return openResult;
 			}
 
-			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
+			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
 			String content = Files.readString(absolutePath);
 			String newContent = content.replace(sourceText, targetText);
 			Files.writeString(absolutePath, newContent);
@@ -490,7 +489,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 				return openResult;
 			}
 
-			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
+			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
 			java.util.List<String> lines = Files.readAllLines(absolutePath);
 
 			if (lines.isEmpty()) {
@@ -541,7 +540,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			}
 
 			// Read file content
-			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
+			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
 			String content = Files.readString(absolutePath);
 
 			// Force flush to disk to ensure data consistency
@@ -552,7 +551,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 			textFileService.updateFileState(planId, filePath, "Success: Retrieved all text");
 
 			// Use InnerStorageService to intelligently process content
-			InnerStorageService.SmartProcessResult processedResult = innerStorageService.processContent(planId, content,
+			SmartContentSavingService.SmartProcessResult processedResult = innerStorageService.processContent(planId, content,
 					"get_all_text");
 
 			return new ToolExecuteResult(processedResult.getSummary());
@@ -576,7 +575,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 				return openResult;
 			}
 
-			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
+			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
 			Files.writeString(absolutePath, "\n" + content, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
 			// Automatically save file
@@ -601,7 +600,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 				return openResult;
 			}
 
-			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
+			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
 			String content = Files.readString(absolutePath);
 			int wordCount = content.isEmpty() ? 0 : content.split("\\s+").length;
 
@@ -615,13 +614,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 	}
 
 	@Override
-	public void setPlanId(String planId) {
-		this.planId = planId;
-	}
-
-	@Override
 	public String getCurrentToolStateString() {
-		String planId = this.planId;
+		String planId = this.currentPlanId;
 		return String.format(
 				"""
 						Current Text File Operation State:
@@ -635,7 +629,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 						- Last Operation Result:
 						%s
 						""",
-				workingDirectoryPath, textFileService.getLastOperationResult(planId).isEmpty()
+				unifiedDirectoryManager.getWorkingDirectoryPath(), textFileService.getLastOperationResult(planId).isEmpty()
 						? "No operation performed yet" : textFileService.getLastOperationResult(planId));
 	}
 
@@ -657,16 +651,6 @@ public class TextFileOperator implements ToolCallBiFunctionDef<TextFileOperator.
 	@Override
 	public Class<TextFileInput> getInputType() {
 		return TextFileInput.class;
-	}
-
-	@Override
-	public boolean isReturnDirect() {
-		return false;
-	}
-
-	@Override
-	public ToolExecuteResult apply(TextFileInput input, ToolContext toolContext) {
-		return run(input);
 	}
 
 	@Override

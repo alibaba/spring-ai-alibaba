@@ -91,21 +91,6 @@ public class PlanningToolFactory {
 		return PlanType.values();
 	}
 
-	/**
-	 * 获取当前活跃的计划ID（简单计划）
-	 * @return 当前活跃的简单计划ID
-	 */
-	public static String getCurrentSimplePlanId() {
-		return simplePlanningTool.getCurrentPlanId();
-	}
-
-	/**
-	 * 获取当前活跃的计划ID（MapReduce计划）
-	 * @return 当前活跃的MapReduce计划ID
-	 */
-	public static String getCurrentMapReducePlanId() {
-		return mapReducePlanningTool.getCurrentPlanId();
-	}
 
 	/**
 	 * 检查指定类型是否有活跃的计划

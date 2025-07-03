@@ -69,7 +69,7 @@ public class QueryCommandRunner implements CommandLineRunner {
 			PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planId);
 			ExecutionContext context = new ExecutionContext();
 			context.setUserRequest(query);
-			context.setPlanId(planId);
+			context.setCurrentPlanId(planId);
 			try {
 				var executionContext = planningCoordinator.executePlan(context);
 				System.out.println("Plan " + planId + " executed successfully");

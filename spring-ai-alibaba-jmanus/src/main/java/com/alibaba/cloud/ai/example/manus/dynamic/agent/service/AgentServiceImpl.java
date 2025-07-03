@@ -158,7 +158,7 @@ public class AgentServiceImpl implements AgentService {
 		String uuid = UUID.randomUUID().toString();
 		List<String> columns = Arrays.asList("dummyColumn1", "dummyColumn2");
 		try {
-			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid,columns);
+			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid,uuid,columns);
 			return toolcallContext.entrySet().stream().map(entry -> {
 				Tool tool = new Tool();
 				tool.setKey(entry.getKey());
@@ -230,7 +230,7 @@ public class AgentServiceImpl implements AgentService {
 	}
 
 	@Override
-	public BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting,List<String> columns) {
+	public BaseAgent createDynamicBaseAgent(String name, String planId,String rootPlanId, Map<String, Object> initialAgentSetting,List<String> columns) {
 
 		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
 
@@ -239,9 +239,10 @@ public class AgentServiceImpl implements AgentService {
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(name, initialAgentSetting);
 
 			// Set planId
-			agent.setPlanId(planId);
+			agent.setCurrentPlanId(planId);
+			agent.setRootPlanId(rootPlanId);
 			// Set tool callback mapping
-			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, columns);
+			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, rootPlanId, columns);
 			agent.setToolCallbackProvider(new ToolCallbackProvider() {
 
 				@Override

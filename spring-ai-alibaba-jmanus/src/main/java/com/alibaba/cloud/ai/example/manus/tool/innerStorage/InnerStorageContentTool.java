@@ -15,18 +15,23 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.innerStorage;
 
+
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
@@ -34,7 +39,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
  * 支持AI智能分析和数据提取功能
  */
 public class InnerStorageContentTool
-		implements ToolCallBiFunctionDef<InnerStorageContentTool.InnerStorageContentInput> {
+		extends AbstractBaseTool<InnerStorageContentTool.InnerStorageContentInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(InnerStorageContentTool.class);
 
@@ -111,17 +116,16 @@ public class InnerStorageContentTool
 		}
 	}
 
-	private final InnerStorageService innerStorageService;
+   private final UnifiedDirectoryManager directoryManager;
 	private final SummaryWorkflow summaryWorkflow;
 	private final PlanExecutionRecorder planExecutionRecorder;
-	private String planId;
 
-	public InnerStorageContentTool(InnerStorageService innerStorageService, SummaryWorkflow summaryWorkflow,
-			PlanExecutionRecorder planExecutionRecorder) {
-		this.innerStorageService = innerStorageService;
-		this.summaryWorkflow = summaryWorkflow;
-		this.planExecutionRecorder = planExecutionRecorder;
-	}
+   public InnerStorageContentTool(UnifiedDirectoryManager directoryManager, SummaryWorkflow summaryWorkflow,
+		   PlanExecutionRecorder planExecutionRecorder) {
+	   this.directoryManager = directoryManager;
+	   this.summaryWorkflow = summaryWorkflow;
+	   this.planExecutionRecorder = planExecutionRecorder;
+   }
 
 	private static final String TOOL_NAME = "inner_storage_content_tool";
 
@@ -134,31 +138,31 @@ public class InnerStorageContentTool
 
 	private static final String PARAMETERS = """
 			{
-			    "type": "object",
-			    "properties": {
-			        "action": {
-			            "type": "string",
-			            "enum": ["get_content"],
-			            "description": "操作类型，目前支持 get_content"
-			        },
-			        "file_name": {
-			            "type": "string",
-			            "description": "文件名（带扩展名）"
-			        },
-			        "query_key": {
-			            "type": "string",
-			            "description": "相关问题或希望提取的内容关键词，必须提供"
-			        },
-			        "columns": {
-			            "type": "array",
-			            "items": {
-			                "type": "string"
-			            },
-			            "description": "返回结果的列名，用于结构化输出，必须提供。返回的结果可以是一个列表"
-			        }
-			    },
-			    "required": ["action", "file_name", "query_key", "columns"],
-			    "additionalProperties": false
+				"type": "object",
+				"properties": {
+					"action": {
+						"type": "string",
+						"enum": ["get_content"],
+						"description": "操作类型，目前支持 get_content"
+					},
+					"file_name": {
+						"type": "string",
+						"description": "文件名（带扩展名）"
+					},
+					"query_key": {
+						"type": "string",
+						"description": "相关问题或希望提取的内容关键词，必须提供"
+					},
+					"columns": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"description": "返回结果的列名，用于结构化输出，必须提供。返回的结果可以是一个列表"
+					}
+				},
+				"required": ["action", "file_name", "query_key", "columns"],
+				"additionalProperties": false
 			}
 			""";
 
@@ -183,16 +187,6 @@ public class InnerStorageContentTool
 	}
 
 	@Override
-	public boolean isReturnDirect() {
-		return false;
-	}
-
-	@Override
-	public void setPlanId(String planId) {
-		this.planId = planId;
-	}
-
-	@Override
 	public String getServiceGroup() {
 		return "default-service-group";
 	}
@@ -206,6 +200,7 @@ public class InnerStorageContentTool
 	/**
 	 * 执行内部存储内容获取操作
 	 */
+	@Override
 	public ToolExecuteResult run(InnerStorageContentInput input) {
 		log.info("InnerStorageContentTool input: action={}, fileName={}, queryKey={}, columns={}",
 				input.getAction(), input.getFileName(), input.getQueryKey(), input.getColumns());
@@ -221,80 +216,48 @@ public class InnerStorageContentTool
 	/**
 	 * 根据文件名或索引获取存储的内容，支持AI智能提取和结构化输出
 	 */
-	private ToolExecuteResult getStoredContent(String fileName, String queryKey, List<String> columns) {
-		if (fileName == null || fileName.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：file_name参数是必需的");
-		}
-
-		// 严格要求queryKey和columns参数
-		if (queryKey == null || queryKey.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：query_key参数是必需的，用于指定要提取的内容关键词");
-		}
-		if (columns == null || columns.isEmpty()) {
-			return new ToolExecuteResult("错误：columns参数是必需的，用于指定返回结果的结构化列名");
-		}
-
-		try {
-			String fileContent = null;
-			String actualFileName = null;
-
-			// 尝试按数字索引获取文件内容
-			try {
-				int index = Integer.parseInt(fileName) - 1; // 转换为0基索引
-				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
-
-				if (index >= 0 && index < files.size()) {
-					InnerStorageService.FileInfo file = files.get(index);
-					Path planDir = innerStorageService.getPlanDirectory(planId);
-					Path filePath = planDir.resolve(file.getRelativePath());
-
-					if (Files.exists(filePath)) {
-						fileContent = Files.readString(filePath);
-						actualFileName = file.getRelativePath();
-					}
-				}
-			} catch (NumberFormatException e) {
-				// 不是数字，尝试按文件名查找
-				List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
-				for (InnerStorageService.FileInfo file : files) {
-					if (file.getRelativePath().contains(fileName)) {
-						Path planDir = innerStorageService.getPlanDirectory(planId);
-						Path filePath = planDir.resolve(file.getRelativePath());
-
-						if (Files.exists(filePath)) {
-							fileContent = Files.readString(filePath);
-							actualFileName = file.getRelativePath();
-							break;
-						}
-					}
-				}
-			}
-
-			if (fileContent == null) {
-				return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内容。" + "请使用文件名的一部分来查找内容。");
-			}
-
-			// 委托给 SummaryWorkflow 进行处理
-			log.info("委托给 SummaryWorkflow 处理文件内容提取：文件={}, 查询关键词={}", actualFileName, queryKey);
-
-			// 获取当前的 think-act 记录ID
-			Long thinkActRecordId = getCurrentThinkActRecordId();
-			String terminateColumnsString = String.join(",", columns);
-			String result = summaryWorkflow
-					.executeSummaryWorkflow(planId, actualFileName, fileContent, queryKey, thinkActRecordId,
-							terminateColumnsString)
-					.get(); // 阻塞等待结果
-   
-			return new ToolExecuteResult(result);
-
-		} catch (IOException e) {
-			log.error("获取存储内容失败", e);
-			return new ToolExecuteResult("获取内容失败: " + e.getMessage());
-		} catch (Exception e) {
-			log.error("SummaryWorkflow 执行失败", e);
-			return new ToolExecuteResult("内容处理失败: " + e.getMessage());
-		}
-	}
+   private ToolExecuteResult getStoredContent(String fileName, String queryKey, List<String> columns) {
+	   if (fileName == null || fileName.trim().isEmpty()) {
+		   return new ToolExecuteResult("错误：file_name参数是必需的");
+	   }
+	   if (queryKey == null || queryKey.trim().isEmpty()) {
+		   return new ToolExecuteResult("错误：query_key参数是必需的，用于指定要提取的内容关键词");
+	   }
+	   if (columns == null || columns.isEmpty()) {
+		   return new ToolExecuteResult("错误：columns参数是必需的，用于指定返回结果的结构化列名");
+	   }
+	   try {
+		   String fileContent = null;
+		   String actualFileName = null;
+		   Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
+		   // 只做文件名模糊查找
+		   List<Path> files = Files.list(planDir).filter(Files::isRegularFile).toList();
+		   for (Path filePath : files) {
+			   if (filePath.getFileName().toString().contains(fileName)) {
+				   fileContent = Files.readString(filePath);
+				   actualFileName = planDir.relativize(filePath).toString();
+				   break;
+			   }
+		   }
+		   if (fileContent == null) {
+			   return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的内容。请使用文件名的一部分来查找内容。");
+		   }
+		   log.info("委托给 SummaryWorkflow 处理文件内容提取：文件={}, 查询关键词={}", actualFileName, queryKey);
+		   Long thinkActRecordId = getCurrentThinkActRecordId();
+		   String terminateColumnsString = String.join(",", columns);
+		   String result = summaryWorkflow
+				   .executeSummaryWorkflow(rootPlanId, actualFileName, fileContent, queryKey, thinkActRecordId,
+						   terminateColumnsString)
+				   .get();
+		   return new ToolExecuteResult(result);
+	   } catch (IOException e) {
+		   log.error("获取存储内容失败", e);
+		   return new ToolExecuteResult("获取内容失败: " + e.getMessage());
+	   } catch (Exception e) {
+		   log.error("SummaryWorkflow 执行失败", e);
+		   return new ToolExecuteResult("内容处理失败: " + e.getMessage());
+	   }
+   }
 
 	/**
 	 * 获取当前的 think-act 记录ID
@@ -304,15 +267,16 @@ public class InnerStorageContentTool
 	private Long getCurrentThinkActRecordId() {
 		try {
 			// 获取当前计划的执行记录
-			com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord currentAgentRecord = planExecutionRecorder
-					.getCurrentAgentExecutionRecord(planId);
+			 PlanExecutionRecord record = planExecutionRecorder.getExecutionRecord(currentPlanId,rootPlanId,null);
+			AgentExecutionRecord currentAgentRecord = planExecutionRecorder
+					.getCurrentAgentExecutionRecord(record);
 
 			if (currentAgentRecord != null && currentAgentRecord.getThinkActSteps() != null &&
 					!currentAgentRecord.getThinkActSteps().isEmpty()) {
 				// 获取最后一个 think-act 记录（当前正在执行的）
-				List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord> steps = currentAgentRecord
+				List<ThinkActRecord> steps = currentAgentRecord
 						.getThinkActSteps();
-				com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord lastStep = steps
+				ThinkActRecord lastStep = steps
 						.get(steps.size() - 1);
 				return lastStep.getId();
 			}
@@ -323,32 +287,25 @@ public class InnerStorageContentTool
 		return null;
 	}
 
-	@Override
-	public String getCurrentToolStateString() {
-		try {
-			StringBuilder sb = new StringBuilder();
-			sb.append("InnerStorageContent 当前状态:\n");
-			sb.append("- Plan ID: ").append(planId != null ? planId : "未设置").append("\n");
-			sb.append("- 存储根目录: ").append(innerStorageService.getInnerStorageRoot()).append("\n");
-
-			// 获取当前目录下的所有文件信息
-			List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
-
-			if (files.isEmpty()) {
-				sb.append("- 内部文件: 无\n");
-			} else {
-				sb.append("- 内部文件 (").append(files.size()).append("个):\n");
-				for (InnerStorageService.FileInfo file : files) {
-					sb.append("  ").append(file.toString()).append("\n");
-				}
-			}
-
-			return sb.toString();
-		} catch (Exception e) {
-			log.error("获取工具状态失败", e);
-			return "InnerStorageContent 状态获取失败: " + e.getMessage();
-		}
-	}
+   @Override
+   public String getCurrentToolStateString() {
+	   try {
+		   StringBuilder sb = new StringBuilder();
+		   sb.append("InnerStorageContent 当前状态:\n");
+		   sb.append("- 存储根目录: ").append(directoryManager.getRootPlanDirectory(rootPlanId)).append("\n");
+		   Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
+		   List<Path> files = Files.exists(planDir) ? Files.list(planDir).filter(Files::isRegularFile).toList() : List.of();
+		   if (files.isEmpty()) {
+			   sb.append("- 内部文件: 无\n");
+		   } else {
+			   sb.append("- 内部文件 (").append(files.size()).append("个)\n");
+		   }
+		   return sb.toString();
+	   } catch (Exception e) {
+		   log.error("获取工具状态失败", e);
+		   return "InnerStorageContent 状态获取失败: " + e.getMessage();
+	   }
+   }
 
 	@Override
 	public void cleanup(String planId) {
@@ -356,8 +313,4 @@ public class InnerStorageContentTool
 		log.info("InnerStorageContentTool cleanup for plan: {}", planId);
 	}
 
-	@Override
-	public ToolExecuteResult apply(InnerStorageContentInput input, ToolContext toolContext) {
-		return run(input);
-	}
 }

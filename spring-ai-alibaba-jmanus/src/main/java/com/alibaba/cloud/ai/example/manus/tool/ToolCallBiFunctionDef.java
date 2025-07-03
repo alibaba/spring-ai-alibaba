@@ -67,8 +67,13 @@ public interface ToolCallBiFunctionDef<I> extends BiFunction<I, ToolContext, Too
 	 * Set the associated Agent instance
 	 * @param planId The plan ID to associate
 	 */
-	public void setPlanId(String planId);
+	public void setCurrentPlanId(String planId);
 
+	/**
+	 * root plan id is the global parent of the whole execution plan id .
+	 * @param rootPlanId
+	 */
+	public void setRootPlanId(String rootPlanId);
 	/**
 	 * Get the current status string of the tool
 	 * @return Returns a string describing the current status of the tool

@@ -71,7 +71,7 @@ public class PlanCreator {
 	 */
 	public void createPlan(ExecutionContext context) {
 		boolean useMemory = context.isUseMemory();
-		String planId = context.getPlanId();
+		String planId = context.getCurrentPlanId();
 		if (planId == null || planId.isEmpty()) {
 			throw new IllegalArgumentException("Plan ID cannot be null or empty");
 		}
@@ -99,7 +99,7 @@ public class PlanCreator {
 						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
 					if (useMemory) {
 						requestSpec
-							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
+							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
 						requestSpec
 							.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
 					}
@@ -135,12 +135,13 @@ public class PlanCreator {
 			// 检查计划是否创建成功
 			if (executionPlan != null) {
 				currentPlan = planningTool.getCurrentPlan();
-				currentPlan.setPlanId(planId);
+				currentPlan.setCurrentPlanId(planId);
+				currentPlan.setRootPlanId(planId);
 				currentPlan.setPlanningThinking(outputText);
 			}
 			else {
 				log.warn("Creating fallback plan for planId: {}", planId);
-				currentPlan = new ExecutionPlan(planId, "answer question without plan");
+				currentPlan = new ExecutionPlan(planId, planId,"answer question without plan");
 			}
 
 			context.setPlan(currentPlan);

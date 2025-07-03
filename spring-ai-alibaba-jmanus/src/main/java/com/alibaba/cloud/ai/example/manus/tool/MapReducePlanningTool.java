@@ -38,7 +38,7 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 	private MapReduceExecutionPlan currentPlan;
 
 	public String getCurrentPlanId() {
-		return currentPlan != null ? currentPlan.getPlanId() : null;
+		return currentPlan != null ? currentPlan.getCurrentPlanId() : null;
 	}
 
 	public MapReduceExecutionPlan getCurrentPlan() {
@@ -202,7 +202,7 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 			return new ToolExecuteResult("Required parameters missing");
 		}
 
-		MapReduceExecutionPlan plan = new MapReduceExecutionPlan(planId, title);
+		MapReduceExecutionPlan plan = new MapReduceExecutionPlan(planId,planId, title);
 
 		for (Map<String, Object> stepNode : steps) {
 			String nodeType = (String) stepNode.get("type");

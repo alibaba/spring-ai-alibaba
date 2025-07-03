@@ -84,7 +84,7 @@ public class PlanFinalizer {
 
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 			if (context.isUseMemory()) {
-				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
+				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
 				requestSpec.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
 			}
 			ChatResponse response = requestSpec.call().chatResponse();
@@ -100,7 +100,7 @@ public class PlanFinalizer {
 			throw new RuntimeException("Failed to generate summary", e);
 		}
 		finally {
-			llmService.clearConversationMemory(plan.getPlanId());
+			llmService.clearConversationMemory(plan.getCurrentPlanId());
 		}
 	}
 
@@ -111,13 +111,13 @@ public class PlanFinalizer {
 	 */
 	private void recordPlanCompletion(ExecutionContext context, String summary) {
 		// Use thinkActRecordId from context to support sub-plan executions
-		PlanExecutionRecord planRecord = recorder.getExecutionRecord(context.getPlan().getPlanId(), context.getThinkActRecordId());
+		PlanExecutionRecord planRecord = recorder.getExecutionRecord(context.getPlan().getCurrentPlanId(), context.getPlan().getRootPlanId(), context.getThinkActRecordId());
 		if (planRecord != null) {
 			recorder.recordPlanCompletion(planRecord, summary);
 		}
 
 		log.info("Plan completed with ID: {} (thinkActRecordId: {}) and summary: {}", 
-				context.getPlan().getPlanId(), context.getThinkActRecordId(), summary);
+				context.getPlan().getCurrentPlanId(), context.getThinkActRecordId(), summary);
 	}
 
 }

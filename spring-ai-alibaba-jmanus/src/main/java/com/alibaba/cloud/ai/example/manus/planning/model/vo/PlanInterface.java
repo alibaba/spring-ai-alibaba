@@ -34,13 +34,26 @@ public interface PlanInterface {
 	 * 获取计划ID
 	 * @return 计划ID
 	 */
-	String getPlanId();
+	String getRootPlanId();
 
 	/**
 	 * 设置计划ID
-	 * @param planId 计划ID
+	 * @param rootPlanId 计划ID
 	 */
-	void setPlanId(String planId);
+	void setRootPlanId(String rootPlanId);
+
+
+	/**
+	 * 获取当前计划ID
+	 * @return 当前计划ID
+	 */
+	String getCurrentPlanId();
+
+	/**
+	 * 设置当前计划ID
+	 * @param currentPlanId 当前计划ID
+	 */
+	void setCurrentPlanId(String currentPlanId);
 
 	/**
 	 * 获取计划类型

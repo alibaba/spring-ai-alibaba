@@ -84,7 +84,8 @@ public class ManusController {
 		context.setUserRequest(query);
 		// Use PlanIdDispatcher to generate a unique plan ID
 		String planId = planIdDispatcher.generatePlanId();
-		context.setPlanId(planId);
+		context.setCurrentPlanId(planId);
+		context.setRootPlanId(planId);
 		context.setNeedSummary(true);
 		// Get or create planning flow
 		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(planId);
@@ -116,7 +117,7 @@ public class ManusController {
 	 */
 	@GetMapping("/details/{planId}")
 	public synchronized ResponseEntity<?> getExecutionDetails(@PathVariable("planId") String planId) {
-		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId, null);
+		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(null,planId, null);
 
 		if (planRecord == null) {
 			return ResponseEntity.notFound().build();
@@ -154,7 +155,7 @@ public class ManusController {
 	 */
 	@DeleteMapping("/details/{planId}")
 	public ResponseEntity<Map<String, String>> removeExecutionDetails(@PathVariable("planId") String planId) {
-		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId, null);
+		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(null, planId, null);
 		if (planRecord == null) {
 			return ResponseEntity.notFound().build();
 		}

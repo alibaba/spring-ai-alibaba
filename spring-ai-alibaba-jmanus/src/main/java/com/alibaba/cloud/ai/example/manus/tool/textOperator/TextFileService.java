@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
 
 import jakarta.annotation.PreDestroy;
 
@@ -49,7 +49,7 @@ public class TextFileService implements ApplicationRunner {
 	private ManusProperties manusProperties;
 
 	@Autowired
-	private InnerStorageService innerStorageService;
+	private SmartContentSavingService innerStorageService;
 
 	/**
 	 * Set of supported text file extensions
@@ -73,7 +73,7 @@ public class TextFileService implements ApplicationRunner {
 		log.info("TextFileService initialized");
 	}
 
-	public InnerStorageService getInnerStorageService() {
+	public SmartContentSavingService getInnerStorageService() {
 		return innerStorageService;
 	}
 

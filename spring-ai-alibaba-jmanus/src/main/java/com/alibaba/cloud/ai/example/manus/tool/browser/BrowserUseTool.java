@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ClickByElementAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.CloseTabAction;
@@ -34,7 +34,7 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,26 +43,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
-public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
+public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
 	private final ChromeDriverService chromeDriverService;
 
-	private final InnerStorageService innerStorageService;
+	private final SmartContentSavingService innerStorageService;
 
-	private String planId;
-
-	public BrowserUseTool(ChromeDriverService chromeDriverService, InnerStorageService innerStorageService) {
+	public BrowserUseTool(ChromeDriverService chromeDriverService, SmartContentSavingService innerStorageService) {
 		this.chromeDriverService = chromeDriverService;
 		this.innerStorageService = innerStorageService;
 	}
 
 	public DriverWrapper getDriver() {
-		return chromeDriverService.getDriver(planId);
+		return chromeDriverService.getDriver(currentPlanId);
 	}
 
 	/**
@@ -323,7 +320,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 	}
 
 	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService,
-			InnerStorageService innerStorageService) {
+			SmartContentSavingService innerStorageService) {
 		BrowserUseTool instance = new BrowserUseTool(chromeDriverService, innerStorageService);
 		return instance;
 	}
@@ -362,22 +359,22 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 				}
 				case "get_html": {
 					result = new GetHtmlAction(this).execute(requestVO);
-					// HTML内容通常很长，使用智能处理
-					InnerStorageService.SmartProcessResult processedResult = innerStorageService.processContent(planId,
+					// HTML content is usually long, use intelligent processing
+					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService.processContent(currentPlanId,
 							result.getOutput(), "get_html");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "get_text": {
 					result = new GetTextAction(this).execute(requestVO);
-					// 文本内容可能很长，使用智能处理
-					InnerStorageService.SmartProcessResult processedResult = innerStorageService.processContent(planId,
+					// Text content may be long, use intelligent processing
+					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService.processContent(currentPlanId,
 							result.getOutput(), "get_text");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "execute_js": {
 					result = new ExecuteJsAction(this).execute(requestVO);
-					// JS执行结果可能很长，使用智能处理
-					InnerStorageService.SmartProcessResult processedResult = innerStorageService.processContent(planId,
+					// JS execution results may be long, use intelligent processing
+					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService.processContent(currentPlanId,
 							result.getOutput(), "execute_js");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
@@ -413,8 +410,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
 
-			// 对于其他操作，也进行智能处理（但阈值通常不会超过）
-			InnerStorageService.SmartProcessResult processedResult = innerStorageService.processContent(planId,
+			// For other operations, also perform intelligent processing (but thresholds usually won't be exceeded)
+			SmartContentSavingService.SmartProcessResult processedResult = innerStorageService.processContent(currentPlanId,
 					result.getOutput(), action);
 			return new ToolExecuteResult(processedResult.getSummary());
 		}
@@ -459,7 +456,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 			List<Map<String, Object>> tabs = getTabsInfo(page);
 			state.put("tabs", tabs);
 
-			String interactiveElements = chromeDriverService.getDriver(planId)
+			String interactiveElements = chromeDriverService.getDriver(currentPlanId)
 				.getInteractiveElementRegistry()
 				.generateElementsInfoText(page);
 			state.put("interactive_elements", interactiveElements);
@@ -472,11 +469,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 			state.put("error", "Failed to get browser state: " + e.getMessage());
 			return state;
 		}
-	}
-
-	@Override
-	public ToolExecuteResult apply(BrowserRequestVO requestVO, ToolContext u) {
-		return run(requestVO);
 	}
 
 	@Override
@@ -502,16 +494,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 	@Override
 	public Class<BrowserRequestVO> getInputType() {
 		return BrowserRequestVO.class;
-	}
-
-	@Override
-	public boolean isReturnDirect() {
-		return false;
-	}
-
-	@Override
-	public void setPlanId(String planId) {
-		this.planId = planId;
 	}
 
 	@Override

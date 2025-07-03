@@ -42,6 +42,6 @@ public interface AgentService {
 	 * @param planId Plan ID, used to identify the plan the agent belongs to
 	 * @return Created BaseAgent object
 	 */
-	BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting,List<String> columns);
+	BaseAgent createDynamicBaseAgent(String name, String currentPlanId,String rootPlanId, Map<String, Object> initialAgentSetting,List<String> columns);
 
 }

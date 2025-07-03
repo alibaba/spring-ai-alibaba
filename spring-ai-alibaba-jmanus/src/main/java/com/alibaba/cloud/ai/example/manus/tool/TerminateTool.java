@@ -19,20 +19,18 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 import java.util.List;
 import java.util.Map;
 
-public class TerminateTool implements ToolCallBiFunctionDef<Map<String, Object>>, TerminableTool {
+public class TerminateTool extends AbstractBaseTool<Map<String, Object>> implements TerminableTool {
 
 	private static final Logger log = LoggerFactory.getLogger(TerminateTool.class);
 
 	public static final String name = "terminate";
 
 	private final List<String> columns;
-	private String planId;
 	private String lastTerminationMessage = "";
 	private boolean isTerminated = false;
 	private String terminationTimestamp = "";
@@ -147,16 +145,17 @@ public class TerminateTool implements ToolCallBiFunctionDef<Map<String, Object>>
 				isTerminated ? "Process was terminated" : "No termination recorded",
 				lastTerminationMessage.isEmpty() ? "N/A" : lastTerminationMessage,
 				terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp,
-				planId != null ? planId : "N/A",
+				currentPlanId != null ? currentPlanId : "N/A",
 				columns != null ? String.join(", ", columns) : "N/A");
 	}
 
 	public TerminateTool(String planId, List<String> columns) {
-		this.planId = planId;
+		this.currentPlanId = planId;
 		// If columns is null or empty, use "message" as default column
 		this.columns = (columns == null || columns.isEmpty()) ? List.of("message") : columns;
 	}
 
+	@Override
 	public ToolExecuteResult run(Map<String, Object> input) {
 		log.info("Terminate with input: {}", input);
 		
@@ -192,11 +191,6 @@ public class TerminateTool implements ToolCallBiFunctionDef<Map<String, Object>>
 	}
 
 	@Override
-	public ToolExecuteResult apply(Map<String, Object> input, ToolContext toolContext) {
-		return run(input);
-	}
-
-	@Override
 	public String getName() {
 		return name;
 	}
@@ -221,11 +215,6 @@ public class TerminateTool implements ToolCallBiFunctionDef<Map<String, Object>>
 	@Override
 	public boolean isReturnDirect() {
 		return true;
-	}
-
-	@Override
-	public void setPlanId(String planId) {
-		this.planId = planId;
 	}
 
 	@Override

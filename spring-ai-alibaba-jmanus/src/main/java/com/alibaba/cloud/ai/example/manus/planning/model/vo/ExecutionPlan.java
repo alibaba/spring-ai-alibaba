@@ -41,8 +41,8 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 		this.steps = new ArrayList<>();
 	}
 
-	public ExecutionPlan(String planId, String title) {
-		super(planId, title);
+	public ExecutionPlan(String currentPlanId , String parentPlanId, String title) {
+		super(currentPlanId, parentPlanId, title);
 		this.steps = new ArrayList<>();
 	}
 

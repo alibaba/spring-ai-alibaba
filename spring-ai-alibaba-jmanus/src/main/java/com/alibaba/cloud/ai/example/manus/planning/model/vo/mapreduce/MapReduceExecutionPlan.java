@@ -44,8 +44,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		this.createdTime = System.currentTimeMillis();
 	}
 
-	public MapReduceExecutionPlan(String planId, String title) {
-		super(planId, title);
+	public MapReduceExecutionPlan(String currentPlanId , String rootPlanId, String title) {
+		super(currentPlanId, rootPlanId, title);
 		this.steps = new ArrayList<>();
 		this.createdTime = System.currentTimeMillis();
 	}
@@ -197,7 +197,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("=== MapReduce执行计划 ===\n");
-		sb.append("计划ID: ").append(planId).append("\n");
+		sb.append("计划ID: ").append(currentPlanId).append("\n");
+		sb.append("父计划ID: ").append(rootPlanId).append("\n");
 		sb.append("标题: ").append(title).append("\n");
 		sb.append("创建时间: ").append(new java.util.Date(createdTime)).append("\n");
 		sb.append("节点数量: ").append(steps.size()).append("\n");

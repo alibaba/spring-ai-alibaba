@@ -65,7 +65,9 @@ public abstract class BaseAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(BaseAgent.class);
 
-	private String planId = null;
+	private String currentPlanId = null;
+
+	private String rootPlanId = null;
 
 	// Think-act record ID for sub-plan executions triggered by tool calls
 	private Long thinkActRecordId = null;
@@ -200,13 +202,13 @@ public abstract class BaseAgent {
 		}
 
 		// Create agent execution record
-		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getPlanId(), getName(), getDescription());
+		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getCurrentPlanId(), getName(), getDescription());
 		agentRecord.setMaxSteps(maxSteps);
 		agentRecord.setStatus(state.toString());
 		// Record execution in recorder if we have a plan ID
-		if (planId != null && planExecutionRecorder != null) {
+		if (currentPlanId != null && planExecutionRecorder != null) {
 			// Use unified method that handles both main plan and sub-plan cases
-			PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId, thinkActRecordId);
+			PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId, thinkActRecordId);
 			
 			if (planRecord != null) {
 				planExecutionRecorder.recordAgentExecution(planRecord, agentRecord);
@@ -269,7 +271,7 @@ public abstract class BaseAgent {
 			state = AgentState.COMPLETED; // Reset state after execution
 
 			agentRecord.setStatus(state.toString());
-			llmService.clearAgentMemory(planId);
+			llmService.clearAgentMemory(currentPlanId);
 		}
 		return results.isEmpty() ? "" : results.get(results.size() - 1);
 	}
@@ -304,7 +306,7 @@ public abstract class BaseAgent {
 	protected boolean isStuck() {
 		// Currently, if the agent does not call the tool three times, it is considered
 		// stuck and the current step is exited.
-		List<Message> memoryEntries = llmService.getAgentMemory().get(getPlanId());
+		List<Message> memoryEntries = llmService.getAgentMemory().get(getCurrentPlanId());
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {
@@ -321,12 +323,20 @@ public abstract class BaseAgent {
 		this.state = state;
 	}
 
-	public String getPlanId() {
-		return planId;
+	public String getCurrentPlanId() {
+		return currentPlanId;
 	}
 
-	public void setPlanId(String planId) {
-		this.planId = planId;
+	public void setCurrentPlanId(String planId) {
+		this.currentPlanId = planId;
+	}
+
+	public void setRootPlanId(String rootPlanId){
+		this.rootPlanId = rootPlanId;
+	}
+
+	public String getRootPlanId() {
+		return rootPlanId;
 	}
 
 	public Long getThinkActRecordId() {

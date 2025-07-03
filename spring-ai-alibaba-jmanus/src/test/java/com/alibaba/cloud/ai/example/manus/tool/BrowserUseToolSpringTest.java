@@ -48,7 +48,7 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageService;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -69,7 +69,7 @@ class BrowserUseToolSpringTest {
 	private ChromeDriverService chromeDriverService;
 
 	@Autowired
-	private InnerStorageService innerStorageService;
+	private SmartContentSavingService innerStorageService;
 
 	private BrowserUseTool browserUseTool;
 
@@ -95,8 +95,8 @@ class BrowserUseToolSpringTest {
 		chromeDriverService.setManusProperties(manusProperties);
 		browserUseTool = new BrowserUseTool(chromeDriverService, innerStorageService);
 		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties, promptLoader);
-		agent.setPlanId("plan_123123124124124");
-		browserUseTool.setPlanId(agent.getPlanId());
+		agent.setCurrentPlanId("plan_123123124124124");
+		browserUseTool.setCurrentPlanId(agent.getCurrentPlanId());
 
 	}
 

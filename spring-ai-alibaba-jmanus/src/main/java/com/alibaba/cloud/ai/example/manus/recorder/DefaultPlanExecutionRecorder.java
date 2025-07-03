@@ -65,71 +65,39 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	/**
 	 * Get or create PlanExecutionRecord by planId and optional thinkActRecordId
 	 * @param planId Plan ID
+	 * @param rootPlanId Root plan ID
 	 * @param thinkActRecordId Think-act record ID that contains the sub-plan (null for main plan)
 	 * @param createIfNotExists Whether to create if not exists
 	 * @return PlanExecutionRecord instance
 	 */
-	public PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, Long thinkActRecordId, boolean createIfNotExists) {
+	public PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId, boolean createIfNotExists) {
+		// Get or create root plan record first
+		PlanExecutionRecord rootRecord = planRecords.computeIfAbsent(rootPlanId, id -> {
+			logger.info("Creating root plan with ID: {}", id);
+			return new PlanExecutionRecord(id, rootPlanId);
+		});
+		
+		// If no thinkActRecordId, return root record directly
 		if (thinkActRecordId == null) {
-			// This is a main plan
-			if (createIfNotExists) {
-				PlanExecutionRecord mainPlan = planRecords.computeIfAbsent(planId, id -> {
-					logger.info("Creating main plan with ID: {}", id);
-					return new PlanExecutionRecord(id);
-				});
-				
-				// Additional validation for main plan
-				if (!mainPlan.getPlanId().equals(planId)) {
-					logger.error("CRITICAL ERROR: Main plan ID mismatch. Expected: {}, Actual: {}", planId, mainPlan.getPlanId());
-					throw new RuntimeException("Main plan ID mismatch");
-				}
-				
-				return mainPlan;
-			} else {
-				return planRecords.get(planId);
-			}
-		} else {
-			// This is a sub-plan, find or create it
-			ThinkActRecord thinkActRecord = findThinkActRecord(planId, thinkActRecordId);
-			if (thinkActRecord != null) {
-				PlanExecutionRecord subPlan = thinkActRecord.getSubPlanExecutionRecord();
-				if (subPlan == null && createIfNotExists) {
-					// Create new sub-plan if it doesn't exist with unique ID
-					// Use UUID to ensure absolute uniqueness and avoid any collision with parent plan ID
-					String subPlanId;
-					int retryCount = 0;
-					do {
-						subPlanId = "sub_" + planId + "_" + thinkActRecordId + "_" + System.nanoTime() + "_" + java.util.UUID.randomUUID().toString().substring(0, 8);
-						retryCount++;
-						// Safety check to prevent infinite loop
-						if (retryCount > 10) {
-							throw new RuntimeException("Failed to generate unique sub-plan ID after 10 attempts");
-						}
-					} while (planRecords.containsKey(subPlanId) || subPlanId.equals(planId));
-					
-					subPlan = new PlanExecutionRecord(subPlanId);
-					// Set parent plan information
-					subPlan.setParentPlanId(planId);
-					subPlan.setThinkActRecordId(thinkActRecordId);
-					// Record the sub-plan in the think-act record
-					thinkActRecord.recordSubPlanExecution(subPlan);
-					// Also register the sub-plan in the main planRecords for direct access
-					planRecords.put(subPlan.getPlanId(), subPlan);
-					
-					// Add logging to ensure unique sub-plan ID generation
-					logger.info("Created sub-plan with unique ID: {} for parent plan: {}, thinkActRecordId: {}", 
-						subPlanId, planId, thinkActRecordId);
-						
-					// Additional validation
-					if (subPlanId.equals(planId)) {
-						logger.error("CRITICAL ERROR: Sub-plan ID {} is identical to parent plan ID {}", subPlanId, planId);
-						throw new RuntimeException("Sub-plan ID cannot be identical to parent plan ID");
-					}
-				}
-				return subPlan;
-			}
-			return null;
+			return rootRecord;
 		}
+		
+		// Find ThinkActRecord in root plan
+		ThinkActRecord thinkActRecord = findThinkActRecord(rootPlanId, thinkActRecordId);
+		if (thinkActRecord == null) {
+			return rootRecord;
+		}
+		
+		// Check if subPlanExecutionRecord exists
+		PlanExecutionRecord subPlan = thinkActRecord.getSubPlanExecutionRecord();
+		if (subPlan == null && createIfNotExists) {
+			// Create new sub-plan with planId and rootPlanId
+			subPlan = new PlanExecutionRecord(planId, rootPlanId);
+			subPlan.setThinkActRecordId(thinkActRecordId);
+			thinkActRecord.recordSubPlanExecution(subPlan);
+		}
+		
+		return subPlan != null ? subPlan : rootRecord;
 	}
 
 	/**
@@ -138,14 +106,14 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	 * @param thinkActRecordId Think-act record ID that contains the sub-plan (null for main plan)
 	 * @return PlanExecutionRecord instance
 	 */
-	public PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, Long thinkActRecordId) {
-		return getOrCreatePlanExecutionRecord(planId, thinkActRecordId, true);
+	public PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId,String rootPlanId, Long thinkActRecordId) {
+		return getOrCreatePlanExecutionRecord(planId, rootPlanId, thinkActRecordId, true);
 	}
 
 	@Override
 	public String recordPlanExecution(PlanExecutionRecord stepRecord) {
-		String planId = stepRecord.getPlanId();
-		String parentPlanId = stepRecord.getParentPlanId();
+		String planId = stepRecord.getCurrentPlanId();
+		String parentPlanId = stepRecord.getRootPlanId();
 		Long thinkActRecordId = stepRecord.getThinkActRecordId();
 		
 		if (parentPlanId != null && thinkActRecordId != null) {
@@ -207,8 +175,8 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	@Override
-	public PlanExecutionRecord getExecutionRecord(String planId, Long thinkActRecordId) {
-		return getOrCreatePlanExecutionRecord(planId, thinkActRecordId, false);
+	public PlanExecutionRecord getExecutionRecord(String planId,String rootPlanId, Long thinkActRecordId) {
+		return getOrCreatePlanExecutionRecord(planId,rootPlanId, thinkActRecordId, false);
 	}
 
 	/**
@@ -219,8 +187,8 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	 * @return Returns true if record is found and saved, false otherwise
 	 */
 	@Override
-	public boolean savePlanExecutionRecords(String planId) {
-		PlanExecutionRecord record = getExecutionRecord(planId, null);
+	public boolean savePlanExecutionRecords(String rootPlanId) {
+		PlanExecutionRecord record = getExecutionRecord(null, rootPlanId,null);
 		if (record == null) {
 			return false;
 		}
@@ -241,16 +209,6 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 			entry.getValue().save();
 		}
 	}
-
-	@Override
-	public AgentExecutionRecord getCurrentAgentExecutionRecord(String planId) {
-		// Automatically clean plan records older than 30 minutes
-		cleanOutdatedPlans(30);
-
-		PlanExecutionRecord planRecord = getExecutionRecord(planId, null);
-		return getCurrentAgentExecutionRecord(planRecord);
-	}
-
 	/**
 	 * Clean expired plan records that exceed the specified number of minutes
 	 * @param expirationMinutes Expiration time (minutes)

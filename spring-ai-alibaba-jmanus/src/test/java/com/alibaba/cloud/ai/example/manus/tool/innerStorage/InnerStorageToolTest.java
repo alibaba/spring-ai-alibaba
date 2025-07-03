@@ -23,6 +23,7 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ public class InnerStorageToolTest {
 
 	private InnerStorageTool innerStorageTool;
 
-	private InnerStorageService innerStorageService;
+	private UnifiedDirectoryManager unifiedDirectoryManager;
 
 	private final String testPlanId = "test-plan-001";
 
@@ -61,12 +62,13 @@ public class InnerStorageToolTest {
 			}
 		};
 
-		// Create InnerStorageService
-		innerStorageService = new InnerStorageService(mockManusProperties);
+		// Create UnifiedDirectoryManager
+		unifiedDirectoryManager = new UnifiedDirectoryManager(mockManusProperties);
 
 		// Use correct constructor to create InnerStorageTool
-		innerStorageTool = new InnerStorageTool(innerStorageService);
-		innerStorageTool.setPlanId(testPlanId);
+		innerStorageTool = new InnerStorageTool(unifiedDirectoryManager);
+		innerStorageTool.setRootPlanId(testPlanId);
+		innerStorageTool.setCurrentPlanId("sub-task-001");
 	}
 
 	@Test

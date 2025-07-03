@@ -64,7 +64,7 @@ class PlanExecutorFactorySpringTest {
     void testCreateSimpleExecutor() {
         try {
             log.info("Step 1: Create simple execution plan");
-            ExecutionPlan simplePlan = new ExecutionPlan("test-simple-001", "Simple test plan");
+            ExecutionPlan simplePlan = new ExecutionPlan("test-simple-001","test-simple-001", "Simple test plan");
             simplePlan.setPlanType("simple");
             
             log.info("Step 2: Create executor using factory");
@@ -92,7 +92,7 @@ class PlanExecutorFactorySpringTest {
         try {
             log.info("Step 1: Create advanced execution plan");
             MapReduceExecutionPlan advancedPlan = new MapReduceExecutionPlan();
-            advancedPlan.setPlanId("test-advanced-001");
+            advancedPlan.setCurrentPlanId("test-advanced-001");
             advancedPlan.setTitle("Advanced MapReduce test plan");
             advancedPlan.setPlanType("advanced");
             
@@ -118,7 +118,7 @@ class PlanExecutorFactorySpringTest {
     void testCreateExecutorWithNullPlanType() {
         try {
             log.info("Step 1: Create plan with null plan type");
-            ExecutionPlan nullTypePlan = new ExecutionPlan("test-null-001", "Plan with null type");
+            ExecutionPlan nullTypePlan = new ExecutionPlan("test-null-001","test-simple-001", "Plan with null type");
             nullTypePlan.setPlanType(null);
             
             log.info("Step 2: Create executor using factory");
@@ -143,7 +143,7 @@ class PlanExecutorFactorySpringTest {
     void testCreateExecutorWithUnknownPlanType() {
         try {
             log.info("Step 1: Create plan with unknown plan type");
-            ExecutionPlan unknownTypePlan = new ExecutionPlan("test-unknown-001", "Plan with unknown type");
+            ExecutionPlan unknownTypePlan = new ExecutionPlan("test-unknown-001","test-simple-001", "Plan with unknown type");
             unknownTypePlan.setPlanType("unknown-type");
             
             log.info("Step 2: Create executor using factory");

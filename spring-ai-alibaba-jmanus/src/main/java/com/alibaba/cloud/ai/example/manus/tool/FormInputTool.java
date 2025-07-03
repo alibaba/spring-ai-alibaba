@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 import java.util.HashMap;
@@ -30,7 +29,7 @@ import java.util.Map;
 /**
  * LLM form input tool: supports multiple input items with labels and descriptions.
  */
-public class FormInputTool implements ToolCallBiFunctionDef<FormInputTool.UserFormInput> {
+public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
 
@@ -167,7 +166,7 @@ public class FormInputTool implements ToolCallBiFunctionDef<FormInputTool.UserFo
 	}
 
 	@Override
-	public ToolExecuteResult apply(UserFormInput formInput, ToolContext toolContext) {
+	public ToolExecuteResult run(UserFormInput formInput) {
 		log.info("FormInputTool input: {}", formInput);
 
 		this.currentFormDefinition = formInput;
@@ -268,11 +267,6 @@ public class FormInputTool implements ToolCallBiFunctionDef<FormInputTool.UserFo
 	@Override
 	public boolean isReturnDirect() {
 		return true;
-	}
-
-	@Override
-	public void setPlanId(String planId) {
-		// Optional implementation
 	}
 
 	@Override

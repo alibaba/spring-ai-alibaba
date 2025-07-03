@@ -26,7 +26,9 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	/**
 	 * 计划ID
 	 */
-	protected String planId;
+	protected String rootPlanId;
+
+	protected String currentPlanId;
 
 	/**
 	 * 计划标题
@@ -59,22 +61,32 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	 * @param planId 计划ID
 	 * @param title 计划标题
 	 */
-	public AbstractExecutionPlan(String planId, String title) {
+	public AbstractExecutionPlan(String currentPlanId , String parentPlanId, String title) {
 		this();
-		this.planId = planId;
+		this.currentPlanId = currentPlanId;	
+		this.rootPlanId = parentPlanId;
 		this.title = title;
 	}
 
 	// PlanInterface 基本属性的实现
 
 	@Override
-	public String getPlanId() {
-		return planId;
+	public String getCurrentPlanId() {
+		return currentPlanId;
+	}
+	@Override
+	public void setCurrentPlanId(String currentPlanId) {
+		this.currentPlanId = currentPlanId;
 	}
 
 	@Override
-	public void setPlanId(String planId) {
-		this.planId = planId;
+	public String getRootPlanId() {
+		return rootPlanId;
+	}
+
+	@Override
+	public void setRootPlanId(String parentPlanId) {
+		this.rootPlanId = parentPlanId;
 	}
 
 	@Override
@@ -184,8 +196,9 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "{" + "planId='" + planId + '\'' + ", title='" + title + '\''
-				+ ", stepCount=" + getTotalStepCount() + '}';
+		return "AbstractExecutionPlan{" + "parentPlanId='" + rootPlanId + '\'' + ", currentPlanId='" + currentPlanId + '\''
+				+ ", title='" + title + '\'' + ", planningThinking='" + planningThinking + '\'' + ", executionParams='"
+				+ executionParams + '\'' + ", userRequest='" + userRequest + '\'' + '}';
 	}
 
 }

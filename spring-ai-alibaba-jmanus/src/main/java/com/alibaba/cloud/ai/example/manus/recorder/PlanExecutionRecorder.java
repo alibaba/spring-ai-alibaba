@@ -61,7 +61,7 @@ public interface PlanExecutionRecorder {
 	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for sub-plan)
 	 * @return Plan execution record
 	 */
-	PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, Long thinkActRecordId);
+	PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, String rootPlanId , Long thinkActRecordId);
 
 	/**
 	 * Gets plan execution record with optional sub-plan support
@@ -69,7 +69,7 @@ public interface PlanExecutionRecorder {
 	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for sub-plan)
 	 * @return Plan execution record
 	 */
-	PlanExecutionRecord getExecutionRecord(String planId, Long thinkActRecordId);
+	PlanExecutionRecord getExecutionRecord(String planId , String rootPlanId, Long thinkActRecordId);
 
 	/**
 	 * Saves the execution records for the specified plan ID to persistent storage. This
@@ -78,7 +78,7 @@ public interface PlanExecutionRecorder {
 	 * @param planId The plan ID to save
 	 * @return true if records were found and saved, false otherwise
 	 */
-	boolean savePlanExecutionRecords(String planId);
+	boolean savePlanExecutionRecords(String rootPlanId);
 
 	/**
 	 * Saves all execution records to persistent storage. This method will iterate through
@@ -92,13 +92,6 @@ public interface PlanExecutionRecorder {
 	 * @return Current active agent execution record, or null if none exists
 	 */
 	AgentExecutionRecord getCurrentAgentExecutionRecord(PlanExecutionRecord planExecutionRecord);
-
-	/**
-	 * Gets the current active agent execution record for the specified plan
-	 * @param planId Plan ID
-	 * @return Current active agent execution record, or null if none exists
-	 */
-	AgentExecutionRecord getCurrentAgentExecutionRecord(String planId);
 
 	/**
 	 * Removes the execution records for the specified plan ID

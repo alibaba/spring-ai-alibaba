@@ -259,4 +259,27 @@ public class ManusProperties {
 		this.infiniteContextTaskContextSize = infiniteContextTaskContextSize;
 	}
 
+	// File System Security SubGroup
+	@ConfigProperty(group = "manus", subGroup = "filesystem", key = "allowExternalAccess", path = "manus.filesystem.allowExternalAccess",
+			description = "Whether to allow file operations outside the working directory", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "Yes"), @ConfigOption(value = "false", label = "No") })
+	private volatile Boolean allowExternalAccess;
+
+	public Boolean getAllowExternalAccess() {
+		String configPath = "manus.filesystem.allowExternalAccess";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			allowExternalAccess = Boolean.valueOf(value);
+		}
+		// Default to false for security
+		if (allowExternalAccess == null) {
+			allowExternalAccess = false;
+		}
+		return allowExternalAccess;
+	}
+
+	public void setAllowExternalAccess(Boolean allowExternalAccess) {
+		this.allowExternalAccess = allowExternalAccess;
+	}
+
 }

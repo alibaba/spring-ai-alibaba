@@ -49,7 +49,7 @@ public class PlanningCoordinator {
      * @return execution context
      */
     public ExecutionContext createPlan(ExecutionContext context) {
-        log.info("Creating plan for planId: {}", context.getPlanId());
+        log.info("Creating plan for planId: {}", context.getCurrentPlanId());
         // Only execute the create plan step
         context.setUseMemory(false);
         planCreator.createPlan(context);
@@ -57,7 +57,7 @@ public class PlanningCoordinator {
         PlanInterface plan = context.getPlan();
         if (plan != null) {
             log.info("Plan created successfully with type: {} for planId: {}", 
-                    plan.getPlanType(), context.getPlanId());
+                    plan.getPlanType(), context.getCurrentPlanId());
         }
         
         return context;
@@ -69,7 +69,7 @@ public class PlanningCoordinator {
      * @return execution summary
      */
     public ExecutionContext executePlan(ExecutionContext context) {
-        log.info("Executing complete plan process for planId: {}", context.getPlanId());
+        log.info("Executing complete plan process for planId: {}", context.getCurrentPlanId());
         context.setUseMemory(true);
         
         // 1. Create a plan
@@ -80,17 +80,17 @@ public class PlanningCoordinator {
         if (plan != null) {
             PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
             log.info("Selected executor: {} for plan type: {} (planId: {})", 
-                    executor.getClass().getSimpleName(), plan.getPlanType(), context.getPlanId());
+                    executor.getClass().getSimpleName(), plan.getPlanType(), context.getCurrentPlanId());
             executor.executeAllSteps(context);
         } else {
-            log.error("No plan found in context for planId: {}", context.getPlanId());
+            log.error("No plan found in context for planId: {}", context.getCurrentPlanId());
             throw new IllegalStateException("Plan creation failed, no plan found in execution context");
         }
 
         // 3. Generate a summary
         planFinalizer.generateSummary(context);
 
-        log.info("Plan execution completed successfully for planId: {}", context.getPlanId());
+        log.info("Plan execution completed successfully for planId: {}", context.getCurrentPlanId());
         return context;
     }
 
@@ -100,24 +100,24 @@ public class PlanningCoordinator {
      * @return execution summary
      */
     public ExecutionContext executeExistingPlan(ExecutionContext context) {
-        log.info("Executing existing plan for planId: {}", context.getPlanId());
+        log.info("Executing existing plan for planId: {}", context.getCurrentPlanId());
         
         PlanInterface plan = context.getPlan();
         if (plan == null) {
-            log.error("No existing plan found in context for planId: {}", context.getPlanId());
+            log.error("No existing plan found in context for planId: {}", context.getCurrentPlanId());
             throw new IllegalArgumentException("No existing plan found in execution context");
         }
 
         // 1. Select appropriate executor based on plan type and execute
         PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
         log.info("Selected executor: {} for existing plan type: {} (planId: {})", 
-                executor.getClass().getSimpleName(), plan.getPlanType(), context.getPlanId());
+                executor.getClass().getSimpleName(), plan.getPlanType(), context.getCurrentPlanId());
         executor.executeAllSteps(context);
 
         // 2. Generate a summary
         planFinalizer.generateSummary(context);
 
-        log.info("Existing plan execution completed successfully for planId: {}", context.getPlanId());
+        log.info("Existing plan execution completed successfully for planId: {}", context.getCurrentPlanId());
         return context;
     }
 
@@ -129,24 +129,24 @@ public class PlanningCoordinator {
      */
     public ExecutionContext executeWithExplicitExecutor(ExecutionContext context, String executorType) {
         log.info("Executing plan with explicit executor type: {} for planId: {}", 
-                executorType, context.getPlanId());
+                executorType, context.getCurrentPlanId());
         
         PlanInterface plan = context.getPlan();
         if (plan == null) {
-            log.error("No plan found in context for planId: {}", context.getPlanId());
+            log.error("No plan found in context for planId: {}", context.getCurrentPlanId());
             throw new IllegalArgumentException("No plan found in execution context");
         }
 
         // Select executor based on explicit type
-        PlanExecutorInterface executor = planExecutorFactory.createExecutorByType(executorType, context.getPlanId());
+        PlanExecutorInterface executor = planExecutorFactory.createExecutorByType(executorType, context.getCurrentPlanId());
         log.info("Using explicit executor: {} for planId: {}", 
-                executor.getClass().getSimpleName(), context.getPlanId());
+                executor.getClass().getSimpleName(), context.getCurrentPlanId());
         
         executor.executeAllSteps(context);
         planFinalizer.generateSummary(context);
 
         log.info("Plan execution with explicit executor completed successfully for planId: {}", 
-                context.getPlanId());
+                context.getCurrentPlanId());
         return context;
     }
 
