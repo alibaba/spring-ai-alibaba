@@ -26,17 +26,20 @@
           <button class="back-button" @click="goBack">
             <Icon icon="carbon:arrow-left" />
           </button>
-          <h2>对话框</h2>
-          <button class="config-button" @click="handleConfig" title="配置">
-            <Icon icon="carbon:settings-adjust" width="20" />
-          </button>
+          <h2>{{ $t('conversation') }}</h2>
+          <div class="header-actions">
+            <LanguageSwitcher />
+            <button class="config-button" @click="handleConfig" title="配置">
+              <Icon icon="carbon:settings-adjust" width="20" />
+            </button>
+          </div>
         </div>
 
         <PlanExecutionComponent
           ref="planExecutionRef"
           :initial-prompt="prompt || ''"
           mode="direct"
-          placeholder="向 JTaskPilot 发送消息"
+          :placeholder="$t('input.placeholder')"
           @plan-completed="handlePlanCompleted"
           @dialog-round-start="handleDialogRoundStart"
           @message-sent="handleMessageSent"
@@ -62,16 +65,19 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import Sidebar from '@/components/sidebar/index.vue'
 import RightPanel from '@/components/right-panel/index.vue'
 import PlanExecutionComponent from '@/components/plan-execution/index.vue'
+import LanguageSwitcher from '@/components/language-switcher/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { useTaskStore } from '@/stores/task'
 
 const route = useRoute()
 const router = useRouter()
 const taskStore = useTaskStore()
+const { t } = useI18n()
 
 const prompt = ref<string>('')
 const planExecutionRef = ref()
@@ -387,6 +393,12 @@ const handlePlanExecutionRequested = async (payload: {
     font-weight: 600;
     color: #ffffff;
   }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .back-button {
