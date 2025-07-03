@@ -283,20 +283,6 @@ spring:
 
 </details>
 
-## 🔧 服务配置
-
-<details>
-<summary>📌 大模型服务（ChatModel）</summary>
-
-确保以下组件已正确配置：
-1. `ChatModel` 实现类已注入 Spring 容器
-2. 大模型 API 调用权限已授予
-3. 相关配置项已在 `application.yml` 中设置
-
-> 💡 **提示**：建议在开发环境中使用较小的模型进行测试，生产环境再切换到完整模型。
-
-</details>
-
 <details>
 <summary>📌 向量服务（EmbeddingModel）</summary>
 
