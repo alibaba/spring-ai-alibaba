@@ -17,74 +17,19 @@
   <div class="right-panel">
     <div class="preview-header">
       <div class="preview-tabs">
-        <!-- 只显示 details 按钮，临时注释掉 chat 和 code 按钮 -->
+        <!-- Only show details tab -->
         <button
-          v-for="tab in previewTabs.filter(t => t.id === 'details')"
-          :key="tab.id"
-          class="tab-button"
-          :class="{ active: activeTab === tab.id }"
-          @click="switchTab(tab.id)"
+          class="tab-button active"
         >
-          <Icon :icon="tab.icon" />
-          {{ tab.name }}
-        </button>
-        <!-- 临时注释掉 chat 和 code 按钮，但保留所有实现 -->
-        <!-- 
-        <button
-          v-for="tab in rightPanelStore.previewTabs.filter(t => t.id === 'chat' || t.id === 'code')"
-          :key="tab.id"
-          class="tab-button"
-          :class="{ active: rightPanelStore.activeTab === tab.id }"
-          @click="rightPanelStore.switchTab(tab.id)"
-        >
-          <Icon :icon="tab.icon" />
-          {{ tab.name }}
-        </button>
-        -->
-      </div>
-      <div class="preview-actions">
-        <button
-          class="action-button"
-          @click="copyCode"
-          v-if="activeTab === 'code'"
-        >
-          <Icon icon="carbon:copy" />
-        </button>
-        <button
-          class="action-button"
-          @click="downloadCode"
-          v-if="activeTab === 'code'"
-        >
-          <Icon icon="carbon:download" />
+          <Icon icon="carbon:events" />
+          步骤执行详情
         </button>
       </div>
     </div>
 
     <div class="preview-content">
-      <!-- Code Preview -->
-      <div v-if="activeTab === 'code'" class="code-preview">
-        <MonacoEditor
-          :language="codeLanguage"
-          :theme="'vs-dark'"
-          :height="'100%'"
-          :readonly="true"
-          :editor-options="{
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            wordWrap: 'on',
-          }"
-        />
-      </div>
-
-      <!-- Chat Preview -->
-      <div v-else-if="activeTab === 'chat'" class="chat-preview">
-        <div class="chat-bubbles">
-          <!-- Chat bubbles content removed as chatBubbles is no longer available -->
-        </div>
-      </div>
-
       <!-- Step Execution Details -->
-      <div v-else-if="activeTab === 'details'" class="step-details">
+      <div class="step-details">
         <!-- Fixed top step basic information -->
         <div v-if="selectedStep" class="step-info-fixed">
           <h3>
@@ -357,13 +302,6 @@
           </button>
         </Transition>
       </div>
-
-      <!-- Empty State -->
-      <div v-else class="empty-preview">
-        <Icon icon="carbon:document" class="empty-icon" />
-        <h3>No preview available</h3>
-        <p>Start a conversation to see the generated content here.</p>
-      </div>
     </div>
   </div>
 </template>
@@ -372,7 +310,6 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import MonacoEditor from '@/components/editor/index.vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import type { PlanExecutionRecord } from '@/types/plan-execution-record'
 
@@ -382,7 +319,6 @@ const { t } = useI18n()
 const scrollContainer = ref<HTMLElement>()
 
 // Local state - replacing store state
-const activeTab = ref('details')
 const planDataMap = ref<Map<string, any>>(new Map())
 const currentDisplayedPlanId = ref<string>()
 const selectedStep = ref<any>()
@@ -396,16 +332,6 @@ const shouldAutoScrollToBottom = ref(true)
 const autoRefreshTimer = ref<number | null>(null)
 const AUTO_REFRESH_INTERVAL = 3000 // Refresh step details every 3 seconds
 
-// Code and chat preview related state
-const codeLanguage = ref('java')
-
-// Preview tab configuration
-const previewTabs = [
-  { id: 'details', name: '步骤执行详情', icon: 'carbon:events' },
-  { id: 'chat', name: 'Chat', icon: 'carbon:chat' },
-  { id: 'code', name: 'Code', icon: 'carbon:code' },
-]
-
 
 const stepStatusText = computed(() => {
   if (!selectedStep.value) return ''
@@ -413,11 +339,6 @@ const stepStatusText = computed(() => {
   if (selectedStep.value.current) return '执行中'
   return '等待执行'
 })
-
-// Actions - Tab management
-const switchTab = (tabId: string) => {
-  activeTab.value = tabId
-}
 
 // Actions - Plan data management
 const handlePlanUpdate = async (planData: PlanExecutionRecord) => {
@@ -807,15 +728,6 @@ const autoScrollToBottomIfNeeded = () => {
   })
 }
 
-// Actions - Code operations
-const copyCode = () => {
-  console.warn('Copy code functionality is disabled as codeContent is removed.')
-}
-
-const downloadCode = () => {
-  console.warn('Download code functionality is disabled as codeContent is removed.')
-}
-
 
 // Actions - Utility functions
 const formatJson = (jsonData: any): string => {
@@ -949,59 +861,20 @@ defineExpose({
 .preview-header {
   padding: 20px 24px;
   border-bottom: 1px solid #1a1a1a;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   background: rgba(255, 255, 255, 0.02);
-}
 
-.preview-tabs {
-  display: flex;
-  gap: 8px;
-}
-
-.tab-button {
-  padding: 8px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #888888;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-  }
-
-  &.active {
+  .tab-button {
+    padding: 8px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
     border-color: #667eea;
     color: #667eea;
-  }
-}
-
-.preview-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.action-button {
-  padding: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #888888;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
   }
 }
 
@@ -1010,90 +883,6 @@ defineExpose({
   display: flex;
   flex-direction: column;
   min-height: 0; /* 确保flex子项可以收缩 */
-}
-
-.code-preview {
-  height: 100%;
-}
-
-.chat-preview {
-  height: 100%;
-  overflow-y: auto;
-  padding: 24px;
-}
-
-.chat-bubbles {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.chat-bubble {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 16px;
-
-  &.thinking {
-    border-left: 4px solid #f39c12;
-  }
-
-  &.progress {
-    border-left: 4px solid #3498db;
-  }
-
-  &.success {
-    border-left: 4px solid #27ae60;
-  }
-}
-
-.bubble-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #ffffff;
-
-  .timestamp {
-    margin-left: auto;
-    font-size: 12px;
-    color: #666666;
-    font-weight: 400;
-  }
-}
-
-.bubble-content {
-  color: #cccccc;
-  line-height: 1.5;
-  font-size: 14px;
-}
-
-.empty-preview {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #666666;
-
-  .empty-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-  }
-
-  h3 {
-    margin: 0 0 8px 0;
-    font-size: 18px;
-    color: #888888;
-  }
-
-  p {
-    margin: 0;
-    font-size: 14px;
-    text-align: center;
-  }
 }
 
 /* 步骤详情样式 */
