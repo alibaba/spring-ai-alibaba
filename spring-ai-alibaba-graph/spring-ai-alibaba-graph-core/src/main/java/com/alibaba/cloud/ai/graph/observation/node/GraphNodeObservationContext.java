@@ -32,7 +32,7 @@ public class GraphNodeObservationContext extends Observation.Context {
 
 	private final Map<String, Object> state;
 
-	private Object output;
+	private final Object output;
 
 	/**
 	 * Constructs a new GraphNodeObservationContext with the specified parameters.
@@ -45,10 +45,6 @@ public class GraphNodeObservationContext extends Observation.Context {
 		this.nodeName = nodeName;
 		this.event = event;
 		this.state = state;
-		this.output = output;
-	}
-
-	public void setOutput(final Object output) {
 		this.output = output;
 	}
 

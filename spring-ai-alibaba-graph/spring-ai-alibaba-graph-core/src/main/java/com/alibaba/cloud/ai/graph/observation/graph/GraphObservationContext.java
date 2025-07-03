@@ -33,7 +33,7 @@ public class GraphObservationContext extends Observation.Context {
 
 	private final Map<String, Object> state;
 
-	private Object output;
+	private final Object output;
 
 	public GraphObservationContext(String graphName, Map<String, Object> state, Object output) {
 		this.graphName = graphName;
@@ -51,10 +51,6 @@ public class GraphObservationContext extends Observation.Context {
 
 	public Object getOutput() {
 		return this.output;
-	}
-
-	public void setOutput(final Object output) {
-		this.output = output;
 	}
 
 	public static Builder builder() {
