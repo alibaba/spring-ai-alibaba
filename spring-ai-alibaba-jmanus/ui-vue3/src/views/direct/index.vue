@@ -35,14 +35,30 @@
           </div>
         </div>
 
-        <PlanExecutionComponent
-          ref="planExecutionRef"
-          :initial-prompt="prompt || ''"
-          mode="direct"
-          :placeholder="$t('input.placeholder')"
-          @plan-completed="handlePlanCompleted"
-          @dialog-round-start="handleDialogRoundStart"
-          @message-sent="handleMessageSent"
+        <!-- Chat Container -->
+        <div class="chat-content">
+          <ChatContainer
+            ref="chatRef"
+            :initial-prompt="prompt || ''"
+            @user-message-send-requested="handleMessageSent"
+            @input-clear="handleInputClear"
+            @input-update-state="handleInputUpdateState"
+            @input-focus="handleInputFocus"
+            @step-selected="handleStepSelected"
+            @sub-plan-step-selected="handleSubPlanStepSelected"
+          />
+        </div>
+
+        <!-- Input Area -->
+        <InputArea
+          ref="inputRef"
+          :disabled="isLoading"
+          :placeholder="isLoading ? '等待任务完成...' : t('input.placeholder')"
+          @send="handleSendMessage"
+          @clear="handleInputClear"
+          @focus="handleInputFocus"
+          @update-state="handleInputUpdateState"
+          @plan-mode-clicked="handlePlanModeClicked"
         />
       </div>
 
@@ -69,7 +85,8 @@ import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import Sidebar from '@/components/sidebar/index.vue'
 import RightPanel from '@/components/right-panel/index.vue'
-import PlanExecutionComponent from '@/components/plan-execution/index.vue'
+import ChatContainer from '@/components/chat/index.vue'
+import InputArea from '@/components/input/index.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { useTaskStore } from '@/stores/task'
@@ -82,7 +99,10 @@ const { t } = useI18n()
 const prompt = ref<string>('')
 const planExecutionRef = ref()
 const rightPanelRef = ref()
+const chatRef = ref()
+const inputRef = ref()
 const isExecutingPlan = ref(false)
+const isLoading = ref(false)
 
 // 面板宽度相关
 const leftPanelWidth = ref(50) // 左面板宽度百分比
@@ -195,19 +215,49 @@ const resetPanelSize = () => {
   localStorage.setItem('directPanelWidth', '50')
 }
 
-const handlePlanCompleted = (result: any) => {
-  console.log('[DirectView] Plan completed:', result)
-  // 处理计划完成事件
-}
-
-const handleDialogRoundStart = (planId: string, query: string) => {
-  console.log('[DirectView] Dialog round started:', planId, query)
-  // 处理对话轮次开始事件
-}
-
 const handleMessageSent = (message: string) => {
   console.log('[DirectView] Message sent:', message)
   // 处理消息发送事件
+}
+
+// 新增的事件处理函数
+const handleSendMessage = (message: string) => {
+  console.log('[DirectView] Send message from input:', message)
+  // 可以在这里调用API或其他处理逻辑
+}
+
+const handleInputClear = () => {
+  console.log('[DirectView] Input cleared')
+  if (inputRef.value && typeof inputRef.value.clear === 'function') {
+    inputRef.value.clear()
+  }
+}
+
+const handleInputFocus = () => {
+  console.log('[DirectView] Input focused')
+}
+
+const handleInputUpdateState = (enabled: boolean, placeholder?: string) => {
+  console.log('[DirectView] Input state updated:', enabled, placeholder)
+  isLoading.value = !enabled
+}
+
+const handleStepSelected = (planId: string, stepIndex: number) => {
+  console.log('[DirectView] Step selected:', planId, stepIndex)
+}
+
+const handleSubPlanStepSelected = (parentPlanId: string, subPlanId: string, stepIndex: number, subStepIndex: number) => {
+  console.log('[DirectView] Sub plan step selected:', {
+    parentPlanId,
+    subPlanId,
+    stepIndex,
+    subStepIndex
+  })
+}
+
+const handlePlanModeClicked = () => {
+  console.log('[DirectView] Plan mode button clicked')
+  // 可以在这里添加侧边栏切换等逻辑
 }
 
 const goBack = () => {
