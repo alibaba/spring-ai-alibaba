@@ -20,10 +20,10 @@
         <img src="/Java-AI.svg" alt="Java-AI" width="96" height="96" class="java-logo" />
       </div>
       <h1 class="error-code">404</h1>
-      <p class="error-message">页面未找到</p>
+      <p class="error-message">{{ $t('error.notFound') }}</p>
       <button class="back-button" @click="backHome">
         <Icon icon="carbon:arrow-left" />
-        返回首页
+        {{ $t('error.backToHome') }}
       </button>
     </div>
   </div>
@@ -32,8 +32,10 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const backHome = () => {
   router.push('/home')
