@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.example.deepresearch.rag.retriever;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.RrfRank;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
@@ -24,8 +23,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import org.elasticsearch.client.RestClient;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.document.Document;
@@ -35,13 +33,15 @@ import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.util.ObjectBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.springframework.ai.vectorstore.elasticsearch.SimilarityFunction.l2_norm;
@@ -113,13 +113,14 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 	public List<Document> retrieve(Query query) {
 		String text = query.text();
 		try {
-			return searchHybrid(text);
+			return search(text, true);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to execute hybrid search", ex);
 		}
 	}
 
+	//plan1
 	private List<Document> searchHybrid(String text) throws IOException {
 		float[] vector = embeddingModel.embed(text);
 		SearchResponse<Document> search = elasticsearchClient.search(sr -> sr.index(indexName)
@@ -143,6 +144,40 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 						)
 				, Document.class);
 		return search.hits().hits().stream().map(this::toDocument).collect(Collectors.toList());
+	}
+
+	private Builder buildHybridSearch(String text, Builder knnBuilder) {
+		// Build the hybrid search request with BM25 and rrf
+		return knnBuilder
+				.query(q -> q
+						.match(mq -> mq
+								.field("content")
+								.query(escape(text))
+								.boost(bm25Boost)))
+				.rank(r -> r.rrf(rrfk -> rrfk
+						.rankConstant((long) rrfK)
+						.rankWindowSize((long) windowSize)));
+	}
+
+	//plan2
+	public List<Document> search(String text, boolean hasHybrid) throws IOException {
+		float[] vector = embeddingModel.embed(text);
+		SearchResponse<Document> response = elasticsearchClient.search(sr -> {
+			Builder knnBuilder = sr.index(indexName)
+					.knn(knn -> knn
+							.queryVector(EmbeddingUtils.toList(vector))
+							.similarity(0.0f)
+							.k(windowSize)
+							.field("embedding")
+							.numCandidates(Math.max(windowSize * 2, 10))
+							.boost(knnBoost));
+			if (hasHybrid) {
+				return buildHybridSearch(text, knnBuilder);
+			}
+			return knnBuilder;
+		}, Document.class);
+
+		return response.hits().hits().stream().map(this::toDocument).collect(Collectors.toList());
 	}
 
 	private Document toDocument(Hit<Document> hit) {
