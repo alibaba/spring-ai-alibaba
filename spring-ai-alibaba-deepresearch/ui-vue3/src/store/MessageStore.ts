@@ -19,13 +19,18 @@
 import {defineStore} from "pinia";
 import {type MessageInfo, type SimpleType} from "ant-design-x-vue";
 import {type Ref} from 'vue'
+import { reactive } from "vue";
 type MsgType<Message> = {
     current: {
+        // 会话 id
+        convId: string|number|null,
         info: MessageInfo<Message | any>,
         // 是否候选, 是: 不显示在界面上
         candidate: boolean,
-        // 是否勾选了deepresearch
-        deepresearch: boolean,
+        // 是否勾选了 deepresearch
+        deepResearch: boolean,
+        // 是否展示研究细节
+        deepResearchDetail: boolean,
         // 记录ai内容的类型
         aiType: 'normal' | 'startDS' | 'onDS' | 'endDS',
     }
@@ -34,7 +39,8 @@ type MsgType<Message> = {
 }
 export const useMessageStore = <Message extends SimpleType>() => defineStore("messageStore", {
     state(): MsgType<Message> {
-        return {
+        return reactive({
+            convId: null,
             current: {
                 info: {
                     status: 'local',
@@ -42,11 +48,11 @@ export const useMessageStore = <Message extends SimpleType>() => defineStore("me
                     id: "0",
                 },
                 candidate: true,
-                deepresearch: true,
+                deepResearch: true,
                 aiType: 'normal',
             },
             history: []
-        }
+        })
     },
     getters: {},
     actions: {
@@ -69,20 +75,21 @@ export const useMessageStore = <Message extends SimpleType>() => defineStore("me
             }
         },
         startDeepResearch(){
-            if (this.current.deepresearch) {
-                this.msgs.push({
-                    id: 'local',
-                    message: '开始研究',
-                    status: 'local'
-                })
-                this.msgs.push({
-                    id: 'search',
-                    message: '正在研究中',
-                    status: 'researching'
-                })
-                this.current.aiType = 'onDS'
-            }
+
         },
+        nextAIType() {
+            console.log("nextAIType", this.current.aiType)
+            if(!this.current.aiType || this.current.aiType === 'normal') {
+                this.current.aiType = 'startDS'
+            }else if(this.current.aiType === 'startDS') {
+                this.current.aiType = 'onDS'
+            }else if(this.current.aiType === 'onDS') {
+                this.current.aiType = 'endDS'
+            }else {
+                this.current.aiType = 'normal'
+            }
+            console.log("nextAIType", this.current.aiType)
+        }
     },
     persist: true
 })()

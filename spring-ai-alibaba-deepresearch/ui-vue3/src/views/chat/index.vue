@@ -19,6 +19,7 @@
 
     <Flex class="body" gap="middle">
       <Flex class="chat" vertical gap="middle" flex="1" align="center">
+
         <div
             ref="scrollContainer"
             align="center"
@@ -39,6 +40,7 @@
           </div>
         </Flex>
         <div class="sender-wrapper">
+
           <sender
               class-name="sender"
               :autoSize="{minRows: 2, maxRows:3}"
@@ -86,7 +88,7 @@
                   <a-switch
                       un-checked-children="Deep Research"
                       checked-children="Deep Research"
-                      v-model:checked="deepResearchChecked"
+                      v-model:checked="current.deepResearch"
                   ></a-switch>
                 </Flex>
                 <Flex>
@@ -120,12 +122,17 @@
         </div>
       </Flex>
       <Flex class="aux"
-            v-if="deepResearchDetail"
+            v-if="current.deepResearchDetail"
             style="width: 60%"
             vertical>
         <a-card style="height: 100%">
           <template #title>
-            研究细节
+            <Flex justify="space-between">
+              研究细节
+              <Button type="text" @click="current.deepResearchDetail = false">
+                <CloseOutlined/>
+              </Button>
+            </Flex>
           </template>
           细节
         </a-card>
@@ -139,6 +146,7 @@
 <script setup lang="tsx">
 import {Button, Flex, Spin, theme} from 'ant-design-vue';
 import {
+  CloseOutlined,
   CopyOutlined,
   GlobalOutlined,
   LinkOutlined,
@@ -155,12 +163,8 @@ import {XStreamBody} from "@/utils/stream";
 import {ScrollController} from "@/utils/scroll";
 import {useAuthStore} from "@/store/AuthStore";
 import {useMessageStore} from "@/store/MessageStore";
-import useRefs from "ant-design-vue/es/_util/hooks/useRefs";
-import {storeToRefs} from "pinia";
 
 const uploadFileList = ref([])
-const deepResearchChecked = ref(true)
-const deepResearchDetail = ref(false)
 const {useToken} = theme;
 const {token} = useToken();
 const username = useAuthStore().token
@@ -189,20 +193,37 @@ const roles: BubbleListProps['roles'] = {
 };
 
 const messageStore = useMessageStore();
-const {current} = storeToRefs(messageStore);
+const {current} = messageStore
 const [agent] = useXAgent({
   request: async ({message}, {onSuccess, onUpdate, onError}) => {
+    if (!current.deepResearch) {
+      // todo 一般性请求
+      return
+    }
+    let content = '';
+    switch (current.aiType) {
+      case 'normal':
+        // todo 请求研究内容
+        senderLoading.value = true;
+        const xStreamBody = new XStreamBody(
+            "/stream",
+            {method: 'GET'}
+        );
+        await xStreamBody.readStream((chunk: any) => {
+          onUpdate(chunk);
+        })
+        content = xStreamBody.content()
+        break;
+      case 'startDS':
+        current.deepResearchDetail = true
+        // todo 请求开始研究
+        break
+    }
+    if (current.deepResearch) {
+      messageStore.nextAIType()
+    }
+    onSuccess(content)
 
-    senderLoading.value = true;
-    const xStreamBody = new XStreamBody(
-        "/stream" ,
-        {method: 'GET'}
-    );
-    await xStreamBody.readStream((chunk: any) => {
-      onUpdate(chunk);
-
-    })
-    onSuccess(xStreamBody.content())
   },
 });
 const {onRequest, messages} = useXChat({
@@ -216,44 +237,66 @@ const content = ref('');
 const senderLoading = ref(false);
 
 const submitHandle = (nextContent: any) => {
+  current.aiType = 'normal'
   onRequest(nextContent)
   content.value = ''
 }
 
 function startDeepResearch() {
-  messageStore.startDeepResearch()
-
+  // messageStore.startDeepResearch()
+  onRequest("开始研究")
 }
 
 function deepResearch() {
-  deepResearchDetail.value = !deepResearchDetail.value
+  current.deepResearchDetail = !current.deepResearchDetail
 }
 
-function parseMessage(status: MessageStatus, msg: any): any {
-  if (status == 'local') {
-    return msg
-  }
-  if (current.deepresearch) {
-    if (status == 'success') {
-      return (
-          <div>
-            <MD content={msg + status}/>
-            <Button onClick={deepResearch}>正在研究</Button>
-          </div>
-      )
-    }
-  }
+function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any {
 
-}
-
-function parseFooter(status: MessageStatus): any {
   switch (status) {
     case 'success':
-      return (<Flex gap="middle" class="bubble-footer">
-        <CopyOutlined/>
-        <ShareAltOutlined/>
-        <MoreOutlined/>
-      </Flex>)
+      if (!isCurrent) {
+        // todo 历史数据渲染
+        return (<MD content={msg}/>);
+      }
+      if (current.deepResearch) {
+        if (current.aiType === 'startDS') {
+          return (
+              <div>
+                <MD content={msg}/>
+                <Button
+                    type="primary"
+                    style="margin-left: auto; display: block"
+                    onClick={startDeepResearch}>开始研究</Button>
+              </div>
+          )
+        }
+        if (current.aiType === 'onDS') {
+          return (
+              <div>
+                <Button type="primary" onClick={deepResearch}>正在研究</Button>
+              </div>
+          )
+        }
+      }
+    default:
+      return msg;
+  }
+
+}
+
+function parseFooter(status: MessageStatus, isCurrent: boolean): any {
+  switch (status) {
+    case 'success':
+      return (<div class='bubble-footer'>
+        <Flex gap="middle"
+              class={isCurrent ? '' : 'toggle-bubble-footer'}
+        >
+          <CopyOutlined/>
+          <ShareAltOutlined/>
+          <MoreOutlined/>
+        </Flex>
+      </div>)
     default:
       return ''
   }
@@ -261,22 +304,12 @@ function parseFooter(status: MessageStatus): any {
 }
 
 const bubbleList = computed(() => {
-  return messages.value.map(({id, message, status}) => ({
+  const len = messages.value.length
+  return messages.value.map(({id, message, status}, idx) => ({
     key: id,
     role: status === 'local' ? 'local' : 'ai',
-    content: status === 'local' ? message : (
-        status === 'researching' ? (
-            <div>
-              <Button onClick={deepResearch}>正在研究</Button>
-            </div>
-        ) : (
-            <div>
-              <MD content={message + status}/>
-              {deepResearchChecked ? (<Button onClick={startDeepResearch}>开始研究</Button>) : ''}
-            </div>
-        )
-    ),
-    footer: parseFooter(status)
+    content: parseMessage(status, message, idx === len - 1),
+    footer: parseFooter(status, idx === len - 1)
   }))
 })
 
@@ -322,14 +355,25 @@ watch(() => messages.value, (o, n) => {
       max-height: calc(100vh - 280px);
     }
 
-    :deep(.bubble-footer) {
-      font-size: 18px;
-      font-weight: bolder;
-      padding-left: 16px;
+    :deep(.ant-bubble-content-wrapper) {
+      .bubble-footer {
+        font-size: 18px;
+        font-weight: bolder;
+        padding-left: 16px;
+
+        .toggle-bubble-footer {
+          display: none !important;
+        }
+      }
+    }
+    :deep(.ant-bubble-content-wrapper:hover .bubble-footer .toggle-bubble-footer) {
+      display: flex !important;
     }
 
     :deep(.ant-bubble) {
       &.ai .ant-bubble-content {
+        padding-right: 40px;
+        text-align: left;
         background: none !important;
         margin-top: -10px;
       }
