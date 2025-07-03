@@ -217,6 +217,74 @@
                       </div>
                     </div>
                   </div>
+
+                  <!-- 子执行计划部分 - 新增功能 -->
+                  <div v-if="tas.subPlanExecutionRecord" class="sub-plan-section">
+                    <h5><Icon icon="carbon:tree-view" /> 子执行计划</h5>
+                    <div class="sub-plan-content">
+                      <div class="sub-plan-header">
+                        <div class="sub-plan-info">
+                          <span class="label">子计划ID:</span>
+                          <span class="value">{{ tas.subPlanExecutionRecord.planId }}</span>
+                        </div>
+                        <div class="sub-plan-info" v-if="tas.subPlanExecutionRecord.title">
+                          <span class="label">标题:</span>
+                          <span class="value">{{ tas.subPlanExecutionRecord.title }}</span>
+                        </div>
+                        <div class="sub-plan-status">
+                          <Icon
+                            icon="carbon:checkmark-filled"
+                            v-if="tas.subPlanExecutionRecord.completed"
+                            class="status-icon success"
+                          />
+                          <Icon icon="carbon:in-progress" v-else class="status-icon progress" />
+                          <span class="status-text">
+                            {{ tas.subPlanExecutionRecord.completed ? '已完成' : '执行中' }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- 子计划的主要步骤 -->
+                      <div
+                        class="sub-plan-steps"
+                        v-if="tas.subPlanExecutionRecord.steps && tas.subPlanExecutionRecord.steps.length > 0"
+                      >
+                        <h6>主要步骤</h6>
+                        <div class="sub-plan-step-list">
+                          <div
+                            v-for="(subStep, subStepIndex) in tas.subPlanExecutionRecord.steps"
+                            :key="subStepIndex"
+                            class="sub-plan-step-item"
+                            :class="{
+                              completed: getSubStepStatus(tas.subPlanExecutionRecord, subStepIndex) === 'completed',
+                              current: getSubStepStatus(tas.subPlanExecutionRecord, subStepIndex) === 'current',
+                              pending: getSubStepStatus(tas.subPlanExecutionRecord, subStepIndex) === 'pending'
+                            }"
+                            @click="handleSubPlanStepClick(tas.subPlanExecutionRecord, subStepIndex)"
+                          >
+                            <div class="sub-step-indicator">
+                              <Icon
+                                icon="carbon:checkmark-filled"
+                                v-if="getSubStepStatus(tas.subPlanExecutionRecord, subStepIndex) === 'completed'"
+                                class="step-icon success"
+                              />
+                              <Icon
+                                icon="carbon:in-progress"
+                                v-else-if="getSubStepStatus(tas.subPlanExecutionRecord, subStepIndex) === 'current'"
+                                class="step-icon current"
+                              />
+                              <Icon icon="carbon:circle" v-else class="step-icon pending" />
+                              <span class="step-number">{{ subStepIndex + 1 }}</span>
+                            </div>
+                            <div class="sub-step-content">
+                              <span class="sub-step-title">{{ subStep }}</span>
+                              <span class="sub-step-badge">子步骤</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -229,6 +297,43 @@
               class="no-steps-message"
             >
               <p>暂无详细步骤信息</p>
+            </div>
+
+            <!-- 处理没有agentExecution的情况 -->
+            <div
+              v-else-if="!rightPanelStore.selectedStep.agentExecution"
+              class="no-execution-message"
+            >
+              <Icon icon="carbon:information" class="info-icon" />
+              <h4>步骤信息</h4>
+              <div class="step-basic-info">
+                <div class="info-item">
+                  <span class="label">步骤名称:</span>
+                  <span class="value">{{
+                    rightPanelStore.selectedStep.title ||
+                    rightPanelStore.selectedStep.description ||
+                    `步骤 ${rightPanelStore.selectedStep.index + 1}`
+                  }}</span>
+                </div>
+                <div class="info-item" v-if="rightPanelStore.selectedStep.description">
+                  <span class="label">描述:</span>
+                  <span class="value">{{ rightPanelStore.selectedStep.description }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">状态:</span>
+                  <span class="value" :class="{
+                    'status-completed': rightPanelStore.selectedStep.completed,
+                    'status-current': rightPanelStore.selectedStep.current,
+                    'status-pending': !rightPanelStore.selectedStep.completed && !rightPanelStore.selectedStep.current
+                  }">
+                    {{
+                      rightPanelStore.selectedStep.completed ? '已完成' :
+                      rightPanelStore.selectedStep.current ? '执行中' : '待执行'
+                    }}
+                  </span>
+                </div>
+              </div>
+              <p class="no-execution-hint">该步骤暂无详细执行信息</p>
             </div>
 
             <!-- 执行中的动态效果 -->
@@ -335,6 +440,45 @@ onUnmounted(() => {
   console.log('[RightPanel] Component unmounting, cleaning up...')
   rightPanelStore.cleanup()
 })
+
+// 获取子步骤状态
+const getSubStepStatus = (subPlan: any, stepIndex: number) => {
+  if (!subPlan) return 'pending'
+  
+  const currentStepIndex = subPlan.currentStepIndex
+  if (subPlan.completed) {
+    return 'completed'
+  }
+  
+  if (currentStepIndex === undefined || currentStepIndex === null) {
+    return stepIndex === 0 ? 'current' : 'pending'
+  }
+  
+  if (stepIndex < currentStepIndex) {
+    return 'completed'
+  } else if (stepIndex === currentStepIndex) {
+    return 'current'
+  } else {
+    return 'pending'
+  }
+}
+
+// 处理子计划步骤点击
+const handleSubPlanStepClick = (subPlan: any, stepIndex: number) => {
+  if (!subPlan || !subPlan.planId) {
+    console.warn('[RightPanel] Invalid sub-plan data:', subPlan)
+    return
+  }
+
+  console.log('[RightPanel] Sub-plan step clicked:', {
+    subPlanId: subPlan.planId,
+    stepIndex: stepIndex,
+    stepTitle: subPlan.steps?.[stepIndex]
+  })
+
+  // 使用 rightPanelStore 显示子计划的步骤详情
+  rightPanelStore.showStepDetails(subPlan.planId, stepIndex)
+}
 
 // 暴露给父组件的方法 - 仅保留必要的接口
 defineExpose({
@@ -634,6 +778,69 @@ defineExpose({
   }
 }
 
+.no-execution-message {
+  padding: 20px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  margin-top: 16px;
+
+  .info-icon {
+    color: #6c757d;
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  h4 {
+    margin: 0 0 16px 0;
+    color: #495057;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .step-basic-info {
+    .info-item {
+      display: flex;
+      margin-bottom: 8px;
+      font-size: 14px;
+
+      .label {
+        font-weight: 500;
+        color: #6c757d;
+        min-width: 80px;
+        margin-right: 8px;
+      }
+
+      .value {
+        color: #333;
+        flex: 1;
+
+        &.status-completed {
+          color: #28a745;
+          font-weight: 500;
+        }
+
+        &.status-current {
+          color: #007bff;
+          font-weight: 500;
+        }
+
+        &.status-pending {
+          color: #6c757d;
+        }
+      }
+    }
+  }
+
+  .no-execution-hint {
+    margin: 16px 0 0 0;
+    color: #6c757d;
+    font-style: italic;
+    font-size: 13px;
+    text-align: center;
+  }
+}
+
 .execution-indicator {
   margin-top: 20px;
   padding: 20px;
@@ -781,7 +988,8 @@ defineExpose({
   }
 
   .think-section,
-  .action-section {
+  .action-section,
+  .sub-plan-section {
     margin-bottom: 16px;
 
     &:last-child {
@@ -836,6 +1044,172 @@ defineExpose({
         line-height: 1.4;
         max-height: 200px;
         overflow-y: auto;
+      }
+    }
+  }
+
+  /* 子计划样式 */
+  .sub-plan-content {
+    .sub-plan-header {
+      background: rgba(102, 126, 234, 0.1);
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+
+      .sub-plan-info {
+        display: flex;
+        margin-bottom: 8px;
+        font-size: 12px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .label {
+          min-width: 80px;
+          font-weight: 600;
+          color: #888888;
+          flex-shrink: 0;
+        }
+
+        .value {
+          flex: 1;
+          color: #cccccc;
+          word-break: break-word;
+        }
+      }
+
+      .sub-plan-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+        .status-icon {
+          font-size: 14px;
+
+          &.success {
+            color: #27ae60;
+          }
+
+          &.progress {
+            color: #3498db;
+          }
+        }
+
+        .status-text {
+          color: #cccccc;
+          font-size: 12px;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .sub-plan-steps {
+      h6 {
+        color: #ffffff;
+        margin: 0 0 8px 0;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .sub-plan-step-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .sub-plan-step-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        &.completed {
+          background: rgba(39, 174, 96, 0.1);
+          border-color: rgba(39, 174, 96, 0.3);
+        }
+
+        &.current {
+          background: rgba(52, 152, 219, 0.1);
+          border-color: rgba(52, 152, 219, 0.3);
+          box-shadow: 0 0 8px rgba(52, 152, 219, 0.2);
+        }
+
+        &.pending {
+          opacity: 0.7;
+        }
+
+        .sub-step-indicator {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+
+          .step-icon {
+            font-size: 12px;
+
+            &.success {
+              color: #27ae60;
+            }
+
+            &.current {
+              color: #3498db;
+            }
+
+            &.pending {
+              color: #666666;
+            }
+          }
+
+          .step-number {
+            font-size: 11px;
+            color: #888888;
+            font-weight: 500;
+            min-width: 16px;
+            text-align: center;
+          }
+        }
+
+        .sub-step-content {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          min-width: 0;
+
+          .sub-step-title {
+            color: #cccccc;
+            font-size: 13px;
+            line-height: 1.4;
+            word-break: break-word;
+            flex: 1;
+          }
+
+          .sub-step-badge {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 500;
+            flex-shrink: 0;
+            margin-left: 8px;
+          }
+        }
       }
     }
   }

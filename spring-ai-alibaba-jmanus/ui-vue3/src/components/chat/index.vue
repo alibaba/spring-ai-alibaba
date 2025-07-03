@@ -141,6 +141,47 @@
                       </div>
                     </div>
 
+                    <!-- 子计划步骤 - 新增功能 -->
+                    <div
+                      v-if="getSubPlanSteps(message, index)?.length > 0"
+                      class="sub-plan-steps"
+                    >
+                      <div class="sub-plan-header">
+                        <Icon icon="carbon:tree-view" class="sub-plan-icon" />
+                        <span class="sub-plan-title">子执行计划</span>
+                      </div>
+                      <div class="sub-plan-step-list">
+                        <div
+                          v-for="(subStep, subStepIndex) in getSubPlanSteps(message, index)"
+                          :key="`sub-${index}-${subStepIndex}`"
+                          class="sub-plan-step-item"
+                          :class="{
+                            completed: getSubPlanStepStatus(message, index, subStepIndex) === 'completed',
+                            current: getSubPlanStepStatus(message, index, subStepIndex) === 'current',
+                            pending: getSubPlanStepStatus(message, index, subStepIndex) === 'pending'
+                          }"
+                          @click.stop="handleSubPlanStepClick(message, index, subStepIndex)"
+                        >
+                          <div class="sub-step-indicator">
+                            <span class="sub-step-icon">
+                              {{
+                                getSubPlanStepStatus(message, index, subStepIndex) === 'completed'
+                                  ? '✓'
+                                  : getSubPlanStepStatus(message, index, subStepIndex) === 'current'
+                                    ? '▶'
+                                    : '○'
+                              }}
+                            </span>
+                            <span class="sub-step-number">{{ subStepIndex + 1 }}</span>
+                          </div>
+                          <div class="sub-step-content">
+                            <span class="sub-step-title">{{ subStep }}</span>
+                            <span class="sub-step-badge">子步骤</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <!-- 用户输入表单 -->
                     <div
                       v-if="message.userInputWaitState && index === message.currentStepIndex"
@@ -344,6 +385,10 @@ interface Message {
     }>
   }
   genericInput?: string
+  agentExecution?: {
+    thinkActSteps?: any[]
+    agentExecutionSequence?: any[]
+  }
 }
 
 interface Props {
@@ -378,7 +423,6 @@ const messagesRef = ref<HTMLElement>()
 const isLoading = ref(false)
 const messages = ref<Message[]>([])
 const currentPlanId = ref<string>()
-const currentExecutionId = ref<string>()
 const pollingInterval = ref<number>()
 const showScrollToBottom = ref(false)
 
@@ -546,80 +590,11 @@ const generateErrorResponse = (error: any): string => {
   return `抱歉，处理您的请求时遇到了一些问题（${errorMsg}）。请稍后再试，或者换个方式表达您的需求，我会尽力帮助您的。`
 }
 
-const startExecutionPolling = (planId: string, executionId: string) => {
-  if (pollingInterval.value) {
-    clearInterval(pollingInterval.value)
-  }
-
-  pollingInterval.value = window.setInterval(async () => {
-    try {
-      // 获取计划详情来检查执行状态
-      const details = await CommonApiService.getDetails(planId)
-
-      if (details) {
-        updateExecutionProgress(details)
-
-        // 检查是否完成
-        if (details.completed || details.status === 'completed') {
-          clearInterval(pollingInterval.value!)
-          pollingInterval.value = undefined
-
-          updateLastMessage({
-            progress: 100,
-            progressText: '执行完成！',
-            content: details.summary || '计划执行完成',
-            steps: details.steps,
-          })
-
-          emit('plan-completed', details)
-        }
-      }
-    } catch (error: any) {
-      console.error('Polling error:', error)
-      // 继续轮询，不中断
-    }
-  }, 2000) // 每2秒轮询一次
-}
-
-const updateExecutionProgress = (details: any) => {
-  if (!details.steps || !Array.isArray(details.steps)) return
-
-  const totalSteps = details.steps.length
-  const currentStep = details.currentStepIndex || 0
-  const progress = Math.min(Math.round((currentStep / totalSteps) * 80) + 20, 95) // 20-95%
-
-  let progressText = `执行步骤 ${currentStep + 1}/${totalSteps}`
-  if (details.steps[currentStep]) {
-    progressText += `: ${details.steps[currentStep].title || details.steps[currentStep].description || ''}`
-  }
-
-  updateLastMessage({
-    progress,
-    progressText,
-    steps: details.steps,
-    currentStepIndex: currentStep,
-  })
-}
-
 const getStepStatus = (stepIndex: number, currentStepIndex?: number) => {
   if (currentStepIndex === undefined) return 'pending'
   if (stepIndex < currentStepIndex) return 'completed'
   if (stepIndex === currentStepIndex) return 'current'
   return 'pending'
-}
-
-const getStepStatusText = (stepIndex: number, currentStepIndex?: number) => {
-  const status = getStepStatus(stepIndex, currentStepIndex)
-  switch (status) {
-    case 'completed':
-      return '已完成'
-    case 'current':
-      return '执行中'
-    case 'pending':
-      return '待执行'
-    default:
-      return '待执行'
-  }
 }
 
 const scrollToBottom = (force = false) => {
@@ -700,10 +675,196 @@ const handleStepClick = (message: Message, stepIndex: number) => {
     planId: message.planId,
     stepIndex: stepIndex,
     stepTitle: message.steps?.[stepIndex]?.title || message.steps?.[stepIndex],
+    hasAgentExecution: !!message.agentExecution,
+    agentExecutionSequenceLength: message.agentExecution?.agentExecutionSequence?.length
   })
 
-  // 直接使用right-panel store显示步骤详情，替代emit事件
+  // 确保right-panel store有完整的计划数据，包括agentExecution信息
+  if (message.agentExecution) {
+    console.log('[ChatComponent] Updating plan data for right panel with agentExecution')
+    
+    // 检查当前步骤是否有执行数据
+    const agentExecution = message.agentExecution.agentExecutionSequence?.[stepIndex]
+    console.log(`[ChatComponent] Agent execution for step ${stepIndex}:`, {
+      hasAgentExecution: !!agentExecution,
+      agentName: agentExecution?.agentName,
+      hasThinkActSteps: !!agentExecution?.thinkActSteps,
+      thinkActStepsLength: agentExecution?.thinkActSteps?.length,
+      isCompleted: agentExecution?.isCompleted
+    })
+    
+    rightPanelStore.handlePlanUpdate({
+      planId: message.planId,
+      steps: message.steps,
+      agentExecutionSequence: message.agentExecution.agentExecutionSequence,
+      currentStepIndex: message.currentStepIndex,
+      completed: message.progress === 100
+    })
+  } else {
+    console.warn('[ChatComponent] No agentExecution data available for this message')
+    // 即使没有agentExecution，也要更新基本的计划信息
+    rightPanelStore.handlePlanUpdate({
+      planId: message.planId,
+      steps: message.steps,
+      agentExecutionSequence: [],
+      currentStepIndex: message.currentStepIndex,
+      completed: message.progress === 100
+    })
+  }
+
+  // 显示步骤详情
   rightPanelStore.showStepDetails(message.planId, stepIndex)
+}
+
+// 获取子计划步骤 - 新增功能
+const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
+  try {
+    // 从agentExecutionSequence中查找子计划
+    const agentExecutionSequence = message.agentExecution?.agentExecutionSequence
+    if (!agentExecutionSequence || !Array.isArray(agentExecutionSequence)) {
+      console.log('[ChatComponent] No agentExecutionSequence found')
+      return []
+    }
+
+    // 获取对应步骤的agentExecution
+    const agentExecution = agentExecutionSequence[stepIndex]
+    if (!agentExecution || !agentExecution.thinkActSteps) {
+      console.log(`[ChatComponent] No agentExecution or thinkActSteps found for step ${stepIndex}`)
+      return []
+    }
+
+    // 查找thinkActSteps中是否有子计划
+    for (const thinkActStep of agentExecution.thinkActSteps) {
+      if (thinkActStep && thinkActStep.subPlanExecutionRecord) {
+        console.log(`[ChatComponent] Found sub-plan for step ${stepIndex}:`, thinkActStep.subPlanExecutionRecord)
+        return thinkActStep.subPlanExecutionRecord.steps || []
+      }
+    }
+
+    return []
+  } catch (error) {
+    console.warn('[ChatComponent] Error getting sub-plan steps:', error)
+    return []
+  }
+}
+
+// 获取子计划步骤状态 - 新增功能
+const getSubPlanStepStatus = (message: Message, stepIndex: number, subStepIndex: number): string => {
+  try {
+    const agentExecutionSequence = message.agentExecution?.agentExecutionSequence
+    if (!agentExecutionSequence || !Array.isArray(agentExecutionSequence)) {
+      return 'pending'
+    }
+
+    const agentExecution = agentExecutionSequence[stepIndex]
+    if (!agentExecution || !agentExecution.thinkActSteps) {
+      return 'pending'
+    }
+
+    // 查找thinkActSteps中的子计划
+    let subPlan = null
+    for (const thinkActStep of agentExecution.thinkActSteps) {
+      if (thinkActStep && thinkActStep.subPlanExecutionRecord) {
+        subPlan = thinkActStep.subPlanExecutionRecord
+        break
+      }
+    }
+
+    if (!subPlan) {
+      return 'pending'
+    }
+
+    const currentStepIndex = subPlan.currentStepIndex
+    if (subPlan.completed) {
+      return 'completed'
+    }
+
+    if (currentStepIndex === undefined || currentStepIndex === null) {
+      return subStepIndex === 0 ? 'current' : 'pending'
+    }
+
+    if (subStepIndex < currentStepIndex) {
+      return 'completed'
+    } else if (subStepIndex === currentStepIndex) {
+      return 'current'
+    } else {
+      return 'pending'
+    }
+  } catch (error) {
+    console.warn('[ChatComponent] Error getting sub-plan step status:', error)
+    return 'pending'
+  }
+}
+
+// 处理子计划步骤点击 - 新增功能
+const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepIndex: number) => {
+  try {
+    const agentExecutionSequence = message.agentExecution?.agentExecutionSequence
+    if (!agentExecutionSequence || !Array.isArray(agentExecutionSequence)) {
+      console.warn('[ChatComponent] No agentExecutionSequence data for sub-plan step click')
+      return
+    }
+
+    const agentExecution = agentExecutionSequence[stepIndex]
+    if (!agentExecution || !agentExecution.thinkActSteps) {
+      console.warn('[ChatComponent] No agentExecution or thinkActSteps for step click')
+      return
+    }
+
+    // 查找thinkActSteps中的子计划
+    let subPlan = null
+    for (const thinkActStep of agentExecution.thinkActSteps) {
+      if (thinkActStep && thinkActStep.subPlanExecutionRecord) {
+        subPlan = thinkActStep.subPlanExecutionRecord
+        break
+      }
+    }
+
+    if (!subPlan || !subPlan.planId) {
+      console.warn('[ChatComponent] No sub-plan data for step click')
+      return
+    }
+
+    console.log('[ChatComponent] Sub-plan step clicked:', {
+      parentPlanId: message.planId,
+      subPlanId: subPlan.planId,
+      stepIndex: stepIndex,
+      subStepIndex: subStepIndex,
+      subStepTitle: subPlan.steps?.[subStepIndex],
+      hasSubPlanAgentExecution: !!subPlan.agentExecutionSequence,
+      subPlanAgentExecutionLength: subPlan.agentExecutionSequence?.length
+    })
+
+    // 构造子计划数据，确保包含必要的执行信息
+    const subPlanData = {
+      planId: subPlan.planId,
+      steps: subPlan.steps || [],
+      agentExecutionSequence: subPlan.agentExecutionSequence || [],
+      currentStepIndex: subPlan.currentStepIndex || 0,
+      completed: subPlan.completed || false
+    }
+
+    // 如果子计划没有agentExecutionSequence，尝试从父计划推断
+    if (!subPlanData.agentExecutionSequence.length && subPlan.steps?.length) {
+      console.log('[ChatComponent] Sub-plan missing agentExecutionSequence, creating placeholder data')
+      // 为每个步骤创建占位符执行数据
+      subPlanData.agentExecutionSequence = subPlan.steps.map((step: any, index: number) => ({
+        agentName: 'SubPlanAgent',
+        agentDescription: `Sub-plan step ${index + 1}`,
+        agentRequest: typeof step === 'string' ? step : step.title || step.description,
+        isCompleted: index < (subPlan.currentStepIndex || 0),
+        thinkActSteps: []
+      }))
+    }
+
+    console.log('[ChatComponent] Updating sub-plan data for right panel:', subPlanData)
+    rightPanelStore.handlePlanUpdate(subPlanData)
+
+    // 使用right-panel store显示子计划的步骤详情
+    rightPanelStore.showStepDetails(subPlan.planId, subStepIndex)
+  } catch (error) {
+    console.error('[ChatComponent] Error handling sub-plan step click:', error)
+  }
 }
 
 // 旧的handlePlanUpdate函数已移除，保留计算进度和更新步骤动作的函数
@@ -994,6 +1155,12 @@ const handlePlanUpdate = (planDetails: any) => {
       '[ChatComponent] 发现执行序列数据，数量:',
       planDetails.agentExecutionSequence.length
     )
+
+    // 设置agentExecution数据以供子计划显示使用
+    // 保持与步骤的对应关系：每个步骤对应一个agentExecution
+    message.agentExecution = {
+      agentExecutionSequence: planDetails.agentExecutionSequence
+    }
 
     // 调用updateStepActions更新步骤动作信息
     updateStepActions(message, planDetails)
@@ -1869,6 +2036,126 @@ defineExpose({
               max-height: 120px;
               overflow-y: auto;
               color: #bbbbbb;
+            }
+          }
+        }
+      }
+
+      /* 子计划步骤样式 - 新增功能 */
+      .sub-plan-steps {
+        margin-top: 8px;
+        padding: 8px 16px;
+        background: rgba(102, 126, 234, 0.05);
+        border-top: 1px solid rgba(102, 126, 234, 0.2);
+
+        .sub-plan-header {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 8px;
+
+          .sub-plan-icon {
+            font-size: 14px;
+            color: #667eea;
+          }
+
+          .sub-plan-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #667eea;
+          }
+        }
+
+        .sub-plan-step-list {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .sub-plan-step-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 8px;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          margin-left: 20px; /* 缩进显示父子关系 */
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(102, 126, 234, 0.3);
+          }
+
+          &.completed {
+            background: rgba(34, 197, 94, 0.05);
+            border-color: rgba(34, 197, 94, 0.2);
+          }
+
+          &.current {
+            background: rgba(102, 126, 234, 0.05);
+            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow: 0 0 4px rgba(102, 126, 234, 0.2);
+          }
+
+          &.pending {
+            opacity: 0.6;
+          }
+
+          .sub-step-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+
+            .sub-step-icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 16px;
+              height: 16px;
+              background: rgba(102, 126, 234, 0.1);
+              border-radius: 50%;
+              font-size: 10px;
+              font-weight: bold;
+              color: #667eea;
+            }
+
+            .sub-step-number {
+              font-size: 10px;
+              color: #888888;
+              font-weight: 500;
+              min-width: 12px;
+              text-align: center;
+            }
+          }
+
+          .sub-step-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 0;
+
+            .sub-step-title {
+              color: #cccccc;
+              font-size: 12px;
+              line-height: 1.3;
+              word-break: break-word;
+              flex: 1;
+            }
+
+            .sub-step-badge {
+              background: rgba(102, 126, 234, 0.15);
+              color: #667eea;
+              font-size: 9px;
+              padding: 1px 4px;
+              border-radius: 8px;
+              font-weight: 500;
+              flex-shrink: 0;
+              margin-left: 6px;
             }
           }
         }

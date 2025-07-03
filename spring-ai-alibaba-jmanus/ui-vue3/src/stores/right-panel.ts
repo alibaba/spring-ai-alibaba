@@ -158,6 +158,23 @@ public class UserController {
     planDataMap.value.set(planData.planId, planData)
     console.log('[RightPanelStore] Plan data updated to planDataMap:', planData.planId)
 
+    // Process sub-plan data from agentExecutionSequence if exists
+    if (planData.agentExecutionSequence) {
+      planData.agentExecutionSequence.forEach((agentExecution: any, agentIndex: number) => {
+        if (agentExecution.thinkActSteps) {
+          agentExecution.thinkActSteps.forEach((thinkActStep: any, stepIndex: number) => {
+            if (thinkActStep.subPlanExecutionRecord) {
+              const subPlanId = thinkActStep.subPlanExecutionRecord.planId
+              if (subPlanId) {
+                console.log(`[RightPanelStore] Processing sub-plan from agent ${agentIndex}, step ${stepIndex}:`, subPlanId)
+                planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
+              }
+            }
+          })
+        }
+      })
+    }
+
     // If currently selected step corresponds to this plan, reload step details
     if (selectedStep.value?.planId === planData.planId) {
       console.log('[RightPanelStore] Refresh details of currently selected step:', selectedStep.value.index)
@@ -185,10 +202,19 @@ public class UserController {
 
     if (!planData || !planData.steps || stepIndex >= planData.steps.length) {
       selectedStep.value = null
-      console.log('[RightPanelStore] Invalid step data:', {
+      console.warn('[RightPanelStore] Invalid step data:', {
         planId,
         stepIndex,
+        hasPlanData: !!planData,
         hasSteps: !!planData?.steps,
+        stepsLength: planData?.steps?.length,
+        planDataKeys: Array.from(planDataMap.value.keys()),
+        availablePlansData: Array.from(planDataMap.value.entries()).map(([key, value]) => ({
+          planId: key,
+          stepsCount: value.steps?.length || 0,
+          hasAgentExecution: !!value.agentExecutionSequence,
+          agentExecutionLength: value.agentExecutionSequence?.length || 0
+        }))
       })
       stopAutoRefresh() // Stop auto refresh
       return
@@ -198,6 +224,17 @@ public class UserController {
     const step = planData.steps[stepIndex]
     const agentExecution =
       planData.agentExecutionSequence && planData.agentExecutionSequence[stepIndex]
+
+    console.log('[RightPanelStore] Step data details:', {
+      planId,
+      stepIndex,
+      step,
+      hasAgentExecutionSequence: !!planData.agentExecutionSequence,
+      agentExecutionSequenceLength: planData.agentExecutionSequence?.length,
+      agentExecution,
+      hasThinkActSteps: !!agentExecution?.thinkActSteps,
+      thinkActStepsLength: agentExecution?.thinkActSteps?.length
+    })
 
     // Determine if step is completed - multiple condition checks
     const isStepCompleted =
@@ -234,6 +271,46 @@ public class UserController {
       planCurrentStep: planData.currentStepIndex,
       planCompleted: planData.completed,
     })
+
+    // Process sub-plan data if exists
+    if (agentExecution?.thinkActSteps) {
+      agentExecution.thinkActSteps.forEach((thinkActStep: any, index: number) => {
+        if (thinkActStep.subPlanExecutionRecord) {
+          console.log(`[RightPanelStore] Found sub-plan in thinkActStep ${index}:`, thinkActStep.subPlanExecutionRecord)
+          
+          const subPlanId = thinkActStep.subPlanExecutionRecord.planId
+          
+          // Critical fix: Check for ID conflicts between main plan and sub-plan
+          if (subPlanId === planId) {
+            console.error(`[RightPanelStore] CRITICAL ERROR: Sub-plan ID "${subPlanId}" is identical to parent plan ID "${planId}". This will cause data corruption!`)
+            console.error('[RightPanelStore] Sub-plan data:', thinkActStep.subPlanExecutionRecord)
+            console.error('[RightPanelStore] Parent plan data:', planData)
+            
+            // Generate a unique sub-plan ID to prevent collision
+            const uniqueSubPlanId = `${subPlanId}_sub_${stepIndex}_${index}_${Date.now()}`
+            console.warn(`[RightPanelStore] Auto-correcting sub-plan ID from "${subPlanId}" to "${uniqueSubPlanId}"`)
+            
+            // Update the sub-plan record with the corrected ID
+            const correctedSubPlan = { ...thinkActStep.subPlanExecutionRecord, planId: uniqueSubPlanId }
+            planDataMap.value.set(uniqueSubPlanId, correctedSubPlan)
+            
+            // Also update the original record to prevent future issues
+            thinkActStep.subPlanExecutionRecord.planId = uniqueSubPlanId
+          } else if (subPlanId && !planDataMap.value.has(subPlanId)) {
+            // Normal case: sub-plan has unique ID
+            console.log(`[RightPanelStore] Storing sub-plan with unique ID: ${subPlanId}`)
+            planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
+          } else if (subPlanId && planDataMap.value.has(subPlanId)) {
+            // Sub-plan ID already exists, check if it's the same plan or different
+            const existingPlan = planDataMap.value.get(subPlanId)
+            if (existingPlan && existingPlan !== thinkActStep.subPlanExecutionRecord) {
+              console.warn(`[RightPanelStore] Sub-plan ID "${subPlanId}" already exists with different data. Updating with latest data.`)
+              planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
+            }
+          }
+        }
+      })
+    }
 
     // If step is not completed and plan is still executing, start auto refresh
     if (

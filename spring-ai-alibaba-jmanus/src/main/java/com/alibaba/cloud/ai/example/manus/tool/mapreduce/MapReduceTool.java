@@ -626,6 +626,10 @@ public class MapReduceTool implements ToolCallBiFunctionDef<MapReduceTool.MapRed
 			if (sharedStateManager != null) {
 				sharedStateManager.setLastOperationResult(planId, resultStr);
 			}
+			
+			// Mark that split data operation has completed, allowing termination
+			this.mapOutputRecorded = true;
+			
 			return new ToolExecuteResult(resultStr);
 
 		}

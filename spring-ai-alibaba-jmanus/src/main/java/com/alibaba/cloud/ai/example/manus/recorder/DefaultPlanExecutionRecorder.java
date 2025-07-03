@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -29,6 +31,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
+
+	private static final Logger logger = LoggerFactory.getLogger(DefaultPlanExecutionRecorder.class);
 
 	private final Map<String, PlanExecutionRecord> planRecords = new ConcurrentHashMap<>();
 
@@ -69,7 +73,18 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 		if (thinkActRecordId == null) {
 			// This is a main plan
 			if (createIfNotExists) {
-				return planRecords.computeIfAbsent(planId, id -> new PlanExecutionRecord(id));
+				PlanExecutionRecord mainPlan = planRecords.computeIfAbsent(planId, id -> {
+					logger.info("Creating main plan with ID: {}", id);
+					return new PlanExecutionRecord(id);
+				});
+				
+				// Additional validation for main plan
+				if (!mainPlan.getPlanId().equals(planId)) {
+					logger.error("CRITICAL ERROR: Main plan ID mismatch. Expected: {}, Actual: {}", planId, mainPlan.getPlanId());
+					throw new RuntimeException("Main plan ID mismatch");
+				}
+				
+				return mainPlan;
 			} else {
 				return planRecords.get(planId);
 			}
@@ -79,8 +94,19 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 			if (thinkActRecord != null) {
 				PlanExecutionRecord subPlan = thinkActRecord.getSubPlanExecutionRecord();
 				if (subPlan == null && createIfNotExists) {
-					// Create new sub-plan if it doesn't exist
-					String subPlanId = planId + "_sub_" + thinkActRecordId + "_" + System.currentTimeMillis();
+					// Create new sub-plan if it doesn't exist with unique ID
+					// Use UUID to ensure absolute uniqueness and avoid any collision with parent plan ID
+					String subPlanId;
+					int retryCount = 0;
+					do {
+						subPlanId = "sub_" + planId + "_" + thinkActRecordId + "_" + System.nanoTime() + "_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+						retryCount++;
+						// Safety check to prevent infinite loop
+						if (retryCount > 10) {
+							throw new RuntimeException("Failed to generate unique sub-plan ID after 10 attempts");
+						}
+					} while (planRecords.containsKey(subPlanId) || subPlanId.equals(planId));
+					
 					subPlan = new PlanExecutionRecord(subPlanId);
 					// Set parent plan information
 					subPlan.setParentPlanId(planId);
@@ -89,6 +115,16 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 					thinkActRecord.recordSubPlanExecution(subPlan);
 					// Also register the sub-plan in the main planRecords for direct access
 					planRecords.put(subPlan.getPlanId(), subPlan);
+					
+					// Add logging to ensure unique sub-plan ID generation
+					logger.info("Created sub-plan with unique ID: {} for parent plan: {}, thinkActRecordId: {}", 
+						subPlanId, planId, thinkActRecordId);
+						
+					// Additional validation
+					if (subPlanId.equals(planId)) {
+						logger.error("CRITICAL ERROR: Sub-plan ID {} is identical to parent plan ID {}", subPlanId, planId);
+						throw new RuntimeException("Sub-plan ID cannot be identical to parent plan ID");
+					}
 				}
 				return subPlan;
 			}
