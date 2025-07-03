@@ -19,11 +19,11 @@
       <div class="preview-tabs">
         <!-- 只显示 details 按钮，临时注释掉 chat 和 code 按钮 -->
         <button
-          v-for="tab in rightPanelStore.previewTabs.filter(t => t.id === 'details')"
+          v-for="tab in previewTabs.filter(t => t.id === 'details')"
           :key="tab.id"
           class="tab-button"
-          :class="{ active: rightPanelStore.activeTab === tab.id }"
-          @click="rightPanelStore.switchTab(tab.id)"
+          :class="{ active: activeTab === tab.id }"
+          @click="switchTab(tab.id)"
         >
           <Icon :icon="tab.icon" />
           {{ tab.name }}
@@ -45,15 +45,15 @@
       <div class="preview-actions">
         <button
           class="action-button"
-          @click="rightPanelStore.copyCode"
-          v-if="rightPanelStore.activeTab === 'code'"
+          @click="copyCode"
+          v-if="activeTab === 'code'"
         >
           <Icon icon="carbon:copy" />
         </button>
         <button
           class="action-button"
-          @click="rightPanelStore.downloadCode"
-          v-if="rightPanelStore.activeTab === 'code'"
+          @click="downloadCode"
+          v-if="activeTab === 'code'"
         >
           <Icon icon="carbon:download" />
         </button>
@@ -62,10 +62,10 @@
 
     <div class="preview-content">
       <!-- Code Preview -->
-      <div v-if="rightPanelStore.activeTab === 'code'" class="code-preview">
+      <div v-if="activeTab === 'code'" class="code-preview">
         <MonacoEditor
-          v-model="rightPanelStore.codeContent"
-          :language="rightPanelStore.codeLanguage"
+          v-model="codeContent"
+          :language="codeLanguage"
           :theme="'vs-dark'"
           :height="'100%'"
           :readonly="true"
@@ -78,10 +78,10 @@
       </div>
 
       <!-- Chat Preview -->
-      <div v-else-if="rightPanelStore.activeTab === 'chat'" class="chat-preview">
+      <div v-else-if="activeTab === 'chat'" class="chat-preview">
         <div class="chat-bubbles">
           <div
-            v-for="bubble in rightPanelStore.chatBubbles"
+            v-for="bubble in chatBubbles"
             :key="bubble.id"
             class="chat-bubble"
             :class="bubble.type"
@@ -99,41 +99,41 @@
       </div>
 
       <!-- Step Execution Details -->
-      <div v-else-if="rightPanelStore.activeTab === 'details'" class="step-details">
-        <!-- 固定顶部的步骤基本信息 -->
-        <div v-if="rightPanelStore.selectedStep" class="step-info-fixed">
+      <div v-else-if="activeTab === 'details'" class="step-details">
+        <!-- Fixed top step basic information -->
+        <div v-if="selectedStep" class="step-info-fixed">
           <h3>
             {{
-              rightPanelStore.selectedStep.title ||
-              rightPanelStore.selectedStep.description ||
-              `步骤 ${rightPanelStore.selectedStep.index + 1}`
+              selectedStep.title ||
+              selectedStep.description ||
+              `步骤 ${selectedStep.index + 1}`
             }}
           </h3>
 
-          <div class="agent-info" v-if="rightPanelStore.selectedStep.agentExecution">
+          <div class="agent-info" v-if="selectedStep.agentExecution">
             <div class="info-item">
               <span class="label">执行智能体:</span>
-              <span class="value">{{ rightPanelStore.selectedStep.agentExecution.agentName }}</span>
+              <span class="value">{{ selectedStep.agentExecution.agentName }}</span>
             </div>
             <div class="info-item">
               <span class="label">描述:</span>
               <span class="value">{{
-                rightPanelStore.selectedStep.agentExecution.agentDescription || ''
+                selectedStep.agentExecution.agentDescription || ''
               }}</span>
             </div>
             <div class="info-item">
               <span class="label">请求:</span>
               <span class="value">{{
-                rightPanelStore.selectedStep.agentExecution.agentRequest || ''
+                selectedStep.agentExecution.agentRequest || ''
               }}</span>
             </div>
             <div class="info-item">
               <span class="label">执行结果:</span>
               <span
                 class="value"
-                :class="{ success: rightPanelStore.selectedStep.agentExecution.isCompleted }"
+                :class="{ success: selectedStep.agentExecution.isCompleted }"
               >
-                {{ rightPanelStore.selectedStep.agentExecution.result || '执行中...' }}
+                {{ selectedStep.agentExecution.result || '执行中...' }}
               </span>
             </div>
           </div>
@@ -142,38 +142,38 @@
             <div class="status-item">
               <Icon
                 icon="carbon:checkmark-filled"
-                v-if="rightPanelStore.selectedStep.completed"
+                v-if="selectedStep.completed"
                 class="status-icon success"
               />
               <Icon
                 icon="carbon:in-progress"
-                v-else-if="rightPanelStore.selectedStep.current"
+                v-else-if="selectedStep.current"
                 class="status-icon progress"
               />
               <Icon icon="carbon:time" v-else class="status-icon pending" />
               <span class="status-text">
-                {{ rightPanelStore.stepStatusText }}
+                {{ stepStatusText }}
               </span>
             </div>
           </div>
         </div>
 
-        <!-- 可滚动的详细内容区域 -->
+        <!-- Scrollable detailed content area -->
         <div
           ref="scrollContainer"
           class="step-details-scroll-container"
-          @scroll="rightPanelStore.checkScrollState"
+          @scroll="checkScrollState"
         >
-          <div v-if="rightPanelStore.selectedStep">
-            <!-- 思考与行动步骤 -->
+          <div v-if="selectedStep">
+            <!-- Think and action steps -->
             <div
               class="think-act-steps"
-              v-if="rightPanelStore.selectedStep.agentExecution?.thinkActSteps?.length > 0"
+              v-if="selectedStep.agentExecution?.thinkActSteps?.length > 0"
             >
               <h4>思考与行动步骤</h4>
               <div class="steps-container">
                 <div
-                  v-for="(tas, index) in rightPanelStore.selectedStep.agentExecution.thinkActSteps"
+                  v-for="(tas, index) in selectedStep.agentExecution.thinkActSteps"
                   :key="index"
                   class="think-act-step"
                 >
@@ -184,22 +184,22 @@
                     }}</span>
                   </div>
 
-                  <!-- 思考部分 - 严格按照 right-sidebar.js 的逻辑 -->
+                  <!-- Think section - strictly follow right-sidebar.js logic -->
                   <div class="think-section">
                     <h5><Icon icon="carbon:thinking" /> 思考</h5>
                     <div class="think-content">
                       <div class="input">
                         <span class="label">输入:</span>
-                        <pre>{{ rightPanelStore.formatJson(tas.thinkInput) }}</pre>
+                        <pre>{{ formatJson(tas.thinkInput) }}</pre>
                       </div>
                       <div class="output">
                         <span class="label">输出:</span>
-                        <pre>{{ rightPanelStore.formatJson(tas.thinkOutput) }}</pre>
+                        <pre>{{ formatJson(tas.thinkOutput) }}</pre>
                       </div>
                     </div>
                   </div>
 
-                  <!-- 行动部分 - 严格按照 right-sidebar.js 的逻辑 -->
+                  <!-- Action section - strictly follow right-sidebar.js logic -->
                   <div v-if="tas.actionNeeded" class="action-section">
                     <h5><Icon icon="carbon:play" /> 行动</h5>
                     <div class="action-content">
@@ -209,11 +209,11 @@
                       </div>
                       <div class="input">
                         <span class="label">工具参数:</span>
-                        <pre>{{ rightPanelStore.formatJson(tas.toolParameters) }}</pre>
+                        <pre>{{ formatJson(tas.toolParameters) }}</pre>
                       </div>
                       <div class="output">
                         <span class="label">执行结果:</span>
-                        <pre>{{ rightPanelStore.formatJson(tas.actionResult) }}</pre>
+                        <pre>{{ formatJson(tas.actionResult) }}</pre>
                       </div>
                     </div>
                   </div>
@@ -291,17 +291,17 @@
 
             <div
               v-else-if="
-                rightPanelStore.selectedStep.agentExecution &&
-                !rightPanelStore.selectedStep.agentExecution.thinkActSteps?.length
+                selectedStep.agentExecution &&
+                !selectedStep.agentExecution.thinkActSteps?.length
               "
               class="no-steps-message"
             >
               <p>暂无详细步骤信息</p>
             </div>
 
-            <!-- 处理没有agentExecution的情况 -->
+            <!-- Handle no agentExecution case -->
             <div
-              v-else-if="!rightPanelStore.selectedStep.agentExecution"
+              v-else-if="!selectedStep.agentExecution"
               class="no-execution-message"
             >
               <Icon icon="carbon:information" class="info-icon" />
@@ -310,25 +310,25 @@
                 <div class="info-item">
                   <span class="label">步骤名称:</span>
                   <span class="value">{{
-                    rightPanelStore.selectedStep.title ||
-                    rightPanelStore.selectedStep.description ||
-                    `步骤 ${rightPanelStore.selectedStep.index + 1}`
+                    selectedStep.title ||
+                    selectedStep.description ||
+                    `步骤 ${selectedStep.index + 1}`
                   }}</span>
                 </div>
-                <div class="info-item" v-if="rightPanelStore.selectedStep.description">
+                <div class="info-item" v-if="selectedStep.description">
                   <span class="label">描述:</span>
-                  <span class="value">{{ rightPanelStore.selectedStep.description }}</span>
+                  <span class="value">{{ selectedStep.description }}</span>
                 </div>
                 <div class="info-item">
                   <span class="label">状态:</span>
                   <span class="value" :class="{
-                    'status-completed': rightPanelStore.selectedStep.completed,
-                    'status-current': rightPanelStore.selectedStep.current,
-                    'status-pending': !rightPanelStore.selectedStep.completed && !rightPanelStore.selectedStep.current
+                    'status-completed': selectedStep.completed,
+                    'status-current': selectedStep.current,
+                    'status-pending': !selectedStep.completed && !selectedStep.current
                   }">
                     {{
-                      rightPanelStore.selectedStep.completed ? '已完成' :
-                      rightPanelStore.selectedStep.current ? '执行中' : '待执行'
+                      selectedStep.completed ? '已完成' :
+                      selectedStep.current ? '执行中' : '待执行'
                     }}
                   </span>
                 </div>
@@ -336,9 +336,9 @@
               <p class="no-execution-hint">该步骤暂无详细执行信息</p>
             </div>
 
-            <!-- 执行中的动态效果 -->
+            <!-- Dynamic effect during execution -->
             <div
-              v-if="rightPanelStore.selectedStep.current && !rightPanelStore.selectedStep.completed"
+              v-if="selectedStep.current && !selectedStep.completed"
               class="execution-indicator"
             >
               <div class="execution-waves">
@@ -355,16 +355,16 @@
 
           <div v-else class="no-selection">
             <Icon icon="carbon:events" class="empty-icon" />
-            <h3>{{ $t('rightPanel.noStepSelected') }}</h3>
-            <p>{{ $t('rightPanel.selectStepHint') }}</p>
+            <h3>{{ t('rightPanel.noStepSelected') }}</h3>
+            <p>{{ t('rightPanel.selectStepHint') }}</p>
           </div>
         </div>
 
-        <!-- 滚动到底部按钮 -->
+        <!-- Scroll to bottom button -->
         <Transition name="scroll-button">
           <button
-            v-if="rightPanelStore.showScrollToBottomButton"
-            @click="rightPanelStore.scrollToBottom"
+            v-if="showScrollToBottomButton"
+            @click="scrollToBottom"
             class="scroll-to-bottom-btn"
             title="滚动到底部"
           >
@@ -384,20 +384,494 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import MonacoEditor from '@/components/editor/index.vue'
-import { useRightPanelStore } from '@/stores/right-panel'
+import { planExecutionManager } from '@/utils/plan-execution-manager'
+import type { PlanExecutionRecord } from '@/types/plan-execution-record'
 
-// 使用 Pinia store
-const rightPanelStore = useRightPanelStore()
 const { t } = useI18n()
 
-// DOM 元素引用
+// DOM element reference
 const scrollContainer = ref<HTMLElement>()
 
-// 初始化滚动监听器
+// Local state - replacing store state
+const activeTab = ref('details')
+const planDataMap = ref<Map<string, any>>(new Map())
+const currentDisplayedPlanId = ref<string>()
+const selectedStep = ref<any>()
+
+// Scroll-related state
+const showScrollToBottomButton = ref(false)
+const isNearBottom = ref(true)
+const shouldAutoScrollToBottom = ref(true)
+
+// Auto-refresh related state
+const autoRefreshTimer = ref<number | null>(null)
+const AUTO_REFRESH_INTERVAL = 3000 // Refresh step details every 3 seconds
+
+// Code and chat preview related state
+const codeContent = ref(`// Generated Spring Boot REST API
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userService.findAll();
+        return ResponseEntity.ok(users);
+    }
+
+    @PostMapping
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        User savedUser = userService.save(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        Optional<User> user = userService.findById(id);
+        return user.map(ResponseEntity::ok)
+                  .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+        if (!userService.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        user.setId(id);
+        User updatedUser = userService.save(user);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        if (!userService.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        userService.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+}`)
+
+const codeLanguage = ref('java')
+
+const chatBubbles = ref([
+  {
+    id: '1',
+    type: 'thinking',
+    icon: 'carbon:thinking',
+    title: '分析需求',
+    content:
+      '将您的请求分解为可操作的步骤：1) 创建用户实体，2) 实现用户服务，3) 构建 REST 端点，4) 添加验证和错误处理。',
+    timestamp: '2 分钟前',
+  },
+  {
+    id: '2',
+    type: 'progress',
+    icon: 'carbon:in-progress',
+    title: '生成代码',
+    content:
+      '创建具有用户管理 CRUD 操作的 Spring Boot REST API。包括正确的 HTTP 状态代码和错误处理。',
+    timestamp: '1 分钟前',
+  },
+  {
+    id: '3',
+    type: 'success',
+    icon: 'carbon:checkmark',
+    title: '代码已生成',
+    content:
+      '成功生成具有所有 CRUD 操作的 UserController。代码包含正确的 REST 约定、错误处理，并遵循 Spring Boot 最佳实践。',
+    timestamp: '刚刚',
+  },
+])
+
+// Preview tab configuration
+const previewTabs = [
+  { id: 'details', name: '步骤执行详情', icon: 'carbon:events' },
+  { id: 'chat', name: 'Chat', icon: 'carbon:chat' },
+  { id: 'code', name: 'Code', icon: 'carbon:code' },
+]
+
+// Computed properties
+const currentPlan = computed(() => {
+  if (!currentDisplayedPlanId.value) return null
+  return planDataMap.value.get(currentDisplayedPlanId.value)
+})
+
+const stepStatusText = computed(() => {
+  if (!selectedStep.value) return ''
+  if (selectedStep.value.completed) return '已完成'
+  if (selectedStep.value.current) return '执行中'
+  return '等待执行'
+})
+
+// Actions - Tab management
+const switchTab = (tabId: string) => {
+  activeTab.value = tabId
+}
+
+// Actions - Plan data management
+const handlePlanUpdate = async (planData: PlanExecutionRecord) => {
+  console.log('[RightPanel] Received plan update event, planData:', planData)
+
+  // Validate data validity
+  if (!planData || !planData.currentPlanId) {
+    console.warn('[RightPanel] Invalid plan data received:', planData)
+    return
+  }
+
+  // Update plan data to local mapping
+  planDataMap.value.set(planData.currentPlanId, planData)
+  console.log('[RightPanel] Plan data updated to planDataMap:', planData.currentPlanId)
+
+  // Process sub-plan data from agentExecutionSequence if exists
+  if (planData.agentExecutionSequence) {
+    planData.agentExecutionSequence.forEach((agentExecution: any, agentIndex: number) => {
+      if (agentExecution.thinkActSteps) {
+        agentExecution.thinkActSteps.forEach((thinkActStep: any, stepIndex: number) => {
+          if (thinkActStep.subPlanExecutionRecord) {
+            const subPlanId = thinkActStep.subPlanExecutionRecord.currentPlanId
+            if (subPlanId) {
+              console.log(`[RightPanel] Processing sub-plan from agent ${agentIndex}, step ${stepIndex}:`, subPlanId)
+              planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
+            }
+          }
+        })
+      }
+    })
+  }
+
+  // If currently selected step corresponds to this plan, reload step details
+  if (selectedStep.value?.planId === planData.currentPlanId) {
+    console.log('[RightPanel] Refresh details of currently selected step:', selectedStep.value.index)
+    showStepDetails(planData.currentPlanId, selectedStep.value.index)
+  }
+
+  // After data update, auto-scroll to latest content if previously at bottom
+  autoScrollToBottomIfNeeded()
+}
+
+const updateDisplayedPlanProgress = (planData: any) => {
+  // Here you can update UI state, such as progress bars
+  if (planData.steps && planData.steps.length > 0) {
+    const totalSteps = planData.steps.length
+    const currentStep = (planData.currentStepIndex || 0) + 1
+    console.log(`[RightPanel] Progress: ${currentStep} / ${totalSteps}`)
+  }
+}
+
+// Actions - Step details management
+const showStepDetails = (planId: string, stepIndex: number) => {
+  console.log('[RightPanel] Show step details:', { planId, stepIndex })
+
+  const planData = planDataMap.value.get(planId)
+
+  if (!planData || !planData.steps || stepIndex >= planData.steps.length) {
+    selectedStep.value = null
+    console.warn('[RightPanel] Invalid step data:', {
+      planId,
+      stepIndex,
+      hasPlanData: !!planData,
+      hasSteps: !!planData?.steps,
+      stepsLength: planData?.steps?.length,
+      planDataKeys: Array.from(planDataMap.value.keys()),
+      availablePlansData: Array.from(planDataMap.value.entries()).map(([key, value]) => ({
+        planId: key,
+        stepsCount: value.steps?.length || 0,
+        hasAgentExecution: !!value.agentExecutionSequence,
+        agentExecutionLength: value.agentExecutionSequence?.length || 0
+      }))
+    })
+    stopAutoRefresh() // Stop auto refresh
+    return
+  }
+
+  currentDisplayedPlanId.value = planId
+  const step = planData.steps[stepIndex]
+  const agentExecution =
+    planData.agentExecutionSequence && planData.agentExecutionSequence[stepIndex]
+
+  console.log('[RightPanel] Step data details:', {
+    planId,
+    stepIndex,
+    step,
+    hasAgentExecutionSequence: !!planData.agentExecutionSequence,
+    agentExecutionSequenceLength: planData.agentExecutionSequence?.length,
+    agentExecution,
+    hasThinkActSteps: !!agentExecution?.thinkActSteps,
+    thinkActStepsLength: agentExecution?.thinkActSteps?.length
+  })
+
+  // Determine if step is completed - multiple condition checks
+  const isStepCompleted =
+    agentExecution?.isCompleted ||
+    planData.completed ||
+    (planData.currentStepIndex !== undefined && stepIndex < planData.currentStepIndex)
+
+  const isCurrent =
+    !isStepCompleted && stepIndex === planData.currentStepIndex && !planData.completed
+
+  // Construct step details object, similar to right-sidebar.js logic
+  selectedStep.value = {
+    planId: planId, // Ensure planId is included
+    index: stepIndex,
+    title:
+      typeof step === 'string'
+        ? step
+        : step.title || step.description || step.name || `步骤 ${stepIndex + 1}`,
+    description: typeof step === 'string' ? step : step.description || step,
+    agentExecution: agentExecution,
+    completed: isStepCompleted,
+    current: isCurrent,
+  }
+
+  console.log('[RightPanel] Step details updated:', {
+    planId,
+    stepIndex,
+    stepTitle: selectedStep.value.title,
+    hasAgentExecution: !!agentExecution,
+    hasThinkActSteps: !!agentExecution?.thinkActSteps?.length,
+    thinkActStepsData: agentExecution?.thinkActSteps,
+    completed: isStepCompleted,
+    current: isCurrent,
+    planCurrentStep: planData.currentStepIndex,
+    planCompleted: planData.completed,
+  })
+
+  // Process sub-plan data if exists
+  if (agentExecution?.thinkActSteps) {
+    agentExecution.thinkActSteps.forEach((thinkActStep: any, index: number) => {
+      if (thinkActStep.subPlanExecutionRecord) {
+        console.log(`[RightPanel] Found sub-plan in thinkActStep ${index}:`, thinkActStep.subPlanExecutionRecord)
+        
+        const subPlanId = thinkActStep.subPlanExecutionRecord.planId
+        
+        // Critical fix: Check for ID conflicts between main plan and sub-plan
+        if (subPlanId === planId) {
+          console.error(`[RightPanel] CRITICAL ERROR: Sub-plan ID "${subPlanId}" is identical to parent plan ID "${planId}". This will cause data corruption!`)
+          console.error('[RightPanel] Sub-plan data:', thinkActStep.subPlanExecutionRecord)
+          console.error('[RightPanel] Parent plan data:', planData)
+          
+          // Generate a unique sub-plan ID to prevent collision
+          const uniqueSubPlanId = `${subPlanId}_sub_${stepIndex}_${index}_${Date.now()}`
+          console.warn(`[RightPanel] Auto-correcting sub-plan ID from "${subPlanId}" to "${uniqueSubPlanId}"`)
+          
+          // Update the sub-plan record with the corrected ID
+          const correctedSubPlan = { ...thinkActStep.subPlanExecutionRecord, planId: uniqueSubPlanId }
+          planDataMap.value.set(uniqueSubPlanId, correctedSubPlan)
+          
+          // Also update the original record to prevent future issues
+          thinkActStep.subPlanExecutionRecord.planId = uniqueSubPlanId
+        } else if (subPlanId && !planDataMap.value.has(subPlanId)) {
+          // Normal case: sub-plan has unique ID
+          console.log(`[RightPanel] Storing sub-plan with unique ID: ${subPlanId}`)
+          planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
+        } else if (subPlanId && planDataMap.value.has(subPlanId)) {
+          // Sub-plan ID already exists, check if it's the same plan or different
+          const existingPlan = planDataMap.value.get(subPlanId)
+          if (existingPlan && existingPlan !== thinkActStep.subPlanExecutionRecord) {
+            console.warn(`[RightPanel] Sub-plan ID "${subPlanId}" already exists with different data. Updating with latest data.`)
+            planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
+          }
+        }
+      }
+    })
+  }
+
+  // If step is not completed and plan is still executing, start auto refresh
+  if (
+    !isStepCompleted &&
+    !planData.completed &&
+    planExecutionManager.getActivePlanId() === planId
+  ) {
+    startAutoRefresh(planId, stepIndex)
+  } else {
+    stopAutoRefresh()
+  }
+
+  // Delay scroll state check to ensure DOM is updated
+  setTimeout(() => {
+    checkScrollState()
+  }, 100)
+
+  // After data update, auto-scroll to latest content if previously at bottom
+  autoScrollToBottomIfNeeded()
+}
+
+const clearSelectedStep = () => {
+  selectedStep.value = null
+  currentDisplayedPlanId.value = undefined
+  stopAutoRefresh()
+}
+
+// Actions - Auto refresh management
+const startAutoRefresh = (planId: string, stepIndex: number) => {
+  console.log('[RightPanel] Start auto refresh:', { planId, stepIndex })
+
+  // Stop previous refresh
+  stopAutoRefresh()
+
+  autoRefreshTimer.value = window.setInterval(() => {
+    console.log('[RightPanel] Execute auto refresh - Step details')
+
+    // Check if plan is still executing
+    const planData = planDataMap.value.get(planId)
+    if (!planData || planData.completed) {
+      console.log('[RightPanel] Plan completed, stop auto refresh')
+      stopAutoRefresh()
+      return
+    }
+
+    // Check if step is still executing
+    const agentExecution = planData.agentExecutionSequence?.[stepIndex]
+    if (agentExecution?.isCompleted) {
+      console.log('[RightPanel] Step completed, stop auto refresh')
+      stopAutoRefresh()
+      return
+    }
+
+    // Check if already moved to next step
+    const currentStepIndex = planData.currentStepIndex ?? 0
+    if (stepIndex < currentStepIndex) {
+      console.log('[RightPanel] Already moved to next step, stop auto refresh')
+      stopAutoRefresh()
+      return
+    }
+
+    // Refresh step details
+    showStepDetails(planId, stepIndex)
+
+    // After data update, auto-scroll to latest content if previously at bottom
+    autoScrollToBottomIfNeeded()
+  }, AUTO_REFRESH_INTERVAL)
+}
+
+const stopAutoRefresh = () => {
+  if (autoRefreshTimer.value) {
+    clearInterval(autoRefreshTimer.value)
+    autoRefreshTimer.value = null
+    console.log('[RightPanel] Auto refresh stopped')
+  }
+}
+
+// Actions - Scroll management
+const setScrollContainer = (element: HTMLElement | null) => {
+  scrollContainer.value = element || undefined
+}
+
+const checkScrollState = () => {
+  if (!scrollContainer.value) return
+
+  const { scrollTop, scrollHeight, clientHeight } = scrollContainer.value
+  const isAtBottom = scrollHeight - scrollTop - clientHeight < 50
+  const hasScrollableContent = scrollHeight > clientHeight
+
+  isNearBottom.value = isAtBottom
+  showScrollToBottomButton.value = hasScrollableContent && !isAtBottom
+
+  // Update auto-scroll flag: should auto-scroll if user scrolls to bottom
+  // If user actively scrolls up away from bottom, stop auto-scrolling
+  if (isAtBottom) {
+    shouldAutoScrollToBottom.value = true
+  } else if (scrollHeight - scrollTop - clientHeight > 100) {
+    // If user clearly scrolled up (more than 100px from bottom), stop auto-scrolling
+    shouldAutoScrollToBottom.value = false
+  }
+
+  console.log('[RightPanel] Scroll state check:', {
+    scrollTop,
+    scrollHeight,
+    clientHeight,
+    isAtBottom,
+    hasScrollableContent,
+    showButton: showScrollToBottomButton.value,
+    shouldAutoScroll: shouldAutoScrollToBottom.value,
+  })
+}
+
+const scrollToBottom = () => {
+  if (!scrollContainer.value) return
+
+  scrollContainer.value.scrollTo({
+    top: scrollContainer.value.scrollHeight,
+    behavior: 'smooth',
+  })
+
+  // Reset state after scrolling
+  nextTick(() => {
+    shouldAutoScrollToBottom.value = true
+    checkScrollState()
+  })
+}
+
+const autoScrollToBottomIfNeeded = () => {
+  if (!shouldAutoScrollToBottom.value || !scrollContainer.value) return
+
+  nextTick(() => {
+    if (scrollContainer.value) {
+      scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
+      console.log('[RightPanel] Auto scroll to bottom')
+    }
+  })
+}
+
+// Actions - Code operations
+const copyCode = () => {
+  navigator.clipboard.writeText(codeContent.value)
+}
+
+const downloadCode = () => {
+  const blob = new Blob([codeContent.value], { type: 'text/plain' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'UserController.java'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// Actions - Data cleanup
+const clearPlanData = () => {
+  planDataMap.value.clear()
+  selectedStep.value = null
+  currentDisplayedPlanId.value = undefined
+  stopAutoRefresh()
+}
+
+// Actions - Utility functions
+const formatJson = (jsonData: any): string => {
+  if (jsonData === null || typeof jsonData === 'undefined' || jsonData === '') {
+    return 'N/A'
+  }
+  try {
+    const jsonObj = typeof jsonData === 'object' ? jsonData : JSON.parse(jsonData)
+    return JSON.stringify(jsonObj, null, 2)
+  } catch (e) {
+    // If parsing fails, return string format directly (similar to _escapeHtml in right-sidebar.js)
+    return String(jsonData)
+  }
+}
+
+// Actions - Resource cleanup
+const cleanup = () => {
+  stopAutoRefresh()
+  planDataMap.value.clear()
+  selectedStep.value = null
+  currentDisplayedPlanId.value = undefined
+  shouldAutoScrollToBottom.value = true
+
+  if (scrollContainer.value) {
+    scrollContainer.value.removeEventListener('scroll', checkScrollState)
+  }
+}
+
+// Initialize scroll listener
 const initScrollListener = () => {
   const setupScrollListener = () => {
     const element = scrollContainer.value
@@ -406,21 +880,21 @@ const initScrollListener = () => {
       return false
     }
 
-    // 设置滚动容器到 store
-    rightPanelStore.setScrollContainer(element)
+    // Set scroll container
+    setScrollContainer(element)
 
-    element.addEventListener('scroll', rightPanelStore.checkScrollState)
-    // 初始状态检查
-    rightPanelStore.shouldAutoScrollToBottom = true // 重置为自动滚动状态
-    rightPanelStore.checkScrollState()
+    element.addEventListener('scroll', checkScrollState)
+    // Initial state check
+    shouldAutoScrollToBottom.value = true // Reset to auto scroll state
+    checkScrollState()
     console.log('[RightPanel] Scroll listener initialized successfully')
     return true
   }
 
-  // 使用 nextTick 确保 DOM 已更新
+  // Use nextTick to ensure DOM is updated
   nextTick(() => {
     if (!setupScrollListener()) {
-      // 如果第一次失败，再尝试一次
+      // If first attempt fails, try again
       setTimeout(() => {
         setupScrollListener()
       }, 100)
@@ -428,22 +902,22 @@ const initScrollListener = () => {
   })
 }
 
-// 生命周期 - 挂载时的初始化
+// Lifecycle - initialization on mount
 onMounted(() => {
-  console.log('右侧面板组件已挂载')
-  // 使用nextTick确保DOM已渲染
+  console.log('Right panel component mounted')
+  // Use nextTick to ensure DOM is rendered
   nextTick(() => {
     initScrollListener()
   })
 })
 
-// 生命周期 - 卸载时的清理
+// Lifecycle - cleanup on unmount
 onUnmounted(() => {
   console.log('[RightPanel] Component unmounting, cleaning up...')
-  rightPanelStore.cleanup()
+  cleanup()
 })
 
-// 获取子步骤状态
+// Get sub-step status
 const getSubStepStatus = (subPlan: any, stepIndex: number) => {
   if (!subPlan) return 'pending'
   
@@ -465,7 +939,7 @@ const getSubStepStatus = (subPlan: any, stepIndex: number) => {
   }
 }
 
-// 处理子计划步骤点击
+// Handle sub-plan step click
 const handleSubPlanStepClick = (subPlan: any, stepIndex: number) => {
   if (!subPlan || !subPlan.planId) {
     console.warn('[RightPanel] Invalid sub-plan data:', subPlan)
@@ -478,15 +952,15 @@ const handleSubPlanStepClick = (subPlan: any, stepIndex: number) => {
     stepTitle: subPlan.steps?.[stepIndex]
   })
 
-  // 使用 rightPanelStore 显示子计划的步骤详情
-  rightPanelStore.showStepDetails(subPlan.planId, stepIndex)
+  // Show sub-plan step details
+  showStepDetails(subPlan.planId, stepIndex)
 }
 
-// 暴露给父组件的方法 - 仅保留必要的接口
+// Expose methods to parent component - only keep necessary interfaces
 defineExpose({
-  handlePlanUpdate: rightPanelStore.handlePlanUpdate,
-  showStepDetails: rightPanelStore.showStepDetails,
-  updateDisplayedPlanProgress: rightPanelStore.updateDisplayedPlanProgress,
+  handlePlanUpdate,
+  showStepDetails,
+  updateDisplayedPlanProgress,
 })
 </script>
 
