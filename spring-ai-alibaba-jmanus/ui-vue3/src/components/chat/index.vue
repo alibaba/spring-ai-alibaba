@@ -354,8 +354,7 @@ import { Icon } from '@iconify/vue'
 import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
-import { useRightPanelStore } from '@/stores/right-panel'
-import type { PlanExecutionRecord } from '@/types/plan-execution-record'
+import { planExecutionManager } from '@/utils/plan-execution-manager'
 
 interface Message {
   id: string
@@ -406,6 +405,7 @@ interface Emits {
   (e: 'input-update-state', enabled: boolean, placeholder?: string): void
   (e: 'input-focus'): void
   (e: 'step-selected', planId: string, stepIndex: number): void
+  (e: 'sub-plan-step-selected', parentPlanId: string, subPlanId: string, stepIndex: number, subStepIndex: number): void
   (e: 'dialog-round-start', planId: string, query: string): void
 }
 
@@ -417,8 +417,6 @@ const emit = defineEmits<Emits>()
 // 使用计划执行管理器
 const planExecution = usePlanExecution()
 
-// 使用right-panel store
-const rightPanelStore = useRightPanelStore()
 
 const messagesRef = ref<HTMLElement>()
 const isLoading = ref(false)
@@ -616,7 +614,7 @@ const handleSendMessage = (message: string) => {
   }
 }
 
-// 处理步骤点击事件
+// 处理步骤点击事件 - 只暴露事件，不处理具体逻辑
 const handleStepClick = (message: Message, stepIndex: number) => {
   if (!message.planId) {
     console.warn('[ChatComponent] Cannot handle step click: missing planId')
@@ -626,46 +624,11 @@ const handleStepClick = (message: Message, stepIndex: number) => {
   console.log('[ChatComponent] Step clicked:', {
     planId: message.planId,
     stepIndex: stepIndex,
-    stepTitle: message.steps?.[stepIndex]?.title || message.steps?.[stepIndex],
-    hasAgentExecution: !!message.agentExecution,
-    agentExecutionSequenceLength: message.agentExecution?.agentExecutionSequence?.length
+    stepTitle: message.steps?.[stepIndex]?.title || message.steps?.[stepIndex]
   })
 
-  // 确保right-panel store有完整的计划数据，包括agentExecution信息
-  if (message.agentExecution) {
-    console.log('[ChatComponent] Updating plan data for right panel with agentExecution')
-    
-    // 检查当前步骤是否有执行数据
-    const agentExecution = message.agentExecution.agentExecutionSequence?.[stepIndex]
-    console.log(`[ChatComponent] Agent execution for step ${stepIndex}:`, {
-      hasAgentExecution: !!agentExecution,
-      agentName: agentExecution?.agentName,
-      hasThinkActSteps: !!agentExecution?.thinkActSteps,
-      thinkActStepsLength: agentExecution?.thinkActSteps?.length,
-      isCompleted: agentExecution?.isCompleted
-    })
-    
-    rightPanelStore.handlePlanUpdate({
-      planId: message.planId,
-      steps: message.steps,
-      agentExecutionSequence: message.agentExecution.agentExecutionSequence,
-      currentStepIndex: message.currentStepIndex,
-      completed: message.progress === 100
-    })
-  } else {
-    console.warn('[ChatComponent] No agentExecution data available for this message')
-    // 即使没有agentExecution，也要更新基本的计划信息
-    rightPanelStore.handlePlanUpdate({
-      planId: message.planId,
-      steps: message.steps,
-      agentExecutionSequence: [],
-      currentStepIndex: message.currentStepIndex,
-      completed: message.progress === 100
-    })
-  }
-
-  // 显示步骤详情
-  rightPanelStore.showStepDetails(message.planId, stepIndex)
+  // 向父组件发射步骤选择事件
+  emit('step-selected', message.planId, stepIndex)
 }
 
 // 获取子计划步骤 - 新增功能
@@ -748,7 +711,7 @@ const getSubPlanStepStatus = (message: Message, stepIndex: number, subStepIndex:
   }
 }
 
-// 处理子计划步骤点击 - 新增功能
+// Handle sub-plan step click - simplified to only emit events
 const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepIndex: number) => {
   try {
     const agentExecutionSequence = message.agentExecution?.agentExecutionSequence
@@ -763,7 +726,7 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
       return
     }
 
-    // 查找thinkActSteps中的子计划
+    // Find sub-plan in thinkActSteps
     let subPlan = null
     for (const thinkActStep of agentExecution.thinkActSteps) {
       if (thinkActStep && thinkActStep.subPlanExecutionRecord) {
@@ -777,43 +740,8 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
       return
     }
 
-    console.log('[ChatComponent] Sub-plan step clicked:', {
-      parentPlanId: message.planId,
-      subPlanId: subPlan.planId,
-      stepIndex: stepIndex,
-      subStepIndex: subStepIndex,
-      subStepTitle: subPlan.steps?.[subStepIndex],
-      hasSubPlanAgentExecution: !!subPlan.agentExecutionSequence,
-      subPlanAgentExecutionLength: subPlan.agentExecutionSequence?.length
-    })
-
-    // 构造子计划数据，确保包含必要的执行信息
-    const subPlanData = {
-      planId: subPlan.planId,
-      steps: subPlan.steps || [],
-      agentExecutionSequence: subPlan.agentExecutionSequence || [],
-      currentStepIndex: subPlan.currentStepIndex || 0,
-      completed: subPlan.completed || false
-    }
-
-    // 如果子计划没有agentExecutionSequence，尝试从父计划推断
-    if (!subPlanData.agentExecutionSequence.length && subPlan.steps?.length) {
-      console.log('[ChatComponent] Sub-plan missing agentExecutionSequence, creating placeholder data')
-      // 为每个步骤创建占位符执行数据
-      subPlanData.agentExecutionSequence = subPlan.steps.map((step: any, index: number) => ({
-        agentName: 'SubPlanAgent',
-        agentDescription: `Sub-plan step ${index + 1}`,
-        agentRequest: typeof step === 'string' ? step : step.title || step.description,
-        isCompleted: index < (subPlan.currentStepIndex || 0),
-        thinkActSteps: []
-      }))
-    }
-
-    console.log('[ChatComponent] Updating sub-plan data for right panel:', subPlanData)
-    rightPanelStore.handlePlanUpdate(subPlanData)
-
-    // 使用right-panel store显示子计划的步骤详情
-    rightPanelStore.showStepDetails(subPlan.planId, subStepIndex)
+    // Emit event with necessary identifiers for parent component to handle
+    emit('sub-plan-step-selected', message.planId || '', subPlan.planId, stepIndex, subStepIndex)
   } catch (error) {
     console.error('[ChatComponent] Error handling sub-plan step click:', error)
   }
@@ -973,19 +901,26 @@ const handleDialogRoundStart = (planId: string, query: string) => {
   }
 }
 
-// 处理计划更新
-const handlePlanUpdate = (planDetails: PlanExecutionRecord) => {
-  console.log('[ChatComponent] Processing plan update:', planDetails)
+// 处理计划更新 - 使用基于 rootPlanId 的新方案
+const handlePlanUpdate = (rootPlanId: string) => {
+  console.log('[ChatComponent] Processing plan update with rootPlanId:', rootPlanId)
+  
+  // 从缓存中获取 PlanExecutionRecord
+  const planDetails = planExecutionManager.getCachedPlanRecord(rootPlanId)
+  
+  if (!planDetails) {
+    console.warn('[ChatComponent] No cached plan data found for rootPlanId:', rootPlanId)
+    return
+  }
+  
+  console.log('[ChatComponent] Retrieved plan details from cache:', planDetails)
   console.log('[ChatComponent] Plan steps:', planDetails?.steps)
   console.log('[ChatComponent] Plan completed:', planDetails?.completed)
 
-  if (!planDetails || !planDetails.currentPlanId) {
+  if (!planDetails.currentPlanId) {
     console.warn('[ChatComponent] Plan update missing currentPlanId')
     return
   }
-
-  // 直接使用right-panel store处理计划更新，替代emit事件
-  rightPanelStore.handlePlanUpdate(planDetails)
 
   // 找到对应的消息 - 使用 currentPlanId 字段
   const messageIndex = messages.value.findIndex(

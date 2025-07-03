@@ -46,7 +46,6 @@ import InputArea from '@/components/input/index.vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useRightPanelStore } from '@/stores/right-panel'
-import type { PlanExecutionRecord } from '@/types/plan-execution-record'
 
 // 使用pinia stores
 const sidebarStore = useSidebarStore()
@@ -128,15 +127,25 @@ onUnmounted(() => {
 })
 
 /**
- * 处理来自 plan execution manager 的计划更新事件
+ * Handle plan update event from plan execution manager (now with rootPlanId-based approach)
  */
-const handlePlanManagerUpdate = (planData: PlanExecutionRecord, activeId: string) => {
-  console.log('[PlanExecutionComponent] Received plan update from manager:', planData, 'activeId:', activeId)
+const handlePlanManagerUpdate = (rootPlanId: string) => {
+  console.log('[PlanExecutionComponent] Received plan update event - rootPlanId:', rootPlanId)
 
-  // 将计划更新传递给 chat container
+  // Get plan data from cache
+  const planData = planExecutionManager.getCachedPlanRecord(rootPlanId)
+  
+  if (!planData) {
+    console.warn('[PlanExecutionComponent] No cached plan data found for rootPlanId:', rootPlanId)
+    return
+  }
+
+  console.log('[PlanExecutionComponent] Retrieved plan data from cache:', planData)
+
+  // Pass plan update to chat container
   if (chatRef.value && typeof chatRef.value.handlePlanUpdate === 'function') {
-    console.log('[PlanExecutionComponent] Calling chatRef.handlePlanUpdate with:', planData)
-    chatRef.value.handlePlanUpdate(planData)
+    console.log('[PlanExecutionComponent] Calling chatRef.handlePlanUpdate with rootPlanId')
+    chatRef.value.handlePlanUpdate(rootPlanId)
   } else {
     console.warn(
       '[PlanExecutionComponent] chatRef.value.handlePlanUpdate is not available:',
@@ -144,54 +153,80 @@ const handlePlanManagerUpdate = (planData: PlanExecutionRecord, activeId: string
     )
   }
 
-  // 更新加载状态
+  // Update loading state
   isLoading.value = !planData.completed
 
-  // 直接使用right-panel store处理计划更新，替代emit事件
+  // Use right-panel store to handle plan update with cached data
   rightPanelStore.handlePlanUpdate(planData)
 }
 
 /**
- * 处理来自 plan execution manager 的计划完成事件
+ * Handle plan completion event from plan execution manager (now with rootPlanId-based approach)
  */
-const handlePlanManagerCompleted = (result: PlanExecutionRecord, activeId: string) => {
-  console.log('[PlanExecutionComponent] Received plan completed from manager:', result, 'activeId:', activeId)
+const handlePlanManagerCompleted = (rootPlanId: string) => {
+  console.log('[PlanExecutionComponent] Received plan completed event - rootPlanId:', rootPlanId)
 
-  // 将计划完成传递给 chat container
+  // Get plan data from cache
+  const result = planExecutionManager.getCachedPlanRecord(rootPlanId)
+  
+  if (!result) {
+    console.warn('[PlanExecutionComponent] No cached plan data found for completed rootPlanId:', rootPlanId)
+    return
+  }
+
+  console.log('[PlanExecutionComponent] Retrieved completed plan data from cache:', result)
+
+  // Pass plan completion to chat container
   if (chatRef.value && typeof chatRef.value.handlePlanCompleted === 'function') {
     chatRef.value.handlePlanCompleted(result)
   }
 
-  // 更新加载状态
+  // Update loading state
   isLoading.value = false
 
-  // 向父组件发射事件
+  // Emit event to parent component
   emit('plan-completed', result)
 }
 
 /**
  * 处理来自 plan execution manager 的对话轮次开始事件
  */
-const handlePlanManagerDialogStart = (dialogData: any) => {
-  console.log('[PlanExecutionComponent] Received dialog round start from manager:', dialogData)
+const handlePlanManagerDialogStart = (rootPlanId: string) => {
+  console.log('[PlanExecutionComponent] Received dialog round start from manager - rootPlanId:', rootPlanId)
 
   // 将对话开始传递给 chat container
   if (chatRef.value && typeof chatRef.value.handleDialogRoundStart === 'function') {
-    chatRef.value.handleDialogRoundStart(dialogData.planId, dialogData.query)
+    // 需要获取planId和query，这里可能需要从缓存中获取或使用默认值
+    const planData = planExecutionManager.getCachedPlanRecord(rootPlanId)
+    const planId = planData?.currentPlanId || rootPlanId
+    const query = planData?.userRequest || '执行计划'
+    
+    chatRef.value.handleDialogRoundStart(planId, query)
   }
 
   // 更新加载状态
   isLoading.value = true
 
   // 向父组件发射事件
-  emit('dialog-round-start', dialogData.planId, dialogData.query)
+  const planData = planExecutionManager.getCachedPlanRecord(rootPlanId)
+  const planId = planData?.currentPlanId || rootPlanId
+  const query = planData?.userRequest || '执行计划'
+  emit('dialog-round-start', planId, query)
 }
 
 /**
  * 处理来自 plan execution manager 的消息更新事件
  */
-const handlePlanManagerMessageUpdate = (messageData: any) => {
-  console.log('[PlanExecutionComponent] Received message update from manager:', messageData)
+const handlePlanManagerMessageUpdate = (rootPlanId: string) => {
+  console.log('[PlanExecutionComponent] Received message update from manager - rootPlanId:', rootPlanId)
+
+  // 从缓存获取消息数据
+  const messageData = planExecutionManager.getCachedMessage(rootPlanId)
+  
+  if (!messageData) {
+    console.warn('[PlanExecutionComponent] No cached message data found for rootPlanId:', rootPlanId)
+    return
+  }
 
   // 将消息更新传递给 chat container
   if (chatRef.value && typeof chatRef.value.handleMessageUpdate === 'function') {
@@ -202,8 +237,16 @@ const handlePlanManagerMessageUpdate = (messageData: any) => {
 /**
  * 处理来自 plan execution manager 的输入状态更新事件
  */
-const handlePlanManagerInputUpdate = (inputData: any) => {
-  console.log('[PlanExecutionComponent] Received input update from manager:', inputData)
+const handlePlanManagerInputUpdate = (rootPlanId: string) => {
+  console.log('[PlanExecutionComponent] Received input update from manager - rootPlanId:', rootPlanId)
+
+  // 从缓存获取UI状态数据
+  const inputData = planExecutionManager.getCachedUIState(rootPlanId)
+  
+  if (!inputData) {
+    console.warn('[PlanExecutionComponent] No cached UI state data found for rootPlanId:', rootPlanId)
+    return
+  }
 
   // 更新输入框状态
   if (inputData.enabled !== undefined) {
