@@ -1028,10 +1028,14 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 
 			var sgWorkflow = subgraphNode.subGraph();
 
+			ProcessedNodesEdgesAndConfig processedSubGraph = process(sgWorkflow, config);
+			StateGraph.Nodes processedSubGraphNodes = processedSubGraph.nodes;
+			StateGraph.Edges processedSubGraphEdges = processedSubGraph.edges;
+
 			//
 			// Process START Node
 			//
-			var sgEdgeStart = sgWorkflow.edges.edgeBySourceId(START).orElseThrow();
+			var sgEdgeStart = processedSubGraphEdges.edgeBySourceId(START).orElseThrow();
 
 			if (sgEdgeStart.isParallel()) {
 				throw new GraphStateException("subgraph not support start with parallel branches yet!");
@@ -1047,8 +1051,8 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 
 			// Process Interruption (Before) Subgraph(s)
 			interruptsBefore = interruptsBefore.stream()
-				.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId : interrupt)
-				.collect(Collectors.toUnmodifiableSet());
+					.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId : interrupt)
+					.collect(Collectors.toUnmodifiableSet());
 
 			var edgesWithSubgraphTargetId = edges.edgesByTargetId(subgraphNode.id());
 
@@ -1068,7 +1072,7 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 			//
 			// Process END Nodes
 			//
-			var sgEdgesEnd = sgWorkflow.edges.edgesByTargetId(END);
+			var sgEdgesEnd = processedSubGraphEdges.edgesByTargetId(END);
 
 			var edgeWithSubgraphSourceId = edges.edgeBySourceId(subgraphNode.id()).orElseThrow();
 
@@ -1096,17 +1100,17 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 			//
 			// Process edges
 			//
-			sgWorkflow.edges.elements.stream()
-				.filter(e -> !Objects.equals(e.sourceId(), START))
-				.filter(e -> !e.anyMatchByTargetId(END))
-				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-						id -> new EdgeValue(subgraphNode.formatId(id))))
-				.forEach(edges.elements::add);
+			processedSubGraphEdges.elements.stream()
+					.filter(e -> !Objects.equals(e.sourceId(), START))
+					.filter(e -> !e.anyMatchByTargetId(END))
+					.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
+							id -> new EdgeValue(subgraphNode.formatId(id))))
+					.forEach(edges.elements::add);
 
 			//
 			// Process nodes
 			//
-			sgWorkflow.nodes.elements.stream().map(n -> {
+			processedSubGraphNodes.elements.stream().map(n -> {
 				if (n instanceof CommandNode commandNode) {
 					Map<String, String> mappings = commandNode.getMappings();
 					HashMap<String, String> newMappings = new HashMap<>();
