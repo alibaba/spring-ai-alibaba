@@ -98,7 +98,7 @@
             <!-- Think and action steps -->
             <div
               class="think-act-steps"
-              v-if="selectedStep.agentExecution?.thinkActSteps?.length > 0"
+              v-if="selectedStep.agentExecution?.thinkActSteps && selectedStep.agentExecution.thinkActSteps.length > 0"
             >
               <h4>思考与行动步骤</h4>
               <div class="steps-container">
@@ -155,7 +155,7 @@
                       <div class="sub-plan-header">
                         <div class="sub-plan-info">
                           <span class="label">子计划ID:</span>
-                          <span class="value">{{ tas.subPlanExecutionRecord.planId }}</span>
+                          <span class="value">{{ tas.subPlanExecutionRecord.currentPlanId }}</span>
                         </div>
                         <div class="sub-plan-info" v-if="tas.subPlanExecutionRecord.title">
                           <span class="label">标题:</span>
@@ -271,16 +271,27 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
-import type { PlanExecutionRecord } from '@/types/plan-execution-record'
+import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
 
 // Define step selection context interface
 interface StepSelectionContext {
   planId: string
   stepIndex: number
-  parentPlanId?: string  // For sub-plan steps
+  rootPlanId?: string    // For sub-plan steps, reference to root plan
   subPlanId?: string     // For sub-plan steps  
   subStepIndex?: number  // For sub-plan steps
   isSubPlan: boolean     // Flag to indicate if this is a sub-plan step
+}
+
+// Define selected step interface
+interface SelectedStep {
+  planId: string
+  index: number
+  title: string
+  description: string
+  agentExecution?: AgentExecutionRecord
+  completed: boolean
+  current: boolean
 }
 
 const { t } = useI18n()
@@ -290,7 +301,7 @@ const scrollContainer = ref<HTMLElement>()
 
 // Local state - replacing store state
 const currentDisplayedPlanId = ref<string>()
-const selectedStep = ref<any>()
+const selectedStep = ref<SelectedStep | null>()
 
 // Current step selection context for auto-refresh
 const currentStepContext = ref<StepSelectionContext | null>(null)
@@ -313,27 +324,6 @@ const stepStatusText = computed(() => {
 })
 
 // Actions - Plan data management
-const handlePlanUpdate = async (planData: PlanExecutionRecord) => {
-  console.log('[RightPanel] Received plan update event, planData:', planData)
-
-  // Validate data validity
-  if (!planData || !planData.currentPlanId) {
-    console.warn('[RightPanel] Invalid plan data received:', planData)
-    return
-  }
-
-  console.log('[RightPanel] Plan data updated in manager:', planData.currentPlanId)
-
-  // If currently selected step corresponds to this plan, reload step details
-  if (selectedStep.value?.planId === planData.currentPlanId) {
-    console.log('[RightPanel] Refresh details of currently selected step:', selectedStep.value.index)
-    showStepDetails(planData.currentPlanId, selectedStep.value.index)
-  }
-
-  // After data update, auto-scroll to latest content if previously at bottom
-  autoScrollToBottomIfNeeded()
-}
-
 const updateDisplayedPlanProgress = (planData: any) => {
   // Here you can update UI state, such as progress bars
   if (planData.steps && planData.steps.length > 0) {
@@ -343,86 +333,176 @@ const updateDisplayedPlanProgress = (planData: any) => {
   }
 }
 
-// Actions - Step details management
-const showStepDetails = (planId: string, stepIndex: number) => {
-  console.log('[RightPanel] Show step details:', { planId, stepIndex })
-
-  const planData = planExecutionManager.getCachedPlanRecord(planId)
-
-  if (!planData || !planData.steps || stepIndex >= planData.steps.length) {
-    selectedStep.value = null
-    currentStepContext.value = null // Clear context when no valid step
-    console.warn('[RightPanel] Invalid step data:', {
-      planId,
-      stepIndex,
-      hasPlanData: !!planData,
-      hasSteps: !!planData?.steps,
-      stepsLength: planData?.steps?.length,
-      message: 'Plan not found in execution manager or invalid step index'
-    })
-    stopAutoRefresh() // Stop auto refresh
-    return
-  }
-
+// Actions - Step selection handling (callable methods for external components)
+/**
+ * Unified step selection handler - handles both regular steps and sub-plan steps
+ * @param planId - The plan ID to display (can be main plan or sub-plan)
+ * @param stepIndex - The step index to display
+ * @param rootPlanId - Optional root plan ID for sub-plan steps
+ * @param subPlanId - Optional sub-plan ID for sub-plan steps
+ * @param subStepIndex - Optional sub-step index for sub-plan steps
+ */
+const handleStepSelected = (
+  planId: string, 
+  stepIndex: number, 
+  rootPlanId?: string, 
+  subPlanId?: string, 
+  subStepIndex?: number
+) => {
+  console.log('[RightPanel] Step selected:', { 
+    planId, 
+    stepIndex, 
+    rootPlanId, 
+    subPlanId, 
+    subStepIndex 
+  })
+  
+  const isSubPlan = !!(rootPlanId && subPlanId && subStepIndex !== undefined)
+  
   // Set current step context for auto-refresh
   currentStepContext.value = {
     planId,
     stepIndex,
-    isSubPlan: false
+    isSubPlan,
+    ...(isSubPlan && { rootPlanId, subPlanId, subStepIndex })
   }
+  
+  // Find the PlanExecutionRecord based on parameters
+  const planRecord = findPlanExecutionRecord(planId, rootPlanId, subPlanId)
+  
+  if (!planRecord) {
+    console.warn('[RightPanel] Plan data not found:', { planId, rootPlanId, subPlanId })
+    selectedStep.value = null
+    currentStepContext.value = null
+    return
+  }
+  
+  // Display step details using unified logic
+  displayStepDetails(planRecord, stepIndex, planId, isSubPlan)
+}
 
+/**
+ * Find PlanExecutionRecord based on parameters
+ * For regular steps: directly get from planExecutionManager
+ * For sub-plan steps: traverse root plan to find the sub-plan record
+ */
+const findPlanExecutionRecord = (
+  planId: string, 
+  rootPlanId?: string, 
+  subPlanId?: string
+): PlanExecutionRecord | null => {
+  // For regular steps, directly get from manager
+  if (!rootPlanId || !subPlanId) {
+    return planExecutionManager.getCachedPlanRecord(planId) || null
+  }
+  
+  // For sub-plan steps, first try direct access
+  const directRecord = planExecutionManager.getCachedPlanRecord(planId)
+  if (directRecord) {
+    return directRecord
+  }
+  
+  // If direct access fails, traverse root plan to find sub-plan
+  const rootPlanData = planExecutionManager.getCachedPlanRecord(rootPlanId)
+  if (!rootPlanData || !rootPlanData.agentExecutionSequence) {
+    return null
+  }
+  
+  // Traverse all agent execution records to find the sub-plan
+  for (const agentExecution of rootPlanData.agentExecutionSequence) {
+    if (agentExecution.thinkActSteps) {
+      for (const thinkActStep of agentExecution.thinkActSteps) {
+        if (thinkActStep.subPlanExecutionRecord?.currentPlanId === subPlanId) {
+          return thinkActStep.subPlanExecutionRecord
+        }
+      }
+    }
+  }
+  
+  return null
+}
+
+/**
+ * Unified display logic for step details
+ */
+const displayStepDetails = (
+  planRecord: PlanExecutionRecord, 
+  stepIndex: number, 
+  planId: string, 
+  isSubPlan: boolean
+) => {
+  // Validate step index
+  if (!planRecord.steps || stepIndex >= planRecord.steps.length) {
+    selectedStep.value = null
+    currentStepContext.value = null
+    console.warn('[RightPanel] Invalid step data:', {
+      planId,
+      stepIndex,
+      hasSteps: !!planRecord.steps,
+      stepsLength: planRecord.steps?.length,
+      message: 'Invalid step index'
+    })
+    stopAutoRefresh()
+    return
+  }
+  
   currentDisplayedPlanId.value = planId
-  const step = planData.steps[stepIndex]
-  const agentExecution =
-    planData.agentExecutionSequence && planData.agentExecutionSequence[stepIndex]
-
+  const step = planRecord.steps[stepIndex]
+  const agentExecution = planRecord.agentExecutionSequence?.[stepIndex]
+  
   console.log('[RightPanel] Step data details:', {
     planId,
     stepIndex,
     step,
-    hasAgentExecutionSequence: !!planData.agentExecutionSequence,
-    agentExecutionSequenceLength: planData.agentExecutionSequence?.length,
+    hasAgentExecutionSequence: !!planRecord.agentExecutionSequence,
+    agentExecutionSequenceLength: planRecord.agentExecutionSequence?.length,
     agentExecution,
     hasThinkActSteps: !!agentExecution?.thinkActSteps,
-    thinkActStepsLength: agentExecution?.thinkActSteps?.length
+    thinkActStepsLength: agentExecution?.thinkActSteps?.length,
+    isSubPlan
   })
-
-  // Determine if step is completed - multiple condition checks
+  
+  // Determine if step is completed
   const isStepCompleted =
     agentExecution?.isCompleted ||
-    planData.completed ||
-    (planData.currentStepIndex !== undefined && stepIndex < planData.currentStepIndex)
-
+    planRecord.completed ||
+    (planRecord.currentStepIndex !== undefined && stepIndex < planRecord.currentStepIndex)
+  
   const isCurrent =
-    !isStepCompleted && stepIndex === planData.currentStepIndex && !planData.completed
-
-  // Construct step details object, similar to right-sidebar.js logic
-  selectedStep.value = {
-    planId: planId, // Ensure planId is included
+    !isStepCompleted && stepIndex === planRecord.currentStepIndex && !planRecord.completed
+  
+  // Construct step details object
+  const stepData: SelectedStep = {
+    planId: planId,
     index: stepIndex,
-    title:
-      typeof step === 'string'
-        ? step
-        : (step as any).title || (step as any).description || (step as any).name || `步骤 ${stepIndex + 1}`,
+    title: typeof step === 'string'
+      ? step
+      : (step as any).title || (step as any).description || (step as any).name || 
+        `${isSubPlan ? '子' : ''}步骤 ${stepIndex + 1}`,
     description: typeof step === 'string' ? step : (step as any).description || step,
-    agentExecution: agentExecution,
     completed: isStepCompleted,
     current: isCurrent,
   }
-
+  
+  if (agentExecution) {
+    stepData.agentExecution = agentExecution
+  }
+  
+  selectedStep.value = stepData
+  
   console.log('[RightPanel] Step details updated:', {
     planId,
     stepIndex,
-    stepTitle: selectedStep.value.title,
+    stepTitle: selectedStep.value?.title,
     hasAgentExecution: !!agentExecution,
     hasThinkActSteps: !!agentExecution?.thinkActSteps?.length,
-    thinkActStepsData: agentExecution?.thinkActSteps,
     completed: isStepCompleted,
     current: isCurrent,
-    planCurrentStep: planData.currentStepIndex,
-    planCompleted: planData.completed,
+    planCurrentStep: planRecord.currentStepIndex,
+    planCompleted: planRecord.completed,
+    isSubPlan
   })
-
+  
   // Process sub-plan data if exists - just log for debugging
   if (agentExecution?.thinkActSteps) {
     agentExecution.thinkActSteps.forEach((thinkActStep: any, index: number) => {
@@ -431,113 +511,44 @@ const showStepDetails = (planId: string, stepIndex: number) => {
       }
     })
   }
-
-  // If step is not completed and plan is still executing, start auto refresh
+  
+  // Start auto refresh if step is not completed and plan is still executing
   if (
     !isStepCompleted &&
-    !planData.completed &&
+    !planRecord.completed &&
     planExecutionManager.getActivePlanId() === planId
   ) {
     startAutoRefresh()
   } else {
     stopAutoRefresh()
   }
-
+  
   // Delay scroll state check to ensure DOM is updated
   setTimeout(() => {
     checkScrollState()
   }, 100)
-
+  
   // After data update, auto-scroll to latest content if previously at bottom
   autoScrollToBottomIfNeeded()
 }
 
-// Actions - Step selection handling (callable methods for external components)
 /**
- * Handle step selection - reuses handlePlanUpdate logic for data loading and display
- * This method can be called from parent components to display specific step details
- * @param planId - The plan ID to display
- * @param stepIndex - The step index to display
- */
-const handleStepSelected = (planId: string, stepIndex: number) => {
-  console.log('[RightPanel] Step selected:', { planId, stepIndex })
-  
-  // Set current step context for auto-refresh before displaying
-  currentStepContext.value = {
-    planId,
-    stepIndex,
-    isSubPlan: false
-  }
-  
-  // Use planExecutionManager to get plan data
-  const planData = planExecutionManager.getCachedPlanRecord(planId)
-  if (planData) {
-    // Direct display using existing data
-    showStepDetails(planId, stepIndex)
-  } else {
-    console.warn('[RightPanel] Plan data not found in manager:', planId)
-    currentStepContext.value = null // Clear context if plan not found
-  }
-}
-
-/**
- * Handle sub-plan step selection - reuses handlePlanUpdate logic for nested plan display
- * This method can be called from parent components to display specific sub-plan step details
- * @param parentPlanId - The parent plan ID
+ * Handle sub-plan step selection - wrapper for backward compatibility
+ * @param rootPlanId - The root plan ID
  * @param subPlanId - The sub-plan ID to display
- * @param stepIndex - The parent step index
+ * @param stepIndex - The parent step index (not used in new logic but kept for compatibility)
  * @param subStepIndex - The sub-step index to display
  */
-const handleSubPlanStepSelected = (parentPlanId: string, subPlanId: string, stepIndex: number, subStepIndex: number) => {
-  console.log('[RightPanel] Sub plan step selected:', {
-    parentPlanId,
-    subPlanId, 
+const handleSubPlanStepSelected = (rootPlanId: string, subPlanId: string, stepIndex: number, subStepIndex: number) => {
+  console.log('[RightPanel] Sub plan step selected (delegating to unified handler):', {
+    rootPlanId,
+    subPlanId,
     stepIndex,
     subStepIndex
   })
   
-  // Set current step context for auto-refresh before displaying
-  currentStepContext.value = {
-    planId: subPlanId,
-    stepIndex: subStepIndex,
-    parentPlanId,
-    subPlanId,
-    subStepIndex,
-    isSubPlan: true
-  }
-  
-  // Check if sub-plan data is available in planExecutionManager
-  const subPlanData = planExecutionManager.getCachedPlanRecord(subPlanId)
-  if (subPlanData) {
-    // Direct display using existing sub-plan data
-    showStepDetails(subPlanId, subStepIndex)
-  } else {
-    // Try to get parent plan to access sub-plan data
-    const parentPlanData = planExecutionManager.getCachedPlanRecord(parentPlanId)
-    if (parentPlanData) {
-      // Parent plan exists, try to find sub-plan data
-      const agentExecution = parentPlanData.agentExecutionSequence?.[stepIndex]
-      const thinkActStep = agentExecution?.thinkActSteps?.find((step: any) => 
-        step.subPlanExecutionRecord?.planId === subPlanId
-      )
-      
-      if (thinkActStep?.subPlanExecutionRecord) {
-        // Found sub-plan data, show its details
-        console.log('[RightPanel] Found sub-plan data in parent plan, displaying step details')
-        showStepDetails(subPlanId, subStepIndex)
-      } else {
-        console.warn('[RightPanel] Sub-plan not found in parent plan data:', {
-          parentPlanId,
-          subPlanId,
-          stepIndex
-        })
-        currentStepContext.value = null // Clear context if sub-plan not found
-      }
-    } else {
-      console.warn('[RightPanel] Parent plan data not found in manager:', parentPlanId)
-      currentStepContext.value = null // Clear context if parent plan not found
-    }
-  }
+  // Delegate to unified handler
+  handleStepSelected(subPlanId, subStepIndex, rootPlanId, subPlanId, subStepIndex)
 }
 
 
@@ -589,7 +600,7 @@ const startAutoRefresh = () => {
     }
 
     // Refresh step details
-    showStepDetails(ctx.planId, ctx.stepIndex)
+    handleStepSelected(ctx.planId, ctx.stepIndex)
 
     // After data update, auto-scroll to latest content if previously at bottom
     autoScrollToBottomIfNeeded()
@@ -741,8 +752,6 @@ onUnmounted(() => {
 
 // Expose methods to parent component - only keep necessary interfaces
 defineExpose({
-  handlePlanUpdate,
-  showStepDetails,
   updateDisplayedPlanProgress,
   handleStepSelected,
   handleSubPlanStepSelected,
