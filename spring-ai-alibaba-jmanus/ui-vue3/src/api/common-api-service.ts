@@ -16,11 +16,13 @@
 
 // Common request methods (TypeScript version, suitable for Vue projects)
 
+import type { PlanExecutionRecordResponse } from '@/types/plan-execution-record'
+
 export class CommonApiService {
   private static readonly BASE_URL = '/api/executor'
 
   // Get detailed execution records
-  public static async getDetails(planId: string): Promise<any | null> {
+  public static async getDetails(planId: string): Promise<PlanExecutionRecordResponse> {
     try {
       const response = await fetch(`${this.BASE_URL}/details/${planId}`)
       if (response.status === 404) {
@@ -30,12 +32,21 @@ export class CommonApiService {
       if (!response.ok) throw new Error(`Failed to get detailed information: ${response.status}`)
       const rawText = await response.text()
       try {
-        return JSON.parse(rawText)
+        const data = JSON.parse(rawText)
+        
+        // Type validation - ensure the response contains required currentPlanId
+        if (data && typeof data === 'object' && !data.currentPlanId) {
+          // If currentPlanId is missing from response, add it from the parameter
+          data.currentPlanId = planId
+        }
+        
+        return data
       } catch (jsonParseError) {
         throw jsonParseError
       }
     } catch (error: any) {
       // Log error but don't throw exception
+      console.error('[CommonApiService] Failed to get plan details:', error)
       return null
     }
   }

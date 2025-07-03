@@ -15,7 +15,6 @@
  */
 
 // Plan-related API wrapper (TypeScript version for Vue projects)
-import type { Ref } from 'vue'
 
 export class PlanActApiService {
   private static readonly PLAN_TEMPLATE_URL = '/api/plan-template'

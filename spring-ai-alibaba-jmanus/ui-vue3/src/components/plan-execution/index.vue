@@ -40,12 +40,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, defineProps, defineEmits, watch } from 'vue'
+import { ref, onMounted, onUnmounted, defineProps, defineEmits, watch } from 'vue'
 import ChatContainer from '@/components/chat/index.vue'
 import InputArea from '@/components/input/index.vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useRightPanelStore } from '@/stores/right-panel'
+import type { PlanExecutionRecord } from '@/types/plan-execution-record'
 
 // 使用pinia stores
 const sidebarStore = useSidebarStore()
@@ -129,8 +130,8 @@ onUnmounted(() => {
 /**
  * 处理来自 plan execution manager 的计划更新事件
  */
-const handlePlanManagerUpdate = (planData: any) => {
-  console.log('[PlanExecutionComponent] Received plan update from manager:', planData)
+const handlePlanManagerUpdate = (planData: PlanExecutionRecord, activeId: string) => {
+  console.log('[PlanExecutionComponent] Received plan update from manager:', planData, 'activeId:', activeId)
 
   // 将计划更新传递给 chat container
   if (chatRef.value && typeof chatRef.value.handlePlanUpdate === 'function') {
@@ -153,8 +154,8 @@ const handlePlanManagerUpdate = (planData: any) => {
 /**
  * 处理来自 plan execution manager 的计划完成事件
  */
-const handlePlanManagerCompleted = (result: any) => {
-  console.log('[PlanExecutionComponent] Received plan completed from manager:', result)
+const handlePlanManagerCompleted = (result: PlanExecutionRecord, activeId: string) => {
+  console.log('[PlanExecutionComponent] Received plan completed from manager:', result, 'activeId:', activeId)
 
   // 将计划完成传递给 chat container
   if (chatRef.value && typeof chatRef.value.handlePlanCompleted === 'function') {

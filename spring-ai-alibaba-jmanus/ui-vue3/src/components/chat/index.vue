@@ -195,7 +195,7 @@
                       </p>
 
                       <form
-                        @submit.prevent="handleUserInputSubmit(message, index)"
+                        @submit.prevent="handleUserInputSubmit(message)"
                         class="user-input-form"
                       >
                         <div
@@ -350,10 +350,7 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
-import { PlanActApiService } from '@/api/plan-act-api-service'
 import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
@@ -425,7 +422,6 @@ const rightPanelStore = useRightPanelStore()
 const messagesRef = ref<HTMLElement>()
 const isLoading = ref(false)
 const messages = ref<Message[]>([])
-const currentPlanId = ref<string>()
 const pollingInterval = ref<number>()
 const showScrollToBottom = ref(false)
 
@@ -460,48 +456,6 @@ const updateLastMessage = (updates: Partial<Message>) => {
   }
 }
 
-const handlePlanMode = async (query: string) => {
-  try {
-    isLoading.value = true
-
-    // 添加思考状态消息
-    const assistantMessage = addMessage('assistant', '', {
-      thinking: '正在分析您的需求并生成执行计划...',
-    })
-
-    // 生成计划
-    const planResponse = await PlanActApiService.generatePlan(query)
-
-    if (planResponse.planId) {
-      currentPlanId.value = planResponse.planId
-      assistantMessage.planId = planResponse.planId
-      assistantMessage.thinking = undefined
-
-      // 重要：使用 plan execution manager 来处理执行
-      // 这会触发轮询和所有相关的事件处理逻辑
-      planExecution.startExecution(query, planResponse.planId)
-
-      assistantMessage.content = '已生成执行计划，正在开始执行...'
-      assistantMessage.steps = planResponse.plan?.steps || []
-      assistantMessage.currentStepIndex = 0
-      assistantMessage.progress = 10
-      assistantMessage.progressText = '准备执行计划...'
-    } else {
-      assistantMessage.thinking = undefined
-      assistantMessage.content = '抱歉，计划生成失败，请重试。'
-    }
-  } catch (error: any) {
-    console.error('Plan mode error:', error)
-    updateLastMessage({
-      thinking: undefined,
-      content: `执行出现错误：${error?.message || '未知错误'}`,
-      progress: undefined,
-      progressText: undefined,
-    })
-  } finally {
-    isLoading.value = false
-  }
-}
 
 const handleDirectMode = async (query: string) => {
   try {
@@ -515,7 +469,8 @@ const handleDirectMode = async (query: string) => {
     // 直接执行
     const response = await DirectApiService.sendMessage(query)
 
-    assistantMessage.thinking = undefined
+    // 清除思考状态 - 使用delete而不是赋值undefined
+    delete assistantMessage.thinking
 
     // 生成自然的人性化回复
     const finalResponse = generateDirectModeResponse(response, query)
@@ -523,7 +478,6 @@ const handleDirectMode = async (query: string) => {
   } catch (error: any) {
     console.error('Direct mode error:', error)
     updateLastMessage({
-      thinking: undefined,
       content: generateErrorResponse(error),
     })
   } finally {
@@ -593,12 +547,6 @@ const generateErrorResponse = (error: any): string => {
   return `抱歉，处理您的请求时遇到了一些问题（${errorMsg}）。请稍后再试，或者换个方式表达您的需求，我会尽力帮助您的。`
 }
 
-const getStepStatus = (stepIndex: number, currentStepIndex?: number) => {
-  if (currentStepIndex === undefined) return 'pending'
-  if (stepIndex < currentStepIndex) return 'completed'
-  if (stepIndex === currentStepIndex) return 'current'
-  return 'pending'
-}
 
 const scrollToBottom = (force = false) => {
   nextTick(() => {
@@ -1013,14 +961,6 @@ const handleDialogRoundStart = (planId: string, query: string) => {
 
     // 如果没有现有消息，添加助手消息准备显示步骤
     if (existingAssistantMsg === -1) {
-      const assistantMessage = addMessage('assistant', '', {
-        planId: planId,
-        thinking: '正在分析任务需求...',
-        steps: [],
-        currentStepIndex: 0,
-        progress: 5,
-        progressText: '准备执行...',
-      })
 
       console.log('[ChatComponent] Created new assistant message for planId:', planId)
     } else {
@@ -1099,9 +1039,9 @@ const handlePlanUpdate = (planDetails: any) => {
 
     if (planDetails.completed) {
       // 直接设置最终回复，清除所有处理状态
-      message.thinking = undefined
-      message.progress = undefined
-      message.progressText = undefined
+      delete message.thinking
+      delete message.progress
+      delete message.progressText
 
       let finalResponse =
         planDetails.summary || planDetails.result || planDetails.message || '处理完成'
@@ -1214,7 +1154,7 @@ const handlePlanUpdate = (planDetails: any) => {
   } else {
     // 如果没有用户输入等待状态，清除之前的状态
     if (message.userInputWaitState) {
-      message.userInputWaitState = undefined
+      delete message.userInputWaitState
     }
   }
 
@@ -1222,9 +1162,9 @@ const handlePlanUpdate = (planDetails: any) => {
   if (planDetails.completed || planDetails.status === 'completed') {
     console.log('[ChatComponent] Plan is completed, updating final response')
     // 清除所有处理状态
-    message.progress = undefined
-    message.progressText = undefined
-    message.thinking = undefined
+    delete message.progress
+    delete message.progressText
+    delete message.thinking
 
     // 重要：设置 currentStepIndex 为总步骤数，这样所有步骤都会显示为"已完成"
     if (message.steps && message.steps.length > 0) {
@@ -1319,9 +1259,9 @@ const handlePlanCompleted = (details: any) => {
     if (messageIndex !== -1) {
       const message = messages.value[messageIndex]
       // 清除所有处理状态，显示为完成
-      message.progress = undefined
-      message.progressText = undefined
-      message.thinking = undefined
+      delete message.progress
+      delete message.progressText
+      delete message.thinking
 
       // 生成人性化的最终回复
       const summary = details.summary || details.result || '任务已完成'
@@ -1366,7 +1306,7 @@ const formatResponseText = (text: string): string => {
 }
 
 // 处理用户输入表单提交
-const handleUserInputSubmit = async (message: Message, stepIndex: number) => {
+const handleUserInputSubmit = async (message: Message) => {
   if (!message.planId || !message.userInputWaitState) {
     console.error('[ChatComponent] 缺少planId或userInputWaitState')
     return
@@ -1392,8 +1332,8 @@ const handleUserInputSubmit = async (message: Message, stepIndex: number) => {
     const response = await CommonApiService.submitFormInput(message.planId, inputData)
 
     // 清除用户输入等待状态
-    message.userInputWaitState = undefined
-    message.genericInput = undefined
+    delete message.userInputWaitState
+    delete message.genericInput
 
     // 继续轮询以获取计划更新（提交后应该会自动继续执行）
     planExecution.startPolling()
@@ -1404,93 +1344,6 @@ const handleUserInputSubmit = async (message: Message, stepIndex: number) => {
     // 可以在UI中显示错误消息
     alert(`提交失败: ${error?.message || '未知错误'}`)
   }
-}
-
-// 定义事件处理器，以便可以正确地添加和移除事件监听器
-const eventHandlers = {
-  onPlanUpdate: (event: CustomEvent) => {
-    console.log('[ChatComponent] Received PLAN_UPDATE event:', event.detail)
-
-    // 检查是否有有效的计划详情
-    if (event.detail && event.detail.planId) {
-      // 添加调试信息
-      if (event.detail.agentExecutionSequence) {
-        console.log(
-          `[ChatComponent] 计划包含 ${event.detail.agentExecutionSequence.length} 个执行序列`
-        )
-
-        // 输出每个执行序列的基本信息
-        event.detail.agentExecutionSequence.forEach((execution: any, index: number) => {
-          if (execution?.thinkActSteps?.length) {
-            console.log(
-              `[ChatComponent] 序列 ${index}: ${execution.thinkActSteps.length} 个思考步骤`
-            )
-          }
-        })
-      }
-
-      // 处理计划更新
-      handlePlanUpdate(event.detail)
-    } else {
-      console.warn('[ChatComponent] 收到无效的计划更新事件:', event.detail)
-    }
-  },
-
-  onPlanCompleted: (event: CustomEvent) => {
-    console.log('[ChatComponent] Received PLAN_COMPLETED event:', event.detail)
-    handlePlanCompleted(event.detail)
-  },
-
-  onDialogRoundStart: (event: CustomEvent) => {
-    console.log('[ChatComponent] Received DIALOG_ROUND_START event:', event.detail)
-    if (event.detail && event.detail.planId && event.detail.query) {
-      handleDialogRoundStart(event.detail.planId, event.detail.query)
-    }
-  },
-
-  onMessageUpdate: (event: CustomEvent) => {
-    console.log('[ChatComponent] Received MESSAGE_UPDATE event:', event.detail)
-    const data = event.detail
-    if (data && data.content) {
-      // 查找或创建对应planId的消息
-      let message
-      if (data.planId) {
-        const index = messages.value.findIndex(m => m.planId === data.planId)
-        if (index >= 0) {
-          message = messages.value[index]
-        } else {
-          // 如果找不到对应的消息，创建一个新的
-          message = addMessage('assistant', '', { planId: data.planId })
-        }
-
-        // 根据消息类型更新不同的内容
-        if (data.type === 'status') {
-          message.thinking = data.content
-        } else if (data.type === 'step') {
-          message.progressText = data.content
-        } else if (data.type === 'completion') {
-          message.content = data.content
-          message.thinking = undefined
-          message.progress = 100
-        } else if (data.type === 'error') {
-          message.content = data.content
-          message.thinking = undefined
-        }
-      }
-    }
-  },
-
-  onChatInputUpdateState: (event: CustomEvent) => {
-    console.log('[ChatComponent] Received CHAT_INPUT_UPDATE_STATE event:', event.detail)
-    if (event.detail) {
-      emit('input-update-state', event.detail?.enabled, event.detail.placeholder)
-    }
-  },
-
-  onChatInputClear: () => {
-    console.log('[ChatComponent] Received CHAT_INPUT_CLEAR event')
-    emit('input-clear')
-  },
 }
 
 onMounted(() => {

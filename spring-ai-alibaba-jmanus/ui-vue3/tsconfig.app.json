@@ -25,6 +25,13 @@
     "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "allowUnreachableCode": false,
-    "allowUnusedLabels": false
+    "allowUnusedLabels": false,
+    // Ensure proper module resolution for Vue
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": false,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "types": ["vite/client"]
   }
 }

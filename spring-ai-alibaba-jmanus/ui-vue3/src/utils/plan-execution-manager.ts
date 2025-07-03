@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-import { ref, reactive } from 'vue'
+import { reactive } from 'vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { CommonApiService } from '@/api/common-api-service'
+import type { PlanExecutionRecord } from '@/types/plan-execution-record'
 
 // Define event callback interface
 interface EventCallbacks {
-  onPlanUpdate?: (data: any) => void
-  onPlanCompleted?: (data: any) => void
+  onPlanUpdate?: (data: PlanExecutionRecord,activeId : string) => void
+  onPlanCompleted?: (data: PlanExecutionRecord, activeId: string) => void
   onDialogRoundStart?: (data: any) => void
   onMessageUpdate?: (data: any) => void
   onChatInputUpdateState?: (data: any) => void
@@ -36,14 +37,6 @@ interface ExecutionState {
   pollTimer: number | null
 }
 
-interface PlanDetails {
-  planId: string
-  title?: string
-  steps?: any[]
-  currentStepIndex?: number
-  completed?: boolean
-  summary?: string
-}
 
 export class PlanExecutionManager {
   private static instance: PlanExecutionManager | null = null
@@ -202,8 +195,8 @@ export class PlanExecutionManager {
   /**
    * Handle plan completion common logic
    */
-  private handlePlanCompletion(details: PlanDetails): void {
-    this.emitPlanCompleted({ ...details, planId: this.state.activePlanId })
+  private handlePlanCompletion(details: PlanExecutionRecord): void {
+    this.emitPlanCompleted(details, this.state.activePlanId || '')
     this.state.lastSequenceSize = 0
     this.stopPolling()
 
@@ -256,12 +249,12 @@ export class PlanExecutionManager {
       if (!details.steps || details.steps.length === 0) {
         console.log('[PlanExecutionManager] Simple response without steps detected, handling as completed')
         // For simple responses, emit completion directly
-        this.emitPlanUpdate({ ...details, planId: this.state.activePlanId, completed: true })
+        this.emitPlanUpdate(details, this.state.activePlanId || '')
         this.handlePlanCompletion(details)
         return
       }
 
-      this.emitPlanUpdate({ ...details, planId: this.state.activePlanId })
+      this.emitPlanUpdate(details, this.state.activePlanId || '')
 
       if (details.completed) {
         this.handlePlanCompletion(details)
@@ -276,7 +269,7 @@ export class PlanExecutionManager {
   /**
    * Get plan details (needs to be adjusted based on actual API)
    */
-  private async getPlanDetails(planId: string): Promise<PlanDetails | null> {
+  private async getPlanDetails(planId: string): Promise<PlanExecutionRecord | null> {
     try {
       // Use CommonApiService's getDetails method
       const details = await CommonApiService.getDetails(planId)
@@ -356,15 +349,15 @@ export class PlanExecutionManager {
     }
   }
 
-  private emitPlanUpdate(data: any): void {
+  private emitPlanUpdate(data: PlanExecutionRecord, activeId: string): void {
     if (this.callbacks.onPlanUpdate) {
-      this.callbacks.onPlanUpdate(data)
+      this.callbacks.onPlanUpdate(data, activeId)
     }
   }
 
-  private emitPlanCompleted(data: any): void {
+  private emitPlanCompleted(data: PlanExecutionRecord, activeId: string): void {
     if (this.callbacks.onPlanCompleted) {
-      this.callbacks.onPlanCompleted(data)
+      this.callbacks.onPlanCompleted(data, activeId)
     }
   }
 }
