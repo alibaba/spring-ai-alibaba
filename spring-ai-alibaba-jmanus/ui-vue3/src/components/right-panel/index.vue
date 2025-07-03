@@ -173,46 +173,6 @@
                           </span>
                         </div>
                       </div>
-
-                      <!-- 子计划的主要步骤 -->
-                      <div
-                        class="sub-plan-steps"
-                        v-if="tas.subPlanExecutionRecord.steps && tas.subPlanExecutionRecord.steps.length > 0"
-                      >
-                        <h6>主要步骤</h6>
-                        <div class="sub-plan-step-list">
-                          <div
-                            v-for="(subStep, subStepIndex) in tas.subPlanExecutionRecord.steps"
-                            :key="subStepIndex"
-                            class="sub-plan-step-item"
-                            :class="{
-                              completed: getSubStepStatus(tas.subPlanExecutionRecord, subStepIndex) === 'completed',
-                              current: getSubStepStatus(tas.subPlanExecutionRecord, subStepIndex) === 'current',
-                              pending: getSubStepStatus(tas.subPlanExecutionRecord, subStepIndex) === 'pending'
-                            }"
-                            @click="handleSubPlanStepClick(tas.subPlanExecutionRecord, subStepIndex)"
-                          >
-                            <div class="sub-step-indicator">
-                              <Icon
-                                icon="carbon:checkmark-filled"
-                                v-if="getSubStepStatus(tas.subPlanExecutionRecord, subStepIndex) === 'completed'"
-                                class="step-icon success"
-                              />
-                              <Icon
-                                icon="carbon:in-progress"
-                                v-else-if="getSubStepStatus(tas.subPlanExecutionRecord, subStepIndex) === 'current'"
-                                class="step-icon current"
-                              />
-                              <Icon icon="carbon:circle" v-else class="step-icon pending" />
-                              <span class="step-number">{{ subStepIndex + 1 }}</span>
-                            </div>
-                            <div class="sub-step-content">
-                              <span class="sub-step-title">{{ subStep }}</span>
-                              <span class="sub-step-badge">子步骤</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -313,15 +273,27 @@ import { Icon } from '@iconify/vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import type { PlanExecutionRecord } from '@/types/plan-execution-record'
 
+// Define step selection context interface
+interface StepSelectionContext {
+  planId: string
+  stepIndex: number
+  parentPlanId?: string  // For sub-plan steps
+  subPlanId?: string     // For sub-plan steps  
+  subStepIndex?: number  // For sub-plan steps
+  isSubPlan: boolean     // Flag to indicate if this is a sub-plan step
+}
+
 const { t } = useI18n()
 
 // DOM element reference
 const scrollContainer = ref<HTMLElement>()
 
 // Local state - replacing store state
-const planDataMap = ref<Map<string, any>>(new Map())
 const currentDisplayedPlanId = ref<string>()
 const selectedStep = ref<any>()
+
+// Current step selection context for auto-refresh
+const currentStepContext = ref<StepSelectionContext | null>(null)
 
 // Scroll-related state
 const showScrollToBottomButton = ref(false)
@@ -350,26 +322,7 @@ const handlePlanUpdate = async (planData: PlanExecutionRecord) => {
     return
   }
 
-  // Update plan data to local mapping
-  planDataMap.value.set(planData.currentPlanId, planData)
-  console.log('[RightPanel] Plan data updated to planDataMap:', planData.currentPlanId)
-
-  // Process sub-plan data from agentExecutionSequence if exists
-  if (planData.agentExecutionSequence) {
-    planData.agentExecutionSequence.forEach((agentExecution: any, agentIndex: number) => {
-      if (agentExecution.thinkActSteps) {
-        agentExecution.thinkActSteps.forEach((thinkActStep: any, stepIndex: number) => {
-          if (thinkActStep.subPlanExecutionRecord) {
-            const subPlanId = thinkActStep.subPlanExecutionRecord.currentPlanId
-            if (subPlanId) {
-              console.log(`[RightPanel] Processing sub-plan from agent ${agentIndex}, step ${stepIndex}:`, subPlanId)
-              planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
-            }
-          }
-        })
-      }
-    })
-  }
+  console.log('[RightPanel] Plan data updated in manager:', planData.currentPlanId)
 
   // If currently selected step corresponds to this plan, reload step details
   if (selectedStep.value?.planId === planData.currentPlanId) {
@@ -394,26 +347,28 @@ const updateDisplayedPlanProgress = (planData: any) => {
 const showStepDetails = (planId: string, stepIndex: number) => {
   console.log('[RightPanel] Show step details:', { planId, stepIndex })
 
-  const planData = planDataMap.value.get(planId)
+  const planData = planExecutionManager.getCachedPlanRecord(planId)
 
   if (!planData || !planData.steps || stepIndex >= planData.steps.length) {
     selectedStep.value = null
+    currentStepContext.value = null // Clear context when no valid step
     console.warn('[RightPanel] Invalid step data:', {
       planId,
       stepIndex,
       hasPlanData: !!planData,
       hasSteps: !!planData?.steps,
       stepsLength: planData?.steps?.length,
-      planDataKeys: Array.from(planDataMap.value.keys()),
-      availablePlansData: Array.from(planDataMap.value.entries()).map(([key, value]) => ({
-        planId: key,
-        stepsCount: value.steps?.length || 0,
-        hasAgentExecution: !!value.agentExecutionSequence,
-        agentExecutionLength: value.agentExecutionSequence?.length || 0
-      }))
+      message: 'Plan not found in execution manager or invalid step index'
     })
     stopAutoRefresh() // Stop auto refresh
     return
+  }
+
+  // Set current step context for auto-refresh
+  currentStepContext.value = {
+    planId,
+    stepIndex,
+    isSubPlan: false
   }
 
   currentDisplayedPlanId.value = planId
@@ -448,8 +403,8 @@ const showStepDetails = (planId: string, stepIndex: number) => {
     title:
       typeof step === 'string'
         ? step
-        : step.title || step.description || step.name || `步骤 ${stepIndex + 1}`,
-    description: typeof step === 'string' ? step : step.description || step,
+        : (step as any).title || (step as any).description || (step as any).name || `步骤 ${stepIndex + 1}`,
+    description: typeof step === 'string' ? step : (step as any).description || step,
     agentExecution: agentExecution,
     completed: isStepCompleted,
     current: isCurrent,
@@ -468,42 +423,11 @@ const showStepDetails = (planId: string, stepIndex: number) => {
     planCompleted: planData.completed,
   })
 
-  // Process sub-plan data if exists
+  // Process sub-plan data if exists - just log for debugging
   if (agentExecution?.thinkActSteps) {
     agentExecution.thinkActSteps.forEach((thinkActStep: any, index: number) => {
       if (thinkActStep.subPlanExecutionRecord) {
         console.log(`[RightPanel] Found sub-plan in thinkActStep ${index}:`, thinkActStep.subPlanExecutionRecord)
-        
-        const subPlanId = thinkActStep.subPlanExecutionRecord.planId
-        
-        // Critical fix: Check for ID conflicts between main plan and sub-plan
-        if (subPlanId === planId) {
-          console.error(`[RightPanel] CRITICAL ERROR: Sub-plan ID "${subPlanId}" is identical to parent plan ID "${planId}". This will cause data corruption!`)
-          console.error('[RightPanel] Sub-plan data:', thinkActStep.subPlanExecutionRecord)
-          console.error('[RightPanel] Parent plan data:', planData)
-          
-          // Generate a unique sub-plan ID to prevent collision
-          const uniqueSubPlanId = `${subPlanId}_sub_${stepIndex}_${index}_${Date.now()}`
-          console.warn(`[RightPanel] Auto-correcting sub-plan ID from "${subPlanId}" to "${uniqueSubPlanId}"`)
-          
-          // Update the sub-plan record with the corrected ID
-          const correctedSubPlan = { ...thinkActStep.subPlanExecutionRecord, planId: uniqueSubPlanId }
-          planDataMap.value.set(uniqueSubPlanId, correctedSubPlan)
-          
-          // Also update the original record to prevent future issues
-          thinkActStep.subPlanExecutionRecord.planId = uniqueSubPlanId
-        } else if (subPlanId && !planDataMap.value.has(subPlanId)) {
-          // Normal case: sub-plan has unique ID
-          console.log(`[RightPanel] Storing sub-plan with unique ID: ${subPlanId}`)
-          planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
-        } else if (subPlanId && planDataMap.value.has(subPlanId)) {
-          // Sub-plan ID already exists, check if it's the same plan or different
-          const existingPlan = planDataMap.value.get(subPlanId)
-          if (existingPlan && existingPlan !== thinkActStep.subPlanExecutionRecord) {
-            console.warn(`[RightPanel] Sub-plan ID "${subPlanId}" already exists with different data. Updating with latest data.`)
-            planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
-          }
-        }
       }
     })
   }
@@ -514,7 +438,7 @@ const showStepDetails = (planId: string, stepIndex: number) => {
     !planData.completed &&
     planExecutionManager.getActivePlanId() === planId
   ) {
-    startAutoRefresh(planId, stepIndex)
+    startAutoRefresh()
   } else {
     stopAutoRefresh()
   }
@@ -538,23 +462,21 @@ const showStepDetails = (planId: string, stepIndex: number) => {
 const handleStepSelected = (planId: string, stepIndex: number) => {
   console.log('[RightPanel] Step selected:', { planId, stepIndex })
   
-  // Use existing plan data if available, otherwise trigger plan update
-  const existingPlanData = planDataMap.value.get(planId)
-  if (existingPlanData) {
+  // Set current step context for auto-refresh before displaying
+  currentStepContext.value = {
+    planId,
+    stepIndex,
+    isSubPlan: false
+  }
+  
+  // Use planExecutionManager to get plan data
+  const planData = planExecutionManager.getCachedPlanRecord(planId)
+  if (planData) {
     // Direct display using existing data
     showStepDetails(planId, stepIndex)
   } else {
-    // Load plan data from plan execution manager first
-    const planData = planExecutionManager.getCachedPlanRecord(planId)
-    if (planData) {
-      handlePlanUpdate(planData).then(() => {
-        showStepDetails(planId, stepIndex)
-      }).catch((error) => {
-        console.error('[RightPanel] Error loading plan data for step selection:', error)
-      })
-    } else {
-      console.warn('[RightPanel] Plan data not found in manager:', planId)
-    }
+    console.warn('[RightPanel] Plan data not found in manager:', planId)
+    currentStepContext.value = null // Clear context if plan not found
   }
 }
 
@@ -574,24 +496,34 @@ const handleSubPlanStepSelected = (parentPlanId: string, subPlanId: string, step
     subStepIndex
   })
   
-  // Check if sub-plan data is already available in planDataMap
-  const subPlanData = planDataMap.value.get(subPlanId)
+  // Set current step context for auto-refresh before displaying
+  currentStepContext.value = {
+    planId: subPlanId,
+    stepIndex: subStepIndex,
+    parentPlanId,
+    subPlanId,
+    subStepIndex,
+    isSubPlan: true
+  }
+  
+  // Check if sub-plan data is available in planExecutionManager
+  const subPlanData = planExecutionManager.getCachedPlanRecord(subPlanId)
   if (subPlanData) {
     // Direct display using existing sub-plan data
     showStepDetails(subPlanId, subStepIndex)
   } else {
-    // First ensure parent plan is loaded to access sub-plan data
-    const parentPlanData = planDataMap.value.get(parentPlanId)
+    // Try to get parent plan to access sub-plan data
+    const parentPlanData = planExecutionManager.getCachedPlanRecord(parentPlanId)
     if (parentPlanData) {
-      // Parent plan exists, try to find and load sub-plan data
+      // Parent plan exists, try to find sub-plan data
       const agentExecution = parentPlanData.agentExecutionSequence?.[stepIndex]
       const thinkActStep = agentExecution?.thinkActSteps?.find((step: any) => 
         step.subPlanExecutionRecord?.planId === subPlanId
       )
       
       if (thinkActStep?.subPlanExecutionRecord) {
-        // Add sub-plan to planDataMap and display
-        planDataMap.value.set(subPlanId, thinkActStep.subPlanExecutionRecord)
+        // Found sub-plan data, show its details
+        console.log('[RightPanel] Found sub-plan data in parent plan, displaying step details')
         showStepDetails(subPlanId, subStepIndex)
       } else {
         console.warn('[RightPanel] Sub-plan not found in parent plan data:', {
@@ -599,36 +531,41 @@ const handleSubPlanStepSelected = (parentPlanId: string, subPlanId: string, step
           subPlanId,
           stepIndex
         })
+        currentStepContext.value = null // Clear context if sub-plan not found
       }
     } else {
-      // Load parent plan first from plan execution manager
-      const parentPlan = planExecutionManager.getCachedPlanRecord(parentPlanId)
-      if (parentPlan) {
-        handlePlanUpdate(parentPlan).then(() => {
-          handleSubPlanStepSelected(parentPlanId, subPlanId, stepIndex, subStepIndex)
-        }).catch((error) => {
-          console.error('[RightPanel] Error loading parent plan data for sub-plan step selection:', error)
-        })
-      } else {
-        console.warn('[RightPanel] Parent plan data not found in manager:', parentPlanId)
-      }
+      console.warn('[RightPanel] Parent plan data not found in manager:', parentPlanId)
+      currentStepContext.value = null // Clear context if parent plan not found
     }
   }
 }
 
 
 // Actions - Auto refresh management
-const startAutoRefresh = (planId: string, stepIndex: number) => {
-  console.log('[RightPanel] Start auto refresh:', { planId, stepIndex })
+const startAutoRefresh = () => {
+  if (!currentStepContext.value) {
+    console.warn('[RightPanel] Cannot start auto refresh: no current step context')
+    return
+  }
+  
+  const context = currentStepContext.value
+  console.log('[RightPanel] Start auto refresh:', context)
 
   // Stop previous refresh
   stopAutoRefresh()
 
   autoRefreshTimer.value = window.setInterval(() => {
+    if (!currentStepContext.value) {
+      console.log('[RightPanel] Current step context cleared, stop auto refresh')
+      stopAutoRefresh()
+      return
+    }
+    
+    const ctx = currentStepContext.value
     console.log('[RightPanel] Execute auto refresh - Step details')
 
     // Check if plan is still executing
-    const planData = planDataMap.value.get(planId)
+    const planData = planExecutionManager.getCachedPlanRecord(ctx.planId)
     if (!planData || planData.completed) {
       console.log('[RightPanel] Plan completed, stop auto refresh')
       stopAutoRefresh()
@@ -636,7 +573,7 @@ const startAutoRefresh = (planId: string, stepIndex: number) => {
     }
 
     // Check if step is still executing
-    const agentExecution = planData.agentExecutionSequence?.[stepIndex]
+    const agentExecution = planData.agentExecutionSequence?.[ctx.stepIndex]
     if (agentExecution?.isCompleted) {
       console.log('[RightPanel] Step completed, stop auto refresh')
       stopAutoRefresh()
@@ -645,14 +582,14 @@ const startAutoRefresh = (planId: string, stepIndex: number) => {
 
     // Check if already moved to next step
     const currentStepIndex = planData.currentStepIndex ?? 0
-    if (stepIndex < currentStepIndex) {
+    if (ctx.stepIndex < currentStepIndex) {
       console.log('[RightPanel] Already moved to next step, stop auto refresh')
       stopAutoRefresh()
       return
     }
 
     // Refresh step details
-    showStepDetails(planId, stepIndex)
+    showStepDetails(ctx.planId, ctx.stepIndex)
 
     // After data update, auto-scroll to latest content if previously at bottom
     autoScrollToBottomIfNeeded()
@@ -746,7 +683,6 @@ const formatJson = (jsonData: any): string => {
 // Actions - Resource cleanup
 const cleanup = () => {
   stopAutoRefresh()
-  planDataMap.value.clear()
   selectedStep.value = null
   currentDisplayedPlanId.value = undefined
   shouldAutoScrollToBottom.value = true
@@ -799,47 +735,9 @@ onMounted(() => {
 // Lifecycle - cleanup on unmount
 onUnmounted(() => {
   console.log('[RightPanel] Component unmounting, cleaning up...')
+  currentStepContext.value = null // Clear step context
   cleanup()
 })
-
-// Get sub-step status
-const getSubStepStatus = (subPlan: any, stepIndex: number) => {
-  if (!subPlan) return 'pending'
-  
-  const currentStepIndex = subPlan.currentStepIndex
-  if (subPlan.completed) {
-    return 'completed'
-  }
-  
-  if (currentStepIndex === undefined || currentStepIndex === null) {
-    return stepIndex === 0 ? 'current' : 'pending'
-  }
-  
-  if (stepIndex < currentStepIndex) {
-    return 'completed'
-  } else if (stepIndex === currentStepIndex) {
-    return 'current'
-  } else {
-    return 'pending'
-  }
-}
-
-// Handle sub-plan step click
-const handleSubPlanStepClick = (subPlan: any, stepIndex: number) => {
-  if (!subPlan || !subPlan.planId) {
-    console.warn('[RightPanel] Invalid sub-plan data:', subPlan)
-    return
-  }
-
-  console.log('[RightPanel] Sub-plan step clicked:', {
-    subPlanId: subPlan.planId,
-    stepIndex: stepIndex,
-    stepTitle: subPlan.steps?.[stepIndex]
-  })
-
-  // Show sub-plan step details
-  showStepDetails(subPlan.planId, stepIndex)
-}
 
 // Expose methods to parent component - only keep necessary interfaces
 defineExpose({
@@ -1343,112 +1241,6 @@ defineExpose({
           color: #cccccc;
           font-size: 12px;
           font-weight: 500;
-        }
-      }
-    }
-
-    .sub-plan-steps {
-      h6 {
-        color: #ffffff;
-        margin: 0 0 8px 0;
-        font-size: 13px;
-        font-weight: 600;
-      }
-
-      .sub-plan-step-list {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      .sub-plan-step-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 12px;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        position: relative;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.05);
-          border-color: rgba(102, 126, 234, 0.5);
-        }
-
-        &.completed {
-          background: rgba(39, 174, 96, 0.1);
-          border-color: rgba(39, 174, 96, 0.3);
-        }
-
-        &.current {
-          background: rgba(52, 152, 219, 0.1);
-          border-color: rgba(52, 152, 219, 0.3);
-          box-shadow: 0 0 8px rgba(52, 152, 219, 0.2);
-        }
-
-        &.pending {
-          opacity: 0.7;
-        }
-
-        .sub-step-indicator {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-shrink: 0;
-
-          .step-icon {
-            font-size: 12px;
-
-            &.success {
-              color: #27ae60;
-            }
-
-            &.current {
-              color: #3498db;
-            }
-
-            &.pending {
-              color: #666666;
-            }
-          }
-
-          .step-number {
-            font-size: 11px;
-            color: #888888;
-            font-weight: 500;
-            min-width: 16px;
-            text-align: center;
-          }
-        }
-
-        .sub-step-content {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          min-width: 0;
-
-          .sub-step-title {
-            color: #cccccc;
-            font-size: 13px;
-            line-height: 1.4;
-            word-break: break-word;
-            flex: 1;
-          }
-
-          .sub-step-badge {
-            background: rgba(102, 126, 234, 0.2);
-            color: #667eea;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: 500;
-            flex-shrink: 0;
-            margin-left: 8px;
-          }
         }
       }
     }
