@@ -18,81 +18,86 @@ package com.alibaba.cloud.ai.example.manus.recorder.entity;
 import java.time.LocalDateTime;
 
 /**
- * 记录智能体在单个执行步骤中的思考和行动过程。 作为AgentExecutionRecord的子步骤存在，专注于记录思考和行动阶段的处理消息。
+ * Records the thinking and action process of an agent in a single execution step. Exists
+ * as a sub-step of AgentExecutionRecord, focusing on recording processing messages during
+ * thinking and action phases.
  *
- * 数据结构简化为三个主要部分：
+ * Data structure simplified into three main parts:
  *
- * 1. 基本信息 (Basic Info) - id: 记录的唯一标识 - stepNumber: 步骤编号 - parentExecutionId: 父执行记录ID
+ * 1. Basic Info - id: unique identifier of the record - stepNumber: step number -
+ * parentExecutionId: parent execution record ID
  *
- * 2. 思考阶段 (Think Phase) - thinkStartTime: 思考开始时间 - thinkInput: 思考输入内容 - thinkOutput:
- * 思考输出结果 - thinkEndTime: 思考结束时间
+ * 2. Think Phase - thinkStartTime: thinking start time - thinkInput: thinking input
+ * content - thinkOutput: thinking output result - thinkEndTime: thinking end time
  *
- * 3. 行动阶段 (Act Phase) - actStartTime: 行动开始时间 - toolName: 使用的工具名称 - toolParameters: 工具参数 -
- * actionNeeded: 是否需要执行动作 - actionDescription: 行动描述 - actionResult: 行动执行结果 - actEndTime:
- * 行动结束时间 - status: 执行状态 - errorMessage: 错误信息（如有）
+ * 3. Act Phase - actStartTime: action start time - toolName: tool name used -
+ * toolParameters: tool parameters - actionNeeded: whether action execution is needed -
+ * actionDescription: action description - actionResult: action execution result -
+ * actEndTime: action end time - status: execution status - errorMessage: error message
+ * (if any)
  *
  * @see AgentExecutionRecord
  * @see JsonSerializable
  */
 public class ThinkActRecord {
 
-	// 记录的唯一标识符
+	// Unique identifier of the record
 	private Long id;
 
-	// 父执行记录的ID，关联到AgentExecutionRecord
+	// ID of parent execution record, linked to AgentExecutionRecord
 	private Long parentExecutionId;
 
-	// 思考开始的时间戳
+	// Timestamp when thinking started
 	private LocalDateTime thinkStartTime;
 
-	// 思考完成的时间戳
+	// Timestamp when thinking completed
 	private LocalDateTime thinkEndTime;
 
-	// 行动开始的时间戳
+	// Timestamp when action started
 	private LocalDateTime actStartTime;
 
-	// 行动完成的时间戳
+	// Timestamp when action completed
 	private LocalDateTime actEndTime;
 
-	// 思考过程的输入上下文
+	// Input context for the thinking process
 	private String thinkInput;
 
-	// 思考过程的输出结果
+	// Output result of the thinking process
 	private String thinkOutput;
 
-	// 思考是否确定需要采取行动
+	// Whether thinking determined that action is needed
 	private boolean actionNeeded;
 
-	// 将要采取的行动描述
+	// Description of the action to be taken
 	private String actionDescription;
 
-	// 行动执行的结果
+	// Result of action execution
 	private String actionResult;
 
-	// 此思考-行动周期的状态（成功、失败等）
+	// Status of this think-act cycle (success, failure, etc.)
 	private String status;
 
-	// 如果周期遇到问题的错误消息
+	// Error message if the cycle encountered problems
 	private String errorMessage;
 
-	// 用于行动的工具名称（如适用）
+	// Tool name used for action (if applicable)
 	private String toolName;
 
-	// 用于行动的工具参数（序列化，如适用）
+	// Tool parameters used for action (serialized, if applicable)
 	private String toolParameters;
 
-	// 默认构造函数
+	// Default constructor
 	public ThinkActRecord() {
 	}
 
-	// 带父执行ID的构造函数
+	// Constructor with parent execution ID
 	public ThinkActRecord(Long parentExecutionId) {
 		this.parentExecutionId = parentExecutionId;
 		this.thinkStartTime = LocalDateTime.now();
 	}
 
 	/**
-	 * 记录思考阶段开始
+	 * Record the start of thinking phase
 	 */
 	public void startThinking(String thinkInput) {
 
@@ -101,7 +106,7 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * 记录思考阶段结束
+	 * Record the end of thinking phase
 	 */
 	public void finishThinking(String thinkOutput) {
 		this.thinkEndTime = LocalDateTime.now();
@@ -109,7 +114,7 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * 记录行动阶段开始
+	 * Record the start of action phase
 	 */
 	public void startAction(String actionDescription, String toolName, String toolParameters) {
 		this.actStartTime = LocalDateTime.now();
@@ -120,7 +125,7 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * 记录行动阶段结束
+	 * Record the end of action phase
 	 */
 	public void finishAction(String actionResult, String status) {
 		this.actEndTime = LocalDateTime.now();
@@ -129,7 +134,7 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * 记录错误信息
+	 * Record error information
 	 */
 	public void recordError(String errorMessage) {
 		this.errorMessage = errorMessage;
@@ -137,13 +142,14 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * 保存记录到持久化存储 空实现，由具体的存储实现来覆盖
-	 * @return 保存后的记录ID
+	 * Save record to persistent storage. Empty implementation, to be overridden by
+	 * specific storage implementations
+	 * @return Record ID after saving
 	 */
 	public Long save() {
-		// 如果ID为空，生成一个随机ID
+		// If ID is null, generate a random ID
 		if (this.id == null) {
-			// 使用时间戳和随机数组合生成ID
+			// Use combination of timestamp and random number to generate ID
 			long timestamp = System.currentTimeMillis();
 			int random = (int) (Math.random() * 1000000);
 			this.id = timestamp * 1000 + random;

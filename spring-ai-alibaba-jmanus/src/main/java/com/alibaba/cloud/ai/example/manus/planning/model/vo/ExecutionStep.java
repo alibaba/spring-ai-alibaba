@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 
 /**
- * 单个步骤的执行结果
+ * The result of a single step execution
  */
 public class ExecutionStep {
 
@@ -82,8 +82,8 @@ public class ExecutionStep {
 	}
 
 	/**
-	 * 将步骤转换为JSON字符串
-	 * @return 步骤的JSON字符串表示
+	 * Convert the step to a JSON string
+	 * @return the JSON string representation of the step
 	 */
 	public String toJson() {
 		StringBuilder json = new StringBuilder();
@@ -99,23 +99,23 @@ public class ExecutionStep {
 	}
 
 	/**
-	 * 从JsonNode解析并创建ExecutionStep对象
-	 * @param stepNode JsonNode对象
-	 * @return 解析后的ExecutionStep对象
+	 * Parse and create an ExecutionStep object from a JsonNode
+	 * @param stepNode JsonNode object
+	 * @return the parsed ExecutionStep object
 	 */
 	public static ExecutionStep fromJson(com.fasterxml.jackson.databind.JsonNode stepNode) {
 		ExecutionStep step = new ExecutionStep();
 
-		// 设置步骤需求
+		// Set the step requirement
 		String stepRequirement = stepNode.has("stepRequirement") ? stepNode.get("stepRequirement").asText() : "未指定步骤";
 		step.setStepRequirement(stepRequirement);
 
-		// 设置步骤索引（如果有）
+		// Set the step index (if any)
 		if (stepNode.has("stepIndex")) {
 			step.setStepIndex(stepNode.get("stepIndex").asInt());
 		}
 
-		// 设置步骤结果（如果有）
+		// Set the step result (if any)
 		if (stepNode.has("result")) {
 			step.setResult(stepNode.get("result").asText());
 		}

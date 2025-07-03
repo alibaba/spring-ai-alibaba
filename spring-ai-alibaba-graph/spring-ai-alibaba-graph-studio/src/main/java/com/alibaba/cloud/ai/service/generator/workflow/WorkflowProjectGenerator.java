@@ -99,7 +99,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		Workflow workflow = (Workflow) app.getSpec();
 
 		List<Node> nodes = workflow.getGraph().getNodes();
-		Map<String, String> varNames = assignVariableNames(nodes);
+		Map<String, String> varNames = nodes.stream()
+			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
 
 		boolean hasRetriever = nodes.stream()
 			.map(Node::getData)
@@ -107,11 +108,11 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 		String stateSectionStr = renderStateSections(workflow.getWorkflowVars());
 		String nodeSectionStr = renderNodeSections(nodes, varNames);
-		String edgeSectionStr = renderEdgeSections(workflow.getGraph().getEdges(), nodes);
+		String edgeSectionStr = renderEdgeSections(workflow.getGraph().getEdges(), nodes, varNames);
 
 		Map<String, Object> graphBuilderModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
 				GRAPH_BUILDER_STATE_SECTION, stateSectionStr, GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
-				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr);
+				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr, HAS_RETRIEVER, hasRetriever);
 		Map<String, Object> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
 				GRAPH_BUILDER_START_INPUTS_SECTION, renderStartInputSection(workflow));
 		renderAndWriteTemplates(List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
@@ -166,7 +167,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return sb.toString();
 	}
 
-	private String renderEdgeSections(List<Edge> edges, List<Node> nodes) {
+	private String renderEdgeSections(List<Edge> edges, List<Node> nodes, Map<String, String> varNames) {
 		StringBuilder sb = new StringBuilder();
 		Map<String, Node> nodeMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
 
@@ -182,6 +183,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		for (Edge edge : edges) {
 			String sourceId = edge.getSource();
 			String targetId = edge.getTarget();
+			String srcVar = varNames.get(sourceId);
+			String tgtVar = varNames.get(targetId);
 			Map<String, Object> data = edge.getData();
 			String sourceType = data != null ? (String) data.get("sourceType") : null;
 			String targetType = data != null ? (String) data.get("targetType") : null;
@@ -191,7 +194,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				continue;
 			}
 
-			String key = sourceId + "->" + targetId;
+			String key = srcVar + "->" + tgtVar;
 			if (renderedEdges.contains(key)) {
 				continue;
 			}
@@ -199,16 +202,20 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 			// START and END special handling
 			if ("start".equals(sourceType)) {
-				sb.append(String.format("stateGraph.addEdge(START, \"%s\");%n", targetId));
+				sb.append(String.format("stateGraph.addEdge(START, \"%s\");%n", tgtVar));
 			}
 			else if ("end".equals(targetType)) {
-				sb.append(String.format("stateGraph.addEdge(\"%s\", END);%n", sourceId));
+				sb.append(String.format("stateGraph.addEdge(\"%s\", END);%n", srcVar));
+			}
+			else {
+				sb.append(String.format("stateGraph.addEdge(\"%s\", \"%s\");%n", srcVar, tgtVar));
 			}
 		}
 
 		// conditional edge（aggregate by sourceId）
 		for (Map.Entry<String, List<Edge>> entry : conditionalEdgesMap.entrySet()) {
 			String sourceId = entry.getKey();
+			String srcVar = varNames.get(sourceId);
 			List<Edge> condEdges = entry.getValue();
 			Node sourceNode = nodeMap.get(sourceId);
 			NodeData sourceData = sourceNode.getData();
@@ -220,6 +227,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				Map<String, Object> data = e.getData();
 				String targetType = data != null ? (String) data.get("targetType") : null;
 				String conditionKey = resolveConditionKey(sourceData, e.getSourceHandle());
+				String tgtVar2 = varNames.get(e.getTarget());
 				String targetId = e.getTarget();
 				if ("end".equals(targetType)) {
 					conditions
@@ -228,18 +236,17 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 					continue;
 				}
 				conditions.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
-				mappings.add(String.format("\"%s\", \"%s\"", conditionKey, targetId));
+				mappings.add(String.format("\"%s\", \"%s\"", conditionKey, tgtVar2));
 			}
 
 			String lambdaContent = String.join("\n", conditions);
 			String mapContent = String.join(", ", mappings);
 
 			sb.append(String.format(
-					"        stateGraph.addConditionalEdges(\"%s\",%n" + "            edge_async(state -> {%n"
-							+ "                String value = state.value(\"%s_output\", String.class).orElse(\"\");%n"
-							+ "%s%n" + "                return null;%n" + "            }),%n"
-							+ "            Map.of(%s)%n" + "        );%n",
-					sourceId, sourceId, lambdaContent, mapContent));
+					"stateGraph.addConditionalEdges(\"%s\",%n" + "            edge_async(state -> {%n"
+							+ "String value = state.value(\"%s_output\", String.class).orElse(\"\");%n" + "%s%n"
+							+ "return null;%n" + "            }),%n" + "            Map.of(%s)%n" + ");%n",
+					srcVar, srcVar, lambdaContent, mapContent));
 		}
 
 		return sb.toString();
