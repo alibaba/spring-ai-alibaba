@@ -58,7 +58,7 @@ export class CommonApiService {
       let errorData
       try {
         errorData = await response.json()
-      } catch (_e) {
+      } catch {
         errorData = { message: `Failed to submit form input: ${response.status}` }
       }
       throw new Error(errorData.message || `Failed to submit form input: ${response.status}`)

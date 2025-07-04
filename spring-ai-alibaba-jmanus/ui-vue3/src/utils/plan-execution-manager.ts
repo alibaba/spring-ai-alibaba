@@ -222,7 +222,7 @@ export class PlanExecutionManager {
 
     if (planId) {
       this.state.activePlanId = planId
-      this.initiatePlanExecutionSequence(query || '执行计划', planId)
+      this.initiatePlanExecutionSequence(query ?? '执行计划', planId)
     } else {
       console.error('[PlanExecutionManager] Invalid plan execution request: missing planId')
     }
@@ -372,11 +372,11 @@ export class PlanExecutionManager {
       }
 
       // Update cache with latest plan details if rootPlanId exists
-      if (details?.rootPlanId) {
+      if (details.rootPlanId) {
         this.setCachedPlanRecord(details.rootPlanId, details)
       }
 
-      if (!details?.steps || details.steps.length === 0) {
+      if (!details.steps || details.steps.length === 0) {
         console.log('[PlanExecutionManager] Simple response without steps detected, handling as completed')
         // For simple responses, emit completion directly
         this.emitPlanUpdate(details.rootPlanId ?? "");

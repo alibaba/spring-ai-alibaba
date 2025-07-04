@@ -33,7 +33,7 @@ export class PlanActApiService {
     if (responseData.planJson) {
       try {
         responseData.plan = JSON.parse(responseData.planJson)
-      } catch (_e) {
+      } catch {
         responseData.plan = { error: 'Unable to parse plan data' }
       }
     }
@@ -123,7 +123,7 @@ export class PlanActApiService {
     if (responseData.planJson) {
       try {
         responseData.plan = JSON.parse(responseData.planJson)
-      } catch (_e) {
+      } catch {
         responseData.plan = { error: 'Unable to parse plan data' }
       }
     }

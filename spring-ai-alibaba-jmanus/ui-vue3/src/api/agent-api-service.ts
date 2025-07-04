@@ -52,7 +52,7 @@ export class AgentApiService {
       try {
         const errorData = await response.json()
         throw new Error(errorData.message || `API request failed: ${response.status}`)
-      } catch (_e) {
+      } catch {
         throw new Error(`API request failed: ${response.status} ${response.statusText}`)
       }
     }

@@ -214,43 +214,6 @@ const message = reactive({
   type: 'success' as 'success' | 'error'
 })
 
-// 计算属性：配置示例文本
-const configPlaceholder = computed(() => {
-  if (newMcpServer.connectionType === 'STUDIO') {
-    return `请输入MCP服务器配置JSON。
-
-        例如：
-        {
-        "mcpServers": {
-            "github": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@modelcontextprotocol/server-github"
-            ],
-            "env": {
-                "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"
-            }
-            }
-        }
-        }`
-  } else {
-    return `请输入SSE MCP服务器配置JSON。
-
-例如：
-{
-  "mcpServers": {
-    "remote-server": {
-      "url": "https://example.com/mcp",
-      "headers": {
-        "Authorization": "Bearer <YOUR_TOKEN>"
-      }
-    }
-  }
-}`
-  }
-})
-
 // 计算属性：是否可以提交
 const canSubmit = computed(() => {
   return newMcpServer.configJson.trim().length > 0
@@ -316,7 +279,7 @@ const addMcpServer = async () => {
   // 验证JSON格式
   try {
     JSON.parse(newMcpServer.configJson)
-  } catch (error) {
+  } catch {
     showMessage('配置JSON格式不正确，请检查语法', 'error')
     return
   }

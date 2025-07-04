@@ -145,7 +145,7 @@
                 </div>
               </div>
               
-              <div v-if="!selectedAgent.availableTools || selectedAgent.availableTools.length === 0" class="no-tools">
+              <div v-if="selectedAgent.availableTools.length === 0" class="no-tools">
                 <Icon icon="carbon:tool-box" />
                 <span>暂无分配的工具</span>
               </div>
@@ -292,7 +292,7 @@ const loadData = async () => {
     // 确保每个agent都有availableTools数组
     const normalizedAgents = loadedAgents.map(agent => ({
       ...agent,
-      availableTools: agent.availableTools ?? []
+      availableTools: agent.availableTools
     }))
     
     agents.splice(0, agents.length, ...normalizedAgents)
@@ -416,15 +416,13 @@ const loadData = async () => {
 
 // 选择Agent
 const selectAgent = async (agent: Agent) => {
-  if (!agent) return
-  
   try {
     // 加载详细信息
     const detailedAgent = await AgentApiService.getAgentById(agent.id)
-    // 确保availableTools是数组
+    // Agent接口保证availableTools是数组
     selectedAgent.value = {
       ...detailedAgent,
-      availableTools: detailedAgent.availableTools ?? []
+      availableTools: detailedAgent.availableTools
     }
   } catch (err: any) {
     console.error('加载Agent详情失败:', err)
@@ -432,7 +430,7 @@ const selectAgent = async (agent: Agent) => {
     // 使用基本信息作为后备
     selectedAgent.value = {
       ...agent,
-      availableTools: agent.availableTools ?? []
+      availableTools: agent.availableTools
     }
   }
 }
@@ -455,8 +453,7 @@ const handleAddAgent = async () => {
   try {
     const agentData: Omit<Agent, 'id'> = {
       name: newAgent.name.trim(),
-      description: newAgent.description.trim(),
-      nextStepPrompt: newAgent.nextStepPrompt?.trim() || '',
+      description: newAgent.description.trim(),        nextStepPrompt: newAgent.nextStepPrompt?.trim() ?? '',
       availableTools: []
     }
 
@@ -556,7 +553,7 @@ const handleImport = () => {
           }
           
           // 移除id字段，让后端分配新的id
-          const { id, ...importData } = agentData
+          const { id: _id, ...importData } = agentData
           const savedAgent = await AgentApiService.createAgent(importData)
           agents.push(savedAgent)
           selectedAgent.value = savedAgent
