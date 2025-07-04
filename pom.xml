@@ -151,6 +151,7 @@
         <!-- Nacos3 version -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-server</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-gateway</module>
 
         <!-- Spring AI Alibaba Nacos Prompt Template -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
@@ -164,6 +165,7 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-server</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-gateway</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
     </modules>
 
@@ -203,7 +205,7 @@
 
         <!-- Nacos -->
         <nacos2.version>2.5.1</nacos2.version>
-        <nacos3.version>3.0.1</nacos3.version>
+        <nacos3.version>3.0.2</nacos3.version>
         <nacos-client-mse-extension.version>1.0.4</nacos-client-mse-extension.version>
         <spring-alibaba-nacos-config.version>2023.0.1.3</spring-alibaba-nacos-config.version>
 
@@ -231,6 +233,18 @@
         <jedis.version>5.2.0</jedis.version>
 
         <mysql.version>8.0.32</mysql.version>
+
+        <postgresql.version>42.4.4</postgresql.version>
+
+        <commons-collections.version>3.2.2</commons-collections.version>
+
+        <commons-io.version>2.14.0</commons-io.version>
+
+        <webdrivermanager.version>6.1.0</webdrivermanager.version>
+
+        <httpclient5.version>5.4.3</httpclient5.version>
+
+        <poi.version>5.4.0</poi.version>
 
         <mcp.version>0.10.0</mcp.version>
 

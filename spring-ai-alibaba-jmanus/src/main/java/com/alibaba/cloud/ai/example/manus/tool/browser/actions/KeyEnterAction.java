@@ -35,16 +35,16 @@ public class KeyEnterAction extends BrowserAction {
 		}
 
 		Page page = getCurrentPage();
-		// 获取注册表
+		// Get the registry
 		var driverWrapper = getDriverWrapper();
 		var registry = driverWrapper.getInteractiveElementRegistry();
-		// 获取目标元素
+		// Get the target element
 		var elementOpt = registry.getElementById(index);
 		if (elementOpt.isEmpty()) {
 			return new ToolExecuteResult("Element with index " + index + " not found");
 		}
 		InteractiveElement enterElement = elementOpt.get();
-		// 执行回车操作
+		// Execute the enter operation
 		try {
 			enterElement.getLocator().press("Enter");
 		}

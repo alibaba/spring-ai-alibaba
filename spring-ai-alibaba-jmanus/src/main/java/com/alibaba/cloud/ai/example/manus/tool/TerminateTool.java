@@ -27,7 +27,7 @@ public class TerminateTool implements ToolCallBiFunctionDef<TerminateTool.Termin
 	private static final Logger log = LoggerFactory.getLogger(TerminateTool.class);
 
 	/**
-	 * 内部输入类，用于定义终止工具的输入参数
+	 * Internal input class for defining termination tool input parameters
 	 */
 	public static class TerminateInput {
 

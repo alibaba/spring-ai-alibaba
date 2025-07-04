@@ -16,17 +16,18 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 
 /**
- * MCP配置请求值对象，用于接收前端传递的配置信息
+ * MCP configuration request value object, used to receive configuration information
+ * passed from the front end
  */
 public class McpConfigRequestVO {
 
 	/**
-	 * 连接类型：STUDIO, STREAMING, SSE
+	 * Connection type: STUDIO, STREAMING, SSE
 	 */
 	private String connectionType;
 
 	/**
-	 * MCP服务器配置的JSON字符串
+	 * JSON string of MCP server configuration
 	 */
 	private String configJson;
 

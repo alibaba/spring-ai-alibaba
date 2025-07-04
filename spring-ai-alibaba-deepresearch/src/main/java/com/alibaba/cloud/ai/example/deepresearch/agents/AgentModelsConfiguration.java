@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 /**
  * This configuration class will configure the corresponding ChatClientBuilder tool
- * according to the `agents-config.json` file to provide multi-agent capabilities for
+ * according to the `model-config.json` file to provide multi-agent capabilities for
  * deepsearch. different {@link ChatClient.Builder} will be created according to the name
  * column. for example: `researchChatClientBuilder`
  *
