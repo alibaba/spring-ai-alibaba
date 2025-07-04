@@ -488,6 +488,7 @@ const displayStepDetails = (
     stepData.agentExecution = agentExecution
   }
   
+  还需要把  right pannel input 和 chat 的 事件在 direct里面连起来。 
   selectedStep.value = stepData
   
   console.log('[RightPanel] Step details updated:', {
@@ -784,6 +785,7 @@ defineExpose({
     font-size: 14px;
   }
 }
+
 
 .preview-content {
   flex: 1;
