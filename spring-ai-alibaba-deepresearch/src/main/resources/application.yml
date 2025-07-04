@@ -71,6 +71,19 @@ spring:
         # 报告导出路径配置
         export:
           path: ${AI_DEEPRESEARCH_EXPORT_PATH}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      # 应用健康状态检查，携带详细新学年
+      show-details: always
+  tracing:
+    sampling:
+      # trace 采样信息，记录每个请求
+      probability: 1.0
 logging:
   level:
     com.alibaba.cloud.ai.example.deepresearch: debug
