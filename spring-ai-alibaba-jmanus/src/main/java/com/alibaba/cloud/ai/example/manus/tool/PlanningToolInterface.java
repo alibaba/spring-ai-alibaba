@@ -40,7 +40,7 @@ public interface PlanningToolInterface {
 	 * 获取函数工具回调，用于与LLM集成
 	 * @return FunctionToolCallback实例
 	 */
-	FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback();
+	FunctionToolCallback<?, ToolExecuteResult> getFunctionToolCallback();
 
 	/**
 	 * 执行工具输入并返回结果

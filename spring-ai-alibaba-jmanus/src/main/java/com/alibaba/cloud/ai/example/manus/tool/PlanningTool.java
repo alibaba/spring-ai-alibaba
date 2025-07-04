@@ -246,11 +246,11 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 
 	// PlanningToolInterface methods
 	@Override
-	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.<String, ToolExecuteResult>builder(name, (String input) -> apply(input))
+	public FunctionToolCallback<PlanningInput, ToolExecuteResult> getFunctionToolCallback() {
+		return FunctionToolCallback.<PlanningInput, ToolExecuteResult>builder(name, this::run)
 			.description(description)
 			.inputSchema(PARAMETERS)
-			.inputType(String.class)
+			.inputType(PlanningInput.class)
 			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
 			.build();
 	}
