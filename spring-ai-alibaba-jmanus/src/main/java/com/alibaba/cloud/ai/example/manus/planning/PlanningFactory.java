@@ -23,12 +23,12 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpTool;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderService;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
-import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
@@ -104,7 +104,7 @@ public class PlanningFactory {
 	private McpStateHolderService mcpStateHolderService;
 
 	@Autowired
-	private PromptLoader promptLoader;
+	private PromptService promptService;
 
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService) {
@@ -122,9 +122,9 @@ public class PlanningFactory {
 
 		PlanningTool planningTool = new PlanningTool();
 
-		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptLoader);
+		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService);
 		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService, llmService);
-		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptLoader);
+		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService);
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
 
