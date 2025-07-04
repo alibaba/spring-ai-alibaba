@@ -71,7 +71,8 @@ public class BigToolController {
 
 	private List<Document> documents = new ArrayList<>();
 
-	public BigToolController(VectorStoreService vectorStoreService, ChatModel chatModel, CompileConfig config) throws GraphStateException {
+	public BigToolController(VectorStoreService vectorStoreService, ChatModel chatModel, CompileConfig config)
+			throws GraphStateException {
 		this.vectorStoreService = vectorStoreService;
 		this.initializeVectorStore();
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
