@@ -146,7 +146,7 @@ public class DynamicAgent extends ReActAgent {
 			List<Message> thinkMessages = Arrays.asList(systemMessage, currentStepEnvMessage);
 			thinkActRecord.startThinking(thinkMessages.toString());
 			log.debug("Messages prepared for the prompt: {}", thinkMessages);
-			// Build current prompt. System message is the first message.
+			// Build current prompt. System message is the first message
 			List<Message> messages = new ArrayList<>(Collections.singletonList(systemMessage));
 			// Add history message.
 			ChatMemory chatMemory = llmService.getAgentMemory(manusProperties.getMaxMemory());
