@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.example.manus.dynamic.prompt.controller;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.vo.PromptVO;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,8 +26,11 @@ import java.util.List;
 @RequestMapping("/api/prompt")
 public class PromptController {
 
-	@Autowired
-	private PromptService promptService;
+	private final PromptService promptService;
+
+	public PromptController(PromptService promptService) {
+		this.promptService = promptService;
+	}
 
 	@GetMapping
 	public ResponseEntity<List<PromptVO>> getAll() {

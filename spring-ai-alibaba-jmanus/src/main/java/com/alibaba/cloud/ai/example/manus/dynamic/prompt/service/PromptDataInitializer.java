@@ -25,13 +25,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-
 @Component
 public class PromptDataInitializer implements CommandLineRunner {
 
-	private PromptRepository promptRepository;
+	private final PromptRepository promptRepository;
 
-	private PromptLoader promptLoader;
+	private final PromptLoader promptLoader;
 
 	private static final Logger log = LoggerFactory.getLogger(PromptDataInitializer.class);
 

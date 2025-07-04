@@ -27,7 +27,6 @@ import org.springframework.ai.chat.prompt.AssistantPromptTemplate;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -37,10 +36,13 @@ import java.util.stream.Collectors;
 @Service
 public class PromptServiceImpl implements PromptService {
 
-	@Autowired
-	private PromptRepository promptRepository;
+	private final PromptRepository promptRepository;
 
 	private static final Logger log = LoggerFactory.getLogger(PromptDataInitializer.class);
+
+	public PromptServiceImpl(PromptRepository promptRepository) {
+		this.promptRepository = promptRepository;
+	}
 
 	@Override
 	public List<PromptVO> getAll() {
@@ -108,7 +110,7 @@ public class PromptServiceImpl implements PromptService {
 	 * Create system prompt template message
 	 * @param promptEnum Prompt enum
 	 * @param variables Variable mapping
-	 * @return
+	 * @return Prompt template message
 	 */
 	@Override
 	public Message createSystemMessage(PromptEnum promptEnum, Map<String, Object> variables) {
@@ -125,7 +127,7 @@ public class PromptServiceImpl implements PromptService {
 	 * Create user prompt template message
 	 * @param promptEnum Prompt enum
 	 * @param variables Variable mapping
-	 * @return
+	 * @return Prompt template message
 	 */
 	@Override
 	public Message createUserMessage(PromptEnum promptEnum, Map<String, Object> variables) {
