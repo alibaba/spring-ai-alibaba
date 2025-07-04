@@ -18,14 +18,18 @@ package com.alibaba.cloud.ai.example.graph.workflow;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
+import com.alibaba.cloud.ai.graph.observation.GraphObservationLifecycleListener;
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,8 +43,12 @@ public class CustomerServiceController {
 
 	private CompiledGraph compiledGraph;
 
-	public CustomerServiceController(@Qualifier("workflowGraph") StateGraph stateGraph) throws GraphStateException {
-		this.compiledGraph = stateGraph.compile();
+	public CustomerServiceController(@Qualifier("workflowGraph") StateGraph stateGraph,
+			ObjectProvider<ObservationRegistry> observationRegistry) throws GraphStateException {
+		this.compiledGraph = stateGraph.compile(CompileConfig.builder()
+			.withLifecycleListener(new GraphObservationLifecycleListener(
+					observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP)))
+			.build());
 	}
 
 	@GetMapping("/chat")

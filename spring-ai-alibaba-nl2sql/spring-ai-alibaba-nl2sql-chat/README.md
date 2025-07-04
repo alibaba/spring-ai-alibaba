@@ -186,9 +186,13 @@ spring:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
       api-key: ${DASHSCOPE_API_KEY}
       model: qwen-max    # 推荐：复杂任务用 qwen-max，一般任务用 qwen-plus
+      embedding:
+        model: text-embedding-ada-002  # OpenAI Embedding 模型
     
     dashscope:
       api-key: ${DASHSCOPE_API_KEY}
+      embedding:
+        model: text-embedding-v2  # DashScope Embedding 模型，默认值
 
 # 数据库配置
 chatbi:
@@ -202,6 +206,16 @@ chatbi:
     connectiontype: jdbc
     dialecttype: mysql      # 可选：mysql、postgresql
     schema: ${DB_SCHEMA}    # PostgreSQL需要
+
+# REST超时配置
+rest:
+  connect:
+    timeout: 600 # 连接超时时间（秒），默认10分钟
+  read:
+    timeout: 600 # 读取超时时间（秒），默认10分钟
+webclient:
+  response:
+    timeout: 600 # 响应超时时间（秒），默认10分钟
 ```
 
 > 🔒 **安全建议**
@@ -221,29 +235,70 @@ chatbi:
 
 </details>
 
-## 🔧 服务配置
-
 <details>
-<summary>📌 大模型服务（LLM）</summary>
+<summary>📌 EmbeddingModel 配置</summary>
 
-确保以下组件已正确配置：
-1. `LlmService` 实现类已注入 Spring 容器
-2. 大模型 API 调用权限已授予
-3. 相关配置项已在 `application.yml` 中设置
+系统支持多种嵌入模型，自动根据配置选择合适的实现：
 
-> 💡 **提示**：建议在开发环境中使用较小的模型进行测试，生产环境再切换到完整模型。
+#### 1️⃣ DashScope EmbeddingModel（推荐）
+- ✨ 阿里云通义千问向量模型
+- 🚀 高性能中文语义理解
+- 🔐 支持多种向量维度规格
+
+**配置示例**：
+```yaml
+spring:
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY}  # 必填：DashScope API Key
+      embedding:
+        model: text-embedding-v2     # 可选：默认为 text-embedding-v2
+```
+
+#### 2️⃣ OpenAI EmbeddingModel
+- 🌐 OpenAI 官方嵌入模型
+- 📊 支持多语言语义理解
+- 🔄 兼容 OpenAI API 格式
+
+**配置示例**：
+```yaml
+spring:
+  ai:
+    openai:
+      base-url: https://api.openai.com  # OpenAI API 地址
+      api-key: ${OPENAI_API_KEY}        # 必填：OpenAI API Key
+      embedding:
+        model: text-embedding-ada-002   # 可选：默认为 text-embedding-ada-002
+```
+
+#### 🤖 自动选择逻辑
+系统会根据以下优先级自动选择 EmbeddingModel：
+1. **优先级1**：如果配置了 `spring.ai.dashscope.api-key`，使用 DashScope
+2. **优先级2**：如果未配置 DashScope，使用 OpenAI（需要配置 OpenAI API Key）
+
+> 💡 **建议**：
+> - 中文业务场景：推荐使用 DashScope，对中文语义理解更好
+> - 国际化场景：可以使用 OpenAI，支持多语言
+> - 开发测试：两种模型都可以，根据 API 可用性选择
 
 </details>
 
 <details>
-<summary>📌 向量服务</summary>
+<summary>📌 向量服务（EmbeddingModel）</summary>
 
 系统依赖以下组件：
-1. `VectorStoreService` 接口及其实现类
+1. `EmbeddingModel` 接口及其实现类（DashScope 或 OpenAI）
 2. 向量存储配置类（如 `AnalyticDbVectorStoreProperties`）
 3. 向量计算和索引服务
 
-> ⚠️ **注意**：首次使用时需要初始化向量库，可能需要较长时间。
+**关键配置**：
+- **Schema 向量化**：数据库表结构信息会被转换为向量存储
+- **语义检索**：用户查询通过向量相似度匹配相关表结构
+- **性能优化**：合理配置 `topK` 和相似度阈值
+
+> ⚠️ **注意**：
+> - 首次使用时需要初始化向量库，可能需要较长时间
+> - 不同的 EmbeddingModel 生成的向量不兼容，切换模型需要重新初始化
 
 </details>
 

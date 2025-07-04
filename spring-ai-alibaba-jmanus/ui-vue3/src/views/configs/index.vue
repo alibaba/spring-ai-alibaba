@@ -19,9 +19,10 @@
     <div class="config-header">
       <!-- <h1>配置中心</h1> -->
       <div class="header-actions">
+        <LanguageSwitcher />
         <button class="action-btn" @click="$router.push('/')">
           <Icon icon="carbon:arrow-left" />
-          返回主页
+          {{ $t('backHome') }}
         </button>
       </div>
     </div>
@@ -54,20 +55,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import BasicConfig from './basicConfig.vue'
 import AgentConfig from './agentConfig.vue'
 import ModelConfig from './modelConfig.vue'
 import McpConfig from './mcpConfig.vue'
+import LanguageSwitcher from '@/components/language-switcher/index.vue'
+
+const { t } = useI18n()
 
 const activeCategory = ref('basic')
-const categories = [
-  { key: 'basic', label: '基础配置', icon: 'carbon:settings' },
-  { key: 'agent', label: 'Agent配置', icon: 'carbon:bot' },
+const categories = computed(() => [
+  { key: 'basic', label: t('config.categories.basic'), icon: 'carbon:settings' },
+  { key: 'agent', label: t('config.categories.agent'), icon: 'carbon:bot' },
   { key: 'model', label: 'Model配置', icon: 'carbon:build-image' },
-  { key: 'mcp', label: 'Tools/MCP配置', icon: 'carbon:tool-box' },
-]
+  { key: 'mcp', label: t('config.categories.mcp'), icon: 'carbon:tool-box' },
+])
 </script>
 
 <style scoped>
@@ -83,6 +88,12 @@ const categories = [
   align-items: center;
   padding: 20px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .config-header h1 {
