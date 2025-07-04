@@ -21,6 +21,8 @@ export interface Agent {
   description: string
   availableTools: string[]
   nextStepPrompt?: string
+  modelName?: string
+  modelControlledByPlan: boolean
 }
 
 export interface Tool {

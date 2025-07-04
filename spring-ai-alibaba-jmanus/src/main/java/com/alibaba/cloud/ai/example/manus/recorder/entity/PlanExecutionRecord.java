@@ -79,6 +79,9 @@ public class PlanExecutionRecord {
 	// Field to store user input wait state
 	private UserInputWaitState userInputWaitState;
 
+	// Actual calling model
+	private String modelName;
+
 	/**
 	 * Default constructor for Jackson and other frameworks.
 	 */
@@ -255,6 +258,14 @@ public class PlanExecutionRecord {
 
 	public void setSummary(String summary) {
 		this.summary = summary;
+	}
+
+	public String getModelName() {
+		return modelName;
+	}
+
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
 	}
 
 	/**

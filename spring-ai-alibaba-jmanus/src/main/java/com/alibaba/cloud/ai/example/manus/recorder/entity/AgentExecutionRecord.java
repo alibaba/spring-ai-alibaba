@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.fasterxml.jackson.databind.JsonSerializable;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +57,9 @@ public class AgentExecutionRecord {
 
 	// Description information of the agent
 	private String agentDescription;
+
+	// Name of the model that created this record
+	private String modelName;
 
 	// Timestamp when execution started
 	private LocalDateTime startTime;
@@ -231,6 +237,14 @@ public class AgentExecutionRecord {
 
 	public void setErrorMessage(String errorMessage) {
 		this.errorMessage = errorMessage;
+	}
+
+	public String getModelName() {
+		return modelName;
+	}
+
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
 	}
 
 	@Override

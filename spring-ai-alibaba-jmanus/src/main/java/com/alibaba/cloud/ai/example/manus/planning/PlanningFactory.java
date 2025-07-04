@@ -18,7 +18,9 @@ package com.alibaba.cloud.ai.example.manus.planning;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.service.DynamicModelLoader;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpTool;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
@@ -101,6 +103,9 @@ public class PlanningFactory {
 	private DynamicAgentLoader dynamicAgentLoader;
 
 	@Autowired
+	private DynamicModelLoader dynamicModelLoader;
+
+	@Autowired
 	private McpStateHolderService mcpStateHolderService;
 
 	@Autowired
@@ -119,10 +124,12 @@ public class PlanningFactory {
 
 		// Add all dynamic agents from the database
 		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
+		// Add all dynamic models from the database
+		List<DynamicModelEntity> modelEntities = dynamicModelLoader.getAllAgents();
 
 		PlanningTool planningTool = new PlanningTool();
 
-		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptLoader);
+		PlanCreator planCreator = new PlanCreator(agentEntities, modelEntities, llmService, planningTool, recorder, promptLoader);
 		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService, llmService);
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptLoader);
 

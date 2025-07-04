@@ -51,6 +51,8 @@ public class PlanExecutor {
 	// characters
 	Pattern pattern = Pattern.compile("^\\s*\\[([^\\]]+)\\]");
 
+	Pattern parenPattern = Pattern.compile("\\(([^)]+)\\)");
+
 	private final List<DynamicAgentEntity> agents;
 
 	private final AgentService agentService;
@@ -118,6 +120,7 @@ public class PlanExecutor {
 
 		try {
 			String stepType = getStepFromStepReq(step.getStepRequirement());
+			String chooseModel = getModelFromStepReq(step.getStepRequirement());
 
 			int stepIndex = step.getStepIndex();
 
@@ -137,6 +140,7 @@ public class PlanExecutor {
 			}
 			step.setAgent(executor);
 			executor.setState(AgentState.IN_PROGRESS);
+			executor.setModel(chooseModel);
 
 			recordStepStart(step, context);
 			String stepResultStr = executor.run();
@@ -161,6 +165,15 @@ public class PlanExecutor {
 			return matcher.group(1).trim().toLowerCase();
 		}
 		return "DEFAULT_AGENT"; // Default agent if no match found
+	}
+
+	private String getModelFromStepReq(String stepRequirement) {
+		Matcher matcher = parenPattern.matcher(stepRequirement);
+		if (matcher.find()) {
+			// Trim and convert to lowercase for matched content
+			return matcher.group(1).trim();
+		}
+		return ""; // Default agent if no match found
 	}
 
 	/**

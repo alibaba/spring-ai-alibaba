@@ -67,7 +67,7 @@ public class DynamicAgentLoader {
 		}
 
 		return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(),
-				entity.getNextStepPrompt(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting,
+				entity.getNextStepPrompt(), entity.getModelName(), entity.isModelControlledByPlan(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting,
 				userInputService, promptLoader);
 	}
 

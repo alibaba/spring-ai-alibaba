@@ -122,6 +122,29 @@
           ></textarea>
         </div>
 
+        <div class="tools-section">
+          <h4>模型配置</h4>
+
+          <div class="form-item">
+            <label>模型选择</label>
+              <Switch
+                  :enabled="modelControlledByPlan"
+                  label="由计划控制（根据Model配置，由计划控制模型调用）"
+                  @update:switchValue="updateSwitchValue($event)"
+              />
+            </div>
+
+          <div class="form-item" v-if="showModelInput">
+            <label>模型名称</label>
+            <input
+                type="text"
+                v-model="selectedAgent.modelName"
+                placeholder="输入Model名称（为空时调用默认Model）"
+                required
+            />
+          </div>
+        </div>
+
         <!-- 工具分配区域 -->
         <div class="tools-section">
           <h4>工具配置</h4>
@@ -230,6 +253,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import Switch from '@/components/switch/index.vue'
 import Modal from '@/components/modal/index.vue'
 import ToolSelectionModal from '@/components/tool-selection-modal/index.vue'
 import { AgentApiService, type Agent, type Tool } from '@/api/agent-api-service'
@@ -244,13 +268,25 @@ const availableTools = reactive<Tool[]>([])
 const showModal = ref(false)
 const showDeleteModal = ref(false)
 const showToolModal = ref(false)
+const showModelInput = ref(false)
+const modelControlledByPlan = ref(false)
 
 // 新建Agent表单数据
 const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
   name: '',
   description: '',
-  nextStepPrompt: ''
+  nextStepPrompt: '',
+  modelName: '',
+  modelControlledByPlan: false
 })
+
+// 更新配置值
+const updateSwitchValue = (value: boolean) => {
+  modelControlledByPlan.value = value
+  showModelInput.value = !value
+  if (!selectedAgent.value) return
+  selectedAgent.value.modelControlledByPlan = value
+}
 
 // 计算属性
 const unassignedTools = computed(() => {
@@ -397,14 +433,16 @@ const loadData = async () => {
         name: '通用助手',
         description: '一个能够处理各种任务的智能助手',
         nextStepPrompt: 'You are a helpful assistant that can answer questions and help with various tasks. What would you like me to help you with next?',
-        availableTools: ['search-web', 'calculator', 'weather']
+        availableTools: ['search-web', 'calculator', 'weather'],
+        modelControlledByPlan: false
       },
       {
         id: 'demo-2',
         name: '数据分析师',
         description: '专门用于数据分析和可视化的Agent',
         nextStepPrompt: 'You are a data analyst assistant specialized in analyzing data and creating visualizations. Please provide the data you would like me to analyze.',
-        availableTools: ['file-read', 'file-write', 'calculator', 'code-execute']
+        availableTools: ['file-read', 'file-write', 'calculator', 'code-execute'],
+        modelControlledByPlan: false
       }
     ]
     availableTools.splice(0, availableTools.length, ...demoTools)
@@ -425,11 +463,14 @@ const selectAgent = async (agent: Agent) => {
   try {
     // 加载详细信息
     const detailedAgent = await AgentApiService.getAgentById(agent.id)
+    console.log('加载Agent详情:', detailedAgent)
     // 确保availableTools是数组
     selectedAgent.value = {
       ...detailedAgent,
       availableTools: Array.isArray(detailedAgent.availableTools) ? detailedAgent.availableTools : []
     }
+    showModelInput.value = !detailedAgent.modelControlledByPlan
+    modelControlledByPlan.value = detailedAgent.modelControlledByPlan
   } catch (err: any) {
     console.error('加载Agent详情失败:', err)
     showMessage('加载Agent详情失败: ' + err.message, 'error')
@@ -438,6 +479,8 @@ const selectAgent = async (agent: Agent) => {
       ...agent,
       availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
     }
+    showModelInput.value = !agent.modelControlledByPlan
+    modelControlledByPlan.value = agent.modelControlledByPlan
   }
 }
 
