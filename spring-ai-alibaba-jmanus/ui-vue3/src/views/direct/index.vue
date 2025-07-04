@@ -90,11 +90,13 @@ import InputArea from '@/components/input/index.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { useTaskStore } from '@/stores/task'
+import { useSidebarStore } from '@/stores/sidebar'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 
 const route = useRoute()
 const router = useRouter()
 const taskStore = useTaskStore()
+const sidebarStore = useSidebarStore()
 const { t } = useI18n()
 
 const prompt = ref<string>('')
@@ -205,6 +207,9 @@ onMounted(() => {
   })
   
   console.log('[Direct] Event callbacks registered to planExecutionManager')
+
+  // 初始化侧边栏数据
+  sidebarStore.loadPlanTemplateList()
 
   // 检查 store 中是否有任务
   if (taskStore.hasUnprocessedTask() && taskStore.currentTask) {
@@ -405,7 +410,9 @@ const handleSubPlanStepSelected = (parentPlanId: string, subPlanId: string, step
 
 const handlePlanModeClicked = () => {
   console.log('[DirectView] Plan mode button clicked')
-  // 可以在这里添加侧边栏切换等逻辑
+  // 切换侧边栏显示状态
+  sidebarStore.toggleSidebar()
+  console.log('[DirectView] Sidebar toggled, isCollapsed:', sidebarStore.isCollapsed)
 }
 
 const goBack = () => {
