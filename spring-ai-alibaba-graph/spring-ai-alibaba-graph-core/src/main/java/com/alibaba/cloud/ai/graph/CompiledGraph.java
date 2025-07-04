@@ -1051,8 +1051,8 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 
 			// Process Interruption (Before) Subgraph(s)
 			interruptsBefore = interruptsBefore.stream()
-					.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId : interrupt)
-					.collect(Collectors.toUnmodifiableSet());
+				.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId : interrupt)
+				.collect(Collectors.toUnmodifiableSet());
 
 			var edgesWithSubgraphTargetId = edges.edgesByTargetId(subgraphNode.id());
 
@@ -1101,11 +1101,11 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 			// Process edges
 			//
 			processedSubGraphEdges.elements.stream()
-					.filter(e -> !Objects.equals(e.sourceId(), START))
-					.filter(e -> !e.anyMatchByTargetId(END))
-					.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-							id -> new EdgeValue(subgraphNode.formatId(id))))
-					.forEach(edges.elements::add);
+				.filter(e -> !Objects.equals(e.sourceId(), START))
+				.filter(e -> !e.anyMatchByTargetId(END))
+				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
+						id -> new EdgeValue(subgraphNode.formatId(id))))
+				.forEach(edges.elements::add);
 
 			//
 			// Process nodes
