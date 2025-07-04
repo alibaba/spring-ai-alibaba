@@ -40,7 +40,7 @@ public abstract class ReActAgent extends BaseAgent {
 	 * @param manusProperties Manus configuration properties
 	 */
 	public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-					  ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService) {
+			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService) {
 		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptService);
 	}
 

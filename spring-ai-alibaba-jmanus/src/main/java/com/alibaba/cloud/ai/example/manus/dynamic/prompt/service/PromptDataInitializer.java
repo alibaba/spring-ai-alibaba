@@ -25,46 +25,53 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 @Component
 public class PromptDataInitializer implements CommandLineRunner {
-    private PromptRepository promptRepository;
 
-    private PromptLoader promptLoader;
+	private PromptRepository promptRepository;
 
-    private static final Logger log = LoggerFactory.getLogger(PromptDataInitializer.class);
+	private PromptLoader promptLoader;
 
-    public PromptDataInitializer(PromptRepository promptRepository, PromptLoader promptLoader) {
-        this.promptRepository = promptRepository;
-        this.promptLoader = promptLoader;
-    }
+	private static final Logger log = LoggerFactory.getLogger(PromptDataInitializer.class);
 
-    @Override
-    public void run(String... args) {
-        try {
-            Arrays.stream(PromptEnum.values()).map(prompt -> {
-                PromptEntity promptEntity = promptRepository.findByPrompt(prompt.getPromptName(), prompt.getType().name(), prompt.getMessageType().name());
-                if (promptEntity != null) {
-                    return promptEntity;
-                }
+	public PromptDataInitializer(PromptRepository promptRepository, PromptLoader promptLoader) {
+		this.promptRepository = promptRepository;
+		this.promptLoader = promptLoader;
+	}
 
-                promptEntity = new PromptEntity();
-                promptEntity.setPromptName(prompt.getPromptName());
-                promptEntity.setPromptDescription(prompt.getPromptDescription());
-                promptEntity.setMessageType(prompt.getMessageType().name());
-                promptEntity.setType(prompt.getType().name());
-                promptEntity.setBuiltIn(prompt.getBuiltIn());
-                String promptContent = promptLoader.loadPrompt(prompt.getPromptPath());
-                promptEntity.setPromptContent(promptContent);
-                promptRepository.save(promptEntity);
-                return promptEntity;
-            }).collect(Collectors.toList());
-        } catch (Exception e) {
-            // 记录日志或抛出异常
-            log.error("Failed to initialize prompt data", e);
+	@Override
+	public void run(String... args) {
 
-        }
-    }
+		for (PromptEnum prompt : PromptEnum.values()) {
+			try {
+				createPromptIfNotExists(prompt);
+			}
+			catch (Exception e) {
+				// 记录日志或抛出异常
+				log.error("Failed to initialize prompt data", e);
+				throw e;
+			}
+		}
+
+	}
+
+	private void createPromptIfNotExists(PromptEnum prompt) {
+		PromptEntity promptEntity = promptRepository.findByPrompt(prompt.getPromptName(), prompt.getType().name(),
+				prompt.getMessageType().name());
+
+		if (promptEntity == null) {
+			promptEntity = new PromptEntity();
+			promptEntity.setPromptName(prompt.getPromptName());
+			promptEntity.setPromptDescription(prompt.getPromptDescription());
+			promptEntity.setMessageType(prompt.getMessageType().name());
+			promptEntity.setType(prompt.getType().name());
+			promptEntity.setBuiltIn(prompt.getBuiltIn());
+			String promptContent = promptLoader.loadPrompt(prompt.getPromptPath());
+			promptEntity.setPromptContent(promptContent);
+			promptRepository.save(promptEntity);
+			log.info("Initialized prompt: {}", prompt.getPromptName());
+		}
+	}
+
 }

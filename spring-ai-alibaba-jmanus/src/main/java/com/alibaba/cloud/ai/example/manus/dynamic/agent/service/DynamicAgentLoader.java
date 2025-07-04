@@ -50,7 +50,7 @@ public class DynamicAgentLoader {
 
 	public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy LlmService llmService,
 			PlanExecutionRecorder recorder, ManusProperties properties, @Lazy ToolCallingManager toolCallingManager,
-			UserInputService userInputService,  PromptService promptService) {
+			UserInputService userInputService, PromptService promptService) {
 		this.repository = repository;
 		this.llmService = llmService;
 		this.recorder = recorder;

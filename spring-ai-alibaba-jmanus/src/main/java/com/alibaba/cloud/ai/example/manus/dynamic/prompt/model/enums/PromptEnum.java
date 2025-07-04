@@ -19,91 +19,97 @@ import org.springframework.ai.chat.messages.MessageType;
 
 public enum PromptEnum {
 
-    LLL_FINALIZE_SYSTEM("LLL_FINALIZE_SYSTEM", MessageType.SYSTEM, PromptType.LLM, true, "","llm/finalize-system.txt"),
-    LLL_MANUS_SYSTEM("LLL_MANUS_SYSTEM", MessageType.SYSTEM, PromptType.LLM, true, "","llm/manus-system.txt"),
-    LLL_PLANNING_SYSTEM("LLL_PLANNING_SYSTEM",  MessageType.SYSTEM, PromptType.LLM, true, "","llm/planning-system.txt"),
+	LLL_FINALIZE_SYSTEM("LLL_FINALIZE_SYSTEM", MessageType.SYSTEM, PromptType.LLM, true, "", "llm/finalize-system.txt"),
+	LLL_MANUS_SYSTEM("LLL_MANUS_SYSTEM", MessageType.SYSTEM, PromptType.LLM, true, "", "llm/manus-system.txt"),
+	LLL_PLANNING_SYSTEM("LLL_PLANNING_SYSTEM", MessageType.SYSTEM, PromptType.LLM, true, "", "llm/planning-system.txt"),
 
-    AGENT_CURRENT_STEP_ENV("AGENT_CURRENT_STEP_ENV",  MessageType.USER, PromptType.AGENT, true, "","agent/current-step-env.txt"),
-    AGENT_STEP_EXECUTION("AGENT_STEP_EXECUTION", MessageType.USER, PromptType.AGENT, true, "","agent/step-execution.txt"),
-    PLANNING_PLAN_CREATION("PLANNING_PLAN_CREATION",  MessageType.SYSTEM, PromptType.PLANNING, true, "","planning/plan-creation.txt"),
-    PLANNING_PLAN_FINALIZER("PLANNING_PLAN_FINALIZER", MessageType.SYSTEM, PromptType.PLANNING, true, "","planning/plan-finalizer.txt"),
-    PLANNING_USER_REQUEST("PLANNING_USER_REQUEST",  MessageType.USER, PromptType.PLANNING, true, "","planning/user-request.txt"),
-    ;
+	AGENT_CURRENT_STEP_ENV("AGENT_CURRENT_STEP_ENV", MessageType.USER, PromptType.AGENT, true, "",
+			"agent/current-step-env.txt"),
+	AGENT_STEP_EXECUTION("AGENT_STEP_EXECUTION", MessageType.USER, PromptType.AGENT, true, "",
+			"agent/step-execution.txt"),
+	PLANNING_PLAN_CREATION("PLANNING_PLAN_CREATION", MessageType.SYSTEM, PromptType.PLANNING, true, "",
+			"planning/plan-creation.txt"),
+	PLANNING_PLAN_FINALIZER("PLANNING_PLAN_FINALIZER", MessageType.SYSTEM, PromptType.PLANNING, true, "",
+			"planning/plan-finalizer.txt"),
+	PLANNING_USER_REQUEST("PLANNING_USER_REQUEST", MessageType.USER, PromptType.PLANNING, true, "",
+			"planning/user-request.txt"),;
 
-    private String promptName;
+	private String promptName;
 
-    private MessageType messageType;
+	private MessageType messageType;
 
-    private PromptType type;
+	private PromptType type;
 
-    private Boolean builtIn;
+	private Boolean builtIn;
 
-    private String promptDescription;
+	private String promptDescription;
 
-    private String promptPath;
+	private String promptPath;
 
-    PromptEnum(String promptName, MessageType messageType, PromptType type, Boolean builtIn, String promptDescription, String promptPath) {
-        this.promptName = promptName;
-        this.messageType = messageType;
-        this.type = type;
-        this.builtIn = builtIn;
-        this.promptDescription = promptDescription;
-        this.promptPath = promptPath;
-    }
+	PromptEnum(String promptName, MessageType messageType, PromptType type, Boolean builtIn, String promptDescription,
+			String promptPath) {
+		this.promptName = promptName;
+		this.messageType = messageType;
+		this.type = type;
+		this.builtIn = builtIn;
+		this.promptDescription = promptDescription;
+		this.promptPath = promptPath;
+	}
 
-    public String getPromptName() {
-        return promptName;
-    }
+	public String getPromptName() {
+		return promptName;
+	}
 
-    public void setPromptName(String promptName) {
-        this.promptName = promptName;
-    }
+	public void setPromptName(String promptName) {
+		this.promptName = promptName;
+	}
 
-    public MessageType getMessageType() {
-        return messageType;
-    }
+	public MessageType getMessageType() {
+		return messageType;
+	}
 
-    public Boolean getBuiltIn() {
-        return builtIn;
-    }
+	public Boolean getBuiltIn() {
+		return builtIn;
+	}
 
-    public void setBuiltIn(Boolean builtIn) {
-        this.builtIn = builtIn;
-    }
+	public void setBuiltIn(Boolean builtIn) {
+		this.builtIn = builtIn;
+	}
 
-    public void setMessageType(MessageType messageType) {
-        this.messageType = messageType;
-    }
+	public void setMessageType(MessageType messageType) {
+		this.messageType = messageType;
+	}
 
-    public PromptType getType() {
-        return type;
-    }
+	public PromptType getType() {
+		return type;
+	}
 
-    public void setType(PromptType type) {
-        this.type = type;
-    }
+	public void setType(PromptType type) {
+		this.type = type;
+	}
 
-    public String getPromptPath() {
-        return promptPath;
-    }
+	public String getPromptPath() {
+		return promptPath;
+	}
 
-    public void setPromptPath(String promptPath) {
-        this.promptPath = promptPath;
-    }
+	public void setPromptPath(String promptPath) {
+		this.promptPath = promptPath;
+	}
 
-    public boolean isBuiltIn() {
-        return builtIn;
-    }
+	public boolean isBuiltIn() {
+		return builtIn;
+	}
 
-    public void setBuiltIn(boolean builtIn) {
-        this.builtIn = builtIn;
-    }
+	public void setBuiltIn(boolean builtIn) {
+		this.builtIn = builtIn;
+	}
 
-    public String getPromptDescription() {
-        return promptDescription;
-    }
+	public String getPromptDescription() {
+		return promptDescription;
+	}
 
-    public void setPromptDescription(String promptDescription) {
-        this.promptDescription = promptDescription;
-    }
+	public void setPromptDescription(String promptDescription) {
+		this.promptDescription = promptDescription;
+	}
+
 }

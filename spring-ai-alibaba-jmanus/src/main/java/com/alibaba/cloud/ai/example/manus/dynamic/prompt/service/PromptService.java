@@ -24,22 +24,22 @@ import java.util.Map;
 
 public interface PromptService {
 
-    List<PromptVO> getAll();
+	List<PromptVO> getAll();
 
-    PromptVO getById(Long id);
+	PromptVO getById(Long id);
 
-    PromptVO create(PromptVO promptVO);
+	PromptVO create(PromptVO promptVO);
 
-    PromptVO update(PromptVO promptVO);
+	PromptVO update(PromptVO promptVO);
 
-    void delete(Long id);
+	void delete(Long id);
 
-    Message createSystemMessage(PromptEnum promptEnum, Map<String, Object> variables);
+	Message createSystemMessage(PromptEnum promptEnum, Map<String, Object> variables);
 
-    Message createUserMessage(PromptEnum promptEnum, Map<String, Object> variables);
+	Message createUserMessage(PromptEnum promptEnum, Map<String, Object> variables);
 
-    Message createMessage(PromptEnum promptEnum, Map<String, Object> variables);
+	Message createMessage(PromptEnum promptEnum, Map<String, Object> variables);
 
-    String renderPrompt(PromptEnum promptEnum, Map<String, Object> variables);
+	String renderPrompt(PromptEnum promptEnum, Map<String, Object> variables);
 
 }

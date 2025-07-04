@@ -17,91 +17,91 @@ package com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.vo;
 
 public class PromptVO {
 
-    private Long id;
+	private Long id;
 
-    private String promptName;
+	private String promptName;
 
-    private String namespace;
+	private String namespace;
 
-    private String messageType;
+	private String messageType;
 
-    private String type;
+	private String type;
 
-    private String promptContent;
+	private String promptContent;
 
-    private Boolean builtIn;
+	private Boolean builtIn;
 
-    private String promptDescription;
+	private String promptDescription;
 
+	public Boolean invalid() {
+		return promptName == null || messageType == null || type == null || promptContent == null;
+	}
 
-    public Boolean invalid() {
-        return promptName == null || messageType == null || type == null || promptContent == null;
-    }
+	public PromptVO() {
+	}
 
-    public PromptVO() {
-    }
+	public Long getId() {
+		return id;
+	}
 
-    public Long getId() {
-        return id;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	public String getPromptName() {
+		return promptName;
+	}
 
-    public String getPromptName() {
-        return promptName;
-    }
+	public void setPromptName(String promptName) {
+		this.promptName = promptName;
+	}
 
-    public void setPromptName(String promptName) {
-        this.promptName = promptName;
-    }
+	public String getNamespace() {
+		return namespace;
+	}
 
-    public String getNamespace() {
-        return namespace;
-    }
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
+	}
 
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
+	public String getMessageType() {
+		return messageType;
+	}
 
-    public String getMessageType() {
-        return messageType;
-    }
+	public void setMessageType(String messageType) {
+		this.messageType = messageType;
+	}
 
-    public void setMessageType(String messageType) {
-        this.messageType = messageType;
-    }
+	public String getType() {
+		return type;
+	}
 
-    public String getType() {
-        return type;
-    }
+	public void setType(String type) {
+		this.type = type;
+	}
 
-    public void setType(String type) {
-        this.type = type;
-    }
+	public String getPromptContent() {
+		return promptContent;
+	}
 
-    public String getPromptContent() {
-        return promptContent;
-    }
+	public void setPromptContent(String promptContent) {
+		this.promptContent = promptContent;
+	}
 
-    public void setPromptContent(String promptContent) {
-        this.promptContent = promptContent;
-    }
+	public Boolean getBuiltIn() {
+		return builtIn;
+	}
 
-    public Boolean getBuiltIn() {
-        return builtIn;
-    }
+	public void setBuiltIn(Boolean builtIn) {
+		this.builtIn = builtIn;
+	}
 
-    public void setBuiltIn(Boolean builtIn) {
-        this.builtIn = builtIn;
-    }
+	public String getPromptDescription() {
+		return promptDescription;
+	}
 
-    public String getPromptDescription() {
-        return promptDescription;
-    }
+	public void setPromptDescription(String promptDescription) {
+		this.promptDescription = promptDescription;
+	}
 
-    public void setPromptDescription(String promptDescription) {
-        this.promptDescription = promptDescription;
-    }
 }

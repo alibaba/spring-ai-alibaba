@@ -37,161 +37,160 @@ import java.util.stream.Collectors;
 @Service
 public class PromptServiceImpl implements PromptService {
 
+	@Autowired
+	private PromptRepository promptRepository;
 
-    @Autowired
-    private PromptRepository promptRepository;
+	private static final Logger log = LoggerFactory.getLogger(PromptDataInitializer.class);
 
-    private static final Logger log = LoggerFactory.getLogger(PromptDataInitializer.class);
+	@Override
+	public List<PromptVO> getAll() {
+		return promptRepository.findAll().stream().map(this::mapToPromptVO).collect(Collectors.toList());
 
+	}
 
-    @Override
-    public List<PromptVO> getAll() {
-        return promptRepository.findAll().stream().map(this::mapToPromptVO).collect(Collectors.toList());
+	@Override
+	public PromptVO getById(Long id) {
+		PromptEntity entity = promptRepository.findById(id)
+			.orElseThrow(() -> new IllegalArgumentException("Prompt not found: " + id));
+		return mapToPromptVO(entity);
+	}
 
-    }
+	@Override
+	public PromptVO create(PromptVO promptVO) {
+		if (promptVO.invalid()) {
+			throw new IllegalArgumentException("PromptVO filed is invalid");
+		}
 
-    @Override
-    public PromptVO getById(Long id) {
-        PromptEntity entity = promptRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Prompt not found: " + id));
-        return mapToPromptVO(entity);
-    }
+		PromptEntity prompt = promptRepository.findByPrompt(promptVO.getPromptName(), promptVO.getType(),
+				promptVO.getMessageType());
+		if (prompt != null) {
+			log.error("Found Prompt is existed: promptName :{} , namespace:{}, type :{}, String messageType:{}",
+					promptVO.getPromptName(), promptVO.getNamespace(), promptVO.getType(), promptVO.getMessageType());
 
-    @Override
-    public PromptVO create(PromptVO promptVO) {
-        if (promptVO.invalid()) {
-            throw new IllegalArgumentException("PromptVO filed is invalid");
-        }
+			throw new RuntimeException("Found Prompt is existed");
+		}
 
-        PromptEntity prompt = promptRepository.findByPrompt(promptVO.getPromptName(), promptVO.getType(), promptVO.getMessageType());
-        if (prompt != null) {
-            log.info("Found Prompt is existed: promptName :{} , namespace:{}, type :{}, String messageType:{}"
-                    , promptVO.getPromptName(), promptVO.getNamespace(), promptVO.getType(), promptVO.getMessageType());
+		PromptEntity promptEntity = mapToPromptEntity(promptVO);
+		PromptEntity save = promptRepository.save(promptEntity);
+		log.info("Successfully created new Prompt promptName :{} , namespace:{}, type :{}, String messageType:{}",
+				save.getPromptName(), save.getNamespace(), save.getType(), save.getMessageType());
+		return mapToPromptVO(save);
+	}
 
-            throw new RuntimeException("Found Prompt is existed");
-        }
+	@Override
+	public PromptVO update(PromptVO promptVO) {
+		if (promptVO.invalid()) {
+			throw new IllegalArgumentException("PromptVO filed is invalid");
+		}
 
-        PromptEntity promptEntity = mapToPromptEntity(promptVO);
-        PromptEntity save = promptRepository.save(promptEntity);
-        log.info("Successfully created new Prompt promptName :{} , namespace:{}, type :{}, String messageType:{}"
-                , save.getPromptName(), save.getNamespace(), save.getType(), save.getMessageType());
-        return mapToPromptVO(save);
-    }
+		promptRepository.findById(promptVO.getId())
+			.orElseThrow(() -> new IllegalArgumentException("Prompt not found: " + promptVO.getId()));
+		PromptEntity promptEntity = mapToPromptEntity(promptVO);
+		PromptEntity save = promptRepository.save(promptEntity);
 
-    @Override
-    public PromptVO update(PromptVO promptVO) {
-        if (promptVO.invalid()) {
-            throw new IllegalArgumentException("PromptVO filed is invalid");
-        }
+		log.info("Successfully update new Prompt promptName :{} , namespace:{}, type :{}, String messageType:{}",
+				save.getPromptName(), save.getNamespace(), save.getType(), save.getMessageType());
+		return mapToPromptVO(save);
+	}
 
-        promptRepository.findById(promptVO.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Prompt not found: " + promptVO.getId()));
-        PromptEntity promptEntity = mapToPromptEntity(promptVO);
-        PromptEntity save = promptRepository.save(promptEntity);
+	@Override
+	public void delete(Long id) {
+		PromptEntity entity = promptRepository.findById(id)
+			.orElseThrow(() -> new IllegalArgumentException("Prompt not found: " + id));
+		if (Boolean.TRUE.equals(entity.getBuiltIn())) {
+			throw new IllegalArgumentException("Cannot delete built-in prompt");
+		}
 
-        log.info("Successfully update new Prompt promptName :{} , namespace:{}, type :{}, String messageType:{}"
-                , save.getPromptName(), save.getNamespace(), save.getType(), save.getMessageType());
-        return mapToPromptVO(save);
-    }
+		promptRepository.deleteById(id);
+	}
 
-    @Override
-    public void delete(Long id) {
-        PromptEntity entity = promptRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Prompt not found: " + id));
-        if (Boolean.TRUE.equals(entity.getBuiltIn())) {
-            throw new IllegalArgumentException("Cannot delete built-in prompt");
-        }
+	/**
+	 * Create system prompt template message
+	 * @param promptEnum Prompt enum
+	 * @param variables Variable mapping
+	 * @return
+	 */
+	@Override
+	public Message createSystemMessage(PromptEnum promptEnum, Map<String, Object> variables) {
+		PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(),
+				promptEnum.getType().name(), promptEnum.getMessageType().name());
+		if (promptEntity == null) {
+			throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
+		}
+		SystemPromptTemplate template = new SystemPromptTemplate(promptEntity.getPromptContent());
+		return template.createMessage(variables != null ? variables : Map.of());
+	}
 
-        promptRepository.deleteById(id);
-    }
+	/**
+	 * Create user prompt template message
+	 * @param promptEnum Prompt enum
+	 * @param variables Variable mapping
+	 * @return
+	 */
+	@Override
+	public Message createUserMessage(PromptEnum promptEnum, Map<String, Object> variables) {
+		PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(),
+				promptEnum.getType().name(), promptEnum.getMessageType().name());
+		if (promptEntity == null) {
+			throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
+		}
+		PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
+		return template.createMessage(variables != null ? variables : Map.of());
+	}
 
+	@Override
+	public Message createMessage(PromptEnum promptEnum, Map<String, Object> variables) {
+		PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(),
+				promptEnum.getType().name(), promptEnum.getMessageType().name());
+		if (promptEntity == null) {
+			throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
+		}
+		if (MessageType.USER.name().equals(promptEntity.getMessageType())) {
+			PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
+			return template.createMessage(variables != null ? variables : Map.of());
+		}
+		else if (MessageType.SYSTEM.name().equals(promptEntity.getMessageType())) {
+			SystemPromptTemplate template = new SystemPromptTemplate(promptEntity.getPromptContent());
+			return template.createMessage(variables != null ? variables : Map.of());
 
-    /**
-     * Create system prompt template message
-     *
-     * @param promptEnum Prompt enum
-     * @param variables  Variable mapping
-     * @return
-     */
-    @Override
-    public Message createSystemMessage(PromptEnum promptEnum, Map<String, Object> variables) {
-        PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(), promptEnum.getType().name(), promptEnum.getMessageType().name());
-        if (promptEntity == null) {
-            throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
-        }
-        SystemPromptTemplate template = new SystemPromptTemplate(promptEntity.getPromptContent());
-        return template.createMessage(variables != null ? variables : Map.of());
-    }
+		}
+		else if (MessageType.ASSISTANT.name().equals(promptEntity.getMessageType())) {
+			AssistantPromptTemplate template = new AssistantPromptTemplate(promptEntity.getPromptContent());
+			return template.createMessage(variables != null ? variables : Map.of());
+		}
+		else {
+			throw new IllegalArgumentException("Prompt message type not support : " + promptEntity.getMessageType());
+		}
 
-    /**
-     * Create user prompt template message
-     *
-     * @param promptEnum Prompt enum
-     * @param variables  Variable mapping
-     * @return
-     */
-    @Override
-    public Message createUserMessage(PromptEnum promptEnum, Map<String, Object> variables) {
-        PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(), promptEnum.getType().name(), promptEnum.getMessageType().name());
-        if (promptEntity == null) {
-            throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
-        }
-        PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
-        return template.createMessage(variables != null ? variables : Map.of());
-    }
+	}
 
+	/**
+	 * Render prompt template
+	 * @param promptEnum Prompt enum
+	 * @param variables Variable mapping
+	 * @return Rendered prompt
+	 */
+	@Override
+	public String renderPrompt(PromptEnum promptEnum, Map<String, Object> variables) {
+		PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(),
+				promptEnum.getType().name(), promptEnum.getMessageType().name());
+		if (promptEntity == null) {
+			throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
+		}
+		PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
+		return template.render(variables != null ? variables : Map.of());
+	}
 
-    @Override
-    public Message createMessage(PromptEnum promptEnum, Map<String, Object> variables) {
-        PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(), promptEnum.getType().name(), promptEnum.getMessageType().name());
-        if (promptEntity == null) {
-            throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
-        }
-        if (MessageType.USER.name().equals(promptEntity.getMessageType())){
-            PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
-            return template.createMessage(variables != null ? variables : Map.of());
-        }else if (MessageType.SYSTEM.name().equals(promptEntity.getMessageType())){
-            SystemPromptTemplate template = new SystemPromptTemplate(promptEntity.getPromptContent());
-            return template.createMessage(variables != null ? variables : Map.of());
+	private PromptVO mapToPromptVO(PromptEntity entity) {
+		PromptVO promptVO = new PromptVO();
+		BeanUtils.copyProperties(entity, promptVO);
+		return promptVO;
+	}
 
-        }else if (MessageType.ASSISTANT.name().equals(promptEntity.getMessageType())){
-            AssistantPromptTemplate template = new AssistantPromptTemplate(promptEntity.getPromptContent());
-            return template.createMessage(variables != null ? variables : Map.of());
-        }else {
-            throw new IllegalArgumentException("Prompt message type not support : " + promptEntity.getMessageType());
-        }
-
-    }
-
-    /**
-     * Render prompt template
-     *
-     * @param promptEnum Prompt enum
-     * @param variables  Variable mapping
-     * @return Rendered prompt
-     */
-    @Override
-    public String renderPrompt(PromptEnum promptEnum, Map<String, Object> variables) {
-        PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(), promptEnum.getType().name(), promptEnum.getMessageType().name());
-        if (promptEntity == null) {
-            throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
-        }
-        PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
-        return template.render(variables != null ? variables : Map.of());
-    }
-
-
-    private PromptVO mapToPromptVO(PromptEntity entity) {
-        PromptVO promptVO = new PromptVO();
-        BeanUtils.copyProperties(entity, promptVO);
-        return promptVO;
-    }
-
-
-    private PromptEntity mapToPromptEntity(PromptVO promptVO) {
-        PromptEntity entity = new PromptEntity();
-        BeanUtils.copyProperties(promptVO, entity);
-        return entity;
-    }
+	private PromptEntity mapToPromptEntity(PromptVO promptVO) {
+		PromptEntity entity = new PromptEntity();
+		BeanUtils.copyProperties(promptVO, entity);
+		return entity;
+	}
 
 }

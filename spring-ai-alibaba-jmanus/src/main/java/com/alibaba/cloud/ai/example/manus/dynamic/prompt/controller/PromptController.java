@@ -27,41 +27,39 @@ import java.util.List;
 @RequestMapping("/api/prompt")
 public class PromptController {
 
+	@Autowired
+	private PromptService promptService;
 
-    @Autowired
-    private PromptService promptService;
+	@GetMapping
+	public ResponseEntity<List<PromptVO>> getAll() {
+		return ResponseEntity.ok(promptService.getAll());
+	}
 
-    @GetMapping
-    public ResponseEntity<List<PromptVO>> getAll() {
-        return ResponseEntity.ok(promptService.getAll());
-    }
+	@GetMapping("/{id}")
+	public ResponseEntity<PromptVO> getById(@PathVariable("id") Long id) {
+		return ResponseEntity.ok(promptService.getById(id));
+	}
 
-    @GetMapping("/{id}")
-    public ResponseEntity<PromptVO> getById(@PathVariable("id") Long id) {
-        return ResponseEntity.ok(promptService.getById(id));
-    }
+	@PostMapping
+	public ResponseEntity<PromptVO> create(@RequestBody PromptVO prompt) {
+		return ResponseEntity.ok(promptService.create(prompt));
+	}
 
-    @PostMapping
-    public ResponseEntity<PromptVO> create(@RequestBody PromptVO prompt) {
-        return ResponseEntity.ok(promptService.create(prompt));
-    }
+	@PutMapping("/{id}")
+	public ResponseEntity<PromptVO> update(@PathVariable("id") Long id, @RequestBody PromptVO prompt) {
+		prompt.setId(id);
+		return ResponseEntity.ok(promptService.update(prompt));
+	}
 
-    @PutMapping("/{id}")
-    public ResponseEntity<PromptVO> update(@PathVariable("id") Long id,
-                                           @RequestBody PromptVO prompt) {
-        prompt.setId(id);
-        return ResponseEntity.ok(promptService.update(prompt));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
-        try {
-            promptService.delete(id);
-            return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
+		try {
+			promptService.delete(id);
+			return ResponseEntity.ok().build();
+		}
+		catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().build();
+		}
+	}
 
 }

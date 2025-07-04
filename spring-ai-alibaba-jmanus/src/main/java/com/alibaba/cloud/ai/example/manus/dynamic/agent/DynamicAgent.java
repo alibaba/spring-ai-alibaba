@@ -61,7 +61,6 @@ import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 
-
 public class DynamicAgent extends ReActAgent {
 
 	private static final String CURRENT_STEP_ENV_DATA_KEY = "current_step_env_data";

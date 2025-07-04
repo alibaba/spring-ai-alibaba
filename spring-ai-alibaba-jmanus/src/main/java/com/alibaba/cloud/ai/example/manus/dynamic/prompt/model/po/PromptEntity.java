@@ -18,100 +18,98 @@ package com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.po;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "prompt",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "idx_prompt_name_namespace",
-                        columnNames = {"prompt_name", "namespace"})})
+@Table(name = "prompt", uniqueConstraints = {
+		@UniqueConstraint(name = "idx_prompt_name_namespace", columnNames = { "prompt_name", "namespace" }) })
 public class PromptEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(nullable = false)
-    private String promptName;
+	@Column(nullable = false)
+	private String promptName;
 
-    @Column(nullable = true)
-    private String namespace;
+	@Column(nullable = true)
+	private String namespace;
 
-    @Column(nullable = false)
-    private String messageType;
+	@Column(nullable = false)
+	private String messageType;
 
-    @Column(nullable = false)
-    private String type;
+	@Column(nullable = false)
+	private String type;
 
-    @Column(nullable = false)
-    private Boolean builtIn;
+	@Column(nullable = false)
+	private Boolean builtIn;
 
-    @Column(nullable = false,length = 1024)
-    private String promptDescription;
+	@Column(nullable = false, length = 1024)
+	private String promptDescription;
 
-    @Lob
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String promptContent;
+	@Lob
+	@Column(columnDefinition = "TEXT", nullable = false)
+	private String promptContent;
 
+	public Long getId() {
+		return id;
+	}
 
-    public Long getId() {
-        return id;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	public String getPromptName() {
+		return promptName;
+	}
 
-    public String getPromptName() {
-        return promptName;
-    }
+	public void setPromptName(String promptName) {
+		this.promptName = promptName;
+	}
 
-    public void setPromptName(String promptName) {
-        this.promptName = promptName;
-    }
+	public String getNamespace() {
+		return namespace;
+	}
 
-    public String getNamespace() {
-        return namespace;
-    }
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
+	}
 
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
+	public String getMessageType() {
+		return messageType;
+	}
 
-    public String getMessageType() {
-        return messageType;
-    }
+	public void setMessageType(String messageType) {
+		this.messageType = messageType;
+	}
 
-    public void setMessageType(String messageType) {
-        this.messageType = messageType;
-    }
+	public String getType() {
+		return type;
+	}
 
-    public String getType() {
-        return type;
-    }
+	public void setType(String type) {
+		this.type = type;
+	}
 
-    public void setType(String type) {
-        this.type = type;
-    }
+	public String getPromptContent() {
+		return promptContent;
+	}
 
-    public String getPromptContent() {
-        return promptContent;
-    }
+	public void setPromptContent(String promptContent) {
+		this.promptContent = promptContent;
+	}
 
-    public void setPromptContent(String promptContent) {
-        this.promptContent = promptContent;
-    }
+	public Boolean getBuiltIn() {
+		return builtIn;
+	}
 
-    public Boolean getBuiltIn() {
-        return builtIn;
-    }
+	public void setBuiltIn(Boolean builtIn) {
+		this.builtIn = builtIn;
+	}
 
-    public void setBuiltIn(Boolean builtIn) {
-        this.builtIn = builtIn;
-    }
+	public String getPromptDescription() {
+		return promptDescription;
+	}
 
-    public String getPromptDescription() {
-        return promptDescription;
-    }
+	public void setPromptDescription(String promptDescription) {
+		this.promptDescription = promptDescription;
+	}
 
-    public void setPromptDescription(String promptDescription) {
-        this.promptDescription = promptDescription;
-    }
 }
