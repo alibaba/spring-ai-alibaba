@@ -149,7 +149,7 @@ public class DynamicAgent extends ReActAgent {
 			// Build current prompt. System message is the first message.
 			List<Message> messages = new ArrayList<>(Collections.singletonList(systemMessage));
 			// Add history message.
-			ChatMemory chatMemory = llmService.getAgentMemory();
+			ChatMemory chatMemory = llmService.getAgentMemory(manusProperties.getMaxMemory());
 			List<Message> historyMem = chatMemory.get(getPlanId());
 			messages.addAll(historyMem);
 			messages.add(currentStepEnvMessage);
@@ -278,7 +278,7 @@ public class DynamicAgent extends ReActAgent {
 			if (!StringUtils.isBlank(userInput)) {
 				// Add user input to memory
 
-				llmService.getAgentMemory().add(getPlanId(), userMessage);
+				llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getPlanId(), userMessage);
 
 			}
 		}
@@ -294,7 +294,7 @@ public class DynamicAgent extends ReActAgent {
 			return;
 		}
 		// clear current plan memory
-		llmService.getAgentMemory().clear(getPlanId());
+		llmService.getAgentMemory(manusProperties.getMaxMemory()).clear(getPlanId());
 		for (Message message : messages) {
 			// exclude all system message
 			if (message instanceof SystemMessage) {
@@ -306,7 +306,7 @@ public class DynamicAgent extends ReActAgent {
 				continue;
 			}
 			// only keep assistant message and tool_call message
-			llmService.getAgentMemory().add(getPlanId(), message);
+			llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getPlanId(), message);
 		}
 	}
 

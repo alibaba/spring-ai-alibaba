@@ -69,7 +69,7 @@ public abstract class BaseAgent {
 
 	protected LlmService llmService;
 
-	private final ManusProperties manusProperties;
+	protected final ManusProperties manusProperties;
 
 	protected final PromptLoader promptLoader;
 
@@ -292,7 +292,7 @@ public abstract class BaseAgent {
 	protected boolean isStuck() {
 		// Currently, if the agent does not call the tool three times, it is considered
 		// stuck and the current step is exited.
-		List<Message> memoryEntries = llmService.getAgentMemory().get(getPlanId());
+		List<Message> memoryEntries = llmService.getAgentMemory(manusProperties.getMaxMemory()).get(getPlanId());
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {
