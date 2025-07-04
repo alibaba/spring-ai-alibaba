@@ -15,7 +15,7 @@
 -->
 <template>
   <div class="chat-container">
-    <div class="messages" ref="messagesRef">
+    <div class="messages" ref="messagesRef" :key="forceUpdateKey">
       <div
         v-for="message in messages"
         :key="message.id"
@@ -88,7 +88,7 @@
                         }}
                       </span>
                       <span class="step-title">
-                        {{ step ?? `步骤 ${index + 1}` }}
+                        {{ step || `步骤 ${index + 1}` }}
                       </span>
                       <span v-if="index === (message.planExecution?.currentStepIndex ?? -1)" class="step-status current">
                         {{ $t('chat.status.executing') }}
@@ -422,6 +422,8 @@ const isLoading = ref(false)
 const messages = ref<Message[]>([])
 const pollingInterval = ref<number>()
 const showScrollToBottom = ref(false)
+// Add a force update key to trigger re-renders when needed
+const forceUpdateKey = ref(0)
 
 const addMessage = (type: 'user' | 'assistant', content: string, options?: Partial<Message>) => {
   const message: Message = {
@@ -615,7 +617,16 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
     for (const thinkActStep of agentExecution.thinkActSteps) {
       if (thinkActStep.subPlanExecutionRecord) {
         console.log(`[ChatComponent] Found sub-plan for step ${stepIndex}:`, thinkActStep.subPlanExecutionRecord)
-        return thinkActStep.subPlanExecutionRecord.steps ?? []
+        const rawSteps = thinkActStep.subPlanExecutionRecord.steps ?? []
+        // Apply the same formatting logic as main steps
+        return rawSteps.map((step: any) => {
+          if (typeof step === 'string') {
+            return step
+          } else if (typeof step === 'object' && step !== null) {
+            return step.title || step.description || `子步骤`
+          }
+          return `子步骤`
+        })
       }
     }
 
@@ -797,13 +808,21 @@ const updateStepActions = (message: Message, planDetails: any) => {
     console.log('[ChatComponent] 没有执行序列数据')
   }
 
-  // 将步骤动作信息附加到消息上
-  message.stepActions = lastStepActions
+  // 将步骤动作信息附加到消息上 - 使用Vue 3响应性友好的方式
+  // 直接覆盖整个数组以确保Vue响应性系统检测到变化
+  message.stepActions = [...lastStepActions]
 
   console.log(
     '[ChatComponent] 步骤动作更新完成:',
     JSON.stringify(lastStepActions.map(a => a?.actionDescription))
   )
+  
+  // 强制更新Vue组件以确保UI响应
+  nextTick(() => {
+    console.log('[ChatComponent] 强制UI更新完成')
+    // Trigger force update for the entire component
+    forceUpdateKey.value++
+  })
 }
 
 // 处理对话轮次开始
@@ -918,8 +937,8 @@ const handlePlanUpdate = (rootPlanId: string) => {
     message.planExecution = {} as PlanExecutionRecord
   }
 
-  // 更新 planExecution 数据
-  message.planExecution = { ...planDetails }
+  // 更新 planExecution 数据 - 使用深拷贝确保响应性
+  message.planExecution = JSON.parse(JSON.stringify(planDetails))
 
   // 处理简单响应（没有步骤的情况）
   if (!planDetails.steps || planDetails.steps.length === 0) {
@@ -947,25 +966,23 @@ const handlePlanUpdate = (rootPlanId: string) => {
   }
 
   // 处理有步骤的计划...
-  // 处理步骤信息 - 确保格式一致
+  // 处理步骤信息 - 确保格式一致并保持显示友好的格式
   const formattedSteps = planDetails.steps.map((step: any) => {
-    // 如果步骤是字符串，转换为对象格式
+    // 如果步骤是字符串，直接返回
     if (typeof step === 'string') {
-      return { title: step, description: step }
+      return step
     }
-    // 如果是对象但缺少title，使用description
-    else if (typeof step === 'object') {
-      return {
-        title: step.title || step.description || `步骤`,
-        description: step.description || step.title || '',
-        ...step,
-      }
+    // 如果是对象，提取标题用于显示
+    else if (typeof step === 'object' && step !== null) {
+      return step.title || step.description || `步骤`
     }
-    return step
+    return `步骤`
   })
 
   // 更新步骤信息到 planExecution 中
-  message.planExecution.steps = formattedSteps
+  if (message.planExecution) {
+    message.planExecution.steps = formattedSteps
+  }
 
   // 处理执行序列和步骤动作 - 参考chat-handler.js的逻辑
   if (planDetails.agentExecutionSequence && planDetails.agentExecutionSequence.length > 0) {
@@ -998,16 +1015,18 @@ const handlePlanUpdate = (rootPlanId: string) => {
     }
   } else {
     // 如果没有执行序列，使用基本思考状态
-    const currentStepIndex = message.planExecution.currentStepIndex ?? 0
-    const currentStep = message.planExecution.steps?.[currentStepIndex]
-    const stepTitle = (typeof currentStep === 'string') 
-      ? currentStep 
-      : '';
-    message.thinking = `正在执行: ${stepTitle}`
+    if (message.planExecution) {
+      const currentStepIndex = message.planExecution.currentStepIndex ?? 0
+      const currentStep = message.planExecution.steps?.[currentStepIndex]
+      const stepTitle = (typeof currentStep === 'string') 
+        ? currentStep 
+        : '';
+      message.thinking = `正在执行: ${stepTitle}`
+    }
   }
 
   // 处理用户输入等待状态
-  if (planDetails.userInputWaitState) {
+  if (planDetails.userInputWaitState && message.planExecution) {
     console.log('[ChatComponent] 需要用户输入:', planDetails.userInputWaitState)
 
     // 将用户输入等待状态附加到 planExecution 上
@@ -1028,7 +1047,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
     message.thinking = '等待用户输入...'
   } else {
     // 如果没有用户输入等待状态，清除之前的状态
-    if (message.planExecution.userInputWaitState) {
+    if (message.planExecution?.userInputWaitState) {
       delete message.planExecution.userInputWaitState
     }
   }
@@ -1057,6 +1076,13 @@ const handlePlanUpdate = (rootPlanId: string) => {
 
   // 滚动到底部确保用户能看到最新进展
   scrollToBottom()
+
+  // 强制更新Vue组件以确保UI响应
+  nextTick(() => {
+    console.log('[ChatComponent] Plan update UI refresh completed')
+    // Trigger force update for the entire component
+    forceUpdateKey.value++
+  })
 
 }
 
