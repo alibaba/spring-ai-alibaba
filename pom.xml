@@ -156,6 +156,9 @@
         <!-- Spring AI Alibaba Nacos Prompt Template -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
 
+        <!-- Spring AI Alibaba Graph Observation -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-graph-observation</module>
+
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
@@ -167,6 +170,7 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-gateway</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
     </modules>
 
     <scm>

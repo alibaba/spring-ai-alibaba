@@ -70,6 +70,16 @@ public class StateGraph {
 	public static final String ERROR = "__ERROR__";
 
 	/**
+	 * Constant representing the NODE_BEFORE of the graph.
+	 */
+	public static final String NODE_BEFORE = "__NODE_BEFORE__";
+
+	/**
+	 * Constant representing the NODE_AFTER of the graph.
+	 */
+	public static final String NODE_AFTER = "__NODE_AFTER__";
+
+	/**
 	 * Collection of nodes in the graph.
 	 */
 	final Nodes nodes = new Nodes();
