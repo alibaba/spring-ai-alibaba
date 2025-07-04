@@ -103,6 +103,7 @@ const words: I18nType = {
     categories: {
       basic: '基础配置',
       agent: 'Agent配置',
+      model: 'Model配置',
       mcp: 'Tools/MCP配置'
     }
   },
@@ -131,6 +132,25 @@ const words: I18nType = {
     saveFailed: 'Agent保存失败',
     deleteSuccess: 'Agent删除成功',
     deleteFailed: 'Agent删除失败'
+  },
+
+  // Model 配置
+  model: {
+    title: 'Model 配置',
+    name: 'Model名称',
+    description: '描述',
+    addModel: '新建Model',
+    editModel: '编辑Model',
+    deleteModel: '删除Model',
+    deleteConfirm: '确定要删除吗？',
+    deleteWarning: '此操作不可恢复。',
+    namePlaceholder: '输入Model名称',
+    descriptionPlaceholder: '描述这个Model及适用场景',
+    required: '*',
+    saveSuccess: 'Model保存成功',
+    saveFailed: 'Model保存失败',
+    deleteSuccess: 'Model删除成功',
+    deleteFailed: 'Model删除失败'
   },
 
   // 计划模板配置

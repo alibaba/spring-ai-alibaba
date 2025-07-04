@@ -103,6 +103,7 @@ const words: I18nType = {
     categories: {
       basic: 'Basic Configuration',
       agent: 'Agent Configuration',
+      model: 'Model Configuration',
       mcp: 'Tools/MCP Configuration'
     }
   },
@@ -131,6 +132,25 @@ const words: I18nType = {
     saveFailed: 'Failed to save agent',
     deleteSuccess: 'Agent deleted successfully',
     deleteFailed: 'Failed to delete agent'
+  },
+
+  // Model 配置
+  model: {
+    title: 'Model Configuration',
+    name: 'Model Name',
+    description: 'Description',
+    addModel: 'Add Model',
+    editModel: 'Edit Model',
+    deleteModel: 'Delete Model',
+    deleteConfirm: 'Are you sure you want to delete?',
+    deleteWarning: 'This action cannot be undone.',
+    namePlaceholder: 'Enter model name',
+    descriptionPlaceholder: 'Describe the function and use cases of this model',
+    required: '*',
+    saveSuccess: 'Model saved successfully',
+    saveFailed: 'Failed to save model',
+    deleteSuccess: 'Model deleted successfully',
+    deleteFailed: 'Failed to delete model'
   },
 
   // Plan template configuration
