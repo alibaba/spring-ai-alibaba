@@ -94,4 +94,12 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 		return "end" + count;
 	}
 
+    @Override
+    public void postProcess(EndNodeData data, String varName) {
+        String outputKey = varName + "_output";
+        data.setOutputKey(outputKey);
+
+        data.setOutputs(List.of(new Variable(outputKey, VariableType.STRING.value())));
+    }
+
 }
