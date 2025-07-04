@@ -1270,10 +1270,11 @@ defineExpose({
 
 <style lang="less" scoped>
 .chat-container {
-  flex: 1; /* 占据剩余空间 */
+  flex: 1; /* 占据父容器的剩余空间 */
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 确保可以收缩 */
+  height: 100%; /* 占满父容器高度 */
+  min-height: 0; /* 允许收缩 */
   overflow: hidden; /* 防止容器溢出 */
 }
 

@@ -419,7 +419,7 @@ const handleConfig = () => {
 const handlePlanExecutionRequested = async (payload: {
   title: string
   planData: any
-  params?: string
+  params?: string | undefined
 }) => {
   console.log('[DirectView] Plan execution requested:', payload)
 
@@ -583,6 +583,14 @@ const handlePlanExecutionRequested = async (payload: {
     font-weight: 600;
     color: #ffffff;
   }
+}
+
+.chat-content {
+  flex: 1; /* 占据剩余空间 */
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* 允许收缩 */
+  overflow: hidden; /* 防止溢出 */
 }
 
 .header-actions {
