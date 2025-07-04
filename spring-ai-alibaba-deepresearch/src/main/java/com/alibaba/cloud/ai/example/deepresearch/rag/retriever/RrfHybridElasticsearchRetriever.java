@@ -21,7 +21,6 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import org.elasticsearch.client.RestClient;
@@ -33,22 +32,15 @@ import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.util.ObjectBuilder;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static org.springframework.ai.vectorstore.elasticsearch.SimilarityFunction.l2_norm;
 
 /**
  * Hybrid Elasticsearch retriever using BM25 and KNN search with Reciprocal Rank Fusion.
- * SimilaritySearch reference {@link org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore}
+ * SimilaritySearch reference
+ * {@link org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore}
  *
  * @author hupei
  * @author ViliamSun
@@ -97,9 +89,8 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 
 	public RrfHybridElasticsearchRetriever(RestClient restClient, EmbeddingModel embeddingModel, String indexName,
 			RagProperties.Elasticsearch.Hybrid hybrid) {
-		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient,
-				new JacksonJsonpMapper(
-						new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
+		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
+				new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
 		this.embeddingModel = embeddingModel;
 		this.indexName = indexName;
 		this.windowSize = hybrid.getRrfWindowSize();
@@ -120,57 +111,22 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 		}
 	}
 
-	//plan1
-	private List<Document> searchHybrid(String text) throws IOException {
-		float[] vector = embeddingModel.embed(text);
-		SearchResponse<Document> search = elasticsearchClient.search(sr -> sr.index(indexName)
-						.query(q -> q
-								.match(mq ->
-										mq.field("content")
-												.query(escape(text))
-												.boost(bm25Boost)))
-						.knn(knn -> knn
-								.queryVector(EmbeddingUtils.toList(vector))
-								.similarity(0.0f)
-								.k(windowSize)
-								.field("embedding")
-								.numCandidates(Math.max(windowSize * 2, 10))
-								.boost(knnBoost))
-						.rank(r ->
-								r.rrf(rrfk -> rrfk
-										.rankConstant((long) rrfK)
-										.rankWindowSize((long) windowSize)
-								)
-						)
-				, Document.class);
-		return search.hits().hits().stream().map(this::toDocument).collect(Collectors.toList());
-	}
-
-	private Builder buildHybridSearch(String text, Builder knnBuilder) {
-		// Build the hybrid search request with BM25 and rrf
-		return knnBuilder
-				.query(q -> q
-						.match(mq -> mq
-								.field("content")
-								.query(escape(text))
-								.boost(bm25Boost)))
-				.rank(r -> r.rrf(rrfk -> rrfk
-						.rankConstant((long) rrfK)
-						.rankWindowSize((long) windowSize)));
-	}
-
-	//plan2
+	/**
+	 * Query unified entry, default search based on knn method
+	 * @param text the query text to search for
+	 * @param hasHybrid whether to enable hybrid search (based on query statement and rank
+	 * query)
+	 */
 	public List<Document> search(String text, boolean hasHybrid) throws IOException {
 		float[] vector = embeddingModel.embed(text);
 		SearchResponse<Document> response = elasticsearchClient.search(sr -> {
 			Builder knnBuilder = sr.index(indexName)
-					.knn(knn -> knn
-							.queryVector(EmbeddingUtils.toList(vector))
-							.similarity(0.0f)
-							.k(windowSize)
-							.field("embedding")
-							.numCandidates(Math.max(windowSize * 2, 10))
-							.boost(knnBoost));
+				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vector))
+					.similarity(0.0f)
+					.k(windowSize)
+					.field("embedding")
+					.numCandidates(Math.max(windowSize * 2, 10))
+					.boost(knnBoost));
 			if (hasHybrid) {
 				return buildHybridSearch(text, knnBuilder);
 			}
@@ -191,24 +147,10 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 		return documentBuilder.build();
 	}
 
-
-
-	private List<Document> parseResults(InputStream content) throws IOException {
-		JsonNode hits = mapper.readTree(content).path("hits").path("hits");
-
-		List<Document> results = new ArrayList<>();
-
-		for (JsonNode hit : hits) {
-			String id = hit.path("_id").asText();
-			String docText = hit.path("_source").path("content").asText();
-
-			Map<String, Object> metadata = mapper.convertValue(hit.path("_source"),
-					mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
-
-			results.add(new Document(id, docText, metadata));
-		}
-
-		return results;
+	private Builder buildHybridSearch(String text, Builder knnBuilder) {
+		// Build the hybrid search request with BM25 and rrf
+		return knnBuilder.query(q -> q.match(mq -> mq.field("content").query(escape(text)).boost(bm25Boost)))
+			.rank(r -> r.rrf(rrfk -> rrfk.rankConstant((long) rrfK).rankWindowSize((long) windowSize)));
 	}
 
 	private static String escape(String text) {
