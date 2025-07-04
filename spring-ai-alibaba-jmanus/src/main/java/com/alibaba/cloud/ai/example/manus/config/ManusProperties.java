@@ -67,24 +67,6 @@ public class ManusProperties {
 		this.openBrowserAuto = openBrowserAuto;
 	}
 
-	@ConfigProperty(group = "manus", subGroup = "interaction", key = "consoleQuery", path = "manus.consoleQuery",
-			description = "启用控制台交互模式", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
-			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
-	private volatile Boolean consoleQuery;
-
-	public Boolean getConsoleQuery() {
-		String configPath = "manus.consoleQuery";
-		String value = configService.getConfigValue(configPath);
-		if (value != null) {
-			consoleQuery = Boolean.valueOf(value);
-		}
-		return consoleQuery;
-	}
-
-	public void setConsoleQuery(Boolean consoleQuery) {
-		this.consoleQuery = consoleQuery;
-	}
-
 	@ConfigProperty(group = "manus", subGroup = "browser", key = "requestTimeout",
 			path = "manus.browser.requestTimeout", description = "浏览器请求超时时间(秒)", defaultValue = "180",
 			inputType = ConfigInputType.NUMBER)
