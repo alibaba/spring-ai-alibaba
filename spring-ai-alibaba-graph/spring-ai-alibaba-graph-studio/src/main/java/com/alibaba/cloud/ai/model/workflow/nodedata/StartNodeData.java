@@ -25,7 +25,7 @@ public class StartNodeData extends NodeData {
 
 	private List<StartInput> startInputs;
 
-    private String outputKey;
+	private String outputKey;
 
 	public StartNodeData() {
 	}
@@ -43,14 +43,14 @@ public class StartNodeData extends NodeData {
 		return this;
 	}
 
-    public String getOutputKey() {
-        return outputKey;
-    }
+	public String getOutputKey() {
+		return outputKey;
+	}
 
-    public StartNodeData setOutputKey(String outputKey) {
-        this.outputKey = outputKey;
-        return this;
-    }
+	public StartNodeData setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+		return this;
+	}
 
 	public static class StartInput {
 
