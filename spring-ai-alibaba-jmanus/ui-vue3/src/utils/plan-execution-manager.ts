@@ -200,7 +200,7 @@ export class PlanExecutionManager {
       }
     } catch (error: any) {
       // Cache error message data first
-      const errorPlanId = this.state.activePlanId || 'error'
+      const errorPlanId = this.state.activePlanId ?? 'error'
       this.setCachedMessage(errorPlanId, {
         content: `Send failed: ${error.message}`,
         type: 'error',
@@ -234,7 +234,7 @@ export class PlanExecutionManager {
   public handleCachedPlanExecution(rootPlanId: string, query?: string): boolean {
     const cachedRecord = this.getCachedPlanRecord(rootPlanId)
     
-    if (cachedRecord && cachedRecord.currentPlanId) {
+    if (cachedRecord?.currentPlanId) {
       console.log(`[PlanExecutionManager] Found cached plan execution record for rootPlanId: ${rootPlanId}`)
       this.handlePlanExecutionRequested(cachedRecord.currentPlanId, query)
       return true
@@ -270,7 +270,7 @@ export class PlanExecutionManager {
     this.emitChatInputClear()
     
     // Cache UI state data first
-    const uiStatePlanId = this.state.activePlanId || 'ui-state'
+    const uiStatePlanId = this.state.activePlanId ?? 'ui-state'
     this.setCachedUIState(uiStatePlanId, { enabled: false, placeholder: 'Processing...' })
     this.emitChatInputUpdateState(uiStatePlanId)
 
@@ -285,10 +285,10 @@ export class PlanExecutionManager {
       // Use direct execution mode API to send message
       const response = await DirectApiService.sendMessage(query)
 
-      if (response && response.planId) {
+      if (response?.planId) {
         this.state.activePlanId = response.planId
         return response
-      } else if (response && response.planTemplateId) {
+      } else if (response?.planTemplateId) {
         // If response contains planTemplateId instead of planId
         this.state.activePlanId = response.planTemplateId
         return { ...response, planId: response.planTemplateId }
@@ -321,7 +321,7 @@ export class PlanExecutionManager {
    * Handle plan completion common logic
    */
   private handlePlanCompletion(details: PlanExecutionRecord): void {
-    this.emitPlanCompleted(details.rootPlanId || "");
+    this.emitPlanCompleted(details.rootPlanId ?? "");
     this.state.lastSequenceSize = 0
     this.stopPolling()
 
@@ -343,7 +343,7 @@ export class PlanExecutionManager {
 
     if (details.completed) {
       this.state.activePlanId = null
-      this.emitChatInputUpdateState(details.rootPlanId || "");
+      this.emitChatInputUpdateState(details.rootPlanId ?? "");
     }
   }
 
@@ -372,19 +372,19 @@ export class PlanExecutionManager {
       }
 
       // Update cache with latest plan details if rootPlanId exists
-      if (details.rootPlanId) {
+      if (details?.rootPlanId) {
         this.setCachedPlanRecord(details.rootPlanId, details)
       }
 
-      if (!details.steps || details.steps.length === 0) {
+      if (!details?.steps || details.steps.length === 0) {
         console.log('[PlanExecutionManager] Simple response without steps detected, handling as completed')
         // For simple responses, emit completion directly
-        this.emitPlanUpdate(details.rootPlanId || "");
+        this.emitPlanUpdate(details.rootPlanId ?? "");
         this.handlePlanCompletion(details)
         return;
       }
 
-      this.emitPlanUpdate(details.rootPlanId || "");
+      this.emitPlanUpdate(details.rootPlanId ?? "");
 
       if (details.completed) {
         this.handlePlanCompletion(details)
@@ -405,7 +405,7 @@ export class PlanExecutionManager {
       const details = await CommonApiService.getDetails(planId)
       
       // Cache the plan execution record by rootPlanId if it exists
-      if (details && details.rootPlanId) {
+      if (details?.rootPlanId) {
         this.planExecutionCache.set(details.rootPlanId, details)
         console.log(`[PlanExecutionManager] Cached plan execution record for rootPlanId: ${details.rootPlanId}`)
       }

@@ -31,19 +31,15 @@ export class CommonApiService {
       }
       if (!response.ok) throw new Error(`Failed to get detailed information: ${response.status}`)
       const rawText = await response.text()
-      try {
-        const data = JSON.parse(rawText)
-        
-        // Type validation - ensure the response contains required currentPlanId
-        if (data && typeof data === 'object' && !data.currentPlanId) {
-          // If currentPlanId is missing from response, add it from the parameter
-          data.currentPlanId = planId
-        }
-        
-        return data
-      } catch (jsonParseError) {
-        throw jsonParseError
+      const data = JSON.parse(rawText)
+      
+      // Type validation - ensure the response contains required currentPlanId
+      if (data && typeof data === 'object' && !data.currentPlanId) {
+        // If currentPlanId is missing from response, add it from the parameter
+        data.currentPlanId = planId
       }
+      
+      return data
     } catch (error: any) {
       // Log error but don't throw exception
       console.error('[CommonApiService] Failed to get plan details:', error)
@@ -62,7 +58,7 @@ export class CommonApiService {
       let errorData
       try {
         errorData = await response.json()
-      } catch (e) {
+      } catch (_e) {
         errorData = { message: `Failed to submit form input: ${response.status}` }
       }
       throw new Error(errorData.message || `Failed to submit form input: ${response.status}`)

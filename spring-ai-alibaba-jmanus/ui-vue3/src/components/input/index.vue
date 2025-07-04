@@ -60,7 +60,6 @@ interface Props {
 interface Emits {
   (e: 'send', message: string): void
   (e: 'clear'): void
-  (e: 'focus'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
   (e: 'message-sent', message: string): void
   (e: 'plan-mode-clicked'): void

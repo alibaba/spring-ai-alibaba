@@ -50,7 +50,7 @@
               <Icon icon="carbon:chevron-right" />
             </div>
             <p class="agent-desc">{{ agent.description }}</p>
-            <div class="agent-tools" v-if="agent.availableTools && Array.isArray(agent.availableTools) && agent.availableTools.length > 0">
+            <div class="agent-tools" v-if="agent.availableTools?.length > 0">
               <span v-for="tool in agent.availableTools.slice(0, 3)" :key="tool" class="tool-tag">
                 {{ getToolDisplayName(tool) }}
               </span>
@@ -116,7 +116,8 @@
         <div class="form-item">
           <label>Agent提示词（人设，要求，以及下一步动作的指导）</label>
           <textarea
-            v-model="selectedAgent.nextStepPrompt"
+            :value="selectedAgent.nextStepPrompt || ''"
+            @input="selectedAgent.nextStepPrompt = ($event.target as HTMLTextAreaElement).value"
             rows="8"
             placeholder="设置Agent的人设、要求以及下一步动作的指导..."
           ></textarea>
@@ -184,7 +185,8 @@
         <div class="form-item">
           <label>Agent提示词（人设，要求，以及下一步动作的指导）</label>
           <textarea
-            v-model="newAgent.nextStepPrompt"
+            :value="newAgent.nextStepPrompt || ''"
+            @input="newAgent.nextStepPrompt = ($event.target as HTMLTextAreaElement).value"
             rows="8"
             placeholder="设置Agent的人设、要求以及下一步动作的指导..."
           ></textarea>
@@ -228,7 +230,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import Modal from '@/components/modal/index.vue'
 import ToolSelectionModal from '@/components/tool-selection-modal/index.vue'
@@ -252,13 +254,7 @@ const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
   nextStepPrompt: ''
 })
 
-// 计算属性
-const unassignedTools = computed(() => {
-  if (!selectedAgent.value || !selectedAgent.value.availableTools || !Array.isArray(selectedAgent.value.availableTools)) {
-    return availableTools
-  }
-  return availableTools.filter(tool => !selectedAgent.value!.availableTools.includes(tool.key))
-})
+// 计算属性 - removed unused unassignedTools since it's not used in the template
 
 // 工具显示名称获取
 const getToolDisplayName = (toolId: string): string => {
@@ -296,7 +292,7 @@ const loadData = async () => {
     // 确保每个agent都有availableTools数组
     const normalizedAgents = loadedAgents.map(agent => ({
       ...agent,
-      availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
+      availableTools: agent.availableTools ?? []
     }))
     
     agents.splice(0, agents.length, ...normalizedAgents)
@@ -428,7 +424,7 @@ const selectAgent = async (agent: Agent) => {
     // 确保availableTools是数组
     selectedAgent.value = {
       ...detailedAgent,
-      availableTools: Array.isArray(detailedAgent.availableTools) ? detailedAgent.availableTools : []
+      availableTools: detailedAgent.availableTools ?? []
     }
   } catch (err: any) {
     console.error('加载Agent详情失败:', err)
@@ -436,7 +432,7 @@ const selectAgent = async (agent: Agent) => {
     // 使用基本信息作为后备
     selectedAgent.value = {
       ...agent,
-      availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
+      availableTools: agent.availableTools ?? []
     }
   }
 }
@@ -486,17 +482,7 @@ const handleToolSelectionConfirm = (selectedToolIds: string[]) => {
   }
 }
 
-// 添加工具
-const addTool = (toolId: string) => {
-  if (selectedAgent.value) {
-    if (!selectedAgent.value.availableTools) {
-      selectedAgent.value.availableTools = []
-    }
-    if (!selectedAgent.value.availableTools.includes(toolId)) {
-      selectedAgent.value.availableTools.push(toolId)
-    }
-  }
-}
+// removed unused addTool function since it's not used anywhere in the code
 
 
 

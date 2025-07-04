@@ -40,8 +40,8 @@ export default defineConfig({
     checker({
       // Enable TypeScript checking in development
       typescript: true,
-      // Enable Vue template type checking
-      vueTsc: true,
+      // Temporarily disable Vue template type checking due to @volar/typescript compatibility issue
+      // vueTsc: true,
       // Enable ESLint checking
       eslint: {
         lintCommand: 'eslint "./src/**/*.{ts,tsx,vue}"'

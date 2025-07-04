@@ -158,9 +158,9 @@ const sortBy = ref<'group' | 'name' | 'enabled'>('group')
 const collapsedGroups = ref(new Set<string>())
 const selectedTools = ref<string[]>([])
 
-// 设置组复选框的 indeterminate 状态
+// Set group checkbox indeterminate state
 const updateGroupCheckboxState = (groupName: string, tools: Tool[]) => {
-  const checkbox = document.querySelector(`input[data-group="${groupName}"]`) as HTMLInputElement
+  const checkbox = document.querySelector(`input[data-group="${groupName}"]`) as HTMLInputElement | null
   if (checkbox) {
     checkbox.indeterminate = isGroupPartiallySelected(tools)
   }
@@ -175,18 +175,18 @@ watch(
   { immediate: true }
 )
 
-// 过滤和排序的工具
+// Filtered and sorted tools
 const filteredTools = computed(() => {
-  let filtered = props.tools.filter(tool => tool && tool.key) // 过滤掉无效工具
+  let filtered = props.tools.filter(tool => tool.key) // Filter out invalid tools
 
-  // 搜索过滤
+  // Search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(
       tool =>
         tool.name.toLowerCase().includes(query) ||
         tool.description.toLowerCase().includes(query) ||
-        (tool.serviceGroup && tool.serviceGroup.toLowerCase().includes(query))
+        (tool.serviceGroup?.toLowerCase().includes(query) ?? false)
     )
   }
 
@@ -207,8 +207,8 @@ const filteredTools = computed(() => {
     case 'group':
     default:
       filtered = [...filtered].sort((a, b) => {
-        const groupA = a.serviceGroup || '未分组'
-        const groupB = b.serviceGroup || '未分组'
+        const groupA = a.serviceGroup ?? '未分组'
+        const groupB = b.serviceGroup ?? '未分组'
         if (groupA !== groupB) {
           return groupA.localeCompare(groupB)
         }
@@ -225,7 +225,7 @@ const groupedTools = computed(() => {
   const groups = new Map<string, Tool[]>()
   
   filteredTools.value.forEach(tool => {
-    const groupName = tool.serviceGroup || '未分组'
+    const groupName = tool.serviceGroup ?? '未分组'
     if (!groups.has(groupName)) {
       groups.set(groupName, [])
     }

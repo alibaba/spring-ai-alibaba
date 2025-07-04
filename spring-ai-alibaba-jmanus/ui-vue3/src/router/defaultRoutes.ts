@@ -15,7 +15,6 @@
  */
 
 import type { RouteRecordRaw } from 'vue-router'
-import * as _ from 'lodash'
 
 export declare type RouteRecordType = RouteRecordRaw & {
   key?: string
@@ -88,7 +87,7 @@ function handleRoutes(
   if (!routes) return
   for (const route of routes) {
     if (parent) {
-      route.path = handlePath(parent?.path, route.path)
+      route.path = handlePath(parent.path, route.path)
     }
     if (route.redirect && typeof route.redirect === 'string') {
       route.redirect = handlePath(route.path, route.redirect || '')

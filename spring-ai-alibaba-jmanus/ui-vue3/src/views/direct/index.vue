@@ -90,6 +90,7 @@ import InputArea from '@/components/input/index.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { useTaskStore } from '@/stores/task'
+import { planExecutionManager } from '@/utils/plan-execution-manager'
 
 const route = useRoute()
 const router = useRouter()
@@ -97,12 +98,12 @@ const taskStore = useTaskStore()
 const { t } = useI18n()
 
 const prompt = ref<string>('')
-const planExecutionRef = ref()
 const rightPanelRef = ref()
 const chatRef = ref()
 const inputRef = ref()
 const isExecutingPlan = ref(false)
 const isLoading = ref(false)
+const currentRootPlanId = ref<string | null>(null)
 
 // 面板宽度相关
 const leftPanelWidth = ref(50) // 左面板宽度百分比
@@ -114,6 +115,96 @@ onMounted(() => {
   console.log('[Direct] onMounted called')
   console.log('[Direct] taskStore.currentTask:', taskStore.currentTask)
   console.log('[Direct] taskStore.hasUnprocessedTask():', taskStore.hasUnprocessedTask())
+
+  // Register event callbacks to planExecutionManager
+  planExecutionManager.setEventCallbacks({
+    onPlanUpdate: (rootPlanId: string) => {
+      console.log('[Direct] Plan update event received for rootPlanId:', rootPlanId)
+      
+      if (!shouldProcessEventForCurrentPlan(rootPlanId)) {
+        return
+      }
+      
+      console.log('[Direct] Processing plan update for current rootPlanId:', rootPlanId)
+      
+      // Call chat component's handlePlanUpdate method
+      if (chatRef.value && typeof chatRef.value.handlePlanUpdate === 'function') {
+        console.log('[Direct] Calling chatRef.handlePlanUpdate with rootPlanId:', rootPlanId)
+        chatRef.value.handlePlanUpdate(rootPlanId)
+      } else {
+        console.warn('[Direct] chatRef.handlePlanUpdate method not available')
+      }
+      
+      // Call right panel component's updateDisplayedPlanProgress method
+      if (rightPanelRef.value && typeof rightPanelRef.value.updateDisplayedPlanProgress === 'function') {
+        console.log('[Direct] Calling rightPanelRef.updateDisplayedPlanProgress with rootPlanId:', rootPlanId)
+        rightPanelRef.value.updateDisplayedPlanProgress(rootPlanId)
+      } else {
+        console.warn('[Direct] rightPanelRef.updateDisplayedPlanProgress method not available')
+      }
+    },
+    
+    onPlanCompleted: (rootPlanId: string) => {
+      console.log('[Direct] Plan completed event received for rootPlanId:', rootPlanId)
+      
+      if (!shouldProcessEventForCurrentPlan(rootPlanId)) {
+        return
+      }
+      
+      console.log('[Direct] Processing plan completion for current rootPlanId:', rootPlanId)
+      
+      // Call chat component's handlePlanCompleted method
+      if (chatRef.value && typeof chatRef.value.handlePlanCompleted === 'function') {
+        const planDetails = planExecutionManager.getCachedPlanRecord(rootPlanId)
+        console.log('[Direct] Calling chatRef.handlePlanCompleted with details:', planDetails)
+        chatRef.value.handlePlanCompleted(planDetails ?? { planId: rootPlanId })
+      } else {
+        console.warn('[Direct] chatRef.handlePlanCompleted method not available')
+      }
+      
+      // Clear current root plan ID when plan is completed
+      currentRootPlanId.value = null
+      console.log('[Direct] Cleared currentRootPlanId after plan completion')
+    },
+    
+    onDialogRoundStart: (rootPlanId: string) => {
+      console.log('[Direct] Dialog round start event received for rootPlanId:', rootPlanId)
+      
+      // Set current root plan ID when dialog starts
+      currentRootPlanId.value = rootPlanId
+      console.log('[Direct] Set currentRootPlanId to:', rootPlanId)
+      
+      // Call chat component's handleDialogRoundStart method
+      if (chatRef.value && typeof chatRef.value.handleDialogRoundStart === 'function') {
+        const planData = planExecutionManager.getCachedPlanRecord(rootPlanId)
+        const query = planData?.title ?? '执行计划'
+        console.log('[Direct] Calling chatRef.handleDialogRoundStart with planId and query:', rootPlanId, query)
+        chatRef.value.handleDialogRoundStart(rootPlanId, query)
+      } else {
+        console.warn('[Direct] chatRef.handleDialogRoundStart method not available')
+      }
+    },
+    
+    onChatInputClear: () => {
+      console.log('[Direct] Chat input clear event received')
+      handleInputClear()
+    },
+    
+    onChatInputUpdateState: (rootPlanId: string) => {
+      console.log('[Direct] Chat input update state event received for rootPlanId:', rootPlanId)
+      
+      if (!shouldProcessEventForCurrentPlan(rootPlanId, true)) {
+        return
+      }
+      
+      const uiState = planExecutionManager.getCachedUIState(rootPlanId)
+      if (uiState) {
+        handleInputUpdateState(uiState.enabled, uiState.placeholder)
+      }
+    }
+  })
+  
+  console.log('[Direct] Event callbacks registered to planExecutionManager')
 
   // 检查 store 中是否有任务
   if (taskStore.hasUnprocessedTask() && taskStore.currentTask) {
@@ -165,6 +256,14 @@ watch(
 )
 
 onUnmounted(() => {
+  console.log('[Direct] onUnmounted called, cleaning up resources')
+  
+  // Clear current root plan ID
+  currentRootPlanId.value = null
+  
+  // Clean up plan execution manager resources
+  planExecutionManager.cleanup()
+  
   // 移除事件监听器
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mouseup', handleMouseUp)
@@ -215,15 +314,43 @@ const resetPanelSize = () => {
   localStorage.setItem('directPanelWidth', '50')
 }
 
-const handleMessageSent = (message: string) => {
-  console.log('[DirectView] Message sent:', message)
-  // 处理消息发送事件
+// Helper function to check if the event should be processed for the current plan
+const shouldProcessEventForCurrentPlan = (rootPlanId: string, allowSpecialIds: boolean = false): boolean => {
+  // If no current plan is set, allow all events (initial state)
+  if (!currentRootPlanId.value) {
+    return true
+  }
+  
+  // Check if this event is for the current active plan
+  if (rootPlanId === currentRootPlanId.value) {
+    return true
+  }
+  
+  // Allow special IDs for UI state updates (error handling, etc.)
+  if (allowSpecialIds && (rootPlanId === 'ui-state' || rootPlanId === 'error')) {
+    return true
+  }
+  
+  // Otherwise, ignore the event
+  console.log('[Direct] Ignoring event for non-current rootPlanId:', rootPlanId, 'current:', currentRootPlanId.value)
+  return false
 }
 
-// 新增的事件处理函数
+const handleMessageSent = (message: string) => {
+  console.log('[DirectView] Message sent from chat:', message)
+  
+  // Use planExecutionManager to handle user message send request
+  console.log('[DirectView] Delegating chat message to planExecutionManager:', message)
+  planExecutionManager.handleUserMessageSendRequested(message)
+}
+
+// New event handler function
 const handleSendMessage = (message: string) => {
   console.log('[DirectView] Send message from input:', message)
-  // 可以在这里调用API或其他处理逻辑
+  
+  // Use planExecutionManager to handle user message send request
+  console.log('[DirectView] Delegating message to planExecutionManager:', message)
+  planExecutionManager.handleUserMessageSendRequested(message)
 }
 
 const handleInputClear = () => {
@@ -244,6 +371,14 @@ const handleInputUpdateState = (enabled: boolean, placeholder?: string) => {
 
 const handleStepSelected = (planId: string, stepIndex: number) => {
   console.log('[DirectView] Step selected:', planId, stepIndex)
+  
+  // Forward step selection to right panel
+  if (rightPanelRef.value && typeof rightPanelRef.value.handleStepSelected === 'function') {
+    console.log('[DirectView] Forwarding step selection to right panel:', planId, stepIndex)
+    rightPanelRef.value.handleStepSelected(planId, stepIndex)
+  } else {
+    console.warn('[DirectView] rightPanelRef.handleStepSelected method not available')
+  }
 }
 
 const handleSubPlanStepSelected = (parentPlanId: string, subPlanId: string, stepIndex: number, subStepIndex: number) => {
@@ -253,6 +388,19 @@ const handleSubPlanStepSelected = (parentPlanId: string, subPlanId: string, step
     stepIndex,
     subStepIndex
   })
+  
+  // Forward sub plan step selection to right panel
+  if (rightPanelRef.value && typeof rightPanelRef.value.handleSubPlanStepSelected === 'function') {
+    console.log('[DirectView] Forwarding sub plan step selection to right panel:', {
+      parentPlanId,
+      subPlanId,
+      stepIndex,
+      subStepIndex
+    })
+    rightPanelRef.value.handleSubPlanStepSelected(parentPlanId, subPlanId, stepIndex, subStepIndex)
+  } else {
+    console.warn('[DirectView] rightPanelRef.handleSubPlanStepSelected method not available')
+  }
 }
 
 const handlePlanModeClicked = () => {
@@ -298,10 +446,10 @@ const handlePlanExecutionRequested = async (payload: {
       payload.params
     )
 
-    // 调用真实的 API 执行计划
+    // Call real API to execute plan
     console.log('[Direct] About to call PlanActApiService.executePlan')
     let response
-    if (payload.params && payload.params.trim()) {
+    if (payload.params?.trim()) {
       console.log('[Direct] Calling executePlan with params:', payload.params.trim())
       response = await PlanActApiService.executePlan(planTemplateId, payload.params.trim())
     } else {
@@ -315,23 +463,13 @@ const handlePlanExecutionRequested = async (payload: {
     if (response.planId) {
       console.log('[Direct] Got planId from response:', response.planId, 'starting plan execution')
 
-      // 直接通过计划执行管理器启动执行，让它负责所有消息管理
-      const manager = planExecutionRef.value?.getPlanExecutionManager()
-      if (manager) {
-        // 设置活动计划ID
-        manager.state.activePlanId = response.planId
-        console.log('[Direct] Set activePlanId to:', response.planId)
+      // Set current root plan ID for the new plan execution
+      currentRootPlanId.value = response.planId
+      console.log('[Direct] Set currentRootPlanId to:', response.planId)
 
-        // 启动执行序列和轮询，这会处理所有必要的消息
-        if (typeof manager.initiatePlanExecutionSequence === 'function') {
-          console.log('[Direct] Starting plan execution sequence')
-          manager.initiatePlanExecutionSequence(payload.title, response.planId)
-        } else {
-          console.error('[Direct] initiatePlanExecutionSequence method not available')
-        }
-      } else {
-        console.error('[Direct] Plan execution manager not available')
-      }
+      // Use planExecutionManager to handle plan execution
+      console.log('[Direct] Delegating plan execution to planExecutionManager')
+      planExecutionManager.handlePlanExecutionRequested(response.planId, payload.title)
     } else {
       console.error('[Direct] No planId in response:', response)
       throw new Error('执行计划失败：未返回有效的计划ID')
@@ -340,14 +478,16 @@ const handlePlanExecutionRequested = async (payload: {
     console.error('[Direct] Plan execution failed:', error)
     console.error('[Direct] Error details:', { message: error.message, stack: error.stack })
 
+    // Clear current root plan ID on error
+    currentRootPlanId.value = null
+    
     // 获取chat组件的引用来显示错误
-    const chatRef = planExecutionRef.value?.getChatRef()
-    if (chatRef) {
+    if (chatRef.value && typeof chatRef.value.addMessage === 'function') {
       console.log('[Direct] Adding error messages to chat')
       // 先添加用户消息
-      chatRef.addMessage('user', payload.title)
+      chatRef.value.addMessage('user', payload.title)
       // 再添加错误消息
-      chatRef.addMessage('assistant', `执行计划失败: ${error.message || '未知错误'}`, {
+      chatRef.value.addMessage('assistant', `执行计划失败: ${error.message || '未知错误'}`, {
         thinking: undefined,
       })
     } else {

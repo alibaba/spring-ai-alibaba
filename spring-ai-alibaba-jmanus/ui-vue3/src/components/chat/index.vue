@@ -58,7 +58,7 @@
                   <div class="progress-bar">
                     <div class="progress-fill" :style="{ width: message.planExecution.progress + '%' }"></div>
                   </div>
-                  <span class="progress-text">{{ message.planExecution.progressText || '处理中...' }}</span>
+                  <span class="progress-text">{{ message.planExecution.progressText ?? '处理中...' }}</span>
                 </div>
 
                 <!-- 步骤执行详情 -->
@@ -72,29 +72,29 @@
                     class="ai-section"
                     :class="{
                       current: index === message.planExecution?.currentStepIndex,
-                      completed: index < (message.planExecution?.currentStepIndex || 0),
-                      pending: index > (message.planExecution?.currentStepIndex || 0),
+                      completed: index < (message.planExecution?.currentStepIndex ?? 0),
+                      pending: index > (message.planExecution?.currentStepIndex ?? 0),
                     }"
                     @click.stop="handleStepClick(message, index)"
                   >
                     <div class="section-header">
                       <span class="step-icon">
                         {{
-                          index < (message.planExecution?.currentStepIndex || 0)
+                          index < (message.planExecution?.currentStepIndex ?? 0)
                             ? '✓'
-                            : index === (message.planExecution?.currentStepIndex || 0)
+                            : index === (message.planExecution?.currentStepIndex ?? 0)
                               ? '▶'
                               : '○'
                         }}
                       </span>
                       <span class="step-title">
-                        {{ step || `步骤 ${index + 1}` }}
+                        {{ step ?? `步骤 ${index + 1}` }}
                       </span>
                       <span v-if="index === message.planExecution?.currentStepIndex" class="step-status current">
                         {{ $t('chat.status.executing') }}
                       </span>
                       <span
-                        v-else-if="index < (message.planExecution?.currentStepIndex || 0)"
+                        v-else-if="index < (message.planExecution?.currentStepIndex ?? 0)"
                         class="step-status completed"
                       >
                         {{ $t('chat.status.completed') }}
@@ -188,7 +188,7 @@
                       class="user-input-form-container"
                     >
                       <p class="user-input-message">
-                        {{ message.planExecution.userInputWaitState.message || $t('chat.userInput.message') }}
+                        {{ message.planExecution.userInputWaitState.message ?? $t('chat.userInput.message') }}
                       </p>
                       <p v-if="message.planExecution.userInputWaitState.formDescription" class="form-description">
                         {{ message.planExecution.userInputWaitState.formDescription }}
@@ -197,38 +197,42 @@
                       <form
                         @submit.prevent="handleUserInputSubmit(message)"
                         class="user-input-form"
-                      >
-                        <div
+                      >                        <template
                           v-if="
                             message.planExecution?.userInputWaitState?.formInputs &&
                             message.planExecution.userInputWaitState.formInputs.length > 0
                           "
-                          v-for="(input, inputIndex) in message.planExecution.userInputWaitState.formInputs"
-                          :key="inputIndex"
-                          class="form-group"
                         >
-                          <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
-                            {{ input.label }}:
-                          </label>
-                          <input
-                            type="text"
-                            :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                            :name="input.label"
-                            v-model="message.planExecution.userInputWaitState.formInputs[inputIndex].value"
-                            class="form-input"
-                          />
-                        </div>
+                          <div
+                            v-for="(input, inputIndex) in message.planExecution.userInputWaitState.formInputs"
+                            :key="inputIndex"
+                            class="form-group"
+                          >
+                            <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
+                              {{ input.label }}:
+                            </label>
+                            <input
+                              type="text"
+                              :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                              :name="input.label"
+                              v-model="message.planExecution.userInputWaitState.formInputs[inputIndex].value"
+                              class="form-input"
+                            />
+                          </div>
+                        </template>
 
-                        <div v-else class="form-group">
-                          <label for="form-input-genericInput">{{ $t('common.input') }}:</label>
-                          <input
-                            type="text"
-                            id="form-input-genericInput"
-                            name="genericInput"
-                            v-model="message.genericInput"
-                            class="form-input"
-                          />
-                        </div>
+                        <template v-else>
+                          <div class="form-group">
+                            <label for="form-input-genericInput">{{ $t('common.input') }}:</label>
+                            <input
+                              type="text"
+                              id="form-input-genericInput"
+                              name="genericInput"
+                              v-model="message.genericInput"
+                              class="form-input"
+                            />
+                          </div>
+                        </template>
 
                         <button type="submit" class="submit-user-input-btn">{{ $t('chat.userInput.submit') }}</button>
                       </form>
@@ -250,7 +254,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span>{{ message.thinking || '正在处理您的请求...' }}</span>
+                    <span>{{ message.thinking ?? '正在处理您的请求...' }}</span>
                   </div>
                 </div>
               </div>
@@ -394,21 +398,18 @@ interface Message {
 }
 
 interface Props {
-  initialPrompt?: string
-  mode?: 'plan' | 'direct' // 计划模式或直接聊天模式
+  mode?: 'plan' | 'direct' // Plan mode or direct chat mode
 }
 
 interface Emits {
   (e: 'user-message-send-requested', message: string): void
   (e: 'input-clear'): void
-  (e: 'input-update-state', enabled: boolean, placeholder?: string): void
-  (e: 'input-focus'): void
   (e: 'step-selected', planId: string, stepIndex: number): void
   (e: 'sub-plan-step-selected', parentPlanId: string, subPlanId: string, stepIndex: number, subStepIndex: number): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mode: 'plan', // 使用计划模式，通过 plan-execution-manager 处理
+  mode: 'plan', // Use plan mode, handled by plan-execution-manager
 })
 const emit = defineEmits<Emits>()
 
@@ -431,10 +432,10 @@ const addMessage = (type: 'user' | 'assistant', content: string, options?: Parti
     ...options,
   }
 
-  // 如果是助手消息，确保有基本的思考状态，即使没有内容
+  // If it's an assistant message, ensure there's a basic thinking state even if there's no content
   if (type === 'assistant') {
     if (!message.thinking && !message.content) {
-      message.thinking = '正在思考...'
+      message.thinking = 'Thinking...'
     }
   }
 
@@ -446,7 +447,7 @@ const addMessage = (type: 'user' | 'assistant', content: string, options?: Parti
 
 const updateLastMessage = (updates: Partial<Message>) => {
   const lastMessage = messages.value[messages.value.length - 1]
-  if (lastMessage && lastMessage.type === 'assistant') {
+  if (lastMessage?.type === 'assistant') {
     Object.assign(lastMessage, updates)
     // 内容更新时也要滚动，确保用户能看到最新内容
     scrollToBottom()
@@ -484,12 +485,12 @@ const handleDirectMode = async (query: string) => {
 
 // 从response中获取响应内容
 const generateDirectModeResponse = (response: any, _originalQuery: string): string => {
-  return response.result || response.message || response.content || ''
+  return response.result ?? response.message ?? response.content ?? ''
 }
 
 // 生成错误响应
 const generateErrorResponse = (error: any): string => {
-  const errorMsg = error?.message || error?.toString() || '未知错误'
+  const errorMsg = error?.message ?? error?.toString() ?? '未知错误'
 
   // 常见错误类型的友好提示
   if (errorMsg.includes('网络') || errorMsg.includes('network') || errorMsg.includes('timeout')) {
@@ -593,28 +594,28 @@ const handleStepClick = (message: Message, stepIndex: number) => {
   emit('step-selected', message.planExecution.currentPlanId, stepIndex)
 }
 
-// 获取子计划步骤 - 新增功能
+// Get sub-plan steps from agentExecutionSequence
 const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
   try {
-    // 从planExecution.agentExecutionSequence中查找子计划
+    // Find sub-plan from planExecution.agentExecutionSequence
     const agentExecutionSequence = message.planExecution?.agentExecutionSequence
-    if (!agentExecutionSequence || !Array.isArray(agentExecutionSequence)) {
+    if (!agentExecutionSequence?.length) {
       console.log('[ChatComponent] No agentExecutionSequence found')
       return []
     }
 
-    // 获取对应步骤的agentExecution
+    // Get corresponding step's agentExecution
     const agentExecution = agentExecutionSequence[stepIndex]
-    if (!agentExecution || !agentExecution.thinkActSteps) {
+    if (!agentExecution?.thinkActSteps) {
       console.log(`[ChatComponent] No agentExecution or thinkActSteps found for step ${stepIndex}`)
       return []
     }
 
-    // 查找thinkActSteps中是否有子计划
+    // Find sub-plan in thinkActSteps
     for (const thinkActStep of agentExecution.thinkActSteps) {
-      if (thinkActStep && thinkActStep.subPlanExecutionRecord) {
+      if (thinkActStep.subPlanExecutionRecord) {
         console.log(`[ChatComponent] Found sub-plan for step ${stepIndex}:`, thinkActStep.subPlanExecutionRecord)
-        return thinkActStep.subPlanExecutionRecord.steps || []
+        return thinkActStep.subPlanExecutionRecord.steps ?? []
       }
     }
 
@@ -625,23 +626,23 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
   }
 }
 
-// 获取子计划步骤状态 - 新增功能
+// Get sub-plan step status - new feature
 const getSubPlanStepStatus = (message: Message, stepIndex: number, subStepIndex: number): string => {
   try {
     const agentExecutionSequence = message.planExecution?.agentExecutionSequence
-    if (!agentExecutionSequence || !Array.isArray(agentExecutionSequence)) {
+    if (!agentExecutionSequence?.length) {
       return 'pending'
     }
 
     const agentExecution = agentExecutionSequence[stepIndex]
-    if (!agentExecution || !agentExecution.thinkActSteps) {
+    if (!agentExecution?.thinkActSteps) {
       return 'pending'
     }
 
-    // 查找thinkActSteps中的子计划
+    // Find sub-plan in thinkActSteps
     let subPlan = null
     for (const thinkActStep of agentExecution.thinkActSteps) {
-      if (thinkActStep && thinkActStep.subPlanExecutionRecord) {
+      if (thinkActStep.subPlanExecutionRecord) {
         subPlan = thinkActStep.subPlanExecutionRecord
         break
       }
@@ -656,7 +657,7 @@ const getSubPlanStepStatus = (message: Message, stepIndex: number, subStepIndex:
       return 'completed'
     }
 
-    if (currentStepIndex === undefined || currentStepIndex === null) {
+    if (currentStepIndex == null) {
       return subStepIndex === 0 ? 'current' : 'pending'
     }
 
@@ -677,13 +678,13 @@ const getSubPlanStepStatus = (message: Message, stepIndex: number, subStepIndex:
 const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepIndex: number) => {
   try {
     const agentExecutionSequence = message.planExecution?.agentExecutionSequence
-    if (!agentExecutionSequence || !Array.isArray(agentExecutionSequence)) {
+    if (!agentExecutionSequence?.length) {
       console.warn('[ChatComponent] No agentExecutionSequence data for sub-plan step click')
       return
     }
 
     const agentExecution = agentExecutionSequence[stepIndex]
-    if (!agentExecution || !agentExecution.thinkActSteps) {
+    if (!agentExecution?.thinkActSteps) {
       console.warn('[ChatComponent] No agentExecution or thinkActSteps for step click')
       return
     }
@@ -691,19 +692,19 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
     // Find sub-plan in thinkActSteps
     let subPlan = null
     for (const thinkActStep of agentExecution.thinkActSteps) {
-      if (thinkActStep && thinkActStep.subPlanExecutionRecord) {
+      if (thinkActStep.subPlanExecutionRecord) {
         subPlan = thinkActStep.subPlanExecutionRecord
         break
       }
     }
 
-    if (!subPlan || !subPlan.currentPlanId) {
+    if (!subPlan?.currentPlanId) {
       console.warn('[ChatComponent] No sub-plan data for step click')
       return
     }
 
     // Emit event with necessary identifiers for parent component to handle
-    emit('sub-plan-step-selected', message.planExecution?.currentPlanId || '', subPlan.currentPlanId, stepIndex, subStepIndex)
+    emit('sub-plan-step-selected', message.planExecution?.currentPlanId ?? '', subPlan.currentPlanId, stepIndex, subStepIndex)
   } catch (error) {
     console.error('[ChatComponent] Error handling sub-plan step click:', error)
   }
@@ -714,18 +715,18 @@ const updateStepActions = (message: Message, planDetails: any) => {
   if (!message.planExecution?.steps) return
 
   console.log(
-    '[ChatComponent] 开始更新步骤动作, 步骤数:',
+    '[ChatComponent] Starting to update step actions, steps count:',
     message.planExecution.steps.length,
-    '执行序列:',
-    planDetails.agentExecutionSequence?.length || 0
+    'execution sequence:',
+    planDetails.agentExecutionSequence?.length ?? 0
   )
 
   // 初始化存储每个步骤的最后执行动作
   const lastStepActions = new Array(message.planExecution.steps.length).fill(null)
 
-  // 遍历所有执行序列，匹配步骤并更新动作
-  if (planDetails.agentExecutionSequence?.length > 0) {
-    // 检查执行序列与步骤数是否匹配
+  // Traverse all execution sequences, match steps and update actions
+  if (planDetails.agentExecutionSequence?.length) {
+    // Check if execution sequence matches step count
     const sequenceLength = Math.min(planDetails.agentExecutionSequence.length, message.planExecution.steps.length)
 
     for (let index = 0; index < sequenceLength; index++) {
@@ -735,15 +736,15 @@ const updateStepActions = (message: Message, planDetails: any) => {
         const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1]
 
         if (latestThinkAct?.actionDescription && latestThinkAct?.toolParameters) {
-          // 保存此步骤的最后执行动作
+          // Save the last execution action for this step
           lastStepActions[index] = {
             actionDescription: latestThinkAct.actionDescription,
             toolParameters:
               typeof latestThinkAct.toolParameters === 'string'
                 ? latestThinkAct.toolParameters
                 : JSON.stringify(latestThinkAct.toolParameters, null, 2),
-            thinkInput: latestThinkAct.thinkInput || '',
-            thinkOutput: latestThinkAct.thinkOutput || '',
+            thinkInput: latestThinkAct.thinkInput ?? '',
+            thinkOutput: latestThinkAct.thinkOutput ?? '',
             status:
               index < planDetails.currentStepIndex
                 ? 'completed'
@@ -753,29 +754,29 @@ const updateStepActions = (message: Message, planDetails: any) => {
           }
 
           console.log(
-            `[ChatComponent] 步骤 ${index} 已设置动作: ${lastStepActions[index].actionDescription}`
+            `[ChatComponent] Step ${index} action set: ${lastStepActions[index].actionDescription}`
           )
         } else if (latestThinkAct) {
-          // 思考中状态
+          // Thinking state
           lastStepActions[index] = {
-            actionDescription: '思考中',
-            toolParameters: '等待决策中',
-            thinkInput: latestThinkAct.thinkInput || '',
-            thinkOutput: latestThinkAct.thinkOutput || '',
+            actionDescription: 'Thinking',
+            toolParameters: 'Waiting for decision',
+            thinkInput: latestThinkAct.thinkInput ?? '',
+            thinkOutput: latestThinkAct.thinkOutput ?? '',
             status: index === planDetails.currentStepIndex ? 'current' : 'pending',
           }
 
-          console.log(`[ChatComponent] 步骤 ${index} 正在思考中`)
+          console.log(`[ChatComponent] Step ${index} is thinking`)
         } else {
           lastStepActions[index] = {
-            actionDescription: '执行完成',
-            toolParameters: '无工具',
+            actionDescription: 'Execution completed',
+            toolParameters: 'No tools',
             thinkInput: '',
             thinkOutput: '',
             status: 'completed',
           }
 
-          console.log(`[ChatComponent] 步骤 ${index} 执行完成`)
+          console.log(`[ChatComponent] Step ${index} execution completed`)
         }
       } else {
         // 没有thinkActSteps的情况
@@ -854,8 +855,8 @@ const handlePlanUpdate = (rootPlanId: string) => {
   }
   
   console.log('[ChatComponent] Retrieved plan details from cache:', planDetails)
-  console.log('[ChatComponent] Plan steps:', planDetails?.steps)
-  console.log('[ChatComponent] Plan completed:', planDetails?.completed)
+  console.log('[ChatComponent] Plan steps:', planDetails.steps)
+  console.log('[ChatComponent] Plan completed:', planDetails.completed)
 
   if (!planDetails.currentPlanId) {
     console.warn('[ChatComponent] Plan update missing currentPlanId')
@@ -881,7 +882,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
       messages.value.map(m => ({
         type: m.type,
         planId: m.planExecution?.currentPlanId,
-        content: m.content?.substring(0, 50),
+        content: m.content.substring(0, 50),
       }))
     )
 
@@ -928,8 +929,8 @@ const handlePlanUpdate = (rootPlanId: string) => {
       // 直接设置最终回复，清除所有处理状态
       delete message.thinking
 
-      let finalResponse =
-        planDetails.summary || planDetails.result || planDetails.message || '处理完成'
+      const finalResponse =
+        planDetails.summary ?? planDetails.result ?? planDetails.message ?? '处理完成'
       // 确保回复自然
       message.content = generateNaturalResponse(finalResponse)
 
@@ -977,13 +978,13 @@ const handlePlanUpdate = (rootPlanId: string) => {
     updateStepActions(message, planDetails)
 
     // 从当前正在执行的步骤更新思考状态
-    const currentStepIndex = planDetails.currentStepIndex || 0
+    const currentStepIndex = planDetails.currentStepIndex ?? 0
     if (currentStepIndex >= 0 && currentStepIndex < planDetails.agentExecutionSequence.length) {
       const currentExecution = planDetails.agentExecutionSequence[currentStepIndex]
-      if (currentExecution && currentExecution.thinkActSteps && currentExecution.thinkActSteps.length > 0) {
+      if (currentExecution?.thinkActSteps && currentExecution.thinkActSteps.length > 0) {
         const latestThinkAct =
           currentExecution.thinkActSteps[currentExecution.thinkActSteps.length - 1]
-        if (latestThinkAct && latestThinkAct.thinkOutput) {
+        if (latestThinkAct?.thinkOutput) {
           // 如果思考输出太长，截断它
           const maxLength = 150
           const displayOutput =
@@ -997,7 +998,8 @@ const handlePlanUpdate = (rootPlanId: string) => {
     }
   } else {
     // 如果没有执行序列，使用基本思考状态
-    const currentStep = message.planExecution?.steps?.[message.planExecution?.currentStepIndex || 0]
+    const currentStepIndex = message.planExecution.currentStepIndex ?? 0
+    const currentStep = message.planExecution.steps?.[currentStepIndex]
     const stepTitle = (typeof currentStep === 'string') 
       ? currentStep 
       : "";
@@ -1013,13 +1015,13 @@ const handlePlanUpdate = (rootPlanId: string) => {
       message.planExecution.userInputWaitState = {}
     }
     message.planExecution.userInputWaitState = {
-      message: planDetails.userInputWaitState.message || '',
-      formDescription: planDetails.userInputWaitState.formDescription || '',
+      message: planDetails.userInputWaitState.message ?? '',
+      formDescription: planDetails.userInputWaitState.formDescription ?? '',
       formInputs:
         planDetails.userInputWaitState.formInputs?.map((input: any) => ({
           label: input.label,
-          value: input.value || '',
-        })) || [],
+          value: input.value ?? '',
+        })) ?? [],
     }
 
     // 清除思考状态，显示等待用户输入的消息
@@ -1112,7 +1114,7 @@ const generateCompletedPlanResponse = (text: string, planDetails: any): string =
 const handlePlanCompleted = (details: any) => {
   console.log('[ChatComponent] Plan completed:', details)
 
-  if (details && details.planId) {
+  if (details?.planId) {
     // 找到对应的消息并更新为完成状态
     const messageIndex = messages.value.findIndex(m => m.planExecution?.currentPlanId === details.planId)
     if (messageIndex !== -1) {
@@ -1121,7 +1123,7 @@ const handlePlanCompleted = (details: any) => {
       delete message.thinking
 
       // 生成人性化的最终回复
-      const summary = details.summary || details.result || '任务已完成'
+      const summary = details.summary ?? details.result ?? '任务已完成'
 
       // 确保回复听起来更像人类对话
       let finalResponse = summary
@@ -1170,16 +1172,16 @@ const handleUserInputSubmit = async (message: Message) => {
 
   try {
     // 收集表单数据
-    let inputData: any = {}
+    const inputData: any = {}
 
     if (message.planExecution.userInputWaitState.formInputs && message.planExecution.userInputWaitState.formInputs.length > 0) {
       // 多个字段的情况
       message.planExecution.userInputWaitState.formInputs.forEach((input: any) => {
-        inputData[input.label] = input.value || ''
+        inputData[input.label] = input.value ?? ''
       })
     } else {
       // 单个通用输入的情况
-      inputData.genericInput = message.genericInput || ''
+      inputData.genericInput = message.genericInput ?? ''
     }
 
     console.log('[ChatComponent] 提交用户输入:', inputData)

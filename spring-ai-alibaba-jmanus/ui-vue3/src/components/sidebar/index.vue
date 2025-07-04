@@ -262,7 +262,7 @@ const sidebarStore = useSidebarStore()
 
 // Emits - 保留部分事件用于与外部组件通信
 const emit = defineEmits<{
-  planExecutionRequested: [payload: { title: string; planData: any; params?: string }]
+  planExecutionRequested: [payload: { title: string; planData: any; params?: string | undefined }]
 }>()
 
 // Methods
@@ -282,7 +282,7 @@ const handlePlanTemplateClick = async (template: PlanTemplate) => {
 }
 
 const handleDeletePlanTemplate = async (template: PlanTemplate) => {
-  if (confirm(`确定要删除计划模板 "${template.title || '未命名计划'}" 吗？此操作不可恢复。`)) {
+  if (confirm(`确定要删除计划模板 "${template.title ?? '未命名计划'}" 吗？此操作不可恢复。`)) {
     try {
       await sidebarStore.deleteTemplate(template)
       alert('计划模板已删除。')
@@ -312,8 +312,8 @@ const handleSaveTemplate = async () => {
 
 const handleGeneratePlan = async () => {
   try {
-    const response = await sidebarStore.generatePlan()
-    alert(`计划生成成功！模板ID: ${sidebarStore.selectedTemplate?.id || '未知'}`)
+    await sidebarStore.generatePlan()
+    alert(`计划生成成功！模板ID: ${sidebarStore.selectedTemplate?.id ?? '未知'}`)
   } catch (error: any) {
     console.error('生成计划失败:', error)
     alert('生成计划失败: ' + error.message)

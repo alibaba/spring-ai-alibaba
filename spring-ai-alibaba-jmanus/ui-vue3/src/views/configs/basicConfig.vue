@@ -300,13 +300,9 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import Switch from '@/components/switch/index.vue'
-import Flex from '@/components/flex/index.vue'
 import { AdminApiService, type ConfigItem } from '@/api/admin-api-service'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
-
-// 定义扩展的配置项接口
+// Define extended configuration item interface
 interface ExtendedConfigItem extends ConfigItem {
   displayName: string
   min?: number
@@ -540,10 +536,10 @@ const loadAllConfigs = async () => {
           return null
         }
         
-        // 为每个配置项设置显示名称（优先使用description）
+        // Set display name for each configuration item (prioritize description)
         const processedItems: ExtendedConfigItem[] = items.map(item => ({
           ...item,
-          displayName: item.description || CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey,
+          displayName: item.description ?? CONFIG_DISPLAY_NAMES[item.configKey] ?? item.configKey,
           min: getConfigMin(item.configKey),
           max: getConfigMax(item.configKey)
         }))
@@ -557,7 +553,7 @@ const loadAllConfigs = async () => {
         const subGroupsMap = new Map<string, ExtendedConfigItem[]>()
         
         processedItems.forEach(item => {
-          const subGroupName = item.configSubGroup || 'general'
+          const subGroupName = item.configSubGroup ?? 'general'
           if (!subGroupsMap.has(subGroupName)) {
             subGroupsMap.set(subGroupName, [])
           }
@@ -816,7 +812,7 @@ const importConfigs = (event: Event) => {
       configGroups.value.forEach(group => {
         group.subGroups.forEach(subGroup => {
           subGroup.items.forEach(item => {
-            if (importData.configs.hasOwnProperty(item.configKey)) {
+            if (Object.prototype.hasOwnProperty.call(importData.configs, item.configKey)) {
               configsToUpdate.push({
                 ...item,
                 configValue: importData.configs[item.configKey]

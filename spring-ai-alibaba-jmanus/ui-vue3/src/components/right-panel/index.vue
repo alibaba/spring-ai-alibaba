@@ -311,10 +311,6 @@ const showScrollToBottomButton = ref(false)
 const isNearBottom = ref(true)
 const shouldAutoScrollToBottom = ref(true)
 
-// Auto-refresh related state
-const autoRefreshTimer = ref<number | null>(null)
-const AUTO_REFRESH_INTERVAL = 3000 // Refresh step details every 3 seconds
-
 
 const stepStatusText = computed(() => {
   if (!selectedStep.value) return ''
@@ -323,13 +319,111 @@ const stepStatusText = computed(() => {
   return '等待执行'
 })
 
-// Actions - Plan data management
-const updateDisplayedPlanProgress = (planData: any) => {
-  // Here you can update UI state, such as progress bars
+// Actions - Plan data management and refresh control
+/**
+ * Primary method for external refresh control of the right panel component.
+ * 
+ * USAGE:
+ * This method should be called by external components (typically Direct component) 
+ * to trigger a refresh of the plan progress display and step details. It serves as 
+ * the main entry point for updating the component's state based on plan execution changes.
+ * 
+ * REFRESH LOGIC:
+ * 1. Validates if the provided rootPlanId matches the currently displayed plan
+ * 2. Updates plan progress information (current step vs total steps)
+ * 3. If a step is currently selected and belongs to the provided rootPlanId:
+ *    - Re-fetches the latest plan execution data
+ *    - Refreshes the step details display with updated information
+ *    - Auto-scrolls to show latest content if user was previously at bottom
+ * 
+ * KEY DESIGN PRINCIPLE:
+ * This component does NOT maintain internal auto-refresh timers. Instead, it relies 
+ * entirely on external calls to this method for updates. This allows parent components
+ * to have full control over when and how frequently the refresh occurs.
+ * 
+ * CONSISTENCY CHECK:
+ * Only updates are allowed for the currently displayed plan to prevent conflicting updates.
+ * 
+ * ================================================================================
+ * 
+ * 右侧面板组件外部刷新控制的主要方法。
+ * 
+ * 使用方式：
+ * 此方法应由外部组件（通常是 Direct 组件）调用，用于触发计划进度显示和步骤详情的刷新。
+ * 它作为基于计划执行变化更新组件状态的主要入口点。
+ * 
+ * 刷新逻辑：
+ * 1. 验证提供的 rootPlanId 是否与当前显示的计划匹配
+ * 2. 更新计划进度信息（当前步骤 vs 总步骤数）
+ * 3. 如果当前有选中的步骤且属于提供的 rootPlanId：
+ *    - 重新获取最新的计划执行数据
+ *    - 刷新步骤详情显示并更新信息
+ *    - 如果用户之前在底部，则自动滚动显示最新内容
+ * 
+ * 关键设计原则：
+ * 此组件不维护内部自动刷新定时器。相反，它完全依赖于对此方法的外部调用来进行更新。
+ * 这使得父组件可以完全控制何时以及多频繁地进行刷新。
+ * 
+ * 一致性检查：
+ * 只允许对当前显示的计划进行更新，以防止冲突的更新操作。
+ * 
+ * @param rootPlanId - The ID of the root plan execution to refresh
+ */
+const updateDisplayedPlanProgress = (rootPlanId: string) => {
+  console.log(`[RightPanel] updateDisplayedPlanProgress called with rootPlanId: ${rootPlanId}`)
+  
+  // Check if there's a currently selected step and validate plan consistency
+  if (selectedStep.value && currentStepContext.value) {
+    // Determine the current root plan ID based on step context
+    const currentRootPlanId = currentStepContext.value.rootPlanId ?? currentDisplayedPlanId.value
+    
+    // Only update if the provided rootPlanId matches the currently displayed plan
+    if (currentRootPlanId && currentRootPlanId !== rootPlanId) {
+      console.log(`[RightPanel] Plan ID mismatch - skipping update. Current: ${currentRootPlanId}, Requested: ${rootPlanId}`)
+      return
+    }
+  }
+  
+  console.log(`[RightPanel] Plan ID validation passed - proceeding with update for rootPlanId: ${rootPlanId}`)
+  
+  // Get plan data from plan execution manager
+  const planData = planExecutionManager.getCachedPlanRecord(rootPlanId)
+  if (!planData) {
+    console.warn(`[RightPanel] Plan data not found for rootPlanId: ${rootPlanId}`)
+    return
+  }
+  
+  // Update UI state, such as progress bars
   if (planData.steps && planData.steps.length > 0) {
     const totalSteps = planData.steps.length
-    const currentStep = (planData.currentStepIndex || 0) + 1
+    const currentStep = (planData.currentStepIndex ?? 0) + 1
     console.log(`[RightPanel] Progress: ${currentStep} / ${totalSteps}`)
+  }
+  
+  // If there's a selected step and it belongs to the current plan, refresh its details
+  if (selectedStep.value && currentDisplayedPlanId.value) {
+    // Check if the selected step belongs to the current root plan
+    const isCurrentPlanStep = currentDisplayedPlanId.value === rootPlanId || 
+                             (currentStepContext.value?.rootPlanId === rootPlanId)
+    
+    if (isCurrentPlanStep) {
+      console.log(`[RightPanel] Refreshing selected step details for plan: ${rootPlanId}`)
+      
+      // Get the current step context
+      if (currentStepContext.value) {
+        const ctx = currentStepContext.value
+        
+        // Re-fetch and update the step details
+        const planRecord = findPlanExecutionRecord(ctx.planId, ctx.rootPlanId, ctx.subPlanId)
+        if (planRecord) {
+          displayStepDetails(planRecord, ctx.stepIndex, ctx.planId, ctx.isSubPlan)
+          // Auto-scroll to latest content if previously at bottom
+          autoScrollToBottomIfNeeded()
+        } else {
+          console.warn(`[RightPanel] Could not find plan record for refresh:`, ctx)
+        }
+      }
+    }
   }
 }
 
@@ -393,7 +487,7 @@ const findPlanExecutionRecord = (
 ): PlanExecutionRecord | null => {
   // For regular steps, directly get from manager
   if (!rootPlanId || !subPlanId) {
-    return planExecutionManager.getCachedPlanRecord(planId) || null
+    return planExecutionManager.getCachedPlanRecord(planId) ?? null
   }
   
   // For sub-plan steps, first try direct access
@@ -404,7 +498,7 @@ const findPlanExecutionRecord = (
   
   // If direct access fails, traverse root plan to find sub-plan
   const rootPlanData = planExecutionManager.getCachedPlanRecord(rootPlanId)
-  if (!rootPlanData || !rootPlanData.agentExecutionSequence) {
+  if (!rootPlanData?.agentExecutionSequence) {
     return null
   }
   
@@ -442,7 +536,6 @@ const displayStepDetails = (
       stepsLength: planRecord.steps?.length,
       message: 'Invalid step index'
     })
-    stopAutoRefresh()
     return
   }
   
@@ -464,8 +557,8 @@ const displayStepDetails = (
   
   // Determine if step is completed
   const isStepCompleted =
-    agentExecution?.isCompleted ||
-    planRecord.completed ||
+    agentExecution?.isCompleted ??
+    planRecord.completed ??
     (planRecord.currentStepIndex !== undefined && stepIndex < planRecord.currentStepIndex)
   
   const isCurrent =
@@ -488,15 +581,14 @@ const displayStepDetails = (
     stepData.agentExecution = agentExecution
   }
   
-  还需要把  right pannel input 和 chat 的 事件在 direct里面连起来。 
   selectedStep.value = stepData
   
   console.log('[RightPanel] Step details updated:', {
     planId,
     stepIndex,
-    stepTitle: selectedStep.value?.title,
+    stepTitle: selectedStep.value.title,
     hasAgentExecution: !!agentExecution,
-    hasThinkActSteps: !!agentExecution?.thinkActSteps?.length,
+    hasThinkActSteps: (agentExecution?.thinkActSteps?.length ?? 0) > 0,
     completed: isStepCompleted,
     current: isCurrent,
     planCurrentStep: planRecord.currentStepIndex,
@@ -513,16 +605,8 @@ const displayStepDetails = (
     })
   }
   
-  // Start auto refresh if step is not completed and plan is still executing
-  if (
-    !isStepCompleted &&
-    !planRecord.completed &&
-    planExecutionManager.getActivePlanId() === planId
-  ) {
-    startAutoRefresh()
-  } else {
-    stopAutoRefresh()
-  }
+  // Note: Auto-refresh is now controlled externally via updateDisplayedPlanProgress
+  // No internal auto-refresh logic needed
   
   // Delay scroll state check to ensure DOM is updated
   setTimeout(() => {
@@ -552,73 +636,9 @@ const handleSubPlanStepSelected = (rootPlanId: string, subPlanId: string, stepIn
   handleStepSelected(subPlanId, subStepIndex, rootPlanId, subPlanId, subStepIndex)
 }
 
-
-// Actions - Auto refresh management
-const startAutoRefresh = () => {
-  if (!currentStepContext.value) {
-    console.warn('[RightPanel] Cannot start auto refresh: no current step context')
-    return
-  }
-  
-  const context = currentStepContext.value
-  console.log('[RightPanel] Start auto refresh:', context)
-
-  // Stop previous refresh
-  stopAutoRefresh()
-
-  autoRefreshTimer.value = window.setInterval(() => {
-    if (!currentStepContext.value) {
-      console.log('[RightPanel] Current step context cleared, stop auto refresh')
-      stopAutoRefresh()
-      return
-    }
-    
-    const ctx = currentStepContext.value
-    console.log('[RightPanel] Execute auto refresh - Step details')
-
-    // Check if plan is still executing
-    const planData = planExecutionManager.getCachedPlanRecord(ctx.planId)
-    if (!planData || planData.completed) {
-      console.log('[RightPanel] Plan completed, stop auto refresh')
-      stopAutoRefresh()
-      return
-    }
-
-    // Check if step is still executing
-    const agentExecution = planData.agentExecutionSequence?.[ctx.stepIndex]
-    if (agentExecution?.isCompleted) {
-      console.log('[RightPanel] Step completed, stop auto refresh')
-      stopAutoRefresh()
-      return
-    }
-
-    // Check if already moved to next step
-    const currentStepIndex = planData.currentStepIndex ?? 0
-    if (ctx.stepIndex < currentStepIndex) {
-      console.log('[RightPanel] Already moved to next step, stop auto refresh')
-      stopAutoRefresh()
-      return
-    }
-
-    // Refresh step details
-    handleStepSelected(ctx.planId, ctx.stepIndex)
-
-    // After data update, auto-scroll to latest content if previously at bottom
-    autoScrollToBottomIfNeeded()
-  }, AUTO_REFRESH_INTERVAL)
-}
-
-const stopAutoRefresh = () => {
-  if (autoRefreshTimer.value) {
-    clearInterval(autoRefreshTimer.value)
-    autoRefreshTimer.value = null
-    console.log('[RightPanel] Auto refresh stopped')
-  }
-}
-
 // Actions - Scroll management
 const setScrollContainer = (element: HTMLElement | null) => {
-  scrollContainer.value = element || undefined
+  scrollContainer.value = element ?? undefined
 }
 
 const checkScrollState = () => {
@@ -686,7 +706,7 @@ const formatJson = (jsonData: any): string => {
   try {
     const jsonObj = typeof jsonData === 'object' ? jsonData : JSON.parse(jsonData)
     return JSON.stringify(jsonObj, null, 2)
-  } catch (e) {
+  } catch {
     // If parsing fails, return string format directly (similar to _escapeHtml in right-sidebar.js)
     return String(jsonData)
   }
@@ -694,7 +714,6 @@ const formatJson = (jsonData: any): string => {
 
 // Actions - Resource cleanup
 const cleanup = () => {
-  stopAutoRefresh()
   selectedStep.value = null
   currentDisplayedPlanId.value = undefined
   shouldAutoScrollToBottom.value = true
