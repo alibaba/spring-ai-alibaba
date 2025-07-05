@@ -27,6 +27,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 {{/hasRetriever}}
 
+{{#hasCode}}
+import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
+import com.alibaba.cloud.ai.graph.node.code.CodeExecutor;
+{{/hasCode}}
+
 @Component
 public class GraphBuilder {
     {{#hasRetriever}}
@@ -39,6 +44,7 @@ public class GraphBuilder {
     public CompiledGraph buildGraph(
         ChatModel chatModel
         {{#hasRetriever}}, VectorStore vectorStore{{/hasRetriever}}
+        {{#hasCode}}, CodeExecutionConfig codeExecutionConfig, CodeExecutor codeExecutor{{/hasCode}}
         ) throws GraphStateException {
         ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
@@ -63,4 +69,24 @@ public class GraphBuilder {
             return vectorStore;
         }
     {{/hasRetriever}}
+
+    {{#hasCode}}
+        @Bean
+    	public Path tempDir() throws IOException {
+    	    // todo： set your work dir
+    		Path tempDir = Files.createTempDirectory("code-execution-workdir-");
+    		tempDir.toFile().deleteOnExit();
+    		return tempDir;
+    	}
+
+    	@Bean
+    	public CodeExecutionConfig codeExecutionConfig(Path tempDir) {
+    		return new CodeExecutionConfig().setWorkDir(tempDir.toString());
+    	}
+
+    	@Bean
+    	public CodeExecutor codeGenerator() {
+    		return new LocalCommandlineCodeExecutor();
+    	}
+    {{/hasCode}}
 }

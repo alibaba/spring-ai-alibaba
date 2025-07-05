@@ -27,6 +27,8 @@ public class CodeNodeData extends NodeData {
 
 	private String codeLanguage;
 
+	private String outputKey;
+
 	public CodeNodeData() {
 	}
 
@@ -49,6 +51,15 @@ public class CodeNodeData extends NodeData {
 
 	public CodeNodeData setCodeLanguage(String codeLanguage) {
 		this.codeLanguage = codeLanguage;
+		return this;
+	}
+
+	public String getOutputKey() {
+		return outputKey;
+	}
+
+	public CodeNodeData setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
 		return this;
 	}
 
