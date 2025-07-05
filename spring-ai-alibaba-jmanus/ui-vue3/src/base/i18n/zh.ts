@@ -104,6 +104,81 @@ const words: I18nType = {
       basic: '基础配置',
       agent: 'Agent配置',
       mcp: 'Tools/MCP配置'
+    },
+    // Agent配置页面
+    agentConfig: {
+      title: 'Agent配置',
+      import: '导入',
+      export: '导出',
+      configuredAgents: '已配置的Agent',
+      agentCount: '个',
+      noAgent: '暂无Agent配置',
+      createNew: '新建Agent',
+      selectAgentHint: '请选择一个Agent进行配置',
+      newAgent: '新建Agent',
+      agentName: 'Agent名称',
+      agentNamePlaceholder: '输入Agent名称',
+      description: '描述',
+      descriptionPlaceholder: '描述这个Agent的功能和用途',
+      nextStepPrompt: 'Agent提示词（人设，要求，以及下一步动作的指导）',
+      nextStepPromptPlaceholder: '设置Agent的人设、要求以及下一步动作的指导...',
+      toolConfiguration: '工具配置',
+      assignedTools: '已分配工具',
+      noAssignedTools: '暂无分配的工具',
+      addRemoveTools: '添加/删除工具',
+      deleteConfirm: '删除确认',
+      deleteConfirmText: '确定要删除',
+      deleteWarning: '此操作不可恢复。',
+      requiredFields: '请填写必要的字段',
+      createSuccess: 'Agent创建成功',
+      createFailed: '创建Agent失败',
+      saveSuccess: 'Agent保存成功',
+      saveFailed: '保存Agent失败',
+      deleteSuccess: 'Agent删除成功',
+      deleteFailed: '删除Agent失败',
+      importSuccess: 'Agent导入成功',
+      importFailed: '导入Agent失败',
+      exportSuccess: 'Agent导出成功',
+      exportFailed: '导出Agent失败',
+      loadDataFailed: '加载数据失败',
+      loadDetailsFailed: '加载Agent详情失败',
+      invalidFormat: 'Agent配置格式不正确：缺少必要字段'
+    },
+    // MCP配置页面
+    mcpConfig: {
+      title: 'MCP服务器配置',
+      mcpServers: 'MCP服务器',
+      addMcpServer: '添加MCP服务器',
+      serverList: '服务器列表',
+      noServers: '暂无MCP服务器配置',
+      connectionType: '连接类型',
+      configJsonLabel: 'mcp json配置：',
+      configJsonPlaceholder: '请输入MCP服务器的配置(JSON格式)...',
+      instructions: '使用说明：',
+      instructionStep1: '找到你要用的mcp server的配置json：',
+      instructionStep1Local: '本地(STDIO)',
+      instructionStep1LocalDesc: '可以在 mcp.so 上找到，需要你有Node.js环境并理解你要配置的json里面的每一个项，做对应调整比如配置ak',
+      instructionStep1Remote: '远程服务(SSE)',
+      instructionStep1RemoteDesc: 'mcp.higress.ai/ 上可以找到，有SSE和STREAMING两种，目前SSE协议更完备一些',
+      instructionStep2: '将json配置复制到上面的输入框，本地选STUDIO，远程选STREAMING或SSE，提交',
+      instructionStep3: '这样mcp tools就注册成功了。',
+      instructionStep4: '然后需要在Agent配置里面，新建一个agent，然后增加指定你刚才添加的mcp tools，这样可以极大减少冲突，增强tools被agent选择的准确性',
+      configRequired: '请输入MCP服务器配置',
+      invalidJson: '配置JSON格式不正确，请检查语法',
+      addFailed: '添加MCP服务器失败，请重试',
+      deleteFailed: '删除MCP服务器失败，请重试',
+      studioExample: '请输入MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
+      sseExample: '请输入SSE MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}'
+    },
+    // 基础配置
+    basicConfig: {
+      title: '基础配置',
+      requestTimeout: '请求超时时间(秒)',
+      browserTimeout: '浏览器请求超时时间(秒)',
+      loadConfigFailed: '加载配置失败，请刷新重试',
+      saveFailed: '保存失败，请重试',
+      resetFailed: '重置失败，请重试',
+      importFailed: '导入失败，请检查文件格式'
     }
   },
 
@@ -165,6 +240,9 @@ const words: I18nType = {
 
   // 聊天组件
   chat: {
+    botName: 'TaskPilot:',
+    thinkingLabel: 'TaskPilot 思考/处理',
+    processing: '处理中...',
     step: '步骤',
     stepNumber: '步骤 {number}',
     stepExecutionDetails: '步骤执行详情',
@@ -179,11 +257,22 @@ const words: I18nType = {
       submit: '提交'
     },
     thinking: '正在思考...',
+    thinkingAnalyzing: '正在分析任务需求...',
+    thinkingExecuting: '正在执行: {title}',
+    thinkingResponse: '正在组织语言回复您...',
+    thinkingProcessing: '正在处理您的请求...',
+    preparingExecution: '准备执行计划...',
+    preparing: '准备执行...',
     response: '回复',
     retry: '重试',
     regenerate: '重新生成',
     copy: '复制',
     scrollToBottom: '滚动到底部',
+    waitingDecision: '等待决策中',
+    executionCompleted: '执行完成',
+    noTool: '无工具',
+    noToolParameters: '无工具参数',
+    executionError: '执行出现错误',
     newMessage: '新消息',
     networkError: '网络连接有问题，请检查您的网络连接后再试一次',
     authError: '访问权限出现了问题，请联系管理员或稍后再试',
@@ -205,9 +294,32 @@ const words: I18nType = {
   // 侧边栏
   sidebar: {
     title: '计划模板',
-    newTemplate: '新建模板',
     templateList: '模板列表',
-    noTemplates: '暂无模板',
+    configuration: '配置',
+    newPlan: '新建计划',
+    loading: '加载中...',
+    retry: '重试',
+    noTemplates: '没有可用的计划模板',
+    unnamedPlan: '未命名计划',
+    noDescription: '无描述',
+    deleteTemplate: '删除此计划模板',
+    jsonTemplate: 'JSON 模板',
+    rollback: '回滚',
+    restore: '恢复',
+    jsonPlaceholder: '输入 JSON 计划模板...',
+    planGenerator: '计划生成器',
+    generatorPlaceholder: '描述您想要生成的计划...',
+    generating: '生成中...',
+    generatePlan: '生成计划',
+    updatePlan: '更新计划',
+    executionController: '执行控制器',
+    executionParams: '执行参数',
+    executionParamsPlaceholder: '输入执行参数...',
+    clearParams: '清空参数',
+    apiUrl: 'API URL',
+    executing: '执行中...',
+    executePlan: '执行计划',
+    newTemplate: '新建模板',
     templateName: '模板名称',
     templateDescription: '模板描述',
     lastModified: '最后修改',
@@ -223,7 +335,21 @@ const words: I18nType = {
     rename: '重命名',
     move: '移动',
     archive: '归档',
-    unarchive: '取消归档'
+    unarchive: '取消归档',
+    selectTemplateFailed: '选择计划模板失败',
+    confirmDelete: '确定要删除计划模板 "{name}" 吗？此操作不可恢复。',
+    templateDeleted: '计划模板已删除。',
+    deleteTemplateFailed: '删除计划模板失败',
+    saveCompleted: '保存完成：{message}\n\n当前版本数：{versionCount}',
+    saveSuccess: '保存成功：{message}\n\n当前版本数：{versionCount}',
+    saveStatus: '保存状态：{message}',
+    saveFailed: '保存计划修改失败',
+    generateSuccess: '计划生成成功！模板ID: {templateId}',
+    generateFailed: '生成计划失败',
+    updateSuccess: '计划更新成功！',
+    updateFailed: '更新计划失败',
+    executeFailed: '执行计划失败',
+    unknown: '未知'
   },
 
   // 模态框
@@ -336,7 +462,7 @@ const words: I18nType = {
 
   // 首页
   home: {
-    welcomeTitle: '欢迎使用 JTaskPoilot！',
+    welcomeTitle: '欢迎使用 JTaskPilot！',
     welcomeSubtitle: '您的 Java AI 智能助手，帮助您构建和完成各种任务。',
     tagline: 'Java AI 智能体',
     inputPlaceholder: '描述您想构建或完成的内容...',
@@ -363,7 +489,66 @@ const words: I18nType = {
   rightPanel: {
     stepExecutionDetails: '步骤执行详情',
     noStepSelected: '未选择执行步骤',
-    selectStepHint: '请在左侧聊天区域选择一个执行步骤查看详情'
+    selectStepHint: '请在左侧聊天区域选择一个执行步骤查看详情',
+    stepExecuting: '步骤正在执行中，请稍候...',
+    step: '步骤',
+    executingAgent: '执行智能体',
+    description: '描述',
+    request: '请求',
+    executionResult: '执行结果',
+    executing: '执行中...',
+    thinkAndActionSteps: '思考与行动步骤',
+    thinking: '思考',
+    action: '行动',
+    input: '输入',
+    output: '输出',
+    tool: '工具',
+    toolParameters: '工具参数',
+    noStepDetails: '暂无详细步骤信息',
+    scrollToBottom: '滚动到底部',
+    // 步骤状态
+    status: {
+      completed: '已完成',
+      executing: '执行中',
+      waiting: '等待执行'
+    },
+    // Tab 标签
+    tabs: {
+      details: '步骤执行详情',
+      chat: 'Chat',
+      code: 'Code'
+    },
+    // 示例 chatBubbles 数据
+    chatBubbles: {
+      analyzeRequirements: {
+        title: '分析需求',
+        content: '将您的请求分解为可操作的步骤：1) 创建用户实体，2) 实现用户服务，3) 构建 REST 端点，4) 添加验证和错误处理。'
+      },
+      generateCode: {
+        title: '生成代码',
+        content: '创建具有用户管理 CRUD 操作的 Spring Boot REST API。包括正确的 HTTP 状态代码和错误处理。'
+      },
+      codeGenerated: {
+        title: '代码已生成',
+        content: '成功生成具有所有 CRUD 操作的 UserController。代码包含正确的 REST 约定、错误处理，并遵循 Spring Boot 最佳实践。'
+      }
+    },
+    // 时间显示
+    timeAgo: {
+      justNow: '刚刚',
+      minutesAgo: '{n} 分钟前',
+      hoursAgo: '{n} 小时前',
+      daysAgo: '{n} 天前'
+    },
+    // 默认步骤标题
+    defaultStepTitle: '步骤 {number}'
+  },
+
+  // 直接页面
+  direct: {
+    configuration: '配置',
+    panelResizeHint: '拖拽调整面板大小，双击重置',
+    aboutExecutionDetails: '关于集成执行详情'
   }
 }
 

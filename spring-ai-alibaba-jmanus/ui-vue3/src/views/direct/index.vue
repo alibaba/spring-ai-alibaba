@@ -29,7 +29,7 @@
           <h2>{{ $t('conversation') }}</h2>
           <div class="header-actions">
             <LanguageSwitcher />
-            <button class="config-button" @click="handleConfig" title="配置">
+            <button class="config-button" @click="handleConfig" :title="$t('direct.configuration')">
               <Icon icon="carbon:settings-adjust" width="20" />
             </button>
           </div>
@@ -51,7 +51,7 @@
         class="panel-resizer"
         @mousedown="startResize"
         @dblclick="resetPanelSize"
-        title="拖拽调整面板大小，双击重置"
+        :title="$t('direct.panelResizeHint')"
       >
         <div class="resizer-line"></div>
       </div>
