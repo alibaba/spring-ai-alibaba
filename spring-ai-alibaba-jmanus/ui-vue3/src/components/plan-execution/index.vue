@@ -29,7 +29,7 @@
     <InputArea
       ref="inputRef"
       :disabled="isLoading"
-      :placeholder="isLoading ? '等待任务完成...' : placeholder"
+      :placeholder="isLoading ? $t('input.waiting') : placeholder"
       @send="handleSendMessage"
       @clear="handleInputClear"
       @focus="handleInputFocus"
@@ -41,11 +41,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted, defineProps, defineEmits, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ChatContainer from '@/components/chat/index.vue'
 import InputArea from '@/components/input/index.vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useRightPanelStore } from '@/stores/right-panel'
+
+const { t } = useI18n()
 
 // 使用pinia stores
 const sidebarStore = useSidebarStore()
@@ -61,7 +64,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   initialPrompt: '',
   mode: 'direct',
-  placeholder: '向 JTaskPilot 发送消息',
+  placeholder: '',
 })
 
 // 定义 emits - 移除 plan-update 和 step-selected，因为现在直接使用 store
