@@ -55,6 +55,15 @@ public class GraphEdgeObservationContext extends Observation.Context {
 	}
 
 	/**
+	 * Gets the name for observation context.
+	 * @return the graph edge name
+	 */
+	@Override
+	public String getName() {
+		return this.graphEdgeName;
+	}
+
+	/**
 	 * Gets the current state of the edge execution.
 	 * @return the edge state as a map of key-value pairs
 	 */
