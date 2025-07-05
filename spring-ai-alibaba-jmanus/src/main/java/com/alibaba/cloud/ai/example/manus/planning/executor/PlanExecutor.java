@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.planning.executor;
 import cn.hutool.core.collection.CollectionUtil;
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
@@ -57,6 +58,8 @@ public class PlanExecutor {
 
 	private LlmService llmService;
 
+	private ManusProperties manusProperties;
+
 	// Define static final strings for the keys used in executorParams
 	public static final String PLAN_STATUS_KEY = "planStatus";
 
@@ -69,11 +72,12 @@ public class PlanExecutor {
 	public static final String EXECUTION_ENV_STRING_KEY = "current_step_env_data";
 
 	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService,
-			LlmService llmService) {
+						LlmService llmService, ManusProperties manusProperties) {
 		this.agents = agents;
 		this.recorder = recorder;
 		this.agentService = agentService;
 		this.llmService = llmService;
+		this.manusProperties = manusProperties;
 	}
 
 	/**

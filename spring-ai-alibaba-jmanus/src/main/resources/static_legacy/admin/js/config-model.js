@@ -19,6 +19,7 @@ const DEFAULT_CONFIG = {
         defaultType: "assistant",
         timeout: 120,
         maxTurns: 10,
+        maxMemory: 1000,
         systemPrompt: "您是一个智能助手，可以回答问题并执行任务。"
     },
     
