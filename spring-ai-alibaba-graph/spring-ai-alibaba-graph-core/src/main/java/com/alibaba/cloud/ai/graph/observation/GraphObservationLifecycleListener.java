@@ -23,21 +23,34 @@ import com.alibaba.cloud.ai.graph.observation.node.DefaultGraphNodeObservationCo
 import com.alibaba.cloud.ai.graph.observation.node.GraphNodeObservationContext;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Lifecycle listener for graph observation operations. Implements GraphLifecycleListener
- * to create observations for different graph lifecycle events. Provides observation
- * tracking for start, before, after, error, and complete events.
+ * to create observations for different graph lifecycle events. Handles cross-thread
+ * observation propagation for async execution environments.
  */
 public class GraphObservationLifecycleListener implements GraphLifecycleListener {
+
+	private static final Logger log = LoggerFactory.getLogger(GraphObservationLifecycleListener.class);
 
 	private static final DefaultGraphObservationConvention DEFAULT_GRAPH_OBSERVATION_CONVENTION = new DefaultGraphObservationConvention();
 
 	private static final DefaultGraphNodeObservationConvention DEFAULT_GRAPH_NODE_OBSERVATION_CONVENTION = new DefaultGraphNodeObservationConvention();
 
 	private final ObservationRegistry observationRegistry;
+
+	private volatile Observation graphObservation;
+
+	private volatile Observation.Scope graphScope;
+
+	private final Map<String, Observation> nodeObservations = new ConcurrentHashMap<>();
+
+	private final Map<String, Observation.Scope> nodeScopes = new ConcurrentHashMap<>();
 
 	/**
 	 * Constructs a new GraphObservationLifecycleListener with the specified observation
@@ -49,23 +62,30 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	}
 
 	/**
-	 * Handles the start of a graph node execution. Creates an observation for the node
-	 * start event.
+	 * Handles the start of a graph execution. Creates a graph-level observation.
 	 * @param nodeId the identifier of the node being started
 	 * @param state the current state of the graph execution
 	 * @param config the runnable configuration for the node
 	 */
 	@Override
 	public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
-		Observation
-			.start(DEFAULT_GRAPH_OBSERVATION_CONVENTION, () -> new GraphObservationContext(nodeId, state, null),
-					observationRegistry)
-			.stop();
+		log.debug("Starting graph execution observation");
+
+		graphObservation = Observation.createNotStarted(DEFAULT_GRAPH_OBSERVATION_CONVENTION,
+				() -> new GraphObservationContext("graph-execution", state, null), observationRegistry);
+
+		Observation currentObservation = observationRegistry.getCurrentObservation();
+		if (currentObservation != null) {
+			graphObservation.parentObservation(currentObservation);
+		}
+
+		graphObservation.start();
+		graphScope = graphObservation.openScope();
 	}
 
 	/**
-	 * Handles the before execution phase of a graph node. Creates an observation for the
-	 * node before event.
+	 * Handles the before execution phase of a graph node. Creates a node-level
+	 * observation and maintains scope for cross-thread propagation.
 	 * @param nodeId the identifier of the node
 	 * @param state the current state of the graph execution
 	 * @param config the runnable configuration for the node
@@ -73,15 +93,25 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	 */
 	@Override
 	public void before(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
-		Observation
-			.start(DEFAULT_GRAPH_NODE_OBSERVATION_CONVENTION,
-					() -> new GraphNodeObservationContext(nodeId, "before", state, null), observationRegistry)
-			.stop();
+		log.debug("Starting observation for node: {}", nodeId);
+
+		Observation nodeObservation = Observation.createNotStarted(DEFAULT_GRAPH_NODE_OBSERVATION_CONVENTION,
+				() -> new GraphNodeObservationContext(nodeId, "execution", state, null), observationRegistry);
+
+		if (graphObservation != null) {
+			nodeObservation.parentObservation(graphObservation);
+		}
+
+		nodeObservation.start();
+		nodeObservations.put(nodeId, nodeObservation);
+
+		Observation.Scope scope = nodeObservation.openScope();
+		nodeScopes.put(nodeId, scope);
 	}
 
 	/**
-	 * Handles the after execution phase of a graph node. Creates an observation for the
-	 * node after event with output data.
+	 * Handles the after execution phase of a graph node. Properly closes scope and stops
+	 * the node observation.
 	 * @param nodeId the identifier of the node
 	 * @param state the current state of the graph execution
 	 * @param config the runnable configuration for the node
@@ -89,15 +119,25 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	 */
 	@Override
 	public void after(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
-		Observation
-			.start(DEFAULT_GRAPH_NODE_OBSERVATION_CONVENTION,
-					() -> new GraphNodeObservationContext(nodeId, "after", state, state), observationRegistry)
-			.stop();
+		log.debug("Stopping observation for node: {}", nodeId);
+
+		Observation.Scope scope = nodeScopes.remove(nodeId);
+		if (scope != null) {
+			scope.close();
+		}
+
+		Observation nodeObservation = nodeObservations.remove(nodeId);
+		if (nodeObservation != null) {
+			nodeObservation.stop();
+		}
+		else {
+			log.warn("No observation found for node: {}", nodeId);
+		}
 	}
 
 	/**
-	 * Handles errors during graph node execution. Creates an observation for the node
-	 * error event.
+	 * Handles errors during graph node execution. Records the error and properly cleans
+	 * up scope and observation.
 	 * @param nodeId the identifier of the node that encountered an error
 	 * @param state the current state of the graph execution
 	 * @param ex the exception that occurred
@@ -105,25 +145,72 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	 */
 	@Override
 	public void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
-		Observation
-			.start(DEFAULT_GRAPH_OBSERVATION_CONVENTION, () -> new GraphObservationContext(nodeId, state, null),
-					observationRegistry)
-			.stop();
+		log.error("Error occurred in node: {}", nodeId, ex);
+
+		Observation.Scope scope = nodeScopes.remove(nodeId);
+		if (scope != null) {
+			scope.close();
+		}
+
+		Observation nodeObservation = nodeObservations.remove(nodeId);
+		if (nodeObservation != null) {
+			nodeObservation.error(ex).stop();
+		}
+
+		if (graphObservation != null) {
+			graphObservation.error(ex);
+		}
 	}
 
 	/**
-	 * Handles the completion of a graph node execution. Creates an observation for the
-	 * node complete event with output data.
+	 * Handles the completion of graph execution. Cleans up all observations and scopes.
 	 * @param nodeId the identifier of the completed node
 	 * @param state the current state of the graph execution
 	 * @param config the runnable configuration for the node
 	 */
 	@Override
 	public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
-		Observation
-			.start(DEFAULT_GRAPH_OBSERVATION_CONVENTION, () -> new GraphObservationContext(nodeId, state, state),
-					observationRegistry)
-			.stop();
+		log.debug("Graph execution completed");
+
+		nodeScopes.values().forEach(scope -> {
+			try {
+				scope.close();
+			}
+			catch (Exception e) {
+				log.debug("Error closing node scope: {}", e.getMessage());
+			}
+		});
+		nodeScopes.clear();
+
+		nodeObservations.values().forEach(observation -> {
+			try {
+				observation.stop();
+			}
+			catch (Exception e) {
+				log.debug("Error stopping node observation: {}", e.getMessage());
+			}
+		});
+		nodeObservations.clear();
+
+		if (graphScope != null) {
+			try {
+				graphScope.close();
+			}
+			catch (Exception e) {
+				log.debug("Error closing graph scope: {}", e.getMessage());
+			}
+			graphScope = null;
+		}
+
+		if (graphObservation != null) {
+			try {
+				graphObservation.stop();
+			}
+			catch (Exception e) {
+				log.debug("Error stopping graph observation: {}", e.getMessage());
+			}
+			graphObservation = null;
+		}
 	}
 
 }
