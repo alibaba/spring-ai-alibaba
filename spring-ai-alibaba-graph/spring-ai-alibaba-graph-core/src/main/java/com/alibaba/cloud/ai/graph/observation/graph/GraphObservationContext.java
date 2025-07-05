@@ -45,6 +45,11 @@ public class GraphObservationContext extends Observation.Context {
 		return this.graphName;
 	}
 
+	@Override
+	public String getName() {
+		return this.graphName;
+	}
+
 	public Map<String, Object> getState() {
 		return this.state;
 	}
