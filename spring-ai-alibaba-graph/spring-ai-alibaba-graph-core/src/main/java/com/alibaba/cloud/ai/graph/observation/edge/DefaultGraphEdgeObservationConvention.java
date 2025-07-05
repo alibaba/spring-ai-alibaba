@@ -64,7 +64,7 @@ public class DefaultGraphEdgeObservationConvention implements GraphEdgeObservati
 	@Nullable
 	public String getContextualName(GraphEdgeObservationContext context) {
 		if (StringUtils.hasText(context.getName())) {
-			return "%s %s".formatted(DEFAULT_OPERATION_NAME, context.getName());
+			return "%s.%s".formatted(DEFAULT_OPERATION_NAME, context.getName());
 		}
 		return DEFAULT_OPERATION_NAME;
 	}

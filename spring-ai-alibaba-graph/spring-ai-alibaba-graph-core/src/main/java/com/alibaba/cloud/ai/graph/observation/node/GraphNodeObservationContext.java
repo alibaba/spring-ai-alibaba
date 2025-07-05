@@ -65,6 +65,15 @@ public class GraphNodeObservationContext extends Observation.Context {
 	}
 
 	/**
+	 * Gets the name for observation context.
+	 * @return the node name
+	 */
+	@Override
+	public String getName() {
+		return this.nodeName;
+	}
+
+	/**
 	 * Gets the type of event occurring on the node.
 	 * @return the event type
 	 */

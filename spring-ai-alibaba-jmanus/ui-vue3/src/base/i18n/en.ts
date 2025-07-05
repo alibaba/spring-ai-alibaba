@@ -105,6 +105,81 @@ const words: I18nType = {
       agent: 'Agent Configuration',
       model: 'Model Configuration',
       mcp: 'Tools/MCP Configuration'
+    },
+    // Agent configuration page
+    agentConfig: {
+      title: 'Agent Configuration',
+      import: 'Import',
+      export: 'Export',
+      configuredAgents: 'Configured Agents',
+      agentCount: 'agents',
+      noAgent: 'No agent configuration',
+      createNew: 'Create New Agent',
+      selectAgentHint: 'Please select an agent to configure',
+      newAgent: 'New Agent',
+      agentName: 'Agent Name',
+      agentNamePlaceholder: 'Enter agent name',
+      description: 'Description',
+      descriptionPlaceholder: 'Describe the function and purpose of this agent',
+      nextStepPrompt: 'Agent Prompt (personality, requirements, and next step guidance)',
+      nextStepPromptPlaceholder: 'Set the agent\'s personality, requirements, and next step guidance...',
+      toolConfiguration: 'Tool Configuration',
+      assignedTools: 'Assigned Tools',
+      noAssignedTools: 'No assigned tools',
+      addRemoveTools: 'Add/Remove Tools',
+      deleteConfirm: 'Delete Confirmation',
+      deleteConfirmText: 'Are you sure you want to delete',
+      deleteWarning: 'This operation cannot be undone.',
+      requiredFields: 'Please fill in the required fields',
+      createSuccess: 'Agent created successfully',
+      createFailed: 'Failed to create agent',
+      saveSuccess: 'Agent saved successfully',
+      saveFailed: 'Failed to save agent',
+      deleteSuccess: 'Agent deleted successfully',
+      deleteFailed: 'Failed to delete agent',
+      importSuccess: 'Agent imported successfully',
+      importFailed: 'Failed to import agent',
+      exportSuccess: 'Agent exported successfully',
+      exportFailed: 'Failed to export agent',
+      loadDataFailed: 'Failed to load data',
+      loadDetailsFailed: 'Failed to load agent details',
+      invalidFormat: 'Invalid agent configuration format: missing required fields'
+    },
+    // MCP configuration page
+    mcpConfig: {
+      title: 'MCP Server Configuration',
+      mcpServers: 'MCP Servers',
+      addMcpServer: 'Add MCP Server',
+      serverList: 'Server List',
+      noServers: 'No MCP server configuration',
+      connectionType: 'Connection Type',
+      configJsonLabel: 'MCP JSON Configuration:',
+      configJsonPlaceholder: 'Please enter MCP server configuration (JSON format)...',
+      instructions: 'Instructions:',
+      instructionStep1: 'Find the configuration JSON for your MCP server:',
+      instructionStep1Local: 'Local (STDIO)',
+      instructionStep1LocalDesc: 'Available at mcp.so, requires Node.js environment and understanding of each item in the configuration JSON for proper adjustments like setting access keys',
+      instructionStep1Remote: 'Remote Service (SSE)',
+      instructionStep1RemoteDesc: 'Available at mcp.higress.ai/, offers SSE and STREAMING types, currently SSE protocol is more complete',
+      instructionStep2: 'Copy the JSON configuration to the input box above, select STUDIO for local, STREAMING or SSE for remote, then submit',
+      instructionStep3: 'This will successfully register the MCP tools.',
+      instructionStep4: 'Then you need to create a new agent in Agent Configuration, and add the specific MCP tools you just added, which can greatly reduce conflicts and enhance the accuracy of tools being selected by agents',
+      configRequired: 'Please enter MCP server configuration',
+      invalidJson: 'Configuration JSON format is incorrect, please check syntax',
+      addFailed: 'Failed to add MCP server, please try again',
+      deleteFailed: 'Failed to delete MCP server, please try again',
+      studioExample: 'Please enter MCP server configuration JSON.\n\nExample:\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
+      sseExample: 'Please enter SSE MCP server configuration JSON.\n\nExample:\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}'
+    },
+    // Basic configuration
+    basicConfig: {
+      title: 'Basic Configuration',
+      requestTimeout: 'Request timeout (seconds)',
+      browserTimeout: 'Browser request timeout (seconds)',
+      loadConfigFailed: 'Failed to load configuration, please refresh and try again',
+      saveFailed: 'Save failed, please try again',
+      resetFailed: 'Reset failed, please try again',
+      importFailed: 'Import failed, please check file format'
     }
   },
 
@@ -185,6 +260,9 @@ const words: I18nType = {
 
   // Chat component
   chat: {
+    botName: 'TaskPilot:',
+    thinkingLabel: 'TaskPilot Thinking/Processing',
+    processing: 'Processing...',
     step: 'Step',
     stepNumber: 'Step {number}',
     stepExecutionDetails: 'Step Execution Details',
@@ -199,11 +277,22 @@ const words: I18nType = {
       submit: 'Submit'
     },
     thinking: 'Thinking...',
+    thinkingAnalyzing: 'Analyzing task requirements...',
+    thinkingExecuting: 'Executing: {title}',
+    thinkingResponse: 'Organizing response for you...',
+    thinkingProcessing: 'Processing your request...',
+    preparingExecution: 'Preparing to execute plan...',
+    preparing: 'Preparing...',
     response: 'Response',
     retry: 'Retry',
     regenerate: 'Regenerate',
     copy: 'Copy',
     scrollToBottom: 'Scroll to Bottom',
+    waitingDecision: 'Waiting for Decision',
+    executionCompleted: 'Execution Completed',
+    noTool: 'No Tool',
+    noToolParameters: 'No Tool Parameters',
+    executionError: 'Execution Error',
     newMessage: 'New Message',
     networkError: 'Network connection issue, please check your network connection and try again',
     authError: 'Access permission issue, please contact administrator or try later',
@@ -225,9 +314,32 @@ const words: I18nType = {
   // Sidebar
   sidebar: {
     title: 'Plan Templates',
-    newTemplate: 'New Template',
     templateList: 'Template List',
-    noTemplates: 'No templates',
+    configuration: 'Configuration',
+    newPlan: 'New Plan',
+    loading: 'Loading...',
+    retry: 'Retry',
+    noTemplates: 'No available plan templates',
+    unnamedPlan: 'Unnamed Plan',
+    noDescription: 'No description',
+    deleteTemplate: 'Delete this plan template',
+    jsonTemplate: 'JSON Template',
+    rollback: 'Rollback',
+    restore: 'Restore',
+    jsonPlaceholder: 'Enter JSON plan template...',
+    planGenerator: 'Plan Generator',
+    generatorPlaceholder: 'Describe the plan you want to generate...',
+    generating: 'Generating...',
+    generatePlan: 'Generate Plan',
+    updatePlan: 'Update Plan',
+    executionController: 'Execution Controller',
+    executionParams: 'Execution Parameters',
+    executionParamsPlaceholder: 'Enter execution parameters...',
+    clearParams: 'Clear Parameters',
+    apiUrl: 'API URL',
+    executing: 'Executing...',
+    executePlan: 'Execute Plan',
+    newTemplate: 'New Template',
     templateName: 'Template Name',
     templateDescription: 'Template Description',
     lastModified: 'Last Modified',
@@ -243,7 +355,21 @@ const words: I18nType = {
     rename: 'Rename',
     move: 'Move',
     archive: 'Archive',
-    unarchive: 'Unarchive'
+    unarchive: 'Unarchive',
+    selectTemplateFailed: 'Failed to select plan template',
+    confirmDelete: 'Are you sure you want to delete plan template "{name}"? This action cannot be undone.',
+    templateDeleted: 'Plan template has been deleted.',
+    deleteTemplateFailed: 'Failed to delete plan template',
+    saveCompleted: 'Save completed: {message}\n\nCurrent version count: {versionCount}',
+    saveSuccess: 'Save successful: {message}\n\nCurrent version count: {versionCount}',
+    saveStatus: 'Save status: {message}',
+    saveFailed: 'Failed to save plan modifications',
+    generateSuccess: 'Plan generated successfully! Template ID: {templateId}',
+    generateFailed: 'Failed to generate plan',
+    updateSuccess: 'Plan updated successfully!',
+    updateFailed: 'Failed to update plan',
+    executeFailed: 'Failed to execute plan',
+    unknown: 'Unknown'
   },
 
   // Modal
@@ -317,12 +443,12 @@ const words: I18nType = {
   // Time related
   time: {
     now: 'Just now',
-    minuteAgo: '{count} minute ago',
-    hourAgo: '{count} hour ago',
-    dayAgo: '{count} day ago',
-    weekAgo: '{count} week ago',
-    monthAgo: '{count} month ago',
-    yearAgo: '{count} year ago',
+    minuteAgo: '{count} minutes ago',
+    hourAgo: '{count} hours ago',
+    dayAgo: '{count} days ago',
+    weekAgo: '{count} weeks ago',
+    monthAgo: '{count} months ago',
+    yearAgo: '{count} years ago',
     today: 'Today',
     yesterday: 'Yesterday',
     tomorrow: 'Tomorrow',
@@ -356,7 +482,7 @@ const words: I18nType = {
 
   // Home page
   home: {
-    welcomeTitle: 'Welcome to JTaskPoilot!',
+    welcomeTitle: 'Welcome to JTaskPilot!',
     welcomeSubtitle: 'Your Java AI intelligent assistant, helping you build and complete various tasks.',
     tagline: 'Java AI Agent',
     inputPlaceholder: 'Describe what you want to build or accomplish...',
@@ -383,7 +509,66 @@ const words: I18nType = {
   rightPanel: {
     stepExecutionDetails: 'Step Execution Details',
     noStepSelected: 'No Step Selected',
-    selectStepHint: 'Please select an execution step in the left chat area to view details'
+    selectStepHint: 'Please select an execution step in the left chat area to view details',
+    stepExecuting: 'Step is executing, please wait...',
+    step: 'Step',
+    executingAgent: 'Executing Agent',
+    description: 'Description',
+    request: 'Request',
+    executionResult: 'Execution Result',
+    executing: 'Executing...',
+    thinkAndActionSteps: 'Think & Action Steps',
+    thinking: 'Thinking',
+    action: 'Action',
+    input: 'Input',
+    output: 'Output',
+    tool: 'Tool',
+    toolParameters: 'Tool Parameters',
+    noStepDetails: 'No detailed step information available',
+    scrollToBottom: 'Scroll to Bottom',
+    // Step status
+    status: {
+      completed: 'Completed',
+      executing: 'Executing',
+      waiting: 'Waiting'
+    },
+    // Tab labels
+    tabs: {
+      details: 'Step Execution Details',
+      chat: 'Chat',
+      code: 'Code'
+    },
+    // Sample chatBubbles data
+    chatBubbles: {
+      analyzeRequirements: {
+        title: 'Analyze Requirements',
+        content: 'Breaking down your request into actionable steps: 1) Create user entity, 2) Implement user service, 3) Build REST endpoints, 4) Add validation and error handling.'
+      },
+      generateCode: {
+        title: 'Generate Code',
+        content: 'Creating Spring Boot REST API with user management CRUD operations. Including proper HTTP status codes and error handling.'
+      },
+      codeGenerated: {
+        title: 'Code Generated',
+        content: 'Successfully generated UserController with all CRUD operations. The code includes proper REST conventions, error handling, and follows Spring Boot best practices.'
+      }
+    },
+    // Time display
+    timeAgo: {
+      justNow: 'Just now',
+      minutesAgo: '{n} minutes ago',
+      hoursAgo: '{n} hours ago',
+      daysAgo: '{n} days ago'
+    },
+    // Default step title
+    defaultStepTitle: 'Step {number}'
+  },
+
+  // Direct page
+  direct: {
+    configuration: 'Configuration',
+    panelResizeHint: 'Drag to resize panel, double-click to reset',
+    aboutExecutionDetails: 'About Integrated Execution Details'
   }
 }
 
