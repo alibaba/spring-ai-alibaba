@@ -1,0 +1,79 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: spring-ai-alibaba-deepresearch
+  # Redis 配置
+  data:
+    redis:
+      enabled: true
+      host: deep-research-redis
+      port: 6379
+      password: deepresearch
+      timeout: 3000 # 连接超时时间（毫秒）
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY}
+      base-url: https://dashscope.aliyuncs.com
+      embedding:
+        options:
+          model: text-embedding-v1
+
+    mcp:
+      client:
+        enabled: false
+        type: async
+    alibaba:
+      toolcalling:
+        baidu:
+          search:
+            enabled: true
+        tavilysearch:
+          api-key: ${TAVILY_API_KEY}
+          enabled: true
+        jinacrawler:
+          enabled: false
+          api-key: ${JINA_API_KEY}
+        serpapi:
+          api-key: ${SERPAPI_KEY}
+          enabled: true
+        aliyunaisearch:
+          api-key: ${ALIYUN_AI_SEARCH_API_KEY}
+          base-url: ${ALIYUN_AI_SEARCH_BASE_URL}
+          enabled: false
+      deepresearch:
+        # 定义项目可以使用的搜索引擎
+        search-list:
+          - tavily
+          - aliyun
+          - baidu
+          - serpapi
+        mcp:
+          enabled: false
+          config-location: classpath:mcp-config.json
+        parallel-node-count:
+          researcher: 5
+          coder: 5
+        rag:
+          enabled: true
+          # 可以设置为 'simple' 或 'elasticsearch'
+          vector-store-type: elasticsearch
+          elasticsearch:
+            uris: http://deep-research-es:9200
+            similarity-function: cosine
+          data:
+            # 启动时加载 classpath下data目录中的所有文件
+            locations:
+              - "classpath:/data/"
+        # 报告导出路径配置
+        export:
+          path: ${AI_DEEPRESEARCH_EXPORT_PATH}
+logging:
+  level:
+    com.alibaba.cloud.ai.example.deepresearch: debug
