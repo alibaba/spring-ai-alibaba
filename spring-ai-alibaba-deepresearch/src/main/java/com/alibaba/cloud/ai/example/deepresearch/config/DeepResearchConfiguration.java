@@ -57,9 +57,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -110,6 +113,14 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private ReportService reportService;
+
+	@Autowired(required = false)
+	@Qualifier("dynamicAgent2AsyncMcpToolCallbackProvider")
+	private Function<OverAllState, Map<String, AsyncMcpToolCallbackProvider>> asyncMcpProviderFunction;
+
+	@Autowired(required = false)
+	@Qualifier("dynamicAgent2SyncMcpToolCallbackProvider")
+	private Function<OverAllState, Map<String, SyncMcpToolCallbackProvider>> syncMcpProviderFunction;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient researchAgent) throws GraphStateException {
@@ -209,7 +220,8 @@ public class DeepResearchConfiguration {
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
 			.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 			String nodeId = "researcher_" + i;
-			stateGraph.addNode(nodeId, node_async(new ResearcherNode(researchAgent, String.valueOf(i))));
+			stateGraph.addNode(nodeId,
+					node_async(new ResearcherNode(researchAgent, String.valueOf(i), asyncMcpProviderFunction)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
@@ -217,7 +229,8 @@ public class DeepResearchConfiguration {
 	private void addCoderNodes(StateGraph stateGraph) throws GraphStateException {
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
 			String nodeId = "coder_" + i;
-			stateGraph.addNode(nodeId, node_async(new CoderNode(coderAgent, String.valueOf(i))));
+			stateGraph.addNode(nodeId,
+					node_async(new CoderNode(coderAgent, String.valueOf(i), asyncMcpProviderFunction)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}

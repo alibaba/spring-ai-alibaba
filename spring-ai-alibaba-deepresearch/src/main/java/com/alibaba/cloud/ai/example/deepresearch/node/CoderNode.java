@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * @author sixiyida
@@ -49,19 +51,28 @@ public class CoderNode implements NodeAction {
 
 	private final String nodeName;
 
+	private Function<OverAllState, Map<String, AsyncMcpToolCallbackProvider>> mcpProviderFunction;
+
 	public CoderNode(ChatClient coderAgent) {
-		this(coderAgent, "0");
+		this(coderAgent, "0", null);
 	}
 
 	public CoderNode(ChatClient coderAgent, String executorNodeId) {
+		this(coderAgent, executorNodeId, null);
+	}
+
+	public CoderNode(ChatClient coderAgent, String executorNodeId,
+			Function<OverAllState, Map<String, AsyncMcpToolCallbackProvider>> mcpProviderFunction) {
 		this.coderAgent = coderAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "coder_" + executorNodeId;
+		this.mcpProviderFunction = mcpProviderFunction;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("coder node {} is running.", executorNodeId);
+		logger.info("coder node {} is running for thread: {}", executorNodeId, state.value("thread_id", "__default__"));
+
 		Plan currentPlan = StateUtil.getPlan(state);
 		Map<String, Object> updated = new HashMap<>();
 
@@ -92,8 +103,17 @@ public class CoderNode implements NodeAction {
 		logger.debug("{} Node message: {}", nodeName, messages);
 
 		// 调用agent
-		var streamResult = coderAgent.prompt().messages(messages).stream().chatResponse();
+		var requestSpec = coderAgent.prompt().messages(messages);
 
+		// 如果这有动态的工具，则添加完再执行requestSpec.stream().chatResponse()
+		if (mcpProviderFunction != null) {
+			Map<String, AsyncMcpToolCallbackProvider> mcpProviders = mcpProviderFunction.apply(state);
+			AsyncMcpToolCallbackProvider mcpProvider = mcpProviders.get("coderAgent");
+			if (mcpProvider != null) {
+				requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
+			}
+		}
+		var streamResult = requestSpec.stream().chatResponse();
 		Plan.Step finalAssignedStep = assignedStep;
 		logger.info("CoderNode {} starting streaming with key: {}", executorNodeId,
 				"coder_llm_stream_" + executorNodeId);

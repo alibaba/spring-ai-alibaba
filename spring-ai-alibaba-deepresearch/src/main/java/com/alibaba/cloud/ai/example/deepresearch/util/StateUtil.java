@@ -22,7 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -96,6 +98,21 @@ public class StateUtil {
 
 	public static boolean getAutoAcceptedPlan(OverAllState state) {
 		return state.value("auto_accepted_plan", true);
+	}
+
+	/**
+	 * 获取MCP设置
+	 */
+	public static Map<String, Object> getMcpSettings(OverAllState state) {
+		return state.value("mcp_settings", Map.class).orElse(Collections.emptyMap());
+	}
+
+	/**
+	 * 检查是否有运行时MCP配置
+	 */
+	public static boolean hasRuntimeMcpConfig(OverAllState state) {
+		Map<String, Object> mcpSettings = getMcpSettings(state);
+		return !mcpSettings.isEmpty();
 	}
 
 }

@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * @author sixiyida
@@ -50,19 +52,26 @@ public class ResearcherNode implements NodeAction {
 
 	private final String nodeName;
 
+	private Function<OverAllState, Map<String, AsyncMcpToolCallbackProvider>> mcpProviderFunction;
+
 	public ResearcherNode(ChatClient researchAgent) {
-		this(researchAgent, "0");
+		this(researchAgent, "0", null);
 	}
 
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId) {
+		this(researchAgent, executorNodeId, null);
+	}
+
+	public ResearcherNode(ChatClient researchAgent, String executorNodeId,
+			Function<OverAllState, Map<String, AsyncMcpToolCallbackProvider>> mcpProviderFunction) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;
+		this.mcpProviderFunction = mcpProviderFunction;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("researcher node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
 		Map<String, Object> updated = new HashMap<>();
 
@@ -101,6 +110,17 @@ public class ResearcherNode implements NodeAction {
 		SearchEnum searchTool = state.value("search_engine", SearchEnum.class).orElse(null);
 		// 调用agent
 		var requestSpec = researchAgent.prompt().messages(messages);
+
+		// 如果这有动态的工具，则添加完再执行requestSpec.stream().chatResponse()
+		if (mcpProviderFunction != null) {
+			Map<String, AsyncMcpToolCallbackProvider> mcpProviders = mcpProviderFunction.apply(state);
+			AsyncMcpToolCallbackProvider mcpProvider = mcpProviders.get("researchAgent");
+
+			if (mcpProvider != null) {
+				requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
+			}
+		}
+
 		if (searchTool != null) {
 			requestSpec = requestSpec.toolNames(searchTool.getToolName());
 		}
