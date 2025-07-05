@@ -74,7 +74,7 @@ public class DefaultGraphNodeObservationConvention implements GraphNodeObservati
 	@Nullable
 	public String getContextualName(GraphNodeObservationContext context) {
 		if (StringUtils.hasText(context.getName())) {
-			return "%s %s".formatted(DEFAULT_OPERATION_NAME, context.getName());
+			return "%s.%s".formatted(DEFAULT_OPERATION_NAME, context.getName());
 		}
 		return DEFAULT_OPERATION_NAME;
 	}

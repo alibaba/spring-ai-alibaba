@@ -19,6 +19,8 @@ import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.observation.graph.DefaultGraphObservationConvention;
 import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationContext;
+import com.alibaba.cloud.ai.graph.observation.node.DefaultGraphNodeObservationConvention;
+import com.alibaba.cloud.ai.graph.observation.node.GraphNodeObservationContext;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 
@@ -32,6 +34,8 @@ import java.util.Map;
 public class GraphObservationLifecycleListener implements GraphLifecycleListener {
 
 	private static final DefaultGraphObservationConvention DEFAULT_GRAPH_OBSERVATION_CONVENTION = new DefaultGraphObservationConvention();
+
+	private static final DefaultGraphNodeObservationConvention DEFAULT_GRAPH_NODE_OBSERVATION_CONVENTION = new DefaultGraphNodeObservationConvention();
 
 	private final ObservationRegistry observationRegistry;
 
@@ -70,8 +74,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	@Override
 	public void before(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
 		Observation
-			.start(DEFAULT_GRAPH_OBSERVATION_CONVENTION, () -> new GraphObservationContext(nodeId, state, null),
-					observationRegistry)
+			.start(DEFAULT_GRAPH_NODE_OBSERVATION_CONVENTION,
+					() -> new GraphNodeObservationContext(nodeId, "before", state, null), observationRegistry)
 			.stop();
 	}
 
@@ -86,8 +90,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	@Override
 	public void after(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
 		Observation
-			.start(DEFAULT_GRAPH_OBSERVATION_CONVENTION, () -> new GraphObservationContext(nodeId, state, state),
-					observationRegistry)
+			.start(DEFAULT_GRAPH_NODE_OBSERVATION_CONVENTION,
+					() -> new GraphNodeObservationContext(nodeId, "after", state, state), observationRegistry)
 			.stop();
 	}
 
