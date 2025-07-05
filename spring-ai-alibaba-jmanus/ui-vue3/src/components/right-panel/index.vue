@@ -106,34 +106,34 @@
             {{
               rightPanelStore.selectedStep.title ||
               rightPanelStore.selectedStep.description ||
-              `步骤 ${rightPanelStore.selectedStep.index + 1}`
+              `${$t('rightPanel.step')} ${rightPanelStore.selectedStep.index + 1}`
             }}
           </h3>
 
           <div class="agent-info" v-if="rightPanelStore.selectedStep.agentExecution">
             <div class="info-item">
-              <span class="label">执行智能体:</span>
+              <span class="label">{{ $t('rightPanel.executingAgent') }}:</span>
               <span class="value">{{ rightPanelStore.selectedStep.agentExecution.agentName }}</span>
             </div>
             <div class="info-item">
-              <span class="label">描述:</span>
+              <span class="label">{{ $t('rightPanel.description') }}:</span>
               <span class="value">{{
                 rightPanelStore.selectedStep.agentExecution.agentDescription || ''
               }}</span>
             </div>
             <div class="info-item">
-              <span class="label">请求:</span>
+              <span class="label">{{ $t('rightPanel.request') }}:</span>
               <span class="value">{{
                 rightPanelStore.selectedStep.agentExecution.agentRequest || ''
               }}</span>
             </div>
             <div class="info-item">
-              <span class="label">执行结果:</span>
+              <span class="label">{{ $t('rightPanel.executionResult') }}:</span>
               <span
                 class="value"
                 :class="{ success: rightPanelStore.selectedStep.agentExecution.isCompleted }"
               >
-                {{ rightPanelStore.selectedStep.agentExecution.result || '执行中...' }}
+                {{ rightPanelStore.selectedStep.agentExecution.result || $t('rightPanel.executing') }}
               </span>
             </div>
           </div>
@@ -170,7 +170,7 @@
               class="think-act-steps"
               v-if="rightPanelStore.selectedStep.agentExecution?.thinkActSteps?.length > 0"
             >
-              <h4>思考与行动步骤</h4>
+              <h4>{{ $t('rightPanel.thinkAndActionSteps') }}</h4>
               <div class="steps-container">
                 <div
                   v-for="(tas, index) in rightPanelStore.selectedStep.agentExecution.thinkActSteps"
@@ -180,20 +180,20 @@
                   <div class="step-header">
                     <span class="step-number">#{{ index + 1 }}</span>
                     <span class="step-status" :class="tas.status">{{
-                      tas.status || '执行中'
+                      tas.status || $t('rightPanel.executing')
                     }}</span>
                   </div>
 
                   <!-- 思考部分 - 严格按照 right-sidebar.js 的逻辑 -->
                   <div class="think-section">
-                    <h5><Icon icon="carbon:thinking" /> 思考</h5>
+                    <h5><Icon icon="carbon:thinking" /> {{ $t('rightPanel.thinking') }}</h5>
                     <div class="think-content">
                       <div class="input">
-                        <span class="label">输入:</span>
+                        <span class="label">{{ $t('rightPanel.input') }}:</span>
                         <pre>{{ rightPanelStore.formatJson(tas.thinkInput) }}</pre>
                       </div>
                       <div class="output">
-                        <span class="label">输出:</span>
+                        <span class="label">{{ $t('rightPanel.output') }}:</span>
                         <pre>{{ rightPanelStore.formatJson(tas.thinkOutput) }}</pre>
                       </div>
                     </div>
@@ -201,18 +201,18 @@
 
                   <!-- 行动部分 - 严格按照 right-sidebar.js 的逻辑 -->
                   <div v-if="tas.actionNeeded" class="action-section">
-                    <h5><Icon icon="carbon:play" /> 行动</h5>
+                    <h5><Icon icon="carbon:play" /> {{ $t('rightPanel.action') }}</h5>
                     <div class="action-content">
                       <div class="tool-info">
-                        <span class="label">工具:</span>
+                        <span class="label">{{ $t('rightPanel.tool') }}:</span>
                         <span class="value">{{ tas.toolName || '' }}</span>
                       </div>
                       <div class="input">
-                        <span class="label">工具参数:</span>
+                        <span class="label">{{ $t('rightPanel.toolParameters') }}:</span>
                         <pre>{{ rightPanelStore.formatJson(tas.toolParameters) }}</pre>
                       </div>
                       <div class="output">
-                        <span class="label">执行结果:</span>
+                        <span class="label">{{ $t('rightPanel.executionResult') }}:</span>
                         <pre>{{ rightPanelStore.formatJson(tas.actionResult) }}</pre>
                       </div>
                     </div>
@@ -228,7 +228,7 @@
               "
               class="no-steps-message"
             >
-              <p>暂无详细步骤信息</p>
+              <p>{{ $t('rightPanel.noStepDetails') }}</p>
             </div>
 
             <!-- 执行中的动态效果 -->
@@ -243,15 +243,15 @@
               </div>
               <p class="execution-text">
                 <Icon icon="carbon:in-progress" class="rotating-icon" />
-                步骤正在执行中，请稍候...
+                {{ $t('rightPanel.stepExecuting') }}
               </p>
             </div>
           </div>
 
           <div v-else class="no-selection">
             <Icon icon="carbon:events" class="empty-icon" />
-            <h3>未选择执行步骤</h3>
-            <p>请在左侧聊天区域点击任意执行步骤查看详情</p>
+            <h3>{{ $t('rightPanel.noStepSelected') }}</h3>
+            <p>{{ $t('rightPanel.selectStepHint') }}</p>
           </div>
         </div>
 
@@ -261,7 +261,7 @@
             v-if="rightPanelStore.showScrollToBottomButton"
             @click="rightPanelStore.scrollToBottom"
             class="scroll-to-bottom-btn"
-            title="滚动到底部"
+            :title="$t('rightPanel.scrollToBottom')"
           >
             <Icon icon="carbon:chevron-down" />
           </button>
@@ -280,12 +280,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import MonacoEditor from '@/components/editor/index.vue'
 import { useRightPanelStore } from '@/stores/right-panel'
 
 // 使用 Pinia store
 const rightPanelStore = useRightPanelStore()
+const { t } = useI18n()
 
 // DOM 元素引用
 const scrollContainer = ref<HTMLElement>()
@@ -323,7 +325,7 @@ const initScrollListener = () => {
 
 // 生命周期 - 挂载时的初始化
 onMounted(() => {
-  console.log('右侧面板组件已挂载')
+  console.log('[RightPanel] Component mounted')
   // 使用nextTick确保DOM已渲染
   nextTick(() => {
     initScrollListener()

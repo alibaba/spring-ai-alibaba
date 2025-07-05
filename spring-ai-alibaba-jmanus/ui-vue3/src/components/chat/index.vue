@@ -43,7 +43,7 @@
                 <div class="thinking-avatar">
                   <Icon icon="carbon:thinking" class="thinking-icon" />
                 </div>
-                <div class="thinking-label">TaskPilot 思考/处理</div>
+                <div class="thinking-label">{{ $t('chat.thinkingLabel') }}</div>
               </div>
 
               <div class="thinking-content">
@@ -58,12 +58,12 @@
                   <div class="progress-bar">
                     <div class="progress-fill" :style="{ width: message.progress + '%' }"></div>
                   </div>
-                  <span class="progress-text">{{ message.progressText || '处理中...' }}</span>
+                  <span class="progress-text">{{ message.progressText || $t('chat.processing') + '...' }}</span>
                 </div>
 
                 <!-- 步骤执行详情 -->
                 <div class="steps-container" v-if="message.steps && message.steps.length > 0">
-                  <h4 class="steps-title">步骤执行详情</h4>
+                  <h4 class="steps-title">{{ $t('chat.stepExecutionDetails') }}</h4>
 
                   <!-- 遍历所有步骤 -->
                   <div
@@ -88,18 +88,18 @@
                         }}
                       </span>
                       <span class="step-title">
-                        {{ step.title || step.description || step || `步骤 ${index + 1}` }}
+                        {{ step.title || step.description || step || `${$t('chat.step')} ${index + 1}` }}
                       </span>
                       <span v-if="index === message.currentStepIndex" class="step-status current">
-                        执行中
+                        {{ $t('chat.status.executing') }}
                       </span>
                       <span
                         v-else-if="index < (message.currentStepIndex || 0)"
                         class="step-status completed"
                       >
-                        已完成
+                        {{ $t('chat.status.completed') }}
                       </span>
-                      <span v-else class="step-status pending"> 待执行 </span>
+                      <span v-else class="step-status pending"> {{ $t('chat.status.pending') }} </span>
                     </div>
 
                     <!-- 显示步骤执行动作信息 -->
@@ -122,7 +122,7 @@
 
                       <div v-if="message.stepActions[index]?.toolParameters" class="tool-params">
                         <span class="tool-icon">⚙️</span>
-                        <span class="param-label">参数:</span>
+                        <span class="param-label">{{ $t('common.parameters') }}:</span>
                         <pre class="param-content">{{
                           message.stepActions[index]?.toolParameters
                         }}</pre>
@@ -131,7 +131,7 @@
                       <div v-if="message.stepActions[index]?.thinkOutput" class="think-details">
                         <div class="think-header">
                           <span class="think-icon">💭</span>
-                          <span class="think-label">思考输出:</span>
+                          <span class="think-label">{{ $t('chat.thinkingOutput') }}:</span>
                         </div>
                         <div class="think-output">
                           <pre class="think-content">{{
@@ -147,7 +147,7 @@
                       class="user-input-form-container"
                     >
                       <p class="user-input-message">
-                        {{ message.userInputWaitState.message || '请输入所需信息:' }}
+                        {{ message.userInputWaitState.message || $t('chat.userInput.message') }}
                       </p>
                       <p v-if="message.userInputWaitState.formDescription" class="form-description">
                         {{ message.userInputWaitState.formDescription }}
@@ -179,7 +179,7 @@
                         </div>
 
                         <div v-else class="form-group">
-                          <label for="form-input-genericInput">输入:</label>
+                          <label for="form-input-genericInput">{{ $t('common.input') }}:</label>
                           <input
                             type="text"
                             id="form-input-genericInput"
@@ -189,7 +189,7 @@
                           />
                         </div>
 
-                        <button type="submit" class="submit-user-input-btn">提交</button>
+                        <button type="submit" class="submit-user-input-btn">{{ $t('chat.userInput.submit') }}</button>
                       </form>
                     </div>
                   </div>
@@ -209,7 +209,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span>{{ message.thinking || '正在处理您的请求...' }}</span>
+                    <span>{{ message.thinking || $t('chat.thinkingProcessing') }}</span>
                   </div>
                 </div>
               </div>
@@ -221,7 +221,7 @@
                 <div class="response-avatar">
                   <Icon icon="carbon:bot" class="bot-icon" />
                 </div>
-                <div class="response-name">TaskPilot:</div>
+                <div class="response-name">{{ $t('chat.botName') }}</div>
               </div>
               <div class="response-content">
                 <div v-if="message.content" class="final-response">
@@ -234,7 +234,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span class="typing-text">正在组织语言回复您...</span>
+                    <span class="typing-text">{{ $t('chat.thinkingResponse') }}</span>
                   </div>
                 </div>
               </div>
@@ -252,7 +252,7 @@
                 <div class="thinking-avatar">
                   <Icon icon="carbon:thinking" class="thinking-icon" />
                 </div>
-                <div class="thinking-label">TaskPilot 思考/处理</div>
+                <div class="thinking-label">{{ $t('chat.thinkingLabel') }}</div>
               </div>
               <div class="thinking-content">
                 <div class="default-processing">
@@ -262,7 +262,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span>正在思考如何最好地帮助您...</span>
+                    <span>{{ $t('chat.thinking') }}</span>
                   </div>
                 </div>
               </div>
@@ -274,7 +274,7 @@
                 <div class="response-avatar">
                   <Icon icon="carbon:bot" class="bot-icon" />
                 </div>
-                <div class="response-name">TaskPilot:</div>
+                <div class="response-name">{{ $t('chat.botName') }}</div>
               </div>
               <div class="response-content">
                 <div class="response-placeholder">
@@ -284,7 +284,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span class="typing-text">正在为您整理最合适的回答...</span>
+                    <span class="typing-text">{{ $t('chat.thinkingResponse') }}</span>
                   </div>
                 </div>
               </div>
@@ -299,7 +299,7 @@
       v-if="showScrollToBottom"
       class="scroll-to-bottom-btn"
       @click="forceScrollToBottom"
-      title="滚动到底部"
+      :title="$t('chat.scrollToBottom')"
     >
       <Icon icon="carbon:chevron-down" />
     </div>
@@ -309,6 +309,9 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
@@ -394,7 +397,7 @@ const addMessage = (type: 'user' | 'assistant', content: string, options?: Parti
   // 如果是助手消息，确保有基本的思考状态，即使没有内容
   if (type === 'assistant') {
     if (!message.thinking && !message.content) {
-      message.thinking = '正在思考...'
+      message.thinking = t('chat.thinking')
     }
   }
 
@@ -419,7 +422,7 @@ const handlePlanMode = async (query: string) => {
 
     // 添加思考状态消息
     const assistantMessage = addMessage('assistant', '', {
-      thinking: '正在分析您的需求并生成执行计划...',
+      thinking: t('chat.analyzingNeedsAndGeneratingPlan'),
     })
 
     // 生成计划
@@ -434,20 +437,20 @@ const handlePlanMode = async (query: string) => {
       // 这会触发轮询和所有相关的事件处理逻辑
       planExecution.startExecution(query, planResponse.planId)
 
-      assistantMessage.content = '已生成执行计划，正在开始执行...'
+      assistantMessage.content = t('chat.planGeneratedStartingExecution')
       assistantMessage.steps = planResponse.plan?.steps || []
       assistantMessage.currentStepIndex = 0
       assistantMessage.progress = 10
-      assistantMessage.progressText = '准备执行计划...'
+      assistantMessage.progressText = t('chat.preparingExecution')
     } else {
       assistantMessage.thinking = undefined
-      assistantMessage.content = '抱歉，计划生成失败，请重试。'
+      assistantMessage.content = t('chat.planGenerationFailed')
     }
   } catch (error: any) {
     console.error('Plan mode error:', error)
     updateLastMessage({
       thinking: undefined,
-      content: `执行出现错误：${error?.message || '未知错误'}`,
+      content: `${t('chat.executionError')}：${error?.message || t('chat.unknownError')}`,
       progress: undefined,
       progressText: undefined,
     })
@@ -780,8 +783,8 @@ const updateStepActions = (message: Message, planDetails: any) => {
         } else if (latestThinkAct) {
           // 思考中状态
           lastStepActions[index] = {
-            actionDescription: '思考中',
-            toolParameters: '等待决策中',
+            actionDescription: t('chat.thinking'),
+            toolParameters: t('chat.waitingDecision'),
             thinkInput: latestThinkAct.thinkInput || '',
             thinkOutput: latestThinkAct.thinkOutput || '',
             status: index === planDetails.currentStepIndex ? 'current' : 'pending',
@@ -790,8 +793,8 @@ const updateStepActions = (message: Message, planDetails: any) => {
           console.log(`[ChatComponent] 步骤 ${index} 正在思考中`)
         } else {
           lastStepActions[index] = {
-            actionDescription: '执行完成',
-            toolParameters: '无工具',
+            actionDescription: t('chat.executionCompleted'),
+            toolParameters: t('chat.noTool'),
             thinkInput: '',
             thinkOutput: '',
             status: 'completed',
@@ -802,8 +805,8 @@ const updateStepActions = (message: Message, planDetails: any) => {
       } else {
         // 没有thinkActSteps的情况
         lastStepActions[index] = {
-          actionDescription: index < planDetails.currentStepIndex ? '已完成' : '待执行',
-          toolParameters: '无工具参数',
+          actionDescription: index < planDetails.currentStepIndex ? t('chat.status.completed') : t('chat.status.pending'),
+          toolParameters: t('chat.noToolParameters'),
           thinkInput: '',
           thinkOutput: '',
           status: index < planDetails.currentStepIndex ? 'completed' : 'pending',
@@ -851,11 +854,11 @@ const handleDialogRoundStart = (planId: string, query: string) => {
     if (existingAssistantMsg === -1) {
       const assistantMessage = addMessage('assistant', '', {
         planId: planId,
-        thinking: '正在分析任务需求...',
+        thinking: t('chat.thinkingAnalyzing'),
         steps: [],
         currentStepIndex: 0,
         progress: 5,
-        progressText: '准备执行...',
+        progressText: t('chat.preparing'),
       })
 
       console.log('[ChatComponent] Created new assistant message for planId:', planId)
@@ -948,7 +951,7 @@ const handlePlanUpdate = (planDetails: any) => {
     } else {
       // 如果有标题或状态信息，更新思考状态
       if (planDetails.title) {
-        message.thinking = `正在执行: ${planDetails.title}`
+        message.thinking = t('chat.thinkingExecuting', { title: planDetails.title })
       }
     }
 
@@ -1021,7 +1024,7 @@ const handlePlanUpdate = (planDetails: any) => {
     // 如果没有执行序列，使用基本思考状态
     const currentStep = message.steps?.[message.currentStepIndex || 0]
     const stepTitle = currentStep?.title || currentStep?.description || '处理中'
-    message.thinking = `正在执行: ${stepTitle}`
+    message.thinking = t('chat.thinkingExecuting', { title: stepTitle })
   }
 
   // 处理用户输入等待状态

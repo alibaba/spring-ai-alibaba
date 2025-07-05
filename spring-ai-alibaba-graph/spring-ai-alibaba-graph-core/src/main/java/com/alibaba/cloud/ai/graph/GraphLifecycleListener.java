@@ -33,7 +33,27 @@ public interface GraphLifecycleListener {
 	 * @param nodeId The unique identifier of the node.
 	 * @param state The current state of the graph at the start of the node execution.
 	 */
-	default void onStart(String nodeId, Map<String, Object> state) {
+	default void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
+	}
+
+	/**
+	 * Callback triggered before a node in the graph starts execution.
+	 * @param nodeId The unique identifier of the node.
+	 * @param state The current state of the graph before the node execution.
+	 * @param config The configuration associated with the runnable task.
+	 * @param curTime The timestamp when this callback is triggered.
+	 */
+	default void before(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
+	}
+
+	/**
+	 * Callback triggered after a node in the graph completes execution.
+	 * @param nodeId The unique identifier of the node.
+	 * @param state The current state of the graph after the node execution.
+	 * @param config The configuration associated with the runnable task.
+	 * @param curTime The timestamp when this callback is triggered.
+	 */
+	default void after(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
 	}
 
 	/**
@@ -42,7 +62,7 @@ public interface GraphLifecycleListener {
 	 * @param state The state of the graph at the time of the error.
 	 * @param ex The exception that was thrown during node execution.
 	 */
-	default void onError(String nodeId, Map<String, Object> state, Throwable ex) {
+	default void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
 	}
 
 	/**
@@ -50,7 +70,7 @@ public interface GraphLifecycleListener {
 	 * @param nodeId The unique identifier of the completed node.
 	 * @param state The final state of the graph after node completion.
 	 */
-	default void onComplete(String nodeId, Map<String, Object> state) {
+	default void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
 	}
 
 }
