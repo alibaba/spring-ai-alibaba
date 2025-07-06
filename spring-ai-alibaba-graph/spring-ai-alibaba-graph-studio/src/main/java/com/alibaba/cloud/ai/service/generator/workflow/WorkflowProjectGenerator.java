@@ -68,6 +68,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private final String GRAPH_BUILDER_START_INPUTS_SECTION = "startInputsSection";
 
+	private final String GRAPH_BUILDER_IMPORT_SECTION = "importSection";
+
 	private final String GRAPH_RUN_TEMPLATE_NAME = "GraphRunController.java";
 
 	private final String PACKAGE_NAME = "packageName";
@@ -112,7 +114,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 		Map<String, Object> graphBuilderModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
 				GRAPH_BUILDER_STATE_SECTION, stateSectionStr, GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
-				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr, HAS_RETRIEVER, hasRetriever);
+				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr, HAS_RETRIEVER, hasRetriever, GRAPH_BUILDER_IMPORT_SECTION,
+				renderImportSection(workflow));
 		Map<String, Object> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
 				GRAPH_BUILDER_START_INPUTS_SECTION, renderStartInputSection(workflow));
 		renderAndWriteTemplates(List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
@@ -296,6 +299,43 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 					var.getName(), var.getDescription()));
 		}
 		sb.append("return graph.invoke(startInputs).get().data();\n");
+
+		return sb.toString();
+	}
+
+	private String renderImportSection(Workflow workflow) {
+		Map<String, String> nodeTypeToClass = Map.ofEntries(
+				Map.entry(NodeType.ANSWER.difyValue(), "com.alibaba.cloud.ai.graph.node.AnswerNode"),
+				Map.entry(NodeType.CODE.difyValue(), "com.alibaba.cloud.ai.graph.node.CodeNode"),
+				Map.entry(NodeType.LLM.difyValue(), "com.alibaba.cloud.ai.graph.node.LlmNode"),
+				Map.entry(NodeType.BRANCH.value(), "com.alibaba.cloud.ai.graph.node.BranchNode"),
+				Map.entry(NodeType.DOC_EXTRACTOR.difyValue(), "com.alibaba.cloud.ai.graph.node.DocumentExtractorNode"),
+				Map.entry(NodeType.HTTP.difyValue(), "com.alibaba.cloud.ai.graph.node.HttpNode"),
+				Map.entry(NodeType.LIST_OPERATOR.difyValue(), "com.alibaba.cloud.ai.graph.node.ListOperatorNode"),
+				Map.entry(NodeType.PARAMETER_PARSING.difyValue(),
+						"com.alibaba.cloud.ai.graph.node.ParameterParsingNode"),
+				Map.entry(NodeType.TOOL.difyValue(), "com.alibaba.cloud.ai.graph.node.ToolNode"),
+				Map.entry(NodeType.KNOWLEDGE_RETRIEVAL.difyValue(),
+						"com.alibaba.cloud.ai.graph.node.KnowledgeRetrievalNode"),
+				Map.entry(NodeType.VARIABLE_AGGREGATOR.difyValue(),
+						"com.alibaba.cloud.ai.graph.node.VariableAggregatorNode"));
+
+		Set<String> uniqueTypes = workflow.getGraph()
+			.getNodes()
+			.stream()
+			.map(Node::getType)
+			.filter(nodeTypeToClass::containsKey)
+			.collect(Collectors.toSet());
+
+		if (uniqueTypes.isEmpty()) {
+			return "";
+		}
+
+		StringBuilder sb = new StringBuilder();
+		for (String type : uniqueTypes) {
+			String className = nodeTypeToClass.get(type);
+			sb.append("import ").append(className).append(";\n");
+		}
 
 		return sb.toString();
 	}
