@@ -229,7 +229,19 @@ flowchart TD
     recorder --> END
 ```
 
+## Observation Configuration
 
+```java
+
+public CustomerServiceController(@Qualifier("workflowGraph") StateGraph stateGraph,
+			ObjectProvider<ObservationRegistry> observationRegistry) throws GraphStateException {
+		 this.compiledGraph = stateGraph.compile(CompileConfig.builder()
+		 .withLifecycleListener(new
+				 GraphObservationLifecycleListener(observationRegistry.getIfUnique(() ->
+		 ObservationRegistry.NOOP)))
+		 .build());
+	}
+```
 
 ## Running and Testing
 
