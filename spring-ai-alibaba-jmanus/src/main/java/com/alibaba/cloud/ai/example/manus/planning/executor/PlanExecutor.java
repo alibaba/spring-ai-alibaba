@@ -72,7 +72,7 @@ public class PlanExecutor {
 	public static final String EXECUTION_ENV_STRING_KEY = "current_step_env_data";
 
 	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService,
-						LlmService llmService, ManusProperties manusProperties) {
+			LlmService llmService, ManusProperties manusProperties) {
 		this.agents = agents;
 		this.recorder = recorder;
 		this.agentService = agentService;

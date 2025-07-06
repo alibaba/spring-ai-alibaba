@@ -132,7 +132,8 @@ public abstract class BaseAgent {
 		String osArch = System.getProperty("os.arch");
 
 		// Get current date time, format as yyyy-MM-dd
-		String currentDateTime = java.time.LocalDate.now().toString(); // Format as yyyy-MM-dd
+		String currentDateTime = java.time.LocalDate.now().toString(); // Format as
+																		// yyyy-MM-dd
 
 		boolean isDebugModel = manusProperties.getBrowserDebug();
 		String detailOutput = "";
@@ -177,7 +178,7 @@ public abstract class BaseAgent {
 	public abstract List<ToolCallback> getToolCallList();
 
 	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-					 ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptLoader promptLoader) {
+			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptLoader promptLoader) {
 		this.llmService = llmService;
 		this.planExecutionRecorder = planExecutionRecorder;
 		this.manusProperties = manusProperties;
@@ -237,7 +238,7 @@ public abstract class BaseAgent {
 
 			// Calculate execution time in seconds
 			long executionTimeSeconds = java.time.Duration.between(agentRecord.getStartTime(), agentRecord.getEndTime())
-					.getSeconds();
+				.getSeconds();
 			String status = agentRecord.isCompleted() ? "成功" : (agentRecord.isStuck() ? "执行卡住" : "未完成");
 			agentRecord.setResult(String.format("执行%s [耗时%d秒] [消耗步骤%d] ", status, executionTimeSeconds, currentStep));
 

@@ -51,22 +51,22 @@ public class LlmService {
 		this.chatModel = chatModel;
 		// Execute and summarize planning, use the same memory
 		this.planningChatClient = ChatClient.builder(chatModel)
-				.defaultAdvisors(new SimpleLoggerAdvisor())
-				.defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
-				.build();
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
+			.build();
 
 		// Each agent execution process uses independent memory
 
 		this.agentExecutionClient = ChatClient.builder(chatModel)
-				// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
-				.defaultAdvisors(new SimpleLoggerAdvisor())
-				.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-				.build();
+			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.build();
 
 		this.finalizeChatClient = ChatClient.builder(chatModel)
-				//.defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
-				.defaultAdvisors(new SimpleLoggerAdvisor())
-				.build();
+			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.build();
 
 	}
 

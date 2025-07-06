@@ -31,11 +31,12 @@ public class ManusProperties {
 	@Autowired
 	private ConfigService configService;
 
-	// Browser Settings Begin-------------------------------------------------------------------------------------------
+	// Browser Settings
+	// Begin-------------------------------------------------------------------------------------------
 
 	@ConfigProperty(group = "manus", subGroup = "browser", key = "headless", path = "manus.browser.headless",
 			description = "是否使用无头浏览器模式", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
-			options = {@ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否")})
+			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean browserHeadless;
 
 	public Boolean getBrowserHeadless() {
@@ -71,7 +72,7 @@ public class ManusProperties {
 
 	@ConfigProperty(group = "manus", subGroup = "browser", key = "debug", path = "manus.browser.debug",
 			description = "浏览器debug模式", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
-			options = {@ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否")})
+			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean browserDebug;
 
 	public Boolean getBrowserDebug() {
@@ -87,12 +88,14 @@ public class ManusProperties {
 		this.browserDebug = browserDebug;
 	}
 
-	// Browser Settings End---------------------------------------------------------------------------------------------
+	// Browser Settings
+	// End---------------------------------------------------------------------------------------------
 
-	// Interaction Settings Begin---------------------------------------------------------------------------------------
+	// Interaction Settings
+	// Begin---------------------------------------------------------------------------------------
 	@ConfigProperty(group = "manus", subGroup = "interaction", key = "openBrowser", path = "manus.openBrowserAuto",
 			description = "启动时自动打开浏览器", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
-			options = {@ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否")})
+			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean openBrowserAuto;
 
 	public Boolean getOpenBrowserAuto() {
@@ -108,9 +111,11 @@ public class ManusProperties {
 		this.openBrowserAuto = openBrowserAuto;
 	}
 
-	// Interaction Settings End-----------------------------------------------------------------------------------------
+	// Interaction Settings
+	// End-----------------------------------------------------------------------------------------
 
-	// Agent Settings Begin---------------------------------------------------------------------------------------------
+	// Agent Settings
+	// Begin---------------------------------------------------------------------------------------------
 
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "maxSteps", path = "manus.maxSteps",
 			description = "智能体执行最大步数", defaultValue = "20", inputType = ConfigInputType.NUMBER)
@@ -131,7 +136,7 @@ public class ManusProperties {
 
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "resetAgents", path = "manus.resetAgents",
 			description = "重置所有agent", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
-			options = {@ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否")})
+			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean resetAgents;
 
 	public Boolean getResetAgents() {
@@ -172,9 +177,8 @@ public class ManusProperties {
 		this.userInputTimeout = userInputTimeout;
 	}
 
-	@ConfigProperty(group = "manus", subGroup = "agent", key = "maxMemory",
-			path = "manus.agent.maxMemory", description = "能记住的最大消息数", defaultValue = "1000",
-			inputType = ConfigInputType.NUMBER)
+	@ConfigProperty(group = "manus", subGroup = "agent", key = "maxMemory", path = "manus.agent.maxMemory",
+			description = "能记住的最大消息数", defaultValue = "1000", inputType = ConfigInputType.NUMBER)
 	private volatile Integer maxMemory;
 
 	public Integer getMaxMemory() {
@@ -193,9 +197,11 @@ public class ManusProperties {
 		this.maxMemory = maxMemory;
 	}
 
-	// Agent Settings End-----------------------------------------------------------------------------------------------
+	// Agent Settings
+	// End-----------------------------------------------------------------------------------------------
 
-	// Normal Settings Begin--------------------------------------------------------------------------------------------
+	// Normal Settings
+	// Begin--------------------------------------------------------------------------------------------
 
 	@ConfigProperty(group = "manus", subGroup = "general", key = "baseDir", path = "manus.baseDir",
 			description = "manus根目录", defaultValue = "", inputType = ConfigInputType.TEXT)
@@ -214,5 +220,7 @@ public class ManusProperties {
 		this.baseDir = baseDir;
 	}
 
-	// Normal Settings End----------------------------------------------------------------------------------------------
+	// Normal Settings
+	// End----------------------------------------------------------------------------------------------
+
 }

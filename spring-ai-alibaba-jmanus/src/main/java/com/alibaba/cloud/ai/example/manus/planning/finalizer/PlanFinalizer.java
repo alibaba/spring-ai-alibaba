@@ -49,7 +49,8 @@ public class PlanFinalizer {
 
 	private final ManusProperties manusProperties;
 
-	public PlanFinalizer(LlmService llmService, PlanExecutionRecorder recorder, PromptLoader promptLoader, ManusProperties manusProperties) {
+	public PlanFinalizer(LlmService llmService, PlanExecutionRecorder recorder, PromptLoader promptLoader,
+			ManusProperties manusProperties) {
 		this.llmService = llmService;
 		this.recorder = recorder;
 		this.promptLoader = promptLoader;
@@ -88,7 +89,9 @@ public class PlanFinalizer {
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 			if (context.isUseMemory()) {
 				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
-				requestSpec.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory(manusProperties.getMaxMemory())).build());
+				requestSpec.advisors(MessageChatMemoryAdvisor
+					.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
+					.build());
 			}
 			ChatResponse response = requestSpec.call().chatResponse();
 

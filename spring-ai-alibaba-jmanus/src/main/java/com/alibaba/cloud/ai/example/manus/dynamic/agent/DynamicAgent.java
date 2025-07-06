@@ -103,9 +103,9 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-						ManusProperties manusProperties, String name, String description, String nextStepPrompt,
-						List<String> availableToolKeys, ToolCallingManager toolCallingManager,
-						Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptLoader promptLoader) {
+			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
+			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
+			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptLoader promptLoader) {
 		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptLoader);
 		this.agentName = name;
 		this.agentDescription = description;
@@ -198,7 +198,7 @@ public class DynamicAgent extends ReActAgent {
 
 			processMemory(toolExecutionResult);
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
-					.get(toolExecutionResult.conversationHistory().size() - 1);
+				.get(toolExecutionResult.conversationHistory().size() - 1);
 
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
 
@@ -227,8 +227,8 @@ public class DynamicAgent extends ReActAgent {
 							// We can now get the updated state string for the LLM.
 
 							UserMessage userMessage = UserMessage.builder()
-									.text("User input received for form: " + formInputTool.getCurrentToolStateString())
-									.build();
+								.text("User input received for form: " + formInputTool.getCurrentToolStateString())
+								.build();
 							processUserInputToMemory(userMessage); // Process user input
 							// to memory
 							llmCallResponse = formInputTool.getCurrentToolStateString();
@@ -239,8 +239,8 @@ public class DynamicAgent extends ReActAgent {
 							// Handle input timeout
 
 							UserMessage userMessage = UserMessage.builder()
-									.text("Input timeout occurred for form: ")
-									.build();
+								.text("Input timeout occurred for form: ")
+								.build();
 							processUserInputToMemory(userMessage);
 							userInputService.removeFormInputTool(getPlanId()); // Clean up
 							return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS); // Or
