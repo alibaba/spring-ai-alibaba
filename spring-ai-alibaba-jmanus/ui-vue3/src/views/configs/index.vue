@@ -70,7 +70,7 @@ const activeCategory = ref('basic')
 const categories = computed(() => [
   { key: 'basic', label: t('config.categories.basic'), icon: 'carbon:settings' },
   { key: 'agent', label: t('config.categories.agent'), icon: 'carbon:bot' },
-  { key: 'model', label: 'config.categories.model', icon: 'carbon:build-image' },
+  { key: 'model', label: t('config.categories.model'), icon: 'carbon:build-image' },
   { key: 'mcp', label: t('config.categories.mcp'), icon: 'carbon:tool-box' },
 ])
 </script>

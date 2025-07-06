@@ -16,15 +16,15 @@
 <template>
   <div class="config-panel">
     <div class="panel-header">
-      <h2>Model配置</h2>
+      <h2>{{ t('config.modelConfig.title') }}</h2>
       <div class="panel-actions">
         <button class="action-btn" @click="handleImport">
           <Icon icon="carbon:upload" />
-          导入
+          {{ t('config.modelConfig.import') }}
         </button>
         <button class="action-btn" @click="handleExport" :disabled="!selectedModel">
           <Icon icon="carbon:download" />
-          导出
+          {{ t('config.modelConfig.export') }}
         </button>
       </div>
     </div>
@@ -33,7 +33,7 @@
       <!-- Model列表 -->
       <div class="model-list">
         <div class="list-header">
-          <h3>已配置的Model</h3>
+          <h3>{{ t('config.modelConfig.configuredModels') }}</h3>
           <span class="model-count">({{ models.length }})</span>
         </div>
         
@@ -55,17 +55,17 @@
 
         <div v-if="loading" class="loading-state">
           <Icon icon="carbon:loading" class="loading-icon" />
-          加载中...
+          {{ t('common.loading') }}
         </div>
 
         <div v-if="!loading && models.length === 0" class="empty-state">
           <Icon icon="carbon:bot" class="empty-icon" />
-          <p>暂无Model配置</p>
+          <p>{{ t('config.modelConfig.noModel') }}</p>
         </div>
 
         <button class="add-btn" @click="showAddModelModal">
           <Icon icon="carbon:add" />
-          新建Model
+          {{ t('config.modelConfig.createNew') }}
         </button>
       </div>
 
@@ -76,31 +76,31 @@
           <div class="detail-actions">
             <button class="action-btn primary" @click="handleSave">
               <Icon icon="carbon:save" />
-              保存
+              {{ t('common.save') }}
             </button>
             <button class="action-btn danger" @click="showDeleteConfirm">
               <Icon icon="carbon:trash-can" />
-              删除
+              {{ t('common.delete') }}
             </button>
           </div>
         </div>
 
         <div class="form-item">
-          <label>Model名称 <span class="required">*</span></label>
+          <label>{{ t('config.modelConfig.modelName') }} <span class="required">*</span></label>
           <input 
             type="text" 
             v-model="selectedModel.name"
-            placeholder="输入Model名称"
+            :placeholder="t('config.modelConfig.modelNamePlaceholder')"
             required
           />
         </div>
         
         <div class="form-item">
-          <label>描述 <span class="required">*</span></label>
+          <label>{{ t('config.modelConfig.description') }} <span class="required">*</span></label>
           <textarea 
             v-model="selectedModel.description"
             rows="3"
-            placeholder="描述这个Model及适用场景"
+            :placeholder="t('config.modelConfig.descriptionPlaceholder')"
             required
           ></textarea>
         </div>
@@ -110,28 +110,28 @@
       <!-- 空状态 -->
       <div v-else class="no-selection">
         <Icon icon="carbon:bot" class="placeholder-icon" />
-        <p>请选择一个Model进行配置</p>
+        <p>{{ t('config.modelConfig.selectModelHint') }}</p>
       </div>
     </div>
 
     <!-- 新建Model弹窗 -->
-    <Modal v-model="showModal" title="新建Model" @confirm="handleAddModel">
+    <Modal v-model="showModal" :title="t('config.modelConfig.newModel')" @confirm="handleAddModel">
       <div class="modal-form">
         <div class="form-item">
-          <label>Model名称 <span class="required">*</span></label>
+          <label>{{ t('config.modelConfig.modelName') }} <span class="required">*</span></label>
           <input 
             type="text" 
             v-model="newModel.name"
-            placeholder="输入Model名称"
+            :placeholder="t('config.modelConfig.modelNamePlaceholder')"
             required 
           />
         </div>
         <div class="form-item">
-          <label>描述 <span class="required">*</span></label>
+          <label>{{ t('config.modelConfig.description') }} <span class="required">*</span></label>
           <textarea
             v-model="newModel.description"
             rows="3"
-            placeholder="描述这个Model及适用场景"
+            :placeholder="t('config.modelConfig.descriptionPlaceholder')"
             required
           ></textarea>
         </div>
@@ -142,12 +142,12 @@
     <Modal v-model="showDeleteModal" title="删除确认">
       <div class="delete-confirm">
         <Icon icon="carbon:warning" class="warning-icon" />
-        <p>确定要删除 <strong>{{ selectedModel?.name }}</strong> 吗？</p>
-        <p class="warning-text">此操作不可恢复。</p>
+        <p>{{ t('config.modelConfig.deleteConfirmText') }} <strong>{{ selectedModel?.name }}</strong> {{ t('common.confirm') }}？</p>
+        <p class="warning-text">{{ t('config.modelConfig.deleteWarning') }}</p>
       </div>
       <template #footer>
-        <button class="cancel-btn" @click="showDeleteModal = false">取消</button>
-        <button class="confirm-btn danger" @click="handleDelete">删除</button>
+        <button class="cancel-btn" @click="showDeleteModal = false">{{ t('common.cancel') }}</button>
+        <button class="confirm-btn danger" @click="handleDelete">{{ t('common.delete') }}</button>
       </template>
     </Modal>
 
@@ -168,8 +168,12 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal/index.vue'
 import { ModelApiService, type Model } from '@/api/model-api-service'
+
+// 国际化
+const { t } = useI18n()
 
 // 响应式数据
 const loading = ref(false)
@@ -218,7 +222,7 @@ const loadData = async () => {
     }
   } catch (err: any) {
     console.error('加载数据失败:', err)
-    showMessage('加载数据失败: ' + err.message, 'error')
+    showMessage(t('config.modelConfig.loadDataFailed') + ': ' + err.message, 'error')
     
     const demoModels = [
       {
@@ -254,7 +258,7 @@ const selectModel = async (model: Model) => {
     }
   } catch (err: any) {
     console.error('加载Model详情失败:', err)
-    showMessage('加载Model详情失败: ' + err.message, 'error')
+    showMessage(t('config.modelConfig.loadDetailsFailed') + ': ' + err.message, 'error')
     // 使用基本信息作为后备
     selectedModel.value = {
       ...model
@@ -266,14 +270,13 @@ const selectModel = async (model: Model) => {
 const showAddModelModal = () => {
   newModel.name = ''
   newModel.description = ''
-  newModel.nextStepPrompt = ''
   showModal.value = true
 }
 
 // 创建新Model
 const handleAddModel = async () => {
   if (!newModel.name.trim() || !newModel.description.trim()) {
-    showMessage('请填写必要的字段', 'error')
+    showMessage(t('config.modelConfig.requiredFields'), 'error')
     return
   }
 
@@ -287,9 +290,9 @@ const handleAddModel = async () => {
     models.push(createdModel)
     selectedModel.value = createdModel
     showModal.value = false
-    showMessage('Model创建成功', 'success')
+    showMessage(t('config.modelConfig.createSuccess'), 'success')
   } catch (err: any) {
-    showMessage('创建Model失败: ' + err.message, 'error')
+    showMessage(t('config.modelConfig.createFailed') + ': ' + err.message, 'error')
   }
 }
 
@@ -298,7 +301,7 @@ const handleSave = async () => {
   if (!selectedModel.value) return
 
   if (!selectedModel.value.name.trim() || !selectedModel.value.description.trim()) {
-    showMessage('请填写必要的字段', 'error')
+    showMessage(t('config.modelConfig.requiredFields'), 'error')
     return
   }
 
@@ -312,9 +315,9 @@ const handleSave = async () => {
     }
     
     selectedModel.value = savedModel
-    showMessage('Model保存成功', 'success')
+    showMessage(t('config.modelConfig.saveSuccess'), 'success')
   } catch (err: any) {
-    showMessage('保存Model失败: ' + err.message, 'error')
+    showMessage(t('config.modelConfig.saveFailed') + ': ' + err.message, 'error')
   }
 }
 
@@ -339,9 +342,9 @@ const handleDelete = async () => {
     // 选择其他Model或清除选中状态
     selectedModel.value = models.length > 0 ? models[0] : null
     showDeleteModal.value = false
-    showMessage('Model删除成功', 'success')
+    showMessage(t('config.modelConfig.deleteSuccess'), 'success')
   } catch (err: any) {
-    showMessage('删除Model失败: ' + err.message, 'error')
+    showMessage(t('config.modelConfig.deleteFailed') + ': ' + err.message, 'error')
   }
 }
 
@@ -359,7 +362,7 @@ const handleImport = () => {
           const modelData = JSON.parse(e.target?.result as string)
           // 基本验证
           if (!modelData.name || !modelData.description) {
-            throw new Error('Model配置格式不正确：缺少必要字段')
+            throw new Error(t('config.modelConfig.invalidFormat'))
           }
           
           // 移除id字段，让后端分配新的id
@@ -367,9 +370,9 @@ const handleImport = () => {
           const savedModel = await ModelApiService.createModel(importData)
           models.push(savedModel)
           selectedModel.value = savedModel
-          showMessage('Model导入成功', 'success')
+          showMessage(t('config.modelConfig.importSuccess'), 'success')
         } catch (err: any) {
-          showMessage('导入Model失败: ' + err.message, 'error')
+          showMessage(t('config.modelConfig.importFailed') + ': ' + err.message, 'error')
         }
       }
       reader.readAsText(file)
@@ -391,9 +394,9 @@ const handleExport = () => {
     link.download = `model-${selectedModel.value.name}-${new Date().toISOString().split('T')[0]}.json`
     link.click()
     URL.revokeObjectURL(url)
-    showMessage('Model导出成功', 'success')
+    showMessage(t('config.modelConfig.exportSuccess'), 'success')
   } catch (err: any) {
-    showMessage('导出Model失败: ' + err.message, 'error')
+    showMessage(t('config.modelConfig.exportFailed') + ': ' + err.message, 'error')
   }
 }
 

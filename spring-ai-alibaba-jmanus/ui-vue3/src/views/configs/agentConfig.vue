@@ -123,23 +123,23 @@
         </div>
 
         <div class="tools-section">
-          <h4>模型配置</h4>
+          <h4>{{ t('config.agentConfig.modelConfiguration') }}</h4>
 
           <div class="form-item">
-            <label>模型选择</label>
+            <label>{{ t('config.agentConfig.modelChoose') }}</label>
               <Switch
                   :enabled="modelControlledByPlan"
-                  label="由计划控制（根据Model配置，由计划控制模型调用）"
+                  :label="t('config.agentConfig.controlledByPlan')"
                   @update:switchValue="updateSwitchValue($event)"
               />
             </div>
 
           <div class="form-item" v-if="showModelInput">
-            <label>模型名称</label>
+            <label>{{ t('config.agentConfig.modelName') }}</label>
             <input
                 type="text"
                 v-model="selectedAgent.modelName"
-                placeholder="输入Model名称（为空时调用默认Model）"
+                :placeholder="t('config.agentConfig.modelNamePlaceholder')"
                 required
             />
           </div>
