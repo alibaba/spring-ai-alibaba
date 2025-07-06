@@ -24,7 +24,14 @@ import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * A service for ingesting data into the vector store from various sources. It handles
@@ -43,7 +50,9 @@ public class VectorStoreDataIngestionService {
 
 	public VectorStoreDataIngestionService(VectorStore vectorStore) {
 		this.vectorStore = vectorStore;
-		this.textSplitter = new TokenTextSplitter();
+		//todo:在配置类中进行更灵活的配置
+		this.textSplitter = new TokenTextSplitter(800, 100, 5,
+				10000, true);
 	}
 
 	/**
@@ -80,4 +89,37 @@ public class VectorStoreDataIngestionService {
 		resources.forEach(this::ingest);
 	}
 
+	/**
+	 * 处理并存储上传的文件
+	 * @param file 上传的文件
+	 * @param sessionId 会话ID
+	 * @param userId 用户ID
+	 */
+	public void processAndStore(MultipartFile file, String sessionId, String userId) {
+		// 1. 解析
+		TikaDocumentReader reader = new TikaDocumentReader(file.getResource());
+		List<Document> documents = reader.get();
+
+		// 2. 分块
+		List<Document> chunks = textSplitter.apply(documents);
+
+		// 3. 元数据富化
+		AtomicInteger chunkCounter = new AtomicInteger(0);
+		List<Document> enrichedChunks = chunks.stream().map(chunk -> {
+			Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
+			metadata.put("source_type", "user_upload");
+			metadata.put("session_id", sessionId);
+			if (userId!= null &&!userId.isBlank()) {
+				metadata.put("user_id", userId);
+			}
+			metadata.put("original_filename", file.getOriginalFilename());
+			metadata.put("upload_timestamp", Instant.now().toString());
+			metadata.put("chunk_id", chunkCounter.getAndIncrement());
+
+			return new Document(chunk.getId(), chunk.getText(), metadata);
+		}).collect(Collectors.toList());
+
+		// 4. 存储
+		vectorStore.add(enrichedChunks);
+	}
 }
