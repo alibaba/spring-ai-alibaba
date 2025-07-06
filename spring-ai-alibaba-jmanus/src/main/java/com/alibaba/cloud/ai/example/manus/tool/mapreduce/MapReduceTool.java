@@ -57,6 +57,11 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	private static final String ACTION_RECORD_MAP_OUTPUT = "record_map_output";
 
 	/**
+	 * Supported operation type: get file lines from root plan
+	 */
+	private static final String ACTION_GET_LINES = "get_lines";
+
+	/**
 	 * Default plan ID prefix
 	 * When planId is empty, use this prefix + timestamp to generate default ID
 	 */
@@ -99,6 +104,12 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	private static final int DEFAULT_SPLIT_SIZE = 5000;
 
 	/**
+	 * Maximum lines limit for get_lines operation
+	 * Single request can retrieve at most this many lines
+	 */
+	private static final int MAX_LINES_LIMIT = 500;
+
+	/**
 	 * Task status: pending
 	 */
 	private static final String TASK_STATUS_PENDING = "pending";
@@ -123,6 +134,9 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 		@com.fasterxml.jackson.annotation.JsonProperty("file_path")
 		private String filePath;
 
+		@com.fasterxml.jackson.annotation.JsonProperty("file_name")
+		private String fileName;
+
 		@com.fasterxml.jackson.annotation.JsonProperty("terminate_columns")
 		private List<String> terminateColumns;
 
@@ -134,6 +148,12 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 		private String taskId;
 
 		private String status;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("start_line")
+		private Integer startLine;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("end_line")
+		private Integer endLine;
 
 		public MapReduceInput() {
 		}
@@ -152,6 +172,14 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 		public void setFilePath(String filePath) {
 			this.filePath = filePath;
+		}
+
+		public String getFileName() {
+			return fileName;
+		}
+
+		public void setFileName(String fileName) {
+			this.fileName = fileName;
 		}
 
 		public List<String> getTerminateColumns() {
@@ -194,6 +222,22 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			this.data = data;
 		}
 
+		public Integer getStartLine() {
+			return startLine;
+		}
+
+		public void setStartLine(Integer startLine) {
+			this.startLine = startLine;
+		}
+
+		public Integer getEndLine() {
+			return endLine;
+		}
+
+		public void setEndLine(Integer endLine) {
+			this.endLine = endLine;
+		}
+
 	}
 
 	private static final String TOOL_NAME = "map_reduce_tool";
@@ -201,23 +245,13 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	private static final String TOOL_DESCRIPTION = """
 			Data split tool for MapReduce workflow data preparation stage and task status management.
 			Supported operations:
-			- split_data: Automatically complete file existence validation and perform data split processing, supports CSV, TSV, TXT and other text format data files.
-			  Output directory uses inner_storage/{planId}/tasks/task_{taskId} pattern, unified management with InnerStorageService,
-			  each task has independent directory containing input.md (split document fragments) file.
+			- split_data: Automatically complete file existence validation and perform data split processing, supports CSV, TSV, TXT and other text format data files. 
 			- record_map_output: Accepts content after Map stage processing completion, automatically generates filename and creates output file, records task status.
-			  Tool automatically creates standardized file structure under inner_storage/{planId}/tasks/task_{taskId} directory:
-			  input.md (document fragments), status.json (task status), output.md (model processing results),
-			  each task has independent directory and unified file naming.
+			- get_lines: Get specified line range content from files in root plan directory (single request max %d lines).
 
 			Task management features:
-			- Automatically generate incremental task IDs
-			- Create independent directory for each task: inner_storage/{planId}/tasks/task_{taskId}
-			- Standardized directory structure: each task directory contains input.md (document fragments), status.json (status file), output.md (model output)
-			- Unified file naming for easy batch processing and management
-			- Unified storage management with InnerStorageService
-			- Get split file list for task assignment through getSplitResults() method
 			- Support automatic file creation and status record management after Map stage completion
-			""";
+			""".formatted(MAX_LINES_LIMIT);
 
 	/**
 	 * Generate parameters JSON with dynamic terminate columns support like TerminateTool
@@ -297,6 +331,29 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			               }
 			           },
 			           "required": ["action", "terminate_columns", "data", "task_id", "status"],
+			           "additionalProperties": false
+			       },
+			       {
+			           "type": "object",
+			           "properties": {
+			               "action": {
+			                   "type": "string",
+			                   "const": "get_lines"
+			               },
+			               "file_name": {
+			                   "type": "string",
+			                   "description": "文件名（带扩展名），从根计划目录获取"
+			               },
+			               "start_line": {
+			                   "type": "integer",
+			                   "description": "起始行号，默认为1"
+			               },
+			               "end_line": {
+			                   "type": "integer",
+			                   "description": "结束行号，默认为文件末尾"
+			               }
+			           },
+			           "required": ["action", "file_name"],
 			           "additionalProperties": false
 			       }
 			    ]
@@ -478,8 +535,19 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 					String content = formatStructuredData(effectiveTerminateColumns, data);
 					yield recordMapTaskOutput(content, taskId, status);
 				}
+				case ACTION_GET_LINES -> {
+					String fileName = input.getFileName();
+					Integer startLine = input.getStartLine();
+					Integer endLine = input.getEndLine();
+
+					if (fileName == null || fileName.trim().isEmpty()) {
+						yield new ToolExecuteResult("Error: file_name parameter is required");
+					}
+
+					yield getFileLines(fileName, startLine, endLine);
+				}
 				default -> new ToolExecuteResult(
-						"Unknown operation: " + action + ". Supported operations: " + ACTION_SPLIT_DATA + ", " + ACTION_RECORD_MAP_OUTPUT);
+						"Unknown operation: " + action + ". Supported operations: " + ACTION_SPLIT_DATA + ", " + ACTION_RECORD_MAP_OUTPUT + ", " + ACTION_GET_LINES);
 			};
 
 		}
@@ -550,9 +618,11 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			boolean isFile = Files.isRegularFile(path);
 			boolean isDirectory = Files.isDirectory(path);
 
-			// Determine output directory - store to inner_storage/{planId}/tasks directory
-			Path planDir = getPlanDirectory(currentPlanId);
-			Path tasksPath = planDir.resolve(TASKS_DIRECTORY_NAME);
+			// Determine output directory - store to inner_storage/{rootPlanId}/{currentPlanId}/tasks directory
+			// This creates a hierarchical structure where sub-plan data is stored under the root plan
+			Path rootPlanDir = getPlanDirectory(rootPlanId);
+			Path currentPlanDir = rootPlanDir.resolve(currentPlanId);
+			Path tasksPath = currentPlanDir.resolve(TASKS_DIRECTORY_NAME);
 			ensureDirectoryExists(tasksPath);
 
 			List<String> allTaskDirs = new ArrayList<>();
@@ -817,9 +887,10 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
 				return new ToolExecuteResult("Error: currentPlanId not set, cannot record task status");
 			}
-			// Locate task directory
-			Path planDir = getPlanDirectory(currentPlanId);
-			Path taskDir = planDir.resolve(TASKS_DIRECTORY_NAME).resolve(taskId);
+			// Locate task directory - use hierarchical structure: inner_storage/{rootPlanId}/{currentPlanId}/tasks/{taskId}
+			Path rootPlanDir = getPlanDirectory(rootPlanId);
+			Path currentPlanDir = rootPlanDir.resolve(currentPlanId);
+			Path taskDir = currentPlanDir.resolve(TASKS_DIRECTORY_NAME).resolve(taskId);
 
 			if (!Files.exists(taskDir)) {
 				return new ToolExecuteResult("Error: Task directory does not exist: " + taskId);
@@ -878,6 +949,68 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			String error = "Recording Map task status failed: " + e.getMessage();
 			log.error(error, e);
 			return new ToolExecuteResult(error);
+		}
+	}
+
+	/**
+	 * Get specified line range content from files in root plan directory
+	 * Similar to InnerStorageTool.getFileLines() but reads from root plan directory instead of subtask directory
+	 */
+	private ToolExecuteResult getFileLines(String fileName, Integer startLine, Integer endLine) {
+		try {
+			if (fileName == null || fileName.trim().isEmpty()) {
+				return new ToolExecuteResult("Error: file_name parameter is required");
+			}
+
+			// Get file from root plan directory instead of subtask directory
+			Path rootPlanDir = getPlanDirectory(rootPlanId);
+			Path filePath = rootPlanDir.resolve(fileName);
+
+			if (!Files.exists(filePath)) {
+				return new ToolExecuteResult("Error: File does not exist: " + fileName);
+			}
+
+			List<String> lines = Files.readAllLines(filePath);
+
+			if (lines.isEmpty()) {
+				return new ToolExecuteResult("File is empty");
+			}
+
+			// Set default values
+			int start = (startLine != null && startLine > 0) ? startLine - 1 : 0;
+			int end = (endLine != null && endLine > 0) ? Math.min(endLine, lines.size()) : lines.size();
+
+			// Validate range
+			if (start >= lines.size()) {
+				return new ToolExecuteResult("Start line number exceeds file range");
+			}
+
+			if (start >= end) {
+				return new ToolExecuteResult("Start line number cannot be greater than or equal to end line number");
+			}
+
+			// Check lines limit
+			int requestedLines = end - start;
+			if (requestedLines > MAX_LINES_LIMIT) {
+				return new ToolExecuteResult(
+						String.format("Requested lines %d exceeds maximum limit %d lines. Please reduce line range or use multiple calls to get content.", 
+						requestedLines, MAX_LINES_LIMIT));
+			}
+
+			StringBuilder result = new StringBuilder();
+			result.append(String.format("File: %s (lines %d-%d, total %d lines)\n", fileName, start + 1, end, lines.size()));
+			result.append("=".repeat(50)).append("\n");
+
+			for (int i = start; i < end; i++) {
+				result.append(String.format("%4d: %s\n", i + 1, lines.get(i)));
+			}
+
+			return new ToolExecuteResult(result.toString());
+
+		}
+		catch (IOException e) {
+			log.error("Failed to read file lines", e);
+			return new ToolExecuteResult("Failed to read file lines: " + e.getMessage());
 		}
 	}
 

@@ -4,14 +4,13 @@ agentDescription: 一个数据准备代理，负责验证文件/文件夹存在�
 availableToolKeys:
 - map_reduce_tool
 - terminate
-- inner_storage_tool
 
 # 下一步提示配置
 nextStepPrompt: |
   你是一个数据准备代理，专门执行以下三个核心任务：
 
   标准工作流程：
-  1) 验证文件或文件夹是否存在，使用 inner_storage_tool 工具来做。如果能正常返回文件的行数，说明文件存在。
+  1) 使用 map_reduce_tool getLine 获取300行数据，尝试获取文件的表单的头部信息
   2）调用 map_reduce_tool 工具的split进行数据分割处理。
 
   为完成数据准备任务，下一步应该做什么？

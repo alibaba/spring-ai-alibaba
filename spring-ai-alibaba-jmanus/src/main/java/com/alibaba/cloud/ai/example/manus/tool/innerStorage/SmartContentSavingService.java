@@ -161,7 +161,7 @@ public class SmartContentSavingService {
 			summary.append("成功调用 ").append(callingMethod).append(" 函数:\n\n");
 		}
 
-		summary.append("但函数返回的内容过长，所以自动通过 inner_storage_tool 工具存储到了文件里");
+		summary.append("但函数返回的内容过长，所以自动通过 inner_storage_content_tool 工具存储到了文件里");
 		summary.append("\n\n");
 		summary.append("存储文件名: ").append(storageFileName).append("\n\n");
 
@@ -172,8 +172,7 @@ public class SmartContentSavingService {
 		summary.append("  - 总行数: ").append(lines.length).append("\n\n");
 
 		summary.append("💡 你可以使用以下工具来获取相关信息:\n");
-		summary.append("  - inner_storage_tool: 基本文件操作（get_lines获取指定行号的内容）\n");
-		summary.append("  - inner_storage_content_tool: 智能内容提取和分析");
+		summary.append("  - inner_storage_content_tool: getContent 方法智能内容提取和分析");
 
 		return summary.toString();
 	}

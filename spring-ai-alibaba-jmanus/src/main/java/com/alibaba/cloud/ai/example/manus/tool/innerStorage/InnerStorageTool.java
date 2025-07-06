@@ -313,11 +313,6 @@ public InnerStorageTool(UnifiedDirectoryManager directoryManager) {
 					Integer endLine = input.getEndLine();
 					yield getFileLines(fileName, startLine, endLine);
 				}
-				case "export" -> {
-					String fileName = input.getFileName();
-					String targetFileName = input.getTargetFileName();
-					yield exportToWorkingDirectory(fileName, targetFileName);
-				}
 				default -> new ToolExecuteResult(
 						"未知操作: " + action + "。支持的操作: append, replace, get_lines, export");
 			};
