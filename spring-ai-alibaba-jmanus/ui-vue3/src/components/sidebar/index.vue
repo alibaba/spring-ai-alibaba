@@ -17,7 +17,7 @@
   <div class="sidebar-wrapper" :class="{ 'sidebar-wrapper-collapsed': sidebarStore.isCollapsed }">
     <div class="sidebar-content">
       <div class="sidebar-content-header">
-        <div class="sidebar-content-title">计划模板</div>
+        <div class="sidebar-content-title">{{ $t('sidebar.title') }}</div>
       </div>
 
       <!-- Tab Switcher -->
@@ -28,7 +28,7 @@
           @click="sidebarStore.switchToTab('list')"
         >
           <Icon icon="carbon:list" width="16" />
-          模板列表
+          {{ $t('sidebar.templateList') }}
         </button>
         <button
           class="tab-button"
@@ -37,7 +37,7 @@
           :disabled="!sidebarStore.selectedTemplate"
         >
           <Icon icon="carbon:settings" width="16" />
-          配置
+          {{ $t('sidebar.configuration') }}
         </button>
       </div>
 
@@ -46,7 +46,7 @@
         <div class="new-task-section">
           <button class="new-task-btn" @click="handleNewTaskButtonClick">
             <Icon icon="carbon:add" width="16" />
-            新建计划
+            {{ $t('sidebar.newPlan') }}
             <span class="shortcut">⌘ K</span>
           </button>
         </div>
@@ -55,20 +55,20 @@
           <!-- Loading state -->
           <div v-if="sidebarStore.isLoading" class="loading-state">
             <Icon icon="carbon:circle-dash" width="20" class="spinning" />
-            <span>加载中...</span>
+            <span>{{ $t('sidebar.loading') }}</span>
           </div>
 
           <!-- Error state -->
           <div v-else-if="sidebarStore.errorMessage" class="error-state">
             <Icon icon="carbon:warning" width="20" />
             <span>{{ sidebarStore.errorMessage }}</span>
-            <button @click="sidebarStore.loadPlanTemplateList" class="retry-btn">重试</button>
+            <button @click="sidebarStore.loadPlanTemplateList" class="retry-btn">{{ $t('sidebar.retry') }}</button>
           </div>
 
           <!-- Empty state -->
           <div v-else-if="sidebarStore.planTemplateList.length === 0" class="empty-state">
             <Icon icon="carbon:document" width="32" />
-            <span>没有可用的计划模板</span>
+            <span>{{ $t('sidebar.noTemplates') }}</span>
           </div>
 
           <!-- Plan template list -->
@@ -87,9 +87,9 @@
               <Icon icon="carbon:document" width="20" />
             </div>
             <div class="task-details">
-              <div class="task-title">{{ template.title || '未命名计划' }}</div>
+              <div class="task-title">{{ template.title || $t('sidebar.unnamedPlan') }}</div>
               <div class="task-preview">
-                {{ truncateText(template.description || '无描述', 40) }}
+                {{ truncateText(template.description || $t('sidebar.noDescription'), 40) }}
               </div>
             </div>
             <div class="task-time">
@@ -98,7 +98,7 @@
             <div class="task-actions">
               <button
                 class="delete-task-btn"
-                title="删除此计划模板"
+                :title="$t('sidebar.deleteTemplate')"
                 @click.stop="handleDeletePlanTemplate(template)"
               >
                 <Icon icon="carbon:close" width="16" />
@@ -114,7 +114,7 @@
           <!-- Template Info Header -->
           <div class="template-info-header">
             <div class="template-info">
-              <h3>{{ sidebarStore.selectedTemplate.title || '未命名计划' }}</h3>
+              <h3>{{ sidebarStore.selectedTemplate.title || $t('sidebar.unnamedPlan') }}</h3>
               <span class="template-id">ID: {{ sidebarStore.selectedTemplate.id }}</span>
             </div>
             <button class="back-to-list-btn" @click="sidebarStore.switchToTab('list')">
@@ -126,13 +126,13 @@
           <div class="config-section">
             <div class="section-header">
               <Icon icon="carbon:code" width="16" />
-              <span>JSON 模板</span>
+              <span>{{ $t('sidebar.jsonTemplate') }}</span>
               <div class="section-actions">
                 <button
                   class="btn btn-sm"
                   @click="sidebarStore.rollbackVersion"
                   :disabled="!sidebarStore.canRollback"
-                  title="回滚"
+                  :title="$t('sidebar.rollback')"
                 >
                   <Icon icon="carbon:undo" width="14" />
                 </button>
@@ -140,7 +140,7 @@
                   class="btn btn-sm"
                   @click="sidebarStore.restoreVersion"
                   :disabled="!sidebarStore.canRestore"
-                  title="恢复"
+                  :title="$t('sidebar.restore')"
                 >
                   <Icon icon="carbon:redo" width="14" />
                 </button>
@@ -156,7 +156,7 @@
             <textarea
               v-model="sidebarStore.jsonContent"
               class="json-editor"
-              placeholder="输入 JSON 计划模板..."
+              :placeholder="$t('sidebar.jsonPlaceholder')"
               rows="8"
             ></textarea>
           </div>
@@ -165,13 +165,13 @@
           <div class="config-section">
             <div class="section-header">
               <Icon icon="carbon:generate" width="16" />
-              <span>计划生成器</span>
+              <span>{{ $t('sidebar.planGenerator') }}</span>
             </div>
             <div class="generator-content">
               <textarea
                 v-model="sidebarStore.generatorPrompt"
                 class="prompt-input"
-                placeholder="描述您想要生成的计划..."
+                :placeholder="$t('sidebar.generatorPlaceholder')"
                 rows="3"
               ></textarea>
               <div class="generator-actions">
@@ -185,7 +185,7 @@
                     width="14"
                     :class="{ spinning: sidebarStore.isGenerating }"
                   />
-                  {{ sidebarStore.isGenerating ? '生成中...' : '生成计划' }}
+                  {{ sidebarStore.isGenerating ? $t('sidebar.generating') : $t('sidebar.generatePlan') }}
                 </button>
                 <button
                   class="btn btn-secondary btn-sm"
@@ -197,7 +197,7 @@
                   "
                 >
                   <Icon icon="carbon:edit" width="14" />
-                  更新计划
+                  {{ $t('sidebar.updatePlan') }}
                 </button>
               </div>
             </div>
@@ -207,28 +207,28 @@
           <div class="config-section">
             <div class="section-header">
               <Icon icon="carbon:play" width="16" />
-              <span>执行控制器</span>
+              <span>{{ $t('sidebar.executionController') }}</span>
             </div>
             <div class="execution-content">
               <div class="params-input-group">
-                <label>执行参数</label>
+                <label>{{ $t('sidebar.executionParams') }}</label>
                 <div class="params-input-container">
                   <input
                     v-model="sidebarStore.executionParams"
                     class="params-input"
-                    placeholder="输入执行参数..."
+                    :placeholder="$t('sidebar.executionParamsPlaceholder')"
                   />
                   <button
                     class="clear-params-btn"
                     @click="sidebarStore.clearExecutionParams"
-                    title="清空参数"
+                    :title="$t('sidebar.clearParams')"
                   >
                     <Icon icon="carbon:close" width="12" />
                   </button>
                 </div>
               </div>
               <div class="api-url-display">
-                <span class="api-url-label">API URL:</span>
+                <span class="api-url-label">{{ $t('sidebar.apiUrl') }}:</span>
                 <code class="api-url">{{ sidebarStore.computedApiUrl }}</code>
               </div>
               <button
@@ -241,7 +241,7 @@
                   width="16"
                   :class="{ spinning: sidebarStore.isExecuting }"
                 />
-                {{ sidebarStore.isExecuting ? '执行中...' : '执行计划' }}
+                {{ sidebarStore.isExecuting ? $t('sidebar.executing') : $t('sidebar.executePlan') }}
               </button>
             </div>
           </div>
@@ -254,8 +254,11 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import { useSidebarStore } from '@/stores/sidebar'
 import type { PlanTemplate } from '@/types/plan-template'
+
+const { t } = useI18n()
 
 // 使用pinia store
 const sidebarStore = useSidebarStore()
@@ -277,18 +280,18 @@ const handlePlanTemplateClick = async (template: PlanTemplate) => {
     console.log(`[PlanTemplateSidebar] 选择了计划模板: ${template.id}`)
   } catch (error: any) {
     console.error('选择计划模板失败:', error)
-    alert('选择计划模板失败: ' + error.message)
+    alert(t('sidebar.selectTemplateFailed') + ': ' + error.message)
   }
 }
 
 const handleDeletePlanTemplate = async (template: PlanTemplate) => {
-  if (confirm(`确定要删除计划模板 "${template.title || '未命名计划'}" 吗？此操作不可恢复。`)) {
+  if (confirm(t('sidebar.confirmDelete', { name: template.title || t('sidebar.unnamedPlan') }))) {
     try {
       await sidebarStore.deleteTemplate(template)
-      alert('计划模板已删除。')
+      alert(t('sidebar.templateDeleted'))
     } catch (error: any) {
       console.error('删除计划模板失败:', error)
-      alert('删除计划模板失败: ' + error.message)
+      alert(t('sidebar.deleteTemplateFailed') + ': ' + error.message)
     }
   }
 }
@@ -298,35 +301,35 @@ const handleSaveTemplate = async () => {
     const saveResult = await sidebarStore.saveTemplate()
 
     if (saveResult?.duplicate) {
-      alert(`保存完成：${saveResult.message}\n\n当前版本数：${saveResult.versionCount}`)
+      alert(t('sidebar.saveCompleted', { message: saveResult.message, versionCount: saveResult.versionCount }))
     } else if (saveResult?.saved) {
-      alert(`保存成功：${saveResult.message}\n\n当前版本数：${saveResult.versionCount}`)
+      alert(t('sidebar.saveSuccess', { message: saveResult.message, versionCount: saveResult.versionCount }))
     } else if (saveResult?.message) {
-      alert(`保存状态：${saveResult.message}`)
+      alert(t('sidebar.saveStatus', { message: saveResult.message }))
     }
   } catch (error: any) {
     console.error('保存计划修改失败:', error)
-    alert(error.message || '保存计划修改失败')
+    alert(error.message || t('sidebar.saveFailed'))
   }
 }
 
 const handleGeneratePlan = async () => {
   try {
     const response = await sidebarStore.generatePlan()
-    alert(`计划生成成功！模板ID: ${sidebarStore.selectedTemplate?.id || '未知'}`)
+    alert(t('sidebar.generateSuccess', { templateId: sidebarStore.selectedTemplate?.id || t('sidebar.unknown') }))
   } catch (error: any) {
     console.error('生成计划失败:', error)
-    alert('生成计划失败: ' + error.message)
+    alert(t('sidebar.generateFailed') + ': ' + error.message)
   }
 }
 
 const handleUpdatePlan = async () => {
   try {
     await sidebarStore.updatePlan()
-    alert('计划更新成功！')
+    alert(t('sidebar.updateSuccess'))
   } catch (error: any) {
     console.error('更新计划失败:', error)
-    alert('更新计划失败: ' + error.message)
+    alert(t('sidebar.updateFailed') + ': ' + error.message)
   }
 }
 
@@ -350,7 +353,7 @@ const handleExecutePlan = async () => {
     console.log('[Sidebar] Event emitted')
   } catch (error: any) {
     console.error('执行计划出错:', error)
-    alert('执行计划失败: ' + error.message)
+    alert(t('sidebar.executeFailed') + ': ' + error.message)
   } finally {
     sidebarStore.finishPlanExecution()
   }

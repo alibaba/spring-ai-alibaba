@@ -17,8 +17,12 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, computed, nextTick } from 'vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
+import { useI18n } from 'vue-i18n'
 
 export const useRightPanelStore = defineStore('rightPanel', () => {
+  // Get i18n function
+  const { t } = useI18n()
+
   // Basic state
   const activeTab = ref('details')
 
@@ -91,36 +95,33 @@ public class UserController {
       id: '1',
       type: 'thinking',
       icon: 'carbon:thinking',
-      title: '分析需求',
-      content:
-        '将您的请求分解为可操作的步骤：1) 创建用户实体，2) 实现用户服务，3) 构建 REST 端点，4) 添加验证和错误处理。',
-      timestamp: '2 分钟前',
+      title: t('rightPanel.chatBubbles.analyzeRequirements.title'),
+      content: t('rightPanel.chatBubbles.analyzeRequirements.content'),
+      timestamp: t('rightPanel.timeAgo.minutesAgo', { n: 2 }),
     },
     {
       id: '2',
       type: 'progress',
       icon: 'carbon:in-progress',
-      title: '生成代码',
-      content:
-        '创建具有用户管理 CRUD 操作的 Spring Boot REST API。包括正确的 HTTP 状态代码和错误处理。',
-      timestamp: '1 分钟前',
+      title: t('rightPanel.chatBubbles.generateCode.title'),
+      content: t('rightPanel.chatBubbles.generateCode.content'),
+      timestamp: t('rightPanel.timeAgo.minutesAgo', { n: 1 }),
     },
     {
       id: '3',
       type: 'success',
       icon: 'carbon:checkmark',
-      title: '代码已生成',
-      content:
-        '成功生成具有所有 CRUD 操作的 UserController。代码包含正确的 REST 约定、错误处理，并遵循 Spring Boot 最佳实践。',
-      timestamp: '刚刚',
+      title: t('rightPanel.chatBubbles.codeGenerated.title'),
+      content: t('rightPanel.chatBubbles.codeGenerated.content'),
+      timestamp: t('rightPanel.timeAgo.justNow'),
     },
   ])
 
   // Preview tab configuration
   const previewTabs = [
-    { id: 'details', name: '步骤执行详情', icon: 'carbon:events' },
-    { id: 'chat', name: 'Chat', icon: 'carbon:chat' },
-    { id: 'code', name: 'Code', icon: 'carbon:code' },
+    { id: 'details', name: t('rightPanel.tabs.details'), icon: 'carbon:events' },
+    { id: 'chat', name: t('rightPanel.tabs.chat'), icon: 'carbon:chat' },
+    { id: 'code', name: t('rightPanel.tabs.code'), icon: 'carbon:code' },
   ]
 
   // DOM element reference (needs to be set in component)
@@ -134,9 +135,9 @@ public class UserController {
 
   const stepStatusText = computed(() => {
     if (!selectedStep.value) return ''
-    if (selectedStep.value.completed) return '已完成'
-    if (selectedStep.value.current) return '执行中'
-    return '等待执行'
+    if (selectedStep.value.completed) return t('rightPanel.status.completed')
+    if (selectedStep.value.current) return t('rightPanel.status.executing')
+    return t('rightPanel.status.waiting')
   })
 
   // Actions - Tab management
@@ -215,7 +216,7 @@ public class UserController {
       title:
         typeof step === 'string'
           ? step
-          : step.title || step.description || step.name || `步骤 ${stepIndex + 1}`,
+          : step.title || step.description || step.name || t('rightPanel.defaultStepTitle', { number: stepIndex + 1 }),
       description: typeof step === 'string' ? step : step.description || step,
       agentExecution: agentExecution,
       completed: isStepCompleted,
