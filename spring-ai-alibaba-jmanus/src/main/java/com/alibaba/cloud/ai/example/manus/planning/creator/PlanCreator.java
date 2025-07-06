@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2025 the original author or authors.
  *
@@ -19,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.planning.creator;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
@@ -53,13 +53,16 @@ public class PlanCreator {
 
 	private final PromptLoader promptLoader;
 
+	private final ManusProperties manusProperties;
+
 	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningTool planningTool,
-			PlanExecutionRecorder recorder, PromptLoader promptLoader) {
+					   PlanExecutionRecorder recorder, PromptLoader promptLoader, ManusProperties manusProperties) {
 		this.agents = agents;
 		this.llmService = llmService;
 		this.planningTool = planningTool;
 		this.recorder = recorder;
 		this.promptLoader = promptLoader;
+		this.manusProperties = manusProperties;
 	}
 
 	/**
@@ -94,13 +97,13 @@ public class PlanCreator {
 					Prompt prompt = promptTemplate.create();
 
 					ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
-						.prompt(prompt)
-						.toolCallbacks(List.of(PlanningTool.getFunctionToolCallback(planningTool)));
+							.prompt(prompt)
+							.toolCallbacks(List.of(PlanningTool.getFunctionToolCallback(planningTool)));
 					if (useMemory) {
 						requestSpec
-							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
+								.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
 						requestSpec
-							.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
+								.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory(manusProperties.getMaxMemory())).build());
 					}
 					ChatClient.CallResponseSpec response = requestSpec.call();
 					outputText = response.chatResponse().getResult().getOutput().getText();
@@ -161,10 +164,10 @@ public class PlanCreator {
 		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
 		for (DynamicAgentEntity agent : agents) {
 			agentsInfo.append("- Agent Name: ")
-				.append(agent.getAgentName())
-				.append("\n  Description: ")
-				.append(agent.getAgentDescription())
-				.append("\n");
+					.append(agent.getAgentName())
+					.append("\n  Description: ")
+					.append(agent.getAgentDescription())
+					.append("\n");
 		}
 		return agentsInfo.toString();
 	}

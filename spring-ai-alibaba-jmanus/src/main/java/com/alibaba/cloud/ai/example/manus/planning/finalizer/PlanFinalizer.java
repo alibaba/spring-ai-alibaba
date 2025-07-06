@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.planning.finalizer;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
@@ -46,10 +47,13 @@ public class PlanFinalizer {
 
 	private final PromptLoader promptLoader;
 
-	public PlanFinalizer(LlmService llmService, PlanExecutionRecorder recorder, PromptLoader promptLoader) {
+	private final ManusProperties manusProperties;
+
+	public PlanFinalizer(LlmService llmService, PlanExecutionRecorder recorder, PromptLoader promptLoader, ManusProperties manusProperties) {
 		this.llmService = llmService;
 		this.recorder = recorder;
 		this.promptLoader = promptLoader;
+		this.manusProperties = manusProperties;
 	}
 
 	/**
@@ -84,7 +88,7 @@ public class PlanFinalizer {
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 			if (context.isUseMemory()) {
 				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
-				requestSpec.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
+				requestSpec.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory(manusProperties.getMaxMemory())).build());
 			}
 			ChatResponse response = requestSpec.call().chatResponse();
 

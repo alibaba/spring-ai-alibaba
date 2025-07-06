@@ -353,6 +353,7 @@ const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   // 智能体设置
   'maxSteps': '智能体执行最大步数',
   'resetAllAgents': '重置所有agent',
+  'maxMemory': "能记住的最大消息数",
   
   // 浏览器设置
   'headlessBrowser': '是否使用无头浏览器模式',
@@ -425,7 +426,8 @@ const getConfigMin = (configKey: string): number => {
     'maxSteps': 1,
     'browserTimeout': 1,
     'maxThreads': 1,
-    'timeoutSeconds': 5
+    'timeoutSeconds': 5,
+    'maxMemory': 1
   }
   return minValues[configKey] || 1
 }
@@ -436,7 +438,8 @@ const getConfigMax = (configKey: string): number => {
     'maxSteps': 100,
     'browserTimeout': 600,
     'maxThreads': 32,
-    'timeoutSeconds': 300
+    'timeoutSeconds': 300,
+    'maxMemory': 1000
   }
   return maxValues[configKey] || 10000
 }
@@ -700,6 +703,7 @@ const getDefaultValueForKey = (configKey: string): string => {
     'timeoutSeconds': '60',
     'autoOpenBrowser': 'false',
     'headlessBrowser': 'true',
+    'maxMemory': '1000'
     // 可以根据需要添加更多默认值
   }
   
