@@ -17,8 +17,8 @@
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioSpeechApi;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechModel;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -51,22 +51,21 @@ public class DashScopeAudioSpeechAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public DashScopeSpeechSynthesisModel dashScopeSpeechSynthesisModel(RetryTemplate retryTemplate,
+	public DashScopeAudioSpeechModel dashScopeSpeechSynthesisModel(RetryTemplate retryTemplate,
 			DashScopeConnectionProperties commonProperties, DashScopeAudioSpeechSynthesisProperties speechProperties) {
 
 		var dashScopeSpeechSynthesisApi = dashScopeSpeechSynthesisApi(commonProperties, speechProperties);
 
-		return new DashScopeSpeechSynthesisModel(dashScopeSpeechSynthesisApi, speechProperties.getOptions(),
-				retryTemplate);
+		return new DashScopeAudioSpeechModel(dashScopeSpeechSynthesisApi, speechProperties.getOptions(), retryTemplate);
 	}
 
-	private DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi(DashScopeConnectionProperties commonProperties,
+	private DashScopeAudioSpeechApi dashScopeSpeechSynthesisApi(DashScopeConnectionProperties commonProperties,
 			DashScopeAudioSpeechSynthesisProperties speechSynthesisProperties) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, speechSynthesisProperties,
 				"audio.synthesis");
 
-		return new DashScopeSpeechSynthesisApi(resolved.apiKey(), resolved.workspaceId());
+		return new DashScopeAudioSpeechApi(resolved.apiKey(), resolved.workspaceId());
 	}
 
 }

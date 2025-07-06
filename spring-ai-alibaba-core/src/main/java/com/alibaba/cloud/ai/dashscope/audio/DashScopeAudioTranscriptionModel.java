@@ -42,6 +42,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Audio transcription: Input audio, output text.
+ */
+
 public class DashScopeAudioTranscriptionModel implements AudioTranscriptionModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeAudioTranscriptionModel.class);

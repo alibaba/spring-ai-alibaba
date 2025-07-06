@@ -15,14 +15,9 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioSpeechApi;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechModel;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechOptions;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisPrompt;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
@@ -31,8 +26,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -42,6 +35,12 @@ import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import reactor.core.publisher.Flux;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,6 +57,15 @@ public class DashScopeAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class));
+
+	private final ApplicationContextRunner testAudioContextRunner = new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
+			.withConfiguration(AutoConfigurations.of(DashScopeAudioSpeechAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class));
+
+	private final ApplicationContextRunner testImageContextRunner = new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
+			.withConfiguration(AutoConfigurations.of(DashScopeImageAutoConfiguration.class));
 
 	private final ApplicationContextRunner textEmbeddingDefaultContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
@@ -99,17 +107,20 @@ public class DashScopeAutoConfigurationIT {
 
 	@Test
 	void speech() {
-		this.contextRunner.run(context -> {
-			DashScopeSpeechSynthesisModel speechModel = context.getBean(DashScopeSpeechSynthesisModel.class);
+		this.testAudioContextRunner.run(context -> {
+
+			DashScopeAudioSpeechModel speechModel = context.getBean(DashScopeAudioSpeechModel.class);
+
 			byte[] response = speechModel
 				.call(new SpeechSynthesisPrompt("H",
-						DashScopeSpeechSynthesisOptions.builder()
-							.responseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)
+						DashScopeAudioSpeechOptions.builder()
+							.responseFormat(DashScopeAudioSpeechApi.ResponseFormat.MP3)
 							.build()))
 				.getResult()
 				.getOutput()
 				.getAudio()
 				.array();
+
 			assertThat(response).isNotNull();
 			// todo: check mp3 types
 			assertThat(response.length).isNotEqualTo(0);
@@ -168,7 +179,7 @@ public class DashScopeAutoConfigurationIT {
 			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
-			assertThat(embeddingModel.dimensions()).isEqualTo(1536);
+			assertThat(embeddingModel.dimensions()).isEqualTo(1024);
 		});
 	}
 
@@ -192,7 +203,7 @@ public class DashScopeAutoConfigurationIT {
 
 	@Test
 	void generateImage() {
-		this.contextRunner.withPropertyValues("spring.ai.dashScope.image.options.size=1024x1024").run(context -> {
+		this.testImageContextRunner.withPropertyValues("spring.ai.dashScope.image.options.size=1024x1024").run(context -> {
 			DashScopeImageModel imageModel = context.getBean(DashScopeImageModel.class);
 			ImageResponse imageResponse = imageModel.call(new ImagePrompt("tree"));
 			System.out.println(imageResponse.getResult().getOutput().getUrl());
@@ -205,7 +216,7 @@ public class DashScopeAutoConfigurationIT {
 	@Test
 	void generateImageWithModel() {
 		// The 256x256 size is supported by dall-e-2, but not by dall-e-3.
-		this.contextRunner
+		this.testImageContextRunner
 			.withPropertyValues("spring.ai.dashScope.image.options.model=wanx-v1",
 					"spring.ai.dashScope.image.options.size=256x256")
 			.run(context -> {

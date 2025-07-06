@@ -87,7 +87,7 @@
     },
     {
       "name": "spring.ai.dashscope.audio.synthesis.options",
-      "type": "com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions",
+      "type": "com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechOptions",
       "description": "DashScope audio speech synthesis options.",
       "sourceType": "com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioSpeechSynthesisProperties"
     },

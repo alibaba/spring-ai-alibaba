@@ -43,6 +43,8 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.AUDIO_TRANSCRIPTION_RESTFUL_URL;
+
 /**
  * Turn audio into text or text into audio. Based on <a href=
  * "https://help.aliyun.com/zh/model-studio/user-guide/speech-recognition-and-synthesis">DashScope
@@ -73,8 +75,6 @@ public class DashScopeAudioTranscriptionApi {
 	private RestClient.Builder restClientBuilder;
 
 	private ResponseErrorHandler responseErrorHandler;
-
-	private final static String DEFAULT_RESTFUL_URL = "/api/v1/services/audio/asr/transcription";
 
 	// @formatter:off
 	public DashScopeAudioTranscriptionApi(
@@ -132,7 +132,7 @@ public class DashScopeAudioTranscriptionApi {
 
 	public ResponseEntity<Response> call(DashScopeAudioTranscriptionApi.Request request) {
 
-		return restClient.post().uri(DEFAULT_RESTFUL_URL).body(request).retrieve().toEntity(Response.class);
+		return restClient.post().uri(AUDIO_TRANSCRIPTION_RESTFUL_URL).body(request).retrieve().toEntity(Response.class);
 	}
 
 	public ResponseEntity<Response> callWithTaskId(DashScopeAudioTranscriptionApi.Request request, String taskId) {
@@ -177,9 +177,11 @@ public class DashScopeAudioTranscriptionApi {
 	}
 
 	/**
-	 * DashScope tts model list.
+	 * Audio Transcription model list. More models:
+	 * <a href="https://help.aliyun.com/zh/model-studio/sambert-java-sdk">Model Stt
+	 * Models</a>
 	 */
-	public enum TtsModel {
+	public enum AudioTranscriptionModel {
 
 		@JsonProperty("paraformer-realtime-v2")
 		PARAFORMER_REALTIME_V2("paraformer-realtime-v2"),
@@ -193,46 +195,9 @@ public class DashScopeAudioTranscriptionApi {
 		@JsonProperty("paraformer-realtime-8k-v1")
 		PARAFORMER_REALTIME_8K_V1("paraformer-realtime-8k-v1");
 
-		public final String value;
-
-		TtsModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return this.value;
-		}
-
-	}
-
-	/**
-	 * DashScope stt model list. More models:
-	 * <a href="https://help.aliyun.com/zh/model-studio/sambert-java-sdk">Model Stt
-	 * Models</a>
-	 */
-	public enum SttModel {
-
-		@JsonProperty("sambert-zhinan-v1")
-		SAM_BERT_ZHINAN_V1("sambert-zhinan-v1"),
-
-		@JsonProperty("sambert-zhiqi-v1")
-		SAM_BERT_ZHIQI_V1("sambert-zhiqi-v1"),
-
-		@JsonProperty("sambert-zhichu-v1")
-		SAM_BERT_ZHICHU_V1("sambert-zhichu-v1"),
-
-		@JsonProperty("sambert-zhide-v1")
-		SAM_BERT_ZHIDE_V1("sambert-zhide-v1"),
-
-		@JsonProperty("sambert-zhiwei-v1")
-		SAM_BERT_ZHIWEI_V1("sambert-zhiwei-v1"),
-
-		@JsonProperty("sambert-zhiting-v1")
-		SAM_BERT_ZHITING_V1("sambert-zhiting-v1");
-
 		private final String model;
 
-		SttModel(String model) {
+		AudioTranscriptionModel(String model) {
 			this.model = model;
 		}
 
