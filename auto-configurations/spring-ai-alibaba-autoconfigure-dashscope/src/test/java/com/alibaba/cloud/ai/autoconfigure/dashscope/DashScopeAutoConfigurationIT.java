@@ -59,13 +59,13 @@ public class DashScopeAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class));
 
 	private final ApplicationContextRunner testAudioContextRunner = new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
-			.withConfiguration(AutoConfigurations.of(DashScopeAudioSpeechAutoConfiguration.class))
-			.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class));
+		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
+		.withConfiguration(AutoConfigurations.of(DashScopeAudioSpeechAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class));
 
 	private final ApplicationContextRunner testImageContextRunner = new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
-			.withConfiguration(AutoConfigurations.of(DashScopeImageAutoConfiguration.class));
+		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
+		.withConfiguration(AutoConfigurations.of(DashScopeImageAutoConfiguration.class));
 
 	private final ApplicationContextRunner textEmbeddingDefaultContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
@@ -203,14 +203,15 @@ public class DashScopeAutoConfigurationIT {
 
 	@Test
 	void generateImage() {
-		this.testImageContextRunner.withPropertyValues("spring.ai.dashScope.image.options.size=1024x1024").run(context -> {
-			DashScopeImageModel imageModel = context.getBean(DashScopeImageModel.class);
-			ImageResponse imageResponse = imageModel.call(new ImagePrompt("tree"));
-			System.out.println(imageResponse.getResult().getOutput().getUrl());
-			assertThat(imageResponse.getResults()).hasSize(1);
-			assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-			logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
-		});
+		this.testImageContextRunner.withPropertyValues("spring.ai.dashScope.image.options.size=1024x1024")
+			.run(context -> {
+				DashScopeImageModel imageModel = context.getBean(DashScopeImageModel.class);
+				ImageResponse imageResponse = imageModel.call(new ImagePrompt("tree"));
+				System.out.println(imageResponse.getResult().getOutput().getUrl());
+				assertThat(imageResponse.getResults()).hasSize(1);
+				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
+				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+			});
 	}
 
 	@Test

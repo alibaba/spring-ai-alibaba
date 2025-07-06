@@ -51,7 +51,7 @@ class DashScopeAudioTranscriptionApiTests {
 		// Initialize DashScopeAudioTranscriptionApi with test API key
 		audioTranscriptionApi = DashScopeAudioTranscriptionApi.builder()
 			.apiKey(new SimpleApiKey("test-api-key"))
-				.model("test-model")
+			.model("test-model")
 			.build();
 	}
 
@@ -60,7 +60,7 @@ class DashScopeAudioTranscriptionApiTests {
 		// Test constructor with only API key
 		DashScopeAudioTranscriptionApi api = DashScopeAudioTranscriptionApi.builder()
 			.apiKey(new SimpleApiKey("test-api-key"))
-				.model("test-model")
+			.model("test-model")
 			.build();
 		assertNotNull(api, "DashScopeAudioTranscriptionApi should be created with API key");
 	}
@@ -70,7 +70,7 @@ class DashScopeAudioTranscriptionApiTests {
 		// Test constructor with API key and workspace ID
 		DashScopeAudioTranscriptionApi api = DashScopeAudioTranscriptionApi.builder()
 			.apiKey(new SimpleApiKey("test-api-key"))
-				.model("test-model")
+			.model("test-model")
 			.build();
 		assertNotNull(api, "DashScopeAudioTranscriptionApi should be created with API key and workspace ID");
 	}
@@ -81,7 +81,7 @@ class DashScopeAudioTranscriptionApiTests {
 		DashScopeAudioTranscriptionApi api = DashScopeAudioTranscriptionApi.builder()
 			.apiKey(new SimpleApiKey("test-api-key"))
 			.baseUrl("ss://test-websocket-url.com")
-				.model("test-model")
+			.model("test-model")
 			.build();
 		;
 		assertNotNull(api, "DashScopeAudioTranscriptionApi should be created with API key, workspace ID, and base URL");
@@ -93,7 +93,7 @@ class DashScopeAudioTranscriptionApiTests {
 		DashScopeAudioTranscriptionApi api = DashScopeAudioTranscriptionApi.builder()
 			.apiKey(new SimpleApiKey("test-api-key"))
 			.webSocketUrl("wss://test-websocket-url.com")
-				.model("test-model")
+			.model("test-model")
 			.build();
 		assertNotNull(api,
 				"DashScopeAudioTranscriptionApi should be created with API key, workspace ID, base URL, and websocket URL");
