@@ -337,9 +337,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		StringBuilder sb = new StringBuilder();
 		for (String type : uniqueTypes) {
 			String className = nodeTypeToClass.get(type);
-			if (className.equals(NodeType.BRANCH.value())
-					|| className.equals(NodeType.QUESTION_CLASSIFIER.difyValue())) {
-				sb.append("import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;");
+			if (type.equals(NodeType.BRANCH.value()) || type.equals(NodeType.QUESTION_CLASSIFIER.difyValue())) {
+				sb.append("import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;\n");
 			}
 			sb.append("import ").append(className).append(";\n");
 		}
