@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.llm;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -24,6 +26,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -37,9 +40,9 @@ public class LlmService {
 
 	private final ChatClient finalizeChatClient;
 
-	private final ChatMemory conversationMemory = MessageWindowChatMemory.builder().maxMessages(1000).build();
+	private ChatMemory conversationMemory;
 
-	private final ChatMemory agentMemory = MessageWindowChatMemory.builder().maxMessages(1000).build();
+	private ChatMemory agentMemory;
 
 	private final ChatModel chatModel;
 
@@ -48,22 +51,22 @@ public class LlmService {
 		this.chatModel = chatModel;
 		// Execute and summarize planning, use the same memory
 		this.planningChatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
-			.build();
+				.defaultAdvisors(new SimpleLoggerAdvisor())
+				.defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
+				.build();
 
 		// Each agent execution process uses independent memory
 
 		this.agentExecutionClient = ChatClient.builder(chatModel)
-			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-			.build();
+				// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
+				.defaultAdvisors(new SimpleLoggerAdvisor())
+				.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+				.build();
 
 		this.finalizeChatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.build();
+				//.defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
+				.defaultAdvisors(new SimpleLoggerAdvisor())
+				.build();
 
 	}
 
@@ -71,7 +74,10 @@ public class LlmService {
 		return agentExecutionClient;
 	}
 
-	public ChatMemory getAgentMemory() {
+	public ChatMemory getAgentMemory(Integer maxMessages) {
+		if (agentMemory == null) {
+			agentMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+		}
 		return agentMemory;
 	}
 
@@ -95,7 +101,10 @@ public class LlmService {
 		return chatModel;
 	}
 
-	public ChatMemory getConversationMemory() {
+	public ChatMemory getConversationMemory(Integer maxMessages) {
+		if (conversationMemory == null) {
+			conversationMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+		}
 		return conversationMemory;
 	}
 
