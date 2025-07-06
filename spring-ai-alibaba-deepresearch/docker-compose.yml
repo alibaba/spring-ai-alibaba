@@ -80,7 +80,7 @@ services:
       AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY}
       TAVILY_API_KEY: ${TAVILY_API_KEY}
       SERPAPI_KEY: ${SERPAPI_KEY}
-      SPRING_CONFIG_LOCATION: file:/app/config/custom-config.yml
+      SPRING_CONFIG_LOCATION: classpath:/,file:/app/config/custom-config.yml
     volumes:
       - ./dockerConfig/app-application.yml:/app/config/custom-config.yml
     ports:
