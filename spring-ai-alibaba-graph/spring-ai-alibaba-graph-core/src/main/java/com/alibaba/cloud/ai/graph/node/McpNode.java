@@ -23,6 +23,7 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.InitializeResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,13 +77,22 @@ public class McpNode implements NodeAction {
 				url, tool, headers, inputParamKeys);
 
 		// Build transport and client
-		HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(this.url);
+		String baseUrl = this.url;
+		String sseEndpoint = "/sse";
+		if (this.url.contains("/sse?")) {
+			int idx = this.url.indexOf("/sse?");
+			baseUrl = this.url.substring(0, idx);
+			sseEndpoint = this.url.substring(idx); // e.g. /sse?key=xxx
+		}
+		HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl)
+				.sseEndpoint(sseEndpoint);
 		if (this.headers != null && !this.headers.isEmpty()) {
 			transportBuilder.customizeRequest(req -> this.headers.forEach(req::header));
 		}
 		this.transport = transportBuilder.build();
 		this.client = McpClient.sync(this.transport).build();
-		this.client.initialize();
+		InitializeResult initializeResult = this.client.initialize();
+		log.info("[McpNode] MCP Client initialized: {}", initializeResult);
 		// Variable replacement
 		String finalTool = replaceVariables(tool, state);
 		Map<String, Object> finalParams = new HashMap<>();
@@ -110,8 +120,7 @@ public class McpNode implements NodeAction {
 			log.info("[McpNode] CallToolRequest: {}", request);
 			result = client.callTool(request);
 			log.info("[McpNode] tool call result: {}", result);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("[McpNode] MCP call fail:", e);
 			throw new McpNodeException("MCP call fail: " + e.getMessage(), e);
 		}
@@ -127,15 +136,12 @@ public class McpNode implements NodeAction {
 				// Compatible with the text field of TextContent
 				if (first instanceof TextContent textContent) {
 					updatedState.put(this.outputKey, textContent.text());
-				}
-				else if (first instanceof Map<?, ?> map && map.containsKey("text")) {
+				} else if (first instanceof Map<?, ?> map && map.containsKey("text")) {
 					updatedState.put(this.outputKey, map.get("text"));
-				}
-				else {
+				} else {
 					updatedState.put(this.outputKey, first);
 				}
-			}
-			else {
+			} else {
 				updatedState.put(this.outputKey, content);
 			}
 		}
@@ -165,8 +171,7 @@ public class McpNode implements NodeAction {
 		map.forEach((k, v) -> {
 			if (v instanceof String) {
 				result.put(k, replaceVariables((String) v, state));
-			}
-			else {
+			} else {
 				result.put(k, v);
 			}
 		});
