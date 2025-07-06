@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.service.VectorStoreDataIngestio
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.util.Map;
 
 /**
@@ -53,6 +54,20 @@ public class RagDataController {
 			String message = "Failed to upload and ingest '" + file.getOriginalFilename() + "'.";
 			return ResponseEntity.internalServerError().body(Map.of("message", message, "error", e.getMessage()));
 		}
+	}
+
+	@PostMapping(value = "/upload", consumes = "multipart/form-data")
+	public ResponseEntity<Map<String, String>> handleFileUpload(
+			@RequestParam("file") MultipartFile file,
+			@RequestParam("session_id") String sessionId,
+			@RequestParam(value = "user_id", required = false) String userId) {
+
+		if (file.isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "File cannot be empty."));
+		}
+
+		ingestionService.processAndStore(file, sessionId, userId);
+		return ResponseEntity.ok(Map.of("message", "File processed successfully for session: " + sessionId));
 	}
 
 }
