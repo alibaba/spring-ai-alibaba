@@ -22,7 +22,6 @@ import java.util.Map;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -140,8 +139,7 @@ public class PlanCreator {
 				currentPlan.setPlanningThinking(outputText);
 			}
 			else {
-				log.warn("Creating fallback plan for planId: {}", planId);
-				currentPlan = new ExecutionPlan(planId, planId,"answer question without plan");
+				throw new RuntimeException("Failed to create a valid execution plan after retries");
 			}
 
 			context.setPlan(currentPlan);

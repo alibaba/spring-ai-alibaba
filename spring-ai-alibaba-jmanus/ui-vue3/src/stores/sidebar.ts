@@ -73,13 +73,6 @@ export const useSidebarStore = defineStore('sidebar', () => {
     isCollapsed.value = !isCollapsed.value
   }
 
-  const showSidebar = () => {
-    isCollapsed.value = false
-  }
-
-  const hideSidebar = () => {
-    isCollapsed.value = true
-  }
 
   const switchToTab = (tab: 'list' | 'config') => {
     currentTab.value = tab
@@ -406,8 +399,6 @@ export const useSidebarStore = defineStore('sidebar', () => {
 
     // Actions
     toggleSidebar,
-    showSidebar,
-    hideSidebar,
     switchToTab,
     loadPlanTemplateList,
     selectTemplate,

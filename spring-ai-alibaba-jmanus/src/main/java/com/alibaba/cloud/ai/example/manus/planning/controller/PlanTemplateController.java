@@ -239,6 +239,7 @@ public class PlanTemplateController {
 
 				// 设置新的计划ID，覆盖JSON中的ID
 				plan.setCurrentPlanId(newPlanId);
+				plan.setRootPlanId(newPlanId);
 				// 设置URL参数到计划中
 				if (rawParam != null && !rawParam.isEmpty()) {
 					logger.info("Set execution parameters to plan: {}", rawParam);

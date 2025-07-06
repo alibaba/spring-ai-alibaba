@@ -70,7 +70,21 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	 * @param createIfNotExists Whether to create if not exists
 	 * @return PlanExecutionRecord instance
 	 */
-	public PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId, boolean createIfNotExists) {
+	public PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId,
+			boolean createIfNotExists) {
+
+		// Add detailed logging to debug NPE
+		logger.info(
+				"Enter getOrCreatePlanExecutionRecord with planId: {}, rootPlanId: {}, thinkActRecordId: {}, createIfNotExists: {}",
+				planId, rootPlanId, thinkActRecordId, createIfNotExists);
+
+		if (rootPlanId == null) {
+			logger.error("rootPlanId is null, which will cause NPE. PlanId: {}, thinkActRecordId: {}.", planId,
+					thinkActRecordId);
+			// For further debugging, log the stack trace to understand the call path
+			// throw new IllegalArgumentException("rootPlanId cannot be null");
+		}
+
 		// Get or create root plan record first
 		PlanExecutionRecord rootRecord = planRecords.computeIfAbsent(rootPlanId, id -> {
 			logger.info("Creating root plan with ID: {}", id);

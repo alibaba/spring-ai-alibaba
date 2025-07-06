@@ -198,7 +198,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		StringBuilder sb = new StringBuilder();
 		sb.append("=== MapReduce执行计划 ===\n");
 		sb.append("计划ID: ").append(currentPlanId).append("\n");
-		sb.append("父计划ID: ").append(rootPlanId).append("\n");
+		sb.append("root计划ID: ").append(rootPlanId).append("\n");
 		sb.append("标题: ").append(title).append("\n");
 		sb.append("创建时间: ").append(new java.util.Date(createdTime)).append("\n");
 		sb.append("节点数量: ").append(steps.size()).append("\n");
