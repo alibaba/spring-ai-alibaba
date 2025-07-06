@@ -304,6 +304,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	}
 
 	private String renderImportSection(Workflow workflow) {
+		// construct a list of node types
 		Map<String, String> nodeTypeToClass = Map.ofEntries(
 				Map.entry(NodeType.ANSWER.difyValue(), "com.alibaba.cloud.ai.graph.node.AnswerNode"),
 				Map.entry(NodeType.CODE.difyValue(), "com.alibaba.cloud.ai.graph.node.CodeNode"),
