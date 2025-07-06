@@ -313,6 +313,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				Map.entry(NodeType.DOC_EXTRACTOR.difyValue(), "com.alibaba.cloud.ai.graph.node.DocumentExtractorNode"),
 				Map.entry(NodeType.HTTP.difyValue(), "com.alibaba.cloud.ai.graph.node.HttpNode"),
 				Map.entry(NodeType.LIST_OPERATOR.difyValue(), "com.alibaba.cloud.ai.graph.node.ListOperatorNode"),
+				Map.entry(NodeType.QUESTION_CLASSIFIER.difyValue(),
+						"com.alibaba.cloud.ai.graph.node.QuestionClassifierNode"),
 				Map.entry(NodeType.PARAMETER_PARSING.difyValue(),
 						"com.alibaba.cloud.ai.graph.node.ParameterParsingNode"),
 				Map.entry(NodeType.TOOL.difyValue(), "com.alibaba.cloud.ai.graph.node.ToolNode"),
@@ -335,6 +337,10 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		StringBuilder sb = new StringBuilder();
 		for (String type : uniqueTypes) {
 			String className = nodeTypeToClass.get(type);
+			if (className.equals(NodeType.BRANCH.value())
+					|| className.equals(NodeType.QUESTION_CLASSIFIER.difyValue())) {
+				sb.append("import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;");
+			}
 			sb.append("import ").append(className).append(";\n");
 		}
 
