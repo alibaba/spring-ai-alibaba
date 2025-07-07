@@ -70,7 +70,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Run Normal Code")
 	public void testNormalCode() {
-		String response = pythonReplTool.executePythonCode(NORMAL_CODE, null, "123\n1234");
+		String response = pythonReplTool.executePythonCode(NORMAL_CODE, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("Successfully executed").contains("3628800");
 	}
@@ -78,7 +78,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Run Code with Third-parties but Not Installed")
 	public void testCodeWithoutDependency() {
-		String response = pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, null, "123\n1234");
+		String response = pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("Error executing code").contains("ModuleNotFoundError");
 	}
@@ -86,7 +86,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Run Code with Third-parties Installed")
 	public void testCodeWithDependency() {
-		String response = pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, "numpy==2.2.6", "123\n1234");
+		String response = pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, "numpy==2.2.6", "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("Successfully executed").doesNotContain("ModuleNotFoundError");
 	}
@@ -94,7 +94,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Run Code with Endless Loop")
 	public void testTimeoutCode() {
-		String response = pythonReplTool.executePythonCode(TIMEOUT_CODE, null, "123\n1234");
+		String response = pythonReplTool.executePythonCode(TIMEOUT_CODE, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("Error executing code");
 	}
@@ -102,7 +102,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Run Code with Syntax Error")
 	public void testErrorCode() {
-		String response = pythonReplTool.executePythonCode(ERROR_CODE, null, "123\n1234");
+		String response = pythonReplTool.executePythonCode(ERROR_CODE, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("SyntaxError");
 	}
@@ -110,7 +110,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Check Network is Disabled")
 	public void testNetworkCheck() {
-		String response = pythonReplTool.executePythonCode(NETWORK_CHECK, null, "123\n1234");
+		String response = pythonReplTool.executePythonCode(NETWORK_CHECK, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("Failed").doesNotContain("Connected");
 	}
