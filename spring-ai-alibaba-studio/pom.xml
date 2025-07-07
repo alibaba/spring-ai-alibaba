@@ -36,8 +36,6 @@
     </scm>
 
     <properties>
-        <!-- lombok -->
-        <lombok.version>1.18.30</lombok.version>
 
         <!-- Jakarta -->
         <jakarta.version>5.0.0</jakarta.version>
