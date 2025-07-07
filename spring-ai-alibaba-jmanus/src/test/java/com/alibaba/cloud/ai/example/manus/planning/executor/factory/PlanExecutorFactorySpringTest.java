@@ -53,7 +53,8 @@ class PlanExecutorFactorySpringTest {
 	@BeforeEach
 	void setUp() {
 		log.info("Setting up PlanExecutorFactory test environment");
-		planExecutorFactory = new PlanExecutorFactory(dynamicAgentLoader, llmService, agentService, recorder, manusProperties);
+		planExecutorFactory = new PlanExecutorFactory(dynamicAgentLoader, llmService, agentService, recorder,
+				manusProperties);
 
 		// Verify that required dependencies are properly injected
 		Assertions.assertNotNull(dynamicAgentLoader, "DynamicAgentLoader should be autowired");

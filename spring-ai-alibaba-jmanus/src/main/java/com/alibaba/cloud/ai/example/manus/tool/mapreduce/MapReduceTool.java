@@ -782,7 +782,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 				// Check if adding this line would exceed character limit
 				if (currentContent.length() + lineWithNewline.length() > splitSize && currentContent.length() > 0) {
-					// If would exceed limit and current content is not empty, save current content first
+					// If would exceed limit and current content is not empty, save
+					// current content first
 					String taskDir = createTaskDirectory(tasksPath, currentContent.toString(), fileName);
 					taskDirs.add(taskDir);
 					currentContent = new StringBuilder();
@@ -794,24 +795,25 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 					String lineContent = lineWithNewline;
 					int startIndex = 0;
 					int chunkCount = 0;
-					
-					log.warn("Line exceeds split size limit ({} chars > {} chars), splitting into chunks: file={}", 
+
+					log.warn("Line exceeds split size limit ({} chars > {} chars), splitting into chunks: file={}",
 							lineWithNewline.length(), splitSize, fileName);
-					
+
 					while (startIndex < lineContent.length()) {
 						int endIndex = Math.min(startIndex + splitSize, lineContent.length());
 						String chunk = lineContent.substring(startIndex, endIndex);
 						chunkCount++;
-						
+
 						// Create task directory for each chunk
 						String taskDir = createTaskDirectory(tasksPath, chunk, fileName);
 						taskDirs.add(taskDir);
-						
+
 						startIndex = endIndex;
 					}
-					
+
 					log.info("Oversized line split into {} chunks for file: {}", chunkCount, fileName);
-				} else {
+				}
+				else {
 					// Add current line normally
 					currentContent.append(lineWithNewline);
 				}
@@ -1122,8 +1124,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	}
 
 	/**
-	 * Append content to file in root plan directory
-	 * Similar to InnerStorageTool.appendToFile() but operates on root plan directory
+	 * Append content to file in root plan directory Similar to
+	 * InnerStorageTool.appendToFile() but operates on root plan directory
 	 */
 	private ToolExecuteResult appendToFile(String fileName, String content) {
 		try {
@@ -1164,7 +1166,7 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 			int totalLines = lines.size();
 			int startLine = Math.max(0, totalLines - 3);
-			
+
 			for (int i = startLine; i < totalLines; i++) {
 				result.append(String.format("%4d: %s\n", i + 1, lines.get(i)));
 			}
@@ -1179,8 +1181,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	}
 
 	/**
-	 * Replace text in file from root plan directory
-	 * Similar to InnerStorageTool.replaceInFile() but operates on root plan directory
+	 * Replace text in file from root plan directory Similar to
+	 * InnerStorageTool.replaceInFile() but operates on root plan directory
 	 */
 	private ToolExecuteResult replaceInFile(String fileName, String sourceText, String targetText) {
 		try {
@@ -1214,7 +1216,7 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 			int totalLines = lines.size();
 			int startLine = Math.max(0, totalLines - 3);
-			
+
 			for (int i = startLine; i < totalLines; i++) {
 				result.append(String.format("%4d: %s\n", i + 1, lines.get(i)));
 			}

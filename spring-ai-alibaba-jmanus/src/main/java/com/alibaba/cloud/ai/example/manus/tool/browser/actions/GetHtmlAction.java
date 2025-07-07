@@ -22,7 +22,6 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class GetHtmlAction extends BrowserAction {
 
-
 	public GetHtmlAction(BrowserUseTool browserUseTool) {
 		super(browserUseTool);
 	}
@@ -44,7 +43,7 @@ public class GetHtmlAction extends BrowserAction {
 			}
 		}
 		String result = allHtml.toString();
-	
+
 		return new ToolExecuteResult(result);
 	}
 
