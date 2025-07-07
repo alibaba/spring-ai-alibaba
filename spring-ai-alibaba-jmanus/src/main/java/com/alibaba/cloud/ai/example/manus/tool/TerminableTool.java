@@ -16,14 +16,13 @@
 package com.alibaba.cloud.ai.example.manus.tool;
 
 /**
- * Interface for tools that can be terminated based on certain conditions
- * Provides simple termination capability check for tools
+ * Interface for tools that can be terminated based on certain conditions Provides simple
+ * termination capability check for tools
  */
 public interface TerminableTool {
 
 	/**
 	 * Check if the tool can be terminated at the current state
-	 * 
 	 * @return true if the tool can be terminated, false otherwise
 	 */
 	boolean canTerminate();

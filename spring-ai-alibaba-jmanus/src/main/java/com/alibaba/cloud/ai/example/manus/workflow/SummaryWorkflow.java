@@ -70,11 +70,10 @@ public class SummaryWorkflow {
 
 	/**
 	 * 执行内容总结工作流
-	 * 
-	 * @param planId           调用者的计划ID，确保子进程能找到对应的目录
-	 * @param fileName         文件名
-	 * @param content          文件内容
-	 * @param queryKey         查询关键词
+	 * @param planId 调用者的计划ID，确保子进程能找到对应的目录
+	 * @param fileName 文件名
+	 * @param content 文件内容
+	 * @param queryKey 查询关键词
 	 * @param thinkActRecordId Think-act记录ID，用于子计划执行追踪
 	 * @return 总结结果的Future
 	 */
@@ -86,15 +85,14 @@ public class SummaryWorkflow {
 				terminateColumnsString);
 
 		// 2. 直接执行计划，传递thinkActRecordId
-		return executeMapReducePlanWithContext(parentPlanId,executionPlan, thinkActRecordId);
+		return executeMapReducePlanWithContext(parentPlanId, executionPlan, thinkActRecordId);
 	}
 
 	/**
 	 * 构建基于MapReduce的总结执行计划
-	 * 
-	 * @param planId   使用调用者提供的计划ID，确保子进程能找到对应的目录
+	 * @param planId 使用调用者提供的计划ID，确保子进程能找到对应的目录
 	 * @param fileName 文件名
-	 * @param content  文件内容（暂未直接使用，但保留为扩展参数）
+	 * @param content 文件内容（暂未直接使用，但保留为扩展参数）
 	 * @param queryKey 查询关键词
 	 */
 	private MapReduceExecutionPlan buildSummaryExecutionPlan(String parentPlanId, String fileName, String content,
@@ -126,7 +124,8 @@ public class SummaryWorkflow {
 
 			return plan;
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("构建总结执行计划失败，planId: {}", parentPlanId, e);
 			throw new RuntimeException("构建MapReduce总结执行计划失败: " + e.getMessage(), e);
 		}
@@ -135,27 +134,27 @@ public class SummaryWorkflow {
 	/**
 	 * 执行MapReduce计划 - 支持子计划上下文
 	 */
-	private CompletableFuture<String> executeMapReducePlanWithContext(String rootPlanId, MapReduceExecutionPlan executionPlan,
-			Long thinkActRecordId) {
+	private CompletableFuture<String> executeMapReducePlanWithContext(String rootPlanId,
+			MapReduceExecutionPlan executionPlan, Long thinkActRecordId) {
 		return CompletableFuture.supplyAsync(() -> {
 			try {
-				// Generate a unique sub-plan ID using PlanIdDispatcher, similar to generatePlan method
-				
+				// Generate a unique sub-plan ID using PlanIdDispatcher, similar to
+				// generatePlan method
+
 				String subPlanId = planIdDispatcher.generateSubPlanId(rootPlanId, thinkActRecordId);
-				
-				logger.info("Generated sub-plan ID: {} for parent plan: {}, think-act record: {}", 
-					subPlanId, rootPlanId, thinkActRecordId);
+
+				logger.info("Generated sub-plan ID: {} for parent plan: {}, think-act record: {}", subPlanId,
+						rootPlanId, thinkActRecordId);
 
 				// 获取规划协调器，使用生成的子计划ID
-				PlanningCoordinator planningCoordinator = planningFactory
-						.createPlanningCoordinator(subPlanId);
+				PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(subPlanId);
 
 				// 创建执行上下文
 				ExecutionContext context = new ExecutionContext();
 				context.setCurrentPlanId(subPlanId);
 				context.setRootPlanId(rootPlanId);
 				context.setThinkActRecordId(thinkActRecordId);
-				
+
 				// 更新执行计划的ID为子计划ID
 				executionPlan.setCurrentPlanId(subPlanId);
 				executionPlan.setRootPlanId(rootPlanId);
@@ -176,7 +175,8 @@ public class SummaryWorkflow {
 				List<ExecutionStep> allSteps = context.getPlan().getAllSteps();
 				ExecutionStep lastStep = allSteps.get(allSteps.size() - 1);
 				return "getContent 执行成功 ， 执行的结果日志： " + lastStep.getResult();
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logger.error("MapReduce总结计划执行失败", e);
 				return "❌ MapReduce内容总结执行失败: " + e.getMessage();
 			}

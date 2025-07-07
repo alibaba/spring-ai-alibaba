@@ -19,7 +19,6 @@ import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -210,8 +209,9 @@ public abstract class BaseAgent {
 		// Record execution in recorder if we have a plan ID
 		if (currentPlanId != null && planExecutionRecorder != null) {
 			// Use unified method that handles both main plan and sub-plan cases
-			PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId, thinkActRecordId);
-			
+			PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId,
+					thinkActRecordId);
+
 			if (planRecord != null) {
 				planExecutionRecorder.recordAgentExecution(planRecord, agentRecord);
 			}
@@ -333,7 +333,7 @@ public abstract class BaseAgent {
 		this.currentPlanId = planId;
 	}
 
-	public void setRootPlanId(String rootPlanId){
+	public void setRootPlanId(String rootPlanId) {
 		this.rootPlanId = rootPlanId;
 	}
 

@@ -33,6 +33,7 @@ public class SmartContentSavingService {
 	private static final Logger log = LoggerFactory.getLogger(SmartContentSavingService.class);
 
 	private final ManusProperties manusProperties;
+
 	private final UnifiedDirectoryManager directoryManager;
 
 	public SmartContentSavingService(ManusProperties manusProperties, UnifiedDirectoryManager directoryManager) {

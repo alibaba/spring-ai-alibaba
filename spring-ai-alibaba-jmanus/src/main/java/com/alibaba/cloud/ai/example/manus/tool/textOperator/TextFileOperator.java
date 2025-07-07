@@ -126,7 +126,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 
 	private final SmartContentSavingService innerStorageService;
 
-	public TextFileOperator(TextFileService textFileService, SmartContentSavingService innerStorageService, 
+	public TextFileOperator(TextFileService textFileService, SmartContentSavingService innerStorageService,
 			UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.textFileService = textFileService;
 		this.innerStorageService = innerStorageService;
@@ -551,8 +551,8 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 			textFileService.updateFileState(planId, filePath, "Success: Retrieved all text");
 
 			// Use InnerStorageService to intelligently process content
-			SmartContentSavingService.SmartProcessResult processedResult = innerStorageService.processContent(planId, content,
-					"get_all_text");
+			SmartContentSavingService.SmartProcessResult processedResult = innerStorageService.processContent(planId,
+					content, "get_all_text");
 
 			return new ToolExecuteResult(processedResult.getSummary());
 		}
@@ -629,8 +629,9 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 						- Last Operation Result:
 						%s
 						""",
-				unifiedDirectoryManager.getWorkingDirectoryPath(), textFileService.getLastOperationResult(planId).isEmpty()
-						? "No operation performed yet" : textFileService.getLastOperationResult(planId));
+				unifiedDirectoryManager.getWorkingDirectoryPath(),
+				textFileService.getLastOperationResult(planId).isEmpty() ? "No operation performed yet"
+						: textFileService.getLastOperationResult(planId));
 	}
 
 	@Override

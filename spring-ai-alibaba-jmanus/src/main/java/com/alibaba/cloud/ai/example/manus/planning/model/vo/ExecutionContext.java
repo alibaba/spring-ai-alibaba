@@ -43,7 +43,6 @@ public class ExecutionContext {
 
 	private String rootPlanId;
 
-
 	/** Execution plan entity containing detailed plan information and execution steps */
 	private PlanInterface plan;
 
@@ -51,6 +50,7 @@ public class ExecutionContext {
 	private String userRequest;
 
 	private Long thinkActRecordId;
+
 	/** Result summary after plan execution completion */
 	private String resultSummary;
 
@@ -93,7 +93,6 @@ public class ExecutionContext {
 		this.rootPlanId = parentPlanId;
 	}
 
-
 	/**
 	 * Get think-act record ID
 	 * @return Think-act record ID for sub-plan executions
@@ -133,7 +132,6 @@ public class ExecutionContext {
 	public boolean isNeedSummary() {
 		return needSummary;
 	}
-
 
 	/**
 	 * Set whether execution result summary generation is needed

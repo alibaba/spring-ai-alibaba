@@ -70,9 +70,9 @@ public class ManusProperties {
 		this.browserRequestTimeout = browserRequestTimeout;
 	}
 
-
 	@ConfigProperty(group = "manus", subGroup = "general", key = "debugDetail", path = "manus.general.debugDetail",
-			description = "debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
+			description = "debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢", defaultValue = "false",
+			inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean debugDetail;
 
@@ -135,8 +135,9 @@ public class ManusProperties {
 		this.maxSteps = maxSteps;
 	}
 
-	@ConfigProperty(group = "manus", subGroup = "agents", key = "forceOverrideFromYaml", path = "manus.agents.forceOverrideFromYaml",
-			description = "强制使用YAML配置文件覆盖同名Agent", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
+	@ConfigProperty(group = "manus", subGroup = "agents", key = "forceOverrideFromYaml",
+			path = "manus.agents.forceOverrideFromYaml", description = "强制使用YAML配置文件覆盖同名Agent", defaultValue = "false",
+			inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean forceOverrideFromYaml;
 
@@ -224,11 +225,10 @@ public class ManusProperties {
 	// Normal Settings
 	// End----------------------------------------------------------------------------------------------
 
-
-
 	// Infinite Context SubGroup
-	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "enabled", path = "manus.infiniteContext.enabled",
-			description = "是否开启无限上下文", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
+	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "enabled",
+			path = "manus.infiniteContext.enabled", description = "是否开启无限上下文", defaultValue = "true",
+			inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean infiniteContextEnabled;
 
@@ -245,8 +245,9 @@ public class ManusProperties {
 		this.infiniteContextEnabled = infiniteContextEnabled;
 	}
 
-	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "parallelThreads", path = "manus.infiniteContext.parallelThreads",
-			description = "并行处理线程数", defaultValue = "4", inputType = ConfigInputType.NUMBER)
+	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "parallelThreads",
+			path = "manus.infiniteContext.parallelThreads", description = "并行处理线程数", defaultValue = "4",
+			inputType = ConfigInputType.NUMBER)
 	private volatile Integer infiniteContextParallelThreads;
 
 	public Integer getInfiniteContextParallelThreads() {
@@ -266,8 +267,9 @@ public class ManusProperties {
 		this.infiniteContextParallelThreads = infiniteContextParallelThreads;
 	}
 
-	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "taskContextSize", path = "manus.infiniteContext.taskContextSize",
-			description = "触发无限上下文的字符数阈值(字符数)", defaultValue = "20000", inputType = ConfigInputType.NUMBER)
+	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "taskContextSize",
+			path = "manus.infiniteContext.taskContextSize", description = "触发无限上下文的字符数阈值(字符数)", defaultValue = "20000",
+			inputType = ConfigInputType.NUMBER)
 	private volatile Integer infiniteContextTaskContextSize;
 
 	public Integer getInfiniteContextTaskContextSize() {
@@ -287,10 +289,11 @@ public class ManusProperties {
 		this.infiniteContextTaskContextSize = infiniteContextTaskContextSize;
 	}
 
-
 	// File System Security SubGroup
-	@ConfigProperty(group = "manus", subGroup = "filesystem", key = "allowExternalAccess", path = "manus.filesystem.allowExternalAccess",
-			description = "Whether to allow file operations outside the working directory", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
+	@ConfigProperty(group = "manus", subGroup = "filesystem", key = "allowExternalAccess",
+			path = "manus.filesystem.allowExternalAccess",
+			description = "Whether to allow file operations outside the working directory", defaultValue = "false",
+			inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "Yes"), @ConfigOption(value = "false", label = "No") })
 	private volatile Boolean allowExternalAccess;
 

@@ -74,6 +74,7 @@ public interface ToolCallBiFunctionDef<I> extends BiFunction<I, ToolContext, Too
 	 * @param rootPlanId
 	 */
 	public void setRootPlanId(String rootPlanId);
+
 	/**
 	 * Get the current status string of the tool
 	 * @return Returns a string describing the current status of the tool

@@ -130,7 +130,8 @@ public class ChromeDriverService {
 			java.nio.file.Path playwrightDir = unifiedDirectoryManager.getWorkingDirectory().resolve("playwright");
 			unifiedDirectoryManager.ensureDirectoryExists(playwrightDir);
 			this.sharedDir = playwrightDir.toString();
-		} catch (java.io.IOException e) {
+		}
+		catch (java.io.IOException e) {
 			log.error("Failed to create playwright directory", e);
 			this.sharedDir = unifiedDirectoryManager.getWorkingDirectory().resolve("playwright").toString();
 		}

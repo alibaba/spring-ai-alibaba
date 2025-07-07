@@ -31,119 +31,123 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Plan Executor Factory - Creates appropriate executor based on plan type
- * Factory class that selects the appropriate PlanExecutor implementation 
- * based on the planType from PlanInterface
+ * Plan Executor Factory - Creates appropriate executor based on plan type Factory class
+ * that selects the appropriate PlanExecutor implementation based on the planType from
+ * PlanInterface
  */
 @Component
 public class PlanExecutorFactory {
 
-    private static final Logger log = LoggerFactory.getLogger(PlanExecutorFactory.class);
+	private static final Logger log = LoggerFactory.getLogger(PlanExecutorFactory.class);
 
-    private final List<DynamicAgentEntity> agents;
-    private final LlmService llmService;
-    private final AgentService agentService;
-    private final PlanExecutionRecorder recorder;
-    private final ManusProperties manusProperties;
+	private final List<DynamicAgentEntity> agents;
 
-    public PlanExecutorFactory(List<DynamicAgentEntity> agents, LlmService llmService, 
-                              AgentService agentService, PlanExecutionRecorder recorder,
-                              ManusProperties manusProperties) {
-        this.agents = agents;
-        this.llmService = llmService;
-        this.agentService = agentService;
-        this.recorder = recorder;
-        this.manusProperties = manusProperties;
-    }
+	private final LlmService llmService;
 
-    /**
-     * Create the appropriate executor based on plan type
-     * @param plan The execution plan containing type information
-     * @return The appropriate PlanExecutorInterface implementation
-     * @throws IllegalArgumentException if plan type is not supported
-     */
-    public PlanExecutorInterface createExecutor(PlanInterface plan) {
-        if (plan == null) {
-            throw new IllegalArgumentException("Plan cannot be null");
-        }
+	private final AgentService agentService;
 
-        String planType = plan.getPlanType();
-        if (planType == null || planType.trim().isEmpty()) {
-            log.warn("Plan type is null or empty, defaulting to simple executor for plan: {}", plan.getCurrentPlanId());
-            planType = "simple";
-        }
+	private final PlanExecutionRecorder recorder;
 
-        log.info("Creating executor for plan type: {} (planId: {})", planType, plan.getCurrentPlanId());
+	private final ManusProperties manusProperties;
 
-        return switch (planType.toLowerCase()) {
-            case "simple" -> createSimpleExecutor();
-            case "advanced" -> createAdvancedExecutor();
-            default -> {
-                log.warn("Unknown plan type: {}, defaulting to simple executor", planType);
-                yield createSimpleExecutor();
-            }
-        };
-    }
+	public PlanExecutorFactory(List<DynamicAgentEntity> agents, LlmService llmService, AgentService agentService,
+			PlanExecutionRecorder recorder, ManusProperties manusProperties) {
+		this.agents = agents;
+		this.llmService = llmService;
+		this.agentService = agentService;
+		this.recorder = recorder;
+		this.manusProperties = manusProperties;
+	}
 
-    /**
-     * Create a simple plan executor for basic sequential execution
-     * @return PlanExecutor instance for simple plans
-     */
-    private PlanExecutorInterface createSimpleExecutor() {
-        log.debug("Creating simple plan executor");
-        return new PlanExecutor(agents, recorder, agentService, llmService, manusProperties);
-    }
+	/**
+	 * Create the appropriate executor based on plan type
+	 * @param plan The execution plan containing type information
+	 * @return The appropriate PlanExecutorInterface implementation
+	 * @throws IllegalArgumentException if plan type is not supported
+	 */
+	public PlanExecutorInterface createExecutor(PlanInterface plan) {
+		if (plan == null) {
+			throw new IllegalArgumentException("Plan cannot be null");
+		}
 
-    /**
-     * Create an advanced plan executor for MapReduce execution
-     * @return MapReducePlanExecutor instance for advanced plans
-     */
-    private PlanExecutorInterface createAdvancedExecutor() {
-        log.debug("Creating advanced MapReduce plan executor");
-        return new MapReducePlanExecutor(agents, recorder, agentService, llmService, manusProperties);
-    }
+		String planType = plan.getPlanType();
+		if (planType == null || planType.trim().isEmpty()) {
+			log.warn("Plan type is null or empty, defaulting to simple executor for plan: {}", plan.getCurrentPlanId());
+			planType = "simple";
+		}
 
-    /**
-     * Get supported plan types
-     * @return Array of supported plan type strings
-     */
-    public String[] getSupportedPlanTypes() {
-        return new String[]{"simple", "advanced"};
-    }
+		log.info("Creating executor for plan type: {} (planId: {})", planType, plan.getCurrentPlanId());
 
-    /**
-     * Check if a plan type is supported
-     * @param planType The plan type to check
-     * @return true if the plan type is supported, false otherwise
-     */
-    public boolean isPlanTypeSupported(String planType) {
-        if (planType == null) {
-            return false;
-        }
-        String normalizedType = planType.toLowerCase();
-        return "simple".equals(normalizedType) || "advanced".equals(normalizedType);
-    }
+		return switch (planType.toLowerCase()) {
+			case "simple" -> createSimpleExecutor();
+			case "advanced" -> createAdvancedExecutor();
+			default -> {
+				log.warn("Unknown plan type: {}, defaulting to simple executor", planType);
+				yield createSimpleExecutor();
+			}
+		};
+	}
 
-    /**
-     * Create executor with explicit plan type (useful for testing or special cases)
-     * @param planType The explicit plan type to use
-     * @param planId Plan ID for logging purposes
-     * @return The appropriate PlanExecutorInterface implementation
-     */
-    public PlanExecutorInterface createExecutorByType(String planType, String planId) {
-        log.info("Creating executor for explicit plan type: {} (planId: {})", planType, planId);
-        
-        if (planType == null || planType.trim().isEmpty()) {
-            planType = "simple";
-        }
+	/**
+	 * Create a simple plan executor for basic sequential execution
+	 * @return PlanExecutor instance for simple plans
+	 */
+	private PlanExecutorInterface createSimpleExecutor() {
+		log.debug("Creating simple plan executor");
+		return new PlanExecutor(agents, recorder, agentService, llmService, manusProperties);
+	}
 
-        return switch (planType.toLowerCase()) {
-            case "simple" -> createSimpleExecutor();
-            case "advanced" -> createAdvancedExecutor();
-            default -> {
-                log.warn("Unknown explicit plan type: {}, defaulting to simple executor", planType);
-                yield createSimpleExecutor();
-            }
-        };
-    }
+	/**
+	 * Create an advanced plan executor for MapReduce execution
+	 * @return MapReducePlanExecutor instance for advanced plans
+	 */
+	private PlanExecutorInterface createAdvancedExecutor() {
+		log.debug("Creating advanced MapReduce plan executor");
+		return new MapReducePlanExecutor(agents, recorder, agentService, llmService, manusProperties);
+	}
+
+	/**
+	 * Get supported plan types
+	 * @return Array of supported plan type strings
+	 */
+	public String[] getSupportedPlanTypes() {
+		return new String[] { "simple", "advanced" };
+	}
+
+	/**
+	 * Check if a plan type is supported
+	 * @param planType The plan type to check
+	 * @return true if the plan type is supported, false otherwise
+	 */
+	public boolean isPlanTypeSupported(String planType) {
+		if (planType == null) {
+			return false;
+		}
+		String normalizedType = planType.toLowerCase();
+		return "simple".equals(normalizedType) || "advanced".equals(normalizedType);
+	}
+
+	/**
+	 * Create executor with explicit plan type (useful for testing or special cases)
+	 * @param planType The explicit plan type to use
+	 * @param planId Plan ID for logging purposes
+	 * @return The appropriate PlanExecutorInterface implementation
+	 */
+	public PlanExecutorInterface createExecutorByType(String planType, String planId) {
+		log.info("Creating executor for explicit plan type: {} (planId: {})", planType, planId);
+
+		if (planType == null || planType.trim().isEmpty()) {
+			planType = "simple";
+		}
+
+		return switch (planType.toLowerCase()) {
+			case "simple" -> createSimpleExecutor();
+			case "advanced" -> createAdvancedExecutor();
+			default -> {
+				log.warn("Unknown explicit plan type: {}, defaulting to simple executor", planType);
+				yield createSimpleExecutor();
+			}
+		};
+	}
+
 }

@@ -138,14 +138,15 @@ public class InnerStorageTool extends AbstractBaseTool<InnerStorageTool.InnerSto
 
 	// Plan ID fields for directory management
 	private String rootPlanId;
+
 	private String currentPlanId;
 
 	// get_lines 操作的最大行数限制
 	private static final int MAX_LINES_LIMIT = 500;
 
-public InnerStorageTool(UnifiedDirectoryManager directoryManager) {
-	this.directoryManager = directoryManager;
-}
+	public InnerStorageTool(UnifiedDirectoryManager directoryManager) {
+		this.directoryManager = directoryManager;
+	}
 
 	private static final String TOOL_NAME = "inner_storage_tool";
 
@@ -313,8 +314,7 @@ public InnerStorageTool(UnifiedDirectoryManager directoryManager) {
 					Integer endLine = input.getEndLine();
 					yield getFileLines(fileName, startLine, endLine);
 				}
-				default -> new ToolExecuteResult(
-						"未知操作: " + action + "。支持的操作: append, replace, get_lines, export");
+				default -> new ToolExecuteResult("未知操作: " + action + "。支持的操作: append, replace, get_lines, export");
 			};
 
 		}
@@ -456,20 +456,23 @@ public InnerStorageTool(UnifiedDirectoryManager directoryManager) {
 		try {
 			StringBuilder sb = new StringBuilder();
 			// sb.append("InnerStorage 当前状态:\n");
-			// sb.append("- Plan ID: ").append(planId != null ? planId : "未设置").append("\n");
-			// sb.append("- 存储根目录: ").append(innerStorageService.getInnerStorageRoot()).append("\n");
+			// sb.append("- Plan ID: ").append(planId != null ? planId :
+			// "未设置").append("\n");
+			// sb.append("- 存储根目录:
+			// ").append(innerStorageService.getInnerStorageRoot()).append("\n");
 
 			// // 获取当前目录下的所有文件信息
-			// List<InnerStorageService.FileInfo> files = innerStorageService.getDirectoryFiles(planId);
+			// List<InnerStorageService.FileInfo> files =
+			// innerStorageService.getDirectoryFiles(planId);
 
 			// if (files.isEmpty()) {
-			// 	sb.append("- 内部文件: 无\n");
+			// sb.append("- 内部文件: 无\n");
 			// }
 			// else {
-			// 	sb.append("- 内部文件 (").append(files.size()).append("个):\n");
-			// 	for (InnerStorageService.FileInfo file : files) {
-			// 		sb.append("  ").append(file.toString()).append("\n");
-			// 	}
+			// sb.append("- 内部文件 (").append(files.size()).append("个):\n");
+			// for (InnerStorageService.FileInfo file : files) {
+			// sb.append(" ").append(file.toString()).append("\n");
+			// }
 			// }
 
 			return sb.toString();
@@ -481,17 +484,18 @@ public InnerStorageTool(UnifiedDirectoryManager directoryManager) {
 	}
 
 	@Override
-   public void cleanup(String planId) {
-	   // planId here is rootPlanId, currentPlanId为subTaskId
-	//    if (planId != null && currentPlanId != null) {
-	// 	   try {
-	// 		   directoryManager.cleanupSubTaskDirectory(planId, currentPlanId);
-	// 		   log.info("Cleaned up subtask directory: rootPlanId={}, subTaskId={}", planId, currentPlanId);
-	// 	   } catch (IOException e) {
-	// 		   log.error("Failed to clean up subtask directory", e);
-	// 	   }
-	//    }
-   }
+	public void cleanup(String planId) {
+		// planId here is rootPlanId, currentPlanId为subTaskId
+		// if (planId != null && currentPlanId != null) {
+		// try {
+		// directoryManager.cleanupSubTaskDirectory(planId, currentPlanId);
+		// log.info("Cleaned up subtask directory: rootPlanId={}, subTaskId={}", planId,
+		// currentPlanId);
+		// } catch (IOException e) {
+		// log.error("Failed to clean up subtask directory", e);
+		// }
+		// }
+	}
 
 	@Override
 	public ToolExecuteResult apply(InnerStorageInput input, ToolContext toolContext) {
@@ -501,43 +505,46 @@ public InnerStorageTool(UnifiedDirectoryManager directoryManager) {
 	/**
 	 * 将内部存储文件导出到工作目录
 	 */
-   private ToolExecuteResult exportToWorkingDirectory(String fileName, String targetFileName) {
-	   try {
-		   if (fileName == null || fileName.trim().isEmpty()) {
-			   return new ToolExecuteResult("错误：file_name参数是必需的");
-		   }
-		   // 源目录为subTaskDir，目标目录为rootPlanDir
-		   Path subTaskDir = directoryManager.getSubTaskDirectory(rootPlanId, currentPlanId);
-		   Path rootPlanDir = directoryManager.getRootPlanDirectory(rootPlanId);
-		   directoryManager.ensureDirectoryExists(rootPlanDir);
+	private ToolExecuteResult exportToWorkingDirectory(String fileName, String targetFileName) {
+		try {
+			if (fileName == null || fileName.trim().isEmpty()) {
+				return new ToolExecuteResult("错误：file_name参数是必需的");
+			}
+			// 源目录为subTaskDir，目标目录为rootPlanDir
+			Path subTaskDir = directoryManager.getSubTaskDirectory(rootPlanId, currentPlanId);
+			Path rootPlanDir = directoryManager.getRootPlanDirectory(rootPlanId);
+			directoryManager.ensureDirectoryExists(rootPlanDir);
 
-		   Path sourceFile = subTaskDir.resolve(fileName);
-		   if (!Files.exists(sourceFile)) {
-			   return new ToolExecuteResult("未找到文件: " + fileName + " 于子任务目录: " + subTaskDir);
-		   }
-		   String finalTargetName = (targetFileName != null && !targetFileName.trim().isEmpty()) ? targetFileName : fileName;
-		   Path targetFile = rootPlanDir.resolve(finalTargetName);
-		   Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
-		   String fileContent = Files.readString(sourceFile);
-		   log.info("成功导出文件：{} -> {}", sourceFile, targetFile);
-		   StringBuilder result = new StringBuilder();
-		   result.append("结果内容:\n");
-		   result.append("-".repeat(50)).append("\n");
-		   result.append(fileContent);
-		   if (!fileContent.endsWith("\n")) {
-			   result.append("\n");
-		   }
-		   result.append("-".repeat(50)).append("\n");
-		   result.append("- 也可以访问路径来获得详细文件内容 : ").append(targetFile.toString()).append("\n");
-		   return new ToolExecuteResult(result.toString());
-	   } catch (IOException e) {
-		   log.error("导出文件失败", e);
-		   return new ToolExecuteResult("导出文件失败: " + e.getMessage());
-	   } catch (Exception e) {
-		   log.error("导出操作异常", e);
-		   return new ToolExecuteResult("导出操作失败: " + e.getMessage());
-	   }
-   }
+			Path sourceFile = subTaskDir.resolve(fileName);
+			if (!Files.exists(sourceFile)) {
+				return new ToolExecuteResult("未找到文件: " + fileName + " 于子任务目录: " + subTaskDir);
+			}
+			String finalTargetName = (targetFileName != null && !targetFileName.trim().isEmpty()) ? targetFileName
+					: fileName;
+			Path targetFile = rootPlanDir.resolve(finalTargetName);
+			Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+			String fileContent = Files.readString(sourceFile);
+			log.info("成功导出文件：{} -> {}", sourceFile, targetFile);
+			StringBuilder result = new StringBuilder();
+			result.append("结果内容:\n");
+			result.append("-".repeat(50)).append("\n");
+			result.append(fileContent);
+			if (!fileContent.endsWith("\n")) {
+				result.append("\n");
+			}
+			result.append("-".repeat(50)).append("\n");
+			result.append("- 也可以访问路径来获得详细文件内容 : ").append(targetFile.toString()).append("\n");
+			return new ToolExecuteResult(result.toString());
+		}
+		catch (IOException e) {
+			log.error("导出文件失败", e);
+			return new ToolExecuteResult("导出文件失败: " + e.getMessage());
+		}
+		catch (Exception e) {
+			log.error("导出操作异常", e);
+			return new ToolExecuteResult("导出操作失败: " + e.getMessage());
+		}
+	}
 
 	@Override
 	public void setCurrentPlanId(String planId) {

@@ -44,14 +44,10 @@ import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackC
 public class AgentServiceImpl implements AgentService {
 
 	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT";
-	
+
 	// MapReduce protected agent names - cannot be deleted by users
-	private static final String[] PROTECTED_MAPREDUCE_AGENTS = {
-		"MAPREDUCE_DATA_PREPARE_AGENT",
-		"MAPREDUCE_FIN_AGENT", 
-		"MAPREDUCE_MAP_TASK_AGENT",
-		"MAPREDUCE_REDUCE_TASK_AGENT"
-	};
+	private static final String[] PROTECTED_MAPREDUCE_AGENTS = { "MAPREDUCE_DATA_PREPARE_AGENT", "MAPREDUCE_FIN_AGENT",
+			"MAPREDUCE_MAP_TASK_AGENT", "MAPREDUCE_REDUCE_TASK_AGENT" };
 
 	private static final Logger log = LoggerFactory.getLogger(AgentServiceImpl.class);
 
@@ -144,7 +140,7 @@ public class AgentServiceImpl implements AgentService {
 		if (DEFAULT_AGENT_NAME.equals(entity.getAgentName())) {
 			throw new IllegalArgumentException("Cannot delete default Agent");
 		}
-		
+
 		// Protect MapReduce system agents from deletion
 		if (Arrays.asList(PROTECTED_MAPREDUCE_AGENTS).contains(entity.getAgentName())) {
 			throw new IllegalArgumentException("Cannot delete protected system Agent: " + entity.getAgentName());
@@ -158,7 +154,7 @@ public class AgentServiceImpl implements AgentService {
 		String uuid = UUID.randomUUID().toString();
 		List<String> columns = Arrays.asList("dummyColumn1", "dummyColumn2");
 		try {
-			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid,uuid,columns);
+			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid, uuid, columns);
 			return toolcallContext.entrySet().stream().map(entry -> {
 				Tool tool = new Tool();
 				tool.setKey(entry.getKey());
@@ -230,7 +226,8 @@ public class AgentServiceImpl implements AgentService {
 	}
 
 	@Override
-	public BaseAgent createDynamicBaseAgent(String name, String planId,String rootPlanId, Map<String, Object> initialAgentSetting,List<String> columns) {
+	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
+			Map<String, Object> initialAgentSetting, List<String> columns) {
 
 		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
 
@@ -242,7 +239,8 @@ public class AgentServiceImpl implements AgentService {
 			agent.setCurrentPlanId(planId);
 			agent.setRootPlanId(rootPlanId);
 			// Set tool callback mapping
-			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, rootPlanId, columns);
+			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, rootPlanId,
+					columns);
 			agent.setToolCallbackProvider(new ToolCallbackProvider() {
 
 				@Override

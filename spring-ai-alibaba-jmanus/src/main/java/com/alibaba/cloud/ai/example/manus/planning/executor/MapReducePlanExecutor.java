@@ -89,15 +89,14 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	// 线程池用于并行执行
 	private final ExecutorService executorService;
 
-
 	public MapReducePlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
 			AgentService agentService, LlmService llmService, ManusProperties manusProperties) {
 		super(agents, recorder, agentService, llmService, manusProperties);
-		
+
 		// Get thread pool size from configuration
 		int threadPoolSize = getMapTaskThreadPoolSize();
 		this.executorService = Executors.newFixedThreadPool(threadPoolSize);
-		
+
 		logger.info("MapReducePlanExecutor initialized with thread pool size: {}", threadPoolSize);
 	}
 
@@ -167,10 +166,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	 */
 	private BaseAgent executeMapReduceNode(MapReduceNode mrNode, ExecutionContext context, BaseAgent lastExecutor) {
 		logger.info("执行 MapReduce 节点，Data Prepared 步骤: {}, Map 步骤: {}, Reduce 步骤: {}, Post Process 步骤: {}",
-				mrNode.getDataPreparedStepCount(), mrNode.getMapStepCount(), mrNode.getReduceStepCount(), mrNode.getPostProcessStepCount());
+				mrNode.getDataPreparedStepCount(), mrNode.getMapStepCount(), mrNode.getReduceStepCount(),
+				mrNode.getPostProcessStepCount());
 
 		BaseAgent executor = lastExecutor;
-		
+
 		// 1. 串行执行 Data Prepared 阶段
 		if (CollectionUtil.isNotEmpty(mrNode.getDataPreparedSteps())) {
 			executor = executeDataPreparedPhase(mrNode.getDataPreparedSteps(), context, executor);
@@ -207,6 +207,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		return executor;
 	}
+
 	/**
 	 * 串行执行 Data Prepared 阶段
 	 */
@@ -228,8 +229,8 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	}
 
 	/**
-	 * 串行执行 Post Process 阶段（后处理阶段）
-	 * 类似于 Data Prepared 阶段，支持单个代理执行，专门用于 MapReduce 流程完成后的最终处理任务
+	 * 串行执行 Post Process 阶段（后处理阶段） 类似于 Data Prepared 阶段，支持单个代理执行，专门用于 MapReduce
+	 * 流程完成后的最终处理任务
 	 */
 	private BaseAgent executePostProcessPhase(List<ExecutionStep> postProcessSteps, ExecutionContext context,
 			BaseAgent lastExecutor) {
@@ -244,7 +245,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			}
 		}
 
-			// 记录Reduce阶段完成状态 - 为每个Reduce步骤记录完成状态
+		// 记录Reduce阶段完成状态 - 为每个Reduce步骤记录完成状态
 		for (ExecutionStep step : postProcessSteps) {
 			step.setAgent(executor);
 			recordStepEnd(step, context);
@@ -359,7 +360,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			copiedStep.setStepIndex(originalStep.getStepIndex());
 			copiedStep.setStepRequirement(originalStep.getStepRequirement());
 			copiedStep.setTerminateColumns(originalStep.getTerminateColumns());
-			
+
 			copiedSteps.add(copiedStep);
 		}
 
@@ -567,7 +568,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		// 添加简化的批次上下文信息
 		enhancedParams.append("=== Reduce批次 ").append(String.format("%03d", batchCounter)).append(" 上下文 : \n");
-		
+
 		// 只包含output.md的内容，不包含状态数据
 		for (String taskDirectory : batchTaskDirectories) {
 			try {
@@ -587,7 +588,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 				logger.error("读取Map任务输出失败: {}", taskDirectory, e);
 			}
 		}
-		
+
 		// 创建修改后的步骤
 		// ExecutionStep enhancedStep = new ExecutionStep();
 		// enhancedStep.setStepIndex(step.getStepIndex());
@@ -758,7 +759,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		copiedContext.setSuccess(originalContext.isSuccess());
 		copiedContext.setUseMemory(originalContext.isUseMemory());
 		copiedContext.setThinkActRecordId(originalContext.getThinkActRecordId());
-		
+
 		// 复制工具上下文
 		if (originalContext.getToolsContext() != null) {
 			Map<String, String> copiedToolsContext = new HashMap<>(originalContext.getToolsContext());
@@ -845,7 +846,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 				return configuredThreads;
 			}
 		}
-		
+
 		logger.debug("Using default Map task thread pool size: {}", DEFAULT_MAP_TASK_THREAD_POOL_SIZE);
 		return DEFAULT_MAP_TASK_THREAD_POOL_SIZE;
 	}

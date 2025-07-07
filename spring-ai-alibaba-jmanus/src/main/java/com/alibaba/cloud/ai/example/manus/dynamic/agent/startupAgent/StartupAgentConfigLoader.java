@@ -143,20 +143,23 @@ public class StartupAgentConfigLoader {
 				return List.of();
 			}
 
-			// Automatically scan for agent directories by looking for agent-config.yml files
+			// Automatically scan for agent directories by looking for agent-config.yml
+			// files
 			List<String> agentList = new java.util.ArrayList<>();
-			
-			// Use Spring's PathMatchingResourcePatternResolver to scan for directories with agent-config.yml
+
+			// Use Spring's PathMatchingResourcePatternResolver to scan for directories
+			// with agent-config.yml
 			PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-			
+
 			// Scan for all agent-config.yml files in subdirectories
 			String pattern = CONFIG_BASE_PATH + "*/agent-config.yml";
 			Resource[] resources = resolver.getResources("classpath:" + pattern);
-			
+
 			for (Resource resource : resources) {
 				try {
 					String path = resource.getURL().getPath();
-					// Extract directory name from path like "/startup-agents/agent_name/agent-config.yml"
+					// Extract directory name from path like
+					// "/startup-agents/agent_name/agent-config.yml"
 					String[] pathParts = path.split("/");
 					for (int i = 0; i < pathParts.length - 1; i++) {
 						if ("startup-agents".equals(pathParts[i]) && i + 1 < pathParts.length) {
@@ -168,11 +171,12 @@ public class StartupAgentConfigLoader {
 							break;
 						}
 					}
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					log.warn("Failed to process resource: {}", resource, e);
 				}
 			}
-			
+
 			log.info("Scanned {} startup agents: {}", agentList.size(), agentList);
 			return agentList;
 		}

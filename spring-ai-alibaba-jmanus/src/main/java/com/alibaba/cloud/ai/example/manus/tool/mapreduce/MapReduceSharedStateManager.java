@@ -240,7 +240,6 @@ public class MapReduceSharedStateManager {
 		return new HashMap<>(planState.getMapTaskStatuses());
 	}
 
-
 	/**
 	 * 设置最后操作结果
 	 * @param planId 计划ID

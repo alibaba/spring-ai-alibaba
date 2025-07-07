@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -71,8 +72,13 @@ public class MapReduceToolTest {
 		// Create UnifiedDirectoryManager
 		unifiedDirectoryManager = new UnifiedDirectoryManager(manusProperties);
 
-		// Create MapReduceTool instance using correct constructor
-		mapReduceTool = new MapReduceTool(testPlanId, manusProperties, sharedStateManager, unifiedDirectoryManager);
+		// Create MapReduceTool instance using correct constructor with terminateColumns
+		List<String> terminateColumns = Arrays.asList("title", "content"); // Default
+																			// terminate
+																			// columns for
+																			// test
+		mapReduceTool = new MapReduceTool(testPlanId, manusProperties, sharedStateManager, unifiedDirectoryManager,
+				terminateColumns);
 	}
 
 	@Test

@@ -31,8 +31,11 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 	public static final String name = "terminate";
 
 	private final List<String> columns;
+
 	private String lastTerminationMessage = "";
+
 	private boolean isTerminated = false;
+
 	private String terminationTimestamp = "";
 
 	public static OpenAiApi.FunctionTool getToolDefinition(List<String> columns) {
@@ -44,9 +47,8 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	private static String getDescriptions(List<String> columns) {
 		// If columns is null or empty, use "message" as default column
-		List<String> effectiveColumns = (columns == null || columns.isEmpty()) ? 
-			List.of("message") : columns;
-		
+		List<String> effectiveColumns = (columns == null || columns.isEmpty()) ? List.of("message") : columns;
+
 		// Generate columns example as JSON string
 		StringBuilder columnsExample = new StringBuilder();
 		columnsExample.append("[");
@@ -57,7 +59,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 			}
 		}
 		columnsExample.append("]");
-		
+
 		// Generate data example
 		StringBuilder dataExample = new StringBuilder();
 		dataExample.append("[\n");
@@ -76,24 +78,23 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 			dataExample.append("\n");
 		}
 		dataExample.append("    ]");
-		
+
 		String template = """
-			Terminate the current execution step with structured data.
-			The data should be provided in a format with columns and corresponding data rows:
-			{
-			  "columns": %s,
-			  "data": %s
-			}
-			""";
-		
+				Terminate the current execution step with structured data.
+				The data should be provided in a format with columns and corresponding data rows:
+				{
+				  "columns": %s,
+				  "data": %s
+				}
+				""";
+
 		return String.format(template, columnsExample.toString(), dataExample.toString());
 	}
 
 	private static String generateParametersJson(List<String> columns) {
 		// If columns is null or empty, use "message" as default column
-		List<String> effectiveColumns = (columns == null || columns.isEmpty()) ? 
-			List.of("message") : columns;
-		
+		List<String> effectiveColumns = (columns == null || columns.isEmpty()) ? List.of("message") : columns;
+
 		// Generate default columns array as JSON string
 		StringBuilder defaultColumnsBuilder = new StringBuilder();
 		defaultColumnsBuilder.append("[");
@@ -104,30 +105,30 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 			}
 		}
 		defaultColumnsBuilder.append("]");
-		
+
 		String template = """
-			{
-			  "type": "object",
-			  "properties": {
-			    "columns": {
-			      "type": "array",
-			      "items": {"type": "string"},
-			      "description": "Column names for the data",
-			      "default": %s
-			    },
-			    "data": {
-			      "type": "array",
-			      "items": {
-			        "type": "array",
-			        "items": {}
-			      },
-			      "description": "Data rows corresponding to the columns"
-			    }
-			  },
-			  "required": ["columns", "data"]
-			}
-			""";
-		
+				{
+				  "type": "object",
+				  "properties": {
+				    "columns": {
+				      "type": "array",
+				      "items": {"type": "string"},
+				      "description": "Column names for the data",
+				      "default": %s
+				    },
+				    "data": {
+				      "type": "array",
+				      "items": {
+				        "type": "array",
+				        "items": {}
+				      },
+				      "description": "Data rows corresponding to the columns"
+				    }
+				  },
+				  "required": ["columns", "data"]
+				}
+				""";
+
 		return String.format(template, defaultColumnsBuilder.toString());
 	}
 
@@ -145,8 +146,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 				isTerminated ? "Process was terminated" : "No termination recorded",
 				lastTerminationMessage.isEmpty() ? "N/A" : lastTerminationMessage,
 				terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp,
-				currentPlanId != null ? currentPlanId : "N/A",
-				columns != null ? String.join(", ", columns) : "N/A");
+				currentPlanId != null ? currentPlanId : "N/A", columns != null ? String.join(", ", columns) : "N/A");
 	}
 
 	public TerminateTool(String planId, List<String> columns) {
@@ -158,7 +158,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 	@Override
 	public ToolExecuteResult run(Map<String, Object> input) {
 		log.info("Terminate with input: {}", input);
-		
+
 		// Extract message from the structured data
 		String message = formatStructuredData(input);
 		this.lastTerminationMessage = message;
@@ -171,22 +171,23 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 	private String formatStructuredData(Map<String, Object> input) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Structured termination data:\n");
-		
+
 		if (input.containsKey("columns") && input.containsKey("data")) {
 			@SuppressWarnings("unchecked")
 			List<String> inputColumns = (List<String>) input.get("columns");
 			@SuppressWarnings("unchecked")
 			List<List<Object>> inputData = (List<List<Object>>) input.get("data");
-			
+
 			sb.append("Columns: ").append(inputColumns).append("\n");
 			sb.append("Data:\n");
 			for (List<Object> row : inputData) {
 				sb.append("  ").append(row).append("\n");
 			}
-		} else {
+		}
+		else {
 			sb.append(input.toString());
 		}
-		
+
 		return sb.toString();
 	}
 

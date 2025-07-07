@@ -502,7 +502,8 @@ class BrowserUseToolSpringTest {
 			Assertions.assertNotNull(elements, "Failed to get interactive elements");
 			log.info("Retrieved interactive elements: {}", elements);
 
-			// Step 3: Find username input field (not currently used but defined for potential future use)
+			// Step 3: Find username input field (not currently used but defined for
+			// potential future use)
 			log.info("Step 3: Locate username input box");
 			@SuppressWarnings("unused")
 			int usernameInputIndex = -1;

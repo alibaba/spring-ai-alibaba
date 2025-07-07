@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public abstract class AbstractExecutionPlan implements PlanInterface {
 
-
 	protected String currentPlanId;
 
 	protected String rootPlanId;
@@ -59,9 +58,9 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	 * @param planId 计划ID
 	 * @param title 计划标题
 	 */
-	public AbstractExecutionPlan(String currentPlanId , String rootPlanId, String title) {
+	public AbstractExecutionPlan(String currentPlanId, String rootPlanId, String title) {
 		this();
-		this.currentPlanId = currentPlanId;	
+		this.currentPlanId = currentPlanId;
 		this.rootPlanId = rootPlanId;
 		this.title = title;
 	}
@@ -72,6 +71,7 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	public String getCurrentPlanId() {
 		return currentPlanId;
 	}
+
 	@Override
 	public void setCurrentPlanId(String currentPlanId) {
 		this.currentPlanId = currentPlanId;
@@ -203,9 +203,9 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	@Override
 	public String toString() {
-		return "AbstractExecutionPlan{" + "rootPlanId='" + rootPlanId + '\'' + ", currentPlanId='" + currentPlanId + '\''
-				+ ", title='" + title + '\'' + ", planningThinking='" + planningThinking + '\'' + ", executionParams='"
-				+ executionParams + '\'' + ", userRequest='" + userRequest + '\'' + '}';
+		return "AbstractExecutionPlan{" + "rootPlanId='" + rootPlanId + '\'' + ", currentPlanId='" + currentPlanId
+				+ '\'' + ", title='" + title + '\'' + ", planningThinking='" + planningThinking + '\''
+				+ ", executionParams='" + executionParams + '\'' + ", userRequest='" + userRequest + '\'' + '}';
 	}
 
 }

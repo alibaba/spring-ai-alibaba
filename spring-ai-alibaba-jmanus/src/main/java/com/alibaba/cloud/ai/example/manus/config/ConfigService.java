@@ -78,7 +78,7 @@ public class ConfigService {
 			List<ConfigEntity> obsoleteConfigs = allConfigs.stream()
 				.filter(config -> !validConfigPaths.contains(config.getConfigPath()))
 				.collect(Collectors.toList());
-			
+
 			if (!obsoleteConfigs.isEmpty()) {
 				log.info("Found {} obsolete configurations to remove:", obsoleteConfigs.size());
 				obsoleteConfigs.forEach(config -> {
@@ -88,7 +88,8 @@ public class ConfigService {
 					configCache.remove(config.getConfigPath());
 				});
 				log.info("✅ Obsolete configuration cleanup completed");
-			} else {
+			}
+			else {
 				log.info("✅ No obsolete configurations found");
 			}
 		}

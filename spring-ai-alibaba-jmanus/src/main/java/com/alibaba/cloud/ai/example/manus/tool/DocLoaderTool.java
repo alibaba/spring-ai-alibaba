@@ -103,8 +103,10 @@ public class DocLoaderTool extends AbstractBaseTool<DocLoaderTool.DocLoaderInput
 	 * Get FunctionToolCallback for Spring AI
 	 */
 	public static FunctionToolCallback<DocLoaderInput, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.<DocLoaderInput, ToolExecuteResult>builder(name, 
-			(DocLoaderInput input, org.springframework.ai.chat.model.ToolContext context) -> new DocLoaderTool().run(input))
+		return FunctionToolCallback
+			.<DocLoaderInput, ToolExecuteResult>builder(name,
+					(DocLoaderInput input, org.springframework.ai.chat.model.ToolContext context) -> new DocLoaderTool()
+						.run(input))
 			.description(description)
 			.inputType(DocLoaderInput.class)
 			.build();

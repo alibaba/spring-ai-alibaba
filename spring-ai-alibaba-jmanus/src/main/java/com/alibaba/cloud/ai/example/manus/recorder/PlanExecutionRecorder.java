@@ -33,7 +33,8 @@ public interface PlanExecutionRecorder {
 	String recordPlanExecution(PlanExecutionRecord stepRecord);
 
 	/**
-	 * Records an agent execution instance associated with a specific plan execution record
+	 * Records an agent execution instance associated with a specific plan execution
+	 * record
 	 * @param planExecutionRecord Plan execution record
 	 * @param agentRecord Agent execution record
 	 * @return Agent execution ID
@@ -46,7 +47,8 @@ public interface PlanExecutionRecorder {
 	 * @param agentExecutionId Agent execution ID
 	 * @param thinkActRecord Think-act record
 	 */
-	void recordThinkActExecution(PlanExecutionRecord planExecutionRecord, Long agentExecutionId, ThinkActRecord thinkActRecord);
+	void recordThinkActExecution(PlanExecutionRecord planExecutionRecord, Long agentExecutionId,
+			ThinkActRecord thinkActRecord);
 
 	/**
 	 * Marks plan execution as completed
@@ -56,20 +58,23 @@ public interface PlanExecutionRecorder {
 	void recordPlanCompletion(PlanExecutionRecord planExecutionRecord, String summary);
 
 	/**
-	 * Gets or creates plan execution record with optional sub-plan support (creates by default)
+	 * Gets or creates plan execution record with optional sub-plan support (creates by
+	 * default)
 	 * @param planId Plan ID
-	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for sub-plan)
+	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for
+	 * sub-plan)
 	 * @return Plan execution record
 	 */
-	PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, String rootPlanId , Long thinkActRecordId);
+	PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId);
 
 	/**
 	 * Gets plan execution record with optional sub-plan support
 	 * @param planId Plan ID
-	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for sub-plan)
+	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for
+	 * sub-plan)
 	 * @return Plan execution record
 	 */
-	PlanExecutionRecord getExecutionRecord(String planId , String rootPlanId, Long thinkActRecordId);
+	PlanExecutionRecord getExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId);
 
 	/**
 	 * Saves the execution records for the specified plan ID to persistent storage. This
@@ -87,7 +92,8 @@ public interface PlanExecutionRecorder {
 	void saveAllExecutionRecords();
 
 	/**
-	 * Gets the current active agent execution record for the specified plan execution record
+	 * Gets the current active agent execution record for the specified plan execution
+	 * record
 	 * @param planExecutionRecord Plan execution record
 	 * @return Current active agent execution record, or null if none exists
 	 */
@@ -98,6 +104,5 @@ public interface PlanExecutionRecorder {
 	 * @param planId The plan ID to remove
 	 */
 	void removeExecutionRecord(String planId);
-
 
 }

@@ -189,7 +189,7 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 			return new ToolExecuteResult("Required parameters missing");
 		}
 
-		ExecutionPlan plan = new ExecutionPlan(planId,planId, title);
+		ExecutionPlan plan = new ExecutionPlan(planId, planId, title);
 		// Use the new createExecutionStep method to create and add steps
 		int index = 0;
 		for (String step : steps) {

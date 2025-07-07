@@ -1,5 +1,8 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2025 the oriimport com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
+import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
+import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder; author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +32,6 @@ import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinat
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
-import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
@@ -124,7 +126,7 @@ public class PlanningFactory {
 	private SummaryWorkflow summaryWorkflow;
 
 	@Autowired
-	private PromptLoader promptLoader;
+	private PlanExecutorFactory planExecutorFactory;
 
 	@Autowired
 	private PromptService promptService;
@@ -149,10 +151,9 @@ public class PlanningFactory {
 
 		PlanningToolInterface planningTool = new PlanningTool();
 
-		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptLoader,
+		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
 				manusProperties);
-		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService, llmService,
-				manusProperties);
+
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties);
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
@@ -182,7 +183,8 @@ public class PlanningFactory {
 
 	}
 
-	public Map<String, ToolCallBackContext> toolCallbackMap(String planId,String rootPlanId, List<String> terminateColumns) {
+	public Map<String, ToolCallBackContext> toolCallbackMap(String planId, String rootPlanId,
+			List<String> terminateColumns) {
 		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
 		List<ToolCallBiFunctionDef<?>> toolDefinitions = new ArrayList<>();
 
@@ -197,7 +199,8 @@ public class PlanningFactory {
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
-		toolDefinitions.add(new MapReduceTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager, terminateColumns));
+		toolDefinitions.add(new MapReduceTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
+				terminateColumns));
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
@@ -212,12 +215,12 @@ public class PlanningFactory {
 		// Create FunctionToolCallback for each tool
 		for (ToolCallBiFunctionDef<?> toolDefinition : toolDefinitions) {
 			FunctionToolCallback<?, ToolExecuteResult> functionToolcallback = FunctionToolCallback
-					.builder(toolDefinition.getName(), toolDefinition)
-					.description(toolDefinition.getDescription())
-					.inputSchema(toolDefinition.getParameters())
-					.inputType(toolDefinition.getInputType())
-					.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
-					.build();
+				.builder(toolDefinition.getName(), toolDefinition)
+				.description(toolDefinition.getDescription())
+				.inputSchema(toolDefinition.getParameters())
+				.inputType(toolDefinition.getInputType())
+				.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
+				.build();
 			toolDefinition.setCurrentPlanId(planId);
 			toolDefinition.setRootPlanId(rootPlanId);
 			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
@@ -231,10 +234,11 @@ public class PlanningFactory {
 	public RestClient.Builder createRestClient() {
 		// Create RequestConfig and set the timeout (10 minutes for all timeouts)
 		RequestConfig requestConfig = RequestConfig.custom()
-				.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection timeout
-				.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.build();
+			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection
+																	// timeout
+			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.build();
 
 		// Create CloseableHttpClient and apply the configuration
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();

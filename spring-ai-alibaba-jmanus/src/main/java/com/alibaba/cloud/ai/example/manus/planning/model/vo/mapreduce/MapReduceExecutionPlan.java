@@ -44,7 +44,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		this.createdTime = System.currentTimeMillis();
 	}
 
-	public MapReduceExecutionPlan(String currentPlanId , String rootPlanId, String title) {
+	public MapReduceExecutionPlan(String currentPlanId, String rootPlanId, String title) {
 		super(currentPlanId, rootPlanId, title);
 		this.steps = new ArrayList<>();
 		this.createdTime = System.currentTimeMillis();
@@ -260,7 +260,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 				}
 
 				// 后处理阶段 - 根据条件决定是否显示
-				if (showReduceAndPostProcess && mrNode.getPostProcessSteps() != null && !mrNode.getPostProcessSteps().isEmpty()) {
+				if (showReduceAndPostProcess && mrNode.getPostProcessSteps() != null
+						&& !mrNode.getPostProcessSteps().isEmpty()) {
 					sb.append("  后处理阶段:\n");
 					appendFilteredSteps(sb, mrNode.getPostProcessSteps(), onlyCompletedAndFirstInProgress);
 				}
@@ -379,7 +380,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	 * @param steps 步骤列表
 	 * @param onlyCompletedAndFirstNotStarted 是否只显示已完成的步骤和第一个未开始的步骤
 	 */
-	private void appendFilteredSteps(StringBuilder sb, List<ExecutionStep> steps, boolean onlyCompletedAndFirstNotStarted) {
+	private void appendFilteredSteps(StringBuilder sb, List<ExecutionStep> steps,
+			boolean onlyCompletedAndFirstNotStarted) {
 		boolean foundNotStarted = false;
 
 		for (ExecutionStep step : steps) {
@@ -399,7 +401,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 				}
 				// 其他所有情况（不是COMPLETED且不是第一个NOT_STARTED）
 				// 跳过不符合条件的步骤
-			} else {
+			}
+			else {
 				// 显示所有步骤
 				sb.append("    ").append(step.getStepInStr()).append("\n");
 				if (step.getResult() != null) {
@@ -425,7 +428,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 				}
 			}
 		}
-		
+
 		// 检查Map阶段是否有第一个步骤正在执行或即将执行
 		boolean mapFirstStepInProgress = false;
 		if (mrNode.getMapSteps() != null && !mrNode.getMapSteps().isEmpty()) {
@@ -435,7 +438,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 				mapFirstStepInProgress = true;
 			}
 		}
-		
+
 		// 只有当数据准备阶段全部完成，且Map阶段的第一个步骤即将执行时，才返回true
 		return dataPreparedCompleted && mapFirstStepInProgress;
 	}

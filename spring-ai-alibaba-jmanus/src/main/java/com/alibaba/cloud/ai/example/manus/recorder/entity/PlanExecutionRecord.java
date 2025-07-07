@@ -104,7 +104,7 @@ public class PlanExecutionRecord {
 	 * Constructor for creating a new execution record
 	 * @param planId The unique identifier for the plan.
 	 */
-	public PlanExecutionRecord(String currentPlanId,String rootPlanId) {
+	public PlanExecutionRecord(String currentPlanId, String rootPlanId) {
 		this.currentPlanId = currentPlanId;
 		this.rootPlanId = rootPlanId;
 		this.steps = new ArrayList<>();
@@ -287,9 +287,9 @@ public class PlanExecutionRecord {
 	@Override
 	public String toString() {
 		return String.format(
-				"PlanExecutionRecord{id=%d, planId='%s',planId='%s', title='%s', steps=%d, currentStep=%d/%d, completed=%b}", id,
-				currentPlanId,rootPlanId, title, steps.size(), currentStepIndex != null ? currentStepIndex + 1 : 0, steps.size(),
-				completed);
+				"PlanExecutionRecord{id=%d, planId='%s',planId='%s', title='%s', steps=%d, currentStep=%d/%d, completed=%b}",
+				id, currentPlanId, rootPlanId, title, steps.size(), currentStepIndex != null ? currentStepIndex + 1 : 0,
+				steps.size(), completed);
 	}
 
 }

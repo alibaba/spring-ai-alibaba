@@ -360,22 +360,22 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 				case "get_html": {
 					result = new GetHtmlAction(this).execute(requestVO);
 					// HTML content is usually long, use intelligent processing
-					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService.processContent(currentPlanId,
-							result.getOutput(), "get_html");
+					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService
+						.processContent(currentPlanId, result.getOutput(), "get_html");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "get_text": {
 					result = new GetTextAction(this).execute(requestVO);
 					// Text content may be long, use intelligent processing
-					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService.processContent(currentPlanId,
-							result.getOutput(), "get_text");
+					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService
+						.processContent(currentPlanId, result.getOutput(), "get_text");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "execute_js": {
 					result = new ExecuteJsAction(this).execute(requestVO);
 					// JS execution results may be long, use intelligent processing
-					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService.processContent(currentPlanId,
-							result.getOutput(), "execute_js");
+					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService
+						.processContent(currentPlanId, result.getOutput(), "execute_js");
 					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "scroll": {
@@ -410,9 +410,10 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
 
-			// For other operations, also perform intelligent processing (but thresholds usually won't be exceeded)
-			SmartContentSavingService.SmartProcessResult processedResult = innerStorageService.processContent(currentPlanId,
-					result.getOutput(), action);
+			// For other operations, also perform intelligent processing (but thresholds
+			// usually won't be exceeded)
+			SmartContentSavingService.SmartProcessResult processedResult = innerStorageService
+				.processContent(currentPlanId, result.getOutput(), action);
 			return new ToolExecuteResult(processedResult.getSummary());
 		}
 		catch (Exception e) {

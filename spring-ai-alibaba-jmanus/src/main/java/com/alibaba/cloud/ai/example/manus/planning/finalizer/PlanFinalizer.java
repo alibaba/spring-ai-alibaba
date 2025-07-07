@@ -119,12 +119,13 @@ public class PlanFinalizer {
 	 */
 	private void recordPlanCompletion(ExecutionContext context, String summary) {
 		// Use thinkActRecordId from context to support sub-plan executions
-		PlanExecutionRecord planRecord = recorder.getExecutionRecord(context.getPlan().getCurrentPlanId(), context.getPlan().getRootPlanId(), context.getThinkActRecordId());
+		PlanExecutionRecord planRecord = recorder.getExecutionRecord(context.getPlan().getCurrentPlanId(),
+				context.getPlan().getRootPlanId(), context.getThinkActRecordId());
 		if (planRecord != null) {
 			recorder.recordPlanCompletion(planRecord, summary);
 		}
 
-		log.info("Plan completed with ID: {} (thinkActRecordId: {}) and summary: {}", 
+		log.info("Plan completed with ID: {} (thinkActRecordId: {}) and summary: {}",
 				context.getPlan().getCurrentPlanId(), context.getThinkActRecordId(), summary);
 	}
 

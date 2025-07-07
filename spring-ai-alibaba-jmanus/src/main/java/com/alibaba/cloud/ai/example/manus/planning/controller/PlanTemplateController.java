@@ -78,7 +78,6 @@ public class PlanTemplateController {
 		return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(plan);
 	}
 
-	
 	/**
 	 * Generate plan
 	 * @param request Request containing plan requirements and optional JSON data
@@ -230,7 +229,7 @@ public class PlanTemplateController {
 			PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(newPlanId);
 			ExecutionContext context = new ExecutionContext();
 			context.setCurrentPlanId(newPlanId);
-			context.setRootPlanId(newPlanId	);
+			context.setRootPlanId(newPlanId);
 			context.setNeedSummary(true); // We need to generate a summary
 
 			try {
@@ -514,7 +513,7 @@ public class PlanTemplateController {
 
 		// Use the existing plan template ID
 		context.setCurrentPlanId(planId);
-		context.setRootPlanId(planId);	
+		context.setRootPlanId(planId);
 		context.setNeedSummary(false); // We don't need to generate a summary, because we
 										// only need the plan
 

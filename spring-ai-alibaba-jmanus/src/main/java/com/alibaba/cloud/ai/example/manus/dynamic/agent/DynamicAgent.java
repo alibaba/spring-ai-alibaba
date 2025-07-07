@@ -120,13 +120,16 @@ public class DynamicAgent extends ReActAgent {
 	@Override
 	protected boolean think() {
 		collectAndSetEnvDataForTools();
-		PlanExecutionRecord planExecutionRecord = planExecutionRecorder.getExecutionRecord(getCurrentPlanId(),getRootPlanId(),getThinkActRecordId());
-		AgentExecutionRecord agentExecutionRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(planExecutionRecord);
+		PlanExecutionRecord planExecutionRecord = planExecutionRecorder.getExecutionRecord(getCurrentPlanId(),
+				getRootPlanId(), getThinkActRecordId());
+		AgentExecutionRecord agentExecutionRecord = planExecutionRecorder
+			.getCurrentAgentExecutionRecord(planExecutionRecord);
 		thinkActRecord = new ThinkActRecord(agentExecutionRecord.getId());
 		thinkActRecord.setActStartTime(LocalDateTime.now());
-		
+
 		if (planExecutionRecord != null) {
-			planExecutionRecorder.recordThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(), thinkActRecord);
+			planExecutionRecorder.recordThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
+					thinkActRecord);
 		}
 
 		try {
@@ -214,7 +217,7 @@ public class DynamicAgent extends ReActAgent {
 
 			// Get the tool instance based on toolCallName
 			ToolCallBiFunctionDef<?> toolInstance = getToolCallBackContext(toolcallName).getFunctionInstance();
-			
+
 			// Handle FormInputTool logic
 			if (toolInstance instanceof FormInputTool) {
 				FormInputTool formInputTool = (FormInputTool) toolInstance;
@@ -232,12 +235,12 @@ public class DynamicAgent extends ReActAgent {
 						// the tool's internal state.
 						// We can now get the updated state string for the LLM.
 
-							UserMessage userMessage = UserMessage.builder()
-								.text("User input received for form: " + formInputTool.getCurrentToolStateString())
-								.build();
-							processUserInputToMemory(userMessage); // Process user input
-							// to memory
-							llmCallResponse = formInputTool.getCurrentToolStateString();
+						UserMessage userMessage = UserMessage.builder()
+							.text("User input received for form: " + formInputTool.getCurrentToolStateString())
+							.build();
+						processUserInputToMemory(userMessage); // Process user input
+						// to memory
+						llmCallResponse = formInputTool.getCurrentToolStateString();
 
 					}
 					else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
@@ -248,7 +251,8 @@ public class DynamicAgent extends ReActAgent {
 							.text("Input timeout occurred for form: ")
 							.build();
 						processUserInputToMemory(userMessage);
-						userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up
+						userInputService.removeFormInputTool(getCurrentPlanId()); // Clean
+																					// up
 						return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS); // Or
 																										// FAILED
 					}
@@ -261,9 +265,13 @@ public class DynamicAgent extends ReActAgent {
 				// Use canTerminate() to decide whether to terminate
 				if (terminableTool.canTerminate()) {
 					log.info("TerminableTool can terminate for planId: {}", getCurrentPlanId());
-					userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up any pending form
+					userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up
+																				// any
+																				// pending
+																				// form
 					return new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
-				} else {
+				}
+				else {
 					log.info("TerminableTool cannot terminate yet for planId: {}", getCurrentPlanId());
 				}
 			}

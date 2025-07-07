@@ -54,6 +54,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	protected final AgentService agentService;
 
 	protected LlmService llmService;
+
 	protected final ManusProperties manusProperties;
 
 	// Define static final strings for the keys used in executorParams
@@ -66,7 +67,6 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	public static final String EXTRA_PARAMS_KEY = "extraParams";
 
 	public static final String EXECUTION_ENV_STRING_KEY = "current_step_env_data";
-
 
 	public AbstractPlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
 			AgentService agentService, LlmService llmService, ManusProperties manusProperties) {
@@ -139,12 +139,12 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	/**
 	 * 获取步骤的执行器
 	 */
-	protected BaseAgent getExecutorForStep(String stepType, ExecutionContext context,
-			Map<String, Object> initSettings,List<String> columns) {
+	protected BaseAgent getExecutorForStep(String stepType, ExecutionContext context, Map<String, Object> initSettings,
+			List<String> columns) {
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
-				BaseAgent executor = agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getCurrentPlanId(),context.getPlan().getRootPlanId(),
-						initSettings, columns);
+				BaseAgent executor = agentService.createDynamicBaseAgent(agent.getAgentName(),
+						context.getPlan().getCurrentPlanId(), context.getPlan().getRootPlanId(), initSettings, columns);
 				// Set thinkActRecordId from context for sub-plan executions
 				if (context.getThinkActRecordId() != null) {
 					executor.setThinkActRecordId(context.getThinkActRecordId());
@@ -189,7 +189,8 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	 * 获取或创建计划执行记录
 	 */
 	protected PlanExecutionRecord getOrCreatePlanExecutionRecord(ExecutionContext context) {
-		PlanExecutionRecord record = getRecorder().getOrCreatePlanExecutionRecord(context.getCurrentPlanId(), context.getRootPlanId(), context.getThinkActRecordId());
+		PlanExecutionRecord record = getRecorder().getOrCreatePlanExecutionRecord(context.getCurrentPlanId(),
+				context.getRootPlanId(), context.getThinkActRecordId());
 		return record;
 	}
 
@@ -229,7 +230,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 		if (columnsInString == null || columnsInString.trim().isEmpty()) {
 			return columns;
 		}
-		
+
 		// Split by comma (,) or Chinese comma (，)
 		String[] parts = columnsInString.split("[,，]");
 		for (String part : parts) {
@@ -238,7 +239,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 				columns.add(trimmed);
 			}
 		}
-		
+
 		return columns;
 	}
 

@@ -27,7 +27,6 @@ public class ExecutionStep {
 	@JsonIgnore
 	private Integer stepIndex;
 
-	
 	private String stepRequirement;
 
 	@JsonIgnore
@@ -35,7 +34,6 @@ public class ExecutionStep {
 
 	@JsonIgnore
 	private BaseAgent agent;
-
 
 	private String terminateColumns;
 
@@ -54,7 +52,6 @@ public class ExecutionStep {
 	public void setResult(String result) {
 		this.result = result;
 	}
-
 
 	public String getTerminateColumns() {
 		return terminateColumns;
