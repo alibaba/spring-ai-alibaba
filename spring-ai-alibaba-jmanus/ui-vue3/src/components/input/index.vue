@@ -24,7 +24,7 @@
         ref="inputRef"
         class="chat-input"
         :placeholder="currentPlaceholder"
-        :disabled="disabled"
+        :disabled="isDisabled"
         @keydown="handleKeydown"
         @input="adjustInputHeight"
       ></textarea>
@@ -34,7 +34,7 @@
       </button>
       <button
         class="send-button"
-        :disabled="!currentInput.trim() || disabled"
+        :disabled="!currentInput.trim() || isDisabled"
         @click="handleSend"
         :title="$t('input.send')"
       >
@@ -77,6 +77,9 @@ const currentInput = ref('')
 const defaultPlaceholder = computed(() => props.placeholder || t('input.placeholder'))
 const currentPlaceholder = ref(defaultPlaceholder.value)
 
+// 计算属性来确保 disabled 是 boolean 类型
+const isDisabled = computed(() => Boolean(props.disabled))
+
 const adjustInputHeight = () => {
   nextTick(() => {
     if (inputRef.value) {
@@ -94,7 +97,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 const handleSend = () => {
-  if (!currentInput.value.trim() || props.disabled) return
+  if (!currentInput.value.trim() || isDisabled.value) return
 
   const query = currentInput.value.trim()
   
