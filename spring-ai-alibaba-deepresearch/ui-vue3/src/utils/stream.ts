@@ -44,9 +44,13 @@ export class XStreamBody {
         return this.lines.value.map((line) => JSON.parse(line.data).content).join('')
     }
 
-    async readStream(updateHandle?) {
+    async readStream(updateHandle?: any) {
         let tmp = ""
         const response = await fetch(this.requestInfo.url, this.requestInfo.config);
+
+        if(response.status!==200){
+            return Promise.reject(response)
+        }
         // Read the stream
         for await (const chunk of XStream({
             readableStream: response.body,

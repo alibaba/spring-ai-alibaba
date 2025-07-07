@@ -42,6 +42,7 @@
         <a-divider/>
         <Conversations
             style="width: 100%"
+            :onActiveChange="changeConv"
             :defaultActiveKey="currentConvKey"
             :items="conversationItems"
         />
@@ -51,78 +52,101 @@
           <Flex>
             Model
           </Flex>
-          <!--            <color-picker-->
-          <!--                :pureColor="token.colorPrimary"-->
-          <!--                @pureColorChange="changeTheme"-->
-          <!--                format="hex6"-->
-          <!--                shape="circle"-->
-          <!--                useType="pure"-->
-          <!--            ></color-picker>-->
           <Flex gap="middle">
-            <div>
-              <ASegmented v-model:value="locale" :options="i18nConfig.opts"/>
-            </div>
-            <AAvatar style="background: rebeccapurple">{{ username.substring(0, 1) }}</AAvatar>
+            <ASegmented v-model:value="locale" :options="i18nConfig.opts"/>
+            <a-button
+                @click="openConfigView"
+                type="primary">
+              <SettingOutlined/>
+            </a-button>
+            <AAvatar style="background: rebeccapurple">{{ username?.substring(0, 1) }}</AAvatar>
           </Flex>
         </Flex>
         <Flex class="content" style="width: 100%">
-          <RouterView/>
+          <RouterView :key="route.fullPath"/>
         </Flex>
       </Flex>
     </Flex>
+
+
   </div>
 
 </template>
 
 <script setup lang="tsx">
 import {Flex, theme,} from 'ant-design-vue';
-import {GithubOutlined,FormOutlined, MenuOutlined, QuestionCircleOutlined} from '@ant-design/icons-vue'
-import {computed, h, inject, onMounted, provide, reactive, ref, watch} from 'vue';
-import {LOCAL_STORAGE_THEME, PRIMARY_COLOR,} from '@/base/constants'
+import {
+  FormOutlined,
+  MenuOutlined,
+  MessageOutlined,
+  QuestionCircleOutlined,
+  SettingOutlined
+} from '@ant-design/icons-vue'
+import {computed, inject, onMounted, ref, watch} from 'vue';
+import {PRIMARY_COLOR,} from '@/base/constants'
 import {PROVIDE_INJECT_KEY} from '@/base/enums/ProvideInject'
 import {changeLanguage, localeConfig} from '@/base/i18n'
 import {Conversations} from "ant-design-x-vue";
 import Gap from "@/components/tookit/Gap.vue";
+import Config from "@/components/layout/config/index.vue";
 import {useConversationStore} from "@/store/ConversationStore";
 import {useAuthStore} from "@/store/AuthStore";
+import {useRoute, useRouter} from "vue-router";
 
+const router = useRouter();
+const route = useRoute();
 const username = useAuthStore().token
 const {useToken} = theme;
 const collapse = ref(false)
+const showConfigView = ref(false)
 
 const leftWidth = computed(() => {
   return collapse.value ? '80px' : '224px'
 })
 
+const {convId} = route.params
 let __null = PRIMARY_COLOR
-const i18nConfig:any = inject(PROVIDE_INJECT_KEY.LOCALE)
+const i18nConfig: any = inject(PROVIDE_INJECT_KEY.LOCALE)
 let locale = ref(localeConfig.locale)
 const conversationStore = useConversationStore();
-
+conversationStore.active(convId)
 const currentConvKey = conversationStore.curConvKey
-const conversationItems = conversationStore.items
+const conversationItems = computed(() => {
+  return conversationStore.conversations.map((x: any) => {
+    x.icon = <MessageOutlined/>
+    return x
+  })
+})
+
 function createNewConversation() {
-  conversationStore.newOne()
+  const {key} = conversationStore.newOne()
+  changeConv(key)
 }
 
-function changeTheme(val: string) {
-  localStorage.setItem(LOCAL_STORAGE_THEME, val)
-  PRIMARY_COLOR.value = val
-}
-
-onMounted(()=>{
+onMounted(() => {
   const mediaQuery = window.matchMedia('(max-width: 768px)');
-  function checkMediaQuery(){
-    if(mediaQuery.matches){
+
+  function checkMediaQuery() {
+    if (mediaQuery.matches) {
       // reactive
       collapse.value = true
-    }else {
+    } else {
       collapse.value = false
     }
   }
+
   mediaQuery.addEventListener('change', checkMediaQuery);
 
 })
+
+function changeConv(id: any) {
+  router.push(`/chat/${id}`)
+}
+
+function openConfigView() {
+  router.push("/config")
+}
+
 watch(locale, (value) => {
   changeLanguage(value)
 })

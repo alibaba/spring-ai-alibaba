@@ -27,6 +27,7 @@ import {i18n} from '@/base/i18n'
 import Vue3ColorPicker from 'vue3-colorpicker'
 import 'vue3-colorpicker/style.css'
 import {useAuthStore} from "@/store/AuthStore";
+import {useRouterStore} from "@/store/RouterStore";
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -36,6 +37,7 @@ app.use(pinia).use(Antd).use(Vue3ColorPicker).use(i18n).use(router).mount('#app'
 
 
 const authStore = useAuthStore();
+const routerStore = useRouterStore();
 router.beforeEach((to, from, next) => {
     if (to.path === '/login') {
         next()
@@ -45,6 +47,13 @@ router.beforeEach((to, from, next) => {
     if (null == token) {
         next(`/login?redirect=${to.fullPath}`)
         return
+    }
+    if(
+        routerStore.needRecordPath.includes(to.name) &&
+        !routerStore.needRecordPath.includes(from.name)
+    ){
+        console.log(from.name, to.name)
+        routerStore.push(from.fullPath)
     }
     next()
 })

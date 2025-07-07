@@ -18,67 +18,48 @@
 
 import {defineStore} from "pinia";
 import {type MessageInfo, type SimpleType} from "ant-design-x-vue";
-import {type Ref} from 'vue'
 import { reactive } from "vue";
 type MsgType<Message> = {
-    current: {
-        // 会话 id
-        convId: string|number|null,
-        info: MessageInfo<Message | any>,
-        // 是否候选, 是: 不显示在界面上
-        candidate: boolean,
-        // 是否勾选了 deepresearch
-        deepResearch: boolean,
-        // 是否展示研究细节
-        deepResearchDetail: boolean,
-        // 记录ai内容的类型
-        aiType: 'normal' | 'startDS' | 'onDS' | 'endDS',
+    convId: string,
+    currentState: {[key: string]: {
+            // 会话 id
+            info: MessageInfo<Message | any>,
+            // 是否候选, 是: 不显示在界面上
+            candidate: boolean,
+            // 是否勾选了 deepresearch
+            deepResearch: boolean,
+            // 是否展示研究细节
+            deepResearchDetail: boolean,
+            // 记录ai内容的类型
+            aiType: 'normal' | 'startDS' | 'onDS' | 'endDS',
+        }
     }
     // 记录历史
-    history: string[],
+    history: {[key: string]: MessageInfo<any>[]},
 }
 export const useMessageStore = <Message extends SimpleType>() => defineStore("messageStore", {
     state(): MsgType<Message> {
         return reactive({
-            convId: null,
-            current: {
-                info: {
-                    status: 'local',
-                    message: null,
-                    id: "0",
-                },
-                candidate: true,
-                deepResearch: true,
-                aiType: 'normal',
-            },
-            history: []
+            convId: '',
+            currentState: {},
+            history: {}
         })
     },
-    getters: {},
-    actions: {
-        // 归档消息
-        archiveLocal() {
-            this.history = [
-                ...this.history,
-                JSON.stringify(this.current)
-            ]
-        },
-        archiveMsg() {
-            this.history = [
-                ...this.history,
-                JSON.stringify(this.current)
-            ]
-        },
-        trace(handle: any) {
-            for (let historyElement of this.history) {
-                handle(JSON.parse(historyElement))
+    getters: {
+        messages: (state): any=>{
+            if(state.convId) {
+                return state.history[state.convId]
             }
+            return null
         },
-        startDeepResearch(){
-
-        },
+        current: (state): any=>{
+            if(state.convId) {
+                return state.currentState[state.convId]
+            }
+        }
+    },
+    actions: {
         nextAIType() {
-            console.log("nextAIType", this.current.aiType)
             if(!this.current.aiType || this.current.aiType === 'normal') {
                 this.current.aiType = 'startDS'
             }else if(this.current.aiType === 'startDS') {
@@ -89,7 +70,8 @@ export const useMessageStore = <Message extends SimpleType>() => defineStore("me
                 this.current.aiType = 'normal'
             }
             console.log("nextAIType", this.current.aiType)
-        }
+        },
+
     },
     persist: true
 })()

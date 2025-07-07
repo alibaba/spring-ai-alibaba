@@ -35,6 +35,7 @@
     "nprogress": "^0.2.0",
     "pinia": "^2.3.1",
     "pinia-plugin-persistedstate": "^4.4.0",
+    "uuid": "^11.1.0",
     "vue": "^3.3.8",
     "vue-demi": "^0.14.10",
     "vue-i18n": "^9.8.0",

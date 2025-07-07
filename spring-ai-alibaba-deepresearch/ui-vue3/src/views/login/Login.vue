@@ -21,12 +21,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { i18n } from '@/base/i18n'
 import {useAuthStore} from "@/store/AuthStore";
+import {useRouterStore} from "@/store/RouterStore";
 const userinfo = reactive({
   username: '',
   password: ''
 })
 
 const authStore = useAuthStore();
+const routerStore = useRouterStore();
+routerStore.clear()
+
 const router = useRouter()
 const route = useRoute()
 const redirect: any = route.query.redirect || '/'

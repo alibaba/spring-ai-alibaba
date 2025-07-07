@@ -17,7 +17,7 @@
   <div class="not-found-page">
     <div class="error-container">
       <div class="error-icon">
-        <img src="/logo.svg" alt="DeepSearch" width="96" height="96" class="logo" />
+        <img src="/logo.svg" alt="DeepResearch" width="96" height="96" class="logo" />
       </div>
       <h1 class="error-code">404</h1>
       <p class="error-message">页面未找到</p>

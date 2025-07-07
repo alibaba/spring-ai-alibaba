@@ -156,13 +156,20 @@ import {
   UserOutlined
 } from '@ant-design/icons-vue';
 import {Bubble, type BubbleListProps, type MessageStatus, Sender, useXAgent, useXChat,} from 'ant-design-x-vue';
-import {computed, h, onMounted, ref, watch} from "vue";
+import {computed, h, onMounted, reactive, ref, watch} from "vue";
 import MD from "@/components/md/index.vue"
 import Gap from "@/components/tookit/Gap.vue"
 import {XStreamBody} from "@/utils/stream";
 import {ScrollController} from "@/utils/scroll";
 import {useAuthStore} from "@/store/AuthStore";
 import {useMessageStore} from "@/store/MessageStore";
+import {useConversationStore} from "@/store/ConversationStore";
+import {useRoute, useRouter} from "vue-router";
+
+const router = useRouter();
+const route = useRoute();
+// 会话ID
+const convId = route.params.convId as string
 
 const uploadFileList = ref([])
 const {useToken} = theme;
@@ -192,26 +199,42 @@ const roles: BubbleListProps['roles'] = {
   },
 };
 
+const conversationStore = useConversationStore();
 const messageStore = useMessageStore();
-const {current} = messageStore
+messageStore.convId = convId
+let current = messageStore.current
+if (!current) {
+  current = reactive({})
+  if (convId) {
+    messageStore.currentState[convId] = current
+  }
+}
 const [agent] = useXAgent({
   request: async ({message}, {onSuccess, onUpdate, onError}) => {
+    senderLoading.value = true;
     if (!current.deepResearch) {
       // todo 一般性请求
+      senderLoading.value = false;
+      onSuccess(`暂未实现: ${message}`)
       return
     }
     let content = '';
     switch (current.aiType) {
       case 'normal':
         // todo 请求研究内容
-        senderLoading.value = true;
+
         const xStreamBody = new XStreamBody(
             "/stream",
             {method: 'GET'}
         );
-        await xStreamBody.readStream((chunk: any) => {
-          onUpdate(chunk);
-        })
+        try {
+          await xStreamBody.readStream((chunk: any) => {
+            onUpdate(chunk);
+          })
+        } catch (e: any) {
+          console.log(e.statusText)
+          onError(e.statusText)
+        }
         content = xStreamBody.content()
         break;
       case 'startDS':
@@ -223,7 +246,7 @@ const [agent] = useXAgent({
       messageStore.nextAIType()
     }
     onSuccess(content)
-
+    senderLoading.value = false;
   },
 });
 const {onRequest, messages} = useXChat({
@@ -231,7 +254,12 @@ const {onRequest, messages} = useXChat({
   requestPlaceholder: 'Waiting...',
   requestFallback: 'Failed return. Please try again later.',
 });
-
+if (convId) {
+  const his_messages = messageStore.history[convId]
+  if (his_messages) {
+    messages.value = [...his_messages]
+  }
+}
 
 const content = ref('');
 const senderLoading = ref(false);
@@ -240,6 +268,10 @@ const submitHandle = (nextContent: any) => {
   current.aiType = 'normal'
   onRequest(nextContent)
   content.value = ''
+  if (!convId) {
+    const {key} = conversationStore.newOne()
+    router.push(`/chat/${key}`)
+  }
 }
 
 function startDeepResearch() {
@@ -252,7 +284,6 @@ function deepResearch() {
 }
 
 function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any {
-
   switch (status) {
     case 'success':
       if (!isCurrent) {
@@ -305,6 +336,7 @@ function parseFooter(status: MessageStatus, isCurrent: boolean): any {
 
 const bubbleList = computed(() => {
   const len = messages.value.length
+  messageStore.history[convId] = messages.value
   return messages.value.map(({id, message, status}, idx) => ({
     key: id,
     role: status === 'local' ? 'local' : 'ai',
@@ -318,11 +350,12 @@ const sc = new ScrollController()
 onMounted(() => {
   sc.init(scrollContainer)
 })
-
 watch(() => messages.value, (o, n) => {
   sc.init(scrollContainer)
   sc.fresh()
 }, {deep: true})
+
+
 </script>
 <style lang="less" scoped>
 
@@ -366,6 +399,7 @@ watch(() => messages.value, (o, n) => {
         }
       }
     }
+
     :deep(.ant-bubble-content-wrapper:hover .bubble-footer .toggle-bubble-footer) {
       display: flex !important;
     }

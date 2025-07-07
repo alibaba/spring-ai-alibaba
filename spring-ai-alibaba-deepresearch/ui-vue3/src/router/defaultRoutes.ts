@@ -37,9 +37,18 @@ export const routes: Readonly<RouteRecordType[]> = [
     },
     children: [
       {
-        path: '/chat',
+        path: '/chat/:convId?',
         name: 'chat',
         component: () => import('../views/chat/index.vue'),
+        meta: {
+          icon: 'carbon:chat',
+          fullscreen: true,
+        },
+      },
+      {
+        path: '/config',
+        name: 'config',
+        component: () => import('../views/config/index.vue'),
         meta: {
           icon: 'carbon:chat',
           fullscreen: true,
