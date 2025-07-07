@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.manus.llm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
@@ -37,9 +36,9 @@ public class LlmService {
 
 	private final ChatClient finalizeChatClient;
 
-	private final ChatMemory conversationMemory = MessageWindowChatMemory.builder().maxMessages(1000).build();
+	private ChatMemory conversationMemory;
 
-	private final ChatMemory agentMemory = MessageWindowChatMemory.builder().maxMessages(1000).build();
+	private ChatMemory agentMemory;
 
 	private final ChatModel chatModel;
 
@@ -61,7 +60,7 @@ public class LlmService {
 			.build();
 
 		this.finalizeChatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
+			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.build();
 
@@ -71,7 +70,10 @@ public class LlmService {
 		return agentExecutionClient;
 	}
 
-	public ChatMemory getAgentMemory() {
+	public ChatMemory getAgentMemory(Integer maxMessages) {
+		if (agentMemory == null) {
+			agentMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+		}
 		return agentMemory;
 	}
 
@@ -95,7 +97,10 @@ public class LlmService {
 		return chatModel;
 	}
 
-	public ChatMemory getConversationMemory() {
+	public ChatMemory getConversationMemory(Integer maxMessages) {
+		if (conversationMemory == null) {
+			conversationMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+		}
 		return conversationMemory;
 	}
 
