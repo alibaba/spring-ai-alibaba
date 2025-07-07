@@ -31,6 +31,9 @@ public class ManusProperties {
 	@Autowired
 	private ConfigService configService;
 
+	// Browser Settings
+	// Begin-------------------------------------------------------------------------------------------
+
 	@ConfigProperty(group = "manus", subGroup = "browser", key = "headless", path = "manus.browser.headless",
 			description = "是否使用无头浏览器模式", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
@@ -49,6 +52,47 @@ public class ManusProperties {
 		this.browserHeadless = browserHeadless;
 	}
 
+	@ConfigProperty(group = "manus", subGroup = "browser", key = "requestTimeout",
+			path = "manus.browser.requestTimeout", description = "浏览器请求超时时间(秒)", defaultValue = "180",
+			inputType = ConfigInputType.NUMBER)
+	private volatile Integer browserRequestTimeout;
+
+	public Integer getBrowserRequestTimeout() {
+		String configPath = "manus.browser.requestTimeout";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			browserRequestTimeout = Integer.valueOf(value);
+		}
+		return browserRequestTimeout;
+	}
+
+	public void setBrowserRequestTimeout(Integer browserRequestTimeout) {
+		this.browserRequestTimeout = browserRequestTimeout;
+	}
+
+	@ConfigProperty(group = "manus", subGroup = "browser", key = "debug", path = "manus.browser.debug",
+			description = "浏览器debug模式", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+	private volatile Boolean browserDebug;
+
+	public Boolean getBrowserDebug() {
+		String configPath = "manus.browser.debug";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			browserDebug = Boolean.valueOf(value);
+		}
+		return browserDebug;
+	}
+
+	public void setBrowserDebug(Boolean browserDebug) {
+		this.browserDebug = browserDebug;
+	}
+
+	// Browser Settings
+	// End---------------------------------------------------------------------------------------------
+
+	// Interaction Settings
+	// Begin---------------------------------------------------------------------------------------
 	@ConfigProperty(group = "manus", subGroup = "interaction", key = "openBrowser", path = "manus.openBrowserAuto",
 			description = "启动时自动打开浏览器", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
@@ -67,27 +111,15 @@ public class ManusProperties {
 		this.openBrowserAuto = openBrowserAuto;
 	}
 
-	@ConfigProperty(group = "manus", subGroup = "browser", key = "requestTimeout",
-			path = "manus.browser.requestTimeout", description = "浏览器请求超时时间(秒)", defaultValue = "180",
-			inputType = ConfigInputType.NUMBER)
-	private volatile Integer browserRequestTimeout;
+	// Interaction Settings
+	// End-----------------------------------------------------------------------------------------
+
+	// Agent Settings
+	// Begin---------------------------------------------------------------------------------------------
 
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "maxSteps", path = "manus.maxSteps",
 			description = "智能体执行最大步数", defaultValue = "20", inputType = ConfigInputType.NUMBER)
 	private volatile Integer maxSteps;
-
-	public Integer getBrowserRequestTimeout() {
-		String configPath = "manus.browser.requestTimeout";
-		String value = configService.getConfigValue(configPath);
-		if (value != null) {
-			browserRequestTimeout = Integer.valueOf(value);
-		}
-		return browserRequestTimeout;
-	}
-
-	public void setBrowserRequestTimeout(Integer browserRequestTimeout) {
-		this.browserRequestTimeout = browserRequestTimeout;
-	}
 
 	public Integer getMaxSteps() {
 		String configPath = "manus.maxSteps";
@@ -120,41 +152,6 @@ public class ManusProperties {
 		this.forceOverrideFromYaml = forceOverrideFromYaml;
 	}
 
-	@ConfigProperty(group = "manus", subGroup = "general", key = "baseDir", path = "manus.baseDir",
-			description = "manus根目录", defaultValue = "", inputType = ConfigInputType.TEXT)
-	private volatile String baseDir = "";
-
-	@ConfigProperty(group = "manus", subGroup = "general", key = "debugDetail", path = "manus.general.debugDetail",
-			description = "debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
-			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
-	private volatile Boolean debugDetail;
-
-	public String getBaseDir() {
-		String configPath = "manus.baseDir";
-		String value = configService.getConfigValue(configPath);
-		if (value != null) {
-			baseDir = value;
-		}
-		return baseDir;
-	}
-
-	public void setBaseDir(String baseDir) {
-		this.baseDir = baseDir;
-	}
-
-	public Boolean getDebugDetail() {
-		String configPath = "manus.general.debugDetail";
-		String value = configService.getConfigValue(configPath);
-		if (value != null) {
-			debugDetail = Boolean.valueOf(value);
-		}
-		return debugDetail;
-	}
-
-	public void setDebugDetail(Boolean debugDetail) {
-		this.debugDetail = debugDetail;
-	}
-
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "userInputTimeout",
 			path = "manus.agent.userInputTimeout", description = "用户输入表单等待超时时间(秒)", defaultValue = "300",
 			inputType = ConfigInputType.NUMBER)
@@ -180,88 +177,50 @@ public class ManusProperties {
 		this.userInputTimeout = userInputTimeout;
 	}
 
-	// Infinite Context SubGroup
-	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "enabled", path = "manus.infiniteContext.enabled",
-			description = "是否开启无限上下文", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
-			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
-	private volatile Boolean infiniteContextEnabled;
+	@ConfigProperty(group = "manus", subGroup = "agent", key = "maxMemory", path = "manus.agent.maxMemory",
+			description = "能记住的最大消息数", defaultValue = "1000", inputType = ConfigInputType.NUMBER)
+	private volatile Integer maxMemory;
 
-	public Boolean getInfiniteContextEnabled() {
-		String configPath = "manus.infiniteContext.enabled";
+	public Integer getMaxMemory() {
+		String configPath = "manus.agent.maxMemory";
 		String value = configService.getConfigValue(configPath);
 		if (value != null) {
-			infiniteContextEnabled = Boolean.valueOf(value);
+			maxMemory = Integer.valueOf(value);
 		}
-		return infiniteContextEnabled;
+		if (maxMemory == null) {
+			maxMemory = 1000;
+		}
+		return maxMemory;
 	}
 
-	public void setInfiniteContextEnabled(Boolean infiniteContextEnabled) {
-		this.infiniteContextEnabled = infiniteContextEnabled;
+	public void setMaxMemory(Integer maxMemory) {
+		this.maxMemory = maxMemory;
 	}
 
-	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "parallelThreads", path = "manus.infiniteContext.parallelThreads",
-			description = "并行处理线程数", defaultValue = "4", inputType = ConfigInputType.NUMBER)
-	private volatile Integer infiniteContextParallelThreads;
+	// Agent Settings
+	// End-----------------------------------------------------------------------------------------------
 
-	public Integer getInfiniteContextParallelThreads() {
-		String configPath = "manus.infiniteContext.parallelThreads";
+	// Normal Settings
+	// Begin--------------------------------------------------------------------------------------------
+
+	@ConfigProperty(group = "manus", subGroup = "general", key = "baseDir", path = "manus.baseDir",
+			description = "manus根目录", defaultValue = "", inputType = ConfigInputType.TEXT)
+	private volatile String baseDir = "";
+
+	public String getBaseDir() {
+		String configPath = "manus.baseDir";
 		String value = configService.getConfigValue(configPath);
 		if (value != null) {
-			infiniteContextParallelThreads = Integer.valueOf(value);
+			baseDir = value;
 		}
-		// Ensure a default value if not configured and not set
-		if (infiniteContextParallelThreads == null) {
-			infiniteContextParallelThreads = 4;
-		}
-		return infiniteContextParallelThreads;
+		return baseDir;
 	}
 
-	public void setInfiniteContextParallelThreads(Integer infiniteContextParallelThreads) {
-		this.infiniteContextParallelThreads = infiniteContextParallelThreads;
+	public void setBaseDir(String baseDir) {
+		this.baseDir = baseDir;
 	}
 
-	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "taskContextSize", path = "manus.infiniteContext.taskContextSize",
-			description = "触发无限上下文的字符数阈值(字符数)", defaultValue = "20000", inputType = ConfigInputType.NUMBER)
-	private volatile Integer infiniteContextTaskContextSize;
-
-	public Integer getInfiniteContextTaskContextSize() {
-		String configPath = "manus.infiniteContext.taskContextSize";
-		String value = configService.getConfigValue(configPath);
-		if (value != null) {
-			infiniteContextTaskContextSize = Integer.valueOf(value);
-		}
-		// Ensure a default value if not configured and not set
-		if (infiniteContextTaskContextSize == null) {
-			infiniteContextTaskContextSize = 8192;
-		}
-		return infiniteContextTaskContextSize;
-	}
-
-	public void setInfiniteContextTaskContextSize(Integer infiniteContextTaskContextSize) {
-		this.infiniteContextTaskContextSize = infiniteContextTaskContextSize;
-	}
-
-	// File System Security SubGroup
-	@ConfigProperty(group = "manus", subGroup = "filesystem", key = "allowExternalAccess", path = "manus.filesystem.allowExternalAccess",
-			description = "Whether to allow file operations outside the working directory", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
-			options = { @ConfigOption(value = "true", label = "Yes"), @ConfigOption(value = "false", label = "No") })
-	private volatile Boolean allowExternalAccess;
-
-	public Boolean getAllowExternalAccess() {
-		String configPath = "manus.filesystem.allowExternalAccess";
-		String value = configService.getConfigValue(configPath);
-		if (value != null) {
-			allowExternalAccess = Boolean.valueOf(value);
-		}
-		// Default to false for security
-		if (allowExternalAccess == null) {
-			allowExternalAccess = false;
-		}
-		return allowExternalAccess;
-	}
-
-	public void setAllowExternalAccess(Boolean allowExternalAccess) {
-		this.allowExternalAccess = allowExternalAccess;
-	}
+	// Normal Settings
+	// End----------------------------------------------------------------------------------------------
 
 }

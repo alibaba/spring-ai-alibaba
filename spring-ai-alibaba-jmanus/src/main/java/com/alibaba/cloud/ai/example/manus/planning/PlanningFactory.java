@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpTool;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderService;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
@@ -145,13 +146,11 @@ public class PlanningFactory {
 
 		PlanningToolInterface planningTool = new PlanningTool();
 
-		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptLoader);
-
-		// Create PlanExecutorFactory for dynamic executor selection
-		PlanExecutorFactory planExecutorFactory = new PlanExecutorFactory(agentEntities, llmService, agentService,
-				recorder,manusProperties);
-
-		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptLoader);
+		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptLoader,
+				manusProperties);
+		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService, llmService,
+				manusProperties);
+		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties);
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
 				planFinalizer);

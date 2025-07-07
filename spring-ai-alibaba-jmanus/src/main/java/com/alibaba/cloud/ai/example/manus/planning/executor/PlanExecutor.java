@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.planning.executor;
 
 import cn.hutool.core.collection.CollectionUtil;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
@@ -40,8 +41,9 @@ public class PlanExecutor extends AbstractPlanExecutor {
 	 * @param llmService LLM service
 	 */
 	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService,
-			LlmService llmService) {
+			LlmService llmService, ManusProperties manusProperties) {
 		super(agents, recorder, agentService, llmService);
+		this.manusProperties = manusProperties;
 	}
 
 	/**

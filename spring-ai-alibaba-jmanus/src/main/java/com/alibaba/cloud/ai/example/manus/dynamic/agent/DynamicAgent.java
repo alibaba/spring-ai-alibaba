@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
@@ -59,7 +61,6 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
-import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 
 public class DynamicAgent extends ReActAgent {
 
@@ -106,8 +107,8 @@ public class DynamicAgent extends ReActAgent {
 	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
 			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
-			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptLoader promptLoader) {
-		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptLoader);
+			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptService promptService) {
+		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptService);
 		this.agentName = name;
 		this.agentDescription = description;
 		this.nextStepPrompt = nextStepPrompt;
@@ -150,10 +151,10 @@ public class DynamicAgent extends ReActAgent {
 			List<Message> thinkMessages = Arrays.asList(systemMessage, currentStepEnvMessage);
 			thinkActRecord.startThinking(thinkMessages.toString());
 			log.debug("Messages prepared for the prompt: {}", thinkMessages);
-			// Build current prompt. System message is the first message.
+			// Build current prompt. System message is the first message
 			List<Message> messages = new ArrayList<>(Collections.singletonList(systemMessage));
 			// Add history message.
-			ChatMemory chatMemory = llmService.getAgentMemory();
+			ChatMemory chatMemory = llmService.getAgentMemory(manusProperties.getMaxMemory());
 			List<Message> historyMem = chatMemory.get(getCurrentPlanId());
 			messages.addAll(historyMem);
 			messages.add(currentStepEnvMessage);
@@ -231,12 +232,12 @@ public class DynamicAgent extends ReActAgent {
 						// the tool's internal state.
 						// We can now get the updated state string for the LLM.
 
-						UserMessage userMessage = UserMessage.builder()
-							.text("User input received for form: " + formInputTool.getCurrentToolStateString())
-							.build();
-						processUserInputToMemory(userMessage); // Process user input
-																// to memory
-						llmCallResponse = formInputTool.getCurrentToolStateString();
+							UserMessage userMessage = UserMessage.builder()
+								.text("User input received for form: " + formInputTool.getCurrentToolStateString())
+								.build();
+							processUserInputToMemory(userMessage); // Process user input
+							// to memory
+							llmCallResponse = formInputTool.getCurrentToolStateString();
 
 					}
 					else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
@@ -288,7 +289,7 @@ public class DynamicAgent extends ReActAgent {
 			if (!StringUtils.isBlank(userInput)) {
 				// Add user input to memory
 
-				llmService.getAgentMemory().add(getCurrentPlanId(), userMessage);
+				llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getCurrentPlanId(), userMessage);
 
 			}
 		}
@@ -304,7 +305,7 @@ public class DynamicAgent extends ReActAgent {
 			return;
 		}
 		// clear current plan memory
-		llmService.getAgentMemory().clear(getCurrentPlanId());
+		llmService.getAgentMemory(manusProperties.getMaxMemory()).clear(getCurrentPlanId());
 		for (Message message : messages) {
 			// exclude all system message
 			if (message instanceof SystemMessage) {
@@ -316,7 +317,7 @@ public class DynamicAgent extends ReActAgent {
 				continue;
 			}
 			// only keep assistant message and tool_call message
-			llmService.getAgentMemory().add(getCurrentPlanId(), message);
+			llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getCurrentPlanId(), message);
 		}
 	}
 
@@ -361,7 +362,7 @@ public class DynamicAgent extends ReActAgent {
 	 * @return User message for current step environment data
 	 */
 	private Message currentStepEnvMessage() {
-		Message stepEnvMessage = promptLoader.createUserMessage("agent/current-step-env.txt", getMergedData());
+		Message stepEnvMessage = promptService.createUserMessage(PromptEnum.AGENT_CURRENT_STEP_ENV, getMergedData());
 		// mark as current step env data
 		stepEnvMessage.getMetadata().put(CURRENT_STEP_ENV_DATA_KEY, Boolean.TRUE);
 		return stepEnvMessage;
@@ -460,7 +461,7 @@ public class DynamicAgent extends ReActAgent {
 			if (System.currentTimeMillis() - startTime > userInputTimeoutMs) {
 				log.warn("Timeout waiting for user input for planId: {}", getCurrentPlanId());
 				formInputTool.handleInputTimeout(); // This will change its state to
-													// INPUT_TIMEOUT
+				// INPUT_TIMEOUT
 				break;
 			}
 			try {
@@ -472,7 +473,7 @@ public class DynamicAgent extends ReActAgent {
 				log.warn("Interrupted while waiting for user input for planId: {}", getCurrentPlanId());
 				Thread.currentThread().interrupt();
 				formInputTool.handleInputTimeout(); // Treat interruption as timeout for
-													// simplicity
+				// simplicity
 				break;
 			}
 		}

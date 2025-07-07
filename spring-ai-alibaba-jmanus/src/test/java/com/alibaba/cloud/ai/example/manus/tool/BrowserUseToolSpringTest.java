@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -83,7 +83,7 @@ class BrowserUseToolSpringTest {
 	private ManusProperties manusProperties;
 
 	@Autowired
-	private PromptLoader promptLoader;
+	private PromptService promptService;
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -94,7 +94,7 @@ class BrowserUseToolSpringTest {
 		manusProperties.setDebugDetail(true);
 		chromeDriverService.setManusProperties(manusProperties);
 		browserUseTool = new BrowserUseTool(chromeDriverService, innerStorageService);
-		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties, promptLoader);
+		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties, promptService);
 		agent.setCurrentPlanId("plan_123123124124124");
 		browserUseTool.setCurrentPlanId(agent.getCurrentPlanId());
 
@@ -103,8 +103,8 @@ class BrowserUseToolSpringTest {
 	private static class DummyBaseAgent extends BaseAgent {
 
 		public DummyBaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-				ManusProperties manusProperties, PromptLoader promptLoader) {
-			super(llmService, planExecutionRecorder, manusProperties, new HashMap<>(), promptLoader);
+				ManusProperties manusProperties, PromptService promptService) {
+			super(llmService, planExecutionRecorder, manusProperties, new HashMap<>(), promptService);
 
 		}
 
@@ -158,7 +158,7 @@ class BrowserUseToolSpringTest {
 			// Step 1: Navigate to Baidu
 			log.info("Step 1: Navigate to Baidu");
 			ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
-			Assertions.assertEquals("Navigated to https://www.baidu.com", navigateResult.getOutput(),
+			Assertions.assertEquals("successfully navigated to https://www.baidu.com", navigateResult.getOutput(),
 					"Failed to navigate to Baidu");
 			Page page = browserUseTool.getDriver().getCurrentPage();
 
@@ -210,7 +210,7 @@ class BrowserUseToolSpringTest {
 			// Step 6: Click search button
 			log.info("Step 6: Click search button");
 			ToolExecuteResult clickResult = executeAction("click", null, searchButtonIndex, null);
-			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"),
+			Assertions.assertTrue(clickResult.getOutput().contains("clicked"),
 					"Failed to click search button: " + clickResult.getOutput());
 
 			// Step 7: Wait and verify search results
@@ -232,7 +232,7 @@ class BrowserUseToolSpringTest {
 				}
 			}
 			clickResult = executeAction("click", null, searchButtonIndex, null);
-			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"),
+			Assertions.assertTrue(clickResult.getOutput().contains("clicked"),
 					"Failed to click search button: " + clickResult.getOutput());
 
 			log.info("Login success");
@@ -252,7 +252,7 @@ class BrowserUseToolSpringTest {
 			// Step 1: Navigate to Baidu
 			log.info("Step 1: Navigate to Baidu");
 			ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
-			Assertions.assertEquals("Navigated to https://www.baidu.com", navigateResult.getOutput(),
+			Assertions.assertEquals("successfully navigated to https://www.baidu.com", navigateResult.getOutput(),
 					"Failed to navigate to Baidu");
 			Page page = browserUseTool.getDriver().getCurrentPage();
 
@@ -393,7 +393,7 @@ class BrowserUseToolSpringTest {
 		// Step 1: Navigate to specified URL
 		log.info("Step 1: Navigate to {}", url);
 		ToolExecuteResult navigateResult = executeAction("navigate", url);
-		Assertions.assertEquals("Navigated to " + url, navigateResult.getOutput(), "Navigation failed");
+		Assertions.assertEquals("successfully navigated to " + url, navigateResult.getOutput(), "Navigation failed");
 
 		Page page = browserUseTool.getDriver().getCurrentPage();
 		// Step 2: Get and verify interactive elements
@@ -441,7 +441,7 @@ class BrowserUseToolSpringTest {
 	void testGitHubSearch() {
 		// Test simple GitHub page loading
 		ToolExecuteResult navigateResult = executeAction("navigate", "https://github.com");
-		Assertions.assertEquals("Navigated to https://github.com", navigateResult.getOutput(),
+		Assertions.assertEquals("successfully navigated to https://github.com", navigateResult.getOutput(),
 				"Failed to navigate to GitHub");
 
 		Page page = browserUseTool.getDriver().getCurrentPage();
@@ -457,7 +457,7 @@ class BrowserUseToolSpringTest {
 	void testNacosPageLink() {
 		// Test simple Nacos page loading
 		ToolExecuteResult navigateResult = executeAction("navigate", "https://nacos.io");
-		Assertions.assertEquals("Navigated to https://nacos.io", navigateResult.getOutput(),
+		Assertions.assertEquals("successfully navigated to https://nacos.io", navigateResult.getOutput(),
 				"Failed to navigate to Nacos");
 
 		Page page = browserUseTool.getDriver().getCurrentPage();
@@ -473,7 +473,7 @@ class BrowserUseToolSpringTest {
 	void testBaiduElements() {
 		// Test simple Baidu page loading
 		ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
-		Assertions.assertEquals("Navigated to https://www.baidu.com", navigateResult.getOutput(),
+		Assertions.assertEquals("successfully navigated to https://www.baidu.com", navigateResult.getOutput(),
 				"Failed to navigate to Baidu");
 
 		Page page = browserUseTool.getDriver().getCurrentPage();
@@ -491,8 +491,8 @@ class BrowserUseToolSpringTest {
 			// Step 1: Navigate to CSDN
 			log.info("Step 1: Navigate to CSDN");
 			ToolExecuteResult navigateResult = executeAction("navigate", "https://passport.csdn.net/login");
-			Assertions.assertEquals("Navigated to https://passport.csdn.net/login", navigateResult.getOutput(),
-					"Failed to navigate to CSDN login");
+			Assertions.assertEquals("successfully navigated to https://passport.csdn.net/login",
+					navigateResult.getOutput(), "Failed to navigate to CSDN login");
 			Page page = browserUseTool.getDriver().getCurrentPage();
 
 			// Step 2: Get and verify interactive elements
