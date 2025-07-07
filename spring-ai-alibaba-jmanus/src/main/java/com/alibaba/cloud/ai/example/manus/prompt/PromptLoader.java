@@ -20,9 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.chat.messages.Message;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -75,42 +72,6 @@ public class PromptLoader {
 			log.error("Failed to load prompt from: {}", promptPath, e);
 			return "";
 		}
-	}
-
-	/**
-	 * Create system prompt template message
-	 * @param promptPath Prompt file path
-	 * @param variables Variable mapping
-	 * @return System message
-	 */
-	public Message createSystemMessage(String promptPath, Map<String, Object> variables) {
-		String promptContent = loadPrompt(promptPath);
-		SystemPromptTemplate template = new SystemPromptTemplate(promptContent);
-		return template.createMessage(variables != null ? variables : Map.of());
-	}
-
-	/**
-	 * Create user prompt template message
-	 * @param promptPath Prompt file path
-	 * @param variables Variable mapping
-	 * @return User message
-	 */
-	public Message createUserMessage(String promptPath, Map<String, Object> variables) {
-		String promptContent = loadPrompt(promptPath);
-		PromptTemplate template = new PromptTemplate(promptContent);
-		return template.createMessage(variables != null ? variables : Map.of());
-	}
-
-	/**
-	 * Render prompt template
-	 * @param promptPath Prompt file path
-	 * @param variables Variable mapping
-	 * @return Rendered prompt content
-	 */
-	public String renderPrompt(String promptPath, Map<String, Object> variables) {
-		String promptContent = loadPrompt(promptPath);
-		PromptTemplate template = new PromptTemplate(promptContent);
-		return template.render(variables != null ? variables : Map.of());
 	}
 
 	/**
