@@ -20,10 +20,11 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
-import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import org.slf4j.Logger;
@@ -51,17 +52,17 @@ public class PlanCreator {
 
 	protected final PlanExecutionRecorder recorder;
 
-	private final PromptLoader promptLoader;
+	private final PromptService promptService;
 
 	private final ManusProperties manusProperties;
 
 	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningTool planningTool,
-			PlanExecutionRecorder recorder, PromptLoader promptLoader, ManusProperties manusProperties) {
+			PlanExecutionRecorder recorder, PromptService promptService, ManusProperties manusProperties) {
 		this.agents = agents;
 		this.llmService = llmService;
 		this.planningTool = planningTool;
 		this.recorder = recorder;
-		this.promptLoader = promptLoader;
+		this.promptService = promptService;
 		this.manusProperties = manusProperties;
 	}
 
@@ -181,7 +182,7 @@ public class PlanCreator {
 	 */
 	private String generatePlanPrompt(String request, String agentsInfo) {
 		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "request", request);
-		return promptLoader.renderPrompt("planning/plan-creation.txt", variables);
+		return promptService.renderPrompt(PromptEnum.PLANNING_PLAN_CREATION, variables);
 	}
 
 }
