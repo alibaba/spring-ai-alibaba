@@ -168,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import type { PlanTemplate } from '@/types/plan-template'
@@ -250,7 +250,7 @@ const loadTemplateData = async (template: PlanTemplate) => {
         if (parsed.params) {
           executionParams.value = parsed.params
         }
-      } catch (e) {
+      } catch {
         console.warn('无法解析JSON内容获取提示信息')
       }
     }
@@ -298,8 +298,8 @@ const handleSaveTemplate = async () => {
   try {
     // Validate JSON
     JSON.parse(content)
-  } catch (e: any) {
-    alert('JSON 格式无效，请修正后再保存\n错误: ' + e.message)
+  } catch (error: any) {
+    alert('JSON 格式无效，请修正后再保存\n错误: ' + error.message)
     return
   }
 
@@ -339,7 +339,7 @@ const handleGeneratePlan = async () => {
       if (response.planTemplateId && !currentTemplate.value) {
         currentTemplate.value = {
           id: response.planTemplateId,
-          title: response.title || '新生成的计划',
+          title: response.title ?? '新生成的计划',
           description: prompt,
           createTime: new Date().toISOString()
         }
@@ -388,7 +388,7 @@ const handleExecutePlan = async () => {
     const params = executionParams.value.trim() || undefined
     const response = await PlanActApiService.executePlan(currentTemplate.value.id, params)
     
-    const query = `执行计划模板: ${currentTemplate.value.title || currentTemplate.value.id}`
+    const query = `执行计划模板: ${currentTemplate.value.title ?? currentTemplate.value.id}`
     emit('planExecuted', { planId: response.planId, query })
     
     console.log('计划执行成功:', response)

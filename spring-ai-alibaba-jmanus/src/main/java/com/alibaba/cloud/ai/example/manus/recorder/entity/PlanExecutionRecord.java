@@ -47,7 +47,13 @@ public class PlanExecutionRecord {
 	private Long id;
 
 	// Unique identifier for the plan
-	private String planId;
+	private String currentPlanId;
+
+	// Parent plan ID for sub-plans (null for main plans)
+	private String rootPlanId;
+
+	// Think-act record ID that triggered this sub-plan (null for main plans)
+	private Long thinkActRecordId;
 
 	// Plan title
 	private String title;
@@ -98,8 +104,9 @@ public class PlanExecutionRecord {
 	 * Constructor for creating a new execution record
 	 * @param planId The unique identifier for the plan.
 	 */
-	public PlanExecutionRecord(String planId) {
-		this.planId = planId;
+	public PlanExecutionRecord(String currentPlanId, String rootPlanId) {
+		this.currentPlanId = currentPlanId;
+		this.rootPlanId = rootPlanId;
 		this.steps = new ArrayList<>();
 		this.startTime = LocalDateTime.now();
 		this.completed = false;
@@ -177,12 +184,28 @@ public class PlanExecutionRecord {
 		this.id = id;
 	}
 
-	public String getPlanId() {
-		return planId;
+	public String getCurrentPlanId() {
+		return currentPlanId;
 	}
 
-	public void setPlanId(String planId) {
-		this.planId = planId;
+	public void setCurrentPlanId(String planId) {
+		this.currentPlanId = planId;
+	}
+
+	public String getRootPlanId() {
+		return rootPlanId;
+	}
+
+	public void setRootPlanId(String rootPlanId) {
+		this.rootPlanId = rootPlanId;
+	}
+
+	public Long getThinkActRecordId() {
+		return thinkActRecordId;
+	}
+
+	public void setThinkActRecordId(Long thinkActRecordId) {
+		this.thinkActRecordId = thinkActRecordId;
 	}
 
 	public String getTitle() {
@@ -264,9 +287,9 @@ public class PlanExecutionRecord {
 	@Override
 	public String toString() {
 		return String.format(
-				"PlanExecutionRecord{id=%d, planId='%s', title='%s', steps=%d, currentStep=%d/%d, completed=%b}", id,
-				planId, title, steps.size(), currentStepIndex != null ? currentStepIndex + 1 : 0, steps.size(),
-				completed);
+				"PlanExecutionRecord{id=%d, planId='%s',planId='%s', title='%s', steps=%d, currentStep=%d/%d, completed=%b}",
+				id, currentPlanId, rootPlanId, title, steps.size(), currentStepIndex != null ? currentStepIndex + 1 : 0,
+				steps.size(), completed);
 	}
 
 }
