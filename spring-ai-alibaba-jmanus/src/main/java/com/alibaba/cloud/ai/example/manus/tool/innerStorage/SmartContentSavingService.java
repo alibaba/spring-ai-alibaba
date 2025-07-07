@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.example.manus.tool.innerStorage;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.*;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
@@ -86,8 +85,8 @@ public class SmartContentSavingService {
 			return new SmartProcessResult(null, content);
 		}
 
-		// 默认阈值：2KB
-		int threshold = 2048;
+		// Use configured threshold from ManusProperties
+		int threshold = manusProperties.getInfiniteContextTaskContextSize();
 
 		log.info("Processing content for plan {}: content length = {}, threshold = {}", planId, content.length(),
 				threshold);

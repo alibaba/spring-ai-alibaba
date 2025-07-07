@@ -101,13 +101,6 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	private static final String TASK_OUTPUT_FILE_NAME = "output.md";
 
 	/**
-	 * Default file split size (character count)
-	 * Number of file characters each task processes, adjustable based on actual
-	 * needs
-	 */
-	private static final int DEFAULT_SPLIT_SIZE = 5000;
-
-	/**
 	 * Maximum lines limit for get_lines operation
 	 * Single request can retrieve at most this many lines
 	 */
@@ -613,14 +606,14 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			}
 
 			if (isFile && isTextFile(path.toString())) {
-				// Process single file with dynamic split size
-				int splitSize = infiniteContextEnabled ? getInfiniteContextTaskContextSize() : getSplitSize();
+				// Process single file - always use infinite context task context size
+				int splitSize = getInfiniteContextTaskContextSize();
 				SplitResult result = splitSingleFileToTasks(path, null, splitSize, tasksPath, null);
 				allTaskDirs.addAll(result.taskDirs);
 
 			} else if (isDirectory) {
-				// Process all text files in directory with dynamic split size
-				int splitSize = infiniteContextEnabled ? getInfiniteContextTaskContextSize() : getSplitSize();
+				// Process all text files in directory - always use infinite context task context size
+				int splitSize = getInfiniteContextTaskContextSize();
 				List<Path> textFiles = Files.list(path)
 						.filter(Files::isRegularFile)
 						.filter(p -> isTextFile(p.toString()))
@@ -1019,17 +1012,6 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	}
 
 	/**
-	 * Get split size configuration for MapReduce operations
-	 * 
-	 * @return Split size in characters, returns default value if not configured
-	 */
-	private Integer getSplitSize() {
-		// For now, use default split size until the configuration is added to
-		// ManusProperties
-		return DEFAULT_SPLIT_SIZE;
-	}
-
-	/**
 	 * Check if infinite context is enabled
 	 * 
 	 * @return true if infinite context is enabled, false otherwise
@@ -1050,9 +1032,9 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	private Integer getInfiniteContextTaskContextSize() {
 		if (manusProperties != null) {
 			Integer contextSize = manusProperties.getInfiniteContextTaskContextSize();
-			return contextSize != null ? contextSize : 8192; // Default 8192 characters
+			return contextSize != null ? contextSize : 20000; // Default 20000 characters
 		}
-		return 8192; // Default 8192 characters
+		return 20000; // Default 20000 characters
 	}
 
 	/**

@@ -221,7 +221,7 @@ public class ManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "taskContextSize", path = "manus.infiniteContext.taskContextSize",
-			description = "单个任务的处理的上下文配置大小(字符数)", defaultValue = "20000", inputType = ConfigInputType.NUMBER)
+			description = "触发无限上下文的字符数阈值(字符数)", defaultValue = "20000", inputType = ConfigInputType.NUMBER)
 	private volatile Integer infiniteContextTaskContextSize;
 
 	public Integer getInfiniteContextTaskContextSize() {
