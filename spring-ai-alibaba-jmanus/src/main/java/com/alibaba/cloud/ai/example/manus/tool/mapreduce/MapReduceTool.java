@@ -35,10 +35,13 @@ import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
  * Data split tool for MapReduce workflow data preparation phase
- * Responsible for validating file existence, identifying table header information and performing data split processing
+ * Responsible for validating file existence, identifying table header
+ * information and performing data split processing
  * 
- * Supports class-level terminate columns configuration that takes precedence over input parameters.
- * When class-level terminateColumns is specified, input parameter terminate_columns will be ignored.
+ * Supports class-level terminate columns configuration that takes precedence
+ * over input parameters.
+ * When class-level terminateColumns is specified, input parameter
+ * terminate_columns will be ignored.
  */
 public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput> implements TerminableTool {
 
@@ -99,7 +102,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 	/**
 	 * Default file split size (character count)
-	 * Number of file characters each task processes, adjustable based on actual needs
+	 * Number of file characters each task processes, adjustable based on actual
+	 * needs
 	 */
 	private static final int DEFAULT_SPLIT_SIZE = 5000;
 
@@ -136,9 +140,6 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 		@com.fasterxml.jackson.annotation.JsonProperty("file_name")
 		private String fileName;
-
-		@com.fasterxml.jackson.annotation.JsonProperty("terminate_columns")
-		private List<String> terminateColumns;
 
 		private String content;
 
@@ -180,14 +181,6 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 		public void setFileName(String fileName) {
 			this.fileName = fileName;
-		}
-
-		public List<String> getTerminateColumns() {
-			return terminateColumns;
-		}
-
-		public void setTerminateColumns(List<String> terminateColumns) {
-			this.terminateColumns = terminateColumns;
 		}
 
 		public String getContent() {
@@ -245,24 +238,27 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	private static final String TOOL_DESCRIPTION = """
 			Data split tool for MapReduce workflow data preparation stage and task status management.
 			Supported operations:
-			- split_data: Automatically complete file existence validation and perform data split processing, supports CSV, TSV, TXT and other text format data files. 
+			- split_data: Automatically complete file existence validation and perform data split processing, supports CSV, TSV, TXT and other text format data files.
 			- record_map_output: Accepts content after Map stage processing completion, automatically generates filename and creates output file, records task status.
 			- get_lines: Get specified line range content from files in root plan directory (single request max %d lines).
 
 			Task management features:
 			- Support automatic file creation and status record management after Map stage completion
-			""".formatted(MAX_LINES_LIMIT);
+			"""
+			.formatted(MAX_LINES_LIMIT);
 
 	/**
-	 * Generate parameters JSON with dynamic terminate columns support like TerminateTool
+	 * Generate parameters JSON with dynamic terminate columns support like
+	 * TerminateTool
+	 * 
 	 * @param terminateColumns the columns for structured output
 	 * @return JSON string for parameters schema
 	 */
 	private static String generateParametersJson(List<String> terminateColumns) {
 		// If terminateColumns is null or empty, use "content" as default column
-		List<String> effectiveColumns = (terminateColumns == null || terminateColumns.isEmpty()) ? 
-			List.of("content") : terminateColumns;
-		
+		List<String> effectiveColumns = (terminateColumns == null || terminateColumns.isEmpty()) ? List.of("content")
+				: terminateColumns;
+
 		// Generate default columns array as JSON string
 		StringBuilder defaultColumnsBuilder = new StringBuilder();
 		defaultColumnsBuilder.append("[");
@@ -275,90 +271,90 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 		defaultColumnsBuilder.append("]");
 
 		return """
-			{
-			    "oneOf": [
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "split_data"
-			                },
-			                "file_path": {
-			                    "type": "string",
-			                    "description": "要处理的文件或文件夹路径"
-			                },
-			                "terminate_columns": {
-			                    "type": "array",
-			                    "items": {
-			                        "type": "string"
-			                    },
-			                    "description": "终止结果的列名，用于结构化输出"
-			                }
-			            },
-			            "required": ["action", "file_path"],
-			            "additionalProperties": false
-			        },
-			        {
-			           "type": "object",
-			           "properties": {
-			               "action": {
-			                   "type": "string",
-			                   "const": "record_map_output"
-			               },
-			               "terminate_columns": {
-			                   "type": "array",
-			                   "items": {"type": "string"},
-			                   "description": "Column names for the structured output data",
-			                   "default": %s
-			               },
-			               "data": {
-			                   "type": "array",
-			                   "items": {
-			                       "type": "array",
-			                       "items": {}
-			                   },
-			                   "description": "Data rows corresponding to the columns"
-			               },
-			               "task_id": {
-			                   "type": "string",
-			                   "description": "任务ID，用于状态跟踪"
-			               },
-			               "status": {
-			                   "type": "string",
-			                   "enum": ["completed", "failed"],
-			                   "description": "任务状态"
-			               }
-			           },
-			           "required": ["action", "terminate_columns", "data", "task_id", "status"],
-			           "additionalProperties": false
-			       },
-			       {
-			           "type": "object",
-			           "properties": {
-			               "action": {
-			                   "type": "string",
-			                   "const": "get_lines"
-			               },
-			               "file_name": {
-			                   "type": "string",
-			                   "description": "文件名（带扩展名），从根计划目录获取"
-			               },
-			               "start_line": {
-			                   "type": "integer",
-			                   "description": "起始行号，默认为1"
-			               },
-			               "end_line": {
-			                   "type": "integer",
-			                   "description": "结束行号，默认为文件末尾"
-			               }
-			           },
-			           "required": ["action", "file_name"],
-			           "additionalProperties": false
-			       }
-			    ]
-			}
-			""".formatted(defaultColumnsBuilder.toString());
+				{
+				    "oneOf": [
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": {
+				                    "type": "string",
+				                    "const": "split_data"
+				                },
+				                "file_path": {
+				                    "type": "string",
+				                    "description": "要处理的文件或文件夹路径"
+				                },
+				                "terminate_columns": {
+				                    "type": "array",
+				                    "items": {
+				                        "type": "string"
+				                    },
+				                    "description": "终止结果的列名，用于结构化输出"
+				                }
+				            },
+				            "required": ["action", "file_path"],
+				            "additionalProperties": false
+				        },
+				        {
+				           "type": "object",
+				           "properties": {
+				               "action": {
+				                   "type": "string",
+				                   "const": "record_map_output"
+				               },
+				               "terminate_columns": {
+				                   "type": "array",
+				                   "items": {"type": "string"},
+				                   "description": "Column names for the structured output data",
+				                   "default": %s
+				               },
+				               "data": {
+				                   "type": "array",
+				                   "items": {
+				                       "type": "array",
+				                       "items": {}
+				                   },
+				                   "description": "Data rows corresponding to the columns"
+				               },
+				               "task_id": {
+				                   "type": "string",
+				                   "description": "任务ID，用于状态跟踪"
+				               },
+				               "status": {
+				                   "type": "string",
+				                   "enum": ["completed", "failed"],
+				                   "description": "任务状态"
+				               }
+				           },
+				           "required": ["action", "terminate_columns", "data", "task_id", "status"],
+				           "additionalProperties": false
+				       },
+				       {
+				           "type": "object",
+				           "properties": {
+				               "action": {
+				                   "type": "string",
+				                   "const": "get_lines"
+				               },
+				               "file_name": {
+				                   "type": "string",
+				                   "description": "文件名（带扩展名），从根计划目录获取"
+				               },
+				               "start_line": {
+				                   "type": "integer",
+				                   "description": "起始行号，默认为1"
+				               },
+				               "end_line": {
+				                   "type": "integer",
+				                   "description": "结束行号，默认为文件末尾"
+				               }
+				           },
+				           "required": ["action", "file_name"],
+				           "additionalProperties": false
+				       }
+				    ]
+				}
+				""".formatted(defaultColumnsBuilder.toString());
 	}
 
 	private UnifiedDirectoryManager unifiedDirectoryManager;
@@ -368,7 +364,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	// 共享状态管理器，用于管理多个Agent实例间的共享状态
 	private MapReduceSharedStateManager sharedStateManager;
 
-	// Class-level terminate columns configuration - takes precedence over input parameters
+	// Class-level terminate columns configuration - takes precedence over input
+	// parameters
 	private List<String> terminateColumns;
 
 	// Track if map output recording has completed, allowing termination
@@ -376,27 +373,22 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
-	// Backward compatibility constructor without terminateColumns
-	public MapReduceTool(String planId, ManusProperties manusProperties,
-			MapReduceSharedStateManager sharedStateManager, UnifiedDirectoryManager unifiedDirectoryManager) {
-		this(planId, manusProperties, sharedStateManager, unifiedDirectoryManager, (List<String>) null);
-	}
-
 	// Convenience constructor with comma-separated string
 	public MapReduceTool(String planId, ManusProperties manusProperties,
-			MapReduceSharedStateManager sharedStateManager, UnifiedDirectoryManager unifiedDirectoryManager, String terminateColumnsString) {
+			MapReduceSharedStateManager sharedStateManager, UnifiedDirectoryManager unifiedDirectoryManager,
+			String terminateColumnsString) {
 		this.currentPlanId = planId;
 		this.manusProperties = manusProperties;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
-		
+
 		// Parse comma-separated string into List<String>
 		if (terminateColumnsString != null && !terminateColumnsString.trim().isEmpty()) {
 			this.terminateColumns = Arrays.asList(terminateColumnsString.split(","))
-				.stream()
-				.map(String::trim)
-				.filter(s -> !s.isEmpty())
-				.collect(Collectors.toList());
+					.stream()
+					.map(String::trim)
+					.filter(s -> !s.isEmpty())
+					.collect(Collectors.toList());
 		} else {
 			this.terminateColumns = null;
 		}
@@ -404,7 +396,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 	// Main constructor with List<String> terminateColumns
 	public MapReduceTool(String planId, ManusProperties manusProperties,
-			MapReduceSharedStateManager sharedStateManager, UnifiedDirectoryManager unifiedDirectoryManager, List<String> terminateColumns) {
+			MapReduceSharedStateManager sharedStateManager, UnifiedDirectoryManager unifiedDirectoryManager,
+			List<String> terminateColumns) {
 		this.currentPlanId = planId;
 		this.manusProperties = manusProperties;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
@@ -432,10 +425,7 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	@Override
 	public String getParameters() {
 		// Get terminate columns from shared state manager if available
-		List<String> terminateColumns = null;
-		if (sharedStateManager != null && currentPlanId != null) {
-			terminateColumns = sharedStateManager.getReturnColumns(currentPlanId);
-		}
+
 		return generateParametersJson(terminateColumns);
 	}
 
@@ -476,30 +466,14 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			return switch (action) {
 				case ACTION_SPLIT_DATA -> {
 					String filePath = input.getFilePath();
-					List<String> inputTerminateColumns = input.getTerminateColumns();
-
 					if (filePath == null) {
 						yield new ToolExecuteResult("Error: file_path parameter is required");
 					}
 
-					// Use class-level terminateColumns if specified, otherwise use input parameter
-					List<String> effectiveTerminateColumns = null;
-					if (this.terminateColumns != null && !this.terminateColumns.isEmpty()) {
-						// Use class-level terminate columns directly
-						effectiveTerminateColumns = new ArrayList<>(this.terminateColumns);
-					} else if (inputTerminateColumns != null) {
-						effectiveTerminateColumns = inputTerminateColumns;
-					}
-
-					// Store terminate column information
-					if (effectiveTerminateColumns != null && sharedStateManager != null) {
-						sharedStateManager.setReturnColumns(currentPlanId, effectiveTerminateColumns);
-					}
 
 					yield processFileOrDirectory(filePath);
 				}
 				case ACTION_RECORD_MAP_OUTPUT -> {
-					List<String> inputTerminateColumns = input.getTerminateColumns();
 					List<List<Object>> data = input.getData();
 					String taskId = input.getTaskId();
 					String status = input.getStatus();
@@ -509,8 +483,6 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 					if (this.terminateColumns != null && !this.terminateColumns.isEmpty()) {
 						// Use class-level terminate columns directly
 						effectiveTerminateColumns = new ArrayList<>(this.terminateColumns);
-					} else if (inputTerminateColumns != null) {
-						effectiveTerminateColumns = inputTerminateColumns;
 					}
 
 					if (effectiveTerminateColumns == null || effectiveTerminateColumns.isEmpty()) {
@@ -525,10 +497,11 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 					if (status == null) {
 						yield new ToolExecuteResult("Error: status parameter is required");
 					}
-					
+
 					// Validate status values
 					if (!TASK_STATUS_COMPLETED.equals(status) && !TASK_STATUS_FAILED.equals(status)) {
-						yield new ToolExecuteResult("Error: status must be either '" + TASK_STATUS_COMPLETED + "' or '" + TASK_STATUS_FAILED + "'");
+						yield new ToolExecuteResult("Error: status must be either '" + TASK_STATUS_COMPLETED + "' or '"
+								+ TASK_STATUS_FAILED + "'");
 					}
 
 					// Convert structured data to content string
@@ -547,18 +520,19 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 					yield getFileLines(fileName, startLine, endLine);
 				}
 				default -> new ToolExecuteResult(
-						"Unknown operation: " + action + ". Supported operations: " + ACTION_SPLIT_DATA + ", " + ACTION_RECORD_MAP_OUTPUT + ", " + ACTION_GET_LINES);
+						"Unknown operation: " + action + ". Supported operations: " + ACTION_SPLIT_DATA + ", "
+								+ ACTION_RECORD_MAP_OUTPUT + ", " + ACTION_GET_LINES);
 			};
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("MapReduceTool execution failed", e);
 			return new ToolExecuteResult("Tool execution failed: " + e.getMessage());
 		}
 	}
 
 	/**
-	 * Process complete workflow for file or directory: validate existence -> split data
+	 * Process complete workflow for file or directory: validate existence -> split
+	 * data
 	 */
 	private ToolExecuteResult processFileOrDirectory(String filePath) {
 		try {
@@ -571,55 +545,59 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			// Validate file or folder existence
 			// Use UnifiedDirectoryManager to get working directory path
 			String workingDirectoryPath = unifiedDirectoryManager.getWorkingDirectoryPath();
-		// Process based on path type
-		Path path = null;
-		boolean foundInInnerStorage = false;
-		
-		// First, try to find file in inner storage directory (similar to InnerStorageTool)
-		if (!Paths.get(filePath).isAbsolute()) {
-			// Check in inner storage first
-			Path planDir = getPlanDirectory(rootPlanId);
-			Path innerStoragePath = planDir.resolve(filePath);
-			
-			if (Files.exists(innerStoragePath)) {
-				path = innerStoragePath;
-				foundInInnerStorage = true;
-				log.info("Found file in inner storage: {}", path.toAbsolutePath());
-			}
-		}
-		
-		// If not found in inner storage, try working directory
-		if (path == null) {
-			if (Paths.get(filePath).isAbsolute()) {
-				// If absolute path, use directly
-				path = Paths.get(filePath);
-			}
-			else {
-				// If relative path, resolve based on working directory
-				path = Paths.get(workingDirectoryPath).resolve(filePath);
-			}
-			log.info("Checking file in working directory: {}", path.toAbsolutePath());
-		}
-		if (!Files.exists(path)) {
-			String errorMsg = "Error: File or directory does not exist: " + path.toAbsolutePath().toString();
-			if (!foundInInnerStorage) {
-				// Also check if file exists in inner storage and provide helpful message
-				Path planDir = getPlanDirectory(currentPlanId);
+			// Process based on path type
+			Path path = null;
+			boolean foundInInnerStorage = false;
+
+			// First, try to find file in inner storage directory (similar to
+			// InnerStorageTool)
+			if (!Paths.get(filePath).isAbsolute()) {
+				// Check in inner storage first
+				Path planDir = getPlanDirectory(rootPlanId);
 				Path innerStoragePath = planDir.resolve(filePath);
+
 				if (Files.exists(innerStoragePath)) {
-					errorMsg += "\nNote: File exists in inner storage at: " + innerStoragePath.toAbsolutePath().toString();
-				} else {
-					errorMsg += "\nSearched in: working directory and inner storage (" + planDir.toAbsolutePath().toString() + ")";
+					path = innerStoragePath;
+					foundInInnerStorage = true;
+					log.info("Found file in inner storage: {}", path.toAbsolutePath());
 				}
 			}
-			return new ToolExecuteResult(errorMsg);
-		}
+
+			// If not found in inner storage, try working directory
+			if (path == null) {
+				if (Paths.get(filePath).isAbsolute()) {
+					// If absolute path, use directly
+					path = Paths.get(filePath);
+				} else {
+					// If relative path, resolve based on working directory
+					path = Paths.get(workingDirectoryPath).resolve(filePath);
+				}
+				log.info("Checking file in working directory: {}", path.toAbsolutePath());
+			}
+			if (!Files.exists(path)) {
+				String errorMsg = "Error: File or directory does not exist: " + path.toAbsolutePath().toString();
+				if (!foundInInnerStorage) {
+					// Also check if file exists in inner storage and provide helpful message
+					Path planDir = getPlanDirectory(currentPlanId);
+					Path innerStoragePath = planDir.resolve(filePath);
+					if (Files.exists(innerStoragePath)) {
+						errorMsg += "\nNote: File exists in inner storage at: "
+								+ innerStoragePath.toAbsolutePath().toString();
+					} else {
+						errorMsg += "\nSearched in: working directory and inner storage ("
+								+ planDir.toAbsolutePath().toString() + ")";
+					}
+				}
+				return new ToolExecuteResult(errorMsg);
+			}
 
 			boolean isFile = Files.isRegularFile(path);
 			boolean isDirectory = Files.isDirectory(path);
 
-			// Determine output directory - store to inner_storage/{rootPlanId}/{currentPlanId}/tasks directory
-			// This creates a hierarchical structure where sub-plan data is stored under the root plan
+			// Determine output directory - store to
+			// inner_storage/{rootPlanId}/{currentPlanId}/tasks directory
+			// This creates a hierarchical structure where sub-plan data is stored under the
+			// root plan
 			Path rootPlanDir = getPlanDirectory(rootPlanId);
 			Path currentPlanDir = rootPlanDir.resolve(currentPlanId);
 			Path tasksPath = currentPlanDir.resolve(TASKS_DIRECTORY_NAME);
@@ -630,8 +608,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			// Check if infinite context is enabled for enhanced processing
 			boolean infiniteContextEnabled = isInfiniteContextEnabled();
 			if (infiniteContextEnabled) {
-				log.info("Infinite context enabled for plan: {}, parallel threads: {}, context size: {}", 
-					currentPlanId, getInfiniteContextParallelThreads(), getInfiniteContextTaskContextSize());
+				log.info("Infinite context enabled for plan: {}, parallel threads: {}, context size: {}",
+						currentPlanId, getInfiniteContextParallelThreads(), getInfiniteContextTaskContextSize());
 			}
 
 			if (isFile && isTextFile(path.toString())) {
@@ -640,14 +618,13 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 				SplitResult result = splitSingleFileToTasks(path, null, splitSize, tasksPath, null);
 				allTaskDirs.addAll(result.taskDirs);
 
-			}
-			else if (isDirectory) {
+			} else if (isDirectory) {
 				// Process all text files in directory with dynamic split size
 				int splitSize = infiniteContextEnabled ? getInfiniteContextTaskContextSize() : getSplitSize();
 				List<Path> textFiles = Files.list(path)
-					.filter(Files::isRegularFile)
-					.filter(p -> isTextFile(p.toString()))
-					.collect(Collectors.toList());
+						.filter(Files::isRegularFile)
+						.filter(p -> isTextFile(p.toString()))
+						.collect(Collectors.toList());
 
 				for (Path file : textFiles) {
 					SplitResult result = splitSingleFileToTasks(file, null, splitSize, tasksPath, null);
@@ -665,26 +642,18 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			result.append("File splitting successful");
 			result.append(", created ").append(allTaskDirs.size()).append(" task directories");
 
-			// If terminate columns are required, add terminate column information
-			if (sharedStateManager != null) {
-				List<String> terminateColumns = sharedStateManager.getReturnColumns(currentPlanId);
-				if (!terminateColumns.isEmpty()) {
-					result.append(", terminate columns: ").append(terminateColumns);
-				}
-			}
 
 			String resultStr = result.toString();
 			if (sharedStateManager != null) {
 				sharedStateManager.setLastOperationResult(currentPlanId, resultStr);
 			}
-			
+
 			// Mark that split data operation has completed, allowing termination
 			this.mapOutputRecorded = true;
-			
+
 			return new ToolExecuteResult(resultStr);
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			String error = "Processing failed: " + e.getMessage();
 			log.error(error, e);
 			return new ToolExecuteResult(error);
@@ -722,7 +691,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 				// Check if adding this line would exceed character limit
 				if (currentContent.length() + lineWithNewline.length() > splitSize && currentContent.length() > 0) {
-					// If would exceed limit and current content is not empty, save current content first
+					// If would exceed limit and current content is not empty, save current content
+					// first
 					String taskDir = createTaskDirectory(tasksPath, currentContent.toString(), fileName);
 					taskDirs.add(taskDir);
 					currentContent = new StringBuilder();
@@ -750,8 +720,7 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 		String taskId = null;
 		if (sharedStateManager != null) {
 			taskId = sharedStateManager.getNextTaskId(currentPlanId);
-		}
-		else {
+		} else {
 			// Fallback solution: use default format
 			taskId = String.format(TASK_ID_FORMAT, 1);
 		}
@@ -800,8 +769,9 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 	/**
 	 * Format structured data similar to TerminateTool
+	 * 
 	 * @param terminateColumns the column names
-	 * @param data the data rows
+	 * @param data             the data rows
 	 * @return formatted string representation of the structured data
 	 */
 	private String formatStructuredData(List<String> terminateColumns, List<List<Object>> data) {
@@ -824,8 +794,10 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 		// Fallback solution
 		StringBuilder sb = new StringBuilder();
 		// sb.append("MapReduceTool current status:\n");
-		// sb.append("- Plan ID: ").append(currentPlanId != null ? currentPlanId : "Not set").append("\n");
-		// sb.append("- Shared state manager: ").append(sharedStateManager != null ? "Connected" : "Not connected").append("\n");
+		// sb.append("- Plan ID: ").append(currentPlanId != null ? currentPlanId : "Not
+		// set").append("\n");
+		// sb.append("- Shared state manager: ").append(sharedStateManager != null ?
+		// "Connected" : "Not connected").append("\n");
 		return sb.toString();
 	}
 
@@ -882,12 +854,13 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			// Get timeout configuration for this operation
 			Integer timeout = getMapReduceTimeout();
 			log.debug("Recording Map task output with timeout: {} seconds", timeout);
-			
+
 			// Ensure planId exists
 			if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
 				return new ToolExecuteResult("Error: currentPlanId not set, cannot record task status");
 			}
-			// Locate task directory - use hierarchical structure: inner_storage/{rootPlanId}/{currentPlanId}/tasks/{taskId}
+			// Locate task directory - use hierarchical structure:
+			// inner_storage/{rootPlanId}/{currentPlanId}/tasks/{taskId}
 			Path rootPlanDir = getPlanDirectory(rootPlanId);
 			Path currentPlanDir = rootPlanDir.resolve(currentPlanId);
 			Path taskDir = currentPlanDir.resolve(TASKS_DIRECTORY_NAME).resolve(taskId);
@@ -909,8 +882,7 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 				// Read existing status
 				String existingStatusJson = new String(Files.readAllBytes(statusFile));
 				taskStatus = objectMapper.readValue(existingStatusJson, TaskStatus.class);
-			}
-			else {
+			} else {
 				// Create new status
 				taskStatus = new TaskStatus();
 				taskStatus.taskId = taskId;
@@ -936,16 +908,16 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			// Write updated status file
 			String statusJson = objectMapper.writeValueAsString(taskStatus);
 			Files.write(statusFile, statusJson.getBytes());
-			
+
 			// Mark that map output has been recorded, allowing termination
 			this.mapOutputRecorded = true;
-			
-			String result = String.format("Task %s status recorded: %s, output file: %s", taskId, status, TASK_OUTPUT_FILE_NAME);
+
+			String result = String.format("Task %s status recorded: %s, output file: %s", taskId, status,
+					TASK_OUTPUT_FILE_NAME);
 			log.info(result);
 			return new ToolExecuteResult(result);
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			String error = "Recording Map task status failed: " + e.getMessage();
 			log.error(error, e);
 			return new ToolExecuteResult(error);
@@ -954,7 +926,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 	/**
 	 * Get specified line range content from files in root plan directory
-	 * Similar to InnerStorageTool.getFileLines() but reads from root plan directory instead of subtask directory
+	 * Similar to InnerStorageTool.getFileLines() but reads from root plan directory
+	 * instead of subtask directory
 	 */
 	private ToolExecuteResult getFileLines(String fileName, Integer startLine, Integer endLine) {
 		try {
@@ -993,12 +966,14 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			int requestedLines = end - start;
 			if (requestedLines > MAX_LINES_LIMIT) {
 				return new ToolExecuteResult(
-						String.format("Requested lines %d exceeds maximum limit %d lines. Please reduce line range or use multiple calls to get content.", 
-						requestedLines, MAX_LINES_LIMIT));
+						String.format(
+								"Requested lines %d exceeds maximum limit %d lines. Please reduce line range or use multiple calls to get content.",
+								requestedLines, MAX_LINES_LIMIT));
 			}
 
 			StringBuilder result = new StringBuilder();
-			result.append(String.format("File: %s (lines %d-%d, total %d lines)\n", fileName, start + 1, end, lines.size()));
+			result.append(
+					String.format("File: %s (lines %d-%d, total %d lines)\n", fileName, start + 1, end, lines.size()));
 			result.append("=".repeat(50)).append("\n");
 
 			for (int i = start; i < end; i++) {
@@ -1007,8 +982,7 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 			return new ToolExecuteResult(result.toString());
 
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			log.error("Failed to read file lines", e);
 			return new ToolExecuteResult("Failed to read file lines: " + e.getMessage());
 		}
@@ -1034,24 +1008,30 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 	/**
 	 * Get MapReduce operation timeout configuration
-	 * @return Timeout in seconds, returns default value of 300 seconds if not configured
+	 * 
+	 * @return Timeout in seconds, returns default value of 300 seconds if not
+	 *         configured
 	 */
 	private Integer getMapReduceTimeout() {
-		// For now, use default timeout until the configuration is added to ManusProperties
+		// For now, use default timeout until the configuration is added to
+		// ManusProperties
 		return 300; // Default timeout is 5 minutes
 	}
 
 	/**
 	 * Get split size configuration for MapReduce operations
+	 * 
 	 * @return Split size in characters, returns default value if not configured
 	 */
 	private Integer getSplitSize() {
-		// For now, use default split size until the configuration is added to ManusProperties
+		// For now, use default split size until the configuration is added to
+		// ManusProperties
 		return DEFAULT_SPLIT_SIZE;
 	}
 
 	/**
 	 * Check if infinite context is enabled
+	 * 
 	 * @return true if infinite context is enabled, false otherwise
 	 */
 	private boolean isInfiniteContextEnabled() {
@@ -1064,6 +1044,7 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 	/**
 	 * Get infinite context parallel thread count
+	 * 
 	 * @return Number of parallel threads for infinite context processing
 	 */
 	private Integer getInfiniteContextParallelThreads() {
@@ -1076,6 +1057,7 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 	/**
 	 * Get infinite context task context size
+	 * 
 	 * @return Context size for infinite context tasks
 	 */
 	private Integer getInfiniteContextTaskContextSize() {
@@ -1088,6 +1070,7 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 	/**
 	 * Get ManusProperties instance - provides access to all configuration values
+	 * 
 	 * @return ManusProperties instance for configuration access
 	 */
 	public ManusProperties getManusProperties() {
@@ -1096,6 +1079,7 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 	/**
 	 * Get class-level terminate columns configuration
+	 * 
 	 * @return terminate columns as comma-separated string
 	 */
 	public String getTerminateColumns() {
@@ -1107,13 +1091,15 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 	/**
 	 * Get class-level terminate columns configuration as List
+	 * 
 	 * @return terminate columns as List<String>
 	 */
 	public List<String> getTerminateColumnsList() {
 		return this.terminateColumns == null ? null : new ArrayList<>(this.terminateColumns);
 	}
 
-	// ==================== TerminableTool interface implementation ====================
+	// ==================== TerminableTool interface implementation
+	// ====================
 
 	@Override
 	public boolean canTerminate() {

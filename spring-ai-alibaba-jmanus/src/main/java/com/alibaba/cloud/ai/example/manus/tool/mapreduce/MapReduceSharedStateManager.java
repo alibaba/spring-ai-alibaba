@@ -50,9 +50,6 @@ public class MapReduceSharedStateManager {
 		// 分割结果列表
 		private final List<String> splitResults = Collections.synchronizedList(new ArrayList<>());
 
-		// 返回列信息
-		private final List<String> returnColumns = Collections.synchronizedList(new ArrayList<>());
-
 		// 最后操作结果
 		private volatile String lastOperationResult = "";
 
@@ -72,10 +69,6 @@ public class MapReduceSharedStateManager {
 
 		public List<String> getSplitResults() {
 			return splitResults;
-		}
-
-		public List<String> getReturnColumns() {
-			return returnColumns;
 		}
 
 		public String getLastOperationResult() {
@@ -247,31 +240,6 @@ public class MapReduceSharedStateManager {
 		return new HashMap<>(planState.getMapTaskStatuses());
 	}
 
-	/**
-	 * 设置返回列信息
-	 * @param planId 计划ID
-	 * @param returnColumns 返回列列表
-	 */
-	public void setReturnColumns(String planId, List<String> returnColumns) {
-		PlanState planState = getOrCreatePlanState(planId);
-		planState.getReturnColumns().clear();
-		if (returnColumns != null) {
-			planState.getReturnColumns().addAll(returnColumns);
-		}
-	}
-
-	/**
-	 * 获取返回列信息
-	 * @param planId 计划ID
-	 * @return 返回列列表的副本
-	 */
-	public List<String> getReturnColumns(String planId) {
-		PlanState planState = getPlanState(planId);
-		if (planState == null) {
-			return new ArrayList<>();
-		}
-		return new ArrayList<>(planState.getReturnColumns());
-	}
 
 	/**
 	 * 设置最后操作结果

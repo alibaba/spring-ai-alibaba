@@ -351,7 +351,8 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			ExecutionStep copiedStep = new ExecutionStep();
 			copiedStep.setStepIndex(originalStep.getStepIndex());
 			copiedStep.setStepRequirement(originalStep.getStepRequirement());
-
+			copiedStep.setTerminateColumns(originalStep.getTerminateColumns());
+			验证这个terminate是否传递正确了，尤其是在Map阶段
 			copiedSteps.add(copiedStep);
 		}
 
@@ -743,13 +744,14 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		// 复制基本属性
 		copiedContext.setCurrentPlanId(originalContext.getCurrentPlanId());
+		copiedContext.setRootPlanId(originalContext.getRootPlanId());
 		copiedContext.setUserRequest(originalContext.getUserRequest());
 		copiedContext.setResultSummary(originalContext.getResultSummary());
 		copiedContext.setNeedSummary(originalContext.isNeedSummary());
 		copiedContext.setSuccess(originalContext.isSuccess());
 		copiedContext.setUseMemory(originalContext.isUseMemory());
 		copiedContext.setThinkActRecordId(originalContext.getThinkActRecordId());
-
+		
 		// 复制工具上下文
 		if (originalContext.getToolsContext() != null) {
 			Map<String, String> copiedToolsContext = new HashMap<>(originalContext.getToolsContext());
@@ -781,10 +783,10 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 			// 复制MapReduceExecutionPlan的所有属性
 			copiedMapReducePlan.setCurrentPlanId(originalMapReducePlan.getCurrentPlanId());
+			copiedMapReducePlan.setRootPlanId(originalMapReducePlan.getRootPlanId());
 			copiedMapReducePlan.setTitle(originalMapReducePlan.getTitle());
 			copiedMapReducePlan.setPlanningThinking(originalMapReducePlan.getPlanningThinking());
 			copiedMapReducePlan.setUserRequest(originalMapReducePlan.getUserRequest());
-
 			// 复制步骤结构（注意：这里复制的是引用，因为步骤本身在执行过程中不会被修改）
 			copiedMapReducePlan.setSteps(originalMapReducePlan.getSteps());
 
