@@ -18,10 +18,11 @@ package com.alibaba.cloud.ai.example.manus.planning.finalizer;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
-import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,12 +45,12 @@ public class PlanFinalizer {
 
 	protected final PlanExecutionRecorder recorder;
 
-	private final PromptLoader promptLoader;
+	private final PromptService promptService;
 
-	public PlanFinalizer(LlmService llmService, PlanExecutionRecorder recorder, PromptLoader promptLoader) {
+	public PlanFinalizer(LlmService llmService, PlanExecutionRecorder recorder, PromptService promptService) {
 		this.llmService = llmService;
 		this.recorder = recorder;
-		this.promptLoader = promptLoader;
+		this.promptService = promptService;
 	}
 
 	/**
@@ -73,10 +74,10 @@ public class PlanFinalizer {
 		try {
 			String userRequest = context.getUserRequest();
 
-			Message systemMessage = promptLoader.createSystemMessage("planning/plan-finalizer.txt",
+			Message systemMessage = promptService.createSystemMessage(PromptEnum.PLANNING_PLAN_FINALIZER,
 					Map.of("executionDetail", executionDetail));
 
-			Message userMessage = promptLoader.createUserMessage("planning/user-request.txt",
+			Message userMessage = promptService.createUserMessage(PromptEnum.PLANNING_USER_REQUEST,
 					Map.of("userRequest", userRequest));
 
 			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
