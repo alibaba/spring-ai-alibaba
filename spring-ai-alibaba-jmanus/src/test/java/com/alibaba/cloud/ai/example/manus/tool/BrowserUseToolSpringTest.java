@@ -98,7 +98,7 @@ class BrowserUseToolSpringTest {
 	private static class DummyBaseAgent extends BaseAgent {
 
 		public DummyBaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-							  ManusProperties manusProperties, PromptService promptService) {
+				ManusProperties manusProperties, PromptService promptService) {
 			super(llmService, planExecutionRecorder, manusProperties, new HashMap<>(), promptService);
 
 		}
