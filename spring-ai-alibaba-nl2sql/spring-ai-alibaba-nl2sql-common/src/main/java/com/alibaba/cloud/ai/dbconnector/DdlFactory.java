@@ -15,20 +15,21 @@
  */
 package com.alibaba.cloud.ai.dbconnector;
 
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-@AllArgsConstructor
 public class DdlFactory {
 
 	private static Map<String, AbstractDdl> ddlExecutorSet = new ConcurrentHashMap<>();
 
 	public static void registry(AbstractDdl ddlExecutor) {
 		ddlExecutorSet.put(getConstraint(ddlExecutor.getType()), ddlExecutor);
+	}
+
+	public DdlFactory() {
 	}
 
 	public AbstractDdl getDdlExecutor(DbConfig dbConfig) {

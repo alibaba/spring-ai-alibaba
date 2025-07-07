@@ -15,13 +15,49 @@
  */
 package com.alibaba.cloud.ai.vo;
 
-import lombok.Builder;
-import lombok.Data;
-
-@Data
-@Builder
 public class TelemetryResult {
 
 	private String traceId;
+
+	public String getTraceId() {
+		return traceId;
+	}
+
+	public void setTraceId(String traceId) {
+		this.traceId = traceId;
+	}
+
+	@Override
+	public String toString() {
+		return "TelemetryResult{" + "traceId='" + traceId + '\'' + '}';
+	}
+
+	public static TelemetryResultBuilder builder() {
+		return new TelemetryResultBuilder();
+	}
+
+	public static final class TelemetryResultBuilder {
+
+		private String traceId;
+
+		private TelemetryResultBuilder() {
+		}
+
+		public static TelemetryResultBuilder aTelemetryResult() {
+			return new TelemetryResultBuilder();
+		}
+
+		public TelemetryResultBuilder traceId(String traceId) {
+			this.traceId = traceId;
+			return this;
+		}
+
+		public TelemetryResult build() {
+			TelemetryResult telemetryResult = new TelemetryResult();
+			telemetryResult.setTraceId(traceId);
+			return telemetryResult;
+		}
+
+	}
 
 }
