@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2025 the original author or authors.
  *
@@ -19,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.planning.creator;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
@@ -54,13 +54,16 @@ public class PlanCreator {
 
 	private final PromptService promptService;
 
+	private final ManusProperties manusProperties;
+
 	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningTool planningTool,
-			PlanExecutionRecorder recorder, PromptService promptService) {
+			PlanExecutionRecorder recorder, PromptService promptService, ManusProperties manusProperties) {
 		this.agents = agents;
 		this.llmService = llmService;
 		this.planningTool = planningTool;
 		this.recorder = recorder;
 		this.promptService = promptService;
+		this.manusProperties = manusProperties;
 	}
 
 	/**
@@ -100,8 +103,9 @@ public class PlanCreator {
 					if (useMemory) {
 						requestSpec
 							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
-						requestSpec
-							.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
+						requestSpec.advisors(MessageChatMemoryAdvisor
+							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
+							.build());
 					}
 					ChatClient.CallResponseSpec response = requestSpec.call();
 					outputText = response.chatResponse().getResult().getOutput().getText();

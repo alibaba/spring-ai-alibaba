@@ -147,10 +147,10 @@ public class DynamicAgent extends ReActAgent {
 			List<Message> thinkMessages = Arrays.asList(systemMessage, currentStepEnvMessage);
 			thinkActRecord.startThinking(thinkMessages.toString());
 			log.debug("Messages prepared for the prompt: {}", thinkMessages);
-			// Build current prompt. System message is the first message.
+			// Build current prompt. System message is the first message
 			List<Message> messages = new ArrayList<>(Collections.singletonList(systemMessage));
 			// Add history message.
-			ChatMemory chatMemory = llmService.getAgentMemory();
+			ChatMemory chatMemory = llmService.getAgentMemory(manusProperties.getMaxMemory());
 			List<Message> historyMem = chatMemory.get(getPlanId());
 			messages.addAll(historyMem);
 			messages.add(currentStepEnvMessage);
@@ -231,7 +231,7 @@ public class DynamicAgent extends ReActAgent {
 								.text("User input received for form: " + formInputTool.getCurrentToolStateString())
 								.build();
 							processUserInputToMemory(userMessage); // Process user input
-																	// to memory
+							// to memory
 							llmCallResponse = formInputTool.getCurrentToolStateString();
 
 						}
@@ -245,7 +245,7 @@ public class DynamicAgent extends ReActAgent {
 							processUserInputToMemory(userMessage);
 							userInputService.removeFormInputTool(getPlanId()); // Clean up
 							return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS); // Or
-																											// FAILED
+							// FAILED
 						}
 					}
 				}
@@ -254,7 +254,7 @@ public class DynamicAgent extends ReActAgent {
 			// If the tool is TerminateTool, return completed state
 			if (TerminateTool.name.equals(toolcallName)) {
 				userInputService.removeFormInputTool(getPlanId()); // Clean up any pending
-																	// form
+				// form
 				return new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
 			}
 
@@ -279,7 +279,7 @@ public class DynamicAgent extends ReActAgent {
 			if (!StringUtils.isBlank(userInput)) {
 				// Add user input to memory
 
-				llmService.getAgentMemory().add(getPlanId(), userMessage);
+				llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getPlanId(), userMessage);
 
 			}
 		}
@@ -295,7 +295,7 @@ public class DynamicAgent extends ReActAgent {
 			return;
 		}
 		// clear current plan memory
-		llmService.getAgentMemory().clear(getPlanId());
+		llmService.getAgentMemory(manusProperties.getMaxMemory()).clear(getPlanId());
 		for (Message message : messages) {
 			// exclude all system message
 			if (message instanceof SystemMessage) {
@@ -307,7 +307,7 @@ public class DynamicAgent extends ReActAgent {
 				continue;
 			}
 			// only keep assistant message and tool_call message
-			llmService.getAgentMemory().add(getPlanId(), message);
+			llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getPlanId(), message);
 		}
 	}
 
@@ -451,7 +451,7 @@ public class DynamicAgent extends ReActAgent {
 			if (System.currentTimeMillis() - startTime > userInputTimeoutMs) {
 				log.warn("Timeout waiting for user input for planId: {}", getPlanId());
 				formInputTool.handleInputTimeout(); // This will change its state to
-													// INPUT_TIMEOUT
+				// INPUT_TIMEOUT
 				break;
 			}
 			try {
@@ -463,7 +463,7 @@ public class DynamicAgent extends ReActAgent {
 				log.warn("Interrupted while waiting for user input for planId: {}", getPlanId());
 				Thread.currentThread().interrupt();
 				formInputTool.handleInputTimeout(); // Treat interruption as timeout for
-													// simplicity
+				// simplicity
 				break;
 			}
 		}
