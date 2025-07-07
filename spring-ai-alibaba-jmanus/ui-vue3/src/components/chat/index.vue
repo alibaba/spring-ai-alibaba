@@ -360,7 +360,7 @@ import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
-import type { PlanExecutionRecord } from '@/types/plan-execution-record'
+import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
 
 /**
  * Chat message interface that includes PlanExecutionRecord for plan-based messages
@@ -609,9 +609,14 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
     }
 
     // Get corresponding step's agentExecution
-    const agentExecution = agentExecutionSequence[stepIndex]
+    const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
+    if (!agentExecution) {
+      console.log(`[ChatComponent] No agentExecution found for step ${stepIndex}`)
+      return []
+    }
+    
     if (!agentExecution.thinkActSteps) {
-      console.log(`[ChatComponent] No agentExecution or thinkActSteps found for step ${stepIndex}`)
+      console.log(`[ChatComponent] No thinkActSteps found for step ${stepIndex}`)
       return []
     }
 
@@ -647,7 +652,11 @@ const getSubPlanStepStatus = (message: Message, stepIndex: number, subStepIndex:
       return 'pending'
     }
 
-    const agentExecution = agentExecutionSequence[stepIndex]
+    const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
+    if (!agentExecution) {
+      return 'pending'
+    }
+    
     if (!agentExecution.thinkActSteps) {
       return 'pending'
     }
@@ -696,9 +705,14 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
       return
     }
 
-    const agentExecution = agentExecutionSequence[stepIndex]
+    const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
+    if (!agentExecution) {
+      console.warn('[ChatComponent] No agentExecution found for step', stepIndex)
+      return
+    }
+    
     if (!agentExecution.thinkActSteps) {
-      console.warn('[ChatComponent] No agentExecution or thinkActSteps for step click')
+      console.warn('[ChatComponent] No thinkActSteps found for step', stepIndex)
       return
     }
 
@@ -827,21 +841,11 @@ const updateStepActions = (message: Message, planDetails: any) => {
 }
 
 // 处理对话轮次开始
-const handleDialogRoundStart = (planId: string, query: string) => {
-  console.log('[ChatComponent] Starting dialog round with planId:', planId, 'query:', query)
+const handleDialogRoundStart = (planId: string) => {
+  console.log('[ChatComponent] Starting dialog round with planId:', planId)
 
-  if (planId && query) {
-    // 添加用户消息（如果还没有的话）
-    const hasUserMessage = messages.value.findIndex(m => m.type === 'user' && m.content === query)
-
-    if (hasUserMessage === -1) {
-      addMessage('user', query)
-      console.log('[ChatComponent] Added user message:', query)
-    } else {
-      console.log('[ChatComponent] User message already exists:', query)
-    }
-
-    // 检查是否已经有针对此计划的助手消息，使用与 handlePlanUpdate 相同的查找逻辑
+  if (planId) {
+    // 检查是否已经有针对此计划的助手消息
     const existingAssistantMsg = messages.value.findIndex(
       m => m.planExecution?.currentPlanId === planId && m.type === 'assistant'
     )
@@ -968,6 +972,10 @@ const handlePlanUpdate = (rootPlanId: string) => {
   }
 
   // 处理有步骤的计划...
+  
+  // 清除初始的thinking状态，让计划执行信息显示
+  delete message.thinking
+  
   // 处理步骤信息 - 确保格式一致并保持显示友好的格式
   const formattedSteps = planDetails.steps.map((step: any) => {
     // 如果步骤是字符串，直接返回
