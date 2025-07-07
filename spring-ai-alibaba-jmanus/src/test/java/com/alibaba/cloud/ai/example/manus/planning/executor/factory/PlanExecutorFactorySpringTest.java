@@ -2,8 +2,8 @@ package com.alibaba.cloud.ai.example.manus.planning.executor.factory;
 
 import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.executor.MapReducePlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
@@ -11,14 +11,15 @@ import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterfac
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+
+import java.util.List;
+
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-
-import java.util.List;
 
 /**
  * Spring integration test for PlanExecutorFactory Tests the factory's ability to create
@@ -33,7 +34,7 @@ class PlanExecutorFactorySpringTest {
 	private static final Logger log = LoggerFactory.getLogger(PlanExecutorFactorySpringTest.class);
 
 	@Autowired
-	private List<DynamicAgentEntity> agents;
+	private DynamicAgentLoader dynamicAgentLoader;
 
 	@Autowired
 	private LlmService llmService;
@@ -52,10 +53,10 @@ class PlanExecutorFactorySpringTest {
 	@BeforeEach
 	void setUp() {
 		log.info("Setting up PlanExecutorFactory test environment");
-		planExecutorFactory = new PlanExecutorFactory(agents, llmService, agentService, recorder, manusProperties);
+		planExecutorFactory = new PlanExecutorFactory(dynamicAgentLoader, llmService, agentService, recorder, manusProperties);
 
 		// Verify that required dependencies are properly injected
-		Assertions.assertNotNull(agents, "Agents list should be autowired");
+		Assertions.assertNotNull(dynamicAgentLoader, "DynamicAgentLoader should be autowired");
 		Assertions.assertNotNull(llmService, "LlmService should be autowired");
 		Assertions.assertNotNull(agentService, "AgentService should be autowired");
 		Assertions.assertNotNull(recorder, "PlanExecutionRecorder should be autowired");

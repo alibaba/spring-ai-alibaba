@@ -45,7 +45,7 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
-import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageTool;
+// import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageTool;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceSharedStateManager;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
@@ -126,6 +126,7 @@ public class PlanningFactory {
 	private SummaryWorkflow summaryWorkflow;
 
 	@Autowired
+	@Lazy
 	private PlanExecutorFactory planExecutorFactory;
 
 	@Autowired
@@ -194,7 +195,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new Bash(unifiedDirectoryManager));
 		toolDefinitions.add(new DocLoaderTool());
 		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, unifiedDirectoryManager));
-		toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
+		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
 		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());

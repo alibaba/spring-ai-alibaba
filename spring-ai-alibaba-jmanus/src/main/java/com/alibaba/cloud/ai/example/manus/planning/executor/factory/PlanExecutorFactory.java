@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.planning.executor.factory;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.executor.MapReducePlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
@@ -40,7 +41,7 @@ public class PlanExecutorFactory {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanExecutorFactory.class);
 
-	private final List<DynamicAgentEntity> agents;
+	private final DynamicAgentLoader dynamicAgentLoader;
 
 	private final LlmService llmService;
 
@@ -50,9 +51,9 @@ public class PlanExecutorFactory {
 
 	private final ManusProperties manusProperties;
 
-	public PlanExecutorFactory(List<DynamicAgentEntity> agents, LlmService llmService, AgentService agentService,
+	public PlanExecutorFactory(DynamicAgentLoader dynamicAgentLoader, LlmService llmService, AgentService agentService,
 			PlanExecutionRecorder recorder, ManusProperties manusProperties) {
-		this.agents = agents;
+		this.dynamicAgentLoader = dynamicAgentLoader;
 		this.llmService = llmService;
 		this.agentService = agentService;
 		this.recorder = recorder;
@@ -94,6 +95,7 @@ public class PlanExecutorFactory {
 	 */
 	private PlanExecutorInterface createSimpleExecutor() {
 		log.debug("Creating simple plan executor");
+		List<DynamicAgentEntity> agents = dynamicAgentLoader.getAllAgents();
 		return new PlanExecutor(agents, recorder, agentService, llmService, manusProperties);
 	}
 
@@ -103,6 +105,7 @@ public class PlanExecutorFactory {
 	 */
 	private PlanExecutorInterface createAdvancedExecutor() {
 		log.debug("Creating advanced MapReduce plan executor");
+		List<DynamicAgentEntity> agents = dynamicAgentLoader.getAllAgents();
 		return new MapReducePlanExecutor(agents, recorder, agentService, llmService, manusProperties);
 	}
 

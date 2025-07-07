@@ -64,6 +64,16 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 	private static final String ACTION_GET_LINES = "get_lines";
 
 	/**
+	 * Supported operation type: append content to file
+	 */
+	private static final String ACTION_APPEND = "append";
+
+	/**
+	 * Supported operation type: replace text in file
+	 */
+	private static final String ACTION_REPLACE = "replace";
+
+	/**
 	 * Default plan ID prefix When planId is empty, use this prefix + timestamp to
 	 * generate default ID
 	 */
@@ -144,6 +154,12 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 		@com.fasterxml.jackson.annotation.JsonProperty("end_line")
 		private Integer endLine;
 
+		@com.fasterxml.jackson.annotation.JsonProperty("source_text")
+		private String sourceText;
+
+		@com.fasterxml.jackson.annotation.JsonProperty("target_text")
+		private String targetText;
+
 		public MapReduceInput() {
 		}
 
@@ -219,6 +235,22 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			this.endLine = endLine;
 		}
 
+		public String getSourceText() {
+			return sourceText;
+		}
+
+		public void setSourceText(String sourceText) {
+			this.sourceText = sourceText;
+		}
+
+		public String getTargetText() {
+			return targetText;
+		}
+
+		public void setTargetText(String targetText) {
+			this.targetText = targetText;
+		}
+
 	}
 
 	private static final String TOOL_NAME = "map_reduce_tool";
@@ -229,6 +261,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			- split_data: Automatically complete file existence validation and perform data split processing, supports CSV, TSV, TXT and other text format data files.
 			- record_map_output: Accepts content after Map stage processing completion, automatically generates filename and creates output file, records task status.
 			- get_lines: Get specified line range content from files in root plan directory (single request max %d lines).
+			- append: Append content to file in root plan directory (auto-create file and directory).
+			- replace: Replace specific text in file from root plan directory.
 
 			Task management features:
 			- Support automatic file creation and status record management after Map stage completion
@@ -336,6 +370,48 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 				               }
 				           },
 				           "required": ["action", "file_name"],
+				           "additionalProperties": false
+				       },
+				       {
+				           "type": "object",
+				           "properties": {
+				               "action": {
+				                   "type": "string",
+				                   "const": "append"
+				               },
+				               "file_name": {
+				                   "type": "string",
+				                   "description": "文件名（带扩展名），在根计划目录中操作"
+				               },
+				               "content": {
+				                   "type": "string",
+				                   "description": "要追加的内容"
+				               }
+				           },
+				           "required": ["action", "file_name", "content"],
+				           "additionalProperties": false
+				       },
+				       {
+				           "type": "object",
+				           "properties": {
+				               "action": {
+				                   "type": "string",
+				                   "const": "replace"
+				               },
+				               "file_name": {
+				                   "type": "string",
+				                   "description": "文件名（带扩展名），在根计划目录中操作"
+				               },
+				               "source_text": {
+				                   "type": "string",
+				                   "description": "要被替换的文本"
+				               },
+				               "target_text": {
+				                   "type": "string",
+				                   "description": "替换后的文本"
+				               }
+				           },
+				           "required": ["action", "file_name", "source_text", "target_text"],
 				           "additionalProperties": false
 				       }
 				    ]
@@ -504,8 +580,33 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 					yield getFileLines(fileName, startLine, endLine);
 				}
+				case ACTION_APPEND -> {
+					String fileName = input.getFileName();
+					String content = input.getContent();
+
+					if (fileName == null || fileName.trim().isEmpty()) {
+						yield new ToolExecuteResult("Error: file_name parameter is required");
+					}
+
+					yield appendToFile(fileName, content);
+				}
+				case ACTION_REPLACE -> {
+					String fileName = input.getFileName();
+					String sourceText = input.getSourceText();
+					String targetText = input.getTargetText();
+
+					if (fileName == null || fileName.trim().isEmpty()) {
+						yield new ToolExecuteResult("Error: file_name parameter is required");
+					}
+					if (sourceText == null || targetText == null) {
+						yield new ToolExecuteResult("Error: source_text and target_text parameters are required");
+					}
+
+					yield replaceInFile(fileName, sourceText, targetText);
+				}
 				default -> new ToolExecuteResult("Unknown operation: " + action + ". Supported operations: "
-						+ ACTION_SPLIT_DATA + ", " + ACTION_RECORD_MAP_OUTPUT + ", " + ACTION_GET_LINES);
+						+ ACTION_SPLIT_DATA + ", " + ACTION_RECORD_MAP_OUTPUT + ", " + ACTION_GET_LINES + ", "
+						+ ACTION_APPEND + ", " + ACTION_REPLACE);
 			};
 
 		}
@@ -681,16 +782,39 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 				// Check if adding this line would exceed character limit
 				if (currentContent.length() + lineWithNewline.length() > splitSize && currentContent.length() > 0) {
-					// If would exceed limit and current content is not empty, save
-					// current content
-					// first
+					// If would exceed limit and current content is not empty, save current content first
 					String taskDir = createTaskDirectory(tasksPath, currentContent.toString(), fileName);
 					taskDirs.add(taskDir);
 					currentContent = new StringBuilder();
 				}
 
-				// Add current line
-				currentContent.append(lineWithNewline);
+				// Handle oversized single line when currentContent is empty
+				if (currentContent.length() == 0 && lineWithNewline.length() > splitSize) {
+					// Split the oversized line into multiple chunks
+					String lineContent = lineWithNewline;
+					int startIndex = 0;
+					int chunkCount = 0;
+					
+					log.warn("Line exceeds split size limit ({} chars > {} chars), splitting into chunks: file={}", 
+							lineWithNewline.length(), splitSize, fileName);
+					
+					while (startIndex < lineContent.length()) {
+						int endIndex = Math.min(startIndex + splitSize, lineContent.length());
+						String chunk = lineContent.substring(startIndex, endIndex);
+						chunkCount++;
+						
+						// Create task directory for each chunk
+						String taskDir = createTaskDirectory(tasksPath, chunk, fileName);
+						taskDirs.add(taskDir);
+						
+						startIndex = endIndex;
+					}
+					
+					log.info("Oversized line split into {} chunks for file: {}", chunkCount, fileName);
+				} else {
+					// Add current line normally
+					currentContent.append(lineWithNewline);
+				}
 			}
 
 			// Process remaining content
@@ -968,8 +1092,24 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 					String.format("File: %s (lines %d-%d, total %d lines)\n", fileName, start + 1, end, lines.size()));
 			result.append("=".repeat(50)).append("\n");
 
+			// Smart content truncation based on context size
+			int contextSizeLimit = getInfiniteContextTaskContextSize();
+			int currentLength = result.length();
+			boolean truncated = false;
+
 			for (int i = start; i < end; i++) {
-				result.append(String.format("%4d: %s\n", i + 1, lines.get(i)));
+				String lineContent = String.format("%4d: %s\n", i + 1, lines.get(i));
+				if (currentLength + lineContent.length() > contextSizeLimit) {
+					truncated = true;
+					break;
+				}
+				result.append(lineContent);
+				currentLength += lineContent.length();
+			}
+
+			// If content was truncated, add ellipsis to indicate more content exists
+			if (truncated) {
+				result.append("...\n");
 			}
 
 			return new ToolExecuteResult(result.toString());
@@ -978,6 +1118,113 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 		catch (IOException e) {
 			log.error("Failed to read file lines", e);
 			return new ToolExecuteResult("Failed to read file lines: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Append content to file in root plan directory
+	 * Similar to InnerStorageTool.appendToFile() but operates on root plan directory
+	 */
+	private ToolExecuteResult appendToFile(String fileName, String content) {
+		try {
+			if (fileName == null || fileName.trim().isEmpty()) {
+				return new ToolExecuteResult("Error: file_name parameter is required");
+			}
+			if (content == null) {
+				content = "";
+			}
+
+			// Get file from root plan directory
+			Path rootPlanDir = getPlanDirectory(rootPlanId);
+			ensureDirectoryExists(rootPlanDir);
+
+			// Get file path and append content
+			Path filePath = rootPlanDir.resolve(fileName);
+
+			String resultMessage;
+			// If file doesn't exist, create new file
+			if (!Files.exists(filePath)) {
+				Files.writeString(filePath, content);
+				log.info("File created and content added: {}", fileName);
+				resultMessage = String.format("File created successfully and content added: %s", fileName);
+			}
+			else {
+				// Append content (add newline)
+				Files.writeString(filePath, "\n" + content, StandardOpenOption.APPEND);
+				log.info("Content appended to file: {}", fileName);
+				resultMessage = String.format("Content appended successfully: %s", fileName);
+			}
+
+			// Read the file and get last 3 lines with line numbers
+			List<String> lines = Files.readAllLines(filePath);
+			StringBuilder result = new StringBuilder();
+			result.append(resultMessage).append("\n\n");
+			result.append("Last 3 lines of file:\n");
+			result.append("-".repeat(30)).append("\n");
+
+			int totalLines = lines.size();
+			int startLine = Math.max(0, totalLines - 3);
+			
+			for (int i = startLine; i < totalLines; i++) {
+				result.append(String.format("%4d: %s\n", i + 1, lines.get(i)));
+			}
+
+			return new ToolExecuteResult(result.toString());
+
+		}
+		catch (IOException e) {
+			log.error("Failed to append to file", e);
+			return new ToolExecuteResult("Failed to append to file: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Replace text in file from root plan directory
+	 * Similar to InnerStorageTool.replaceInFile() but operates on root plan directory
+	 */
+	private ToolExecuteResult replaceInFile(String fileName, String sourceText, String targetText) {
+		try {
+			if (fileName == null || fileName.trim().isEmpty()) {
+				return new ToolExecuteResult("Error: file_name parameter is required");
+			}
+			if (sourceText == null || targetText == null) {
+				return new ToolExecuteResult("Error: source_text and target_text parameters are required");
+			}
+
+			// Get file from root plan directory
+			Path rootPlanDir = getPlanDirectory(rootPlanId);
+			Path filePath = rootPlanDir.resolve(fileName);
+
+			if (!Files.exists(filePath)) {
+				return new ToolExecuteResult("Error: File does not exist: " + fileName);
+			}
+
+			String fileContent = Files.readString(filePath);
+			String newContent = fileContent.replace(sourceText, targetText);
+			Files.writeString(filePath, newContent);
+
+			log.info("Text replaced in file: {}", fileName);
+
+			// Read the file and get last 3 lines with line numbers
+			List<String> lines = Files.readAllLines(filePath);
+			StringBuilder result = new StringBuilder();
+			result.append(String.format("Text replacement successful: %s", fileName)).append("\n\n");
+			result.append("Last 3 lines of file:\n");
+			result.append("-".repeat(30)).append("\n");
+
+			int totalLines = lines.size();
+			int startLine = Math.max(0, totalLines - 3);
+			
+			for (int i = startLine; i < totalLines; i++) {
+				result.append(String.format("%4d: %s\n", i + 1, lines.get(i)));
+			}
+
+			return new ToolExecuteResult(result.toString());
+
+		}
+		catch (IOException e) {
+			log.error("Failed to replace text in file", e);
+			return new ToolExecuteResult("Failed to replace text in file: " + e.getMessage());
 		}
 	}
 
