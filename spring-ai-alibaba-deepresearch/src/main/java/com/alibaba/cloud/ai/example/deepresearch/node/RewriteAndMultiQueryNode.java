@@ -44,19 +44,14 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 
 	private final QueryTransformer queryTransformer;
 
-	private final QueryExpander queryExpander;
+	ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
 
 	public RewriteAndMultiQueryNode(ChatClient.Builder rewriteAndMultiQueryAgentBuilder) {
+		this.rewriteAndMultiQueryAgentBuilder = rewriteAndMultiQueryAgentBuilder;
+
 		// 查询重写
 		this.queryTransformer = RewriteQueryTransformer.builder()
 			.chatClientBuilder(rewriteAndMultiQueryAgentBuilder)
-			.build();
-
-		// 查询拓展
-		this.queryExpander = MultiQueryExpander.builder()
-			.chatClientBuilder(rewriteAndMultiQueryAgentBuilder)
-			.includeOriginal(true)
-			.numberOfQueries(3)
 			.build();
 	}
 
@@ -71,7 +66,19 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 		Query query = Query.builder().text(queryText).build();
 		// 查询重写
 		Query rewriteQuery = queryTransformer.transform(query);
-		// 多拓展
+
+		// 查询拓展
+		int optimizeQueryNum = state.value("optimize_query_num", 3);
+		if (optimizeQueryNum > 5)
+			optimizeQueryNum = 5;
+		if (optimizeQueryNum < 0)
+			optimizeQueryNum = 1;
+		QueryExpander queryExpander = MultiQueryExpander.builder()
+			.chatClientBuilder(rewriteAndMultiQueryAgentBuilder)
+			.includeOriginal(true)
+			.numberOfQueries(optimizeQueryNum)
+			.build();
+
 		List<Query> multiQueries = queryExpander.expand(rewriteQuery);
 		List<String> newQueries = multiQueries.stream().map(Query::text).collect(Collectors.toList());
 		updated.put("optimize_queries", newQueries);
