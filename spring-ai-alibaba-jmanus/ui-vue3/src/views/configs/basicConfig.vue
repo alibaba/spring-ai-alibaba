@@ -17,7 +17,7 @@
   <div class="config-panel">
     <div class="config-header">
       <div class="header-left">
-        <h2>基础配置</h2>
+        <h2>{{ t('config.basicConfig.title') }}</h2>
         <div class="config-stats">
           <span class="stat-item">
             <span class="stat-label">总配置项:</span>
@@ -352,7 +352,7 @@ const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   
   // 浏览器设置
   'headlessBrowser': '是否使用无头浏览器模式',
-  'browserTimeout': '浏览器请求超时时间(秒)',
+  'browserTimeout': t('config.basicConfig.browserTimeout'),
   'browserDebug': '浏览器debug模式',
   
   // 交互设置
@@ -363,7 +363,7 @@ const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   'systemName': '系统名称',
   'language': '默认语言',
   'maxThreads': '最大线程数',
-  'timeoutSeconds': '请求超时时间(秒)'
+  'timeoutSeconds': t('config.basicConfig.requestTimeout')
 }
 
 // 组显示名称映射
@@ -586,7 +586,7 @@ const loadAllConfigs = async () => {
     console.log('配置加载完成:', configGroups.value)
   } catch (error) {
     console.error('加载配置失败:', error)
-    showMessage('加载配置失败，请刷新重试', 'error')
+    showMessage(t('config.basicConfig.loadConfigFailed'), 'error')
   } finally {
     initialLoading.value = false
   }
@@ -630,7 +630,7 @@ const saveAllConfigs = async () => {
     }
   } catch (error) {
     console.error('保存配置失败:', error)
-    showMessage('保存失败，请重试', 'error')
+    showMessage(t('config.basicConfig.saveFailed'), 'error')
   } finally {
     loading.value = false
   }
@@ -680,7 +680,7 @@ const resetGroupConfigs = async (groupName: string) => {
     }
   } catch (error) {
     console.error('重置组配置失败:', error)
-    showMessage('重置失败，请重试', 'error')
+    showMessage(t('config.basicConfig.resetFailed'), 'error')
   } finally {
     loading.value = false
   }
@@ -838,7 +838,7 @@ const importConfigs = (event: Event) => {
       }
     } catch (error) {
       console.error('导入配置失败:', error)
-      showMessage('导入失败，请检查文件格式', 'error')
+      showMessage(t('config.basicConfig.importFailed'), 'error')
     } finally {
       loading.value = false
       // 清空输入框

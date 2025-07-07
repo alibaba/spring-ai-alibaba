@@ -166,7 +166,7 @@ onUnmounted(() => {
   position: absolute;
   top: 100%;
   right: 0;
-  z-index: 1000;
+  z-index: 9999;
   margin-top: 4px;
   background: linear-gradient(135deg, rgba(40, 40, 50, 0.95), rgba(30, 30, 40, 0.95));
   backdrop-filter: blur(16px);
@@ -260,7 +260,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 999;
+  z-index: 9998;
   background: transparent;
 }
 

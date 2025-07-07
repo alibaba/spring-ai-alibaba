@@ -43,7 +43,7 @@
                 <div class="thinking-avatar">
                   <Icon icon="carbon:thinking" class="thinking-icon" />
                 </div>
-                <div class="thinking-label">TaskPilot 思考/处理</div>
+                <div class="thinking-label">{{ $t('chat.thinkingLabel') }}</div>
               </div>
 
               <div class="thinking-content">
@@ -58,7 +58,7 @@
                   <div class="progress-bar">
                     <div class="progress-fill" :style="{ width: message.planExecution.progress + '%' }"></div>
                   </div>
-                  <span class="progress-text">{{ message.planExecution.progressText ?? '处理中...' }}</span>
+                  <span class="progress-text">{{ message.planExecution.progressText ?? $t('chat.processing') + '...' }}</span>
                 </div>
 
                 <!-- 步骤执行详情 -->
@@ -88,7 +88,7 @@
                         }}
                       </span>
                       <span class="step-title">
-                        {{ step || `步骤 ${index + 1}` }}
+                   {{ step || `${$t('chat.step')} ${index + 1}` }}
                       </span>
                       <span v-if="index === (message.planExecution?.currentStepIndex ?? -1)" class="step-status current">
                         {{ $t('chat.status.executing') }}
@@ -254,7 +254,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span>{{ message.thinking ?? '正在处理您的请求...' }}</span>
+                    <span>{{ message.thinking ?? $t('chat.thinkingProcessing') }}</span>
                   </div>
                 </div>
               </div>
@@ -266,7 +266,7 @@
                 <div class="response-avatar">
                   <Icon icon="carbon:bot" class="bot-icon" />
                 </div>
-                <div class="response-name">TaskPilot:</div>
+                <div class="response-name">{{ $t('chat.botName') }}</div>
               </div>
               <div class="response-content">
                 <div v-if="message.content" class="final-response">
@@ -279,7 +279,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span class="typing-text">正在组织语言回复您...</span>
+                    <span class="typing-text">{{ $t('chat.thinkingResponse') }}</span>
                   </div>
                 </div>
               </div>
@@ -297,7 +297,7 @@
                 <div class="thinking-avatar">
                   <Icon icon="carbon:thinking" class="thinking-icon" />
                 </div>
-                <div class="thinking-label">TaskPilot 思考/处理</div>
+                <div class="thinking-label">{{ $t('chat.thinkingLabel') }}</div>
               </div>
               <div class="thinking-content">
                 <div class="default-processing">
@@ -307,7 +307,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span>正在思考如何最好地帮助您...</span>
+                    <span>{{ $t('chat.thinking') }}</span>
                   </div>
                 </div>
               </div>
@@ -319,7 +319,7 @@
                 <div class="response-avatar">
                   <Icon icon="carbon:bot" class="bot-icon" />
                 </div>
-                <div class="response-name">TaskPilot:</div>
+                <div class="response-name">{{ $t('chat.botName') }}</div>
               </div>
               <div class="response-content">
                 <div class="response-placeholder">
@@ -329,7 +329,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span class="typing-text">正在为您整理最合适的回答...</span>
+                    <span class="typing-text">{{ $t('chat.thinkingResponse') }}</span>
                   </div>
                 </div>
               </div>
@@ -344,7 +344,7 @@
       v-if="showScrollToBottom"
       class="scroll-to-bottom-btn"
       @click="forceScrollToBottom"
-      title="滚动到底部"
+      :title="$t('chat.scrollToBottom')"
     >
       <Icon icon="carbon:chevron-down" />
     </div>
@@ -353,6 +353,7 @@
 
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 
 import { CommonApiService } from '@/api/common-api-service'
@@ -413,6 +414,9 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const emit = defineEmits<Emits>()
 
+// Initialize i18n
+const { t } = useI18n()
+
 // 使用计划执行管理器
 const planExecution = usePlanExecution()
 
@@ -437,7 +441,7 @@ const addMessage = (type: 'user' | 'assistant', content: string, options?: Parti
   // If it's an assistant message, ensure there's a basic thinking state even if there's no content
   if (type === 'assistant') {
     if (!message.thinking && !message.content) {
-      message.thinking = 'Thinking...'
+      message.thinking = t('chat.thinking')
     }
   }
 
@@ -455,7 +459,6 @@ const updateLastMessage = (updates: Partial<Message>) => {
     scrollToBottom()
   }
 }
-
 
 const handleDirectMode = async (query: string) => {
   try {
@@ -770,8 +773,8 @@ const updateStepActions = (message: Message, planDetails: any) => {
         } else if (latestThinkAct) {
           // Thinking state
           lastStepActions[index] = {
-            actionDescription: 'Thinking',
-            toolParameters: 'Waiting for decision',
+            actionDescription: '思考中',
+            toolParameters: '等待决策',
             thinkInput: latestThinkAct.thinkInput ?? '',
             thinkOutput: latestThinkAct.thinkOutput ?? '',
             status: index === planDetails.currentStepIndex ? 'current' : 'pending',
@@ -780,8 +783,8 @@ const updateStepActions = (message: Message, planDetails: any) => {
           console.log(`[ChatComponent] Step ${index} is thinking`)
         } else {
           lastStepActions[index] = {
-            actionDescription: 'Execution completed',
-            toolParameters: 'No tools',
+            actionDescription: '执行完成',
+            toolParameters: '无工具',
             thinkInput: '',
             thinkOutput: '',
             status: 'completed',
@@ -792,7 +795,7 @@ const updateStepActions = (message: Message, planDetails: any) => {
       } else {
         // 没有thinkActSteps的情况
         lastStepActions[index] = {
-          actionDescription: index < planDetails.currentStepIndex ? '已完成' : '待执行',
+          actionDescription: index < planDetails.currentStepIndex ? '已完成' : '等待中',
           toolParameters: '无工具参数',
           thinkInput: '',
           thinkOutput: '',

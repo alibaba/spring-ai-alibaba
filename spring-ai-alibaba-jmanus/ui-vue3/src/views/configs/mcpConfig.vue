@@ -147,7 +147,7 @@
             <label class="form-label">mcp json配置：</label>
             <textarea 
               v-model="newMcpServer.configJson"
-              placeholder="请输入MCP服务器的配置(JSON格式)..."
+              :placeholder="t('config.mcpConfig.configJsonPlaceholder')"
               class="config-textarea"
               rows="6"
             ></textarea>
@@ -156,10 +156,10 @@
           <!-- 操作按钮 -->
           <div class="mcp-form-actions">
             <button @click="addMcpServer" class="action-btn add-btn" :disabled="loading">
-              添加
+              {{ t('common.add') }}
             </button>
             <button @click="resetForm" class="action-btn reset-btn" :disabled="loading">
-              重置
+              {{ t('common.reset') }}
             </button>
             
           </div>
@@ -194,7 +194,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { McpApiService, type McpServer, type McpServerRequest } from '@/api/mcp-api-service'
+
+// 国际化
+const { t } = useI18n()
 
 // 响应式数据
 const loading = ref(false)
@@ -212,6 +216,15 @@ const message = reactive({
   show: false,
   text: '',
   type: 'success' as 'success' | 'error'
+})
+
+// 计算属性：配置示例文本
+const configPlaceholder = computed(() => {
+  if (newMcpServer.connectionType === 'STUDIO') {
+    return t('config.mcpConfig.studioExample')
+  } else {
+    return t('config.mcpConfig.sseExample')
+  }
 })
 
 // 计算属性：是否可以提交
@@ -272,15 +285,15 @@ const loadMcpServers = async () => {
 // 添加MCP服务器
 const addMcpServer = async () => {
   if (!canSubmit.value) {
-    showMessage('请输入MCP服务器配置', 'error')
+    showMessage(t('config.mcpConfig.configRequired'), 'error')
     return
   }
 
   // 验证JSON格式
   try {
     JSON.parse(newMcpServer.configJson)
-  } catch {
-    showMessage('配置JSON格式不正确，请检查语法', 'error')
+  } catch (error) {
+    showMessage(t('config.mcpConfig.invalidJson'), 'error')
     return
   }
 
@@ -299,11 +312,11 @@ const addMcpServer = async () => {
       resetForm()
       await loadMcpServers() // 重新加载列表
     } else {
-      showMessage(result.message || '添加MCP服务器失败', 'error')
+      showMessage(result.message || t('config.mcpConfig.addFailed'), 'error')
     }
   } catch (error) {
     console.error('添加MCP服务器失败:', error)
-    showMessage('添加MCP服务器失败，请重试', 'error')
+    showMessage(t('config.mcpConfig.addFailed'), 'error')
   } finally {
     loading.value = false
   }
@@ -324,11 +337,11 @@ const removeMcpServer = async (id: number) => {
       showMessage('删除MCP服务器成功')
       await loadMcpServers() // 重新加载列表
     } else {
-      showMessage(result.message || '删除MCP服务器失败', 'error')
+      showMessage(result.message || t('config.mcpConfig.deleteFailed'), 'error')
     }
   } catch (error) {
     console.error('删除MCP服务器失败:', error)
-    showMessage('删除MCP服务器失败，请重试', 'error')
+    showMessage(t('config.mcpConfig.deleteFailed'), 'error')
   } finally {
     loading.value = false
   }
