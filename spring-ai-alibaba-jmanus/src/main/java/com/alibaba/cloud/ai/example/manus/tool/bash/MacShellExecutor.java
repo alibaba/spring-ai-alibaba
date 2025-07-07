@@ -38,6 +38,9 @@ public class MacShellExecutor implements ShellCommandExecutor {
 
 	private BufferedWriter processInput;
 
+	// Cache for shell path to avoid repeated detection
+	private static String shellPath = null;
+
 	@Override
 	public List<String> execute(List<String> commands, String workingDir) {
 		return commands.stream().map(command -> {
@@ -53,7 +56,9 @@ public class MacShellExecutor implements ShellCommandExecutor {
 					return "Process terminated by ctrl+c";
 				}
 
-				ProcessBuilder pb = new ProcessBuilder("/bin/zsh", "-c", command);
+				// Use dynamic shell path detection
+				String shell = getShellPath();
+				ProcessBuilder pb = new ProcessBuilder(shell, "-c", command);
 				if (!StringUtils.isEmpty(workingDir)) {
 					pb.directory(new File(workingDir));
 				}
@@ -111,6 +116,75 @@ public class MacShellExecutor implements ShellCommandExecutor {
 			}
 			log.info("Mac process terminated");
 		}
+	}
+
+	/**
+	 * Dynamically detect the best available shell path
+	 * Priority: zsh -> bash (as fallback)
+	 * @return The path to the shell executable
+	 */
+	private String getShellPath() {
+		// Return cached path if already detected
+		if (shellPath != null) {
+			return shellPath;
+		}
+
+		// Try to find zsh in common locations
+		String[] zshPaths = {
+			"/bin/zsh",
+			"/usr/bin/zsh", 
+			"/usr/local/bin/zsh",
+			"/opt/homebrew/bin/zsh"
+		};
+		
+		for (String path : zshPaths) {
+			if (new File(path).exists() && new File(path).canExecute()) {
+				log.info("Found zsh at: {}", path);
+				shellPath = path;
+				return shellPath;
+			}
+		}
+		
+		// If zsh not found, use 'which' command to find it
+		try {
+			Process whichProcess = new ProcessBuilder("which", "zsh").start();
+			whichProcess.waitFor(5, TimeUnit.SECONDS);
+			if (whichProcess.exitValue() == 0) {
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(whichProcess.getInputStream()))) {
+					String path = reader.readLine();
+					if (path != null && !path.trim().isEmpty()) {
+						File zshFile = new File(path.trim());
+						if (zshFile.exists() && zshFile.canExecute()) {
+							log.info("Found zsh via 'which' command at: {}", path.trim());
+							shellPath = path.trim();
+							return shellPath;
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			log.warn("Failed to find zsh using 'which' command: {}", e.getMessage());
+		}
+		
+		// Fall back to bash if zsh is not available
+		String[] bashPaths = {
+			"/bin/bash",
+			"/usr/bin/bash",
+			"/usr/local/bin/bash"
+		};
+		
+		for (String path : bashPaths) {
+			if (new File(path).exists() && new File(path).canExecute()) {
+				log.warn("zsh not found, falling back to bash at: {}", path);
+				shellPath = path;
+				return shellPath;
+			}
+		}
+		
+		// Final fallback - use system default
+		log.error("Neither zsh nor bash found in standard locations, using /bin/bash as final fallback");
+		shellPath = "/bin/bash";
+		return shellPath;
 	}
 
 	private String processOutput(Process process) throws IOException, InterruptedException {

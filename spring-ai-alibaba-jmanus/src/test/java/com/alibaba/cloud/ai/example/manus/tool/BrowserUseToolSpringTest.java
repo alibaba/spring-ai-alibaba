@@ -48,6 +48,8 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.microsoft.playwright.Page;
@@ -65,6 +67,9 @@ class BrowserUseToolSpringTest {
 
 	@Autowired
 	private ChromeDriverService chromeDriverService;
+
+	@Autowired
+	private SmartContentSavingService innerStorageService;
 
 	private BrowserUseTool browserUseTool;
 
@@ -86,12 +91,12 @@ class BrowserUseToolSpringTest {
 	void setUp() {
 
 		manusProperties.setBrowserHeadless(false);
-		manusProperties.setBrowserDebug(true);
+		manusProperties.setDebugDetail(true);
 		chromeDriverService.setManusProperties(manusProperties);
-		browserUseTool = new BrowserUseTool(chromeDriverService);
+		browserUseTool = new BrowserUseTool(chromeDriverService, innerStorageService);
 		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties, promptService);
-		agent.setPlanId("plan_123123124124124");
-		browserUseTool.setPlanId(agent.getPlanId());
+		agent.setCurrentPlanId("plan_123123124124124");
+		browserUseTool.setCurrentPlanId(agent.getCurrentPlanId());
 
 	}
 
@@ -120,6 +125,11 @@ class BrowserUseToolSpringTest {
 
 		@Override
 		public List<ToolCallback> getToolCallList() {
+			return null;
+		}
+
+		@Override
+		public ToolCallBackContext getToolCallBackContext(String toolKey) {
 			return null;
 		}
 
@@ -492,78 +502,127 @@ class BrowserUseToolSpringTest {
 			Assertions.assertNotNull(elements, "Failed to get interactive elements");
 			log.info("Retrieved interactive elements: {}", elements);
 
-			// Step 3: Find username input box
+			// Step 3: Find username input field (not currently used but defined for
+			// potential future use)
 			log.info("Step 3: Locate username input box");
+			@SuppressWarnings("unused")
 			int usernameInputIndex = -1;
 			String[] elementLines = elements.split("\n");
-			for (int i = 0; i < elementLines.length; i++) {
-				if (elementLines[i].contains("placeholder=\"Phone number/email/username\"")
-						|| elementLines[i].contains("loginname")) {
-					usernameInputIndex = i;
-					break;
-				}
-			}
-
-			if (usernameInputIndex == -1) {
-				log.warn("Username input box not found, skipping username input");
-			}
-			else {
-				log.info("Found username input box index: {}", usernameInputIndex);
-
-				// Step 4: Input username
-				log.info("Step 4: Input username");
-				String testUsername = "testuser@example.com";
-				ToolExecuteResult usernameResult = executeAction("input_text", null, usernameInputIndex, testUsername);
-				log.info("Username input result: {}", usernameResult.getOutput());
-			}
-
-			// Step 5: Find password input box
-			log.info("Step 5: Locate password input box");
-			int passwordInputIndex = -1;
-			for (int i = 0; i < elementLines.length; i++) {
-				if (elementLines[i].contains("type=\"password\"") || elementLines[i].contains("password")) {
-					passwordInputIndex = i;
-					break;
-				}
-			}
-
-			if (passwordInputIndex == -1) {
-				log.warn("Password input box not found, skipping password input");
-			}
-			else {
-				log.info("Found password input box index: {}", passwordInputIndex);
-
-				// Step 6: Input password
-				log.info("Step 6: Input password");
-				String testPassword = "testpassword123";
-				ToolExecuteResult passwordResult = executeAction("input_text", null, passwordInputIndex, testPassword);
-				log.info("Password input result: {}", passwordResult.getOutput());
-			}
-
-			// Step 7: Find login button
-			log.info("Step 7: Locate login button");
 			int loginButtonIndex = -1;
-			for (int i = 0; i < elementLines.length; i++) {
-				if (elementLines[i].contains("login") || elementLines[i].contains("Login")
-						|| elementLines[i].contains("sign in")) {
-					loginButtonIndex = i;
-					break;
+
+			for (String line : elementLines) {
+				// 从每行开头提取元素的实际索引号，格式如 [195] <input...
+				if (line.matches("\\[\\d+\\].*")) {
+					int indexEndPos = line.indexOf("]");
+					String indexStr = line.substring(1, indexEndPos);
+					int elementIndex = Integer.parseInt(indexStr);
+
+					if (line.contains("登录")) {
+						loginButtonIndex = elementIndex;
+						log.info("找到登录按钮，索引: {}", loginButtonIndex);
+						break;
+					}
 				}
 			}
 
-			if (loginButtonIndex == -1) {
-				log.warn("Login button not found, skipping login button click");
+			Assertions.assertNotEquals(-1, loginButtonIndex, "未找到登录按钮");
+
+			// 步骤3: 点击"登录"按钮
+			log.info("步骤3: 点击登录按钮");
+			ToolExecuteResult clickLoginResult = executeAction("click", null, loginButtonIndex, null);
+			Assertions.assertTrue(clickLoginResult.getOutput().contains("Clicked"), "点击登录按钮失败");
+
+			// 等待登录对话框加载
+			log.info("等待登录对话框加载...");
+			Thread.sleep(2000);
+
+			// 获取更新后的交互元素
+			state = browserUseTool.getCurrentState(page);
+			elements = (String) state.get("interactive_elements");
+			elementLines = elements.split("\n"); // 步骤4:
+													// 使用GetElementPositionByNameAction查找"APP登录"元素并通过坐标点击
+			log.info("步骤4: 使用GetElementPositionByNameAction查找'APP登录'元素");
+
+			// 创建请求对象并设置元素名称
+			BrowserRequestVO positionRequest = new BrowserRequestVO();
+			positionRequest.setElementName("验证码登录");
+
+			// 执行GetElementPositionByNameAction获取元素位置
+			GetElementPositionByNameAction positionAction = new GetElementPositionByNameAction(browserUseTool);
+			ToolExecuteResult positionResult = positionAction.execute(positionRequest);
+			log.info("获取到'验证码登录'元素位置信息: {}", positionResult.getOutput());
+
+			// 解析JSON结果获取坐标
+			List<?> positionsList = objectMapper.readValue(positionResult.getOutput(), new TypeReference<List<?>>() {
+			});
+			Assertions.assertFalse(positionsList.isEmpty(), "未找到'APP登录'元素");
+
+			// 获取第一个匹配元素的位置信息
+			Map<?, ?> elementPosition = (Map<?, ?>) positionsList.get(0);
+			Double xNumber = (Double) elementPosition.get("x");
+			Double yNumber = (Double) elementPosition.get("y");
+			log.info("验证码登录元素坐标: x={}, y={}", xNumber, yNumber);
+
+			// 使用MoveToAndClickAction通过坐标点击元素
+			BrowserRequestVO clickRequest = new BrowserRequestVO();
+			clickRequest.setPositionX(xNumber);
+			clickRequest.setPositionY(yNumber);
+
+			MoveToAndClickAction clickAction = new MoveToAndClickAction(browserUseTool);
+			ToolExecuteResult clickResult = clickAction.execute(clickRequest);
+			log.info("点击结果: {}", clickResult.getOutput());
+			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"), "点击验证码登录元素失败");
+
+			// 等待密码登录表单加载
+			log.info("等待密码登录表单加载...");
+			Thread.sleep(1000);
+
+			// 获取更新后的交互元素
+			state = browserUseTool.getCurrentState(page);
+			elements = (String) state.get("interactive_elements");
+			elementLines = elements.split("\n");
+
+			// 步骤5: 查找手机号输入框
+			log.info("步骤5: 查找手机号输入框");
+			int phoneInputIndex = -1;
+			int verifyCodeButtonIndex = -1;
+
+			for (String line : elementLines) {
+				// 从每行开头提取元素的实际索引号，格式如 [195] <input...
+				if (line.matches("\\[\\d+\\].*")) {
+					int indexEndPos = line.indexOf("]");
+					String indexStr = line.substring(1, indexEndPos);
+					int elementIndex = Integer.parseInt(indexStr);
+
+					// 查找手机号输入框(可能包含phone、tel或mobile相关的input)
+					if (line.contains("input") && line.contains("手机号")) {
+						phoneInputIndex = elementIndex;
+						log.info("找到手机号输入框，索引: {}", phoneInputIndex);
+					}
+					// 查找获取验证码按钮
+					else if ((line.contains("button") || line.contains("a ")) && line.contains("获取验证码")) {
+						verifyCodeButtonIndex = elementIndex;
+						log.info("找到获取验证码按钮，索引: {}", verifyCodeButtonIndex);
+					}
+				}
 			}
-			else {
-				log.info("Found login button index: {}", loginButtonIndex);
 
-				// Note: We won't actually click the login button to avoid actually
-				// logging in
-				log.info("Login button located successfully, test completed (not clicking to avoid actual login)");
-			}
+			Assertions.assertNotEquals(-1, phoneInputIndex, "未找到手机号输入框");
 
-			log.info("CSDN login page test completed successfully!");
+			// 步骤6: 在手机号输入框中输入"123456789"
+			log.info("步骤6: 在手机号输入框中输入'123456789'");
+			ToolExecuteResult phoneInputResult = executeAction("input_text", null, phoneInputIndex, "123456789");
+			Assertions.assertTrue(phoneInputResult.getOutput().contains("成功输入:"), "在手机号输入框输入文本失败");
 
+			// 步骤8: 验证手机号输入是否成功
+			log.info("步骤8: 验证手机号输入是否成功");
+			browserUseTool.getDriver().getInteractiveElementRegistry().refresh(page);
+			state = browserUseTool.getCurrentState(page);
+			String updatedElements = (String) state.get("interactive_elements");
+			log.info("Updated elements: {}",
+					updatedElements != null ? updatedElements.length() + " characters" : "null");
+
+			log.info("CSDN登录测试完成");
 		}
 		catch (Exception e) {
 			log.error("Error occurred during CSDN login test", e);

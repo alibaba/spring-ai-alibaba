@@ -1,5 +1,8 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2025 the oriimport com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
+import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
+import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder; author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +30,13 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
+import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
+import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.bash.Bash;
@@ -40,9 +44,16 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
+// import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageTool;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool;
+import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceSharedStateManager;
+import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
+import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -84,6 +95,10 @@ public class PlanningFactory {
 
 	private final TextFileService textFileService;
 
+	private final SmartContentSavingService innerStorageService;
+
+	private final UnifiedDirectoryManager unifiedDirectoryManager;
+
 	@Autowired
 	private AgentService agentService;
 
@@ -104,31 +119,46 @@ public class PlanningFactory {
 	private McpStateHolderService mcpStateHolderService;
 
 	@Autowired
+	private MapReduceSharedStateManager sharedStateManager;
+
+	@Autowired
+	@Lazy
+	private SummaryWorkflow summaryWorkflow;
+
+	@Autowired
+	@Lazy
+	private PlanExecutorFactory planExecutorFactory;
+
+	@Autowired
 	private PromptService promptService;
 
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
-			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService) {
+			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
+			SmartContentSavingService innerStorageService, UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.chromeDriverService = chromeDriverService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
 		this.textFileService = textFileService;
 		this.mcpService = mcpService;
+		this.innerStorageService = innerStorageService;
+		this.unifiedDirectoryManager = unifiedDirectoryManager;
 	}
 
+	// Use the enhanced PlanningCoordinator with dynamic executor selection
 	public PlanningCoordinator createPlanningCoordinator(String planId) {
 
 		// Add all dynamic agents from the database
 		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
 
-		PlanningTool planningTool = new PlanningTool();
+		PlanningToolInterface planningTool = new PlanningTool();
 
 		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
 				manusProperties);
-		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService, llmService,
-				manusProperties);
+
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties);
 
-		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
+		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
+				planFinalizer);
 
 		return planningCoordinator;
 	}
@@ -137,9 +167,9 @@ public class PlanningFactory {
 
 		private final ToolCallback toolCallback;
 
-		private final ToolCallBiFunctionDef functionInstance;
+		private final ToolCallBiFunctionDef<?> functionInstance;
 
-		public ToolCallBackContext(ToolCallback toolCallback, ToolCallBiFunctionDef functionInstance) {
+		public ToolCallBackContext(ToolCallback toolCallback, ToolCallBiFunctionDef<?> functionInstance) {
 			this.toolCallback = toolCallback;
 			this.functionInstance = functionInstance;
 		}
@@ -148,25 +178,30 @@ public class PlanningFactory {
 			return toolCallback;
 		}
 
-		public ToolCallBiFunctionDef getFunctionInstance() {
+		public ToolCallBiFunctionDef<?> getFunctionInstance() {
 			return functionInstance;
 		}
 
 	}
 
-	public Map<String, ToolCallBackContext> toolCallbackMap(String planId) {
+	public Map<String, ToolCallBackContext> toolCallbackMap(String planId, String rootPlanId,
+			List<String> terminateColumns) {
 		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
-		List<ToolCallBiFunctionDef> toolDefinitions = new ArrayList<>();
+		List<ToolCallBiFunctionDef<?>> toolDefinitions = new ArrayList<>();
 
 		// Add all tool definitions
-		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService));
-		toolDefinitions.add(new TerminateTool(planId));
-		toolDefinitions.add(new Bash(manusProperties));
+		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService));
+		toolDefinitions.add(new TerminateTool(planId, terminateColumns));
+		toolDefinitions.add(new Bash(unifiedDirectoryManager));
 		toolDefinitions.add(new DocLoaderTool());
-		toolDefinitions.add(new TextFileOperator(textFileService));
+		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, unifiedDirectoryManager));
+		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
+		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
+		toolDefinitions.add(new MapReduceTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
+				terminateColumns));
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
@@ -179,7 +214,7 @@ public class PlanningFactory {
 		}
 
 		// Create FunctionToolCallback for each tool
-		for (ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
+		for (ToolCallBiFunctionDef<?> toolDefinition : toolDefinitions) {
 			FunctionToolCallback<?, ToolExecuteResult> functionToolcallback = FunctionToolCallback
 				.builder(toolDefinition.getName(), toolDefinition)
 				.description(toolDefinition.getDescription())
@@ -187,7 +222,8 @@ public class PlanningFactory {
 				.inputType(toolDefinition.getInputType())
 				.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
 				.build();
-			toolDefinition.setPlanId(planId);
+			toolDefinition.setCurrentPlanId(planId);
+			toolDefinition.setRootPlanId(rootPlanId);
 			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
 					toolDefinition);
 			toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
@@ -197,12 +233,7 @@ public class PlanningFactory {
 
 	@Bean
 	public RestClient.Builder createRestClient() {
-		// 1. Configure the timeout (unit: milliseconds)
-		int connectionTimeout = 600000; // Connection timeout
-		int readTimeout = 600000; // Response read timeout
-		int writeTimeout = 600000; // Request write timeout
-
-		// 2. Create RequestConfig and set the timeout
+		// Create RequestConfig and set the timeout (10 minutes for all timeouts)
 		RequestConfig requestConfig = RequestConfig.custom()
 			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection
 																	// timeout
@@ -210,13 +241,13 @@ public class PlanningFactory {
 			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
 			.build();
 
-		// 3. Create CloseableHttpClient and apply the configuration
+		// Create CloseableHttpClient and apply the configuration
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
 
-		// 4. Use HttpComponentsClientHttpRequestFactory to wrap HttpClient
+		// Use HttpComponentsClientHttpRequestFactory to wrap HttpClient
 		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
 
-		// 5. Create RestClient and set the request factory
+		// Create RestClient and set the request factory
 		return RestClient.builder().requestFactory(requestFactory);
 	}
 

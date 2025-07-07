@@ -50,7 +50,7 @@
               <Icon icon="carbon:chevron-right" />
             </div>
             <p class="agent-desc">{{ agent.description }}</p>
-            <div class="agent-tools" v-if="agent.availableTools && Array.isArray(agent.availableTools) && agent.availableTools.length > 0">
+            <div class="agent-tools" v-if="agent.availableTools?.length > 0">
               <span v-for="tool in agent.availableTools.slice(0, 3)" :key="tool" class="tool-tag">
                 {{ getToolDisplayName(tool) }}
               </span>
@@ -116,7 +116,8 @@
         <div class="form-item">
           <label>{{ t('config.agentConfig.nextStepPrompt') }}</label>
           <textarea
-            v-model="selectedAgent.nextStepPrompt"
+            :value="selectedAgent.nextStepPrompt || ''"
+            @input="selectedAgent.nextStepPrompt = ($event.target as HTMLTextAreaElement).value"
             rows="8"
             :placeholder="t('config.agentConfig.nextStepPromptPlaceholder')"
           ></textarea>
@@ -144,7 +145,7 @@
                 </div>
               </div>
               
-              <div v-if="!selectedAgent.availableTools || selectedAgent.availableTools.length === 0" class="no-tools">
+              <div v-if="selectedAgent.availableTools.length === 0" class="no-tools">
                 <Icon icon="carbon:tool-box" />
                 <span>{{ t('config.agentConfig.noAssignedTools') }}</span>
               </div>
@@ -184,7 +185,8 @@
         <div class="form-item">
           <label>{{ t('config.agentConfig.nextStepPrompt') }}</label>
           <textarea
-            v-model="newAgent.nextStepPrompt"
+            :value="newAgent.nextStepPrompt || ''"
+            @input="newAgent.nextStepPrompt = ($event.target as HTMLTextAreaElement).value"
             rows="8"
             :placeholder="t('config.agentConfig.nextStepPromptPlaceholder')"
           ></textarea>
@@ -228,7 +230,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal/index.vue'
@@ -256,13 +258,7 @@ const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
   nextStepPrompt: ''
 })
 
-// 计算属性
-const unassignedTools = computed(() => {
-  if (!selectedAgent.value || !selectedAgent.value.availableTools || !Array.isArray(selectedAgent.value.availableTools)) {
-    return availableTools
-  }
-  return availableTools.filter(tool => !selectedAgent.value!.availableTools.includes(tool.key))
-})
+// 计算属性 - removed unused unassignedTools since it's not used in the template
 
 // 工具显示名称获取
 const getToolDisplayName = (toolId: string): string => {
@@ -300,7 +296,7 @@ const loadData = async () => {
     // 确保每个agent都有availableTools数组
     const normalizedAgents = loadedAgents.map(agent => ({
       ...agent,
-      availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
+      availableTools: agent.availableTools
     }))
     
     agents.splice(0, agents.length, ...normalizedAgents)
@@ -424,15 +420,13 @@ const loadData = async () => {
 
 // 选择Agent
 const selectAgent = async (agent: Agent) => {
-  if (!agent) return
-  
   try {
     // 加载详细信息
     const detailedAgent = await AgentApiService.getAgentById(agent.id)
-    // 确保availableTools是数组
+    // Agent接口保证availableTools是数组
     selectedAgent.value = {
       ...detailedAgent,
-      availableTools: Array.isArray(detailedAgent.availableTools) ? detailedAgent.availableTools : []
+      availableTools: detailedAgent.availableTools
     }
   } catch (err: any) {
     console.error('加载Agent详情失败:', err)
@@ -440,7 +434,7 @@ const selectAgent = async (agent: Agent) => {
     // 使用基本信息作为后备
     selectedAgent.value = {
       ...agent,
-      availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
+      availableTools: agent.availableTools
     }
   }
 }
@@ -463,8 +457,7 @@ const handleAddAgent = async () => {
   try {
     const agentData: Omit<Agent, 'id'> = {
       name: newAgent.name.trim(),
-      description: newAgent.description.trim(),
-      nextStepPrompt: newAgent.nextStepPrompt?.trim() || '',
+      description: newAgent.description.trim(),        nextStepPrompt: newAgent.nextStepPrompt?.trim() ?? '',
       availableTools: []
     }
 
@@ -490,17 +483,7 @@ const handleToolSelectionConfirm = (selectedToolIds: string[]) => {
   }
 }
 
-// 添加工具
-const addTool = (toolId: string) => {
-  if (selectedAgent.value) {
-    if (!selectedAgent.value.availableTools) {
-      selectedAgent.value.availableTools = []
-    }
-    if (!selectedAgent.value.availableTools.includes(toolId)) {
-      selectedAgent.value.availableTools.push(toolId)
-    }
-  }
-}
+// removed unused addTool function since it's not used anywhere in the code
 
 
 
@@ -574,7 +557,7 @@ const handleImport = () => {
           }
           
           // 移除id字段，让后端分配新的id
-          const { id, ...importData } = agentData
+          const { id: _id, ...importData } = agentData
           const savedAgent = await AgentApiService.createAgent(importData)
           agents.push(savedAgent)
           selectedAgent.value = savedAgent
