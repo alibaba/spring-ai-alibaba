@@ -17,19 +17,25 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * The result of a single step execution
  */
 public class ExecutionStep {
 
+	@JsonIgnore
 	private Integer stepIndex;
 
 	private String stepRequirement;
 
+	@JsonIgnore
 	private String result;
 
+	@JsonIgnore
 	private BaseAgent agent;
+
+	private String terminateColumns;
 
 	public Integer getStepIndex() {
 		return stepIndex;
@@ -47,6 +53,15 @@ public class ExecutionStep {
 		this.result = result;
 	}
 
+	public String getTerminateColumns() {
+		return terminateColumns;
+	}
+
+	public void setTerminateColumns(String terminateColumns) {
+		this.terminateColumns = terminateColumns;
+	}
+
+	@JsonIgnore
 	public AgentState getStatus() {
 		return agent == null ? AgentState.NOT_STARTED : agent.getState();
 	}
@@ -63,6 +78,7 @@ public class ExecutionStep {
 		this.stepRequirement = stepRequirement;
 	}
 
+	@JsonIgnore
 	public String getStepInStr() {
 		String agentState = null;
 		if (agent != null) {
@@ -79,48 +95,6 @@ public class ExecutionStep {
 		sb.append(stepRequirement);
 
 		return sb.toString();
-	}
-
-	/**
-	 * Convert the step to a JSON string
-	 * @return the JSON string representation of the step
-	 */
-	public String toJson() {
-		StringBuilder json = new StringBuilder();
-		json.append("    {");
-		json.append("\"stepRequirement\": \"").append(stepRequirement.replace("\"", "\\\"")).append("\" ");
-
-		if (result != null && !result.isEmpty()) {
-			json.append(", \"result\": \"").append(result.replace("\"", "\\\"").replace("\n", "\\n")).append("\"");
-		}
-
-		json.append("}");
-		return json.toString();
-	}
-
-	/**
-	 * Parse and create an ExecutionStep object from a JsonNode
-	 * @param stepNode JsonNode object
-	 * @return the parsed ExecutionStep object
-	 */
-	public static ExecutionStep fromJson(com.fasterxml.jackson.databind.JsonNode stepNode) {
-		ExecutionStep step = new ExecutionStep();
-
-		// Set the step requirement
-		String stepRequirement = stepNode.has("stepRequirement") ? stepNode.get("stepRequirement").asText() : "未指定步骤";
-		step.setStepRequirement(stepRequirement);
-
-		// Set the step index (if any)
-		if (stepNode.has("stepIndex")) {
-			step.setStepIndex(stepNode.get("stepIndex").asInt());
-		}
-
-		// Set the step result (if any)
-		if (stepNode.has("result")) {
-			step.setResult(stepNode.get("result").asText());
-		}
-
-		return step;
 	}
 
 }

@@ -67,7 +67,7 @@ import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { localeConfig, changeLanguage } from '@/base/i18n'
 
-const { locale, t } = useI18n()
+const { locale } = useI18n()
 
 const showDropdown = ref(false)
 

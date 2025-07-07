@@ -22,8 +22,6 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class GetHtmlAction extends BrowserAction {
 
-	private final int MAX_LENGTH = 50000;
-
 	public GetHtmlAction(BrowserUseTool browserUseTool) {
 		super(browserUseTool);
 	}
@@ -45,9 +43,7 @@ public class GetHtmlAction extends BrowserAction {
 			}
 		}
 		String result = allHtml.toString();
-		if (result.length() > MAX_LENGTH) {
-			result = result.substring(0, MAX_LENGTH) + "...";
-		}
+
 		return new ToolExecuteResult(result);
 	}
 
