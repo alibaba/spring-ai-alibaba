@@ -182,7 +182,7 @@ public class ManusProperties {
 
 	// Infinite Context SubGroup
 	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "enabled", path = "manus.infiniteContext.enabled",
-			description = "是否开启无限上下文", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
+			description = "是否开启无限上下文", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean infiniteContextEnabled;
 
@@ -221,7 +221,7 @@ public class ManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "taskContextSize", path = "manus.infiniteContext.taskContextSize",
-			description = "单个任务的处理的上下文配置大小", defaultValue = "8192", inputType = ConfigInputType.NUMBER)
+			description = "单个任务的处理的上下文配置大小(字符数)", defaultValue = "20000", inputType = ConfigInputType.NUMBER)
 	private volatile Integer infiniteContextTaskContextSize;
 
 	public Integer getInfiniteContextTaskContextSize() {

@@ -49,16 +49,14 @@ import { useSidebarStore } from '@/stores/sidebar'
 // 使用pinia stores
 const sidebarStore = useSidebarStore()
 
-// 定义 props
+// Define props interface
 interface Props {
   initialPrompt?: string
-  mode?: 'direct' | 'plan'
   placeholder?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   initialPrompt: '',
-  mode: 'direct',
   placeholder: '',
 })
 

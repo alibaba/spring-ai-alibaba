@@ -149,7 +149,7 @@ public class PlanningFactory {
 
 		// Create PlanExecutorFactory for dynamic executor selection
 		PlanExecutorFactory planExecutorFactory = new PlanExecutorFactory(agentEntities, llmService, agentService,
-				recorder);
+				recorder,manusProperties);
 
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptLoader);
 

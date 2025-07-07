@@ -543,7 +543,7 @@ const loadAllConfigs = async () => {
         // Set display name for each configuration item (prioritize description)
         const processedItems: ExtendedConfigItem[] = items.map(item => ({
           ...item,
-          displayName: item.description ?? CONFIG_DISPLAY_NAMES[item.configKey] ?? item.configKey,
+          displayName: item.description ?? (CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey),
           min: getConfigMin(item.configKey),
           max: getConfigMax(item.configKey)
         }))

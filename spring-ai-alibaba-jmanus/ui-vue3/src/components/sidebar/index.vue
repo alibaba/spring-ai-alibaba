@@ -285,7 +285,7 @@ const handlePlanTemplateClick = async (template: PlanTemplate) => {
 }
 
 const handleDeletePlanTemplate = async (template: PlanTemplate) => {
-  if (confirm(t('sidebar.confirmDelete', { name: template.title || t('sidebar.unnamedPlan') }))) {
+  if (confirm(t('sidebar.confirmDelete', { name: template.title ?? t('sidebar.unnamedPlan') }))) {
     try {
       await sidebarStore.deleteTemplate(template)
       alert(t('sidebar.templateDeleted'))
@@ -315,8 +315,8 @@ const handleSaveTemplate = async () => {
 
 const handleGeneratePlan = async () => {
   try {
-    const response = await sidebarStore.generatePlan()
-    alert(t('sidebar.generateSuccess', { templateId: sidebarStore.selectedTemplate?.id || t('sidebar.unknown') }))
+    await sidebarStore.generatePlan()
+    alert(t('sidebar.generateSuccess', { templateId: sidebarStore.selectedTemplate?.id ?? t('sidebar.unknown') }))
   } catch (error: any) {
     console.error('生成计划失败:', error)
     alert(t('sidebar.generateFailed') + ': ' + error.message)

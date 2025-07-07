@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.executor.factory;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
@@ -43,13 +44,16 @@ public class PlanExecutorFactory {
     private final LlmService llmService;
     private final AgentService agentService;
     private final PlanExecutionRecorder recorder;
+    private final ManusProperties manusProperties;
 
     public PlanExecutorFactory(List<DynamicAgentEntity> agents, LlmService llmService, 
-                              AgentService agentService, PlanExecutionRecorder recorder) {
+                              AgentService agentService, PlanExecutionRecorder recorder,
+                              ManusProperties manusProperties) {
         this.agents = agents;
         this.llmService = llmService;
         this.agentService = agentService;
         this.recorder = recorder;
+        this.manusProperties = manusProperties;
     }
 
     /**
@@ -96,7 +100,7 @@ public class PlanExecutorFactory {
      */
     private PlanExecutorInterface createAdvancedExecutor() {
         log.debug("Creating advanced MapReduce plan executor");
-        return new MapReducePlanExecutor(agents, recorder, agentService, llmService);
+        return new MapReducePlanExecutor(agents, recorder, agentService, llmService, manusProperties);
     }
 
     /**

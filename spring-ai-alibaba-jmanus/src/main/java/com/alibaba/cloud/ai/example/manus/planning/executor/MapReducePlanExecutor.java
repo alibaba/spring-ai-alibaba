@@ -21,6 +21,7 @@ package com.alibaba.cloud.ai.example.manus.planning.executor;
 
 import cn.hutool.core.collection.CollectionUtil;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
@@ -81,17 +82,26 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	private static final int DEFAULT_TASK_CHARACTER_COUNT = 100;
 
 	/**
-	 * Map任务执行的线程池线程数 调试阶段设置为1，便于调试和问题排查 生产环境可以根据系统资源调整为更大的值
+	 * Map任务执行的默认线程池线程数 当配置未设置时使用此默认值
 	 */
-	private static final int MAP_TASK_THREAD_POOL_SIZE = 1;
+	private static final int DEFAULT_MAP_TASK_THREAD_POOL_SIZE = 1;
 
 	// 线程池用于并行执行
 	private final ExecutorService executorService;
 
+	// ManusProperties for configuration access
+	private final ManusProperties manusProperties;
+
 	public MapReducePlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
-			AgentService agentService, LlmService llmService) {
+			AgentService agentService, LlmService llmService, ManusProperties manusProperties) {
 		super(agents, recorder, agentService, llmService);
-		this.executorService = Executors.newFixedThreadPool(MAP_TASK_THREAD_POOL_SIZE);
+		this.manusProperties = manusProperties;
+		
+		// Get thread pool size from configuration
+		int threadPoolSize = getMapTaskThreadPoolSize();
+		this.executorService = Executors.newFixedThreadPool(threadPoolSize);
+		
+		logger.info("MapReducePlanExecutor initialized with thread pool size: {}", threadPoolSize);
 	}
 
 	/**
@@ -824,6 +834,23 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		copiedPlan.setExecutionParams(enhancedParams.toString());
 
 		return copiedPlan;
+	}
+
+	/**
+	 * Get Map task thread pool size from configuration
+	 * @return configured thread pool size or default value if not configured
+	 */
+	private int getMapTaskThreadPoolSize() {
+		if (manusProperties != null) {
+			Integer configuredThreads = manusProperties.getInfiniteContextParallelThreads();
+			if (configuredThreads != null && configuredThreads > 0) {
+				logger.debug("Using configured Map task thread pool size: {}", configuredThreads);
+				return configuredThreads;
+			}
+		}
+		
+		logger.debug("Using default Map task thread pool size: {}", DEFAULT_MAP_TASK_THREAD_POOL_SIZE);
+		return DEFAULT_MAP_TASK_THREAD_POOL_SIZE;
 	}
 
 	/**

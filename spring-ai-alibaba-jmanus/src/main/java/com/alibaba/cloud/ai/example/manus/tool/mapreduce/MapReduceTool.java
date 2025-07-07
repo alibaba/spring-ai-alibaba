@@ -608,8 +608,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			// Check if infinite context is enabled for enhanced processing
 			boolean infiniteContextEnabled = isInfiniteContextEnabled();
 			if (infiniteContextEnabled) {
-				log.info("Infinite context enabled for plan: {}, parallel threads: {}, context size: {}",
-						currentPlanId, getInfiniteContextParallelThreads(), getInfiniteContextTaskContextSize());
+				log.info("Infinite context enabled for plan: {}, context size: {}",
+						currentPlanId, getInfiniteContextTaskContextSize());
 			}
 
 			if (isFile && isTextFile(path.toString())) {
@@ -1040,19 +1040,6 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 			return enabled != null ? enabled : false;
 		}
 		return false;
-	}
-
-	/**
-	 * Get infinite context parallel thread count
-	 * 
-	 * @return Number of parallel threads for infinite context processing
-	 */
-	private Integer getInfiniteContextParallelThreads() {
-		if (manusProperties != null) {
-			Integer threads = manusProperties.getInfiniteContextParallelThreads();
-			return threads != null ? threads : 4; // Default 4 threads
-		}
-		return 4; // Default 4 threads
 	}
 
 	/**

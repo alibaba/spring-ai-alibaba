@@ -15,7 +15,7 @@
 -->
 <template>
   <div class="chat-container">
-    <div class="messages" ref="messagesRef" :key="forceUpdateKey">
+    <div class="messages" ref="messagesRef">
       <div
         v-for="message in messages"
         :key="message.id"
@@ -426,8 +426,7 @@ const isLoading = ref(false)
 const messages = ref<Message[]>([])
 const pollingInterval = ref<number>()
 const showScrollToBottom = ref(false)
-// Add a force update key to trigger re-renders when needed
-const forceUpdateKey = ref(0)
+// Remove forceUpdateKey as it causes DOM to be recreated and scroll position to reset
 
 const addMessage = (type: 'user' | 'assistant', content: string, options?: Partial<Message>) => {
   const message: Message = {
@@ -446,17 +445,17 @@ const addMessage = (type: 'user' | 'assistant', content: string, options?: Parti
   }
 
   messages.value.push(message)
-  // 新消息时强制滚动到底部
-  forceScrollToBottom()
+  // Remove forced scroll to bottom for new messages
+  // Users can manually scroll if needed
   return message
 }
 
 const updateLastMessage = (updates: Partial<Message>) => {
   const lastMessage = messages.value[messages.value.length - 1]
-  if (lastMessage && lastMessage.type === 'assistant') {
+  if (lastMessage.type === 'assistant') {
     Object.assign(lastMessage, updates)
-    // 内容更新时也要滚动，确保用户能看到最新内容
-    scrollToBottom()
+    // Remove automatic scroll when content updates
+    // Let users control their viewing position
   }
 }
 
@@ -604,14 +603,14 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
   try {
     // Find sub-plan from planExecution.agentExecutionSequence
     const agentExecutionSequence = message.planExecution?.agentExecutionSequence
-    if (!agentExecutionSequence || !agentExecutionSequence.length) {
+    if (!agentExecutionSequence?.length) {
       console.log('[ChatComponent] No agentExecutionSequence found')
       return []
     }
 
     // Get corresponding step's agentExecution
     const agentExecution = agentExecutionSequence[stepIndex]
-    if (!agentExecution || !agentExecution.thinkActSteps) {
+    if (!agentExecution.thinkActSteps) {
       console.log(`[ChatComponent] No agentExecution or thinkActSteps found for step ${stepIndex}`)
       return []
     }
@@ -644,12 +643,12 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
 const getSubPlanStepStatus = (message: Message, stepIndex: number, subStepIndex: number): string => {
   try {
     const agentExecutionSequence = message.planExecution?.agentExecutionSequence
-    if (!agentExecutionSequence || !agentExecutionSequence.length) {
+    if (!agentExecutionSequence?.length) {
       return 'pending'
     }
 
     const agentExecution = agentExecutionSequence[stepIndex]
-    if (!agentExecution || !agentExecution.thinkActSteps) {
+    if (!agentExecution.thinkActSteps) {
       return 'pending'
     }
 
@@ -692,13 +691,13 @@ const getSubPlanStepStatus = (message: Message, stepIndex: number, subStepIndex:
 const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepIndex: number) => {
   try {
     const agentExecutionSequence = message.planExecution?.agentExecutionSequence
-    if (!agentExecutionSequence || !agentExecutionSequence.length) {
+    if (!agentExecutionSequence?.length) {
       console.warn('[ChatComponent] No agentExecutionSequence data for sub-plan step click')
       return
     }
 
     const agentExecution = agentExecutionSequence[stepIndex]
-    if (!agentExecution || !agentExecution.thinkActSteps) {
+    if (!agentExecution.thinkActSteps) {
       console.warn('[ChatComponent] No agentExecution or thinkActSteps for step click')
       return
     }
@@ -712,7 +711,7 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
       }
     }
 
-    if (!subPlan || !subPlan.currentPlanId) {
+    if (!subPlan?.currentPlanId) {
       console.warn('[ChatComponent] No sub-plan data for step click')
       return
     }
@@ -820,11 +819,10 @@ const updateStepActions = (message: Message, planDetails: any) => {
     JSON.stringify(lastStepActions.map(a => a?.actionDescription))
   )
   
-  // 强制更新Vue组件以确保UI响应
+  // Use Vue's reactivity system instead of force update
+  // The UI will automatically update when stepActions array changes
   nextTick(() => {
-    console.log('[ChatComponent] 强制UI更新完成')
-    // Trigger force update for the entire component
-    forceUpdateKey.value++
+    console.log('[ChatComponent] UI update completed via reactivity')
   })
 }
 
@@ -859,8 +857,8 @@ const handleDialogRoundStart = (planId: string, query: string) => {
       console.log('[ChatComponent] Found existing assistant message for planId:', planId)
     }
 
-    // 滚动到底部确保用户能看到最新进展
-    scrollToBottom()
+    // Remove automatic scroll for dialog round start
+    // Keep user at their current viewing position
   }
 }
 
@@ -964,7 +962,8 @@ const handlePlanUpdate = (rootPlanId: string) => {
       }
     }
 
-    scrollToBottom()
+    // Remove automatic scroll in simple response
+    // Users can manually scroll if they want to see the latest content
     return
   }
 
@@ -1077,14 +1076,13 @@ const handlePlanUpdate = (rootPlanId: string) => {
     console.log('[ChatComponent] Updated completed message:', message.content)
   }
 
-  // 滚动到底部确保用户能看到最新进展
-  scrollToBottom()
+  // Remove automatic scroll to bottom for plan updates
+  // Let users stay at their current viewing position
 
-  // 强制更新Vue组件以确保UI响应
+  // Use Vue's reactivity system instead of force update
+  // The UI will automatically update when planExecution data changes
   nextTick(() => {
-    console.log('[ChatComponent] Plan update UI refresh completed')
-    // Trigger force update for the entire component
-    forceUpdateKey.value++
+    console.log('[ChatComponent] Plan update UI refresh completed via reactivity')
   })
 
 }
