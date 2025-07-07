@@ -70,7 +70,7 @@ public abstract class BaseAgent {
 
 	protected LlmService llmService;
 
-	private final ManusProperties manusProperties;
+	protected final ManusProperties manusProperties;
 
 	protected final PromptService promptService;
 
@@ -135,6 +135,7 @@ public abstract class BaseAgent {
 		// Get current date time, format as yyyy-MM-dd
 		String currentDateTime = java.time.LocalDate.now().toString(); // Format as
 																		// yyyy-MM-dd
+
 		boolean isDebugModel = manusProperties.getBrowserDebug();
 		String detailOutput = "";
 		if (isDebugModel) {
@@ -252,7 +253,7 @@ public abstract class BaseAgent {
 			agentRecord.setResult(String.format("执行失败 [错误: %s]", e.getMessage()));
 			results.add("Execution failed: " + e.getMessage());
 			throw e; // Re-throw the exception to let the caller know that an error
-						// occurred
+			// occurred
 		}
 		finally {
 			state = AgentState.COMPLETED; // Reset state after execution
@@ -293,7 +294,7 @@ public abstract class BaseAgent {
 	protected boolean isStuck() {
 		// Currently, if the agent does not call the tool three times, it is considered
 		// stuck and the current step is exited.
-		List<Message> memoryEntries = llmService.getAgentMemory().get(getPlanId());
+		List<Message> memoryEntries = llmService.getAgentMemory(manusProperties.getMaxMemory()).get(getPlanId());
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {

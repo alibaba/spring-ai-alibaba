@@ -122,9 +122,11 @@ public class PlanningFactory {
 
 		PlanningTool planningTool = new PlanningTool();
 
-		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService);
-		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService, llmService);
-		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService);
+		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
+				manusProperties);
+		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService, llmService,
+				manusProperties);
+		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties);
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
 
