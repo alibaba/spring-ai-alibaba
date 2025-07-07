@@ -43,7 +43,7 @@
                 <div class="thinking-avatar">
                   <Icon icon="carbon:thinking" class="thinking-icon" />
                 </div>
-                <div class="thinking-label">{{ $t('chat.thinkingLabel') }}</div>
+                 <div class="thinking-label">{{ $t('chat.thinkingLabel') }}</div>
               </div>
 
               <div class="thinking-content">
@@ -169,11 +169,18 @@
                           <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
                             {{ input.label }}:
                           </label>
-                          <input
+                          <!-- <input
                             type="text"
                             :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
                             :name="input.label"
                             v-model="message.userInputWaitState.formInputs[inputIndex].value"
+                            class="form-input"
+                          /> -->
+                          <input
+                            type="text"
+                            :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                            :name="input.label"
+                            v-model="formInputsStore[message.id][inputIndex]"
                             class="form-input"
                           />
                         </div>
@@ -221,7 +228,7 @@
                 <div class="response-avatar">
                   <Icon icon="carbon:bot" class="bot-icon" />
                 </div>
-                <div class="response-name">{{ $t('chat.botName') }}</div>
+                 <div class="response-name">{{ $t('chat.botName') }}</div>
               </div>
               <div class="response-content">
                 <div v-if="message.content" class="final-response">
@@ -234,7 +241,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span class="typing-text">{{ $t('chat.thinkingResponse') }}</span>
+                     <span class="typing-text">{{ $t('chat.thinkingResponse') }}</span>
                   </div>
                 </div>
               </div>
@@ -262,7 +269,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span>{{ $t('chat.thinking') }}</span>
+                     <span>{{ $t('chat.thinking') }}</span>
                   </div>
                 </div>
               </div>
@@ -274,7 +281,7 @@
                 <div class="response-avatar">
                   <Icon icon="carbon:bot" class="bot-icon" />
                 </div>
-                <div class="response-name">{{ $t('chat.botName') }}</div>
+               <div class="response-name">{{ $t('chat.botName') }}</div>
               </div>
               <div class="response-content">
                 <div class="response-placeholder">
@@ -284,7 +291,7 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span class="typing-text">{{ $t('chat.thinkingResponse') }}</span>
+                     <span class="typing-text">{{ $t('chat.thinkingResponse') }}</span>
                   </div>
                 </div>
               </div>
@@ -307,7 +314,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted ,reactive} from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 
@@ -384,6 +391,7 @@ const currentPlanId = ref<string>()
 const currentExecutionId = ref<string>()
 const pollingInterval = ref<number>()
 const showScrollToBottom = ref(false)
+const formInputsStore = reactive<Record<string, Record<number, string>>>({})
 
 const addMessage = (type: 'user' | 'assistant', content: string, options?: Partial<Message>) => {
   const message: Message = {
@@ -421,7 +429,7 @@ const handlePlanMode = async (query: string) => {
     isLoading.value = true
 
     // 添加思考状态消息
-    const assistantMessage = addMessage('assistant', '', {
+   const assistantMessage = addMessage('assistant', '', {
       thinking: t('chat.analyzingNeedsAndGeneratingPlan'),
     })
 
@@ -437,14 +445,14 @@ const handlePlanMode = async (query: string) => {
       // 这会触发轮询和所有相关的事件处理逻辑
       planExecution.startExecution(query, planResponse.planId)
 
-      assistantMessage.content = t('chat.planGeneratedStartingExecution')
+    assistantMessage.content = t('chat.planGeneratedStartingExecution')
       assistantMessage.steps = planResponse.plan?.steps || []
       assistantMessage.currentStepIndex = 0
       assistantMessage.progress = 10
-      assistantMessage.progressText = t('chat.preparingExecution')
+        assistantMessage.progressText = t('chat.preparingExecution')
     } else {
       assistantMessage.thinking = undefined
-      assistantMessage.content = t('chat.planGenerationFailed')
+        assistantMessage.content = t('chat.planGenerationFailed')
     }
   } catch (error: any) {
     console.error('Plan mode error:', error)
@@ -852,7 +860,7 @@ const handleDialogRoundStart = (planId: string, query: string) => {
 
     // 如果没有现有消息，添加助手消息准备显示步骤
     if (existingAssistantMsg === -1) {
-      const assistantMessage = addMessage('assistant', '', {
+          const assistantMessage = addMessage('assistant', '', {
         planId: planId,
         thinking: t('chat.thinkingAnalyzing'),
         steps: [],
@@ -860,6 +868,7 @@ const handleDialogRoundStart = (planId: string, query: string) => {
         progress: 5,
         progressText: t('chat.preparing'),
       })
+
 
       console.log('[ChatComponent] Created new assistant message for planId:', planId)
     } else {
@@ -950,7 +959,7 @@ const handlePlanUpdate = (planDetails: any) => {
       console.log('[ChatComponent] Set simple response content:', message.content)
     } else {
       // 如果有标题或状态信息，更新思考状态
-      if (planDetails.title) {
+       if (planDetails.title) {
         message.thinking = t('chat.thinkingExecuting', { title: planDetails.title })
       }
     }
@@ -1036,10 +1045,14 @@ const handlePlanUpdate = (planDetails: any) => {
       message: planDetails.userInputWaitState.message,
       formDescription: planDetails.userInputWaitState.formDescription,
       formInputs:
-        planDetails.userInputWaitState.formInputs?.map((input: any) => ({
+        planDetails.userInputWaitState.formInputs?.map((input: any,index) => ({
           label: input.label,
-          value: input.value || '',
+          value: input.value || ( formInputsStore[message.id] && formInputsStore[message.id][index]) || '',
         })) || [],
+    }
+
+    if (!formInputsStore[message.id]) {
+      formInputsStore[message.id] = {}
     }
 
     // 清除思考状态，显示等待用户输入的消息
@@ -1207,13 +1220,21 @@ const handleUserInputSubmit = async (message: Message, stepIndex: number) => {
 
   try {
     // 收集表单数据
-    let inputData: any = {}
+    const inputData: Record<string, string> = {}
 
     if (message.userInputWaitState.formInputs && message.userInputWaitState.formInputs.length > 0) {
       // 多个字段的情况
-      message.userInputWaitState.formInputs.forEach(input => {
-        inputData[input.label] = input.value || ''
-      })
+      // message.userInputWaitState.formInputs.forEach(input => {
+      // inputData[input.label] = input.value || ''
+
+      // })
+      if (formInputsStore[message.id]) {
+        Object.entries(formInputsStore[message.id]).forEach(([index, value]) => {
+          const label =
+            message.userInputWaitState?.formInputs?.[Number(index)]?.label || `input_${index}`
+          inputData[label] = value
+        })
+      }
     } else {
       // 单个通用输入的情况
       inputData.genericInput = message.genericInput || ''
@@ -1225,6 +1246,7 @@ const handleUserInputSubmit = async (message: Message, stepIndex: number) => {
     const response = await CommonApiService.submitFormInput(message.planId, inputData)
 
     // 清除用户输入等待状态
+    delete formInputsStore[message.id]
     message.userInputWaitState = undefined
     message.genericInput = undefined
 
@@ -1351,6 +1373,9 @@ onUnmounted(() => {
 
   // 清理计划执行管理器资源
   planExecution.cleanup()
+
+  // 清除表单输入
+  Object.keys(formInputsStore).forEach(key => delete formInputsStore[key])
 })
 
 // 暴露方法给父组件使用
@@ -1390,8 +1415,8 @@ defineExpose({
   &::-webkit-scrollbar {
     width: 8px;
   }
-
-  &::-webkit-scrollbar-track {
+  
+   &::-webkit-scrollbar-track {
     background: transparent;
   }
 
@@ -2043,7 +2068,7 @@ defineExpose({
 /* 滚动到底部按钮 */
 .scroll-to-bottom-btn {
   position: absolute;
-  bottom: 120px; /* 在输入框上方 */
+ bottom: 120px; /* 在输入框上方 */
   right: 24px;
   width: 48px;
   height: 48px;
