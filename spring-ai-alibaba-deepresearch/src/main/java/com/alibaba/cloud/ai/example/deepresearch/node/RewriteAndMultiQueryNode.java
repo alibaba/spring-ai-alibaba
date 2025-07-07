@@ -40,6 +40,10 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
 public class RewriteAndMultiQueryNode implements NodeAction {
 
+	private static final Integer MaxOptimizeQueryNum = 5;
+
+	private static final Integer MinOptimizeQueryNum = 0;
+
 	private static final Logger logger = LoggerFactory.getLogger(RewriteAndMultiQueryNode.class);
 
 	private final QueryTransformer queryTransformer;
@@ -69,10 +73,7 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 
 		// 查询拓展
 		int optimizeQueryNum = state.value("optimize_query_num", 3);
-		if (optimizeQueryNum > 5)
-			optimizeQueryNum = 5;
-		if (optimizeQueryNum < 0)
-			optimizeQueryNum = 1;
+		optimizeQueryNum = Math.max(MinOptimizeQueryNum, Math.min(MaxOptimizeQueryNum, optimizeQueryNum));
 		QueryExpander queryExpander = MultiQueryExpander.builder()
 			.chatClientBuilder(rewriteAndMultiQueryAgentBuilder)
 			.includeOriginal(true)

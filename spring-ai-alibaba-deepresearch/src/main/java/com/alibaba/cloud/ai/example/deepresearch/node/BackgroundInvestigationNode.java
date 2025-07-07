@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.tool.InfoCheckTool;
+import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
 import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -51,13 +51,13 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final SearchBeanUtil searchBeanUtil;
 
-	private final InfoCheckTool infoCheckTool;
+	private final InfoCheckService infoCheckService;
 
 	public BackgroundInvestigationNode(SearchBeanUtil searchBeanUtil, JinaCrawlerService jinaCrawlerService,
-			InfoCheckTool infoCheckTool) {
+			InfoCheckService infoCheckService) {
 		this.jinaCrawlerService = jinaCrawlerService;
 		this.searchBeanUtil = searchBeanUtil;
-		this.infoCheckTool = infoCheckTool;
+		this.infoCheckService = infoCheckService;
 	}
 
 	@Override
@@ -118,7 +118,7 @@ public class BackgroundInvestigationNode implements NodeAction {
 				List<Map<String, String>> results = resultsList.get(i);
 				String query = queries.get(i);
 				// filter result
-				String checkResults = infoCheckTool.backgroundInfoCheck(results, query);
+				String checkResults = infoCheckService.backgroundInfoCheck(results, query);
 
 				String prompt = "background investigation query:\n" + query + "\n"
 						+ "background investigation results:\n" + checkResults + "\n";

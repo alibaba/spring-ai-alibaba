@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.deepresearch.tool;
+package com.alibaba.cloud.ai.example.deepresearch.service;
 
-import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -36,9 +35,9 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class InfoCheckTool {
+public class InfoCheckService {
 
-	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(InfoCheckService.class);
 
 	@Autowired
 	private ChatClient infoCheckAgent;
@@ -60,8 +59,10 @@ public class InfoCheckTool {
 			// handle json result
 			ObjectMapper mapper = new ObjectMapper();
 			JsonNode jsonNode = mapper.readTree(filterResult);
-			boolean isSensitive = jsonNode.get("is_sensitive").asBoolean();
-			boolean isIrrelevant = jsonNode.get("is_irrelevant").asBoolean();
+			boolean isSensitive = true;
+			isSensitive = jsonNode.get("is_sensitive").asBoolean();
+			boolean isIrrelevant = true;
+			isIrrelevant = jsonNode.get("is_irrelevant").asBoolean();
 			if (!isSensitive && !isIrrelevant) {
 				String post = "title:\n" + result.get("title") + "\n" + "content:\n" + result.get("content") + "\n";
 				correctedPost.add(post);

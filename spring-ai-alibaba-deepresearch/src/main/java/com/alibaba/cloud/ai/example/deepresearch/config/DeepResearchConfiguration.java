@@ -39,7 +39,7 @@ import com.alibaba.cloud.ai.example.deepresearch.node.RewriteAndMultiQueryNode;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
-import com.alibaba.cloud.ai.example.deepresearch.tool.InfoCheckTool;
+import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
 import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -113,7 +113,7 @@ public class DeepResearchConfiguration {
 	private ReportService reportService;
 
 	@Autowired
-	private InfoCheckTool infoCheckTool;
+	private InfoCheckService infoCheckService;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient researchAgent) throws GraphStateException {
@@ -166,7 +166,7 @@ public class DeepResearchConfiguration {
 			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
 			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
 			.addNode("background_investigator",
-					node_async(new BackgroundInvestigationNode(searchBeanUtil, jinaCrawlerService, infoCheckTool)))
+					node_async(new BackgroundInvestigationNode(searchBeanUtil, jinaCrawlerService, infoCheckService)))
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
