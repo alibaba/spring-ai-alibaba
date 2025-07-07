@@ -16,8 +16,9 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 
@@ -69,9 +70,9 @@ public abstract class BaseAgent {
 
 	protected LlmService llmService;
 
-	private final ManusProperties manusProperties;
+	protected final ManusProperties manusProperties;
 
-	protected final PromptLoader promptLoader;
+	protected final PromptService promptService;
 
 	private int maxSteps;
 
@@ -134,6 +135,7 @@ public abstract class BaseAgent {
 		// Get current date time, format as yyyy-MM-dd
 		String currentDateTime = java.time.LocalDate.now().toString(); // Format as
 																		// yyyy-MM-dd
+
 		boolean isDebugModel = manusProperties.getBrowserDebug();
 		String detailOutput = "";
 		if (isDebugModel) {
@@ -157,7 +159,7 @@ public abstract class BaseAgent {
 		variables.put("currentDateTime", currentDateTime);
 		variables.put("detailOutput", detailOutput);
 
-		return promptLoader.createSystemMessage("agent/step-execution.txt", variables);
+		return promptService.createSystemMessage(PromptEnum.AGENT_STEP_EXECUTION, variables);
 	}
 
 	/**
@@ -177,11 +179,11 @@ public abstract class BaseAgent {
 	public abstract List<ToolCallback> getToolCallList();
 
 	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptLoader promptLoader) {
+			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService) {
 		this.llmService = llmService;
 		this.planExecutionRecorder = planExecutionRecorder;
 		this.manusProperties = manusProperties;
-		this.promptLoader = promptLoader;
+		this.promptService = promptService;
 		this.maxSteps = manusProperties.getMaxSteps();
 		this.initSettingData = Collections.unmodifiableMap(new HashMap<>(initialAgentSetting));
 	}
@@ -251,7 +253,7 @@ public abstract class BaseAgent {
 			agentRecord.setResult(String.format("执行失败 [错误: %s]", e.getMessage()));
 			results.add("Execution failed: " + e.getMessage());
 			throw e; // Re-throw the exception to let the caller know that an error
-						// occurred
+			// occurred
 		}
 		finally {
 			state = AgentState.COMPLETED; // Reset state after execution
@@ -292,7 +294,7 @@ public abstract class BaseAgent {
 	protected boolean isStuck() {
 		// Currently, if the agent does not call the tool three times, it is considered
 		// stuck and the current step is exited.
-		List<Message> memoryEntries = llmService.getAgentMemory().get(getPlanId());
+		List<Message> memoryEntries = llmService.getAgentMemory(manusProperties.getMaxMemory()).get(getPlanId());
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {
