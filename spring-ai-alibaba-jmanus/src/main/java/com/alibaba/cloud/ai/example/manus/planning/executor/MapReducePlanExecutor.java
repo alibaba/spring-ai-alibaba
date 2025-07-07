@@ -89,13 +89,10 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	// 线程池用于并行执行
 	private final ExecutorService executorService;
 
-	// ManusProperties for configuration access
-	private final ManusProperties manusProperties;
 
 	public MapReducePlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
 			AgentService agentService, LlmService llmService, ManusProperties manusProperties) {
-		super(agents, recorder, agentService, llmService);
-		this.manusProperties = manusProperties;
+		super(agents, recorder, agentService, llmService, manusProperties);
 		
 		// Get thread pool size from configuration
 		int threadPoolSize = getMapTaskThreadPoolSize();

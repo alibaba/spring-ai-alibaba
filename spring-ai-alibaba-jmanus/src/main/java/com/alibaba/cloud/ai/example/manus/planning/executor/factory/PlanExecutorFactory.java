@@ -91,7 +91,7 @@ public class PlanExecutorFactory {
      */
     private PlanExecutorInterface createSimpleExecutor() {
         log.debug("Creating simple plan executor");
-        return new PlanExecutor(agents, recorder, agentService, llmService);
+        return new PlanExecutor(agents, recorder, agentService, llmService, manusProperties);
     }
 
     /**

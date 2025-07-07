@@ -42,8 +42,7 @@ public class PlanExecutor extends AbstractPlanExecutor {
 	 */
 	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService,
 			LlmService llmService, ManusProperties manusProperties) {
-		super(agents, recorder, agentService, llmService);
-		this.manusProperties = manusProperties;
+		super(agents, recorder, agentService, llmService, manusProperties);
 	}
 
 	/**

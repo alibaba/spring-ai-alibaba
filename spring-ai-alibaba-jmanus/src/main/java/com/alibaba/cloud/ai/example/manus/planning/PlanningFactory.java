@@ -126,6 +126,9 @@ public class PlanningFactory {
 	@Autowired
 	private PromptLoader promptLoader;
 
+	@Autowired
+	private PromptService promptService;
+
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
 			SmartContentSavingService innerStorageService, UnifiedDirectoryManager unifiedDirectoryManager) {
