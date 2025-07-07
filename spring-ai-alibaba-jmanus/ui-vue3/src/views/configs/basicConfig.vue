@@ -299,8 +299,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Switch from '@/components/switch/index.vue'
 import { AdminApiService, type ConfigItem } from '@/api/admin-api-service'
+
+// Initialize i18n
+const { t } = useI18n()
 
 // Define extended configuration item interface
 interface ExtendedConfigItem extends ConfigItem {

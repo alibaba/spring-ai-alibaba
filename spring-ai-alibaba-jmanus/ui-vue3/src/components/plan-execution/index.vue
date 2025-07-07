@@ -40,19 +40,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, defineProps, defineEmits, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { ref, onMounted, onUnmounted, defineProps, defineEmits, watch } from 'vue'
 import ChatContainer from '@/components/chat/index.vue'
 import InputArea from '@/components/input/index.vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import { useSidebarStore } from '@/stores/sidebar'
-import { useRightPanelStore } from '@/stores/right-panel'
-
-const { t } = useI18n()
 
 // 使用pinia stores
 const sidebarStore = useSidebarStore()
-const rightPanelStore = useRightPanelStore()
 
 // 定义 props
 interface Props {
@@ -148,9 +143,6 @@ const handlePlanManagerUpdate = (planData: any) => {
 
   // 更新加载状态
   isLoading.value = !planData.completed
-
-  // 直接使用right-panel store处理计划更新，替代emit事件
-  rightPanelStore.handlePlanUpdate(planData)
 }
 
 /**

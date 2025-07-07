@@ -34,9 +34,9 @@
         <div v-if="selectedStep" class="step-info-fixed">
           <h3>
             {{
-              rightPanelStore.selectedStep.title ||
-              rightPanelStore.selectedStep.description ||
-              `步骤 ${rightPanelStore.selectedStep.index + 1}`
+              selectedStep.title ||
+              selectedStep.description ||
+              `步骤 ${selectedStep.index + 1}`
             }}
           </h3>
 

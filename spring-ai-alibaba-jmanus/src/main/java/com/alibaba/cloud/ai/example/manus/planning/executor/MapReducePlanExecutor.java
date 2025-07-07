@@ -352,7 +352,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			copiedStep.setStepIndex(originalStep.getStepIndex());
 			copiedStep.setStepRequirement(originalStep.getStepRequirement());
 			copiedStep.setTerminateColumns(originalStep.getTerminateColumns());
-			验证这个terminate是否传递正确了，尤其是在Map阶段
+			
 			copiedSteps.add(copiedStep);
 		}
 
