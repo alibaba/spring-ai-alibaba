@@ -39,13 +39,17 @@ public class ExecutionContext {
 	 * Tool context for storing context information of tool execution
 	 */
 	/** Unique identifier of the plan */
-	private String planId;
+	private String currentPlanId;
+
+	private String rootPlanId;
 
 	/** Execution plan entity containing detailed plan information and execution steps */
-	private ExecutionPlan plan;
+	private PlanInterface plan;
 
 	/** User's original request content */
 	private String userRequest;
+
+	private Long thinkActRecordId;
 
 	/** Result summary after plan execution completion */
 	private String resultSummary;
@@ -69,23 +73,47 @@ public class ExecutionContext {
 	 * Get plan ID
 	 * @return Unique identifier of the plan
 	 */
-	public String getPlanId() {
-		return planId;
+	public String getCurrentPlanId() {
+		return currentPlanId;
 	}
 
 	/**
 	 * Set plan ID
-	 * @param planId Unique identifier of the plan
+	 * @param currentPlanId Unique identifier of the plan
 	 */
-	public void setPlanId(String planId) {
-		this.planId = planId;
+	public void setCurrentPlanId(String currentPlanId) {
+		this.currentPlanId = currentPlanId;
+	}
+
+	public String getRootPlanId() {
+		return rootPlanId;
+	}
+
+	public void setRootPlanId(String parentPlanId) {
+		this.rootPlanId = parentPlanId;
+	}
+
+	/**
+	 * Get think-act record ID
+	 * @return Think-act record ID for sub-plan executions
+	 */
+	public Long getThinkActRecordId() {
+		return thinkActRecordId;
+	}
+
+	/**
+	 * Set think-act record ID
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions
+	 */
+	public void setThinkActRecordId(Long thinkActRecordId) {
+		this.thinkActRecordId = thinkActRecordId;
 	}
 
 	/**
 	 * Get execution plan entity
 	 * @return Execution plan entity object
 	 */
-	public ExecutionPlan getPlan() {
+	public PlanInterface getPlan() {
 		return plan;
 	}
 
@@ -93,7 +121,7 @@ public class ExecutionContext {
 	 * Set execution plan entity
 	 * @param plan Execution plan entity object
 	 */
-	public void setPlan(ExecutionPlan plan) {
+	public void setPlan(PlanInterface plan) {
 		this.plan = plan;
 	}
 

@@ -29,8 +29,8 @@
           </div>
           <div class="modal-footer">
             <slot name="footer">
-              <button class="cancel-btn" @click="$emit('update:modelValue', false)">取消</button>
-              <button class="confirm-btn" @click="$emit('confirm')">确认</button>
+              <button class="cancel-btn" @click="$emit('update:modelValue', false)">{{ $t('common.cancel') }}</button>
+              <button class="confirm-btn" @click="$emit('confirm')">{{ $t('common.confirm') }}</button>
             </slot>
           </div>
         </div>
