@@ -16,10 +16,6 @@
 
 package com.alibaba.cloud.ai.node;
 
-import com.alibaba.cloud.ai.dbconnector.DbAccessor;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
-import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
-import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
@@ -39,53 +35,42 @@ import static com.alibaba.cloud.ai.constant.Constant.*;
 /**
  * @author zhangshenghang
  */
-public class SqlExecuteNode implements NodeAction {
+public class PythonExecuteNode implements NodeAction {
 
-	private static final Logger logger = LoggerFactory.getLogger(SqlExecuteNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(PythonExecuteNode.class);
 
+	private final ChatClient chatClient;
 	private final BeanOutputConverter<Plan> converter;
 
-	private final DbConfig dbConfig;
-
-	private final DbAccessor dbAccessor;
-
-	public SqlExecuteNode(ChatClient.Builder chatClientBuilder, DbAccessor dbAccessor, DbConfig dbConfig) {
+	public PythonExecuteNode(ChatClient.Builder chatClientBuilder) {
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {});
-		this.dbAccessor = dbAccessor;
-		this.dbConfig = dbConfig;
+
+		this.chatClient = chatClientBuilder.build();
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT).orElseThrow();
 		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
-
 		Map<String, Object> updated = new HashMap<>();
 		Plan plan = converter.convert(plannerNodeOutput);
 		Integer planCurrentStep = state.value(PLAN_CURRENT_STEP, 1);
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
 		ExecutionStep executionStep = executionPlan.get(planCurrentStep - 1);
 		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
-		logger.info(toolParameters.getDescription());
-		String sqlQuery = toolParameters.getSqlQuery();
-		DbQueryParameter dbQueryParameter = new DbQueryParameter();
-		dbQueryParameter.setSql(sqlQuery);
-		try {
-			ResultSetBO resultSetBO = dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
-			String jsonStr = resultSetBO.toJsonStr();
-			HashMap<String, String> value = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<String, String>());
-			value.put("步骤"+planCurrentStep+"结果", jsonStr);
-			updated.put(SQL_EXECUTE_NODE_OUTPUT, value);
-			updated.put(PLAN_CURRENT_STEP, planCurrentStep + 1);
-			updated.put(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT,null);
-			return updated;
-		}catch (Exception e) {
-			// 处理验证失败情况
-			String errorMessage = e.getMessage();
-			logger.error("[{}] SQL执行失败 - 原因: {}", this.getClass().getSimpleName(), errorMessage);
-			// 失败，重新生成SQL
-			return Map.of(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, errorMessage);
-		}
+		String instruction = toolParameters.getInstruction();
+		String description = toolParameters.getDescription();
+		HashMap<String, String> value = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<String, String>());
+
+		String content = chatClient.prompt("你是一个模拟Python的执行器，我将给你需求和数据，请帮我分析，并给出详细的数据结果").user(
+				"## 整体执行计划（仅当无法理解需求时参考整体执行计划）：" + plan.toJsonStr() +
+						"## instruction：" + instruction + "\n## description：" + description + "\n## 数据：" + value + "\n请给出结果。"
+		).call().content();
+		HashMap<String, String> value2 = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<String, String>());
+		value2.put("步骤"+planCurrentStep+"结果", content);
+		updated.put(SQL_EXECUTE_NODE_OUTPUT, value2);
+		updated.put(PLAN_CURRENT_STEP, planCurrentStep + 1);
+		return updated;
 	}
 
 }

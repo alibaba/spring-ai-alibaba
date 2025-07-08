@@ -18,55 +18,54 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
+import com.alibaba.cloud.ai.prompt.PromptConstant;
+import com.alibaba.cloud.ai.prompt.PromptHelper;
+import com.alibaba.cloud.ai.schema.SchemaDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
+import reactor.core.publisher.Flux;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
- * 关键词、实体、时间等信息抽取，为后续 Schema 召回做准备
- *
  * @author zhangshenghang
  */
-public class KeywordExtractNode implements NodeAction {
+public class PlannerNode implements NodeAction {
 
-	private static final Logger logger = LoggerFactory.getLogger(KeywordExtractNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(PlannerNode.class);
 
 	private final ChatClient chatClient;
 
-	private final BaseNl2SqlService baseNl2SqlService;
-
-	public KeywordExtractNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService) {
+	public PlannerNode(ChatClient.Builder chatClientBuilder) {
 		this.chatClient = chatClientBuilder.build();
-		this.baseNl2SqlService = baseNl2SqlService;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 		String input = (String) state.value(INPUT_KEY).orElseThrow();
+		SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
+		String schemaStr = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
+		Map<String, Object> params = Map.of("user_question", input, "schema", schemaStr);
+		String plannerPrompt = PromptConstant.getPlannerPromptTemplate().render(params);
+		Flux<ChatResponse> chatResponseFlux = chatClient.prompt().user(plannerPrompt).stream().chatResponse();
+		var generator = StreamingChatGenerator.builder()
+				.startingNode(PLANNER_NODE)
+				.startingState(state)
+				.mapResult(
+						response ->{
+							logger.info("{} 节点输出 content：{}", this.getClass().getSimpleName(), response.getResult().getOutput().getText());
+							return Map.of(PLANNER_NODE_OUTPUT, Objects.requireNonNull(response.getResult().getOutput().getText()));
+						})
+				.build(chatResponseFlux);
 
-		List<String> evidences = baseNl2SqlService.extractEvidences(input);
-		List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);
-		logger.info("evidences：{} , keywords: {}", evidences, keywords);
-
-		state.value(SQL_GENERATE_SCHEMA_MISSING_ADVICE).map(advice -> {
-			logger.info("Schema 召回缺失补充");
-			List<String> additionalKeywords = baseNl2SqlService.extractKeywords((String) advice, evidences);
-			logger.info("Schema 召回缺失补充 keywords: {}", additionalKeywords);
-			keywords.addAll(additionalKeywords);
-			return keywords;
-		});
-
-		Map<String, Object> updated = Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, keywords, EVIDENCES, evidences, RESULT,
-				keywords);
-
-		logger.info("{} 节点输出 evidences：{} , keywords: {}", this.getClass().getSimpleName(), evidences, keywords);
+		Map<String, Object> updated = Map.of(PLANNER_NODE_OUTPUT, generator);
 		return updated;
 	}
 

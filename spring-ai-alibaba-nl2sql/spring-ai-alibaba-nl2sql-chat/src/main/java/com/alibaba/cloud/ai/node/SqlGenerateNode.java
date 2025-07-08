@@ -28,6 +28,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.alibaba.cloud.ai.constant.Constant.*;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -56,6 +57,14 @@ public class SqlGenerateNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
+		// --------------------新版本处理-------------------------------
+		Optional<Object> exceptionOutputOpt = state.value(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT);
+		if (exceptionOutputOpt.isPresent()) {
+			String sqlException= (String) exceptionOutputOpt.orElseThrow(() -> new IllegalStateException("sql exception not found"));
+
+		}
+
+		// ----------------------------------------------------
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 		String input = (String) state.value(INPUT_KEY).orElseThrow();
 		List<String> evidenceList = (List<String>) state.value(EVIDENCES).orElseThrow();

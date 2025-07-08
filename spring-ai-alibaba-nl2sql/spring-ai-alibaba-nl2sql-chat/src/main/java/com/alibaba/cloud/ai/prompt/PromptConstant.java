@@ -58,6 +58,10 @@ public class PromptConstant {
 		return new PromptTemplate(PromptLoader.loadPrompt("mix-sql-generator-system-check"));
 	}
 
+	public static PromptTemplate getPlannerPromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("planner"));
+	}
+
 	// 兼容性方法，保持向后兼容
 	@Deprecated
 	public static final PromptTemplate INIT_REWRITE_PROMPT_TEMPLATE = getInitRewritePromptTemplate();

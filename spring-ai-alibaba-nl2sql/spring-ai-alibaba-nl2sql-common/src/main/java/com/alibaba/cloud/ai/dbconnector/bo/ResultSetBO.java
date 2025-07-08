@@ -19,6 +19,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +47,19 @@ public final class ResultSetBO extends DdlBaseBO implements Cloneable {
 			t.putAll(x);
 			return t;
 		}).collect(Collectors.toList())).build();
+	}
+
+	/**
+	 * 将当前对象转换为 JSON 字符串
+	 * @return JSON 字符串
+	 */
+	public String toJsonStr() {
+		ObjectMapper objectMapper = new ObjectMapper();
+		try {
+			return objectMapper.writeValueAsString(this);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException("Failed to convert object to JSON string", e);
+		}
 	}
 
 }
