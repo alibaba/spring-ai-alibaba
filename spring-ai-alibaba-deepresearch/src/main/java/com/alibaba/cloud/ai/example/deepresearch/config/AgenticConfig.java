@@ -39,7 +39,8 @@ public class AgenticConfig {
 	@Description("agent description information container")
 	public Map<String, String> agentDescriptions(List<AbstractNode> nodes) {
 		return nodes.stream()
-			.collect(Collectors.toMap(node -> node.definition().name(), node -> node.definition().description()));
+			.collect(Collectors.toMap(node -> node.getNodeDefinition().getName(),
+					node -> node.getNodeDefinition().getDescription()));
 	}
 
 }
