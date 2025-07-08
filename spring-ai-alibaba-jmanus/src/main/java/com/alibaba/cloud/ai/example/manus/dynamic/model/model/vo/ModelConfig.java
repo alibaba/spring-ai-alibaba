@@ -16,8 +16,6 @@ public class ModelConfig {
 
     private String modelDescription;
 
-    private String className;
-
     private String type;
 
     public Long getId() {
@@ -58,14 +56,6 @@ public class ModelConfig {
 
     public void setModelDescription(String modelDescription) {
         this.modelDescription = modelDescription;
-    }
-
-    public String getClassName() {
-        return className;
-    }
-
-    public void setClassName(String className) {
-        this.className = className;
     }
 
     public String getType() {

@@ -176,7 +176,13 @@ public class DynamicAgent extends ReActAgent {
 				chatClient = llmService.getDynamicChatClient(model.getBaseUrl(), model.getApiKey(), model.getModelName());
 			}
 			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
-
+			String model = response.getMetadata().getModel();
+			PlanExecutionRecord planExecutionRecord = planExecutionRecorder.getExecutionRecord(getCurrentPlanId(),
+					getRootPlanId(), getThinkActRecordId());
+			AgentExecutionRecord agentExecutionRecord = planExecutionRecorder
+					.getCurrentAgentExecutionRecord(planExecutionRecord);
+			planExecutionRecord.setModelName(model);
+			agentExecutionRecord.setModelName(model);
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
 

@@ -35,7 +35,6 @@ public class ModelDataInitialization {
             dynamicModelEntity.setBaseUrl(baseUrl);
             dynamicModelEntity.setApiKey(apiKey);
             dynamicModelEntity.setModelName(model);
-            dynamicModelEntity.setClassName(model);
             dynamicModelEntity.setModelDescription("base model");
             dynamicModelEntity.setType(ModelType.GENERAL.name());
             repository.save(dynamicModelEntity);

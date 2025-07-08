@@ -29,22 +29,19 @@ public class DynamicModelEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = false)
 	private String baseUrl;
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = false)
 	private String apiKey;
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = false)
 	private String modelName;
 
 	@Column(nullable = false, length = 1000)
 	private String modelDescription;
 
-	@Column(nullable = false)
-	private String className;
-
-	@Column(nullable = false)
+	@Column(nullable = false, unique = true)
 	private String type;
 
 	@OneToMany(mappedBy = "model")
@@ -98,14 +95,6 @@ public class DynamicModelEntity {
 		this.modelDescription = modelDescription;
 	}
 
-	public String getClassName() {
-		return className;
-	}
-
-	public void setClassName(String className) {
-		this.className = className;
-	}
-
 	public String getType() {
 		return type;
 	}
@@ -129,7 +118,6 @@ public class DynamicModelEntity {
 		config.setApiKey(maskValue(this.getApiKey()));
 		config.setModelName(this.getModelName());
 		config.setModelDescription(this.getModelDescription());
-		config.setClassName(this.getClassName());
 		config.setType(this.getType());
 		return config;
 	}

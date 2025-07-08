@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
@@ -33,9 +35,12 @@ public class ModelServiceImpl implements ModelService {
 
 	private final DynamicModelRepository repository;
 
+	private final DynamicAgentRepository agentRepository;
+
 	@Autowired
-	public ModelServiceImpl(DynamicModelRepository repository) {
+	public ModelServiceImpl(DynamicModelRepository repository, DynamicAgentRepository agentRepository) {
 		this.repository = repository;
+		this.agentRepository = agentRepository;
 	}
 
 	@Override
@@ -94,6 +99,11 @@ public class ModelServiceImpl implements ModelService {
 
 	@Override
 	public void deleteModel(String id) {
+		List<DynamicAgentEntity> allByModel = agentRepository.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
+		if (allByModel != null && !allByModel.isEmpty()) {
+			allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
+			agentRepository.saveAll(allByModel);
+		}
 		repository.deleteById(Long.parseLong(id));
 	}
 
@@ -102,7 +112,6 @@ public class ModelServiceImpl implements ModelService {
 		entity.setApiKey(config.getApiKey());
 		entity.setModelName(config.getModelName());
 		entity.setModelDescription(config.getModelDescription());
-		entity.setClassName(config.getClassName());
 		entity.setType(config.getType());
 	}
 
