@@ -35,6 +35,7 @@ import static com.alibaba.cloud.ai.constant.Constant.SQL_VALIDATE_NODE_OUTPUT;
  *
  * @author zhangshenghang
  */
+@Deprecated
 public class SqlValidateNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(SqlValidateNode.class);

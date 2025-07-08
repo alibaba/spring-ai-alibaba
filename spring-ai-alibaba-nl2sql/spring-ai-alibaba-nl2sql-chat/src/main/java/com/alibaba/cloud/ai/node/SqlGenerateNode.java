@@ -66,20 +66,20 @@ public class SqlGenerateNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
+		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT).orElseThrow();
+		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
+
+		Plan plan = converter.convert(plannerNodeOutput);
+		Integer planCurrentStep = state.value(PLAN_CURRENT_STEP, 1);
+		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
+		ExecutionStep executionStep = executionPlan.get(planCurrentStep - 1);
+		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
 		// --------------------新版本处理-------------------------------
 		Optional<Object> exceptionOutputOpt = state.value(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT);
 		if (exceptionOutputOpt.isPresent()) {
 			String sqlException = (String) exceptionOutputOpt
 				.orElseThrow(() -> new IllegalStateException("sql exception not found"));
 			logger.info("检测到SQL执行异常，开始重新生成SQL: {}", sqlException);
-			String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT).orElseThrow();
-			logger.info("plannerNodeOutput: {}", plannerNodeOutput);
-
-			Plan plan = converter.convert(plannerNodeOutput);
-			Integer planCurrentStep = state.value(PLAN_CURRENT_STEP, 1);
-			List<ExecutionStep> executionPlan = plan.getExecutionPlan();
-			ExecutionStep executionStep = executionPlan.get(planCurrentStep - 1);
-			ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
 
 			List<String> evidenceList = (List<String>) state.value(EVIDENCES).orElseThrow();
 			SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
@@ -96,15 +96,6 @@ public class SqlGenerateNode implements NodeAction {
 		List<String> evidenceList = (List<String>) state.value(EVIDENCES).orElseThrow();
 		SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
 
-		// 检查SQL语法验证结果
-		boolean isValidationFailed = state.value(SQL_VALIDATE_NODE_OUTPUT).map(v -> !(Boolean) v).orElse(false);
-
-		if (isValidationFailed) {
-			logger.info("SQL 语法校验未通过，开始重新生成SQL");
-			String newSql = regenerateSql(state, input, evidenceList, schemaDTO, SQL_VALIDATE_EXCEPTION_OUTPUT, null);
-			return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
-		}
-
 		// 检查语义一致性验证结果
 		boolean isSemanticConsistencyFailed = state.value(SEMANTIC_CONSISTENC_NODE_OUTPUT)
 			.map(v -> !(Boolean) v)
@@ -112,8 +103,8 @@ public class SqlGenerateNode implements NodeAction {
 
 		if (isSemanticConsistencyFailed) {
 			logger.info("语义一致性校验未通过，开始重新生成SQL");
-			String newSql = regenerateSql(state, input, evidenceList, schemaDTO,
-					SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, null);
+			String newSql = regenerateSql(state, toolParameters.toJsonStr(), evidenceList, schemaDTO,
+					SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, toolParameters.getSqlQuery());
 			return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
 		}
 

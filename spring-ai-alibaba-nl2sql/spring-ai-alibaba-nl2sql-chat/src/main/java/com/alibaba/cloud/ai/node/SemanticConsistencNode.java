@@ -20,12 +20,18 @@ import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
+import com.alibaba.cloud.ai.schema.ExecutionStep;
+import com.alibaba.cloud.ai.schema.Plan;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.core.ParameterizedTypeReference;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +50,8 @@ public class SemanticConsistencNode implements NodeAction {
 
 	private final DbConfig dbConfig;
 
+	private final BeanOutputConverter<Plan> converter;
+
 	private final BaseNl2SqlService baseNl2SqlService;
 
 	public SemanticConsistencNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
@@ -51,6 +59,8 @@ public class SemanticConsistencNode implements NodeAction {
 		this.chatClient = chatClientBuilder.build();
 		this.dbConfig = dbConfig;
 		this.baseNl2SqlService = baseNl2SqlService;
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
+		});
 	}
 
 	@Override
@@ -70,22 +80,36 @@ public class SemanticConsistencNode implements NodeAction {
 			.map(SchemaDTO.class::cast)
 			.orElseThrow(() -> new IllegalStateException("Schema DTO not found"));
 
-		String sql = state.value(SQL_GENERATE_OUTPUT)
-			.map(String.class::cast)
-			.orElseThrow(() -> new IllegalStateException("SQL not found"));
+		// String sql = state.value(SQL_GENERATE_OUTPUT)
+		// .map(String.class::cast)
+		// .orElseThrow(() -> new IllegalStateException("SQL not found"));
+
+		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT).orElseThrow();
+		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
+
+		Map<String, Object> updated = new HashMap<>();
+		Plan plan = converter.convert(plannerNodeOutput);
+		Integer planCurrentStep = state.value(PLAN_CURRENT_STEP, 1);
+		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
+		ExecutionStep executionStep = executionPlan.get(planCurrentStep - 1);
+		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
+		logger.info(toolParameters.getDescription());
+		String sqlQuery = toolParameters.getSqlQuery();
+		String schema = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
+		String evidence = StringUtils.join(evidenceList, ";\n");
 
 		// 构建和执行语义一致性检查
-		List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(input, dbConfig, schemaDTO, evidenceList);
-		String semanticConsistency = baseNl2SqlService.semanticConsistency(sql,
-				String.join("\n", prompts.get(0), prompts.get(1)));
+		// List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(input, dbConfig,
+		// schemaDTO, evidenceList);
+		String semanticConsistency = baseNl2SqlService.semanticConsistency(sqlQuery,
+				String.join("\n", schema, evidence, toolParameters.getDescription()));
 
 		logger.info("语义一致性校验结果详情: {}", semanticConsistency);
 		boolean passed = !semanticConsistency.startsWith("不通过");
 		logger.info("语义一致性校验结果: {}", passed);
-
 		// 根据校验结果返回相应的状态
-		return passed ? Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, true) : Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, false,
-				SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, semanticConsistency);
+		return passed ? Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, true, PLAN_CURRENT_STEP, planCurrentStep + 1) : Map
+			.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, false, SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, semanticConsistency);
 	}
 
 }

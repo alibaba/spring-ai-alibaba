@@ -138,13 +138,15 @@ public class Nl2sqlConfiguration {
 							REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE))
 			.addEdge(REPORT_GENERATOR_NODE, END)
 			.addConditionalEdges(SQL_EXECUTE_NODE, edge_async(new SQLExecutorDispatcher()),
-					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, PLAN_EXECUTOR_NODE, PLAN_EXECUTOR_NODE))
+					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, SEMANTIC_CONSISTENC_NODE, SEMANTIC_CONSISTENC_NODE))
 			.addConditionalEdges(SQL_GENERATE_NODE, edge_async(new SqlGenerateDispatcher()),
 					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END, SQL_EXECUTE_NODE, SQL_EXECUTE_NODE))
-			.addConditionalEdges(SQL_VALIDATE_NODE, edge_async(new SqlValidateDispatcher()),
-					Map.of(SEMANTIC_CONSISTENC_NODE, SEMANTIC_CONSISTENC_NODE, SQL_GENERATE_NODE, SQL_GENERATE_NODE))
+			// .addConditionalEdges(SQL_VALIDATE_NODE, edge_async(new
+			// SqlValidateDispatcher()),
+			// Map.of(SEMANTIC_CONSISTENC_NODE, SEMANTIC_CONSISTENC_NODE,
+			// SQL_GENERATE_NODE, SQL_GENERATE_NODE))
 			.addConditionalEdges(SEMANTIC_CONSISTENC_NODE, edge_async(new SemanticConsistenceDispatcher()),
-					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, END, END));
+					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, PLAN_EXECUTOR_NODE, PLAN_EXECUTOR_NODE));
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
 				"workflow graph");

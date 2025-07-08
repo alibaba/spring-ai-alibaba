@@ -77,7 +77,6 @@ public class SqlExecuteNode implements NodeAction {
 			HashMap<String, String> value = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<String, String>());
 			value.put("步骤" + planCurrentStep + "结果", jsonStr);
 			updated.put(SQL_EXECUTE_NODE_OUTPUT, value);
-			updated.put(PLAN_CURRENT_STEP, planCurrentStep + 1);
 			updated.put(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, null);
 			return updated;
 		}

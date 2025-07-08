@@ -33,7 +33,7 @@ public class SQLExecutorDispatcher implements EdgeAction {
 			return SQL_GENERATE_NODE;
 		}
 		else {
-			return PLAN_EXECUTOR_NODE;
+			return SEMANTIC_CONSISTENC_NODE;
 		}
 	}
 
