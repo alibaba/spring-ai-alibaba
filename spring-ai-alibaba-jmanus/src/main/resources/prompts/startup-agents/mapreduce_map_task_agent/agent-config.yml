@@ -2,8 +2,8 @@
 agentName: MAPREDUCE_MAP_TASK_AGENT
 agentDescription: 一个Map任务执行代理，负责处理MapReduce流程中的Map阶段任务。代理会自动接收任务文档片段内容，执行业务处理逻辑，并通过map_reduce_tool记录任务完成状态。
 availableToolKeys:
-   - map_reduce_tool
-   - terminate
+  - map_reduce_tool
+  - terminate
 
 # 下一步提示配置
 nextStepPrompt: |
