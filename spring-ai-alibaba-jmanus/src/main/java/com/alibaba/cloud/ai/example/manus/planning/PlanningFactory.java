@@ -116,9 +116,6 @@ public class PlanningFactory {
 	private DynamicAgentLoader dynamicAgentLoader;
 
 	@Autowired
-	private McpStateHolderService mcpStateHolderService;
-
-	@Autowired
 	private MapReduceSharedStateManager sharedStateManager;
 
 	@Autowired
@@ -209,7 +206,7 @@ public class PlanningFactory {
 			ToolCallback[] tCallbacks = toolCallback.getAsyncMcpToolCallbackProvider().getToolCallbacks();
 			for (ToolCallback tCallback : tCallbacks) {
 				// The serviceGroup is the name of the tool
-				toolDefinitions.add(new McpTool(tCallback, serviceGroup, planId, mcpStateHolderService));
+				toolDefinitions.add(new McpTool(tCallback, serviceGroup, planId, new McpStateHolderService()));
 			}
 		}
 
