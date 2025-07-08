@@ -40,10 +40,12 @@ public class PythonExecuteNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(PythonExecuteNode.class);
 
 	private final ChatClient chatClient;
+
 	private final BeanOutputConverter<Plan> converter;
 
 	public PythonExecuteNode(ChatClient.Builder chatClientBuilder) {
-		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {});
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
+		});
 
 		this.chatClient = chatClientBuilder.build();
 	}
@@ -62,12 +64,13 @@ public class PythonExecuteNode implements NodeAction {
 		String description = toolParameters.getDescription();
 		HashMap<String, String> value = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<String, String>());
 
-		String content = chatClient.prompt("你是一个模拟Python的执行器，我将给你需求和数据，请帮我分析，并给出详细的数据结果").user(
-				"## 整体执行计划（仅当无法理解需求时参考整体执行计划）：" + plan.toJsonStr() +
-						"## instruction：" + instruction + "\n## description：" + description + "\n## 数据：" + value + "\n请给出结果。"
-		).call().content();
+		String content = chatClient.prompt("你是一个模拟Python的执行器，我将给你需求和数据，请帮我分析，并给出详细的数据结果")
+			.user("## 整体执行计划（仅当无法理解需求时参考整体执行计划）：" + plan.toJsonStr() + "## instruction：" + instruction
+					+ "\n## description：" + description + "\n## 数据：" + value + "\n请给出结果。")
+			.call()
+			.content();
 		HashMap<String, String> value2 = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<String, String>());
-		value2.put("步骤"+planCurrentStep+"结果", content);
+		value2.put("步骤" + planCurrentStep + "结果", content);
 		updated.put(SQL_EXECUTE_NODE_OUTPUT, value2);
 		updated.put(PLAN_CURRENT_STEP, planCurrentStep + 1);
 		return updated;

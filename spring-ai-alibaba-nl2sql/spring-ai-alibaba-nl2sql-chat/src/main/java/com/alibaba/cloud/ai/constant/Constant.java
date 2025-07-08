@@ -58,6 +58,7 @@ public class Constant {
 	public static final String PLANNER_NODE_OUTPUT = "PLANNER_NODE_OUTPUT";
 
 	public static final String SQL_EXECUTE_NODE_OUTPUT = "SQL_EXECUTE_NODE_OUTPUT";
+
 	public static final String SQL_EXECUTE_NODE_EXCEPTION_OUTPUT = "SQL_EXECUTE_NODE_EXCEPTION_OUTPUT";
 
 	public static final String PYTHON_EXECUTE_NODE_OUTPUT = "PYTHON_EXECUTE_NODE_OUTPUT";

@@ -117,9 +117,9 @@ public class Nl2sqlConfiguration {
 			.addNode(SQL_VALIDATE_NODE, node_async(new SqlValidateNode(chatClientBuilder, dbAccessor, dbConfig)))
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
-				.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(chatClientBuilder, dbAccessor, dbConfig)))
-				.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(chatClientBuilder)))
-				.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
+			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(chatClientBuilder, dbAccessor, dbConfig)))
+			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(chatClientBuilder)))
+			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
 			// TODO 待定：这里考虑可以添加一个自我反思的节点，进行自我反思和改进；是否需要根据使用效果再进行开发
 			.addNode(SEMANTIC_CONSISTENC_NODE,
 					node_async(new SemanticConsistencNode(chatClientBuilder, nl2SqlService, dbConfig)));
@@ -132,14 +132,15 @@ public class Nl2sqlConfiguration {
 			.addEdge(SCHEMA_RECALL_NODE, TABLE_RELATION_NODE)
 			.addEdge(TABLE_RELATION_NODE, PLANNER_NODE) // TODO 使用
 			.addEdge(PLANNER_NODE, PLAN_EXECUTOR_NODE)
-				.addEdge(PYTHON_EXECUTE_NODE, PLAN_EXECUTOR_NODE)
+			.addEdge(PYTHON_EXECUTE_NODE, PLAN_EXECUTOR_NODE)
 			.addConditionalEdges(PLAN_EXECUTOR_NODE, edge_async(new PlanExecutorDispatcher()),
-					Map.of(SQL_EXECUTE_NODE, SQL_EXECUTE_NODE, PYTHON_EXECUTE_NODE,PYTHON_EXECUTE_NODE, REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE))
-				.addEdge(REPORT_GENERATOR_NODE,END)
-				.addConditionalEdges(SQL_EXECUTE_NODE,edge_async(new SQLExecutorDispatcher()),
-						Map.of(SQL_GENERATE_NODE,SQL_GENERATE_NODE,PLAN_EXECUTOR_NODE,PLAN_EXECUTOR_NODE))
+					Map.of(SQL_EXECUTE_NODE, SQL_EXECUTE_NODE, PYTHON_EXECUTE_NODE, PYTHON_EXECUTE_NODE,
+							REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE))
+			.addEdge(REPORT_GENERATOR_NODE, END)
+			.addConditionalEdges(SQL_EXECUTE_NODE, edge_async(new SQLExecutorDispatcher()),
+					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, PLAN_EXECUTOR_NODE, PLAN_EXECUTOR_NODE))
 			.addConditionalEdges(SQL_GENERATE_NODE, edge_async(new SqlGenerateDispatcher()),
-					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END, SQL_VALIDATE_NODE, SQL_VALIDATE_NODE))
+					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END, SQL_EXECUTE_NODE, SQL_EXECUTE_NODE))
 			.addConditionalEdges(SQL_VALIDATE_NODE, edge_async(new SqlValidateDispatcher()),
 					Map.of(SEMANTIC_CONSISTENC_NODE, SEMANTIC_CONSISTENC_NODE, SQL_GENERATE_NODE, SQL_GENERATE_NODE))
 			.addConditionalEdges(SEMANTIC_CONSISTENC_NODE, edge_async(new SemanticConsistenceDispatcher()),

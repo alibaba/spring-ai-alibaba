@@ -50,7 +50,8 @@ public class SqlExecuteNode implements NodeAction {
 	private final DbAccessor dbAccessor;
 
 	public SqlExecuteNode(ChatClient.Builder chatClientBuilder, DbAccessor dbAccessor, DbConfig dbConfig) {
-		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {});
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
+		});
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
 	}
@@ -74,12 +75,13 @@ public class SqlExecuteNode implements NodeAction {
 			ResultSetBO resultSetBO = dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
 			String jsonStr = resultSetBO.toJsonStr();
 			HashMap<String, String> value = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<String, String>());
-			value.put("步骤"+planCurrentStep+"结果", jsonStr);
+			value.put("步骤" + planCurrentStep + "结果", jsonStr);
 			updated.put(SQL_EXECUTE_NODE_OUTPUT, value);
 			updated.put(PLAN_CURRENT_STEP, planCurrentStep + 1);
-			updated.put(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT,null);
+			updated.put(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, null);
 			return updated;
-		}catch (Exception e) {
+		}
+		catch (Exception e) {
 			// 处理验证失败情况
 			String errorMessage = e.getMessage();
 			logger.error("[{}] SQL执行失败 - 原因: {}", this.getClass().getSimpleName(), errorMessage);

@@ -1,6 +1,8 @@
 package com.alibaba.cloud.ai.schema;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 
 public class ExecutionStep {
@@ -15,16 +17,32 @@ public class ExecutionStep {
 	private ToolParameters toolParameters;
 
 	@Data
-	public static class ToolParameters{
+	public static class ToolParameters {
+
 		private String description;
+
 		@JsonProperty("summary_and_recommendations")
 		private String summaryAndRecommendations;
+
 		@JsonProperty("sql_query")
 		private String sqlQuery;
+
 		@JsonProperty("instruction")
 		private String instruction;
+
 		@JsonProperty("input_data_description")
 		private String inputDataDescription;
+
+		public String toJsonStr() {
+			ObjectMapper objectMapper = new ObjectMapper();
+			try {
+				return objectMapper.writeValueAsString(this);
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException("Failed to convert object to JSON string", e);
+			}
+		}
+
 	}
 
 	public ExecutionStep() {

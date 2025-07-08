@@ -41,11 +41,13 @@ public class ReportGeneratorNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(ReportGeneratorNode.class);
 
 	private final ChatClient chatClient;
+
 	private final BeanOutputConverter<Plan> converter;
 
 	public ReportGeneratorNode(ChatClient.Builder chatClientBuilder) {
 		this.chatClient = chatClientBuilder.build();
-		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {});
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
+		});
 
 	}
 
@@ -62,7 +64,11 @@ public class ReportGeneratorNode implements NodeAction {
 		String summaryAndRecommendations = toolParameters.getSummaryAndRecommendations();
 		HashMap<String, String> value = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<String, String>());
 
-		String content = chatClient.prompt("你是一个专业的报告生成器," + summaryAndRecommendations).user("这里是需求和计划" + plan.toJsonStr() + "\n这里是每个步骤生成的数据:" + JSONObject.toJSONString(value)).call().content();
+		String content = chatClient.prompt("你是一个专业的报告生成器," + summaryAndRecommendations)
+			.user("这里是需求和计划" + plan.toJsonStr() + "\n这里是每个步骤生成的数据:" + JSONObject.toJSONString(value))
+			.call()
+			.content();
+		logger.info("生成的报告内容: {}", content);
 		updated.put(RESULT, content);
 		updated.put(SQL_EXECUTE_NODE_OUTPUT, null);
 		updated.put(PLAN_CURRENT_STEP, null);

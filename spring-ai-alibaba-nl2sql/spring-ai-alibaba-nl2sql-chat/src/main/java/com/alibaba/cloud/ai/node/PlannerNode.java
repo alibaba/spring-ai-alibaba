@@ -56,14 +56,14 @@ public class PlannerNode implements NodeAction {
 		String plannerPrompt = PromptConstant.getPlannerPromptTemplate().render(params);
 		Flux<ChatResponse> chatResponseFlux = chatClient.prompt().user(plannerPrompt).stream().chatResponse();
 		var generator = StreamingChatGenerator.builder()
-				.startingNode(PLANNER_NODE)
-				.startingState(state)
-				.mapResult(
-						response ->{
-							logger.info("{} 节点输出 content：{}", this.getClass().getSimpleName(), response.getResult().getOutput().getText());
-							return Map.of(PLANNER_NODE_OUTPUT, Objects.requireNonNull(response.getResult().getOutput().getText()));
-						})
-				.build(chatResponseFlux);
+			.startingNode(PLANNER_NODE)
+			.startingState(state)
+			.mapResult(response -> {
+				logger.info("{} 节点输出 content：{}", this.getClass().getSimpleName(),
+						response.getResult().getOutput().getText());
+				return Map.of(PLANNER_NODE_OUTPUT, Objects.requireNonNull(response.getResult().getOutput().getText()));
+			})
+			.build(chatResponseFlux);
 
 		Map<String, Object> updated = Map.of(PLANNER_NODE_OUTPUT, generator);
 		return updated;

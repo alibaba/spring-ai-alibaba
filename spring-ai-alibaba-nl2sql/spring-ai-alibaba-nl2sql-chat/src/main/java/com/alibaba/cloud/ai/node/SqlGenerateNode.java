@@ -19,11 +19,15 @@ package com.alibaba.cloud.ai.node;
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.schema.ExecutionStep;
+import com.alibaba.cloud.ai.schema.Plan;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.util.HashMap;
 import java.util.List;
@@ -48,11 +52,16 @@ public class SqlGenerateNode implements NodeAction {
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
+	private final BeanOutputConverter<Plan> converter;
+
 	public SqlGenerateNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
 			DbConfig dbConfig) {
 		this.chatClient = chatClientBuilder.build();
 		this.baseNl2SqlService = baseNl2SqlService;
 		this.dbConfig = dbConfig;
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
+		});
+
 	}
 
 	@Override
@@ -60,8 +69,25 @@ public class SqlGenerateNode implements NodeAction {
 		// --------------------新版本处理-------------------------------
 		Optional<Object> exceptionOutputOpt = state.value(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT);
 		if (exceptionOutputOpt.isPresent()) {
-			String sqlException= (String) exceptionOutputOpt.orElseThrow(() -> new IllegalStateException("sql exception not found"));
+			String sqlException = (String) exceptionOutputOpt
+				.orElseThrow(() -> new IllegalStateException("sql exception not found"));
+			logger.info("检测到SQL执行异常，开始重新生成SQL: {}", sqlException);
+			String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT).orElseThrow();
+			logger.info("plannerNodeOutput: {}", plannerNodeOutput);
 
+			Plan plan = converter.convert(plannerNodeOutput);
+			Integer planCurrentStep = state.value(PLAN_CURRENT_STEP, 1);
+			List<ExecutionStep> executionPlan = plan.getExecutionPlan();
+			ExecutionStep executionStep = executionPlan.get(planCurrentStep - 1);
+			ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
+
+			List<String> evidenceList = (List<String>) state.value(EVIDENCES).orElseThrow();
+			SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
+
+			String newSql = regenerateSql(state, toolParameters.toJsonStr(), evidenceList, schemaDTO,
+					SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, toolParameters.getSqlQuery());
+			toolParameters.setSqlQuery(newSql);
+			return Map.of(SQL_GENERATE_OUTPUT, SQL_EXECUTE_NODE, PLANNER_NODE_OUTPUT, plan.toJsonStr());
 		}
 
 		// ----------------------------------------------------
@@ -75,7 +101,8 @@ public class SqlGenerateNode implements NodeAction {
 
 		if (isValidationFailed) {
 			logger.info("SQL 语法校验未通过，开始重新生成SQL");
-			return regenerateSql(state, input, evidenceList, schemaDTO, SQL_VALIDATE_EXCEPTION_OUTPUT);
+			String newSql = regenerateSql(state, input, evidenceList, schemaDTO, SQL_VALIDATE_EXCEPTION_OUTPUT, null);
+			return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
 		}
 
 		// 检查语义一致性验证结果
@@ -85,7 +112,9 @@ public class SqlGenerateNode implements NodeAction {
 
 		if (isSemanticConsistencyFailed) {
 			logger.info("语义一致性校验未通过，开始重新生成SQL");
-			return regenerateSql(state, input, evidenceList, schemaDTO, SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT);
+			String newSql = regenerateSql(state, input, evidenceList, schemaDTO,
+					SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, null);
+			return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
 		}
 
 		// 检查召回信息是否满足需求
@@ -111,20 +140,19 @@ public class SqlGenerateNode implements NodeAction {
 	/**
 	 * 重新生成SQL
 	 */
-	private Map<String, Object> regenerateSql(OverAllState state, String input, List<String> evidenceList,
-			SchemaDTO schemaDTO, String exceptionOutputKey) throws Exception {
+	private String regenerateSql(OverAllState state, String input, List<String> evidenceList, SchemaDTO schemaDTO,
+			String exceptionOutputKey, String sql) throws Exception {
 		String exceptionMessage = state.value(exceptionOutputKey)
 			.map(String.class::cast)
 			.orElseThrow(() -> new IllegalStateException("Exception message not found"));
 
-		String originalSql = state.value(SQL_GENERATE_OUTPUT)
-			.map(String.class::cast)
-			.orElseThrow(() -> new IllegalStateException("Original SQL not found"));
+		String originalSql = state.value(SQL_GENERATE_OUTPUT).map(String.class::cast).orElse(sql);
 
 		String newSql = baseNl2SqlService.generateSql(evidenceList, input, schemaDTO, originalSql, exceptionMessage);
 		logger.info("重新生成的SQL为：{}", newSql);
 
-		return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
+		// return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
+		return newSql;
 	}
 
 	/**
@@ -148,7 +176,7 @@ public class SqlGenerateNode implements NodeAction {
 			updated.put(SQL_GENERATE_SCHEMA_MISSING_ADVICE, newAdvice);
 
 			if (!state.value(SQL_GENERATE_SCHEMA_MISSING_ADVICE).isPresent()) {
-				logger.info("召回信息不满足需求，需要补充Schema信息");
+				logger.info("召回信息不满足需求，需要补���Schema信息");
 			}
 
 			return updated;
