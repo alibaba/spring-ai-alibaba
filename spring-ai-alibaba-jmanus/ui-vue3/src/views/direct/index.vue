@@ -442,6 +442,11 @@ const handlePlanExecutionRequested = async (payload: {
     return
   }
 
+  // 同步调用 chat 的 handleSendMessage，使用计划标题作为消息
+  const planMessage = `执行计划: ${payload.title}`
+  console.log('[DirectView] Calling handleSendMessage for plan execution:', planMessage)
+  handleSendMessage(planMessage)
+
   isExecutingPlan.value = true
 
   try {
