@@ -47,9 +47,8 @@ public class ReactController {
 	@GetMapping("/chat")
 	public String simpleChat(@RequestParam("query") String query) throws GraphRunnerException {
 
-		Optional<OverAllState> result = compiledGraph.invoke(Map.of("messages", new UserMessage(query)), RunnableConfig.builder()
-				.threadId(UUID.randomUUID().toString())
-				.build());
+		Optional<OverAllState> result = compiledGraph.invoke(Map.of("messages", new UserMessage(query)),
+				RunnableConfig.builder().threadId(UUID.randomUUID().toString()).build());
 		List<Message> messages = (List<Message>) result.get().value("messages").get();
 		AssistantMessage assistantMessage = (AssistantMessage) messages.get(messages.size() - 1);
 
