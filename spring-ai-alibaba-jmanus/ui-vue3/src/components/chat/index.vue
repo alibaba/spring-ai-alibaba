@@ -385,7 +385,7 @@ import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
-import type { PlanExecutionRecord } from '@/types/plan-execution-record'
+import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
 
 /**
  * Chat message interface that includes PlanExecutionRecord for plan-based messages
@@ -428,8 +428,6 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'user-message-send-requested', message: string): void
-  (e: 'input-clear'): void
   (e: 'step-selected', planId: string, stepIndex: number): void
   (
     e: 'sub-plan-step-selected',
@@ -598,13 +596,11 @@ const handleSendMessage = (message: string) => {
   // 首先添加用户消息到UI
   addMessage('user', message)
 
-  // 通过 emit 通知父组件清空输入
-  emit('input-clear')
-
   // 根据模式处理消息
   if (props.mode === 'plan') {
-    // 在计划模式下，触发用户消息发送请求事件
-    emit('user-message-send-requested', message)
+    // 在计划模式下，不再触发事件，让父组件直接调用相应方法
+    // 这里的逻辑由父组件通过直接调用处理
+    console.log('[ChatComponent] Plan mode message sent, parent should handle:', message)
   } else {
     // 直接模式仍然直接处理
     handleDirectMode(message)
@@ -639,9 +635,14 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
     }
 
     // Get corresponding step's agentExecution
-    const agentExecution = agentExecutionSequence[stepIndex]
+    const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
+    if (!agentExecution) {
+      console.log(`[ChatComponent] No agentExecution found for step ${stepIndex}`)
+      return []
+    }
+    
     if (!agentExecution.thinkActSteps) {
-      console.log(`[ChatComponent] No agentExecution or thinkActSteps found for step ${stepIndex}`)
+      console.log(`[ChatComponent] No thinkActSteps found for step ${stepIndex}`)
       return []
     }
 
@@ -684,7 +685,11 @@ const getSubPlanStepStatus = (
       return 'pending'
     }
 
-    const agentExecution = agentExecutionSequence[stepIndex]
+    const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
+    if (!agentExecution) {
+      return 'pending'
+    }
+    
     if (!agentExecution.thinkActSteps) {
       return 'pending'
     }
@@ -733,9 +738,14 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
       return
     }
 
-    const agentExecution = agentExecutionSequence[stepIndex]
+    const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
+    if (!agentExecution) {
+      console.warn('[ChatComponent] No agentExecution found for step', stepIndex)
+      return
+    }
+    
     if (!agentExecution.thinkActSteps) {
-      console.warn('[ChatComponent] No agentExecution or thinkActSteps for step click')
+      console.warn('[ChatComponent] No thinkActSteps found for step', stepIndex)
       return
     }
 
@@ -873,21 +883,11 @@ const updateStepActions = (message: Message, planDetails: any) => {
 }
 
 // 处理对话轮次开始
-const handleDialogRoundStart = (planId: string, query: string) => {
-  console.log('[ChatComponent] Starting dialog round with planId:', planId, 'query:', query)
+const handleDialogRoundStart = (planId: string) => {
+  console.log('[ChatComponent] Starting dialog round with planId:', planId)
 
-  if (planId && query) {
-    // 添加用户消息（如果还没有的话）
-    const hasUserMessage = messages.value.findIndex(m => m.type === 'user' && m.content === query)
-
-    if (hasUserMessage === -1) {
-      addMessage('user', query)
-      console.log('[ChatComponent] Added user message:', query)
-    } else {
-      console.log('[ChatComponent] User message already exists:', query)
-    }
-
-    // 检查是否已经有针对此计划的助手消息，使用与 handlePlanUpdate 相同的查找逻辑
+  if (planId) {
+    // 检查是否已经有针对此计划的助手消息
     const existingAssistantMsg = messages.value.findIndex(
       m => m.planExecution?.currentPlanId === planId && m.type === 'assistant'
     )
@@ -1017,6 +1017,10 @@ const handlePlanUpdate = (rootPlanId: string) => {
   }
 
   // 处理有步骤的计划...
+  
+  // 清除初始的thinking状态，让计划执行信息显示
+  delete message.thinking
+  
   // 处理步骤信息 - 确保格式一致并保持显示友好的格式
   const formattedSteps = planDetails.steps.map((step: any) => {
     // 如果步骤是字符串，直接返回
@@ -1253,7 +1257,8 @@ const handleUserInputSubmit = async (message: Message) => {
     if (formInputs && formInputs.length > 0) {
       // 多个字段的情况
       Object.entries(formInputsStore[message.id]).forEach(([index, value]) => {
-        const label = formInputs[index]?.label || `input_${index}`
+        const numIndex = parseInt(index, 10)
+        const label = formInputs[numIndex]?.label || `input_${index}`
         inputData[label] = value
       })
     } else {
