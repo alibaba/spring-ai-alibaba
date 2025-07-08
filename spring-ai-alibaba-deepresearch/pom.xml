@@ -32,6 +32,8 @@
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
+
+        <opentelemetry.spring.boot.starter.version>2.9.0</opentelemetry.spring.boot.starter.version>
     </properties>
 
 
@@ -141,10 +143,11 @@
             <version>${commonmark.version}</version>
         </dependency>
 
+        <!-- OpenTelemetry Spring Boot Starter for distributed tracing -->
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-spring-boot-starter</artifactId>
-            <version>2.9.0</version>
+            <version>${opentelemetry.spring.boot.starter.version}</version>
         </dependency>
 
         <dependency>
