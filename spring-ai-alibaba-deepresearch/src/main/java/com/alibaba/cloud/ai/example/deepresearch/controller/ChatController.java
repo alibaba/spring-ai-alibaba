@@ -62,14 +62,14 @@ public class ChatController {
 
 	@Autowired
 	public ChatController(@Qualifier("deepResearch") StateGraph stateGraph, SearchBeanUtil searchBeanUtil,
-						  ObjectProvider<ObservationRegistry> observationRegistry) throws GraphStateException {
+			ObjectProvider<ObservationRegistry> observationRegistry) throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 		this.compiledGraph = stateGraph.compile(CompileConfig.builder()
-				.saverConfig(saverConfig)
-				.interruptBefore("human_feedback")
-				.withLifecycleListener(new GraphObservationLifecycleListener(
-						observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP)))
-				.build());
+			.saverConfig(saverConfig)
+			.interruptBefore("human_feedback")
+			.withLifecycleListener(new GraphObservationLifecycleListener(
+					observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP)))
+			.build());
 		this.searchBeanUtil = searchBeanUtil;
 	}
 
