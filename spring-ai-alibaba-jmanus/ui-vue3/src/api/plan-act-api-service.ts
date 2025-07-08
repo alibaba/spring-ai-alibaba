@@ -15,7 +15,6 @@
  */
 
 // Plan-related API wrapper (TypeScript version for Vue projects)
-import type { Ref } from 'vue'
 
 export class PlanActApiService {
   private static readonly PLAN_TEMPLATE_URL = '/api/plan-template'
@@ -34,7 +33,7 @@ export class PlanActApiService {
     if (responseData.planJson) {
       try {
         responseData.plan = JSON.parse(responseData.planJson)
-      } catch (e) {
+      } catch {
         responseData.plan = { error: 'Unable to parse plan data' }
       }
     }
@@ -124,7 +123,7 @@ export class PlanActApiService {
     if (responseData.planJson) {
       try {
         responseData.plan = JSON.parse(responseData.planJson)
-      } catch (e) {
+      } catch {
         responseData.plan = { error: 'Unable to parse plan data' }
       }
     }

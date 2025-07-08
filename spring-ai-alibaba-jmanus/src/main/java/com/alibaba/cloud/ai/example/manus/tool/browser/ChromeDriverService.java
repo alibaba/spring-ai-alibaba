@@ -23,7 +23,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Playwright;
@@ -48,6 +49,10 @@ public class ChromeDriverService {
 	private final Lock driverLock = new ReentrantLock();
 
 	private ManusProperties manusProperties;
+
+	private SmartContentSavingService innerStorageService;
+
+	private UnifiedDirectoryManager unifiedDirectoryManager;
 
 	// Initialize ObjectMapper instance
 	private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -115,9 +120,21 @@ public class ChromeDriverService {
 		}
 	}
 
-	public ChromeDriverService(ManusProperties manusProperties) {
+	public ChromeDriverService(ManusProperties manusProperties, SmartContentSavingService innerStorageService,
+			UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.manusProperties = manusProperties;
-		this.sharedDir = CodeUtils.getSharedDirectory(manusProperties.getBaseDir(), "playwright");
+		this.innerStorageService = innerStorageService;
+		this.unifiedDirectoryManager = unifiedDirectoryManager;
+		// Use UnifiedDirectoryManager to get the shared directory for playwright
+		try {
+			java.nio.file.Path playwrightDir = unifiedDirectoryManager.getWorkingDirectory().resolve("playwright");
+			unifiedDirectoryManager.ensureDirectoryExists(playwrightDir);
+			this.sharedDir = playwrightDir.toString();
+		}
+		catch (java.io.IOException e) {
+			log.error("Failed to create playwright directory", e);
+			this.sharedDir = unifiedDirectoryManager.getWorkingDirectory().resolve("playwright").toString();
+		}
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			log.info("JVM shutting down - cleaning up Playwright processes");
 			cleanupAllPlaywrightProcesses();
@@ -244,6 +261,14 @@ public class ChromeDriverService {
 
 	public ManusProperties getManusProperties() {
 		return manusProperties;
+	}
+
+	public SmartContentSavingService getInnerStorageService() {
+		return innerStorageService;
+	}
+
+	public UnifiedDirectoryManager getUnifiedDirectoryManager() {
+		return unifiedDirectoryManager;
 	}
 
 }

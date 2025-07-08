@@ -18,8 +18,6 @@ package com.alibaba.cloud.ai.example.manus.agent;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -30,8 +28,6 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
  */
 public abstract class ReActAgent extends BaseAgent {
 
-	private static final Logger logger = LoggerFactory.getLogger(ReActAgent.class);
-
 	/**
 	 * Constructor
 	 * @param llmService LLM service instance for handling natural language interactions
@@ -39,6 +35,7 @@ public abstract class ReActAgent extends BaseAgent {
 	 * process
 	 * @param manusProperties Manus configuration properties
 	 */
+
 	public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService) {
 		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptService);

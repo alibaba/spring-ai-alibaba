@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ClickByElementAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.CloseTabAction;
@@ -34,6 +34,7 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,23 +43,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
-public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
+public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
 	private final ChromeDriverService chromeDriverService;
 
-	private String planId;
+	private final SmartContentSavingService innerStorageService;
 
-	public BrowserUseTool(ChromeDriverService chromeDriverService) {
+	public BrowserUseTool(ChromeDriverService chromeDriverService, SmartContentSavingService innerStorageService) {
 		this.chromeDriverService = chromeDriverService;
+		this.innerStorageService = innerStorageService;
 	}
 
 	public DriverWrapper getDriver() {
-		return chromeDriverService.getDriver(planId);
+		return chromeDriverService.getDriver(currentPlanId);
 	}
 
 	/**
@@ -72,103 +73,221 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 
 	private final String PARAMETERS = """
 			{
-			    "type": "object",
-			    "properties": {
-			        "action": {
-			            "type": "string",
-			            "enum": [
-			                "navigate",
-			                "click",
-			                "input_text",
-			                "key_enter",
-			                "screenshot",
-			                "get_html",
-			                "get_text",
-			                "execute_js",
-			                "scroll",
-			                "switch_tab",
-			                "new_tab",
-			                "close_tab",
-			                "refresh",
-			                "get_element_position",
-			                "move_to_and_click"
-			            ],
-			            "description": "The browser action to perform"
+			    "oneOf": [
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "navigate"
+			                },
+			                "url": {
+			                    "type": "string",
+			                    "description": "URL to navigate to"
+			                }
+			            },
+			            "required": ["action", "url"],
+			            "additionalProperties": false
 			        },
-			        "url": {
-			            "type": "string",
-			            "description": "URL for 'navigate' or 'new_tab' actions , don't support get_text and get_html"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "click"
+			                },
+			                "index": {
+			                    "type": "integer",
+			                    "description": "Element index to click"
+			                }
+			            },
+			            "required": ["action", "index"],
+			            "additionalProperties": false
 			        },
-			        "index": {
-			            "type": "integer",
-			            "description": "Element index for 'click' or 'input_text' actions"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "input_text"
+			                },
+			                "index": {
+			                    "type": "integer",
+			                    "description": "Element index to input text"
+			                },
+			                "text": {
+			                    "type": "string",
+			                    "description": "Text to input"
+			                }
+			            },
+			            "required": ["action", "index", "text"],
+			            "additionalProperties": false
 			        },
-			        "text": {
-			            "type": "string",
-			            "description": "Text for 'input_text' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "key_enter"
+			                },
+			                "index": {
+			                    "type": "integer",
+			                    "description": "Element index to press enter"
+			                }
+			            },
+			            "required": ["action", "index"],
+			            "additionalProperties": false
 			        },
-			        "script": {
-			            "type": "string",
-			            "description": "JavaScript code for 'execute_js' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "screenshot"
+			                }
+			            },
+			            "required": ["action"],
+			            "additionalProperties": false
 			        },
-			        "scroll_amount": {
-			            "type": "integer",
-			            "description": "Pixels to scroll (positive for down, negative for up) for 'scroll' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "get_html"
+			                }
+			            },
+			            "required": ["action"],
+			            "additionalProperties": false
 			        },
-			        "tab_id": {
-			            "type": "integer",
-			            "description": "Tab ID for 'switch_tab' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "get_text"
+			                }
+			            },
+			            "required": ["action"],
+			            "additionalProperties": false
 			        },
-			        "element_name": {
-			            "type": "string",
-			            "description": "Element name for 'get_element_position' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "execute_js"
+			                },
+			                "script": {
+			                    "type": "string",
+			                    "description": "JavaScript code to execute"
+			                }
+			            },
+			            "required": ["action", "script"],
+			            "additionalProperties": false
 			        },
-			        "position_x": {
-			            "type": "integer",
-			            "description": "X coordinate for 'move_to_and_click' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "scroll"
+			                },
+			                "scroll_amount": {
+			                    "type": "integer",
+			                    "description": "Pixels to scroll (positive for down, negative for up)"
+			                }
+			            },
+			            "required": ["action", "scroll_amount"],
+			            "additionalProperties": false
 			        },
-			        "position_y": {
-			            "type": "integer",
-			            "description": "Y coordinate for 'move_to_and_click' action"
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "switch_tab"
+			                },
+			                "tab_id": {
+			                    "type": "integer",
+			                    "description": "Tab ID to switch to"
+			                }
+			            },
+			            "required": ["action", "tab_id"],
+			            "additionalProperties": false
+			        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "new_tab"
+			                },
+			                "url": {
+			                    "type": "string",
+			                    "description": "URL to open in new tab"
+			                }
+			            },
+			            "required": ["action", "url"],
+			            "additionalProperties": false
+			        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "close_tab"
+			                }
+			            },
+			            "required": ["action"],
+			            "additionalProperties": false
+			        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "refresh"
+			                }
+			            },
+			            "required": ["action"],
+			            "additionalProperties": false
+			        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "get_element_position"
+			                },
+			                "element_name": {
+			                    "type": "string",
+			                    "description": "Element name to get position"
+			                }
+			            },
+			            "required": ["action", "element_name"],
+			            "additionalProperties": false
+			        },
+			        {
+			            "type": "object",
+			            "properties": {
+			                "action": {
+			                    "type": "string",
+			                    "const": "move_to_and_click"
+			                },
+			                "position_x": {
+			                    "type": "integer",
+			                    "description": "X coordinate to move to and click"
+			                },
+			                "position_y": {
+			                    "type": "integer",
+			                    "description": "Y coordinate to move to and click"
+			                }
+			            },
+			            "required": ["action", "position_x", "position_y"],
+			            "additionalProperties": false
 			        }
-			    },
-			    "required": [
-			        "action"
-			    ],
-			    "dependencies": {
-			        "navigate": [
-			            "url"
-			        ],
-			        "click": [
-			            "index"
-			        ],
-			        "input_text": [
-			            "index",
-			            "text"
-			        ],
-			        "key_enter": [
-			            "index"
-			        ],
-			        "execute_js": [
-			            "script"
-			        ],
-			        "switch_tab": [
-			            "tab_id"
-			        ],
-			        "new_tab": [
-			            "url"
-			        ],
-			        "scroll": [
-			            "scroll_amount"
-			        ],
-			        "get_element_position": [
-			            "element_name"
-			        ],
-			        "move_to_and_click": [
-			            "position_x",
-			            "position_y"
-			        ]
-			    }
+			    ]
 			}
 			""";
 
@@ -200,8 +319,9 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 		return functionTool;
 	}
 
-	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService) {
-		BrowserUseTool instance = new BrowserUseTool(chromeDriverService);
+	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService,
+			SmartContentSavingService innerStorageService) {
+		BrowserUseTool instance = new BrowserUseTool(chromeDriverService, innerStorageService);
 		return instance;
 	}
 
@@ -214,55 +334,87 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 			if (action == null) {
 				return new ToolExecuteResult("Action parameter is required");
 			}
+
+			ToolExecuteResult result;
 			switch (action) {
 				case "navigate": {
-					return new NavigateAction(this).execute(requestVO);
+					result = new NavigateAction(this).execute(requestVO);
+					break;
 				}
 				case "click": {
-					return new ClickByElementAction(this).execute(requestVO);
+					result = new ClickByElementAction(this).execute(requestVO);
+					break;
 				}
 				case "input_text": {
-					return new InputTextAction(this).execute(requestVO);
+					result = new InputTextAction(this).execute(requestVO);
+					break;
 				}
 				case "key_enter": {
-					return new KeyEnterAction(this).execute(requestVO);
+					result = new KeyEnterAction(this).execute(requestVO);
+					break;
 				}
 				case "screenshot": {
-					return new ScreenShotAction(this).execute(requestVO);
+					result = new ScreenShotAction(this).execute(requestVO);
+					break;
 				}
 				case "get_html": {
-					return new GetHtmlAction(this).execute(requestVO);
+					result = new GetHtmlAction(this).execute(requestVO);
+					// HTML content is usually long, use intelligent processing
+					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService
+						.processContent(currentPlanId, result.getOutput(), "get_html");
+					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "get_text": {
-					return new GetTextAction(this).execute(requestVO);
+					result = new GetTextAction(this).execute(requestVO);
+					// Text content may be long, use intelligent processing
+					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService
+						.processContent(currentPlanId, result.getOutput(), "get_text");
+					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "execute_js": {
-					return new ExecuteJsAction(this).execute(requestVO);
+					result = new ExecuteJsAction(this).execute(requestVO);
+					// JS execution results may be long, use intelligent processing
+					SmartContentSavingService.SmartProcessResult processedResult = innerStorageService
+						.processContent(currentPlanId, result.getOutput(), "execute_js");
+					return new ToolExecuteResult(processedResult.getSummary());
 				}
 				case "scroll": {
-					return new ScrollAction(this).execute(requestVO);
+					result = new ScrollAction(this).execute(requestVO);
+					break;
 				}
 				case "new_tab": {
-					return new NewTabAction(this).execute(requestVO);
+					result = new NewTabAction(this).execute(requestVO);
+					break;
 				}
 				case "close_tab": {
-					return new CloseTabAction(this).execute(requestVO);
+					result = new CloseTabAction(this).execute(requestVO);
+					break;
 				}
 				case "switch_tab": {
-					return new SwitchTabAction(this).execute(requestVO);
+					result = new SwitchTabAction(this).execute(requestVO);
+					break;
 				}
 				case "refresh": {
-					return new RefreshAction(this).execute(requestVO);
+					result = new RefreshAction(this).execute(requestVO);
+					break;
 				}
 				case "get_element_position": {
-					return new GetElementPositionByNameAction(this).execute(requestVO);
+					result = new GetElementPositionByNameAction(this).execute(requestVO);
+					break;
 				}
 				case "move_to_and_click": {
-					return new MoveToAndClickAction(this).execute(requestVO);
+					result = new MoveToAndClickAction(this).execute(requestVO);
+					break;
 				}
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
+
+			// For other operations, also perform intelligent processing (but thresholds
+			// usually won't be exceeded)
+			SmartContentSavingService.SmartProcessResult processedResult = innerStorageService
+				.processContent(currentPlanId, result.getOutput(), action);
+			return new ToolExecuteResult(processedResult.getSummary());
 		}
 		catch (Exception e) {
 			log.error("Browser action '" + action + "' failed", e);
@@ -305,7 +457,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 			List<Map<String, Object>> tabs = getTabsInfo(page);
 			state.put("tabs", tabs);
 
-			String interactiveElements = chromeDriverService.getDriver(planId)
+			String interactiveElements = chromeDriverService.getDriver(currentPlanId)
 				.getInteractiveElementRegistry()
 				.generateElementsInfoText(page);
 			state.put("interactive_elements", interactiveElements);
@@ -318,11 +470,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 			state.put("error", "Failed to get browser state: " + e.getMessage());
 			return state;
 		}
-	}
-
-	@Override
-	public ToolExecuteResult apply(BrowserRequestVO requestVO, ToolContext u) {
-		return run(requestVO);
 	}
 
 	@Override
@@ -348,16 +495,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef<BrowserRequestVO> {
 	@Override
 	public Class<BrowserRequestVO> getInputType() {
 		return BrowserRequestVO.class;
-	}
-
-	@Override
-	public boolean isReturnDirect() {
-		return false;
-	}
-
-	@Override
-	public void setPlanId(String planId) {
-		this.planId = planId;
 	}
 
 	@Override

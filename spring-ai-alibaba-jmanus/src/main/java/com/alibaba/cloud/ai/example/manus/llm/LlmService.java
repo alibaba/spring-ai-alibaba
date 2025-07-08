@@ -86,6 +86,10 @@ public class LlmService {
 	}
 
 	public void clearConversationMemory(String planId) {
+		if (this.conversationMemory == null) {
+			// Default to 100 messages if not specified elsewhere
+			this.conversationMemory = MessageWindowChatMemory.builder().maxMessages(100).build();
+		}
 		this.conversationMemory.clear(planId);
 	}
 

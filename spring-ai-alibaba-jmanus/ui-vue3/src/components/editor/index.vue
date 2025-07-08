@@ -67,7 +67,7 @@ const props = defineProps({
 const { createEditor, updateVal, getEditor, onFormatDoc } = useMonaco(props.language)
 
 const updateMonacoVal = (_val?: string) => {
-  const val = _val || props.modelValue
+  const val = _val ?? props.modelValue
   updateVal(val)
 }
 watch(
