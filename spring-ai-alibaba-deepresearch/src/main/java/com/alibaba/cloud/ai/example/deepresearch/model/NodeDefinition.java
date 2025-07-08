@@ -22,11 +22,29 @@ package com.alibaba.cloud.ai.example.deepresearch.model;
  * @author ViliamSun
  * @since 1.0.0
  */
-public record NodeDefinition(
-		// The name of the node.
-		String name,
-		// The description of the node.
-		String description) {
+public class NodeDefinition {
+
+	// The name of the node.
+	private String name;
+
+	// The description of the node.
+	private String description;
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
 
 	public record SelectionNode(
 			// The reasoning behind the selection.
@@ -38,4 +56,5 @@ public record NodeDefinition(
 			return String.format("{\"reasoning\": \"%s\", \"selection\": \"%s\"}", reasoning, selection);
 		}
 	}
+
 }

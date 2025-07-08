@@ -31,16 +31,11 @@ public abstract class AbstractNode {
 
 	private final ChatClient chatClient;
 
+	private NodeDefinition nodeDefinition;
+
 	public AbstractNode(ChatClient.Builder builder) {
 		this.chatClient = builder.defaultSystem(String.format(GUIDE, NodeSelectionUtil.getAvailableNodes())).build();
 	}
-
-	/**
-	 * The hook function implemented by the child node obtains the description information
-	 * and name of the node
-	 * @return the NodeDefinition instance
-	 */
-	public abstract NodeDefinition definition();
 
 	private static final String GUIDE = """
 			Parse the input and select the most appropriate support node from the following options: %s First explain your rationale,
@@ -53,6 +48,14 @@ public abstract class AbstractNode {
 
 	protected NodeDefinition.SelectionNode guide(String input) {
 		return chatClient.prompt().user(input).call().entity(NodeDefinition.SelectionNode.class);
+	}
+
+	public NodeDefinition getNodeDefinition() {
+		return nodeDefinition;
+	}
+
+	public void setNodeDefinition(NodeDefinition nodeDefinition) {
+		this.nodeDefinition = nodeDefinition;
 	}
 
 }
