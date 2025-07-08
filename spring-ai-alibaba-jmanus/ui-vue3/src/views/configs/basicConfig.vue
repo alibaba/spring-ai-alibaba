@@ -299,14 +299,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import Switch from '@/components/switch/index.vue'
-import Flex from '@/components/flex/index.vue'
-import { AdminApiService, type ConfigItem } from '@/api/admin-api-service'
 import { useI18n } from 'vue-i18n'
+import Switch from '@/components/switch/index.vue'
+import { AdminApiService, type ConfigItem } from '@/api/admin-api-service'
 
+// Initialize i18n
 const { t } = useI18n()
 
-// 定义扩展的配置项接口
+// Define extended configuration item interface
 interface ExtendedConfigItem extends ConfigItem {
   displayName: string
   min?: number
@@ -353,6 +353,7 @@ const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   // 智能体设置
   'maxSteps': '智能体执行最大步数',
   'resetAllAgents': '重置所有agent',
+  'maxMemory': "能记住的最大消息数",
   
   // 浏览器设置
   'headlessBrowser': '是否使用无头浏览器模式',
@@ -425,7 +426,8 @@ const getConfigMin = (configKey: string): number => {
     'maxSteps': 1,
     'browserTimeout': 1,
     'maxThreads': 1,
-    'timeoutSeconds': 5
+    'timeoutSeconds': 5,
+    'maxMemory': 1
   }
   return minValues[configKey] || 1
 }
@@ -436,7 +438,8 @@ const getConfigMax = (configKey: string): number => {
     'maxSteps': 100,
     'browserTimeout': 600,
     'maxThreads': 32,
-    'timeoutSeconds': 300
+    'timeoutSeconds': 300,
+    'maxMemory': 1000
   }
   return maxValues[configKey] || 10000
 }
@@ -540,10 +543,10 @@ const loadAllConfigs = async () => {
           return null
         }
         
-        // 为每个配置项设置显示名称（优先使用description）
+        // Set display name for each configuration item (prioritize description)
         const processedItems: ExtendedConfigItem[] = items.map(item => ({
           ...item,
-          displayName: item.description || CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey,
+          displayName: item.description ?? (CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey),
           min: getConfigMin(item.configKey),
           max: getConfigMax(item.configKey)
         }))
@@ -557,7 +560,7 @@ const loadAllConfigs = async () => {
         const subGroupsMap = new Map<string, ExtendedConfigItem[]>()
         
         processedItems.forEach(item => {
-          const subGroupName = item.configSubGroup || 'general'
+          const subGroupName = item.configSubGroup ?? 'general'
           if (!subGroupsMap.has(subGroupName)) {
             subGroupsMap.set(subGroupName, [])
           }
@@ -700,6 +703,7 @@ const getDefaultValueForKey = (configKey: string): string => {
     'timeoutSeconds': '60',
     'autoOpenBrowser': 'false',
     'headlessBrowser': 'true',
+    'maxMemory': '1000'
     // 可以根据需要添加更多默认值
   }
   
@@ -816,7 +820,7 @@ const importConfigs = (event: Event) => {
       configGroups.value.forEach(group => {
         group.subGroups.forEach(subGroup => {
           subGroup.items.forEach(item => {
-            if (importData.configs.hasOwnProperty(item.configKey)) {
+            if (Object.prototype.hasOwnProperty.call(importData.configs, item.configKey)) {
               configsToUpdate.push({
                 ...item,
                 configValue: importData.configs[item.configKey]

@@ -2,9 +2,10 @@
 agentName: BROWSER_AGENT
 agentDescription: 一个可以控制浏览器完成任务的浏览器代理
 availableToolKeys:
-  - browser_use
-  - text_file_operator
-  - terminate
+- browser_use
+- text_file_operator
+- terminate
+- inner_storage_content_tool
 
 # 下一步提示配置
 nextStepPrompt: |

@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -30,33 +32,146 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 
+	private static final Logger logger = LoggerFactory.getLogger(DefaultPlanExecutionRecorder.class);
+
 	private final Map<String, PlanExecutionRecord> planRecords = new ConcurrentHashMap<>();
 
 	private final AtomicLong agentExecutionIdGenerator = new AtomicLong(0);
 
-	@Override
-	public String recordPlanExecution(PlanExecutionRecord stepRecord) {
-		String planId = stepRecord.getPlanId();
-		planRecords.put(planId, stepRecord);
-		return planId;
+	/**
+	 * Find ThinkActRecord by parent plan ID and think-act record ID
+	 * @param parentPlanId Parent plan ID
+	 * @param thinkActRecordId Think-act record ID
+	 * @return ThinkActRecord if found, null otherwise
+	 */
+	private ThinkActRecord findThinkActRecord(String parentPlanId, Long thinkActRecordId) {
+		if (parentPlanId == null || thinkActRecordId == null) {
+			return null;
+		}
+
+		PlanExecutionRecord parentPlan = planRecords.get(parentPlanId);
+		if (parentPlan != null) {
+			for (AgentExecutionRecord agentRecord : parentPlan.getAgentExecutionSequence()) {
+				for (ThinkActRecord thinkActRecord : agentRecord.getThinkActSteps()) {
+					if (thinkActRecordId.equals(thinkActRecord.getId())) {
+						return thinkActRecord;
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Get or create PlanExecutionRecord by planId and optional thinkActRecordId
+	 * @param planId Plan ID
+	 * @param rootPlanId Root plan ID
+	 * @param thinkActRecordId Think-act record ID that contains the sub-plan (null for
+	 * main plan)
+	 * @param createIfNotExists Whether to create if not exists
+	 * @return PlanExecutionRecord instance
+	 */
+	public PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId,
+			boolean createIfNotExists) {
+
+		// Add detailed logging to debug NPE
+		logger.info(
+				"Enter getOrCreatePlanExecutionRecord with planId: {}, rootPlanId: {}, thinkActRecordId: {}, createIfNotExists: {}",
+				planId, rootPlanId, thinkActRecordId, createIfNotExists);
+
+		if (rootPlanId == null) {
+			logger.error("rootPlanId is null, which will cause NPE. PlanId: {}, thinkActRecordId: {}.", planId,
+					thinkActRecordId);
+			// For further debugging, log the stack trace to understand the call path
+			// throw new IllegalArgumentException("rootPlanId cannot be null");
+		}
+
+		// Get or create root plan record first
+		PlanExecutionRecord rootRecord = planRecords.computeIfAbsent(rootPlanId, id -> {
+			logger.info("Creating root plan with ID: {}", id);
+			return new PlanExecutionRecord(id, rootPlanId);
+		});
+
+		// If no thinkActRecordId, return root record directly
+		if (thinkActRecordId == null) {
+			return rootRecord;
+		}
+
+		// Find ThinkActRecord in root plan
+		ThinkActRecord thinkActRecord = findThinkActRecord(rootPlanId, thinkActRecordId);
+		if (thinkActRecord == null) {
+			return rootRecord;
+		}
+
+		// Check if subPlanExecutionRecord exists
+		PlanExecutionRecord subPlan = thinkActRecord.getSubPlanExecutionRecord();
+		if (subPlan == null && createIfNotExists) {
+			// Create new sub-plan with planId and rootPlanId
+			subPlan = new PlanExecutionRecord(planId, rootPlanId);
+			subPlan.setThinkActRecordId(thinkActRecordId);
+			thinkActRecord.recordSubPlanExecution(subPlan);
+		}
+
+		return subPlan != null ? subPlan : rootRecord;
+	}
+
+	/**
+	 * Get or create PlanExecutionRecord by planId and optional thinkActRecordId (creates
+	 * if not exists)
+	 * @param planId Plan ID
+	 * @param thinkActRecordId Think-act record ID that contains the sub-plan (null for
+	 * main plan)
+	 * @return PlanExecutionRecord instance
+	 */
+	public PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId) {
+		return getOrCreatePlanExecutionRecord(planId, rootPlanId, thinkActRecordId, true);
 	}
 
 	@Override
-	public Long recordAgentExecution(String planId, AgentExecutionRecord agentRecord) {
+	public String recordPlanExecution(PlanExecutionRecord stepRecord) {
+		String planId = stepRecord.getCurrentPlanId();
+		String parentPlanId = stepRecord.getRootPlanId();
+		Long thinkActRecordId = stepRecord.getThinkActRecordId();
+
+		if (parentPlanId != null && thinkActRecordId != null) {
+			// This is a sub-plan, need to attach it to the corresponding think-act record
+			ThinkActRecord thinkActRecord = findThinkActRecord(parentPlanId, thinkActRecordId);
+			if (thinkActRecord != null) {
+				// Found the corresponding think-act record, attach the sub-plan
+				thinkActRecord.recordSubPlanExecution(stepRecord);
+			}
+		}
+
+		return planId;
+	}
+
+	/**
+	 * Record agent execution with PlanExecutionRecord parameter
+	 * @param planExecutionRecord Plan execution record
+	 * @param agentRecord Agent execution record
+	 * @return Agent execution ID
+	 */
+	@Override
+	public Long recordAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord) {
 		Long agentExecutionId = agentExecutionIdGenerator.incrementAndGet();
 		agentRecord.setId(agentExecutionId);
-		PlanExecutionRecord planRecord = planRecords.get(planId);
-		if (planRecord != null) {
-			planRecord.addAgentExecutionRecord(agentRecord);
+		if (planExecutionRecord != null) {
+			planExecutionRecord.addAgentExecutionRecord(agentRecord);
 		}
 		return agentExecutionId;
 	}
 
+	/**
+	 * Record think-act execution with PlanExecutionRecord parameter
+	 * @param planExecutionRecord Plan execution record
+	 * @param agentExecutionId Agent execution ID
+	 * @param thinkActRecord Think-act record
+	 */
 	@Override
-	public void recordThinkActExecution(String planId, Long agentExecutionId, ThinkActRecord thinkActRecord) {
-		PlanExecutionRecord planRecord = planRecords.get(planId);
-		if (planRecord != null) {
-			for (AgentExecutionRecord agentRecord : planRecord.getAgentExecutionSequence()) {
+	public void recordThinkActExecution(PlanExecutionRecord planExecutionRecord, Long agentExecutionId,
+			ThinkActRecord thinkActRecord) {
+		if (planExecutionRecord != null) {
+			for (AgentExecutionRecord agentRecord : planExecutionRecord.getAgentExecutionSequence()) {
 				if (agentExecutionId.equals(agentRecord.getId())) {
 					agentRecord.addThinkActStep(thinkActRecord);
 					break;
@@ -65,17 +180,21 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 	}
 
+	/**
+	 * Record plan completion with PlanExecutionRecord parameter
+	 * @param planExecutionRecord Plan execution record
+	 * @param summary Execution summary
+	 */
 	@Override
-	public void recordPlanCompletion(String planId, String summary) {
-		PlanExecutionRecord record = planRecords.get(planId);
-		if (record != null) {
-			record.complete(summary);
+	public void recordPlanCompletion(PlanExecutionRecord planExecutionRecord, String summary) {
+		if (planExecutionRecord != null) {
+			planExecutionRecord.complete(summary);
 		}
 	}
 
 	@Override
-	public PlanExecutionRecord getExecutionRecord(String planId) {
-		return planRecords.get(planId);
+	public PlanExecutionRecord getExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId) {
+		return getOrCreatePlanExecutionRecord(planId, rootPlanId, thinkActRecordId, false);
 	}
 
 	/**
@@ -86,8 +205,8 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	 * @return Returns true if record is found and saved, false otherwise
 	 */
 	@Override
-	public boolean savePlanExecutionRecords(String planId) {
-		PlanExecutionRecord record = planRecords.get(planId);
+	public boolean savePlanExecutionRecords(String rootPlanId) {
+		PlanExecutionRecord record = getExecutionRecord(null, rootPlanId, null);
 		if (record == null) {
 			return false;
 		}
@@ -107,22 +226,6 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 		for (Map.Entry<String, PlanExecutionRecord> entry : planRecords.entrySet()) {
 			entry.getValue().save();
 		}
-	}
-
-	@Override
-	public AgentExecutionRecord getCurrentAgentExecutionRecord(String planId) {
-		// Automatically clean plan records older than 30 minutes
-		cleanOutdatedPlans(30);
-
-		PlanExecutionRecord planRecord = planRecords.get(planId);
-		if (planRecord != null) {
-			List<AgentExecutionRecord> agentExecutionSequence = planRecord.getAgentExecutionSequence();
-			int currentIndex = planRecord.getCurrentStepIndex();
-			if (!agentExecutionSequence.isEmpty()) {
-				return agentExecutionSequence.get(currentIndex);
-			}
-		}
-		return null;
 	}
 
 	/**
@@ -150,6 +253,41 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	@Override
 	public void removeExecutionRecord(String planId) {
 		planRecords.remove(planId);
+	}
+
+	/**
+	 * Get all plan execution records
+	 * @return Map of all plan records
+	 */
+	public Map<String, PlanExecutionRecord> getAllPlanRecords() {
+		return new ConcurrentHashMap<>(planRecords);
+	}
+
+	/**
+	 * Check if a plan execution record exists
+	 * @param planId Plan ID to check
+	 * @return true if exists, false otherwise
+	 */
+	public boolean hasPlanExecutionRecord(String planId) {
+		return planRecords.containsKey(planId);
+	}
+
+	/**
+	 * Get current agent execution record for a specific plan execution record
+	 * @param planExecutionRecord Plan execution record
+	 * @return Current active agent execution record, or null if none exists
+	 */
+	@Override
+	public AgentExecutionRecord getCurrentAgentExecutionRecord(PlanExecutionRecord planExecutionRecord) {
+		if (planExecutionRecord != null) {
+			List<AgentExecutionRecord> agentExecutionSequence = planExecutionRecord.getAgentExecutionSequence();
+			Integer currentIndex = planExecutionRecord.getCurrentStepIndex();
+			if (!agentExecutionSequence.isEmpty() && currentIndex != null
+					&& currentIndex < agentExecutionSequence.size()) {
+				return agentExecutionSequence.get(currentIndex);
+			}
+		}
+		return null;
 	}
 
 }

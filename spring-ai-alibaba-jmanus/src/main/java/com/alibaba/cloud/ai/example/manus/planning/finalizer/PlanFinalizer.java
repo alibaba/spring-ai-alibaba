@@ -18,12 +18,14 @@ package com.alibaba.cloud.ai.example.manus.planning.finalizer;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -47,10 +49,14 @@ public class PlanFinalizer {
 
 	private final PromptService promptService;
 
-	public PlanFinalizer(LlmService llmService, PlanExecutionRecorder recorder, PromptService promptService) {
+	private final ManusProperties manusProperties;
+
+	public PlanFinalizer(LlmService llmService, PlanExecutionRecorder recorder, PromptService promptService,
+			ManusProperties manusProperties) {
 		this.llmService = llmService;
 		this.recorder = recorder;
 		this.promptService = promptService;
+		this.manusProperties = manusProperties;
 	}
 
 	/**
@@ -69,7 +75,7 @@ public class PlanFinalizer {
 			recordPlanCompletion(context, summary);
 			return;
 		}
-		ExecutionPlan plan = context.getPlan();
+		PlanInterface plan = context.getPlan();
 		String executionDetail = plan.getPlanExecutionStateStringFormat(false);
 		try {
 			String userRequest = context.getUserRequest();
@@ -84,8 +90,10 @@ public class PlanFinalizer {
 
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 			if (context.isUseMemory()) {
-				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
-				requestSpec.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
+				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
+				requestSpec.advisors(MessageChatMemoryAdvisor
+					.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
+					.build());
 			}
 			ChatResponse response = requestSpec.call().chatResponse();
 
@@ -100,7 +108,7 @@ public class PlanFinalizer {
 			throw new RuntimeException("Failed to generate summary", e);
 		}
 		finally {
-			llmService.clearConversationMemory(plan.getPlanId());
+			llmService.clearConversationMemory(plan.getCurrentPlanId());
 		}
 	}
 
@@ -110,9 +118,15 @@ public class PlanFinalizer {
 	 * @param summary The summary of the plan execution
 	 */
 	private void recordPlanCompletion(ExecutionContext context, String summary) {
-		recorder.recordPlanCompletion(context.getPlan().getPlanId(), summary);
+		// Use thinkActRecordId from context to support sub-plan executions
+		PlanExecutionRecord planRecord = recorder.getExecutionRecord(context.getPlan().getCurrentPlanId(),
+				context.getPlan().getRootPlanId(), context.getThinkActRecordId());
+		if (planRecord != null) {
+			recorder.recordPlanCompletion(planRecord, summary);
+		}
 
-		log.info("Plan completed with ID: {} and summary: {}", context.getPlan().getPlanId(), summary);
+		log.info("Plan completed with ID: {} (thinkActRecordId: {}) and summary: {}",
+				context.getPlan().getCurrentPlanId(), context.getThinkActRecordId(), summary);
 	}
 
 }

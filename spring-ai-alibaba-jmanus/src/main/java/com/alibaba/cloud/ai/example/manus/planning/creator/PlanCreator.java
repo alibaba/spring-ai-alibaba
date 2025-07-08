@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2025 the original author or authors.
  *
@@ -19,14 +18,15 @@ package com.alibaba.cloud.ai.example.manus.planning.creator;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
+import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -48,19 +48,22 @@ public class PlanCreator {
 
 	private final LlmService llmService;
 
-	private final PlanningTool planningTool;
+	private final PlanningToolInterface planningTool;
 
 	protected final PlanExecutionRecorder recorder;
 
 	private final PromptService promptService;
 
-	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningTool planningTool,
-			PlanExecutionRecorder recorder, PromptService promptService) {
+	private final ManusProperties manusProperties;
+
+	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningToolInterface planningTool,
+			PlanExecutionRecorder recorder, PromptService promptService, ManusProperties manusProperties) {
 		this.agents = agents;
 		this.llmService = llmService;
 		this.planningTool = planningTool;
 		this.recorder = recorder;
 		this.promptService = promptService;
+		this.manusProperties = manusProperties;
 	}
 
 	/**
@@ -71,7 +74,7 @@ public class PlanCreator {
 	 */
 	public void createPlan(ExecutionContext context) {
 		boolean useMemory = context.isUseMemory();
-		String planId = context.getPlanId();
+		String planId = context.getCurrentPlanId();
 		if (planId == null || planId.isEmpty()) {
 			throw new IllegalArgumentException("Plan ID cannot be null or empty");
 		}
@@ -81,7 +84,7 @@ public class PlanCreator {
 			// Generate plan prompt
 			String planPrompt = generatePlanPrompt(context.getUserRequest(), agentsInfo);
 
-			ExecutionPlan executionPlan = null;
+			PlanInterface executionPlan = null;
 			String outputText = null;
 
 			// Retry mechanism: up to 3 attempts until a valid execution plan is obtained
@@ -96,12 +99,13 @@ public class PlanCreator {
 
 					ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
 						.prompt(prompt)
-						.toolCallbacks(List.of(PlanningTool.getFunctionToolCallback(planningTool)));
+						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
 					if (useMemory) {
-						requestSpec
-							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
-						requestSpec
-							.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
+						requestSpec.advisors(
+								memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
+						requestSpec.advisors(MessageChatMemoryAdvisor
+							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
+							.build());
 					}
 					ChatClient.CallResponseSpec response = requestSpec.call();
 					outputText = response.chatResponse().getResult().getOutput().getText();
@@ -131,16 +135,16 @@ public class PlanCreator {
 				}
 			}
 
-			ExecutionPlan currentPlan;
-			// Check if the plan is created successfully
+			PlanInterface currentPlan;
+			// 检查计划是否创建成功
 			if (executionPlan != null) {
 				currentPlan = planningTool.getCurrentPlan();
-				currentPlan.setPlanId(planId);
+				currentPlan.setCurrentPlanId(planId);
+				currentPlan.setRootPlanId(planId);
 				currentPlan.setPlanningThinking(outputText);
 			}
 			else {
-				log.warn("Creating fallback plan for planId: {}", planId);
-				currentPlan = new ExecutionPlan(planId, "answer question without plan");
+				throw new RuntimeException("Failed to create a valid execution plan after retries");
 			}
 
 			context.setPlan(currentPlan);

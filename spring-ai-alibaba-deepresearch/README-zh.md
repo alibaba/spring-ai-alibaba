@@ -113,6 +113,13 @@ docker run -d \
   -p 8080:8080 \
   alibaba-deepresearch:v1.0
 ```
+- 或者使用docker-compose up命令启动,当前容器包括Redis，ElasticSearch,deep research app.
+```shell
+  docker-compose up
+```
+> **注意**：
+> - .env文件中设置api-key信息
+> - dockerConfig目录下有对应应用的配置文件，也可在配置文件中设置key及相关配置信息
 
 **测试用例**
 

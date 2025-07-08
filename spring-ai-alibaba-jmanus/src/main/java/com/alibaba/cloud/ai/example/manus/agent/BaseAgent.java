@@ -19,8 +19,10 @@ import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,13 +66,18 @@ public abstract class BaseAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(BaseAgent.class);
 
-	private String planId = null;
+	private String currentPlanId = null;
+
+	private String rootPlanId = null;
+
+	// Think-act record ID for sub-plan executions triggered by tool calls
+	private Long thinkActRecordId = null;
 
 	private AgentState state = AgentState.NOT_STARTED;
 
 	protected LlmService llmService;
 
-	private final ManusProperties manusProperties;
+	protected final ManusProperties manusProperties;
 
 	protected final PromptService promptService;
 
@@ -135,7 +142,7 @@ public abstract class BaseAgent {
 		// Get current date time, format as yyyy-MM-dd
 		String currentDateTime = java.time.LocalDate.now().toString(); // Format as
 																		// yyyy-MM-dd
-		boolean isDebugModel = manusProperties.getBrowserDebug();
+		boolean isDebugModel = manusProperties.getDebugDetail();
 		String detailOutput = "";
 		if (isDebugModel) {
 			detailOutput = """
@@ -177,6 +184,8 @@ public abstract class BaseAgent {
 
 	public abstract List<ToolCallback> getToolCallList();
 
+	public abstract ToolCallBackContext getToolCallBackContext(String toolKey);
+
 	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService) {
 		this.llmService = llmService;
@@ -194,12 +203,18 @@ public abstract class BaseAgent {
 		}
 
 		// Create agent execution record
-		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getPlanId(), getName(), getDescription());
+		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getCurrentPlanId(), getName(), getDescription());
 		agentRecord.setMaxSteps(maxSteps);
 		agentRecord.setStatus(state.toString());
 		// Record execution in recorder if we have a plan ID
-		if (planId != null && planExecutionRecorder != null) {
-			planExecutionRecorder.recordAgentExecution(planId, agentRecord);
+		if (currentPlanId != null && planExecutionRecorder != null) {
+			// Use unified method that handles both main plan and sub-plan cases
+			PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId,
+					thinkActRecordId);
+
+			if (planRecord != null) {
+				planExecutionRecorder.recordAgentExecution(planRecord, agentRecord);
+			}
 		}
 		List<String> results = new ArrayList<>();
 		try {
@@ -252,13 +267,13 @@ public abstract class BaseAgent {
 			agentRecord.setResult(String.format("执行失败 [错误: %s]", e.getMessage()));
 			results.add("Execution failed: " + e.getMessage());
 			throw e; // Re-throw the exception to let the caller know that an error
-						// occurred
+			// occurred
 		}
 		finally {
 			state = AgentState.COMPLETED; // Reset state after execution
 
 			agentRecord.setStatus(state.toString());
-			llmService.clearAgentMemory(planId);
+			llmService.clearAgentMemory(currentPlanId);
 		}
 		return results.isEmpty() ? "" : results.get(results.size() - 1);
 	}
@@ -293,7 +308,7 @@ public abstract class BaseAgent {
 	protected boolean isStuck() {
 		// Currently, if the agent does not call the tool three times, it is considered
 		// stuck and the current step is exited.
-		List<Message> memoryEntries = llmService.getAgentMemory().get(getPlanId());
+		List<Message> memoryEntries = llmService.getAgentMemory(manusProperties.getMaxMemory()).get(getCurrentPlanId());
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {
@@ -310,12 +325,36 @@ public abstract class BaseAgent {
 		this.state = state;
 	}
 
-	public String getPlanId() {
-		return planId;
+	public String getCurrentPlanId() {
+		return currentPlanId;
 	}
 
-	public void setPlanId(String planId) {
-		this.planId = planId;
+	public void setCurrentPlanId(String planId) {
+		this.currentPlanId = planId;
+	}
+
+	public void setRootPlanId(String rootPlanId) {
+		this.rootPlanId = rootPlanId;
+	}
+
+	public String getRootPlanId() {
+		return rootPlanId;
+	}
+
+	public Long getThinkActRecordId() {
+		return thinkActRecordId;
+	}
+
+	public void setThinkActRecordId(Long thinkActRecordId) {
+		this.thinkActRecordId = thinkActRecordId;
+	}
+
+	/**
+	 * Check if this agent is executing a sub-plan triggered by a tool call
+	 * @return true if this is a sub-plan execution, false otherwise
+	 */
+	public boolean isSubPlanExecution() {
+		return thinkActRecordId != null;
 	}
 
 	public AgentState getState() {
