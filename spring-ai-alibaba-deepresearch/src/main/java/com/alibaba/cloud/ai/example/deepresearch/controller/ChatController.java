@@ -61,8 +61,10 @@ public class ChatController {
 	private final SearchBeanUtil searchBeanUtil;
 
 	@Autowired
-	public ChatController(@Qualifier("deepResearch") StateGraph stateGraph, SearchBeanUtil searchBeanUtil,
-			ObjectProvider<ObservationRegistry> observationRegistry) throws GraphStateException {
+	private ObjectProvider<ObservationRegistry> observationRegistry;
+
+	@Autowired
+	public ChatController(@Qualifier("deepResearch") StateGraph stateGraph, SearchBeanUtil searchBeanUtil) throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 		this.compiledGraph = stateGraph.compile(CompileConfig.builder()
 			.saverConfig(saverConfig)
