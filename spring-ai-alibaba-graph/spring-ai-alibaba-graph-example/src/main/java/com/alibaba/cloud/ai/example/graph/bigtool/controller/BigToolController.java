@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.graph.bigtool.agent.Tool;
 import com.alibaba.cloud.ai.example.graph.bigtool.agent.ToolAgent;
 import com.alibaba.cloud.ai.example.graph.bigtool.service.VectorStoreService;
 import com.alibaba.cloud.ai.example.graph.bigtool.utils.MethodUtils;
+import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -70,7 +71,8 @@ public class BigToolController {
 
 	private List<Document> documents = new ArrayList<>();
 
-	public BigToolController(VectorStoreService vectorStoreService, ChatModel chatModel) throws GraphStateException {
+	public BigToolController(VectorStoreService vectorStoreService, ChatModel chatModel, CompileConfig config)
+			throws GraphStateException {
 		this.vectorStoreService = vectorStoreService;
 		this.initializeVectorStore();
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
@@ -99,7 +101,7 @@ public class BigToolController {
 		System.out.println(graphRepresentation.content());
 		System.out.println("\n\n");
 
-		this.compiledGraph = stateGraph.compile();
+		this.compiledGraph = stateGraph.compile(config);
 
 	}
 

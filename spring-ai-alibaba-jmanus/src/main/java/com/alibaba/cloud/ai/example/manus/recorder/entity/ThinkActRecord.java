@@ -86,6 +86,9 @@ public class ThinkActRecord {
 	// Tool parameters used for action (serialized, if applicable)
 	private String toolParameters;
 
+	// Sub-plan execution record for tool calls that create new execution plans
+	private PlanExecutionRecord subPlanExecutionRecord;
+
 	// Default constructor
 	public ThinkActRecord() {
 	}
@@ -142,30 +145,41 @@ public class ThinkActRecord {
 	}
 
 	/**
+	 * Generate unique ID if not already set
+	 * @return Generated or existing ID
+	 */
+	private Long ensureIdGenerated() {
+		if (this.id == null) {
+			// Use combination of timestamp and random number to generate ID
+			long timestamp = System.currentTimeMillis();
+			int random = (int) (Math.random() * 1000000);
+			this.id = timestamp * 1000 + random;
+		}
+		return this.id;
+	}
+
+	/**
 	 * Save record to persistent storage. Empty implementation, to be overridden by
 	 * specific storage implementations
 	 * @return Record ID after saving
 	 */
 	public Long save() {
-		// If ID is null, generate a random ID
-		if (this.id == null) {
-			// Use combination of timestamp and random number to generate ID
-			this.id = generateId();
-		}
-		return this.id;
-	}
+		// Ensure ID is generated before saving
+		ensureIdGenerated();
 
-	// 根据save方法中的逻辑生产ID
-	public Long generateId() {
-		long timestamp = System.currentTimeMillis();
-		int random = (int) (Math.random() * 1000000);
-		return timestamp * 1000 + random;
+		// Save sub-plan execution record if exists
+		if (subPlanExecutionRecord != null) {
+			subPlanExecutionRecord.save();
+		}
+
+		return this.id;
 	}
 
 	// Getters and setters
 
 	public Long getId() {
-		return id;
+		// Ensure ID is generated when accessing
+		return ensureIdGenerated();
 	}
 
 	public void setId(Long id) {
@@ -282,6 +296,30 @@ public class ThinkActRecord {
 
 	public void setToolParameters(String toolParameters) {
 		this.toolParameters = toolParameters;
+	}
+
+	public PlanExecutionRecord getSubPlanExecutionRecord() {
+		return subPlanExecutionRecord;
+	}
+
+	public void setSubPlanExecutionRecord(PlanExecutionRecord subPlanExecutionRecord) {
+		this.subPlanExecutionRecord = subPlanExecutionRecord;
+	}
+
+	/**
+	 * Record a sub-plan execution triggered by tool call
+	 * @param subPlanRecord Sub-plan execution record
+	 */
+	public void recordSubPlanExecution(PlanExecutionRecord subPlanRecord) {
+		this.subPlanExecutionRecord = subPlanRecord;
+	}
+
+	/**
+	 * Check if this think-act record has a sub-plan execution
+	 * @return true if sub-plan exists, false otherwise
+	 */
+	public boolean hasSubPlanExecution() {
+		return this.subPlanExecutionRecord != null;
 	}
 
 	@Override

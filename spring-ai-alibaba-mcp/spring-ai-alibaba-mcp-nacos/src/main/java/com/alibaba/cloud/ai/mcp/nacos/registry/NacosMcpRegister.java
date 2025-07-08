@@ -146,7 +146,11 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			McpServerBasicInfo serverBasicInfo = new McpServerBasicInfo();
 			serverBasicInfo.setName(this.serverInfo.name());
 			serverBasicInfo.setVersionDetail(serverVersionDetail);
-			serverBasicInfo.setDescription(this.serverInfo.name());
+			String description = this.mcpServerProperties.getInstructions();
+			if (StringUtils.isBlank(description)) {
+				description = this.serverInfo.name();
+			}
+			serverBasicInfo.setDescription(description);
 
 			McpEndpointSpec endpointSpec = new McpEndpointSpec();
 			if (StringUtils.equals(this.type, AiConstants.Mcp.MCP_PROTOCOL_STDIO)) {
@@ -170,8 +174,25 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				serverBasicInfo.setProtocol(AiConstants.Mcp.MCP_PROTOCOL_SSE);
 				serverBasicInfo.setFrontProtocol(AiConstants.Mcp.MCP_PROTOCOL_SSE);
 			}
-			this.nacosMcpOperationService.createMcpServer(this.serverInfo.name(), serverBasicInfo, mcpToolSpec,
-					endpointSpec);
+			try {
+				this.nacosMcpOperationService.createMcpServer(this.serverInfo.name(), serverBasicInfo, mcpToolSpec,
+						endpointSpec);
+			}
+			catch (NacosException e) {
+				McpServerDetailInfo recheckServerDetailInfo = null;
+				try {
+					recheckServerDetailInfo = this.nacosMcpOperationService.getServerDetail(this.serverInfo.name(),
+							this.serverInfo.version());
+				}
+				catch (NacosException ignored) {
+				}
+				if (recheckServerDetailInfo == null) {
+					log.info("Mcp server " + this.serverInfo.name() + "exist ,try to update");
+					this.nacosMcpOperationService.updateMcpServer(this.serverInfo.name(), serverBasicInfo, mcpToolSpec,
+							endpointSpec);
+				}
+			}
+
 		}
 		catch (Exception e) {
 			log.error("Failed to register mcp server to nacos", e);

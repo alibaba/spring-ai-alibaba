@@ -190,6 +190,19 @@ Spring AI Alibaba Graph 是一款面向 Java 开发者的**工作流、多智能
 </div>
 
 
+## 观测性配置
+
+```java
+
+public CustomerServiceController(@Qualifier("workflowGraph") StateGraph stateGraph,
+			ObjectProvider<ObservationRegistry> observationRegistry) throws GraphStateException {
+		 this.compiledGraph = stateGraph.compile(CompileConfig.builder()
+		 .withLifecycleListener(new
+				 GraphObservationLifecycleListener(observationRegistry.getIfUnique(() ->
+		 ObservationRegistry.NOOP)))
+		 .build());
+	}
+```
 
 ## 运行与测试
 

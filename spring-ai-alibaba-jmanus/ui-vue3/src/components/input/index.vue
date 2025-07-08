@@ -24,30 +24,33 @@
         ref="inputRef"
         class="chat-input"
         :placeholder="currentPlaceholder"
-        :disabled="disabled"
+        :disabled="isDisabled"
         @keydown="handleKeydown"
         @input="adjustInputHeight"
       ></textarea>
-      <button class="plan-mode-btn" title="进入计划模式" @click="handlePlanModeClick">
+      <button class="plan-mode-btn" :title="$t('input.planMode')" @click="handlePlanModeClick">
         <Icon icon="carbon:document" />
-        计划模式
+        {{ $t('input.planMode') }}
       </button>
       <button
         class="send-button"
-        :disabled="!currentInput.trim() || disabled"
+        :disabled="!currentInput.trim() || isDisabled"
         @click="handleSend"
-        title="发送"
+        :title="$t('input.send')"
       >
         <Icon icon="carbon:send-alt" />
-        发送
+        {{ $t('input.send') }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   placeholder?: string
@@ -57,14 +60,13 @@ interface Props {
 interface Emits {
   (e: 'send', message: string): void
   (e: 'clear'): void
-  (e: 'focus'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
   (e: 'message-sent', message: string): void
   (e: 'plan-mode-clicked'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: '向 JTaskPilot 发送消息',
+  placeholder: '',
   disabled: false,
 })
 
@@ -72,10 +74,11 @@ const emit = defineEmits<Emits>()
 
 const inputRef = ref<HTMLTextAreaElement>()
 const currentInput = ref('')
-const currentPlaceholder = ref(props.placeholder)
+const defaultPlaceholder = computed(() => props.placeholder || t('input.placeholder'))
+const currentPlaceholder = ref(defaultPlaceholder.value)
 
-// 监听全局事件来清空输入和更新状态
-const eventBus = ref<any>()
+// 计算属性来确保 disabled 是 boolean 类型
+const isDisabled = computed(() => Boolean(props.disabled))
 
 const adjustInputHeight = () => {
   nextTick(() => {
@@ -94,7 +97,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 const handleSend = () => {
-  if (!currentInput.value.trim() || props.disabled) return
+  if (!currentInput.value.trim() || isDisabled.value) return
 
   const query = currentInput.value.trim()
   
@@ -129,18 +132,11 @@ const clearInput = () => {
  */
 const updateState = (enabled: boolean, placeholder?: string) => {
   if (placeholder) {
-    currentPlaceholder.value = enabled ? placeholder : '等待任务完成...'
+    currentPlaceholder.value = enabled ? placeholder : t('input.waiting')
   }
   emit('update-state', enabled, placeholder)
 }
 
-/**
- * 聚焦输入框
- */
-const focus = () => {
-  inputRef.value?.focus()
-  emit('focus')
-}
 
 /**
  * 获取当前输入框的值

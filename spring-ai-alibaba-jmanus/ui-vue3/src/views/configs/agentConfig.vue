@@ -16,15 +16,15 @@
 <template>
   <div class="config-panel">
     <div class="panel-header">
-      <h2>Agent配置</h2>
+      <h2>{{ t('config.agentConfig.title') }}</h2>
       <div class="panel-actions">
         <button class="action-btn" @click="handleImport">
           <Icon icon="carbon:upload" />
-          导入
+          {{ t('config.agentConfig.import') }}
         </button>
         <button class="action-btn" @click="handleExport" :disabled="!selectedAgent">
           <Icon icon="carbon:download" />
-          导出
+          {{ t('config.agentConfig.export') }}
         </button>
       </div>
     </div>
@@ -33,8 +33,8 @@
       <!-- Agent列表 -->
       <div class="agent-list">
         <div class="list-header">
-          <h3>已配置的Agent</h3>
-          <span class="agent-count">({{ agents.length }})</span>
+          <h3>{{ t('config.agentConfig.configuredAgents') }}</h3>
+          <span class="agent-count">({{ agents.length }}{{ t('config.agentConfig.agentCount') }})</span>
         </div>
         
         <div class="agents-container" v-if="!loading">
@@ -50,7 +50,7 @@
               <Icon icon="carbon:chevron-right" />
             </div>
             <p class="agent-desc">{{ agent.description }}</p>
-            <div class="agent-tools" v-if="agent.availableTools && Array.isArray(agent.availableTools) && agent.availableTools.length > 0">
+            <div class="agent-tools" v-if="agent.availableTools?.length > 0">
               <span v-for="tool in agent.availableTools.slice(0, 3)" :key="tool" class="tool-tag">
                 {{ getToolDisplayName(tool) }}
               </span>
@@ -63,17 +63,17 @@
 
         <div v-if="loading" class="loading-state">
           <Icon icon="carbon:loading" class="loading-icon" />
-          加载中...
+          {{ t('common.loading') }}
         </div>
 
         <div v-if="!loading && agents.length === 0" class="empty-state">
           <Icon icon="carbon:bot" class="empty-icon" />
-          <p>暂无Agent配置</p>
+          <p>{{ t('config.agentConfig.noAgent') }}</p>
         </div>
 
         <button class="add-btn" @click="showAddAgentModal">
           <Icon icon="carbon:add" />
-          新建Agent
+          {{ t('config.agentConfig.createNew') }}
         </button>
       </div>
 
@@ -84,55 +84,56 @@
           <div class="detail-actions">
             <button class="action-btn primary" @click="handleSave">
               <Icon icon="carbon:save" />
-              保存
+              {{ t('common.save') }}
             </button>
             <button class="action-btn danger" @click="showDeleteConfirm">
               <Icon icon="carbon:trash-can" />
-              删除
+              {{ t('common.delete') }}
             </button>
           </div>
         </div>
 
         <div class="form-item">
-          <label>Agent名称 <span class="required">*</span></label>
+          <label>{{ t('config.agentConfig.agentName') }} <span class="required">*</span></label>
           <input 
             type="text" 
             v-model="selectedAgent.name" 
-            placeholder="输入Agent名称"
+            :placeholder="t('config.agentConfig.agentNamePlaceholder')"
             required
           />
         </div>
         
         <div class="form-item">
-          <label>描述 <span class="required">*</span></label>
+          <label>{{ t('config.agentConfig.description') }} <span class="required">*</span></label>
           <textarea 
             v-model="selectedAgent.description" 
             rows="3"
-            placeholder="描述这个Agent的功能和用途"
+            :placeholder="t('config.agentConfig.descriptionPlaceholder')"
             required
           ></textarea>
         </div>
         
         <div class="form-item">
-          <label>Agent提示词（人设，要求，以及下一步动作的指导）</label>
+          <label>{{ t('config.agentConfig.nextStepPrompt') }}</label>
           <textarea
-            v-model="selectedAgent.nextStepPrompt"
+            :value="selectedAgent.nextStepPrompt || ''"
+            @input="selectedAgent.nextStepPrompt = ($event.target as HTMLTextAreaElement).value"
             rows="8"
-            placeholder="设置Agent的人设、要求以及下一步动作的指导..."
+            :placeholder="t('config.agentConfig.nextStepPromptPlaceholder')"
           ></textarea>
         </div>
 
         <!-- 工具分配区域 -->
         <div class="tools-section">
-          <h4>工具配置</h4>
+          <h4>{{ t('config.agentConfig.toolConfiguration') }}</h4>
           
           <!-- 已分配的工具 -->
           <div class="assigned-tools">
             <div class="section-header">
-              <span>已分配工具 ({{ (selectedAgent.availableTools || []).length }})</span>
+              <span>{{ t('config.agentConfig.assignedTools') }} ({{ (selectedAgent.availableTools || []).length }})</span>
               <button class="action-btn small" @click="showToolSelectionModal" v-if="availableTools.length > 0">
                 <Icon icon="carbon:add" />
-                添加/删除工具
+                {{ t('config.agentConfig.addRemoveTools') }}
               </button>
             </div>
             
@@ -144,9 +145,9 @@
                 </div>
               </div>
               
-              <div v-if="!selectedAgent.availableTools || selectedAgent.availableTools.length === 0" class="no-tools">
+              <div v-if="selectedAgent.availableTools.length === 0" class="no-tools">
                 <Icon icon="carbon:tool-box" />
-                <span>暂无分配的工具</span>
+                <span>{{ t('config.agentConfig.noAssignedTools') }}</span>
               </div>
             </div>
           </div>
@@ -156,37 +157,38 @@
       <!-- 空状态 -->
       <div v-else class="no-selection">
         <Icon icon="carbon:bot" class="placeholder-icon" />
-        <p>请选择一个Agent进行配置</p>
+        <p>{{ t('config.agentConfig.selectAgentHint') }}</p>
       </div>
     </div>
 
     <!-- 新建Agent弹窗 -->
-    <Modal v-model="showModal" title="新建Agent" @confirm="handleAddAgent">
+    <Modal v-model="showModal" :title="t('config.agentConfig.newAgent')" @confirm="handleAddAgent">
       <div class="modal-form">
         <div class="form-item">
-          <label>Agent名称 <span class="required">*</span></label>
+          <label>{{ t('config.agentConfig.agentName') }} <span class="required">*</span></label>
           <input 
             type="text" 
             v-model="newAgent.name" 
-            placeholder="输入Agent名称"
+            :placeholder="t('config.agentConfig.agentNamePlaceholder')"
             required 
           />
         </div>
         <div class="form-item">
-          <label>描述 <span class="required">*</span></label>
+          <label>{{ t('config.agentConfig.description') }} <span class="required">*</span></label>
           <textarea
             v-model="newAgent.description"
             rows="3"
-            placeholder="描述这个Agent的功能和用途"
+            :placeholder="t('config.agentConfig.descriptionPlaceholder')"
             required
           ></textarea>
         </div>
         <div class="form-item">
-          <label>Agent提示词（人设，要求，以及下一步动作的指导）</label>
+          <label>{{ t('config.agentConfig.nextStepPrompt') }}</label>
           <textarea
-            v-model="newAgent.nextStepPrompt"
+            :value="newAgent.nextStepPrompt || ''"
+            @input="newAgent.nextStepPrompt = ($event.target as HTMLTextAreaElement).value"
             rows="8"
-            placeholder="设置Agent的人设、要求以及下一步动作的指导..."
+            :placeholder="t('config.agentConfig.nextStepPromptPlaceholder')"
           ></textarea>
         </div>
       </div>
@@ -201,15 +203,15 @@
     />
 
     <!-- 删除确认弹窗 -->
-    <Modal v-model="showDeleteModal" title="删除确认">
+    <Modal v-model="showDeleteModal" :title="t('config.agentConfig.deleteConfirm')">
       <div class="delete-confirm">
         <Icon icon="carbon:warning" class="warning-icon" />
-        <p>确定要删除 <strong>{{ selectedAgent?.name }}</strong> 吗？</p>
-        <p class="warning-text">此操作不可恢复。</p>
+        <p>{{ t('config.agentConfig.deleteConfirmText') }} <strong>{{ selectedAgent?.name }}</strong> {{ t('common.confirm') }}？</p>
+        <p class="warning-text">{{ t('config.agentConfig.deleteWarning') }}</p>
       </div>
       <template #footer>
-        <button class="cancel-btn" @click="showDeleteModal = false">取消</button>
-        <button class="confirm-btn danger" @click="handleDelete">删除</button>
+        <button class="cancel-btn" @click="showDeleteModal = false">{{ t('common.cancel') }}</button>
+        <button class="confirm-btn danger" @click="handleDelete">{{ t('common.delete') }}</button>
       </template>
     </Modal>
 
@@ -228,11 +230,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal/index.vue'
 import ToolSelectionModal from '@/components/tool-selection-modal/index.vue'
 import { AgentApiService, type Agent, type Tool } from '@/api/agent-api-service'
+
+// 国际化
+const { t } = useI18n()
 
 // 响应式数据
 const loading = ref(false)
@@ -252,13 +258,7 @@ const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
   nextStepPrompt: ''
 })
 
-// 计算属性
-const unassignedTools = computed(() => {
-  if (!selectedAgent.value || !selectedAgent.value.availableTools || !Array.isArray(selectedAgent.value.availableTools)) {
-    return availableTools
-  }
-  return availableTools.filter(tool => !selectedAgent.value!.availableTools.includes(tool.key))
-})
+// 计算属性 - removed unused unassignedTools since it's not used in the template
 
 // 工具显示名称获取
 const getToolDisplayName = (toolId: string): string => {
@@ -296,7 +296,7 @@ const loadData = async () => {
     // 确保每个agent都有availableTools数组
     const normalizedAgents = loadedAgents.map(agent => ({
       ...agent,
-      availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
+      availableTools: agent.availableTools
     }))
     
     agents.splice(0, agents.length, ...normalizedAgents)
@@ -308,7 +308,7 @@ const loadData = async () => {
     }
   } catch (err: any) {
     console.error('加载数据失败:', err)
-    showMessage('加载数据失败: ' + err.message, 'error')
+    showMessage(t('config.agentConfig.loadDataFailed') + ': ' + err.message, 'error')
     
     // 提供演示数据作为后备
     const demoTools = [
@@ -420,23 +420,21 @@ const loadData = async () => {
 
 // 选择Agent
 const selectAgent = async (agent: Agent) => {
-  if (!agent) return
-  
   try {
     // 加载详细信息
     const detailedAgent = await AgentApiService.getAgentById(agent.id)
-    // 确保availableTools是数组
+    // Agent接口保证availableTools是数组
     selectedAgent.value = {
       ...detailedAgent,
-      availableTools: Array.isArray(detailedAgent.availableTools) ? detailedAgent.availableTools : []
+      availableTools: detailedAgent.availableTools
     }
   } catch (err: any) {
     console.error('加载Agent详情失败:', err)
-    showMessage('加载Agent详情失败: ' + err.message, 'error')
+    showMessage(t('config.agentConfig.loadDetailsFailed') + ': ' + err.message, 'error')
     // 使用基本信息作为后备
     selectedAgent.value = {
       ...agent,
-      availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
+      availableTools: agent.availableTools
     }
   }
 }
@@ -452,15 +450,14 @@ const showAddAgentModal = () => {
 // 创建新Agent
 const handleAddAgent = async () => {
   if (!newAgent.name.trim() || !newAgent.description.trim()) {
-    showMessage('请填写必要的字段', 'error')
+    showMessage(t('config.agentConfig.requiredFields'), 'error')
     return
   }
 
   try {
     const agentData: Omit<Agent, 'id'> = {
       name: newAgent.name.trim(),
-      description: newAgent.description.trim(),
-      nextStepPrompt: newAgent.nextStepPrompt?.trim() || '',
+      description: newAgent.description.trim(),        nextStepPrompt: newAgent.nextStepPrompt?.trim() ?? '',
       availableTools: []
     }
 
@@ -468,9 +465,9 @@ const handleAddAgent = async () => {
     agents.push(createdAgent)
     selectedAgent.value = createdAgent
     showModal.value = false
-    showMessage('Agent创建成功', 'success')
+    showMessage(t('config.agentConfig.createSuccess'), 'success')
   } catch (err: any) {
-    showMessage('创建Agent失败: ' + err.message, 'error')
+    showMessage(t('config.agentConfig.createFailed') + ': ' + err.message, 'error')
   }
 }
 
@@ -486,17 +483,7 @@ const handleToolSelectionConfirm = (selectedToolIds: string[]) => {
   }
 }
 
-// 添加工具
-const addTool = (toolId: string) => {
-  if (selectedAgent.value) {
-    if (!selectedAgent.value.availableTools) {
-      selectedAgent.value.availableTools = []
-    }
-    if (!selectedAgent.value.availableTools.includes(toolId)) {
-      selectedAgent.value.availableTools.push(toolId)
-    }
-  }
-}
+// removed unused addTool function since it's not used anywhere in the code
 
 
 
@@ -505,7 +492,7 @@ const handleSave = async () => {
   if (!selectedAgent.value) return
 
   if (!selectedAgent.value.name.trim() || !selectedAgent.value.description.trim()) {
-    showMessage('请填写必要的字段', 'error')
+    showMessage(t('config.agentConfig.requiredFields'), 'error')
     return
   }
 
@@ -519,9 +506,9 @@ const handleSave = async () => {
     }
     
     selectedAgent.value = savedAgent
-    showMessage('Agent保存成功', 'success')
+    showMessage(t('config.agentConfig.saveSuccess'), 'success')
   } catch (err: any) {
-    showMessage('保存Agent失败: ' + err.message, 'error')
+    showMessage(t('config.agentConfig.saveFailed') + ': ' + err.message, 'error')
   }
 }
 
@@ -546,9 +533,9 @@ const handleDelete = async () => {
     // 选择其他Agent或清除选中状态
     selectedAgent.value = agents.length > 0 ? agents[0] : null
     showDeleteModal.value = false
-    showMessage('Agent删除成功', 'success')
+    showMessage(t('config.agentConfig.deleteSuccess'), 'success')
   } catch (err: any) {
-    showMessage('删除Agent失败: ' + err.message, 'error')
+    showMessage(t('config.agentConfig.deleteFailed') + ': ' + err.message, 'error')
   }
 }
 
@@ -566,17 +553,17 @@ const handleImport = () => {
           const agentData = JSON.parse(e.target?.result as string)
           // 基本验证
           if (!agentData.name || !agentData.description) {
-            throw new Error('Agent配置格式不正确：缺少必要字段')
+            throw new Error(t('config.agentConfig.invalidFormat'))
           }
           
           // 移除id字段，让后端分配新的id
-          const { id, ...importData } = agentData
+          const { id: _id, ...importData } = agentData
           const savedAgent = await AgentApiService.createAgent(importData)
           agents.push(savedAgent)
           selectedAgent.value = savedAgent
-          showMessage('Agent导入成功', 'success')
+          showMessage(t('config.agentConfig.importSuccess'), 'success')
         } catch (err: any) {
-          showMessage('导入Agent失败: ' + err.message, 'error')
+          showMessage(t('config.agentConfig.importFailed') + ': ' + err.message, 'error')
         }
       }
       reader.readAsText(file)
@@ -598,9 +585,9 @@ const handleExport = () => {
     link.download = `agent-${selectedAgent.value.name}-${new Date().toISOString().split('T')[0]}.json`
     link.click()
     URL.revokeObjectURL(url)
-    showMessage('Agent导出成功', 'success')
+    showMessage(t('config.agentConfig.exportSuccess'), 'success')
   } catch (err: any) {
-    showMessage('导出Agent失败: ' + err.message, 'error')
+    showMessage(t('config.agentConfig.exportFailed') + ': ' + err.message, 'error')
   }
 }
 

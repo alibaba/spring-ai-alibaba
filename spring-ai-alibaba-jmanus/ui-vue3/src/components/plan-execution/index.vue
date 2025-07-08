@@ -29,7 +29,7 @@
     <InputArea
       ref="inputRef"
       :disabled="isLoading"
-      :placeholder="isLoading ? '等待任务完成...' : placeholder"
+      :placeholder="inputPlaceholder"
       @send="handleSendMessage"
       @clear="handleInputClear"
       @focus="handleInputFocus"
@@ -40,28 +40,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, defineProps, defineEmits, watch } from 'vue'
+import { ref, onMounted, onUnmounted, defineProps, defineEmits, watch, computed } from 'vue'
 import ChatContainer from '@/components/chat/index.vue'
 import InputArea from '@/components/input/index.vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import { useSidebarStore } from '@/stores/sidebar'
-import { useRightPanelStore } from '@/stores/right-panel'
+import { useI18n } from 'vue-i18n'
+
+// 使用 i18n
+const { t } = useI18n()
 
 // 使用pinia stores
 const sidebarStore = useSidebarStore()
-const rightPanelStore = useRightPanelStore()
 
-// 定义 props
+// Define props interface
 interface Props {
   initialPrompt?: string
-  mode?: 'direct' | 'plan'
   placeholder?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   initialPrompt: '',
-  mode: 'direct',
-  placeholder: '向 JTaskPilot 发送消息',
+  placeholder: '',
 })
 
 // 定义 emits - 移除 plan-update 和 step-selected，因为现在直接使用 store
@@ -78,6 +78,14 @@ const isLoading = ref(false)
 const chatRef = ref()
 const inputRef = ref()
 const hasProcessedInitialPrompt = ref(false) // 标记是否已经处理过初始 prompt
+
+// 计算属性确保 placeholder 是 string 类型
+const inputPlaceholder = computed(() => {
+  if (isLoading.value) {
+    return t('input.waiting')
+  }
+  return props.placeholder || ''
+})
 
 onMounted(() => {
   console.log('[PlanExecutionComponent] Initialized')
@@ -145,9 +153,6 @@ const handlePlanManagerUpdate = (planData: any) => {
 
   // 更新加载状态
   isLoading.value = !planData.completed
-
-  // 直接使用right-panel store处理计划更新，替代emit事件
-  rightPanelStore.handlePlanUpdate(planData)
 }
 
 /**
