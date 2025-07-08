@@ -403,8 +403,6 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'user-message-send-requested', message: string): void
-  (e: 'input-clear'): void
   (e: 'step-selected', planId: string, stepIndex: number): void
   (e: 'sub-plan-step-selected', parentPlanId: string, subPlanId: string, stepIndex: number, subStepIndex: number): void
 }
@@ -568,13 +566,11 @@ const handleSendMessage = (message: string) => {
   // 首先添加用户消息到UI
   addMessage('user', message)
 
-  // 通过 emit 通知父组件清空输入
-  emit('input-clear')
-
   // 根据模式处理消息
   if (props.mode === 'plan') {
-    // 在计划模式下，触发用户消息发送请求事件
-    emit('user-message-send-requested', message)
+    // 在计划模式下，不再触发事件，让父组件直接调用相应方法
+    // 这里的逻辑由父组件通过直接调用处理
+    console.log('[ChatComponent] Plan mode message sent, parent should handle:', message)
   } else {
     // 直接模式仍然直接处理
     handleDirectMode(message)

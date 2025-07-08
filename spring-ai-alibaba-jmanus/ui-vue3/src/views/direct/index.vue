@@ -40,10 +40,6 @@
           <ChatContainer
             ref="chatRef"
             :initial-prompt="prompt || ''"
-            @user-message-send-requested="handleMessageSent"
-            @input-clear="handleInputClear"
-            @input-update-state="handleInputUpdateState"
-            @input-focus="handleInputFocus"
             @step-selected="handleStepSelected"
             @sub-plan-step-selected="handleSubPlanStepSelected"
           />
@@ -337,14 +333,6 @@ const shouldProcessEventForCurrentPlan = (rootPlanId: string, allowSpecialIds: b
   // Otherwise, ignore the event
   console.log('[Direct] Ignoring event for non-current rootPlanId:', rootPlanId, 'current:', currentRootPlanId.value)
   return false
-}
-
-const handleMessageSent = (message: string) => {
-  console.log('[DirectView] Message sent from chat:', message)
-  
-  // Use planExecutionManager to handle user message send request
-  console.log('[DirectView] Delegating chat message to planExecutionManager:', message)
-  planExecutionManager.handleUserMessageSendRequested(message)
 }
 
 // New event handler function
