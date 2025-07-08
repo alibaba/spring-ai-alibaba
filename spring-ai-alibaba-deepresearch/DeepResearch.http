@@ -71,3 +71,8 @@ GET http://localhost:8080/api/reports/download/__default__
 
 ### 构建交互式HTML报告
 GET http://localhost:8080/api/reports/build-html?threadId=__default__
+
+
+### 获取所有默认 MCP 服务信息概览
+GET http://localhost:8080/api/mcp/services
+Accept: application/json
