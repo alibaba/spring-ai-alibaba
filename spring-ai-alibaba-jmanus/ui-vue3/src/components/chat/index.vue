@@ -1257,7 +1257,8 @@ const handleUserInputSubmit = async (message: Message) => {
     if (formInputs && formInputs.length > 0) {
       // 多个字段的情况
       Object.entries(formInputsStore[message.id]).forEach(([index, value]) => {
-        const label = formInputs[index]?.label || `input_${index}`
+        const numIndex = parseInt(index, 10)
+        const label = formInputs[numIndex]?.label || `input_${index}`
         inputData[label] = value
       })
     } else {
