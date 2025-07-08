@@ -947,7 +947,7 @@ public class CompiledGraph {
 				}
 
 				if (shouldInterruptBefore(nextNodeId, currentNodeId)) {
-					return Data.done(currentNodeId);
+					return Data.done(nextNodeId);
 				}
 
 				currentNodeId = nextNodeId;
