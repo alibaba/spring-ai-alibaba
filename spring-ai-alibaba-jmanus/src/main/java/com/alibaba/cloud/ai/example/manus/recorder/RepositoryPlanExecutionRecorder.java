@@ -9,6 +9,7 @@ import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.List;
@@ -20,7 +21,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * 解决的问题可参考: https://github.com/alibaba/spring-ai-alibaba/issues/1391
  */
-public class RepositoryPlanExecutionRecorderV2 implements PlanExecutionRecorder {
+@Component
+public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultPlanExecutionRecorder.class);
 
