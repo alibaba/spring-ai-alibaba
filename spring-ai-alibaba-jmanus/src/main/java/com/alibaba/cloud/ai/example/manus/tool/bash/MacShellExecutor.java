@@ -119,8 +119,8 @@ public class MacShellExecutor implements ShellCommandExecutor {
 	}
 
 	/**
-	 * Dynamically detect the best available shell path
-	 * Priority: zsh -> bash (as fallback)
+	 * Dynamically detect the best available shell path Priority: zsh -> bash (as
+	 * fallback)
 	 * @return The path to the shell executable
 	 */
 	private String getShellPath() {
@@ -130,13 +130,8 @@ public class MacShellExecutor implements ShellCommandExecutor {
 		}
 
 		// Try to find zsh in common locations
-		String[] zshPaths = {
-			"/bin/zsh",
-			"/usr/bin/zsh", 
-			"/usr/local/bin/zsh",
-			"/opt/homebrew/bin/zsh"
-		};
-		
+		String[] zshPaths = { "/bin/zsh", "/usr/bin/zsh", "/usr/local/bin/zsh", "/opt/homebrew/bin/zsh" };
+
 		for (String path : zshPaths) {
 			if (new File(path).exists() && new File(path).canExecute()) {
 				log.info("Found zsh at: {}", path);
@@ -144,7 +139,7 @@ public class MacShellExecutor implements ShellCommandExecutor {
 				return shellPath;
 			}
 		}
-		
+
 		// If zsh not found, use 'which' command to find it
 		try {
 			Process whichProcess = new ProcessBuilder("which", "zsh").start();
@@ -162,17 +157,14 @@ public class MacShellExecutor implements ShellCommandExecutor {
 					}
 				}
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.warn("Failed to find zsh using 'which' command: {}", e.getMessage());
 		}
-		
+
 		// Fall back to bash if zsh is not available
-		String[] bashPaths = {
-			"/bin/bash",
-			"/usr/bin/bash",
-			"/usr/local/bin/bash"
-		};
-		
+		String[] bashPaths = { "/bin/bash", "/usr/bin/bash", "/usr/local/bin/bash" };
+
 		for (String path : bashPaths) {
 			if (new File(path).exists() && new File(path).canExecute()) {
 				log.warn("zsh not found, falling back to bash at: {}", path);
@@ -180,7 +172,7 @@ public class MacShellExecutor implements ShellCommandExecutor {
 				return shellPath;
 			}
 		}
-		
+
 		// Final fallback - use system default
 		log.error("Neither zsh nor bash found in standard locations, using /bin/bash as final fallback");
 		shellPath = "/bin/bash";
