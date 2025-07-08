@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
@@ -88,6 +89,8 @@ public class DynamicAgent extends ReActAgent {
 
 	private final UserInputService userInputService;
 
+	private final DynamicModelEntity model;
+
 	public void clearUp(String planId) {
 		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
 		for (ToolCallBackContext toolCallBack : toolCallBackContext.values()) {
@@ -107,7 +110,7 @@ public class DynamicAgent extends ReActAgent {
 	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
 			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
-			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptService promptService) {
+			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptService promptService, DynamicModelEntity model) {
 		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptService);
 		this.agentName = name;
 		this.agentDescription = description;
@@ -115,6 +118,7 @@ public class DynamicAgent extends ReActAgent {
 		this.availableToolKeys = availableToolKeys;
 		this.toolCallingManager = toolCallingManager;
 		this.userInputService = userInputService;
+		this.model = model;
 	}
 
 	@Override
@@ -165,7 +169,12 @@ public class DynamicAgent extends ReActAgent {
 			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
 			userPrompt = new Prompt(messages, chatOptions);
 			List<ToolCallback> callbacks = getToolCallList();
-			ChatClient chatClient = llmService.getAgentChatClient();
+			ChatClient chatClient;
+			if (model == null) {
+				chatClient = llmService.getAgentChatClient();
+			} else {
+				chatClient = llmService.getDynamicChatClient(model.getBaseUrl(), model.getApiKey(), model.getModelName());
+			}
 			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
 
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
