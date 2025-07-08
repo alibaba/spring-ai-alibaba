@@ -442,13 +442,15 @@ const handlePlanExecutionRequested = async (payload: {
     return
   }
 
-  // 同步调用 chat 的 handleSendMessage，使用计划标题作为消息
-  const planMessage = `执行计划: ${payload.title}`
-  console.log('[DirectView] Calling handleSendMessage for plan execution:', planMessage)
-  handleSendMessage(planMessage)
-
   isExecutingPlan.value = true
 
+  // First call chat component's addMessage to update UI (avoid triggering user-message-send-requested event)
+  if (chatRef.value && typeof chatRef.value.addMessage === 'function') {
+    console.log('[DirectView] Calling chatRef.addMessage for plan execution:', payload.title)
+    chatRef.value.addMessage('user', payload.title)
+  } else {
+    console.warn('[DirectView] chatRef.addMessage method not available')
+  }
   try {
     // 获取计划模板ID
     const planTemplateId = payload.planData.planTemplateId || payload.planData.planId
