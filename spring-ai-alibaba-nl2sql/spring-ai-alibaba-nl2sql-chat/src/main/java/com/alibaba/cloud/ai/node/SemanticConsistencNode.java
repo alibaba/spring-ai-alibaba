@@ -79,13 +79,14 @@ public class SemanticConsistencNode implements NodeAction {
 			.map(SchemaDTO.class::cast)
 			.orElseThrow(() -> new IllegalStateException("Schema DTO not found"));
 
-		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT).orElseThrow();
+		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
+			.orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
 		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
 
 		Plan plan = converter.convert(plannerNodeOutput);
-		Integer planCurrentStep = state.value(PLAN_CURRENT_STEP, 1);
+		Integer currentStep = state.value(PLAN_CURRENT_STEP, 1);
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
-		ExecutionStep executionStep = executionPlan.get(planCurrentStep - 1);
+		ExecutionStep executionStep = executionPlan.get(currentStep - 1);
 		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
 		logger.info(toolParameters.getDescription());
 		String sqlQuery = toolParameters.getSqlQuery();
@@ -99,9 +100,18 @@ public class SemanticConsistencNode implements NodeAction {
 		logger.info("语义一致性校验结果详情: {}", semanticConsistency);
 		boolean passed = !semanticConsistency.startsWith("不通过");
 		logger.info("语义一致性校验结果: {}", passed);
-		// 根据校验结果返回相应的状态
-		return passed ? Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, true, PLAN_CURRENT_STEP, planCurrentStep + 1) : Map
-			.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, false, SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, semanticConsistency);
+
+		if (passed) {
+			return Map.of(
+					SEMANTIC_CONSISTENC_NODE_OUTPUT, true,
+					PLAN_CURRENT_STEP, currentStep + 1
+			);
+		} else {
+			return Map.of(
+					SEMANTIC_CONSISTENC_NODE_OUTPUT, false,
+					SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, semanticConsistency
+			);
+		}
 	}
 
 }

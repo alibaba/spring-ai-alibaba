@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.schema.Plan;
+import com.alibaba.cloud.ai.util.StepResultUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -39,41 +40,63 @@ public class PythonExecuteNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(PythonExecuteNode.class);
 
-	private final ChatClient chatClient;
+	private static final String SYSTEM_PROMPT = "你是一个模拟Python的执行���，我将给你需求和数据，请帮我分析，并给出详细的数据结果";
 
+	private final ChatClient chatClient;
 	private final BeanOutputConverter<Plan> converter;
 
 	public PythonExecuteNode(ChatClient.Builder chatClientBuilder) {
-		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
-		});
-
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {});
 		this.chatClient = chatClientBuilder.build();
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT).orElseThrow();
+		// 获取计划节点输出并解析
+		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
+			.orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
 		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
-		Map<String, Object> updated = new HashMap<>();
+
 		Plan plan = converter.convert(plannerNodeOutput);
-		Integer planCurrentStep = state.value(PLAN_CURRENT_STEP, 1);
+		Integer currentStep = state.value(PLAN_CURRENT_STEP, 1);
+
+		// 获取当前执行步骤信息
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
-		ExecutionStep executionStep = executionPlan.get(planCurrentStep - 1);
+		if (executionPlan == null || executionPlan.isEmpty()) {
+			throw new IllegalStateException("执行计划为空");
+		}
+
+		int stepIndex = currentStep - 1;
+		if (stepIndex < 0 || stepIndex >= executionPlan.size()) {
+			throw new IllegalStateException("当前步骤索引超出范围: " + stepIndex);
+		}
+
+		ExecutionStep executionStep = executionPlan.get(stepIndex);
 		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
 		String instruction = toolParameters.getInstruction();
 		String description = toolParameters.getDescription();
-		HashMap<String, String> value = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<String, String>());
 
-		String content = chatClient.prompt("你是一个模拟Python的执行器，我将给你需求和数据，请帮我分析，并给出详细的数据结果")
-			.user("## 整体执行计划（仅当无法理解需求时参考整体执行计划）：" + plan.toJsonStr() + "## instruction：" + instruction
-					+ "\n## description：" + description + "\n## 数据：" + value + "\n请给出结果。")
+		// 获取SQL执行结果
+		Map<String, String> sqlExecuteResult = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<>());
+
+		// 构建用户消息并调用AI
+		String userMessage = String.format(
+			"## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
+			plan.toJsonStr(), instruction, description, sqlExecuteResult
+		);
+
+		String aiResponse = chatClient.prompt(SYSTEM_PROMPT)
+			.user(userMessage)
 			.call()
 			.content();
-		HashMap<String, String> value2 = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<String, String>());
-		value2.put("步骤" + planCurrentStep + "结果", content);
-		updated.put(SQL_EXECUTE_NODE_OUTPUT, value2);
-		updated.put(PLAN_CURRENT_STEP, planCurrentStep + 1);
+
+		// 构建返回结果
+		Map<String, Object> updated = new HashMap<>();
+		Map<String, String> updatedSqlResult = StepResultUtils.addStepResult(sqlExecuteResult, currentStep, aiResponse);
+
+		updated.put(SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult);
+		updated.put(PLAN_CURRENT_STEP, currentStep + 1);
+
 		return updated;
 	}
-
 }

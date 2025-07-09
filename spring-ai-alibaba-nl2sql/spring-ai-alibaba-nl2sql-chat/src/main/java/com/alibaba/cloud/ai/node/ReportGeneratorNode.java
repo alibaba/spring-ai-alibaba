@@ -53,13 +53,15 @@ public class ReportGeneratorNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT).orElseThrow();
+		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
+			.orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
 		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
+
 		Map<String, Object> updated = new HashMap<>();
 		Plan plan = converter.convert(plannerNodeOutput);
-		Integer planCurrentStep = state.value(PLAN_CURRENT_STEP, 1);
+		Integer currentStep = state.value(PLAN_CURRENT_STEP, 1);
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
-		ExecutionStep executionStep = executionPlan.get(planCurrentStep - 1);
+		ExecutionStep executionStep = executionPlan.get(currentStep - 1);
 		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
 		String summaryAndRecommendations = toolParameters.getSummaryAndRecommendations();
 		HashMap<String, String> value = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<String, String>());
@@ -69,6 +71,7 @@ public class ReportGeneratorNode implements NodeAction {
 			.call()
 			.content();
 		logger.info("生成的报告内容: {}", content);
+
 		updated.put(RESULT, content);
 		updated.put(SQL_EXECUTE_NODE_OUTPUT, null);
 		updated.put(PLAN_CURRENT_STEP, null);

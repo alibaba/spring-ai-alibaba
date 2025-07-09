@@ -49,7 +49,7 @@ public class KeywordExtractNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
-		String input = (String) state.value(INPUT_KEY).orElseThrow();
+		String input = state.value(QUERY_REWRITE_NODE_OUTPUT, (String) state.value(INPUT_KEY).orElseThrow());
 
 		List<String> evidences = baseNl2SqlService.extractEvidences(input);
 		List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);

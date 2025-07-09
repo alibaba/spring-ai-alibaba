@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,35 +47,28 @@ public class PlanExecutorNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
-		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT).orElseThrow();
+		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
+			.orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
 		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
 
-		Map<String, Object> updated = new HashMap<>();
 		Plan plan = converter.convert(plannerNodeOutput);
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
-		Integer planCurrentStep = state.value(PLAN_CURRENT_STEP, 1);
-		if (planCurrentStep > executionPlan.size()) {
-			logger.info("计划已完成，当前步骤: {}, 总步骤: {}", planCurrentStep, executionPlan.size());
-			updated.put(PLAN_CURRENT_STEP, 1);
-			updated.put(PLAN_NEXT_NODE, REPORT_GENERATOR_NODE);
-			return updated;
+		Integer currentStep = state.value(PLAN_CURRENT_STEP, 1);
+
+		if (currentStep > executionPlan.size()) {
+			logger.info("计划已完成，当前步骤: {}, 总步骤: {}", currentStep, executionPlan.size());
+			return Map.of(PLAN_CURRENT_STEP, 1, PLAN_NEXT_NODE, REPORT_GENERATOR_NODE);
 		}
-		ExecutionStep executionStep = executionPlan.get(planCurrentStep - 1);
+
+		ExecutionStep executionStep = executionPlan.get(currentStep - 1);
 		String toolToUse = executionStep.getToolToUse();
-		switch (toolToUse) {
-			case SQL_EXECUTE_NODE:
-				updated.put(PLAN_NEXT_NODE, SQL_EXECUTE_NODE);
-				return updated;
-			case PYTHON_EXECUTE_NODE:
-				updated.put(PLAN_NEXT_NODE, PYTHON_EXECUTE_NODE);
-				return updated;
-			case REPORT_GENERATOR_NODE:
-				updated.put(PLAN_NEXT_NODE, REPORT_GENERATOR_NODE);
-				break;
-			default:
-				throw new RuntimeException("未知的节点: " + toolToUse);
+
+		// 验证节点名称是否有效，然后直接返回
+		if (List.of(SQL_EXECUTE_NODE, PYTHON_EXECUTE_NODE, REPORT_GENERATOR_NODE).contains(toolToUse)) {
+			return Map.of(PLAN_NEXT_NODE, toolToUse);
+		} else {
+			throw new RuntimeException("未知的节点: " + toolToUse);
 		}
-		return updated;
 	}
 
 }

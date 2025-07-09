@@ -38,8 +38,6 @@ import static com.alibaba.cloud.ai.constant.Constant.*;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
 /**
- * 生成 SQL 语句
- *
  * @author zhangshenghang
  */
 public class SqlGenerateNode implements NodeAction {
@@ -70,13 +68,14 @@ public class SqlGenerateNode implements NodeAction {
 		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
 
 		Plan plan = converter.convert(plannerNodeOutput);
-		Integer planCurrentStep = state.value(PLAN_CURRENT_STEP, 1);
+		Integer currentStep = state.value(PLAN_CURRENT_STEP, 1);
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
-		ExecutionStep executionStep = executionPlan.get(planCurrentStep - 1);
+		ExecutionStep executionStep = executionPlan.get(currentStep - 1);
 		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
-		// --------------------新版本处理-------------------------------
+
 		Optional<Object> exceptionOutputOpt = state.value(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT);
 		if (exceptionOutputOpt.isPresent()) {
+			// TODO 不能无限重试，需要限制重试次数
 			String sqlException = (String) exceptionOutputOpt
 				.orElseThrow(() -> new IllegalStateException("sql exception not found"));
 			logger.info("检测到SQL执行异常，开始重新生成SQL: {}", sqlException);
@@ -90,7 +89,6 @@ public class SqlGenerateNode implements NodeAction {
 			return Map.of(SQL_GENERATE_OUTPUT, SQL_EXECUTE_NODE, PLANNER_NODE_OUTPUT, plan.toJsonStr());
 		}
 
-		// ----------------------------------------------------
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 		List<String> evidenceList = (List<String>) state.value(EVIDENCES).orElseThrow();
 		SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
