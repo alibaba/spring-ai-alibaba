@@ -16,8 +16,11 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.advisor.RoutingNodeAdvisor;
 import com.alibaba.cloud.ai.example.deepresearch.model.NodeDefinition;
 import com.alibaba.cloud.ai.example.deepresearch.util.NodeSelectionUtil;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.client.ChatClient;
 
 /**
@@ -34,17 +37,12 @@ public abstract class AbstractNode {
 	private NodeDefinition nodeDefinition;
 
 	public AbstractNode(ChatClient.Builder builder) {
-		this.chatClient = builder.defaultSystem(String.format(GUIDE, NodeSelectionUtil.getAvailableNodes())).build();
+		this.chatClient = builder.defaultAdvisors(RoutingNodeAdvisor.Builder()
+				.selections(NodeSelectionUtil.getAvailableNodes())
+				.JSONParser(new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))
+				.build()
+		).build();
 	}
-
-	private static final String GUIDE = """
-			Parse the input and select the most appropriate support node from the following options: %s First explain your rationale,
-			then provide your selection in JSON format:
-			\\{
-			 "reasoning": "Briefly explain why this ticket should be routed to a specific node. Consider key terms, user intent, and urgency level. ",
-			 "selection": "Selected node name"
-			\\}
-			""";
 
 	protected NodeDefinition.SelectionNode guide(String input) {
 		return chatClient.prompt().user(input).call().entity(NodeDefinition.SelectionNode.class);
