@@ -15,9 +15,8 @@
  */
 package com.alibaba.cloud.ai.common;
 
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class R<T> {
 
 	private Integer code;
@@ -48,6 +47,68 @@ public class R<T> {
 		r.setMsg(msg);
 		r.setData(null);
 		return r;
+	}
+
+	public Integer getCode() {
+		return code;
+	}
+
+	public void setCode(Integer code) {
+		this.code = code;
+	}
+
+	public String getMsg() {
+		return msg;
+	}
+
+	public void setMsg(String msg) {
+		this.msg = msg;
+	}
+
+	public T getData() {
+		return data;
+	}
+
+	public void setData(T data) {
+		this.data = data;
+	}
+
+	public long getTimestamp() {
+		return timestamp;
+	}
+
+	public void setTimestamp(long timestamp) {
+		this.timestamp = timestamp;
+	}
+
+	public String getRequestId() {
+		return requestId;
+	}
+
+	public void setRequestId(String requestId) {
+		this.requestId = requestId;
+	}
+
+	@Override
+	public String toString() {
+		return "R{" + "code=" + code + ", msg='" + msg + '\'' + ", data=" + data + ", timestamp=" + timestamp
+				+ ", requestId='" + requestId + '\'' + '}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		R<?> r = (R<?>) o;
+		return timestamp == r.timestamp && Objects.equals(code, r.code) && Objects.equals(msg, r.msg)
+				&& Objects.equals(data, r.data) && Objects.equals(requestId, r.requestId);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(code, msg, data, timestamp, requestId);
 	}
 
 }

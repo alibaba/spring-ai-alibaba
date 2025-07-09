@@ -15,11 +15,9 @@
  */
 package com.alibaba.cloud.ai.dbconnector;
 
-import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-@Data
 @Component
 @ConfigurationProperties("chatbi.dbconfig")
 public class DbConfig {
@@ -35,5 +33,60 @@ public class DbConfig {
 	private String connectionType;
 
 	private String dialectType;
+
+	public String getSchema() {
+		return schema;
+	}
+
+	public void setSchema(String schema) {
+		this.schema = schema;
+	}
+
+	public String getUrl() {
+		return url;
+	}
+
+	public void setUrl(String url) {
+		this.url = url;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public String getConnectionType() {
+		return connectionType;
+	}
+
+	public void setConnectionType(String connectionType) {
+		this.connectionType = connectionType;
+	}
+
+	public String getDialectType() {
+		return dialectType;
+	}
+
+	public void setDialectType(String dialectType) {
+		this.dialectType = dialectType;
+	}
+
+	@Override
+	public String toString() {
+		return "DbConfig{" + "schema='" + schema + '\'' + ", url='" + url + '\'' + ", username='" + username + '\''
+				+ ", password='" + password + '\'' + ", connectionType='" + connectionType + '\'' + ", dialectType='"
+				+ dialectType + '\'' + '}';
+	}
 
 }
