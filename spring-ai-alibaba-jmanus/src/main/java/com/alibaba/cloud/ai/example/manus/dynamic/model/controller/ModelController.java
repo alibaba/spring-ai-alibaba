@@ -65,12 +65,10 @@ public class ModelController {
 			return ResponseEntity.badRequest().build();
 		}
 	}
+
 	@GetMapping("/types")
 	public ResponseEntity<List<String>> getAllModelTypes() {
-		return ResponseEntity.ok(
-				Arrays.stream(ModelType.values())
-						.map(Enum::name)
-						.collect(Collectors.toList())
-		);
+		return ResponseEntity.ok(Arrays.stream(ModelType.values()).map(Enum::name).collect(Collectors.toList()));
 	}
+
 }

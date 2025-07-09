@@ -22,7 +22,8 @@ package com.alibaba.cloud.ai.example.manus.dynamic.model.model.enums;
 public enum ModelType {
 
 	/**
-	 * General model: Has multiple capabilities and can handle various tasks (e.g., text generation, reasoning, code)
+	 * General model: Has multiple capabilities and can handle various tasks (e.g., text
+	 * generation, reasoning, code)
 	 */
 	GENERAL,
 
@@ -37,7 +38,8 @@ public enum ModelType {
 	PLANNER,
 
 	/**
-	 * Vision model: Used for visual tasks such as image recognition, OCR, and object detection
+	 * Vision model: Used for visual tasks such as image recognition, OCR, and object
+	 * detection
 	 */
 	VISION,
 
@@ -47,7 +49,8 @@ public enum ModelType {
 	CODE,
 
 	/**
-	 * Text generation model: Used for natural language text generation (e.g., dialogue, article generation)
+	 * Text generation model: Used for natural language text generation (e.g., dialogue,
+	 * article generation)
 	 */
 	TEXT_GENERATION,
 
