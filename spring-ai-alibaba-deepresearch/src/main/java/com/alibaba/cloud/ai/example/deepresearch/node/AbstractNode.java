@@ -45,6 +45,7 @@ public abstract class AbstractNode {
 			.build();
 	}
 
+	@Deprecated
 	protected NodeDefinition.SelectionNode guide(String input) {
 		return chatClient.prompt().user(input).call().entity(NodeDefinition.SelectionNode.class);
 	}
