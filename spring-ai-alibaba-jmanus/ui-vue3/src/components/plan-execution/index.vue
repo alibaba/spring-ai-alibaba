@@ -96,7 +96,6 @@ onMounted(() => {
     onPlanUpdate: handlePlanManagerUpdate,
     onPlanCompleted: handlePlanManagerCompleted,
     onDialogRoundStart: handlePlanManagerDialogStart,
-    onMessageUpdate: handlePlanManagerMessageUpdate,
     onChatInputUpdateState: handlePlanManagerInputUpdate,
     onChatInputClear: handlePlanManagerInputClear,
   })
@@ -189,18 +188,6 @@ const handlePlanManagerDialogStart = (dialogData: any) => {
 
   // 向父组件发射事件
   emit('dialog-round-start', dialogData.planId, dialogData.query)
-}
-
-/**
- * 处理来自 plan execution manager 的消息更新事件
- */
-const handlePlanManagerMessageUpdate = (messageData: any) => {
-  console.log('[PlanExecutionComponent] Received message update from manager:', messageData)
-
-  // 将消息更新传递给 chat container
-  if (chatRef.value && typeof chatRef.value.handleMessageUpdate === 'function') {
-    chatRef.value.handleMessageUpdate(messageData)
-  }
 }
 
 /**
