@@ -86,7 +86,7 @@
             <artifactId>spring-ai-alibaba-graph-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-graph-observation</artifactId>

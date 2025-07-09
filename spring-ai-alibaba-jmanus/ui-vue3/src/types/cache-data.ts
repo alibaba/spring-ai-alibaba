@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.model;
 
-public class Prompt {
-
+/**
+ * UI state data for managing input component state
+ */
+export interface UIStateData {
+  /** Whether the input component is enabled */
+  enabled: boolean
+  
+  /** Placeholder text for the input component */
+  placeholder?: string
+  
+  /** Additional UI properties */
+  loading?: boolean
+  
+  /** Any additional metadata for UI state */
+  metadata?: Record<string, any>
 }

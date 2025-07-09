@@ -15,16 +15,17 @@
  */
 package com.alibaba.cloud.ai.dbconnector.bo;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class CommentInfoBO extends DdlBaseBO {
+
+	public CommentInfoBO() {
+	}
+
+	public CommentInfoBO(String schema, String table, String column, String description) {
+		this.schema = schema;
+		this.table = table;
+		this.column = column;
+		this.description = description;
+	}
 
 	private String schema;
 
@@ -33,5 +34,43 @@ public class CommentInfoBO extends DdlBaseBO {
 	private String column;
 
 	private String description;
+
+	public String getSchema() {
+		return schema;
+	}
+
+	public void setSchema(String schema) {
+		this.schema = schema;
+	}
+
+	public String getTable() {
+		return table;
+	}
+
+	public void setTable(String table) {
+		this.table = table;
+	}
+
+	public String getColumn() {
+		return column;
+	}
+
+	public void setColumn(String column) {
+		this.column = column;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	@Override
+	public String toString() {
+		return "CommentInfoBO{" + "schema='" + schema + '\'' + ", table='" + table + '\'' + ", column='" + column + '\''
+				+ ", description='" + description + '\'' + '}';
+	}
 
 }
