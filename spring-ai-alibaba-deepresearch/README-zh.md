@@ -135,7 +135,25 @@ curl --location 'http://localhost:8080/chat/stream' \
 }'
 ```
 
+**调试与观测**
 
+Langfuse 配置
+
+#### 使用 Langfuse 云端服务
+1. 在 [https://cloud.langfuse.com](https://cloud.langfuse.com) 注册账户
+2. 创建新项目
+3. 导航到 **Settings** → **API Keys**
+4. 生成新的 API 密钥对（公钥和私钥）
+5. 将凭据编码为 Base64：
+   ```bash
+   echo -n "public_key:secret_key" | base64
+   ``` 
+   ```Windows PowerShell
+   [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("public_key:secret_key"))
+   ```
+6. yml文件中选择对应的endpoint，将编码后的字符串作为环境变量 `YOUR_BASE64_ENCODED_CREDENTIALS`
+
+参考： https://langfuse.com/docs/opentelemetry/get-started
 
 ## Contributors
 
