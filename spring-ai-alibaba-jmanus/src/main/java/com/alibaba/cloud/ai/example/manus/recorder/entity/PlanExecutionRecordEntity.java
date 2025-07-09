@@ -21,7 +21,8 @@ import jakarta.persistence.*;
 import java.util.Date;
 
 /**
- * Plan execution record class for tracking and recording detailed information about agent execution process.
+ * Plan execution record class for tracking and recording detailed information about agent
+ * execution process.
  */
 @Entity
 @Table(name = "plan_execution_record")

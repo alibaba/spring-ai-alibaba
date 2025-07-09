@@ -36,6 +36,6 @@ public class StringAttributeConverter implements AttributeConverter<PlanExecutio
 			return null;
 		}
 		return JsonParser.fromJson(json, PlanExecutionRecord.class);
-    }
+	}
 
 }

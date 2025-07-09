@@ -32,7 +32,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * The in-memory PlanExecutionRecorder cannot be used in a distributed environment, so it is necessary to use DB persistence for PlanExecutionRecord.
+ * The in-memory PlanExecutionRecorder cannot be used in a distributed environment, so it
+ * is necessary to use DB persistence for PlanExecutionRecord.
  *
  * fix feature: https://github.com/alibaba/spring-ai-alibaba/issues/1391
  */

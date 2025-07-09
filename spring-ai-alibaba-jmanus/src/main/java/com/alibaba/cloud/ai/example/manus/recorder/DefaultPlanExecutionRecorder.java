@@ -129,10 +129,9 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Record plan execution with PlanExecutionRecord parameter
-	 *
-     * @param stepRecord Plan execution record
-     * @return Plan ID
-     */
+	 * @param stepRecord Plan execution record
+	 * @return Plan ID
+	 */
 	@Override
 	public String recordPlanExecution(PlanExecutionRecord stepRecord) {
 		String planId = stepRecord.getCurrentPlanId();
@@ -204,7 +203,6 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Get execution record of the specified plan ID
-	 *
 	 * @param planId Plan ID
 	 * @param rootPlanId
 	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for
