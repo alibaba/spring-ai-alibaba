@@ -312,7 +312,6 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 			agentRecord.addThinkActStep(thinkActRecord);
 			return;
 		}
-		// 会多次调用，因此需要根据id修改
 		ThinkActRecord exist = agentRecord.getThinkActSteps()
 			.stream()
 			.filter(r -> r.getId().equals(thinkActRecord.getId()))
