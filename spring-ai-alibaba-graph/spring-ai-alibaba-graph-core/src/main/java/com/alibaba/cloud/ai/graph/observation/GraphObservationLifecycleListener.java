@@ -85,7 +85,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	}
 
 	/**
-	 * Handles the before execution phase of a graph node. Creates node observation and records input state.
+	 * Handles the before execution phase of a graph node. Creates node observation and
+	 * records input state.
 	 * @param nodeId the identifier of the node
 	 * @param state the current state of the graph execution
 	 * @param config the runnable configuration for the node
@@ -97,7 +98,7 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 
 		// Create minimal context for the observation
 		GraphNodeObservationContext context = new GraphNodeObservationContext(nodeId, "execution");
-		
+
 		Observation nodeObservation = Observation.createNotStarted(DEFAULT_GRAPH_NODE_OBSERVATION_CONVENTION,
 				() -> context, observationRegistry);
 
@@ -118,7 +119,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	}
 
 	/**
-	 * Handles the after execution phase of a graph node. Adds output state and stops observation.
+	 * Handles the after execution phase of a graph node. Adds output state and stops
+	 * observation.
 	 * @param nodeId the identifier of the node
 	 * @param state the current state of the graph execution
 	 * @param config the runnable configuration for the node
@@ -134,13 +136,13 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 		}
 
 		Observation nodeObservation = nodeObservations.remove(nodeId);
-		
+
 		if (nodeObservation != null) {
 			// Add output state using Documentation constant
 			nodeObservation.highCardinalityKeyValue(
 					GraphNodeObservationDocumentation.HighCardinalityKeyNames.GEN_AI_COMPLETION.asString(),
 					state != null ? state.toString() : "");
-			
+
 			nodeObservation.stop();
 		}
 		else {
@@ -149,7 +151,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	}
 
 	/**
-	 * Handles errors during graph node execution. Records the error and stops observation.
+	 * Handles errors during graph node execution. Records the error and stops
+	 * observation.
 	 * @param nodeId the identifier of the node that encountered an error
 	 * @param state the current state of the graph execution
 	 * @param ex the exception that occurred
@@ -165,13 +168,13 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 		}
 
 		Observation nodeObservation = nodeObservations.remove(nodeId);
-		
+
 		if (nodeObservation != null) {
 			// Add error state using Documentation constant
 			nodeObservation.highCardinalityKeyValue(
 					GraphNodeObservationDocumentation.HighCardinalityKeyNames.GEN_AI_COMPLETION.asString(),
 					state != null ? state.toString() : "");
-			
+
 			nodeObservation.error(ex).stop();
 		}
 

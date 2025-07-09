@@ -102,8 +102,9 @@ public enum GraphNodeObservationDocumentation implements ObservationDocumentatio
 	public enum HighCardinalityKeyNames implements KeyName {
 
 		/**
-		 * Represents the input state when entering the graph node (OpenTelemetry semantic convention).
-		 * Note: This key is dynamically added by GraphObservationLifecycleListener, not by Convention.
+		 * Represents the input state when entering the graph node (OpenTelemetry semantic
+		 * convention). Note: This key is dynamically added by
+		 * GraphObservationLifecycleListener, not by Convention.
 		 */
 		GEN_AI_PROMPT {
 			@Override
@@ -113,8 +114,9 @@ public enum GraphNodeObservationDocumentation implements ObservationDocumentatio
 		},
 
 		/**
-		 * Represents the output state after executing the graph node (OpenTelemetry semantic convention).
-		 * Note: This key is dynamically added by GraphObservationLifecycleListener, not by Convention.
+		 * Represents the output state after executing the graph node (OpenTelemetry
+		 * semantic convention). Note: This key is dynamically added by
+		 * GraphObservationLifecycleListener, not by Convention.
 		 */
 		GEN_AI_COMPLETION {
 			@Override
