@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.vo;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptType;
+import org.springframework.ai.chat.messages.MessageType;
+
 public class PromptVO {
 
 	private Long id;
@@ -34,7 +37,22 @@ public class PromptVO {
 	private String promptDescription;
 
 	public Boolean invalid() {
-		return promptName == null || messageType == null || type == null || promptContent == null;
+		return promptName == null || messageType == null || type == null || promptContent == null
+				|| promptDescription == null || builtIn == null || !isValidEnumValue(type, PromptType.class)
+				|| !isValidEnumValue(messageType, MessageType.class);
+	}
+
+	private static <E extends Enum<E>> boolean isValidEnumValue(String value, Class<E> enumClass) {
+		if (value == null) {
+			return false;
+		}
+		try {
+			Enum.valueOf(enumClass, value);
+			return true;
+		}
+		catch (IllegalArgumentException e) {
+			return false;
+		}
 	}
 
 	public PromptVO() {
