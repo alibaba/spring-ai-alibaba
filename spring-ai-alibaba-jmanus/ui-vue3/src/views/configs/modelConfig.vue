@@ -50,6 +50,11 @@
               <Icon icon="carbon:chevron-right" />
             </div>
             <p class="model-desc">{{ model.modelDescription }}</p>
+            <div class="model-type" v-if="model.type">
+              <span class="model-tag">
+                {{ model.type }}
+              </span>
+          </div>
           </div>
         </div>
 
@@ -87,11 +92,12 @@
 
         <div class="form-item">
           <label>{{ t('config.modelConfig.type') }} <span class="required">*</span></label>
-          <input
-              type="text"
+          <CustomSelect
               v-model="selectedModel.type"
+              :options="modelTypes.map(type => ({ id: type, name: type }))"
               :placeholder="t('config.modelConfig.typePlaceholder')"
-              required
+              :dropdown-title="t('config.modelConfig.typePlaceholder')"
+              icon="carbon:types"
           />
         </div>
 
@@ -149,11 +155,12 @@
       <div class="modal-form">
         <div class="form-item">
           <label>{{ t('config.modelConfig.type') }} <span class="required">*</span></label>
-          <input
-              type="text"
+          <CustomSelect
               v-model="newModel.type"
+              :options="modelTypes.map(type => ({ id: type, name: type }))"
               :placeholder="t('config.modelConfig.typePlaceholder')"
-              required
+              :dropdown-title="t('config.modelConfig.typePlaceholder')"
+              icon="carbon:types"
           />
         </div>
         <div class="form-item">
@@ -227,6 +234,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal/index.vue'
+import CustomSelect from '@/components/select/index.vue'
 import { ModelApiService, type Model } from '@/api/model-api-service'
 
 // 国际化
@@ -237,6 +245,7 @@ const loading = ref(false)
 const error = ref('')
 const success = ref('')
 const models = reactive<Model[]>([])
+const modelTypes = reactive<string[]>([])
 const selectedModel = ref<Model | null>(null)
 const showModal = ref(false)
 const showDeleteModal = ref(false)
@@ -266,15 +275,16 @@ const loadData = async () => {
   loading.value = true
   try {
     // 并行加载Model列表和可用工具
-    const [loadedModels] = await Promise.all([
-      ModelApiService.getAllModels()
+    const [loadedModels, loadedTypes] = await Promise.all([
+      ModelApiService.getAllModels(),
+      ModelApiService.getAllTypes()
     ])
-
     const normalizedModels = loadedModels.map(model => ({
       ...model
     }))
 
     models.splice(0, models.length, ...normalizedModels)
+    modelTypes.splice(0, models.length, ...loadedTypes)
 
     // 选中第一个Model
     if (normalizedModels.length > 0) {
@@ -318,7 +328,7 @@ const showAddModelModal = () => {
 
 // 创建新Model
 const handleAddModel = async () => {
-  if (!newModel.modelName.trim() || !newModel.modelDescription.trim()) {
+  if (!newModel.modelName?.trim() || !newModel.modelDescription?.trim()) {
     showMessage(t('config.modelConfig.requiredFields'), 'error')
     return
   }
@@ -792,6 +802,21 @@ onMounted(() => {
   }
 }
 
+.model-type {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.model-tag {
+  display: inline-block;
+  padding: 4px 8px;
+  background: rgba(181, 102, 234, 0.2);
+  border-radius: 4px;
+  font-size: 12px;
+  color: #a8b3ff;
+}
+
 /* 提示消息 */
 .error-toast, .success-toast {
   position: fixed;
@@ -828,4 +853,5 @@ onMounted(() => {
     opacity: 1;
   }
 }
+
 </style>

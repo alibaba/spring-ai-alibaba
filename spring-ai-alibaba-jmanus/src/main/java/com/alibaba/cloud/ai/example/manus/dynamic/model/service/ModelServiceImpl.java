@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
@@ -99,7 +100,8 @@ public class ModelServiceImpl implements ModelService {
 
 	@Override
 	public void deleteModel(String id) {
-		List<DynamicAgentEntity> allByModel = agentRepository.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
+		List<DynamicAgentEntity> allByModel = agentRepository
+			.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
 		if (allByModel != null && !allByModel.isEmpty()) {
 			allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
 			agentRepository.saveAll(allByModel);
@@ -108,8 +110,10 @@ public class ModelServiceImpl implements ModelService {
 	}
 
 	private void updateEntityFromConfig(DynamicModelEntity entity, ModelConfig config) {
+		if (StrUtil.isNotBlank(config.getApiKey()) && !config.getApiKey().contains("*")) {
+			entity.setApiKey(config.getApiKey());
+		}
 		entity.setBaseUrl(config.getBaseUrl());
-		entity.setApiKey(config.getApiKey());
 		entity.setModelName(config.getModelName());
 		entity.setModelDescription(config.getModelDescription());
 		entity.setType(config.getType());

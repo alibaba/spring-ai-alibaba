@@ -159,7 +159,7 @@ const words: I18nType = {
       selectModelHint: '请选择一个Model进行配置',
       newModel: '新建Model',
       type: '模型类型',
-      typePlaceholder: '输入模型类型 ( REASONING, VISION, CODE, EMBEDDING... )',
+      typePlaceholder: '选择模型类型',
       baseUrl: 'Base Url',
       baseUrlPlaceholder: '输入 Base Url',
       apiKey: 'API密钥',

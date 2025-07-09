@@ -159,7 +159,7 @@ const words: I18nType = {
       selectModelHint: 'Please select a model to configure',
       newModel: 'New Model',
       type: 'Model Type',
-      typePlaceholder: 'Enter model type ( REASONING, VISION, CODE, EMBEDDING... )',
+      typePlaceholder: 'Select model type',
       baseUrl: 'Base Url',
       baseUrlPlaceholder: 'Enter base url',
       apiKey: 'API Key',

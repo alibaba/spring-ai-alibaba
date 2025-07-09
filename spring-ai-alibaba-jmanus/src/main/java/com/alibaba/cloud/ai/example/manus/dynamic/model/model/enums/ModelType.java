@@ -20,62 +20,65 @@ package com.alibaba.cloud.ai.example.manus.dynamic.model.model.enums;
  * @date 2025/7/8
  */
 public enum ModelType {
-    /**
-     * 通用模型：具备多种能力，可处理多种任务（如文本生成、推理、代码等）
-     */
-    GENERAL,
-    /**
-     * 推理模型：用于逻辑推理、决策等场景
-     */
-    REASONING,
 
-    /**
-     * 规划模型：用于任务分解、计划制定等场景
-     */
-    PLANNER,
+	/**
+	 * General model: Has multiple capabilities and can handle various tasks (e.g., text generation, reasoning, code)
+	 */
+	GENERAL,
 
-    /**
-     * 视觉模型：用于图像识别、OCR、目标检测等视觉相关任务
-     */
-    VISION,
+	/**
+	 * Reasoning model: Used for logical reasoning and decision-making scenarios
+	 */
+	REASONING,
 
-    /**
-     * 代码模型：用于代码生成、理解、修复等编程任务
-     */
-    CODE,
+	/**
+	 * Planner model: Used for task decomposition and plan formulation
+	 */
+	PLANNER,
 
-    /**
-     * 文本生成模型：用于自然语言文本生成（如对话、文章生成）
-     */
-    TEXT_GENERATION,
+	/**
+	 * Vision model: Used for visual tasks such as image recognition, OCR, and object detection
+	 */
+	VISION,
 
-    /**
-     * 嵌入模型：用于文本向量化、语义编码等
-     */
-    EMBEDDING,
+	/**
+	 * Code model: Used for code generation, understanding, and repair
+	 */
+	CODE,
 
-    /**
-     * 分类模型：用于文本分类、情感分析等
-     */
-    CLASSIFICATION,
+	/**
+	 * Text generation model: Used for natural language text generation (e.g., dialogue, article generation)
+	 */
+	TEXT_GENERATION,
 
-    /**
-     * 摘要模型：用于长文本摘要生成
-     */
-    SUMMARIZATION,
+	/**
+	 * Embedding model: Used for text vectorization and semantic encoding
+	 */
+	EMBEDDING,
 
-    /**
-     * 多模态模型：结合文本、图像等多种模态进行处理
-     */
-    MULTIMODAL,
+	/**
+	 * Classification model: Used for text classification and sentiment analysis
+	 */
+	CLASSIFICATION,
 
-    /**
-     * 语音模型：用于语音识别、合成等任务
-     */
-    SPEECH,
+	/**
+	 * Summarization model: Used for generating summaries of long texts
+	 */
+	SUMMARIZATION,
 
-    /**
-     * 翻译模型：用于跨语言翻译
-     */
-    TRANSLATION;
+	/**
+	 * Multimodal model: Processes multiple modalities such as text and images together
+	 */
+	MULTIMODAL,
+
+	/**
+	 * Speech model: Used for speech recognition and synthesis
+	 */
+	SPEECH,
+
+	/**
+	 * Translation model: Used for cross-language translation
+	 */
+	TRANSLATION;
+
 }

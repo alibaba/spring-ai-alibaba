@@ -75,16 +75,17 @@ public class LlmService {
 	public ChatClient getDynamicChatClient(String host, String apiKey, String modelName) {
 		OpenAiApi openAiApi = OpenAiApi.builder().baseUrl(host).apiKey(apiKey).build();
 
-		OpenAiChatOptions chatOptions = OpenAiChatOptions.builder()
-				.model(modelName)
-				.build();
+		OpenAiChatOptions chatOptions = OpenAiChatOptions.builder().model(modelName).build();
 
-		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder().openAiApi(openAiApi).defaultOptions(chatOptions).build();
+		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
+			.openAiApi(openAiApi)
+			.defaultOptions(chatOptions)
+			.build();
 		return ChatClient.builder(openAiChatModel)
-				// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
-				.defaultAdvisors(new SimpleLoggerAdvisor())
-				.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-				.build();
+			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.build();
 	}
 
 	public ChatMemory getAgentMemory(Integer maxMessages) {

@@ -110,7 +110,8 @@ public class DynamicAgent extends ReActAgent {
 	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
 			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
-			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptService promptService, DynamicModelEntity model) {
+			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptService promptService,
+			DynamicModelEntity model) {
 		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptService);
 		this.agentName = name;
 		this.agentDescription = description;
@@ -172,15 +173,17 @@ public class DynamicAgent extends ReActAgent {
 			ChatClient chatClient;
 			if (model == null) {
 				chatClient = llmService.getAgentChatClient();
-			} else {
-				chatClient = llmService.getDynamicChatClient(model.getBaseUrl(), model.getApiKey(), model.getModelName());
+			}
+			else {
+				chatClient = llmService.getDynamicChatClient(model.getBaseUrl(), model.getApiKey(),
+						model.getModelName());
 			}
 			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
 			String model = response.getMetadata().getModel();
 			PlanExecutionRecord planExecutionRecord = planExecutionRecorder.getExecutionRecord(getCurrentPlanId(),
 					getRootPlanId(), getThinkActRecordId());
 			AgentExecutionRecord agentExecutionRecord = planExecutionRecorder
-					.getCurrentAgentExecutionRecord(planExecutionRecord);
+				.getCurrentAgentExecutionRecord(planExecutionRecord);
 			planExecutionRecord.setModelName(model);
 			agentExecutionRecord.setModelName(model);
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();

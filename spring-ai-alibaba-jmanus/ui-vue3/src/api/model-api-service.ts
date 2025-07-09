@@ -67,6 +67,20 @@ export class ModelApiService {
     }
 
     /**
+     * Get all Types list
+     */
+    static async getAllTypes(): Promise<string[]> {
+        try {
+            const response = await fetch(`${this.BASE_URL}/types`)
+            const result = await this.handleResponse(response)
+            return await result.json()
+        } catch (error) {
+            console.error('Failed to get Model list:', error)
+            throw error
+        }
+    }
+
+    /**
      * Get Model details by ID
      */
     static async getModelById(id: string): Promise<Model> {

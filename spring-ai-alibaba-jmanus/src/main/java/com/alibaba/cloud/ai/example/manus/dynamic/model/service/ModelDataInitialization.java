@@ -29,31 +29,32 @@ import org.springframework.stereotype.Service;
 @Service
 public class ModelDataInitialization {
 
-    @Value("${spring.ai.openai.base-url}")
-    private String baseUrl;
-    @Value("${spring.ai.openai.api-key}")
-    private String apiKey;
-    @Value("${spring.ai.openai.chat.options.model}")
-    private String model;
+	@Value("${spring.ai.openai.base-url}")
+	private String baseUrl;
 
+	@Value("${spring.ai.openai.api-key}")
+	private String apiKey;
 
-    private final DynamicModelRepository repository;
+	@Value("${spring.ai.openai.chat.options.model}")
+	private String model;
 
-    public ModelDataInitialization(DynamicModelRepository repository) {
-        this.repository = repository;
-    }
+	private final DynamicModelRepository repository;
 
-    @PostConstruct
-    public void init() {
-        if (repository.count() == 0) {
-            DynamicModelEntity dynamicModelEntity = new DynamicModelEntity();
-            dynamicModelEntity.setBaseUrl(baseUrl);
-            dynamicModelEntity.setApiKey(apiKey);
-            dynamicModelEntity.setModelName(model);
-            dynamicModelEntity.setModelDescription("base model");
-            dynamicModelEntity.setType(ModelType.GENERAL.name());
-            repository.save(dynamicModelEntity);
-        }
-    }
+	public ModelDataInitialization(DynamicModelRepository repository) {
+		this.repository = repository;
+	}
+
+	@PostConstruct
+	public void init() {
+		if (repository.count() == 0) {
+			DynamicModelEntity dynamicModelEntity = new DynamicModelEntity();
+			dynamicModelEntity.setBaseUrl(baseUrl);
+			dynamicModelEntity.setApiKey(apiKey);
+			dynamicModelEntity.setModelName(model);
+			dynamicModelEntity.setModelDescription("base model");
+			dynamicModelEntity.setType(ModelType.GENERAL.name());
+			repository.save(dynamicModelEntity);
+		}
+	}
 
 }

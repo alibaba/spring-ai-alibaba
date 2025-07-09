@@ -101,4 +101,5 @@ public class AgentConfig {
 	public void setModel(ModelConfig model) {
 		this.model = model;
 	}
+
 }

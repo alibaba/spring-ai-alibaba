@@ -129,4 +129,5 @@ public class DynamicAgentEntity {
 	public void setModel(DynamicModelEntity model) {
 		this.model = model;
 	}
+
 }

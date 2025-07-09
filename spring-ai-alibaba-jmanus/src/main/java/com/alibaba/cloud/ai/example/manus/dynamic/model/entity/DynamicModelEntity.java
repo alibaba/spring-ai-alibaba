@@ -41,7 +41,7 @@ public class DynamicModelEntity {
 	@Column(nullable = false, length = 1000)
 	private String modelDescription;
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = false)
 	private String type;
 
 	@OneToMany(mappedBy = "model")
@@ -123,16 +123,17 @@ public class DynamicModelEntity {
 	}
 
 	/**
-	 * 混淆字符串，保留前 4 位和后 4 位，其余用 * 替换
+	 * Obscures the string, keeping the first 4 and last 4 characters visible,
+	 * replacing the rest with asterisks (*)
 	 */
 	private String maskValue(String value) {
 		if (value == null || value.length() <= 8) {
-			return "*"; // 如果长度不足，直接返回 *
+			return "*";
 		}
 		int length = value.length();
 		String front = value.substring(0, 4);
 		String end = value.substring(length - 4);
-		return front + "*".repeat(length - 8) +
-				end;
+		return front + "*".repeat(length - 8) + end;
 	}
+
 }
