@@ -25,98 +25,106 @@ import java.util.Map;
  */
 public class RoutingNodeAdvisor implements BaseAdvisor {
 
-    private final PromptTemplate promptTemplate;
+	private final PromptTemplate promptTemplate;
 
-    private final Iterable<String> selections;
+	private final Iterable<String> selections;
 
-    private final ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper;
 
-    private static final String SELECTION = "selection";
+	private static final String SELECTION = "selection";
 
-    private RoutingNodeAdvisor(Iterable<String> selections, ObjectMapper objectMapper) {
-        this.promptTemplate = new PromptTemplate(
-                """
-                    Parse the input and select the most appropriate support node from the following options: {selection} First explain your rationale,
-                    then provide your selection in JSON format:
-                    \\{
-                     "reasoning": "Briefly explain why this ticket should be routed to a specific node. Consider key terms, user intent, and urgency level. ",
-                     "selection": "Selected node name"
-                    \\}
-                    .input: {input}
-                """
-        );
-        Assert.notNull(selections, "Selections must not be null");
-        this.selections = selections;
-        this.objectMapper = objectMapper;
-    }
+	private RoutingNodeAdvisor(Iterable<String> selections, ObjectMapper objectMapper) {
+		this.promptTemplate = new PromptTemplate(
+				"""
+						    Parse the input and select the most appropriate support node from the following options: {selection} First explain your rationale,
+						    then provide your selection in JSON format:
+						    \\{
+						     "reasoning": "Briefly explain why this ticket should be routed to a specific node. Consider key terms, user intent, and urgency level. ",
+						     "selection": "Selected node name"
+						    \\}
+						    .input: {input}
+						""");
+		Assert.notNull(selections, "Selections must not be null");
+		this.selections = selections;
+		this.objectMapper = objectMapper;
+	}
 
-    @Override
-    public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-        var userMessage = chatClientRequest.prompt().getUserMessage();
+	@Override
+	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+		var userMessage = chatClientRequest.prompt().getUserMessage();
 
-        String input = promptTemplate.render(Map.of(SELECTION, selections,"input", userMessage.getText()));
+		String input = promptTemplate.render(Map.of(SELECTION, selections, "input", userMessage.getText()));
 
-        return chatClientRequest.mutate()
-                .prompt(chatClientRequest.prompt().augmentUserMessage(input))
-                .context(chatClientRequest.context())
-                .build();
-    }
+		return chatClientRequest.mutate()
+			.prompt(chatClientRequest.prompt().augmentUserMessage(input))
+			.context(chatClientRequest.context())
+			.build();
+	}
 
-    @Override
-    public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
-        ChatResponse.Builder chatResponseBuilder;
-        if (chatClientResponse.chatResponse() == null) {
-            chatResponseBuilder = ChatResponse.builder();
-        } else {
-            String chatResponse = StringUtils.EMPTY;
-            Generation result = chatClientResponse.chatResponse().getResult();
-            if (result != null) {
-                chatResponse = result.getOutput().getText();
-            }
-            //Parse response results
-            try{
-                var selectionNode = objectMapper.readValue(chatResponse, new TypeReference<NodeDefinition.SelectionNode>() {
-                });
-                chatResponseBuilder = ChatResponse.builder().from(chatClientResponse.chatResponse()).metadata(
-                        ChatResponseMetadata.builder().metadata(Map.of("routeredNode", selectionNode)).build()
-                );
-            } catch (JsonProcessingException e) {
-                throw new IllegalStateException("Failed to parse selection node from chat response: " + chatResponse, e);
-            }
-        }
+	@Override
+	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+		ChatResponse.Builder chatResponseBuilder;
+		if (chatClientResponse.chatResponse() == null) {
+			chatResponseBuilder = ChatResponse.builder();
+		}
+		else {
+			String chatResponse = StringUtils.EMPTY;
+			Generation result = chatClientResponse.chatResponse().getResult();
+			if (result != null) {
+				chatResponse = result.getOutput().getText();
+			}
+			// Parse response results
+			try {
+				var selectionNode = objectMapper.readValue(chatResponse,
+						new TypeReference<NodeDefinition.SelectionNode>() {
+						});
+				chatResponseBuilder = ChatResponse.builder()
+					.from(chatClientResponse.chatResponse())
+					.metadata(ChatResponseMetadata.builder().metadata(Map.of("routeredNode", selectionNode)).build());
+			}
+			catch (JsonProcessingException e) {
+				throw new IllegalStateException("Failed to parse selection node from chat response: " + chatResponse,
+						e);
+			}
+		}
 
-        return ChatClientResponse.builder()
-                .chatResponse(chatResponseBuilder.build())
-                .context(chatClientResponse.context())
-                .build();
-    }
+		return ChatClientResponse.builder()
+			.chatResponse(chatResponseBuilder.build())
+			.context(chatClientResponse.context())
+			.build();
+	}
 
-    @Override
-    public int getOrder() {
-        return 0;
-    }
+	@Override
+	public int getOrder() {
+		return 0;
+	}
 
-    public static Builder Builder() {
-        return new Builder();
-    }
+	public static Builder Builder() {
+		return new Builder();
+	}
 
-    public static class Builder {
-        private Iterable<String> selections;;
+	public static class Builder {
 
-        private ObjectMapper objectMapper;
+		private Iterable<String> selections;
 
-        public Builder selections(Iterable<String> selections) {
-            this.selections = selections;
-            return this;
-        }
+		;
 
-        public Builder JSONParser(ObjectMapper objectMapper) {
-            this.objectMapper = objectMapper;
-            return this;
-        }
+		private ObjectMapper objectMapper;
 
-        public RoutingNodeAdvisor build() {
-            return new RoutingNodeAdvisor(selections, objectMapper);
-        }
-    }
+		public Builder selections(Iterable<String> selections) {
+			this.selections = selections;
+			return this;
+		}
+
+		public Builder JSONParser(ObjectMapper objectMapper) {
+			this.objectMapper = objectMapper;
+			return this;
+		}
+
+		public RoutingNodeAdvisor build() {
+			return new RoutingNodeAdvisor(selections, objectMapper);
+		}
+
+	}
+
 }
