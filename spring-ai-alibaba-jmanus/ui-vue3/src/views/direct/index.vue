@@ -40,10 +40,6 @@
           <ChatContainer
             ref="chatRef"
             :initial-prompt="prompt || ''"
-            @user-message-send-requested="handleMessageSent"
-            @input-clear="handleInputClear"
-            @input-update-state="handleInputUpdateState"
-            @input-focus="handleInputFocus"
             @step-selected="handleStepSelected"
             @sub-plan-step-selected="handleSubPlanStepSelected"
           />
@@ -176,12 +172,10 @@ onMounted(() => {
       currentRootPlanId.value = rootPlanId
       console.log('[Direct] Set currentRootPlanId to:', rootPlanId)
       
-      // Call chat component's handleDialogRoundStart method
+      // Call chat component's handleDialogRoundStart method (without query parameter)
       if (chatRef.value && typeof chatRef.value.handleDialogRoundStart === 'function') {
-        const planData = planExecutionManager.getCachedPlanRecord(rootPlanId)
-        const query = planData?.title ?? '执行计划'
-        console.log('[Direct] Calling chatRef.handleDialogRoundStart with planId and query:', rootPlanId, query)
-        chatRef.value.handleDialogRoundStart(rootPlanId, query)
+        console.log('[Direct] Calling chatRef.handleDialogRoundStart with planId:', rootPlanId)
+        chatRef.value.handleDialogRoundStart(rootPlanId)
       } else {
         console.warn('[Direct] chatRef.handleDialogRoundStart method not available')
       }
@@ -341,19 +335,19 @@ const shouldProcessEventForCurrentPlan = (rootPlanId: string, allowSpecialIds: b
   return false
 }
 
-const handleMessageSent = (message: string) => {
-  console.log('[DirectView] Message sent from chat:', message)
-  
-  // Use planExecutionManager to handle user message send request
-  console.log('[DirectView] Delegating chat message to planExecutionManager:', message)
-  planExecutionManager.handleUserMessageSendRequested(message)
-}
-
 // New event handler function
 const handleSendMessage = (message: string) => {
   console.log('[DirectView] Send message from input:', message)
   
-  // Use planExecutionManager to handle user message send request
+  // First call chat component's handleSendMessage to update UI
+  if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
+    console.log('[DirectView] Calling chatRef.handleSendMessage:', message)
+    chatRef.value.handleSendMessage(message)
+  } else {
+    console.warn('[DirectView] chatRef.handleSendMessage method not available')
+  }
+  
+  // Then use planExecutionManager to handle user message send request
   console.log('[DirectView] Delegating message to planExecutionManager:', message)
   planExecutionManager.handleUserMessageSendRequested(message)
 }
@@ -438,6 +432,13 @@ const handlePlanExecutionRequested = async (payload: {
 
   isExecutingPlan.value = true
 
+  // First call chat component's addMessage to update UI (avoid triggering user-message-send-requested event)
+  if (chatRef.value && typeof chatRef.value.addMessage === 'function') {
+    console.log('[DirectView] Calling chatRef.addMessage for plan execution:', payload.title)
+    chatRef.value.addMessage('user', payload.title)
+  } else {
+    console.warn('[DirectView] chatRef.addMessage method not available')
+  }
   try {
     // 获取计划模板ID
     const planTemplateId = payload.planData.planTemplateId || payload.planData.planId
