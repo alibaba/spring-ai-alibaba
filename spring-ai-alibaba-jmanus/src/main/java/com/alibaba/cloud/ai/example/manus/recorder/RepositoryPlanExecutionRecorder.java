@@ -139,18 +139,14 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 				thinkActRecord.recordSubPlanExecution(stepRecord);
 
 				// update sub plan
-				PlanExecutionRecordEntity entity = planExecutionRecordRepository.findByPlanId(parentPlanId);
-				assert entity != null && entity.getPlanExecutionRecord() != null;
-				PlanExecutionRecord rootRecord = entity.getPlanExecutionRecord();
+				PlanExecutionRecord rootRecord = getExecutionRecord(parentPlanId);
 				updateThinkActRecord(rootRecord, thinkActRecord);
-				entity.setGmtModified(new Date());
-				planExecutionRecordRepository.save(entity);
+				saveExecutionRecord(rootRecord);
+				return planId;
 			}
 		}
-		else {
-			// This is a main plan
-			saveExecutionRecord(stepRecord);
-		}
+		// This is a main plan
+		saveExecutionRecord(stepRecord);
 
 		return planId;
 	}
@@ -163,12 +159,15 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	 */
 	@Override
 	public Long recordAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord) {
-		Long agentExecutionId = agentExecutionIdGenerator.incrementAndGet();
-		agentRecord.setId(agentExecutionId);
-		if (planExecutionRecord != null) {
-			planExecutionRecord.addAgentExecutionRecord(agentRecord);
+		Long agentExecutionId = agentRecord.getId();
+		if(agentRecord.getId() == null){
+			agentExecutionId = agentExecutionIdGenerator.incrementAndGet();
+			agentRecord.setId(agentExecutionId);
+			if (planExecutionRecord != null) {
+				planExecutionRecord.addAgentExecutionRecord(agentRecord);
 
-			saveExecutionRecord(planExecutionRecord);
+				saveExecutionRecord(planExecutionRecord);
+			}
 		}
 		return agentExecutionId;
 	}
@@ -185,7 +184,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		if (planExecutionRecord != null) {
 			for (AgentExecutionRecord agentRecord : planExecutionRecord.getAgentExecutionSequence()) {
 				if (agentExecutionId.equals(agentRecord.getId())) {
-					agentRecord.addThinkActStep(thinkActRecord);
+					addThinkActStep(agentRecord, thinkActRecord);
 
 					updateThinkActRecord(planExecutionRecord, thinkActRecord);
 					saveExecutionRecord(planExecutionRecord);
@@ -310,5 +309,20 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			}
 		}
 	}
+
+	private void addThinkActStep(AgentExecutionRecord agentRecord, ThinkActRecord thinkActRecord) {
+		if (agentRecord.getThinkActSteps() == null) {
+			agentRecord.addThinkActStep(thinkActRecord);
+			return;
+		}
+		//会多次调用，因此需要根据id修改
+		ThinkActRecord exist = agentRecord.getThinkActSteps().stream().filter(r -> r.getId().equals(thinkActRecord.getId())).findFirst().orElse(null);
+		if(exist == null){
+			agentRecord.getThinkActSteps().add(thinkActRecord);
+		}else {
+			BeanUtils.copyProperties(thinkActRecord, exist);
+		}
+	}
+
 
 }

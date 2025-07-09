@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.recorder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -127,6 +128,16 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 		return getOrCreatePlanExecutionRecord(planId, rootPlanId, thinkActRecordId, true);
 	}
 
+	/**
+	 * 记录计划执行情况的方法。
+	 *
+	 * <p>该方法用于记录执行的计划。如果当前记录是一个子计划，则将其附加到相应的思维—行动记录上。
+	 * 通过获取计划ID、根计划ID和思维—行动记录ID，判断当前记录是否为子计划。
+	 * 如果是子计划，则查找相应的思维—行动记录，并将子计划的执行情况记录到该思维—行动记录中。
+	 *
+	 * @param stepRecord 执行的计划记录对象，包含当前计划ID、根计划ID和思维—行动记录ID。
+	 * @return 当前计划的ID，如果没有找到相应的思维—行动记录，则返回的ID可能仍然有效。
+	 */
 	@Override
 	public String recordPlanExecution(PlanExecutionRecord stepRecord) {
 		String planId = stepRecord.getCurrentPlanId();
@@ -153,10 +164,13 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	 */
 	@Override
 	public Long recordAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord) {
-		Long agentExecutionId = agentExecutionIdGenerator.incrementAndGet();
-		agentRecord.setId(agentExecutionId);
-		if (planExecutionRecord != null) {
-			planExecutionRecord.addAgentExecutionRecord(agentRecord);
+		Long agentExecutionId = agentRecord.getId();
+		if(agentRecord.getId() == null){
+			agentExecutionId = agentExecutionIdGenerator.incrementAndGet();
+			agentRecord.setId(agentExecutionId);
+			if (planExecutionRecord != null) {
+				planExecutionRecord.addAgentExecutionRecord(agentRecord);
+			}
 		}
 		return agentExecutionId;
 	}
@@ -173,7 +187,8 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 		if (planExecutionRecord != null) {
 			for (AgentExecutionRecord agentRecord : planExecutionRecord.getAgentExecutionSequence()) {
 				if (agentExecutionId.equals(agentRecord.getId())) {
-					agentRecord.addThinkActStep(thinkActRecord);
+//					agentRecord.addThinkActStep(thinkActRecord);
+					addThinkActStep(agentRecord, thinkActRecord);
 					break;
 				}
 			}
@@ -192,6 +207,16 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 	}
 
+	/**
+	 * 获取计划执行记录
+	 *
+	 * <p>根据给定的计划ID、根计划ID和思维行为记录ID，获取或创建对应的计划执行记录。
+	 *
+	 * @param planId 计划的唯一标识符
+	 * @param rootPlanId 根计划的唯一标识符
+	 * @param thinkActRecordId 思维行为记录的唯一标识符
+	 * @return 返回对应的计划执行记录，如果无法创建记录则返回null
+	 */
 	@Override
 	public PlanExecutionRecord getExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId) {
 		return getOrCreatePlanExecutionRecord(planId, rootPlanId, thinkActRecordId, false);
@@ -290,4 +315,17 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 		return null;
 	}
 
+	private void addThinkActStep(AgentExecutionRecord agentRecord, ThinkActRecord thinkActRecord) {
+		if (agentRecord.getThinkActSteps() == null) {
+			agentRecord.addThinkActStep(thinkActRecord);
+			return;
+		}
+		//会多次调用，因此需要根据id修改
+		ThinkActRecord exist = agentRecord.getThinkActSteps().stream().filter(r -> r.getId().equals(thinkActRecord.getId())).findFirst().orElse(null);
+		if(exist == null){
+			agentRecord.getThinkActSteps().add(thinkActRecord);
+		}else {
+			BeanUtils.copyProperties(thinkActRecord, exist);
+		}
+	}
 }
