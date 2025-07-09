@@ -160,7 +160,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	@Override
 	public Long recordAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord) {
 		Long agentExecutionId = agentRecord.getId();
-		if(agentRecord.getId() == null){
+		if (agentRecord.getId() == null) {
 			agentExecutionId = agentExecutionIdGenerator.incrementAndGet();
 			agentRecord.setId(agentExecutionId);
 			if (planExecutionRecord != null) {
@@ -315,14 +315,18 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			agentRecord.addThinkActStep(thinkActRecord);
 			return;
 		}
-		//会多次调用，因此需要根据id修改
-		ThinkActRecord exist = agentRecord.getThinkActSteps().stream().filter(r -> r.getId().equals(thinkActRecord.getId())).findFirst().orElse(null);
-		if(exist == null){
+		// 会多次调用，因此需要根据id修改
+		ThinkActRecord exist = agentRecord.getThinkActSteps()
+			.stream()
+			.filter(r -> r.getId().equals(thinkActRecord.getId()))
+			.findFirst()
+			.orElse(null);
+		if (exist == null) {
 			agentRecord.getThinkActSteps().add(thinkActRecord);
-		}else {
+		}
+		else {
 			BeanUtils.copyProperties(thinkActRecord, exist);
 		}
 	}
-
 
 }

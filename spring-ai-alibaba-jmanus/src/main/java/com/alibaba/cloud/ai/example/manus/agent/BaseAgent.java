@@ -211,8 +211,7 @@ public abstract class BaseAgent {
 		// Record execution in recorder if we have a plan ID
 		if (currentPlanId != null && planExecutionRecorder != null) {
 			// Use unified method that handles both main plan and sub-plan cases
-			planRecord = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId,
-					thinkActRecordId);
+			planRecord = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId, thinkActRecordId);
 
 			if (planRecord != null) {
 				planExecutionRecorder.recordAgentExecution(planRecord, agentRecord);

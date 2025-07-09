@@ -126,7 +126,7 @@ public class DynamicAgent extends ReActAgent {
 			.getCurrentAgentExecutionRecord(planExecutionRecord);
 		thinkActRecord = new ThinkActRecord(agentExecutionRecord.getId());
 		thinkActRecord.setActStartTime(LocalDateTime.now());
-		//set id
+		// set id
 		thinkActRecord.getId();
 
 		if (planExecutionRecord != null) {
@@ -142,7 +142,8 @@ public class DynamicAgent extends ReActAgent {
 			log.info("Exception occurred", e);
 			thinkActRecord.recordError(e.getMessage());
 			return false;
-		}finally {
+		}
+		finally {
 			if (planExecutionRecord != null) {
 				planExecutionRecorder.recordThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
 						thinkActRecord);
@@ -206,7 +207,7 @@ public class DynamicAgent extends ReActAgent {
 		PlanExecutionRecord planExecutionRecord = planExecutionRecorder.getExecutionRecord(getCurrentPlanId(),
 				getRootPlanId(), getThinkActRecordId());
 		AgentExecutionRecord agentExecutionRecord = planExecutionRecorder
-				.getCurrentAgentExecutionRecord(planExecutionRecord);
+			.getCurrentAgentExecutionRecord(planExecutionRecord);
 		try {
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			ToolCall toolCall = toolCalls.get(0);
@@ -297,7 +298,8 @@ public class DynamicAgent extends ReActAgent {
 			userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error
 			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
-		}finally {
+		}
+		finally {
 			if (planExecutionRecord != null) {
 				planExecutionRecorder.recordThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
 						thinkActRecord);
