@@ -119,8 +119,8 @@ public class MacShellExecutor implements ShellCommandExecutor {
 	}
 
 	/**
-	 * Dynamically detect the best available shell path
-	 * Priority: zsh -> bash (as fallback)
+	 * Dynamically detect the best available shell path Priority: zsh -> bash (as
+	 * fallback)
 	 * @return The path to the shell executable
 	 */
 	private String getShellPath() {
