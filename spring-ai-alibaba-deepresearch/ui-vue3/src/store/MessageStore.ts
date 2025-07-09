@@ -15,63 +15,63 @@
  * limitations under the License.
  */
 
-
-import {defineStore} from "pinia";
-import {type MessageInfo, type SimpleType} from "ant-design-x-vue";
-import { reactive } from "vue";
+import { defineStore } from 'pinia'
+import { type MessageInfo, type SimpleType } from 'ant-design-x-vue'
+import { reactive } from 'vue'
 type MsgType<Message> = {
-    convId: string,
-    currentState: {[key: string]: {
-            // 会话 id
-            info: MessageInfo<Message | any>,
-            // 是否候选, 是: 不显示在界面上
-            candidate: boolean,
-            // 是否勾选了 deepresearch
-            deepResearch: boolean,
-            // 是否展示研究细节
-            deepResearchDetail: boolean,
-            // 记录ai内容的类型
-            aiType: 'normal' | 'startDS' | 'onDS' | 'endDS',
-        }
+  convId: string
+  currentState: {
+    [key: string]: {
+      // 会话 id
+      info: MessageInfo<Message | any>
+      // 是否候选, 是: 不显示在界面上
+      candidate: boolean
+      // 是否勾选了 deepresearch
+      deepResearch: boolean
+      // 是否展示研究细节
+      deepResearchDetail: boolean
+      // 记录ai内容的类型
+      aiType: 'normal' | 'startDS' | 'onDS' | 'endDS'
     }
-    // 记录历史
-    history: {[key: string]: MessageInfo<any>[]},
+  }
+  // 记录历史
+  history: { [key: string]: MessageInfo<any>[] }
 }
-export const useMessageStore = <Message extends SimpleType>() => defineStore("messageStore", {
+export const useMessageStore = <Message extends SimpleType>() =>
+  defineStore('messageStore', {
     state(): MsgType<Message> {
-        return reactive({
-            convId: '',
-            currentState: {},
-            history: {}
-        })
+      return reactive({
+        convId: '',
+        currentState: {},
+        history: {},
+      })
     },
     getters: {
-        messages: (state): any=>{
-            if(state.convId) {
-                return state.history[state.convId]
-            }
-            return null
-        },
-        current: (state): any=>{
-            if(state.convId) {
-                return state.currentState[state.convId]
-            }
+      messages: (state): any => {
+        if (state.convId) {
+          return state.history[state.convId]
         }
+        return null
+      },
+      current: (state): any => {
+        if (state.convId) {
+          return state.currentState[state.convId]
+        }
+      },
     },
     actions: {
-        nextAIType() {
-            if(!this.current.aiType || this.current.aiType === 'normal') {
-                this.current.aiType = 'startDS'
-            }else if(this.current.aiType === 'startDS') {
-                this.current.aiType = 'onDS'
-            }else if(this.current.aiType === 'onDS') {
-                this.current.aiType = 'endDS'
-            }else {
-                this.current.aiType = 'normal'
-            }
-            console.log("nextAIType", this.current.aiType)
-        },
-
+      nextAIType() {
+        if (!this.current.aiType || this.current.aiType === 'normal') {
+          this.current.aiType = 'startDS'
+        } else if (this.current.aiType === 'startDS') {
+          this.current.aiType = 'onDS'
+        } else if (this.current.aiType === 'onDS') {
+          this.current.aiType = 'endDS'
+        } else {
+          this.current.aiType = 'normal'
+        }
+        console.log('nextAIType', this.current.aiType)
+      },
     },
-    persist: true
-})()
+    persist: true,
+  })()

@@ -16,22 +16,16 @@
 -->
 <template>
   <div class="__container_chat_index">
-
     <Flex class="body" gap="middle">
       <Flex class="chat" vertical gap="middle" flex="1" align="center">
-
         <div
-            ref="scrollContainer"
-            align="center"
-            class="bubble-list"
-            v-show="bubbleList.length > 0">
-          <Bubble.List
-              style="min-height: 100%;"
-              :roles="roles"
-              :items="bubbleList"
-          >
-          </Bubble.List>
-          <Gap height="100px"/>
+          ref="scrollContainer"
+          align="center"
+          class="bubble-list"
+          v-show="bubbleList.length > 0"
+        >
+          <Bubble.List style="min-height: 100%" :roles="roles" :items="bubbleList"> </Bubble.List>
+          <Gap height="100px" />
           <!--          <div style="height: 100px; width: 0px" class="bottom-spacer"></div>-->
         </div>
         <Flex v-show="bubbleList.length === 0" class="bubble-list" justify="center" align="center">
@@ -40,97 +34,85 @@
           </div>
         </Flex>
         <div class="sender-wrapper">
-
           <sender
-              class-name="sender"
-              :autoSize="{minRows: 2, maxRows:3}"
-              :loading="senderLoading"
-              v-model:value="content"
-              @submit="submitHandle"
-              :actions="false"
-              placeholder="type an issue"
+            class-name="sender"
+            :autoSize="{ minRows: 2, maxRows: 3 }"
+            :loading="senderLoading"
+            v-model:value="content"
+            @submit="submitHandle"
+            :actions="false"
+            placeholder="type an issue"
           >
             <template #header>
-              <a-carousel
-                  :slidesToShow="2"
-                  arrows style="width: 100%; padding: 12px">
-                <a-tag
-                    style="left: 5px"
-                    :id="f.uid"
-                    :closable="true"
-                    v-for="f in uploadFileList">
-                  <LinkOutlined/>
+              <a-carousel :slidesToShow="2" arrows style="width: 100%; padding: 12px">
+                <a-tag style="left: 5px" :id="f.uid" :closable="true" v-for="f in uploadFileList">
+                  <LinkOutlined />
                   {{ f.name }}
                 </a-tag>
               </a-carousel>
-
             </template>
-            <template #footer="{ info: { components: { SendButton, LoadingButton, ClearButton, SpeechButton } } }">
-              <Flex
-                  justify="space-between"
-                  align="center"
-              >
+            <template
+              #footer="{
+                info: {
+                  components: { SendButton, LoadingButton, ClearButton, SpeechButton },
+                },
+              }"
+            >
+              <Flex justify="space-between" align="center">
                 <Flex align="center">
                   <a-upload
-                      :multiple="true"
-                      name="uploadFileList"
-                      v-model:file-list="uploadFileList"
-                      :showUploadList="false"
+                    :multiple="true"
+                    name="uploadFileList"
+                    v-model:file-list="uploadFileList"
+                    :showUploadList="false"
                   >
-                    <a-button
-                        size="small"
-                        style="border-radius: 15px"
-                        type="text">
-                      <LinkOutlined/>
+                    <a-button size="small" style="border-radius: 15px" type="text">
+                      <LinkOutlined />
                     </a-button>
                   </a-upload>
 
                   <a-switch
-                      un-checked-children="Deep Research"
-                      checked-children="Deep Research"
-                      v-model:checked="current.deepResearch"
+                    un-checked-children="Deep Research"
+                    checked-children="Deep Research"
+                    v-model:checked="current.deepResearch"
                   ></a-switch>
                 </Flex>
                 <Flex>
-                  <component :is="ClearButton"/>
-                  <component :is="SpeechButton"/>
+                  <component :is="ClearButton" />
+                  <component :is="SpeechButton" />
                   <component
-                      :is="LoadingButton"
-                      v-if="senderLoading"
-                      type="default"
-                      style="display: block;"
-                      :disabled="true"
+                    :is="LoadingButton"
+                    v-if="senderLoading"
+                    type="default"
+                    style="display: block"
+                    :disabled="true"
                   >
                     <template #icon>
-                      <Spin size="small"/>
+                      <Spin size="small" />
                     </template>
                   </component>
                   <component
-                      :is="SendButton"
-                      v-else
-                      :icon="h(SendOutlined)"
-                      shape="default"
-                      type="text"
-                      :style="{ color: token.colorPrimary }"
-                      :disabled="false"
+                    :is="SendButton"
+                    v-else
+                    :icon="h(SendOutlined)"
+                    shape="default"
+                    type="text"
+                    :style="{ color: token.colorPrimary }"
+                    :disabled="false"
                   />
                 </Flex>
               </Flex>
-
             </template>
           </sender>
         </div>
       </Flex>
-      <Flex class="aux"
-            v-if="current.deepResearchDetail"
-            style="width: 60%"
-            vertical>
+      <Flex class="aux" v-if="current.deepResearchDetail" style="width: 60%" vertical>
         <a-card style="height: 100%">
           <template #title>
             <Flex justify="space-between">
               研究细节
               <Button type="text" @click="current.deepResearchDetail = false">
-                <CloseOutlined/>
+                <CloseOutlined />
               </Button>
             </Flex>
           </template>
@@ -138,13 +120,11 @@
         </a-card>
       </Flex>
     </Flex>
-
   </div>
-
 </template>
 
 <script setup lang="tsx">
-import {Button, Card, Flex, Spin, theme, Typography} from 'ant-design-vue';
+import { Button, Card, Flex, Spin, theme, Typography } from 'ant-design-vue'
 import {
   CheckCircleOutlined,
   CloseOutlined,
@@ -154,11 +134,11 @@ import {
   MoreOutlined,
   SendOutlined,
   IeOutlined,
-BgColorsOutlined,
+  BgColorsOutlined,
   DotChartOutlined,
   ShareAltOutlined,
-  UserOutlined
-} from '@ant-design/icons-vue';
+  UserOutlined,
+} from '@ant-design/icons-vue'
 import {
   Bubble,
   type BubbleListProps,
@@ -166,57 +146,57 @@ import {
   Sender,
   ThoughtChain,
   type ThoughtChainItem,
-  type  ThoughtChainProps,
+  type ThoughtChainProps,
   useXAgent,
   useXChat,
-} from 'ant-design-x-vue';
-import {computed, h, onMounted, reactive, ref, watch} from "vue";
-import MD from "@/components/md/index.vue"
-import Gap from "@/components/tookit/Gap.vue"
-import {XStreamBody} from "@/utils/stream";
-import {ScrollController} from "@/utils/scroll";
-import {useAuthStore} from "@/store/AuthStore";
-import {useMessageStore} from "@/store/MessageStore";
-import {useConversationStore} from "@/store/ConversationStore";
-import {useRoute, useRouter} from "vue-router";
-import {useConfigStore} from "@/store/ConfigStore";
+} from 'ant-design-x-vue'
+import { computed, h, onMounted, reactive, ref, watch } from 'vue'
+import MD from '@/components/md/index.vue'
+import Gap from '@/components/tookit/Gap.vue'
+import { XStreamBody } from '@/utils/stream'
+import { ScrollController } from '@/utils/scroll'
+import { useAuthStore } from '@/store/AuthStore'
+import { useMessageStore } from '@/store/MessageStore'
+import { useConversationStore } from '@/store/ConversationStore'
+import { useRoute, useRouter } from 'vue-router'
+import { useConfigStore } from '@/store/ConfigStore'
 
-const router = useRouter();
-const route = useRoute();
+const router = useRouter()
+const route = useRoute()
 // 会话ID
 const convId = route.params.convId as string
 
 const uploadFileList = ref([])
-const {useToken} = theme;
-const {token} = useToken();
+const { useToken } = theme
+const { token } = useToken()
 const username = useAuthStore().token
 const roles: BubbleListProps['roles'] = {
   ai: {
     placement: 'start',
     avatar: {
-      icon: <GlobalOutlined/>,
+      icon: <GlobalOutlined />,
       shape: 'square',
-      style: {background: 'linear-gradient(to right, #f67ac4, #6b4dee)'}
+      style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
     },
     style: {
       maxWidth: '100%',
     },
-    rootClassName: 'ai'
+    rootClassName: 'ai',
   },
   local: {
     placement: 'end',
     shape: 'corner',
     avatar: {
-      icon: <UserOutlined/>,
-      style: {}
+      icon: <UserOutlined />,
+      style: {},
     },
-    rootClassName: 'local'
+    rootClassName: 'local',
   },
-};
+}
 
-const conversationStore = useConversationStore();
-const messageStore = useMessageStore();
-const configStore = useConfigStore();
+const conversationStore = useConversationStore()
+const messageStore = useMessageStore()
+const configStore = useConfigStore()
 messageStore.convId = convId
 let current = messageStore.current
 if (!current) {
@@ -226,42 +206,39 @@ if (!current) {
   }
 }
 const [agent] = useXAgent({
-  request: async ({message}, {onSuccess, onUpdate, onError}) => {
-    senderLoading.value = true;
+  request: async ({ message }, { onSuccess, onUpdate, onError }) => {
+    senderLoading.value = true
     if (!current.deepResearch) {
       // todo 一般性请求
-      senderLoading.value = false;
+      senderLoading.value = false
       onSuccess(`暂未实现: ${message}`)
       return
     }
-    let content = '';
+    let content = ''
     switch (current.aiType) {
       case 'normal':
         // todo 请求研究内容
 
-        const xStreamBody = new XStreamBody(
-            "/deep-research/chat/stream",
-            {
-              method: 'POST',
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: {
-                ...configStore.chatConfig,
-                query: message
-              }
-            }
-        );
+        const xStreamBody = new XStreamBody('/deep-research/chat/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: {
+            ...configStore.chatConfig,
+            query: message,
+          },
+        })
         try {
           await xStreamBody.readStream((chunk: any) => {
-            onUpdate(chunk);
+            onUpdate(chunk)
           })
         } catch (e: any) {
           console.log(e.statusText)
           onError(e.statusText)
         }
         content = xStreamBody.content()
-        break;
+        break
       case 'startDS':
         current.deepResearchDetail = true
         // todo 请求开始研究
@@ -271,14 +248,14 @@ const [agent] = useXAgent({
       messageStore.nextAIType()
     }
     onSuccess(content)
-    senderLoading.value = false;
+    senderLoading.value = false
   },
-});
-const {onRequest, messages} = useXChat({
+})
+const { onRequest, messages } = useXChat({
   agent: agent.value,
   requestPlaceholder: 'Waiting...',
   requestFallback: 'Failed return. Please try again later.',
-});
+})
 if (convId) {
   const his_messages = messageStore.history[convId]
   if (his_messages) {
@@ -286,22 +263,22 @@ if (convId) {
   }
 }
 
-const content = ref('');
-const senderLoading = ref(false);
+const content = ref('')
+const senderLoading = ref(false)
 
 const submitHandle = (nextContent: any) => {
   current.aiType = 'normal'
   onRequest(nextContent)
   content.value = ''
   if (!convId) {
-    const {key} = conversationStore.newOne()
+    const { key } = conversationStore.newOne()
     router.push(`/chat/${key}`)
   }
 }
 
 function startDeepResearch() {
   // messageStore.startDeepResearch()
-  onRequest("开始研究")
+  onRequest('开始研究')
 }
 
 function deepResearch() {
@@ -313,31 +290,35 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
     case 'success':
       if (!isCurrent) {
         // todo 历史数据渲染
-        return (<MD content={msg}/>);
+        return <MD content={msg} />
       }
       if (current.deepResearch) {
         if (current.aiType === 'startDS') {
+          const { Paragraph, Text } = Typography
 
-          const {Paragraph, Text} = Typography;
-
-          const customizationProps = (title: any, description: string, para: string | null, footer?:any): ThoughtChainItem => {
+          const customizationProps = (
+            title: any,
+            description: string,
+            para: string | null,
+            footer?: any
+          ): ThoughtChainItem => {
             return {
               title,
               description,
-              icon: <CheckCircleOutlined/>,
+              icon: <CheckCircleOutlined />,
               extra: '',
               footer,
-              content: (
-                  para ?
-                      (<Typography>
-                        <Paragraph>
-                          <MD content={para}/>
-                        </Paragraph>
-                      </Typography>) : ''
+              content: para ? (
+                <Typography>
+                  <Paragraph>
+                    <MD content={para} />
+                  </Paragraph>
+                </Typography>
+              ) : (
+                ''
               ),
             }
-          };
-
+          }
 
           const items: ThoughtChainProps['items'] = [
             {
@@ -346,11 +327,12 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
               icon: <IeOutlined />,
               extra: '',
               content: (
-                      <Typography>
-                        <Paragraph>
-                          <MD content="(1) xxx"/>
-                        </Paragraph>
-                      </Typography>)
+                <Typography>
+                  <Paragraph>
+                    <MD content="(1) xxx" />
+                  </Paragraph>
+                </Typography>
+              ),
             },
             {
               status: 'pending',
@@ -362,84 +344,86 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
             {
               status: 'success',
               title: '研究报告',
-              icon: <BgColorsOutlined/>,
+              icon: <BgColorsOutlined />,
               description: <i>只需要几分钟就可以准备好</i>,
               footer: (
-                  <Flex style="margin-left: auto" gap='middle'>
-                    <Button type="primary">修改方案</Button><Button type="primary">开始研究</Button>
-                  </Flex>
+                <Flex style="margin-left: auto" gap="middle">
+                  <Button type="primary">修改方案</Button>
+                  <Button type="primary">开始研究</Button>
+                </Flex>
               ),
               extra: '',
             },
-          ];
+          ]
 
           return (
-              <>
-                这是该主题的研究方案。如果你需要进行更新，请告诉我。
-                <Card style={{width: '500px', backgroundColor: '#EEF2F8'}}>
-                  <h2>{{msg}}</h2>
-                  <ThoughtChain items={items}/>
-                </Card>
-              </>
+            <>
+              这是该主题的研究方案。如果你需要进行更新，请告诉我。
+              <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
+                <h2>{{ msg }}</h2>
+                <ThoughtChain items={items} />
+              </Card>
+            </>
           )
         }
         if (current.aiType === 'onDS') {
           return (
-              <div>
-                <Button type="primary" onClick={deepResearch}>正在研究</Button>
-              </div>
+            <div>
+              <Button type="primary" onClick={deepResearch}>
+                正在研究
+              </Button>
+            </div>
           )
         }
       }
     default:
-      return msg;
+      return msg
   }
-
 }
 
 function parseFooter(status: MessageStatus, isCurrent: boolean): any {
   switch (status) {
     case 'success':
-      return (<div class='bubble-footer'>
-        <Flex gap="middle"
-              class={isCurrent ? '' : 'toggle-bubble-footer'}
-        >
-          <CopyOutlined/>
-          <ShareAltOutlined/>
-          <MoreOutlined/>
-        </Flex>
-      </div>)
+      return (
+        <div class="bubble-footer">
+          <Flex gap="middle" class={isCurrent ? '' : 'toggle-bubble-footer'}>
+            <CopyOutlined />
+            <ShareAltOutlined />
+            <MoreOutlined />
+          </Flex>
+        </div>
+      )
     default:
       return ''
   }
-
 }
 
 const bubbleList = computed(() => {
   const len = messages.value.length
   messageStore.history[convId] = messages.value
-  return messages.value.map(({id, message, status}, idx) => ({
+  return messages.value.map(({ id, message, status }, idx) => ({
     key: id,
     role: status === 'local' ? 'local' : 'ai',
     content: parseMessage(status, message, idx === len - 1),
-    footer: parseFooter(status, idx === len - 1)
+    footer: parseFooter(status, idx === len - 1),
   }))
 })
 
-const scrollContainer = ref<Element | any>(null);
+const scrollContainer = ref<Element | any>(null)
 const sc = new ScrollController()
 onMounted(() => {
   sc.init(scrollContainer)
 })
-watch(() => messages.value, (o, n) => {
-  sc.init(scrollContainer)
-  sc.fresh()
-}, {deep: true})
-
-
+watch(
+  () => messages.value,
+  (o, n) => {
+    sc.init(scrollContainer)
+    sc.fresh()
+  },
+  { deep: true }
+)
 </script>
 <style lang="less" scoped>
-
 .__container_chat_index {
   width: 100%;
   height: 100%;
@@ -549,7 +533,6 @@ watch(() => messages.value, (o, n) => {
   }
 
   .aux {
-
   }
 }
 </style>

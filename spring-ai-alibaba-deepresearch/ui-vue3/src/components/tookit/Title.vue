@@ -16,12 +16,12 @@
 -->
 <template>
   <div style="line-height: 1.5em; margin: 20px 0">
-    <span class="__container_Gap"
-          :style="{background:token.colorPrimary}"
-          style="width: 4px;
-          margin-right: 10px;
-           height: auto;
-           border-radius: 2px">&nbsp;</span>
+    <span
+      class="__container_Gap"
+      :style="{ background: token.colorPrimary }"
+      style="width: 4px; margin-right: 10px; height: auto; border-radius: 2px"
+      >&nbsp;</span
+    >
     <span style="font-size: 1.1em; font-weight: bold">
       <slot></slot>
     </span>
@@ -29,13 +29,11 @@
 </template>
 
 <script setup lang="ts">
-import {theme} from "ant-design-vue";
+import { theme } from 'ant-design-vue'
 
 const props = defineProps({})
-const {useToken} = theme;
-const {token} = useToken();
-;
-
+const { useToken } = theme
+const { token } = useToken()
 </script>
 <style lang="less" scoped>
 .__container_Gap {

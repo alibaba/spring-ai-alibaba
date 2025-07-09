@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
+import { defineStore } from 'pinia'
 
-import {defineStore} from "pinia";
-
-export const useAuthStore = defineStore("authStore", {
-    state(): { token: string | null } {
-        return {
-            token: null
-        }
-    },
-    getters: {},
-    actions: {},
-    persist: true
+export const useAuthStore = defineStore('authStore', {
+  state(): { token: string | null } {
+    return {
+      token: null,
+    }
+  },
+  getters: {},
+  actions: {},
+  persist: true,
 })

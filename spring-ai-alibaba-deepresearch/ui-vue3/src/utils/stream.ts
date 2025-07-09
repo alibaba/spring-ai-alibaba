@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {ref} from "vue";
-import {XStream} from "ant-design-x-vue";
+import { ref } from 'vue'
+import { XStream } from 'ant-design-x-vue'
 
 type MethodType = 'POST' | 'GET'
 
@@ -22,52 +22,53 @@ type MethodType = 'POST' | 'GET'
  * sse request
  */
 export class XStreamBody {
-    requestInfo: {
-        url: string,
-        config: {
-            method: MethodType,
-            headers: any,
-            body: any,
-        }
+  requestInfo: {
+    url: string
+    config: {
+      method: MethodType
+      headers: any
+      body: any
     }
+  }
 
-    // records
-    lines = ref<Record<string, string>[]>([])
+  // records
+  lines = ref<Record<string, string>[]>([])
 
-    constructor(url: string, config:any) {
-        if(config.body){
-            config.body = JSON.stringify(config.body)
-        }
-        this.requestInfo = {
-            url, config
-        };
+  constructor(url: string, config: any) {
+    if (config.body) {
+      config.body = JSON.stringify(config.body)
     }
-
-    content() {
-        return this.lines.value.map((line) => JSON.parse(line.data).content).join('')
+    this.requestInfo = {
+      url,
+      config,
     }
+  }
 
-    async readStream(updateHandle?: any) {
-        let tmp = ""
-        const response = await fetch(this.requestInfo.url, this.requestInfo.config);
+  content() {
+    return this.lines.value.map(line => JSON.parse(line.data).content).join('')
+  }
 
-        if(response.status!==200){
-            return Promise.reject(response)
-        }
-        // Read the stream
-        for await (const chunk of XStream({
-            readableStream: response.body,
-        })) {
-            const newChunk = {
-                event: "message",
-                data: JSON.stringify({
-                    content: chunk.data
-                }),
-            };
-            this.lines.value = [...this.lines.value, newChunk];
-            if (updateHandle) {
-                updateHandle(tmp += chunk.data)
-            }
-        }
+  async readStream(updateHandle?: any) {
+    let tmp = ''
+    const response = await fetch(this.requestInfo.url, this.requestInfo.config)
+
+    if (response.status !== 200) {
+      return Promise.reject(response)
     }
+    // Read the stream
+    for await (const chunk of XStream({
+      readableStream: response.body,
+    })) {
+      const newChunk = {
+        event: 'message',
+        data: JSON.stringify({
+          content: chunk.data,
+        }),
+      }
+      this.lines.value = [...this.lines.value, newChunk]
+      if (updateHandle) {
+        updateHandle((tmp += chunk.data))
+      }
+    }
+  }
 }

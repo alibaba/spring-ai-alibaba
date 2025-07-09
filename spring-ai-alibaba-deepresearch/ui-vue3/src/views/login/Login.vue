@@ -20,15 +20,15 @@ import { reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { i18n } from '@/base/i18n'
-import {useAuthStore} from "@/store/AuthStore";
-import {useRouterStore} from "@/store/RouterStore";
+import { useAuthStore } from '@/store/AuthStore'
+import { useRouterStore } from '@/store/RouterStore'
 const userinfo = reactive({
   username: '',
-  password: ''
+  password: '',
 })
 
-const authStore = useAuthStore();
-const routerStore = useRouterStore();
+const authStore = useAuthStore()
+const routerStore = useRouterStore()
 routerStore.clear()
 
 const router = useRouter()
@@ -47,7 +47,7 @@ function loginHandle() {
   <div class="background">
     <a-card class="login">
       <a-row class="title">
-        <div>{{$t('loginDomain.title')}}</div>
+        <div>{{ $t('loginDomain.title') }}</div>
       </a-row>
       <a-row>
         <a-form layout="vertical" :model="userinfo" ref="login-form-ref">

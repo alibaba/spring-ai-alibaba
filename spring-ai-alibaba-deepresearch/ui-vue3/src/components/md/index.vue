@@ -18,7 +18,6 @@
   <div class="__container_markdown_index">
     <div class="markdown-body" v-html="renderedContent"></div>
   </div>
-
 </template>
 
 <script setup lang="ts">
@@ -33,8 +32,8 @@ import 'katex/dist/katex.min.css'
 const props = defineProps({
   content: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
 })
 
 // 创建markdown-it实例并配置插件
@@ -46,28 +45,29 @@ const md = new MarkdownIt({
   highlight: function (str, lang) {
     if (lang && hljs.getLanguage(lang)) {
       try {
-        return `<pre class="hljs"><code>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value}</code></pre>`;
+        return `<pre class="hljs"><code>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value}</code></pre>`
       } catch (__) {}
     }
-    return `<pre class="hljs"><code>${md.utils.escapeHtml(str)}</code></pre>`;
-  }
-})
-    .use(mk) // 启用KaTeX数学公式支持
-    // .use(breaks); // 启用换行支持
+    return `<pre class="hljs"><code>${md.utils.escapeHtml(str)}</code></pre>`
+  },
+}).use(mk) // 启用KaTeX数学公式支持
+// .use(breaks); // 启用换行支持
 
 // 配置链接在新窗口打开
-const defaultRender = md.renderer.rules.link_open || function(tokens, idx, options, env, self) {
-  return self.renderToken(tokens, idx, options);
-};
+const defaultRender =
+  md.renderer.rules.link_open ||
+  function (tokens, idx, options, env, self) {
+    return self.renderToken(tokens, idx, options)
+  }
 md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
-  tokens[idx].attrPush(['target', '_blank']);
-  return defaultRender(tokens, idx, options, env, self);
-};
+  tokens[idx].attrPush(['target', '_blank'])
+  return defaultRender(tokens, idx, options, env, self)
+}
 
 // 计算渲染后的HTML
 const renderedContent = computed(() => {
-  return md.render(props.content || '');
-});
+  return md.render(props.content || '')
+})
 </script>
 
 <style lang="less" scoped>
@@ -98,4 +98,3 @@ const renderedContent = computed(() => {
   background: transparent;
 }
 </style>
-

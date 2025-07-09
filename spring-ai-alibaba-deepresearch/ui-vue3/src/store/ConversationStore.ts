@@ -15,51 +15,49 @@
  * limitations under the License.
  */
 
-
-import {defineStore} from "pinia";
-import {MessageOutlined} from '@ant-design/icons-vue'
-import {h, reactive} from "vue";
-import { v1, v3, v4, v5 } from 'uuid';
-import {useRoute, useRouter} from "vue-router";
-export const useConversationStore =() => defineStore("conversationStore", {
-    state(): { editKey:string|null, current: number, conversations: any } {
-        return reactive({
-            current: 0,
-            editKey: null,
-            conversations: [
-
-            ]
-        })
+import { defineStore } from 'pinia'
+import { MessageOutlined } from '@ant-design/icons-vue'
+import { h, reactive } from 'vue'
+import { v1, v3, v4, v5 } from 'uuid'
+import { useRoute, useRouter } from 'vue-router'
+export const useConversationStore = () =>
+  defineStore('conversationStore', {
+    state(): { editKey: string | null; current: number; conversations: any } {
+      return reactive({
+        current: 0,
+        editKey: null,
+        conversations: [],
+      })
     },
     getters: {
-        curConv: state => state.conversations[state.current],
-        curConvKey: state => state.conversations[state.current]?.key,
+      curConv: state => state.conversations[state.current],
+      curConvKey: state => state.conversations[state.current]?.key,
     },
     actions: {
-        newOne() {
-            const newVar = {
-                key: v4(),
-                title: 'Unnamed conversation',
-                messages: null
-            };
-            this.conversations = [...this.conversations, newVar]
-            this.current++
-            return newVar
-        },
-        delete(key:any) {
-            this.conversations = this.conversations.filter((item: any)=>{
-                return item.key !== key
-            })
-        },
-        active(convId: any) {
-            if (!convId) this.current = -1
-            for (let i = 0; i < this.conversations.length; i++) {
-                if (this.conversations[i].key === convId) {
-                    this.current = i
-                    break
-                }
-            }
+      newOne() {
+        const newVar = {
+          key: v4(),
+          title: 'Unnamed conversation',
+          messages: null,
         }
+        this.conversations = [...this.conversations, newVar]
+        this.current++
+        return newVar
+      },
+      delete(key: any) {
+        this.conversations = this.conversations.filter((item: any) => {
+          return item.key !== key
+        })
+      },
+      active(convId: any) {
+        if (!convId) this.current = -1
+        for (let i = 0; i < this.conversations.length; i++) {
+          if (this.conversations[i].key === convId) {
+            this.current = i
+            break
+          }
+        }
+      },
     },
-    persist: true
-})()
+    persist: true,
+  })()

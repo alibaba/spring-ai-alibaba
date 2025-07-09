@@ -15,11 +15,13 @@
   ~ limitations under the License.
 -->
 <template>
-  <span class="__container_Gap"
-        :style="{
-    width: props.width||0,
-    height: props.height||0,
-        }">
+  <span
+    class="__container_Gap"
+    :style="{
+      width: props.width || 0,
+      height: props.height || 0,
+    }"
+  >
   </span>
 </template>
 
@@ -27,17 +29,16 @@
 const props = defineProps({
   width: {
     type: String,
-    required: false
+    required: false,
   },
   height: {
     type: String,
-    required: false
-  }
+    required: false,
+  },
 })
-
 </script>
 <style lang="less" scoped>
-.__container_Gap{
+.__container_Gap {
   display: inline-block;
 }
 </style>

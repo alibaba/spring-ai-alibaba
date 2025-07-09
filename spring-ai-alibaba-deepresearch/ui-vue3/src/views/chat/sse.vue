@@ -15,94 +15,90 @@
   ~ limitations under the License.
 -->
 <script setup lang="ts">
-import {TagsOutlined} from '@ant-design/icons-vue';
-import {Button, Flex} from 'ant-design-vue';
-import {Bubble, ThoughtChain, XStream} from 'ant-design-x-vue';
-import {computed, h, ref} from 'vue';
-import {XStreamBody} from '@/utils/stream'
+import { TagsOutlined } from '@ant-design/icons-vue'
+import { Button, Flex } from 'ant-design-vue'
+import { Bubble, ThoughtChain, XStream } from 'ant-design-x-vue'
+import { computed, h, ref } from 'vue'
+import { XStreamBody } from '@/utils/stream'
 
 function request() {
   return new ReadableStream({
     async start(controller) {
-      const response = await fetch("/stream", {
-        method: 'GET'
-      });
+      const response = await fetch('/stream', {
+        method: 'GET',
+      })
       let idx = 0
       for await (const chunk of XStream({
         readableStream: response.body,
       })) {
-        if (idx > 10) break;
+        if (idx > 10) break
         let chunk1 = {
-          event: "message",
+          event: 'message',
           data: JSON.stringify({
             id: idx,
-            content: chunk.data
+            content: chunk.data,
           }),
-        };
-        controller.enqueue(new TextEncoder().encode(chunk1));
+        }
+        controller.enqueue(new TextEncoder().encode(chunk1))
         idx++
       }
-      controller.close();
+      controller.close()
     },
-  });
+  })
 }
 
+defineOptions({ name: 'AXXStreamDefaultProtocolSetup' })
 
-defineOptions({name: 'AXXStreamDefaultProtocolSetup'});
-
-const contentChunks = ['He', 'llo', ', w', 'or', 'ld!'];
-
+const contentChunks = ['He', 'llo', ', w', 'or', 'ld!']
 
 function mockReadableStream() {
-  const sseChunks: string[] = [];
+  const sseChunks: string[] = []
 
   for (let i = 0; i < contentChunks.length; i++) {
-    const sseEventPart = `event: message\ndata: {"id":"${i}","content":"${contentChunks[i]}"}\n\n`;
-    sseChunks.push(sseEventPart);
+    const sseEventPart = `event: message\ndata: {"id":"${i}","content":"${contentChunks[i]}"}\n\n`
+    sseChunks.push(sseEventPart)
   }
 
   return new ReadableStream({
-
     async start(controller) {
-
       for (const chunk of sseChunks) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 100))
         console.log(chunk)
-        controller.enqueue(new TextEncoder().encode(chunk));
+        controller.enqueue(new TextEncoder().encode(chunk))
       }
-      controller.close();
+      controller.close()
     },
-  });
+  })
 }
 
-
-const lines = ref<Record<string, string>[]>([]);
-const content = computed(() =>
-    lines.value.map((line) => JSON.parse(line.data).content).join(''),
-);
+const lines = ref<Record<string, string>[]>([])
+const content = computed(() => lines.value.map(line => JSON.parse(line.data).content).join(''))
 
 async function readStream() {
-  const response = await fetch("/stream", {
-    method: 'GET'
-  });
+  const response = await fetch('/stream', {
+    method: 'GET',
+  })
   // 🌟 Read the stream
   for await (const chunk of XStream({
     readableStream: response.body,
   })) {
-    lines.value = [...lines.value, {
-      event: "message",
-      data: JSON.stringify({
-        content: chunk.data
-      }),
-    }];
+    lines.value = [
+      ...lines.value,
+      {
+        event: 'message',
+        data: JSON.stringify({
+          content: chunk.data,
+        }),
+      },
+    ]
   }
 }
 
 const streamBody = new XStreamBody({
   url: '/stream',
-  method: 'GET'
+  method: 'GET',
 })
-const contentInfo = computed(()=>{
+const contentInfo = computed(() => {
   return streamBody.content()
 })
 </script>
@@ -110,33 +106,26 @@ const contentInfo = computed(()=>{
   <Flex :gap="8">
     <div>
       <!-- -------------- Emit -------------- -->
-      <Button
-          type="primary"
-          :style="{ marginBottom: '16px' }"
-          @click="streamBody.readStream()"
-      >
+      <Button type="primary" :style="{ marginBottom: '16px' }" @click="streamBody.readStream()">
         Mock Default Protocol - SSE
       </Button>
       <!-- -------------- Content Concat -------------- -->
-      <Bubble
-          v-if="contentInfo"
-          :content="contentInfo"
-      />
+      <Bubble v-if="contentInfo" :content="contentInfo" />
     </div>
     <div>
       <ThoughtChain
-          :items="
+        :items="
           lines.length
             ? [
-              {
-                title: 'Mock Default Protocol - Log',
-                status: 'success',
-                icon: h(TagsOutlined),
-                content: h('pre', { style: { overflow: 'scroll' } }, [
-                  lines.map((i) => h('code', { key: i.data }, i.data)),
-                ]),
-              },
-            ]
+                {
+                  title: 'Mock Default Protocol - Log',
+                  status: 'success',
+                  icon: h(TagsOutlined),
+                  content: h('pre', { style: { overflow: 'scroll' } }, [
+                    lines.map(i => h('code', { key: i.data }, i.data)),
+                  ]),
+                },
+              ]
             : []
         "
       />

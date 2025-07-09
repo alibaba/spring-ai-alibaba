@@ -38,5 +38,5 @@ export const INSTANCE_DEPLOY_COLOR: { [key: string]: string } = {
   RUNNING: 'green',
   PENDING: 'yellow',
   TERMINATING: 'red',
-  CRASHING: 'darkRed'
+  CRASHING: 'darkRed',
 }

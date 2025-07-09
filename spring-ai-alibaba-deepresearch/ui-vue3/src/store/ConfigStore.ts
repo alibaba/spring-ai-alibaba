@@ -15,39 +15,39 @@
  * limitations under the License.
  */
 
-
-import {defineStore} from "pinia";
-import {type SimpleType} from "ant-design-x-vue";
-import {reactive} from "vue";
+import { defineStore } from 'pinia'
+import { type SimpleType } from 'ant-design-x-vue'
+import { reactive } from 'vue'
 
 type ConfigType = {
-    form: {
-        enable_background_investigation: boolean,
-        auto_accepted_plan: boolean,
-        optimize_query_num: number,
-        max_plan_iterations: number,
-        max_step_num: number,
-        mcp_settings: any,
-        search_engine: 'tavily',
-    }
+  form: {
+    enable_background_investigation: boolean
+    auto_accepted_plan: boolean
+    optimize_query_num: number
+    max_plan_iterations: number
+    max_step_num: number
+    mcp_settings: any
+    search_engine: 'tavily'
+  }
 }
-export const useConfigStore = () => defineStore("configStore", {
+export const useConfigStore = () =>
+  defineStore('configStore', {
     state(): ConfigType {
-        return reactive({
-            form: {
-                enable_background_investigation: true,
-                auto_accepted_plan: true,
-                optimize_query_num: 3,
-                max_plan_iterations: 3,
-                max_step_num: 1,
-                mcp_settings: {},
-                search_engine: 'tavily',
-            }
-        })
+      return reactive({
+        form: {
+          enable_background_investigation: true,
+          auto_accepted_plan: true,
+          optimize_query_num: 3,
+          max_plan_iterations: 3,
+          max_step_num: 1,
+          mcp_settings: {},
+          search_engine: 'tavily',
+        },
+      })
     },
     getters: {
-        chatConfig: state=>state.form
+      chatConfig: state => state.form,
     },
     actions: {},
-    persist: true
-})()
+    persist: true,
+  })()

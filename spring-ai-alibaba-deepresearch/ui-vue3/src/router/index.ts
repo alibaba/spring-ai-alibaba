@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {createRouter, createWebHashHistory, createWebHistory} from 'vue-router'
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 import { routes } from '@/router/defaultRoutes'
 
 const options = {

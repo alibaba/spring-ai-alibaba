@@ -15,43 +15,42 @@
  * limitations under the License.
  */
 
+import { defineStore } from 'pinia'
+import { type MessageInfo, type SimpleType } from 'ant-design-x-vue'
+import { type Reactive, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 
-import {defineStore} from "pinia";
-import {type MessageInfo, type SimpleType} from "ant-design-x-vue";
-import {type Reactive, reactive} from "vue";
-import {useRouter} from "vue-router";
-
-export const useRouterStore = <Message extends SimpleType>() => defineStore("routerStore", {
+export const useRouterStore = <Message extends SimpleType>() =>
+  defineStore('routerStore', {
     state(): Reactive<{ items: any[] }> {
-        return reactive({
-            items: [],
-            needRecordPath: ['config', 'login']
-        })
+      return reactive({
+        items: [],
+        needRecordPath: ['config', 'login'],
+      })
     },
     getters: {
-        size: state => state.items.length,
-        isEmpty: state => state.items.length === 0,
+      size: state => state.items.length,
+      isEmpty: state => state.items.length === 0,
     },
     actions: {
-        peek(){
-            if (this.isEmpty) return null;
-            return this.items[this.items.length - 1];
-        },
-        clear() {
-            this.items = [];
-        },
-        pop() {
-            if (this.isEmpty) return null;
-            return this.items.pop();
-        },
-        push(element:string) {
-            if(this.peek() === element) return;
-            this.items.push(element);
-            if(this.size>30) {
-                this.items.splice(0, 10);
-            }
-        },
-
+      peek() {
+        if (this.isEmpty) return null
+        return this.items[this.items.length - 1]
+      },
+      clear() {
+        this.items = []
+      },
+      pop() {
+        if (this.isEmpty) return null
+        return this.items.pop()
+      },
+      push(element: string) {
+        if (this.peek() === element) return
+        this.items.push(element)
+        if (this.size > 30) {
+          this.items.splice(0, 10)
+        }
+      },
     },
-    persist: true
-})()
+    persist: true,
+  })()

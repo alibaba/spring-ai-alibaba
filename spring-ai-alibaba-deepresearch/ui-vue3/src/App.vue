@@ -25,10 +25,10 @@ import { QuestionCircleOutlined } from '@ant-design/icons-vue'
 import { PROVIDE_INJECT_KEY } from '@/base/enums/ProvideInject'
 import { PRIMARY_COLOR } from '@/base/constants'
 import { i18n, localeConfig } from '@/base/i18n'
-import { XProvider } from 'ant-design-x-vue';
+import { XProvider } from 'ant-design-x-vue'
 dayjs.locale('en')
 const i18nConfig = reactive(localeConfig)
-watch(i18nConfig, (val) => {
+watch(i18nConfig, val => {
   dayjs.locale(val.locale)
 })
 
@@ -38,8 +38,7 @@ provide(PROVIDE_INJECT_KEY.LOCALE, i18nConfig)
  * this function is showing some tips about our Q&A
  * TODO
  */
-function globalQuestion() {
-}
+function globalQuestion() {}
 
 const localeGlobal = reactive(i18n.global.locale)
 
@@ -48,11 +47,11 @@ const router = useRouter()
 
 <template>
   <x-provider
-      :locale="localeGlobal === 'en' ? enUS : zhCN"
-      :theme="{
+    :locale="localeGlobal === 'en' ? enUS : zhCN"
+    :theme="{
       token: {
-        colorPrimary: PRIMARY_COLOR
-      }
+        colorPrimary: PRIMARY_COLOR,
+      },
     }"
   >
     <RouterView />

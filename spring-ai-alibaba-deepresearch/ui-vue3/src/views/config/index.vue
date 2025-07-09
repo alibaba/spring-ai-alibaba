@@ -18,34 +18,21 @@
   <div class="__container_config_index">
     <div style="padding: 20px 10vw">
       <div class="header">
-        <a-flex
-            justify="space-between"
-        >
+        <a-flex justify="space-between">
           <h1>Deep Research Config</h1>
-          <a-button
-              @click="back"
-              type="text"><CloseOutlined /></a-button>
+          <a-button @click="back" type="text"><CloseOutlined /></a-button>
         </a-flex>
       </div>
-      <a-divider/>
+      <a-divider />
 
-      <a-form
-          :model="form"
-          :label-col="{span: 4}"
-          :wrapper-col="{span: 20}"
-      >
+      <a-form :model="form" :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
         <Title>一般配置</Title>
 
-        <a-form-item
-            label="是否开启背景调查">
-          <a-switch
-              v-model:checked="form.enable_background_investigation"
-          ></a-switch>
+        <a-form-item label="是否开启背景调查">
+          <a-switch v-model:checked="form.enable_background_investigation"></a-switch>
         </a-form-item>
         <a-form-item label="是否自动接受计划">
-          <a-switch
-              v-model:checked="form.auto_accepted_plan"
-          ></a-switch>
+          <a-switch v-model:checked="form.auto_accepted_plan"></a-switch>
         </a-form-item>
         <a-form-item label="扩展优化后查询数量">
           <!--      enable_background_investigation: true,
@@ -55,57 +42,47 @@
                 max_step_num: 1,
                 mcp_settings: {},
                 search_engine: 'tavily',-->
-          <a-input-number
-          v-model:value="form.optimize_query_num"
-          ></a-input-number>
+          <a-input-number v-model:value="form.optimize_query_num"></a-input-number>
         </a-form-item>
         <a-form-item label="计划最大步骤数量">
-          <a-input-number
-              v-model:value="form.max_plan_iterations"
-          ></a-input-number>
+          <a-input-number v-model:value="form.max_plan_iterations"></a-input-number>
         </a-form-item>
         <a-form-item label="最大迭代次数">
-          <a-input-number
-              v-model:value="form.max_step_num"
-          ></a-input-number>
+          <a-input-number v-model:value="form.max_step_num"></a-input-number>
         </a-form-item>
         <Title>搜索配置</Title>
         <a-form-item label="搜索引擎">
           <a-radio-group v-model:value="form.search_engine">
-          <a-radio value="tavily">Tavily</a-radio>
-          <a-radio value="baidu">Baidu</a-radio>
-          <a-radio value="serpapi">Serpapi</a-radio>
-          <a-radio value="aliyun">Aliyun</a-radio>
+            <a-radio value="tavily">Tavily</a-radio>
+            <a-radio value="baidu">Baidu</a-radio>
+            <a-radio value="serpapi">Serpapi</a-radio>
+            <a-radio value="aliyun">Aliyun</a-radio>
           </a-radio-group>
         </a-form-item>
         <Title>MCP</Title>
-
       </a-form>
     </div>
   </div>
-
 </template>
 
 <script setup lang="ts">
-import Title from "@/components/tookit/Title.vue";
-import {useConfigStore} from "@/store/ConfigStore";
-import {
-CloseOutlined
-} from '@ant-design/icons-vue';
-import {useRouter} from "vue-router";
-import {useRouterStore} from "@/store/RouterStore";
+import Title from '@/components/tookit/Title.vue'
+import { useConfigStore } from '@/store/ConfigStore'
+import { CloseOutlined } from '@ant-design/icons-vue'
+import { useRouter } from 'vue-router'
+import { useRouterStore } from '@/store/RouterStore'
 
-const configStore = useConfigStore();
-const {form} = configStore;
+const configStore = useConfigStore()
+const { form } = configStore
 
 const routerStore = useRouterStore()
 const router = useRouter()
 
-function back(){
-  const pop = routerStore.pop();
-  if(pop){
+function back() {
+  const pop = routerStore.pop()
+  if (pop) {
     router.push(pop)
-  }else {
+  } else {
     router.back()
   }
 }
