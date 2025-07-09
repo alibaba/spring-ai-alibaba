@@ -35,6 +35,9 @@ export class XStreamBody {
     lines = ref<Record<string, string>[]>([])
 
     constructor(url: string, config:any) {
+        if(config.body){
+            config.body = JSON.stringify(config.body)
+        }
         this.requestInfo = {
             url, config
         };

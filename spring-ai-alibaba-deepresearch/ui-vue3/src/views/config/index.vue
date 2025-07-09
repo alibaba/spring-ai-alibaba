@@ -73,6 +73,9 @@
         <a-form-item label="搜索引擎">
           <a-radio-group v-model:value="form.search_engine">
           <a-radio value="tavily">Tavily</a-radio>
+          <a-radio value="baidu">Baidu</a-radio>
+          <a-radio value="serpapi">Serpapi</a-radio>
+          <a-radio value="aliyun">Aliyun</a-radio>
           </a-radio-group>
         </a-form-item>
         <Title>MCP</Title>

@@ -144,18 +144,32 @@
 </template>
 
 <script setup lang="tsx">
-import {Button, Flex, Spin, theme} from 'ant-design-vue';
+import {Button, Card, Flex, Spin, theme, Typography} from 'ant-design-vue';
 import {
+  CheckCircleOutlined,
   CloseOutlined,
   CopyOutlined,
   GlobalOutlined,
   LinkOutlined,
   MoreOutlined,
   SendOutlined,
+  IeOutlined,
+BgColorsOutlined,
+  DotChartOutlined,
   ShareAltOutlined,
   UserOutlined
 } from '@ant-design/icons-vue';
-import {Bubble, type BubbleListProps, type MessageStatus, Sender, useXAgent, useXChat,} from 'ant-design-x-vue';
+import {
+  Bubble,
+  type BubbleListProps,
+  type MessageStatus,
+  Sender,
+  ThoughtChain,
+  type ThoughtChainItem,
+  type  ThoughtChainProps,
+  useXAgent,
+  useXChat,
+} from 'ant-design-x-vue';
 import {computed, h, onMounted, reactive, ref, watch} from "vue";
 import MD from "@/components/md/index.vue"
 import Gap from "@/components/tookit/Gap.vue"
@@ -165,6 +179,7 @@ import {useAuthStore} from "@/store/AuthStore";
 import {useMessageStore} from "@/store/MessageStore";
 import {useConversationStore} from "@/store/ConversationStore";
 import {useRoute, useRouter} from "vue-router";
+import {useConfigStore} from "@/store/ConfigStore";
 
 const router = useRouter();
 const route = useRoute();
@@ -201,6 +216,7 @@ const roles: BubbleListProps['roles'] = {
 
 const conversationStore = useConversationStore();
 const messageStore = useMessageStore();
+const configStore = useConfigStore();
 messageStore.convId = convId
 let current = messageStore.current
 if (!current) {
@@ -224,8 +240,17 @@ const [agent] = useXAgent({
         // todo 请求研究内容
 
         const xStreamBody = new XStreamBody(
-            "/stream",
-            {method: 'GET'}
+            "/deep-research/chat/stream",
+            {
+              method: 'POST',
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: {
+                ...configStore.chatConfig,
+                query: message
+              }
+            }
         );
         try {
           await xStreamBody.readStream((chunk: any) => {
@@ -292,14 +317,70 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
       }
       if (current.deepResearch) {
         if (current.aiType === 'startDS') {
+
+          const {Paragraph, Text} = Typography;
+
+          const customizationProps = (title: any, description: string, para: string | null, footer?:any): ThoughtChainItem => {
+            return {
+              title,
+              description,
+              icon: <CheckCircleOutlined/>,
+              extra: '',
+              footer,
+              content: (
+                  para ?
+                      (<Typography>
+                        <Paragraph>
+                          <MD content={para}/>
+                        </Paragraph>
+                      </Typography>) : ''
+              ),
+            }
+          };
+
+
+          const items: ThoughtChainProps['items'] = [
+            {
+              status: 'error',
+              title: '研究网站',
+              icon: <IeOutlined />,
+              extra: '',
+              content: (
+                      <Typography>
+                        <Paragraph>
+                          <MD content="(1) xxx"/>
+                        </Paragraph>
+                      </Typography>)
+            },
+            {
+              status: 'pending',
+              title: '分析结果',
+              icon: <DotChartOutlined />,
+              extra: '',
+            },
+
+            {
+              status: 'success',
+              title: '研究报告',
+              icon: <BgColorsOutlined/>,
+              description: <i>只需要几分钟就可以准备好</i>,
+              footer: (
+                  <Flex style="margin-left: auto" gap='middle'>
+                    <Button type="primary">修改方案</Button><Button type="primary">开始研究</Button>
+                  </Flex>
+              ),
+              extra: '',
+            },
+          ];
+
           return (
-              <div>
-                <MD content={msg}/>
-                <Button
-                    type="primary"
-                    style="margin-left: auto; display: block"
-                    onClick={startDeepResearch}>开始研究</Button>
-              </div>
+              <>
+                这是该主题的研究方案。如果你需要进行更新，请告诉我。
+                <Card style={{width: '500px', backgroundColor: '#EEF2F8'}}>
+                  <h2>{{msg}}</h2>
+                  <ThoughtChain items={items}/>
+                </Card>
+              </>
           )
         }
         if (current.aiType === 'onDS') {

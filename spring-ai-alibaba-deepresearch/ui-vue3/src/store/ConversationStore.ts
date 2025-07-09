@@ -20,10 +20,12 @@ import {defineStore} from "pinia";
 import {MessageOutlined} from '@ant-design/icons-vue'
 import {h, reactive} from "vue";
 import { v1, v3, v4, v5 } from 'uuid';
-export const useConversationStore = defineStore("conversationStore", {
-    state(): { current: number, conversations: any } {
+import {useRoute, useRouter} from "vue-router";
+export const useConversationStore =() => defineStore("conversationStore", {
+    state(): { editKey:string|null, current: number, conversations: any } {
         return reactive({
             current: 0,
+            editKey: null,
             conversations: [
 
             ]
@@ -32,21 +34,22 @@ export const useConversationStore = defineStore("conversationStore", {
     getters: {
         curConv: state => state.conversations[state.current],
         curConvKey: state => state.conversations[state.current]?.key,
-        items: state => state.conversations.map((x: any) => {
-            x.icon = h(MessageOutlined)
-            return x
-        })
     },
     actions: {
         newOne() {
             const newVar = {
                 key: v4(),
-                label: 'Unnamed conversation',
+                title: 'Unnamed conversation',
                 messages: null
             };
             this.conversations = [...this.conversations, newVar]
             this.current++
             return newVar
+        },
+        delete(key:any) {
+            this.conversations = this.conversations.filter((item: any)=>{
+                return item.key !== key
+            })
         },
         active(convId: any) {
             if (!convId) this.current = -1
@@ -59,4 +62,4 @@ export const useConversationStore = defineStore("conversationStore", {
         }
     },
     persist: true
-})
+})()

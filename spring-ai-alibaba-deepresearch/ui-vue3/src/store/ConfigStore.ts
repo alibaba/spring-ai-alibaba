@@ -31,7 +31,7 @@ type ConfigType = {
         search_engine: 'tavily',
     }
 }
-export const useConfigStore = <Message extends SimpleType>() => defineStore("configStore", {
+export const useConfigStore = () => defineStore("configStore", {
     state(): ConfigType {
         return reactive({
             form: {
@@ -45,7 +45,9 @@ export const useConfigStore = <Message extends SimpleType>() => defineStore("con
             }
         })
     },
-    getters: {},
+    getters: {
+        chatConfig: state=>state.form
+    },
     actions: {},
     persist: true
 })()

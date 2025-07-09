@@ -45,7 +45,9 @@
             :onActiveChange="changeConv"
             :defaultActiveKey="currentConvKey"
             :items="conversationItems"
-        />
+            :menu="menuConfig"
+        >
+        </Conversations>
       </Flex>
       <Flex class="right" flex="1" vertical>
         <Flex justify="space-between" flex="1" class="header" style="">
@@ -68,30 +70,34 @@
       </Flex>
     </Flex>
 
-
   </div>
 
 </template>
 
 <script setup lang="tsx">
-import {Flex, theme,} from 'ant-design-vue';
+import {Button, Dropdown, Flex, Input, Menu, MenuItem, type MenuProps, message, theme} from 'ant-design-vue';
 import {
+  EllipsisOutlined,
   FormOutlined,
   MenuOutlined,
-  MessageOutlined,
   QuestionCircleOutlined,
-  SettingOutlined
+  SettingOutlined,
+  SmileOutlined,
+  EditOutlined,
+  StopOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons-vue'
-import {computed, inject, onMounted, ref, watch} from 'vue';
+import {computed, inject, nextTick, onMounted, ref, watch} from 'vue';
 import {PRIMARY_COLOR,} from '@/base/constants'
 import {PROVIDE_INJECT_KEY} from '@/base/enums/ProvideInject'
 import {changeLanguage, localeConfig} from '@/base/i18n'
-import {Conversations} from "ant-design-x-vue";
+import {Conversations, type ConversationsProps} from "ant-design-x-vue";
 import Gap from "@/components/tookit/Gap.vue";
-import Config from "@/components/layout/config/index.vue";
 import {useConversationStore} from "@/store/ConversationStore";
 import {useAuthStore} from "@/store/AuthStore";
 import {useRoute, useRouter} from "vue-router";
+import {storeToRefs} from "pinia";
+import {useMessageStore} from "@/store/MessageStore";
 
 const router = useRouter();
 const route = useRoute();
@@ -109,14 +115,70 @@ let __null = PRIMARY_COLOR
 const i18nConfig: any = inject(PROVIDE_INJECT_KEY.LOCALE)
 let locale = ref(localeConfig.locale)
 const conversationStore = useConversationStore();
+const {conversations} = storeToRefs(conversationStore)
 conversationStore.active(convId)
 const currentConvKey = conversationStore.curConvKey
+const EditableItem = (props: { index: number; disabled?: boolean}) => {
+  return (
+      <Flex justify="space-between" align="center" style={{width: '100%'}}>
+        {
+          conversationStore.editKey === conversations.value[props.index].key
+              ? <Input
+                  v-model:value={conversations.value[props.index].title}
+                  onBlur={() => conversations.value[props.index].editing = false}
+                  onPressEnter={() => conversationStore.editKey = null}
+              />
+              : <>
+                <span>{conversations.value[props.index].title}</span>
+              </>
+
+        }
+      </Flex>
+  )
+}
 const conversationItems = computed(() => {
-  return conversationStore.conversations.map((x: any) => {
-    x.icon = <MessageOutlined/>
-    return x
+  return conversations.value.map((x: any, index: number) => {
+    return {
+      // icon:  <MessageOutlined/>,
+      ...x,
+      label: <EditableItem index={index} />,
+    }
   })
 })
+const menuConfig: ConversationsProps['menu'] = (conversation) => ({
+  items: [
+    {
+      label: 'edit',
+      key: 'edit',
+      icon: <EditOutlined />,
+    },
+    {
+      label: 'delete',
+      key: 'delete',
+      icon: <DeleteOutlined />,
+      danger: true,
+    },
+  ],
+  onClick: (menuInfo) => {
+    switch (menuInfo.key){
+      case 'edit':
+        conversationStore.editKey = conversation.key
+        break
+      case 'delete':
+        conversationStore.delete(conversation.key)
+        if(route.params.convId === conversation.key){
+          const messageStore = useMessageStore();
+          delete messageStore.history[conversation.key]
+          delete messageStore.currentState[conversation.key]
+          router.push("/chat")
+        }
+        break
+      default:
+        break
+    }
+    menuInfo.domEvent.stopPropagation();
+  },
+});
 
 function createNewConversation() {
   const {key} = conversationStore.newOne()
