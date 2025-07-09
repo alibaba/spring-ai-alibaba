@@ -37,11 +37,12 @@ public abstract class AbstractNode {
 	private NodeDefinition nodeDefinition;
 
 	public AbstractNode(ChatClient.Builder builder) {
-		this.chatClient = builder.defaultAdvisors(RoutingNodeAdvisor.Builder()
+		this.chatClient = builder
+			.defaultAdvisors(RoutingNodeAdvisor.Builder()
 				.selections(NodeSelectionUtil.getAvailableNodes())
 				.JSONParser(new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))
-				.build()
-		).build();
+				.build())
+			.build();
 	}
 
 	protected NodeDefinition.SelectionNode guide(String input) {
