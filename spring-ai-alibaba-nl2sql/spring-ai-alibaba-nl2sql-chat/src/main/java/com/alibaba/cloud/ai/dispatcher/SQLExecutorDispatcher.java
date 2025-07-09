@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.dispatcher;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
+import com.alibaba.cloud.ai.util.StateUtils;
 
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
@@ -28,7 +29,7 @@ public class SQLExecutorDispatcher implements EdgeAction {
 
 	@Override
 	public String apply(OverAllState state) {
-		boolean present = state.value(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT).isPresent();
+		boolean present = StateUtils.hasValue(state,SQL_EXECUTE_NODE_EXCEPTION_OUTPUT);
 		if (present) {
 			return SQL_GENERATE_NODE;
 		}

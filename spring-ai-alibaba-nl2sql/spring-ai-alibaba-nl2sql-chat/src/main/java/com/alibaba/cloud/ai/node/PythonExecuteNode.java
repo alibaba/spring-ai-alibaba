@@ -17,86 +17,83 @@
 package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
-import com.alibaba.cloud.ai.schema.Plan;
+import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StepResultUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.core.ParameterizedTypeReference;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
+ * Python执行节点
+ *
  * @author zhangshenghang
  */
-public class PythonExecuteNode implements NodeAction {
+public class PythonExecuteNode extends AbstractPlanBasedNode {
 
 	private static final Logger logger = LoggerFactory.getLogger(PythonExecuteNode.class);
 
-	private static final String SYSTEM_PROMPT = "你是一个模拟Python的执行���，我将给你需求和数据，请帮我分析，并给出详细的数据结果";
+	private static final String SYSTEM_PROMPT = """
+			你将模拟Python的执行，根据我提供的需求和数据进行详细分析，并给出最终的数据结果。
+			在进行分析时，请按照以下要求操作：
+			1. 仔细理解需求和数据的内容。
+			2. 运用类似于Python的逻辑和方法进行分析。
+			3. 给出详细的分析过程和推理依据。
+			4. 输出详细、全面的数据结果。
+			""";
 
 	private final ChatClient chatClient;
-	private final BeanOutputConverter<Plan> converter;
 
 	public PythonExecuteNode(ChatClient.Builder chatClientBuilder) {
-		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {});
+		super();
 		this.chatClient = chatClientBuilder.build();
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		// 获取计划节点输出并解析
-		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
-			.orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
-		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
+		logNodeEntry();
 
-		Plan plan = converter.convert(plannerNodeOutput);
-		Integer currentStep = state.value(PLAN_CURRENT_STEP, 1);
+		ExecutionStep executionStep = getCurrentExecutionStep(state);
+		Integer currentStep = getCurrentStepNumber(state);
 
-		// 获取当前执行步骤信息
-		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
-		if (executionPlan == null || executionPlan.isEmpty()) {
-			throw new IllegalStateException("执行计划为空");
-		}
-
-		int stepIndex = currentStep - 1;
-		if (stepIndex < 0 || stepIndex >= executionPlan.size()) {
-			throw new IllegalStateException("当前步骤索引超出范围: " + stepIndex);
-		}
-
-		ExecutionStep executionStep = executionPlan.get(stepIndex);
 		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
 		String instruction = toolParameters.getInstruction();
 		String description = toolParameters.getDescription();
 
-		// 获取SQL执行结果
-		Map<String, String> sqlExecuteResult = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<>());
+		@SuppressWarnings("unchecked")
+		Map<String, String> sqlExecuteResult = StateUtils.getObjectValue(
+			state, SQL_EXECUTE_NODE_OUTPUT, Map.class, new HashMap());
 
-		// 构建用户消息并调用AI
+		String aiResponse = executeAnalysis(state, instruction, description, sqlExecuteResult);
+
+		return buildResult(currentStep, aiResponse, sqlExecuteResult);
+	}
+
+	private String executeAnalysis(OverAllState state, String instruction, String description, Map<String, String> sqlExecuteResult) {
 		String userMessage = String.format(
 			"## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
-			plan.toJsonStr(), instruction, description, sqlExecuteResult
+			getPlan(state).toJsonStr(), instruction, description, sqlExecuteResult
 		);
 
-		String aiResponse = chatClient.prompt(SYSTEM_PROMPT)
+		return chatClient.prompt(SYSTEM_PROMPT)
 			.user(userMessage)
 			.call()
 			.content();
+	}
 
-		// 构建返回结果
-		Map<String, Object> updated = new HashMap<>();
+	private Map<String, Object> buildResult(Integer currentStep, String aiResponse, Map<String, String> sqlExecuteResult) {
 		Map<String, String> updatedSqlResult = StepResultUtils.addStepResult(sqlExecuteResult, currentStep, aiResponse);
 
-		updated.put(SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult);
-		updated.put(PLAN_CURRENT_STEP, currentStep + 1);
+		logNodeOutput("analysis_result", aiResponse);
 
-		return updated;
+		return Map.of(
+			SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult,
+			PLAN_CURRENT_STEP, currentStep + 1
+		);
 	}
 }

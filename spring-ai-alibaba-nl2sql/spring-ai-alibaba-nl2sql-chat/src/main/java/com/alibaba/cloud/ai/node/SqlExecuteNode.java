@@ -21,64 +21,54 @@ import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
-import com.alibaba.cloud.ai.schema.Plan;
+import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StepResultUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.core.ParameterizedTypeReference;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
+ * SQL执行节点
+ *
  * @author zhangshenghang
  */
-public class SqlExecuteNode implements NodeAction {
+public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 	private static final Logger logger = LoggerFactory.getLogger(SqlExecuteNode.class);
 
-	private final BeanOutputConverter<Plan> converter;
 	private final DbConfig dbConfig;
 	private final DbAccessor dbAccessor;
 
 	public SqlExecuteNode(ChatClient.Builder chatClientBuilder, DbAccessor dbAccessor, DbConfig dbConfig) {
-		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {});
+		super();
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
-			.orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
-		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
+		logNodeEntry();
 
-		Plan plan = converter.convert(plannerNodeOutput);
-		Integer currentStep = state.value(PLAN_CURRENT_STEP, 1);
+		ExecutionStep executionStep = getCurrentExecutionStep(state);
+		Integer currentStep = getCurrentStepNumber(state);
 
-		// 获取当前执行步骤信息
-		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
-		if (executionPlan == null || executionPlan.isEmpty()) {
-			throw new IllegalStateException("执行计划为空");
-		}
-
-		int stepIndex = currentStep - 1;
-		if (stepIndex < 0 || stepIndex >= executionPlan.size()) {
-			throw new IllegalStateException("当前步骤索引超出范围: " + stepIndex);
-		}
-
-		ExecutionStep executionStep = executionPlan.get(stepIndex);
 		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
-		logger.info(toolParameters.getDescription());
-
 		String sqlQuery = toolParameters.getSqlQuery();
+
+		logger.info("执行SQL查询: {}", sqlQuery);
+		logger.info("步骤描述: {}", toolParameters.getDescription());
+
+		return executeSqlQuery(state, currentStep, sqlQuery);
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> executeSqlQuery(OverAllState state, Integer currentStep, String sqlQuery) {
 		DbQueryParameter dbQueryParameter = new DbQueryParameter();
 		dbQueryParameter.setSql(sqlQuery);
 
@@ -86,20 +76,19 @@ public class SqlExecuteNode implements NodeAction {
 			ResultSetBO resultSetBO = dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
 			String jsonStr = resultSetBO.toJsonStr();
 
-			// 使用工具类统一处理步骤结果
-			Map<String, String> existingResults = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<>());
+			Map<String, String> existingResults = StateUtils.getObjectValue(
+				state, SQL_EXECUTE_NODE_OUTPUT, Map.class, new HashMap());
 			Map<String, String> updatedResults = StepResultUtils.addStepResult(existingResults, currentStep, jsonStr);
 
-			Map<String, Object> updated = new HashMap<>();
-			updated.put(SQL_EXECUTE_NODE_OUTPUT, updatedResults);
-			updated.put(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, null);
+			logger.info("SQL执行成功，结果记录数: {}", resultSetBO.getData() != null ? resultSetBO.getData().size() : 0);
 
-			return updated;
+			return Map.of(
+				SQL_EXECUTE_NODE_OUTPUT, updatedResults,
+				SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, ""
+			);
 		} catch (Exception e) {
-			// 处理验证失败情况
 			String errorMessage = e.getMessage();
-			logger.error("[{}] SQL执行失败 - SQL: [{}], 原因: {}", this.getClass().getSimpleName(), sqlQuery, errorMessage);
-			// 失败，重新生成SQL
+			logger.error("SQL执行失败 - SQL: [{}] ", sqlQuery, e);
 			return Map.of(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, errorMessage);
 		}
 	}

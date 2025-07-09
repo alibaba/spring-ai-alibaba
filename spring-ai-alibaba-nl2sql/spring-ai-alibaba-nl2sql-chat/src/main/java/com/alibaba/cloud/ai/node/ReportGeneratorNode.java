@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.schema.Plan;
+import com.alibaba.cloud.ai.util.StateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -34,6 +35,8 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
+ * 报告生成节点
+ *
  * @author zhangshenghang
  */
 public class ReportGeneratorNode implements NodeAction {
@@ -41,42 +44,60 @@ public class ReportGeneratorNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(ReportGeneratorNode.class);
 
 	private final ChatClient chatClient;
-
 	private final BeanOutputConverter<Plan> converter;
 
 	public ReportGeneratorNode(ChatClient.Builder chatClientBuilder) {
 		this.chatClient = chatClientBuilder.build();
-		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<>() {
-		});
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {});
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 
-		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
-			.orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
-		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
+		// 获取必要的输入参数
+		String plannerNodeOutput = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT);
+		String userInput = StateUtils.getStringValue(state, INPUT_KEY);
+		Integer currentStep = StateUtils.getObjectValue(state, PLAN_CURRENT_STEP, Integer.class, 1);
+		@SuppressWarnings("unchecked")
+		HashMap<String, String> executionResults = StateUtils.getObjectValue(state, SQL_EXECUTE_NODE_OUTPUT, HashMap.class, new HashMap<>());
 
-		Map<String, Object> updated = new HashMap<>();
+		logger.info("计划节点输出: {}", plannerNodeOutput);
+
+		// 解析计划并获取当前步骤
 		Plan plan = converter.convert(plannerNodeOutput);
-		Integer currentStep = state.value(PLAN_CURRENT_STEP, 1);
-		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
+		ExecutionStep executionStep = getCurrentExecutionStep(plan, currentStep);
+		String summaryAndRecommendations = executionStep.getToolParameters().getSummaryAndRecommendations();
 
-		// 添加空值检查
+		// 构建报告
+		String reportContent = generateReport(userInput, plan, executionResults, summaryAndRecommendations);
+
+		logger.info("生成的报告内容: {}", reportContent);
+
+		return buildFinalResult(reportContent);
+	}
+
+	/**
+	 * 获取当前执行步骤
+	 */
+	private ExecutionStep getCurrentExecutionStep(Plan plan, Integer currentStep) {
+		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
 		if (executionPlan == null || executionPlan.isEmpty()) {
 			throw new IllegalStateException("执行计划为空");
 		}
 
-		ExecutionStep executionStep = executionPlan.get(currentStep - 1);
-		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
-		String summaryAndRecommendations = toolParameters.getSummaryAndRecommendations();
-		HashMap<String, String> executionResults = state.value(SQL_EXECUTE_NODE_OUTPUT, new HashMap<>());
+		int stepIndex = currentStep - 1;
+		if (stepIndex < 0 || stepIndex >= executionPlan.size()) {
+			throw new IllegalStateException("当前步骤索引超出范围: " + stepIndex);
+		}
 
-		// 获取用户原始输入
-		String userInput = (String) state.value(INPUT_KEY)
-			.orElseThrow(() -> new IllegalStateException("用户输入为空"));
+		return executionPlan.get(stepIndex);
+	}
 
+	/**
+	 * 生成报告
+	 */
+	private String generateReport(String userInput, Plan plan, HashMap<String, String> executionResults, String summaryAndRecommendations) {
 		// 构建用户需求和计划描述
 		String userRequirementsAndPlan = buildUserRequirementsAndPlan(userInput, plan);
 
@@ -90,18 +111,10 @@ public class ReportGeneratorNode implements NodeAction {
 			summaryAndRecommendations
 		);
 
-		String content = chatClient.prompt()
+		return chatClient.prompt()
 			.user(reportPrompt)
 			.call()
 			.content();
-
-		logger.info("生成的报告内容: {}", content);
-
-		updated.put(RESULT, content);
-		updated.put(SQL_EXECUTE_NODE_OUTPUT, null);
-		updated.put(PLAN_CURRENT_STEP, null);
-		updated.put(PLANNER_NODE_OUTPUT, null);
-		return updated;
 	}
 
 	/**
@@ -172,4 +185,16 @@ public class ReportGeneratorNode implements NodeAction {
 		return sb.toString();
 	}
 
+	/**
+	 * 构建最终结果
+	 */
+	private Map<String, Object> buildFinalResult(String reportContent) {
+		Map<String, Object> result = new HashMap<>();
+		result.put(RESULT, reportContent);
+		// 清理临时状态
+		result.put(SQL_EXECUTE_NODE_OUTPUT, null);
+		result.put(PLAN_CURRENT_STEP, null);
+		result.put(PLANNER_NODE_OUTPUT, null);
+		return result;
+	}
 }
