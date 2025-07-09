@@ -29,9 +29,6 @@ public class DdlFactory {
 		ddlExecutorSet.put(getConstraint(ddlExecutor.getType()), ddlExecutor);
 	}
 
-	public DdlFactory() {
-	}
-
 	public AbstractDdl getDdlExecutor(DbConfig dbConfig) {
 		BizDataSourceTypeEnum type = BizDataSourceTypeEnum.fromTypeName(dbConfig.getDialectType());
 		if (type == null) {
