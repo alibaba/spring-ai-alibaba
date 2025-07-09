@@ -92,7 +92,6 @@ public class SqlGenerateNode implements NodeAction {
 
 		// ----------------------------------------------------
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
-		String input = (String) state.value(INPUT_KEY).orElseThrow();
 		List<String> evidenceList = (List<String>) state.value(EVIDENCES).orElseThrow();
 		SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
 
@@ -108,24 +107,7 @@ public class SqlGenerateNode implements NodeAction {
 			return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
 		}
 
-		// 检查召回信息是否满足需求
-		String recallInfoSatisfyRequirement = baseNl2SqlService.isRecallInfoSatisfyRequirement(input, schemaDTO,
-				evidenceList);
-		logger.info("召回信息是否满足需求：{}", recallInfoSatisfyRequirement);
-
-		if (recallInfoSatisfyRequirement.startsWith("否") || recallInfoSatisfyRequirement.contains("**否")) {
-			return handleUnsatisfiedRecallInfo(state, recallInfoSatisfyRequirement);
-		}
-
-		// 生成SQL
-		logger.info("开始生成SQL");
-		String sql = baseNl2SqlService.generateSql(evidenceList, input, schemaDTO);
-		logger.info("生成的SQL为：{}", sql);
-
-		Map<String, Object> result = Map.of(SQL_GENERATE_OUTPUT, sql, RESULT, sql);
-
-		logger.info("{} 节点执行完成", this.getClass().getSimpleName());
-		return result;
+		throw new IllegalStateException("未知异常");
 	}
 
 	/**
@@ -142,7 +124,6 @@ public class SqlGenerateNode implements NodeAction {
 		String newSql = baseNl2SqlService.generateSql(evidenceList, input, schemaDTO, originalSql, exceptionMessage);
 		logger.info("重新生成的SQL为：{}", newSql);
 
-		// return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
 		return newSql;
 	}
 

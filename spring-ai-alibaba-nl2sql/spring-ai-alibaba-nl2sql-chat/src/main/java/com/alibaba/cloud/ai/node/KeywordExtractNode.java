@@ -55,14 +55,6 @@ public class KeywordExtractNode implements NodeAction {
 		List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);
 		logger.info("evidences：{} , keywords: {}", evidences, keywords);
 
-		state.value(SQL_GENERATE_SCHEMA_MISSING_ADVICE).map(advice -> {
-			logger.info("Schema 召回缺失补充");
-			List<String> additionalKeywords = baseNl2SqlService.extractKeywords((String) advice, evidences);
-			logger.info("Schema 召回缺失补充 keywords: {}", additionalKeywords);
-			keywords.addAll(additionalKeywords);
-			return keywords;
-		});
-
 		Map<String, Object> updated = Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, keywords, EVIDENCES, evidences, RESULT,
 				keywords);
 

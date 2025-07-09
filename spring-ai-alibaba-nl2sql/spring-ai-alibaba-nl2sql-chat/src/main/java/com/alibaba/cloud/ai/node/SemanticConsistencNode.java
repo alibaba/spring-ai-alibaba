@@ -31,7 +31,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -80,14 +79,9 @@ public class SemanticConsistencNode implements NodeAction {
 			.map(SchemaDTO.class::cast)
 			.orElseThrow(() -> new IllegalStateException("Schema DTO not found"));
 
-		// String sql = state.value(SQL_GENERATE_OUTPUT)
-		// .map(String.class::cast)
-		// .orElseThrow(() -> new IllegalStateException("SQL not found"));
-
 		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT).orElseThrow();
 		logger.info("plannerNodeOutput: {}", plannerNodeOutput);
 
-		Map<String, Object> updated = new HashMap<>();
 		Plan plan = converter.convert(plannerNodeOutput);
 		Integer planCurrentStep = state.value(PLAN_CURRENT_STEP, 1);
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
@@ -99,8 +93,6 @@ public class SemanticConsistencNode implements NodeAction {
 		String evidence = StringUtils.join(evidenceList, ";\n");
 
 		// 构建和执行语义一致性检查
-		// List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(input, dbConfig,
-		// schemaDTO, evidenceList);
 		String semanticConsistency = baseNl2SqlService.semanticConsistency(sqlQuery,
 				String.join("\n", schema, evidence, toolParameters.getDescription()));
 
