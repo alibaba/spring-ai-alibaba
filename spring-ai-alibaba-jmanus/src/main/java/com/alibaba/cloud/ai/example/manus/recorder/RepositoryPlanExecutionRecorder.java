@@ -32,9 +32,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 内存PlanExecutionRecorder 无法在分布式环境下使用，因此需要使用DB持久化PlanExecutionRecord
+ * The in-memory PlanExecutionRecorder cannot be used in a distributed environment, so it is necessary to use DB persistence for PlanExecutionRecord.
  *
- * 解决的问题可参考: https://github.com/alibaba/spring-ai-alibaba/issues/1391
+ * fix feature: https://github.com/alibaba/spring-ai-alibaba/issues/1391
  */
 @Component
 public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {

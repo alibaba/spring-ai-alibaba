@@ -16,9 +16,9 @@
 package com.alibaba.cloud.ai.example.manus.recorder.converter;
 
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
-import com.alibaba.fastjson.JSON;
 import jakarta.persistence.AttributeConverter;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.ai.util.json.JsonParser;
 
 public class StringAttributeConverter implements AttributeConverter<PlanExecutionRecord, String> {
 
@@ -27,7 +27,7 @@ public class StringAttributeConverter implements AttributeConverter<PlanExecutio
 		if (attribute == null) {
 			return null;
 		}
-		return JSON.toJSONString(attribute);
+		return JsonParser.toJson(attribute);
 	}
 
 	@Override
@@ -35,7 +35,7 @@ public class StringAttributeConverter implements AttributeConverter<PlanExecutio
 		if (StringUtils.isBlank(json)) {
 			return null;
 		}
-		return JSON.parseObject(json, PlanExecutionRecord.class);
-	}
+		return JsonParser.fromJson(json, PlanExecutionRecord.class);
+    }
 
 }

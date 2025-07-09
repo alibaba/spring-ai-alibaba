@@ -128,14 +128,11 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * 记录计划执行情况的方法。
+	 * Record plan execution with PlanExecutionRecord parameter
 	 *
-	 * <p>
-	 * 该方法用于记录执行的计划。如果当前记录是一个子计划，则将其附加到相应的思维—行动记录上。 通过获取计划ID、根计划ID和思维—行动记录ID，判断当前记录是否为子计划。
-	 * 如果是子计划，则查找相应的思维—行动记录，并将子计划的执行情况记录到该思维—行动记录中。
-	 * @param stepRecord 执行的计划记录对象，包含当前计划ID、根计划ID和思维—行动记录ID。
-	 * @return 当前计划的ID，如果没有找到相应的思维—行动记录，则返回的ID可能仍然有效。
-	 */
+     * @param stepRecord Plan execution record
+     * @return Plan ID
+     */
 	@Override
 	public String recordPlanExecution(PlanExecutionRecord stepRecord) {
 		String planId = stepRecord.getCurrentPlanId();
@@ -206,14 +203,13 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * 获取计划执行记录
+	 * Get execution record of the specified plan ID
 	 *
-	 * <p>
-	 * 根据给定的计划ID、根计划ID和思维行为记录ID，获取或创建对应的计划执行记录。
-	 * @param planId 计划的唯一标识符
-	 * @param rootPlanId 根计划的唯一标识符
-	 * @param thinkActRecordId 思维行为记录的唯一标识符
-	 * @return 返回对应的计划执行记录，如果无法创建记录则返回null
+	 * @param planId Plan ID
+	 * @param rootPlanId
+	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for
+	 * sub-plan)
+	 * @return
 	 */
 	@Override
 	public PlanExecutionRecord getExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId) {
