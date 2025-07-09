@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.prompt.service;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.vo.PromptVO;
 import org.springframework.ai.chat.messages.Message;
 
