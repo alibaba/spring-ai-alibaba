@@ -80,7 +80,7 @@ public class RoutingNodeAdvisor implements BaseAdvisor {
 						});
 				chatResponseBuilder = ChatResponse.builder()
 					.from(chatClientResponse.chatResponse())
-					.metadata(ChatResponseMetadata.builder().metadata(Map.of("routeredNode", selectionNode)).build());
+					.metadata(ChatResponseMetadata.builder().metadata(Map.of("routerNode", selectionNode)).build());
 			}
 			catch (JsonProcessingException e) {
 				throw new IllegalStateException("Failed to parse selection node from chat response: " + chatResponse,
