@@ -133,18 +133,19 @@
                   <div v-if="tas.actionNeeded" class="action-section">
                     <h5><Icon icon="carbon:play" /> {{ $t('rightPanel.action') }}</h5>
                     <div class="action-content">
-                      <div class="tool-info">
-                        <span class="label">{{ $t('rightPanel.tool') }}:</span>
-                        <span class="value">{{ tas.toolName || '' }}</span>
-                      </div>
-                      <div class="input">
-                        <span class="label">{{ $t('rightPanel.toolParameters') }}:</span>
-                        <pre>{{ formatJson(tas.toolParameters)  }}</pre>
-                      </div>
-                      <div class="output">
-                        <span class="label">{{ $t('rightPanel.executionResult') }}:</span>
-                        <pre>{{ formatJson(tas.actionResult) }}</pre>
-                      </div>
+                      <div v-for="(actToolInfo, index) in tas.actToolInfoList" :key="index">
+                        <div class="tool-info">
+                          <span class="label">{{ $t('rightPanel.tool') }}:</span>
+                          <span class="value">{{ actToolInfo.name || '' }}</span>
+                        </div>
+                        <div class="input">
+                          <span class="label">{{ $t('rightPanel.toolParameters') }}:</span>
+                          <pre>{{ formatJson(actToolInfo.parameters) }}</pre>
+                        </div>
+                        <div class="output">
+                          <span class="label">{{ $t('rightPanel.executionResult') }}:</span>
+                          <pre>{{ formatJson(actToolInfo.result) }}</pre>
+                        </div>
                     </div>
                   </div>
 
