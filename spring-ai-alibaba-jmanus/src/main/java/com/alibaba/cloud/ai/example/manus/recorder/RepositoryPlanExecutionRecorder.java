@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultPlanExecutionRecorder.class);
+	private static final Logger logger = LoggerFactory.getLogger(RepositoryPlanExecutionRecorder.class);
 
 	private final AtomicLong agentExecutionIdGenerator = new AtomicLong(0);
 
