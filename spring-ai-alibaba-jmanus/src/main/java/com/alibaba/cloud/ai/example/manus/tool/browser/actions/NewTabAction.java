@@ -33,8 +33,8 @@ public class NewTabAction extends BrowserAction {
 			return new ToolExecuteResult("URL is required for 'new_tab' action");
 		}
 
-		Page page = getCurrentPage(); // 打开新标签页
-		page.navigate(url); // 导航到指定 URL
+		Page page = getCurrentPage(); // Open new tab
+		page.navigate(url); // Navigate to specified URL
 		return new ToolExecuteResult("Opened new tab with URL " + url);
 	}
 

@@ -37,68 +37,68 @@ public class ConfigEntity {
 	private Long id;
 
 	/**
-	 * 配置组
+	 * Configuration group
 	 */
 	@Column(nullable = false)
 	private String configGroup;
 
 	/**
-	 * 配置子组
+	 * Configuration sub-group
 	 */
 	@Column(nullable = false)
 	private String configSubGroup;
 
 	/**
-	 * 配置键
+	 * Configuration key
 	 */
 	@Column(nullable = false)
 	private String configKey;
 
 	/**
-	 * 配置项完整路径
+	 * Configuration item full path
 	 */
 	@Column(nullable = false, unique = true)
 	private String configPath;
 
 	/**
-	 * 配置值
+	 * Configuration value
 	 */
 	@Column(columnDefinition = "TEXT")
 	private String configValue;
 
 	/**
-	 * 默认值
+	 * Default value
 	 */
 	@Column(columnDefinition = "TEXT")
 	private String defaultValue;
 
 	/**
-	 * 配置描述
+	 * Configuration description
 	 */
 	@Column(columnDefinition = "TEXT")
 	private String description;
 
 	/**
-	 * 输入类型
+	 * Input type
 	 */
 	@Column(nullable = false)
 	@Enumerated(EnumType.STRING)
 	private ConfigInputType inputType;
 
 	/**
-	 * 选项JSON字符串 用于存储SELECT类型的选项数据
+	 * Options JSON string for storing SELECT type option data
 	 */
 	@Column(columnDefinition = "TEXT")
 	private String optionsJson;
 
 	/**
-	 * 最后更新时间
+	 * Last update time
 	 */
 	@Column(nullable = false)
 	private LocalDateTime updateTime;
 
 	/**
-	 * 创建时间
+	 * Create time
 	 */
 	@Column(nullable = false)
 	private LocalDateTime createTime;

@@ -16,13 +16,14 @@
 package com.alibaba.cloud.ai.example.manus.tool.bash;
 
 /**
- * Shell执行器工厂类 负责创建对应操作系统的Shell执行器
+ * Shell executor factory class responsible for creating shell executors for corresponding
+ * operating systems
  */
 public class ShellExecutorFactory {
 
 	/**
-	 * 创建对应当前操作系统的Shell执行器
-	 * @return ShellCommandExecutor实现
+	 * Create shell executor for current operating system
+	 * @return ShellCommandExecutor implementation
 	 */
 	public static ShellCommandExecutor createExecutor() {
 		String os = System.getProperty("os.name").toLowerCase();
@@ -38,9 +39,9 @@ public class ShellExecutorFactory {
 	}
 
 	/**
-	 * 创建指定操作系统类型的Shell执行器
-	 * @param osType 操作系统类型：windows/mac/linux
-	 * @return ShellCommandExecutor实现
+	 * Create shell executor for specified operating system type
+	 * @param osType Operating system type: windows/mac/linux
+	 * @return ShellCommandExecutor implementation
 	 */
 	public static ShellCommandExecutor createExecutor(String osType) {
 		switch (osType.toLowerCase()) {

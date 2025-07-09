@@ -22,7 +22,7 @@ import zh from './zh'
 export const LOCAL_STORAGE_LOCALE = 'LOCAL_STORAGE_LOCALE'
 
 export const localeConfig = reactive({
-  locale: localStorage.getItem(LOCAL_STORAGE_LOCALE) || 'zh',
+  locale: localStorage.getItem(LOCAL_STORAGE_LOCALE) ?? 'zh',
   opts: [
     {
       value: 'en',
@@ -38,16 +38,15 @@ export const localeConfig = reactive({
 export const i18n = createI18n({
   legacy: false,
   locale: localeConfig.locale,
-  fallbackLocale: 'zh-CN',
+  fallbackLocale: 'zh',
   messages: {
     en: en,
     zh: zh,
   },
 })
 
-export const changeLanguage = (l: string) => {
-  const locale = l === 'en' ? 'en-US' : 'zh-CN'
+export const changeLanguage = (locale: string) => {
   localStorage.setItem(LOCAL_STORAGE_LOCALE, locale)
-  // @ts-ignore
-  i18n.global.locale.value = locale
+  i18n.global.locale.value = locale as 'zh' | 'en'
+  localeConfig.locale = locale
 }

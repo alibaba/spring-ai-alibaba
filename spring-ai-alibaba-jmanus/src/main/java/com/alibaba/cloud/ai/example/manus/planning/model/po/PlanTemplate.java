@@ -23,7 +23,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * 计划模板实体类，用于存储计划模板的基本信息
+ * The entity class for the plan template, used to store the basic information of the plan
+ * template
  */
 @Entity
 @Table(name = "plan_template")
@@ -45,7 +46,7 @@ public class PlanTemplate {
 	@Column(name = "update_time", nullable = false)
 	private LocalDateTime updateTime;
 
-	// 构造函数
+	// Constructor
 	public PlanTemplate() {
 	}
 
@@ -57,7 +58,7 @@ public class PlanTemplate {
 		this.updateTime = LocalDateTime.now();
 	}
 
-	// Getters and Setters
+	// Getters and setters
 	public String getPlanTemplateId() {
 		return planTemplateId;
 	}

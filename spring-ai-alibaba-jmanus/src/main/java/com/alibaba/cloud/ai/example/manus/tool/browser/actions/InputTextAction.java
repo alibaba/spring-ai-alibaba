@@ -34,13 +34,16 @@ public class InputTextAction extends BrowserAction {
 		Integer index = request.getIndex();
 		String text = request.getText();
 
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		Page page = getCurrentPage(); // Get Playwright Page instance
 		if (index == null || text == null) {
 			return new ToolExecuteResult("Index and text are required for 'input_text' action");
 		}
 
-		// 获取交互元素（InteractiveElement），支持所有 frame（包括 iframe）
-		List<InteractiveElement> interactiveElements = getInteractiveElements(page); // 已支持递归
+		// Get interactive elements (InteractiveElement), supports all frames (including
+		// iframe)
+		List<InteractiveElement> interactiveElements = getInteractiveElements(page); // Already
+																						// supports
+																						// recursion
 																						// frame
 		if (index < 0 || index >= interactiveElements.size()) {
 			return new ToolExecuteResult("Element with index " + index + " not found");
@@ -53,36 +56,37 @@ public class InputTextAction extends BrowserAction {
 			return new ToolExecuteResult("Element at index " + index + " is not an input element");
 		}
 
-		// 获取元素定位器
+		// Get element locator
 		Locator elementLocator = inputElement.getLocator();
-		// 3. 尝试 fill
+		// 3. Try fill
 		try {
-			elementLocator.fill(""); // 先清空
-			// 设置每个字符输入间隔 100ms，可根据需要调整
+			elementLocator.fill(""); // Clear first
+			// Set character input delay to 100ms, adjustable as needed
 			com.microsoft.playwright.Locator.PressSequentiallyOptions options = new com.microsoft.playwright.Locator.PressSequentiallyOptions()
 				.setDelay(100);
 			elementLocator.pressSequentially(text, options);
 
 		}
 		catch (Exception e) {
-			// 4. fill 失败，尝试 pressSequentially
+			// 4. If fill fails, try pressSequentially
 			try {
-				elementLocator.fill(""); // 再清空一次
-				elementLocator.fill(text); // 直接填充
+				elementLocator.fill(""); // Clear again
+				elementLocator.fill(text); // Direct fill
 			}
 			catch (Exception e2) {
-				// 5. 还不行，直接用 JS 赋值并触发 input 事件
+				// 5. If still fails, use JS assignment and trigger input event
 				try {
 					elementLocator.evaluate(
 							"(el, value) => { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); }",
 							text);
 				}
 				catch (Exception e3) {
-					return new ToolExecuteResult("输入失败: " + e3.getMessage());
+					return new ToolExecuteResult("Input failed: " + e3.getMessage());
 				}
 			}
 		}
-		return new ToolExecuteResult("成功输入: '" + text + "' 到指定的对象.其索引编号为 ： " + index);
+		return new ToolExecuteResult(
+				"Successfully input: '" + text + "' to the specified element with index: " + index);
 	}
 
 }

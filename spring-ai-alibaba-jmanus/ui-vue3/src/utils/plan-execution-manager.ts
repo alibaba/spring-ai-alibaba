@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-import { ref, reactive } from 'vue'
+import { reactive } from 'vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { CommonApiService } from '@/api/common-api-service'
+import type { PlanExecutionRecord } from '@/types/plan-execution-record'
+import type { UIStateData } from '@/types/cache-data'
 
-// 定义事件回调接口
+// Define event callback interface
 interface EventCallbacks {
-  onPlanUpdate?: (data: any) => void
-  onPlanCompleted?: (data: any) => void
-  onDialogRoundStart?: (data: any) => void
-  onMessageUpdate?: (data: any) => void
-  onChatInputUpdateState?: (data: any) => void
+  onPlanUpdate?: (rootPlanId: string) => void
+  onPlanCompleted?: (rootPlanId: string) => void
+  onDialogRoundStart?: (rootPlanId: string) => void
+  onChatInputUpdateState?: (rootPlanId: string) => void
   onChatInputClear?: () => void
 }
 
@@ -36,20 +37,12 @@ interface ExecutionState {
   pollTimer: number | null
 }
 
-interface PlanDetails {
-  planId: string
-  title?: string
-  steps?: any[]
-  currentStepIndex?: number
-  completed?: boolean
-  summary?: string
-}
 
 export class PlanExecutionManager {
   private static instance: PlanExecutionManager | null = null
   private readonly POLL_INTERVAL = 5000
 
-  // 响应式状态
+  // Reactive state
   private state = reactive<ExecutionState>({
     activePlanId: null,
     lastSequenceSize: 0,
@@ -57,16 +50,90 @@ export class PlanExecutionManager {
     pollTimer: null
   })
 
-  // 事件回调
+  // Event callbacks
   private callbacks: EventCallbacks = {}
 
+  // Cache for PlanExecutionRecord by rootPlanId
+  private planExecutionCache = new Map<string, PlanExecutionRecord>()
+  
+  // Cache for UI state by rootPlanId
+  private uiStateCache = new Map<string, UIStateData>()
+
+  /**
+   * Get cached plan execution record by rootPlanId
+   */
+  getCachedPlanRecord(rootPlanId: string): PlanExecutionRecord | undefined {
+    return this.planExecutionCache.get(rootPlanId)
+  }
+
+  /**
+   * Get cached UI state by rootPlanId
+   */
+  getCachedUIState(rootPlanId: string): UIStateData | undefined {
+    return this.uiStateCache.get(rootPlanId)
+  }
+
+  /**
+   * Set cached UI state by rootPlanId
+   */
+  setCachedUIState(rootPlanId: string, uiState: UIStateData): void {
+    this.uiStateCache.set(rootPlanId, uiState)
+    console.log(`[PlanExecutionManager] Cached UI state for rootPlanId: ${rootPlanId}`)
+  }
+
+  /**
+   * Get all cached plan execution records
+   */
+  getAllCachedRecords(): Map<string, PlanExecutionRecord> {
+    return new Map(this.planExecutionCache)
+  }
+
+  /**
+   * Check if a plan execution record exists in cache
+   */
+  hasCachedPlanRecord(rootPlanId: string): boolean {
+    return this.planExecutionCache.has(rootPlanId)
+  }
+
+  /**
+   * Set cached plan execution record by rootPlanId
+   */
+  setCachedPlanRecord(rootPlanId: string, record: PlanExecutionRecord): void {
+    this.planExecutionCache.set(rootPlanId, record)
+    console.log(`[PlanExecutionManager] Cached plan execution record for rootPlanId: ${rootPlanId}`)
+  }
+
+  /**
+   * Clear cached plan execution record by rootPlanId
+   */
+  clearCachedPlanRecord(rootPlanId: string): boolean {
+    const deleted = this.planExecutionCache.delete(rootPlanId)
+    if (deleted) {
+      console.log(`[PlanExecutionManager] Cleared cached plan execution record for rootPlanId: ${rootPlanId}`)
+    }
+    return deleted
+  }
+
+  /**
+   * Clear all cached plan execution records
+   */
+  clearAllCachedRecords(): void {
+    const planCacheSize = this.planExecutionCache.size
+    const uiStateCacheSize = this.uiStateCache.size
+    
+    this.planExecutionCache.clear()
+    this.uiStateCache.clear()
+    
+    console.log(`[PlanExecutionManager] Cleared all caches - Plans: ${planCacheSize}, UI States: ${uiStateCacheSize}`)
+  }
+
   private constructor() {
-    // 移除 window 事件监听器初始化
+    // Remove window event listener initialization
     console.log('[PlanExecutionManager] Initialized with callback-based event system')
   }
 
   /**
-   * 获取单例实例
+   * Get singleton instance
    */
   public static getInstance(): PlanExecutionManager {
     if (!PlanExecutionManager.instance) {
@@ -76,21 +143,21 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 获取当前活动的计划ID
+   * Get current active plan ID
    */
   public getActivePlanId(): string | null {
     return this.state.activePlanId
   }
 
   /**
-   * 获取当前状态（响应式）
+   * Get current state (reactive)
    */
   public getState() {
     return this.state
   }
 
   /**
-   * 设置事件回调
+   * Set event callbacks
    */
   public setEventCallbacks(callbacks: EventCallbacks): void {
     this.callbacks = { ...this.callbacks, ...callbacks }
@@ -98,7 +165,7 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 处理用户消息发送请求
+   * Handle user message send request
    */
   public async handleUserMessageSendRequested(query: string): Promise<void> {
     if (!this.validateAndPrepareUIForNewRequest(query)) {
@@ -106,40 +173,56 @@ export class PlanExecutionManager {
     }
 
     try {
-      const response = await this.sendUserMessageAndSetPlanId(query)
-      
+      await this.sendUserMessageAndSetPlanId(query)
+
       if (this.state.activePlanId) {
         this.initiatePlanExecutionSequence(query, this.state.activePlanId)
       } else {
-        throw new Error('未能获取有效的计划ID')
+        throw new Error('Failed to get valid plan ID')
       }
     } catch (error: any) {
-      this.emitMessageUpdate({
-        content: `发送失败: ${error.message}`,
-        type: 'error',
-        planId: this.state.activePlanId
-      })
-      this.emitChatInputUpdateState({ enabled: true })
+      console.error('[PlanExecutionManager] Failed to send user message:', error)
+      // Set UI state to enabled for error recovery
+      const errorPlanId = this.state.activePlanId ?? 'error'
+      this.setCachedUIState(errorPlanId, { enabled: true })
+      
+      this.emitChatInputUpdateState(errorPlanId)
       this.state.activePlanId = null
     }
   }
 
   /**
-   * 处理计划执行请求
+   * Handle plan execution request
    */
   public handlePlanExecutionRequested(planId: string, query?: string): void {
     console.log('[PlanExecutionManager] Received plan execution request:', { planId, query })
-    
+
     if (planId) {
       this.state.activePlanId = planId
-      this.initiatePlanExecutionSequence(query || '执行计划', planId)
+      this.initiatePlanExecutionSequence(query ?? '执行计划', planId)
     } else {
       console.error('[PlanExecutionManager] Invalid plan execution request: missing planId')
     }
   }
 
   /**
-   * 验证请求并准备UI
+   * Handle plan execution request with cache lookup by rootPlanId
+   */
+  public handleCachedPlanExecution(rootPlanId: string, query?: string): boolean {
+    const cachedRecord = this.getCachedPlanRecord(rootPlanId)
+    
+    if (cachedRecord?.currentPlanId) {
+      console.log(`[PlanExecutionManager] Found cached plan execution record for rootPlanId: ${rootPlanId}`)
+      this.handlePlanExecutionRequested(cachedRecord.currentPlanId, query)
+      return true
+    } else {
+      console.log(`[PlanExecutionManager] No cached plan execution record found for rootPlanId: ${rootPlanId}`)
+      return false
+    }
+  }
+
+  /**
+   * Validate request and prepare UI
    */
   private validateAndPrepareUIForNewRequest(query: string): boolean {
     if (!query) {
@@ -148,40 +231,40 @@ export class PlanExecutionManager {
     }
 
     if (this.state.activePlanId) {
-      this.emitMessageUpdate({
-        content: '当前有任务正在执行，请等待完成后再提交新任务',
-        type: 'error',
-        planId: this.state.activePlanId
-      })
+      // There is already an active plan, cannot start new request
       return false
     }
 
-    // 清空输入并设置为禁用状态
+    // Clear input and set to disabled state
     this.emitChatInputClear()
-    this.emitChatInputUpdateState({ enabled: false, placeholder: '处理中...' })
     
+    // Cache UI state data first
+    const uiStatePlanId = this.state.activePlanId ?? 'ui-state'
+    this.setCachedUIState(uiStatePlanId, { enabled: false, placeholder: 'Processing...' })
+    this.emitChatInputUpdateState(uiStatePlanId)
+
     return true
   }
 
   /**
-   * 发送用户消息并设置计划ID
+   * Send user message and set plan ID
    */
   private async sendUserMessageAndSetPlanId(query: string): Promise<any> {
     try {
-      // 使用直接执行模式API发送消息
+      // Use direct execution mode API to send message
       const response = await DirectApiService.sendMessage(query)
-      
-      if (response && response.planId) {
+
+      if (response?.planId) {
         this.state.activePlanId = response.planId
         return response
-      } else if (response && response.planTemplateId) {
-        // 如果响应中有planTemplateId而不是planId
+      } else if (response?.planTemplateId) {
+        // If response contains planTemplateId instead of planId
         this.state.activePlanId = response.planTemplateId
         return { ...response, planId: response.planTemplateId }
       }
-      
+
       console.error('[PlanExecutionManager] Failed to get planId from response:', response)
-      throw new Error('未能从API响应中获取有效的 planId')
+      throw new Error('Failed to get valid planId from API response')
     } catch (error: any) {
       console.error('[PlanExecutionManager] API call failed:', error)
       throw error
@@ -189,25 +272,29 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 启动计划执行序列
+   * Start plan execution sequence
    */
   public initiatePlanExecutionSequence(query: string, planId: string): void {
-    this.emitDialogRoundStart({
-      planId: planId,
-      query: query
-    })
+    console.log(`[PlanExecutionManager] Starting plan execution sequence for query: "${query}", planId: ${planId}`)
+    
+    // Use planId as rootPlanId for now (assume they are the same initially)
+    const rootPlanId = planId
+    
+    // Try to emit dialog start
+    this.emitDialogRoundStart(rootPlanId)
+    
     this.startPolling()
   }
 
   /**
-   * 处理计划完成的通用逻辑
+   * Handle plan completion common logic
    */
-  private handlePlanCompletion(details: PlanDetails): void {
-    this.emitPlanCompleted({ ...details, planId: this.state.activePlanId })
+  private handlePlanCompletion(details: PlanExecutionRecord): void {
+    this.emitPlanCompleted(details.rootPlanId ?? "");
     this.state.lastSequenceSize = 0
     this.stopPolling()
 
-    // 延迟删除计划执行记录
+    // Delay deletion of plan execution record
     try {
       setTimeout(async () => {
         if (this.state.activePlanId) {
@@ -215,26 +302,26 @@ export class PlanExecutionManager {
             await PlanActApiService.deletePlanTemplate(this.state.activePlanId)
             console.log(`[PlanExecutionManager] Plan template ${this.state.activePlanId} deleted successfully`)
           } catch (error: any) {
-            console.log(`删除计划执行记录失败: ${error.message}`)
+            console.log(`Delete plan execution record failed: ${error.message}`)
           }
         }
       }, 5000)
     } catch (error: any) {
-      console.log(`删除计划执行记录失败: ${error.message}`)
+      console.log(`Delete plan execution record failed: ${error.message}`)
     }
 
     if (details.completed) {
       this.state.activePlanId = null
-      this.emitChatInputUpdateState({ enabled: true })
+      this.emitChatInputUpdateState(details.rootPlanId ?? "");
     }
   }
 
   /**
-   * 轮询计划执行状态
+   * Poll plan execution status
    */
   private async pollPlanStatus(): Promise<void> {
     if (!this.state.activePlanId) return
-    
+
     if (this.state.isPolling) {
       console.log('[PlanExecutionManager] Previous polling still in progress, skipping')
       return
@@ -242,26 +329,31 @@ export class PlanExecutionManager {
 
     try {
       this.state.isPolling = true
-      
-      // 这里需要实现获取计划详情的API调用
-      // 由于原始代码调用 ManusAPI.getDetails，我们需要使用现有的API服务
-      // 暂时使用 PlanActApiService 的相关方法
+
+      // Here we need to implement the API call to get plan details
+      // Since the original code calls ManusAPI.getDetails, we need to use the existing API services
+      // For now, we'll use the relevant methods of PlanActApiService
       const details = await this.getPlanDetails(this.state.activePlanId)
-      
+
       if (!details) {
         console.warn('[PlanExecutionManager] No details received from API')
         return
       }
 
+      // Update cache with latest plan details if rootPlanId exists
+      if (details.rootPlanId) {
+        this.setCachedPlanRecord(details.rootPlanId, details)
+      }
+
       if (!details.steps || details.steps.length === 0) {
         console.log('[PlanExecutionManager] Simple response without steps detected, handling as completed')
         // For simple responses, emit completion directly
-        this.emitPlanUpdate({ ...details, planId: this.state.activePlanId, completed: true })
+        this.emitPlanUpdate(details.rootPlanId ?? "");
         this.handlePlanCompletion(details)
-        return
+        return;
       }
 
-      this.emitPlanUpdate({ ...details, planId: this.state.activePlanId })
+      this.emitPlanUpdate(details.rootPlanId ?? "");
 
       if (details.completed) {
         this.handlePlanCompletion(details)
@@ -274,12 +366,19 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 获取计划详情（需要根据实际API调整）
+   * Get plan details (needs to be adjusted based on actual API)
    */
-  private async getPlanDetails(planId: string): Promise<PlanDetails | null> {
+  private async getPlanDetails(planId: string): Promise<PlanExecutionRecord | null> {
     try {
-      // 使用 CommonApiService 的 getDetails 方法
+      // Use CommonApiService's getDetails method
       const details = await CommonApiService.getDetails(planId)
+      
+      // Cache the plan execution record by rootPlanId if it exists
+      if (details?.rootPlanId) {
+        this.planExecutionCache.set(details.rootPlanId, details)
+        console.log(`[PlanExecutionManager] Cached plan execution record for rootPlanId: ${details.rootPlanId}`)
+      }
+      
       return details
     } catch (error: any) {
       console.error('[PlanExecutionManager] Failed to get plan details:', error)
@@ -288,22 +387,22 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 开始轮询计划执行状态
+   * Start polling plan execution status
    */
   public startPolling(): void {
     if (this.state.pollTimer) {
       clearInterval(this.state.pollTimer)
     }
-    
+
     this.state.pollTimer = window.setInterval(() => {
       this.pollPlanStatus()
     }, this.POLL_INTERVAL)
-    
+
     console.log('[PlanExecutionManager] Started polling')
   }
 
   /**
-   * 立即轮询计划执行状态（用于手动触发刷新）
+   * Immediately poll plan execution status (for manual refresh trigger)
    */
   public async pollPlanStatusImmediately(): Promise<void> {
     console.log('[PlanExecutionManager] Polling plan status immediately')
@@ -311,7 +410,7 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 停止轮询
+   * Stop polling
    */
   public stopPolling(): void {
     if (this.state.pollTimer) {
@@ -322,52 +421,49 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 清理资源
+   * Clean up resources
    */
   public cleanup(): void {
     this.stopPolling()
     this.state.activePlanId = null
     this.state.lastSequenceSize = 0
     this.state.isPolling = false
+    
+    // Clear all cached plan execution records
+    this.clearAllCachedRecords()
   }
 
-  // Event emission helpers - 使用回调函数替代 window 事件
-  private emitMessageUpdate(data: any): void {
-    if (this.callbacks.onMessageUpdate) {
-      this.callbacks.onMessageUpdate(data)
-    }
-  }
-
+  // Event emission helpers - Use callback functions instead of window events
   private emitChatInputClear(): void {
     if (this.callbacks.onChatInputClear) {
       this.callbacks.onChatInputClear()
     }
   }
 
-  private emitChatInputUpdateState(data: any): void {
+  private emitChatInputUpdateState(rootPlanId: string): void {
     if (this.callbacks.onChatInputUpdateState) {
-      this.callbacks.onChatInputUpdateState(data)
+      this.callbacks.onChatInputUpdateState(rootPlanId)
     }
   }
 
-  private emitDialogRoundStart(data: any): void {
+  private emitDialogRoundStart(rootPlanId: string): void {
     if (this.callbacks.onDialogRoundStart) {
-      this.callbacks.onDialogRoundStart(data)
+      this.callbacks.onDialogRoundStart(rootPlanId)
     }
   }
 
-  private emitPlanUpdate(data: any): void {
+  private emitPlanUpdate(rootPlanId: string): void {
     if (this.callbacks.onPlanUpdate) {
-      this.callbacks.onPlanUpdate(data)
+      this.callbacks.onPlanUpdate(rootPlanId)
     }
   }
 
-  private emitPlanCompleted(data: any): void {
+  private emitPlanCompleted(rootPlanId: string): void {
     if (this.callbacks.onPlanCompleted) {
-      this.callbacks.onPlanCompleted(data)
+      this.callbacks.onPlanCompleted(rootPlanId)
     }
   }
 }
 
-// 导出单例实例
+// Export singleton instance
 export const planExecutionManager = PlanExecutionManager.getInstance()

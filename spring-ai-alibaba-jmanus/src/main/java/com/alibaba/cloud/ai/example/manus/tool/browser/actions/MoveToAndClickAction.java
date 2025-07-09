@@ -39,17 +39,18 @@ public class MoveToAndClickAction extends BrowserAction {
 			return new ToolExecuteResult("X and Y coordinates are required for 'move_to_and_click' action");
 		}
 
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
-		boolean isDebug = getBrowserUseTool().getManusProperties().getBrowserDebug();
+		Page page = getCurrentPage(); // Get the Playwright Page instance
+		boolean isDebug = getBrowserUseTool().getManusProperties().getDebugDetail();
 
 		String clickResultMessage = clickAndSwitchToNewTabIfOpened(page, () -> {
 			try {
-				// 1. 滚动到目标位置（让目标点尽量在视窗中央）
+				// 1. Scroll to the target position (make the target point as close to the
+				// center of the viewport as possible)
 
 				Object result = null;
 				String markerId = "__move_click_marker__";
 				if (isDebug) {
-					// 2. 注入大红点（仅debug模式）
+					// 2. Inject a large red dot (only in debug mode)
 					result = page.evaluate(
 							"(args) => {\n" + "  const [x, y, id] = args;\n"
 									+ "  let dot = document.getElementById(id);\n" + "  if (!dot) {\n"

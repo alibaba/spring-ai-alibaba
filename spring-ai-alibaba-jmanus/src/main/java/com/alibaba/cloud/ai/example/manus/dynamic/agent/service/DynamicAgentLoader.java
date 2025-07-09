@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -45,15 +46,18 @@ public class DynamicAgentLoader {
 
 	private final UserInputService userInputService;
 
+	private final PromptService promptService;
+
 	public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy LlmService llmService,
 			PlanExecutionRecorder recorder, ManusProperties properties, @Lazy ToolCallingManager toolCallingManager,
-			UserInputService userInputService) {
+			UserInputService userInputService, PromptService promptService) {
 		this.repository = repository;
 		this.llmService = llmService;
 		this.recorder = recorder;
 		this.properties = properties;
 		this.toolCallingManager = toolCallingManager;
 		this.userInputService = userInputService;
+		this.promptService = promptService;
 	}
 
 	public DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting) {
@@ -64,7 +68,7 @@ public class DynamicAgentLoader {
 
 		return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(),
 				entity.getNextStepPrompt(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting,
-				userInputService);
+				userInputService, promptService);
 	}
 
 	public List<DynamicAgentEntity> getAllAgents() {

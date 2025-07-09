@@ -143,4 +143,9 @@ public class MCPNodeDataConverter extends AbstractNodeDataConverter<MCPNodeData>
 
 	}
 
+	@Override
+	public String generateVarName(int count) {
+		return "mcpNode" + count;
+	}
+
 }

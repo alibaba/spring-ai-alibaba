@@ -15,10 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.bash;
 
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,15 +25,14 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
-public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
+public class Bash extends AbstractBaseTool<Bash.BashInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(Bash.class);
 
 	/**
-	 * 内部输入类，用于定义Bash工具的输入参数
+	 * Internal input class for defining Bash tool input parameters
 	 */
 	public static class BashInput {
 
@@ -57,14 +55,12 @@ public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
 
 	}
 
-	private ManusProperties manusProperties;
-
 	/**
-	 * bash执行工作目录
+	 * Unified directory manager for directory operations
 	 */
-	private String workingDirectoryPath;
+	private final UnifiedDirectoryManager unifiedDirectoryManager;
 
-	// 添加操作系统信息
+	// Add operating system information
 	private static final String osName = System.getProperty("os.name");
 
 	private static String PARAMETERS = """
@@ -98,10 +94,8 @@ public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
 		return functionTool;
 	}
 
-	public Bash(ManusProperties manusProperties) {
-		this.manusProperties = manusProperties;
-		String baseDir = manusProperties.getBaseDir();
-		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(baseDir);
+	public Bash(UnifiedDirectoryManager unifiedDirectoryManager) {
+		this.unifiedDirectoryManager = unifiedDirectoryManager;
 	}
 
 	private String lastCommand = "";
@@ -110,6 +104,7 @@ public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
+	@Override
 	public ToolExecuteResult run(BashInput input) {
 		String command = input.getCommand();
 		log.info("Bash command: {}", command);
@@ -120,10 +115,11 @@ public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
 		commandList.add(command);
 
 		try {
-			// 使用ShellExecutorFactory创建对应操作系统的执行器
+			// Use ShellExecutorFactory to create executor for corresponding operating
+			// system
 			ShellCommandExecutor executor = ShellExecutorFactory.createExecutor();
 			log.info("Using shell executor for OS: {}", osName);
-			List<String> result = executor.execute(commandList, workingDirectoryPath);
+			List<String> result = executor.execute(commandList, unifiedDirectoryManager.getWorkingDirectoryPath());
 			this.lastResult = String.join("\n", result);
 			return new ToolExecuteResult(objectMapper.writeValueAsString(result));
 		}
@@ -154,16 +150,6 @@ public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
 	}
 
 	@Override
-	public boolean isReturnDirect() {
-		return false;
-	}
-
-	@Override
-	public ToolExecuteResult apply(BashInput input, ToolContext toolContext) {
-		return run(input);
-	}
-
-	@Override
 	public String getServiceGroup() {
 		return "default-service-group";
 	}
@@ -181,19 +167,14 @@ public class Bash implements ToolCallBiFunctionDef<Bash.BashInput> {
 				            - Last Operation Result:
 				%s
 
-				            """, workingDirectoryPath, lastCommand.isEmpty() ? "No command executed yet" : lastCommand,
+				            """, unifiedDirectoryManager.getWorkingDirectoryPath(),
+				lastCommand.isEmpty() ? "No command executed yet" : lastCommand,
 				lastResult.isEmpty() ? "No result yet" : lastResult);
 	}
 
 	@Override
 	public void cleanup(String planId) {
 		log.info("Cleaned up resources for plan: {}", planId);
-	}
-
-	// Implement the setPlanId method to satisfy the interface
-	@Override
-	public void setPlanId(String planId) {
-		// No operation needed as planId is no longer used
 	}
 
 }

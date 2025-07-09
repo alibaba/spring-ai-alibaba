@@ -56,7 +56,7 @@ public class JsonProcessorInsertService implements Function<JsonProcessorInsertS
 	}
 
 	@JsonClassDescription("JsonProcessorInsertService request")
-	record JsonInsertRequest(@JsonProperty("content") String content, @JsonProperty("field") String field,
+	public record JsonInsertRequest(@JsonProperty("content") String content, @JsonProperty("field") String field,
 			@JsonProperty("value") JsonNode value) {
 	}
 

@@ -20,9 +20,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 配置选项注解
+ * Configuration option annotation
  * <p>
- * 用于定义下拉框、单选框等的选项
+ * Used to define options for dropdown boxes, radio buttons, etc.
  */
 @Target({})
 @Retention(RetentionPolicy.RUNTIME)
@@ -30,31 +30,33 @@ import java.lang.annotation.Target;
 public @interface ConfigOption {
 
 	/**
-	 * 选项值
+	 * Option value
 	 */
 	String value();
 
 	/**
-	 * 选项标签
+	 * Option label
 	 * <p>
-	 * 支持国际化key格式：config.option.{group}.{subGroup}.{key}.{value}
+	 * Supports internationalization key format:
+	 * config.option.{group}.{subGroup}.{key}.{value}
 	 */
 	String label() default "";
 
 	/**
-	 * 选项描述
+	 * Option description
 	 * <p>
-	 * 支持国际化key格式：config.option.desc.{group}.{subGroup}.{key}.{value}
+	 * Supports internationalization key format:
+	 * config.option.desc.{group}.{subGroup}.{key}.{value}
 	 */
 	String description() default "";
 
 	/**
-	 * 选项图标（可选）
+	 * Option icon (optional)
 	 */
 	String icon() default "";
 
 	/**
-	 * 选项是否禁用
+	 * Whether option is disabled
 	 */
 	boolean disabled() default false;
 

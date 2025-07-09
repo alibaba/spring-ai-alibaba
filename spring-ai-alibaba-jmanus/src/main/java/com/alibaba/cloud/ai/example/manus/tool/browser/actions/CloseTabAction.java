@@ -30,12 +30,12 @@ public class CloseTabAction extends BrowserAction {
 
 	@Override
 	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		Page page = getCurrentPage(); // Get Playwright's Page instance
 
-		// 关闭当前页面
+		// Close current page
 		page.close();
 
-		// 刷新标签页信息
+		// Refresh tab information
 		return new ToolExecuteResult("Closed current tab");
 	}
 

@@ -213,36 +213,4 @@ public class CodeUtils {
 		return resultList.stream().collect(Collectors.joining("\n"));
 	}
 
-	/**
-	 * 获取共享文件目录（在输入目录下新建一个共享文件夹并返回其路径）。
-	 * @param baseDir 基础目录（如果为空，则使用系统属性 user.dir）
-	 * @param sharedFolderName 共享文件夹名称（如 "shared"）
-	 * @return 共享文件夹的绝对路径
-	 */
-	public static String getSharedDirectory(String baseDir, String sharedFolderName) {
-		if (baseDir == null || baseDir.isEmpty()) {
-			baseDir = System.getProperty("user.dir");
-		}
-		String sharedDir = Paths.get(baseDir, sharedFolderName).toString();
-		try {
-			Files.createDirectories(Paths.get(sharedDir));
-		}
-		catch (IOException e) {
-			log.error("Failed to create shared directory: {}", sharedDir, e);
-		}
-		return sharedDir;
-	}
-
-	/**
-	 * 获取工作目录（即 extensions 目录的绝对路径）。
-	 * @param baseDir 基础目录（如果为空，则使用系统属性 user.dir）
-	 * @return 工作目录的绝对路径
-	 */
-	public static String getWorkingDirectory(String baseDir) {
-		if (baseDir == null || baseDir.isEmpty()) {
-			baseDir = System.getProperty("user.dir");
-		}
-		return Paths.get(baseDir, "extensions").toString();
-	}
-
 }

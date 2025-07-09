@@ -16,71 +16,160 @@
 package com.alibaba.cloud.ai.example.manus.planning.coordinator;
 
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
+import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * 计划流程的总协调器 负责协调计划的创建、执行和总结三个主要步骤
+ * Enhanced Planning Coordinator that uses PlanExecutorFactory to dynamically select the
+ * appropriate executor based on plan type
  */
 public class PlanningCoordinator {
 
+	private static final Logger log = LoggerFactory.getLogger(PlanningCoordinator.class);
+
 	private final PlanCreator planCreator;
 
-	private final PlanExecutor planExecutor;
+	private final PlanExecutorFactory planExecutorFactory;
 
 	private final PlanFinalizer planFinalizer;
 
-	public PlanningCoordinator(PlanCreator planCreator, PlanExecutor planExecutor, PlanFinalizer planFinalizer) {
+	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
+			PlanFinalizer planFinalizer) {
 		this.planCreator = planCreator;
-		this.planExecutor = planExecutor;
+		this.planExecutorFactory = planExecutorFactory;
 		this.planFinalizer = planFinalizer;
 	}
 
 	/**
-	 * 仅创建计划，不执行
-	 * @param context 执行上下文
-	 * @return 执行上下文
+	 * Create a plan only, without executing it
+	 * @param context execution context
+	 * @return execution context
 	 */
 	public ExecutionContext createPlan(ExecutionContext context) {
-		// 只执行创建计划步骤
+		log.info("Creating plan for planId: {}", context.getCurrentPlanId());
+		// Only execute the create plan step
 		context.setUseMemory(false);
 		planCreator.createPlan(context);
+
+		PlanInterface plan = context.getPlan();
+		if (plan != null) {
+			log.info("Plan created successfully with type: {} for planId: {}", plan.getPlanType(),
+					context.getCurrentPlanId());
+		}
+
 		return context;
 	}
 
 	/**
-	 * 执行完整的计划流程
-	 * @param context 执行上下文
-	 * @return 执行总结
+	 * Execute the complete plan process with dynamic executor selection
+	 * @param context execution context
+	 * @return execution summary
 	 */
 	public ExecutionContext executePlan(ExecutionContext context) {
+		log.info("Executing complete plan process for planId: {}", context.getCurrentPlanId());
 		context.setUseMemory(true);
-		// 1. 创建计划
+
+		// 1. Create a plan
 		planCreator.createPlan(context);
 
-		// 2. 执行计划
-		planExecutor.executeAllSteps(context);
+		// 2. Select appropriate executor based on plan type and execute
+		PlanInterface plan = context.getPlan();
+		if (plan != null) {
+			PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
+			log.info("Selected executor: {} for plan type: {} (planId: {})", executor.getClass().getSimpleName(),
+					plan.getPlanType(), context.getCurrentPlanId());
+			executor.executeAllSteps(context);
+		}
+		else {
+			log.error("No plan found in context for planId: {}", context.getCurrentPlanId());
+			throw new IllegalStateException("Plan creation failed, no plan found in execution context");
+		}
 
-		// 3. 生成总结
+		// 3. Generate a summary
 		planFinalizer.generateSummary(context);
 
+		log.info("Plan execution completed successfully for planId: {}", context.getCurrentPlanId());
 		return context;
 	}
 
 	/**
-	 * 执行已有计划（跳过创建计划步骤）
-	 * @param context 包含现有计划的执行上下文
-	 * @return 执行总结
+	 * Execute an existing plan (skip the create plan step) with dynamic executor
+	 * selection
+	 * @param context execution context containing the existing plan
+	 * @return execution summary
 	 */
 	public ExecutionContext executeExistingPlan(ExecutionContext context) {
-		// 1. 执行计划
-		planExecutor.executeAllSteps(context);
+		log.info("Executing existing plan for planId: {}", context.getCurrentPlanId());
 
-		// 2. 生成总结
+		PlanInterface plan = context.getPlan();
+		if (plan == null) {
+			log.error("No existing plan found in context for planId: {}", context.getCurrentPlanId());
+			throw new IllegalArgumentException("No existing plan found in execution context");
+		}
+
+		// 1. Select appropriate executor based on plan type and execute
+		PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
+		log.info("Selected executor: {} for existing plan type: {} (planId: {})", executor.getClass().getSimpleName(),
+				plan.getPlanType(), context.getCurrentPlanId());
+		executor.executeAllSteps(context);
+
+		// 2. Generate a summary
 		planFinalizer.generateSummary(context);
 
+		log.info("Existing plan execution completed successfully for planId: {}", context.getCurrentPlanId());
 		return context;
+	}
+
+	/**
+	 * Execute plan with explicit executor type (useful for testing or override scenarios)
+	 * @param context execution context
+	 * @param executorType explicit executor type to use
+	 * @return execution summary
+	 */
+	public ExecutionContext executeWithExplicitExecutor(ExecutionContext context, String executorType) {
+		log.info("Executing plan with explicit executor type: {} for planId: {}", executorType,
+				context.getCurrentPlanId());
+
+		PlanInterface plan = context.getPlan();
+		if (plan == null) {
+			log.error("No plan found in context for planId: {}", context.getCurrentPlanId());
+			throw new IllegalArgumentException("No plan found in execution context");
+		}
+
+		// Select executor based on explicit type
+		PlanExecutorInterface executor = planExecutorFactory.createExecutorByType(executorType,
+				context.getCurrentPlanId());
+		log.info("Using explicit executor: {} for planId: {}", executor.getClass().getSimpleName(),
+				context.getCurrentPlanId());
+
+		executor.executeAllSteps(context);
+		planFinalizer.generateSummary(context);
+
+		log.info("Plan execution with explicit executor completed successfully for planId: {}",
+				context.getCurrentPlanId());
+		return context;
+	}
+
+	/**
+	 * Get information about supported plan types
+	 * @return Array of supported plan types
+	 */
+	public String[] getSupportedPlanTypes() {
+		return planExecutorFactory.getSupportedPlanTypes();
+	}
+
+	/**
+	 * Check if a plan type is supported
+	 * @param planType The plan type to check
+	 * @return true if supported, false otherwise
+	 */
+	public boolean isPlanTypeSupported(String planType) {
+		return planExecutorFactory.isPlanTypeSupported(planType);
 	}
 
 }

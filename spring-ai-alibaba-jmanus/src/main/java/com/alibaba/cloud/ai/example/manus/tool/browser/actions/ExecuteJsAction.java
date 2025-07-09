@@ -33,7 +33,7 @@ public class ExecuteJsAction extends BrowserAction {
 			return new ToolExecuteResult("Script is required for 'execute_js' action");
 		}
 
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		Page page = getCurrentPage(); // Get the Playwright Page instance
 		Object result = page.evaluate(script);
 
 		if (result == null) {

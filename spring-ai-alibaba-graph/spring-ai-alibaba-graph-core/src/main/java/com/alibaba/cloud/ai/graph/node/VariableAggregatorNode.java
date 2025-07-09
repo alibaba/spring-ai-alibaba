@@ -90,14 +90,11 @@ public class VariableAggregatorNode implements NodeAction {
 	}
 
 	private Object convertOutput(List<Object> values, String type) {
-		switch (type) {
-			case "list":
-				return new ArrayList<>(values);
-			case "string":
-				return String.join("\n", values.stream().map(Object::toString).collect(Collectors.toList()));
-			default:
-				return values;
-		}
+		return switch (type) {
+			case "list" -> new ArrayList<>(values);
+			case "string" -> String.join("\n", values.stream().map(Object::toString).collect(Collectors.toList()));
+			default -> values;
+		};
 	}
 
 	public static class AdvancedSettings {

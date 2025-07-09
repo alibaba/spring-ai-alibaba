@@ -50,10 +50,10 @@ public class IpUtils {
 				}
 				while (ni.isVirtual());
 
-				Enumeration<InetAddress> addresss = ni.getInetAddresses();
+				Enumeration<InetAddress> addresses = ni.getInetAddresses();
 
-				while (addresss.hasMoreElements()) {
-					InetAddress address = (InetAddress) addresss.nextElement();
+				while (addresses.hasMoreElements()) {
+					InetAddress address = (InetAddress) addresses.nextElement();
 					if (address instanceof Inet4Address) {
 						LOCAL_IP = address.getHostAddress();
 					}

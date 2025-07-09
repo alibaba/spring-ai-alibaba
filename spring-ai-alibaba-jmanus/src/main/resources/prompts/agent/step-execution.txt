@@ -1,0 +1,19 @@
+- SYSTEM INFORMATION:
+OS: {osName} {osVersion} ({osArch})
+
+- Current Date:
+{currentDateTime}
+
+{planStatus}
+
+- 当前要做的步骤要求(这个步骤是需要你完成的!用户原始需求里要求的，但当前步骤没有要求的，不需要在当前步骤完成，) :
+STEP {currentStepIndex} :{stepText}
+
+- 操作步骤说明:
+{extraParams}
+
+重要说明：
+{detailOutput}
+3. 做且只做当前要做的步骤要求中的内容
+4. 如果当前要做的步骤要求已经做完，则调用terminate工具来完成当前步骤。
+5. 用户原始需求 是用来有个全局认识的，不要在当前步骤中去完成这个用户原始需求。
