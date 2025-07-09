@@ -144,4 +144,9 @@ public class AgentsConfiguration {
 		return interactionChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(interactionPrompt)).build();
 	}
 
+	@Bean
+	public ChatClient infoCheckAgent(ChatClient.Builder infoCheckChatClientBuilder) {
+		return infoCheckChatClientBuilder.build();
+	}
+
 }

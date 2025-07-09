@@ -158,12 +158,12 @@ public class SmartContentSavingService {
 
 		// 如果提供了调用方法，添加成功调用信息
 		if (callingMethod != null && !callingMethod.trim().isEmpty()) {
-			summary.append("成功调用 ").append(callingMethod).append(" 函数:\n\n");
+			summary.append("成功调用了").append(callingMethod).append("函数，\n\n");
 		}
 
-		summary.append("但函数返回的内容过长，所以自动通过 inner_storage_content_tool 工具存储到了文件里");
+		summary.append("但函数返回的内容过长，所以自动存储到了文件里");
 		summary.append("\n\n");
-		summary.append("存储文件名: ").append(storageFileName).append("\n\n");
+		summary.append("存储文件的名: ").append(storageFileName).append("\n\n");
 
 		// 添加内容统计
 		String[] lines = content.split("\n");
@@ -171,9 +171,8 @@ public class SmartContentSavingService {
 		summary.append("  - 总字符数: ").append(content.length()).append("\n");
 		summary.append("  - 总行数: ").append(lines.length).append("\n\n");
 
-		summary.append("💡 你可以使用以下工具来获取相关信息:\n");
-		summary.append("  - inner_storage_content_tool: getContent 方法智能内容提取和分析");
-
+		summary.append("在后续的调用中，必需要使用 inner_storage_content_tool 工具的 getContent 来获取相关信息,\n");
+		summary.append("该方法可以从内容中总结出需要的关键信息。\n\n");
 		return summary.toString();
 	}
 

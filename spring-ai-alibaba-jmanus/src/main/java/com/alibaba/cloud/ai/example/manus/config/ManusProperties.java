@@ -136,7 +136,7 @@ public class ManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "agents", key = "forceOverrideFromYaml",
-			path = "manus.agents.forceOverrideFromYaml", description = "强制使用YAML配置文件覆盖同名Agent", defaultValue = "false",
+			path = "manus.agents.forceOverrideFromYaml", description = "强制使用YAML配置文件覆盖同名Agent", defaultValue = "true",
 			inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean forceOverrideFromYaml;
