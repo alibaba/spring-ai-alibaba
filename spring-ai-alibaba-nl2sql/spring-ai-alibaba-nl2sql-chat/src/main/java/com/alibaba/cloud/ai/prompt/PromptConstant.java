@@ -66,7 +66,11 @@ public class PromptConstant {
 		return new PromptTemplate(PromptLoader.loadPrompt("report-generator"));
 	}
 
-	// 兼容性方法��保持向后兼容
+	public static PromptTemplate getSqlErrorFixerPromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("sql-error-fixer"));
+	}
+
+	// 兼容性方法，保持向后兼容
 	@Deprecated
 	public static final PromptTemplate INIT_REWRITE_PROMPT_TEMPLATE = getInitRewritePromptTemplate();
 

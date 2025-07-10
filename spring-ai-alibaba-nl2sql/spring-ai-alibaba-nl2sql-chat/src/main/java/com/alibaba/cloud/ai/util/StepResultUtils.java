@@ -70,7 +70,7 @@ public class StepResultUtils {
      *
      * @param results 结果集合
      * @param stepNumber 步骤编号
-     * @return ���新后的结果集合
+     * @return 结果集合
      */
     public static Map<String, String> clearStepResult(Map<String, String> results, Integer stepNumber) {
         Map<String, String> updatedResults = new HashMap<>(results);
