@@ -16,19 +16,25 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.McpAssignNodeProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.util.Mcp.McpClientUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.client.autoconfigure.configurer.McpAsyncClientConfigurer;
+import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,22 +58,37 @@ public class ResearcherNode implements NodeAction {
 
 	private final String nodeName;
 
-	private Function<OverAllState, Map<String, AsyncMcpToolCallbackProvider>> mcpProviderFunction;
+	// MCP相关配置
+	private final Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider;
+
+	private final McpAsyncClientConfigurer mcpAsyncClientConfigurer;
+
+	private final McpClientCommonProperties commonProperties;
+
+	private final WebClient.Builder webClientBuilderTemplate;
+
+	private final ObjectMapper objectMapper;
 
 	public ResearcherNode(ChatClient researchAgent) {
-		this(researchAgent, "0", null);
+		this(researchAgent, "0", null, null, null, null, null);
 	}
 
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId) {
-		this(researchAgent, executorNodeId, null);
+		this(researchAgent, executorNodeId, null, null, null, null, null);
 	}
 
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId,
-			Function<OverAllState, Map<String, AsyncMcpToolCallbackProvider>> mcpProviderFunction) {
+			Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider,
+			McpAsyncClientConfigurer mcpAsyncClientConfigurer, McpClientCommonProperties commonProperties,
+			WebClient.Builder webClientBuilderTemplate, ObjectMapper objectMapper) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;
-		this.mcpProviderFunction = mcpProviderFunction;
+		this.mcpConfigProvider = mcpConfigProvider;
+		this.mcpAsyncClientConfigurer = mcpAsyncClientConfigurer;
+		this.commonProperties = commonProperties;
+		this.webClientBuilderTemplate = webClientBuilderTemplate;
+		this.objectMapper = objectMapper;
 	}
 
 	@Override
@@ -111,14 +132,11 @@ public class ResearcherNode implements NodeAction {
 		// 调用agent
 		var requestSpec = researchAgent.prompt().messages(messages);
 
-		// 如果这有动态的工具，则添加完再执行requestSpec.stream().chatResponse()
-		if (mcpProviderFunction != null) {
-			Map<String, AsyncMcpToolCallbackProvider> mcpProviders = mcpProviderFunction.apply(state);
-			AsyncMcpToolCallbackProvider mcpProvider = mcpProviders.get("researchAgent");
-
-			if (mcpProvider != null) {
-				requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
-			}
+		// 创建MCP客户端
+		AsyncMcpToolCallbackProvider mcpProvider = McpClientUtil.createMcpProvider(state, "researchAgent",
+				mcpConfigProvider, mcpAsyncClientConfigurer, commonProperties, webClientBuilderTemplate, objectMapper);
+		if (mcpProvider != null) {
+			requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
 		}
 
 		if (searchTool != null) {
