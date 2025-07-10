@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionUtil;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,25 +54,19 @@ public class ResearcherNode implements NodeAction {
 	private final String nodeName;
 
 	private final ReflectionProcessor reflectionProcessor;
+	// MCP工厂
+	private final McpProviderFactory mcpFactory;
 
-	public ResearcherNode(ChatClient researchAgent) {
-		this(researchAgent, "0", null);
-	}
-
-	public ResearcherNode(ChatClient researchAgent, String executorNodeId) {
-		this(researchAgent, executorNodeId, null);
-	}
-
-	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor) {
+	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor, McpProviderFactory mcpFactory) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;
 		this.reflectionProcessor = reflectionProcessor;
+		this.mcpFactory = mcpFactory;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("researcher node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
 		Map<String, Object> updated = new HashMap<>();
 
@@ -115,6 +111,14 @@ public class ResearcherNode implements NodeAction {
 
 		// Call agent
 		var requestSpec = researchAgent.prompt().messages(messages);
+
+		// 使用MCP工厂创建MCP提供者
+		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null
+				? mcpFactory.createProvider(state, "researchAgent") : null;
+		if (mcpProvider != null) {
+			requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
+		}
+
 		if (searchTool != null) {
 			requestSpec = requestSpec.toolNames(searchTool.getToolName());
 		}
