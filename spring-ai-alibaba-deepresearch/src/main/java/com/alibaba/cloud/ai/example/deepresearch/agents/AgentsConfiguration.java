@@ -49,6 +49,9 @@ public class AgentsConfiguration {
 	@Value("classpath:prompts/buildInteractiveHtmlPrompt.md")
 	private Resource interactionPrompt;
 
+	@Value("classpath:prompts/reflection.md")
+	private Resource reflectionPrompt;
+
 	@Autowired
 	private ApplicationContext context;
 
@@ -147,6 +150,11 @@ public class AgentsConfiguration {
 	@Bean
 	public ChatClient infoCheckAgent(ChatClient.Builder infoCheckChatClientBuilder) {
 		return infoCheckChatClientBuilder.build();
+	}
+
+	@Bean
+	public ChatClient reflectionAgent(ChatClient.Builder reflectionChatClientBuilder) {
+		return reflectionChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(reflectionPrompt)).build();
 	}
 
 }

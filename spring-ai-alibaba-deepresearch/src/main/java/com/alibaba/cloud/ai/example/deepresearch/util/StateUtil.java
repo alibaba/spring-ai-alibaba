@@ -44,6 +44,10 @@ public class StateUtil {
 
 	public static final String EXECUTION_STATUS_COMPLETED_PREFIX = "completed_";
 
+	public static final String EXECUTION_STATUS_WAITING_REFLECTING = "waiting_reflecting_";
+
+	public static final String EXECUTION_STATUS_WAITING_PROCESSING = "waiting_processing_";
+
 	public static List<String> getMessagesByType(OverAllState state, String name) {
 		return state.value(name, List.class).map(obj -> new ArrayList<>((List<String>) obj)).orElseGet(ArrayList::new);
 	}

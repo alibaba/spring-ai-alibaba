@@ -48,6 +48,8 @@ spring:
           base-url: ${ALIYUN_AI_SEARCH_BASE_URL}
           enabled: true
       deepresearch:
+        # 图执行的最大迭代次数
+        max-iterations: 50
         # 定义项目可以使用的搜索引擎
         search-list:
           - tavily
@@ -58,8 +60,8 @@ spring:
           enabled: false
           config-location: classpath:mcp-config.json
         parallel-node-count:
-          researcher: 5
-          coder: 5
+          researcher: 4
+          coder: 4
         rag:
           enabled: false
           # 可以设置为 'simple' 或 'elasticsearch'
@@ -71,6 +73,9 @@ spring:
         # 报告导出路径配置
         export:
           path: ${AI_DEEPRESEARCH_EXPORT_PATH}
+        reflection:
+          enabled: true
+          max-attempts: 1
 # OpenTelemetry Observation configuration
 management:
   endpoints:
@@ -79,8 +84,9 @@ management:
         include: "*"
   endpoint:
     health:
+      enabled: false
       # health status check with detailed messages
-      show-details: always
+      # show-details: always
   tracing:
     sampling:
       # trace information with every request
@@ -116,3 +122,4 @@ otel:
 logging:
   level:
     com.alibaba.cloud.ai.example.deepresearch: debug
+
