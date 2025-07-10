@@ -200,7 +200,7 @@ public class ManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "parallelToolCalls",
-			path = "manus.agent.parallelToolCalls", description = "并行执行工具调用", defaultValue = "false",
+			path = "manus.agent.parallelToolCalls", description = "并行工具调用", defaultValue = "false",
 			inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean parallelToolCalls;

@@ -354,7 +354,7 @@ const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   'maxSteps': '智能体执行最大步数',
   'resetAllAgents': '重置所有agent',
   'maxMemory': "能记住的最大消息数",
-  'parallelToolCalls':'并行执行工具调用',
+  'parallelToolCalls':'并行工具调用',
   
   // 浏览器设置
   'headlessBrowser': '是否使用无头浏览器模式',
