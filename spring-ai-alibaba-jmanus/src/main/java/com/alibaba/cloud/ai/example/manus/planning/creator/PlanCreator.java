@@ -182,7 +182,7 @@ public class PlanCreator {
 	 */
 	private String generatePlanPrompt(String request, String agentsInfo) {
 		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "request", request);
-		return promptService.renderPrompt(PromptEnum.PLANNING_PLAN_CREATION, variables);
+		return promptService.renderPrompt(PromptEnum.PLANNING_PLAN_CREATION.getPromptName(), variables);
 	}
 
 }

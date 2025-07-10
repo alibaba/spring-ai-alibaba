@@ -165,7 +165,7 @@ public abstract class BaseAgent {
 		variables.put("currentDateTime", currentDateTime);
 		variables.put("detailOutput", detailOutput);
 
-		return promptService.createSystemMessage(PromptEnum.AGENT_STEP_EXECUTION, variables);
+		return promptService.createSystemMessage(PromptEnum.AGENT_STEP_EXECUTION.getPromptName(), variables);
 	}
 
 	/**
