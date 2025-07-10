@@ -23,6 +23,17 @@ import java.util.List;
 
 public class EndNodeData extends NodeData {
 
+	public String getOutputKey() {
+		return outputKey;
+	}
+
+	public EndNodeData setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+		return this;
+	}
+
+	private String outputKey;
+
 	public EndNodeData() {
 	}
 

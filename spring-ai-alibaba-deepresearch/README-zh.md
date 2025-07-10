@@ -113,6 +113,13 @@ docker run -d \
   -p 8080:8080 \
   alibaba-deepresearch:v1.0
 ```
+- 或者使用docker-compose up命令启动,当前容器包括Redis，ElasticSearch,deep research app.
+```shell
+  docker-compose up
+```
+> **注意**：
+> - .env文件中设置api-key信息
+> - dockerConfig目录下有对应应用的配置文件，也可在配置文件中设置key及相关配置信息
 
 **测试用例**
 
@@ -128,7 +135,25 @@ curl --location 'http://localhost:8080/chat/stream' \
 }'
 ```
 
+**调试与观测**
 
+Langfuse 配置
+
+#### 使用 Langfuse 云端服务
+1. 在 [https://cloud.langfuse.com](https://cloud.langfuse.com) 注册账户
+2. 创建新项目
+3. 导航到 **Settings** → **API Keys**
+4. 生成新的 API 密钥对（公钥和私钥）
+5. 将凭据编码为 Base64：
+   ```bash
+   echo -n "public_key:secret_key" | base64
+   ``` 
+   ```Windows PowerShell
+   [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("public_key:secret_key"))
+   ```
+6. yml文件中选择对应的endpoint，将编码后的字符串作为环境变量 `YOUR_BASE64_ENCODED_CREDENTIALS`
+
+参考： https://langfuse.com/docs/opentelemetry/get-started
 
 ## Contributors
 

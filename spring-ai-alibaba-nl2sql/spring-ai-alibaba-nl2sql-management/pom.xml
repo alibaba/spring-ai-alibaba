@@ -28,7 +28,7 @@
     <dependencies>
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-nl2sql-common</artifactId>
+            <artifactId>spring-ai-alibaba-nl2sql-chat</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -75,11 +75,6 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>

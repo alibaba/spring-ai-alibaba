@@ -19,47 +19,43 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Plan entity class for managing execution plan related information
  */
-public class ExecutionPlan {
-
-	private String planId;
-
-	private String title;
-
-	private String userRequest;
-
-	private String planningThinking;
-
-	// Use simple string to store execution parameters
-	private String executionParams;
+public class ExecutionPlan extends AbstractExecutionPlan {
 
 	private List<ExecutionStep> steps;
 
-	public ExecutionPlan(String planId, String title) {
-		this.planId = planId;
-		this.title = title;
+	/**
+	 * 计划类型，用于 Jackson 多态反序列化
+	 */
+	private String planType = "simple";
+
+	/**
+	 * 默认构造函数 - Jackson 反序列化需要
+	 */
+	public ExecutionPlan() {
+		super();
 		this.steps = new ArrayList<>();
-		this.executionParams = "";
 	}
 
-	public String getPlanId() {
-		return planId;
+	public ExecutionPlan(String currentPlanId, String parentPlanId, String title) {
+		super(currentPlanId, parentPlanId, title);
+		this.steps = new ArrayList<>();
 	}
 
-	public void setPlanId(String planId) {
-		this.planId = planId;
+	@JsonIgnore
+	public String getPlanType() {
+		return planType;
 	}
 
-	public String getTitle() {
-		return title;
+	public void setPlanType(String planType) {
+		this.planType = planType;
 	}
 
-	public void setTitle(String title) {
-		this.title = title;
-	}
+	// ExecutionPlan 特有的方法
 
 	public List<ExecutionStep> getSteps() {
 		return steps;
@@ -69,54 +65,44 @@ public class ExecutionPlan {
 		this.steps = steps;
 	}
 
-	public void addStep(ExecutionStep step) {
-		this.steps.add(step);
-	}
-
-	public void removeStep(ExecutionStep step) {
-		this.steps.remove(step);
-	}
-
+	@JsonIgnore
 	public int getStepCount() {
 		return steps.size();
 	}
 
-	public String getPlanningThinking() {
-		return planningThinking;
-	}
+	// AbstractExecutionPlan 抽象方法的实现
 
-	public void setPlanningThinking(String planningThinking) {
-		this.planningThinking = planningThinking;
-	}
-
-	public String getExecutionParams() {
-		return executionParams;
-	}
-
-	public void setExecutionParams(String executionParams) {
-		this.executionParams = executionParams;
-	}
-
-	/**
-	 * Get user request
-	 * @return User request string
-	 */
-	public String getUserRequest() {
-		return userRequest;
-	}
-
-	/**
-	 * Set user request
-	 * @param userRequest User request string
-	 */
-	public void setUserRequest(String userRequest) {
-		this.userRequest = userRequest;
+	@Override
+	@JsonIgnore
+	public List<ExecutionStep> getAllSteps() {
+		return new ArrayList<>(steps);
 	}
 
 	@Override
-	public String toString() {
-		return "ExecutionPlan{" + "planId='" + planId + '\'' + ", title='" + title + '\'' + ", stepsCount="
-				+ (steps != null ? steps.size() : 0) + '}';
+	@JsonIgnore
+	public int getTotalStepCount() {
+		return getStepCount();
+	}
+
+	@Override
+	public void addStep(ExecutionStep step) {
+		this.steps.add(step);
+	}
+
+	@Override
+	public void removeStep(ExecutionStep step) {
+		this.steps.remove(step);
+	}
+
+	@Override
+	@JsonIgnore
+	public boolean isEmpty() {
+		return steps.isEmpty();
+	}
+
+	@Override
+	protected void clearSteps() {
+		steps.clear();
 	}
 
 	// state.append("Global Goal (The global goal is just a directional guidance, you
@@ -125,14 +111,16 @@ public class ExecutionPlan {
 	// .append("\n")
 	// .append(title)
 	// .append("\n");
+	@Override
+	@JsonIgnore
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
 
 		state.append(
 				"- User Original Requirements (This requirement is the user's initial input, information can be referenced, but in the current interaction round only the current step requirements need to be completed!) :\n");
 		state.append(title).append("\n");
-		if (userRequest != null && !userRequest.isEmpty()) {
-			state.append("").append(userRequest).append("\n\n");
+		if (getUserRequest() != null && !getUserRequest().isEmpty()) {
+			state.append("").append(getUserRequest()).append("\n\n");
 		}
 		state.append("\n- Execution Parameters: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
@@ -154,6 +142,7 @@ public class ExecutionPlan {
 	 * and the first step in progress
 	 * @return Formatted step execution status string
 	 */
+	@JsonIgnore
 	public String getStepsExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
 		boolean foundInProgress = false;
@@ -211,78 +200,9 @@ public class ExecutionPlan {
 	 * Get all step execution status in string format (compatible with old version)
 	 * @return Formatted step execution status string
 	 */
+	@JsonIgnore
 	public String getStepsExecutionStateStringFormat() {
 		return getStepsExecutionStateStringFormat(false);
-	}
-
-	/**
-	 * Convert plan to JSON string
-	 * @return JSON string representation of the plan
-	 */
-	public String toJson() {
-		StringBuilder json = new StringBuilder();
-		json.append("{\n");
-		json.append("  \"planId\": \"").append(planId).append("\",\n");
-		json.append("  \"title\": \"").append(title).append("\",\n");
-
-		// Add steps array
-		json.append("  \"steps\": [\n");
-		for (int i = 0; i < steps.size(); i++) {
-			json.append(steps.get(i).toJson());
-			if (i < steps.size() - 1) {
-				json.append(",");
-			}
-			json.append("\n");
-		}
-		json.append("  ]\n");
-
-		json.append("}");
-		return json.toString();
-	}
-
-	/**
-	 * Parse JSON string and create ExecutionPlan object
-	 * @param planJson JSON string
-	 * @param newPlanId New plan ID (optional, will override planId in JSON if provided)
-	 * @return Parsed ExecutionPlan object
-	 * @throws Exception Throws exception if parsing fails
-	 */
-	public static ExecutionPlan fromJson(String planJson, String newPlanId) throws Exception {
-		com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
-		com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(planJson);
-
-		// Get plan title
-		String title = rootNode.has("title") ? rootNode.get("title").asText() : "Plan from Template";
-
-		// Use new plan ID or get from JSON
-		String planId = (newPlanId != null && !newPlanId.isEmpty()) ? newPlanId
-				: (rootNode.has("planId") ? rootNode.get("planId").asText() : "unknown-plan");
-
-		// Create new ExecutionPlan object
-		ExecutionPlan plan = new ExecutionPlan(planId, title);
-
-		// If there are plan steps, add them to the plan
-		if (rootNode.has("steps") && rootNode.get("steps").isArray()) {
-			com.fasterxml.jackson.databind.JsonNode stepsNode = rootNode.get("steps");
-			int stepIndex = 0;
-			for (com.fasterxml.jackson.databind.JsonNode stepNode : stepsNode) {
-				if (stepNode.has("stepRequirement")) {
-					// Call ExecutionStep's fromJson method to create step
-					ExecutionStep step = ExecutionStep.fromJson(stepNode);
-					Integer stepIndexValFromJson = step.getStepIndex();
-					if (stepIndexValFromJson != null) {
-						stepIndex = stepIndexValFromJson;
-					}
-					else {
-						step.setStepIndex(stepIndex);
-					}
-					plan.addStep(step);
-					stepIndex++;
-				}
-			}
-		}
-
-		return plan;
 	}
 
 }

@@ -241,13 +241,6 @@ initializr:
           links:
             - rel: reference
               href: https://docs.spring.io/spring-boot/{bootVersion}/reference/using/devtools.html
-        - name: Lombok
-          id: lombok
-          groupId: org.projectlombok
-          artifactId: lombok
-          scope: annotationProcessor
-          description: Java annotation library which helps to reduce boilerplate code.
-          starter: false
         - name: Spring Configuration Processor
           id: configuration-processor
           groupId: org.springframework.boot

@@ -16,11 +16,11 @@
 package com.alibaba.cloud.ai.dbconnector;
 
 import com.alibaba.cloud.ai.dbconnector.bo.*;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.sql.Connection;
@@ -35,10 +35,10 @@ import static com.alibaba.cloud.ai.dbconnector.ColumnTypeParser.wrapType;
  * @author jiuhe
  * @since 2024/3/15
  */
-@Slf4j
 @Service
-@AllArgsConstructor
 public class PostgreJdbcDdl extends AbstractJdbcDdl {
+
+	private static final Logger log = LoggerFactory.getLogger(PostgreJdbcDdl.class);
 
 	@Override
 	public List<DatabaseInfoBO> showDatabases(Connection connection) {

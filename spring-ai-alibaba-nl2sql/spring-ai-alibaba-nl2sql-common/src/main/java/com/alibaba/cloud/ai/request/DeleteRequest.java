@@ -15,15 +15,49 @@
  */
 package com.alibaba.cloud.ai.request;
 
-import lombok.Data;
-
 import java.io.Serializable;
+import java.util.Objects;
 
-@Data
 public class DeleteRequest implements Serializable {
 
 	private String id;
 
 	private String vectorType;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getVectorType() {
+		return vectorType;
+	}
+
+	public void setVectorType(String vectorType) {
+		this.vectorType = vectorType;
+	}
+
+	@Override
+	public String toString() {
+		return "DeleteRequest{" + "id='" + id + '\'' + ", vectorType='" + vectorType + '\'' + '}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		DeleteRequest that = (DeleteRequest) o;
+		return Objects.equals(id, that.id) && Objects.equals(vectorType, that.vectorType);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id, vectorType);
+	}
 
 }

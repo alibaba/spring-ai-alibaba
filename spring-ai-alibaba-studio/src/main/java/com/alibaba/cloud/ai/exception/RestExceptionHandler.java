@@ -17,15 +17,17 @@ package com.alibaba.cloud.ai.exception;
 
 import com.alibaba.cloud.ai.common.R;
 import com.alibaba.cloud.ai.common.ReturnCode;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@Slf4j
 @RestControllerAdvice
 @ResponseBody
 public class RestExceptionHandler {
+
+	private static final Logger log = LoggerFactory.getLogger(RestExceptionHandler.class);
 
 	@ExceptionHandler(NotFoundException.class)
 	public R<String> notFoundException(NotFoundException e) {

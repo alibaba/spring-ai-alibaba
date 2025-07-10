@@ -27,8 +27,6 @@ import Vue3ColorPicker from 'vue3-colorpicker'
 import 'vue3-colorpicker/style.css'
 import 'nprogress/nprogress.css'
 
-import _ from 'lodash'
-
 const app = createApp(App)
 const pinia = createPinia()
 

@@ -15,13 +15,11 @@
  */
 package com.alibaba.cloud.ai.dbconnector;
 
-import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.Optional;
 
-@Getter
 public enum DbAccessTypeEnum {
 
 	JDBC("jdbc"),
@@ -50,6 +48,10 @@ public enum DbAccessTypeEnum {
 			.findAny();
 
 		return any.orElse(null);
+	}
+
+	public String getCode() {
+		return code;
 	}
 
 }
