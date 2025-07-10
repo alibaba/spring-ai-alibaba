@@ -211,6 +211,8 @@ public class DynamicAgent extends ReActAgent {
 				// Prepare act tool info
 				setActToolInfoList(toolCalls);
 				thinkActRecord.setActionNeeded(true);
+				thinkActRecord.setToolName(toolCalls.get(0).name());
+				thinkActRecord.setToolParameters(toolCalls.get(0).arguments());
 				thinkActRecord.setStatus("SUCCESS");
 				return true;
 			}
