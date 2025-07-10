@@ -51,7 +51,7 @@ public class AgentsConfiguration {
 
 	@Value("classpath:prompts/reflection.md")
 	private Resource reflectionPrompt;
- 
+
 	@Value("classpath:prompts/reporter.md")
 	private Resource reporterPrompt;
 
