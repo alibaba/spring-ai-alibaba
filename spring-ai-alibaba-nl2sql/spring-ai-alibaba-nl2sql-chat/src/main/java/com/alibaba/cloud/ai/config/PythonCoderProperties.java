@@ -16,11 +16,8 @@
 
 package com.alibaba.cloud.ai.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-
-@EnableConfigurationProperties(PythonCoderProperties.class)
-@ConfigurationProperties(prefix = "spring.ai.alibaba.nl2sql")
+//@EnableConfigurationProperties(PythonCoderProperties.class)
+//@ConfigurationProperties(prefix = "spring.ai.alibaba.nl2sql")
 public class PythonCoderProperties {
 
 	public static final String PYTHON_CODER_PREFIX = "spring.ai.alibaba.nl2sql.python-coder";
