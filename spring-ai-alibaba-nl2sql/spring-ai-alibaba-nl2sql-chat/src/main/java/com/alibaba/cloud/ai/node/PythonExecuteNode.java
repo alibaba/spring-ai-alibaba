@@ -30,7 +30,7 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
- * Python执行节点
+ * Python执行节点 TODO 当前是模拟执行，需结合Python工具进行执行
  *
  * @author zhangshenghang
  */
