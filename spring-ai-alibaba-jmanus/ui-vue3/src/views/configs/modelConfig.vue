@@ -328,7 +328,7 @@ const showAddModelModal = () => {
 
 // 创建新Model
 const handleAddModel = async () => {
-  if (!newModel.modelName?.trim() || !newModel.modelDescription?.trim()) {
+  if (!newModel.modelName.trim() || !newModel.modelDescription.trim()) {
     showMessage(t('config.modelConfig.requiredFields'), 'error')
     return
   }

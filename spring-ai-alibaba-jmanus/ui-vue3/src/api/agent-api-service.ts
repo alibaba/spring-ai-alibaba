@@ -23,7 +23,7 @@ export interface Agent {
   description: string
   availableTools: string[]
   nextStepPrompt?: string,
-  model: Model | null
+  model?: Model | null
 }
 
 export interface Tool {

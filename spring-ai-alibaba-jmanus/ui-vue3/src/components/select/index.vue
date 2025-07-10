@@ -74,7 +74,7 @@ import {Icon} from '@iconify/vue'
 const props = defineProps<{
   modelValue?: string | null
   options: Array<{ id: string; name: string }>
-  placeholder?: string
+  placeholder: string
   dropdownTitle?: string
   icon?: string
 }>()

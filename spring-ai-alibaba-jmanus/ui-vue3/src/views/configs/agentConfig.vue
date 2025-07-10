@@ -513,7 +513,7 @@ const selectAgent = async (agent: Agent) => {
       ...detailedAgent,
       availableTools: detailedAgent.availableTools
     }
-    chooseModel.value = detailedAgent.model
+    chooseModel.value = detailedAgent.model ?? null
   } catch (err: any) {
     console.error('加载Agent详情失败:', err)
     showMessage(t('config.agentConfig.loadDetailsFailed') + ': ' + err.message, 'error')
