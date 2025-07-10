@@ -54,10 +54,12 @@ public class ResearcherNode implements NodeAction {
 	private final String nodeName;
 
 	private final ReflectionProcessor reflectionProcessor;
+
 	// MCP工厂
 	private final McpProviderFactory mcpFactory;
 
-	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor, McpProviderFactory mcpFactory) {
+	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
+			McpProviderFactory mcpFactory) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;

@@ -53,10 +53,12 @@ public class CoderNode implements NodeAction {
 	private final String nodeName;
 
 	private final ReflectionProcessor reflectionProcessor;
+
 	// MCP工厂
 	private final McpProviderFactory mcpFactory;
 
-	public CoderNode(ChatClient coderAgent, String executorNodeId, ReflectionProcessor reflectionProcessor, McpProviderFactory mcpFactory) {
+	public CoderNode(ChatClient coderAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
+			McpProviderFactory mcpFactory) {
 		this.coderAgent = coderAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "coder_" + executorNodeId;
