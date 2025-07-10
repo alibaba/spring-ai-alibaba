@@ -32,7 +32,8 @@ import com.alibaba.cloud.ai.vo.ChatModelRunResult;
 import com.alibaba.cloud.ai.vo.TelemetryResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.tracing.Tracer;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -47,8 +48,9 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Slf4j
 public class ChatModelDelegateImpl implements ChatModelDelegate {
+
+	private static final Logger log = LoggerFactory.getLogger(GraphServiceImpl.class);
 
 	private final Tracer tracer;
 

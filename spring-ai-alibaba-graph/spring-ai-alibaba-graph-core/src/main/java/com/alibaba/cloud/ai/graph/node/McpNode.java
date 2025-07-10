@@ -23,6 +23,7 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.InitializeResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,13 +77,22 @@ public class McpNode implements NodeAction {
 				url, tool, headers, inputParamKeys);
 
 		// Build transport and client
-		HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(this.url);
+		String baseUrl = this.url;
+		String sseEndpoint = "/sse";
+		if (this.url.contains("/sse?")) {
+			int idx = this.url.indexOf("/sse?");
+			baseUrl = this.url.substring(0, idx);
+			sseEndpoint = this.url.substring(idx); // e.g. /sse?key=xxx
+		}
+		HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl)
+			.sseEndpoint(sseEndpoint);
 		if (this.headers != null && !this.headers.isEmpty()) {
 			transportBuilder.customizeRequest(req -> this.headers.forEach(req::header));
 		}
 		this.transport = transportBuilder.build();
 		this.client = McpClient.sync(this.transport).build();
-		this.client.initialize();
+		InitializeResult initializeResult = this.client.initialize();
+		log.info("[McpNode] MCP Client initialized: {}", initializeResult);
 		// Variable replacement
 		String finalTool = replaceVariables(tool, state);
 		Map<String, Object> finalParams = new HashMap<>();

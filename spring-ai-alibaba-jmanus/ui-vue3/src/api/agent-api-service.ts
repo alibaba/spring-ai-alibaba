@@ -15,12 +15,15 @@
  */
 
 // Define interface types
+import type {Model} from "@/api/model-api-service";
+
 export interface Agent {
   id: string
   name: string
   description: string
   availableTools: string[]
-  nextStepPrompt?: string
+  nextStepPrompt?: string,
+  model?: Model | null
 }
 
 export interface Tool {
@@ -52,7 +55,7 @@ export class AgentApiService {
       try {
         const errorData = await response.json()
         throw new Error(errorData.message || `API request failed: ${response.status}`)
-      } catch (e) {
+      } catch {
         throw new Error(`API request failed: ${response.status} ${response.statusText}`)
       }
     }

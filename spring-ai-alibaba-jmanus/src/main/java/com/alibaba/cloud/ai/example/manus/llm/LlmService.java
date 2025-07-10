@@ -18,12 +18,13 @@ package com.alibaba.cloud.ai.example.manus.llm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -37,9 +38,9 @@ public class LlmService {
 
 	private final ChatClient finalizeChatClient;
 
-	private final ChatMemory conversationMemory = MessageWindowChatMemory.builder().maxMessages(1000).build();
+	private ChatMemory conversationMemory;
 
-	private final ChatMemory agentMemory = MessageWindowChatMemory.builder().maxMessages(1000).build();
+	private ChatMemory agentMemory;
 
 	private final ChatModel chatModel;
 
@@ -61,7 +62,7 @@ public class LlmService {
 			.build();
 
 		this.finalizeChatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
+			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.build();
 
@@ -71,7 +72,26 @@ public class LlmService {
 		return agentExecutionClient;
 	}
 
-	public ChatMemory getAgentMemory() {
+	public ChatClient getDynamicChatClient(String host, String apiKey, String modelName) {
+		OpenAiApi openAiApi = OpenAiApi.builder().baseUrl(host).apiKey(apiKey).build();
+
+		OpenAiChatOptions chatOptions = OpenAiChatOptions.builder().model(modelName).build();
+
+		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
+			.openAiApi(openAiApi)
+			.defaultOptions(chatOptions)
+			.build();
+		return ChatClient.builder(openAiChatModel)
+			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.build();
+	}
+
+	public ChatMemory getAgentMemory(Integer maxMessages) {
+		if (agentMemory == null) {
+			agentMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+		}
 		return agentMemory;
 	}
 
@@ -84,6 +104,10 @@ public class LlmService {
 	}
 
 	public void clearConversationMemory(String planId) {
+		if (this.conversationMemory == null) {
+			// Default to 100 messages if not specified elsewhere
+			this.conversationMemory = MessageWindowChatMemory.builder().maxMessages(100).build();
+		}
 		this.conversationMemory.clear(planId);
 	}
 
@@ -95,7 +119,10 @@ public class LlmService {
 		return chatModel;
 	}
 
-	public ChatMemory getConversationMemory() {
+	public ChatMemory getConversationMemory(Integer maxMessages) {
+		if (conversationMemory == null) {
+			conversationMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+		}
 		return conversationMemory;
 	}
 

@@ -100,7 +100,6 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 			return this;
 		}
 		return RunnableConfig.builder(this).checkPointId(checkPointId).build();
-
 	}
 
 	/**

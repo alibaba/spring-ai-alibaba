@@ -132,9 +132,6 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 
 		List<Variable> outs = new ArrayList<>();
 		outs.add(new Variable(data.getOutputKey(), VariableType.STRING.value()));
-		for (Case c : data.getCases()) {
-			outs.add(new Variable(c.getId(), VariableType.STRING.value()));
-		}
 		data.setOutputs(outs);
 	}
 
