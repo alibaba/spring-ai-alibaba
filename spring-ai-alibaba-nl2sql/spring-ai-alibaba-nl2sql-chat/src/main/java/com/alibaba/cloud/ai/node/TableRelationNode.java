@@ -42,6 +42,7 @@ public class TableRelationNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(TableRelationNode.class);
 
 	private final BaseSchemaService baseSchemaService;
+
 	private final BaseNl2SqlService baseNl2SqlService;
 
 	public TableRelationNode(ChatClient.Builder chatClientBuilder, BaseSchemaService baseSchemaService,
@@ -58,7 +59,8 @@ public class TableRelationNode implements NodeAction {
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
 		List<String> evidenceList = StateUtils.getListValue(state, EVIDENCES);
 		List<Document> tableDocuments = StateUtils.getDocumentList(state, TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT);
-		List<List<Document>> columnDocumentsByKeywords = StateUtils.getDocumentListList(state, COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT);
+		List<List<Document>> columnDocumentsByKeywords = StateUtils.getDocumentListList(state,
+				COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT);
 
 		// 构建和处理Schema
 		SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
@@ -71,7 +73,8 @@ public class TableRelationNode implements NodeAction {
 	/**
 	 * 构建初始Schema
 	 */
-	private SchemaDTO buildInitialSchema(List<List<Document>> columnDocumentsByKeywords, List<Document> tableDocuments) {
+	private SchemaDTO buildInitialSchema(List<List<Document>> columnDocumentsByKeywords,
+			List<Document> tableDocuments) {
 		SchemaDTO schemaDTO = new SchemaDTO();
 		baseSchemaService.extractDatabaseName(schemaDTO);
 		baseSchemaService.buildSchemaFromDocuments(columnDocumentsByKeywords, tableDocuments, schemaDTO);
@@ -81,15 +84,18 @@ public class TableRelationNode implements NodeAction {
 	/**
 	 * 处理Schema选择
 	 */
-	private SchemaDTO processSchemaSelection(SchemaDTO schemaDTO, String input, List<String> evidenceList, OverAllState state) {
+	private SchemaDTO processSchemaSelection(SchemaDTO schemaDTO, String input, List<String> evidenceList,
+			OverAllState state) {
 		String schemaAdvice = StateUtils.getStringValue(state, SQL_GENERATE_SCHEMA_MISSING_ADVICE, null);
 
 		if (schemaAdvice != null) {
 			logger.info("[{}] 使用Schema补充建议处理: {}", this.getClass().getSimpleName(), schemaAdvice);
 			return baseNl2SqlService.fineSelect(schemaDTO, input, evidenceList, schemaAdvice);
-		} else {
+		}
+		else {
 			logger.info("[{}] 执行常规Schema选择", this.getClass().getSimpleName());
 			return baseNl2SqlService.fineSelect(schemaDTO, input, evidenceList);
 		}
 	}
+
 }

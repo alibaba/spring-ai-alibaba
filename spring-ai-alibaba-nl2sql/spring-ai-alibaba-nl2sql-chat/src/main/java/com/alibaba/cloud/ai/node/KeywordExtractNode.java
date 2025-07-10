@@ -50,7 +50,7 @@ public class KeywordExtractNode implements NodeAction {
 
 		// 获取输入，优先使用重写后的查询，否则使用原始输入
 		String input = StateUtils.getStringValue(state, QUERY_REWRITE_NODE_OUTPUT,
-			StateUtils.getStringValue(state, INPUT_KEY));
+				StateUtils.getStringValue(state, INPUT_KEY));
 
 		// 提取证据和关键词
 		List<String> evidences = baseNl2SqlService.extractEvidences(input);
@@ -58,11 +58,7 @@ public class KeywordExtractNode implements NodeAction {
 
 		logger.info("[{}] 提取结果 - 证据: {}, 关键词: {}", this.getClass().getSimpleName(), evidences, keywords);
 
-		return Map.of(
-			KEYWORD_EXTRACT_NODE_OUTPUT, keywords,
-			EVIDENCES, evidences,
-			RESULT, keywords
-		);
+		return Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, keywords, EVIDENCES, evidences, RESULT, keywords);
 	}
 
 }

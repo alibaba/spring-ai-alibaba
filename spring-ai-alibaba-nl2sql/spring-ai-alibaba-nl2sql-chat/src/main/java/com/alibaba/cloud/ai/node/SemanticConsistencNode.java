@@ -86,7 +86,7 @@ public class SemanticConsistencNode extends AbstractPlanBasedNode {
 	 * 执行语义一致性验证
 	 */
 	private String performSemanticValidation(SchemaDTO schemaDTO, List<String> evidenceList,
-											ExecutionStep.ToolParameters toolParameters, String sqlQuery) throws Exception {
+			ExecutionStep.ToolParameters toolParameters, String sqlQuery) throws Exception {
 		// 构建验证上下文
 		String schema = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
 		String evidence = StringUtils.join(evidenceList, ";\n");
@@ -101,15 +101,12 @@ public class SemanticConsistencNode extends AbstractPlanBasedNode {
 	 */
 	private Map<String, Object> buildValidationResult(boolean passed, String validationResult, Integer currentStep) {
 		if (passed) {
-			return Map.of(
-				SEMANTIC_CONSISTENC_NODE_OUTPUT, true,
-				PLAN_CURRENT_STEP, currentStep + 1
-			);
-		} else {
-			return Map.of(
-				SEMANTIC_CONSISTENC_NODE_OUTPUT, false,
-				SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, validationResult
-			);
+			return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, true, PLAN_CURRENT_STEP, currentStep + 1);
+		}
+		else {
+			return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, false, SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT,
+					validationResult);
 		}
 	}
+
 }

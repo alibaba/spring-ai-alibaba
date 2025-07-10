@@ -29,7 +29,7 @@ public class SQLExecutorDispatcher implements EdgeAction {
 
 	@Override
 	public String apply(OverAllState state) {
-		boolean present = StateUtils.hasValue(state,SQL_EXECUTE_NODE_EXCEPTION_OUTPUT);
+		boolean present = StateUtils.hasValue(state, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT);
 		if (present) {
 			return SQL_GENERATE_NODE;
 		}

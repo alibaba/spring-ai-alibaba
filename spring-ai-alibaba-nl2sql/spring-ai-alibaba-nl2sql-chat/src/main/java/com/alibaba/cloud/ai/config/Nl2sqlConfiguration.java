@@ -120,17 +120,15 @@ public class Nl2sqlConfiguration {
 			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(chatClientBuilder, dbAccessor, dbConfig)))
 			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(chatClientBuilder)))
 			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
-			// TODO 待定：这里考虑可以添加一个自我反思的节点，进行自我反思和改进；是否需要根据使用效果再进行开发
 			.addNode(SEMANTIC_CONSISTENC_NODE,
 					node_async(new SemanticConsistencNode(chatClientBuilder, nl2SqlService, dbConfig)));
-		// TODO 执行sql的节点
 
 		stateGraph.addEdge(START, QUERY_REWRITE_NODE)
 			.addConditionalEdges(QUERY_REWRITE_NODE, edge_async(new QueryRewriteDispatcher()),
 					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END))
 			.addEdge(KEYWORD_EXTRACT_NODE, SCHEMA_RECALL_NODE)
 			.addEdge(SCHEMA_RECALL_NODE, TABLE_RELATION_NODE)
-			.addEdge(TABLE_RELATION_NODE, PLANNER_NODE) // TODO 使用
+			.addEdge(TABLE_RELATION_NODE, PLANNER_NODE)
 			.addEdge(PLANNER_NODE, PLAN_EXECUTOR_NODE)
 			.addEdge(PYTHON_EXECUTE_NODE, PLAN_EXECUTOR_NODE)
 			.addConditionalEdges(PLAN_EXECUTOR_NODE, edge_async(new PlanExecutorDispatcher()),

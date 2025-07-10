@@ -49,15 +49,20 @@ public class SqlGenerateNode implements NodeAction {
 	private static final int MAX_RETRY_COUNT = 3;
 
 	private final ChatClient chatClient;
+
 	private final DbConfig dbConfig;
+
 	private final BaseNl2SqlService baseNl2SqlService;
+
 	private final BeanOutputConverter<Plan> converter;
 
-	public SqlGenerateNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService, DbConfig dbConfig) {
+	public SqlGenerateNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
+			DbConfig dbConfig) {
 		this.chatClient = chatClientBuilder.build();
 		this.baseNl2SqlService = baseNl2SqlService;
 		this.dbConfig = dbConfig;
-		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {});
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
+		});
 	}
 
 	@Override
@@ -88,7 +93,8 @@ public class SqlGenerateNode implements NodeAction {
 	/**
 	 * 处理SQL执行异常
 	 */
-	private Map<String, Object> handleSqlExecutionException(OverAllState state, Plan plan, ExecutionStep.ToolParameters toolParameters) throws Exception {
+	private Map<String, Object> handleSqlExecutionException(OverAllState state, Plan plan,
+			ExecutionStep.ToolParameters toolParameters) throws Exception {
 		String sqlException = StateUtils.getStringValue(state, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT);
 		logger.info("检测到SQL执行异常，开始重新生成SQL: {}", sqlException);
 
@@ -96,32 +102,27 @@ public class SqlGenerateNode implements NodeAction {
 		SchemaDTO schemaDTO = StateUtils.getObjectValue(state, TABLE_RELATION_OUTPUT, SchemaDTO.class);
 
 		String newSql = regenerateSql(state, toolParameters.toJsonStr(), evidenceList, schemaDTO,
-			SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, toolParameters.getSqlQuery());
+				SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, toolParameters.getSqlQuery());
 
 		toolParameters.setSqlQuery(newSql);
 
-		return Map.of(
-			SQL_GENERATE_OUTPUT, SQL_EXECUTE_NODE,
-			PLANNER_NODE_OUTPUT, plan.toJsonStr()
-		);
+		return Map.of(SQL_GENERATE_OUTPUT, SQL_EXECUTE_NODE, PLANNER_NODE_OUTPUT, plan.toJsonStr());
 	}
 
 	/**
 	 * 处理语义一致性校验失败
 	 */
-	private Map<String, Object> handleSemanticConsistencyFailure(OverAllState state, ExecutionStep.ToolParameters toolParameters) throws Exception {
+	private Map<String, Object> handleSemanticConsistencyFailure(OverAllState state,
+			ExecutionStep.ToolParameters toolParameters) throws Exception {
 		logger.info("语义一致性校验未通过，开始重新生成SQL");
 
 		List<String> evidenceList = StateUtils.getListValue(state, EVIDENCES);
 		SchemaDTO schemaDTO = StateUtils.getObjectValue(state, TABLE_RELATION_OUTPUT, SchemaDTO.class);
 
 		String newSql = regenerateSql(state, toolParameters.toJsonStr(), evidenceList, schemaDTO,
-			SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, toolParameters.getSqlQuery());
+				SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, toolParameters.getSqlQuery());
 
-		return Map.of(
-			SQL_GENERATE_OUTPUT, newSql,
-			RESULT, newSql
-		);
+		return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
 	}
 
 	/**
@@ -154,20 +155,18 @@ public class SqlGenerateNode implements NodeAction {
 
 		if (sqlGenerateCount <= MAX_RETRY_COUNT) {
 			return buildRetryResult(state, recallInfoSatisfyRequirement, sqlGenerateCount);
-		} else {
+		}
+		else {
 			logger.info("召回信息不满足需求，重试次数已达上限，结束SQL生成");
-			return Map.of(
-				RESULT, recallInfoSatisfyRequirement,
-				SQL_GENERATE_OUTPUT, END,
-				SQL_GENERATE_COUNT, 0
-			);
+			return Map.of(RESULT, recallInfoSatisfyRequirement, SQL_GENERATE_OUTPUT, END, SQL_GENERATE_COUNT, 0);
 		}
 	}
 
 	/**
 	 * 构建重试结果
 	 */
-	private Map<String, Object> buildRetryResult(OverAllState state, String recallInfoSatisfyRequirement, int sqlGenerateCount) {
+	private Map<String, Object> buildRetryResult(OverAllState state, String recallInfoSatisfyRequirement,
+			int sqlGenerateCount) {
 		logger.info("召回信息不满足需求，开始重新生成SQL");
 
 		Map<String, Object> result = new HashMap<>();
@@ -175,8 +174,8 @@ public class SqlGenerateNode implements NodeAction {
 		result.put(SQL_GENERATE_OUTPUT, SQL_GENERATE_SCHEMA_MISSING);
 
 		String newAdvice = StateUtils.getStringValue(state, SQL_GENERATE_SCHEMA_MISSING_ADVICE, "")
-			+ (StateUtils.hasValue(state, SQL_GENERATE_SCHEMA_MISSING_ADVICE) ? "\n" : "")
-			+ recallInfoSatisfyRequirement;
+				+ (StateUtils.hasValue(state, SQL_GENERATE_SCHEMA_MISSING_ADVICE) ? "\n" : "")
+				+ recallInfoSatisfyRequirement;
 
 		result.put(SQL_GENERATE_SCHEMA_MISSING_ADVICE, newAdvice);
 
@@ -186,4 +185,5 @@ public class SqlGenerateNode implements NodeAction {
 
 		return result;
 	}
+
 }

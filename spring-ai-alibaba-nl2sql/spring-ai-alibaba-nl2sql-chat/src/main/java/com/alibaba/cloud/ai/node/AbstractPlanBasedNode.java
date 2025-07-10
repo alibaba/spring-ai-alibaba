@@ -37,72 +37,74 @@ import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
  */
 public abstract class AbstractPlanBasedNode implements NodeAction {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractPlanBasedNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(AbstractPlanBasedNode.class);
 
-    private final BeanOutputConverter<Plan> converter;
+	private final BeanOutputConverter<Plan> converter;
 
-    protected AbstractPlanBasedNode() {
-        this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<>() {});
-    }
+	protected AbstractPlanBasedNode() {
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<>() {
+		});
+	}
 
-    /**
-     * 获取当前执行步骤
-     */
-    protected ExecutionStep getCurrentExecutionStep(OverAllState state) {
-        String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
-            .orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
+	/**
+	 * 获取当前执行步骤
+	 */
+	protected ExecutionStep getCurrentExecutionStep(OverAllState state) {
+		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
+			.orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
 
-        Plan plan = converter.convert(plannerNodeOutput);
-        if (plan == null) {
-            throw new IllegalStateException("计划解析失败");
-        }
+		Plan plan = converter.convert(plannerNodeOutput);
+		if (plan == null) {
+			throw new IllegalStateException("计划解析失败");
+		}
 
-        Integer currentStep = state.value(PLAN_CURRENT_STEP, 1);
+		Integer currentStep = state.value(PLAN_CURRENT_STEP, 1);
 
-        List<ExecutionStep> executionPlan = plan.getExecutionPlan();
-        if (executionPlan == null || executionPlan.isEmpty()) {
-            throw new IllegalStateException("执行计划为空");
-        }
+		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
+		if (executionPlan == null || executionPlan.isEmpty()) {
+			throw new IllegalStateException("执行计划为空");
+		}
 
-        int stepIndex = currentStep - 1;
-        if (stepIndex < 0 || stepIndex >= executionPlan.size()) {
-            throw new IllegalStateException("当前步骤索引超出范围: " + stepIndex);
-        }
+		int stepIndex = currentStep - 1;
+		if (stepIndex < 0 || stepIndex >= executionPlan.size()) {
+			throw new IllegalStateException("当前步骤索引超出范围: " + stepIndex);
+		}
 
-        return executionPlan.get(stepIndex);
-    }
+		return executionPlan.get(stepIndex);
+	}
 
-    /**
-     * 获取计划对象
-     */
-    protected Plan getPlan(OverAllState state) {
-        String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
-            .orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
-        Plan plan = converter.convert(plannerNodeOutput);
-        if (plan == null) {
-            throw new IllegalStateException("计划解析失败");
-        }
-        return plan;
-    }
+	/**
+	 * 获取计划对象
+	 */
+	protected Plan getPlan(OverAllState state) {
+		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
+			.orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
+		Plan plan = converter.convert(plannerNodeOutput);
+		if (plan == null) {
+			throw new IllegalStateException("计划解析失败");
+		}
+		return plan;
+	}
 
-    /**
-     * 获取当前步骤号
-     */
-    protected Integer getCurrentStepNumber(OverAllState state) {
-        return state.value(PLAN_CURRENT_STEP, 1);
-    }
+	/**
+	 * 获取当前步骤号
+	 */
+	protected Integer getCurrentStepNumber(OverAllState state) {
+		return state.value(PLAN_CURRENT_STEP, 1);
+	}
 
-    /**
-     * 记录节点进入日志
-     */
-    protected void logNodeEntry() {
-        logger.info("进入 {} 节点", this.getClass().getSimpleName());
-    }
+	/**
+	 * 记录节点进入日志
+	 */
+	protected void logNodeEntry() {
+		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+	}
 
-    /**
-     * 记录节点输出日志
-     */
-    protected void logNodeOutput(String outputKey, Object output) {
-        logger.info("{} 节点输出 {}：{}", this.getClass().getSimpleName(), outputKey, output);
-    }
+	/**
+	 * 记录节点输出日志
+	 */
+	protected void logNodeOutput(String outputKey, Object output) {
+		logger.info("{} 节点输出 {}：{}", this.getClass().getSimpleName(), outputKey, output);
+	}
+
 }

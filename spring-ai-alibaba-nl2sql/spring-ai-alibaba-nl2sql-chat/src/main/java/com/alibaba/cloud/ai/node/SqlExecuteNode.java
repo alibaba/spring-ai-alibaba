@@ -43,6 +43,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 	private static final Logger logger = LoggerFactory.getLogger(SqlExecuteNode.class);
 
 	private final DbConfig dbConfig;
+
 	private final DbAccessor dbAccessor;
 
 	public SqlExecuteNode(ChatClient.Builder chatClientBuilder, DbAccessor dbAccessor, DbConfig dbConfig) {
@@ -76,20 +77,19 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			ResultSetBO resultSetBO = dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
 			String jsonStr = resultSetBO.toJsonStr();
 
-			Map<String, String> existingResults = StateUtils.getObjectValue(
-				state, SQL_EXECUTE_NODE_OUTPUT, Map.class, new HashMap());
+			Map<String, String> existingResults = StateUtils.getObjectValue(state, SQL_EXECUTE_NODE_OUTPUT, Map.class,
+					new HashMap());
 			Map<String, String> updatedResults = StepResultUtils.addStepResult(existingResults, currentStep, jsonStr);
 
 			logger.info("SQL执行成功，结果记录数: {}", resultSetBO.getData() != null ? resultSetBO.getData().size() : 0);
 
-			return Map.of(
-				SQL_EXECUTE_NODE_OUTPUT, updatedResults,
-				SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, ""
-			);
-		} catch (Exception e) {
+			return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedResults, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, "");
+		}
+		catch (Exception e) {
 			String errorMessage = e.getMessage();
 			logger.error("SQL执行失败 - SQL: [{}] ", sqlQuery, e);
 			return Map.of(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, errorMessage);
 		}
 	}
+
 }

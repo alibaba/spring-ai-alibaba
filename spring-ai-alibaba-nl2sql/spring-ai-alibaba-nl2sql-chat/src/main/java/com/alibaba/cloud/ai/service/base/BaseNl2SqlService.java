@@ -158,8 +158,8 @@ public class BaseNl2SqlService {
 		String newSql = "";
 		if (sql != null && !sql.isEmpty()) {
 			// 使用专业的SQL错误修复提示词
-			String errorFixerPrompt = PromptHelper.buildSqlErrorFixerPrompt(query, dbConfig, schemaDTO,
-					evidenceList, sql, exceptionMessage);
+			String errorFixerPrompt = PromptHelper.buildSqlErrorFixerPrompt(query, dbConfig, schemaDTO, evidenceList,
+					sql, exceptionMessage);
 			newSql = aiService.call(errorFixerPrompt);
 		}
 		else {

@@ -44,11 +44,13 @@ public class ReportGeneratorNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(ReportGeneratorNode.class);
 
 	private final ChatClient chatClient;
+
 	private final BeanOutputConverter<Plan> converter;
 
 	public ReportGeneratorNode(ChatClient.Builder chatClientBuilder) {
 		this.chatClient = chatClientBuilder.build();
-		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {});
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
+		});
 	}
 
 	@Override
@@ -60,7 +62,8 @@ public class ReportGeneratorNode implements NodeAction {
 		String userInput = StateUtils.getStringValue(state, INPUT_KEY);
 		Integer currentStep = StateUtils.getObjectValue(state, PLAN_CURRENT_STEP, Integer.class, 1);
 		@SuppressWarnings("unchecked")
-		HashMap<String, String> executionResults = StateUtils.getObjectValue(state, SQL_EXECUTE_NODE_OUTPUT, HashMap.class, new HashMap<>());
+		HashMap<String, String> executionResults = StateUtils.getObjectValue(state, SQL_EXECUTE_NODE_OUTPUT,
+				HashMap.class, new HashMap<>());
 
 		logger.info("计划节点输出: {}", plannerNodeOutput);
 
@@ -97,7 +100,8 @@ public class ReportGeneratorNode implements NodeAction {
 	/**
 	 * 生成报告
 	 */
-	private String generateReport(String userInput, Plan plan, HashMap<String, String> executionResults, String summaryAndRecommendations) {
+	private String generateReport(String userInput, Plan plan, HashMap<String, String> executionResults,
+			String summaryAndRecommendations) {
 		// 构建用户需求和计划描述
 		String userRequirementsAndPlan = buildUserRequirementsAndPlan(userInput, plan);
 
@@ -105,16 +109,10 @@ public class ReportGeneratorNode implements NodeAction {
 		String analysisStepsAndData = buildAnalysisStepsAndData(plan, executionResults);
 
 		// 使用PromptHelper构建报告生成提示词
-		String reportPrompt = PromptHelper.buildReportGeneratorPrompt(
-			userRequirementsAndPlan,
-			analysisStepsAndData,
-			summaryAndRecommendations
-		);
+		String reportPrompt = PromptHelper.buildReportGeneratorPrompt(userRequirementsAndPlan, analysisStepsAndData,
+				summaryAndRecommendations);
 
-		return chatClient.prompt()
-			.user(reportPrompt)
-			.call()
-			.content();
+		return chatClient.prompt().user(reportPrompt).call().content();
 	}
 
 	/**
@@ -152,7 +150,8 @@ public class ReportGeneratorNode implements NodeAction {
 
 		if (executionResults.isEmpty()) {
 			sb.append("暂无执行结果数据\n");
-		} else {
+		}
+		else {
 			List<ExecutionStep> executionPlan = plan.getExecutionPlan();
 			for (Map.Entry<String, String> entry : executionResults.entrySet()) {
 				String stepKey = entry.getKey();
@@ -170,11 +169,14 @@ public class ReportGeneratorNode implements NodeAction {
 						if (step.getToolParameters() != null) {
 							sb.append("**参数描述**: ").append(step.getToolParameters().getDescription()).append("\n");
 							if (step.getToolParameters().getSqlQuery() != null) {
-								sb.append("**执行SQL**: \n```sql\n").append(step.getToolParameters().getSqlQuery()).append("\n```\n");
+								sb.append("**执行SQL**: \n```sql\n")
+									.append(step.getToolParameters().getSqlQuery())
+									.append("\n```\n");
 							}
 						}
 					}
-				} catch (NumberFormatException e) {
+				}
+				catch (NumberFormatException e) {
 					// 忽略解析错误
 				}
 
@@ -197,4 +199,5 @@ public class ReportGeneratorNode implements NodeAction {
 		result.put(PLANNER_NODE_OUTPUT, null);
 		return result;
 	}
+
 }

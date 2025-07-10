@@ -29,79 +29,74 @@ import java.util.function.Supplier;
  */
 public class StateUtils {
 
-    /**
-     * 安全获取字符串类型状态值
-     */
-    public static String getStringValue(OverAllState state, String key) {
-        return state.value(key)
-            .map(String.class::cast)
-            .orElseThrow(() -> new IllegalStateException("State key not found: " + key));
-    }
+	/**
+	 * 安全获取字符串类型状态值
+	 */
+	public static String getStringValue(OverAllState state, String key) {
+		return state.value(key)
+			.map(String.class::cast)
+			.orElseThrow(() -> new IllegalStateException("State key not found: " + key));
+	}
 
-    /**
-     * 安全获取字符串类型状态值，带默认值
-     */
-    public static String getStringValue(OverAllState state, String key, String defaultValue) {
-        return state.value(key)
-            .map(String.class::cast)
-            .orElse(defaultValue);
-    }
+	/**
+	 * 安全获取字符串类型状态值，带默认值
+	 */
+	public static String getStringValue(OverAllState state, String key, String defaultValue) {
+		return state.value(key).map(String.class::cast).orElse(defaultValue);
+	}
 
-    /**
-     * 安全获取列表类型状态值
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> List<T> getListValue(OverAllState state, String key) {
-        return state.value(key)
-            .map(v -> (List<T>) v)
-            .orElseThrow(() -> new IllegalStateException("State key not found: " + key));
-    }
+	/**
+	 * 安全获取列表类型状态值
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> List<T> getListValue(OverAllState state, String key) {
+		return state.value(key)
+			.map(v -> (List<T>) v)
+			.orElseThrow(() -> new IllegalStateException("State key not found: " + key));
+	}
 
-    /**
-     * 安全获取对象类型状态值
-     */
-    public static <T> T getObjectValue(OverAllState state, String key, Class<T> type) {
-        return state.value(key)
-            .map(type::cast)
-            .orElseThrow(() -> new IllegalStateException("State key not found: " + key));
-    }
+	/**
+	 * 安全获取对象类型状态值
+	 */
+	public static <T> T getObjectValue(OverAllState state, String key, Class<T> type) {
+		return state.value(key)
+			.map(type::cast)
+			.orElseThrow(() -> new IllegalStateException("State key not found: " + key));
+	}
 
-    /**
-     * 安全获取对象类型状态值，带默认值
-     */
-    public static <T> T getObjectValue(OverAllState state, String key, Class<T> type, T defaultValue) {
-        return state.value(key)
-            .map(type::cast)
-            .orElse(defaultValue);
-    }
+	/**
+	 * 安全获取对象类型状态值，带默认值
+	 */
+	public static <T> T getObjectValue(OverAllState state, String key, Class<T> type, T defaultValue) {
+		return state.value(key).map(type::cast).orElse(defaultValue);
+	}
 
-    /**
-     * 安全获取对象类型状态值，带默认值提供器
-     */
-    public static <T> T getObjectValue(OverAllState state, String key, Class<T> type, Supplier<T> defaultSupplier) {
-        return state.value(key)
-            .map(type::cast)
-            .orElseGet(defaultSupplier);
-    }
+	/**
+	 * 安全获取对象类型状态值，带默认值提供器
+	 */
+	public static <T> T getObjectValue(OverAllState state, String key, Class<T> type, Supplier<T> defaultSupplier) {
+		return state.value(key).map(type::cast).orElseGet(defaultSupplier);
+	}
 
-    /**
-     * 检查状态值是否存在
-     */
-    public static boolean hasValue(OverAllState state, String key) {
-        return state.value(key).isPresent() && !((String)state.value(key).get()).equals("");
-    }
+	/**
+	 * 检查状态值是否存在
+	 */
+	public static boolean hasValue(OverAllState state, String key) {
+		return state.value(key).isPresent() && !((String) state.value(key).get()).equals("");
+	}
 
-    /**
-     * 获取Document列表
-     */
-    public static List<Document> getDocumentList(OverAllState state, String key) {
-        return getListValue(state, key);
-    }
+	/**
+	 * 获取Document列表
+	 */
+	public static List<Document> getDocumentList(OverAllState state, String key) {
+		return getListValue(state, key);
+	}
 
-    /**
-     * 获取Document列表的列表
-     */
-    public static List<List<Document>> getDocumentListList(OverAllState state, String key) {
-        return getListValue(state, key);
-    }
+	/**
+	 * 获取Document列表的列表
+	 */
+	public static List<List<Document>> getDocumentListList(OverAllState state, String key) {
+		return getListValue(state, key);
+	}
+
 }

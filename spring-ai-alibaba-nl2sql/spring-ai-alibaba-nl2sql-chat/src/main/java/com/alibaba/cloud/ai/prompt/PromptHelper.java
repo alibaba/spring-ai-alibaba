@@ -225,7 +225,8 @@ public class PromptHelper {
 		return PromptConstant.SEMANTIC_CONSISTENC_PROMPT_TEMPLATE.render(params);
 	}
 
-	public static String buildReportGeneratorPrompt(String userRequirementsAndPlan, String analysisStepsAndData, String summaryAndRecommendations) {
+	public static String buildReportGeneratorPrompt(String userRequirementsAndPlan, String analysisStepsAndData,
+			String summaryAndRecommendations) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("user_requirements_and_plan", userRequirementsAndPlan);
 		params.put("analysis_steps_and_data", analysisStepsAndData);
@@ -249,4 +250,5 @@ public class PromptHelper {
 
 		return PromptConstant.getSqlErrorFixerPromptTemplate().render(params);
 	}
+
 }

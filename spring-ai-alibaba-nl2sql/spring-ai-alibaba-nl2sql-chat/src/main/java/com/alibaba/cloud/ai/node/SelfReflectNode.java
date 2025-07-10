@@ -52,4 +52,5 @@ public class SelfReflectNode implements NodeAction {
 
 		return Map.of(RESULT, "自反思节点执行完成");
 	}
+
 }

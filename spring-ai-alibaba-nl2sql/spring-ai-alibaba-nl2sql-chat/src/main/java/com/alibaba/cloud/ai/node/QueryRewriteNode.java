@@ -58,4 +58,5 @@ public class QueryRewriteNode implements NodeAction {
 		// 返回处理结果
 		return Map.of(QUERY_REWRITE_NODE_OUTPUT, rewrite, RESULT, rewrite);
 	}
+
 }

@@ -43,7 +43,9 @@ public class SqlValidateNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(SqlValidateNode.class);
 
 	private final ChatClient chatClient;
+
 	private final DbConfig dbConfig;
+
 	private final DbAccessor dbAccessor;
 
 	public SqlValidateNode(ChatClient.Builder chatClientBuilder, DbAccessor dbAccessor, DbConfig dbConfig) {
@@ -71,15 +73,14 @@ public class SqlValidateNode implements NodeAction {
 			logger.info("[{}] SQL语法验证通过", this.getClass().getSimpleName());
 			return Map.of(SQL_VALIDATE_NODE_OUTPUT, true);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			// 处理验证失败情况
 			String errorMessage = e.getMessage();
 			logger.error("[{}] SQL语法验证失败 - 原因: {}", this.getClass().getSimpleName(), errorMessage);
 
-			return Map.of(
-				SQL_VALIDATE_NODE_OUTPUT, false,
-				SQL_VALIDATE_EXCEPTION_OUTPUT, errorMessage
-			);
+			return Map.of(SQL_VALIDATE_NODE_OUTPUT, false, SQL_VALIDATE_EXCEPTION_OUTPUT, errorMessage);
 		}
 	}
+
 }

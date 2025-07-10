@@ -66,34 +66,30 @@ public class PythonExecuteNode extends AbstractPlanBasedNode {
 		String description = toolParameters.getDescription();
 
 		@SuppressWarnings("unchecked")
-		Map<String, String> sqlExecuteResult = StateUtils.getObjectValue(
-			state, SQL_EXECUTE_NODE_OUTPUT, Map.class, new HashMap());
+		Map<String, String> sqlExecuteResult = StateUtils.getObjectValue(state, SQL_EXECUTE_NODE_OUTPUT, Map.class,
+				new HashMap());
 
 		String aiResponse = executeAnalysis(state, instruction, description, sqlExecuteResult);
 
 		return buildResult(currentStep, aiResponse, sqlExecuteResult);
 	}
 
-	private String executeAnalysis(OverAllState state, String instruction, String description, Map<String, String> sqlExecuteResult) {
+	private String executeAnalysis(OverAllState state, String instruction, String description,
+			Map<String, String> sqlExecuteResult) {
 		String userMessage = String.format(
-			"## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
-			getPlan(state).toJsonStr(), instruction, description, sqlExecuteResult
-		);
+				"## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
+				getPlan(state).toJsonStr(), instruction, description, sqlExecuteResult);
 
-		return chatClient.prompt(SYSTEM_PROMPT)
-			.user(userMessage)
-			.call()
-			.content();
+		return chatClient.prompt(SYSTEM_PROMPT).user(userMessage).call().content();
 	}
 
-	private Map<String, Object> buildResult(Integer currentStep, String aiResponse, Map<String, String> sqlExecuteResult) {
+	private Map<String, Object> buildResult(Integer currentStep, String aiResponse,
+			Map<String, String> sqlExecuteResult) {
 		Map<String, String> updatedSqlResult = StepResultUtils.addStepResult(sqlExecuteResult, currentStep, aiResponse);
 
 		logNodeOutput("analysis_result", aiResponse);
 
-		return Map.of(
-			SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult,
-			PLAN_CURRENT_STEP, currentStep + 1
-		);
+		return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult, PLAN_CURRENT_STEP, currentStep + 1);
 	}
+
 }

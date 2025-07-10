@@ -58,13 +58,12 @@ public class SchemaRecallNode implements NodeAction {
 		List<List<Document>> columnDocumentsByKeywords = baseSchemaService.getColumnDocumentsByKeywords(keywords);
 
 		// 记录处理结果
-		logger.info("[{}] Schema召回结果 - 表文档数量: {}, 关键词相关列文档组数: {}",
-			this.getClass().getSimpleName(), tableDocuments.size(), columnDocumentsByKeywords.size());
+		logger.info("[{}] Schema召回结果 - 表文档数量: {}, 关键词相关列文档组数: {}", this.getClass().getSimpleName(),
+				tableDocuments.size(), columnDocumentsByKeywords.size());
 
 		// 返回处理结果
-		return Map.of(
-			TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, tableDocuments,
-			COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT, columnDocumentsByKeywords
-		);
+		return Map.of(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, tableDocuments, COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT,
+				columnDocumentsByKeywords);
 	}
+
 }
