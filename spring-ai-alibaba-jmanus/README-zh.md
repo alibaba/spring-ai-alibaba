@@ -62,7 +62,42 @@ export DASHSCOPE_API_KEY=your_api_key_here
 >
 > **使用其他提供商?** 在 `src/main/resources/application.yml` 中更新配置，以使用您偏好的 AI 模型平台。
 
-### 3. 启动应用程序
+### 3. 数据库配置（可选）
+
+JManus 支持 H2（默认）和 MySQL 数据库。
+
+#### 如何使用 MySQL
+
+1. **创建 MySQL 数据库**：
+
+   ```sql
+   CREATE DATABASE openmanus_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+
+2. **配置数据库连接**：
+   在 `src/main/resources/application-mysql.yml` 中更新数据库配置：
+
+   ```yaml
+   spring:
+     datasource:
+       url: jdbc:mysql://your-mysql-host:3306/openmanus_db?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8
+       username: your_mysql_username
+       password: your_mysql_password
+   ```
+
+3. **激活 MySQL 配置**：
+   在 `src/main/resources/application.yml` 中更新配置：
+
+   ```yaml
+   spring:
+     ...
+     profiles:
+       active: mysql  
+   ```
+
+> 💡 **注意**：应用程序将在首次启动时自动创建所需的表，使用 JPA 的 `ddl-auto: update` 配置。
+
+### 4. 启动应用程序
 
 **对于类 Unix 系统 (macOS, Linux):**
 ```bash
@@ -74,7 +109,7 @@ export DASHSCOPE_API_KEY=your_api_key_here
 ../mvnw.cmd spring-boot:run
 ```
 
-### 4. 访问您的多 Agent 仪表盘
+### 5. 访问您的多 Agent 仪表盘
 
 在您的浏览器中访问 `http://localhost:18080`。
 

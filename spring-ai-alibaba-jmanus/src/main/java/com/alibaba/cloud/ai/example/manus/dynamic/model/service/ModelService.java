@@ -13,21 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.dynamic.agent.repository;
+package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
 
 import java.util.List;
 
-@Repository
-public interface DynamicAgentRepository extends JpaRepository<DynamicAgentEntity, Long> {
+public interface ModelService {
 
-	DynamicAgentEntity findByAgentName(String agentName);
+	List<ModelConfig> getAllModels();
 
-	List<DynamicAgentEntity> findAllByModel(DynamicModelEntity model);
+	ModelConfig getModelById(String id);
+
+	ModelConfig createModel(ModelConfig modelConfig);
+
+	ModelConfig updateModel(ModelConfig modelConfig);
+
+	void deleteModel(String id);
 
 }

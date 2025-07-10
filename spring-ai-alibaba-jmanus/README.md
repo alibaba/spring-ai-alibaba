@@ -70,7 +70,43 @@ export DASHSCOPE_API_KEY=your_api_key_here
 > 
 > **Using other providers?** Update the configuration in `src/main/resources/application.yml` to use your preferred AI model platform.
 
-### 3. Launch the Application
+
+### 3. Database Configuration (Optional)
+
+JManus supports both H2 (default) and MySQL databases. 
+
+#### How To Use MySQL
+
+1. **Set up MySQL Database**:
+
+   ```sql
+   CREATE DATABASE openmanus_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+
+2. **Configure Database Connection**:
+   Update your database configuration in `src/main/resources/application-mysql.yml`:
+
+   ```yaml
+   spring:
+     datasource:
+       url: jdbc:mysql://your-mysql-host:3306/openmanus_db?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8
+       username: your_mysql_username
+       password: your_mysql_password
+   ```
+
+3. **Activate MySQL Profile**:
+   Update configuration in `src/main/resources/application.yml`:
+
+   ```bash
+   spring:
+     ...
+     profiles:
+       active: mysql  
+   ```
+
+> 💡 **Note**: The application will automatically create required tables on first startup using JPA's `ddl-auto: update` configuration.
+
+### 4. Launch the Application
 
 **For Unix-like systems (macOS, Linux):**
 ```bash
@@ -82,7 +118,7 @@ export DASHSCOPE_API_KEY=your_api_key_here
 ../mvnw.cmd spring-boot:run
 ```
 
-### 4. Access Your Multi-Agent Dashboard
+### 5. Access Your Multi-Agent Dashboard
 
 Navigate to `http://localhost:18080` in your browser.
 
