@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import java.util.List;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
@@ -39,7 +38,8 @@ public class InputTextAction extends BrowserAction {
 			return new ToolExecuteResult("Index and text are required for 'input_text' action");
 		}
 
-		// Get interactive elements (InteractiveElement), supports all frames (including iframe)
+		// Get interactive elements (InteractiveElement), supports all frames (including
+		// iframe)
 		// Already supports recursion frame
 		InteractiveElement inputElement = getInteractiveElement(index);
 		if (inputElement == null) {
@@ -55,8 +55,7 @@ public class InputTextAction extends BrowserAction {
 		try {
 			elementLocator.fill(""); // Clear first
 			// Set character input delay to 100ms, adjustable as needed
-			Locator.PressSequentiallyOptions options = new Locator.PressSequentiallyOptions()
-				.setDelay(100);
+			Locator.PressSequentiallyOptions options = new Locator.PressSequentiallyOptions().setDelay(100);
 			elementLocator.pressSequentially(text, options);
 		}
 		catch (Exception e) {
