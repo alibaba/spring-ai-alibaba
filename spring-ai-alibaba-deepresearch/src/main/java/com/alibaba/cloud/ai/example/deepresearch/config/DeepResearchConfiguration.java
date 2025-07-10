@@ -66,6 +66,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 
 /**
  * @author yingzi
@@ -111,6 +112,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private ReportService reportService;
+
+	@Autowired(required = false)
+	private McpProviderFactory mcpProviderFactory;
 
 	@Autowired
 	private InfoCheckService infoCheckService;
@@ -214,7 +218,8 @@ public class DeepResearchConfiguration {
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
 			.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 			String nodeId = "researcher_" + i;
-			stateGraph.addNode(nodeId, node_async(new ResearcherNode(researchAgent, String.valueOf(i))));
+			stateGraph.addNode(nodeId,
+					node_async(new ResearcherNode(researchAgent, String.valueOf(i), mcpProviderFactory)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
@@ -222,7 +227,7 @@ public class DeepResearchConfiguration {
 	private void addCoderNodes(StateGraph stateGraph) throws GraphStateException {
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
 			String nodeId = "coder_" + i;
-			stateGraph.addNode(nodeId, node_async(new CoderNode(coderAgent, String.valueOf(i))));
+			stateGraph.addNode(nodeId, node_async(new CoderNode(coderAgent, String.valueOf(i), mcpProviderFactory)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
