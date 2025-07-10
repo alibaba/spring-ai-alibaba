@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.example.deepresearch.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 反思机制配置属性
+ * properties for reflection
  *
  * @author sixiyida
  * @since 2025/7/10
@@ -28,12 +28,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ReflectionProperties {
 
 	/**
-	 * 是否启用反思机制
+	 * enable reflection or not
 	 */
 	private boolean enabled = true;
 
 	/**
-	 * 最大反思尝试次数
+	 * max reflection attempt count
 	 */
 	private int maxAttempts = 2;
 
