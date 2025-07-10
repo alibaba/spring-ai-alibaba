@@ -16,11 +16,7 @@
 package com.alibaba.cloud.ai.exception;
 
 import com.alibaba.cloud.ai.common.ReturnCode;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
 public class NotFoundException extends RuntimeException {
 
 	private int code;
@@ -34,6 +30,22 @@ public class NotFoundException extends RuntimeException {
 
 	public NotFoundException(String msg) {
 		this.code = ReturnCode.RC404.getCode();
+		this.msg = msg;
+	}
+
+	public int getCode() {
+		return code;
+	}
+
+	public void setCode(int code) {
+		this.code = code;
+	}
+
+	public String getMsg() {
+		return msg;
+	}
+
+	public void setMsg(String msg) {
 		this.msg = msg;
 	}
 
