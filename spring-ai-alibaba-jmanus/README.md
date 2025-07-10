@@ -94,6 +94,8 @@ We enthusiastically welcome contributions from the developer community! Here's h
 
 ### Contribution Opportunities
 
+You can find available tasks on our [project board](https://github.com/orgs/alibaba/projects/24).
+
 - 🐛 **Bug Reports**: [Submit detailed issue reports](https://github.com/alibaba/spring-ai-alibaba/issues)
 - 💡 **Feature Requests**: [Propose innovative enhancements](https://github.com/alibaba/spring-ai-alibaba/issues)
 - 📝 **Documentation**: Help us improve clarity and completeness

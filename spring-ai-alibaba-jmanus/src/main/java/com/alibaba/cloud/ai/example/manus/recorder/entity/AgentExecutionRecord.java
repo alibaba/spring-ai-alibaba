@@ -264,4 +264,12 @@ public class AgentExecutionRecord {
 		return this.id;
 	}
 
+	public String getConversationId() {
+		return conversationId;
+	}
+
+	public void setConversationId(String conversationId) {
+		this.conversationId = conversationId;
+	}
+
 }

@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.dynamic.prompt.repository;
+package com.alibaba.cloud.ai.example.manus.recorder.repository;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.po.PromptEntity;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecordEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface PromptRepository extends JpaRepository<PromptEntity, Long> {
+public interface PlanExecutionRecordRepository extends JpaRepository<PlanExecutionRecordEntity, String> {
 
-	@Query(value = "select * from prompt where prompt_name = ?1", nativeQuery = true)
-	PromptEntity findByPromptName(String promptName);
+	PlanExecutionRecordEntity findByPlanId(String planId);
+
+	PlanExecutionRecordEntity deleteByPlanId(String planId);
 
 }

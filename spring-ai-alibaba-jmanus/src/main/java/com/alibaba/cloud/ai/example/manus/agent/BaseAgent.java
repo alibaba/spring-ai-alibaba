@@ -175,7 +175,7 @@ public abstract class BaseAgent {
 		variables.put("detailOutput", detailOutput);
 		variables.put("parallelToolCallsResponse", parallelToolCallsResponse);
 
-		return promptService.createSystemMessage(PromptEnum.AGENT_STEP_EXECUTION, variables);
+		return promptService.createSystemMessage(PromptEnum.AGENT_STEP_EXECUTION.getPromptName(), variables);
 	}
 
 	/**
@@ -212,6 +212,8 @@ public abstract class BaseAgent {
 			throw new IllegalStateException("Cannot run agent from state: " + state);
 		}
 
+		PlanExecutionRecord planRecord = null;
+
 		// Create agent execution record
 		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getCurrentPlanId(), getName(), getDescription());
 		agentRecord.setMaxSteps(maxSteps);
@@ -219,8 +221,7 @@ public abstract class BaseAgent {
 		// Record execution in recorder if we have a plan ID
 		if (currentPlanId != null && planExecutionRecorder != null) {
 			// Use unified method that handles both main plan and sub-plan cases
-			PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId,
-					thinkActRecordId);
+			planRecord = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId, thinkActRecordId);
 
 			if (planRecord != null) {
 				planExecutionRecorder.recordAgentExecution(planRecord, agentRecord);
@@ -283,6 +284,9 @@ public abstract class BaseAgent {
 			state = AgentState.COMPLETED; // Reset state after execution
 
 			agentRecord.setStatus(state.toString());
+			if (planRecord != null) {
+				planExecutionRecorder.recordAgentExecution(planRecord, agentRecord);
+			}
 			llmService.clearAgentMemory(currentPlanId);
 		}
 		return results.isEmpty() ? "" : results.get(results.size() - 1);

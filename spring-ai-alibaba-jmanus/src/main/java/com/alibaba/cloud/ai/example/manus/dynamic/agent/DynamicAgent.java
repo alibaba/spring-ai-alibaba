@@ -126,6 +126,8 @@ public class DynamicAgent extends ReActAgent {
 			.getCurrentAgentExecutionRecord(planExecutionRecord);
 		thinkActRecord = new ThinkActRecord(agentExecutionRecord.getId());
 		thinkActRecord.setActStartTime(LocalDateTime.now());
+		// set id
+		thinkActRecord.getId();
 
 		if (planExecutionRecord != null) {
 			planExecutionRecorder.recordThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
@@ -140,6 +142,12 @@ public class DynamicAgent extends ReActAgent {
 			log.info("Exception occurred", e);
 			thinkActRecord.recordError(e.getMessage());
 			return false;
+		}
+		finally {
+			if (planExecutionRecord != null) {
+				planExecutionRecorder.recordThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
+						thinkActRecord);
+			}
 		}
 	}
 
@@ -207,6 +215,10 @@ public class DynamicAgent extends ReActAgent {
 	@Override
 	protected AgentExecResult act() {
 		ToolExecutionResult toolExecutionResult = null;
+		PlanExecutionRecord planExecutionRecord = planExecutionRecorder.getExecutionRecord(getCurrentPlanId(),
+				getRootPlanId(), getThinkActRecordId());
+		AgentExecutionRecord agentExecutionRecord = planExecutionRecorder
+			.getCurrentAgentExecutionRecord(planExecutionRecord);
 		try {
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			ToolCall firstToolCall = toolCalls.get(0);
@@ -295,6 +307,12 @@ public class DynamicAgent extends ReActAgent {
 			userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error
 			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
+		}
+		finally {
+			if (planExecutionRecord != null) {
+				planExecutionRecorder.recordThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
+						thinkActRecord);
+			}
 		}
 	}
 
@@ -401,7 +419,8 @@ public class DynamicAgent extends ReActAgent {
 	 * @return User message for current step environment data
 	 */
 	private Message currentStepEnvMessage() {
-		Message stepEnvMessage = promptService.createUserMessage(PromptEnum.AGENT_CURRENT_STEP_ENV, getMergedData());
+		Message stepEnvMessage = promptService.createUserMessage(PromptEnum.AGENT_CURRENT_STEP_ENV.getPromptName(),
+				getMergedData());
 		// mark as current step env data
 		stepEnvMessage.getMetadata().put(CURRENT_STEP_ENV_DATA_KEY, Boolean.TRUE);
 		return stepEnvMessage;
