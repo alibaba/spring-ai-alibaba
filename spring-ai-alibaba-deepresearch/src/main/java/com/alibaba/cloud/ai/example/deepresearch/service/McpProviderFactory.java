@@ -32,49 +32,44 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * MCP提供者工厂服务
- * 负责创建和管理MCP提供者
- * 
+ * MCP提供者工厂服务 负责创建和管理MCP提供者
+ *
  * @author Makoto
  */
 @Service
 public class McpProviderFactory {
-    
-    private final Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider;
-    private final McpAsyncClientConfigurer mcpAsyncClientConfigurer;
-    private final McpClientCommonProperties commonProperties;
-    private final WebClient.Builder webClientBuilderTemplate;
-    private final ObjectMapper objectMapper;
-    
-    @Autowired
-    public McpProviderFactory(
-            @Qualifier("agent2mcpConfigWithRuntime") Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider,
-            McpAsyncClientConfigurer mcpAsyncClientConfigurer,
-            McpClientCommonProperties commonProperties,
-            WebClient.Builder webClientBuilderTemplate,
-            ObjectMapper objectMapper) {
-        this.mcpConfigProvider = mcpConfigProvider;
-        this.mcpAsyncClientConfigurer = mcpAsyncClientConfigurer;
-        this.commonProperties = commonProperties;
-        this.webClientBuilderTemplate = webClientBuilderTemplate;
-        this.objectMapper = objectMapper;
-    }
-    
-    /**
-     * 核心方法：直接创建MCP提供者
-     * @param state 状态对象
-     * @param agentName 代理名称
-     * @return MCP工具回调提供者
-     */
-    public AsyncMcpToolCallbackProvider createProvider(OverAllState state, String agentName) {
-        return McpClientUtil.createMcpProvider(
-            state, 
-            agentName,
-            mcpConfigProvider,
-            mcpAsyncClientConfigurer,
-            commonProperties,
-            webClientBuilderTemplate,
-            objectMapper
-        );
-    }
-} 
+
+	private final Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider;
+
+	private final McpAsyncClientConfigurer mcpAsyncClientConfigurer;
+
+	private final McpClientCommonProperties commonProperties;
+
+	private final WebClient.Builder webClientBuilderTemplate;
+
+	private final ObjectMapper objectMapper;
+
+	@Autowired
+	public McpProviderFactory(
+			@Qualifier("agent2mcpConfigWithRuntime") Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider,
+			McpAsyncClientConfigurer mcpAsyncClientConfigurer, McpClientCommonProperties commonProperties,
+			WebClient.Builder webClientBuilderTemplate, ObjectMapper objectMapper) {
+		this.mcpConfigProvider = mcpConfigProvider;
+		this.mcpAsyncClientConfigurer = mcpAsyncClientConfigurer;
+		this.commonProperties = commonProperties;
+		this.webClientBuilderTemplate = webClientBuilderTemplate;
+		this.objectMapper = objectMapper;
+	}
+
+	/**
+	 * 核心方法：直接创建MCP提供者
+	 * @param state 状态对象
+	 * @param agentName 代理名称
+	 * @return MCP工具回调提供者
+	 */
+	public AsyncMcpToolCallbackProvider createProvider(OverAllState state, String agentName) {
+		return McpClientUtil.createMcpProvider(state, agentName, mcpConfigProvider, mcpAsyncClientConfigurer,
+				commonProperties, webClientBuilderTemplate, objectMapper);
+	}
+
+}

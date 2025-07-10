@@ -106,7 +106,8 @@ public class CoderNode implements NodeAction {
 		var requestSpec = coderAgent.prompt().messages(messages);
 
 		// 使用MCP工厂创建MCP客户端
-		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null ? mcpFactory.createProvider(state, "coderAgent") : null;
+		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null ? mcpFactory.createProvider(state, "coderAgent")
+				: null;
 		if (mcpProvider != null) {
 			requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
 		}

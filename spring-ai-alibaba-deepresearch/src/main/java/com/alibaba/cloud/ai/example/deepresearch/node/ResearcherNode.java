@@ -112,7 +112,8 @@ public class ResearcherNode implements NodeAction {
 		var requestSpec = researchAgent.prompt().messages(messages);
 
 		// 使用MCP工厂创建MCP提供者
-		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null ? mcpFactory.createProvider(state, "researchAgent") : null;
+		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null
+				? mcpFactory.createProvider(state, "researchAgent") : null;
 		if (mcpProvider != null) {
 			requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
 		}
