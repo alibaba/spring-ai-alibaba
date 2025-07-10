@@ -102,22 +102,26 @@ public enum GraphNodeObservationDocumentation implements ObservationDocumentatio
 	public enum HighCardinalityKeyNames implements KeyName {
 
 		/**
-		 * Represents the current state of the graph node execution.
+		 * Represents the input state when entering the graph node (OpenTelemetry semantic
+		 * convention). Note: This key is dynamically added by
+		 * GraphObservationLifecycleListener, not by Convention.
 		 */
-		GRAPH_NODE_STATE {
+		GEN_AI_PROMPT {
 			@Override
 			public String asString() {
-				return "spring.ai.alibaba.graph.node.state";
+				return "gen_ai.prompt";
 			}
 		},
 
 		/**
-		 * Represents the output data from the graph node execution.
+		 * Represents the output state after executing the graph node (OpenTelemetry
+		 * semantic convention). Note: This key is dynamically added by
+		 * GraphObservationLifecycleListener, not by Convention.
 		 */
-		GRAPH_NODE_OUTPUT {
+		GEN_AI_COMPLETION {
 			@Override
 			public String asString() {
-				return "spring.ai.alibaba.graph.node.output";
+				return "gen_ai.completion";
 			}
 		}
 

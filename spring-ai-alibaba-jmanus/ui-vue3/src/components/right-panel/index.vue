@@ -52,6 +52,10 @@
               }}</span>
             </div>
             <div class="info-item">
+              <span class="label">{{ $t('rightPanel.callingModel') }}:</span>
+              <span class="value">{{ selectedStep.agentExecution.modelName }}</span>
+            </div>
+            <div class="info-item">
               <span class="label">{{ $t('rightPanel.request') }}:</span>
               <span class="value">{{
                 selectedStep.agentExecution.agentRequest || ''
