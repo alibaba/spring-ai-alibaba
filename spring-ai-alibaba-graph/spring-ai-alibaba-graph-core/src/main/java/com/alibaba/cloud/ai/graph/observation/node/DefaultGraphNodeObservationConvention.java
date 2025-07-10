@@ -103,11 +103,7 @@ public class DefaultGraphNodeObservationConvention implements GraphNodeObservati
 	 */
 	@Override
 	public KeyValues getHighCardinalityKeyValues(GraphNodeObservationContext context) {
-		return KeyValues.of(
-				KeyValue.of(GraphNodeObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_STATE,
-						context.getState() != null ? context.getState().toString() : ""),
-				KeyValue.of(GraphNodeObservationDocumentation.HighCardinalityKeyNames.GRAPH_NODE_OUTPUT,
-						context.getOutput() != null ? context.getOutput().toString() : ""));
+		return KeyValues.empty();
 	}
 
 }

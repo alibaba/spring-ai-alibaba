@@ -16,24 +16,21 @@
 
 package com.alibaba.cloud.ai.dbconnector;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.pool.DruidDataSourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
+import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.sql.DataSource;
-
-import com.alibaba.druid.pool.DruidDataSource;
-import com.alibaba.druid.pool.DruidDataSourceFactory;
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 public abstract class AbstractDBConnectionPool implements DBConnectionPool {
+
+	private static final Logger log = LoggerFactory.getLogger(AbstractDBConnectionPool.class);
 
 	/**
 	 * DataSource cache to ensure that each configuration creates DataSource only once.
