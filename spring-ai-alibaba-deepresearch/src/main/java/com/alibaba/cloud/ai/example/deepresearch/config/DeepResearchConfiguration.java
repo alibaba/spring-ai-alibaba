@@ -122,7 +122,7 @@ public class DeepResearchConfiguration {
 	@Autowired(required = false)
 	@Qualifier("dynamicAgent2SyncMcpToolCallbackProvider")
 	private Function<OverAllState, Map<String, SyncMcpToolCallbackProvider>> syncMcpProviderFunction;
-  
+
 	@Autowired
 	private InfoCheckService infoCheckService;
 

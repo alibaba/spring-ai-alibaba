@@ -248,10 +248,10 @@ public class McpAssignNodeConfiguration {
 						McpClient.AsyncSpec spec = McpClient.async(namedTransport.transport()).clientInfo(clientInfo);
 						spec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
 						McpAsyncClient client = spec.build();
-						
+
 						// 初始化MCP客户端
 						client.initialize().block(java.time.Duration.ofMinutes(2));
-						
+
 						mcpAsyncClients.add(client);
 					}
 				}
@@ -302,10 +302,10 @@ public class McpAssignNodeConfiguration {
 					McpClient.AsyncSpec spec = McpClient.async(namedTransport.transport()).clientInfo(clientInfo);
 					spec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
 					McpAsyncClient client = spec.build();
-					
+
 					// 初始化MCP客户端
 					client.initialize().block(java.time.Duration.ofMinutes(2));
-					
+
 					mcpAsyncClients.add(client);
 				}
 			}
@@ -360,10 +360,10 @@ public class McpAssignNodeConfiguration {
 						McpClient.SyncSpec spec = McpClient.sync(namedTransport.transport()).clientInfo(clientInfo);
 						spec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
 						McpSyncClient client = spec.build();
-						
+
 						// 初始化MCP客户端
 						client.initialize();
-						
+
 						mcpSyncClients.add(client);
 					}
 				}
@@ -414,10 +414,10 @@ public class McpAssignNodeConfiguration {
 					McpClient.SyncSpec spec = McpClient.sync(namedTransport.transport()).clientInfo(clientInfo);
 					spec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
 					McpSyncClient client = spec.build();
-					
+
 					// 初始化MCP客户端
 					client.initialize();
-					
+
 					mcpSyncClients.add(client);
 				}
 			}
