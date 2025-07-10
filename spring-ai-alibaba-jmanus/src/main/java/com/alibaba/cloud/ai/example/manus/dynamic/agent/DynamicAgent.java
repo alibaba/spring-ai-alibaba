@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
@@ -88,6 +89,8 @@ public class DynamicAgent extends ReActAgent {
 
 	private final UserInputService userInputService;
 
+	private final DynamicModelEntity model;
+
 	public void clearUp(String planId) {
 		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
 		for (ToolCallBackContext toolCallBack : toolCallBackContext.values()) {
@@ -107,7 +110,8 @@ public class DynamicAgent extends ReActAgent {
 	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
 			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
-			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptService promptService) {
+			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptService promptService,
+			DynamicModelEntity model) {
 		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptService);
 		this.agentName = name;
 		this.agentDescription = description;
@@ -115,6 +119,7 @@ public class DynamicAgent extends ReActAgent {
 		this.availableToolKeys = availableToolKeys;
 		this.toolCallingManager = toolCallingManager;
 		this.userInputService = userInputService;
+		this.model = model;
 	}
 
 	@Override
@@ -126,6 +131,8 @@ public class DynamicAgent extends ReActAgent {
 			.getCurrentAgentExecutionRecord(planExecutionRecord);
 		thinkActRecord = new ThinkActRecord(agentExecutionRecord.getId());
 		thinkActRecord.setActStartTime(LocalDateTime.now());
+		// set id
+		thinkActRecord.getId();
 
 		if (planExecutionRecord != null) {
 			planExecutionRecorder.recordThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
@@ -140,6 +147,12 @@ public class DynamicAgent extends ReActAgent {
 			log.info("Exception occurred", e);
 			thinkActRecord.recordError(e.getMessage());
 			return false;
+		}
+		finally {
+			if (planExecutionRecord != null) {
+				planExecutionRecorder.recordThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
+						thinkActRecord);
+			}
 		}
 	}
 
@@ -165,9 +178,22 @@ public class DynamicAgent extends ReActAgent {
 			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
 			userPrompt = new Prompt(messages, chatOptions);
 			List<ToolCallback> callbacks = getToolCallList();
-			ChatClient chatClient = llmService.getAgentChatClient();
+			ChatClient chatClient;
+			if (model == null) {
+				chatClient = llmService.getAgentChatClient();
+			}
+			else {
+				chatClient = llmService.getDynamicChatClient(model.getBaseUrl(), model.getApiKey(),
+						model.getModelName());
+			}
 			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
-
+			String model = response.getMetadata().getModel();
+			PlanExecutionRecord planExecutionRecord = planExecutionRecorder.getExecutionRecord(getCurrentPlanId(),
+					getRootPlanId(), getThinkActRecordId());
+			AgentExecutionRecord agentExecutionRecord = planExecutionRecorder
+				.getCurrentAgentExecutionRecord(planExecutionRecord);
+			planExecutionRecord.setModelName(model);
+			agentExecutionRecord.setModelName(model);
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
 
@@ -196,6 +222,10 @@ public class DynamicAgent extends ReActAgent {
 	@Override
 	protected AgentExecResult act() {
 		ToolExecutionResult toolExecutionResult = null;
+		PlanExecutionRecord planExecutionRecord = planExecutionRecorder.getExecutionRecord(getCurrentPlanId(),
+				getRootPlanId(), getThinkActRecordId());
+		AgentExecutionRecord agentExecutionRecord = planExecutionRecorder
+			.getCurrentAgentExecutionRecord(planExecutionRecord);
 		try {
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			ToolCall toolCall = toolCalls.get(0);
@@ -287,6 +317,12 @@ public class DynamicAgent extends ReActAgent {
 			processMemory(toolExecutionResult); // Process memory even on error
 			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
 		}
+		finally {
+			if (planExecutionRecord != null) {
+				planExecutionRecorder.recordThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
+						thinkActRecord);
+			}
+		}
 	}
 
 	private void processUserInputToMemory(UserMessage userMessage) {
@@ -370,7 +406,8 @@ public class DynamicAgent extends ReActAgent {
 	 * @return User message for current step environment data
 	 */
 	private Message currentStepEnvMessage() {
-		Message stepEnvMessage = promptService.createUserMessage(PromptEnum.AGENT_CURRENT_STEP_ENV, getMergedData());
+		Message stepEnvMessage = promptService.createUserMessage(PromptEnum.AGENT_CURRENT_STEP_ENV.getPromptName(),
+				getMergedData());
 		// mark as current step env data
 		stepEnvMessage.getMetadata().put(CURRENT_STEP_ENV_DATA_KEY, Boolean.TRUE);
 		return stepEnvMessage;

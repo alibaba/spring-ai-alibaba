@@ -15,19 +15,70 @@
  */
 package com.alibaba.cloud.ai.dbconnector.bo;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class DatabaseInfoBO extends DdlBaseBO {
 
 	private String name;
 
 	private String description;
+
+	public String getName() {
+		return name;
+	}
+
+	public DatabaseInfoBO() {
+	}
+
+	public DatabaseInfoBO(String name, String description) {
+		this.name = name;
+		this.description = description;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public static DatabaseInfoBOBuilder builder() {
+		return new DatabaseInfoBOBuilder();
+	}
+
+	public static final class DatabaseInfoBOBuilder {
+
+		private String name;
+
+		private String description;
+
+		private DatabaseInfoBOBuilder() {
+		}
+
+		public static DatabaseInfoBOBuilder aDatabaseInfoBO() {
+			return new DatabaseInfoBOBuilder();
+		}
+
+		public DatabaseInfoBOBuilder name(String name) {
+			this.name = name;
+			return this;
+		}
+
+		public DatabaseInfoBOBuilder description(String description) {
+			this.description = description;
+			return this;
+		}
+
+		public DatabaseInfoBO build() {
+			DatabaseInfoBO databaseInfoBO = new DatabaseInfoBO();
+			databaseInfoBO.setName(name);
+			databaseInfoBO.setDescription(description);
+			return databaseInfoBO;
+		}
+
+	}
 
 }

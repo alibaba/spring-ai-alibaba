@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -50,19 +52,26 @@ public class ResearcherNode implements NodeAction {
 
 	private final String nodeName;
 
+	// MCP工厂
+	private final McpProviderFactory mcpFactory;
+
 	public ResearcherNode(ChatClient researchAgent) {
-		this(researchAgent, "0");
+		this(researchAgent, "0", null);
 	}
 
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId) {
+		this(researchAgent, executorNodeId, null);
+	}
+
+	public ResearcherNode(ChatClient researchAgent, String executorNodeId, McpProviderFactory mcpFactory) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;
+		this.mcpFactory = mcpFactory;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("researcher node {} is running.", executorNodeId);
 		Plan currentPlan = StateUtil.getPlan(state);
 		Map<String, Object> updated = new HashMap<>();
 
@@ -101,6 +110,14 @@ public class ResearcherNode implements NodeAction {
 		SearchEnum searchTool = state.value("search_engine", SearchEnum.class).orElse(null);
 		// 调用agent
 		var requestSpec = researchAgent.prompt().messages(messages);
+
+		// 使用MCP工厂创建MCP提供者
+		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null
+				? mcpFactory.createProvider(state, "researchAgent") : null;
+		if (mcpProvider != null) {
+			requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
+		}
+
 		if (searchTool != null) {
 			requestSpec = requestSpec.toolNames(searchTool.getToolName());
 		}

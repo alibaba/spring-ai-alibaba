@@ -15,19 +15,39 @@
  */
 package com.alibaba.cloud.ai.dbconnector.bo;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class DbInstanceBO extends DdlBaseBO {
 
 	private String name;
 
 	private String description;
+
+	public DbInstanceBO() {
+	}
+
+	public DbInstanceBO(String name, String description) {
+		this.name = name;
+		this.description = description;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	@Override
+	public String toString() {
+		return "DbInstanceBO{" + "name='" + name + '\'' + ", description='" + description + '\'' + '}';
+	}
 
 }

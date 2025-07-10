@@ -51,8 +51,6 @@ public class GraphNodeObservationHandler implements ObservationHandler<GraphNode
 	 */
 	@Override
 	public void onStop(GraphNodeObservationContext context) {
-		logger.info("Graph nodeName: {} event: {} state: {} output : {}", context.getNodeName(), context.getEvent(),
-				context.getState().toString(), context.getOutput().toString());
 		GraphMetricsGenerator.generate(context, meterRegistry, true);
 	}
 
@@ -63,8 +61,6 @@ public class GraphNodeObservationHandler implements ObservationHandler<GraphNode
 	 */
 	@Override
 	public void onError(GraphNodeObservationContext context) {
-		logger.error("Graph nodeName: {} event: {} state: {} output : {}", context.getNodeName(), context.getEvent(),
-				context.getState().toString(), context.getOutput().toString());
 		GraphMetricsGenerator.generate(context, meterRegistry, false);
 	}
 

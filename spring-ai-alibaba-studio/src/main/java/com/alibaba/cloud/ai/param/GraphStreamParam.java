@@ -15,9 +15,6 @@
  */
 package com.alibaba.cloud.ai.param;
 
-import lombok.Data;
-
-@Data
 public class GraphStreamParam {
 
 	private String sessionId;
@@ -29,5 +26,51 @@ public class GraphStreamParam {
 	private String checkpoint;
 
 	private String node;
+
+	public String getSessionId() {
+		return sessionId;
+	}
+
+	public void setSessionId(String sessionId) {
+		this.sessionId = sessionId;
+	}
+
+	public String getThread() {
+		return thread;
+	}
+
+	public void setThread(String thread) {
+		this.thread = thread;
+	}
+
+	public boolean isResume() {
+		return resume;
+	}
+
+	public void setResume(boolean resume) {
+		this.resume = resume;
+	}
+
+	public String getCheckpoint() {
+		return checkpoint;
+	}
+
+	public void setCheckpoint(String checkpoint) {
+		this.checkpoint = checkpoint;
+	}
+
+	public String getNode() {
+		return node;
+	}
+
+	public void setNode(String node) {
+		this.node = node;
+	}
+
+	@Override
+	public String toString() {
+		return "GraphStreamParam{" + "sessionId='" + sessionId + '\'' + ", thread='" + thread + '\'' + ", resume="
+				+ resume + ", checkpoint='" + checkpoint + '\'' + ", node='" + node + '\'' + '}';
+	}
 
 }

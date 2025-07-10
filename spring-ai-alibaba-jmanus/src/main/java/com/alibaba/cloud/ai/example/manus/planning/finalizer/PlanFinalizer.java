@@ -80,10 +80,10 @@ public class PlanFinalizer {
 		try {
 			String userRequest = context.getUserRequest();
 
-			Message systemMessage = promptService.createSystemMessage(PromptEnum.PLANNING_PLAN_FINALIZER,
-					Map.of("executionDetail", executionDetail));
+			Message systemMessage = promptService.createSystemMessage(
+					PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(), Map.of("executionDetail", executionDetail));
 
-			Message userMessage = promptService.createUserMessage(PromptEnum.PLANNING_USER_REQUEST,
+			Message userMessage = promptService.createUserMessage(PromptEnum.PLANNING_USER_REQUEST.getPromptName(),
 					Map.of("userRequest", userRequest));
 
 			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));

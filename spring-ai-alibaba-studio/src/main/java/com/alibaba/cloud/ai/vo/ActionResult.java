@@ -16,17 +16,71 @@
 package com.alibaba.cloud.ai.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.List;
-import lombok.Builder;
-import lombok.Data;
 
-@Data
-@Builder
+import java.util.List;
+
 public class ActionResult {
 
 	private String Response;
 
 	@Schema(description = "stream response", nullable = true)
 	private List<String> streamResponse;
+
+	public String getResponse() {
+		return Response;
+	}
+
+	public void setResponse(String response) {
+		Response = response;
+	}
+
+	public List<String> getStreamResponse() {
+		return streamResponse;
+	}
+
+	public void setStreamResponse(List<String> streamResponse) {
+		this.streamResponse = streamResponse;
+	}
+
+	@Override
+	public String toString() {
+		return "ActionResult{" + "Response='" + Response + '\'' + ", streamResponse=" + streamResponse + '}';
+	}
+
+	public static ActionResultBuilder builder() {
+		return new ActionResultBuilder();
+	}
+
+	public static final class ActionResultBuilder {
+
+		private String Response;
+
+		private List<String> streamResponse;
+
+		private ActionResultBuilder() {
+		}
+
+		public static ActionResultBuilder anActionResult() {
+			return new ActionResultBuilder();
+		}
+
+		public ActionResultBuilder Response(String Response) {
+			this.Response = Response;
+			return this;
+		}
+
+		public ActionResultBuilder streamResponse(List<String> streamResponse) {
+			this.streamResponse = streamResponse;
+			return this;
+		}
+
+		public ActionResult build() {
+			ActionResult actionResult = new ActionResult();
+			actionResult.setResponse(Response);
+			actionResult.setStreamResponse(streamResponse);
+			return actionResult;
+		}
+
+	}
 
 }

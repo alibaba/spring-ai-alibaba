@@ -18,12 +18,11 @@ package com.alibaba.cloud.ai.tracing;
 import io.micrometer.tracing.Tracer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Objects;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-@Slf4j
+import java.util.Objects;
+
 @Component
 public class TraceIdInterceptor implements HandlerInterceptor {
 

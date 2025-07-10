@@ -15,12 +15,9 @@
  */
 package com.alibaba.cloud.ai.schema;
 
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
 public class TableDTO {
 
 	private String name;
@@ -30,5 +27,43 @@ public class TableDTO {
 	private List<ColumnDTO> column = new ArrayList<ColumnDTO>();
 
 	private List<String> primaryKeys;
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public List<ColumnDTO> getColumn() {
+		return column;
+	}
+
+	public void setColumn(List<ColumnDTO> column) {
+		this.column = column;
+	}
+
+	public List<String> getPrimaryKeys() {
+		return primaryKeys;
+	}
+
+	public void setPrimaryKeys(List<String> primaryKeys) {
+		this.primaryKeys = primaryKeys;
+	}
+
+	@Override
+	public String toString() {
+		return "TableDTO{" + "name='" + name + '\'' + ", description='" + description + '\'' + ", column=" + column
+				+ ", primaryKeys=" + primaryKeys + '}';
+	}
 
 }
