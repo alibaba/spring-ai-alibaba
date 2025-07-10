@@ -51,6 +51,9 @@ public class AgentsConfiguration {
 
 	@Value("classpath:prompts/reflection.md")
 	private Resource reflectionPrompt;
+ 
+	@Value("classpath:prompts/reporter.md")
+	private Resource reporterPrompt;
 
 	@Autowired
 	private ApplicationContext context;
@@ -139,7 +142,7 @@ public class AgentsConfiguration {
 
 	@Bean
 	public ChatClient reporterAgent(ChatClient.Builder reporterChatClientBuilder) {
-		return reporterChatClientBuilder.build();
+		return reporterChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(reporterPrompt)).build();
 	}
 
 	@Bean

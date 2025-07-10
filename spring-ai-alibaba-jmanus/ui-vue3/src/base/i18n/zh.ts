@@ -103,6 +103,7 @@ const words: I18nType = {
     categories: {
       basic: '基础配置',
       agent: 'Agent配置',
+      model: 'Model配置',
       mcp: 'Tools/MCP配置'
     },
     // Agent配置页面
@@ -122,6 +123,8 @@ const words: I18nType = {
       descriptionPlaceholder: '描述这个Agent的功能和用途',
       nextStepPrompt: 'Agent提示词（人设，要求，以及下一步动作的指导）',
       nextStepPromptPlaceholder: '设置Agent的人设、要求以及下一步动作的指导...',
+      modelConfiguration: '模型配置',
+      modelConfigurationLabel: '选择模型',
       toolConfiguration: '工具配置',
       assignedTools: '已分配工具',
       noAssignedTools: '暂无分配的工具',
@@ -143,6 +146,45 @@ const words: I18nType = {
       loadDataFailed: '加载数据失败',
       loadDetailsFailed: '加载Agent详情失败',
       invalidFormat: 'Agent配置格式不正确：缺少必要字段'
+    },
+    // Model配置页面
+    modelConfig: {
+      title: 'Model配置',
+      import: '导入',
+      export: '导出',
+      configuredModels: '已配置的Model',
+      modelCount: '个',
+      noModel: '暂无Model配置',
+      createNew: '新建Model',
+      selectModelHint: '请选择一个Model进行配置',
+      newModel: '新建Model',
+      type: '模型类型',
+      typePlaceholder: '选择模型类型',
+      baseUrl: 'Base Url',
+      baseUrlPlaceholder: '输入 Base Url',
+      apiKey: 'API密钥',
+      apiKeyPlaceholder: '输入API密钥',
+      modelName: '模型名称',
+      modelNamePlaceholder: '输入模型名称',
+      description: '描述',
+      descriptionPlaceholder: '输入模型描述',
+      deleteConfirm: '删除确认',
+      deleteConfirmText: '确定要删除',
+      deleteWarning: '此操作不可恢复。',
+      requiredFields: '请填写必要的字段',
+      createSuccess: 'Model创建成功',
+      createFailed: '创建Model失败',
+      saveSuccess: 'Model保存成功',
+      saveFailed: '保存Model失败',
+      deleteSuccess: 'Model删除成功',
+      deleteFailed: '删除Model失败',
+      importSuccess: 'Model导入成功',
+      importFailed: '导入Model失败',
+      exportSuccess: 'Model导出成功',
+      exportFailed: '导出Model失败',
+      loadDataFailed: '加载数据失败',
+      loadDetailsFailed: '加载Model详情失败',
+      invalidFormat: 'Model配置格式不正确：缺少必要字段'
     },
     // MCP配置页面
     mcpConfig: {
@@ -206,6 +248,25 @@ const words: I18nType = {
     saveFailed: 'Agent保存失败',
     deleteSuccess: 'Agent删除成功',
     deleteFailed: 'Agent删除失败'
+  },
+
+  // Model 配置
+  model: {
+    title: 'Model 配置',
+    name: 'Model名称',
+    description: '描述',
+    addModel: '新建Model',
+    editModel: '编辑Model',
+    deleteModel: '删除Model',
+    deleteConfirm: '确定要删除吗？',
+    deleteWarning: '此操作不可恢复。',
+    namePlaceholder: '输入Model名称',
+    descriptionPlaceholder: 'Model描述',
+    required: '*',
+    saveSuccess: 'Model保存成功',
+    saveFailed: 'Model保存失败',
+    deleteSuccess: 'Model删除成功',
+    deleteFailed: 'Model删除失败'
   },
 
   // 计划模板配置
@@ -495,6 +556,7 @@ const words: I18nType = {
     executingAgent: '执行智能体',
     description: '描述',
     request: '请求',
+    callingModel: '调用模型',
     executionResult: '执行结果',
     executing: '执行中...',
     thinkAndActionSteps: '思考与行动步骤',
