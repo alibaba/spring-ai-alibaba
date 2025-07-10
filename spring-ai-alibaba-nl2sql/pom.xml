@@ -37,6 +37,7 @@
         <commons-compress.version>1.27.1</commons-compress.version>
         <netty-resolver-dns-native-macos.version>4.1.114.Final</netty-resolver-dns-native-macos.version>
         <netty-transport-native-epoll.version>4.1.114.Final</netty-transport-native-epoll.version>
+        <jsonschema.version>4.37.0</jsonschema.version>
     </properties>
 
     <dependencyManagement>
@@ -85,6 +86,16 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
                 <version>${commons-compress.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.victools</groupId>
+                <artifactId>jsonschema-generator</artifactId>
+                <version>${jsonschema.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.victools</groupId>
+                <artifactId>jsonschema-module-jackson</artifactId>
+                <version>${jsonschema.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
