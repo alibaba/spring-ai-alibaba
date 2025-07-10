@@ -26,6 +26,7 @@
     "axios": "^1.6.2",
     "dayjs": "^1.11.10",
     "highlight.js": "^11.11.1",
+    "katex": "^0.16.22",
     "lodash": "^4.17.21",
     "markdown-it": "^14.1.0",
     "markdown-it-highlightjs": "^4.2.0",
