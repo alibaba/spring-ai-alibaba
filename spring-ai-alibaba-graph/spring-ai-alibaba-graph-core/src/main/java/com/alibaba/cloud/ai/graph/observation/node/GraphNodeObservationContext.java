@@ -17,12 +17,10 @@ package com.alibaba.cloud.ai.graph.observation.node;
 
 import io.micrometer.observation.Observation;
 
-import java.util.Map;
-
 /**
  * Context class for graph node observation operations. Provides node-specific observation
- * data including node name, event type, state, and output information. Extends
- * Observation.Context to integrate with Micrometer's observation framework.
+ * data including node name and event type. Extends Observation.Context to integrate with
+ * Micrometer's observation framework.
  */
 public class GraphNodeObservationContext extends Observation.Context {
 
@@ -30,30 +28,14 @@ public class GraphNodeObservationContext extends Observation.Context {
 
 	private final String event;
 
-	private final Map<String, Object> state;
-
-	private final Object output;
-
 	/**
 	 * Constructs a new GraphNodeObservationContext with the specified parameters.
 	 * @param nodeName the name of the graph node being observed
 	 * @param event the type of event occurring on the node
-	 * @param state the current state of the node execution
-	 * @param output the output data from the node execution
 	 */
-	public GraphNodeObservationContext(String nodeName, String event, Map<String, Object> state, Object output) {
+	public GraphNodeObservationContext(String nodeName, String event) {
 		this.nodeName = nodeName;
 		this.event = event;
-		this.state = state;
-		this.output = output;
-	}
-
-	/**
-	 * Gets the output data from the node execution.
-	 * @return the node output as a map of key-value pairs
-	 */
-	public Object getOutput() {
-		return this.output;
 	}
 
 	/**
@@ -82,14 +64,6 @@ public class GraphNodeObservationContext extends Observation.Context {
 	}
 
 	/**
-	 * Gets the current state of the node execution.
-	 * @return the node state as a map of key-value pairs
-	 */
-	public Map<String, Object> getState() {
-		return this.state;
-	}
-
-	/**
 	 * Creates a new Builder instance for constructing GraphNodeObservationContext
 	 * objects.
 	 * @return a new Builder instance
@@ -107,10 +81,6 @@ public class GraphNodeObservationContext extends Observation.Context {
 		private String nodeName;
 
 		private String event;
-
-		private Map<String, Object> state;
-
-		private Object output;
 
 		/**
 		 * Sets the node name for the observation context.
@@ -133,32 +103,12 @@ public class GraphNodeObservationContext extends Observation.Context {
 		}
 
 		/**
-		 * Sets the state for the observation context.
-		 * @param state the current state of the node execution
-		 * @return this builder instance for method chaining
-		 */
-		public Builder state(Map<String, Object> state) {
-			this.state = state;
-			return this;
-		}
-
-		/**
-		 * Sets the output for the observation context.
-		 * @param output the output data from the node execution
-		 * @return this builder instance for method chaining
-		 */
-		public Builder output(Object output) {
-			this.output = output;
-			return this;
-		}
-
-		/**
 		 * Builds and returns a new GraphNodeObservationContext instance with the
 		 * configured properties.
 		 * @return a new GraphNodeObservationContext instance
 		 */
 		public GraphNodeObservationContext build() {
-			return new GraphNodeObservationContext(nodeName, event, state, output);
+			return new GraphNodeObservationContext(nodeName, event);
 		}
 
 	}
