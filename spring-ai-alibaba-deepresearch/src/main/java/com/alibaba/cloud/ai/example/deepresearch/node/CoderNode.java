@@ -16,31 +16,25 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.config.McpAssignNodeProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
-import com.alibaba.cloud.ai.example.deepresearch.util.Mcp.McpClientUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
-import org.springframework.ai.mcp.client.autoconfigure.configurer.McpAsyncClientConfigurer;
-import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 
 /**
  * @author sixiyida
@@ -57,37 +51,22 @@ public class CoderNode implements NodeAction {
 
 	private final String nodeName;
 
-	// MCP相关配置
-	private final Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider;
-
-	private final McpAsyncClientConfigurer mcpAsyncClientConfigurer;
-
-	private final McpClientCommonProperties commonProperties;
-
-	private final WebClient.Builder webClientBuilderTemplate;
-
-	private final ObjectMapper objectMapper;
+	// MCP工厂
+	private final McpProviderFactory mcpFactory;
 
 	public CoderNode(ChatClient coderAgent) {
-		this(coderAgent, "0", null, null, null, null, null);
+		this(coderAgent, "0", null);
 	}
 
 	public CoderNode(ChatClient coderAgent, String executorNodeId) {
-		this(coderAgent, executorNodeId, null, null, null, null, null);
+		this(coderAgent, executorNodeId, null);
 	}
 
-	public CoderNode(ChatClient coderAgent, String executorNodeId,
-			Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider,
-			McpAsyncClientConfigurer mcpAsyncClientConfigurer, McpClientCommonProperties commonProperties,
-			WebClient.Builder webClientBuilderTemplate, ObjectMapper objectMapper) {
+	public CoderNode(ChatClient coderAgent, String executorNodeId, McpProviderFactory mcpFactory) {
 		this.coderAgent = coderAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "coder_" + executorNodeId;
-		this.mcpConfigProvider = mcpConfigProvider;
-		this.mcpAsyncClientConfigurer = mcpAsyncClientConfigurer;
-		this.commonProperties = commonProperties;
-		this.webClientBuilderTemplate = webClientBuilderTemplate;
-		this.objectMapper = objectMapper;
+		this.mcpFactory = mcpFactory;
 	}
 
 	@Override
@@ -126,9 +105,8 @@ public class CoderNode implements NodeAction {
 		// 调用agent
 		var requestSpec = coderAgent.prompt().messages(messages);
 
-		// 使用工具类创建MCP客户端
-		AsyncMcpToolCallbackProvider mcpProvider = McpClientUtil.createMcpProvider(state, "coderAgent",
-				mcpConfigProvider, mcpAsyncClientConfigurer, commonProperties, webClientBuilderTemplate, objectMapper);
+		// 使用MCP工厂创建MCP客户端
+		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null ? mcpFactory.createProvider(state, "coderAgent") : null;
 		if (mcpProvider != null) {
 			requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
 		}

@@ -23,10 +23,6 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatche
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.RewriteAndMultiQueryDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.ai.mcp.client.autoconfigure.configurer.McpAsyncClientConfigurer;
-import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
@@ -65,12 +61,12 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 
 /**
  * @author yingzi
@@ -118,20 +114,7 @@ public class DeepResearchConfiguration {
 	private ReportService reportService;
 
 	@Autowired(required = false)
-	@Qualifier("agent2mcpConfigWithRuntime")
-	private Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider;
-
-	@Autowired(required = false)
-	private McpAsyncClientConfigurer mcpAsyncClientConfigurer;
-
-	@Autowired(required = false)
-	private McpClientCommonProperties commonProperties;
-
-	@Autowired(required = false)
-	private WebClient.Builder webClientBuilderTemplate;
-
-	@Autowired(required = false)
-	private ObjectMapper objectMapper;
+	private McpProviderFactory mcpProviderFactory;
 
 	@Autowired
 	private InfoCheckService infoCheckService;
@@ -236,8 +219,7 @@ public class DeepResearchConfiguration {
 			.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 			String nodeId = "researcher_" + i;
 			stateGraph.addNode(nodeId,
-					node_async(new ResearcherNode(researchAgent, String.valueOf(i), mcpConfigProvider,
-							mcpAsyncClientConfigurer, commonProperties, webClientBuilderTemplate, objectMapper)));
+					node_async(new ResearcherNode(researchAgent, String.valueOf(i), mcpProviderFactory)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
@@ -245,8 +227,7 @@ public class DeepResearchConfiguration {
 	private void addCoderNodes(StateGraph stateGraph) throws GraphStateException {
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
 			String nodeId = "coder_" + i;
-			stateGraph.addNode(nodeId, node_async(new CoderNode(coderAgent, String.valueOf(i), mcpConfigProvider,
-					mcpAsyncClientConfigurer, commonProperties, webClientBuilderTemplate, objectMapper)));
+			stateGraph.addNode(nodeId, node_async(new CoderNode(coderAgent, String.valueOf(i), mcpProviderFactory)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
