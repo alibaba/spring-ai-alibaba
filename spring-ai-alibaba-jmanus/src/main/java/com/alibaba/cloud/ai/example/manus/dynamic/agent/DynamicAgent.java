@@ -47,6 +47,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
@@ -175,7 +176,10 @@ public class DynamicAgent extends ReActAgent {
 			messages.addAll(historyMem);
 			messages.add(currentStepEnvMessage);
 			// Call the LLM
-			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
+			ChatOptions chatOptions = OpenAiChatOptions.builder()
+				.internalToolExecutionEnabled(false)
+				.parallelToolCalls(manusProperties.getParallelToolCalls())
+				.build();
 			userPrompt = new Prompt(messages, chatOptions);
 			List<ToolCallback> callbacks = getToolCallList();
 			ChatClient chatClient;

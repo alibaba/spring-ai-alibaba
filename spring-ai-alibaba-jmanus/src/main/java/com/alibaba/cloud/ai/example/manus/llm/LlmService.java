@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.llm;
 
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -45,7 +44,7 @@ public class LlmService {
 
 	private final ChatModel chatModel;
 
-	public LlmService(ChatModel chatModel, ManusProperties manusProperties) {
+	public LlmService(ChatModel chatModel) {
 
 		this.chatModel = chatModel;
 		// Execute and summarize planning, use the same memory
@@ -59,10 +58,7 @@ public class LlmService {
 		this.agentExecutionClient = ChatClient.builder(chatModel)
 			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder()
-				.internalToolExecutionEnabled(false)
-				.parallelToolCalls(manusProperties.getParallelToolCalls())
-				.build())
+			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
 
 		this.finalizeChatClient = ChatClient.builder(chatModel)
