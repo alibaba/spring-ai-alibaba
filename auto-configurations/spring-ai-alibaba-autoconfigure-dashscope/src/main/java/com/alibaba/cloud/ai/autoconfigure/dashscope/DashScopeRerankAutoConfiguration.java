@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.autoconfigure.dashscope;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -31,6 +32,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClient.Builder;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUtils.resolveConnectionProperties;
@@ -54,8 +56,8 @@ public class DashScopeRerankAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public DashScopeRerankModel dashscopeRerankModel(DashScopeConnectionProperties commonProperties,
-			DashScopeRerankProperties rerankProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
+			DashScopeRerankProperties rerankProperties, ObjectProvider<Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, rerankProperties,
@@ -65,9 +67,9 @@ public class DashScopeRerankAutoConfiguration {
 			.apiKey(resolved.apiKey())
 			.headers(resolved.headers())
 			.baseUrl(resolved.baseUrl())
-			.webClientBuilder(webClientBuilder)
+			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
 			.workSpaceId(resolved.workspaceId())
-			.restClientBuilder(restClientBuilder)
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.responseErrorHandler(responseErrorHandler)
 			.build();
 
