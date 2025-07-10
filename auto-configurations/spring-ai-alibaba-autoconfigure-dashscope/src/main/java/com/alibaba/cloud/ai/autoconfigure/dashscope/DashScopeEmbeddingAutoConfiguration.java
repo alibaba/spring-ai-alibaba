@@ -20,13 +20,13 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.model.SpringAIAlibabaModels;
 import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,7 +34,6 @@ import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfigura
 import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -51,7 +50,8 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 		SpringAiRetryAutoConfiguration.class })
 @ConditionalOnClass(DashScopeApi.class)
 @ConditionalOnDashScopeEnabled
-@Conditional(DashScopeEmbeddingAutoConfiguration.Condition.class)
+@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIAlibabaModels.DASHSCOPE,
+		matchIfMissing = true)
 @EnableConfigurationProperties({ DashScopeConnectionProperties.class, DashScopeEmbeddingProperties.class })
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		WebClientAutoConfiguration.class })
@@ -94,34 +94,6 @@ public class DashScopeEmbeddingAutoConfiguration {
 			.restClientBuilder(restClientBuilder)
 			.responseErrorHandler(responseErrorHandler)
 			.build();
-	}
-
-	public static class Condition extends AllNestedConditions {
-
-		public Condition() {
-			super(ConfigurationPhase.PARSE_CONFIGURATION);
-		}
-
-		/**
-		 * Enable this when `spring.ai.dashscope.embedding.enabled` is not set or is set
-		 * to `true`.
-		 */
-		@ConditionalOnProperty(prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
-				havingValue = "true", matchIfMissing = true)
-		static class Enabled {
-
-		}
-
-		/**
-		 * Enable this when `spring.ai.model.embedding` is not specified or is set to
-		 * `dashscope`.
-		 */
-		@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL,
-				havingValue = SpringAIAlibabaModels.DASHSCOPE, matchIfMissing = true)
-		static class ModelSpecified {
-
-		}
-
 	}
 
 }

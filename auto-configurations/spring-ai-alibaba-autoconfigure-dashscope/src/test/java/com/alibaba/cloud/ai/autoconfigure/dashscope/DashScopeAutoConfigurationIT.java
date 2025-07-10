@@ -152,8 +152,9 @@ public class DashScopeAutoConfigurationIT {
 	}
 
 	@Test
-	void embedding() {
+	void embeddingV2() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.dashscope.embedding.options.model=text-embedding-v2")
 			.run(context -> {
 				DashScopeEmbeddingModel embeddingModel = context.getBean(DashScopeEmbeddingModel.class);
 
@@ -170,7 +171,7 @@ public class DashScopeAutoConfigurationIT {
 	}
 
 	@Test
-	void embeddingWithTextEmbeddingV3Mode() {
+	void embeddingV3() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.dashscope.embedding.options.model=text-embedding-v3")
 			.withPropertyValues("spring.ai.dashscope.embedding.options.dimensions=512")

@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.model;
 
 /**
  * @author YunKui Lu
+ * @see org.springframework.ai.model.SpringAIModels
  */
 public final class SpringAIAlibabaModels {
 

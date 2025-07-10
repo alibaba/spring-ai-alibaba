@@ -20,6 +20,7 @@ import org.springframework.ai.model.SpringAIModelProperties;
 
 /**
  * @author YunKui Lu
+ * @see org.springframework.ai.model.SpringAIModelProperties
  */
 public final class SpringAIAlibabaModelProperties {
 

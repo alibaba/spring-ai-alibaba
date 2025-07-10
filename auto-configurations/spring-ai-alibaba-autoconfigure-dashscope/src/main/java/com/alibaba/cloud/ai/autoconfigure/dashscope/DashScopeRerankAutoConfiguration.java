@@ -20,10 +20,10 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import com.alibaba.cloud.ai.model.SpringAIAlibabaModelProperties;
 import com.alibaba.cloud.ai.model.SpringAIAlibabaModels;
+
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -31,7 +31,6 @@ import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfigura
 import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -48,7 +47,8 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 		SpringAiRetryAutoConfiguration.class })
 @ConditionalOnClass(DashScopeApi.class)
 @ConditionalOnDashScopeEnabled
-@Conditional(DashScopeRerankAutoConfiguration.Condition.class)
+@ConditionalOnProperty(name = SpringAIAlibabaModelProperties.RERANK_MODEL,
+		havingValue = SpringAIAlibabaModels.DASHSCOPE, matchIfMissing = true)
 @EnableConfigurationProperties({ DashScopeConnectionProperties.class, DashScopeRerankProperties.class })
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		WebClientAutoConfiguration.class })
@@ -75,34 +75,6 @@ public class DashScopeRerankAutoConfiguration {
 			.build();
 
 		return new DashScopeRerankModel(dashScopeApi, rerankProperties.getOptions(), retryTemplate);
-	}
-
-	public static class Condition extends AllNestedConditions {
-
-		public Condition() {
-			super(ConfigurationPhase.PARSE_CONFIGURATION);
-		}
-
-		/**
-		 * Enable this when `spring.ai.dashscope.rerank.enabled` is not set or is set to
-		 * `true`.
-		 */
-		@ConditionalOnProperty(prefix = DashScopeRerankProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-				matchIfMissing = true)
-		static class Enabled {
-
-		}
-
-		/**
-		 * Enable this when `spring.ai.model.rerank` is not specified or is set to
-		 * `dashscope`.
-		 */
-		@ConditionalOnProperty(name = SpringAIAlibabaModelProperties.RERANK_MODEL,
-				havingValue = SpringAIAlibabaModels.DASHSCOPE, matchIfMissing = true)
-		static class ModelSpecified {
-
-		}
-
 	}
 
 }

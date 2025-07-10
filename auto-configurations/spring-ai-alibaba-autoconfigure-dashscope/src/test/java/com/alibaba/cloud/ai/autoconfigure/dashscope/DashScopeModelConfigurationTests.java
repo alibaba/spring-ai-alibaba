@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -55,13 +56,6 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withPropertyValues("spring.ai.dashscope.chat.enabled=false")
-			.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(DashScopeChatProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
-			});
-
 		this.contextRunner.withPropertyValues("spring.ai.model.chat=dashscope")
 			.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
 			.run(context -> {
@@ -74,10 +68,16 @@ class DashScopeModelConfigurationTests {
 					DashScopeEmbeddingAutoConfiguration.class, DashScopeImageAutoConfiguration.class,
 					DashScopeAudioSpeechAutoConfiguration.class, DashScopeAudioTranscriptionAutoConfiguration.class,
 					DashScopeRerankAutoConfiguration.class))
-			.withPropertyValues("spring.ai.model.chat=dashscope", "spring.ai.model.embedding=none",
-					"spring.ai.model.image=none", "spring.ai.model.audio.speech=none",
-					"spring.ai.model.audio.transcription=none", "spring.ai.model.moderation=none",
+			.withPropertyValues(
+			// @formatter:off
+					"spring.ai.model.chat=dashscope",
+					"spring.ai.model.embedding=none",
+					"spring.ai.model.image=none",
+					"spring.ai.model.audio.speech=none",
+					"spring.ai.model.audio.transcription=none",
+					"spring.ai.model.moderation=none",
 					"spring.ai.model.rerank=none")
+			// @formatter:on
 			.run(context -> {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
@@ -107,13 +107,6 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withPropertyValues("spring.ai.dashscope.embedding.enabled=false")
-			.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(DashScopeEmbeddingProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
-			});
-
 		this.contextRunner.withPropertyValues("spring.ai.model.embedding=dashscope")
 			.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class))
 			.run(context -> {
@@ -126,10 +119,16 @@ class DashScopeModelConfigurationTests {
 					DashScopeEmbeddingAutoConfiguration.class, DashScopeImageAutoConfiguration.class,
 					DashScopeAudioSpeechAutoConfiguration.class, DashScopeAudioTranscriptionAutoConfiguration.class,
 					DashScopeRerankAutoConfiguration.class))
-			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=dashscope",
-					"spring.ai.model.image=none", "spring.ai.model.audio.speech=none",
-					"spring.ai.model.audio.transcription=none", "spring.ai.model.moderation=none",
+			.withPropertyValues(
+			// @formatter:off
+					"spring.ai.model.chat=none",
+					"spring.ai.model.embedding=dashscope",
+					"spring.ai.model.image=none",
+					"spring.ai.model.audio.speech=none",
+					"spring.ai.model.audio.transcription=none",
+					"spring.ai.model.moderation=none",
 					"spring.ai.model.rerank=none")
+				// @formatter
 			.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
@@ -160,13 +159,6 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withPropertyValues("spring.ai.dashscope.image.enabled=false")
-			.withConfiguration(AutoConfigurations.of(DashScopeImageAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(DashScopeImageProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
-			});
-
 		this.contextRunner.withPropertyValues("spring.ai.model.image=dashscope")
 			.withConfiguration(AutoConfigurations.of(DashScopeImageAutoConfiguration.class))
 			.run(context -> {
@@ -179,10 +171,16 @@ class DashScopeModelConfigurationTests {
 					DashScopeEmbeddingAutoConfiguration.class, DashScopeImageAutoConfiguration.class,
 					DashScopeAudioSpeechAutoConfiguration.class, DashScopeAudioTranscriptionAutoConfiguration.class,
 					DashScopeRerankAutoConfiguration.class))
-			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none",
-					"spring.ai.model.image=dashscope", "spring.ai.model.audio.speech=none",
-					"spring.ai.model.audio.transcription=none", "spring.ai.model.moderation=none",
+			.withPropertyValues(
+					// @formatter:off
+					"spring.ai.model.chat=none",
+					"spring.ai.model.embedding=none",
+					"spring.ai.model.image=dashscope",
+					"spring.ai.model.audio.speech=none",
+					"spring.ai.model.audio.transcription=none",
+					"spring.ai.model.moderation=none",
 					"spring.ai.model.rerank=none")
+				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
@@ -213,13 +211,6 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withPropertyValues("spring.ai.dashscope.audio.synthesis.enabled=false")
-			.withConfiguration(AutoConfigurations.of(DashScopeAudioSpeechAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(DashScopeAudioSpeechSynthesisProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
-			});
-
 		this.contextRunner.withPropertyValues("spring.ai.model.audio.speech=dashscope")
 			.withConfiguration(AutoConfigurations.of(DashScopeAudioSpeechAutoConfiguration.class))
 			.run(context -> {
@@ -232,10 +223,16 @@ class DashScopeModelConfigurationTests {
 					DashScopeEmbeddingAutoConfiguration.class, DashScopeImageAutoConfiguration.class,
 					DashScopeAudioSpeechAutoConfiguration.class, DashScopeAudioTranscriptionAutoConfiguration.class,
 					DashScopeRerankAutoConfiguration.class))
-			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none",
-					"spring.ai.model.image=none", "spring.ai.model.audio.speech=dashscope",
-					"spring.ai.model.audio.transcription=none", "spring.ai.model.moderation=none",
+			.withPropertyValues(
+			// @formatter:off
+					"spring.ai.model.chat=none",
+					"spring.ai.model.embedding=none",
+					"spring.ai.model.image=none",
+					"spring.ai.model.audio.speech=dashscope",
+					"spring.ai.model.audio.transcription=none",
+					"spring.ai.model.moderation=none",
 					"spring.ai.model.rerank=none")
+				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
@@ -266,13 +263,6 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withPropertyValues("spring.ai.dashscope.audio.transcription.enabled=false")
-			.withConfiguration(AutoConfigurations.of(DashScopeAudioTranscriptionAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
-			});
-
 		this.contextRunner.withPropertyValues("spring.ai.model.audio.transcription=dashscope")
 			.withConfiguration(AutoConfigurations.of(DashScopeAudioTranscriptionAutoConfiguration.class))
 			.run(context -> {
@@ -285,10 +275,16 @@ class DashScopeModelConfigurationTests {
 					DashScopeEmbeddingAutoConfiguration.class, DashScopeImageAutoConfiguration.class,
 					DashScopeAudioSpeechAutoConfiguration.class, DashScopeAudioTranscriptionAutoConfiguration.class,
 					DashScopeRerankAutoConfiguration.class))
-			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none",
-					"spring.ai.model.image=none", "spring.ai.model.audio.speech=none",
-					"spring.ai.model.audio.transcription=dashscope", "spring.ai.model.moderation=none",
+			.withPropertyValues(
+			// @formatter:off
+					"spring.ai.model.chat=none",
+					"spring.ai.model.embedding=none",
+					"spring.ai.model.image=none",
+					"spring.ai.model.audio.speech=none",
+					"spring.ai.model.audio.transcription=dashscope",
+					"spring.ai.model.moderation=none",
 					"spring.ai.model.rerank=none")
+				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
@@ -319,13 +315,6 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withPropertyValues("spring.ai.dashscope.rerank.enabled=false")
-			.withConfiguration(AutoConfigurations.of(DashScopeRerankAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(DashScopeRerankProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
-			});
-
 		this.contextRunner.withPropertyValues("spring.ai.model.rerank=dashscope")
 			.withConfiguration(AutoConfigurations.of(DashScopeRerankAutoConfiguration.class))
 			.run(context -> {
@@ -338,18 +327,24 @@ class DashScopeModelConfigurationTests {
 					DashScopeEmbeddingAutoConfiguration.class, DashScopeImageAutoConfiguration.class,
 					DashScopeAudioSpeechAutoConfiguration.class, DashScopeAudioTranscriptionAutoConfiguration.class,
 					DashScopeRerankAutoConfiguration.class))
-			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none",
-					"spring.ai.model.image=none", "spring.ai.model.audio.speech=none",
-					"spring.ai.model.audio.transcription=dashscope", "spring.ai.model.moderation=none",
-					"spring.ai.model.rerank=none")
+			.withPropertyValues(
+			// @formatter:off
+					"spring.ai.model.chat=none",
+					"spring.ai.model.embedding=none",
+					"spring.ai.model.image=none",
+					"spring.ai.model.audio.speech=none",
+					"spring.ai.model.audio.transcription=none",
+					"spring.ai.model.moderation=none",
+					"spring.ai.model.rerank=dashscope")
+				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isNotEmpty();
 			});
 	}
 
