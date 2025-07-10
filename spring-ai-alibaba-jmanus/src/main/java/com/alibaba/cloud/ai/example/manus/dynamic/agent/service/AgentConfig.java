@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
+
 import java.util.List;
 
 public class AgentConfig {
@@ -32,6 +34,8 @@ public class AgentConfig {
 	private List<String> availableTools;
 
 	private String className;
+
+	private ModelConfig model;
 
 	// Getters and Setters
 	public String getId() {
@@ -88,6 +92,14 @@ public class AgentConfig {
 
 	public void setClassName(String className) {
 		this.className = className;
+	}
+
+	public ModelConfig getModel() {
+		return model;
+	}
+
+	public void setModel(ModelConfig model) {
+		this.model = model;
 	}
 
 }

@@ -15,12 +15,9 @@
  */
 package com.alibaba.cloud.ai.schema;
 
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
 
-@Data
 public class ColumnDTO {
 
 	private String name;
@@ -38,5 +35,76 @@ public class ColumnDTO {
 	private List<String> data;
 
 	private Map<String, String> mapping;
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public int getEnumeration() {
+		return enumeration;
+	}
+
+	public void setEnumeration(int enumeration) {
+		this.enumeration = enumeration;
+	}
+
+	public String getRange() {
+		return range;
+	}
+
+	public void setRange(String range) {
+		this.range = range;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public List<String> getSamples() {
+		return samples;
+	}
+
+	public void setSamples(List<String> samples) {
+		this.samples = samples;
+	}
+
+	public List<String> getData() {
+		return data;
+	}
+
+	public void setData(List<String> data) {
+		this.data = data;
+	}
+
+	public Map<String, String> getMapping() {
+		return mapping;
+	}
+
+	public void setMapping(Map<String, String> mapping) {
+		this.mapping = mapping;
+	}
+
+	@Override
+	public String toString() {
+		return "ColumnDTO{" + "name='" + name + '\'' + ", description='" + description + '\'' + ", enumeration="
+				+ enumeration + ", range='" + range + '\'' + ", type='" + type + '\'' + ", samples=" + samples
+				+ ", data=" + data + ", mapping=" + mapping + '}';
+	}
 
 }

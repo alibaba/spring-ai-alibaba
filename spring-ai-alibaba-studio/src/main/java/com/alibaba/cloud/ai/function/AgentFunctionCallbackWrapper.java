@@ -15,17 +15,11 @@
  */
 package com.alibaba.cloud.ai.function;
 
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -35,16 +29,16 @@ import org.springframework.ai.tool.resolution.TypeResolverHelper;
 import org.springframework.ai.util.json.schema.SchemaType;
 import org.springframework.util.Assert;
 
-@EqualsAndHashCode
+import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolContext, O>, ToolCallback {
 
-	@Getter
 	private final String name;
 
-	@Getter
 	private final String description;
 
-	@Getter
 	private final String inputTypeSchema;
 
 	private final Class<I> inputType;
@@ -54,6 +48,18 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 	private final Function<O, String> responseConverter;
 
 	private final BiFunction<I, ToolContext, O> biFunction;
+
+	public String getName() {
+		return name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public String getInputTypeSchema() {
+		return inputTypeSchema;
+	}
 
 	protected AgentFunctionCallbackWrapper(String name, String description, String inputTypeSchema, Class<I> inputType,
 			Function<O, String> responseConverter, ObjectMapper objectMapper, BiFunction<I, ToolContext, O> function) {
@@ -245,6 +251,25 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 				.getFunctionInputClass((Class<? extends Function<?, ?>>) function.getClass());
 		}
 
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		AgentFunctionCallbackWrapper<?, ?> that = (AgentFunctionCallbackWrapper<?, ?>) o;
+		return Objects.equals(name, that.name) && Objects.equals(description, that.description)
+				&& Objects.equals(inputTypeSchema, that.inputTypeSchema) && Objects.equals(inputType, that.inputType)
+				&& Objects.equals(objectMapper, that.objectMapper)
+				&& Objects.equals(responseConverter, that.responseConverter)
+				&& Objects.equals(biFunction, that.biFunction);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, description, inputTypeSchema, inputType, objectMapper, responseConverter, biFunction);
 	}
 
 }

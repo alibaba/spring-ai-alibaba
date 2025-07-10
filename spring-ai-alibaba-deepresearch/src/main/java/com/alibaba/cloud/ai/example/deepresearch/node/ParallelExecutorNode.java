@@ -62,14 +62,14 @@ public class ParallelExecutorNode implements NodeAction {
 				case PROCESSING:
 					if (areAllResearchStepsCompleted(curPlan)) {
 						step.setExecutionStatus(assignRole(stepType, currCoder));
-						currCoder = (currCoder + 1) % parallelNodeCount.get(ParallelEnum.RESEARCHER.getValue());
+						currCoder = (currCoder + 1) % parallelNodeCount.get(ParallelEnum.CODER.getValue());
 					}
 					logger.info("Waiting for remaining research steps executed");
 					break;
 
 				case RESEARCH:
 					step.setExecutionStatus(assignRole(stepType, currResearcher));
-					currResearcher = (currResearcher + 1) % parallelNodeCount.get(ParallelEnum.CODER.getValue());
+					currResearcher = (currResearcher + 1) % parallelNodeCount.get(ParallelEnum.RESEARCHER.getValue());
 					break;
 
 				// 处理其他可能的StepType
