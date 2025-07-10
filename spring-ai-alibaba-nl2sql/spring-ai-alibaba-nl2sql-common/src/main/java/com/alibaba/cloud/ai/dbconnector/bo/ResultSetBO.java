@@ -57,7 +57,8 @@ public final class ResultSetBO extends DdlBaseBO implements Cloneable {
 		ObjectMapper objectMapper = new ObjectMapper();
 		try {
 			return objectMapper.writeValueAsString(this);
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			throw new RuntimeException("Failed to convert object to JSON string", e);
 		}
 	}
