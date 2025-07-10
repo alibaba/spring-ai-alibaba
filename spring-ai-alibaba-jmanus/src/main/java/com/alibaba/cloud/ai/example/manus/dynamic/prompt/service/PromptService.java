@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.prompt.service;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.vo.PromptVO;
 import org.springframework.ai.chat.messages.Message;
 
@@ -34,12 +33,12 @@ public interface PromptService {
 
 	void delete(Long id);
 
-	Message createSystemMessage(PromptEnum promptEnum, Map<String, Object> variables);
+	Message createSystemMessage(String promptName, Map<String, Object> variables);
 
-	Message createUserMessage(PromptEnum promptEnum, Map<String, Object> variables);
+	Message createUserMessage(String promptName, Map<String, Object> variables);
 
-	Message createMessage(PromptEnum promptEnum, Map<String, Object> variables);
+	Message createMessage(String promptName, Map<String, Object> variables);
 
-	String renderPrompt(PromptEnum promptEnum, Map<String, Object> variables);
+	String renderPrompt(String promptName, Map<String, Object> variables);
 
 }

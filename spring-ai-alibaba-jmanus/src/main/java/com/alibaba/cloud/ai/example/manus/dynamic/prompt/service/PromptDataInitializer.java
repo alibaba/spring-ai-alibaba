@@ -56,8 +56,7 @@ public class PromptDataInitializer implements CommandLineRunner {
 	}
 
 	private void createPromptIfNotExists(PromptEnum prompt) {
-		PromptEntity promptEntity = promptRepository.findByPrompt(prompt.getPromptName(), prompt.getType().name(),
-				prompt.getMessageType().name());
+		PromptEntity promptEntity = promptRepository.findByPromptName(prompt.getPromptName());
 
 		if (promptEntity == null) {
 			promptEntity = new PromptEntity();
