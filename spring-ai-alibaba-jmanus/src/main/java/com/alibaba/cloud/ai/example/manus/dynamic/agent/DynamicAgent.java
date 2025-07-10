@@ -432,8 +432,15 @@ public class DynamicAgent extends ReActAgent {
 	protected Message getThinkMessage() {
 		Message baseThinkPrompt = super.getThinkMessage();
 		Message nextStepWithEnvMessage = getNextStepWithEnvMessage();
-		SystemMessage thinkMessage = new SystemMessage(
-				baseThinkPrompt.getText() + System.lineSeparator() + nextStepWithEnvMessage.getText());
+		SystemMessage thinkMessage = new SystemMessage("""
+				<SystemInfo>
+				%s
+				</SystemInfo>
+
+				<AgentInfo>
+				%s
+				</AgentInfo>
+				""".formatted(baseThinkPrompt.getText(), nextStepWithEnvMessage.getText()));
 		return thinkMessage;
 	}
 
