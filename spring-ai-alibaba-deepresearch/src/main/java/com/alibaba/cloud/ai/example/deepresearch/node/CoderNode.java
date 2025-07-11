@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.node.annotation.Node;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
@@ -30,6 +31,9 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,12 +45,12 @@ import java.util.Objects;
  * @author sixiyida
  * @since 2025/6/14 11:17
  */
-
-public class CoderNode implements NodeAction {
+@Component
+@Node(name = "处理详细任务并对结果进行反思节点", description = "反思")
+public class CoderNode extends AbstractNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(CoderNode.class);
 
-	private final ChatClient coderAgent;
 
 	private final String executorNodeId;
 
@@ -57,10 +61,19 @@ public class CoderNode implements NodeAction {
 	// MCP工厂
 	private final McpProviderFactory mcpFactory;
 
-	public CoderNode(ChatClient coderAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
+	@Autowired
+	public CoderNode(ObjectProvider<ChatClient.Builder> coderAgent, ReflectionProcessor reflectionProcessor){
+		super(coderAgent);
+		this.executorNodeId = "__default__";
+		this.nodeName = "coder_" + executorNodeId;
+		this.reflectionProcessor = reflectionProcessor;
+		this.mcpFactory = null;
+	}
+
+	public CoderNode(ObjectProvider<ChatClient.Builder> coderAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
 			McpProviderFactory mcpFactory) {
-		this.coderAgent = coderAgent;
-		this.executorNodeId = executorNodeId;
+        super(coderAgent);
+        this.executorNodeId = executorNodeId;
 		this.nodeName = "coder_" + executorNodeId;
 		this.reflectionProcessor = reflectionProcessor;
 		this.mcpFactory = mcpFactory;
@@ -102,7 +115,7 @@ public class CoderNode implements NodeAction {
 		logger.debug("{} Node message: {}", nodeName, messages);
 
 		// 调用agent
-		var requestSpec = coderAgent.prompt().messages(messages);
+		var requestSpec = this.chatClient().prompt().messages(messages);
 
 		// 使用MCP工厂创建MCP客户端
 		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null ? mcpFactory.createProvider(state, "coderAgent")

@@ -54,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -84,7 +85,7 @@ public class DeepResearchConfiguration {
 	private SearchBeanUtil searchBeanUtil;
 
 	@Autowired
-	private ChatClient coderAgent;
+	private ObjectProvider<ChatClient.Builder> coderAgent;
 
 	@Autowired
 	private ChatClient researchAgent;
@@ -93,7 +94,7 @@ public class DeepResearchConfiguration {
 	private ChatClient reporterAgent;
 
 	@Autowired
-	private ChatClient coordinatorAgent;
+	private ObjectProvider<ChatClient.Builder> coordinatorAgent;
 
 	@Autowired
 	private ChatClient plannerAgent;
@@ -101,9 +102,9 @@ public class DeepResearchConfiguration {
 	@Autowired
 	private ChatClient reflectionAgent;
 
-	@Qualifier("chatClientBuilder")
+//	@Qualifier("chatClientBuilder")
 	@Autowired
-	private ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
+	private ChatClient.Builder researchChatClientBuilder;
 
 	@Autowired
 	private DeepResearchProperties deepResearchProperties;
@@ -184,7 +185,7 @@ public class DeepResearchConfiguration {
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
-			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
+			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(researchChatClientBuilder)))
 			.addNode("background_investigator",
 					node_async(new BackgroundInvestigationNode(searchBeanUtil, jinaCrawlerService, infoCheckService)))
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))

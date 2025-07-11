@@ -40,7 +40,7 @@ public class NodeDefinitionInjector implements BeanPostProcessor {
 			Node nodeInfo = AnnotationUtils.findAnnotation(bean.getClass(), Node.class);
 			if (nodeInfo != null) {
 				NodeDefinition def = new NodeDefinition();
-				def.setName(nodeInfo.name());
+				def.setName(nodeInfo.name().concat("。 "));
 				def.setDescription(nodeInfo.description());
 				node.setNodeDefinition(def);
 			}

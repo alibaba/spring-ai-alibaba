@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.deepresearch.util.NodeSelectionUtil;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.ObjectProvider;
 
 /**
  * Abstract class representing a node in a graph. It defines the structure for nodes with
@@ -32,22 +33,22 @@ import org.springframework.ai.chat.client.ChatClient;
  */
 public abstract class AbstractNode {
 
-	private final ChatClient chatClient;
+	protected final ChatClient.Builder builder;
 
 	private NodeDefinition nodeDefinition;
 
-	public AbstractNode(ChatClient.Builder builder) {
-		this.chatClient = builder
-			.defaultAdvisors(RoutingNodeAdvisor.Builder()
-				.selections(NodeSelectionUtil.getAvailableNodes())
-				.JSONParser(new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))
-				.build())
-			.build();
+	public AbstractNode(ObjectProvider<ChatClient.Builder> builder) {
+		this.builder = builder.getIfAvailable();
 	}
 
-	@Deprecated
-	protected NodeDefinition.SelectionNode guide(String input) {
-		return chatClient.prompt().user(input).call().entity(NodeDefinition.SelectionNode.class);
+	protected ChatClient chatClient() {
+		return builder
+				.defaultAdvisors(RoutingNodeAdvisor
+						.Builder()
+						.selections(NodeSelectionUtil.getAvailableNodes())
+						.JSONParser(new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))
+						.build())
+				.build();
 	}
 
 	public NodeDefinition getNodeDefinition() {

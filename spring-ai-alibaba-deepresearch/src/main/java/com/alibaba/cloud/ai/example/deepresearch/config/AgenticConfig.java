@@ -17,6 +17,10 @@
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
 import com.alibaba.cloud.ai.example.deepresearch.node.AbstractNode;
+import com.alibaba.cloud.ai.example.deepresearch.util.NodeSelectionUtil;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
@@ -33,14 +37,24 @@ import java.util.stream.Collectors;
  */
 
 @Configuration
-public class AgenticConfig {
+public class AgenticConfig implements InitializingBean {
+
+	private final Map<String, String> agentDescriptions;
+
+	public AgenticConfig(List<AbstractNode> nodes){
+		this.agentDescriptions = nodes.stream()
+				.collect(Collectors.toMap(node -> node.getNodeDefinition().getName(),
+						node -> node.getNodeDefinition().getDescription()));
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+		NodeSelectionUtil.init(this.agentDescriptions);
+	}
 
 	@Bean
-	@Description("agent description information container")
-	public Map<String, String> agentDescriptions(List<AbstractNode> nodes) {
-		return nodes.stream()
-			.collect(Collectors.toMap(node -> node.getNodeDefinition().getName(),
-					node -> node.getNodeDefinition().getDescription()));
+	public Map<String, String> agentDescriptions() {
+		return this.agentDescriptions;
 	}
 
 }

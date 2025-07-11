@@ -122,25 +122,25 @@ public class AgentsConfiguration {
 	 * configure ToolCallbackProviders.
 	 * @return ChatClient
 	 */
-	@Bean
-	public ChatClient coderAgent(ChatClient.Builder coderChatClientBuilder, PythonCoderProperties coderProperties) {
+	@Bean("coderAgent")
+	public ChatClient.Builder coderAgent(ChatClient.Builder coderChatClientBuilder, PythonCoderProperties coderProperties) {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("coderAgent");
 
 		return coderChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(coderPrompt))
 			.defaultTools(new PythonReplTool(coderProperties))
 			.defaultToolCallbacks(mcpCallbacks)
-			.build();
+			;
 	}
 
-	@Bean
-	public ChatClient coordinatorAgent(ChatClient.Builder coordinatorChatClientBuilder, PlannerTool plannerTool) {
+	@Bean("coordinatorAgent")
+	public ChatClient.Builder coordinatorAgent(ChatClient.Builder coordinatorChatClientBuilder, PlannerTool plannerTool) {
 		return coordinatorChatClientBuilder
 			.defaultOptions(ToolCallingChatOptions.builder()
 				.internalToolExecutionEnabled(false) // 禁用内部工具执行
 				.build())
 			// 当前CoordinatorNode节点只绑定一个计划工具
 			.defaultTools(plannerTool)
-			.build();
+			;
 	}
 
 	@Bean

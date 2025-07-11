@@ -16,10 +16,13 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.util;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.AgenticConfig;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -28,13 +31,11 @@ import java.util.Map;
  * @author ViliamSun
  * @since 1.0.0
  */
-@Component
 public class NodeSelectionUtil {
 
 	private static Map<String, String> agentDescriptions;
 
-	@Autowired
-	public void setAgentDescriptions(Map<String, String> agentDescriptions) {
+	public static void init(Map<String, String> agentDescriptions) {
 		NodeSelectionUtil.agentDescriptions = agentDescriptions;
 	}
 
@@ -43,7 +44,7 @@ public class NodeSelectionUtil {
 	 * @return a collection of node names
 	 */
 	public static Collection<String> getAvailableNodes() {
-		return agentDescriptions.keySet();
+		return NodeSelectionUtil.agentDescriptions.keySet().stream().toList();
 	}
 
 }
