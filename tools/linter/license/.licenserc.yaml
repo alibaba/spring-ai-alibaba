@@ -84,4 +84,5 @@ header:
     - 'community/openmanus/src/main/java/com/alibaba/cloud/ai/example/manus/tool/support/llmbash/BashProcess.java'
     - '**/spring-ai-alibaba-graph/spring-ai-alibaba-graph-example/**'
     - 'spring-ai-alibaba-graph/spring-ai-alibaba-graph-example/.mvn/wrapper/maven-wrapper.properties'
+    - '**/spring-ai-alibaba-deepresearch/ui-vue3/**'
   comment: never
