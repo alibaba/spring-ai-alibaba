@@ -34,12 +34,15 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * An abstract base class for implementing AI agents that can execute multi-step tasks.
- * This class provides the core functionality for managing agent state, conversation flow,
+ * An abstract base class for implementing AI agents that can execute multi-step
+ * tasks.
+ * This class provides the core functionality for managing agent state,
+ * conversation flow,
  * and step-by-step execution of tasks.
  *
  * <p>
- * The agent supports a finite number of execution steps and includes mechanisms for:
+ * The agent supports a finite number of execution steps and includes mechanisms
+ * for:
  * <ul>
  * <li>State management (idle, running, finished)</li>
  * <li>Conversation tracking</li>
@@ -97,12 +100,16 @@ public abstract class BaseAgent {
 	/**
 	 * Get the name of the agent
 	 *
-	 * Implementation requirements: 1. Return a short but descriptive name 2. The name
-	 * should reflect the main functionality or characteristics of the agent 3. The name
+	 * Implementation requirements: 1. Return a short but descriptive name 2. The
+	 * name
+	 * should reflect the main functionality or characteristics of the agent 3. The
+	 * name
 	 * should be unique for easy logging and debugging
 	 *
-	 * Example implementations: - ToolCallAgent returns "ToolCallAgent" - BrowserAgent
+	 * Example implementations: - ToolCallAgent returns "ToolCallAgent" -
+	 * BrowserAgent
 	 * returns "BrowserAgent"
+	 * 
 	 * @return The name of the agent
 	 */
 	public abstract String getName();
@@ -111,12 +118,15 @@ public abstract class BaseAgent {
 	 * Get the detailed description of the agent
 	 *
 	 * Implementation requirements: 1. Return a detailed description of the agent's
-	 * functionality 2. The description should include the agent's main responsibilities
+	 * functionality 2. The description should include the agent's main
+	 * responsibilities
 	 * and capabilities 3. Should explain how this agent differs from other agents
 	 *
 	 * Example implementations: - ToolCallAgent: "Agent responsible for managing and
-	 * executing tool calls, supporting multi-tool combination calls" - ReActAgent: "Agent
+	 * executing tool calls, supporting multi-tool combination calls" - ReActAgent:
+	 * "Agent
 	 * that implements alternating execution of reasoning and acting"
+	 * 
 	 * @return The detailed description text of the agent
 	 */
 	public abstract String getDescription();
@@ -125,12 +135,17 @@ public abstract class BaseAgent {
 	 * Add thinking prompts to the message list to build the agent's thinking chain
 	 *
 	 * Implementation requirements: 1. Generate appropriate system prompts based on
-	 * current context and state 2. Prompts should guide the agent on how to think and
-	 * make decisions 3. Can recursively build prompt chains to form hierarchical thinking
+	 * current context and state 2. Prompts should guide the agent on how to think
+	 * and
+	 * make decisions 3. Can recursively build prompt chains to form hierarchical
+	 * thinking
 	 * processes 4. Return the added system prompt message object
 	 *
-	 * Subclass implementation reference: 1. ReActAgent: Implement basic thinking-action
-	 * loop prompts 2. ToolCallAgent: Add tool selection and execution related prompts
+	 * Subclass implementation reference: 1. ReActAgent: Implement basic
+	 * thinking-action
+	 * loop prompts 2. ToolCallAgent: Add tool selection and execution related
+	 * prompts
+	 * 
 	 * @return The added system prompt message object
 	 */
 	protected Message getThinkMessage() {
@@ -149,8 +164,7 @@ public abstract class BaseAgent {
 					1. 使用工具调用时，必须给出解释说明，说明使用这个工具的理由和背后的思考
 					2. 简述过去的所有步骤已经都做了什么事
 					""";
-		}
-		else {
+		} else {
 			detailOutput = """
 					1. 使用工具调用时，不需要额外的任何解释说明！
 					2. 不要在工具调用前提供推理或描述！
@@ -171,13 +185,18 @@ public abstract class BaseAgent {
 	/**
 	 * Get the next step prompt message
 	 *
-	 * Implementation requirements: 1. Generate a prompt message that guides the agent to
-	 * perform the next step 2. The prompt should be based on the current execution state
-	 * and context 3. The message should clearly guide the agent on what task to perform
+	 * Implementation requirements: 1. Generate a prompt message that guides the
+	 * agent to
+	 * perform the next step 2. The prompt should be based on the current execution
+	 * state
+	 * and context 3. The message should clearly guide the agent on what task to
+	 * perform
 	 *
-	 * Subclass implementation reference: 1. ToolCallAgent: Return prompts related to tool
+	 * Subclass implementation reference: 1. ToolCallAgent: Return prompts related
+	 * to tool
 	 * selection and execution 2. ReActAgent: Return prompts related to reasoning or
 	 * action decision
+	 * 
 	 * @return The next step prompt message object
 	 */
 	protected abstract Message getNextStepWithEnvMessage();
@@ -203,6 +222,7 @@ public abstract class BaseAgent {
 		}
 
 		PlanExecutionRecord planRecord = null;
+		PlanExecutionRecord planToSave = null; // Track which plan should be saved
 
 		// Create agent execution record
 		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getCurrentPlanId(), getName(), getDescription());
@@ -210,11 +230,30 @@ public abstract class BaseAgent {
 		agentRecord.setStatus(state.toString());
 		// Record execution in recorder if we have a plan ID
 		if (currentPlanId != null && planExecutionRecorder != null) {
-			// Use unified method that handles both main plan and sub-plan cases
-			planRecord = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId, thinkActRecordId);
-
-			if (planRecord != null) {
-				planExecutionRecorder.recordAgentExecution(planRecord, agentRecord);
+			// Handle both root plan and sub-plan execution cases
+			if (isSubPlanExecution()) {
+				// For sub-plan execution, we need the parent plan first
+				PlanExecutionRecord parentPlan = planExecutionRecorder.getOrCreateRootPlanExecutionRecord(rootPlanId, true);
+				if (parentPlan != null) {
+					planRecord = planExecutionRecorder.getOrCreateSubPlanExecutionRecord(parentPlan, currentPlanId,
+							thinkActRecordId, true);
+					planToSave = parentPlan; // Save parent plan for sub-plan execution
+					// For sub-plan, set execution to sub-plan but save parent plan
+					if (planRecord != null) {
+						planExecutionRecorder.setAgentExecution(planRecord, agentRecord);
+						// Must save parent plan because sub-plan execution is stored within parent
+						planExecutionRecorder.savePlanExecutionRecords(parentPlan);
+					}
+				}
+			} else {
+				// For root plan execution
+				planRecord = planExecutionRecorder.getOrCreateRootPlanExecutionRecord(currentPlanId, true);
+				planToSave = planRecord; // Save the root plan record itself
+				if (planRecord != null) {
+					planExecutionRecorder.setAgentExecution(planRecord, agentRecord);
+					// Save the root plan record
+					planExecutionRecorder.savePlanExecutionRecords(planRecord);
+				}
 			}
 		}
 		List<String> results = new ArrayList<>();
@@ -230,8 +269,7 @@ public abstract class BaseAgent {
 
 				if (isStuck()) {
 					handleStuckState(agentRecord);
-				}
-				else {
+				} else {
 					// Update global state for consistency
 					log.info("Agent state: {}", stepResult.getState());
 					state = stepResult.getState();
@@ -254,12 +292,11 @@ public abstract class BaseAgent {
 
 			// Calculate execution time in seconds
 			long executionTimeSeconds = java.time.Duration.between(agentRecord.getStartTime(), agentRecord.getEndTime())
-				.getSeconds();
+					.getSeconds();
 			String status = agentRecord.isCompleted() ? "成功" : (agentRecord.isStuck() ? "执行卡住" : "未完成");
 			agentRecord.setResult(String.format("执行%s [耗时%d秒] [消耗步骤%d] ", status, executionTimeSeconds, currentStep));
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Agent execution failed", e);
 			// Record exception information to agentRecord
 			agentRecord.setErrorMessage(e.getMessage());
@@ -269,13 +306,16 @@ public abstract class BaseAgent {
 			results.add("Execution failed: " + e.getMessage());
 			throw e; // Re-throw the exception to let the caller know that an error
 			// occurred
-		}
-		finally {
+		} finally {
 			state = AgentState.COMPLETED; // Reset state after execution
 
 			agentRecord.setStatus(state.toString());
 			if (planRecord != null) {
-				planExecutionRecorder.recordAgentExecution(planRecord, agentRecord);
+				planExecutionRecorder.setAgentExecution(planRecord, agentRecord);
+				// Save the correct plan (parent for sub-plan, self for root plan)
+				if (planToSave != null) {
+					planExecutionRecorder.savePlanExecutionRecords(planToSave);
+				}
 			}
 			llmService.clearAgentMemory(currentPlanId);
 		}
@@ -307,6 +347,7 @@ public abstract class BaseAgent {
 
 	/**
 	 * Check if the agent is stuck
+	 * 
 	 * @return true if the agent is stuck, false otherwise
 	 */
 	protected boolean isStuck() {
@@ -355,6 +396,7 @@ public abstract class BaseAgent {
 
 	/**
 	 * Check if this agent is executing a sub-plan triggered by a tool call
+	 * 
 	 * @return true if this is a sub-plan execution, false otherwise
 	 */
 	public boolean isSubPlanExecution() {
@@ -368,13 +410,16 @@ public abstract class BaseAgent {
 	/**
 	 * Get the data context of the agent
 	 *
-	 * Implementation requirements: 1. Return all the context data needed for the agent's
+	 * Implementation requirements: 1. Return all the context data needed for the
+	 * agent's
 	 * execution 2. Data can include: - Current execution state - Step information -
-	 * Intermediate results - Configuration parameters 3. Data is set through setData()
+	 * Intermediate results - Configuration parameters 3. Data is set through
+	 * setData()
 	 * when run() is executed
 	 *
 	 * Do not modify the implementation of this method. If you need to pass context,
 	 * inherit and modify setData() to improve getData() efficiency.
+	 * 
 	 * @return A Map object containing the agent's context data
 	 */
 	protected final Map<String, Object> getInitSettingData() {

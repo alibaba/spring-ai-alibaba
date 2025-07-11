@@ -118,15 +118,32 @@ public class PlanFinalizer {
 	 * @param summary The summary of the plan execution
 	 */
 	private void recordPlanCompletion(ExecutionContext context, String summary) {
-		// Use thinkActRecordId from context to support sub-plan executions
-		PlanExecutionRecord planRecord = recorder.getExecutionRecord(context.getPlan().getCurrentPlanId(),
-				context.getPlan().getRootPlanId(), context.getThinkActRecordId());
+		// Use thinkActRecordId from context to support sub-plan executions - using new interface methods
+		PlanExecutionRecord planRecord = null;
+		String currentPlanId = context.getPlan().getCurrentPlanId();
+		String rootPlanId = context.getPlan().getRootPlanId();
+		Long thinkActRecordId = context.getThinkActRecordId();
+		PlanExecutionRecord parentPlan = recorder.getOrCreateRootPlanExecutionRecord(rootPlanId, false);
+		
+		// Handle both root plan and sub-plan execution cases based on thinkActRecordId
+		if (thinkActRecordId != null) {
+			// Sub-plan execution: thinkActRecordId indicates this is triggered by a tool call
+			if (parentPlan != null) {
+				planRecord = recorder.getOrCreateSubPlanExecutionRecord(parentPlan, currentPlanId, thinkActRecordId, false);
+			}
+		} else {
+			// Root plan execution: no thinkActRecordId means this is a main plan
+			planRecord = recorder.getOrCreateRootPlanExecutionRecord(currentPlanId, false);
+		}
+		
 		if (planRecord != null) {
-			recorder.recordPlanCompletion(planRecord, summary);
+			recorder.setPlanCompletion(planRecord, summary);
+			recorder.savePlanExecutionRecords(parentPlan);
+
 		}
 
 		log.info("Plan completed with ID: {} (thinkActRecordId: {}) and summary: {}",
-				context.getPlan().getCurrentPlanId(), context.getThinkActRecordId(), summary);
+				currentPlanId, thinkActRecordId, summary);
 	}
 
 }

@@ -268,16 +268,38 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 	 */
 	private Long getCurrentThinkActRecordId() {
 		try {
-			// 获取当前计划的执行记录
-			PlanExecutionRecord record = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId, null);
-			AgentExecutionRecord currentAgentRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(record);
-
-			if (currentAgentRecord != null && currentAgentRecord.getThinkActSteps() != null
-					&& !currentAgentRecord.getThinkActSteps().isEmpty()) {
-				// 获取最后一个 think-act 记录（当前正在执行的）
-				List<ThinkActRecord> steps = currentAgentRecord.getThinkActSteps();
-				ThinkActRecord lastStep = steps.get(steps.size() - 1);
-				return lastStep.getId();
+			// 获取当前计划的执行记录 - 使用新的接口方法
+			PlanExecutionRecord planExecutionRecord = null;
+			
+			// 根据是否有rootPlanId判断是子计划还是根计划
+			if (rootPlanId != null && !rootPlanId.equals(currentPlanId)) {
+				// 子计划执行：获取父计划然后查找子计划
+				PlanExecutionRecord parentPlan = planExecutionRecorder.getOrCreateRootPlanExecutionRecord(rootPlanId, false);
+				if (parentPlan != null) {
+					// 由于这是工具调用，我们需要找到当前正在执行的think-act记录
+					// 获取当前agent执行记录
+					AgentExecutionRecord currentAgentRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(parentPlan);
+					if (currentAgentRecord != null && currentAgentRecord.getThinkActSteps() != null
+							&& !currentAgentRecord.getThinkActSteps().isEmpty()) {
+						// 获取最后一个 think-act 记录（当前正在执行的）
+						List<ThinkActRecord> steps = currentAgentRecord.getThinkActSteps();
+						ThinkActRecord lastStep = steps.get(steps.size() - 1);
+						return lastStep.getId();
+					}
+				}
+			} else {
+				// 根计划执行
+				planExecutionRecord = planExecutionRecorder.getOrCreateRootPlanExecutionRecord(currentPlanId, false);
+				if (planExecutionRecord != null) {
+					AgentExecutionRecord currentAgentRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(planExecutionRecord);
+					if (currentAgentRecord != null && currentAgentRecord.getThinkActSteps() != null
+							&& !currentAgentRecord.getThinkActSteps().isEmpty()) {
+						// 获取最后一个 think-act 记录（当前正在执行的）
+						List<ThinkActRecord> steps = currentAgentRecord.getThinkActSteps();
+						ThinkActRecord lastStep = steps.get(steps.size() - 1);
+						return lastStep.getId();
+					}
+				}
 			}
 		}
 		catch (Exception e) {

@@ -26,20 +26,13 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 public interface PlanExecutionRecorder {
 
 	/**
-	 * Records a plan execution instance and returns its unique identifier
-	 * @param stepRecord Plan execution record
-	 * @return Plan ID
-	 */
-	String recordPlanExecution(PlanExecutionRecord stepRecord);
-
-	/**
 	 * Records an agent execution instance associated with a specific plan execution
 	 * record
 	 * @param planExecutionRecord Plan execution record
 	 * @param agentRecord Agent execution record
 	 * @return Agent execution ID
 	 */
-	Long recordAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord);
+	Long setAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord);
 
 	/**
 	 * Records a think-act execution instance associated with a specific agent execution
@@ -47,7 +40,7 @@ public interface PlanExecutionRecorder {
 	 * @param agentExecutionId Agent execution ID
 	 * @param thinkActRecord Think-act record
 	 */
-	void recordThinkActExecution(PlanExecutionRecord planExecutionRecord, Long agentExecutionId,
+	void setThinkActExecution(PlanExecutionRecord planExecutionRecord, Long agentExecutionId,
 			ThinkActRecord thinkActRecord);
 
 	/**
@@ -55,26 +48,26 @@ public interface PlanExecutionRecorder {
 	 * @param planExecutionRecord Plan execution record
 	 * @param summary Execution summary
 	 */
-	void recordPlanCompletion(PlanExecutionRecord planExecutionRecord, String summary);
+	void setPlanCompletion(PlanExecutionRecord planExecutionRecord, String summary);
 
 	/**
-	 * Gets or creates plan execution record with optional sub-plan support (creates by
-	 * default)
-	 * @param planId Plan ID
-	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for
-	 * sub-plan)
-	 * @return Plan execution record
+	 * Gets or creates root plan execution record
+	 * @param rootPlanId Root plan ID
+	 * @param createIfNotExists Whether to create if not exists
+	 * @return Root plan execution record, or null if not found and createIfNotExists is false
 	 */
-	PlanExecutionRecord getOrCreatePlanExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId);
+	PlanExecutionRecord getOrCreateRootPlanExecutionRecord(String rootPlanId, boolean createIfNotExists);
 
 	/**
-	 * Gets plan execution record with optional sub-plan support
-	 * @param planId Plan ID
-	 * @param thinkActRecordId Think-act record ID (null for main plan, non-null for
-	 * sub-plan)
-	 * @return Plan execution record
+	 * Gets or creates sub-plan execution record from parent plan
+	 * @param parentPlan Parent plan execution record
+	 * @param subPlanId Sub-plan ID
+	 * @param thinkActRecordId Think-act record ID that contains the sub-plan
+	 * @param createIfNotExists Whether to create if not exists
+	 * @return Sub-plan execution record, or null if thinkActRecordId is null or not found and createIfNotExists is false
 	 */
-	PlanExecutionRecord getExecutionRecord(String planId, String rootPlanId, Long thinkActRecordId);
+	PlanExecutionRecord getOrCreateSubPlanExecutionRecord(PlanExecutionRecord parentPlan, String subPlanId, 
+			Long thinkActRecordId, boolean createIfNotExists);
 
 	/**
 	 * Saves the execution records for the specified plan ID to persistent storage. This
@@ -83,7 +76,7 @@ public interface PlanExecutionRecorder {
 	 * @param planId The plan ID to save
 	 * @return true if records were found and saved, false otherwise
 	 */
-	boolean savePlanExecutionRecords(String rootPlanId);
+	boolean savePlanExecutionRecords(PlanExecutionRecord planExecutionRecord);
 
 	/**
 	 * Saves all execution records to persistent storage. This method will iterate through
@@ -104,5 +97,25 @@ public interface PlanExecutionRecorder {
 	 * @param planId The plan ID to remove
 	 */
 	void removeExecutionRecord(String planId);
+
+	/**
+	 * Record the start of step execution.
+	 * @param step Execution step
+	 * @param context Execution context
+	 */
+	void recordStepStart(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep step, com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
+
+	/**
+	 * Record the end of step execution.
+	 * @param step Execution step
+	 * @param context Execution context
+	 */
+	void recordStepEnd(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep step, com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
+
+	/**
+	 * Record the start of plan execution.
+	 * @param context Execution context containing user request and execution process information
+	 */
+	void recordPlanExecutionStart(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
 
 }

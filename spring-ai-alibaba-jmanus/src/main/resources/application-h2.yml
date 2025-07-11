@@ -13,7 +13,7 @@ spring:
       pool-name: Spring-AI-Alibaba-JManus-H2-Pool
   h2:
     console:
-      enabled: false
+      enabled: true
       path: /h2-console
       settings:
         web-allow-others: true
