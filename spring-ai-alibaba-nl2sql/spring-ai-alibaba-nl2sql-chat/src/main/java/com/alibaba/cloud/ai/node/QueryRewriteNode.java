@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
+import com.alibaba.cloud.ai.util.StateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -36,12 +37,9 @@ public class QueryRewriteNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(QueryRewriteNode.class);
 
-	private final ChatClient chatClient;
-
 	private final BaseNl2SqlService baseNl2SqlService;
 
 	public QueryRewriteNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService) {
-		this.chatClient = chatClientBuilder.build();
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
 
@@ -50,10 +48,7 @@ public class QueryRewriteNode implements NodeAction {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 
 		// 获取用户输入
-		String input = state.value(INPUT_KEY)
-			.map(String.class::cast)
-			.orElseThrow(() -> new IllegalStateException("Input key not found"));
-
+		String input = StateUtils.getStringValue(state, INPUT_KEY);
 		logger.info("[{}] 处理用户输入: {}", this.getClass().getSimpleName(), input);
 
 		// 执行问题重写

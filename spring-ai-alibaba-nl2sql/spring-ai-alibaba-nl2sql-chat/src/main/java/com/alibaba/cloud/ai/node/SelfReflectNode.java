@@ -22,10 +22,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 
-import java.util.HashMap;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.constant.Constant.RESULT;
+
 /**
+ * 自反思节点，用于结果质量评估和优化建议
+ *
  * @author zhangshenghang
  */
 public class SelfReflectNode implements NodeAction {
@@ -40,9 +43,14 @@ public class SelfReflectNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
+		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 
-		Map<String, Object> updated = new HashMap<>();
-		return updated;
+		// 当前节点暂未实现具体逻辑，预留扩展点
+		// 可以在这里添加结果质量评估、优化建议等功能
+
+		logger.info("自反思节点暂未实现具体逻辑，直接返回空结果");
+
+		return Map.of(RESULT, "自反思节点执行完成");
 	}
 
 }
