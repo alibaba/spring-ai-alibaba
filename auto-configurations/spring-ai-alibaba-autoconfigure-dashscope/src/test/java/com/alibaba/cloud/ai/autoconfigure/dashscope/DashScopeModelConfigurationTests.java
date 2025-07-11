@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
@@ -44,7 +44,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
 			});
@@ -82,7 +82,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
 			});
@@ -95,7 +95,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
 			});
@@ -134,7 +134,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
 			});
@@ -147,7 +147,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
 			});
@@ -186,7 +186,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
 			});
@@ -199,7 +199,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
 			});
@@ -208,14 +208,14 @@ class DashScopeModelConfigurationTests {
 			.withConfiguration(AutoConfigurations.of(DashScopeAudioSpeechAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(DashScopeAudioSpeechSynthesisProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isEmpty();
 			});
 
 		this.contextRunner.withPropertyValues("spring.ai.model.audio.speech=dashscope")
 			.withConfiguration(AutoConfigurations.of(DashScopeAudioSpeechAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(DashScopeAudioSpeechSynthesisProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isNotEmpty();
 			});
 
 		this.contextRunner
@@ -238,7 +238,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
 			});
@@ -251,7 +251,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
 			});
@@ -290,7 +290,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isEmpty();
 			});
@@ -303,7 +303,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isNotEmpty();
 			});
@@ -342,7 +342,7 @@ class DashScopeModelConfigurationTests {
 				assertThat(context.getBeansOfType(DashScopeChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeImageModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(DashScopeSpeechSynthesisModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(DashScopeAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(DashScopeRerankModel.class)).isNotEmpty();
 			});

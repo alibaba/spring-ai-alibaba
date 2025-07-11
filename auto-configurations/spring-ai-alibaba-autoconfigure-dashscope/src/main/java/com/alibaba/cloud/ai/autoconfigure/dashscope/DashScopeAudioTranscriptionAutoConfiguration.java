@@ -18,7 +18,9 @@ package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
+import com.alibaba.cloud.ai.model.SpringAIAlibabaModels;
 import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -45,9 +47,7 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 @AutoConfiguration(after = {
 		RestClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class })
-@ConditionalOnProperty(
-		name = DashScopeAudioTranscriptionProperties.CONFIG_PREFIX,
-		havingValue = "enabled",
+@ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_TRANSCRIPTION_MODEL, havingValue = SpringAIAlibabaModels.DASHSCOPE,
 		matchIfMissing = true)
 @EnableConfigurationProperties({
 		DashScopeConnectionProperties.class,
