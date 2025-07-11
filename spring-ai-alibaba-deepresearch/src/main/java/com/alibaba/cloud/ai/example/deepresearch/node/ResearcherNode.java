@@ -17,6 +17,8 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.tool.SearchFilterTool;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -50,14 +52,13 @@ public class ResearcherNode implements NodeAction {
 
 	private final String nodeName;
 
-	public ResearcherNode(ChatClient researchAgent) {
-		this(researchAgent, "0");
-	}
+	private final SearchFilterService searchFilterService;
 
-	public ResearcherNode(ChatClient researchAgent, String executorNodeId) {
+	public ResearcherNode(ChatClient researchAgent, String executorNodeId, SearchFilterService searchFilterService) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;
+		this.searchFilterService = searchFilterService;
 	}
 
 	@Override
@@ -98,11 +99,11 @@ public class ResearcherNode implements NodeAction {
 
 		logger.debug("{} Node messages: {}", nodeName, messages);
 		// 获取搜索工具
-		SearchEnum searchTool = state.value("search_engine", SearchEnum.class).orElse(null);
+		SearchEnum searchEnum = state.value("search_engine", SearchEnum.class).orElse(null);
 		// 调用agent
 		var requestSpec = researchAgent.prompt().messages(messages);
-		if (searchTool != null) {
-			requestSpec = requestSpec.toolNames(searchTool.getToolName());
+		if (searchEnum != null) {
+			requestSpec = requestSpec.tools(new SearchFilterTool(searchFilterService, searchEnum));
 		}
 		var streamResult = requestSpec.stream().chatResponse();
 		Plan.Step finalAssignedStep = assignedStep;

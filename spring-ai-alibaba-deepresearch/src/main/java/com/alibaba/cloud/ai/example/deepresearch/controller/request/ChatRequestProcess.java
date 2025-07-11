@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.controller.request;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
-import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.SearchBeanUtil;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
