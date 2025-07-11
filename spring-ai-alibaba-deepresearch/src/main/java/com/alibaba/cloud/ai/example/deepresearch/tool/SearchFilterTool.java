@@ -37,15 +37,19 @@ public class SearchFilterTool {
 
 	private final SearchEnum searchEnum;
 
-	public SearchFilterTool(SearchFilterService searchFilterService, SearchEnum searchEnum) {
+	private final Boolean isEnabledFilter;
+
+	public SearchFilterTool(SearchFilterService searchFilterService, SearchEnum searchEnum, Boolean isEnabledFilter) {
 		this.searchFilterService = searchFilterService;
 		this.searchEnum = searchEnum;
+		this.isEnabledFilter = isEnabledFilter;
 	}
 
 	@Tool(description = "Use SearchService to retrieve relevant information and return search results ranked by website trust weights. Information from untrusted websites will be filtered out.")
 	public List<SearchFilterService.SearchContentWithWeight> searchFilterTool(
 			@ToolParam(description = "Content to be queried using search engines") String query) {
-		return searchFilterService.queryAndFilter(true, searchEnum, query);
+		log.debug("SearchFilterTool start.");
+		return searchFilterService.queryAndFilter(isEnabledFilter, searchEnum, query);
 	}
 
 }

@@ -127,7 +127,8 @@ public class ResearcherNode implements NodeAction {
 		}
 
 		if (searchEnum != null) {
-			requestSpec = requestSpec.tools(new SearchFilterTool(searchFilterService, searchEnum));
+			requestSpec = requestSpec.tools(
+					new SearchFilterTool(searchFilterService, searchEnum, state.value("enable_search_filter", true)));
 		}
 		var streamResult = requestSpec.stream().chatResponse();
 

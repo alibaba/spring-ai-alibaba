@@ -72,27 +72,32 @@ public class BackgroundInvestigationNode implements NodeAction {
 			// Retry logic
 			for (int i = 0; i < MAX_RETRY_COUNT; i++) {
 				try {
-					results = searchFilterService.queryAndFilter(true, searchEnum, query).stream().map(info -> {
-						Map<String, String> result = new HashMap<>();
-						result.put("title", info.content().title());
-						result.put("weight", String.valueOf(info.weight()));
-						if (jinaCrawlerService == null || !CommonToolCallUtils.isValidUrl(info.content().url())) {
-							result.put("content", info.content().content());
-						}
-						else {
-							try {
-								logger.info("Get detail info of a url using Jina Crawler...");
-								result.put("content",
-										jinaCrawlerService.apply(new JinaCrawlerService.Request(info.content().url()))
-											.content());
-							}
-							catch (Exception e) {
-								logger.error("Jina Crawler Service Error", e);
+					results = searchFilterService
+						.queryAndFilter(state.value("enable_search_filter", true), searchEnum, query)
+						.stream()
+						.map(info -> {
+							Map<String, String> result = new HashMap<>();
+							result.put("title", info.content().title());
+							result.put("weight", String.valueOf(info.weight()));
+							if (jinaCrawlerService == null || !CommonToolCallUtils.isValidUrl(info.content().url())) {
 								result.put("content", info.content().content());
 							}
-						}
-						return result;
-					}).collect(Collectors.toList());
+							else {
+								try {
+									logger.info("Get detail info of a url using Jina Crawler...");
+									result.put("content",
+											jinaCrawlerService
+												.apply(new JinaCrawlerService.Request(info.content().url()))
+												.content());
+								}
+								catch (Exception e) {
+									logger.error("Jina Crawler Service Error", e);
+									result.put("content", info.content().content());
+								}
+							}
+							return result;
+						})
+						.collect(Collectors.toList());
 					break;
 				}
 				catch (Exception e) {
