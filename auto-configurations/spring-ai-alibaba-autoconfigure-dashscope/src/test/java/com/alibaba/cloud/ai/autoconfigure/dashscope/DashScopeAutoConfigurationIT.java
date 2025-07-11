@@ -90,11 +90,11 @@ public class DashScopeAutoConfigurationIT {
 	void speech() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeAudioSpeechAutoConfiguration.class))
 			.run(context -> {
-				DashScopeSpeechSynthesisModel speechModel = context.getBean(DashScopeSpeechSynthesisModel.class);
+				DashScopeAudioSpeechModel speechModel = context.getBean(DashScopeAudioSpeechModel.class);
 				byte[] response = speechModel
 					.call(new SpeechSynthesisPrompt("H",
-							DashScopeSpeechSynthesisOptions.builder()
-								.responseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)
+							DashScopeAudioSpeechOptions.builder()
+								.responseFormat(DashScopeAudioSpeechApi.ResponseFormat.MP3)
 								.build()))
 					.getResult()
 					.getOutput()
