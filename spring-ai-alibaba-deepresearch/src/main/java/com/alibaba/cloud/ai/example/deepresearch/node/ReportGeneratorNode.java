@@ -51,12 +51,13 @@ public class ReportGeneratorNode implements NodeAction {
 	private final ChatClient reportGeneratorAgent;
 
 	private final ReportService reportService;
-	
+
 	private final DeepResearchProperties deepResearchProperties;
 
 	private static final String RESEARCH_SUMMARY_FORMAT = "# 研究报告概要\n\n## 任务\n\n{0}\n\n## 描述\n\n{1}\n\n## 生成综合分析报告\n\n请根据以下所有步骤收集的结果，生成一份完整的、条理清晰的综合分析报告。";
 
-	public ReportGeneratorNode(ChatClient reportGeneratorAgent, ReportService reportService, DeepResearchProperties deepResearchProperties) {
+	public ReportGeneratorNode(ChatClient reportGeneratorAgent, ReportService reportService,
+			DeepResearchProperties deepResearchProperties) {
 		this.reportGeneratorAgent = reportGeneratorAgent;
 		this.reportService = reportService;
 		this.deepResearchProperties = deepResearchProperties;
@@ -151,7 +152,7 @@ public class ReportGeneratorNode implements NodeAction {
 				return Map.of("comprehensive_report", comprehensiveReport, "thread_id", threadId);
 			})
 			.build(streamResult);
-		
+
 		Map<String, Object> resultMap = new HashMap<>();
 		resultMap.put("comprehensive_report", generator);
 		resultMap.put("thread_id", threadId);

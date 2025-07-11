@@ -198,7 +198,8 @@ public class DeepResearchConfiguration {
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
 			.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportService))))
-			.addNode("report_generator", node_async(new ReportGeneratorNode(reportGeneratorAgent, reportService, deepResearchProperties)))
+			.addNode("report_generator",
+					node_async(new ReportGeneratorNode(reportGeneratorAgent, reportService, deepResearchProperties)))
 			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
 
 		// 添加并行节点块
