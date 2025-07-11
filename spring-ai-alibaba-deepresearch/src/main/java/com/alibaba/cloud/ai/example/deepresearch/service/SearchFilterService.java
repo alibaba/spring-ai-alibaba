@@ -25,10 +25,13 @@ import org.springframework.util.StringUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Sort the SearchService's returned results based on user-configured website blocklists
@@ -73,13 +76,20 @@ public abstract class SearchFilterService {
 	}
 
 	/**
-	 * Sort the SearchService's returned results.
+	 * Sort the SearchService's returned results. To optimize for AI model processing,
+	 * position search results with high trust weights at both ends of the message list,
+	 * while placing items with lower weights toward the center.
+	 * @param isEnabled Whether to reorder search results based on trust weights (default:
+	 * true). If set to false, all returned weight fields become 0.0.
 	 * @param result SearchService.SearchResult
 	 * @return sort results
 	 */
-	public List<SearchContentWithWeight> sortSearchResult(SearchService.SearchResult result) {
+	public List<SearchContentWithWeight> sortSearchResult(Boolean isEnabled, SearchService.SearchResult result) {
+		if (isEnabled != null && !isEnabled) {
+			return result.results().stream().map(item -> new SearchContentWithWeight(item, 0.0)).toList();
+		}
 		Map<String, Double> weight = this.loadWebsiteWeight();
-		return result.results().stream().map(item -> {
+		List<SearchContentWithWeight> sortedResult = result.results().stream().map(item -> {
 			try {
 				String host = this.extractDomain(item.url());
 				// Domains with unknown weights default to a neutral value of 0.
@@ -90,44 +100,65 @@ public abstract class SearchFilterService {
 				return new SearchContentWithWeight(item, 0.0);
 			}
 		}).sorted(Comparator.comparingDouble(SearchContentWithWeight::weight).reversed()).toList();
+		// Reorganization List
+		List<SearchContentWithWeight> reorderedResult = new ArrayList<>();
+		List<SearchContentWithWeight> rightResult = new ArrayList<>();
+		for (int index = 0; index < sortedResult.size(); index++) {
+			if (index % 2 == 0) {
+				reorderedResult.add(sortedResult.get(index));
+			}
+			else {
+				rightResult.add(sortedResult.get(index));
+			}
+		}
+		Collections.reverse(rightResult);
+		return Stream.concat(reorderedResult.stream(), rightResult.stream()).toList();
 	}
 
 	/**
 	 * Filter the SearchService's returned results by removing entries with weight values
-	 * below 0.
+	 * below 0. To optimize for AI model processing, position search results with high
+	 * trust weights at both ends of the message list, while placing items with lower
+	 * weights toward the center.
+	 * @param isEnabled Whether to reorder search results based on trust weights (default:
+	 * true). If set to false, all returned weight fields become 0.0.
 	 * @param result SearchService.SearchResult
 	 * @return filter results
 	 */
-	public List<SearchContentWithWeight> filterSearchResult(SearchService.SearchResult result) {
-		return this.sortSearchResult(result).stream().filter(i -> i.weight() >= 0).toList();
+	public List<SearchContentWithWeight> filterSearchResult(Boolean isEnabled, SearchService.SearchResult result) {
+		return this.sortSearchResult(isEnabled, result).stream().filter(i -> i.weight() >= 0).toList();
 	}
 
 	/**
 	 * Execute query and sort result.
+	 * @param isEnabled Whether to reorder search results based on trust weights (default:
+	 * true). If set to false, all returned weight fields become 0.0.
 	 * @param searchEnum searchEnum
 	 * @param query query
 	 * @return result
 	 */
-	public List<SearchContentWithWeight> queryAndSort(SearchEnum searchEnum, String query) {
+	public List<SearchContentWithWeight> queryAndSort(Boolean isEnabled, SearchEnum searchEnum, String query) {
 		Optional<SearchService> searchService = searchBeanUtil.getSearchService(searchEnum);
 		if (searchService.isEmpty()) {
 			return List.of();
 		}
-		return this.sortSearchResult(searchService.get().query(query).getSearchResult());
+		return this.sortSearchResult(isEnabled, searchService.get().query(query).getSearchResult());
 	}
 
 	/**
 	 * Execute query and filter result.
+	 * @param isEnabled Whether to reorder search results based on trust weights (default:
+	 * true). If set to false, all returned weight fields become 0.0.
 	 * @param searchEnum searchEnum
 	 * @param query query
 	 * @return result
 	 */
-	public List<SearchContentWithWeight> queryAndFilter(SearchEnum searchEnum, String query) {
+	public List<SearchContentWithWeight> queryAndFilter(Boolean isEnabled, SearchEnum searchEnum, String query) {
 		Optional<SearchService> searchService = searchBeanUtil.getSearchService(searchEnum);
 		if (searchService.isEmpty()) {
 			return List.of();
 		}
-		return this.filterSearchResult(searchService.get().query(query).getSearchResult());
+		return this.filterSearchResult(isEnabled, searchService.get().query(query).getSearchResult());
 	}
 
 	public record SearchContentWithWeight(SearchService.SearchContent content, Double weight) {

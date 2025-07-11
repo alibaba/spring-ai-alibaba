@@ -72,7 +72,7 @@ public class BackgroundInvestigationNode implements NodeAction {
 			// Retry logic
 			for (int i = 0; i < MAX_RETRY_COUNT; i++) {
 				try {
-					results = searchFilterService.queryAndFilter(searchEnum, query).stream().map(info -> {
+					results = searchFilterService.queryAndFilter(true, searchEnum, query).stream().map(info -> {
 						Map<String, String> result = new HashMap<>();
 						result.put("title", info.content().title());
 						result.put("weight", String.valueOf(info.weight()));

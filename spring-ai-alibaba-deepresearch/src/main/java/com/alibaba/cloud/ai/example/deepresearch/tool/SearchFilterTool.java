@@ -45,7 +45,7 @@ public class SearchFilterTool {
 	@Tool(description = "Use SearchService to retrieve relevant information and return search results ranked by website trust weights. Information from untrusted websites will be filtered out.")
 	public List<SearchFilterService.SearchContentWithWeight> searchFilterTool(
 			@ToolParam(description = "Content to be queried using search engines") String query) {
-		return searchFilterService.queryAndFilter(searchEnum, query);
+		return searchFilterService.queryAndFilter(true, searchEnum, query);
 	}
 
 }

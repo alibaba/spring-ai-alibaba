@@ -76,25 +76,25 @@ public class SearchFilterServiceTest {
 	@Test
 	@DisplayName("Run search result sorting method")
 	public void testSearchResultSorting() {
-		var resp = searchFilterService.sortSearchResult(searchResult);
+		var resp = searchFilterService.sortSearchResult(true, searchResult);
 		log.debug("sorted resp: {}", resp);
 		assert resp != null && resp.size() == searchResult.results().size();
 		Assertions.assertIterableEquals(resp.stream()
 			.map(SearchFilterService.SearchContentWithWeight::content)
 			.map(SearchService.SearchContent::title)
-			.toList(), List.of("1", "2", "3", "unknown", "4", "5"));
+			.toList(), List.of("1", "3", "4", "5", "unknown", "2"));
 	}
 
 	@Test
 	@DisplayName("Run search result filtering method")
 	public void testSearchResultFiltering() {
-		var resp = searchFilterService.filterSearchResult(searchResult);
+		var resp = searchFilterService.filterSearchResult(true, searchResult);
 		log.debug("filtered resp: {}", resp);
 		assert resp != null && resp.size() != searchResult.results().size();
 		Assertions.assertIterableEquals(resp.stream()
 			.map(SearchFilterService.SearchContentWithWeight::content)
 			.map(SearchService.SearchContent::title)
-			.toList(), List.of("1", "2", "3", "unknown"));
+			.toList(), List.of("1", "3", "unknown", "2"));
 	}
 
 }
