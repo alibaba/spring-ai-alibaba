@@ -152,7 +152,7 @@ import {
 } from 'ant-design-x-vue'
 import { computed, h, onMounted, reactive, ref, watch } from 'vue'
 import MD from '@/components/md/index.vue'
-import Gap from '@/components/tookit/Gap.vue'
+import Gap from '@/components/toolkit/Gap.vue'
 import { XStreamBody } from '@/utils/stream'
 import { ScrollController } from '@/utils/scroll'
 import { useAuthStore } from '@/store/AuthStore'

@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import Title from '@/components/tookit/Title.vue'
+import Title from '@/components/toolkit/Title.vue'
 import { useConfigStore } from '@/store/ConfigStore'
 import { CloseOutlined } from '@ant-design/icons-vue'
 import { useRouter } from 'vue-router'
