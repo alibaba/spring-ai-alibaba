@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,9 +55,6 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
@@ -83,7 +79,8 @@ public class DynamicAgent extends ReActAgent {
 
 	private Prompt userPrompt;
 
-	protected ThinkActRecord thinkActRecord;
+	// 存储当前创建的ThinkActRecord ID，用于后续的action记录
+	private Long currentThinkActRecordId;
 
 	private final ToolCallingManager toolCallingManager;
 
@@ -126,75 +123,35 @@ public class DynamicAgent extends ReActAgent {
 	protected boolean think() {
 		collectAndSetEnvDataForTools();
 		
-		PlanExecutionRecord planExecutionRecord = null;
-		PlanExecutionRecord planToSave = null; // Track which plan should be saved
-		
-		// Handle both root plan and sub-plan execution cases based on thinkActRecordId
-		if (getThinkActRecordId() != null) {
-			// Sub-plan execution: thinkActRecordId indicates this is triggered by a tool call
-			PlanExecutionRecord parentPlan = planExecutionRecorder.getOrCreateRootPlanExecutionRecord(getRootPlanId(), true);
-			if (parentPlan != null) {
-				planExecutionRecord = planExecutionRecorder.getOrCreateSubPlanExecutionRecord(parentPlan, getCurrentPlanId(),
-						getThinkActRecordId(), true);
-				planToSave = parentPlan; // Save parent plan for sub-plan execution
-			}
-		} else {
-			// Root plan execution: no thinkActRecordId means this is a main plan
-			planExecutionRecord = planExecutionRecorder.getOrCreateRootPlanExecutionRecord(getCurrentPlanId(), true);
-			planToSave = planExecutionRecord; // Save the root plan record itself
-		}
-		
-		AgentExecutionRecord agentExecutionRecord = planExecutionRecorder
-			.getCurrentAgentExecutionRecord(planExecutionRecord);
-		
-		// Ensure agentExecutionRecord exists - create one if null
-		if (agentExecutionRecord == null && planExecutionRecord != null) {
-			agentExecutionRecord = new AgentExecutionRecord(getCurrentPlanId(), getName(), getDescription());
-			planExecutionRecorder.setAgentExecution(planExecutionRecord, agentExecutionRecord);
-		}
-		
-		// Additional safety check
-		if (agentExecutionRecord == null) {
-			log.error("Failed to create or retrieve AgentExecutionRecord for plan: {}", getCurrentPlanId());
-			return false;
-		}
-		
-		thinkActRecord = new ThinkActRecord(agentExecutionRecord.getId());
-		thinkActRecord.setActStartTime(LocalDateTime.now());
-		// set id
-		thinkActRecord.getId();
-
-		if (planExecutionRecord != null) {
-			planExecutionRecorder.setThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
-					thinkActRecord);
-			// Explicitly save the execution records
-			if (planToSave != null) {
-				planExecutionRecorder.savePlanExecutionRecords(planToSave);
-			}
-		}
-
 		try {
-			return executeWithRetry(3, planExecutionRecord, planToSave);
+			return executeWithRetry(3);
 		}
 		catch (Exception e) {
 			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()), e);
 			log.info("Exception occurred", e);
-			thinkActRecord.recordError(e.getMessage());
+			
+			// 记录思考失败
+			planExecutionRecorder.recordThinkingAndAction(
+				getCurrentPlanId(), 
+				getRootPlanId(), 
+				getThinkActRecordId(),
+				getName(),
+				getDescription(),
+				null, // thinkInput
+				null, // thinkOutput  
+				false, // actionNeeded
+				null, // toolName
+				null, // toolParameters
+				null, // modelName
+				e.getMessage() // errorMessage
+			);
+		
 			return false;
 		}
-		finally {
-			if (planExecutionRecord != null) {
-				planExecutionRecorder.setThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
-						thinkActRecord);
-				// Explicitly save the final execution records
-				if (planToSave != null) {
-					planExecutionRecorder.savePlanExecutionRecords(planToSave);
-				}
-			}
-		}
+		
 	}
 
-	private boolean executeWithRetry(int maxRetries, PlanExecutionRecord planExecutionRecord, PlanExecutionRecord planToSave) throws Exception {
+	private boolean executeWithRetry(int maxRetries) throws Exception {
 		int attempt = 0;
 		while (attempt < maxRetries) {
 			attempt++;
@@ -203,7 +160,8 @@ public class DynamicAgent extends ReActAgent {
 			Message currentStepEnvMessage = currentStepEnvMessage();
 			// Record think message
 			List<Message> thinkMessages = Arrays.asList(systemMessage, currentStepEnvMessage);
-			thinkActRecord.startThinking(thinkMessages.toString());
+			String thinkInput = thinkMessages.toString();
+			
 			log.debug("Messages prepared for the prompt: {}", thinkMessages);
 			// Build current prompt. System message is the first message
 			List<Message> messages = new ArrayList<>(Collections.singletonList(systemMessage));
@@ -225,22 +183,10 @@ public class DynamicAgent extends ReActAgent {
 						model.getModelName());
 			}
 			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
-			String model = response.getMetadata().getModel();
-			
-			AgentExecutionRecord agentExecutionRecord = planExecutionRecorder
-				.getCurrentAgentExecutionRecord(planExecutionRecord);
-			planExecutionRecord.setModelName(model);
-			agentExecutionRecord.setModelName(model);
-			
-			// Save the updated execution records
-			if (planToSave != null) {
-				planExecutionRecorder.savePlanExecutionRecords(planToSave);
-			}
+			String modelName = response.getMetadata().getModel();
 			
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
-
-			thinkActRecord.finishThinking(responseByLLm);
 
 			log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
 			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
@@ -248,62 +194,58 @@ public class DynamicAgent extends ReActAgent {
 			if (!toolCalls.isEmpty()) {
 				log.info(String.format("🧰 Tools being prepared: %s",
 						toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
-				thinkActRecord.setActionNeeded(true);
-				thinkActRecord.setToolName(toolCalls.get(0).name());
-				thinkActRecord.setToolParameters(toolCalls.get(0).arguments());
-				thinkActRecord.setStatus("SUCCESS");
+			
+				// 记录成功的思考和动作准备
+				String toolName = toolCalls.get(0).name();
+				String toolParameters = toolCalls.get(0).arguments();
+				currentThinkActRecordId = planExecutionRecorder.recordThinkingAndAction(
+					getCurrentPlanId(), 
+					getRootPlanId(), 
+					getThinkActRecordId(),
+					getName(),
+					getDescription(),
+					thinkInput,
+					responseByLLm,
+					true, // actionNeeded
+					toolName,
+					toolParameters,
+					modelName,
+					null // errorMessage
+				);
+				
 				return true;
 			}
 
 			log.warn("Attempt {}: No tools selected. Retrying...", attempt);
 		}
 
-		thinkActRecord.setStatus("FAILED");
+		// 记录思考失败（没有选择工具）
+		planExecutionRecorder.recordThinkingAndAction(
+			getCurrentPlanId(), 
+			getRootPlanId(), 
+			getThinkActRecordId(),
+			getName(),
+			getDescription(),
+			null, // thinkInput
+			"No tools selected after retries", // thinkOutput  
+			false, // actionNeeded
+			null, // toolName
+			null, // toolParameters
+			null, // modelName
+			"Failed to select tools after " + maxRetries + " attempts" // errorMessage
+		);
+	
 		return false;
 	}
-
 	@Override
 	protected AgentExecResult act() {
 		ToolExecutionResult toolExecutionResult = null;
 		
-		PlanExecutionRecord planExecutionRecord = null;
-		PlanExecutionRecord planToSave = null; // Track which plan should be saved
-		
-		// Handle both root plan and sub-plan execution cases based on thinkActRecordId
-		if (getThinkActRecordId() != null) {
-			// Sub-plan execution: thinkActRecordId indicates this is triggered by a tool call
-			PlanExecutionRecord parentPlan = planExecutionRecorder.getOrCreateRootPlanExecutionRecord(getRootPlanId(), true);
-			if (parentPlan != null) {
-				planExecutionRecord = planExecutionRecorder.getOrCreateSubPlanExecutionRecord(parentPlan, getCurrentPlanId(),
-						getThinkActRecordId(), true);
-				planToSave = parentPlan; // Save parent plan for sub-plan execution
-			}
-		} else {
-			// Root plan execution: no thinkActRecordId means this is a main plan
-			planExecutionRecord = planExecutionRecorder.getOrCreateRootPlanExecutionRecord(getCurrentPlanId(), true);
-			planToSave = planExecutionRecord; // Save the root plan record itself
-		}
-		
-		AgentExecutionRecord agentExecutionRecord = planExecutionRecorder
-			.getCurrentAgentExecutionRecord(planExecutionRecord);
-		
-		// Ensure agentExecutionRecord exists - create one if null
-		if (agentExecutionRecord == null && planExecutionRecord != null) {
-			agentExecutionRecord = new AgentExecutionRecord(getCurrentPlanId(), getName(), getDescription());
-			planExecutionRecorder.setAgentExecution(planExecutionRecord, agentExecutionRecord);
-		}
-		
-		// Additional safety check
-		if (agentExecutionRecord == null) {
-			log.error("Failed to create or retrieve AgentExecutionRecord for plan: {} in act()", getCurrentPlanId());
-			return new AgentExecResult("Failed to create agent execution record", AgentState.FAILED);
-		}
-		
 		try {
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			ToolCall toolCall = toolCalls.get(0);
-
-			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
+			String toolName = toolCall.name();
+			String actionDescription = "Executing tool: " + toolName;
 
 			toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 
@@ -315,7 +257,6 @@ public class DynamicAgent extends ReActAgent {
 
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
 
-			thinkActRecord.finishAction(llmCallResponse, "SUCCESS");
 			String toolcallName = toolCall.name();
 
 			// Get the tool instance based on toolCallName
@@ -354,10 +295,23 @@ public class DynamicAgent extends ReActAgent {
 							.text("Input timeout occurred for form: ")
 							.build();
 						processUserInputToMemory(userMessage);
-						userInputService.removeFormInputTool(getCurrentPlanId()); // Clean
-																					// up
-						return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS); // Or
-																										// FAILED
+						userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up
+						
+						// 记录输入超时的动作结果
+						planExecutionRecorder.recordActionResult(
+							getCurrentPlanId(),
+							getRootPlanId(),
+							getThinkActRecordId(),
+							currentThinkActRecordId,
+							actionDescription,
+							"Input timeout occurred",
+							"TIMEOUT",
+							"Input timeout occurred for FormInputTool",
+							toolName,
+							false // subPlanCreated
+						);
+						
+						return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS);
 					}
 				}
 			}
@@ -368,10 +322,22 @@ public class DynamicAgent extends ReActAgent {
 				// Use canTerminate() to decide whether to terminate
 				if (terminableTool.canTerminate()) {
 					log.info("TerminableTool can terminate for planId: {}", getCurrentPlanId());
-					userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up
-																				// any
-																				// pending
-																				// form
+					userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up any pending form
+					
+					// 记录成功完成的动作结果
+					planExecutionRecorder.recordActionResult(
+						getCurrentPlanId(),
+						getRootPlanId(),
+						getThinkActRecordId(),
+						currentThinkActRecordId,
+						actionDescription,
+						llmCallResponse,
+						"COMPLETED",
+						null, // errorMessage
+						toolName,
+						false // subPlanCreated
+					);
+					
 					return new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
 				}
 				else {
@@ -379,27 +345,56 @@ public class DynamicAgent extends ReActAgent {
 				}
 			}
 
+			// 记录成功的动作结果
+			planExecutionRecorder.recordActionResult(
+				getCurrentPlanId(),
+				getRootPlanId(),
+				getThinkActRecordId(),
+				currentThinkActRecordId,
+				actionDescription,
+				llmCallResponse,
+				"SUCCESS",
+				null, // errorMessage
+				toolName,
+				false // subPlanCreated
+			);
+
 			return new AgentExecResult(llmCallResponse, AgentState.IN_PROGRESS);
 		}
 		catch (Exception e) {
 
 			log.error(e.getMessage());
 			log.info("Exception occurred", e);
-			thinkActRecord.recordError(e.getMessage());
+			
+			// 记录失败的动作结果
+			String toolName = null;
+			String actionDescription = "Tool execution failed";
+			if (response != null && response.getResult() != null && response.getResult().getOutput() != null) {
+				List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
+				if (!toolCalls.isEmpty()) {
+					toolName = toolCalls.get(0).name();
+					actionDescription = "Executing tool: " + toolName;
+				}
+			}
+			
+			planExecutionRecorder.recordActionResult(
+				getCurrentPlanId(),
+				getRootPlanId(),
+				getThinkActRecordId(),
+				currentThinkActRecordId,
+				actionDescription,
+				null, // actionResult
+				"FAILED",
+				e.getMessage(), // errorMessage
+				toolName,
+				false // subPlanCreated
+			);
+			
 			userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error
 			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
 		}
-		finally {
-			if (planExecutionRecord != null) {
-				planExecutionRecorder.setThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(),
-						thinkActRecord);
-				// Explicitly save the final execution records
-				if (planToSave != null) {
-					planExecutionRecorder.savePlanExecutionRecords(planToSave);
-				}
-			}
-		}
+		
 	}
 
 	private void processUserInputToMemory(UserMessage userMessage) {
