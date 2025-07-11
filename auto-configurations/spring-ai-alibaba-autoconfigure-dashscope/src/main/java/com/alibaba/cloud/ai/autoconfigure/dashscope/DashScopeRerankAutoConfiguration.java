@@ -18,6 +18,9 @@ package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
+import com.alibaba.cloud.ai.model.SpringAIAlibabaModelProperties;
+import com.alibaba.cloud.ai.model.SpringAIAlibabaModels;
+
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -46,8 +49,8 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 		SpringAiRetryAutoConfiguration.class })
 @ConditionalOnClass(DashScopeApi.class)
 @ConditionalOnDashScopeEnabled
-@ConditionalOnProperty(prefix = DashScopeRerankProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(name = SpringAIAlibabaModelProperties.RERANK_MODEL,
+		havingValue = SpringAIAlibabaModels.DASHSCOPE, matchIfMissing = true)
 @EnableConfigurationProperties({ DashScopeConnectionProperties.class, DashScopeRerankProperties.class })
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		WebClientAutoConfiguration.class })

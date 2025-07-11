@@ -31,7 +31,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -51,7 +50,7 @@ import java.util.logging.Logger;
 
 import static com.github.dockerjava.api.model.HostConfig.newHostConfig;
 
-@Service
+//@Service
 public class PythonReplTool {
 
 	private static final Logger logger = Logger.getLogger(PythonReplTool.class.getName());
