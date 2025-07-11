@@ -107,7 +107,7 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 	}
 
 	/**
-	 * 新增的 retrieve 方法，允许传入一个 ES filter query
+	 * 允许传入一个 ES filter query
 	 * @param query 用户查询
 	 * @param filter ES filter query，用于限定搜索范围
 	 * @return 文档列表
@@ -128,16 +128,18 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 	 * @param hasHybrid whether to enable hybrid search (based on query statement and rank
 	 * query)
 	 */
-	public List<Document> search(String text, boolean hasHybrid, co.elastic.clients.elasticsearch._types.query_dsl.Query filter) throws IOException {
+	public List<Document> search(String text, boolean hasHybrid,
+			co.elastic.clients.elasticsearch._types.query_dsl.Query filter) throws IOException {
 		float[] vector = embeddingModel.embed(text);
 		SearchResponse<Document> response = elasticsearchClient.search(sr -> {
-			Builder knnBuilder = sr.index(indexName).postFilter(filter)
-					.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vector))
-							.similarity(0.0f)
-							.k(windowSize)
-							.field("embedding")
-							.numCandidates(Math.max(windowSize * 2, 10))
-							.boost(knnBoost));
+			Builder knnBuilder = sr.index(indexName)
+				.postFilter(filter)
+				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vector))
+					.similarity(0.0f)
+					.k(windowSize)
+					.field("embedding")
+					.numCandidates(Math.max(windowSize * 2, 10))
+					.boost(knnBoost));
 			if (hasHybrid) {
 				return buildHybridSearch(text, knnBuilder);
 			}

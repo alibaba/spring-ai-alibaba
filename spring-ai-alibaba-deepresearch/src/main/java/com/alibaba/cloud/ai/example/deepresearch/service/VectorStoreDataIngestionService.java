@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.service;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -48,11 +49,24 @@ public class VectorStoreDataIngestionService {
 
 	private final TokenTextSplitter textSplitter;
 
-	public VectorStoreDataIngestionService(VectorStore vectorStore) {
+	private final RagProperties ragProperties;
+
+	public VectorStoreDataIngestionService(VectorStore vectorStore, RagProperties ragProperties) {
 		this.vectorStore = vectorStore;
-		//todo:在配置类中进行更灵活的配置
-		this.textSplitter = new TokenTextSplitter(800, 100, 5,
-				10000, true);
+		this.ragProperties = ragProperties;
+
+		// 使用配置化的文本分割器
+		RagProperties.TextSplitter splitterConfig = ragProperties.getTextSplitter();
+		this.textSplitter = new TokenTextSplitter(splitterConfig.getDefaultChunkSize(), splitterConfig.getOverlap(),
+				splitterConfig.getMinChunkSizeToSplit(), splitterConfig.getMaxChunkSize(),
+				splitterConfig.isKeepSeparator());
+
+		logger.info(
+				"Initialized VectorStoreDataIngestionService with text splitter config: "
+						+ "chunkSize={}, overlap={}, minChunkSize={}, maxChunkSize={}, keepSeparator={}",
+				splitterConfig.getDefaultChunkSize(), splitterConfig.getOverlap(),
+				splitterConfig.getMinChunkSizeToSplit(), splitterConfig.getMaxChunkSize(),
+				splitterConfig.isKeepSeparator());
 	}
 
 	/**
@@ -96,30 +110,375 @@ public class VectorStoreDataIngestionService {
 	 * @param userId 用户ID
 	 */
 	public void processAndStore(MultipartFile file, String sessionId, String userId) {
-		// 1. 解析
-		TikaDocumentReader reader = new TikaDocumentReader(file.getResource());
-		List<Document> documents = reader.get();
-
-		// 2. 分块
-		List<Document> chunks = textSplitter.apply(documents);
-
-		// 3. 元数据富化
-		AtomicInteger chunkCounter = new AtomicInteger(0);
-		List<Document> enrichedChunks = chunks.stream().map(chunk -> {
-			Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
-			metadata.put("source_type", "user_upload");
-			metadata.put("session_id", sessionId);
-			if (userId!= null &&!userId.isBlank()) {
-				metadata.put("user_id", userId);
-			}
-			metadata.put("original_filename", file.getOriginalFilename());
-			metadata.put("upload_timestamp", Instant.now().toString());
-			metadata.put("chunk_id", chunkCounter.getAndIncrement());
-
-			return new Document(chunk.getId(), chunk.getText(), metadata);
-		}).collect(Collectors.toList());
-
-		// 4. 存储
-		vectorStore.add(enrichedChunks);
+		batchProcessAndStore(List.of(file), sessionId, userId);
 	}
+
+	/**
+	 * 批量处理并存储上传的文件
+	 * @param files 上传的文件列表
+	 * @param sessionId 会话ID
+	 * @param userId 用户ID
+	 * @return 成功处理的文档片段数量
+	 */
+	public int batchProcessAndStore(List<MultipartFile> files, String sessionId, String userId) {
+		if (files == null || files.isEmpty()) {
+			logger.warn("No files provided for user upload");
+			return 0;
+		}
+
+		logger.info("Starting batch upload for user: sessionId={}, userId={}, fileCount={}", sessionId, userId,
+				files.size());
+
+		int totalChunks = 0;
+		String uploadTimestamp = Instant.now().toString();
+
+		for (MultipartFile file : files) {
+			try {
+				if (file.isEmpty()) {
+					logger.warn("Skipping empty file: {}", file.getOriginalFilename());
+					continue;
+				}
+
+				// 1. 解析文档
+				TikaDocumentReader reader = new TikaDocumentReader(file.getResource());
+				List<Document> documents = reader.get();
+
+				// 2. 分块
+				List<Document> chunks = textSplitter.apply(documents);
+
+				// 3. 元数据富化
+				AtomicInteger chunkCounter = new AtomicInteger(0);
+				List<Document> enrichedChunks = chunks.stream().map(chunk -> {
+					Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
+
+					// 核心元数据
+					metadata.put("source_type", "user_upload");
+					metadata.put("session_id", sessionId);
+					if (userId != null && !userId.isBlank()) {
+						metadata.put("user_id", userId);
+					}
+
+					// 文档元数据
+					metadata.put("original_filename", file.getOriginalFilename());
+					metadata.put("upload_timestamp", uploadTimestamp);
+					metadata.put("chunk_id", chunkCounter.getAndIncrement());
+					metadata.put("file_size", file.getSize());
+					metadata.put("content_type", file.getContentType());
+
+					// 添加搜索用的标题字段
+					String title = extractTitle(chunk.getText(), file.getOriginalFilename());
+					metadata.put("title", title);
+
+					return new Document(chunk.getId(), chunk.getText(), metadata);
+				}).collect(Collectors.toList());
+
+				// 4. 存储
+				vectorStore.add(enrichedChunks);
+				totalChunks += enrichedChunks.size();
+
+				logger.info("Successfully uploaded user file {} to vector store: {} chunks", file.getOriginalFilename(),
+						enrichedChunks.size());
+
+			}
+			catch (Exception e) {
+				logger.error("Failed to upload user file {} to vector store", file.getOriginalFilename(), e);
+			}
+		}
+
+		logger.info("Batch upload for user completed: sessionId={}, userId={}, totalChunks={}", sessionId, userId,
+				totalChunks);
+		return totalChunks;
+	}
+
+	/**
+	 * 从Resource批量处理并存储用户文件
+	 * @param resources 资源列表
+	 * @param sessionId 会话ID
+	 * @param userId 用户ID
+	 * @return 成功处理的文档片段数量
+	 */
+	public int batchProcessAndStoreResources(List<Resource> resources, String sessionId, String userId) {
+		if (resources == null || resources.isEmpty()) {
+			logger.warn("No resources provided for user upload");
+			return 0;
+		}
+
+		logger.info("Starting batch upload resources for user: sessionId={}, userId={}, resourceCount={}", sessionId,
+				userId, resources.size());
+
+		int totalChunks = 0;
+		String uploadTimestamp = Instant.now().toString();
+
+		for (Resource resource : resources) {
+			try {
+				if (!resource.exists() || resource.contentLength() == 0) {
+					logger.warn("Skipping empty or non-existent resource: {}", resource.getFilename());
+					continue;
+				}
+
+				// 1. 解析文档
+				TikaDocumentReader reader = new TikaDocumentReader(resource);
+				List<Document> documents = reader.get();
+
+				// 2. 分块
+				List<Document> chunks = textSplitter.apply(documents);
+
+				// 3. 元数据富化
+				AtomicInteger chunkCounter = new AtomicInteger(0);
+				List<Document> enrichedChunks = chunks.stream().map(chunk -> {
+					Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
+
+					// 核心元数据
+					metadata.put("source_type", "user_upload");
+					metadata.put("session_id", sessionId);
+					if (userId != null && !userId.isBlank()) {
+						metadata.put("user_id", userId);
+					}
+
+					// 文档元数据
+					metadata.put("original_filename", resource.getFilename());
+					metadata.put("upload_timestamp", uploadTimestamp);
+					metadata.put("chunk_id", chunkCounter.getAndIncrement());
+
+					// 添加搜索用的标题字段
+					String title = extractTitle(chunk.getText(), resource.getFilename());
+					metadata.put("title", title);
+
+					return new Document(chunk.getId(), chunk.getText(), metadata);
+				}).collect(Collectors.toList());
+
+				// 4. 存储
+				vectorStore.add(enrichedChunks);
+				totalChunks += enrichedChunks.size();
+
+				logger.info("Successfully uploaded user resource {} to vector store: {} chunks", resource.getFilename(),
+						enrichedChunks.size());
+
+			}
+			catch (Exception e) {
+				logger.error("Failed to upload user resource {} to vector store", resource.getFilename(), e);
+			}
+		}
+
+		logger.info("Batch upload resources for user completed: sessionId={}, userId={}, totalChunks={}", sessionId,
+				userId, totalChunks);
+		return totalChunks;
+	}
+
+	/**
+	 * 批量上传文档到专业知识库ES 与ProfessionalKbEsStrategy的元数据保持一致
+	 * @param files 上传的文件列表
+	 * @param kbId 知识库ID
+	 * @param kbName 知识库名称
+	 * @param kbDescription 知识库描述
+	 * @param category 文档分类（可选）
+	 * @return 上传成功的文档数量
+	 */
+	public int batchUploadToProfessionalKbEs(List<MultipartFile> files, String kbId, String kbName,
+			String kbDescription, String category) {
+		if (files == null || files.isEmpty()) {
+			logger.warn("No files provided for professional KB upload");
+			return 0;
+		}
+
+		logger.info("Starting batch upload to professional KB ES: kbId={}, kbName={}, fileCount={}", kbId, kbName,
+				files.size());
+
+		int totalChunks = 0;
+		String uploadTimestamp = Instant.now().toString();
+
+		for (MultipartFile file : files) {
+			try {
+				if (file.isEmpty()) {
+					logger.warn("Skipping empty file: {}", file.getOriginalFilename());
+					continue;
+				}
+
+				// 1. 解析文档
+				TikaDocumentReader reader = new TikaDocumentReader(file.getResource());
+				List<Document> documents = reader.get();
+
+				// 2. 分块
+				List<Document> chunks = textSplitter.apply(documents);
+
+				// 3. 元数据富化，与ProfessionalKbEsStrategy保持一致
+				AtomicInteger chunkCounter = new AtomicInteger(0);
+				List<Document> enrichedChunks = chunks.stream().map(chunk -> {
+					Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
+
+					// 核心元数据，与ProfessionalKbEsStrategy一致
+					metadata.put("source_type", "professional_kb_es");
+					metadata.put("session_id", "professional_kb_es");
+
+					// 专业知识库特有元数据
+					metadata.put("kb_id", kbId);
+					metadata.put("kb_name", kbName);
+					metadata.put("kb_description", kbDescription);
+
+					// 文档元数据
+					metadata.put("original_filename", file.getOriginalFilename());
+					metadata.put("upload_timestamp", uploadTimestamp);
+					metadata.put("chunk_id", chunkCounter.getAndIncrement());
+					metadata.put("file_size", file.getSize());
+					metadata.put("content_type", file.getContentType());
+
+					// 可选分类
+					if (category != null && !category.isBlank()) {
+						metadata.put("category", category);
+					}
+
+					// 添加搜索用的标题字段
+					String title = extractTitle(chunk.getText(), file.getOriginalFilename());
+					metadata.put("title", title);
+
+					return new Document(chunk.getId(), chunk.getText(), metadata);
+				}).collect(Collectors.toList());
+
+				// 4. 存储到ES
+				vectorStore.add(enrichedChunks);
+				totalChunks += enrichedChunks.size();
+
+				logger.info("Successfully uploaded file {} to professional KB ES: {} chunks",
+						file.getOriginalFilename(), enrichedChunks.size());
+
+			}
+			catch (Exception e) {
+				logger.error("Failed to upload file {} to professional KB ES", file.getOriginalFilename(), e);
+			}
+		}
+
+		logger.info("Batch upload to professional KB ES completed: kbId={}, totalChunks={}", kbId, totalChunks);
+		return totalChunks;
+	}
+
+	/**
+	 * 单个文档上传到专业知识库ES
+	 * @param file 上传的文件
+	 * @param kbId 知识库ID
+	 * @param kbName 知识库名称
+	 * @param kbDescription 知识库描述
+	 * @param category 文档分类（可选）
+	 * @return 上传成功的文档片段数量
+	 */
+	public int uploadToProfessionalKbEs(MultipartFile file, String kbId, String kbName, String kbDescription,
+			String category) {
+		return batchUploadToProfessionalKbEs(List.of(file), kbId, kbName, kbDescription, category);
+	}
+
+	/**
+	 * 从Resource批量上传到专业知识库ES
+	 * @param resources 资源列表
+	 * @param kbId 知识库ID
+	 * @param kbName 知识库名称
+	 * @param kbDescription 知识库描述
+	 * @param category 文档分类（可选）
+	 * @return 上传成功的文档片段数量
+	 */
+	public int batchUploadResourcesToProfessionalKbEs(List<Resource> resources, String kbId, String kbName,
+			String kbDescription, String category) {
+		if (resources == null || resources.isEmpty()) {
+			logger.warn("No resources provided for professional KB upload");
+			return 0;
+		}
+
+		logger.info("Starting batch upload resources to professional KB ES: kbId={}, kbName={}, resourceCount={}", kbId,
+				kbName, resources.size());
+
+		int totalChunks = 0;
+		String uploadTimestamp = Instant.now().toString();
+
+		for (Resource resource : resources) {
+			try {
+				if (!resource.exists() || resource.contentLength() == 0) {
+					logger.warn("Skipping empty or non-existent resource: {}", resource.getFilename());
+					continue;
+				}
+
+				// 1. 解析文档
+				TikaDocumentReader reader = new TikaDocumentReader(resource);
+				List<Document> documents = reader.get();
+
+				// 2. 分块
+				List<Document> chunks = textSplitter.apply(documents);
+
+				// 3. 元数据富化，与ProfessionalKbEsStrategy保持一致
+				AtomicInteger chunkCounter = new AtomicInteger(0);
+				List<Document> enrichedChunks = chunks.stream().map(chunk -> {
+					Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
+
+					// 核心元数据，与ProfessionalKbEsStrategy一致
+					metadata.put("source_type", "professional_kb_es");
+					metadata.put("session_id", "professional_kb_es");
+
+					// 专业知识库特有元数据
+					metadata.put("kb_id", kbId);
+					metadata.put("kb_name", kbName);
+					metadata.put("kb_description", kbDescription);
+
+					// 文档元数据
+					metadata.put("original_filename", resource.getFilename());
+					metadata.put("upload_timestamp", uploadTimestamp);
+					metadata.put("chunk_id", chunkCounter.getAndIncrement());
+
+					// 可选分类
+					if (category != null && !category.isBlank()) {
+						metadata.put("category", category);
+					}
+
+					// 添加搜索用的标题字段
+					String title = extractTitle(chunk.getText(), resource.getFilename());
+					metadata.put("title", title);
+
+					return new Document(chunk.getId(), chunk.getText(), metadata);
+				}).collect(Collectors.toList());
+
+				// 4. 存储到ES
+				vectorStore.add(enrichedChunks);
+				totalChunks += enrichedChunks.size();
+
+				logger.info("Successfully uploaded resource {} to professional KB ES: {} chunks",
+						resource.getFilename(), enrichedChunks.size());
+
+			}
+			catch (Exception e) {
+				logger.error("Failed to upload resource {} to professional KB ES", resource.getFilename(), e);
+			}
+		}
+
+		logger.info("Batch upload resources to professional KB ES completed: kbId={}, totalChunks={}", kbId,
+				totalChunks);
+		return totalChunks;
+	}
+
+	/**
+	 * 从文本内容提取标题
+	 * @param text 文本内容
+	 * @param filename 文件名（回退标题）
+	 * @return 提取的标题
+	 */
+	private String extractTitle(String text, String filename) {
+		if (text == null || text.isBlank()) {
+			return filename != null ? filename : "Untitled";
+		}
+
+		// 简单的标题提取逻辑：取第一行作为标题，最多50个字符
+		String firstLine = text.split("\n")[0].trim();
+		if (firstLine.length() > 50) {
+			firstLine = firstLine.substring(0, 50) + "...";
+		}
+
+		return firstLine.isEmpty() ? (filename != null ? filename : "Untitled") : firstLine;
+	}
+
+	/**
+	 * 删除指定知识库的所有文档
+	 * @param kbId 知识库ID
+	 */
+	public void deleteByKbId(String kbId) {
+		logger.info("Deleting all documents for knowledge base: {}", kbId);
+		// 注意：VectorStore接口可能不支持按条件删除，这里提供接口设计
+		// 实际实现需要根据具体的VectorStore实现来调整
+		logger.warn("Delete by kbId not implemented yet. Manual deletion required for kbId: {}", kbId);
+	}
+
 }
