@@ -17,7 +17,7 @@
   <div class="config-panel">
     <div class="config-header">
       <div class="header-left">
-        <h2>基础配置</h2>
+        <h2>{{ t('config.basicConfig.title') }}</h2>
         <div class="config-stats">
           <span class="stat-item">
             <span class="stat-label">总配置项:</span>
@@ -299,14 +299,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import Switch from '@/components/switch/index.vue'
-import Flex from '@/components/flex/index.vue'
-import { AdminApiService, type ConfigItem } from '@/api/admin-api-service'
 import { useI18n } from 'vue-i18n'
+import Switch from '@/components/switch/index.vue'
+import { AdminApiService, type ConfigItem } from '@/api/admin-api-service'
 
+// Initialize i18n
 const { t } = useI18n()
 
-// 定义扩展的配置项接口
+// Define extended configuration item interface
 interface ExtendedConfigItem extends ConfigItem {
   displayName: string
   min?: number
@@ -353,10 +353,11 @@ const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   // 智能体设置
   'maxSteps': '智能体执行最大步数',
   'resetAllAgents': '重置所有agent',
+  'maxMemory': "能记住的最大消息数",
   
   // 浏览器设置
   'headlessBrowser': '是否使用无头浏览器模式',
-  'browserTimeout': '浏览器请求超时时间(秒)',
+  'browserTimeout': t('config.basicConfig.browserTimeout'),
   'browserDebug': '浏览器debug模式',
   
   // 交互设置
@@ -367,7 +368,7 @@ const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   'systemName': '系统名称',
   'language': '默认语言',
   'maxThreads': '最大线程数',
-  'timeoutSeconds': '请求超时时间(秒)'
+  'timeoutSeconds': t('config.basicConfig.requestTimeout')
 }
 
 // 组显示名称映射
@@ -425,7 +426,8 @@ const getConfigMin = (configKey: string): number => {
     'maxSteps': 1,
     'browserTimeout': 1,
     'maxThreads': 1,
-    'timeoutSeconds': 5
+    'timeoutSeconds': 5,
+    'maxMemory': 1
   }
   return minValues[configKey] || 1
 }
@@ -436,7 +438,8 @@ const getConfigMax = (configKey: string): number => {
     'maxSteps': 100,
     'browserTimeout': 600,
     'maxThreads': 32,
-    'timeoutSeconds': 300
+    'timeoutSeconds': 300,
+    'maxMemory': 1000
   }
   return maxValues[configKey] || 10000
 }
@@ -540,10 +543,10 @@ const loadAllConfigs = async () => {
           return null
         }
         
-        // 为每个配置项设置显示名称（优先使用description）
+        // Set display name for each configuration item (prioritize description)
         const processedItems: ExtendedConfigItem[] = items.map(item => ({
           ...item,
-          displayName: item.description || CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey,
+          displayName: item.description ?? (CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey),
           min: getConfigMin(item.configKey),
           max: getConfigMax(item.configKey)
         }))
@@ -557,7 +560,7 @@ const loadAllConfigs = async () => {
         const subGroupsMap = new Map<string, ExtendedConfigItem[]>()
         
         processedItems.forEach(item => {
-          const subGroupName = item.configSubGroup || 'general'
+          const subGroupName = item.configSubGroup ?? 'general'
           if (!subGroupsMap.has(subGroupName)) {
             subGroupsMap.set(subGroupName, [])
           }
@@ -590,7 +593,7 @@ const loadAllConfigs = async () => {
     console.log('配置加载完成:', configGroups.value)
   } catch (error) {
     console.error('加载配置失败:', error)
-    showMessage('加载配置失败，请刷新重试', 'error')
+    showMessage(t('config.basicConfig.loadConfigFailed'), 'error')
   } finally {
     initialLoading.value = false
   }
@@ -634,7 +637,7 @@ const saveAllConfigs = async () => {
     }
   } catch (error) {
     console.error('保存配置失败:', error)
-    showMessage('保存失败，请重试', 'error')
+    showMessage(t('config.basicConfig.saveFailed'), 'error')
   } finally {
     loading.value = false
   }
@@ -684,7 +687,7 @@ const resetGroupConfigs = async (groupName: string) => {
     }
   } catch (error) {
     console.error('重置组配置失败:', error)
-    showMessage('重置失败，请重试', 'error')
+    showMessage(t('config.basicConfig.resetFailed'), 'error')
   } finally {
     loading.value = false
   }
@@ -700,6 +703,7 @@ const getDefaultValueForKey = (configKey: string): string => {
     'timeoutSeconds': '60',
     'autoOpenBrowser': 'false',
     'headlessBrowser': 'true',
+    'maxMemory': '1000'
     // 可以根据需要添加更多默认值
   }
   
@@ -816,7 +820,7 @@ const importConfigs = (event: Event) => {
       configGroups.value.forEach(group => {
         group.subGroups.forEach(subGroup => {
           subGroup.items.forEach(item => {
-            if (importData.configs.hasOwnProperty(item.configKey)) {
+            if (Object.prototype.hasOwnProperty.call(importData.configs, item.configKey)) {
               configsToUpdate.push({
                 ...item,
                 configValue: importData.configs[item.configKey]
@@ -842,7 +846,7 @@ const importConfigs = (event: Event) => {
       }
     } catch (error) {
       console.error('导入配置失败:', error)
-      showMessage('导入失败，请检查文件格式', 'error')
+      showMessage(t('config.basicConfig.importFailed'), 'error')
     } finally {
       loading.value = false
       // 清空输入框

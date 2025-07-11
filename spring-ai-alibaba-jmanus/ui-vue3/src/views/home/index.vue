@@ -276,7 +276,7 @@ const selectExample = (example: any) => {
 
 .header {
   position: relative;
-  z-index: 1;
+  z-index: 1000;
   padding: 32px 32px 0;
 }
 
@@ -284,6 +284,8 @@ const selectExample = (example: any) => {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 20px;
+  position: relative;
+  z-index: 1001;
 }
 
 .logo-container {

@@ -163,6 +163,12 @@ public class ReactAgent {
 	}
 
 	public CompiledGraph getAndCompileGraph(CompileConfig compileConfig) throws GraphStateException {
+		if (this.compileConfig == null) {
+			this.compiledGraph = getStateGraph().compile();
+		}
+		else {
+			this.compiledGraph = getStateGraph().compile(compileConfig);
+		}
 		this.compiledGraph = getStateGraph().compile(compileConfig);
 		return this.compiledGraph;
 	}

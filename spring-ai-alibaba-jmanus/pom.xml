@@ -7,7 +7,7 @@
     <groupId>com.alibaba.cloud.ai</groupId>
     <name>Spring AI Alibaba JManus</name>
     <artifactId>spring-ai-alibaba-jmanus</artifactId>
-    <version>2.1.0-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
 
     <!-- The required dependencies are maintained separately by the JManus module -->
     <properties>
@@ -172,6 +172,13 @@
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- MySQL Database -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.33</version>
+            <scope>runtime</scope>
+        </dependency>
 
         <!-- Spring Boot Test -->
         <dependency>
@@ -287,6 +294,11 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
+                <configuration>
+                    <fork>true</fork>
+                    <addResources>false</addResources>
+                    <executable>true</executable>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

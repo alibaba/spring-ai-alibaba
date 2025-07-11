@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.graph.react;
 
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -58,7 +59,7 @@ public class ReactAutoconfiguration {
 	}
 
 	@Bean
-	public CompiledGraph reactAgentGraph(@Qualifier("normalReactAgent") ReactAgent reactAgent)
+	public CompiledGraph reactAgentGraph(@Qualifier("normalReactAgent") ReactAgent reactAgent, CompileConfig config)
 			throws GraphStateException {
 
 		GraphRepresentation graphRepresentation = reactAgent.getStateGraph()
@@ -68,7 +69,7 @@ public class ReactAutoconfiguration {
 		System.out.println(graphRepresentation.content());
 		System.out.println("\n\n");
 
-		return reactAgent.getAndCompileGraph();
+		return reactAgent.getAndCompileGraph(config);
 	}
 
 	@Bean
