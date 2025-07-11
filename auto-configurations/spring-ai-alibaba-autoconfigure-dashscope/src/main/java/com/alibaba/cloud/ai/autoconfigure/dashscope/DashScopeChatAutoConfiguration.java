@@ -17,9 +17,11 @@ package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.model.SpringAIAlibabaModels;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
@@ -53,7 +55,8 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 // @formatter:off
 @ConditionalOnClass(DashScopeApi.class)
 @ConditionalOnDashScopeEnabled
-@ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIAlibabaModels.DASHSCOPE,
+		matchIfMissing = true)
 @AutoConfiguration(after = {
 		RestClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class,
@@ -135,6 +138,5 @@ public class DashScopeChatAutoConfiguration {
 					.responseErrorHandler(responseErrorHandler)
 					.build();
 		}
-
 }
 // @formatter:on
