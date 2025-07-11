@@ -27,7 +27,6 @@
 
     <properties>
         <gpdb.version>3.0.0</gpdb.version>
-        <lombok.version>1.18.34</lombok.version>
         <druid.version>1.2.22</druid.version>
         <commons-lang3.version>3.9</commons-lang3.version>
         <mysql-connector-java.version>8.0.15</mysql-connector-java.version>
@@ -46,12 +45,6 @@
                 <groupId>com.aliyun</groupId>
                 <artifactId>gpdb20160503</artifactId>
                 <version>${gpdb.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>${lombok.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>com.alibaba</groupId>

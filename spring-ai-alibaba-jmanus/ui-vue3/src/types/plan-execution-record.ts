@@ -130,6 +130,10 @@ export interface AgentExecutionRecord {
   
   /** Error message if execution encounters problems */
   errorMessage?: string
+
+  /** Model name called */
+  modelName?: string
+
 }
 
 /**

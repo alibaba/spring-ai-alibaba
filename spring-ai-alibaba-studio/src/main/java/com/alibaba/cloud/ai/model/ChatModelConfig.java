@@ -19,11 +19,7 @@ import com.alibaba.cloud.ai.common.ModelType;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
-import lombok.Data;
 
-@Data
-@Builder
 public class ChatModelConfig {
 
 	@Schema(description = "ChatModel bean name", examples = { "chatModel", "chatModel1" })
@@ -40,5 +36,111 @@ public class ChatModelConfig {
 
 	@Schema(nullable = true)
 	private DashScopeImageOptions imageOptions;
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getModel() {
+		return model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	public ModelType getModelType() {
+		return modelType;
+	}
+
+	public void setModelType(ModelType modelType) {
+		this.modelType = modelType;
+	}
+
+	public DashScopeChatOptions getChatOptions() {
+		return chatOptions;
+	}
+
+	public void setChatOptions(DashScopeChatOptions chatOptions) {
+		this.chatOptions = chatOptions;
+	}
+
+	public DashScopeImageOptions getImageOptions() {
+		return imageOptions;
+	}
+
+	public void setImageOptions(DashScopeImageOptions imageOptions) {
+		this.imageOptions = imageOptions;
+	}
+
+	@Override
+	public String toString() {
+		return "ChatModelConfig{" + "name='" + name + '\'' + ", model='" + model + '\'' + ", modelType=" + modelType
+				+ ", chatOptions=" + chatOptions + ", imageOptions=" + imageOptions + '}';
+	}
+
+	public static ChatModelConfigBuilder builder() {
+		return new ChatModelConfigBuilder();
+	}
+
+	public static final class ChatModelConfigBuilder {
+
+		private String name;
+
+		private String model;
+
+		private ModelType modelType;
+
+		private DashScopeChatOptions chatOptions;
+
+		private DashScopeImageOptions imageOptions;
+
+		private ChatModelConfigBuilder() {
+		}
+
+		public static ChatModelConfigBuilder aChatModelConfig() {
+			return new ChatModelConfigBuilder();
+		}
+
+		public ChatModelConfigBuilder name(String name) {
+			this.name = name;
+			return this;
+		}
+
+		public ChatModelConfigBuilder model(String model) {
+			this.model = model;
+			return this;
+		}
+
+		public ChatModelConfigBuilder modelType(ModelType modelType) {
+			this.modelType = modelType;
+			return this;
+		}
+
+		public ChatModelConfigBuilder chatOptions(DashScopeChatOptions chatOptions) {
+			this.chatOptions = chatOptions;
+			return this;
+		}
+
+		public ChatModelConfigBuilder imageOptions(DashScopeImageOptions imageOptions) {
+			this.imageOptions = imageOptions;
+			return this;
+		}
+
+		public ChatModelConfig build() {
+			ChatModelConfig chatModelConfig = new ChatModelConfig();
+			chatModelConfig.setName(name);
+			chatModelConfig.setModel(model);
+			chatModelConfig.setModelType(modelType);
+			chatModelConfig.setChatOptions(chatOptions);
+			chatModelConfig.setImageOptions(imageOptions);
+			return chatModelConfig;
+		}
+
+	}
 
 }

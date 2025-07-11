@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.prompt.service;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.po.PromptEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.vo.PromptVO;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.repository.PromptRepository;
@@ -63,12 +62,14 @@ public class PromptServiceImpl implements PromptService {
 			throw new IllegalArgumentException("PromptVO filed is invalid");
 		}
 
-		PromptEntity prompt = promptRepository.findByPrompt(promptVO.getPromptName(), promptVO.getType(),
-				promptVO.getMessageType());
+		if (Boolean.TRUE.equals(promptVO.getBuiltIn())) {
+			throw new IllegalArgumentException("Cannot create built-in prompt");
+		}
+
+		PromptEntity prompt = promptRepository.findByPromptName(promptVO.getPromptName());
 		if (prompt != null) {
 			log.error("Found Prompt is existed: promptName :{} , namespace:{}, type :{}, String messageType:{}",
 					promptVO.getPromptName(), promptVO.getNamespace(), promptVO.getType(), promptVO.getMessageType());
-
 			throw new RuntimeException("Found Prompt is existed");
 		}
 
@@ -85,8 +86,13 @@ public class PromptServiceImpl implements PromptService {
 			throw new IllegalArgumentException("PromptVO filed is invalid");
 		}
 
-		promptRepository.findById(promptVO.getId())
+		PromptEntity oldPrompt = promptRepository.findById(promptVO.getId())
 			.orElseThrow(() -> new IllegalArgumentException("Prompt not found: " + promptVO.getId()));
+
+		if (!oldPrompt.getPromptName().equals(promptVO.getPromptName())) {
+			throw new IllegalArgumentException("Prompt name is not allowed to update");
+		}
+
 		PromptEntity promptEntity = mapToPromptEntity(promptVO);
 		PromptEntity save = promptRepository.save(promptEntity);
 
@@ -108,45 +114,45 @@ public class PromptServiceImpl implements PromptService {
 
 	/**
 	 * Create system prompt template message
-	 * @param promptEnum Prompt enum
+	 * @param promptName Prompt Name
 	 * @param variables Variable mapping
 	 * @return Prompt template message
 	 */
 	@Override
-	public Message createSystemMessage(PromptEnum promptEnum, Map<String, Object> variables) {
-		PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(),
-				promptEnum.getType().name(), promptEnum.getMessageType().name());
+	public Message createSystemMessage(String promptName, Map<String, Object> variables) {
+		PromptEntity promptEntity = promptRepository.findByPromptName(promptName);
 		if (promptEntity == null) {
-			throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
+			throw new IllegalArgumentException("Prompt not found: " + promptName);
 		}
+
 		SystemPromptTemplate template = new SystemPromptTemplate(promptEntity.getPromptContent());
 		return template.createMessage(variables != null ? variables : Map.of());
 	}
 
 	/**
 	 * Create user prompt template message
-	 * @param promptEnum Prompt enum
+	 * @param promptName Prompt Name
 	 * @param variables Variable mapping
 	 * @return Prompt template message
 	 */
 	@Override
-	public Message createUserMessage(PromptEnum promptEnum, Map<String, Object> variables) {
-		PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(),
-				promptEnum.getType().name(), promptEnum.getMessageType().name());
+	public Message createUserMessage(String promptName, Map<String, Object> variables) {
+		PromptEntity promptEntity = promptRepository.findByPromptName(promptName);
 		if (promptEntity == null) {
-			throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
+			throw new IllegalArgumentException("Prompt not found: " + promptName);
 		}
+
 		PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
 		return template.createMessage(variables != null ? variables : Map.of());
 	}
 
 	@Override
-	public Message createMessage(PromptEnum promptEnum, Map<String, Object> variables) {
-		PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(),
-				promptEnum.getType().name(), promptEnum.getMessageType().name());
+	public Message createMessage(String promptName, Map<String, Object> variables) {
+		PromptEntity promptEntity = promptRepository.findByPromptName(promptName);
 		if (promptEntity == null) {
-			throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
+			throw new IllegalArgumentException("Prompt not found: " + promptName);
 		}
+
 		if (MessageType.USER.name().equals(promptEntity.getMessageType())) {
 			PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
 			return template.createMessage(variables != null ? variables : Map.of());
@@ -168,17 +174,17 @@ public class PromptServiceImpl implements PromptService {
 
 	/**
 	 * Render prompt template
-	 * @param promptEnum Prompt enum
+	 * @param promptName Prompt Name
 	 * @param variables Variable mapping
 	 * @return Rendered prompt
 	 */
 	@Override
-	public String renderPrompt(PromptEnum promptEnum, Map<String, Object> variables) {
-		PromptEntity promptEntity = promptRepository.findByPrompt(promptEnum.getPromptName(),
-				promptEnum.getType().name(), promptEnum.getMessageType().name());
+	public String renderPrompt(String promptName, Map<String, Object> variables) {
+		PromptEntity promptEntity = promptRepository.findByPromptName(promptName);
 		if (promptEntity == null) {
-			throw new IllegalArgumentException("Prompt not found: " + promptEnum.getPromptName());
+			throw new IllegalArgumentException("Prompt not found: " + promptName);
 		}
+
 		PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
 		return template.render(variables != null ? variables : Map.of());
 	}

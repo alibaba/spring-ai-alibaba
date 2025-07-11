@@ -15,19 +15,72 @@
  */
 package com.alibaba.cloud.ai.dbconnector.bo;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class SchemaInfoBO extends DdlBaseBO {
 
 	private String name;
 
 	private String description;
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	@Override
+	public String toString() {
+		return "SchemaInfoBO{" + "name='" + name + '\'' + ", description='" + description + '\'' + '}';
+	}
+
+	public static SchemaInfoBOBuilder builder() {
+		return new SchemaInfoBOBuilder();
+	}
+
+	public static final class SchemaInfoBOBuilder {
+
+		private String name;
+
+		private String description;
+
+		public SchemaInfoBOBuilder() {
+		}
+
+		public SchemaInfoBOBuilder(SchemaInfoBO other) {
+			this.name = other.name;
+			this.description = other.description;
+		}
+
+		public static SchemaInfoBOBuilder aSchemaInfoBO() {
+			return new SchemaInfoBOBuilder();
+		}
+
+		public SchemaInfoBOBuilder name(String name) {
+			this.name = name;
+			return this;
+		}
+
+		public SchemaInfoBOBuilder description(String description) {
+			this.description = description;
+			return this;
+		}
+
+		public SchemaInfoBO build() {
+			SchemaInfoBO schemaInfoBO = new SchemaInfoBO();
+			schemaInfoBO.setName(name);
+			schemaInfoBO.setDescription(description);
+			return schemaInfoBO;
+		}
+
+	}
 
 }

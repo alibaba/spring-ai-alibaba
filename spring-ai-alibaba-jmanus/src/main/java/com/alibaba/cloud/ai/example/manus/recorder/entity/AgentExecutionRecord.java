@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.fasterxml.jackson.databind.JsonSerializable;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,6 +90,9 @@ public class AgentExecutionRecord {
 
 	// Error message if execution encounters problems
 	private String errorMessage;
+
+	// Actual calling model
+	private String modelName;
 
 	// Default constructor
 	public AgentExecutionRecord() {
@@ -233,6 +239,14 @@ public class AgentExecutionRecord {
 		this.errorMessage = errorMessage;
 	}
 
+	public String getModelName() {
+		return modelName;
+	}
+
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
+	}
+
 	@Override
 	public String toString() {
 		return "AgentExecutionRecord{" + "id='" + id + '\'' + ", conversationId='" + conversationId + '\''
@@ -262,6 +276,14 @@ public class AgentExecutionRecord {
 			}
 		}
 		return this.id;
+	}
+
+	public String getConversationId() {
+		return conversationId;
+	}
+
+	public void setConversationId(String conversationId) {
+		this.conversationId = conversationId;
 	}
 
 }

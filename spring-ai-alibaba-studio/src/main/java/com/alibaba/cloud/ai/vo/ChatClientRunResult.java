@@ -16,11 +16,7 @@
 package com.alibaba.cloud.ai.vo;
 
 import com.alibaba.cloud.ai.param.ClientRunActionParam;
-import lombok.Builder;
-import lombok.Data;
 
-@Data
-@Builder
 public class ChatClientRunResult {
 
 	private ClientRunActionParam input;
@@ -30,5 +26,95 @@ public class ChatClientRunResult {
 	private TelemetryResult telemetry;
 
 	private String ChatID;
+
+	public ClientRunActionParam getInput() {
+		return input;
+	}
+
+	public void setInput(ClientRunActionParam input) {
+		this.input = input;
+	}
+
+	public ActionResult getResult() {
+		return result;
+	}
+
+	public void setResult(ActionResult result) {
+		this.result = result;
+	}
+
+	public TelemetryResult getTelemetry() {
+		return telemetry;
+	}
+
+	public void setTelemetry(TelemetryResult telemetry) {
+		this.telemetry = telemetry;
+	}
+
+	public String getChatID() {
+		return ChatID;
+	}
+
+	public void setChatID(String chatID) {
+		ChatID = chatID;
+	}
+
+	@Override
+	public String toString() {
+		return "ChatClientRunResult{" + "input=" + input + ", result=" + result + ", telemetry=" + telemetry
+				+ ", ChatID='" + ChatID + '\'' + '}';
+	}
+
+	public static ChatClientRunResultBuilder builder() {
+		return new ChatClientRunResultBuilder();
+	}
+
+	public static final class ChatClientRunResultBuilder {
+
+		private ClientRunActionParam input;
+
+		private ActionResult result;
+
+		private TelemetryResult telemetry;
+
+		private String ChatID;
+
+		private ChatClientRunResultBuilder() {
+		}
+
+		public static ChatClientRunResultBuilder aChatClientRunResult() {
+			return new ChatClientRunResultBuilder();
+		}
+
+		public ChatClientRunResultBuilder input(ClientRunActionParam input) {
+			this.input = input;
+			return this;
+		}
+
+		public ChatClientRunResultBuilder result(ActionResult result) {
+			this.result = result;
+			return this;
+		}
+
+		public ChatClientRunResultBuilder telemetry(TelemetryResult telemetry) {
+			this.telemetry = telemetry;
+			return this;
+		}
+
+		public ChatClientRunResultBuilder ChatID(String ChatID) {
+			this.ChatID = ChatID;
+			return this;
+		}
+
+		public ChatClientRunResult build() {
+			ChatClientRunResult chatClientRunResult = new ChatClientRunResult();
+			chatClientRunResult.setInput(input);
+			chatClientRunResult.setResult(result);
+			chatClientRunResult.setTelemetry(telemetry);
+			chatClientRunResult.setChatID(ChatID);
+			return chatClientRunResult;
+		}
+
+	}
 
 }
