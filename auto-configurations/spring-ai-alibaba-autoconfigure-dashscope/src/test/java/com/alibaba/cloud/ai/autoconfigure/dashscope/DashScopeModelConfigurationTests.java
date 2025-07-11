@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author YunKui Lu
+ * @author yuluo
  */
 class DashScopeModelConfigurationTests {
 
