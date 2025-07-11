@@ -46,7 +46,7 @@ public class LocalConfigSearchFilterService extends SearchFilterService {
 	}
 
 	@Override
-	Map<String, Double> loadWebsiteWeight() {
+	protected Map<String, Double> loadWebsiteWeight() {
 		ClassPathResource resource = new ClassPathResource("website-weight-config.json");
 		Map<String, Double> map = new HashMap<>();
 		try (InputStream stream = resource.getInputStream()) {

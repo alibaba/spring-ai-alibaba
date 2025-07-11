@@ -54,7 +54,7 @@ public abstract class SearchFilterService {
 	 * Positive weights indicate trust (1.0 = maximum trust) Negative weights indicate
 	 * distrust (-1.0 = maximum distrust)
 	 */
-	abstract Map<String, Double> loadWebsiteWeight();
+	protected abstract Map<String, Double> loadWebsiteWeight();
 
 	private String extractDomain(String url) throws IllegalArgumentException, URISyntaxException {
 		if (!StringUtils.hasText(url)) {
@@ -108,7 +108,7 @@ public abstract class SearchFilterService {
 	 * @param query query
 	 * @return result
 	 */
-	public List<SearchContentWithWeight> doQueryAndSort(SearchEnum searchEnum, String query) {
+	public List<SearchContentWithWeight> queryAndSort(SearchEnum searchEnum, String query) {
 		Optional<SearchService> searchService = searchBeanUtil.getSearchService(searchEnum);
 		if (searchService.isEmpty()) {
 			return List.of();
@@ -122,7 +122,7 @@ public abstract class SearchFilterService {
 	 * @param query query
 	 * @return result
 	 */
-	public List<SearchContentWithWeight> doQueryAndFilter(SearchEnum searchEnum, String query) {
+	public List<SearchContentWithWeight> queryAndFilter(SearchEnum searchEnum, String query) {
 		Optional<SearchService> searchService = searchBeanUtil.getSearchService(searchEnum);
 		if (searchService.isEmpty()) {
 			return List.of();

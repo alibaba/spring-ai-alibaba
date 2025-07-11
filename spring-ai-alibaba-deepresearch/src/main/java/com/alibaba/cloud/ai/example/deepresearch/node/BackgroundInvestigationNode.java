@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +72,7 @@ public class BackgroundInvestigationNode implements NodeAction {
 			// Retry logic
 			for (int i = 0; i < MAX_RETRY_COUNT; i++) {
 				try {
-					results = searchFilterService.doQueryAndFilter(searchEnum, query).stream().map(info -> {
+					results = searchFilterService.queryAndFilter(searchEnum, query).stream().map(info -> {
 						Map<String, String> result = new HashMap<>();
 						result.put("title", info.content().title());
 						result.put("weight", String.valueOf(info.weight()));
