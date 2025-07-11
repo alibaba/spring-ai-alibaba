@@ -15,9 +15,9 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioSpeechApi;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechModel;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechOptions;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisPrompt;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
@@ -90,11 +90,11 @@ public class DashScopeAutoConfigurationIT {
 	void speech() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeAudioSpeechAutoConfiguration.class))
 			.run(context -> {
-				DashScopeSpeechSynthesisModel speechModel = context.getBean(DashScopeSpeechSynthesisModel.class);
+				DashScopeAudioSpeechModel speechModel = context.getBean(DashScopeAudioSpeechModel.class);
 				byte[] response = speechModel
 					.call(new SpeechSynthesisPrompt("H",
-							DashScopeSpeechSynthesisOptions.builder()
-								.responseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)
+							DashScopeAudioSpeechOptions.builder()
+								.responseFormat(DashScopeAudioSpeechApi.ResponseFormat.MP3)
 								.build()))
 					.getResult()
 					.getOutput()

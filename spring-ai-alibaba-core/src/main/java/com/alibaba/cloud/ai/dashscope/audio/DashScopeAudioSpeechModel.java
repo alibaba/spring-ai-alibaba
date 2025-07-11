@@ -15,68 +15,47 @@
  */
 package com.alibaba.cloud.ai.dashscope.audio;
 
-import java.nio.ByteBuffer;
-import java.util.UUID;
-
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioSpeechApi;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisOptions;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisOutput;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisPrompt;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResponse;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
+import reactor.core.publisher.Flux;
+
+import java.nio.ByteBuffer;
+import java.util.UUID;
 
 /**
+ * Audio Speech: input text, output audio.
+ *
  * @author kevinlin09
  */
-public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
+public class DashScopeAudioSpeechModel implements SpeechSynthesisModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(DashScopeSpeechSynthesisModel.class);
+	private final DashScopeAudioSpeechApi api;
 
-	private final DashScopeSpeechSynthesisApi api;
-
-	private final DashScopeSpeechSynthesisOptions options;
+	private final DashScopeAudioSpeechOptions options;
 
 	private final RetryTemplate retryTemplate;
 
-	public DashScopeSpeechSynthesisModel(DashScopeSpeechSynthesisApi api) {
-		this(api, DashScopeSpeechSynthesisOptions.builder().model("").build());
+	public DashScopeAudioSpeechModel(DashScopeAudioSpeechApi api) {
+		this(api, DashScopeAudioSpeechOptions.builder().model("").build());
 	}
 
-	public DashScopeSpeechSynthesisModel(DashScopeSpeechSynthesisApi api, DashScopeSpeechSynthesisOptions options) {
+	public DashScopeAudioSpeechModel(DashScopeAudioSpeechApi api, DashScopeAudioSpeechOptions options) {
 		this(api, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
-	public DashScopeSpeechSynthesisModel(DashScopeSpeechSynthesisApi api, DashScopeSpeechSynthesisOptions options,
+	public DashScopeAudioSpeechModel(DashScopeAudioSpeechApi api, DashScopeAudioSpeechOptions options,
 			RetryTemplate retryTemplate) {
 		this.api = api;
 		this.options = options;
 		this.retryTemplate = retryTemplate;
-	}
-
-	public enum DashScopeSpeechModel {
-
-		SAMBERT_ZHICHU_V1("sambert-zhichu-v1"),
-
-		COSYVOICE_V1("cosyvoice-v1");
-
-		private final String model;
-
-		DashScopeSpeechModel(String model) {
-			this.model = model;
-		}
-
-		public String getModel() {
-			return this.model;
-		}
-
 	}
 
 	@Override
@@ -101,31 +80,30 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 			.map(SpeechSynthesisResponse::new));
 	}
 
-	public DashScopeSpeechSynthesisApi.Request createRequest(SpeechSynthesisPrompt prompt) {
-		DashScopeSpeechSynthesisOptions options = DashScopeSpeechSynthesisOptions.builder().build();
+	public DashScopeAudioSpeechApi.Request createRequest(SpeechSynthesisPrompt prompt) {
+		DashScopeAudioSpeechOptions options = DashScopeAudioSpeechOptions.builder().build();
 		if (prompt.getOptions() != null) {
-			DashScopeSpeechSynthesisOptions runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
-					SpeechSynthesisOptions.class, DashScopeSpeechSynthesisOptions.class);
+			DashScopeAudioSpeechOptions runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					SpeechSynthesisOptions.class, DashScopeAudioSpeechOptions.class);
 
-			options = ModelOptionsUtils.merge(runtimeOptions, options, DashScopeSpeechSynthesisOptions.class);
+			options = ModelOptionsUtils.merge(runtimeOptions, options, DashScopeAudioSpeechOptions.class);
 		}
 
-		options = ModelOptionsUtils.merge(options, this.options, DashScopeSpeechSynthesisOptions.class);
+		options = ModelOptionsUtils.merge(options, this.options, DashScopeAudioSpeechOptions.class);
 
-		return new DashScopeSpeechSynthesisApi.Request(
-				new DashScopeSpeechSynthesisApi.Request.RequestHeader("run-task", UUID.randomUUID().toString(), "out"),
-				new DashScopeSpeechSynthesisApi.Request.RequestPayload(options.getModel(), "audio", "tts",
+		return new DashScopeAudioSpeechApi.Request(
+				new DashScopeAudioSpeechApi.Request.RequestHeader("run-task", UUID.randomUUID().toString(), "out"),
+				new DashScopeAudioSpeechApi.Request.RequestPayload(options.getModel(), "audio", "tts",
 						"SpeechSynthesizer",
-						new DashScopeSpeechSynthesisApi.Request.RequestPayload.RequestPayloadInput(
+						new DashScopeAudioSpeechApi.Request.RequestPayload.RequestPayloadInput(
 								prompt.getInstructions().get(0).getText()),
-						new DashScopeSpeechSynthesisApi.Request.RequestPayload.RequestPayloadParameters(
-								options.getVolume(), options.getRequestTextType().getValue(), options.getVoice(),
-								options.getSampleRate(), options.getSpeed(), options.getResponseFormat().getValue(),
-								options.getPitch(), options.getEnablePhonemeTimestamp(),
-								options.getEnableWordTimestamp())));
+						new DashScopeAudioSpeechApi.Request.RequestPayload.RequestPayloadParameters(options.getVolume(),
+								options.getRequestTextType().getValue(), options.getVoice(), options.getSampleRate(),
+								options.getSpeed(), options.getResponseFormat().getValue(), options.getPitch(),
+								options.getEnablePhonemeTimestamp(), options.getEnableWordTimestamp())));
 	}
 
-	private SpeechSynthesisResponse toResponse(DashScopeSpeechSynthesisApi.Response apiResponse) {
+	private SpeechSynthesisResponse toResponse(DashScopeAudioSpeechApi.Response apiResponse) {
 		SpeechSynthesisOutput output = new SpeechSynthesisOutput(apiResponse.getAudio());
 		SpeechSynthesisResult result = new SpeechSynthesisResult(output);
 		return new SpeechSynthesisResponse(result);
