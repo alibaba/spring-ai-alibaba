@@ -20,8 +20,10 @@ import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ProfessionalKbDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.RewriteAndMultiQueryDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.UserFileRagDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
@@ -31,11 +33,16 @@ import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.InformationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ProfessionalKbDecisionNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.RewriteAndMultiQueryNode;
+import com.alibaba.cloud.ai.example.deepresearch.rag.core.HybridRagProcessor;
+import com.alibaba.cloud.ai.example.deepresearch.rag.strategy.FusionStrategy;
+import com.alibaba.cloud.ai.example.deepresearch.rag.strategy.ProfessionalKbEsStrategy;
+import com.alibaba.cloud.ai.example.deepresearch.rag.strategy.UserFileRetrievalStrategy;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
@@ -47,13 +54,13 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -61,6 +68,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -115,7 +123,7 @@ public class DeepResearchConfiguration {
 	private JinaCrawlerService jinaCrawlerService;
 
 	@Autowired(required = false)
-	private RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
+	private RagProperties ragProperties;
 
 	@Autowired
 	private ReportService reportService;
@@ -125,6 +133,18 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private InfoCheckService infoCheckService;
+
+	@Autowired(required = false)
+	private UserFileRetrievalStrategy userFileRetrievalStrategy;
+
+	@Autowired(required = false)
+	private ProfessionalKbEsStrategy professionalKbEsStrategy;
+
+	@Autowired(required = false)
+	private FusionStrategy fusionStrategy;
+
+	@Autowired(required = false)
+	private HybridRagProcessor hybridRagProcessor;
 
 	@Bean
 	public ReflectionProcessor reflectionProcessor() {
@@ -157,9 +177,14 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("max_step_num", new ReplaceStrategy());
 			keyStrategyHashMap.put("mcp_settings", new ReplaceStrategy());
 			keyStrategyHashMap.put("optimize_query_num", new ReplaceStrategy());
+			keyStrategyHashMap.put("user_upload_file", new ReplaceStrategy());
 
 			keyStrategyHashMap.put("feed_back", new ReplaceStrategy());
 			keyStrategyHashMap.put("feed_back_content", new ReplaceStrategy());
+
+			// 专业知识库决策相关
+			keyStrategyHashMap.put("use_professional_kb", new ReplaceStrategy());
+			keyStrategyHashMap.put("selected_knowledge_bases", new ReplaceStrategy());
 
 			// 节点输出
 			keyStrategyHashMap.put("background_investigation_results", new ReplaceStrategy());
@@ -187,13 +212,15 @@ public class DeepResearchConfiguration {
 			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
 			.addNode("background_investigator",
 					node_async(new BackgroundInvestigationNode(searchBeanUtil, jinaCrawlerService, infoCheckService)))
+			.addNode("user_file_rag", createUserFileRagNode())
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
+			.addNode("professional_kb_decision",
+					node_async(new ProfessionalKbDecisionNode(researchAgent, ragProperties)))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-			.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportService))))
-			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
+			.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportService))));
 
 		// 添加并行节点块
 		configureParallelNodes(stateGraph);
@@ -203,8 +230,12 @@ public class DeepResearchConfiguration {
 					Map.of("rewrite_multi_query", "rewrite_multi_query", END, END))
 			.addConditionalEdges("rewrite_multi_query", edge_async(new RewriteAndMultiQueryDispatcher()),
 					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
-			.addEdge("background_investigator", "planner")
-			.addEdge("planner", "information")
+
+			.addConditionalEdges("background_investigator", edge_async(new UserFileRagDispatcher()),
+					Map.of("user_file_rag", "user_file_rag", "planner", "planner"))
+			.addEdge("user_file_rag", "planner")
+			.addEdge("planner", "professional_kb_decision")
+			.addEdge("professional_kb_decision", "information")
 			.addConditionalEdges("information", edge_async(new InformationDispatcher()),
 					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
 							"research_team", "research_team", END, END))
@@ -228,6 +259,8 @@ public class DeepResearchConfiguration {
 		addResearcherNodes(stateGraph);
 
 		addCoderNodes(stateGraph);
+
+		addProfessionalKbNode(stateGraph);
 	}
 
 	private void addResearcherNodes(StateGraph stateGraph) throws GraphStateException {
@@ -248,6 +281,41 @@ public class DeepResearchConfiguration {
 			stateGraph.addNode(nodeId,
 					node_async(new CoderNode(coderAgent, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
+		}
+	}
+
+	private void addProfessionalKbNode(StateGraph stateGraph) throws GraphStateException {
+		stateGraph.addNode("professional_kb_rag", createProfessionalKbRagNode());
+		stateGraph.addConditionalEdges("parallel_executor", edge_async(new ProfessionalKbDispatcher()),
+				Map.of("professional_kb_rag", "professional_kb_rag", "research_team", "research_team"));
+		stateGraph.addEdge("professional_kb_rag", "research_team");
+	}
+
+	/**
+	 * 创建用户文件RAG节点，优先使用统一的HybridRagProcessor
+	 */
+	private AsyncNodeAction createUserFileRagNode() {
+		if (hybridRagProcessor != null) {
+			// 使用统一的RAG处理器，包含完整的前后处理和混合查询逻辑
+			return node_async(new RagNode(hybridRagProcessor, researchAgent));
+		}
+		else {
+			// 回退到传统的策略模式
+			return node_async(new RagNode(List.of(userFileRetrievalStrategy), fusionStrategy, researchAgent));
+		}
+	}
+
+	/**
+	 * 创建专业知识库RAG节点，优先使用统一的HybridRagProcessor
+	 */
+	private AsyncNodeAction createProfessionalKbRagNode() {
+		if (hybridRagProcessor != null) {
+			// 使用统一的RAG处理器，包含完整的前后处理和混合查询逻辑
+			return node_async(new RagNode(hybridRagProcessor, researchAgent));
+		}
+		else {
+			// 回退到传统的策略模式
+			return node_async(new RagNode(List.of(professionalKbEsStrategy), fusionStrategy, researchAgent));
 		}
 	}
 

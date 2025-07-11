@@ -13,29 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.alibaba.cloud.ai.example.deepresearch.dispatcher;
 
-package com.alibaba.cloud.ai.example.deepresearch.rag.strategy;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.action.EdgeAction;
 
-import org.springframework.ai.document.Document;
+public class UserFileRagDispatcher implements EdgeAction {
 
-import java.util.List;
-
-/**
- * 定义了融合多个检索结果列表的策略接口。
- */
-public interface FusionStrategy {
-
-	/**
-	 * 将多个已排序的文档列表融合成一个单一的、重新排序的列表。
-	 * @param results 包含多个检索结果列表的列表。
-	 * @return 经过融合和重新排序的单一文档列表。
-	 */
-	List<Document> fuse(List<List<Document>> results);
-
-	/**
-	 * 返回此策略的唯一名称。
-	 * @return 策略名称。
-	 */
-	String getStrategyName();
+	@Override
+	public String apply(OverAllState state) {
+		Boolean enabled = state.value("user_upload_file", false);
+		return Boolean.TRUE.equals(enabled) ? "user_file_rag" : "planner";
+	}
 
 }

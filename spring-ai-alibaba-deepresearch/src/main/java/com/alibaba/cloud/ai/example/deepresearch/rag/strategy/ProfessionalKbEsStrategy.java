@@ -13,43 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.example.deepresearch.rag.strategy;
 
+import com.alibaba.cloud.ai.example.deepresearch.rag.core.HybridRagProcessor;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.ai.rag.Query;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
 public class ProfessionalKbEsStrategy implements RetrievalStrategy {
 
-    private final VectorStore vectorStore;
+	private final HybridRagProcessor hybridRagProcessor;
 
-    public ProfessionalKbEsStrategy(VectorStore vectorStore) {
-        this.vectorStore = vectorStore;
-    }
+	public ProfessionalKbEsStrategy(HybridRagProcessor hybridRagProcessor) {
+		this.hybridRagProcessor = hybridRagProcessor;
+	}
 
-    @Override
-    public String getStrategyName() {
-        return "professionalKbEs";
-    }
+	@Override
+	public String getStrategyName() {
+		return "professionalKbEs";
+	}
 
-    @Override
-    public List<Document> retrieve(String query, Map<String, Object> options) {
-        // 使用 Filter.Expression 构建精确的元数据过滤器
-        // 只需按 source_type 过滤，查询所有标记为专业知识库的文档
-        var filterBuilder = new FilterExpressionBuilder();
-        var filterExpression = filterBuilder.eq("session_id", "professional_kb_es").build();
-        //todo: 添加配置项，例如 topK 和 similarityThreshold
-        SearchRequest searchRequest = SearchRequest.builder().query(query)
-                .topK(5) // 可配置
-                .similarityThreshold(0.7) // 可配置
-                .filterExpression(filterExpression).build();
+	@Override
+	public List<Document> retrieve(String query, Map<String, Object> options) {
+		// 构建专业知识库检索的上下文选项，与VectorStoreDataIngestionService的元数据逻辑一致
+		Map<String, Object> ragOptions = new HashMap<>(options);
+		ragOptions.put("source_type", "professional_kb_es");
+		// 专业知识库使用固定的session_id标识
+		ragOptions.put("session_id", "professional_kb_es");
 
-        return vectorStore.similaritySearch(searchRequest);
-    }
+		// 使用统一的RAG处理器执行完整的处理流程，包含ES混合查询
+		Query ragQuery = new Query(query);
+		return hybridRagProcessor.process(ragQuery, ragOptions);
+	}
+
 }
