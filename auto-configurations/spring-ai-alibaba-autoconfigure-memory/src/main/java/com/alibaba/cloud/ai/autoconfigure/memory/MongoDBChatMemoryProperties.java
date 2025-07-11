@@ -101,4 +101,5 @@ public class MongoDBChatMemoryProperties {
 	public void setDatabaseName(String databaseName) {
 		this.databaseName = databaseName;
 	}
+
 }

@@ -38,8 +38,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration test using Testcontainers to automatically manage MongoDB test
- * environment
+ * Integration test using Testcontainers to automatically manage MongoDB test environment
  */
 @SpringBootTest(classes = MongoDBChatMemoryRepositoryIT.TestConfiguration.class)
 @Testcontainers
@@ -50,7 +49,8 @@ class MongoDBChatMemoryRepositoryIT {
 	// Define and start MongoDB container
 	@Container
 	private static final MongoDBContainer mongoDBContainer = new MongoDBContainer(DockerImageName.parse("mongo:6.0.24"))
-			.withExposedPorts(MongoDB_PORT);
+		.withExposedPorts(MongoDB_PORT);
+
 	@Autowired
 	private ChatMemoryRepository chatMemoryRepository;
 
@@ -182,9 +182,11 @@ class MongoDBChatMemoryRepositoryIT {
 		@Bean
 		ChatMemoryRepository chatMemoryRepository() {
 			return MongoDBChatMemoryRepository.builder()
-					.host(mongoDBContainer.getHost())
-					.port(mongoDBContainer.getMappedPort(MongoDB_PORT))
-					.build();
+				.host(mongoDBContainer.getHost())
+				.port(mongoDBContainer.getMappedPort(MongoDB_PORT))
+				.build();
 		}
+
 	}
+
 }

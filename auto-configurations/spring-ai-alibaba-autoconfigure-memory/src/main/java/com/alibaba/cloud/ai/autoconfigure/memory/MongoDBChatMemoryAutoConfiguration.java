@@ -14,23 +14,24 @@ import org.springframework.context.annotation.Bean;
  * Auto-configuration for MongoDB chat memory repository.
  */
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
-@ConditionalOnClass({MongoDBChatMemoryRepository.class, MongoClient.class})
+@ConditionalOnClass({ MongoDBChatMemoryRepository.class, MongoClient.class })
 @EnableConfigurationProperties(MongoDBChatMemoryProperties.class)
 public class MongoDBChatMemoryAutoConfiguration {
 
-    private static final Logger logger = LoggerFactory.getLogger(MongoDBChatMemoryAutoConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(MongoDBChatMemoryAutoConfiguration.class);
 
-    @Bean
-    @ConditionalOnMissingBean
-    MongoDBChatMemoryRepository redisChatMemoryRepository(MongoDBChatMemoryProperties properties) {
-        logger.info("Configuring MongoDB chat memory repository");
-        return MongoDBChatMemoryRepository.builder()
-                .host(properties.getHost())
-                .port(properties.getPort())
-                .authDatabaseName(properties.getAuthDatabaseName())
-                .databaseName(properties.getDatabaseName())
-                .userName(properties.getUserName())
-                .password(properties.getPassword())
-                .build();
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	MongoDBChatMemoryRepository redisChatMemoryRepository(MongoDBChatMemoryProperties properties) {
+		logger.info("Configuring MongoDB chat memory repository");
+		return MongoDBChatMemoryRepository.builder()
+			.host(properties.getHost())
+			.port(properties.getPort())
+			.authDatabaseName(properties.getAuthDatabaseName())
+			.databaseName(properties.getDatabaseName())
+			.userName(properties.getUserName())
+			.password(properties.getPassword())
+			.build();
+	}
+
 }
