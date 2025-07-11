@@ -26,59 +26,6 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 public interface PlanExecutionRecorder {
 
 	/**
-	 * Records an agent execution instance associated with a specific plan execution
-	 * record
-	 * @param planExecutionRecord Plan execution record
-	 * @param agentRecord Agent execution record
-	 * @return Agent execution ID
-	 */
-	Long setAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord);
-
-	/**
-	 * Records a think-act execution instance associated with a specific agent execution
-	 * @param planExecutionRecord Plan execution record
-	 * @param agentExecutionId Agent execution ID
-	 * @param thinkActRecord Think-act record
-	 */
-	void setThinkActExecution(PlanExecutionRecord planExecutionRecord, Long agentExecutionId,
-			ThinkActRecord thinkActRecord);
-
-	/**
-	 * Marks plan execution as completed
-	 * @param planExecutionRecord Plan execution record
-	 * @param summary Execution summary
-	 */
-	void setPlanCompletion(PlanExecutionRecord planExecutionRecord, String summary);
-
-	/**
-	 * Gets or creates root plan execution record
-	 * @param rootPlanId Root plan ID
-	 * @param createIfNotExists Whether to create if not exists
-	 * @return Root plan execution record, or null if not found and createIfNotExists is false
-	 */
-	PlanExecutionRecord getOrCreateRootPlanExecutionRecord(String rootPlanId, boolean createIfNotExists);
-
-	/**
-	 * Gets or creates sub-plan execution record from parent plan
-	 * @param parentPlan Parent plan execution record
-	 * @param subPlanId Sub-plan ID
-	 * @param thinkActRecordId Think-act record ID that contains the sub-plan
-	 * @param createIfNotExists Whether to create if not exists
-	 * @return Sub-plan execution record, or null if thinkActRecordId is null or not found and createIfNotExists is false
-	 */
-	PlanExecutionRecord getOrCreateSubPlanExecutionRecord(PlanExecutionRecord parentPlan, String subPlanId, 
-			Long thinkActRecordId, boolean createIfNotExists);
-
-	/**
-	 * Saves the execution records for the specified plan ID to persistent storage. This
-	 * method will recursively call the save methods of PlanExecutionRecord,
-	 * AgentExecutionRecord, and ThinkActRecord
-	 * @param planId The plan ID to save
-	 * @return true if records were found and saved, false otherwise
-	 */
-	boolean savePlanExecutionRecords(PlanExecutionRecord planExecutionRecord);
-
-	/**
 	 * Saves all execution records to persistent storage. This method will iterate through
 	 * all plan records and call their save methods
 	 */
@@ -119,6 +66,56 @@ public interface PlanExecutionRecorder {
 	void recordPlanExecutionStart(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
 
 	/**
+	 * Get or create root plan execution record
+	 * @param rootPlanId Root plan ID
+	 * @param createIfNotExists Whether to create if not exists
+	 * @return Root plan execution record
+	 */
+	PlanExecutionRecord getOrCreateRootPlanExecutionRecord(String rootPlanId, boolean createIfNotExists);
+
+	/**
+	 * Get or create sub-plan execution record
+	 * @param parentPlan Parent plan execution record
+	 * @param subPlanId Sub-plan ID
+	 * @param thinkActRecordId Think-act record ID that contains the sub-plan
+	 * @param createIfNotExists Whether to create if not exists
+	 * @return Sub-plan execution record
+	 */
+	PlanExecutionRecord getOrCreateSubPlanExecutionRecord(PlanExecutionRecord parentPlan, String subPlanId, 
+			Long thinkActRecordId, boolean createIfNotExists);
+
+	/**
+	 * Record agent execution
+	 * @param planExecutionRecord Plan execution record
+	 * @param agentRecord Agent execution record
+	 * @return Agent execution ID
+	 */
+	Long setAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord);
+
+	/**
+	 * Record think-act execution
+	 * @param planExecutionRecord Plan execution record
+	 * @param agentExecutionId Agent execution ID
+	 * @param thinkActRecord Think-act record
+	 */
+	void setThinkActExecution(PlanExecutionRecord planExecutionRecord, Long agentExecutionId,
+			ThinkActRecord thinkActRecord);
+
+	/**
+	 * Record plan completion
+	 * @param planExecutionRecord Plan execution record
+	 * @param summary Execution summary
+	 */
+	void setPlanCompletion(PlanExecutionRecord planExecutionRecord, String summary);
+
+	/**
+	 * Save execution records to persistent storage
+	 * @param planExecutionRecord Plan execution record to save
+	 * @return true if save was successful
+	 */
+	boolean savePlanExecutionRecords(PlanExecutionRecord planExecutionRecord);
+
+	/**
 	 * Record complete agent execution at the end. This method handles all agent execution
 	 * record management logic without exposing internal record objects.
 	 * @param currentPlanId Current plan ID
@@ -139,5 +136,46 @@ public interface PlanExecutionRecorder {
 			String agentName, String agentDescription, int maxSteps, int actualSteps,
 			boolean completed, boolean stuck, String errorMessage, String result,
 			java.time.LocalDateTime startTime, java.time.LocalDateTime endTime);
+
+	/**
+	 * 接口1: 记录思考和执行动作
+	 * Record thinking and action execution process. This method handles ThinkActRecord creation and thinking process
+	 * without exposing internal record objects.
+	 * @param currentPlanId Current plan ID
+	 * @param rootPlanId Root plan ID  
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root plans)
+	 * @param agentName Agent name
+	 * @param agentDescription Agent description
+	 * @param thinkInput Input context for the thinking process
+	 * @param thinkOutput Output result of the thinking process
+	 * @param actionNeeded Whether thinking determined that action is needed
+	 * @param toolName Tool name used for action (if applicable)
+	 * @param toolParameters Tool parameters used for action (if applicable)
+	 * @param modelName Model name used for thinking
+	 * @param errorMessage Error message if thinking process failed
+	 * @return ThinkActRecord ID for subsequent action recording
+	 */
+	Long recordThinkingAndAction(String currentPlanId, String rootPlanId, Long thinkActRecordId,
+			String agentName, String agentDescription, String thinkInput, String thinkOutput,
+			boolean actionNeeded, String toolName, String toolParameters, String modelName, String errorMessage);
+
+	/**
+	 * 接口2: 记录执行结果  
+	 * Record action execution result. This method updates the ThinkActRecord with action results
+	 * without exposing internal record objects.
+	 * @param currentPlanId Current plan ID
+	 * @param rootPlanId Root plan ID
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root plans)
+	 * @param createdThinkActRecordId The ThinkActRecord ID returned from recordThinkingAndAction
+	 * @param actionDescription Description of the action to be taken
+	 * @param actionResult Result of action execution
+	 * @param status Execution status (SUCCESS, FAILED, etc.)
+	 * @param errorMessage Error message if action execution failed
+	 * @param toolName Tool name used for action
+	 * @param subPlanCreated Whether this action created a sub-plan execution
+	 */
+	void recordActionResult(String currentPlanId, String rootPlanId, Long thinkActRecordId,
+			Long createdThinkActRecordId, String actionDescription, String actionResult,
+			String status, String errorMessage, String toolName, boolean subPlanCreated);
 
 }

@@ -482,16 +482,14 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		agentRecord.setStatus(completed ? "COMPLETED" : (stuck ? "STUCK" : "FAILED"));
 
 		PlanExecutionRecord planRecord = null;
-		PlanExecutionRecord planToSave = null;
-
+		PlanExecutionRecord rootPlan = getOrCreateRootPlanExecutionRecord(rootPlanId, true);
 		// Handle both root plan and sub-plan execution cases
 		if (thinkActRecordId != null) {
 			// For sub-plan execution, we need the parent plan first
-			PlanExecutionRecord parentPlan = getOrCreateRootPlanExecutionRecord(rootPlanId, true);
-			if (parentPlan != null) {
-				planRecord = getOrCreateSubPlanExecutionRecord(parentPlan, currentPlanId,
+		
+			if (rootPlan != null) {
+				planRecord = getOrCreateSubPlanExecutionRecord(rootPlan, currentPlanId,
 						thinkActRecordId, true);
-				planToSave = parentPlan; // Save parent plan for sub-plan execution
 				// For sub-plan, set execution to sub-plan but save parent plan
 				if (planRecord != null) {
 					setAgentExecution(planRecord, agentRecord);
@@ -500,15 +498,176 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		} else {
 			// For root plan execution
 			planRecord = getOrCreateRootPlanExecutionRecord(currentPlanId, true);
-			planToSave = planRecord; // Save the root plan record itself
 			if (planRecord != null) {
 				setAgentExecution(planRecord, agentRecord);
 			}
 		}
 
 		// Save the correct plan (parent for sub-plan, self for root plan)
-		if (planToSave != null) {
-			savePlanExecutionRecords(planToSave);
+		if (rootPlan != null) {
+			savePlanExecutionRecords(rootPlan);
+		}
+	}
+
+	/**
+	 * 接口1: 记录思考和执行动作
+	 * Record thinking and action execution process. This method handles ThinkActRecord creation and thinking process
+	 * without exposing internal record objects.
+	 */
+	@Override
+	public Long recordThinkingAndAction(String currentPlanId, String rootPlanId, Long thinkActRecordId,
+			String agentName, String agentDescription, String thinkInput, String thinkOutput,
+			boolean actionNeeded, String toolName, String toolParameters, String modelName, String errorMessage) {
+		
+		if (currentPlanId == null) {
+			return null;
+		}
+
+		PlanExecutionRecord planExecutionRecord = null;
+		PlanExecutionRecord planToSave = null; // Track which plan should be saved
+		
+		// Handle both root plan and sub-plan execution cases based on thinkActRecordId
+		if (thinkActRecordId != null) {
+			// Sub-plan execution: thinkActRecordId indicates this is triggered by a tool call
+			PlanExecutionRecord parentPlan = getOrCreateRootPlanExecutionRecord(rootPlanId, true);
+			if (parentPlan != null) {
+				planExecutionRecord = getOrCreateSubPlanExecutionRecord(parentPlan, currentPlanId,
+						thinkActRecordId, true);
+				planToSave = parentPlan; // Save parent plan for sub-plan execution
+			}
+		} else {
+			// Root plan execution: no thinkActRecordId means this is a main plan
+			planExecutionRecord = getOrCreateRootPlanExecutionRecord(currentPlanId, true);
+			planToSave = planExecutionRecord; // Save the root plan record itself
+		}
+		
+		AgentExecutionRecord agentExecutionRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
+		
+		// Ensure agentExecutionRecord exists - create one if null
+		if (agentExecutionRecord == null && planExecutionRecord != null) {
+			agentExecutionRecord = new AgentExecutionRecord(currentPlanId, agentName, agentDescription);
+			setAgentExecution(planExecutionRecord, agentExecutionRecord);
+		}
+		
+		// Additional safety check
+		if (agentExecutionRecord == null) {
+			logger.error("Failed to create or retrieve AgentExecutionRecord for plan: {}", currentPlanId);
+			return null;
+		}
+		
+		// Create new ThinkActRecord
+		com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord thinkActRecord = 
+			new com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord(agentExecutionRecord.getId());
+		thinkActRecord.setActStartTime(java.time.LocalDateTime.now());
+		
+		// Set model name if provided
+		if (modelName != null) {
+			planExecutionRecord.setModelName(modelName);
+			agentExecutionRecord.setModelName(modelName);
+		}
+		
+		// Record thinking process
+		if (thinkInput != null) {
+			thinkActRecord.startThinking(thinkInput);
+		}
+		if (thinkOutput != null) {
+			thinkActRecord.finishThinking(thinkOutput);
+		}
+		
+		// Record action details if action is needed
+		if (actionNeeded && toolName != null) {
+			thinkActRecord.setActionNeeded(true);
+			thinkActRecord.setToolName(toolName);
+			thinkActRecord.setToolParameters(toolParameters);
+			thinkActRecord.setStatus("SUCCESS");
+		}
+		
+		// Record error if any
+		if (errorMessage != null) {
+			thinkActRecord.recordError(errorMessage);
+		}
+		
+		// Set think-act execution
+		if (planExecutionRecord != null) {
+			setThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(), thinkActRecord);
+			// Save the execution records
+			if (planToSave != null) {
+				savePlanExecutionRecords(planToSave);
+			}
+		}
+		
+		return thinkActRecord.getId();
+	}
+
+	/**
+	 * 接口2: 记录执行结果
+	 * Record action execution result. This method updates the ThinkActRecord with action results
+	 * without exposing internal record objects.
+	 */
+	@Override
+	public void recordActionResult(String currentPlanId, String rootPlanId, Long thinkActRecordId,
+			Long createdThinkActRecordId, String actionDescription, String actionResult,
+			String status, String errorMessage, String toolName, boolean subPlanCreated) {
+		
+		if (currentPlanId == null || createdThinkActRecordId == null) {
+			return;
+		}
+
+		PlanExecutionRecord planExecutionRecord = null;
+		PlanExecutionRecord planToSave = null; // Track which plan should be saved
+		
+		// Handle both root plan and sub-plan execution cases based on thinkActRecordId
+		if (thinkActRecordId != null) {
+			// Sub-plan execution: thinkActRecordId indicates this is triggered by a tool call
+			PlanExecutionRecord parentPlan = getOrCreateRootPlanExecutionRecord(rootPlanId, true);
+			if (parentPlan != null) {
+				planExecutionRecord = getOrCreateSubPlanExecutionRecord(parentPlan, currentPlanId,
+						thinkActRecordId, true);
+				planToSave = parentPlan; // Save parent plan for sub-plan execution
+			}
+		} else {
+			// Root plan execution: no thinkActRecordId means this is a main plan
+			planExecutionRecord = getOrCreateRootPlanExecutionRecord(currentPlanId, true);
+			planToSave = planExecutionRecord; // Save the root plan record itself
+		}
+		
+		AgentExecutionRecord agentExecutionRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
+		
+		// Additional safety check
+		if (agentExecutionRecord == null) {
+			logger.error("Failed to retrieve AgentExecutionRecord for plan: {} in recordActionResult", currentPlanId);
+			return;
+		}
+		
+		// Find the ThinkActRecord by ID and update it with action results
+		com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord thinkActRecord = 
+			findThinkActRecordInPlan(planExecutionRecord, createdThinkActRecordId);
+		
+		if (thinkActRecord != null) {
+			// Record action start if not already recorded
+			if (actionDescription != null && toolName != null) {
+				thinkActRecord.startAction(actionDescription, toolName, null);
+			}
+			
+			// Record action completion
+			if (actionResult != null && status != null) {
+				thinkActRecord.finishAction(actionResult, status);
+			}
+			
+			// Record error if any
+			if (errorMessage != null) {
+				thinkActRecord.recordError(errorMessage);
+			}
+			
+			// Set think-act execution to update the record
+			setThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(), thinkActRecord);
+			
+			// Save the execution records
+			if (planToSave != null) {
+				savePlanExecutionRecords(planToSave);
+			}
+		} else {
+			logger.warn("ThinkActRecord not found with ID: {} for plan: {}", createdThinkActRecordId, currentPlanId);
 		}
 	}
 
