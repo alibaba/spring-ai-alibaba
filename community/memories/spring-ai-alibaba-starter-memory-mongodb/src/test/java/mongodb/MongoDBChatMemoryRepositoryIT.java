@@ -27,7 +27,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -47,9 +47,9 @@ class MongoDBChatMemoryRepositoryIT {
 
 	private static final int MongoDB_PORT = 27017;
 
-	// Define and start ongoDB container
+	// Define and start MongoDB container
 	@Container
-	private static final GenericContainer<?> mongoDBContainer = new GenericContainer<>(DockerImageName.parse("mongodb:6.0.24"))
+	private static final MongoDBContainer mongoDBContainer = new MongoDBContainer(DockerImageName.parse("mongo:6.0.24"))
 			.withExposedPorts(MongoDB_PORT);
 	@Autowired
 	private ChatMemoryRepository chatMemoryRepository;
