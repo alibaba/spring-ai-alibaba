@@ -15,14 +15,14 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-
-import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 
 /**
  * @author nuocheng.lxm
@@ -73,10 +73,10 @@ public class ApiUtils {
 		return headers;
 	}
 
-	public static Consumer<HttpHeaders> getAudioTranscriptionHeaders(String apiKey, String workspace,
-			Boolean isAsyncTask, Boolean isSecurityCheck, Boolean isSSE) {
+	public static Consumer<HttpHeaders> getAudioTranscriptionHeaders(String workspace, Boolean isAsyncTask,
+			Boolean isSecurityCheck, Boolean isSSE) {
+
 		return (headers) -> {
-			headers.setBearerAuth(apiKey);
 			headers.set(HttpHeaders.USER_AGENT, USER_AGENT);
 			if (isSecurityCheck) {
 				headers.set("X-DashScope-DataInspection", "enable");

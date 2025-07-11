@@ -15,35 +15,31 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import java.nio.ByteBuffer;
-
 import com.alibaba.cloud.ai.dashscope.protocol.DashScopeWebSocketClient;
 import com.alibaba.cloud.ai.dashscope.protocol.DashScopeWebSocketClientOptions;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+
+import java.nio.ByteBuffer;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_WEBSOCKET_URL;
 
-public class DashScopeSpeechSynthesisApi {
-
-	private static final Logger logger = LoggerFactory.getLogger(DashScopeSpeechSynthesisApi.class);
+public class DashScopeAudioSpeechApi {
 
 	private final DashScopeWebSocketClient webSocketClient;
 
-	public DashScopeSpeechSynthesisApi(String apiKey) {
+	public DashScopeAudioSpeechApi(String apiKey) {
 		this(apiKey, null);
 	}
 
-	public DashScopeSpeechSynthesisApi(String apiKey, String workSpaceId) {
+	public DashScopeAudioSpeechApi(String apiKey, String workSpaceId) {
 		this(apiKey, workSpaceId, DEFAULT_WEBSOCKET_URL);
 	}
 
-	public DashScopeSpeechSynthesisApi(String apiKey, String workSpaceId, String websocketUrl) {
+	public DashScopeAudioSpeechApi(String apiKey, String workSpaceId, String websocketUrl) {
 		this.webSocketClient = new DashScopeWebSocketClient(DashScopeWebSocketClientOptions.builder()
 			.withApiKey(apiKey)
 			.withWorkSpaceId(workSpaceId)
@@ -103,6 +99,78 @@ public class DashScopeSpeechSynthesisApi {
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * DashScope text to speech model list. More models:
+	 * <a href="https://help.aliyun.com/zh/model-studio/sambert-java-sdk">Model Stt
+	 * Models</a>
+	 */
+	public enum TTSModel {
+
+		@JsonProperty("sambert-zhinan-v1")
+		SAM_BERT_ZHINAN_V1("sambert-zhinan-v1"),
+
+		@JsonProperty("sambert-zhiqi-v1")
+		SAM_BERT_ZHIQI_V1("sambert-zhiqi-v1"),
+
+		@JsonProperty("sambert-zhichu-v1")
+		SAM_BERT_ZHICHU_V1("sambert-zhichu-v1"),
+
+		@JsonProperty("sambert-zhide-v1")
+		SAM_BERT_ZHIDE_V1("sambert-zhide-v1"),
+
+		@JsonProperty("sambert-zhiwei-v1")
+		SAM_BERT_ZHIWEI_V1("sambert-zhiwei-v1"),
+
+		@JsonProperty("sambert-zhiting-v1")
+		SAM_BERT_ZHITING_V1("sambert-zhiting-v1");
+
+		private final String model;
+
+		TTSModel(String model) {
+			this.model = model;
+		}
+
+		public String getValue() {
+			return this.model;
+		}
+
+	}
+
+	/**
+	 * DashScope Audio speech model list.
+	 */
+	public enum AudioSpeechModel {
+
+		@JsonProperty("sambert-zhinan-v1")
+		SAM_BERT_ZHINAN_V1("sambert-zhinan-v1"),
+
+		@JsonProperty("sambert-zhiqi-v1")
+		SAM_BERT_ZHIQI_V1("sambert-zhiqi-v1"),
+
+		@JsonProperty("sambert-zhichu-v1")
+		SAM_BERT_ZHICHU_V1("sambert-zhichu-v1"),
+
+		@JsonProperty("sambert-zhide-v1")
+		SAM_BERT_ZHIDE_V1("sambert-zhide-v1"),
+
+		@JsonProperty("sambert-zhiwei-v1")
+		SAM_BERT_ZHIWEI_V1("sambert-zhiwei-v1"),
+
+		@JsonProperty("sambert-zhiting-v1")
+		SAM_BERT_ZHITING_V1("sambert-zhiting-v1");
+
+		public final String value;
+
+		AudioSpeechModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
 	}
 
 	public enum RequestTextType {
