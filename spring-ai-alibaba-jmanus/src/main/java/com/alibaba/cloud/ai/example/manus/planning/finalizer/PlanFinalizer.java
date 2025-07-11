@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -113,37 +112,21 @@ public class PlanFinalizer {
 	}
 
 	/**
-	 * Record plan completion
-	 * @param context The execution context
-	 * @param summary The summary of the plan execution
+	 * Record plan completion with the given context and summary
+	 * @param context Execution context
+	 * @param summary Plan execution summary
 	 */
 	private void recordPlanCompletion(ExecutionContext context, String summary) {
-		// Use thinkActRecordId from context to support sub-plan executions - using new interface methods
-		PlanExecutionRecord planRecord = null;
+		if (context == null || context.getPlan() == null) {
+			log.warn("Cannot record plan completion: context or plan is null");
+			return;
+		}
+		
 		String currentPlanId = context.getPlan().getCurrentPlanId();
 		String rootPlanId = context.getPlan().getRootPlanId();
 		Long thinkActRecordId = context.getThinkActRecordId();
-		PlanExecutionRecord parentPlan = recorder.getOrCreateRootPlanExecutionRecord(rootPlanId, false);
 		
-		// Handle both root plan and sub-plan execution cases based on thinkActRecordId
-		if (thinkActRecordId != null) {
-			// Sub-plan execution: thinkActRecordId indicates this is triggered by a tool call
-			if (parentPlan != null) {
-				planRecord = recorder.getOrCreateSubPlanExecutionRecord(parentPlan, currentPlanId, thinkActRecordId, false);
-			}
-		} else {
-			// Root plan execution: no thinkActRecordId means this is a main plan
-			planRecord = recorder.getOrCreateRootPlanExecutionRecord(currentPlanId, false);
-		}
-		
-		if (planRecord != null) {
-			recorder.setPlanCompletion(planRecord, summary);
-			recorder.savePlanExecutionRecords(parentPlan);
-
-		}
-
-		log.info("Plan completed with ID: {} (thinkActRecordId: {}) and summary: {}",
-				currentPlanId, thinkActRecordId, summary);
+		recorder.recordPlanCompletion(currentPlanId, rootPlanId, thinkActRecordId, summary);
 	}
 
 }

@@ -32,7 +32,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  * The in-memory PlanExecutionRecorder cannot be used in a distributed environment, so it
@@ -48,160 +47,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	@Resource
 	private PlanExecutionRecordRepository planExecutionRecordRepository;
 
-	/**
-	 * Gets or creates root plan execution record
-	 * @param rootPlanId Root plan ID
-	 * @param createIfNotExists Whether to create if not exists
-	 * @return Root plan execution record, or null if not found and createIfNotExists is false
-	 */
-	@Override
-	public PlanExecutionRecord getOrCreateRootPlanExecutionRecord(String rootPlanId, boolean createIfNotExists) {
-		logger.info("Enter getOrCreateRootPlanExecutionRecord with rootPlanId: {}, createIfNotExists: {}", 
-				rootPlanId, createIfNotExists);
 
-		if (rootPlanId == null) {
-			logger.error("rootPlanId is null");
-			return null;
-		}
-
-		// Get existing root plan record
-		PlanExecutionRecord rootRecord = getExecutionRecord(rootPlanId);
-		
-		// Create if not exists and createIfNotExists is true
-		if (rootRecord == null && createIfNotExists) {
-			logger.info("Creating root plan with ID: {}", rootPlanId);
-			rootRecord = new PlanExecutionRecord(rootPlanId, rootPlanId);
-			// Note: No explicit save here as per requirement
-		}
-
-		return rootRecord;
-	}
-
-	/**
-	 * Gets or creates sub-plan execution record from parent plan
-	 * @param parentPlan Parent plan execution record
-	 * @param subPlanId Sub-plan ID
-	 * @param thinkActRecordId Think-act record ID that contains the sub-plan
-	 * @param createIfNotExists Whether to create if not exists
-	 * @return Sub-plan execution record, or null if thinkActRecordId is null or not found and createIfNotExists is false
-	 */
-	@Override
-	public PlanExecutionRecord getOrCreateSubPlanExecutionRecord(PlanExecutionRecord parentPlan, String subPlanId, 
-			Long thinkActRecordId, boolean createIfNotExists) {
-		logger.info("Enter getOrCreateSubPlanExecutionRecord with subPlanId: {}, thinkActRecordId: {}, createIfNotExists: {}", 
-				subPlanId, thinkActRecordId, createIfNotExists);
-
-		// Return null if thinkActRecordId is null as per requirement
-		if (thinkActRecordId == null) {
-			logger.warn("thinkActRecordId is null, returning null");
-			return null;
-		}
-
-		if (parentPlan == null) {
-			logger.warn("parentPlan is null");
-			return null;
-		}
-
-		// Find ThinkActRecord in parent plan
-		ThinkActRecord thinkActRecord = findThinkActRecordInPlan(parentPlan, thinkActRecordId);
-		if (thinkActRecord == null) {
-			logger.warn("ThinkActRecord not found with ID: {}", thinkActRecordId);
-			return null;
-		}
-
-		// Check if subPlanExecutionRecord exists
-		PlanExecutionRecord subPlan = thinkActRecord.getSubPlanExecutionRecord();
-		if (subPlan == null && createIfNotExists) {
-			// Create new sub-plan with subPlanId and rootPlanId from parent
-			logger.info("Creating sub-plan with ID: {}", subPlanId);
-			subPlan = new PlanExecutionRecord(subPlanId, parentPlan.getRootPlanId());
-			subPlan.setThinkActRecordId(thinkActRecordId);
-			thinkActRecord.recordSubPlanExecution(subPlan);
-			// Note: No explicit save here as per requirement
-		}
-
-		return subPlan;
-	}
-
-	/**
-	 * Helper method to find ThinkActRecord in a plan
-	 * @param plan Plan execution record
-	 * @param thinkActRecordId Think-act record ID
-	 * @return ThinkActRecord if found, null otherwise
-	 */
-	private ThinkActRecord findThinkActRecordInPlan(PlanExecutionRecord plan, Long thinkActRecordId) {
-		if (plan == null || thinkActRecordId == null) {
-			return null;
-		}
-
-		for (AgentExecutionRecord agentRecord : plan.getAgentExecutionSequence()) {
-			for (ThinkActRecord thinkActRecord : agentRecord.getThinkActSteps()) {
-				if (thinkActRecordId.equals(thinkActRecord.getId())) {
-					return thinkActRecord;
-				}
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * Get or create ThinkActRecord in a plan, similar to DynamicAgent's approach for AgentExecutionRecord
-	 * @param planExecutionRecord Plan execution record
-	 * @param createIfNotExists Whether to create if not exists
-	 * @return ThinkActRecord if found or created, null if not found and createIfNotExists is false
-	 */
-	public ThinkActRecord getOrCreateThinkActRecordInPlan(PlanExecutionRecord planExecutionRecord, 
-			boolean createIfNotExists) {
-		if (planExecutionRecord == null) {
-			logger.warn("planExecutionRecord is null");
-			return null;
-		}
-
-		// Get current AgentExecutionRecord (similar to DynamicAgent pattern)
-		AgentExecutionRecord agentExecutionRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
-		
-		// Ensure agentExecutionRecord exists - this should not happen in normal flow
-		if (agentExecutionRecord == null) {
-			logger.error("Failed to get current AgentExecutionRecord for plan: {}", planExecutionRecord.getCurrentPlanId());
-			return null;
-		}
-
-		// Try to find the latest ThinkActRecord for this agent (similar to DynamicAgent's pattern)
-		ThinkActRecord thinkActRecord = null;
-		if (!agentExecutionRecord.getThinkActSteps().isEmpty()) {
-			// Get the last ThinkActRecord as the current one
-			thinkActRecord = agentExecutionRecord.getThinkActSteps()
-				.get(agentExecutionRecord.getThinkActSteps().size() - 1);
-		}
-
-		// Create new ThinkActRecord if not exists and createIfNotExists is true
-		if (thinkActRecord == null && createIfNotExists) {
-			logger.info("Creating new ThinkActRecord for agentExecutionId: {}", agentExecutionRecord.getId());
-			thinkActRecord = new ThinkActRecord(agentExecutionRecord.getId());
-			thinkActRecord.setActStartTime(java.time.LocalDateTime.now());
-			// Ensure id is generated
-			thinkActRecord.getId();
-			// Add to agent execution record
-			agentExecutionRecord.addThinkActStep(thinkActRecord);
-		}
-
-		return thinkActRecord;
-	}
-
-
-	/**
-	 * Record agent execution with PlanExecutionRecord parameter
-	 * @param planExecutionRecord Plan execution record
-	 * @param agentRecord Agent execution record
-	 * @return Agent execution ID
-	 */
-	@Override
-	public Long setAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord) {
-		if (planExecutionRecord != null) {
-			planExecutionRecord.addAgentExecutionRecord(agentRecord);
-		}
-		return agentRecord.getId();
-	}
 
 	/**
 	 * Record think-act execution with PlanExecutionRecord parameter
@@ -251,119 +97,12 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * Save all execution records to persistent storage. This method will iterate through
-	 * all plan records and call their save methods
-	 */
-	@Override
-	public void saveAllExecutionRecords() {
-		throw new UnsupportedOperationException();
-	}
-
-	/**
 	 * Delete execution record of the specified plan ID
 	 * @param planId Plan ID to delete
 	 */
 	@Override
 	public void removeExecutionRecord(String planId) {
 		planExecutionRecordRepository.deleteByPlanId(planId);
-	}
-
-	/**
-	 * Get all plan execution records
-	 * @return Map of all plan records
-	 */
-	public Map<String, PlanExecutionRecord> getAllPlanRecords() {
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * Check if a plan execution record exists
-	 * @param planId Plan ID to check
-	 * @return true if exists, false otherwise
-	 */
-	public boolean hasPlanExecutionRecord(String planId) {
-		return planExecutionRecordRepository.findByPlanId(planId) != null;
-	}
-
-	/**
-	 * Get current agent execution record for a specific plan execution record
-	 * @param planExecutionRecord Plan execution record
-	 * @return Current active agent execution record, or null if none exists
-	 */
-	@Override
-	public AgentExecutionRecord getCurrentAgentExecutionRecord(PlanExecutionRecord planExecutionRecord) {
-		if (planExecutionRecord != null) {
-			List<AgentExecutionRecord> agentExecutionSequence = planExecutionRecord.getAgentExecutionSequence();
-			Integer currentIndex = planExecutionRecord.getCurrentStepIndex();
-			if (!agentExecutionSequence.isEmpty() && currentIndex != null
-					&& currentIndex < agentExecutionSequence.size()) {
-				return agentExecutionSequence.get(currentIndex);
-			}
-		}
-		return null;
-	}
-
-	private PlanExecutionRecord getExecutionRecord(String rootPlanId) {
-		PlanExecutionRecordEntity entity = planExecutionRecordRepository.findByPlanId(rootPlanId);
-		return entity != null ? entity.getPlanExecutionRecord() : null;
-	}
-
-	private void saveExecutionRecord(PlanExecutionRecord planExecutionRecord) {
-		PlanExecutionRecordEntity entity = planExecutionRecordRepository
-			.findByPlanId(planExecutionRecord.getRootPlanId());
-		if (entity == null) {
-			entity = new PlanExecutionRecordEntity();
-			entity.setPlanId(planExecutionRecord.getRootPlanId());
-			entity.setGmtCreate(new Date());
-		}
-
-		entity.setPlanExecutionRecord(planExecutionRecord);
-		entity.setGmtModified(new Date());
-
-		planExecutionRecordRepository.save(entity);
-	}
-
-	private void updateThinkActRecord(PlanExecutionRecord parentPlan, ThinkActRecord record) {
-		if (parentPlan != null && record != null) {
-			ThinkActRecord existingRecord = findThinkActRecordInPlan(parentPlan, record.getId());
-			if (existingRecord != null) {
-				BeanUtils.copyProperties(record, existingRecord);
-			}
-		}
-	}
-
-	private void addThinkActStep(AgentExecutionRecord agentRecord, ThinkActRecord thinkActRecord) {
-		if (agentRecord.getThinkActSteps() == null) {
-			agentRecord.addThinkActStep(thinkActRecord);
-			return;
-		}
-		// 会多次调用，因此需要根据id修改
-		ThinkActRecord exist = agentRecord.getThinkActSteps()
-			.stream()
-			.filter(r -> r.getId().equals(thinkActRecord.getId()))
-			.findFirst()
-			.orElse(null);
-		if (exist == null) {
-			agentRecord.getThinkActSteps().add(thinkActRecord);
-		}
-		else {
-			BeanUtils.copyProperties(thinkActRecord, exist);
-		}
-	}
-
-
-
-
-
-	/**
-	 * Retrieve execution step information and set it to the record.
-	 */
-	protected void retrieveExecutionSteps(ExecutionContext context, PlanExecutionRecord record) {
-		List<String> steps = new ArrayList<>();
-		for (ExecutionStep step : context.getPlan().getAllSteps()) {
-			steps.add(step.getStepInStr());
-		}
-		record.setSteps(steps);
 	}
 
 	/**
@@ -607,7 +346,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	@Override
 	public void recordActionResult(String currentPlanId, String rootPlanId, Long thinkActRecordId,
 			Long createdThinkActRecordId, String actionDescription, String actionResult,
-			String status, String errorMessage, String toolName, boolean subPlanCreated) {
+			String status, String errorMessage, String toolName, String toolParameters, boolean subPlanCreated) {
 		
 		if (currentPlanId == null || createdThinkActRecordId == null) {
 			return;
@@ -646,7 +385,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		if (thinkActRecord != null) {
 			// Record action start if not already recorded
 			if (actionDescription != null && toolName != null) {
-				thinkActRecord.startAction(actionDescription, toolName, null);
+				thinkActRecord.startAction(actionDescription, toolName, toolParameters);
 			}
 			
 			// Record action completion
@@ -671,5 +410,277 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 	}
 
+	/**
+	 * 接口3: 记录计划完成
+	 * Record plan completion. This method handles plan completion recording logic
+	 * without exposing internal record objects.
+	 */
+	@Override
+	public void recordPlanCompletion(String currentPlanId, String rootPlanId, Long thinkActRecordId, String summary) {
+		if (currentPlanId == null) {
+			return;
+		}
 
+		PlanExecutionRecord planExecutionRecord = null;
+		PlanExecutionRecord planToSave = null; // Track which plan should be saved
+		
+		// Handle both root plan and sub-plan execution cases based on thinkActRecordId
+		if (thinkActRecordId != null) {
+			// Sub-plan execution: thinkActRecordId indicates this is triggered by a tool call
+			PlanExecutionRecord parentPlan = getOrCreateRootPlanExecutionRecord(rootPlanId, false);
+			if (parentPlan != null) {
+				planExecutionRecord = getOrCreateSubPlanExecutionRecord(parentPlan, currentPlanId, thinkActRecordId, false);
+				planToSave = parentPlan; // Save parent plan for sub-plan execution
+			}
+		} else {
+			// Root plan execution: no thinkActRecordId means this is a main plan
+			planExecutionRecord = getOrCreateRootPlanExecutionRecord(currentPlanId, false);
+			planToSave = planExecutionRecord; // Save the root plan record itself
+		}
+		
+		if (planExecutionRecord != null) {
+			setPlanCompletion(planExecutionRecord, summary);
+			// Save the correct plan (parent for sub-plan, self for root plan)
+			if (planToSave != null) {
+				savePlanExecutionRecords(planToSave);
+			}
+		}
+
+		logger.info("Plan completed with ID: {} (thinkActRecordId: {}) and summary: {}",
+				currentPlanId, thinkActRecordId, summary);
+	}
+
+	@Override
+	public PlanExecutionRecord getRootPlanExecutionRecord(String rootPlanId) {
+		if (rootPlanId == null) {
+			logger.warn("rootPlanId is null, cannot retrieve plan execution record");
+			return null;
+		}
+		return getOrCreateRootPlanExecutionRecord(rootPlanId, false);
+	}
+
+	/**
+	 * Gets or creates root plan execution record
+	 * @param rootPlanId Root plan ID
+	 * @param createIfNotExists Whether to create if not exists
+	 * @return Root plan execution record, or null if not found and createIfNotExists is false
+	 */
+	private PlanExecutionRecord getOrCreateRootPlanExecutionRecord(String rootPlanId, boolean createIfNotExists) {
+		logger.info("Enter getOrCreateRootPlanExecutionRecord with rootPlanId: {}, createIfNotExists: {}", 
+				rootPlanId, createIfNotExists);
+
+		if (rootPlanId == null) {
+			logger.error("rootPlanId is null");
+			return null;
+		}
+
+		// Get existing root plan record
+		PlanExecutionRecord rootRecord = getExecutionRecord(rootPlanId);
+		
+		// Create if not exists and createIfNotExists is true
+		if (rootRecord == null && createIfNotExists) {
+			logger.info("Creating root plan with ID: {}", rootPlanId);
+			rootRecord = new PlanExecutionRecord(rootPlanId, rootPlanId);
+			// Note: No explicit save here as per requirement
+		}
+
+		return rootRecord;
+	}
+
+	/**
+	 * Gets or creates sub-plan execution record from parent plan
+	 * @param parentPlan Parent plan execution record
+	 * @param subPlanId Sub-plan ID
+	 * @param thinkActRecordId Think-act record ID that contains the sub-plan
+	 * @param createIfNotExists Whether to create if not exists
+	 * @return Sub-plan execution record, or null if thinkActRecordId is null or not found and createIfNotExists is false
+	 */
+	private PlanExecutionRecord getOrCreateSubPlanExecutionRecord(PlanExecutionRecord parentPlan, String subPlanId, 
+			Long thinkActRecordId, boolean createIfNotExists) {
+		logger.info("Enter getOrCreateSubPlanExecutionRecord with subPlanId: {}, thinkActRecordId: {}, createIfNotExists: {}", 
+				subPlanId, thinkActRecordId, createIfNotExists);
+
+		// Return null if thinkActRecordId is null as per requirement
+		if (thinkActRecordId == null) {
+			logger.warn("thinkActRecordId is null, returning null");
+			return null;
+		}
+
+		if (parentPlan == null) {
+			logger.warn("parentPlan is null");
+			return null;
+		}
+
+		// Find ThinkActRecord in parent plan
+		ThinkActRecord thinkActRecord = findThinkActRecordInPlan(parentPlan, thinkActRecordId);
+		if (thinkActRecord == null) {
+			logger.warn("ThinkActRecord not found with ID: {}", thinkActRecordId);
+			return null;
+		}
+
+		// Check if subPlanExecutionRecord exists
+		PlanExecutionRecord subPlan = thinkActRecord.getSubPlanExecutionRecord();
+		if (subPlan == null && createIfNotExists) {
+			// Create new sub-plan with subPlanId and rootPlanId from parent
+			logger.info("Creating sub-plan with ID: {}", subPlanId);
+			subPlan = new PlanExecutionRecord(subPlanId, parentPlan.getRootPlanId());
+			subPlan.setThinkActRecordId(thinkActRecordId);
+			thinkActRecord.recordSubPlanExecution(subPlan);
+			// Note: No explicit save here as per requirement
+		}
+
+		return subPlan;
+	}
+
+	/**
+	 * Helper method to find ThinkActRecord in a plan
+	 * @param plan Plan execution record
+	 * @param thinkActRecordId Think-act record ID
+	 * @return ThinkActRecord if found, null otherwise
+	 */
+	private ThinkActRecord findThinkActRecordInPlan(PlanExecutionRecord plan, Long thinkActRecordId) {
+		if (plan == null || thinkActRecordId == null) {
+			return null;
+		}
+
+		for (AgentExecutionRecord agentRecord : plan.getAgentExecutionSequence()) {
+			for (ThinkActRecord thinkActRecord : agentRecord.getThinkActSteps()) {
+				if (thinkActRecordId.equals(thinkActRecord.getId())) {
+					return thinkActRecord;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Get current agent execution record for a specific plan execution record
+	 * @param planExecutionRecord Plan execution record
+	 * @return Current active agent execution record, or null if none exists
+	 */
+	private AgentExecutionRecord getCurrentAgentExecutionRecord(PlanExecutionRecord planExecutionRecord) {
+		if (planExecutionRecord != null) {
+			List<AgentExecutionRecord> agentExecutionSequence = planExecutionRecord.getAgentExecutionSequence();
+			Integer currentIndex = planExecutionRecord.getCurrentStepIndex();
+			if (!agentExecutionSequence.isEmpty() && currentIndex != null
+					&& currentIndex < agentExecutionSequence.size()) {
+				return agentExecutionSequence.get(currentIndex);
+			}
+		}
+		return null;
+	}
+
+	private PlanExecutionRecord getExecutionRecord(String rootPlanId) {
+		PlanExecutionRecordEntity entity = planExecutionRecordRepository.findByPlanId(rootPlanId);
+		return entity != null ? entity.getPlanExecutionRecord() : null;
+	}
+
+	private void saveExecutionRecord(PlanExecutionRecord planExecutionRecord) {
+		PlanExecutionRecordEntity entity = planExecutionRecordRepository
+			.findByPlanId(planExecutionRecord.getRootPlanId());
+		if (entity == null) {
+			entity = new PlanExecutionRecordEntity();
+			entity.setPlanId(planExecutionRecord.getRootPlanId());
+			entity.setGmtCreate(new Date());
+		}
+
+		entity.setPlanExecutionRecord(planExecutionRecord);
+		entity.setGmtModified(new Date());
+
+		planExecutionRecordRepository.save(entity);
+	}
+
+	private void updateThinkActRecord(PlanExecutionRecord parentPlan, ThinkActRecord record) {
+		if (parentPlan != null && record != null) {
+			ThinkActRecord existingRecord = findThinkActRecordInPlan(parentPlan, record.getId());
+			if (existingRecord != null) {
+				BeanUtils.copyProperties(record, existingRecord);
+			}
+		}
+	}
+
+	private void addThinkActStep(AgentExecutionRecord agentRecord, ThinkActRecord thinkActRecord) {
+		if (agentRecord.getThinkActSteps() == null) {
+			agentRecord.addThinkActStep(thinkActRecord);
+			return;
+		}
+		// 会多次调用，因此需要根据id修改
+		ThinkActRecord exist = agentRecord.getThinkActSteps()
+			.stream()
+			.filter(r -> r.getId().equals(thinkActRecord.getId()))
+			.findFirst()
+			.orElse(null);
+		if (exist == null) {
+			agentRecord.getThinkActSteps().add(thinkActRecord);
+		}
+		else {
+			BeanUtils.copyProperties(thinkActRecord, exist);
+		}
+	}
+
+
+
+	/**
+	 * Retrieve execution step information and set it to the record.
+	 */
+	private void retrieveExecutionSteps(ExecutionContext context, PlanExecutionRecord record) {
+		List<String> steps = new ArrayList<>();
+		for (ExecutionStep step : context.getPlan().getAllSteps()) {
+			steps.add(step.getStepInStr());
+		}
+		record.setSteps(steps);
+	}
+
+	/**
+	 * Record agent execution with PlanExecutionRecord parameter
+	 * @param planExecutionRecord Plan execution record
+	 * @param agentRecord Agent execution record
+	 * @return Agent execution ID
+	 */
+	private Long setAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord) {
+		if (planExecutionRecord != null) {
+			planExecutionRecord.addAgentExecutionRecord(agentRecord);
+		}
+		return agentRecord.getId();
+	}
+
+	/**
+	 * get current  think-act record ID
+	 * @param currentPlanId 当前计划ID
+	 * @param rootPlanId 根计划ID
+	 * @return 当前 think-act 记录ID，如果没有则返回 null
+	 */
+	public Long getCurrentThinkActRecordId(String currentPlanId, String rootPlanId) {
+		try {
+			PlanExecutionRecord planExecutionRecord = null;
+
+			if (rootPlanId != null && !rootPlanId.equals(currentPlanId)) {
+				PlanExecutionRecord parentPlan = getOrCreateRootPlanExecutionRecord(rootPlanId, false);
+				if (parentPlan != null) {
+					AgentExecutionRecord currentAgentRecord = getCurrentAgentExecutionRecord(parentPlan);
+					if (currentAgentRecord != null && currentAgentRecord.getThinkActSteps() != null
+							&& !currentAgentRecord.getThinkActSteps().isEmpty()) {
+						List<ThinkActRecord> steps = currentAgentRecord.getThinkActSteps();
+						ThinkActRecord lastStep = steps.get(steps.size() - 1);
+						return lastStep.getId();
+					}
+				}
+			} else {
+				planExecutionRecord = getOrCreateRootPlanExecutionRecord(currentPlanId, false);
+				if (planExecutionRecord != null) {
+					AgentExecutionRecord currentAgentRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
+					if (currentAgentRecord != null && currentAgentRecord.getThinkActSteps() != null
+							&& !currentAgentRecord.getThinkActSteps().isEmpty()) {
+						List<ThinkActRecord> steps = currentAgentRecord.getThinkActSteps();
+						ThinkActRecord lastStep = steps.get(steps.size() - 1);
+						return lastStep.getId();
+					}
+				}
+			}
+		} catch (Exception e) {
+			logger.warn("Failed to get current think-act record ID: {}", e.getMessage());
+		}
+
+		return null;
+	}
 }

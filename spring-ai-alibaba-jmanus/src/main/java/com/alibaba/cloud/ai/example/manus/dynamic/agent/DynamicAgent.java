@@ -245,6 +245,7 @@ public class DynamicAgent extends ReActAgent {
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			ToolCall toolCall = toolCalls.get(0);
 			String toolName = toolCall.name();
+			String toolParameters = toolCall.arguments();
 			String actionDescription = "Executing tool: " + toolName;
 
 			toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
@@ -308,6 +309,7 @@ public class DynamicAgent extends ReActAgent {
 							"TIMEOUT",
 							"Input timeout occurred for FormInputTool",
 							toolName,
+							toolParameters,
 							false // subPlanCreated
 						);
 						
@@ -335,6 +337,7 @@ public class DynamicAgent extends ReActAgent {
 						"COMPLETED",
 						null, // errorMessage
 						toolName,
+						toolParameters,
 						false // subPlanCreated
 					);
 					
@@ -356,6 +359,7 @@ public class DynamicAgent extends ReActAgent {
 				"SUCCESS",
 				null, // errorMessage
 				toolName,
+				toolParameters,
 				false // subPlanCreated
 			);
 
@@ -368,11 +372,13 @@ public class DynamicAgent extends ReActAgent {
 			
 			// 记录失败的动作结果
 			String toolName = null;
+			String toolParameters = null;
 			String actionDescription = "Tool execution failed";
 			if (response != null && response.getResult() != null && response.getResult().getOutput() != null) {
 				List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 				if (!toolCalls.isEmpty()) {
 					toolName = toolCalls.get(0).name();
+					toolParameters = toolCalls.get(0).arguments();
 					actionDescription = "Executing tool: " + toolName;
 				}
 			}
@@ -387,6 +393,7 @@ public class DynamicAgent extends ReActAgent {
 				"FAILED",
 				e.getMessage(), // errorMessage
 				toolName,
+				toolParameters,
 				false // subPlanCreated
 			);
 			

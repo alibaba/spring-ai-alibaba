@@ -15,7 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder;
 
-import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 
@@ -26,31 +27,18 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 public interface PlanExecutionRecorder {
 
 	/**
-	 * Saves all execution records to persistent storage. This method will iterate through
-	 * all plan records and call their save methods
-	 */
-	void saveAllExecutionRecords();
-
-	/**
-	 * Gets the current active agent execution record for the specified plan execution
-	 * record
-	 * @param planExecutionRecord Plan execution record
-	 * @return Current active agent execution record, or null if none exists
-	 */
-	AgentExecutionRecord getCurrentAgentExecutionRecord(PlanExecutionRecord planExecutionRecord);
-
-	/**
 	 * Removes the execution records for the specified plan ID
 	 * @param planId The plan ID to remove
 	 */
 	void removeExecutionRecord(String planId);
 
+	PlanExecutionRecord getRootPlanExecutionRecord(String rootPlanId);
 	/**
 	 * Record the start of step execution.
 	 * @param step Execution step
 	 * @param context Execution context
 	 */
-	void recordStepStart(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep step, com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
+	void recordStepStart(ExecutionStep step, ExecutionContext context);
 
 	/**
 	 * Record the end of step execution.
@@ -64,33 +52,6 @@ public interface PlanExecutionRecorder {
 	 * @param context Execution context containing user request and execution process information
 	 */
 	void recordPlanExecutionStart(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
-
-	/**
-	 * Get or create root plan execution record
-	 * @param rootPlanId Root plan ID
-	 * @param createIfNotExists Whether to create if not exists
-	 * @return Root plan execution record
-	 */
-	PlanExecutionRecord getOrCreateRootPlanExecutionRecord(String rootPlanId, boolean createIfNotExists);
-
-	/**
-	 * Get or create sub-plan execution record
-	 * @param parentPlan Parent plan execution record
-	 * @param subPlanId Sub-plan ID
-	 * @param thinkActRecordId Think-act record ID that contains the sub-plan
-	 * @param createIfNotExists Whether to create if not exists
-	 * @return Sub-plan execution record
-	 */
-	PlanExecutionRecord getOrCreateSubPlanExecutionRecord(PlanExecutionRecord parentPlan, String subPlanId, 
-			Long thinkActRecordId, boolean createIfNotExists);
-
-	/**
-	 * Record agent execution
-	 * @param planExecutionRecord Plan execution record
-	 * @param agentRecord Agent execution record
-	 * @return Agent execution ID
-	 */
-	Long setAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord);
 
 	/**
 	 * Record think-act execution
@@ -176,6 +137,19 @@ public interface PlanExecutionRecorder {
 	 */
 	void recordActionResult(String currentPlanId, String rootPlanId, Long thinkActRecordId,
 			Long createdThinkActRecordId, String actionDescription, String actionResult,
-			String status, String errorMessage, String toolName, boolean subPlanCreated);
+			String status, String errorMessage, String toolName, String toolParameters,  boolean subPlanCreated);
 
+	/**
+	 * 接口3: 记录计划完成
+	 * Record plan completion. This method handles plan completion recording logic
+	 * without exposing internal record objects.
+	 * @param currentPlanId Current plan ID
+	 * @param rootPlanId Root plan ID
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root plans)
+	 * @param summary The summary of the plan execution
+	 */
+	void recordPlanCompletion(String currentPlanId, String rootPlanId, Long thinkActRecordId, String summary);
+
+
+	public Long getCurrentThinkActRecordId(String currentPlanId, String rootPlanId);
 }
