@@ -455,5 +455,62 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 	}
 
+	/**
+	 * Record complete agent execution at the end. This method handles all agent execution
+	 * record management logic without exposing internal record objects.
+	 */
+	@Override
+	public void recordCompleteAgentExecution(String currentPlanId, String rootPlanId, Long thinkActRecordId,
+			String agentName, String agentDescription, int maxSteps, int actualSteps,
+			boolean completed, boolean stuck, String errorMessage, String result,
+			LocalDateTime startTime, LocalDateTime endTime) {
+		
+		if (currentPlanId == null) {
+			return;
+		}
+
+		// Create agent execution record with all the final data
+		AgentExecutionRecord agentRecord = new AgentExecutionRecord(currentPlanId, agentName, agentDescription);
+		agentRecord.setMaxSteps(maxSteps);
+		agentRecord.setCurrentStep(actualSteps);
+		agentRecord.setCompleted(completed);
+		agentRecord.setStuck(stuck);
+		agentRecord.setErrorMessage(errorMessage);
+		agentRecord.setResult(result);
+		agentRecord.setStartTime(startTime);
+		agentRecord.setEndTime(endTime);
+		agentRecord.setStatus(completed ? "COMPLETED" : (stuck ? "STUCK" : "FAILED"));
+
+		PlanExecutionRecord planRecord = null;
+		PlanExecutionRecord planToSave = null;
+
+		// Handle both root plan and sub-plan execution cases
+		if (thinkActRecordId != null) {
+			// For sub-plan execution, we need the parent plan first
+			PlanExecutionRecord parentPlan = getOrCreateRootPlanExecutionRecord(rootPlanId, true);
+			if (parentPlan != null) {
+				planRecord = getOrCreateSubPlanExecutionRecord(parentPlan, currentPlanId,
+						thinkActRecordId, true);
+				planToSave = parentPlan; // Save parent plan for sub-plan execution
+				// For sub-plan, set execution to sub-plan but save parent plan
+				if (planRecord != null) {
+					setAgentExecution(planRecord, agentRecord);
+				}
+			}
+		} else {
+			// For root plan execution
+			planRecord = getOrCreateRootPlanExecutionRecord(currentPlanId, true);
+			planToSave = planRecord; // Save the root plan record itself
+			if (planRecord != null) {
+				setAgentExecution(planRecord, agentRecord);
+			}
+		}
+
+		// Save the correct plan (parent for sub-plan, self for root plan)
+		if (planToSave != null) {
+			savePlanExecutionRecords(planToSave);
+		}
+	}
+
 
 }

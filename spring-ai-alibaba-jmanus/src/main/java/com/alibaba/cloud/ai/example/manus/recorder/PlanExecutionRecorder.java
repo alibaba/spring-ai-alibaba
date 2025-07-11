@@ -118,4 +118,26 @@ public interface PlanExecutionRecorder {
 	 */
 	void recordPlanExecutionStart(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
 
+	/**
+	 * Record complete agent execution at the end. This method handles all agent execution
+	 * record management logic without exposing internal record objects.
+	 * @param currentPlanId Current plan ID
+	 * @param rootPlanId Root plan ID
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root plans)
+	 * @param agentName Agent name
+	 * @param agentDescription Agent description
+	 * @param maxSteps Maximum execution steps
+	 * @param actualSteps Actual steps executed
+	 * @param completed Whether execution completed successfully
+	 * @param stuck Whether agent got stuck
+	 * @param errorMessage Error message if any
+	 * @param result Final execution result
+	 * @param startTime Execution start time
+	 * @param endTime Execution end time
+	 */
+	void recordCompleteAgentExecution(String currentPlanId, String rootPlanId, Long thinkActRecordId,
+			String agentName, String agentDescription, int maxSteps, int actualSteps,
+			boolean completed, boolean stuck, String errorMessage, String result,
+			java.time.LocalDateTime startTime, java.time.LocalDateTime endTime);
+
 }
