@@ -6,13 +6,13 @@ spring:
   ai:
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
-      api-key: ${DASHSCOPE_API_KEY}}
+      api-key: ${DASHSCOPE_API_KEY}
       chat:
         options:
           model: qwen-plus
     mcp:
       client:
-        enabled: false
+        enabled: true
   # H2 database configuration
   datasource:
     url: jdbc:h2:file:./h2-data/openmanus_db;MODE=MYSQL;DATABASE_TO_LOWER=TRUE
@@ -24,14 +24,14 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
-        format_sql: false
+        format_sql: true
   # H2 console configuration
   h2:
     console:
-      enabled: false
+      enabled: true
       path: /h2-console
 logging:
   file:

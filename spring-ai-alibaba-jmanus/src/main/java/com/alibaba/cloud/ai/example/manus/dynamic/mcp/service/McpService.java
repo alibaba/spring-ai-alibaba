@@ -15,33 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.service;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigType;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigRequestVO;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerConfig;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServersConfig;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.repository.McpConfigRepository;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.cache.RemovalListener;
-import io.modelcontextprotocol.client.McpAsyncClient;
-import io.modelcontextprotocol.client.McpClient;
-import io.modelcontextprotocol.client.transport.ServerParameters;
-import io.modelcontextprotocol.client.transport.StdioClientTransport;
-import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
-import io.modelcontextprotocol.spec.McpClientTransport;
-import io.modelcontextprotocol.spec.McpSchema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -50,6 +23,36 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigType;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigRequestVO;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerConfig;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServersConfig;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.repository.McpConfigRepository;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.transport.StreamableHttpClientTransport;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.cache.RemovalListener;
+
+import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.client.McpClient;
+import io.modelcontextprotocol.client.transport.ServerParameters;
+import io.modelcontextprotocol.client.transport.StdioClientTransport;
+import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
+import io.modelcontextprotocol.spec.McpClientTransport;
+import io.modelcontextprotocol.spec.McpSchema;
 
 @Component
 public class McpService {
@@ -120,10 +123,7 @@ public class McpService {
 						mcpServiceEntity = createStudioConnection(mcpConfigEntity, serverName);
 					}
 					case STREAMING -> {
-						logger.warn("STREAMING connection type is not fully implemented yet for server: {}",
-								serverName);
-						throw new UnsupportedOperationException(
-								"STREAMING connection type is not supported yet for server: " + serverName);
+						mcpServiceEntity = createStreamableConnection(mcpConfigEntity, serverName);
 					}
 					default -> {
 						logger.error("Unsupported connection type: {} for server: {}", type, serverName);
@@ -277,6 +277,36 @@ public class McpService {
 		}
 	}
 
+	private McpServiceEntity createStreamableConnection(McpConfigEntity mcpConfigEntity, String serverName)
+			throws IOException {
+		McpClientTransport transport = null;
+
+		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigEntity.getConnectionConfig())) {
+			McpServerConfig mcpServerConfig = jsonParser.readValueAs(McpServerConfig.class);
+
+			// Validate URL configuration
+			if (mcpServerConfig.getUrl() == null || mcpServerConfig.getUrl().trim().isEmpty()) {
+				throw new IOException("Invalid or missing MCP server URL for server: " + serverName);
+			}
+
+			String url = mcpServerConfig.getUrl().trim();
+			// 直接用完整url，不再拆分baseUrl/endpoint
+			logger.info("Creating Streamable HTTP connection to full URL: {} for server: {}", url, serverName);
+
+			// 创建WebClient时不再设置baseUrl，直接用完整url
+			WebClient.Builder webClientBuilder = WebClient.builder()
+				.defaultHeader("Accept", "application/json, text/event-stream")
+				.defaultHeader("Content-Type", "application/json");
+
+			transport = new StreamableHttpClientTransport(webClientBuilder, new ObjectMapper(), url);
+			return configureMcpTransport(serverName, transport);
+		}
+		catch (Exception e) {
+			logger.error("Failed to create Streamable HTTP transport for server: {}", serverName, e);
+			throw new IOException("Failed to create Streamable HTTP transport for server: " + serverName, e);
+		}
+	}
+
 	private McpServiceEntity configureMcpTransport(String mcpServerName, McpClientTransport transport)
 			throws IOException {
 		if (transport != null) {
@@ -292,7 +322,11 @@ public class McpService {
 				try {
 					logger.debug("Attempting to initialize MCP transport for: {} (attempt {}/{})", mcpServerName,
 							attempt, maxRetries);
-					mcpAsyncClient.initialize().block(Duration.ofMinutes(2));
+					mcpAsyncClient.initialize()
+						.timeout(Duration.ofSeconds(60))  // 增加到60秒
+						.doOnSuccess(result -> logger.info("MCP client initialized successfully for {}", mcpServerName))
+						.doOnError(error -> logger.error("Failed to initialize MCP client for {}: {}", mcpServerName, error.getMessage()))
+						.block();
 					logger.info("MCP transport configured successfully for: {} (attempt {})", mcpServerName, attempt);
 
 					AsyncMcpToolCallbackProvider callbackProvider = new AsyncMcpToolCallbackProvider(mcpAsyncClient);
@@ -363,7 +397,17 @@ public class McpService {
 				});
 			}
 			else if (McpConfigType.STREAMING.equals(mcpConfigType)) {
-				throw new UnsupportedOperationException("STREAMING connection type is not supported yet");
+				// STREAMING type connections require special handling
+				mcpServerConfig.getMcpServers().forEach((name, config) -> {
+					if (config.getUrl() == null || config.getUrl().isEmpty()) {
+						throw new IllegalArgumentException(
+								"Missing required 'url' field in server configuration for " + name);
+					}
+					if (config.getCommand() != null && !config.getCommand().isEmpty()) {
+						throw new IllegalArgumentException(
+								"STREAMING type should not have 'command' field in server configuration for " + name);
+					}
+				});
 			}
 
 			// Iterate through each MCP server configuration

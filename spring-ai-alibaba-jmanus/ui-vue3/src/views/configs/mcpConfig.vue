@@ -139,6 +139,18 @@
                   <span class="connection-type-desc">通过http server等提供的，目前网络上比较少见</span>
                 </label>
               </div>
+              <div class="connection-type-option">
+                <input 
+                  type="radio" 
+                  id="mcp-connection-type-streaming" 
+                  v-model="newMcpServer.connectionType" 
+                  value="STREAMING"
+                />
+                <label for="mcp-connection-type-streaming" class="radio-label">
+                  <span class="radio-title">Streaming HTTP</span>
+                  <span class="connection-type-desc">基于HTTP的流式传输协议，支持实时数据交换</span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -564,6 +576,11 @@ onMounted(() => {
 .connection-type-badge.sse {
   background: rgba(76, 175, 80, 0.2);
   color: #a5d6a7;
+}
+
+.connection-type-badge.streaming {
+  background: rgba(156, 39, 176, 0.2);
+  color: #ce93d8;
 }
 
 .config-preview {

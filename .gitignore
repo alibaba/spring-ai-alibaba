@@ -53,3 +53,9 @@ spring-ai-alibaba-jmanus/ui-vue3/pnpm-lock.yaml
 # checkstyle report files
 **/checkstyle-report.xml
 **/logs/*
+.specstory/.what-is-this.md
+.specstory/history/2025-06-16_07-00Z-inject-api-key-during-application-startup.md
+.specstory/history/2025-06-16_11-58Z-fixing-private-access-control-error.md
+.specstory/history/2025-07-08_03-24Z-generate-a-name-for-the-chat.md
+.specstory/history/2025-07-09_05-58Z-just-a-friendly-hello.md
+.gitignore
