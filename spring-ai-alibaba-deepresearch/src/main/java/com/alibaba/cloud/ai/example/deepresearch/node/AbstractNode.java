@@ -43,12 +43,11 @@ public abstract class AbstractNode {
 
 	protected ChatClient chatClient() {
 		return builder
-				.defaultAdvisors(RoutingNodeAdvisor
-						.Builder()
-						.selections(NodeSelectionUtil.getAvailableNodes())
-						.JSONParser(new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))
-						.build())
-				.build();
+			.defaultAdvisors(RoutingNodeAdvisor.Builder()
+				.selections(NodeSelectionUtil.getAvailableNodes())
+				.JSONParser(new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))
+				.build())
+			.build();
 	}
 
 	public NodeDefinition getNodeDefinition() {

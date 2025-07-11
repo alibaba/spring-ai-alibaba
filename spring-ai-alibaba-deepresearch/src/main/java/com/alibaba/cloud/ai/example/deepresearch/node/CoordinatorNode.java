@@ -48,7 +48,7 @@ public class CoordinatorNode extends AbstractNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(CoordinatorNode.class);
 
-//	private final ChatClient coordinatorAgent;
+	// private final ChatClient coordinatorAgent;
 
 	public CoordinatorNode(ObjectProvider<ChatClient.Builder> coordinatorAgent) {
 		super(coordinatorAgent);

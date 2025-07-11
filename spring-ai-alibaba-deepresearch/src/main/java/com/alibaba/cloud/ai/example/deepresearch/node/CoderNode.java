@@ -51,7 +51,6 @@ public class CoderNode extends AbstractNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(CoderNode.class);
 
-
 	private final String executorNodeId;
 
 	private final String nodeName;
@@ -62,7 +61,7 @@ public class CoderNode extends AbstractNode implements NodeAction {
 	private final McpProviderFactory mcpFactory;
 
 	@Autowired
-	public CoderNode(ObjectProvider<ChatClient.Builder> coderAgent, ReflectionProcessor reflectionProcessor){
+	public CoderNode(ObjectProvider<ChatClient.Builder> coderAgent, ReflectionProcessor reflectionProcessor) {
 		super(coderAgent);
 		this.executorNodeId = "__default__";
 		this.nodeName = "coder_" + executorNodeId;
@@ -70,10 +69,10 @@ public class CoderNode extends AbstractNode implements NodeAction {
 		this.mcpFactory = null;
 	}
 
-	public CoderNode(ObjectProvider<ChatClient.Builder> coderAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
-			McpProviderFactory mcpFactory) {
-        super(coderAgent);
-        this.executorNodeId = executorNodeId;
+	public CoderNode(ObjectProvider<ChatClient.Builder> coderAgent, String executorNodeId,
+			ReflectionProcessor reflectionProcessor, McpProviderFactory mcpFactory) {
+		super(coderAgent);
+		this.executorNodeId = executorNodeId;
 		this.nodeName = "coder_" + executorNodeId;
 		this.reflectionProcessor = reflectionProcessor;
 		this.mcpFactory = mcpFactory;

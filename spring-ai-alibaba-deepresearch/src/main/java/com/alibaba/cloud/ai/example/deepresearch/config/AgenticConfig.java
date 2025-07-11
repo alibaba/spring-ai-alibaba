@@ -41,10 +41,10 @@ public class AgenticConfig implements InitializingBean {
 
 	private final Map<String, String> agentDescriptions;
 
-	public AgenticConfig(List<AbstractNode> nodes){
+	public AgenticConfig(List<AbstractNode> nodes) {
 		this.agentDescriptions = nodes.stream()
-				.collect(Collectors.toMap(node -> node.getNodeDefinition().getName(),
-						node -> node.getNodeDefinition().getDescription()));
+			.collect(Collectors.toMap(node -> node.getNodeDefinition().getName(),
+					node -> node.getNodeDefinition().getDescription()));
 	}
 
 	@Override
