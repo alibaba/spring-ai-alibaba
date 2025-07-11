@@ -69,7 +69,8 @@ public class PlanExecutor extends AbstractPlanExecutor {
 			}
 
 			context.setSuccess(true);
-		} finally {
+		}
+		finally {
 			performCleanup(context, lastExecutor);
 		}
 	}

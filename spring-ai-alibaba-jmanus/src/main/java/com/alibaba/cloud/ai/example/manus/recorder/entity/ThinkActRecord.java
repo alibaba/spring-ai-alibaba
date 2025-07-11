@@ -43,6 +43,7 @@ public class ThinkActRecord {
 
 	// Unique identifier of the record
 	private Long id;
+
 	// 生成唯一ID的方法
 	private Long generateId() {
 		if (this.id == null) {

@@ -36,7 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Abstract base class for plan executors. Contains common logic and basic functionality for all executor types.
+ * Abstract base class for plan executors. Contains common logic and basic functionality
+ * for all executor types.
  */
 public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
@@ -44,7 +45,8 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
 	protected final PlanExecutionRecorder recorder;
 
-	// Pattern to match square brackets at the beginning of a string, supports Chinese and other characters
+	// Pattern to match square brackets at the beginning of a string, supports Chinese and
+	// other characters
 	protected final Pattern pattern = Pattern.compile("^\\s*\\[([^\\]]+)\\]");
 
 	protected final List<DynamicAgentEntity> agents;
@@ -157,9 +159,6 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	protected PlanExecutionRecorder getRecorder() {
 		return recorder;
 	}
-
-
-
 
 	/**
 	 * Parse columns string by splitting with comma or Chinese comma.

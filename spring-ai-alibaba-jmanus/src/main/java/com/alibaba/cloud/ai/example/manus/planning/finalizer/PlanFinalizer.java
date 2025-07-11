@@ -121,11 +121,11 @@ public class PlanFinalizer {
 			log.warn("Cannot record plan completion: context or plan is null");
 			return;
 		}
-		
+
 		String currentPlanId = context.getPlan().getCurrentPlanId();
 		String rootPlanId = context.getPlan().getRootPlanId();
 		Long thinkActRecordId = context.getThinkActRecordId();
-		
+
 		recorder.recordPlanCompletion(currentPlanId, rootPlanId, thinkActRecordId, summary);
 	}
 

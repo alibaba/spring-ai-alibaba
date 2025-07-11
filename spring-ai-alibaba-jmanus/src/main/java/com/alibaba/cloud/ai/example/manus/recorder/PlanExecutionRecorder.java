@@ -33,6 +33,7 @@ public interface PlanExecutionRecorder {
 	void removeExecutionRecord(String planId);
 
 	PlanExecutionRecord getRootPlanExecutionRecord(String rootPlanId);
+
 	/**
 	 * Record the start of step execution.
 	 * @param step Execution step
@@ -45,11 +46,13 @@ public interface PlanExecutionRecorder {
 	 * @param step Execution step
 	 * @param context Execution context
 	 */
-	void recordStepEnd(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep step, com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
+	void recordStepEnd(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep step,
+			com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
 
 	/**
 	 * Record the start of plan execution.
-	 * @param context Execution context containing user request and execution process information
+	 * @param context Execution context containing user request and execution process
+	 * information
 	 */
 	void recordPlanExecutionStart(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
 
@@ -81,7 +84,8 @@ public interface PlanExecutionRecorder {
 	 * record management logic without exposing internal record objects.
 	 * @param currentPlanId Current plan ID
 	 * @param rootPlanId Root plan ID
-	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root plans)
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root
+	 * plans)
 	 * @param agentName Agent name
 	 * @param agentDescription Agent description
 	 * @param maxSteps Maximum execution steps
@@ -93,18 +97,18 @@ public interface PlanExecutionRecorder {
 	 * @param startTime Execution start time
 	 * @param endTime Execution end time
 	 */
-	void recordCompleteAgentExecution(String currentPlanId, String rootPlanId, Long thinkActRecordId,
-			String agentName, String agentDescription, int maxSteps, int actualSteps,
-			boolean completed, boolean stuck, String errorMessage, String result,
-			java.time.LocalDateTime startTime, java.time.LocalDateTime endTime);
+	void recordCompleteAgentExecution(String currentPlanId, String rootPlanId, Long thinkActRecordId, String agentName,
+			String agentDescription, int maxSteps, int actualSteps, boolean completed, boolean stuck,
+			String errorMessage, String result, java.time.LocalDateTime startTime, java.time.LocalDateTime endTime);
 
 	/**
-	 * 接口1: 记录思考和执行动作
-	 * Record thinking and action execution process. This method handles ThinkActRecord creation and thinking process
-	 * without exposing internal record objects.
+	 * 接口1: 记录思考和执行动作 Record thinking and action execution process. This method handles
+	 * ThinkActRecord creation and thinking process without exposing internal record
+	 * objects.
 	 * @param currentPlanId Current plan ID
-	 * @param rootPlanId Root plan ID  
-	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root plans)
+	 * @param rootPlanId Root plan ID
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root
+	 * plans)
 	 * @param agentName Agent name
 	 * @param agentDescription Agent description
 	 * @param thinkInput Input context for the thinking process
@@ -116,18 +120,19 @@ public interface PlanExecutionRecorder {
 	 * @param errorMessage Error message if thinking process failed
 	 * @return ThinkActRecord ID for subsequent action recording
 	 */
-	Long recordThinkingAndAction(String currentPlanId, String rootPlanId, Long thinkActRecordId,
-			String agentName, String agentDescription, String thinkInput, String thinkOutput,
-			boolean actionNeeded, String toolName, String toolParameters, String modelName, String errorMessage);
+	Long recordThinkingAndAction(String currentPlanId, String rootPlanId, Long thinkActRecordId, String agentName,
+			String agentDescription, String thinkInput, String thinkOutput, boolean actionNeeded, String toolName,
+			String toolParameters, String modelName, String errorMessage);
 
 	/**
-	 * 接口2: 记录执行结果  
-	 * Record action execution result. This method updates the ThinkActRecord with action results
-	 * without exposing internal record objects.
+	 * 接口2: 记录执行结果 Record action execution result. This method updates the ThinkActRecord
+	 * with action results without exposing internal record objects.
 	 * @param currentPlanId Current plan ID
 	 * @param rootPlanId Root plan ID
-	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root plans)
-	 * @param createdThinkActRecordId The ThinkActRecord ID returned from recordThinkingAndAction
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root
+	 * plans)
+	 * @param createdThinkActRecordId The ThinkActRecord ID returned from
+	 * recordThinkingAndAction
 	 * @param actionDescription Description of the action to be taken
 	 * @param actionResult Result of action execution
 	 * @param status Execution status (SUCCESS, FAILED, etc.)
@@ -136,20 +141,20 @@ public interface PlanExecutionRecorder {
 	 * @param subPlanCreated Whether this action created a sub-plan execution
 	 */
 	void recordActionResult(String currentPlanId, String rootPlanId, Long thinkActRecordId,
-			Long createdThinkActRecordId, String actionDescription, String actionResult,
-			String status, String errorMessage, String toolName, String toolParameters,  boolean subPlanCreated);
+			Long createdThinkActRecordId, String actionDescription, String actionResult, String status,
+			String errorMessage, String toolName, String toolParameters, boolean subPlanCreated);
 
 	/**
-	 * 接口3: 记录计划完成
-	 * Record plan completion. This method handles plan completion recording logic
-	 * without exposing internal record objects.
+	 * 接口3: 记录计划完成 Record plan completion. This method handles plan completion recording
+	 * logic without exposing internal record objects.
 	 * @param currentPlanId Current plan ID
 	 * @param rootPlanId Root plan ID
-	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root plans)
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root
+	 * plans)
 	 * @param summary The summary of the plan execution
 	 */
 	void recordPlanCompletion(String currentPlanId, String rootPlanId, Long thinkActRecordId, String summary);
 
-
 	public Long getCurrentThinkActRecordId(String currentPlanId, String rootPlanId);
+
 }
