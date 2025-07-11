@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,12 +36,20 @@ public class ResearchTeamNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(ResearchTeamNode.class);
 
-	private static final long TIME_SLEEP = 20000;
+	private static final long TIME_SLEEP = 10000;
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
+		// 智能等待：根据是否有反思任务调整等待时间
 		if (state.value("research_team_next_node").isPresent()) {
-			Thread.sleep(TIME_SLEEP);
+			Plan curPlan = StateUtil.getPlan(state);
+			if (hasActiveReflectionTasks(curPlan)) {
+				Thread.sleep(5000);
+				logger.debug("decline waiting time for reflection tasks");
+			}
+			else {
+				Thread.sleep(TIME_SLEEP);
+			}
 		}
 
 		logger.info("research_team node is running.");
@@ -64,7 +71,25 @@ public class ResearchTeamNode implements NodeAction {
 			return false;
 		}
 
-		return plan.getSteps().stream().allMatch(step -> StringUtils.hasText(step.getExecutionRes()));
+		return plan.getSteps()
+			.stream()
+			.allMatch(step -> step.getExecutionStatus() != null
+					&& step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX));
+	}
+
+	/**
+	 * 检查是否有活跃的反思任务
+	 */
+	private boolean hasActiveReflectionTasks(Plan plan) {
+		if (CollectionUtils.isEmpty(plan.getSteps())) {
+			return false;
+		}
+
+		return plan.getSteps()
+			.stream()
+			.anyMatch(step -> step.getExecutionStatus() != null
+					&& (step.getExecutionStatus().contains("waiting_reflecting")
+							|| step.getExecutionStatus().contains("waiting_processing")));
 	}
 
 }

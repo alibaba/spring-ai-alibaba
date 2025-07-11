@@ -25,6 +25,7 @@ import org.springframework.ai.mcp.client.autoconfigure.configurer.McpAsyncClient
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -37,6 +38,7 @@ import java.util.function.Function;
  * @author Makoto
  */
 @Service
+@ConditionalOnProperty(prefix = McpAssignNodeProperties.MCP_ASSIGN_NODE_PREFIX, name = "enabled", havingValue = "true")
 public class McpProviderFactory {
 
 	private final Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider;
