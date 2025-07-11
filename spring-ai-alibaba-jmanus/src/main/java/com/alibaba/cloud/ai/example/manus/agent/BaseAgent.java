@@ -252,9 +252,21 @@ public abstract class BaseAgent {
 
 			// Record execution at the end - even for failures
 			if (currentPlanId != null && planExecutionRecorder != null) {
-				planExecutionRecorder.recordCompleteAgentExecution(currentPlanId, rootPlanId, thinkActRecordId,
-						getName(), getDescription(), maxSteps, currentStep, completed, stuck, errorMessage, finalResult,
-						startTime, endTime);
+				PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
+				params.setCurrentPlanId(currentPlanId);
+				params.setRootPlanId(rootPlanId);
+				params.setThinkActRecordId(thinkActRecordId);
+				params.setAgentName(getName());
+				params.setAgentDescription(getDescription());
+				params.setMaxSteps(maxSteps);
+				params.setActualSteps(currentStep);
+				params.setCompleted(completed);
+				params.setStuck(stuck);
+				params.setErrorMessage(errorMessage);
+				params.setResult(finalResult);
+				params.setStartTime(startTime);
+				params.setEndTime(endTime);
+				planExecutionRecorder.recordCompleteAgentExecution(params);
 			}
 
 			throw e; // Re-throw the exception to let the caller know that an error
@@ -268,9 +280,21 @@ public abstract class BaseAgent {
 		// Record execution at the end - only once
 		if (currentPlanId != null && planExecutionRecorder != null) {
 			LocalDateTime endTime = LocalDateTime.now();
-			planExecutionRecorder.recordCompleteAgentExecution(currentPlanId, rootPlanId, thinkActRecordId, getName(),
-					getDescription(), maxSteps, currentStep, completed, stuck, errorMessage, finalResult, startTime,
-					endTime);
+			PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
+			params.setCurrentPlanId(currentPlanId);
+			params.setRootPlanId(rootPlanId);
+			params.setThinkActRecordId(thinkActRecordId);
+			params.setAgentName(getName());
+			params.setAgentDescription(getDescription());
+			params.setMaxSteps(maxSteps);
+			params.setActualSteps(currentStep);
+			params.setCompleted(completed);
+			params.setStuck(stuck);
+			params.setErrorMessage(errorMessage);
+			params.setResult(finalResult);
+			params.setStartTime(startTime);
+			params.setEndTime(endTime);
+			planExecutionRecorder.recordCompleteAgentExecution(params);
 		}
 
 		return results.isEmpty() ? "" : results.get(results.size() - 1);

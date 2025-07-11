@@ -97,35 +97,19 @@ public interface PlanExecutionRecorder {
 	 * @param startTime Execution start time
 	 * @param endTime Execution end time
 	 */
-	void recordCompleteAgentExecution(String currentPlanId, String rootPlanId, Long thinkActRecordId, String agentName,
-			String agentDescription, int maxSteps, int actualSteps, boolean completed, boolean stuck,
-			String errorMessage, String result, java.time.LocalDateTime startTime, java.time.LocalDateTime endTime);
+	void recordCompleteAgentExecution(PlanExecutionParams params);
 
 	/**
-	 * 接口1: 记录思考和执行动作 Record thinking and action execution process. This method handles
+	 * Interface 1: Record thinking and action execution process. This method handles
 	 * ThinkActRecord creation and thinking process without exposing internal record
 	 * objects.
-	 * @param currentPlanId Current plan ID
-	 * @param rootPlanId Root plan ID
-	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root
-	 * plans)
-	 * @param agentName Agent name
-	 * @param agentDescription Agent description
-	 * @param thinkInput Input context for the thinking process
-	 * @param thinkOutput Output result of the thinking process
-	 * @param actionNeeded Whether thinking determined that action is needed
-	 * @param toolName Tool name used for action (if applicable)
-	 * @param toolParameters Tool parameters used for action (if applicable)
-	 * @param modelName Model name used for thinking
-	 * @param errorMessage Error message if thinking process failed
+	 * @param params Encapsulated parameters for plan execution
 	 * @return ThinkActRecord ID for subsequent action recording
 	 */
-	Long recordThinkingAndAction(String currentPlanId, String rootPlanId, Long thinkActRecordId, String agentName,
-			String agentDescription, String thinkInput, String thinkOutput, boolean actionNeeded, String toolName,
-			String toolParameters, String modelName, String errorMessage);
+	Long recordThinkingAndAction(PlanExecutionParams params);
 
 	/**
-	 * 接口2: 记录执行结果 Record action execution result. This method updates the ThinkActRecord
+	 * Interface 2: Record action execution result. This method updates the ThinkActRecord
 	 * with action results without exposing internal record objects.
 	 * @param currentPlanId Current plan ID
 	 * @param rootPlanId Root plan ID
@@ -140,12 +124,10 @@ public interface PlanExecutionRecorder {
 	 * @param toolName Tool name used for action
 	 * @param subPlanCreated Whether this action created a sub-plan execution
 	 */
-	void recordActionResult(String currentPlanId, String rootPlanId, Long thinkActRecordId,
-			Long createdThinkActRecordId, String actionDescription, String actionResult, String status,
-			String errorMessage, String toolName, String toolParameters, boolean subPlanCreated);
+	void recordActionResult(PlanExecutionParams params);
 
 	/**
-	 * 接口3: 记录计划完成 Record plan completion. This method handles plan completion recording
+	 * Interface 3: Record plan completion. This method handles plan completion recording
 	 * logic without exposing internal record objects.
 	 * @param currentPlanId Current plan ID
 	 * @param rootPlanId Root plan ID
@@ -156,5 +138,288 @@ public interface PlanExecutionRecorder {
 	void recordPlanCompletion(String currentPlanId, String rootPlanId, Long thinkActRecordId, String summary);
 
 	public Long getCurrentThinkActRecordId(String currentPlanId, String rootPlanId);
+
+	/**
+	 * Parameter encapsulation class for recording all relevant information about plan
+	 * execution
+	 */
+	public class PlanExecutionParams {
+
+		/** Current plan ID */
+		String currentPlanId;
+
+		/** Root plan ID */
+		String rootPlanId;
+
+		/** Think-act record ID */
+		Long thinkActRecordId;
+
+		/** Agent name */
+		String agentName;
+
+		/** Agent description */
+		String agentDescription;
+
+		/** Thinking input */
+		String thinkInput;
+
+		/** Thinking output */
+		String thinkOutput;
+
+		/** Whether action is needed */
+		boolean actionNeeded;
+
+		/** Tool name */
+		String toolName;
+
+		/** Tool parameters */
+		String toolParameters;
+
+		/** Model name */
+		String modelName;
+
+		/** Error message */
+		String errorMessage;
+
+		/** Created Think-act record ID */
+		Long createdThinkActRecordId;
+
+		/** Action description */
+		String actionDescription;
+
+		/** Action result */
+		String actionResult;
+
+		/** Execution status */
+		String status;
+
+		/** Whether a sub-plan was created */
+		boolean subPlanCreated;
+
+		/** Execution summary */
+		String summary;
+
+		/** Maximum execution steps */
+		int maxSteps;
+
+		/** Actual steps executed */
+		int actualSteps;
+
+		/** Whether execution completed successfully */
+		boolean completed;
+
+		/** Whether agent got stuck */
+		boolean stuck;
+
+		/** Final execution result */
+		String result;
+
+		/** Execution start time */
+		java.time.LocalDateTime startTime;
+
+		/** Execution end time */
+		java.time.LocalDateTime endTime;
+
+		public int getMaxSteps() {
+			return maxSteps;
+		}
+
+		public void setMaxSteps(int maxSteps) {
+			this.maxSteps = maxSteps;
+		}
+
+		public int getActualSteps() {
+			return actualSteps;
+		}
+
+		public void setActualSteps(int actualSteps) {
+			this.actualSteps = actualSteps;
+		}
+
+		public boolean isCompleted() {
+			return completed;
+		}
+
+		public void setCompleted(boolean completed) {
+			this.completed = completed;
+		}
+
+		public boolean isStuck() {
+			return stuck;
+		}
+
+		public void setStuck(boolean stuck) {
+			this.stuck = stuck;
+		}
+
+		public String getResult() {
+			return result;
+		}
+
+		public void setResult(String result) {
+			this.result = result;
+		}
+
+		public java.time.LocalDateTime getStartTime() {
+			return startTime;
+		}
+
+		public void setStartTime(java.time.LocalDateTime startTime) {
+			this.startTime = startTime;
+		}
+
+		public java.time.LocalDateTime getEndTime() {
+			return endTime;
+		}
+
+		public void setEndTime(java.time.LocalDateTime endTime) {
+			this.endTime = endTime;
+		}
+
+		public String getCurrentPlanId() {
+			return currentPlanId;
+		}
+
+		public void setCurrentPlanId(String currentPlanId) {
+			this.currentPlanId = currentPlanId;
+		}
+
+		public String getRootPlanId() {
+			return rootPlanId;
+		}
+
+		public void setRootPlanId(String rootPlanId) {
+			this.rootPlanId = rootPlanId;
+		}
+
+		public Long getThinkActRecordId() {
+			return thinkActRecordId;
+		}
+
+		public void setThinkActRecordId(Long thinkActRecordId) {
+			this.thinkActRecordId = thinkActRecordId;
+		}
+
+		public String getAgentName() {
+			return agentName;
+		}
+
+		public void setAgentName(String agentName) {
+			this.agentName = agentName;
+		}
+
+		public String getAgentDescription() {
+			return agentDescription;
+		}
+
+		public void setAgentDescription(String agentDescription) {
+			this.agentDescription = agentDescription;
+		}
+
+		public String getThinkInput() {
+			return thinkInput;
+		}
+
+		public void setThinkInput(String thinkInput) {
+			this.thinkInput = thinkInput;
+		}
+
+		public String getThinkOutput() {
+			return thinkOutput;
+		}
+
+		public void setThinkOutput(String thinkOutput) {
+			this.thinkOutput = thinkOutput;
+		}
+
+		public boolean isActionNeeded() {
+			return actionNeeded;
+		}
+
+		public void setActionNeeded(boolean actionNeeded) {
+			this.actionNeeded = actionNeeded;
+		}
+
+		public String getToolName() {
+			return toolName;
+		}
+
+		public void setToolName(String toolName) {
+			this.toolName = toolName;
+		}
+
+		public String getToolParameters() {
+			return toolParameters;
+		}
+
+		public void setToolParameters(String toolParameters) {
+			this.toolParameters = toolParameters;
+		}
+
+		public String getModelName() {
+			return modelName;
+		}
+
+		public void setModelName(String modelName) {
+			this.modelName = modelName;
+		}
+
+		public String getErrorMessage() {
+			return errorMessage;
+		}
+
+		public void setErrorMessage(String errorMessage) {
+			this.errorMessage = errorMessage;
+		}
+
+		public Long getCreatedThinkActRecordId() {
+			return createdThinkActRecordId;
+		}
+
+		public void setCreatedThinkActRecordId(Long createdThinkActRecordId) {
+			this.createdThinkActRecordId = createdThinkActRecordId;
+		}
+
+		public String getActionDescription() {
+			return actionDescription;
+		}
+
+		public void setActionDescription(String actionDescription) {
+			this.actionDescription = actionDescription;
+		}
+
+		public String getActionResult() {
+			return actionResult;
+		}
+
+		public void setActionResult(String actionResult) {
+			this.actionResult = actionResult;
+		}
+
+		public String getStatus() {
+			return status;
+		}
+
+		public void setStatus(String status) {
+			this.status = status;
+		}
+
+		public boolean isSubPlanCreated() {
+			return subPlanCreated;
+		}
+
+		public void setSubPlanCreated(boolean subPlanCreated) {
+			this.subPlanCreated = subPlanCreated;
+		}
+
+		public String getSummary() {
+			return summary;
+		}
+
+		public void setSummary(String summary) {
+			this.summary = summary;
+		}
+
+	}
 
 }

@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecordEntity;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.repository.PlanExecutionRecordRepository;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder.PlanExecutionParams;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -196,34 +197,32 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	 * record management logic without exposing internal record objects.
 	 */
 	@Override
-	public void recordCompleteAgentExecution(String currentPlanId, String rootPlanId, Long thinkActRecordId,
-			String agentName, String agentDescription, int maxSteps, int actualSteps, boolean completed, boolean stuck,
-			String errorMessage, String result, LocalDateTime startTime, LocalDateTime endTime) {
-
-		if (currentPlanId == null) {
+	public void recordCompleteAgentExecution(PlanExecutionParams params) {
+		if (params == null || params.getCurrentPlanId() == null) {
 			return;
 		}
 
 		// Create agent execution record with all the final data
-		AgentExecutionRecord agentRecord = new AgentExecutionRecord(currentPlanId, agentName, agentDescription);
-		agentRecord.setMaxSteps(maxSteps);
-		agentRecord.setCurrentStep(actualSteps);
-		agentRecord.setCompleted(completed);
-		agentRecord.setStuck(stuck);
-		agentRecord.setErrorMessage(errorMessage);
-		agentRecord.setResult(result);
-		agentRecord.setStartTime(startTime);
-		agentRecord.setEndTime(endTime);
-		agentRecord.setStatus(completed ? "COMPLETED" : (stuck ? "STUCK" : "FAILED"));
+		AgentExecutionRecord agentRecord = new AgentExecutionRecord(params.getCurrentPlanId(), params.getAgentName(),
+				params.getAgentDescription());
+		agentRecord.setMaxSteps(params.getMaxSteps());
+		agentRecord.setCurrentStep(params.getActualSteps());
+		agentRecord.setCompleted(params.isCompleted());
+		agentRecord.setStuck(params.isStuck());
+		agentRecord.setErrorMessage(params.getErrorMessage());
+		agentRecord.setResult(params.getResult());
+		agentRecord.setStartTime(params.getStartTime());
+		agentRecord.setEndTime(params.getEndTime());
+		agentRecord.setStatus(params.isCompleted() ? "COMPLETED" : (params.isStuck() ? "STUCK" : "FAILED"));
 
 		PlanExecutionRecord planRecord = null;
-		PlanExecutionRecord rootPlan = getOrCreateRootPlanExecutionRecord(rootPlanId, true);
+		PlanExecutionRecord rootPlan = getOrCreateRootPlanExecutionRecord(params.getRootPlanId(), true);
 		// Handle both root plan and sub-plan execution cases
-		if (thinkActRecordId != null) {
+		if (params.getThinkActRecordId() != null) {
 			// For sub-plan execution, we need the parent plan first
-
 			if (rootPlan != null) {
-				planRecord = getOrCreateSubPlanExecutionRecord(rootPlan, currentPlanId, thinkActRecordId, true);
+				planRecord = getOrCreateSubPlanExecutionRecord(rootPlan, params.getCurrentPlanId(),
+						params.getThinkActRecordId(), true);
 				// For sub-plan, set execution to sub-plan but save parent plan
 				if (planRecord != null) {
 					setAgentExecution(planRecord, agentRecord);
@@ -232,7 +231,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 		else {
 			// For root plan execution
-			planRecord = getOrCreateRootPlanExecutionRecord(currentPlanId, true);
+			planRecord = getOrCreateRootPlanExecutionRecord(params.getCurrentPlanId(), true);
 			if (planRecord != null) {
 				setAgentExecution(planRecord, agentRecord);
 			}
@@ -250,11 +249,8 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	 * objects.
 	 */
 	@Override
-	public Long recordThinkingAndAction(String currentPlanId, String rootPlanId, Long thinkActRecordId,
-			String agentName, String agentDescription, String thinkInput, String thinkOutput, boolean actionNeeded,
-			String toolName, String toolParameters, String modelName, String errorMessage) {
-
-		if (currentPlanId == null) {
+	public Long recordThinkingAndAction(PlanExecutionParams params) {
+		if (params.getCurrentPlanId() == null) {
 			return null;
 		}
 
@@ -262,72 +258,60 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		PlanExecutionRecord planToSave = null; // Track which plan should be saved
 
 		// Handle both root plan and sub-plan execution cases based on thinkActRecordId
-		if (thinkActRecordId != null) {
-			// Sub-plan execution: thinkActRecordId indicates this is triggered by a tool
-			// call
-			PlanExecutionRecord parentPlan = getOrCreateRootPlanExecutionRecord(rootPlanId, true);
+		if (params.getThinkActRecordId() != null) {
+			PlanExecutionRecord parentPlan = getOrCreateRootPlanExecutionRecord(params.getRootPlanId(), true);
 			if (parentPlan != null) {
-				planExecutionRecord = getOrCreateSubPlanExecutionRecord(parentPlan, currentPlanId, thinkActRecordId,
-						true);
+				planExecutionRecord = getOrCreateSubPlanExecutionRecord(parentPlan, params.getCurrentPlanId(),
+						params.getThinkActRecordId(), true);
 				planToSave = parentPlan; // Save parent plan for sub-plan execution
 			}
 		}
 		else {
-			// Root plan execution: no thinkActRecordId means this is a main plan
-			planExecutionRecord = getOrCreateRootPlanExecutionRecord(currentPlanId, true);
+			planExecutionRecord = getOrCreateRootPlanExecutionRecord(params.getCurrentPlanId(), true);
 			planToSave = planExecutionRecord; // Save the root plan record itself
 		}
 
 		AgentExecutionRecord agentExecutionRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
 
-		// Ensure agentExecutionRecord exists - create one if null
 		if (agentExecutionRecord == null && planExecutionRecord != null) {
-			agentExecutionRecord = new AgentExecutionRecord(currentPlanId, agentName, agentDescription);
+			agentExecutionRecord = new AgentExecutionRecord(params.getCurrentPlanId(), params.getAgentName(),
+					params.getAgentDescription());
 			setAgentExecution(planExecutionRecord, agentExecutionRecord);
 		}
 
-		// Additional safety check
 		if (agentExecutionRecord == null) {
-			logger.error("Failed to create or retrieve AgentExecutionRecord for plan: {}", currentPlanId);
+			logger.error("Failed to create or retrieve AgentExecutionRecord for plan: {}", params.getCurrentPlanId());
 			return null;
 		}
 
-		// Create new ThinkActRecord
-		com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord thinkActRecord = new com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord(
-				agentExecutionRecord.getId());
-		thinkActRecord.setActStartTime(java.time.LocalDateTime.now());
+		ThinkActRecord thinkActRecord = new ThinkActRecord(agentExecutionRecord.getId());
+		thinkActRecord.setActStartTime(LocalDateTime.now());
 
-		// Set model name if provided
-		if (modelName != null) {
-			planExecutionRecord.setModelName(modelName);
-			agentExecutionRecord.setModelName(modelName);
+		if (params.getModelName() != null) {
+			planExecutionRecord.setModelName(params.getModelName());
+			agentExecutionRecord.setModelName(params.getModelName());
 		}
 
-		// Record thinking process
-		if (thinkInput != null) {
-			thinkActRecord.startThinking(thinkInput);
+		if (params.getThinkInput() != null) {
+			thinkActRecord.startThinking(params.getThinkInput());
 		}
-		if (thinkOutput != null) {
-			thinkActRecord.finishThinking(thinkOutput);
+		if (params.getThinkOutput() != null) {
+			thinkActRecord.finishThinking(params.getThinkOutput());
 		}
 
-		// Record action details if action is needed
-		if (actionNeeded && toolName != null) {
+		if (params.isActionNeeded() && params.getToolName() != null) {
 			thinkActRecord.setActionNeeded(true);
-			thinkActRecord.setToolName(toolName);
-			thinkActRecord.setToolParameters(toolParameters);
+			thinkActRecord.setToolName(params.getToolName());
+			thinkActRecord.setToolParameters(params.getToolParameters());
 			thinkActRecord.setStatus("SUCCESS");
 		}
 
-		// Record error if any
-		if (errorMessage != null) {
-			thinkActRecord.recordError(errorMessage);
+		if (params.getErrorMessage() != null) {
+			thinkActRecord.recordError(params.getErrorMessage());
 		}
 
-		// Set think-act execution
 		if (planExecutionRecord != null) {
 			setThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(), thinkActRecord);
-			// Save the execution records
 			if (planToSave != null) {
 				savePlanExecutionRecords(planToSave);
 			}
@@ -341,11 +325,8 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	 * with action results without exposing internal record objects.
 	 */
 	@Override
-	public void recordActionResult(String currentPlanId, String rootPlanId, Long thinkActRecordId,
-			Long createdThinkActRecordId, String actionDescription, String actionResult, String status,
-			String errorMessage, String toolName, String toolParameters, boolean subPlanCreated) {
-
-		if (currentPlanId == null || createdThinkActRecordId == null) {
+	public void recordActionResult(PlanExecutionParams params) {
+		if (params.getCurrentPlanId() == null || params.getCreatedThinkActRecordId() == null) {
 			return;
 		}
 
@@ -353,19 +334,19 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		PlanExecutionRecord planToSave = null; // Track which plan should be saved
 
 		// Handle both root plan and sub-plan execution cases based on thinkActRecordId
-		if (thinkActRecordId != null) {
+		if (params.getThinkActRecordId() != null) {
 			// Sub-plan execution: thinkActRecordId indicates this is triggered by a tool
 			// call
-			PlanExecutionRecord parentPlan = getOrCreateRootPlanExecutionRecord(rootPlanId, true);
+			PlanExecutionRecord parentPlan = getOrCreateRootPlanExecutionRecord(params.getRootPlanId(), true);
 			if (parentPlan != null) {
-				planExecutionRecord = getOrCreateSubPlanExecutionRecord(parentPlan, currentPlanId, thinkActRecordId,
-						true);
+				planExecutionRecord = getOrCreateSubPlanExecutionRecord(parentPlan, params.getCurrentPlanId(),
+						params.getThinkActRecordId(), true);
 				planToSave = parentPlan; // Save parent plan for sub-plan execution
 			}
 		}
 		else {
 			// Root plan execution: no thinkActRecordId means this is a main plan
-			planExecutionRecord = getOrCreateRootPlanExecutionRecord(currentPlanId, true);
+			planExecutionRecord = getOrCreateRootPlanExecutionRecord(params.getCurrentPlanId(), true);
 			planToSave = planExecutionRecord; // Save the root plan record itself
 		}
 
@@ -373,28 +354,30 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 		// Additional safety check
 		if (agentExecutionRecord == null) {
-			logger.error("Failed to retrieve AgentExecutionRecord for plan: {} in recordActionResult", currentPlanId);
+			logger.error("Failed to retrieve AgentExecutionRecord for plan: {} in recordActionResult",
+					params.getCurrentPlanId());
 			return;
 		}
 
 		// Find the ThinkActRecord by ID and update it with action results
 		com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord thinkActRecord = findThinkActRecordInPlan(
-				planExecutionRecord, createdThinkActRecordId);
+				planExecutionRecord, params.getCreatedThinkActRecordId());
 
 		if (thinkActRecord != null) {
 			// Record action start if not already recorded
-			if (actionDescription != null && toolName != null) {
-				thinkActRecord.startAction(actionDescription, toolName, toolParameters);
+			if (params.getActionDescription() != null && params.getToolName() != null) {
+				thinkActRecord.startAction(params.getActionDescription(), params.getToolName(),
+						params.getToolParameters());
 			}
 
 			// Record action completion
-			if (actionResult != null && status != null) {
-				thinkActRecord.finishAction(actionResult, status);
+			if (params.getActionResult() != null && params.getStatus() != null) {
+				thinkActRecord.finishAction(params.getActionResult(), params.getStatus());
 			}
 
 			// Record error if any
-			if (errorMessage != null) {
-				thinkActRecord.recordError(errorMessage);
+			if (params.getErrorMessage() != null) {
+				thinkActRecord.recordError(params.getErrorMessage());
 			}
 
 			// Set think-act execution to update the record
@@ -406,7 +389,8 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			}
 		}
 		else {
-			logger.warn("ThinkActRecord not found with ID: {} for plan: {}", createdThinkActRecordId, currentPlanId);
+			logger.warn("ThinkActRecord not found with ID: {} for plan: {}", params.getCreatedThinkActRecordId(),
+					params.getCurrentPlanId());
 		}
 	}
 
