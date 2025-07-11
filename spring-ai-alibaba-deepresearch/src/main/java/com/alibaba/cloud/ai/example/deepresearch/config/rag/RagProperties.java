@@ -211,6 +211,11 @@ public class RagProperties {
 		 */
 		private SimilarityFunction similarityFunction;
 
+		/**
+		 * 混合搜索配置
+		 */
+		private final Hybrid hybrid = new Hybrid();
+
 		// Getters and Setters
 		public String getIndexName() {
 			return indexName;
@@ -258,6 +263,82 @@ public class RagProperties {
 
 		public void setSimilarityFunction(SimilarityFunction similarityFunction) {
 			this.similarityFunction = similarityFunction;
+		}
+
+		public Hybrid getHybrid() {
+			return hybrid;
+		}
+
+		/**
+		 * 混合搜索配置。 混合搜索结合了BM25和KNN搜索，使用RRF算法进行结果融合。
+		 */
+		public static class Hybrid {
+
+			/**
+			 * 是否启用混合搜索，默认为false。
+			 */
+			private boolean enabled = false;
+
+			/**
+			 * BM25搜索的权重。
+			 */
+			private float bm25Boost = 1.0f;
+
+			/**
+			 * KNN搜索的权重。
+			 */
+			private float knnBoost = 1.0f;
+
+			/**
+			 * RRF算法中的窗口大小。
+			 */
+			private int rrfWindowSize = 100;
+
+			/**
+			 * RRF算法中的排名常数。
+			 */
+			private int rrfRankConstant = 60;
+
+			public boolean isEnabled() {
+				return enabled;
+			}
+
+			public void setEnabled(boolean enabled) {
+				this.enabled = enabled;
+			}
+
+			public float getBm25Boost() {
+				return bm25Boost;
+			}
+
+			public void setBm25Boost(float bm25Boost) {
+				this.bm25Boost = bm25Boost;
+			}
+
+			public float getKnnBoost() {
+				return knnBoost;
+			}
+
+			public void setKnnBoost(float knnBoost) {
+				this.knnBoost = knnBoost;
+			}
+
+			public int getRrfWindowSize() {
+				return rrfWindowSize;
+			}
+
+			public void setRrfWindowSize(int rrfWindowSize) {
+				this.rrfWindowSize = rrfWindowSize;
+			}
+
+			public int getRrfRankConstant() {
+				return rrfRankConstant;
+			}
+
+			public void setRrfRankConstant(int rrfRankConstant) {
+				this.rrfRankConstant = rrfRankConstant;
+			}
+
 		}
 
 	}

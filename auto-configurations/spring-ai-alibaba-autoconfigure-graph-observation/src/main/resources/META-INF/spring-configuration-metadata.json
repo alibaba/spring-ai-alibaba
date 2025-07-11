@@ -1,0 +1,18 @@
+{
+  "groups": [
+    {
+      "name": "spring.ai.alibaba.graph.observation",
+      "type": "com.alibaba.cloud.ai.autoconfigure.graph.GraphObservationProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.graph.GraphObservationProperties",
+      "description": "Configuration properties for Graph observation functionality."
+    }
+  ],
+  "properties": [
+    {
+      "name": "spring.ai.alibaba.graph.observation.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "Whether to enable graph observation functionality."
+    }
+  ]
+}

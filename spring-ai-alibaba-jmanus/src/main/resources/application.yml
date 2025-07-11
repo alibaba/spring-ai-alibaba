@@ -3,6 +3,8 @@ server:
 spring:
   application:
     name: spring-ai-alibaba-openmanus
+  profiles:
+    active: h2
   ai:
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
@@ -13,26 +15,15 @@ spring:
     mcp:
       client:
         enabled: false
-  # H2 数据库配置
-  datasource:
-    url: jdbc:h2:file:./h2-data/openmanus_db;MODE=MYSQL;DATABASE_TO_LOWER=TRUE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: $FSD#@!@#!#$!12341234
-  # JPA 配置
+  # JPA Configuration
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
-  # H2 控制台配置
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+
 logging:
   file:
     name: ./logs/info.log

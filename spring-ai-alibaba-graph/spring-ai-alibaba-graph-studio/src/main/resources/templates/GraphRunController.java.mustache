@@ -3,7 +3,7 @@ package {{packageName}}.graph;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import org.bsc.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController("/run")
 public class GraphRunController {
@@ -32,6 +33,11 @@ public class GraphRunController {
     @PostMapping(value = "/invoke")
     public OverAllState invoke(@RequestBody Map<String, Object> inputs) throws Exception{
         return graph.invoke(inputs).orElse(null);
+    }
+
+    @PostMapping(value = "/start")
+    public Map<String, Object> startInvoke(@RequestBody Map<String, Object> inputs) throws Exception {
+        {{startInputsSection}}
     }
 
 

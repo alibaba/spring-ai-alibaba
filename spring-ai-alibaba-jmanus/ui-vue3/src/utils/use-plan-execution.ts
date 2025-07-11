@@ -14,63 +14,63 @@
  * limitations under the License.
  */
 
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed,  onUnmounted } from 'vue'
 import { planExecutionManager } from './plan-execution-manager'
 
 /**
  * Vue composable for plan execution management
- * 提供响应式的计划执行状态和控制方法
+ * Provides reactive plan execution status and control methods
  */
 export function usePlanExecution() {
   const manager = planExecutionManager
 
-  // 响应式状态
+  // Reactive state
   const activePlanId = computed(() => manager.getActivePlanId())
   const state = computed(() => manager.getState())
   const isPolling = computed(() => state.value.isPolling)
   const hasActivePlan = computed(() => !!activePlanId.value)
 
   /**
-   * 启动计划执行
+   * Start plan execution
    */
   const startExecution = (query: string, planId: string) => {
     manager.initiatePlanExecutionSequence(query, planId)
   }
 
   /**
-   * 停止轮询
+   * Stop polling
    */
   const stopPolling = () => {
     manager.stopPolling()
   }
 
   /**
-   * 开始轮询
+   * Start polling
    */
   const startPolling = () => {
     manager.startPolling()
   }
 
   /**
-   * 清理资源
+   * Clean up resources
    */
   const cleanup = () => {
     manager.cleanup()
   }
 
-  // 组件卸载时清理资源
+  // Clean up resources when component is unmounted
   onUnmounted(() => {
     cleanup()
   })
 
   return {
-    // 状态
+    // State
     activePlanId,
     state,
     isPolling,
     hasActivePlan,
     
-    // 方法
+    // Methods
     startExecution,
     stopPolling,
     startPolling,

@@ -15,14 +15,115 @@
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
     <modules>
-        <module>chat</module>
-        <module>management</module>
-        <module>common</module>
+        <module>spring-ai-alibaba-nl2sql-chat</module>
+        <module>spring-ai-alibaba-nl2sql-management</module>
+        <module>spring-ai-alibaba-nl2sql-common</module>
     </modules>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
         <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
+
+    <properties>
+        <gpdb.version>3.0.0</gpdb.version>
+        <druid.version>1.2.22</druid.version>
+        <commons-lang3.version>3.9</commons-lang3.version>
+        <mysql-connector-java.version>8.0.15</mysql-connector-java.version>
+        <postgresql.version>42.4.1</postgresql.version>
+        <commons-collections.version>3.2.1</commons-collections.version>
+        <commonmark.version>0.17.0</commonmark.version>
+        <httpclient5.version>5.4.1</httpclient5.version>
+        <commons-compress.version>1.27.1</commons-compress.version>
+        <netty-resolver-dns-native-macos.version>4.1.114.Final</netty-resolver-dns-native-macos.version>
+        <netty-transport-native-epoll.version>4.1.114.Final</netty-transport-native-epoll.version>
+        <jsonschema.version>4.37.0</jsonschema.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>gpdb20160503</artifactId>
+                <version>${gpdb.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid</artifactId>
+                <version>${druid.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql-connector-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-collections</groupId>
+                <artifactId>commons-collections</artifactId>
+                <version>${commons-collections.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.atlassian.commonmark</groupId>
+                <artifactId>commonmark</artifactId>
+                <version>${commonmark.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.client5</groupId>
+                <artifactId>httpclient5</artifactId>
+                <version>${httpclient5.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.victools</groupId>
+                <artifactId>jsonschema-generator</artifactId>
+                <version>${jsonschema.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.victools</groupId>
+                <artifactId>jsonschema-module-jackson</artifactId>
+                <version>${jsonschema.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-resolver-dns-native-macos</artifactId>
+                <version>${netty-resolver-dns-native-macos.version}</version>
+                <classifier>osx-x86_64</classifier>
+                <scope>compile</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport-native-epoll</artifactId>
+                <version>${netty-transport-native-epoll.version}</version>
+                <classifier>linux-x86_64</classifier>
+                <scope>compile</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
 </project>

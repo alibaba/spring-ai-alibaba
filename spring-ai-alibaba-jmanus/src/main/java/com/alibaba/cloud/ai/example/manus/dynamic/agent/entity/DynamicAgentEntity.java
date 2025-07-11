@@ -17,16 +17,8 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.entity;
 
 import java.util.List;
 
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "dynamic_agents")
@@ -57,6 +49,10 @@ public class DynamicAgentEntity {
 	@Column(nullable = false)
 	private String className;
 
+	@ManyToOne(fetch = FetchType.EAGER)
+	@JoinColumn(name = "model_id")
+	private DynamicModelEntity model;
+
 	// Getters and Setters
 	public Long getId() {
 		return id;
@@ -83,7 +79,8 @@ public class DynamicAgentEntity {
 	}
 
 	/**
-	 * 以后不用这个了， 把两段合并为一段 nextStepPrompt 。 目前实现会忽略这个内容了。
+	 * This is no longer used, merge the two parts into one nextStepPrompt. The current
+	 * implementation will ignore this content.
 	 * @return
 	 */
 	@Deprecated
@@ -92,7 +89,8 @@ public class DynamicAgentEntity {
 	}
 
 	/**
-	 * 以后不用这个了， 把两段合并为一段 nextStepPrompt 。 目前实现会忽略这个内容了。
+	 * This is no longer used, merge the two parts into one nextStepPrompt. The current
+	 * implementation will ignore this content.
 	 * @return
 	 */
 	@Deprecated
@@ -122,6 +120,14 @@ public class DynamicAgentEntity {
 
 	public void setClassName(String className) {
 		this.className = className;
+	}
+
+	public DynamicModelEntity getModel() {
+		return model;
+	}
+
+	public void setModel(DynamicModelEntity model) {
+		this.model = model;
 	}
 
 }

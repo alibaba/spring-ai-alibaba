@@ -97,4 +97,9 @@ public class HumanNodeDataConverter extends AbstractNodeDataConverter<HumanNodeD
 
 	}
 
+	@Override
+	public String generateVarName(int count) {
+		return "humanNode" + count;
+	}
+
 }

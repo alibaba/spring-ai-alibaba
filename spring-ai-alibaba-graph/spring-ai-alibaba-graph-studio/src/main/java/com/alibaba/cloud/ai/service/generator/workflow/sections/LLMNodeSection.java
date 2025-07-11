@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.service.generator.workflow.sections;
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData.PromptTemplate;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +43,18 @@ public class LLMNodeSection implements NodeSection {
 
 		sb.append(String.format("// —— LlmNode [%s] ——%n", id));
 		sb.append(String.format("LlmNode %s = LlmNode.builder()%n", varName));
+
+		List<PromptTemplate> promptTemplates = d.getPromptTemplate();
+		for (PromptTemplate promptTemplate : promptTemplates) {
+			if (promptTemplate.getRole() != null && promptTemplate.getText() != null) {
+				if (promptTemplate.getRole().equals("system")) {
+					sb.append(String.format(".systemPromptTemplate(\"%s\")%n", escape(promptTemplate.getText())));
+				}
+				else if (promptTemplate.getRole().equals("user")) {
+					sb.append(String.format(".userPromptTemplate(\"%s\")%n", escape(promptTemplate.getText())));
+				}
+			}
+		}
 
 		if (d.getSystemPromptTemplate() != null) {
 			sb.append(String.format(".systemPromptTemplate(\"%s\")%n", escape(d.getSystemPromptTemplate())));
@@ -113,7 +126,7 @@ public class LLMNodeSection implements NodeSection {
 		}
 
 		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
 
 		return sb.toString();
 	}

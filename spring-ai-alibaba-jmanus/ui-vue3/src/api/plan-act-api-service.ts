@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-// 计划相关 API 封装（TypeScript 版，适用于 Vue 项目）
-import type { Ref } from 'vue'
+// Plan-related API wrapper (TypeScript version for Vue projects)
 
 export class PlanActApiService {
   private static readonly PLAN_TEMPLATE_URL = '/api/plan-template'
 
-  // 生成计划
+  // Generate plan
   public static async generatePlan(query: string, existingJson?: string): Promise<any> {
     const requestBody: Record<string, any> = { query }
     if (existingJson) requestBody.existingJson = existingJson
@@ -29,19 +28,19 @@ export class PlanActApiService {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     })
-    if (!response.ok) throw new Error(`生成计划失败: ${response.status}`)
+    if (!response.ok) throw new Error(`Failed to generate plan: ${response.status}`)
     const responseData = await response.json()
     if (responseData.planJson) {
       try {
         responseData.plan = JSON.parse(responseData.planJson)
-      } catch (e) {
-        responseData.plan = { error: '无法解析计划数据' }
+      } catch {
+        responseData.plan = { error: 'Unable to parse plan data' }
       }
     }
     return responseData
   }
 
-  // 执行已生成的计划
+  // Execute generated plan
   public static async executePlan(planTemplateId: string, rawParam?: string): Promise<any> {
     console.log('[PlanActApiService] executePlan called with:', { planTemplateId, rawParam })
     
@@ -62,7 +61,7 @@ export class PlanActApiService {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('[PlanActApiService] Request failed:', errorText)
-      throw new Error(`执行计划失败: ${response.status}`)
+      throw new Error(`Failed to execute plan: ${response.status}`)
     }
     
     const result = await response.json()
@@ -70,47 +69,47 @@ export class PlanActApiService {
     return result
   }
 
-  // 保存计划到服务器
+  // Save plan to server
   public static async savePlanTemplate(planId: string, planJson: string): Promise<any> {
     const response = await fetch(`${this.PLAN_TEMPLATE_URL}/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ planId, planJson })
     })
-    if (!response.ok) throw new Error(`保存计划失败: ${response.status}`)
+    if (!response.ok) throw new Error(`Failed to save plan: ${response.status}`)
     return await response.json()
   }
 
-  // 获取计划的所有版本
+  // Get all versions of plan
   public static async getPlanVersions(planId: string): Promise<any> {
     const response = await fetch(`${this.PLAN_TEMPLATE_URL}/versions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ planId })
     })
-    if (!response.ok) throw new Error(`获取计划版本失败: ${response.status}`)
+    if (!response.ok) throw new Error(`Failed to get plan versions: ${response.status}`)
     return await response.json()
   }
 
-  // 获取特定版本的计划
+  // Get specific version of plan
   public static async getVersionPlan(planId: string, versionIndex: number): Promise<any> {
     const response = await fetch(`${this.PLAN_TEMPLATE_URL}/get-version`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ planId, versionIndex: versionIndex.toString() })
     })
-    if (!response.ok) throw new Error(`获取特定版本计划失败: ${response.status}`)
+    if (!response.ok) throw new Error(`Failed to get specific version plan: ${response.status}`)
     return await response.json()
   }
 
-  // 获取所有计划模板列表
+  // Get all plan template list
   public static async getAllPlanTemplates(): Promise<any> {
     const response = await fetch(`${this.PLAN_TEMPLATE_URL}/list`)
-    if (!response.ok) throw new Error(`获取计划模板列表失败: ${response.status}`)
+    if (!response.ok) throw new Error(`Failed to get plan template list: ${response.status}`)
     return await response.json()
   }
 
-  // 更新现有计划模板
+  // Update existing plan template
   public static async updatePlanTemplate(planId: string, query: string, existingJson?: string): Promise<any> {
     const requestBody: Record<string, any> = { planId, query }
     if (existingJson) requestBody.existingJson = existingJson
@@ -119,26 +118,26 @@ export class PlanActApiService {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     })
-    if (!response.ok) throw new Error(`更新计划模板失败: ${response.status}`)
+    if (!response.ok) throw new Error(`Failed to update plan template: ${response.status}`)
     const responseData = await response.json()
     if (responseData.planJson) {
       try {
         responseData.plan = JSON.parse(responseData.planJson)
-      } catch (e) {
-        responseData.plan = { error: '无法解析计划数据' }
+      } catch {
+        responseData.plan = { error: 'Unable to parse plan data' }
       }
     }
     return responseData
   }
 
-  // 删除计划模板
+  // Delete plan template
   public static async deletePlanTemplate(planId: string): Promise<any> {
     const response = await fetch(`${this.PLAN_TEMPLATE_URL}/delete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ planId })
     })
-    if (!response.ok) throw new Error(`删除计划模板失败: ${response.status}`)
+    if (!response.ok) throw new Error(`Failed to delete plan template: ${response.status}`)
     return await response.json()
   }
 

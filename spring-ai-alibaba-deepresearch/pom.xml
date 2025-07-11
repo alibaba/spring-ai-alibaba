@@ -32,6 +32,8 @@
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
+
+        <opentelemetry.spring.boot.starter.version>2.9.0</opentelemetry.spring.boot.starter.version>
     </properties>
 
 
@@ -69,7 +71,8 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-tool-calling-tavilysearch</artifactId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-searches</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
         </dependency>
 
         <dependency>
@@ -138,6 +141,40 @@
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark-ext-gfm-tables</artifactId>
             <version>${commonmark.version}</version>
+        </dependency>
+
+        <!-- OpenTelemetry Spring Boot Starter for distributed tracing -->
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-spring-boot-starter</artifactId>
+            <version>${opentelemetry.spring.boot.starter.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-graph-observation</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
         </dependency>
 
     </dependencies>

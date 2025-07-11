@@ -17,7 +17,7 @@
   <div class="config-panel">
     <div class="config-header">
       <div class="header-left">
-        <h2>基础配置</h2>
+        <h2>{{ t('config.basicConfig.title') }}</h2>
         <div class="config-stats">
           <span class="stat-item">
             <span class="stat-label">总配置项:</span>
@@ -48,7 +48,7 @@
           <input 
             v-model="searchQuery"
             type="text" 
-            placeholder="搜索配置项..."
+                            :placeholder="$t('config.search')"
             class="search-input"
           />
           <span class="search-icon">🔍</span>
@@ -59,7 +59,7 @@
     <!-- 加载状态 -->
     <div v-if="initialLoading" class="loading-container">
       <div class="loading-spinner"></div>
-      <p>正在加载配置...</p>
+      <p>{{ $t('config.loading') }}</p>
     </div>
 
     <!-- 配置组 -->
@@ -78,9 +78,9 @@
               @click="resetGroupConfigs(group.name)"
               class="reset-btn"
               :disabled="loading"
-              title="重置该组所有配置为默认值"
+              :title="$t('config.resetGroupConfirm')"
             >
-              重置
+              {{ $t('config.reset') }}
             </button>
           </div>
           <div class="group-divider"></div>
@@ -129,8 +129,8 @@
                       <div class="config-item-header">
                         <label class="config-label">
                           {{ item.description || item.displayName }}
-                          <span class="type-badge boolean">{{ item.inputType === 'CHECKBOX' ? '选择' : '布尔' }}</span>
-                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">已修改</span>
+                          <span class="type-badge boolean">{{ item.inputType === 'CHECKBOX' ? $t('config.types.checkbox') : $t('config.types.boolean') }}</span>
+                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
                         <span class="config-key" :title="item.configKey">{{ item.configKey }}</span>
                       </div>
@@ -171,8 +171,8 @@
                       <div class="config-item-header">
                         <label class="config-label">
                           {{ item.description || item.displayName }}
-                          <span class="type-badge select">选择</span>
-                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">已修改</span>
+                          <span class="type-badge select">{{ $t('config.types.select') }}</span>
+                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
                         <span class="config-key" :title="item.configKey">{{ item.configKey }}</span>
                       </div>
@@ -202,8 +202,8 @@
                       <div class="config-item-header">
                         <label class="config-label">
                           {{ item.description || item.displayName }}
-                          <span class="type-badge textarea">多行</span>
-                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">已修改</span>
+                          <span class="type-badge textarea">{{ $t('config.types.textarea') }}</span>
+                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
                         <span class="config-key" :title="item.configKey">{{ item.configKey }}</span>
                       </div>
@@ -227,13 +227,13 @@
                       <div class="config-item-header">
                         <label class="config-label">
                           {{ item.description || item.displayName }}
-                          <span class="type-badge number">数值</span>
-                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">已修改</span>
+                          <span class="type-badge number">{{ $t('config.types.number') }}</span>
+                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
                         <span class="config-key" :title="item.configKey">{{ item.configKey }}</span>
                         <div class="config-meta" v-if="item.min || item.max">
                           <span class="range-info">
-                            范围: {{ item.min || 0 }} - {{ item.max || '∞' }}
+                            {{ $t('config.range') }}: {{ item.min || 0 }} - {{ item.max || '∞' }}
                           </span>
                         </div>
                       </div>
@@ -259,8 +259,8 @@
                       <div class="config-item-header">
                         <label class="config-label">
                           {{ item.description || item.displayName }}
-                          <span class="type-badge string">{{ item.inputType === 'TEXT' ? '文本' : '字符串' }}</span>
-                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">已修改</span>
+                          <span class="type-badge string">{{ item.inputType === 'TEXT' ? $t('config.types.text') : $t('config.types.string') }}</span>
+                          <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
                         <span class="config-key" :title="item.configKey">{{ item.configKey }}</span>
                       </div>
@@ -285,7 +285,7 @@
 
     <!-- 空状态 -->
     <div v-else class="empty-state">
-      <p>未找到配置项</p>
+      <p>{{ $t('config.notFound') }}</p>
     </div>
 
     <!-- 消息提示 -->
@@ -299,11 +299,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Switch from '@/components/switch/index.vue'
-import Flex from '@/components/flex/index.vue'
 import { AdminApiService, type ConfigItem } from '@/api/admin-api-service'
 
-// 定义扩展的配置项接口
+// Initialize i18n
+const { t } = useI18n()
+
+// Define extended configuration item interface
 interface ExtendedConfigItem extends ConfigItem {
   displayName: string
   min?: number
@@ -350,10 +353,11 @@ const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   // 智能体设置
   'maxSteps': '智能体执行最大步数',
   'resetAllAgents': '重置所有agent',
+  'maxMemory': "能记住的最大消息数",
   
   // 浏览器设置
   'headlessBrowser': '是否使用无头浏览器模式',
-  'browserTimeout': '浏览器请求超时时间(秒)',
+  'browserTimeout': t('config.basicConfig.browserTimeout'),
   'browserDebug': '浏览器debug模式',
   
   // 交互设置
@@ -364,7 +368,7 @@ const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   'systemName': '系统名称',
   'language': '默认语言',
   'maxThreads': '最大线程数',
-  'timeoutSeconds': '请求超时时间(秒)'
+  'timeoutSeconds': t('config.basicConfig.requestTimeout')
 }
 
 // 组显示名称映射
@@ -422,7 +426,8 @@ const getConfigMin = (configKey: string): number => {
     'maxSteps': 1,
     'browserTimeout': 1,
     'maxThreads': 1,
-    'timeoutSeconds': 5
+    'timeoutSeconds': 5,
+    'maxMemory': 1
   }
   return minValues[configKey] || 1
 }
@@ -433,7 +438,8 @@ const getConfigMax = (configKey: string): number => {
     'maxSteps': 100,
     'browserTimeout': 600,
     'maxThreads': 32,
-    'timeoutSeconds': 300
+    'timeoutSeconds': 300,
+    'maxMemory': 1000
   }
   return maxValues[configKey] || 10000
 }
@@ -537,10 +543,10 @@ const loadAllConfigs = async () => {
           return null
         }
         
-        // 为每个配置项设置显示名称（优先使用description）
+        // Set display name for each configuration item (prioritize description)
         const processedItems: ExtendedConfigItem[] = items.map(item => ({
           ...item,
-          displayName: item.description || CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey,
+          displayName: item.description ?? (CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey),
           min: getConfigMin(item.configKey),
           max: getConfigMax(item.configKey)
         }))
@@ -554,7 +560,7 @@ const loadAllConfigs = async () => {
         const subGroupsMap = new Map<string, ExtendedConfigItem[]>()
         
         processedItems.forEach(item => {
-          const subGroupName = item.configSubGroup || 'general'
+          const subGroupName = item.configSubGroup ?? 'general'
           if (!subGroupsMap.has(subGroupName)) {
             subGroupsMap.set(subGroupName, [])
           }
@@ -587,7 +593,7 @@ const loadAllConfigs = async () => {
     console.log('配置加载完成:', configGroups.value)
   } catch (error) {
     console.error('加载配置失败:', error)
-    showMessage('加载配置失败，请刷新重试', 'error')
+    showMessage(t('config.basicConfig.loadConfigFailed'), 'error')
   } finally {
     initialLoading.value = false
   }
@@ -631,7 +637,7 @@ const saveAllConfigs = async () => {
     }
   } catch (error) {
     console.error('保存配置失败:', error)
-    showMessage('保存失败，请重试', 'error')
+    showMessage(t('config.basicConfig.saveFailed'), 'error')
   } finally {
     loading.value = false
   }
@@ -681,7 +687,7 @@ const resetGroupConfigs = async (groupName: string) => {
     }
   } catch (error) {
     console.error('重置组配置失败:', error)
-    showMessage('重置失败，请重试', 'error')
+    showMessage(t('config.basicConfig.resetFailed'), 'error')
   } finally {
     loading.value = false
   }
@@ -697,6 +703,7 @@ const getDefaultValueForKey = (configKey: string): string => {
     'timeoutSeconds': '60',
     'autoOpenBrowser': 'false',
     'headlessBrowser': 'true',
+    'maxMemory': '1000'
     // 可以根据需要添加更多默认值
   }
   
@@ -813,7 +820,7 @@ const importConfigs = (event: Event) => {
       configGroups.value.forEach(group => {
         group.subGroups.forEach(subGroup => {
           subGroup.items.forEach(item => {
-            if (importData.configs.hasOwnProperty(item.configKey)) {
+            if (Object.prototype.hasOwnProperty.call(importData.configs, item.configKey)) {
               configsToUpdate.push({
                 ...item,
                 configValue: importData.configs[item.configKey]
@@ -839,7 +846,7 @@ const importConfigs = (event: Event) => {
       }
     } catch (error) {
       console.error('导入配置失败:', error)
-      showMessage('导入失败，请检查文件格式', 'error')
+      showMessage(t('config.basicConfig.importFailed'), 'error')
     } finally {
       loading.value = false
       // 清空输入框

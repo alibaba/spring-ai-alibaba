@@ -85,7 +85,7 @@ public class HttpNodeSection implements NodeSection {
 		}
 
 		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
 
 		return sb.toString();
 	}

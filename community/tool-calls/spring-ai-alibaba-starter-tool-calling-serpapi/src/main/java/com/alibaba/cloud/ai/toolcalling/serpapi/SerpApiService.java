@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.toolcalling.serpapi;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -39,7 +40,7 @@ import java.util.function.Function;
  * @author 北极星
  * @author sixiyida
  */
-public class SerpApiService implements Function<SerpApiService.Request, SerpApiService.Response> {
+public class SerpApiService implements SearchService, Function<SerpApiService.Request, SerpApiService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(SerpApiService.class);
 
@@ -53,6 +54,11 @@ public class SerpApiService implements Function<SerpApiService.Request, SerpApiS
 		this.properties = properties;
 		this.jsonParseTool = jsonParseTool;
 		this.webClientTool = webClientTool;
+	}
+
+	@Override
+	public SearchService.Response query(String query) {
+		return this.apply(new Request(query));
 	}
 
 	/**
@@ -126,11 +132,24 @@ public class SerpApiService implements Function<SerpApiService.Request, SerpApiS
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("serpapi search request")
 	public record Request(@JsonProperty(required = true,
-			value = "query") @JsonPropertyDescription("The query " + "keyword e.g. Alibaba") String query) {
+			value = "query") @JsonPropertyDescription("The query " + "keyword e.g. Alibaba") String query)
+			implements
+				SearchService.Request {
+		@Override
+		public String getQuery() {
+			return this.query();
+		}
 	}
 
 	@JsonClassDescription("serpapi search response")
-	public record Response(List<SearchResult> results) {
+	public record Response(List<SearchResult> results) implements SearchService.Response {
+		@Override
+		public SearchService.SearchResult getSearchResult() {
+			return new SearchService.SearchResult(this.results()
+				.stream()
+				.map(item -> new SearchService.SearchContent(item.title(), item.text(), null))
+				.toList());
+		}
 	}
 
 	public record SearchResult(String title, String text) {

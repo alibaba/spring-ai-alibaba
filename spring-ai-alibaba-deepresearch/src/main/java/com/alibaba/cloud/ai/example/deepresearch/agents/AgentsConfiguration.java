@@ -21,7 +21,6 @@ import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
-import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
@@ -50,6 +49,12 @@ public class AgentsConfiguration {
 	@Value("classpath:prompts/buildInteractiveHtmlPrompt.md")
 	private Resource interactionPrompt;
 
+	@Value("classpath:prompts/reflection.md")
+	private Resource reflectionPrompt;
+
+	@Value("classpath:prompts/reporter.md")
+	private Resource reporterPrompt;
+
 	@Autowired
 	private ApplicationContext context;
 
@@ -67,7 +72,7 @@ public class AgentsConfiguration {
 	}
 
 	/**
-	 * 获取指定代理的MCP工具回调
+	 * 获取指定代理的MCP工具回调, 这边我把mcp创建的部分改为在结点处进行动态创建和加载，所以会返回空数组
 	 */
 	private ToolCallback[] getMcpToolCallbacks(String agentName) {
 		if (CollectionUtils.isEmpty(agent2SyncMcpToolCallbackProvider)
@@ -77,12 +82,20 @@ public class AgentsConfiguration {
 
 		if (!CollectionUtils.isEmpty(agent2SyncMcpToolCallbackProvider)) {
 			SyncMcpToolCallbackProvider toolCallbackProvider = agent2SyncMcpToolCallbackProvider.get(agentName);
-			return toolCallbackProvider.getToolCallbacks();
+			if (toolCallbackProvider != null) {
+				return toolCallbackProvider.getToolCallbacks();
+			}
 		}
-		else {
+
+		if (!CollectionUtils.isEmpty(agent2AsyncMcpToolCallbackProvider)) {
 			AsyncMcpToolCallbackProvider toolCallbackProvider = agent2AsyncMcpToolCallbackProvider.get(agentName);
-			return toolCallbackProvider.getToolCallbacks();
+			if (toolCallbackProvider != null) {
+				return toolCallbackProvider.getToolCallbacks();
+			}
 		}
+
+		// 如果没有找到有效的工具回调提供者，返回空数组
+		return new ToolCallback[0];
 	}
 
 	/**
@@ -95,10 +108,12 @@ public class AgentsConfiguration {
 	public ChatClient researchAgent(ChatClient.Builder researchChatClientBuilder) {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("researchAgent");
 
-		return researchChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt))
-			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
-			.defaultToolCallbacks(mcpCallbacks)
-			.build();
+		var builder = researchChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt));
+		var toolArray = this.getAvailableTools(JinaCrawlerConstants.TOOL_NAME);
+		if (toolArray.length > 0) {
+			builder = builder.defaultToolNames(toolArray);
+		}
+		return builder.defaultToolCallbacks(mcpCallbacks).build();
 	}
 
 	/**
@@ -135,12 +150,22 @@ public class AgentsConfiguration {
 
 	@Bean
 	public ChatClient reporterAgent(ChatClient.Builder reporterChatClientBuilder) {
-		return reporterChatClientBuilder.build();
+		return reporterChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(reporterPrompt)).build();
 	}
 
 	@Bean
 	public ChatClient interactionAgent(ChatClient.Builder interactionChatClientBuilder) {
 		return interactionChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(interactionPrompt)).build();
+	}
+
+	@Bean
+	public ChatClient infoCheckAgent(ChatClient.Builder infoCheckChatClientBuilder) {
+		return infoCheckChatClientBuilder.build();
+	}
+
+	@Bean
+	public ChatClient reflectionAgent(ChatClient.Builder reflectionChatClientBuilder) {
+		return reflectionChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(reflectionPrompt)).build();
 	}
 
 }

@@ -55,37 +55,18 @@ public class DashScopeAutoConfigurationIT {
 	private static final Log logger = LogFactory.getLog(DashScopeAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class));
-
-	private final ApplicationContextRunner testAudioContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(DashScopeAudioSpeechAutoConfiguration.class))
-		.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class));
-
-	private final ApplicationContextRunner testImageContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(DashScopeImageAutoConfiguration.class));
-
-	private final ApplicationContextRunner textEmbeddingDefaultContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class));
-
-	private final ApplicationContextRunner textEmbeddingV3ContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
-		.withPropertyValues("spring.ai.dashscope.embedding.options.model=text-embedding-v3")
-		.withPropertyValues("spring.ai.dashscope.embedding.options.dimensions=512")
-		.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class));
+		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"));
 
 	@Test
 	void chatCall() {
 
-		this.contextRunner.run(context -> {
-			DashScopeChatModel chatModel = context.getBean(DashScopeChatModel.class);
-			String response = chatModel.call("Hello");
-			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
+			.run(context -> {
+				DashScopeChatModel chatModel = context.getBean(DashScopeChatModel.class);
+				String response = chatModel.call("Hello");
+				assertThat(response).isNotEmpty();
+				logger.info("Response: " + response);
+			});
 	}
 
 	// https://github.com/alibaba/spring-ai-alibaba/issues/295
@@ -107,103 +88,113 @@ public class DashScopeAutoConfigurationIT {
 
 	@Test
 	void speech() {
-		this.testAudioContextRunner.run(context -> {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeAudioSpeechAutoConfiguration.class))
+			.run(context -> {
+				DashScopeSpeechSynthesisModel speechModel = context.getBean(DashScopeSpeechSynthesisModel.class);
+				byte[] response = speechModel
+					.call(new SpeechSynthesisPrompt("H",
+							DashScopeSpeechSynthesisOptions.builder()
+								.responseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)
+								.build()))
+					.getResult()
+					.getOutput()
+					.getAudio()
+					.array();
+				assertThat(response).isNotNull();
+				// todo: check mp3 types
+				assertThat(response.length).isNotEqualTo(0);
 
-			DashScopeAudioSpeechModel speechModel = context.getBean(DashScopeAudioSpeechModel.class);
-
-			byte[] response = speechModel
-				.call(new SpeechSynthesisPrompt("H",
-						DashScopeAudioSpeechOptions.builder()
-							.responseFormat(DashScopeAudioSpeechApi.ResponseFormat.MP3)
-							.build()))
-				.getResult()
-				.getOutput()
-				.getAudio()
-				.array();
-
-			assertThat(response).isNotNull();
-			// todo: check mp3 types
-			assertThat(response.length).isNotEqualTo(0);
-
-			logger.debug("Response: " + Arrays.toString(response));
-		});
+				logger.debug("Response: " + Arrays.toString(response));
+			});
 	}
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner.run(context -> {
-			DashScopeChatModel chatModel = context.getBean(DashScopeChatModel.class);
-			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
-			String response = Objects.requireNonNull(responseFlux.collectList().block())
-				.stream()
-				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
-				.collect(Collectors.joining());
+		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
+			.run(context -> {
+				DashScopeChatModel chatModel = context.getBean(DashScopeChatModel.class);
+				Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
+				String response = Objects.requireNonNull(responseFlux.collectList().block())
+					.stream()
+					.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
+					.collect(Collectors.joining());
 
-			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
-		});
+				assertThat(response).isNotEmpty();
+				logger.info("Response: " + response);
+			});
 	}
 
 	@Test
 	void streamingWithTokenUsage() {
-		this.contextRunner.withPropertyValues("spring.ai.dashScope.chat").run(context -> {
-			DashScopeChatModel chatModel = context.getBean(DashScopeChatModel.class);
+		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
+			.withPropertyValues("spring.ai.dashScope.chat")
+			.run(context -> {
+				DashScopeChatModel chatModel = context.getBean(DashScopeChatModel.class);
 
-			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
+				Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
 
-			Usage[] streamingTokenUsage = new Usage[1];
-			String response = Objects.requireNonNull(responseFlux.collectList().block()).stream().map(chatResponse -> {
-				streamingTokenUsage[0] = chatResponse.getMetadata().getUsage();
-				return (chatResponse.getResult() != null) ? chatResponse.getResult().getOutput().getText() : "";
-			}).collect(Collectors.joining());
+				Usage[] streamingTokenUsage = new Usage[1];
+				String response = Objects.requireNonNull(responseFlux.collectList().block())
+					.stream()
+					.map(chatResponse -> {
+						streamingTokenUsage[0] = chatResponse.getMetadata().getUsage();
+						return (chatResponse.getResult() != null) ? chatResponse.getResult().getOutput().getText() : "";
+					})
+					.collect(Collectors.joining());
 
-			assertThat(streamingTokenUsage[0].getPromptTokens()).isGreaterThan(0);
-			assertThat(streamingTokenUsage[0].getCompletionTokens()).isGreaterThan(0);
-			assertThat(streamingTokenUsage[0].getTotalTokens()).isGreaterThan(0);
+				assertThat(streamingTokenUsage[0].getPromptTokens()).isGreaterThan(0);
+				assertThat(streamingTokenUsage[0].getCompletionTokens()).isGreaterThan(0);
+				assertThat(streamingTokenUsage[0].getTotalTokens()).isGreaterThan(0);
 
-			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
-		});
+				assertThat(response).isNotEmpty();
+				logger.info("Response: " + response);
+			});
 	}
 
 	@Test
-	void embedding() {
-		this.textEmbeddingDefaultContextRunner.run(context -> {
-			DashScopeEmbeddingModel embeddingModel = context.getBean(DashScopeEmbeddingModel.class);
+	void embeddingV2() {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.dashscope.embedding.options.model=text-embedding-v2")
+			.run(context -> {
+				DashScopeEmbeddingModel embeddingModel = context.getBean(DashScopeEmbeddingModel.class);
 
-			EmbeddingResponse embeddingResponse = embeddingModel
-				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
-			assertThat(embeddingResponse.getResults()).hasSize(2);
-			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-			assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
-			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
-			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+				EmbeddingResponse embeddingResponse = embeddingModel
+					.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+				assertThat(embeddingResponse.getResults()).hasSize(2);
+				assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+				assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
-			assertThat(embeddingModel.dimensions()).isEqualTo(1024);
-		});
+				assertThat(embeddingModel.dimensions()).isEqualTo(1536);
+			});
 	}
 
 	@Test
-	void embeddingWithTextEmbeddingV3Mode() {
-		this.textEmbeddingV3ContextRunner.run(context -> {
-			DashScopeEmbeddingModel embeddingModel = context.getBean(DashScopeEmbeddingModel.class);
+	void embeddingV3() {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.dashscope.embedding.options.model=text-embedding-v3")
+			.withPropertyValues("spring.ai.dashscope.embedding.options.dimensions=512")
+			.run(context -> {
+				DashScopeEmbeddingModel embeddingModel = context.getBean(DashScopeEmbeddingModel.class);
 
-			EmbeddingResponse embeddingResponse = embeddingModel
-				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
-			assertThat(embeddingResponse.getResults()).hasSize(2);
-			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-			assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
-			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
-			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+				EmbeddingResponse embeddingResponse = embeddingModel
+					.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+				assertThat(embeddingResponse.getResults()).hasSize(2);
+				assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+				assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
-			assertThat(embeddingModel.dimensions()).isEqualTo(512);
+				assertThat(embeddingModel.dimensions()).isEqualTo(512);
 
-		});
+			});
 	}
 
 	@Test
 	void generateImage() {
-		this.testImageContextRunner.withPropertyValues("spring.ai.dashScope.image.options.size=1024x1024")
+		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeImageAutoConfiguration.class))
+			.withPropertyValues("spring.ai.dashScope.image.options.size=1024x1024")
 			.run(context -> {
 				DashScopeImageModel imageModel = context.getBean(DashScopeImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("tree"));
@@ -217,7 +208,7 @@ public class DashScopeAutoConfigurationIT {
 	@Test
 	void generateImageWithModel() {
 		// The 256x256 size is supported by dall-e-2, but not by dall-e-3.
-		this.testImageContextRunner
+		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeImageAutoConfiguration.class))
 			.withPropertyValues("spring.ai.dashScope.image.options.model=wanx-v1",
 					"spring.ai.dashScope.image.options.size=256x256")
 			.run(context -> {

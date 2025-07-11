@@ -16,16 +16,17 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderService;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import org.springframework.ai.chat.model.ToolContext;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.tool.ToolCallback;
 
-public class McpTool implements ToolCallBiFunctionDef {
+import java.util.Map;
+
+public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 
 	private final ToolCallback toolCallback;
-
-	private String planId;
 
 	private String serviceNameString;
 
@@ -35,7 +36,7 @@ public class McpTool implements ToolCallBiFunctionDef {
 			McpStateHolderService mcpStateHolderService) {
 		this.toolCallback = toolCallback;
 		this.serviceNameString = serviceNameString;
-		this.planId = planId;
+		this.currentPlanId = planId;
 		this.mcpStateHolderService = mcpStateHolderService;
 	}
 
@@ -55,23 +56,13 @@ public class McpTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
-	}
-
-	@Override
-	public boolean isReturnDirect() {
-		return false;
-	}
-
-	@Override
-	public void setPlanId(String planId) {
-		this.planId = planId;
+	public Class<Map<String, Object>> getInputType() {
+		return (Class<Map<String, Object>>) (Class<?>) Map.class;
 	}
 
 	@Override
 	public String getCurrentToolStateString() {
-		McpState mcpState = mcpStateHolderService.getMcpState(planId);
+		McpState mcpState = mcpStateHolderService.getMcpState(currentPlanId);
 		if (mcpState != null) {
 			return mcpState.getState();
 		}
@@ -79,16 +70,26 @@ public class McpTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		String result = toolCallback.call(s, toolContext);
+	public ToolExecuteResult run(Map<String, Object> inputMap) {
+		// Convert Map to JSON string, as ToolCallback expects string input
+		ObjectMapper objectMapper = new ObjectMapper();
+		String jsonInput;
+		try {
+			jsonInput = objectMapper.writeValueAsString(inputMap);
+		}
+		catch (JsonProcessingException e) {
+			return new ToolExecuteResult("Error: Failed to serialize input to JSON - " + e.getMessage());
+		}
+
+		String result = toolCallback.call(jsonInput, null);
 		if (result == null) {
 			result = "";
 		}
-		// 这里可以将结果存储到McpStateHolderService中
-		McpState mcpState = mcpStateHolderService.getMcpState(planId);
+		// Here we can store the result to McpStateHolderService
+		McpState mcpState = mcpStateHolderService.getMcpState(currentPlanId);
 		if (mcpState == null) {
 			mcpState = new McpState();
-			mcpStateHolderService.setMcpState(planId, mcpState);
+			mcpStateHolderService.setMcpState(currentPlanId, mcpState);
 		}
 		mcpState.setState(result);
 

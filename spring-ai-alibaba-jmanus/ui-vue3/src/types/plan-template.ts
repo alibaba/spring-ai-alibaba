@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// 计划模板相关类型定义
+// Plan template related type definitions
 
 export interface PlanTemplate {
   id: string

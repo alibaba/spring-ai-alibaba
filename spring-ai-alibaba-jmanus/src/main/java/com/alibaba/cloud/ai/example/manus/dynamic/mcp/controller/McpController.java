@@ -63,28 +63,28 @@ public class McpController {
 	public ResponseEntity<String> add(@RequestBody McpConfigRequestVO requestVO) throws IOException {
 		String configJson = requestVO.getConfigJson();
 
-		// 检查是否是简短格式（没有mcpServers包装）的JSON
+		// Check if it's short format JSON (without mcpServers wrapper)
 		try {
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(configJson);
 
-			// 如果不包含mcpServers字段，则需要转换为完整格式
+			// If mcpServers field is not included, need to convert to full format
 			if (!jsonNode.has("mcpServers")) {
 				logger.info("Detected short format JSON, converting to full format");
 
-				// 检查是否是简单的键值对格式（不包含外层大括号）
+				// Check if it's simple key-value pair format (without outer braces)
 				if (configJson.trim().startsWith("\"") && configJson.contains(":")) {
-					// 简单键值对格式，需要添加外层大括号
+					// Simple key-value pair format, need to add outer braces
 					configJson = "{" + configJson + "}";
 				}
 
-				// 创建完整的配置格式
+				// Create complete configuration format
 				StringBuilder fullJsonBuilder = new StringBuilder();
 				fullJsonBuilder.append("{\n  \"mcpServers\": ");
 				fullJsonBuilder.append(configJson);
 				fullJsonBuilder.append("\n}");
 
-				// 更新requestVO中的configJson
+				// Update configJson in requestVO
 				configJson = fullJsonBuilder.toString();
 				requestVO.setConfigJson(configJson);
 				logger.info("Converted to full format: {}", configJson);

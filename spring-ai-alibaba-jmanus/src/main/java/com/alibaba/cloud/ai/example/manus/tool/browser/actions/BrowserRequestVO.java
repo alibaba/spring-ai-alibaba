@@ -18,63 +18,64 @@ package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 浏览器工具请求对象 用于封装浏览器操作的请求参数
+ * Browser tool request object for encapsulating browser operation request parameters
  */
 public class BrowserRequestVO {
 
 	/**
-	 * 浏览器操作类型 支持: navigate, click, input_text, key_enter, screenshot, get_html, get_text,
-	 * execute_js, scroll, switch_tab, new_tab, close_tab, refresh, get_element_position,
-	 * move_to_and_click
+	 * Browser operation type Supports: navigate, click, input_text, key_enter,
+	 * screenshot, get_html, get_text, execute_js, scroll, switch_tab, new_tab, close_tab,
+	 * refresh, get_element_position, move_to_and_click
 	 */
 	private String action;
 
 	/**
-	 * URL地址，用于navigate和new_tab操作
+	 * URL address, used for navigate and new_tab operations
 	 */
 	private String url;
 
 	/**
-	 * 元素索引，用于click、input_text和key_enter操作
+	 * Element index, used for click, input_text and key_enter operations
 	 */
 	private Integer index;
 
 	/**
-	 * 要输入的文本，用于input_text操作
+	 * Text to be input, used for input_text operations
 	 */
 	private String text;
 
 	/**
-	 * JavaScript代码，用于execute_js操作
+	 * JavaScript code, used for execute_js operations
 	 */
 	private String script;
 
 	/**
-	 * 滚动像素，用于scroll操作 正数向下滚动，负数向上滚动
+	 * Scroll pixels, used for scroll operations Positive scrolls down, negative scrolls
+	 * up
 	 */
 	@JsonProperty("scroll_amount")
 	private Integer scrollAmount;
 
 	/**
-	 * 标签页ID，用于switch_tab操作
+	 * Tab ID, used for switch_tab operations
 	 */
 	@JsonProperty("tab_id")
 	private Integer tabId;
 
 	/**
-	 * 元素名称，用于get_element_position操作
+	 * Element name, used for get_element_position operations
 	 */
 	@JsonProperty("element_name")
 	private String elementName;
 
 	/**
-	 * X坐标，用于move_to_and_click操作
+	 * X coordinate, used for move_to_and_click operations
 	 */
 	@JsonProperty("position_x")
 	private Double positionX;
 
 	/**
-	 * Y坐标，用于move_to_and_click操作
+	 * Y coordinate, used for move_to_and_click operations
 	 */
 	@JsonProperty("position_y")
 	private Double positionY;

@@ -73,12 +73,7 @@ public class CoordinatorNode implements NodeAction {
 		// 判断是否触发工具调用
 		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
 			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
-			if (state.value("enable_background_investigation", true)) {
-				nextStep = "background_investigator";
-			}
-			else {
-				nextStep = "planner";
-			}
+			nextStep = "rewrite_multi_query";
 		}
 		else {
 			logger.warn("❌ 未触发工具调用");

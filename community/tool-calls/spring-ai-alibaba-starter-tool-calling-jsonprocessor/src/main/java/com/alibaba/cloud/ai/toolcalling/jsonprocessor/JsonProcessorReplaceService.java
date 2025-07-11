@@ -56,7 +56,7 @@ public class JsonProcessorReplaceService implements Function<JsonProcessorReplac
 	}
 
 	@JsonClassDescription("JsonProcessorReplaceService request")
-	record JsonReplaceRequest(@JsonProperty("content") String content, @JsonProperty("field") String field,
+	public record JsonReplaceRequest(@JsonProperty("content") String content, @JsonProperty("field") String field,
 			@JsonProperty("value") JsonNode value) {
 	}
 

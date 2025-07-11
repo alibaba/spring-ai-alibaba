@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * 内部服务器配置类
+ * Internal server configuration class
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class McpServerConfig {
@@ -77,31 +77,31 @@ public class McpServerConfig {
 	}
 
 	/**
-	 * 将ServerConfig转换为JSON字符串
-	 * @return 转换后的JSON字符串
+	 * Convert ServerConfig to JSON string
+	 * @return Converted JSON string
 	 */
 	public String toJson() {
 		try {
 			return new ObjectMapper().writeValueAsString(this);
 		}
 		catch (Exception e) {
-			// 如果序列化失败，则手动构建简化版JSON
+			// If serialization fails, manually build a simplified JSON
 			StringBuilder sb = new StringBuilder();
 			sb.append("{");
 
-			// 添加URL（如果存在）
+			// Add URL (if it exists)
 			if (url != null && !url.isEmpty()) {
 				sb.append("\"url\":\"").append(url).append("\"");
 			}
 
-			// 添加命令（如果存在）
+			// Add command (if it exists)
 			if (command != null && !command.isEmpty()) {
 				if (sb.length() > 1)
 					sb.append(",");
 				sb.append("\"command\":\"").append(command).append("\"");
 			}
 
-			// 添加参数（如果存在）
+			// Add parameters (if they exist)
 			if (args != null && !args.isEmpty()) {
 				if (sb.length() > 1)
 					sb.append(",");
@@ -116,7 +116,7 @@ public class McpServerConfig {
 				sb.append("]");
 			}
 
-			// 添加环境变量（如果存在）
+			// Add environment variables (if they exist)
 			if (env != null && !env.isEmpty()) {
 				if (sb.length() > 1)
 					sb.append(",");

@@ -20,20 +20,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.tool.metadata.ToolMetadata;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * LLM表单输入工具：支持带标签的多输入项和描述说明。
+ * LLM form input tool: supports multiple input items with labels and descriptions.
  */
-public class FormInputTool implements ToolCallBiFunctionDef {
+public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
 
@@ -77,18 +73,9 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 		return new OpenAiApi.FunctionTool(function);
 	}
 
-	public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, new FormInputTool())
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
-			.build();
-	}
-
 	// Data structures:
 	/**
-	 * 表单输入项，包含标签和对应的值。
+	 * Form input item containing label and corresponding value.
 	 */
 	public static class InputItem {
 
@@ -123,7 +110,7 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 	}
 
 	/**
-	 * 用户提交的表单数据，包含输入项列表和说明。
+	 * User-submitted form data containing list of input items and description.
 	 */
 	public static class UserFormInput {
 
@@ -179,47 +166,46 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		log.info("FormInputTool input: {}", s);
-		try {
-			this.currentFormDefinition = objectMapper.readValue(s, UserFormInput.class);
-			// Initialize values to empty string if null, to ensure they are present for
-			// form binding
-			if (this.currentFormDefinition != null && this.currentFormDefinition.getInputs() != null) {
-				for (InputItem item : this.currentFormDefinition.getInputs()) {
-					if (item.getValue() == null) {
-						item.setValue(""); // Initialize with empty string
-					}
+	public ToolExecuteResult run(UserFormInput formInput) {
+		log.info("FormInputTool input: {}", formInput);
+
+		this.currentFormDefinition = formInput;
+		// Initialize values to empty string if null, to ensure they are present for
+		// form binding
+		if (this.currentFormDefinition != null && this.currentFormDefinition.getInputs() != null) {
+			for (InputItem item : this.currentFormDefinition.getInputs()) {
+				if (item.getValue() == null) {
+					item.setValue(""); // Initialize with empty string
 				}
 			}
-			setInputState(InputState.AWAITING_USER_INPUT);
-			// Return the original JSON string 's' which represents the form definition.
-			// The agent can use this or call getLatestUserFormInput() via
-			// UserInputService.
-			return new ToolExecuteResult(s);
 		}
-		catch (IOException e) {
-			log.error("Error deserializing form input JSON: {}. Error: {}", s, e.getMessage());
-			// Do not change state to AWAITING_USER_INPUT if parsing fails.
-			// Keep previous state or reset to INPUT_RECEIVED.
-			// this.inputState = InputState.INPUT_RECEIVED; // Or handle error state
-			// appropriately
-			this.currentFormDefinition = null; // Clear partially parsed/invalid form
-			return new ToolExecuteResult("{\"error\": \"Failed to parse form input: " + e.getMessage() + "\"}");
+		setInputState(InputState.AWAITING_USER_INPUT);
+
+		// Return form definition as a structured result
+		try {
+			String formJson = objectMapper.writeValueAsString(formInput);
+			return new ToolExecuteResult(formJson);
+		}
+		catch (Exception e) {
+			log.error("Error serializing form input", e);
+			return new ToolExecuteResult("{\"error\": \"Failed to process form input: " + e.getMessage() + "\"}");
 		}
 	}
 
 	/**
-	 * 获取由LLM定义的最新表单结构（包括描述和输入项标签及当前值）。 这个表单结构将用于在前端呈现给用户。
-	 * @return 最新的 UserFormInput 对象，如果尚未定义则为 null。
+	 * Get the latest form structure defined by LLM (including description and input item
+	 * labels and current values). This form structure will be used to present to users in
+	 * the frontend.
+	 * @return latest UserFormInput object, or null if not yet defined.
 	 */
 	public UserFormInput getLatestUserFormInput() {
 		return this.currentFormDefinition;
 	}
 
 	/**
-	 * 设置用户提交的表单输入值。 这些值将更新 currentFormDefinition 中对应输入项的 value。
-	 * @param submittedItems 用户提交的输入项列表 (label-value pairs).
+	 * Set user-submitted form input values. These values will update the value of
+	 * corresponding input items in currentFormDefinition.
+	 * @param submittedItems list of input items submitted by user (label-value pairs).
 	 */
 	public void setUserFormInputValues(List<InputItem> submittedItems) {
 		if (this.currentFormDefinition == null || this.currentFormDefinition.getInputs() == null) {
@@ -274,8 +260,8 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
+	public Class<UserFormInput> getInputType() {
+		return UserFormInput.class;
 	}
 
 	@Override
@@ -284,13 +270,8 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public void setPlanId(String planId) {
-		// 可选实现
-	}
-
-	@Override
 	public void cleanup(String planId) {
-		// 可选实现
+		// Optional implementation
 	}
 
 	@Override
@@ -299,7 +280,8 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 	}
 
 	/**
-	 * 获取当前工具状态，包括表单说明和输入项 (包括用户已输入的值 if any)
+	 * Get current tool state, including form description and input items (including
+	 * user-entered values if any)
 	 */
 	@Override
 	public String getCurrentToolStateString() {

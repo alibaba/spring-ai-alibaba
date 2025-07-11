@@ -19,11 +19,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 执行上下文类，用于在计划的创建、执行和总结过程中传递和维护状态信息。 该类作为计划执行流程中的核心数据载体，在
- * {@link com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator}
- * 的各个阶段之间传递。
+ * Execution context class for passing and maintaining state information during the
+ * creation, execution, and summarization of plans. This class serves as the core data
+ * carrier in the plan execution process, passing between various stages of
+ * {@link com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator}.
  *
- * 主要职责： - 存储计划ID和计划实体信息 - 保存用户原始请求 - 维护计划执行状态 - 存储执行结果摘要 - 控制是否需要生成执行总结
+ * Main responsibilities: - Store plan ID and plan entity information - Save user original
+ * request - Maintain plan execution status - Store execution result summary - Control
+ * whether execution summary generation is needed
  *
  * @see com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan
  * @see com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator
@@ -33,88 +36,122 @@ public class ExecutionContext {
 	private Map<String, String> toolsContext = new HashMap<>();
 
 	/**
-	 * 工具上下文，存储工具执行的上下文信息
+	 * Tool context for storing context information of tool execution
 	 */
-	/** 计划的唯一标识符 */
-	private String planId;
+	/** Unique identifier of the plan */
+	private String currentPlanId;
 
-	/** 执行计划实体，包含计划的详细信息和执行步骤 */
-	private ExecutionPlan plan;
+	private String rootPlanId;
 
-	/** 用户的原始请求内容 */
+	/** Execution plan entity containing detailed plan information and execution steps */
+	private PlanInterface plan;
+
+	/** User's original request content */
 	private String userRequest;
 
-	/** 计划执行完成后的结果摘要 */
+	private Long thinkActRecordId;
+
+	/** Result summary after plan execution completion */
 	private String resultSummary;
 
-	/** 是否需要为执行结果调用大模型生成摘要，true是调用大模型，false是不调用直接输出结果 */
+	/**
+	 * Whether to call large model to generate summary for execution results, true calls
+	 * large model, false does not call and outputs results directly
+	 */
 	private boolean needSummary;
 
-	/** 计划执行是否成功的标志 */
+	/** Flag indicating whether plan execution was successful */
 	private boolean success = false;
 
-	/** 是否使用记忆， 场景是 如果只构建计划，那么不应该用记忆，否则记忆无法删除 */
+	/**
+	 * Whether to use memory, scenario is if only building plan, then memory should not be
+	 * used, otherwise memory cannot be deleted
+	 */
 	private boolean useMemory = false;
 
 	/**
-	 * 获取计划ID
-	 * @return 计划的唯一标识符
+	 * Get plan ID
+	 * @return Unique identifier of the plan
 	 */
-	public String getPlanId() {
-		return planId;
+	public String getCurrentPlanId() {
+		return currentPlanId;
 	}
 
 	/**
-	 * 设置计划ID
-	 * @param planId 计划的唯一标识符
+	 * Set plan ID
+	 * @param currentPlanId Unique identifier of the plan
 	 */
-	public void setPlanId(String planId) {
-		this.planId = planId;
+	public void setCurrentPlanId(String currentPlanId) {
+		this.currentPlanId = currentPlanId;
+	}
+
+	public String getRootPlanId() {
+		return rootPlanId;
+	}
+
+	public void setRootPlanId(String parentPlanId) {
+		this.rootPlanId = parentPlanId;
 	}
 
 	/**
-	 * 获取执行计划实体
-	 * @return 执行计划实体对象
+	 * Get think-act record ID
+	 * @return Think-act record ID for sub-plan executions
 	 */
-	public ExecutionPlan getPlan() {
+	public Long getThinkActRecordId() {
+		return thinkActRecordId;
+	}
+
+	/**
+	 * Set think-act record ID
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions
+	 */
+	public void setThinkActRecordId(Long thinkActRecordId) {
+		this.thinkActRecordId = thinkActRecordId;
+	}
+
+	/**
+	 * Get execution plan entity
+	 * @return Execution plan entity object
+	 */
+	public PlanInterface getPlan() {
 		return plan;
 	}
 
 	/**
-	 * 设置执行计划实体
-	 * @param plan 执行计划实体对象
+	 * Set execution plan entity
+	 * @param plan Execution plan entity object
 	 */
-	public void setPlan(ExecutionPlan plan) {
+	public void setPlan(PlanInterface plan) {
 		this.plan = plan;
 	}
 
 	/**
-	 * 检查是否需要生成执行结果摘要
-	 * @return 如果需要生成摘要返回true，否则返回false
+	 * Check if execution result summary generation is needed
+	 * @return Returns true if summary generation is needed, otherwise false
 	 */
 	public boolean isNeedSummary() {
 		return needSummary;
 	}
 
 	/**
-	 * 设置是否需要生成执行结果摘要
-	 * @param needSummary 是否需要生成摘要的标志
+	 * Set whether execution result summary generation is needed
+	 * @param needSummary Flag indicating whether summary generation is needed
 	 */
 	public void setNeedSummary(boolean needSummary) {
 		this.needSummary = needSummary;
 	}
 
 	/**
-	 * 检查计划执行是否成功
-	 * @return 如果执行成功返回true，否则返回false
+	 * Check if plan execution was successful
+	 * @return Returns true if execution was successful, otherwise false
 	 */
 	public boolean isSuccess() {
 		return success;
 	}
 
 	/**
-	 * 设置计划执行的成功状态
-	 * @param success 执行成功状态的标志
+	 * Set plan execution success status
+	 * @param success Flag indicating execution success status
 	 */
 	public void setSuccess(boolean success) {
 		this.success = success;
@@ -133,42 +170,43 @@ public class ExecutionContext {
 	}
 
 	/**
-	 * 获取用户的原始请求内容
-	 * @return 用户请求的字符串
+	 * Get user's original request content
+	 * @return User request string
 	 */
 	public String getUserRequest() {
 		return userRequest;
 	}
 
 	/**
-	 * 设置用户的原始请求内容
-	 * @param userRequest 用户请求的字符串
+	 * Set user's original request content
+	 * @param userRequest User request string
 	 */
 	public void setUserRequest(String userRequest) {
 		this.userRequest = userRequest;
 	}
 
 	/**
-	 * 获取执行结果摘要
-	 * @return 执行结果的摘要说明
+	 * Get execution result summary
+	 * @return Summary description of execution results
 	 */
 	public String getResultSummary() {
 		return resultSummary;
 	}
 
 	/**
-	 * 设置执行结果摘要
-	 * @param resultSummary 执行结果的摘要说明
+	 * Set execution result summary
+	 * @param resultSummary Summary description of execution results
 	 */
 	public void setResultSummary(String resultSummary) {
 		this.resultSummary = resultSummary;
 	}
 
 	/**
-	 * 使用另一个ExecutionContext实例的内容更新当前实例
+	 * Update current instance with content from another ExecutionContext instance
 	 * <p>
-	 * 此方法会复制传入context的计划实体、用户请求和结果摘要到当前实例
-	 * @param context 源执行上下文实例
+	 * This method copies the plan entity, user request, and result summary from the
+	 * passed context to the current instance
+	 * @param context Source execution context instance
 	 */
 	public void updateContext(ExecutionContext context) {
 		this.plan = context.getPlan();

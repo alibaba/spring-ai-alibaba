@@ -1,0 +1,78 @@
+    /*
+    * Copyright 2025 the original author or authors.
+    *
+    * Licensed under the Apache License, Version 2.0 (the "License");
+    * you may not use this file except in compliance with the License.
+    * You may obtain a copy of the License at
+    *
+    *      https://www.apache.org/licenses/LICENSE-2.0
+    *
+    * Unless required by applicable law or agreed to in writing, software
+    * distributed under the License is distributed on an "AS IS" BASIS,
+    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    * See the License for the specific language governing permissions and
+    * limitations under the License.
+    */
+
+
+### 会话接口(流式请求)
+POST http://localhost:8080/chat/stream
+
+
+### 人类反馈1:流式请求时，auto_accepted_plan是否自动接受计划，此处为false
+POST http://localhost:8080/chat/stream
+Content-Type: application/json
+
+{
+  "auto_accepted_plan": false
+}
+
+
+### 人类反馈2:feed_back为是否接受当前计划，false时feed_back_content生效
+POST http://localhost:8080/chat/resume
+Content-Type: application/json
+
+{
+  "thread_id": "__default__",
+  "feed_back": false,
+  "feed_back_content": "巧克力蛋糕制作技巧"
+}
+
+
+### RAG文档解析，上传文件，解析并保存至向量数据库中
+POST http://localhost:8080/api/rag/upload
+
+
+### 根据线程ID获取报告,路径参数{threadId},这里选择"__default__"
+GET http://localhost:8080/api/reports/__default__
+
+
+### 检查报告是否存在,路径参数{threadId},这里选择"__default__"
+GET http://localhost:8080/api/reports/__default__/exists
+
+
+### 删除报告,路径参数{threadId},这里选择"__default__"
+DELETE http://localhost:8080/api/reports/__default__
+
+
+### 导出报告
+POST http://localhost:8080/api/reports/export
+Content-Type: application/json
+
+{
+  "thread_id": "__default__",
+  "format": "markdown"
+}
+
+
+### 下载指定格式的报告文件,路径参数{threadId},这里选择"__default__"
+GET http://localhost:8080/api/reports/download/__default__
+
+
+### 构建交互式HTML报告
+GET http://localhost:8080/api/reports/build-html?threadId=__default__
+
+
+### 获取所有默认 MCP 服务信息概览
+GET http://localhost:8080/api/mcp/services
+Accept: application/json

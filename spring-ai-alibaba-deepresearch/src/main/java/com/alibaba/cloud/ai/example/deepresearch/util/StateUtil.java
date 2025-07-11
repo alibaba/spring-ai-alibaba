@@ -22,7 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,6 +45,10 @@ public class StateUtil {
 	public static final String EXECUTION_STATUS_PROCESSING_PREFIX = "processing_";
 
 	public static final String EXECUTION_STATUS_COMPLETED_PREFIX = "completed_";
+
+	public static final String EXECUTION_STATUS_WAITING_REFLECTING = "waiting_reflecting_";
+
+	public static final String EXECUTION_STATUS_WAITING_PROCESSING = "waiting_processing_";
 
 	public static List<String> getMessagesByType(OverAllState state, String name) {
 		return state.value(name, List.class).map(obj -> new ArrayList<>((List<String>) obj)).orElseGet(ArrayList::new);
@@ -70,6 +76,10 @@ public class StateUtil {
 		return state.value("query", "草莓蛋糕怎么做呀");
 	}
 
+	public static List<String> getOptimizeQueries(OverAllState state) {
+		return state.value("optimize_queries", (List<String>) null);
+	}
+
 	public static Plan getPlan(OverAllState state) {
 		return state.value("current_plan", Plan.class).get();
 	}
@@ -92,6 +102,21 @@ public class StateUtil {
 
 	public static boolean getAutoAcceptedPlan(OverAllState state) {
 		return state.value("auto_accepted_plan", true);
+	}
+
+	/**
+	 * 获取MCP设置
+	 */
+	public static Map<String, Object> getMcpSettings(OverAllState state) {
+		return state.value("mcp_settings", Map.class).orElse(Collections.emptyMap());
+	}
+
+	/**
+	 * 检查是否有运行时MCP配置
+	 */
+	public static boolean hasRuntimeMcpConfig(OverAllState state) {
+		Map<String, Object> mcpSettings = getMcpSettings(state);
+		return !mcpSettings.isEmpty();
 	}
 
 }

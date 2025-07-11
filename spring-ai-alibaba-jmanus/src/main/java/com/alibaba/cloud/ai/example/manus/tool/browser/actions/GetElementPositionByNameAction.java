@@ -36,7 +36,8 @@ public class GetElementPositionByNameAction extends BrowserAction {
 	}
 
 	/**
-	 * 元素位置信息类，用于存储每个匹配元素的全局位置和文本信息
+	 * Element position information class for storing global position and text information
+	 * of each matched element
 	 */
 	public static class ElementPosition {
 
@@ -46,11 +47,11 @@ public class GetElementPositionByNameAction extends BrowserAction {
 
 		private String elementText; // Element text content
 
-		// 构造函数
+		// Default constructor
 		public ElementPosition() {
 		}
 
-		// 构造函数，只包含必要字段
+		// Constructor with only necessary fields
 		public ElementPosition(double x, double y, String elementText) {
 			this.x = x;
 			this.y = y;
@@ -86,19 +87,19 @@ public class GetElementPositionByNameAction extends BrowserAction {
 
 	@Override
 	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-		boolean isDebug = getBrowserUseTool().getManusProperties().getBrowserDebug();
+		boolean isDebug = getBrowserUseTool().getManusProperties().getDebugDetail();
 		String elementName = request.getElementName();
 		if (elementName == null || elementName.isEmpty()) {
 			return new ToolExecuteResult("Element name is required for 'get_element_position' action");
 		}
 
-		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		Page page = getCurrentPage(); // Get Playwright Page instance
 
-		// 用于去重的集合
+		// Set for deduplication
 		Set<String> uniqueSet = new HashSet<>();
 		List<ElementPosition> positionResults = new ArrayList<>();
 
-		// 统一处理所有 frame（包括主页面和所有iframe）
+		// Uniformly handle all frames (including main page and all iframes)
 		for (Frame frame : page.frames()) {
 			findAndProcessElementsByLocatorForFrame(frame, elementName, positionResults, uniqueSet, isDebug);
 		}
@@ -115,7 +116,8 @@ public class GetElementPositionByNameAction extends BrowserAction {
 	private void findAndProcessElementsByLocatorForFrame(Frame frame, String elementName, List<ElementPosition> results,
 			Set<String> uniqueSet, boolean isDebug) {
 
-		// 只查找可见且文本包含elementName的元素，不包含style标签
+		// Only find visible elements that contain elementName in text, excluding style
+		// tags
 		com.microsoft.playwright.Locator locator = frame.getByText(elementName);
 		int count = locator.count();
 		for (int i = 0; i < count; i++) {
@@ -141,12 +143,13 @@ public class GetElementPositionByNameAction extends BrowserAction {
 					double x = (double) box.x + (double) box.width / 2;
 					double y = (double) box.y + (double) box.height / 2;
 					if (isDebug) {
-						// 给元素加红色边框，并在右上角显示 elementText（红底白字）
+						// Add red border to element and display elementText in top-right
+						// corner (red background, white text)
 						try {
 							String elementTextFinal = text.trim();
 							elementTextFinal = " (" + x + "," + y + ")" + elementTextFinal;
 							Object result = nthLocator.evaluate(
-									"(el, text) => {\n  el.style.border = '2px solid red';\n  // 创建或更新右上角标签\n  let tag = el.querySelector('[data-element-text-tag]');\n  if (!tag) {\n    tag = document.createElement('div');\n    tag.setAttribute('data-element-text-tag', '1');\n    tag.style.position = 'absolute';\n    tag.style.top = '0';\n    tag.style.right = '0';\n    tag.style.background = 'red';\n    tag.style.color = 'white';\n    tag.style.fontSize = '12px';\n    tag.style.padding = '2px 6px';\n    tag.style.borderBottomLeftRadius = '6px';\n    tag.style.zIndex = '9999';\n    tag.style.pointerEvents = 'none';\n    tag.style.fontWeight = 'bold';\n    tag.style.maxWidth = '120px';\n    tag.style.overflow = 'hidden';\n    tag.style.textOverflow = 'ellipsis';\n    tag.style.whiteSpace = 'nowrap';\n    el.style.position = el.style.position || 'relative';\n    el.appendChild(tag);\n  }\n  tag.textContent = text;\n}",
+									"(el, text) => {\n  el.style.border = '2px solid red';\n  // Create or update top-right corner tag\n  let tag = el.querySelector('[data-element-text-tag]');\n  if (!tag) {\n    tag = document.createElement('div');\n    tag.setAttribute('data-element-text-tag', '1');\n    tag.style.position = 'absolute';\n    tag.style.top = '0';\n    tag.style.right = '0';\n    tag.style.background = 'red';\n    tag.style.color = 'white';\n    tag.style.fontSize = '12px';\n    tag.style.padding = '2px 6px';\n    tag.style.borderBottomLeftRadius = '6px';\n    tag.style.zIndex = '9999';\n    tag.style.pointerEvents = 'none';\n    tag.style.fontWeight = 'bold';\n    tag.style.maxWidth = '120px';\n    tag.style.overflow = 'hidden';\n    tag.style.textOverflow = 'ellipsis';\n    tag.style.whiteSpace = 'nowrap';\n    el.style.position = el.style.position || 'relative';\n    el.appendChild(tag);\n  }\n  tag.textContent = text;\n}",
 									elementTextFinal);
 
 							log.info("Debug: Added red border and text tag for element. result: {}, x: {}, y: {}",

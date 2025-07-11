@@ -23,18 +23,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
-import static com.alibaba.cloud.ai.toolcalling.time.TimeProperties.TIME_PREFIX;
-
 /**
  * @author chengle
  */
 @Configuration
 @EnableConfigurationProperties(TimeProperties.class)
 @ConditionalOnClass({ TimeService.class, GetTimeByZoneIdService.class })
-@ConditionalOnProperty(prefix = TIME_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = TimeConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class TimeAutoConfiguration {
 
-	@Bean
+	@Bean(name = TimeConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Get the time of a specified city.")
 	public GetTimeByZoneIdService getCityTimeFunction() {

@@ -22,8 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * MCP服务器配置解析对象，用于解析形如： { "mcpServers": { "server-name": { "url":
- * "http://localhost:3000/sse", "env": { "API_KEY": "value" } } } } 的配置格式
+ * MCP server configuration parsing object for parsing configuration format like: {
+ * "mcpServers": { "server-name": { "url": "http://localhost:3000/sse", "env": {
+ * "API_KEY": "value" } } } }
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class McpServersConfig {
@@ -44,8 +45,8 @@ public class McpServersConfig {
 	}
 
 	/**
-	 * 获取第一个服务器配置
-	 * @return 第一个服务器配置，如果没有则返回null
+	 * Get the first server configuration
+	 * @return First server configuration, returns null if none exists
 	 */
 	public McpServerConfig getFirstServerConfig() {
 		if (mcpServers != null && !mcpServers.isEmpty()) {
@@ -56,8 +57,8 @@ public class McpServersConfig {
 	}
 
 	/**
-	 * 获取第一个服务器名称
-	 * @return 第一个服务器名称，如果没有则返回null
+	 * Get the first server name
+	 * @return First server name, returns null if none exists
 	 */
 	public String getFirstServerName() {
 		if (mcpServers != null && !mcpServers.isEmpty()) {
@@ -67,17 +68,17 @@ public class McpServersConfig {
 	}
 
 	/**
-	 * 转换为SseParameters
-	 * @return 转换后的SseParameters内容
+	 * Convert to SseParameters
+	 * @return Converted SseParameters content
 	 */
 	public String toSseParametersJson() {
 		McpServerConfig serverConfig = getFirstServerConfig();
 		if (serverConfig != null && serverConfig.getUrl() != null) {
-			// 构建SseParameters格式的JSON
+			// Build SseParameters format JSON
 			StringBuilder sb = new StringBuilder();
 			sb.append("{\"base_uri\":\"").append(serverConfig.getUrl()).append("\"");
 
-			// 添加环境变量作为请求头
+			// Add environment variables as request headers
 			if (serverConfig.getEnv() != null && !serverConfig.getEnv().isEmpty()) {
 				sb.append(",\"headers\":{");
 				boolean first = true;
@@ -98,8 +99,8 @@ public class McpServersConfig {
 	}
 
 	/**
-	 * 判断当前配置是否为STUDIO类型
-	 * @return 如果是STUDIO类型（包含command字段）则返回true，否则返回false
+	 * Determine if current configuration is STUDIO type
+	 * @return Returns true if it's STUDIO type (contains command field), false otherwise
 	 */
 	public boolean isStudioType() {
 		McpServerConfig serverConfig = getFirstServerConfig();
@@ -107,15 +108,15 @@ public class McpServersConfig {
 	}
 
 	/**
-	 * 转换为ServerParameters格式的JSON（用于STUDIO类型连接） 支持如下两种格式： { "mcpServers": { "server-name":
-	 * { "command": "npx", "args": ["-y", "mcp-server"], "env": { "API_KEY": "value" } } }
-	 * }
+	 * Convert to ServerParameters format JSON (for STUDIO type connection). Supports the
+	 * following two formats: { "mcpServers": { "server-name": { "command": "npx", "args":
+	 * ["-y", "mcp-server"], "env": { "API_KEY": "value" } } } }
 	 *
-	 * 或者：
+	 * Or:
 	 *
 	 * { "mcpServers": { "server-name": { "command": "python", "args": ["mcp-server.py"],
 	 * "env": { "API_KEY": "value" } } } }
-	 * @return 转换后的ServerParameters格式JSON
+	 * @return Converted ServerParameters format JSON
 	 */
 	public String toServerParametersJson() {
 		McpServerConfig serverConfig = getFirstServerConfig();
@@ -123,10 +124,10 @@ public class McpServersConfig {
 			StringBuilder sb = new StringBuilder();
 			sb.append("{");
 
-			// 添加命令
+			// Add command
 			sb.append("\"command\":\"").append(serverConfig.getCommand()).append("\"");
 
-			// 添加参数
+			// Add parameters
 			if (serverConfig.getArgs() != null && !serverConfig.getArgs().isEmpty()) {
 				sb.append(",\"args\":[");
 				boolean first = true;
@@ -140,7 +141,7 @@ public class McpServersConfig {
 				sb.append("]");
 			}
 
-			// 添加环境变量
+			// Add environment variables
 			if (serverConfig.getEnv() != null && !serverConfig.getEnv().isEmpty()) {
 				sb.append(",\"env\":{");
 				boolean first = true;
