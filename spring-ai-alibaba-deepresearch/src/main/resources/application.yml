@@ -28,7 +28,7 @@ spring:
     mcp:
       client:
         enabled: false
-        type: async
+        type: ASYNC
     alibaba:
       toolcalling:
         baidu:

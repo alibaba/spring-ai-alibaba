@@ -49,6 +49,9 @@ public class AgentsConfiguration {
 	@Value("classpath:prompts/buildInteractiveHtmlPrompt.md")
 	private Resource interactionPrompt;
 
+	@Value("classpath:prompts/reporter.md")
+	private Resource reporterPrompt;
+
 	@Autowired
 	private ApplicationContext context;
 
@@ -66,7 +69,7 @@ public class AgentsConfiguration {
 	}
 
 	/**
-	 * 获取指定代理的MCP工具回调
+	 * 获取指定代理的MCP工具回调, 这边我把mcp创建的部分改为在结点处进行动态创建和加载，所以会返回空数组
 	 */
 	private ToolCallback[] getMcpToolCallbacks(String agentName) {
 		if (CollectionUtils.isEmpty(agent2SyncMcpToolCallbackProvider)
@@ -76,12 +79,20 @@ public class AgentsConfiguration {
 
 		if (!CollectionUtils.isEmpty(agent2SyncMcpToolCallbackProvider)) {
 			SyncMcpToolCallbackProvider toolCallbackProvider = agent2SyncMcpToolCallbackProvider.get(agentName);
-			return toolCallbackProvider.getToolCallbacks();
+			if (toolCallbackProvider != null) {
+				return toolCallbackProvider.getToolCallbacks();
+			}
 		}
-		else {
+
+		if (!CollectionUtils.isEmpty(agent2AsyncMcpToolCallbackProvider)) {
 			AsyncMcpToolCallbackProvider toolCallbackProvider = agent2AsyncMcpToolCallbackProvider.get(agentName);
-			return toolCallbackProvider.getToolCallbacks();
+			if (toolCallbackProvider != null) {
+				return toolCallbackProvider.getToolCallbacks();
+			}
 		}
+
+		// 如果没有找到有效的工具回调提供者，返回空数组
+		return new ToolCallback[0];
 	}
 
 	/**
@@ -136,7 +147,7 @@ public class AgentsConfiguration {
 
 	@Bean
 	public ChatClient reporterAgent(ChatClient.Builder reporterChatClientBuilder) {
-		return reporterChatClientBuilder.build();
+		return reporterChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(reporterPrompt)).build();
 	}
 
 	@Bean
