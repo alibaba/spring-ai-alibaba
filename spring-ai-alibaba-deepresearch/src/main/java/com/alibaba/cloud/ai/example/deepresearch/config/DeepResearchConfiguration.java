@@ -32,6 +32,7 @@ import com.alibaba.cloud.ai.example.deepresearch.node.InformationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.ReportGeneratorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
@@ -101,6 +102,9 @@ public class DeepResearchConfiguration {
 	@Autowired
 	private ChatClient reflectionAgent;
 
+	@Autowired
+	private ChatClient reportGeneratorAgent;
+
 	@Qualifier("chatClientBuilder")
 	@Autowired
 	private ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
@@ -168,6 +172,7 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("current_plan", new ReplaceStrategy());
 			keyStrategyHashMap.put("observations", new ReplaceStrategy());
 			keyStrategyHashMap.put("final_report", new ReplaceStrategy());
+			keyStrategyHashMap.put("comprehensive_report", new ReplaceStrategy());
 			keyStrategyHashMap.put("planner_content", new ReplaceStrategy());
 
 			for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
@@ -193,6 +198,7 @@ public class DeepResearchConfiguration {
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
 			.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportService))))
+			.addNode("report_generator", node_async(new ReportGeneratorNode(reportGeneratorAgent, reportService, deepResearchProperties)))
 			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
 
 		// 添加并行节点块
@@ -212,7 +218,8 @@ public class DeepResearchConfiguration {
 					Map.of("planner", "planner", "research_team", "research_team", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
 					Map.of("reporter", "reporter", "parallel_executor", "parallel_executor", END, END))
-			.addEdge("reporter", END);
+			.addEdge("reporter", "report_generator")
+			.addEdge("report_generator", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
 				"workflow graph");
