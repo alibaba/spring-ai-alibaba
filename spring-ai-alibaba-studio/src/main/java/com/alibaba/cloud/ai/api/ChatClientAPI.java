@@ -32,10 +32,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 @Tag(name = "chat-client", description = "the chat-client API")
 public interface ChatClientAPI {
 
-	default ChatClientDelegate getDelegate() {
-		return new ChatClientDelegate() {
-		};
-	}
+	/**
+	 * 获取委托实现
+	 * @return ChatClientDelegate 实现
+	 */
+	ChatClientDelegate getDelegate();
 
 	@Operation(summary = "list chat clients", description = "", tags = { "chat-client" })
 	@GetMapping(value = "", produces = { "application/json" })

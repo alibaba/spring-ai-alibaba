@@ -13,36 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service;
+package com.alibaba.cloud.ai.service.impl;
 
 import com.alibaba.cloud.ai.model.ChatClient;
 import com.alibaba.cloud.ai.param.ClientRunActionParam;
+import com.alibaba.cloud.ai.service.ChatClientDelegate;
 import com.alibaba.cloud.ai.vo.ChatClientRunResult;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 聊天客户端委托接口
+ * 空的 ChatClientDelegate 实现，用于在没有实际实现时提供默认行为
  */
-public interface ChatClientDelegate {
+@Component("emptyChatClientDelegate")
+public class EmptyChatClientDelegate implements ChatClientDelegate {
 
-	/**
-	 * 列出所有聊天客户端
-	 * @return 聊天客户端列表
-	 */
-	List<ChatClient> list();
+    @Override
+    public List<ChatClient> list() {
+        return new ArrayList<>();
+    }
 
-	/**
-	 * 根据名称获取聊天客户端
-	 * @param clientName 客户端名称
-	 * @return 聊天客户端
-	 */
-	ChatClient get(String clientName);
+    @Override
+    public ChatClient get(String clientName) {
+        return null;
+    }
 
-	/**
-	 * 运行聊天客户端
-	 * @param runActionParam 运行参数
-	 * @return 运行结果
-	 */
-	ChatClientRunResult run(ClientRunActionParam runActionParam);
-
-}
+    @Override
+    public ChatClientRunResult run(ClientRunActionParam runActionParam) {
+        return null;
+    }
+} 
