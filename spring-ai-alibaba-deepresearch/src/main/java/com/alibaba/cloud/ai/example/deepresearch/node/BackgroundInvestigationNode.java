@@ -17,13 +17,12 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
-import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,15 +48,15 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final JinaCrawlerService jinaCrawlerService;
 
-	private final SearchBeanUtil searchBeanUtil;
-
 	private final InfoCheckService infoCheckService;
 
-	public BackgroundInvestigationNode(SearchBeanUtil searchBeanUtil, JinaCrawlerService jinaCrawlerService,
-			InfoCheckService infoCheckService) {
+	private final SearchFilterService searchFilterService;
+
+	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
+			SearchFilterService searchFilterService) {
 		this.jinaCrawlerService = jinaCrawlerService;
-		this.searchBeanUtil = searchBeanUtil;
 		this.infoCheckService = infoCheckService;
+		this.searchFilterService = searchFilterService;
 	}
 
 	@Override
@@ -67,40 +66,39 @@ public class BackgroundInvestigationNode implements NodeAction {
 		assert queries != null && !queries.isEmpty();
 		List<List<Map<String, String>>> resultsList = new ArrayList<>();
 		for (String query : queries) {
-			SearchService searchService = searchBeanUtil
-				.getSearchService(state.value("search_engine", SearchEnum.class).orElseThrow())
-				.orElseThrow();
-
+			SearchEnum searchEnum = state.value("search_engine", SearchEnum.class).orElseThrow();
 			List<Map<String, String>> results = new ArrayList<>();
 
 			// Retry logic
 			for (int i = 0; i < MAX_RETRY_COUNT; i++) {
 				try {
-					SearchService.Response response = searchService.query(query);
-					if (response != null && response.getSearchResult() != null
-							&& !response.getSearchResult().results().isEmpty()) {
-						results = response.getSearchResult().results().stream().map(info -> {
+					results = searchFilterService
+						.queryAndFilter(state.value("enable_search_filter", true), searchEnum, query)
+						.stream()
+						.map(info -> {
 							Map<String, String> result = new HashMap<>();
-							result.put("title", info.title());
-							if (jinaCrawlerService == null || !CommonToolCallUtils.isValidUrl(info.url())) {
-								result.put("content", info.content());
+							result.put("title", info.content().title());
+							result.put("weight", String.valueOf(info.weight()));
+							if (jinaCrawlerService == null || !CommonToolCallUtils.isValidUrl(info.content().url())) {
+								result.put("content", info.content().content());
 							}
 							else {
 								try {
 									logger.info("Get detail info of a url using Jina Crawler...");
 									result.put("content",
-											jinaCrawlerService.apply(new JinaCrawlerService.Request(info.url()))
+											jinaCrawlerService
+												.apply(new JinaCrawlerService.Request(info.content().url()))
 												.content());
 								}
 								catch (Exception e) {
 									logger.error("Jina Crawler Service Error", e);
-									result.put("content", info.content());
+									result.put("content", info.content().content());
 								}
 							}
 							return result;
-						}).collect(Collectors.toList());
-						break;
-					}
+						})
+						.collect(Collectors.toList());
+					break;
 				}
 				catch (Exception e) {
 					logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());

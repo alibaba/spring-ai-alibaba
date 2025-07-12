@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.tool.SearchFilterTool;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
@@ -53,18 +55,21 @@ public class ResearcherNode implements NodeAction {
 
 	private final String nodeName;
 
+	private final SearchFilterService searchFilterService;
+
 	private final ReflectionProcessor reflectionProcessor;
 
 	// MCP工厂
 	private final McpProviderFactory mcpFactory;
 
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
-			McpProviderFactory mcpFactory) {
+			McpProviderFactory mcpFactory, SearchFilterService searchFilterService) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;
 		this.reflectionProcessor = reflectionProcessor;
 		this.mcpFactory = mcpFactory;
+		this.searchFilterService = searchFilterService;
 	}
 
 	@Override
@@ -109,7 +114,7 @@ public class ResearcherNode implements NodeAction {
 		logger.debug("{} Node messages: {}", nodeName, messages);
 
 		// Get search tool
-		SearchEnum searchTool = state.value("search_engine", SearchEnum.class).orElse(null);
+		SearchEnum searchEnum = state.value("search_engine", SearchEnum.class).orElse(null);
 
 		// Call agent
 		var requestSpec = researchAgent.prompt().messages(messages);
@@ -121,8 +126,9 @@ public class ResearcherNode implements NodeAction {
 			requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
 		}
 
-		if (searchTool != null) {
-			requestSpec = requestSpec.toolNames(searchTool.getToolName());
+		if (searchEnum != null) {
+			requestSpec = requestSpec.tools(
+					new SearchFilterTool(searchFilterService, searchEnum, state.value("enable_search_filter", true)));
 		}
 		var streamResult = requestSpec.stream().chatResponse();
 
