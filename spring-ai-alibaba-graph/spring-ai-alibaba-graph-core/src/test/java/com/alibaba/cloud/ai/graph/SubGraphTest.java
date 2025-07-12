@@ -520,4 +520,48 @@ public class SubGraphTest {
 				state.data());
 	}
 
+	@Test
+	public void testNestedSubgraph() throws Exception {
+		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+
+		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
+
+		var workflowChildChild = new StateGraph(createKeyStrategyFactory()).addNode("step_1", _makeNode("child:step1"))
+			.addNode("step_2", _makeNode("child:step2"))
+			.addNode("step_3", _makeNode("child:step3"))
+			.addEdge(START, "step_1")
+			.addEdge("step_1", "step_2")
+			.addEdge("step_2", "step_3")
+			.addEdge("step_3", END);
+
+		var workflowChild = new StateGraph(createKeyStrategyFactory()).addNode("step_1", _makeNode("child:step1"))
+			.addNode("step_2", _makeNode("child:step2"))
+			.addNode("step_3", _makeNode("child:step3"))
+			.addNode("subsubgraph", workflowChildChild)
+			.addEdge(START, "step_1")
+			.addEdge("step_1", "step_2")
+			.addEdge("step_2", "subsubgraph")
+			.addEdge("subsubgraph", "step_3")
+			.addEdge("step_3", END);
+
+		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("step_1", _makeNode("step1"))
+			.addNode("step_2", _makeNode("step2"))
+			.addNode("step_3", _makeNode("step3"))
+			.addNode("subgraph", workflowChild)
+			.addEdge(START, "step_1")
+			.addEdge("step_1", "step_2")
+			.addEdge("step_2", "subgraph")
+			.addEdge("subgraph", "step_3")
+			.addEdge("step_3", END)
+			.compile(compileConfig);
+
+		var result = workflowParent.stream()
+			.stream()
+			.peek(n -> log.info("{}", n))
+			.reduce((a, b) -> b)
+			.map(NodeOutput::state);
+
+		assertTrue(result.isPresent());
+	}
+
 }
