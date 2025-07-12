@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.example.deepresearch.rag.kb.impl.DashScopeKbApiClien
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 /**
  * 专业知识库API客户端工厂 根据配置创建相应的API客户端
@@ -34,10 +34,10 @@ public class ProfessionalKbApiClientFactory {
 
 	private static final Logger logger = LoggerFactory.getLogger(ProfessionalKbApiClientFactory.class);
 
-	private final RestTemplate restTemplate;
+	private final RestClient restClient;
 
-	public ProfessionalKbApiClientFactory(RestTemplate restTemplate) {
-		this.restTemplate = restTemplate;
+	public ProfessionalKbApiClientFactory(RestClient restClient) {
+		this.restClient = restClient;
 	}
 
 	/**
@@ -71,12 +71,12 @@ public class ProfessionalKbApiClientFactory {
 			switch (provider.toLowerCase()) {
 				case "dashscope":
 					logger.info("Creating DashScope API client for knowledge base: {}", knowledgeBase.getId());
-					return new DashScopeKbApiClient(restTemplate, apiConfig);
+					return new DashScopeKbApiClient(restClient, apiConfig);
 
 				case "custom":
 				default:
 					logger.info("Creating custom API client for knowledge base: {}", knowledgeBase.getId());
-					return new CustomKbApiClient(restTemplate, apiConfig);
+					return new CustomKbApiClient(restClient, apiConfig);
 			}
 		}
 		catch (Exception e) {
