@@ -29,14 +29,14 @@ import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses
 
 public class DashScopeAIRuntimeHints implements RuntimeHintsRegistrar {
 
-    @Override
-    public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+	@Override
+	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 
-        var mcs = MemberCategory.values();
+		var mcs = MemberCategory.values();
 
-        for (var tr : findJsonAnnotatedClassesInPackage(("com.alibaba.cloud.ai"))) {
-            hints.reflection().registerType(tr, mcs);
-        }
-    }
+		for (var tr : findJsonAnnotatedClassesInPackage(("com.alibaba.cloud.ai"))) {
+			hints.reflection().registerType(tr, mcs);
+		}
+	}
 
 }
