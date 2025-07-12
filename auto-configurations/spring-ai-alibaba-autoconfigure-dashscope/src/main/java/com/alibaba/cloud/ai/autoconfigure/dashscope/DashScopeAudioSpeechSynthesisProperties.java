@@ -16,10 +16,8 @@
 
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions;
-
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioSpeechApi;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -37,25 +35,24 @@ public class DashScopeAudioSpeechSynthesisProperties extends DashScopeParentProp
 	 */
 	public static final String CONFIG_PREFIX = "spring.ai.dashscope.audio.synthesis";
 
-	private final String DEFAULT_MODEL = DashScopeSpeechSynthesisModel.DashScopeSpeechModel.SAMBERT_ZHICHU_V1
-		.getModel();
+	private final String DEFAULT_MODEL = DashScopeAudioSpeechApi.TTSModel.SAM_BERT_ZHICHU_V1.getValue();
 
 	private static final Float SPEED = 1.0f;
 
 	private static final String DEFAULT_VOICE = "longhua";
 
-	private final DashScopeSpeechSynthesisApi.ResponseFormat DEFAULT_RESPONSE_FORMAT = DashScopeSpeechSynthesisApi.ResponseFormat.MP3;
+	private final DashScopeAudioSpeechApi.ResponseFormat DEFAULT_RESPONSE_FORMAT = DashScopeAudioSpeechApi.ResponseFormat.MP3;
 
-	public DashScopeSpeechSynthesisOptions getOptions() {
+	public DashScopeAudioSpeechOptions getOptions() {
 		return this.options;
 	}
 
-	public void setOptions(DashScopeSpeechSynthesisOptions options) {
+	public void setOptions(DashScopeAudioSpeechOptions options) {
 		this.options = options;
 	}
 
 	@NestedConfigurationProperty
-	private DashScopeSpeechSynthesisOptions options = DashScopeSpeechSynthesisOptions.builder()
+	private DashScopeAudioSpeechOptions options = DashScopeAudioSpeechOptions.builder()
 		.model(DEFAULT_MODEL)
 		.voice(DEFAULT_VOICE)
 		.speed(SPEED)
