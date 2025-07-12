@@ -20,15 +20,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 /**
- * HTTP客户端配置 提供RestTemplate等HTTP客户端的Bean配置，支持配置化参数
+ * HTTP客户端配置 提供RestClient等HTTP客户端的Bean配置，支持配置化参数
  *
  * @author hupei
  */
@@ -45,14 +44,14 @@ public class HttpClientConfiguration {
 	}
 
 	/**
-	 * 配置RestTemplate Bean 支持配置化的超时时间和连接参数
+	 * 配置RestClient Bean 支持配置化的超时时间和连接参数
 	 */
 	@Bean
-	public RestTemplate restTemplate(RestTemplateBuilder builder) {
-		logger.info("Configuring RestTemplate with connect timeout: {}ms, read timeout: {}ms",
+	public RestClient restClient() {
+		logger.info("Configuring RestClient with connect timeout: {}ms, read timeout: {}ms",
 				properties.getConnectTimeoutMs(), properties.getReadTimeoutMs());
 
-		return builder.requestFactory(() -> clientHttpRequestFactory()).build();
+		return RestClient.builder().requestFactory(clientHttpRequestFactory()).build();
 	}
 
 	/**
@@ -73,11 +72,11 @@ public class HttpClientConfiguration {
 	}
 
 	/**
-	 * RestTemplateBuilder Bean（用于其他组件自定义RestTemplate）
+	 * RestClient.Builder Bean（用于其他组件自定义RestClient）
 	 */
 	@Bean
-	public RestTemplateBuilder restTemplateBuilder() {
-		return new RestTemplateBuilder();
+	public RestClient.Builder restClientBuilder() {
+		return RestClient.builder().requestFactory(clientHttpRequestFactory());
 	}
 
 	/**

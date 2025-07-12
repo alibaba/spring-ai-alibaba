@@ -20,12 +20,10 @@ import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.rag.kb.ProfessionalKbApiClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,13 +40,13 @@ public class DashScopeKbApiClient implements ProfessionalKbApiClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeKbApiClient.class);
 
-	private final RestTemplate restTemplate;
+	private final RestClient restClient;
 
 	private final RagProperties.ProfessionalKnowledgeBases.KnowledgeBase.Api apiConfig;
 
-	public DashScopeKbApiClient(RestTemplate restTemplate,
+	public DashScopeKbApiClient(RestClient restClient,
 			RagProperties.ProfessionalKnowledgeBases.KnowledgeBase.Api apiConfig) {
-		this.restTemplate = restTemplate;
+		this.restClient = restClient;
 		this.apiConfig = apiConfig;
 	}
 
@@ -60,11 +58,6 @@ public class DashScopeKbApiClient implements ProfessionalKbApiClient {
 		}
 
 		try {
-			// 构建请求
-			HttpHeaders headers = new HttpHeaders();
-			headers.setContentType(MediaType.APPLICATION_JSON);
-			headers.setBearerAuth(apiConfig.getApiKey());
-
 			// 构建请求体
 			Map<String, Object> requestBody = new HashMap<>();
 			requestBody.put("model", apiConfig.getModel() != null ? apiConfig.getModel() : "text-embedding-v1");
@@ -74,16 +67,21 @@ public class DashScopeKbApiClient implements ProfessionalKbApiClient {
 			int maxResults = (int) options.getOrDefault("maxResults", apiConfig.getMaxResults());
 			requestBody.put("parameters", Map.of("size", maxResults));
 
-			HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
-			// 发送请求
+			// 构建请求URL
 			String url = apiConfig.getUrl();
 			if (url == null || url.isEmpty()) {
 				// DashScope默认API端点
 				url = "https://dashscope.aliyuncs.com/api/v1/services/knowledge-base/text-search";
 			}
 
-			ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
+			// 发送请求
+			ResponseEntity<Map> response = restClient.post()
+				.uri(url)
+				.contentType(MediaType.APPLICATION_JSON)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiConfig.getApiKey())
+				.body(requestBody)
+				.retrieve()
+				.toEntity(Map.class);
 
 			// 解析响应
 			return parseResponse(response.getBody());

@@ -20,12 +20,10 @@ import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.rag.kb.ProfessionalKbApiClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
@@ -43,13 +41,13 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(CustomKbApiClient.class);
 
-	private final RestTemplate restTemplate;
+	private final RestClient restClient;
 
 	private final RagProperties.ProfessionalKnowledgeBases.KnowledgeBase.Api apiConfig;
 
-	public CustomKbApiClient(RestTemplate restTemplate,
+	public CustomKbApiClient(RestClient restClient,
 			RagProperties.ProfessionalKnowledgeBases.KnowledgeBase.Api apiConfig) {
-		this.restTemplate = restTemplate;
+		this.restClient = restClient;
 		this.apiConfig = apiConfig;
 	}
 
@@ -67,19 +65,16 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 				.queryParam("q", query)
 				.queryParam("limit", maxResults);
 
-			// 设置请求头
-			HttpHeaders headers = new HttpHeaders();
-			headers.setContentType(MediaType.APPLICATION_JSON);
+			// 发送GET请求
+			RestClient.RequestHeadersSpec<?> request = restClient.get()
+				.uri(builder.toUriString())
+				.accept(MediaType.APPLICATION_JSON);
 
 			if (apiConfig.getApiKey() != null && !apiConfig.getApiKey().trim().isEmpty()) {
-				headers.setBearerAuth(apiConfig.getApiKey());
+				request = request.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiConfig.getApiKey());
 			}
 
-			HttpEntity<String> entity = new HttpEntity<>(headers);
-
-			// 发送GET请求
-			ResponseEntity<Map> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity,
-					Map.class);
+			ResponseEntity<Map> response = request.retrieve().toEntity(Map.class);
 
 			// 解析响应
 			return parseResponse(response.getBody());
