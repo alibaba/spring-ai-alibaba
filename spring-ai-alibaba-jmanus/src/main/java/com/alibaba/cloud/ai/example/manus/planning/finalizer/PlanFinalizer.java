@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -113,20 +112,21 @@ public class PlanFinalizer {
 	}
 
 	/**
-	 * Record plan completion
-	 * @param context The execution context
-	 * @param summary The summary of the plan execution
+	 * Record plan completion with the given context and summary
+	 * @param context Execution context
+	 * @param summary Plan execution summary
 	 */
 	private void recordPlanCompletion(ExecutionContext context, String summary) {
-		// Use thinkActRecordId from context to support sub-plan executions
-		PlanExecutionRecord planRecord = recorder.getExecutionRecord(context.getPlan().getCurrentPlanId(),
-				context.getPlan().getRootPlanId(), context.getThinkActRecordId());
-		if (planRecord != null) {
-			recorder.recordPlanCompletion(planRecord, summary);
+		if (context == null || context.getPlan() == null) {
+			log.warn("Cannot record plan completion: context or plan is null");
+			return;
 		}
 
-		log.info("Plan completed with ID: {} (thinkActRecordId: {}) and summary: {}",
-				context.getPlan().getCurrentPlanId(), context.getThinkActRecordId(), summary);
+		String currentPlanId = context.getPlan().getCurrentPlanId();
+		String rootPlanId = context.getPlan().getRootPlanId();
+		Long thinkActRecordId = context.getThinkActRecordId();
+
+		recorder.recordPlanCompletion(currentPlanId, rootPlanId, thinkActRecordId, summary);
 	}
 
 }

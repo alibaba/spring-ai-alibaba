@@ -97,6 +97,8 @@ public class AgentExecutionRecord {
 	// Default constructor
 	public AgentExecutionRecord() {
 		this.thinkActSteps = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
 	// Constructor with parameters
@@ -110,6 +112,8 @@ public class AgentExecutionRecord {
 		this.isStuck = false;
 		this.currentStep = 0;
 		this.thinkActSteps = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
 	/**
@@ -124,9 +128,27 @@ public class AgentExecutionRecord {
 		this.currentStep = this.thinkActSteps.size();
 	}
 
+	/**
+	 * Generate unique ID if not already set
+	 * @return Generated or existing ID
+	 */
+	private Long generateId() {
+		if (this.id == null) {
+			// Use combination of timestamp and random number to generate ID
+			long timestamp = System.currentTimeMillis();
+			int random = (int) (Math.random() * 1000000);
+			this.id = timestamp * 1000 + random;
+		}
+		return this.id;
+	}
+
 	// Getters and setters
 
 	public Long getId() {
+		// Ensure ID is generated when accessing
+		if (this.id == null) {
+			this.id = generateId();
+		}
 		return id;
 	}
 
