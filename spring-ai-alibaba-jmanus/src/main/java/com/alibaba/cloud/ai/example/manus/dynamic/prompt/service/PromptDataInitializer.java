@@ -22,8 +22,13 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.repository.PromptReposi
 import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 @Component
 public class PromptDataInitializer implements CommandLineRunner {
@@ -31,6 +36,9 @@ public class PromptDataInitializer implements CommandLineRunner {
 	private final PromptRepository promptRepository;
 
 	private final PromptLoader promptLoader;
+
+	@Autowired
+	private PlatformTransactionManager transactionManager;
 
 	private static final Logger log = LoggerFactory.getLogger(PromptDataInitializer.class);
 
@@ -56,8 +64,17 @@ public class PromptDataInitializer implements CommandLineRunner {
 	}
 
 	private void createPromptIfNotExists(PromptEnum prompt) {
-		PromptEntity promptEntity = promptRepository.findByPromptName(prompt.getPromptName());
-
+		// 开启事务为了兼容postgres数据库的大型对象无法被使用在自动确认事物交易模式问题
+		DefaultTransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
+		TransactionStatus transaction = transactionManager.getTransaction(transactionDefinition);
+		PromptEntity promptEntity = null;
+		try {
+			promptEntity = promptRepository.findByPromptName(prompt.getPromptName());
+			transactionManager.commit(transaction);
+		}
+		catch (TransactionException e) {
+			transactionManager.rollback(transaction);
+		}
 		if (promptEntity == null) {
 			promptEntity = new PromptEntity();
 			promptEntity.setPromptName(prompt.getPromptName());

@@ -4,13 +4,6 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password: $FSD#@!@#!#$!12341234
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-      pool-name: Spring-AI-Alibaba-JManus-H2-Pool
   h2:
     console:
       enabled: false
@@ -20,9 +13,3 @@ spring:
   # JPA configuration
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-    properties:
-      hibernate:
-        format_sql: false
