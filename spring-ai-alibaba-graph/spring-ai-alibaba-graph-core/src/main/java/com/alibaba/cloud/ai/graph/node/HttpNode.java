@@ -59,6 +59,7 @@ import java.util.regex.Pattern;
 import static java.lang.String.format;
 
 public class HttpNode implements NodeAction {
+
 	private static final Logger logger = LoggerFactory.getLogger(HttpNode.class);
 
 	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{(.+?)\\}");
@@ -486,7 +487,8 @@ public class HttpNode implements NodeAction {
 								Object type0 = item.get("type");
 								if (type0 instanceof String) {
 									bd3.setType(BodyType.from((String) type0));
-								} else {
+								}
+								else {
 									bd3.setType(BodyType.NONE);
 								}
 
@@ -502,7 +504,8 @@ public class HttpNode implements NodeAction {
 								else if (fileBytes instanceof String) {
 									try {
 										bd3.setFileBytes(Base64.getDecoder().decode((String) fileBytes));
-									} catch (IllegalArgumentException e) {
+									}
+									catch (IllegalArgumentException e) {
 										logger.warn("Base64 decode failed for fileBytes: {}", fileBytes);
 									}
 								}
@@ -702,7 +705,8 @@ public class HttpNode implements NodeAction {
 		public static BodyType from(String s) {
 			try {
 				return BodyType.valueOf(s.toUpperCase());
-			} catch (Exception ex) {
+			}
+			catch (Exception ex) {
 				logger.warn("Unknown body type: {}", s);
 				return BodyType.NONE;
 			}
