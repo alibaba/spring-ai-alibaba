@@ -22,6 +22,8 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.utils.InMemoryFileStorage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -57,6 +59,7 @@ import java.util.regex.Pattern;
 import static java.lang.String.format;
 
 public class HttpNode implements NodeAction {
+	private static final Logger logger = LoggerFactory.getLogger(HttpNode.class);
 
 	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{(.+?)\\}");
 
@@ -473,8 +476,9 @@ public class HttpNode implements NodeAction {
 								BodyData bd3 = new BodyData();
 
 								Object key0 = item.get("key");
-								String key = (key0 instanceof String) ? ((String) key0).trim() : "";
-								if (key.isEmpty()) {
+								String key = (key0 instanceof String) ? ((String) key0).trim() : null;
+								if (key == null || key.isEmpty()) {
+									logger.warn("Form data item missing or empty key, item: {}", item);
 									continue;
 								}
 								bd3.setKey(key);
@@ -482,6 +486,8 @@ public class HttpNode implements NodeAction {
 								Object type0 = item.get("type");
 								if (type0 instanceof String) {
 									bd3.setType(BodyType.from((String) type0));
+								} else {
+									bd3.setType(BodyType.NONE);
 								}
 
 								Object val0 = item.get("value");
@@ -494,7 +500,11 @@ public class HttpNode implements NodeAction {
 									bd3.setFileBytes((byte[]) fileBytes);
 								}
 								else if (fileBytes instanceof String) {
-									bd3.setFileBytes(Base64.getDecoder().decode((String) fileBytes));
+									try {
+										bd3.setFileBytes(Base64.getDecoder().decode((String) fileBytes));
+									} catch (IllegalArgumentException e) {
+										logger.warn("Base64 decode failed for fileBytes: {}", fileBytes);
+									}
 								}
 
 								Object filename = item.get("filename");
@@ -690,7 +700,12 @@ public class HttpNode implements NodeAction {
 		NONE, FORM_DATA, X_WWW_FORM_URLENCODED, RAW_TEXT, JSON, BINARY;
 
 		public static BodyType from(String s) {
-			return BodyType.valueOf(s.toUpperCase().replace("-", "_"));
+			try {
+				return BodyType.valueOf(s.toUpperCase());
+			} catch (Exception ex) {
+				logger.warn("Unknown body type: {}", s);
+				return BodyType.NONE;
+			}
 		}
 
 	}
