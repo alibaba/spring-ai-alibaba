@@ -43,6 +43,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -470,27 +471,32 @@ public class HttpNode implements NodeAction {
 							List<BodyData> listData = new ArrayList<>();
 							for (Map<String, Object> item : rawList) {
 								BodyData bd3 = new BodyData();
+
 								Object key0 = item.get("key");
-								if (key0 instanceof String) {
-									bd3.setKey((String) key0);
+								String key = (key0 instanceof String) ? ((String) key0).trim() : "";
+								if (key.isEmpty()) {
+									continue;
 								}
+								bd3.setKey(key);
+
 								Object type0 = item.get("type");
 								if (type0 instanceof String) {
-									try {
-										bd3.setType(BodyType.valueOf(((String) type0).toUpperCase()));
-									}
-									catch (Exception ex) {
-										bd3.setType(BodyType.NONE);
-									}
+									bd3.setType(BodyType.from((String) type0));
 								}
+
 								Object val0 = item.get("value");
 								if (val0 instanceof String) {
 									bd3.setValue((String) val0);
 								}
+
 								Object fileBytes = item.get("fileBytes");
 								if (fileBytes instanceof byte[]) {
 									bd3.setFileBytes((byte[]) fileBytes);
 								}
+								else if (fileBytes instanceof String) {
+									bd3.setFileBytes(Base64.getDecoder().decode((String) fileBytes));
+								}
+
 								Object filename = item.get("filename");
 								if (filename instanceof String) {
 									bd3.setFilename((String) filename);
@@ -499,6 +505,7 @@ public class HttpNode implements NodeAction {
 								if (mimeType instanceof String) {
 									bd3.setMimeType((String) mimeType);
 								}
+
 								listData.add(bd3);
 							}
 							return new HttpRequestNodeBody(BodyType.FORM_DATA, listData);
