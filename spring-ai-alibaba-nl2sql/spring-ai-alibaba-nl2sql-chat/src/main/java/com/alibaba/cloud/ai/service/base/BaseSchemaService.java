@@ -84,9 +84,9 @@ public abstract class BaseSchemaService {
 		// 处理列权重，并按表关联排序
 		processColumnWeights(columnDocumentList, tableDocuments);
 
-		// 初始化列选择器
-		Map<String, Document> weightedColumns = selectWeightedColumns(columnDocumentList, 100); // TODO
-																								// 上限100存在问题
+		// 初始化列选择器， TODO 上限100存在问题
+		Map<String, Document> weightedColumns = selectWeightedColumns(columnDocumentList, 100);
+
 		Set<String> foreignKeySet = extractForeignKeyRelations(tableDocuments);
 
 		// 构建表列表

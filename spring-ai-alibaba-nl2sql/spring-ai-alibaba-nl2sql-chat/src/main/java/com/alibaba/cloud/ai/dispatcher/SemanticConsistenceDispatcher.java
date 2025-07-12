@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.alibaba.cloud.ai.constant.Constant.*;
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
 /**
  * @author zhangshenghang
@@ -37,7 +36,7 @@ public class SemanticConsistenceDispatcher implements EdgeAction {
 		logger.info("语义一致性校验结果: {}，跳转节点配置", validate);
 		if (validate) {
 			logger.info("语义一致性校验通过，跳转到结束节点。");
-			return END;
+			return PLAN_EXECUTOR_NODE;
 		}
 		else {
 			logger.info("语义一致性校验未通过，跳转到SQL生成节点：{}", SQL_GENERATE_NODE);

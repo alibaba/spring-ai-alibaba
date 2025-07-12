@@ -15,11 +15,11 @@
  */
 package com.alibaba.cloud.ai.dashscope.audio;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
+import com.alibaba.cloud.ai.dashscope.audio.transcription.AudioTranscriptionModel;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
 import com.alibaba.cloud.ai.dashscope.protocol.DashScopeWebSocketClient;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
-import com.alibaba.cloud.ai.dashscope.audio.transcription.AudioTranscriptionModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.audio.transcription.AudioTranscription;
@@ -28,21 +28,23 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.time.Duration;
+
+/**
+ * Audio transcription: Input audio, output text.
+ */
 
 public class DashScopeAudioTranscriptionModel implements AudioTranscriptionModel {
 
@@ -52,22 +54,11 @@ public class DashScopeAudioTranscriptionModel implements AudioTranscriptionModel
 
 	private final DashScopeAudioTranscriptionOptions options;
 
-	private final RetryTemplate retryTemplate;
-
-	public DashScopeAudioTranscriptionModel(DashScopeAudioTranscriptionApi api) {
-		this(api, DashScopeAudioTranscriptionOptions.builder().build());
-	}
-
 	public DashScopeAudioTranscriptionModel(DashScopeAudioTranscriptionApi api,
 			DashScopeAudioTranscriptionOptions options) {
-		this(api, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
 
-	public DashScopeAudioTranscriptionModel(DashScopeAudioTranscriptionApi api,
-			DashScopeAudioTranscriptionOptions options, RetryTemplate retryTemplate) {
-		this.api = api;
-		this.options = options;
-		this.retryTemplate = retryTemplate;
+		this.api = Objects.requireNonNull(api, "api must not be null");
+		this.options = Objects.requireNonNull(options, "options must not be null");
 	}
 
 	@Override

@@ -19,8 +19,11 @@ package com.alibaba.cloud.ai.autoconfigure.dashscope;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
+import com.alibaba.cloud.ai.model.SpringAIAlibabaModels;
 import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
+import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -48,7 +51,7 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 		SpringAiRetryAutoConfiguration.class })
 @ConditionalOnClass(DashScopeApi.class)
 @ConditionalOnDashScopeEnabled
-@ConditionalOnProperty(prefix = DashScopeImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+@ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIAlibabaModels.DASHSCOPE,
 		matchIfMissing = true)
 @EnableConfigurationProperties({ DashScopeConnectionProperties.class, DashScopeImageProperties.class })
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
