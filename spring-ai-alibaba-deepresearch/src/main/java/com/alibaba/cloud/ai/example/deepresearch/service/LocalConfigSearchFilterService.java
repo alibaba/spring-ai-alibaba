@@ -52,11 +52,25 @@ public class LocalConfigSearchFilterService extends SearchFilterService {
 		try (InputStream stream = resource.getInputStream()) {
 			List<WebsiteConfig> configs = objectMapper.readValue(stream,
 					objectMapper.getTypeFactory().constructCollectionType(List.class, WebsiteConfig.class));
-			configs.forEach(config -> map.put(config.host(), config.weight()));
+			configs.forEach(config -> {
+				if (config.weight() > 1.0) {
+					log.warn("The weight field value for host '{}' is {}, exceeding the maximum weight limit.",
+							config.host(), config.weight());
+					map.put(config.host(), 1.0);
+				}
+				else if (config.weight() < -1.0) {
+					log.warn("The weight field value for host '{}' is {}, exceeding the minimum weight limit.",
+							config.host(), config.weight());
+					map.put(config.host(), -1.0);
+				}
+				else {
+					map.put(config.host(), config.weight());
+				}
+			});
 		}
 		catch (Exception e) {
-			log.error("Failed to read website weight configuration file: {}", e.getMessage());
-			throw new RuntimeException("Failed to read website weight configuration file: ", e);
+			log.warn("Failed to read website weight configuration file: {}", e.getMessage());
+			return Map.of();
 		}
 		return map;
 	}
