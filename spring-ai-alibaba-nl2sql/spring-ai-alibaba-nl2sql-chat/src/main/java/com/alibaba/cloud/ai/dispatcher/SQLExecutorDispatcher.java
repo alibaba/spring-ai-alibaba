@@ -18,29 +18,23 @@ package com.alibaba.cloud.ai.dispatcher;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.alibaba.cloud.ai.util.StateUtils;
 
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
  * @author zhangshenghang
  */
-public class SemanticConsistenceDispatcher implements EdgeAction {
-
-	private static final Logger logger = LoggerFactory.getLogger(SemanticConsistenceDispatcher.class);
+public class SQLExecutorDispatcher implements EdgeAction {
 
 	@Override
 	public String apply(OverAllState state) {
-		Boolean validate = (Boolean) state.value(SEMANTIC_CONSISTENC_NODE_OUTPUT).orElseThrow();
-		logger.info("语义一致性校验结果: {}，跳转节点配置", validate);
-		if (validate) {
-			logger.info("语义一致性校验通过，跳转到结束节点。");
-			return PLAN_EXECUTOR_NODE;
+		boolean present = StateUtils.hasValue(state, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT);
+		if (present) {
+			return SQL_GENERATE_NODE;
 		}
 		else {
-			logger.info("语义一致性校验未通过，跳转到SQL生成节点：{}", SQL_GENERATE_NODE);
-			return SQL_GENERATE_NODE;
+			return SEMANTIC_CONSISTENC_NODE;
 		}
 	}
 

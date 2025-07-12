@@ -18,10 +18,7 @@ package com.alibaba.cloud.ai.config;
 
 import com.alibaba.cloud.ai.dbconnector.DbAccessor;
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
-import com.alibaba.cloud.ai.dispatcher.QueryRewriteDispatcher;
-import com.alibaba.cloud.ai.dispatcher.SemanticConsistenceDispatcher;
-import com.alibaba.cloud.ai.dispatcher.SqlGenerateDispatcher;
-import com.alibaba.cloud.ai.dispatcher.SqlValidateDispatcher;
+import com.alibaba.cloud.ai.dispatcher.*;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
@@ -97,6 +94,14 @@ public class Nl2sqlConfiguration {
 			// Semantic consistence节点输出
 			keyStrategyHashMap.put(SEMANTIC_CONSISTENC_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, new ReplaceStrategy());
+			// Planner 节点输出
+			keyStrategyHashMap.put(PLANNER_NODE_OUTPUT, new ReplaceStrategy());
+			// PlanExecutorNode
+			keyStrategyHashMap.put(PLAN_CURRENT_STEP, new ReplaceStrategy());
+			keyStrategyHashMap.put(PLAN_NEXT_NODE, new ReplaceStrategy());
+			// SQL Execute 节点输出
+			keyStrategyHashMap.put(SQL_EXECUTE_NODE_OUTPUT, new ReplaceStrategy());
+			keyStrategyHashMap.put(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, new ReplaceStrategy());
 			// 最终结果
 			keyStrategyHashMap.put(RESULT, new ReplaceStrategy());
 			return keyStrategyHashMap;
@@ -110,24 +115,36 @@ public class Nl2sqlConfiguration {
 					node_async(new TableRelationNode(chatClientBuilder, schemaService, nl2SqlService)))
 			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder, nl2SqlService, dbConfig)))
 			.addNode(SQL_VALIDATE_NODE, node_async(new SqlValidateNode(chatClientBuilder, dbAccessor, dbConfig)))
-			// TODO 待定：这里考虑可以添加一个自我反思的节点，进行自我反思和改进；是否需要根据使用效果再进行开发
+			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
+			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
+			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(chatClientBuilder, dbAccessor, dbConfig)))
+			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(chatClientBuilder)))
+			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
 			.addNode(SEMANTIC_CONSISTENC_NODE,
 					node_async(new SemanticConsistencNode(chatClientBuilder, nl2SqlService, dbConfig)));
-		// TODO 执行sql的节点
 
 		stateGraph.addEdge(START, QUERY_REWRITE_NODE)
 			.addConditionalEdges(QUERY_REWRITE_NODE, edge_async(new QueryRewriteDispatcher()),
 					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END))
 			.addEdge(KEYWORD_EXTRACT_NODE, SCHEMA_RECALL_NODE)
 			.addEdge(SCHEMA_RECALL_NODE, TABLE_RELATION_NODE)
-			.addEdge(TABLE_RELATION_NODE, SQL_GENERATE_NODE) // TODO 使用
-																// addConditionalEdges
+			.addEdge(TABLE_RELATION_NODE, PLANNER_NODE)
+			.addEdge(PLANNER_NODE, PLAN_EXECUTOR_NODE)
+			.addEdge(PYTHON_EXECUTE_NODE, PLAN_EXECUTOR_NODE)
+			.addConditionalEdges(PLAN_EXECUTOR_NODE, edge_async(new PlanExecutorDispatcher()),
+					Map.of(SQL_EXECUTE_NODE, SQL_EXECUTE_NODE, PYTHON_EXECUTE_NODE, PYTHON_EXECUTE_NODE,
+							REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE))
+			.addEdge(REPORT_GENERATOR_NODE, END)
+			.addConditionalEdges(SQL_EXECUTE_NODE, edge_async(new SQLExecutorDispatcher()),
+					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, SEMANTIC_CONSISTENC_NODE, SEMANTIC_CONSISTENC_NODE))
 			.addConditionalEdges(SQL_GENERATE_NODE, edge_async(new SqlGenerateDispatcher()),
-					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END, SQL_VALIDATE_NODE, SQL_VALIDATE_NODE))
-			.addConditionalEdges(SQL_VALIDATE_NODE, edge_async(new SqlValidateDispatcher()),
-					Map.of(SEMANTIC_CONSISTENC_NODE, SEMANTIC_CONSISTENC_NODE, SQL_GENERATE_NODE, SQL_GENERATE_NODE))
+					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END, SQL_EXECUTE_NODE, SQL_EXECUTE_NODE))
+			// .addConditionalEdges(SQL_VALIDATE_NODE, edge_async(new
+			// SqlValidateDispatcher()),
+			// Map.of(SEMANTIC_CONSISTENC_NODE, SEMANTIC_CONSISTENC_NODE,
+			// SQL_GENERATE_NODE, SQL_GENERATE_NODE))
 			.addConditionalEdges(SEMANTIC_CONSISTENC_NODE, edge_async(new SemanticConsistenceDispatcher()),
-					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, END, END));
+					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, PLAN_EXECUTOR_NODE, PLAN_EXECUTOR_NODE));
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
 				"workflow graph");
