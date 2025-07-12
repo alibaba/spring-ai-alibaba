@@ -22,6 +22,8 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.utils.InMemoryFileStorage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -43,6 +45,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +59,8 @@ import java.util.regex.Pattern;
 import static java.lang.String.format;
 
 public class HttpNode implements NodeAction {
+
+	private static final Logger logger = LoggerFactory.getLogger(HttpNode.class);
 
 	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{(.+?)\\}");
 
@@ -470,27 +475,41 @@ public class HttpNode implements NodeAction {
 							List<BodyData> listData = new ArrayList<>();
 							for (Map<String, Object> item : rawList) {
 								BodyData bd3 = new BodyData();
+
 								Object key0 = item.get("key");
-								if (key0 instanceof String) {
-									bd3.setKey((String) key0);
+								String key = (key0 instanceof String) ? ((String) key0).trim() : null;
+								if (key == null || key.isEmpty()) {
+									logger.warn("Form data item missing or empty key, item: {}", item);
+									continue;
 								}
+								bd3.setKey(key);
+
 								Object type0 = item.get("type");
 								if (type0 instanceof String) {
-									try {
-										bd3.setType(BodyType.valueOf(((String) type0).toUpperCase()));
-									}
-									catch (Exception ex) {
-										bd3.setType(BodyType.NONE);
-									}
+									bd3.setType(BodyType.from((String) type0));
 								}
+								else {
+									bd3.setType(BodyType.NONE);
+								}
+
 								Object val0 = item.get("value");
 								if (val0 instanceof String) {
 									bd3.setValue((String) val0);
 								}
+
 								Object fileBytes = item.get("fileBytes");
 								if (fileBytes instanceof byte[]) {
 									bd3.setFileBytes((byte[]) fileBytes);
 								}
+								else if (fileBytes instanceof String) {
+									try {
+										bd3.setFileBytes(Base64.getDecoder().decode((String) fileBytes));
+									}
+									catch (IllegalArgumentException e) {
+										logger.warn("Base64 decode failed for fileBytes: {}", fileBytes);
+									}
+								}
+
 								Object filename = item.get("filename");
 								if (filename instanceof String) {
 									bd3.setFilename((String) filename);
@@ -499,6 +518,7 @@ public class HttpNode implements NodeAction {
 								if (mimeType instanceof String) {
 									bd3.setMimeType((String) mimeType);
 								}
+
 								listData.add(bd3);
 							}
 							return new HttpRequestNodeBody(BodyType.FORM_DATA, listData);
@@ -683,7 +703,13 @@ public class HttpNode implements NodeAction {
 		NONE, FORM_DATA, X_WWW_FORM_URLENCODED, RAW_TEXT, JSON, BINARY;
 
 		public static BodyType from(String s) {
-			return BodyType.valueOf(s.toUpperCase().replace("-", "_"));
+			try {
+				return BodyType.valueOf(s.toUpperCase());
+			}
+			catch (Exception ex) {
+				logger.warn("Unknown body type: {}", s);
+				return BodyType.NONE;
+			}
 		}
 
 	}
