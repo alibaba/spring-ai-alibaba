@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.toolcalling.tencentmap;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -24,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,7 +47,7 @@ public class TencentMapWeatherServiceTest {
 	public void testWeatherSearch() {
 		TencentMapWeatherService.Response resp = weatherSearchService
 			.apply(new TencentMapWeatherService.Request("北京天安门", null));
-		assert resp != null && StringUtils.hasText(resp.message());
+		Assertions.assertNotNull(resp, "Response should not be null");
 		log.info("Weather Search Response: {}", resp.message());
 		assertThat(resp.message()).doesNotContain("Error");
 	}
