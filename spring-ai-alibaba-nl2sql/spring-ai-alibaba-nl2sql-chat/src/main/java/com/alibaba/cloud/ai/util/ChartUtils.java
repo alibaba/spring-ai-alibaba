@@ -19,173 +19,142 @@ package com.alibaba.cloud.ai.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 图表工具类，用于处理报告中的图表生成、保存和引用
+ * 图表工具类，用于处理分析结果中的图表路径
  *
- * @author zhangshenghang
+ * @author Makoto
  */
 public class ChartUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(ChartUtils.class);
 
-	private static final String DEFAULT_CHARTS_DIR = "charts";
-
-	private static final Pattern CHART_PATH_PATTERN = Pattern.compile("!\\[.*?\\]\\((.*?)\\)");
-
-	private static final Pattern MERMAID_CHART_PATTERN = Pattern.compile("```mermaid\\s+([\\s\\S]*?)\\s+```");
-
 	/**
-	 * 从文本中提取所有图表路径
-	 * @param text 包含图表引用的文本
-	 * @return 图表路径列表
+	 * 从分析结果中提取图表路径
+	 * @param analysisResult Python分析结果文本
+	 * @return 提取的图表路径列表
 	 */
-	public static List<String> extractChartPaths(String text) {
-		if (text == null || text.isEmpty()) {
-			return new ArrayList<>();
-		}
+	public static List<String> extractChartPaths(String analysisResult) {
+		List<String> chartPaths = new ArrayList<>();
 
-		List<String> paths = new ArrayList<>();
-		Matcher matcher = CHART_PATH_PATTERN.matcher(text);
-		while (matcher.find()) {
-			String path = matcher.group(1);
-			paths.add(path);
+		if (analysisResult == null || analysisResult.isEmpty()) {
+			return chartPaths;
 		}
-		return paths;
-	}
-
-	/**
-	 * 从文本中提取所有Mermaid图表定义
-	 * @param text 包含Mermaid图表定义的文本
-	 * @return Mermaid图表内容列表
-	 */
-	public static List<String> extractMermaidCharts(String text) {
-		if (text == null || text.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		List<String> charts = new ArrayList<>();
-		Matcher matcher = MERMAID_CHART_PATTERN.matcher(text);
-		while (matcher.find()) {
-			String chart = matcher.group(1);
-			charts.add(chart);
-		}
-		return charts;
-	}
-
-	/**
-	 * 生成图表的唯一路径
-	 * @param baseDir 基础目录，可为null则使用默认目录
-	 * @param fileExtension 文件扩展名（如png, svg等）
-	 * @return 图表文件路径
-	 */
-	public static String generateChartPath(String baseDir, String fileExtension) {
-		String dir = baseDir != null ? baseDir : DEFAULT_CHARTS_DIR;
-		String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-		String uuid = UUID.randomUUID().toString().substring(0, 8);
-		String fileName = String.format("chart_%s_%s.%s", timestamp, uuid, fileExtension);
 
 		try {
-			Path dirPath = Paths.get(dir);
-			if (!Files.exists(dirPath)) {
-				Files.createDirectories(dirPath);
+			Pattern markdownPattern = Pattern.compile("!\\[(.*?)\\]\\((.*?)\\)");
+			Matcher markdownMatcher = markdownPattern.matcher(analysisResult);
+			while (markdownMatcher.find()) {
+				chartPaths.add(markdownMatcher.group(0));
 			}
-			return Paths.get(dir, fileName).toString();
-		}
-		catch (IOException e) {
-			logger.error("创建图表目录失败: {}", e.getMessage());
-			return fileName;
-		}
-	}
 
-	/**
-	 * 检查图表文件是否存在
-	 * @param path 图表文件路径
-	 * @return 是否存在
-	 */
-	public static boolean chartExists(String path) {
-		return Files.exists(Paths.get(path));
-	}
+			Pattern htmlPattern = Pattern.compile("<img\\s+[^>]*src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
+			Matcher htmlMatcher = htmlPattern.matcher(analysisResult);
+			while (htmlMatcher.find()) {
+				chartPaths.add(htmlMatcher.group(0));
+			}
 
-	/**
-	 * 将图表路径转换为相对路径（适合在Markdown中引用）
-	 * @param absolutePath 绝对路径
-	 * @param basePath 基准路径，如果为null则返回原路径
-	 * @return 相对路径
-	 */
-	public static String toRelativePath(String absolutePath, String basePath) {
-		if (absolutePath == null || basePath == null) {
-			return absolutePath;
-		}
+			Pattern filePathPattern = Pattern.compile(
+					"(?i)(?:图表|chart|figure|图像|image)(?:已?保存|saved|generated)(?:到|at|to)?[\\s:]*[\"']?([\\/\\\\\\w\\.\\-_]+\\.(png|jpg|jpeg|svg|pdf))[\"']?");
+			Matcher filePathMatcher = filePathPattern.matcher(analysisResult);
+			while (filePathMatcher.find()) {
+				chartPaths.add(filePathMatcher.group(1));
+			}
 
-		try {
-			Path pathAbsolute = Paths.get(absolutePath);
-			Path pathBase = Paths.get(basePath);
-			return pathBase.relativize(pathAbsolute).toString().replace('\\', '/');
+			Pattern directPathPattern = Pattern.compile("[\\/\\\\\\w\\.\\-_]+\\.(png|jpg|jpeg|svg|pdf)");
+			Matcher directPathMatcher = directPathPattern.matcher(analysisResult);
+			while (directPathMatcher.find()) {
+				String path = directPathMatcher.group(0);
+				boolean alreadyIncluded = chartPaths.stream().anyMatch(cp -> cp.contains(path));
+				if (!alreadyIncluded) {
+					chartPaths.add(path);
+				}
+			}
 		}
 		catch (Exception e) {
-			logger.error("转换为相对路径失败: {}", e.getMessage());
-			return absolutePath;
+			logger.error("提取图表路径时发生错误", e);
 		}
+
+		return chartPaths;
 	}
 
 	/**
-	 * 清理过期图表（超过指定天数的图表）
-	 * @param baseDir 图表目录
-	 * @param daysOld 过期天数
-	 * @return 删除的文件数量
+	 * 从分析结果中移除图表路径，避免在文本中重复显示
+	 * @param analysisResult Python分析结果文本
+	 * @param chartPaths 要移除的图表路径列表
+	 * @return 清理后的分析结果
 	 */
-	public static int cleanupOldCharts(String baseDir, int daysOld) {
-		String dir = baseDir != null ? baseDir : DEFAULT_CHARTS_DIR;
-		Path dirPath = Paths.get(dir);
-		if (!Files.exists(dirPath)) {
-			return 0;
+	public static String removeChartPaths(String analysisResult, List<String> chartPaths) {
+		if (analysisResult == null || analysisResult.isEmpty() || chartPaths == null || chartPaths.isEmpty()) {
+			return analysisResult;
 		}
 
-		int count = 0;
+		String cleanedResult = analysisResult;
+
 		try {
-			LocalDateTime cutoffDate = LocalDateTime.now().minusDays(daysOld);
-			Files.list(dirPath).forEach(path -> {
-				try {
-					LocalDateTime fileTime = LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(),
-							java.time.ZoneId.systemDefault());
-
-					if (fileTime.isBefore(cutoffDate)) {
-						Files.delete(path);
-					}
+			for (String chartPath : chartPaths) {
+				if (chartPath.startsWith("![")) {
+					cleanedResult = cleanedResult.replace(chartPath, "");
+					continue;
 				}
-				catch (IOException e) {
-					logger.warn("删除过期图表失败: {}", e.getMessage());
+
+				if (chartPath.startsWith("<img")) {
+					cleanedResult = cleanedResult.replace(chartPath, "");
+					continue;
 				}
-			});
+
+				Pattern filePathPattern = Pattern
+					.compile("(?i)(?:图表|chart|figure|图像|image)(?:已?保存|saved|generated)(?:到|at|to)?[\\s:]*[\"']?"
+							+ Pattern.quote(chartPath) + "[\"']?[\\s\\.,]*");
+				Matcher filePathMatcher = filePathPattern.matcher(cleanedResult);
+				if (filePathMatcher.find()) {
+					cleanedResult = filePathMatcher.replaceAll("");
+				}
+				else {
+					cleanedResult = cleanedResult.replace(chartPath, "");
+				}
+			}
+
+			cleanedResult = cleanedResult.replaceAll("(?m)^\\s*$\\n", "");
 		}
-		catch (IOException e) {
-			logger.error("清理过期图表失败: {}", e.getMessage());
+		catch (Exception e) {
+			logger.error("移除图表路径时发生错误", e);
+			return analysisResult;
 		}
 
-		return count;
+		return cleanedResult;
 	}
 
 	/**
-	 * 创建图表的Markdown引用
+	 * 为图表生成HTML容器和标题
 	 * @param chartPath 图表路径
-	 * @param altText 替代文本
-	 * @return Markdown格式的图表引用
+	 * @param chartNumber 图表编号
+	 * @param stepNumber 关联的步骤编号
+	 * @return 包含图表和标题的HTML代码
 	 */
-	public static String createChartReference(String chartPath, String altText) {
-		String alt = altText != null ? altText : "图表";
-		return String.format("![%s](%s)", alt, chartPath);
+	public static String generateChartContainer(String chartPath, int chartNumber, int stepNumber) {
+		StringBuilder chartContainer = new StringBuilder();
+
+		chartContainer.append("<div class='chart-container'>\n");
+
+		if (chartPath.startsWith("![") || chartPath.startsWith("<img")) {
+			chartContainer.append(chartPath).append("\n");
+		}
+		else {
+			chartContainer.append("![数据图表](").append(chartPath).append(")\n");
+		}
+
+		chartContainer.append("<div class='chart-caption'>图 ")
+			.append(chartNumber)
+			.append("：与步骤")
+			.append(stepNumber)
+			.append("相关的分析图表</div>\n</div>\n\n");
+
+		return chartContainer.toString();
 	}
 
 }

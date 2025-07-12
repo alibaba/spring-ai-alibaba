@@ -102,6 +102,10 @@ public class Nl2sqlConfiguration {
 			// SQL Execute 节点输出
 			keyStrategyHashMap.put(SQL_EXECUTE_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, new ReplaceStrategy());
+			// Python Execute 节点输出
+			keyStrategyHashMap.put(PYTHON_EXECUTE_NODE_OUTPUT, new ReplaceStrategy());
+			// Report Generator 节点输出
+			keyStrategyHashMap.put(REPORT_GENERATOR_NODE_OUTPUT, new ReplaceStrategy());
 			// 最终结果
 			keyStrategyHashMap.put(RESULT, new ReplaceStrategy());
 			return keyStrategyHashMap;
@@ -131,10 +135,10 @@ public class Nl2sqlConfiguration {
 			.addEdge(TABLE_RELATION_NODE, PLANNER_NODE)
 			.addEdge(PLANNER_NODE, PLAN_EXECUTOR_NODE)
 			.addEdge(PYTHON_EXECUTE_NODE, PLAN_EXECUTOR_NODE)
+			.addEdge(REPORT_GENERATOR_NODE, END)
 			.addConditionalEdges(PLAN_EXECUTOR_NODE, edge_async(new PlanExecutorDispatcher()),
 					Map.of(SQL_EXECUTE_NODE, SQL_EXECUTE_NODE, PYTHON_EXECUTE_NODE, PYTHON_EXECUTE_NODE,
-							REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE))
-			.addEdge(REPORT_GENERATOR_NODE, END)
+							REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE, END, END))
 			.addConditionalEdges(SQL_EXECUTE_NODE, edge_async(new SQLExecutorDispatcher()),
 					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, SEMANTIC_CONSISTENC_NODE, SEMANTIC_CONSISTENC_NODE))
 			.addConditionalEdges(SQL_GENERATE_NODE, edge_async(new SqlGenerateDispatcher()),

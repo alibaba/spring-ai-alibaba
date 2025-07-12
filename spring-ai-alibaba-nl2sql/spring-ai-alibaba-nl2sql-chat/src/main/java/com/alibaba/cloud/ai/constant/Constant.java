@@ -63,6 +63,8 @@ public class Constant {
 
 	public static final String PYTHON_EXECUTE_NODE_OUTPUT = "PYTHON_EXECUTE_NODE_OUTPUT";
 
+	public static final String REPORT_GENERATOR_NODE_OUTPUT = "REPORT_GENERATOR_NODE_OUTPUT";
+
 	// Plan当前需要执行的步骤编号
 	public static final String PLAN_CURRENT_STEP = "PLAN_CURRENT_STEP";
 
