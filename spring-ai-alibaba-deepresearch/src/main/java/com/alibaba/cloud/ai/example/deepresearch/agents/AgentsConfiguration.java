@@ -27,6 +27,7 @@ import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -54,6 +55,9 @@ public class AgentsConfiguration {
 
 	@Value("classpath:prompts/reporter.md")
 	private Resource reporterPrompt;
+
+	@Value("classpath:prompts/reportGenerator.md")
+	private Resource reportGeneratorPrompt;
 
 	@Autowired
 	private ApplicationContext context;
@@ -151,6 +155,13 @@ public class AgentsConfiguration {
 	@Bean
 	public ChatClient reporterAgent(ChatClient.Builder reporterChatClientBuilder) {
 		return reporterChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(reporterPrompt)).build();
+	}
+
+	@Bean
+	public ChatClient reportGeneratorAgent(
+			@Qualifier("reporterChatClientBuilder") ChatClient.Builder reportGeneratorChatClientBuilder) {
+		return reportGeneratorChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(reportGeneratorPrompt))
+			.build();
 	}
 
 	@Bean
