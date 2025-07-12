@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Description;
 
 /**
  * @author 北极星
+ * @author huaiziqing
  */
 @Configuration
 @EnableConfigurationProperties({ LarkSuiteProperties.class })
@@ -52,6 +53,20 @@ public class LarkSuiteAutoConfiguration {
 	@Description("It calls the document api to invoke a method to create a larksuite sheet")
 	public LarkSuiteCreateSheetService larksuiteCreateSheetFunction(LarkSuiteProperties properties) {
 		return new LarkSuiteCreateSheetService(properties);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("It calls the document api to get content of a larksuite document")
+	public LarkSuiteGetDocContentService larksuiteGetDocContentFunction(LarkSuiteProperties properties) {
+		return new LarkSuiteGetDocContentService(properties);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("It calls the sheet api to get content of a larksuite sheet")
+	public LarkSuiteGetSheetContentService larksuiteGetSheetContentFunction(LarkSuiteProperties properties) {
+		return new LarkSuiteGetSheetContentService(properties);
 	}
 
 }
