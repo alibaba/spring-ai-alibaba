@@ -39,7 +39,9 @@ import com.alibaba.cloud.ai.example.deepresearch.node.RewriteAndMultiQueryNode;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
+import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
 import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
@@ -65,6 +67,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 
 /**
  * @author yingzi
@@ -72,7 +75,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  */
 @Configuration
 @EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class,
-		McpAssignNodeProperties.class, RagProperties.class })
+		McpAssignNodeProperties.class, RagProperties.class, ReflectionProperties.class })
 public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
@@ -95,12 +98,18 @@ public class DeepResearchConfiguration {
 	@Autowired
 	private ChatClient plannerAgent;
 
+	@Autowired
+	private ChatClient reflectionAgent;
+
 	@Qualifier("chatClientBuilder")
 	@Autowired
 	private ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
 
 	@Autowired
 	private DeepResearchProperties deepResearchProperties;
+
+	@Autowired
+	private ReflectionProperties reflectionProperties;
 
 	@Autowired(required = false)
 	private JinaCrawlerService jinaCrawlerService;
@@ -110,6 +119,21 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private ReportService reportService;
+
+	@Autowired(required = false)
+	private McpProviderFactory mcpProviderFactory;
+
+	@Autowired
+	private InfoCheckService infoCheckService;
+
+	@Bean
+	public ReflectionProcessor reflectionProcessor() {
+		if (!reflectionProperties.isEnabled()) {
+			return null; // Return null if reflection mechanism is not enabled
+		}
+		// Use dedicated reflection agent
+		return new ReflectionProcessor(reflectionAgent, reflectionProperties.getMaxAttempts());
+	}
 
 	@Bean
 	public StateGraph deepResearch(ChatClient researchAgent) throws GraphStateException {
@@ -132,6 +156,7 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("plan_max_iterations", new ReplaceStrategy());
 			keyStrategyHashMap.put("max_step_num", new ReplaceStrategy());
 			keyStrategyHashMap.put("mcp_settings", new ReplaceStrategy());
+			keyStrategyHashMap.put("optimize_query_num", new ReplaceStrategy());
 
 			keyStrategyHashMap.put("feed_back", new ReplaceStrategy());
 			keyStrategyHashMap.put("feed_back_content", new ReplaceStrategy());
@@ -161,7 +186,7 @@ public class DeepResearchConfiguration {
 			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
 			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
 			.addNode("background_investigator",
-					node_async(new BackgroundInvestigationNode(searchBeanUtil, jinaCrawlerService)))
+					node_async(new BackgroundInvestigationNode(searchBeanUtil, jinaCrawlerService, infoCheckService)))
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
@@ -206,18 +231,22 @@ public class DeepResearchConfiguration {
 	}
 
 	private void addResearcherNodes(StateGraph stateGraph) throws GraphStateException {
+		ReflectionProcessor reflectionProcessor = reflectionProcessor();
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
 			.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 			String nodeId = "researcher_" + i;
-			stateGraph.addNode(nodeId, node_async(new ResearcherNode(researchAgent, String.valueOf(i))));
+			stateGraph.addNode(nodeId, node_async(
+					new ResearcherNode(researchAgent, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
 
 	private void addCoderNodes(StateGraph stateGraph) throws GraphStateException {
+		ReflectionProcessor reflectionProcessor = reflectionProcessor();
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
 			String nodeId = "coder_" + i;
-			stateGraph.addNode(nodeId, node_async(new CoderNode(coderAgent, String.valueOf(i))));
+			stateGraph.addNode(nodeId,
+					node_async(new CoderNode(coderAgent, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}

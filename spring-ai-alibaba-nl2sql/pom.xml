@@ -27,7 +27,6 @@
 
     <properties>
         <gpdb.version>3.0.0</gpdb.version>
-        <lombok.version>1.18.34</lombok.version>
         <druid.version>1.2.22</druid.version>
         <commons-lang3.version>3.9</commons-lang3.version>
         <mysql-connector-java.version>8.0.15</mysql-connector-java.version>
@@ -38,6 +37,7 @@
         <commons-compress.version>1.27.1</commons-compress.version>
         <netty-resolver-dns-native-macos.version>4.1.114.Final</netty-resolver-dns-native-macos.version>
         <netty-transport-native-epoll.version>4.1.114.Final</netty-transport-native-epoll.version>
+        <jsonschema.version>4.37.0</jsonschema.version>
     </properties>
 
     <dependencyManagement>
@@ -46,12 +46,6 @@
                 <groupId>com.aliyun</groupId>
                 <artifactId>gpdb20160503</artifactId>
                 <version>${gpdb.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>${lombok.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>com.alibaba</groupId>
@@ -92,6 +86,16 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
                 <version>${commons-compress.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.victools</groupId>
+                <artifactId>jsonschema-generator</artifactId>
+                <version>${jsonschema.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.victools</groupId>
+                <artifactId>jsonschema-module-jackson</artifactId>
+                <version>${jsonschema.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>

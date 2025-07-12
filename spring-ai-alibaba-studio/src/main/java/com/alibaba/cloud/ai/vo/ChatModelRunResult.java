@@ -16,11 +16,7 @@
 package com.alibaba.cloud.ai.vo;
 
 import com.alibaba.cloud.ai.param.ModelRunActionParam;
-import lombok.Builder;
-import lombok.Data;
 
-@Data
-@Builder
 public class ChatModelRunResult {
 
 	private ModelRunActionParam input;
@@ -28,5 +24,87 @@ public class ChatModelRunResult {
 	private ActionResult result;
 
 	private TelemetryResult telemetry;
+
+	public ChatModelRunResult() {
+	}
+
+	public ChatModelRunResult(ModelRunActionParam input, ActionResult result, TelemetryResult telemetry) {
+		this.input = input;
+		this.result = result;
+		this.telemetry = telemetry;
+	}
+
+	public ModelRunActionParam getInput() {
+		return input;
+	}
+
+	public void setInput(ModelRunActionParam input) {
+		this.input = input;
+	}
+
+	public ActionResult getResult() {
+		return result;
+	}
+
+	public void setResult(ActionResult result) {
+		this.result = result;
+	}
+
+	public TelemetryResult getTelemetry() {
+		return telemetry;
+	}
+
+	public void setTelemetry(TelemetryResult telemetry) {
+		this.telemetry = telemetry;
+	}
+
+	@Override
+	public String toString() {
+		return "ChatModelRunResult{" + "input=" + input + ", result=" + result + ", telemetry=" + telemetry + '}';
+	}
+
+	public static ChatModelRunResultBuilder builder() {
+		return new ChatModelRunResultBuilder();
+	}
+
+	public static final class ChatModelRunResultBuilder {
+
+		private ModelRunActionParam input;
+
+		private ActionResult result;
+
+		private TelemetryResult telemetry;
+
+		private ChatModelRunResultBuilder() {
+		}
+
+		public static ChatModelRunResultBuilder aChatModelRunResult() {
+			return new ChatModelRunResultBuilder();
+		}
+
+		public ChatModelRunResultBuilder input(ModelRunActionParam input) {
+			this.input = input;
+			return this;
+		}
+
+		public ChatModelRunResultBuilder result(ActionResult result) {
+			this.result = result;
+			return this;
+		}
+
+		public ChatModelRunResultBuilder telemetry(TelemetryResult telemetry) {
+			this.telemetry = telemetry;
+			return this;
+		}
+
+		public ChatModelRunResult build() {
+			ChatModelRunResult chatModelRunResult = new ChatModelRunResult();
+			chatModelRunResult.setInput(input);
+			chatModelRunResult.setResult(result);
+			chatModelRunResult.setTelemetry(telemetry);
+			return chatModelRunResult;
+		}
+
+	}
 
 }

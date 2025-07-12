@@ -18,10 +18,12 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
+import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
+import com.alibaba.cloud.ai.util.StateUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -32,60 +34,79 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
- * 语义一致性校验
+ * 语义一致性校验节点
  *
  * @author zhangshenghang
  */
-public class SemanticConsistencNode implements NodeAction {
+public class SemanticConsistencNode extends AbstractPlanBasedNode {
 
 	private static final Logger logger = LoggerFactory.getLogger(SemanticConsistencNode.class);
-
-	private final ChatClient chatClient;
-
-	private final DbConfig dbConfig;
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
 	public SemanticConsistencNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
 			DbConfig dbConfig) {
-		this.chatClient = chatClientBuilder.build();
-		this.dbConfig = dbConfig;
+		super();
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+		logNodeEntry();
 
 		// 获取必要的输入参数
-		String input = state.value(INPUT_KEY)
-			.map(String.class::cast)
-			.orElseThrow(() -> new IllegalStateException("Input key not found"));
+		String input = StateUtils.getStringValue(state, INPUT_KEY);
+		List<String> evidenceList = StateUtils.getListValue(state, EVIDENCES);
+		SchemaDTO schemaDTO = StateUtils.getObjectValue(state, TABLE_RELATION_OUTPUT, SchemaDTO.class);
 
-		List<String> evidenceList = state.value(EVIDENCES)
-			.map(v -> (List<String>) v)
-			.orElseThrow(() -> new IllegalStateException("Evidence list not found"));
+		// 获取当前执行步骤和SQL查询
+		ExecutionStep executionStep = getCurrentExecutionStep(state);
+		Integer currentStep = getCurrentStepNumber(state);
+		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
+		String sqlQuery = toolParameters.getSqlQuery();
 
-		SchemaDTO schemaDTO = state.value(TABLE_RELATION_OUTPUT)
-			.map(SchemaDTO.class::cast)
-			.orElseThrow(() -> new IllegalStateException("Schema DTO not found"));
+		logger.info("开始语义一致性校验 - SQL: {}", sqlQuery);
+		logger.info("步骤描述: {}", toolParameters.getDescription());
 
-		String sql = state.value(SQL_GENERATE_OUTPUT)
-			.map(String.class::cast)
-			.orElseThrow(() -> new IllegalStateException("SQL not found"));
+		// 执行语义一致性检查
+		String validationResult = performSemanticValidation(schemaDTO, evidenceList, toolParameters, sqlQuery);
 
-		// 构建和执行语义一致性检查
-		List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(input, dbConfig, schemaDTO, evidenceList);
-		String semanticConsistency = baseNl2SqlService.semanticConsistency(sql,
-				String.join("\n", prompts.get(0), prompts.get(1)));
+		// 判断校验结果
+		boolean passed = !validationResult.startsWith("不通过");
+		logger.info("语义一致性校验结果: {}", passed ? "通过" : "未通过");
 
-		logger.info("语义一致性校验结果详情: {}", semanticConsistency);
-		boolean passed = !semanticConsistency.startsWith("不通过");
-		logger.info("语义一致性校验结果: {}", passed);
+		if (!passed) {
+			logger.info("语义一致性校验详情: {}", validationResult);
+		}
 
-		// 根据校验结果返回相应的状态
-		return passed ? Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, true) : Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, false,
-				SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, semanticConsistency);
+		return buildValidationResult(passed, validationResult, currentStep);
+	}
+
+	/**
+	 * 执行语义一致性验证
+	 */
+	private String performSemanticValidation(SchemaDTO schemaDTO, List<String> evidenceList,
+			ExecutionStep.ToolParameters toolParameters, String sqlQuery) throws Exception {
+		// 构建验证上下文
+		String schema = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
+		String evidence = StringUtils.join(evidenceList, ";\n");
+		String context = String.join("\n", schema, evidence, toolParameters.getDescription());
+
+		// 执行语义一致性检查
+		return baseNl2SqlService.semanticConsistency(sqlQuery, context);
+	}
+
+	/**
+	 * 构建验证结果
+	 */
+	private Map<String, Object> buildValidationResult(boolean passed, String validationResult, Integer currentStep) {
+		if (passed) {
+			return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, true, PLAN_CURRENT_STEP, currentStep + 1);
+		}
+		else {
+			return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, false, SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT,
+					validationResult);
+		}
 	}
 
 }

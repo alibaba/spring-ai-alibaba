@@ -218,15 +218,6 @@ const message = reactive({
   type: 'success' as 'success' | 'error'
 })
 
-// 计算属性：配置示例文本
-const configPlaceholder = computed(() => {
-  if (newMcpServer.connectionType === 'STUDIO') {
-    return t('config.mcpConfig.studioExample')
-  } else {
-    return t('config.mcpConfig.sseExample')
-  }
-})
-
 // 计算属性：是否可以提交
 const canSubmit = computed(() => {
   return newMcpServer.configJson.trim().length > 0
@@ -292,7 +283,7 @@ const addMcpServer = async () => {
   // 验证JSON格式
   try {
     JSON.parse(newMcpServer.configJson)
-  } catch (error) {
+  } catch {
     showMessage(t('config.mcpConfig.invalidJson'), 'error')
     return
   }

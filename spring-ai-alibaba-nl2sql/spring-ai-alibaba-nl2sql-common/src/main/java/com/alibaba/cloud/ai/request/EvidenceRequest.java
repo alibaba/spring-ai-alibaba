@@ -15,15 +15,49 @@
  */
 package com.alibaba.cloud.ai.request;
 
-import lombok.Data;
-
 import java.io.Serializable;
+import java.util.Objects;
 
-@Data
 public class EvidenceRequest implements Serializable {
 
 	private String content;
 
 	private Integer type;
+
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
+
+	public Integer getType() {
+		return type;
+	}
+
+	public void setType(Integer type) {
+		this.type = type;
+	}
+
+	@Override
+	public String toString() {
+		return "EvidenceRequest{" + "content='" + content + '\'' + ", type=" + type + '}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		EvidenceRequest that = (EvidenceRequest) o;
+		return Objects.equals(content, that.content) && Objects.equals(type, that.type);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(content, type);
+	}
 
 }

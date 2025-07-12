@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.util.StateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -31,10 +32,12 @@ import static com.alibaba.cloud.ai.constant.Constant.SQL_VALIDATE_EXCEPTION_OUTP
 import static com.alibaba.cloud.ai.constant.Constant.SQL_VALIDATE_NODE_OUTPUT;
 
 /**
- * 校验 SQL 语句
+ * 校验 SQL 语句的语法正确性
  *
+ * @deprecated 此节点已废弃，建议使用 SemanticConsistencNode 进行语义一致性校验
  * @author zhangshenghang
  */
+@Deprecated
 public class SqlValidateNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(SqlValidateNode.class);
@@ -54,17 +57,15 @@ public class SqlValidateNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+		logger.warn("此节点已废弃，建议使用 SemanticConsistencNode 进行语义一致性校验");
 
 		// 获取SQL语句
-		String sql = state.value("SQL_GENERATE_OUTPUT")
-			.map(String.class::cast)
-			.orElseThrow(() -> new IllegalStateException("SQL statement not found"));
+		String sql = StateUtils.getStringValue(state, "SQL_GENERATE_OUTPUT");
+		logger.info("[{}] 开始验证SQL语句: {}", this.getClass().getSimpleName(), sql);
 
-		// 构建查询参数
+		// 构建查询参数并执行验证
 		DbQueryParameter dbQueryParameter = new DbQueryParameter();
 		dbQueryParameter.setSql(sql);
-
-		logger.info("[{}] 开始验证SQL语句: {}", this.getClass().getSimpleName(), sql);
 
 		try {
 			// 执行SQL验证

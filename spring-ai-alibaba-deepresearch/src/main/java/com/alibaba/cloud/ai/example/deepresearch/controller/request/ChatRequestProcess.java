@@ -36,7 +36,7 @@ public class ChatRequestProcess {
 	public static ChatRequest getDefaultChatRequest(ChatRequest chatRequest, SearchBeanUtil searchBeanUtil) {
 		if (chatRequest == null) {
 			return new ChatRequest("__default__", 1, 3, true, null, true, Collections.emptyMap(), "草莓蛋糕怎么做呀。",
-					searchBeanUtil.getFirstAvailableSearch().orElse(null));
+					searchBeanUtil.getFirstAvailableSearch().orElse(null), 3);
 		}
 		else {
 			return new ChatRequest(StringUtils.hasText(chatRequest.threadId()) ? chatRequest.threadId() : "__default__",
@@ -48,7 +48,8 @@ public class ChatRequestProcess {
 					chatRequest.mcpSettings() == null ? Collections.emptyMap() : chatRequest.mcpSettings(),
 					StringUtils.hasText(chatRequest.query()) ? chatRequest.query() : "草莓蛋糕怎么做呀",
 					chatRequest.searchEngine() == null ? searchBeanUtil.getFirstAvailableSearch().orElse(null)
-							: chatRequest.searchEngine());
+							: chatRequest.searchEngine(),
+					chatRequest.optimizeQueryNum() == null ? 3 : chatRequest.optimizeQueryNum());
 		}
 	}
 
@@ -61,6 +62,7 @@ public class ChatRequestProcess {
 		objectMap.put("max_plan_iterations", chatRequest.maxPlanIterations());
 		objectMap.put("mcp_settings", chatRequest.mcpSettings());
 		objectMap.put("search_engine", chatRequest.searchEngine());
+		objectMap.put("optimize_query_num", chatRequest.optimizeQueryNum());
 	}
 
 }

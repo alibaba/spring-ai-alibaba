@@ -44,6 +44,11 @@ public class DeepResearchProperties {
 	 */
 	private Map<String, Set<String>> mcpClientMapping = Maps.newHashMap();
 
+	/**
+	 * 图执行的最大迭代次数
+	 */
+	private int maxIterations = 50;
+
 	public Map<String, Integer> getParallelNodeCount() {
 		return parallelNodeCount;
 	}
@@ -58,6 +63,14 @@ public class DeepResearchProperties {
 
 	public void setMcpClientMapping(Map<String, Set<String>> mcpClientMapping) {
 		this.mcpClientMapping = mcpClientMapping;
+	}
+
+	public int getMaxIterations() {
+		return maxIterations;
+	}
+
+	public void setMaxIterations(int maxIterations) {
+		this.maxIterations = maxIterations;
 	}
 
 	private List<SearchEnum> searchList = List.of();

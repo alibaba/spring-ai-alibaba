@@ -15,12 +15,15 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +46,10 @@ import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackC
 public class AgentServiceImpl implements AgentService {
 
 	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT";
+
+	// MapReduce protected agent names - cannot be deleted by users
+	private static final String[] PROTECTED_MAPREDUCE_AGENTS = { "MAPREDUCE_DATA_PREPARE_AGENT", "MAPREDUCE_FIN_AGENT",
+			"MAPREDUCE_MAP_TASK_AGENT", "MAPREDUCE_REDUCE_TASK_AGENT" };
 
 	private static final Logger log = LoggerFactory.getLogger(AgentServiceImpl.class);
 
@@ -131,20 +138,25 @@ public class AgentServiceImpl implements AgentService {
 		DynamicAgentEntity entity = repository.findById(Long.parseLong(id))
 			.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
 
+		// Protect default agent from deletion
 		if (DEFAULT_AGENT_NAME.equals(entity.getAgentName())) {
 			throw new IllegalArgumentException("Cannot delete default Agent");
+		}
+
+		// Protect MapReduce system agents from deletion
+		if (Arrays.asList(PROTECTED_MAPREDUCE_AGENTS).contains(entity.getAgentName())) {
+			throw new IllegalArgumentException("Cannot delete protected system Agent: " + entity.getAgentName());
 		}
 
 		repository.deleteById(Long.parseLong(id));
 	}
 
-	@Override
 	public List<Tool> getAvailableTools() {
 
 		String uuid = UUID.randomUUID().toString();
-
+		List<String> columns = Arrays.asList("dummyColumn1", "dummyColumn2");
 		try {
-			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid);
+			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid, uuid, columns);
 			return toolcallContext.entrySet().stream().map(entry -> {
 				Tool tool = new Tool();
 				tool.setKey(entry.getKey());
@@ -171,6 +183,8 @@ public class AgentServiceImpl implements AgentService {
 		config.setNextStepPrompt(entity.getNextStepPrompt());
 		config.setAvailableTools(entity.getAvailableToolKeys());
 		config.setClassName(entity.getClassName());
+		DynamicModelEntity model = entity.getModel();
+		config.setModel(model == null ? null : model.mapToModelConfig());
 		return config;
 	}
 
@@ -196,6 +210,10 @@ public class AgentServiceImpl implements AgentService {
 		// 3. Convert to List and set
 		entity.setAvailableToolKeys(new java.util.ArrayList<>(toolSet));
 		entity.setClassName(config.getName());
+		ModelConfig model = config.getModel();
+		if (model != null) {
+			entity.setModel(new DynamicModelEntity(model.getId()));
+		}
 	}
 
 	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity, String agentName) {
@@ -216,7 +234,8 @@ public class AgentServiceImpl implements AgentService {
 	}
 
 	@Override
-	public BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting) {
+	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
+			Map<String, Object> initialAgentSetting, List<String> columns) {
 
 		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
 
@@ -225,9 +244,11 @@ public class AgentServiceImpl implements AgentService {
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(name, initialAgentSetting);
 
 			// Set planId
-			agent.setPlanId(planId);
+			agent.setCurrentPlanId(planId);
+			agent.setRootPlanId(rootPlanId);
 			// Set tool callback mapping
-			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId);
+			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, rootPlanId,
+					columns);
 			agent.setToolCallbackProvider(new ToolCallbackProvider() {
 
 				@Override
