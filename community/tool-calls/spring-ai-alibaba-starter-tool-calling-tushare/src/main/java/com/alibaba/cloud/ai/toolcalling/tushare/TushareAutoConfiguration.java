@@ -36,7 +36,7 @@ public class TushareAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(TushareAutoConfiguration.class);
 
-	@Bean(name = TushareConstants.TOOL_NAME_STOCK_QUOTES)
+	@Bean(name = TushareConstants.STOCK_QUOTES_TOOL_NAME)
 	@Description("根据股票代码或(和)日期获取股票日行情，每次最多6000条")
 	public TushareStockQuotesService tushareGetStockQuotes(JsonParseTool jsonParseTool,
 			TushareProperties tushareProperties) {

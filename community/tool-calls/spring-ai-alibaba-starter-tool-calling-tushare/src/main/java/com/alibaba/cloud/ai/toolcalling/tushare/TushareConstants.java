@@ -27,6 +27,6 @@ public final class TushareConstants {
 
 	public static final String TOKEN_ENV = "TUSHARE_TOKEN";
 
-	public static final String TOOL_NAME_STOCK_QUOTES = "tushareGetStockQuotes";
+	public static final String STOCK_QUOTES_TOOL_NAME = "tushareGetStockQuotes";
 
 }
