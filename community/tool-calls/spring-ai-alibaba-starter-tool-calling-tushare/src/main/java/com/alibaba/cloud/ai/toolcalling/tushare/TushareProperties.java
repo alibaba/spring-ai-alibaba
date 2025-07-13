@@ -25,8 +25,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class TushareProperties extends CommonToolCallProperties {
 
 	/**
-	 * Official Document URL： <a href=
-	 * "https://tushare.pro/document/1?doc_id=130">...</a>
+	 * Official Document URL： <a href= "https://tushare.pro/document/1?doc_id=130">...</a>
 	 */
 	public TushareProperties() {
 		super("http://api.tushare.pro");

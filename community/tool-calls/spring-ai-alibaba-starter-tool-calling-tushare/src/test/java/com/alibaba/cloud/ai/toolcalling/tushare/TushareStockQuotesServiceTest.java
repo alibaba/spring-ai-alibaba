@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.toolcalling.common.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ public class TushareStockQuotesServiceTest {
 	private static final Logger log = LoggerFactory.getLogger(TushareStockQuotesServiceTest.class);
 
 	@Test
+	@EnabledIfEnvironmentVariable(named = TushareConstants.TOKEN_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	@DisplayName("Tushare Tool-Calling Test By Stock Code")
 	public void testStockQuotesSearchByStockCode() {
 		TushareStockQuotesService.Request request = new TushareStockQuotesService.Request("000001.SZ", null, null);
@@ -48,7 +50,9 @@ public class TushareStockQuotesServiceTest {
 		log.info("stock quotes Search Response: {}", response.message());
 		assertThat(response.message()).doesNotContain("Error");
 	}
+
 	@Test
+	@EnabledIfEnvironmentVariable(named = TushareConstants.TOKEN_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	@DisplayName("Tushare Tool-Calling Test By Date Range")
 	public void testStockQuotesSearchByDateRange() {
 		TushareStockQuotesService.Request request = new TushareStockQuotesService.Request(null, "20250710", "20250710");

@@ -39,7 +39,7 @@ public class TushareAutoConfiguration {
 	@Bean(name = TushareConstants.TOOL_NAME_STOCK_QUOTES)
 	@Description("根据股票代码或(和)日期获取股票日行情，每次最多6000条")
 	public TushareStockQuotesService tushareGetStockQuotes(JsonParseTool jsonParseTool,
-														   TushareProperties tushareProperties) {
+			TushareProperties tushareProperties) {
 		logger.debug("TushareStockQuotesService is enabled.");
 		return new TushareStockQuotesService(WebClientTool.builder(jsonParseTool, tushareProperties).build(),
 				tushareProperties);

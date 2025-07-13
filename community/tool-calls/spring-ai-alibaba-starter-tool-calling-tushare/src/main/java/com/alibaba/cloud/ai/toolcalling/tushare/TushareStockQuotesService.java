@@ -34,8 +34,7 @@ public class TushareStockQuotesService
 
 	private final TushareProperties tushareProperties;
 
-	public TushareStockQuotesService(WebClientTool webClientTool,
-									 TushareProperties tushareProperties) {
+	public TushareStockQuotesService(WebClientTool webClientTool, TushareProperties tushareProperties) {
 		this.webClientTool = webClientTool;
 		this.tushareProperties = tushareProperties;
 	}
@@ -53,14 +52,9 @@ public class TushareStockQuotesService
 			params.put("ts_code", tsCode);
 			params.put("start_date", startDate);
 			params.put("end_date", endDate);
-			Map<String, Object> valueMap = Map.of(
-					"api_name", "daily",
-					"token", tushareProperties.getToken(),
-					"params", params,
-					"fields", "ts_code,trade_date,open,high,low,close,pre_close,change,pct_chg,vol,amount");
-			return webClientTool
-					.post("", valueMap)
-					.block();
+			Map<String, Object> valueMap = Map.of("api_name", "daily", "token", tushareProperties.getToken(), "params",
+					params, "fields", "ts_code,trade_date,open,high,low,close,pre_close,change,pct_chg,vol,amount");
+			return webClientTool.post("", valueMap).block();
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to get stock quotes", e);
@@ -78,8 +72,7 @@ public class TushareStockQuotesService
 	}
 
 	@JsonClassDescription("根据股票代码或日期获取股票日行情")
-	public record Request(
-			@JsonProperty(value = "ts_code") @JsonPropertyDescription("股票代码，例如000001.SZ") String tsCode,
+	public record Request(@JsonProperty(value = "ts_code") @JsonPropertyDescription("股票代码，例如000001.SZ") String tsCode,
 			@JsonProperty(value = "start_date") @JsonPropertyDescription("开始日期，格式yyyyMMdd") String startDate,
 			@JsonProperty(value = "end_date") @JsonPropertyDescription("结束日期，格式yyyyMMdd") String endDate) {
 	}
