@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.deepresearch.tool;
+package com.alibaba.cloud.ai.example.deepresearch.util;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.DeepResearchProperties;
 import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
