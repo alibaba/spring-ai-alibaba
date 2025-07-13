@@ -16,31 +16,35 @@
 
 package com.alibaba.cloud.ai.tool;
 
-import com.alibaba.cloud.ai.config.ContainerProperties;
 import com.alibaba.cloud.ai.service.container.ContainerPoolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.stereotype.Service;
 
 /**
  * @author vlsmb
  * @since 2025/7/14
  */
+@Service
 public class PythonExecutorTool {
 
 	private static final Logger log = LoggerFactory.getLogger(PythonExecutorTool.class);
 
 	private final ContainerPoolExecutor containerPoolExecutor;
 
-	public PythonExecutorTool(ContainerProperties properties) {
-		this.containerPoolExecutor = ContainerPoolExecutor.getInstance(properties);
+	public PythonExecutorTool(ContainerPoolExecutor containerPoolExecutor) {
+		this.containerPoolExecutor = containerPoolExecutor;
 	}
 
-	@Tool(description = "Execute Python code and return the result.")
+	@Tool(description = "Execute Python code and return the result. You **need to provide** the correct Python code and its standard input."
+			+ "Stdin may be null if there's not necessary. "
+			+ "If a third-party dependency is required, please follow the `requirements.txt` schema for pip. "
+			+ "Otherwise, the corresponding field will be set to null.")
 	public String executePythonCode(@ToolParam(description = "python code") String code,
 			@ToolParam(description = "requirements.txt", required = false) String requirements,
-			@ToolParam(description = "input data for the python script", required = false) String data) {
+			@ToolParam(description = "stdin for the python script", required = false) String data) {
 		if (code == null || code.trim().isEmpty()) {
 			return "Error: Code must be a non-empty string.";
 		}

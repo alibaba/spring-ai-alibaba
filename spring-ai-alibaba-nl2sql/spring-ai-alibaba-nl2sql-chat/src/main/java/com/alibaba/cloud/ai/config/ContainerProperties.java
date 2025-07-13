@@ -15,6 +15,13 @@
  */
 package com.alibaba.cloud.ai.config;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+/**
+ * @author vlsmb
+ * @since 2025/7/12
+ */
+@ConfigurationProperties(prefix = "spring.ai.alibaba.nl2sql.container")
 public class ContainerProperties {
 
 	public enum ContainerImpl {

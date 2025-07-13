@@ -80,6 +80,10 @@ public class DockerContainerPoolExecutorTest {
 			        print(f"HTTP {ans2}: {str(e)}")
 			""";
 
+	static final String NEED_INPUT = """
+			print(input())
+			""";
+
 	@Test
 	@DisplayName("Run Normal Code")
 	public void testNormalCode() {
@@ -125,7 +129,15 @@ public class DockerContainerPoolExecutorTest {
 	public void testNetworkCheck() {
 		String response = pythonExecutorTool.executePythonCode(NETWORK_CHECK, null, "DataFrame Data");
 		System.out.println(response);
-		assertThat(response).contains("Failed").doesNotContain("Connected");
+		assertThat(response).contains("Connected").doesNotContain("Failed");
+	}
+
+	@Test
+	@DisplayName("Check Need Input")
+	public void testNeedInput() {
+		String response = pythonExecutorTool.executePythonCode(NEED_INPUT, null, "DataFrame Data");
+		System.out.println(response);
+		assertThat(response).contains("DataFrame Data");
 	}
 
 }

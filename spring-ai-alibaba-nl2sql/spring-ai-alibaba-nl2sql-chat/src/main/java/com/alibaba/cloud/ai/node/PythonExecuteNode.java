@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
+import com.alibaba.cloud.ai.tool.PythonExecutorTool;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StepResultUtils;
 import org.slf4j.Logger;
@@ -49,9 +50,9 @@ public class PythonExecuteNode extends AbstractPlanBasedNode {
 
 	private final ChatClient chatClient;
 
-	public PythonExecuteNode(ChatClient.Builder chatClientBuilder) {
+	public PythonExecuteNode(ChatClient.Builder chatClientBuilder, PythonExecutorTool pythonExecutorTool) {
 		super();
-		this.chatClient = chatClientBuilder.build();
+		this.chatClient = chatClientBuilder.defaultTools(pythonExecutorTool).build();
 	}
 
 	@Override
