@@ -15,12 +15,10 @@
  */
 package com.alibaba.cloud.ai.toolcalling.tushare;
 
-import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import org.springframework.util.MultiValueMap;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,14 +32,11 @@ public class TushareStockQuotesService
 
 	private final WebClientTool webClientTool;
 
-	private final JsonParseTool jsonParseTool;
-
 	private final TushareProperties tushareProperties;
 
-	public TushareStockQuotesService(WebClientTool webClientTool, JsonParseTool jsonParseTool,
+	public TushareStockQuotesService(WebClientTool webClientTool,
 									 TushareProperties tushareProperties) {
 		this.webClientTool = webClientTool;
-		this.jsonParseTool = jsonParseTool;
 		this.tushareProperties = tushareProperties;
 	}
 

@@ -42,7 +42,7 @@ public class TushareAutoConfiguration {
 														   TushareProperties tushareProperties) {
 		logger.debug("TushareStockQuotesService is enabled.");
 		return new TushareStockQuotesService(WebClientTool.builder(jsonParseTool, tushareProperties).build(),
-				jsonParseTool, tushareProperties);
+				tushareProperties);
 	}
 
 }
