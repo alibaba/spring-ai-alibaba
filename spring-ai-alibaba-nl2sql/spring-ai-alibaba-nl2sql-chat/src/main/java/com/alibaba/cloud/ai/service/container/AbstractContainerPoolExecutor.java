@@ -16,10 +16,18 @@
 package com.alibaba.cloud.ai.service.container;
 
 import com.alibaba.cloud.ai.config.ContainerProperties;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -295,6 +303,44 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 			log.error("An exception occurred while executing the task: {}", e.getMessage(), e);
 			return TaskResponse.error(e.getMessage());
 		}
+	}
+
+	/**
+	 * 删除临时目录
+	 */
+	protected void clearTempDir(Path tempDir) {
+		try {
+			Files.walkFileTree(tempDir, new SimpleFileVisitor<>() {
+				@NotNull
+				@Override
+				public FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs)
+						throws IOException {
+					Files.delete(file);
+					return super.visitFile(file, attrs);
+				}
+
+				@NotNull
+				@Override
+				public FileVisitResult postVisitDirectory(@NotNull Path dir, @Nullable IOException exc)
+						throws IOException {
+					if (exc != null)
+						throw exc;
+					Files.delete(dir);
+					return super.postVisitDirectory(dir, exc);
+				}
+			});
+			log.info("Temp directory has been deleted.");
+		}
+		catch (Exception e) {
+			log.warn("Exception in clean temp directory: {}", e.getMessage());
+		}
+	}
+
+	/**
+	 * 生成唯一的容器名称
+	 */
+	protected String generateContainerName() {
+		return this.properties.getContainerNamePrefix() + "_" + System.currentTimeMillis();
 	}
 
 }

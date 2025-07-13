@@ -13,27 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.controller;
 
-import com.alibaba.cloud.ai.tool.PythonReplTool;
+import com.alibaba.cloud.ai.tool.PythonExecutorTool;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @DisplayName("Run Python Code in Docker Test Without Network")
-@ActiveProfiles("python")
 @Disabled
-public class PythonReplToolTest {
+public class DockerContainerPoolExecutorTest {
 
 	@Autowired
-	private PythonReplTool pythonReplTool;
+	private PythonExecutorTool pythonExecutorTool;
 
 	static final String NORMAL_CODE = """
 			def func(x: int):
@@ -86,7 +83,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Run Normal Code")
 	public void testNormalCode() {
-		String response = pythonReplTool.executePythonCode(NORMAL_CODE, null, "DataFrame Data");
+		String response = pythonExecutorTool.executePythonCode(NORMAL_CODE, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("Successfully executed").contains("3628800");
 	}
@@ -94,7 +91,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Run Code with Third-parties but Not Installed")
 	public void testCodeWithoutDependency() {
-		String response = pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, null, "DataFrame Data");
+		String response = pythonExecutorTool.executePythonCode(CODE_WITH_DEPENDENCY, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("Error executing code").contains("ModuleNotFoundError");
 	}
@@ -102,7 +99,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Run Code with Third-parties Installed")
 	public void testCodeWithDependency() {
-		String response = pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, "numpy==2.2.6", "DataFrame Data");
+		String response = pythonExecutorTool.executePythonCode(CODE_WITH_DEPENDENCY, "numpy==2.2.6", "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("Successfully executed").doesNotContain("ModuleNotFoundError");
 	}
@@ -110,7 +107,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Run Code with Endless Loop")
 	public void testTimeoutCode() {
-		String response = pythonReplTool.executePythonCode(TIMEOUT_CODE, null, "DataFrame Data");
+		String response = pythonExecutorTool.executePythonCode(TIMEOUT_CODE, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("Error executing code");
 	}
@@ -118,7 +115,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Run Code with Syntax Error")
 	public void testErrorCode() {
-		String response = pythonReplTool.executePythonCode(ERROR_CODE, null, "DataFrame Data");
+		String response = pythonExecutorTool.executePythonCode(ERROR_CODE, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("SyntaxError");
 	}
@@ -126,7 +123,7 @@ public class PythonReplToolTest {
 	@Test
 	@DisplayName("Check Network is Disabled")
 	public void testNetworkCheck() {
-		String response = pythonReplTool.executePythonCode(NETWORK_CHECK, null, "DataFrame Data");
+		String response = pythonExecutorTool.executePythonCode(NETWORK_CHECK, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("Failed").doesNotContain("Connected");
 	}

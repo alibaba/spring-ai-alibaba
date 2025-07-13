@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.service.container;
 
+import com.alibaba.cloud.ai.config.ContainerProperties;
+
 /**
  * Docker容器池
  *
@@ -24,6 +26,15 @@ package com.alibaba.cloud.ai.service.container;
 public interface ContainerPoolExecutor {
 
 	TaskResponse runTask(TaskRequest request);
+
+	static ContainerPoolExecutor getInstance(ContainerProperties properties) {
+		if (properties.getContainerImpl().equals(ContainerProperties.ContainerImpl.DOCKER)) {
+			return new DockerContainerPoolExecutor(properties);
+		}
+		else {
+			throw new IllegalArgumentException("Unknown container impl: " + properties.getContainerImpl());
+		}
+	}
 
 	record TaskRequest(String code, String input, String requirement) {
 
