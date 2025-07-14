@@ -315,7 +315,7 @@ public class DockerContainerPoolExecutor extends AbstractContainerPoolExecutor i
 	protected void stopContainer(String containerId) throws Exception {
 		try {
 			this.dockerClient.stopContainerCmd(containerId).exec();
-			log.info("Successfully stoped container: {}", containerId);
+			log.info("Successfully stopped container: {}", containerId);
 		}
 		catch (Exception e) {
 			log.warn("Failed to stop container: {}, message: {}", containerId, e.getMessage());
