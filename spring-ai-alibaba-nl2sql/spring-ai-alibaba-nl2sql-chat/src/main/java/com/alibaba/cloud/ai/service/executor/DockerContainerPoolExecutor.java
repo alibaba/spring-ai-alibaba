@@ -21,6 +21,7 @@ import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.LogContainerCmd;
+import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.AccessMode;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Capability;
@@ -42,6 +43,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -74,6 +76,27 @@ public class DockerContainerPoolExecutor extends AbstractContainerPoolExecutor i
 			.build();
 		this.dockerClient = this.createDockerClientWithFallback(config);
 		this.containerTempPath = new ConcurrentHashMap<>();
+
+		// 检查镜像是否已存在本地
+		boolean imageExists = this.dockerClient.listImagesCmd()
+			.withImageNameFilter(properties.getImageName())
+			.exec()
+			.stream()
+			.anyMatch(image -> Arrays.asList(image.getRepoTags()).contains(properties.getImageName()));
+
+		if (!imageExists) {
+			// 拉取镜像
+			try {
+				this.dockerClient.pullImageCmd(properties.getImageName())
+					.exec(new PullImageResultCallback())
+					.awaitCompletion();
+				log.info("pull image {} success", properties.getImageName());
+			}
+			catch (Exception e) {
+				log.error("pull image {} error", properties.getImageName(), e);
+				throw new RuntimeException(e);
+			}
+		}
 	}
 
 	/**

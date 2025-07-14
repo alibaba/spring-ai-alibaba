@@ -25,6 +25,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -145,15 +148,74 @@ public class DockerContainerPoolExecutorTest {
 	@DisplayName("Concurrency Testing")
 	public void testConcurrency() throws InterruptedException {
 		ExecutorService executorService = Executors.newFixedThreadPool(10);
-		executorService.submit(this::testNormalCode);
-		executorService.submit(this::testCodeWithDependency);
-		executorService.submit(this::testTimeoutCode);
-		executorService.submit(this::testErrorCode);
-		executorService.submit(this::testNetworkCheck);
-		executorService.submit(this::testNeedInput);
-		executorService.shutdown();
-		while (!executorService.awaitTermination(500, TimeUnit.MILLISECONDS))
-			;
+		CountDownLatch countDownLatch = new CountDownLatch(6);
+		executorService.submit(() -> {
+			try {
+				this.testNormalCode();
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			finally {
+				countDownLatch.countDown();
+			}
+		});
+		executorService.submit(() -> {
+			try {
+				this.testCodeWithDependency();
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			finally {
+				countDownLatch.countDown();
+			}
+		});
+		executorService.submit(() -> {
+			try {
+				this.testTimeoutCode();
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			finally {
+				countDownLatch.countDown();
+			}
+		});
+		executorService.submit(() -> {
+			try {
+				this.testErrorCode();
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			finally {
+				countDownLatch.countDown();
+			}
+		});
+		executorService.submit(() -> {
+			try {
+				this.testNetworkCheck();
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			finally {
+				countDownLatch.countDown();
+			}
+		});
+		executorService.submit(() -> {
+			try {
+				this.testNeedInput();
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			finally {
+				countDownLatch.countDown();
+			}
+		});
+		assert countDownLatch.await(600L, TimeUnit.SECONDS);
 	}
 
 }
