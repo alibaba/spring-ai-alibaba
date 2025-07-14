@@ -127,6 +127,9 @@ public class DeepResearchConfiguration {
 	@Autowired
 	private InfoCheckService infoCheckService;
 
+	@Autowired
+	private ChatClient routerAgent;
+
 	@Bean
 	public ReflectionProcessor reflectionProcessor() {
 		if (!reflectionProperties.isEnabled()) {
@@ -184,7 +187,7 @@ public class DeepResearchConfiguration {
 
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
-			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
+			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent, routerAgent)))
 			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(researchChatClientBuilder)))
 			.addNode("background_investigator",
 					node_async(new BackgroundInvestigationNode(searchBeanUtil, jinaCrawlerService, infoCheckService)))
@@ -246,8 +249,8 @@ public class DeepResearchConfiguration {
 		ReflectionProcessor reflectionProcessor = reflectionProcessor();
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
 			String nodeId = "coder_" + i;
-			stateGraph.addNode(nodeId,
-					node_async(new CoderNode(coderAgent, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
+			stateGraph.addNode(nodeId, node_async(new CoderNode(coderAgent, String.valueOf(i), reflectionProcessor,
+					mcpProviderFactory, routerAgent)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}

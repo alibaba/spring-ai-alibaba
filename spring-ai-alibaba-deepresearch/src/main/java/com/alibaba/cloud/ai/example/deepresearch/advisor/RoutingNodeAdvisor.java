@@ -25,13 +25,17 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Intelligent content routing based on LLM’s understanding capabilities
@@ -41,106 +45,94 @@ import java.util.Map;
  */
 public class RoutingNodeAdvisor implements BaseAdvisor {
 
-	private final PromptTemplate promptTemplate;
+    private final PromptTemplate promptTemplate;
 
-	private final Iterable<String> selections;
+    private final Iterable<String> selections;
 
-	private final ObjectMapper objectMapper;
+    private static final String SELECTION = "selection";
 
-	private static final String SELECTION = "selection";
+    private final Function<String, String> router;
 
-	private RoutingNodeAdvisor(Iterable<String> selections, ObjectMapper objectMapper) {
-		this.promptTemplate = new PromptTemplate(
-				"""
-						    Parse the input and select the most appropriate support node from the following options: {selection} First explain your rationale,
-						    then provide your selection in JSON format:
-						    \\{
-						     "reasoning": "Briefly explain why this ticket should be routed to a specific node. Consider key terms, user intent, and urgency level. ",
-						     "selection": "Selected node name"
-						    \\}
-						    .input: {input}
-						""");
-		Assert.notNull(selections, "Selections must not be null");
-		this.selections = selections;
-		this.objectMapper = objectMapper;
-	}
+    private RoutingNodeAdvisor(Iterable<String> selections, Function<String, String> router) {
+        this.promptTemplate = new PromptTemplate(
+                """
+                            Parse the input and select the most appropriate support node from the following options: {selection} First explain your rationale,
+                            then provide your selection in JSON format:
+                            \\{
+                             "reasoning": "Briefly explain why this ticket should be routed to a specific node. Consider key terms, user intent, and urgency level. ",
+                             "selection": "Selected node name"
+                            \\}
+                            .input: {input}
+                        """);
+        Assert.notNull(selections, "Selections must not be null");
+        this.selections = selections;
+        this.router = router;
+    }
 
-	@Override
-	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-		var userMessage = chatClientRequest.prompt().getUserMessage();
+    @Override
+    public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+        var userMessage = chatClientRequest.prompt().getUserMessage();
 
-		String input = promptTemplate.render(Map.of(SELECTION, selections, "input", userMessage.getText()));
 
-		return chatClientRequest.mutate()
-			.prompt(chatClientRequest.prompt().augmentUserMessage(input))
-			.context(chatClientRequest.context())
-			.build();
-	}
+        return chatClientRequest.mutate()
+                .prompt(chatClientRequest.prompt().augmentUserMessage(userMessage.getText()))
+                .context(chatClientRequest.context())
+                .build();
+    }
 
-	@Override
-	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
-		ChatResponse.Builder chatResponseBuilder;
-		if (chatClientResponse.chatResponse() == null) {
-			chatResponseBuilder = ChatResponse.builder();
-		}
-		else {
-			String chatResponse = StringUtils.EMPTY;
-			Generation result = chatClientResponse.chatResponse().getResult();
-			if (result != null) {
-				chatResponse = result.getOutput().getText();
-			}
-			// Parse response results
-			try {
-				var selectionNode = objectMapper.readValue(chatResponse,
-						new TypeReference<NodeDefinition.SelectionNode>() {
-						});
-				chatResponseBuilder = ChatResponse.builder()
-					.from(chatClientResponse.chatResponse())
-					.metadata(ChatResponseMetadata.builder().metadata(Map.of("routerNode", selectionNode)).build());
-			}
-			catch (JsonProcessingException e) {
-				// If parsing fails, log the error and return an empty chat response
-				chatResponseBuilder = ChatResponse.builder();
-			}
-		}
+    @Override
+    public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+        ChatResponse.Builder chatResponseBuilder = ChatResponse.builder();
 
-		return ChatClientResponse.builder()
-			.chatResponse(chatResponseBuilder.build())
-			.context(chatClientResponse.context())
-			.build();
-	}
+        Generation result = chatClientResponse.chatResponse().getResult();
+        if (result != null) {
+            AssistantMessage output = result.getOutput();
+            if (output != null) {
+                String responseContent = output.getText();
+                if (StringUtils.isBlank(responseContent)) {
+                    responseContent = output.hasToolCalls() ?
+                            output.getToolCalls().stream().map(AssistantMessage.ToolCall::arguments).collect(Collectors.joining(System.lineSeparator())) :
+                            "发生了异常错误";
+                }
+                String input = promptTemplate.render(Map.of(SELECTION, selections, "input", responseContent));
+                chatResponseBuilder.generations(List.of(new Generation(new AssistantMessage(this.router.apply(input), Map.of()))));
+            }
+        }
+        return ChatClientResponse.builder()
+                .chatResponse(chatResponseBuilder.build())
+                .context(chatClientResponse.context())
+                .build();
+    }
 
-	@Override
-	public int getOrder() {
-		return 0;
-	}
+    @Override
+    public int getOrder() {
+        return 0;
+    }
 
-	public static Builder Builder() {
-		return new Builder();
-	}
+    public static Builder Builder() {
+        return new Builder();
+    }
 
-	public static class Builder {
+    public static class Builder {
 
-		private Iterable<String> selections;
+        private Iterable<String> selections;
 
-		;
+        private Function<String, String> router;
 
-		private ObjectMapper objectMapper;
+        public Builder selections(Iterable<String> selections) {
+            this.selections = selections;
+            return this;
+        }
 
-		public Builder selections(Iterable<String> selections) {
-			this.selections = selections;
-			return this;
-		}
+        public Builder router(Function<String, String> router) {
+            this.router = router;
+            return this;
+        }
 
-		public Builder JSONParser(ObjectMapper objectMapper) {
-			this.objectMapper = objectMapper;
-			return this;
-		}
+        public RoutingNodeAdvisor build() {
+            return new RoutingNodeAdvisor(selections, router);
+        }
 
-		public RoutingNodeAdvisor build() {
-			return new RoutingNodeAdvisor(selections, objectMapper);
-		}
-
-	}
+    }
 
 }

@@ -50,8 +50,8 @@ public class CoordinatorNode extends AbstractNode implements NodeAction {
 
 	// private final ChatClient coordinatorAgent;
 
-	public CoordinatorNode(ObjectProvider<ChatClient.Builder> coordinatorAgent) {
-		super(coordinatorAgent);
+	public CoordinatorNode(ObjectProvider<ChatClient.Builder> coordinatorAgent, ChatClient routerAgent) {
+		super(coordinatorAgent, routerAgent);
 	}
 
 	@Override
@@ -70,21 +70,21 @@ public class CoordinatorNode extends AbstractNode implements NodeAction {
 
 		String nextStep = END;
 		Map<String, Object> updated = new HashMap<>();
-
-		// 获取 assistant 消息内容
-		assert response != null;
-		AssistantMessage assistantMessage = response.getResult().getOutput();
-		// 判断是否触发工具调用
-		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
-			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
-			nextStep = "rewrite_multi_query";
-		}
-		else {
-			logger.warn("❌ 未触发工具调用");
-			logger.debug("Coordinator response: {}", response.getResult());
-			updated.put("output", assistantMessage.getText());
-		}
-		updated.put("coordinator_next_node", nextStep);
+//
+//		// 获取 assistant 消息内容
+//		assert response != null;
+//		AssistantMessage assistantMessage = response.getResult().getOutput();
+//		// 判断是否触发工具调用
+//		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
+//			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
+//			nextStep = "rewrite_multi_query";
+//		}
+//		else {
+//			logger.warn("❌ 未触发工具调用");
+//			logger.debug("Coordinator response: {}", response.getResult());
+//			updated.put("output", assistantMessage.getText());
+//		}
+		updated.put("coordinator_next_node", nextNode(response));
 		return updated;
 	}
 

@@ -19,9 +19,14 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 import com.alibaba.cloud.ai.example.deepresearch.advisor.RoutingNodeAdvisor;
 import com.alibaba.cloud.ai.example.deepresearch.model.NodeDefinition;
 import com.alibaba.cloud.ai.example.deepresearch.util.NodeSelectionUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.ObjectProvider;
 
 /**
@@ -37,17 +42,39 @@ public abstract class AbstractNode {
 
 	private NodeDefinition nodeDefinition;
 
-	public AbstractNode(ObjectProvider<ChatClient.Builder> builder) {
+	private final ChatClient routerAgent;
+
+	private final ObjectMapper objectMapper;
+
+	public AbstractNode(ObjectProvider<ChatClient.Builder> builder, ChatClient routerAgent) {
 		this.builder = builder.getIfAvailable();
+		this.routerAgent = routerAgent;
+		objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 
 	protected ChatClient chatClient() {
 		return builder
 			.defaultAdvisors(RoutingNodeAdvisor.Builder()
 				.selections(NodeSelectionUtil.getAvailableNodes())
-				.JSONParser(new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))
+				.router(render -> routerAgent.prompt().system(render).call().content())
 				.build())
 			.build();
+	}
+
+	protected String nextNode(ChatResponse response) {
+		if (response == null || response.getResults().isEmpty()) {
+			return "planner";
+		}
+		try {
+			var text = response.getResult().getOutput().getText();
+			return objectMapper.readValue(text, new TypeReference<NodeDefinition.SelectionNode>() {
+			}).selection();
+		} catch (JsonProcessingException e) {
+			return "planner";
+		}
+
+
+
 	}
 
 	public NodeDefinition getNodeDefinition() {
