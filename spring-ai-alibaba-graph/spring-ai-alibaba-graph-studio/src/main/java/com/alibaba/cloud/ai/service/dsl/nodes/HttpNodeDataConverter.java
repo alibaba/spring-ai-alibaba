@@ -152,8 +152,12 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 				// output_key
 				String outputKey = (String) data.get("output_key");
 
-				return new HttpNodeData(inputs, outputs, method, url, headers, queryParams, body, auth, retryConfig,
-						timeoutConfig, outputKey);
+				HttpNodeData nd = new HttpNodeData(inputs, outputs, method, url, headers, queryParams, body, auth,
+						retryConfig, timeoutConfig, outputKey);
+				if (rawBody instanceof Map<?, ?>) {
+					nd.setRawBodyMap((Map<String, Object>) rawBody);
+				}
+				return nd;
 			}
 
 			@Override
