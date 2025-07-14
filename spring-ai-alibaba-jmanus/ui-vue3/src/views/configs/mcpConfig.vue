@@ -27,11 +27,11 @@
       </div>
       <div class="header-right">
         <div class="search-box">
-          <input 
-            v-model="searchQuery"
-            type="text" 
-            placeholder="搜索MCP服务器..."
-            class="search-input"
+          <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="搜索MCP服务器..."
+              class="search-input"
           />
           <span class="search-icon">🔍</span>
         </div>
@@ -49,7 +49,7 @@
       <!-- MCP服务器列表 -->
       <div class="mcp-table-container">
         <h3 class="section-title">已配置的MCP服务器</h3>
-        
+
         <!-- 空状态 -->
         <div v-if="filteredMcpServers.length === 0" class="empty-state">
           <div class="empty-state-icon">📂</div>
@@ -62,43 +62,43 @@
         <div v-else class="mcp-table-wrapper">
           <table class="mcp-table">
             <thead>
-              <tr>
-                <th>ID</th>
-                <th>服务器名称</th>
-                <th>连接类型</th>
-                <th>连接配置</th>
-                <th>操作</th>
-              </tr>
+            <tr>
+              <th>ID</th>
+              <th>服务器名称</th>
+              <th>连接类型</th>
+              <th>连接配置</th>
+              <th>操作</th>
+            </tr>
             </thead>
             <tbody>
-              <tr v-for="server in filteredMcpServers" :key="server.id" class="mcp-row">
-                <td class="mcp-id">{{ server.id }}</td>
-                <td class="mcp-server-name">
-                  <div class="server-name-content">
-                    <span class="server-icon">🔌</span>
-                    {{ server.mcpServerName }}
-                  </div>
-                </td>
-                <td class="mcp-connection-type">
+            <tr v-for="server in filteredMcpServers" :key="server.id" class="mcp-row">
+              <td class="mcp-id">{{ server.id }}</td>
+              <td class="mcp-server-name">
+                <div class="server-name-content">
+                  <span class="server-icon">🔌</span>
+                  {{ server.mcpServerName }}
+                </div>
+              </td>
+              <td class="mcp-connection-type">
                   <span class="connection-type-badge" :class="server.connectionType.toLowerCase()">
                     {{ server.connectionType }}
                   </span>
-                </td>
-                <td class="mcp-config">
-                  <div class="config-preview" :title="server.connectionConfig">
-                    {{ formatConfig(server.connectionConfig) }}
-                  </div>
-                </td>
-                <td class="mcp-actions">
-                  <button 
+              </td>
+              <td class="mcp-config">
+                <div class="config-preview" :title="server.connectionConfig">
+                  {{ formatConfig(server.connectionConfig) }}
+                </div>
+              </td>
+              <td class="mcp-actions">
+                <button
                     @click="removeMcpServer(server.id)"
                     class="action-btn delete-btn"
                     :disabled="loading"
-                  >
-                    删除
-                  </button>
-                </td>
-              </tr>
+                >
+                  删除
+                </button>
+              </td>
+            </tr>
             </tbody>
           </table>
         </div>
@@ -109,18 +109,18 @@
         <div class="add-mcp-header">
           <h3 class="add-mcp-title">添加MCP服务器</h3>
         </div>
-        
+
         <div class="mcp-form">
           <!-- 连接类型选择 -->
           <div class="mcp-form-group">
             <label class="form-label">连接类型：</label>
             <div class="connection-type-options">
               <div class="connection-type-option">
-                <input 
-                  type="radio" 
-                  id="mcp-connection-type-studio" 
-                  v-model="newMcpServer.connectionType" 
-                  value="STUDIO"
+                <input
+                    type="radio"
+                    id="mcp-connection-type-studio"
+                    v-model="newMcpServer.connectionType"
+                    value="STUDIO"
                 />
                 <label for="mcp-connection-type-studio" class="radio-label">
                   <span class="radio-title">STUDIO</span>
@@ -128,15 +128,27 @@
                 </label>
               </div>
               <div class="connection-type-option">
-                <input 
-                  type="radio" 
-                  id="mcp-connection-type-sse" 
-                  v-model="newMcpServer.connectionType" 
-                  value="SSE"
+                <input
+                    type="radio"
+                    id="mcp-connection-type-sse"
+                    v-model="newMcpServer.connectionType"
+                    value="SSE"
                 />
                 <label for="mcp-connection-type-sse" class="radio-label">
                   <span class="radio-title">SSE</span>
                   <span class="connection-type-desc">通过http server等提供的，目前网络上比较少见</span>
+                </label>
+              </div>
+              <div class="connection-type-option">
+                <input
+                    type="radio"
+                    id="mcp-connection-type-streaming"
+                    v-model="newMcpServer.connectionType"
+                    value="STREAMING"
+                />
+                <label for="mcp-connection-type-streaming" class="radio-label">
+                  <span class="radio-title">Streaming HTTP</span>
+                  <span class="connection-type-desc">基于HTTP的流式传输协议，支持实时数据交换</span>
                 </label>
               </div>
             </div>
@@ -145,11 +157,11 @@
           <!-- JSON配置输入 -->
           <div class="mcp-form-group">
             <label class="form-label">mcp json配置：</label>
-            <textarea 
-              v-model="newMcpServer.configJson"
-              :placeholder="t('config.mcpConfig.configJsonPlaceholder')"
-              class="config-textarea"
-              rows="6"
+            <textarea
+                v-model="newMcpServer.configJson"
+                :placeholder="t('config.mcpConfig.configJsonPlaceholder')"
+                class="config-textarea"
+                rows="6"
             ></textarea>
           </div>
 
@@ -161,7 +173,7 @@
             <button @click="resetForm" class="action-btn reset-btn" :disabled="loading">
               {{ t('common.reset') }}
             </button>
-            
+
           </div>
         </div>
 
@@ -228,24 +240,24 @@ const filteredMcpServers = computed(() => {
   if (!searchQuery.value.trim()) {
     return mcpServers.value
   }
-  
+
   const query = searchQuery.value.toLowerCase()
-  return mcpServers.value.filter(server => 
-    server.mcpServerName.toLowerCase().includes(query) ||
-    server.connectionType.toLowerCase().includes(query) ||
-    server.connectionConfig.toLowerCase().includes(query)
+  return mcpServers.value.filter(server =>
+      server.mcpServerName.toLowerCase().includes(query) ||
+      server.connectionType.toLowerCase().includes(query) ||
+      server.connectionConfig.toLowerCase().includes(query)
   )
 })
 
 // 格式化配置信息
 const formatConfig = (config: string): string => {
   if (!config) return ''
-  
+
   // 如果配置信息太长，截断显示
   if (config.length > 50) {
     return config.substring(0, 50) + '...'
   }
-  
+
   return config
 }
 
@@ -254,7 +266,7 @@ const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
   message.text = text
   message.type = type
   message.show = true
-  
+
   setTimeout(() => {
     message.show = false
   }, 3000)
@@ -290,14 +302,14 @@ const addMcpServer = async () => {
 
   try {
     loading.value = true
-    
+
     const requestData: McpServerRequest = {
       connectionType: newMcpServer.connectionType,
       configJson: newMcpServer.configJson
     }
-    
+
     const result = await McpApiService.addMcpServer(requestData)
-    
+
     if (result.success) {
       showMessage('添加MCP服务器成功')
       resetForm()
@@ -321,9 +333,9 @@ const removeMcpServer = async (id: number) => {
 
   try {
     loading.value = true
-    
+
     const result = await McpApiService.removeMcpServer(id)
-    
+
     if (result.success) {
       showMessage('删除MCP服务器成功')
       await loadMcpServers() // 重新加载列表
@@ -564,6 +576,11 @@ onMounted(() => {
 .connection-type-badge.sse {
   background: rgba(76, 175, 80, 0.2);
   color: #a5d6a7;
+}
+
+.connection-type-badge.streaming {
+  background: rgba(156, 39, 176, 0.2);
+  color: #ce93d8;
 }
 
 .config-preview {
@@ -840,33 +857,33 @@ onMounted(() => {
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .search-input {
     width: 100%;
   }
-  
+
   .search-input:focus {
     width: 100%;
   }
-  
+
   .mcp-table-wrapper {
     overflow-x: scroll;
   }
-  
+
   .mcp-table {
     min-width: 600px;
   }
-  
+
   .connection-type-options {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .mcp-form-actions {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .mcp-form-actions button {
     width: 100%;
   }
