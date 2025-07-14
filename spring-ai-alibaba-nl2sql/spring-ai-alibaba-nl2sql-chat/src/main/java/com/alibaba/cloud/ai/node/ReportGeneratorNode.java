@@ -76,17 +76,18 @@ public class ReportGeneratorNode implements NodeAction {
 		String summaryAndRecommendations = executionStep.getToolParameters().getSummaryAndRecommendations();
 
 		// 构建报告
-		Flux<ChatResponse> reportGenerationFlux = generateReport(userInput, plan, executionResults, summaryAndRecommendations);
+		Flux<ChatResponse> reportGenerationFlux = generateReport(userInput, plan, executionResults,
+				summaryAndRecommendations);
 
 		var generator = StreamingChatGenerator.builder()
-				.startingNode(this.getClass().getSimpleName())
-				.startingState(state)
-				.mapResult(response -> {
-					String reportContent = response.getResult().getOutput().getText();
-					logger.info("生成的报告内容: {}", reportContent);
-					return buildFinalResult(reportContent);
-				})
-				.build(reportGenerationFlux);
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				String reportContent = response.getResult().getOutput().getText();
+				logger.info("生成的报告内容: {}", reportContent);
+				return buildFinalResult(reportContent);
+			})
+			.build(reportGenerationFlux);
 
 		return Map.of(RESULT, generator);
 	}
@@ -193,7 +194,7 @@ public class ReportGeneratorNode implements NodeAction {
 
 				sb.append("**执行结果**: \n```json\n").append(stepResult).append("\n```\n\n");
 			}
-			}
+		}
 
 		return sb.toString();
 	}

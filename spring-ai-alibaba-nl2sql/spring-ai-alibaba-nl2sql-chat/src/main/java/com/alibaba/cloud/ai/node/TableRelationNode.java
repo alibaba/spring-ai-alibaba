@@ -81,14 +81,14 @@ public class TableRelationNode implements NodeAction {
 		});
 
 		var generator = StreamingChatGenerator.builder()
-				.startingNode(this.getClass().getSimpleName())
-				.startingState(state)
-				.mapResult(response -> {
-					SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
-					SchemaDTO result = processSchemaSelection(schemaDTO, input, evidenceList, state);
-					return Map.of(TABLE_RELATION_OUTPUT, result);
-				})
-				.build(tableRelationFlux);
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
+				SchemaDTO result = processSchemaSelection(schemaDTO, input, evidenceList, state);
+				return Map.of(TABLE_RELATION_OUTPUT, result);
+			})
+			.build(tableRelationFlux);
 
 		return Map.of(TABLE_RELATION_OUTPUT, generator);
 	}

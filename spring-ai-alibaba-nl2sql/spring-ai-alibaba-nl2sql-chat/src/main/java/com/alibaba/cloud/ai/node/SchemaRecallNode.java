@@ -63,7 +63,8 @@ public class SchemaRecallNode implements NodeAction {
 			List<Document> tableDocuments = baseSchemaService.getTableDocuments(input);
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("表信息召回完成，数量: " + tableDocuments.size()));
 			List<List<Document>> columnDocumentsByKeywords = baseSchemaService.getColumnDocumentsByKeywords(keywords);
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("列信息召回完成，数量: " + columnDocumentsByKeywords.size()));
+			emitter
+				.next(ChatResponseUtil.createCustomStatusResponse("列信息召回完成，数量: " + columnDocumentsByKeywords.size()));
 
 			// 记录处理结果
 			logger.info("[{}] Schema召回结果 - 表文档数量: {}, 关键词相关列文档组数: {}", this.getClass().getSimpleName(),
@@ -73,16 +74,16 @@ public class SchemaRecallNode implements NodeAction {
 		});
 
 		var generator = StreamingChatGenerator.builder()
-				.startingNode(this.getClass().getSimpleName())
-				.startingState(state)
-				.mapResult(response -> {
-					List<Document> tableDocuments = baseSchemaService.getTableDocuments(input);
-					List<List<Document>> columnDocumentsByKeywords = baseSchemaService.getColumnDocumentsByKeywords(keywords);
-					return Map.of(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, tableDocuments, COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT,
-							columnDocumentsByKeywords);
-				})
-				.build(schemaRecallFlux);
-
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				List<Document> tableDocuments = baseSchemaService.getTableDocuments(input);
+				List<List<Document>> columnDocumentsByKeywords = baseSchemaService
+					.getColumnDocumentsByKeywords(keywords);
+				return Map.of(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, tableDocuments, COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT,
+						columnDocumentsByKeywords);
+			})
+			.build(schemaRecallFlux);
 
 		// 返回处理结果
 		return Map.of(SCHEMA_RECALL_NODE_OUTPUT, generator);

@@ -93,12 +93,13 @@ public class Nl2sqlForGraphController {
 		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
 		schemaInitRequest.setDbConfig(dbConfig);
 		schemaInitRequest
-				.setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
+			.setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
 		simpleVectorStoreService.schema(schemaInitRequest);
 	}
 
 	@GetMapping(value = "/stream/search", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	public Flux<ServerSentEvent<String>> streamSearch(@RequestParam String query, HttpServletResponse response) throws Exception {
+	public Flux<ServerSentEvent<String>> streamSearch(@RequestParam String query, HttpServletResponse response)
+			throws Exception {
 		response.setCharacterEncoding("UTF-8");
 
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
@@ -109,20 +110,21 @@ public class Nl2sqlForGraphController {
 		CompletableFuture.runAsync(() -> {
 			generator.forEachAsync(output -> {
 				try {
-//					System.out.println("output = " + output);
+					// System.out.println("output = " + output);
 					if (output instanceof StreamingOutput) {
 						StreamingOutput streamingOutput = (StreamingOutput) output;
 						String chunk = streamingOutput.chunk();
-						if(chunk!=null){
+						if (chunk != null) {
 							sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(chunk)).build());
-						}else{
+						}
+						else {
 							logger.warn("Received null chunk from streaming output, skipping emission.");
 						}
 					}
-//					else {
-//						sink.tryEmitNext(
-//								ServerSentEvent.builder(JSON.toJSONString(output.state().value("messages"))).build());
-//					}
+					// else {
+					// sink.tryEmitNext(
+					// ServerSentEvent.builder(JSON.toJSONString(output.state().value("messages"))).build());
+					// }
 				}
 				catch (Exception e) {
 					e.printStackTrace();
@@ -136,8 +138,8 @@ public class Nl2sqlForGraphController {
 		});
 
 		return sink.asFlux()
-				.doOnCancel(() -> System.out.println("Client disconnected from stream"))
-				.doOnError(e -> System.err.println("Error occurred during streaming: " + e));
+			.doOnCancel(() -> System.out.println("Client disconnected from stream"))
+			.doOnError(e -> System.err.println("Error occurred during streaming: " + e));
 	}
 
 }

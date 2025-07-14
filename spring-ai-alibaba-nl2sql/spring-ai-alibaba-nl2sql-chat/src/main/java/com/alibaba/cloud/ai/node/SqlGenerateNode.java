@@ -89,39 +89,45 @@ public class SqlGenerateNode implements NodeAction {
 					String newSql = handleSqlExecutionException(state, plan, toolParameters);
 					emitter.next(ChatResponseUtil.createCustomStatusResponse("重新生成的SQL: " + newSql));
 					emitter.complete();
-				} else if (isSemanticConsistencyFailed(state)) {
+				}
+				else if (isSemanticConsistencyFailed(state)) {
 					emitter.next(ChatResponseUtil.createCustomStatusResponse("语义一致性校验未通过，开始重新生成SQL..."));
 					String newSql = handleSemanticConsistencyFailure(state, toolParameters);
 					emitter.next(ChatResponseUtil.createCustomStatusResponse("重新生成的SQL: " + newSql));
 					emitter.complete();
-				} else {
+				}
+				else {
 					emitter.error(new IllegalStateException("SQL生成节点被意外调用"));
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				emitter.error(e);
 			}
 		});
 
 		var generator = StreamingChatGenerator.builder()
-				.startingNode(this.getClass().getSimpleName())
-				.startingState(state)
-				.mapResult(response -> {
-					try {
-						if (StateUtils.hasValue(state, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT)) {
-							String newSql = handleSqlExecutionException(state, plan, toolParameters);
-							toolParameters.setSqlQuery(newSql);
-							return Map.of(SQL_GENERATE_OUTPUT, SQL_EXECUTE_NODE, PLANNER_NODE_OUTPUT, plan.toJsonStr());
-						} else if (isSemanticConsistencyFailed(state)) {
-							String newSql = handleSemanticConsistencyFailure(state, toolParameters);
-							return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
-						} else {
-							throw new IllegalStateException("SQL生成节点被意外调用");
-						}
-					} catch (Exception e) {
-						throw new RuntimeException(e);
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				try {
+					if (StateUtils.hasValue(state, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT)) {
+						String newSql = handleSqlExecutionException(state, plan, toolParameters);
+						toolParameters.setSqlQuery(newSql);
+						return Map.of(SQL_GENERATE_OUTPUT, SQL_EXECUTE_NODE, PLANNER_NODE_OUTPUT, plan.toJsonStr());
 					}
-				})
-				.build(sqlGenerationFlux);
+					else if (isSemanticConsistencyFailed(state)) {
+						String newSql = handleSemanticConsistencyFailure(state, toolParameters);
+						return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
+					}
+					else {
+						throw new IllegalStateException("SQL生成节点被意外调用");
+					}
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			})
+			.build(sqlGenerationFlux);
 
 		return Map.of(SQL_GENERATE_OUTPUT, generator);
 	}
@@ -144,8 +150,8 @@ public class SqlGenerateNode implements NodeAction {
 	/**
 	 * 处理语义一致性校验失败
 	 */
-	private String handleSemanticConsistencyFailure(OverAllState state,
-			ExecutionStep.ToolParameters toolParameters) throws Exception {
+	private String handleSemanticConsistencyFailure(OverAllState state, ExecutionStep.ToolParameters toolParameters)
+			throws Exception {
 		logger.info("语义一致性校验未通过，开始重新生成SQL");
 
 		List<String> evidenceList = StateUtils.getListValue(state, EVIDENCES);
@@ -177,7 +183,8 @@ public class SqlGenerateNode implements NodeAction {
 
 	/**
 	 * 处理不满足需求的召回信息
-	 */	private Map<String, Object> handleUnsatisfiedRecallInfo(OverAllState state, String recallInfoSatisfyRequirement) {
+	 */
+	private Map<String, Object> handleUnsatisfiedRecallInfo(OverAllState state, String recallInfoSatisfyRequirement) {
 		int sqlGenerateCount = StateUtils.getObjectValue(state, SQL_GENERATE_COUNT, Integer.class, 0) + 1;
 
 		logger.info(sqlGenerateCount == 1 ? "首次生成SQL" : "SQL生成次数: {}", sqlGenerateCount);

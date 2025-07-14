@@ -91,19 +91,20 @@ public class SqlValidateNode implements NodeAction {
 		});
 
 		var generator = StreamingChatGenerator.builder()
-				.startingNode(this.getClass().getSimpleName())
-				.startingState(state)
-				.mapResult(response -> {
-					DbQueryParameter dbQueryParameter = new DbQueryParameter();
-					dbQueryParameter.setSql(sql);
-					try {
-						dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
-						return Map.of(SQL_VALIDATE_NODE_OUTPUT, true);
-					} catch (Exception e) {
-						return Map.of(SQL_VALIDATE_NODE_OUTPUT, false, SQL_VALIDATE_EXCEPTION_OUTPUT, e.getMessage());
-					}
-				})
-				.build(sqlValidationFlux);
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				DbQueryParameter dbQueryParameter = new DbQueryParameter();
+				dbQueryParameter.setSql(sql);
+				try {
+					dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
+					return Map.of(SQL_VALIDATE_NODE_OUTPUT, true);
+				}
+				catch (Exception e) {
+					return Map.of(SQL_VALIDATE_NODE_OUTPUT, false, SQL_VALIDATE_EXCEPTION_OUTPUT, e.getMessage());
+				}
+			})
+			.build(sqlValidationFlux);
 
 		return Map.of(SQL_VALIDATE_NODE_OUTPUT, generator);
 	}

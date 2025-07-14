@@ -63,13 +63,15 @@ public class KeywordExtractNode implements NodeAction {
 			// 提取证据
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("正在提取证据..."));
 			List<String> evidences = baseNl2SqlService.extractEvidences(input);
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("提取的证据: " + evidences.stream().collect(Collectors.joining(","))));
+			emitter.next(ChatResponseUtil
+				.createCustomStatusResponse("提取的证据: " + evidences.stream().collect(Collectors.joining(","))));
 			logger.info("[{}] 提取结果 - 证据: {}", this.getClass().getSimpleName(), evidences);
 
 			// 提取关键词
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("正在提取关键词..."));
 			List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("提取的关键词: " + keywords.stream().collect(Collectors.joining(","))));
+			emitter.next(ChatResponseUtil
+				.createCustomStatusResponse("提取的关键词: " + keywords.stream().collect(Collectors.joining(","))));
 			logger.info("[{}] 提取结果 - 关键词: {}", this.getClass().getSimpleName(), keywords);
 
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("关键词提取完成."));

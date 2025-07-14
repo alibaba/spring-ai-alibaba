@@ -78,7 +78,8 @@ public class SemanticConsistencNode extends AbstractPlanBasedNode {
 			String validationResult = null;
 			try {
 				validationResult = performSemanticValidation(schemaDTO, evidenceList, toolParameters, sqlQuery);
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				emitter.error(e);
 				return;
 			}
@@ -96,19 +97,20 @@ public class SemanticConsistencNode extends AbstractPlanBasedNode {
 		});
 
 		var generator = StreamingChatGenerator.builder()
-				.startingNode(this.getClass().getSimpleName())
-				.startingState(state)
-				.mapResult(response -> {
-					String validationResult = null;
-					try {
-						validationResult = performSemanticValidation(schemaDTO, evidenceList, toolParameters, sqlQuery);
-					} catch (Exception e) {
-						throw new RuntimeException(e);
-					}
-					boolean passed = !validationResult.startsWith("不通过");
-					return buildValidationResult(passed, validationResult, currentStep);
-				})
-				.build(semanticValidationFlux);
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				String validationResult = null;
+				try {
+					validationResult = performSemanticValidation(schemaDTO, evidenceList, toolParameters, sqlQuery);
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+				boolean passed = !validationResult.startsWith("不通过");
+				return buildValidationResult(passed, validationResult, currentStep);
+			})
+			.build(semanticValidationFlux);
 
 		return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, generator);
 	}

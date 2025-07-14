@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
-import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StepResultUtils;
 import org.slf4j.Logger;
@@ -74,23 +73,23 @@ public class PythonExecuteNode extends AbstractPlanBasedNode {
 				new HashMap());
 
 		Flux<ChatResponse> pythonExecutionFlux = chatClient.prompt()
-				.system(SYSTEM_PROMPT)
-				.user(String.format(
-						"## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
-						getPlan(state).toJsonStr(), instruction, description, sqlExecuteResult))
-				.stream()
-				.chatResponse();
+			.system(SYSTEM_PROMPT)
+			.user(String.format("## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
+					getPlan(state).toJsonStr(), instruction, description, sqlExecuteResult))
+			.stream()
+			.chatResponse();
 
 		var generator = StreamingChatGenerator.builder()
-				.startingNode(this.getClass().getSimpleName())
-				.startingState(state)
-				.mapResult(response -> {
-					String aiResponse = response.getResult().getOutput().getText();
-					Map<String, String> updatedSqlResult = StepResultUtils.addStepResult(sqlExecuteResult, currentStep, aiResponse);
-					logNodeOutput("analysis_result", aiResponse);
-					return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult, PLAN_CURRENT_STEP, currentStep + 1);
-				})
-				.build(pythonExecutionFlux);
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				String aiResponse = response.getResult().getOutput().getText();
+				Map<String, String> updatedSqlResult = StepResultUtils.addStepResult(sqlExecuteResult, currentStep,
+						aiResponse);
+				logNodeOutput("analysis_result", aiResponse);
+				return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult, PLAN_CURRENT_STEP, currentStep + 1);
+			})
+			.build(pythonExecutionFlux);
 
 		return Map.of(PYTHON_EXECUTE_NODE_OUTPUT, generator);
 	}

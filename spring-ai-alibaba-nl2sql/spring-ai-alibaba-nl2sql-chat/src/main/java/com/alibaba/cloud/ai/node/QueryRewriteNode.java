@@ -58,31 +58,32 @@ public class QueryRewriteNode implements NodeAction {
 		Flux<ChatResponse> queryRewriteFlux = Flux.create(emitter -> {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始进行问题重写..."));
 			// 执行问题重写
-            String rewrite = null;
-            try {
-                rewrite = baseNl2SqlService.rewrite(input);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            logger.info("[{}] 问题重写结果: {}", this.getClass().getSimpleName(), rewrite);
+			String rewrite = null;
+			try {
+				rewrite = baseNl2SqlService.rewrite(input);
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			logger.info("[{}] 问题重写结果: {}", this.getClass().getSimpleName(), rewrite);
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("问题重写完成: " + rewrite));
 			emitter.complete();
 		});
 
 		var generator = StreamingChatGenerator.builder()
-				.startingNode(this.getClass().getSimpleName())
-				.startingState(state)
-				.mapResult(response -> {
-                    String rewrite = null;
-                    try {
-                        rewrite = baseNl2SqlService.rewrite(input);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                    return Map.of(QUERY_REWRITE_NODE_OUTPUT, rewrite, RESULT, rewrite);
-				})
-				.build(queryRewriteFlux);
-
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				String rewrite = null;
+				try {
+					rewrite = baseNl2SqlService.rewrite(input);
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+				return Map.of(QUERY_REWRITE_NODE_OUTPUT, rewrite, RESULT, rewrite);
+			})
+			.build(queryRewriteFlux);
 
 		// 返回处理结果
 		return Map.of(QUERY_REWRITE_NODE_OUTPUT, generator);
