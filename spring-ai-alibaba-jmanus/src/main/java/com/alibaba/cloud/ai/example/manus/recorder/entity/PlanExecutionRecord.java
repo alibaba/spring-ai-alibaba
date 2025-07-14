@@ -20,6 +20,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState; // Added import
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 
 /**
  * Plan execution record class for tracking and recording detailed information about
@@ -62,9 +66,13 @@ public class PlanExecutionRecord {
 	private String userRequest;
 
 	// Timestamp when execution started
+	@JsonSerialize(using = LocalDateSerializer.class)
+	@JsonDeserialize(using = LocalDateDeserializer.class)
 	private LocalDateTime startTime;
 
 	// Timestamp when execution ended
+	@JsonSerialize(using = LocalDateSerializer.class)
+	@JsonDeserialize(using = LocalDateDeserializer.class)
 	private LocalDateTime endTime;
 
 	// List of plan steps
