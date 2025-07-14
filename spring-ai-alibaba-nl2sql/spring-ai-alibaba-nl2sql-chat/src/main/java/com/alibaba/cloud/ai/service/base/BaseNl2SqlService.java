@@ -155,14 +155,16 @@ public class BaseNl2SqlService {
 		}
 		expressionList.addAll(dateTimeList);
 
-		List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(query, dbConfig, schemaDTO, evidenceList);
 		String newSql = "";
 		if (sql != null && !sql.isEmpty()) {
-			newSql = aiService.callWithSystemPrompt(prompts.get(0),
-					prompts.get(1) + "\n 上面描述的是需求，目前我已经生成了一个SQL，但是报错了，SQL是:" + sql + "\n 错误信息是:" + exceptionMessage
-							+ "\n 请你帮我修改这个SQL，确保它能正确执行。");
+			// 使用专业的SQL错误修复提示词
+			String errorFixerPrompt = PromptHelper.buildSqlErrorFixerPrompt(query, dbConfig, schemaDTO, evidenceList,
+					sql, exceptionMessage);
+			newSql = aiService.call(errorFixerPrompt);
 		}
 		else {
+			// 正常的SQL生成流程
+			List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(query, dbConfig, schemaDTO, evidenceList);
 			newSql = aiService.callWithSystemPrompt(prompts.get(0), prompts.get(1));
 		}
 		return MarkdownParser.extractRawText(newSql).trim();

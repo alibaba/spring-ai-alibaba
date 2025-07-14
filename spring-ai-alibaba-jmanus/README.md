@@ -73,35 +73,31 @@ export DASHSCOPE_API_KEY=your_api_key_here
 
 ### 3. Database Configuration (Optional)
 
-JManus supports both H2 (default) and MySQL databases. 
+JManus supports both H2 (default)、MySQL and PostgreSQL databases. 
 
-#### How To Use MySQL
+#### How To Use MySQL/PostgreSQL
 
-1. **Set up MySQL Database**:
-
-   ```sql
-   CREATE DATABASE openmanus_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-
-2. **Configure Database Connection**:
-   Update your database configuration in `src/main/resources/application-mysql.yml`:
+1. **Configure Database Connection**:
+   Update the database configuration and JPA database-platform in the application-mysql.yml/application-postgres.yml under 'src/main/resources/':
 
    ```yaml
    spring:
      datasource:
-       url: jdbc:mysql://your-mysql-host:3306/openmanus_db?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8
-       username: your_mysql_username
-       password: your_mysql_password
+       url: your_url
+       username: your_username
+       password: your_password
+     jpa:
+       database-platform: org.hibernate.dialect.MySQLDialect/PostgreSQLDialect
    ```
 
-3. **Activate MySQL Profile**:
+3. **Activate MySQL/PostgreSQL Profile**:
    Update configuration in `src/main/resources/application.yml`:
 
    ```bash
    spring:
      ...
      profiles:
-       active: mysql  
+       active: mysql/postgres  
    ```
 
 > 💡 **Note**: The application will automatically create required tables on first startup using JPA's `ddl-auto: update` configuration.

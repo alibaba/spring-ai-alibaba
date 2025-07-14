@@ -281,6 +281,29 @@ spring:
 > - 国际化场景：可以使用 OpenAI，支持多语言
 > - 开发测试：两种模型都可以，根据 API 可用性选择
 
+---
+
+#### 3️⃣ Ollama 本地大模型配置示例
+
+如需使用 Ollama 部署本地大模型，可在 `application.yml` 中添加如下配置：
+
+```yaml
+spring:
+  openai:
+    base-url: http://localhost:11434
+    api-key: ${API_KEY}
+    model: qwen2.5:7b
+    embedding:
+      model: bge-m3:latest
+```
+
+- `base-url`：Ollama 服务的本地地址，默认端口为 11434。
+- `api-key`：API 密钥（如无可留空）。
+- `model`：主模型名称（如 qwen2.5:7b）。
+- `embedding.model`：用于向量检索的 embedding 模型（如 bge-m3:latest）。
+
+---
+
 </details>
 
 <details>

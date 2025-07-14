@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.dbconnector.bo;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -105,6 +108,20 @@ public final class ResultSetBO extends DdlBaseBO implements Cloneable {
 			return resultSetBO;
 		}
 
+	}
+
+	/**
+	 * 将当前对象转换为 JSON 字符串
+	 * @return JSON 字符串
+	 */
+	public String toJsonStr() {
+		ObjectMapper objectMapper = new ObjectMapper();
+		try {
+			return objectMapper.writeValueAsString(this);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException("Failed to convert object to JSON string", e);
+		}
 	}
 
 }

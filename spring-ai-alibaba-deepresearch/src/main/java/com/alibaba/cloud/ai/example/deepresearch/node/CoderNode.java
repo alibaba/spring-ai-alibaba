@@ -17,7 +17,10 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
+import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
@@ -26,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.util.StringUtils;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,59 +52,78 @@ public class CoderNode implements NodeAction {
 
 	private final String nodeName;
 
-	public CoderNode(ChatClient coderAgent) {
-		this(coderAgent, "0");
-	}
+	private final ReflectionProcessor reflectionProcessor;
 
-	public CoderNode(ChatClient coderAgent, String executorNodeId) {
+	// MCP工厂
+	private final McpProviderFactory mcpFactory;
+
+	public CoderNode(ChatClient coderAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
+			McpProviderFactory mcpFactory) {
 		this.coderAgent = coderAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "coder_" + executorNodeId;
+		this.reflectionProcessor = reflectionProcessor;
+		this.mcpFactory = mcpFactory;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("coder node {} is running.", executorNodeId);
+		logger.info("coder node {} is running for thread: {}", executorNodeId, state.value("thread_id", "__default__"));
+
 		Plan currentPlan = StateUtil.getPlan(state);
 		Map<String, Object> updated = new HashMap<>();
 
-		Plan.Step assignedStep = null;
-		for (Plan.Step step : currentPlan.getSteps()) {
-			if (step.getStepType().equals(Plan.StepType.PROCESSING) && !StringUtils.hasText(step.getExecutionRes())
-					&& StringUtils.hasText(step.getExecutionStatus())
-					&& step.getExecutionStatus().equals(StateUtil.EXECUTION_STATUS_ASSIGNED_PREFIX + nodeName)) {
-				assignedStep = step;
-				break;
-			}
-		}
+		Plan.Step assignedStep = findAssignedStep(currentPlan);
 
 		if (assignedStep == null) {
 			logger.info("No remaining steps to be executed by {}", nodeName);
 			return updated;
 		}
 
-		// 标记步骤为正在执行
+		// Handle reflection logic
+		if (reflectionProcessor != null) {
+			ReflectionProcessor.ReflectionHandleResult reflectionResult = reflectionProcessor
+				.handleReflection(assignedStep, nodeName, "coder");
+
+			if (!ReflectionUtil.shouldContinueAfterReflection(reflectionResult)) {
+				logger.debug("Step {} reflection processing completed, skipping execution", assignedStep.getTitle());
+				return updated;
+			}
+		}
+
+		// Mark step as processing
 		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + nodeName);
 
 		List<Message> messages = new ArrayList<>();
-		// 添加任务消息
-		Message taskMessage = new UserMessage(
-				String.format("#Task\n\n##title\n\n%s\n\n##description\n\n%s\n\n##locale\n\n%s",
-						assignedStep.getTitle(), assignedStep.getDescription(), state.value("locale", "en-US")));
+		// Build task message with reflection history
+		String taskContent = buildTaskMessageWithReflectionHistory(assignedStep, state.value("locale", "en-US"));
+		Message taskMessage = new UserMessage(taskContent);
 		messages.add(taskMessage);
 		logger.debug("{} Node message: {}", nodeName, messages);
 
 		// 调用agent
-		var streamResult = coderAgent.prompt().messages(messages).stream().chatResponse();
+		var requestSpec = coderAgent.prompt().messages(messages);
 
+		// 使用MCP工厂创建MCP客户端
+		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null ? mcpFactory.createProvider(state, "coderAgent")
+				: null;
+		if (mcpProvider != null) {
+			requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
+		}
+
+		var streamResult = requestSpec.stream().chatResponse();
 		Plan.Step finalAssignedStep = assignedStep;
 		logger.info("CoderNode {} starting streaming with key: {}", executorNodeId,
 				"coder_llm_stream_" + executorNodeId);
+
 		var generator = StreamingChatGenerator.builder()
 			.startingNode("coder_llm_stream_" + executorNodeId)
 			.startingState(state)
 			.mapResult(response -> {
-				finalAssignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX + executorNodeId);
+				// Set appropriate completion status using ReflectionUtil
+				finalAssignedStep
+					.setExecutionStatus(ReflectionUtil.getCompletionStatus(reflectionProcessor != null, nodeName));
+
 				String coderContent = response.getResult().getOutput().getText();
 				finalAssignedStep.setExecutionRes(Objects.requireNonNull(coderContent));
 
@@ -114,6 +136,47 @@ public class CoderNode implements NodeAction {
 
 		updated.put("coder_content_" + executorNodeId, generator);
 		return updated;
+	}
+
+	/**
+	 * Find steps assigned to current node
+	 */
+	private Plan.Step findAssignedStep(Plan currentPlan) {
+		for (Plan.Step step : currentPlan.getSteps()) {
+			if (Plan.StepType.PROCESSING.equals(step.getStepType())
+					&& ReflectionUtil.shouldProcessStep(step, nodeName)) {
+				return step;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Build task message with reflection history
+	 */
+	private String buildTaskMessageWithReflectionHistory(Plan.Step step, String locale) {
+		StringBuilder content = new StringBuilder();
+
+		// Basic task information
+		content.append("# Task\n\n")
+			.append("## Title\n\n")
+			.append(step.getTitle())
+			.append("\n\n")
+			.append("## Description\n\n")
+			.append(step.getDescription())
+			.append("\n\n")
+			.append("## Locale\n\n")
+			.append(locale)
+			.append("\n\n");
+
+		// Add reflection history if available
+		if (ReflectionUtil.hasReflectionHistory(step)) {
+			content.append(ReflectionUtil.buildReflectionHistoryContent(step));
+			content.append(
+					"Please re-complete this coding task based on the above previous attempt results and reflection feedback, ensuring to avoid the previously identified code issues and deficiencies, and improve upon the previous code.\n\n");
+		}
+
+		return content.toString();
 	}
 
 }

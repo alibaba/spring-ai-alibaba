@@ -16,11 +16,12 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.DeepResearchProperties;
 import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
 import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
-import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.SearchBeanUtil;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
@@ -62,7 +63,8 @@ public class ChatController {
 
 	@Autowired
 	public ChatController(@Qualifier("deepResearch") StateGraph stateGraph, SearchBeanUtil searchBeanUtil,
-			ObjectProvider<ObservationRegistry> observationRegistry) throws GraphStateException {
+			ObjectProvider<ObservationRegistry> observationRegistry, DeepResearchProperties deepResearchProperties)
+			throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 		this.compiledGraph = stateGraph.compile(CompileConfig.builder()
 			.saverConfig(saverConfig)
@@ -70,7 +72,10 @@ public class ChatController {
 			.withLifecycleListener(new GraphObservationLifecycleListener(
 					observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP)))
 			.build());
+		this.compiledGraph.setMaxIterations(deepResearchProperties.getMaxIterations());
 		this.searchBeanUtil = searchBeanUtil;
+		logger.info("ChatController initialized with graph maxIterations: {}",
+				deepResearchProperties.getMaxIterations());
 	}
 
 	/**

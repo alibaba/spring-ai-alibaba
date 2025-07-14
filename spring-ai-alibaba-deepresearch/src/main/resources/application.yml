@@ -1,6 +1,9 @@
 server:
   port: 8080
 spring:
+  profiles:
+    # LangFuse和可观测配置
+    include: observability
   application:
     name: spring-ai-alibaba-deepresearch
   # Redis 配置
@@ -28,7 +31,7 @@ spring:
     mcp:
       client:
         enabled: false
-        type: async
+        type: ASYNC
     alibaba:
       toolcalling:
         baidu:
@@ -48,6 +51,8 @@ spring:
           base-url: ${ALIYUN_AI_SEARCH_BASE_URL}
           enabled: true
       deepresearch:
+        # 图执行的最大迭代次数
+        max-iterations: 50
         # 定义项目可以使用的搜索引擎
         search-list:
           - tavily
@@ -58,8 +63,8 @@ spring:
           enabled: false
           config-location: classpath:mcp-config.json
         parallel-node-count:
-          researcher: 5
-          coder: 5
+          researcher: 4
+          coder: 4
         rag:
           enabled: false
           # 可以设置为 'simple' 或 'elasticsearch'
@@ -71,48 +76,11 @@ spring:
         # 报告导出路径配置
         export:
           path: ${AI_DEEPRESEARCH_EXPORT_PATH}
-# OpenTelemetry Observation configuration
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-  endpoint:
-    health:
-      # health status check with detailed messages
-      show-details: always
-  tracing:
-    sampling:
-      # trace information with every request
-      probability: 1.0
-  observations:
-    annotations:
-      enabled: true
-otel:
-  service:
-    name: spring-ai-alibaba-deepresearch-langfuse
-  resource:
-    attributes:
-      deployment.environment: development
-  # configure exporter
-  traces:
-    exporter: otlp
-    sampler: always_on
-  metrics:
-    exporter: otlp
-  # logs exportation inhibited for langfuse currently cannot support
-  logs:
-    exporter: none
-  exporter:
-    otlp:
-      # OpenTelemetry exporter endpoint configuration. For details, refer to the official Langfuse documentation: https://langfuse.com/docs/opentelemetry/get-started
-      endpoint: "https://us.cloud.langfuse.com/api/public/otel" # 🇺🇸 US data region
-      # endpoint: "https://cloud.langfuse.com/api/public/otel" # 🇪🇺 EU data region
-      # endpoint: "http://localhost:3000/api/public/otel" # 🏠 Local deployment (>= v3.22.0)
-      headers:
-        # Replace `YOUR_BASE64_ENCODED_CREDENTIALS` with your Base64-encoded `public_key:secret_key`.
-        Authorization: "Basic ${YOUR_BASE64_ENCODED_CREDENTIALS}"
-      protocol: http/protobuf
+        reflection:
+          enabled: true
+          max-attempts: 1
+
 logging:
   level:
     com.alibaba.cloud.ai.example.deepresearch: debug
+

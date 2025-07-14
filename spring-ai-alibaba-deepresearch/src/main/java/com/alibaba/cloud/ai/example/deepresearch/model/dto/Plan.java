@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.deepresearch.model.dto;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -52,6 +53,11 @@ public class Plan {
 		private String executionRes;
 
 		private String executionStatus;
+
+		/**
+		 * 反思历史记录，记录每次反思的评估过程和结果
+		 */
+		private List<ReflectionResult> reflectionHistory;
 
 		public boolean isNeedWebSearch() {
 			return needWebSearch;
@@ -99,6 +105,24 @@ public class Plan {
 
 		public void setExecutionStatus(String executionStatus) {
 			this.executionStatus = executionStatus;
+		}
+
+		public List<ReflectionResult> getReflectionHistory() {
+			if (reflectionHistory == null) {
+				reflectionHistory = new ArrayList<>();
+			}
+			return reflectionHistory;
+		}
+
+		public void setReflectionHistory(List<ReflectionResult> reflectionHistory) {
+			this.reflectionHistory = reflectionHistory;
+		}
+
+		/**
+		 * 添加反思记录
+		 */
+		public void addReflectionRecord(ReflectionResult record) {
+			getReflectionHistory().add(record);
 		}
 
 	}
