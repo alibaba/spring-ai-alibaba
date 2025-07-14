@@ -55,14 +55,7 @@ public class QuestionClassifierService {
 			return AgentType.GENERAL_RESEARCH;
 		}
 
-		// 首先尝试基于关键词的快速分类
-		AgentType quickClassification = SmartAgentUtil.quickClassifyByKeywords(question);
-		if (quickClassification != AgentType.GENERAL_RESEARCH) {
-			logger.info("Quick classification result for question '{}': {}", question, quickClassification);
-			return quickClassification;
-		}
-
-		// 如果快速分类无法确定，使用AI模型进行深度分析
+		// 直接使用AI模型进行问题分类决策
 		String aiClassification = classifierClient.prompt()
 			.user("请分析以下问题并返回最适合的Agent类型代码：\n\n" + question)
 			.call()

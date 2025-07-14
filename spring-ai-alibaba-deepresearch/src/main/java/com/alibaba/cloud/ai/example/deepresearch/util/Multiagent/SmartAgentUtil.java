@@ -37,19 +37,6 @@ public class SmartAgentUtil {
 
 	private static final Logger logger = LoggerFactory.getLogger(SmartAgentUtil.class);
 
-	private static final Pattern ACADEMIC_PATTERN = Pattern
-		.compile("(?i).*(论文|期刊|学术|研究|科研|技术|算法|学者|引用|文献|会议|学科|理论|实验|分析|方法|模型|框架|综述|调研).*");
-
-	private static final Pattern LIFESTYLE_PATTERN = Pattern
-		.compile("(?i).*(旅游|旅行|攻略|美食|餐厅|酒店|景点|购物|生活|娱乐|休闲|度假|出行|路线|推荐|体验|民宿|特产|文化|风俗).*");
-
-	private static final Pattern ENCYCLOPEDIA_PATTERN = Pattern
-		.compile("(?i).*(什么是|定义|概念|历史|由来|起源|介绍|解释|含义|意思|百科|知识|科普|基础|原理|背景).*");
-
-	private static final Pattern DATA_ANALYSIS_PATTERN = Pattern
-		.compile("(?i).*(数据|统计|分析|趋势|指标|报告|图表|比较|增长|下降|占比|排名|调查|市场|行业|经济|财务).*");
-
-
 	public static boolean isSmartAgentAvailable(SmartAgentProperties smartAgentProperties, Object... services) {
 		if (smartAgentProperties == null || !smartAgentProperties.isEnabled()) {
 			logger.debug("智能Agent功能未开启");
@@ -64,35 +51,6 @@ public class SmartAgentUtil {
 		}
 
 		return true;
-	}
-
-	/**
-	 * 基于关键词快速分类问题
-	 * @param question 用户问题
-	 * @return Agent类型，如果无法匹配返回GENERAL_RESEARCH
-	 */
-	public static AgentType quickClassifyByKeywords(String question) {
-		if (question == null || question.trim().isEmpty()) {
-			return AgentType.GENERAL_RESEARCH;
-		}
-
-		if (ACADEMIC_PATTERN.matcher(question).find()) {
-			return AgentType.ACADEMIC_RESEARCH;
-		}
-
-		if (LIFESTYLE_PATTERN.matcher(question).find()) {
-			return AgentType.LIFESTYLE_TRAVEL;
-		}
-
-		if (ENCYCLOPEDIA_PATTERN.matcher(question).find()) {
-			return AgentType.ENCYCLOPEDIA;
-		}
-
-		if (DATA_ANALYSIS_PATTERN.matcher(question).find()) {
-			return AgentType.DATA_ANALYSIS;
-		}
-
-		return AgentType.GENERAL_RESEARCH;
 	}
 
 	/**
