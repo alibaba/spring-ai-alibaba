@@ -27,26 +27,27 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class AsyncGeneratorOperatorsStackOverflowTest {
 
-    @Test
-    void forEachAsyncShouldProcessAllElementsWithoutStackOverflow() {
-        // Given a generator with a large number of elements
-        int largeNumberOfElements = 20000;
-        var counter = new AtomicInteger(0);
-        var stream = IntStream.range(0, largeNumberOfElements).iterator();
+	@Test
+	void forEachAsyncShouldProcessAllElementsWithoutStackOverflow() {
+		// Given a generator with a large number of elements
+		int largeNumberOfElements = 20000;
+		var counter = new AtomicInteger(0);
+		var stream = IntStream.range(0, largeNumberOfElements).iterator();
 
-        AsyncGenerator<Integer> largeGenerator = () -> {
-            if (!stream.hasNext()) {
-                return AsyncGenerator.Data.done(null);
-            }
-            return AsyncGenerator.Data.of(CompletableFuture.completedFuture(stream.next()));
-        };
+		AsyncGenerator<Integer> largeGenerator = () -> {
+			if (!stream.hasNext()) {
+				return AsyncGenerator.Data.done(null);
+			}
+			return AsyncGenerator.Data.of(CompletableFuture.completedFuture(stream.next()));
+		};
 
-        // When forEachAsync is called, it should not throw an exception
-        assertDoesNotThrow(() -> {
-            largeGenerator.forEachAsync(i -> counter.incrementAndGet()).join();
-        });
+		// When forEachAsync is called, it should not throw an exception
+		assertDoesNotThrow(() -> {
+			largeGenerator.forEachAsync(i -> counter.incrementAndGet()).join();
+		});
 
-        // Then all elements should be processed
-        assertEquals(largeNumberOfElements, counter.get(), "All elements should have been processed");
-    }
+		// Then all elements should be processed
+		assertEquals(largeNumberOfElements, counter.get(), "All elements should have been processed");
+	}
+
 }
