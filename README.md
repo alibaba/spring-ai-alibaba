@@ -124,12 +124,10 @@ Alibaba.
 
 ## Contact Us
 
-* Dingtalk Group (钉钉群), search `124010006813` and join.
+* Dingtalk Group (钉钉群), search `94405033092` and join.
 * WeChat Group (微信公众号), scan the QR code below and follow us.
 
-<p align="center">
-    <img src="./docs/imgs/wechat-account.png" alt="Deep Research" style="max-width: 400px; height: 400px">
-</p>
+<img src="./docs/imgs/wechat-account.png" alt="Deep Research" style="max-width: 200px; height: 200px;">
 
 ## Credits
 
