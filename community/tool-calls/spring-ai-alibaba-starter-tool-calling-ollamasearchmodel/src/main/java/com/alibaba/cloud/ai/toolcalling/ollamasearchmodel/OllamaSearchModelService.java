@@ -15,15 +15,12 @@
  */
 package com.alibaba.cloud.ai.toolcalling.ollamasearchmodel;
 
-import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.RestClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
@@ -33,14 +30,9 @@ import java.util.function.Function;
  */
 public class OllamaSearchModelService implements Function<OllamaSearchModelService.Request, OllamaSearchModelService.Response> {
 
-    private static final Logger logger = LoggerFactory.getLogger(OllamaSearchModelService.class);
-
-    private final JsonParseTool jsonParseTool;
-
     private final RestClientTool restClientTool;
 
-    public OllamaSearchModelService(RestClientTool restClientTool, JsonParseTool jsonParseTool) {
-        this.jsonParseTool = jsonParseTool;
+    public OllamaSearchModelService(RestClientTool restClientTool) {
         this.restClientTool = restClientTool;
     }
 

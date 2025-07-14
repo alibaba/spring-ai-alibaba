@@ -29,7 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * @since 2025/07/14
  */
 @SpringBootTest(classes = {OllamaSearchModelAutoConfiguration.class, CommonToolCallAutoConfiguration.class})
-@DisplayName("ollamasearchmodel tool call Test")
+@DisplayName("ollamaSearchModel tool call Test")
 class OllamaSearchModelTest {
 
     @Autowired

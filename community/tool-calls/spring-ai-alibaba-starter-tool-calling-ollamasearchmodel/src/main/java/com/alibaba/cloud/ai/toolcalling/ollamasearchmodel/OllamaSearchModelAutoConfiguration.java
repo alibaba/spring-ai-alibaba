@@ -40,6 +40,6 @@ public class OllamaSearchModelAutoConfiguration {
     @Description("Query courier tracking information")
     public OllamaSearchModelService queryTrack(JsonParseTool jsonParseTool, OllamaSearchModelProperties ollamaSearchModelProperties) {
         RestClientTool restClientTool = RestClientTool.builder(jsonParseTool, ollamaSearchModelProperties).build();
-        return new OllamaSearchModelService(restClientTool, jsonParseTool);
+        return new OllamaSearchModelService(restClientTool);
     }
 }
