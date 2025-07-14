@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -57,6 +58,19 @@ public class OpenmanusController {
 	// 也可以使用如下的方式注入 ChatClient
 	public OpenmanusController(ChatModel chatModel) throws GraphStateException {
 
+		ChatOptions defaultOptions = chatModel.getDefaultOptions();
+
+		// If internalToolExecutionEnabled is not configured, set
+		// internalToolExecutionEnabled of agentExecutionClient to false
+		if (defaultOptions instanceof OpenAiChatOptions) {
+			OpenAiChatOptions options = (OpenAiChatOptions) defaultOptions;
+			Boolean internalToolExecutionEnabled = options.getInternalToolExecutionEnabled();
+			if (internalToolExecutionEnabled == null) {
+				options.setInternalToolExecutionEnabled(false);
+			}
+			defaultOptions = options;
+		}
+
 		this.planningClient = ChatClient.builder(chatModel)
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
 			// .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
@@ -64,7 +78,7 @@ public class OpenmanusController {
 			.defaultToolCallbacks(Builder.getToolCallList())// tools registered will only
 			// be used
 			// as tool description
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.defaultOptions(defaultOptions)
 			.build();
 
 		this.stepClient = ChatClient.builder(chatModel)
@@ -74,7 +88,7 @@ public class OpenmanusController {
 			// will only
 			// be used as tool description
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.defaultOptions(defaultOptions)
 			.build();
 
 		initGraph();

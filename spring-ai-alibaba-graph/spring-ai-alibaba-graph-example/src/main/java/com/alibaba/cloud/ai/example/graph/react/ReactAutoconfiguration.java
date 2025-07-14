@@ -31,6 +31,7 @@ import org.apache.hc.core5.util.Timeout;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -44,10 +45,24 @@ public class ReactAutoconfiguration {
 
 	@Bean
 	public ReactAgent normalReactAgent(ChatModel chatModel, ToolCallbackResolver resolver) throws GraphStateException {
+
+		ChatOptions defaultOptions = chatModel.getDefaultOptions();
+
+		// If internalToolExecutionEnabled is not configured, set
+		// internalToolExecutionEnabled of agentExecutionClient to false
+		if (defaultOptions instanceof OpenAiChatOptions) {
+			OpenAiChatOptions options = (OpenAiChatOptions) defaultOptions;
+			Boolean internalToolExecutionEnabled = options.getInternalToolExecutionEnabled();
+			if (internalToolExecutionEnabled == null) {
+				options.setInternalToolExecutionEnabled(false);
+			}
+			defaultOptions = options;
+		}
+
 		ChatClient chatClient = ChatClient.builder(chatModel)
 			.defaultToolNames("getWeatherFunction")
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.defaultOptions(defaultOptions)
 			.build();
 
 		return ReactAgent.builder()

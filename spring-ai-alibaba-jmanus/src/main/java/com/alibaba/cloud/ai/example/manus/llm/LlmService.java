@@ -56,8 +56,18 @@ public class LlmService {
 			.defaultOptions(defaultOptions)
 			.build();
 
-		// Each agent execution process uses independent memory
+		// If internalToolExecutionEnabled is not configured, set
+		// internalToolExecutionEnabled of agentExecutionClient to false
+		if (defaultOptions instanceof OpenAiChatOptions) {
+			OpenAiChatOptions options = (OpenAiChatOptions) defaultOptions;
+			Boolean internalToolExecutionEnabled = options.getInternalToolExecutionEnabled();
+			if (internalToolExecutionEnabled == null) {
+				options.setInternalToolExecutionEnabled(false);
+			}
+			defaultOptions = options;
+		}
 
+		// Each agent execution process uses independent memory
 		this.agentExecutionClient = ChatClient.builder(chatModel)
 			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
 			.defaultAdvisors(new SimpleLoggerAdvisor())

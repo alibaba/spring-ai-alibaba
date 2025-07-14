@@ -33,6 +33,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,16 +71,30 @@ public class OpenmanusHumanController {
 
 	// 也可以使用如下的方式注入 ChatClient
 	public OpenmanusHumanController(ChatModel chatModel) {
+
+		ChatOptions defaultOptions = chatModel.getDefaultOptions();
+
+		// If internalToolExecutionEnabled is not configured, set
+		// internalToolExecutionEnabled of agentExecutionClient to false
+		if (defaultOptions instanceof OpenAiChatOptions) {
+			OpenAiChatOptions options = (OpenAiChatOptions) defaultOptions;
+			Boolean internalToolExecutionEnabled = options.getInternalToolExecutionEnabled();
+			if (internalToolExecutionEnabled == null) {
+				options.setInternalToolExecutionEnabled(false);
+			}
+			defaultOptions = options;
+		}
+
 		this.planningClient = ChatClient.builder(chatModel)
 			.defaultSystem(planningPrompt)
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.defaultOptions(defaultOptions)
 			.build();
 
 		this.stepClient = ChatClient.builder(chatModel)
 			.defaultSystem(stepPrompt)
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.defaultOptions(defaultOptions)
 			.build();
 	}
 

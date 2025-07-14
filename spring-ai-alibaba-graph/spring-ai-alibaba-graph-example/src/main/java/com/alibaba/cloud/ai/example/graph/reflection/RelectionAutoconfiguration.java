@@ -30,6 +30,7 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.context.annotation.Bean;
@@ -205,9 +206,22 @@ public class RelectionAutoconfiguration {
 	@Bean
 	public CompiledGraph reflectGraph(ChatModel chatModel) throws GraphStateException {
 
+		ChatOptions defaultOptions = chatModel.getDefaultOptions();
+
+		// If internalToolExecutionEnabled is not configured, set
+		// internalToolExecutionEnabled of agentExecutionClient to false
+		if (defaultOptions instanceof OpenAiChatOptions) {
+			OpenAiChatOptions options = (OpenAiChatOptions) defaultOptions;
+			Boolean internalToolExecutionEnabled = options.getInternalToolExecutionEnabled();
+			if (internalToolExecutionEnabled == null) {
+				options.setInternalToolExecutionEnabled(false);
+			}
+			defaultOptions = options;
+		}
+
 		ChatClient chatClient = ChatClient.builder(chatModel)
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.defaultOptions(defaultOptions)
 			.build();
 
 		AssistantGraphNode assistantGraphNode = AssistantGraphNode.builder().chatClient(chatClient).build();
