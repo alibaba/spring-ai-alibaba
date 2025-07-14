@@ -19,7 +19,8 @@ package com.alibaba.cloud.ai.schema;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
+
+import java.util.Objects;
 
 public class ExecutionStep {
 
@@ -32,7 +33,6 @@ public class ExecutionStep {
 	@JsonProperty("tool_parameters")
 	private ToolParameters toolParameters;
 
-	@Data
 	public static class ToolParameters {
 
 		private String description;
@@ -57,6 +57,69 @@ public class ExecutionStep {
 			catch (JsonProcessingException e) {
 				throw new RuntimeException("Failed to convert object to JSON string", e);
 			}
+		}
+
+		public String getDescription() {
+			return description;
+		}
+
+		public void setDescription(String description) {
+			this.description = description;
+		}
+
+		public String getSummaryAndRecommendations() {
+			return summaryAndRecommendations;
+		}
+
+		public void setSummaryAndRecommendations(String summaryAndRecommendations) {
+			this.summaryAndRecommendations = summaryAndRecommendations;
+		}
+
+		public String getSqlQuery() {
+			return sqlQuery;
+		}
+
+		public void setSqlQuery(String sqlQuery) {
+			this.sqlQuery = sqlQuery;
+		}
+
+		public String getInstruction() {
+			return instruction;
+		}
+
+		public void setInstruction(String instruction) {
+			this.instruction = instruction;
+		}
+
+		public String getInputDataDescription() {
+			return inputDataDescription;
+		}
+
+		public void setInputDataDescription(String inputDataDescription) {
+			this.inputDataDescription = inputDataDescription;
+		}
+
+		@Override
+		public String toString() {
+			return "ToolParameters{" + "description='" + description + '\'' + ", summaryAndRecommendations='"
+					+ summaryAndRecommendations + '\'' + ", sqlQuery='" + sqlQuery + '\'' + ", instruction='"
+					+ instruction + '\'' + ", inputDataDescription='" + inputDataDescription + '\'' + '}';
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (o == null || getClass() != o.getClass())
+				return false;
+			ToolParameters that = (ToolParameters) o;
+			return Objects.equals(description, that.description)
+					&& Objects.equals(summaryAndRecommendations, that.summaryAndRecommendations)
+					&& Objects.equals(sqlQuery, that.sqlQuery) && Objects.equals(instruction, that.instruction)
+					&& Objects.equals(inputDataDescription, that.inputDataDescription);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(description, summaryAndRecommendations, sqlQuery, instruction, inputDataDescription);
 		}
 
 	}
