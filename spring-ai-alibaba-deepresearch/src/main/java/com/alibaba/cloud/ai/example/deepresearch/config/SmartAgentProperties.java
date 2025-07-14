@@ -59,22 +59,12 @@ public class SmartAgentProperties {
 
 		private String primary;
 
-		private List<String> fallback;
-
 		public String getPrimary() {
 			return primary;
 		}
 
 		public void setPrimary(String primary) {
 			this.primary = primary;
-		}
-
-		public List<String> getFallback() {
-			return fallback;
-		}
-
-		public void setFallback(List<String> fallback) {
-			this.fallback = fallback;
 		}
 
 	}

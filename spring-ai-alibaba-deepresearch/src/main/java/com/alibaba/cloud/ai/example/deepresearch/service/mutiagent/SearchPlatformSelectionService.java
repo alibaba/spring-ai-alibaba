@@ -53,10 +53,7 @@ public class SearchPlatformSelectionService {
 		List<SearchEnum> searchPlatforms = new ArrayList<>();
 
 		try {
-			// 获取Agent类型的推荐搜索平台
-			List<SearchPlatform> recommendedPlatforms = SearchPlatform.getRecommendedPlatforms(agentType);
-
-			// 根据具体问题内容进行细化选择
+			// 根据具体问题内容选择主要搜索平台
 			SearchPlatform primaryPlatform = selectPrimaryPlatform(agentType, question);
 
 			SearchEnum primarySearchEnum = SmartAgentUtil.convertToSearchEnum(primaryPlatform);
@@ -65,26 +62,17 @@ public class SearchPlatformSelectionService {
 				searchPlatforms.add(primarySearchEnum);
 			}
 
-			// 添加备用搜索平台
-			for (SearchPlatform platform : recommendedPlatforms) {
-				SearchEnum searchEnum = SmartAgentUtil.convertToSearchEnum(platform);
-				if (searchEnum != null && SmartAgentUtil.isSearchEngineEnabled(searchEnum, enabledSearchEngines)
-						&& !searchPlatforms.contains(searchEnum)) {
-					searchPlatforms.add(searchEnum);
-				}
-			}
-
-			// 如果没有找到合适的搜索平台，使用默认的通用搜索
+			// 如果主要搜索平台不可用，使用默认的通用搜索
 			if (searchPlatforms.isEmpty()) {
 				addDefaultSearchEngines(searchPlatforms);
 			}
 
-			logger.info("Selected search platforms for agent type {}: {}", agentType, searchPlatforms);
+			logger.info("Selected search platform for agent type {}: {}", agentType, searchPlatforms);
 			return searchPlatforms;
 
 		}
 		catch (Exception e) {
-			logger.warn("Error selecting search platforms for agent type {}, using default", agentType, e);
+			logger.warn("Error selecting search platform for agent type {}, using default", agentType, e);
 			List<SearchEnum> defaultPlatforms = new ArrayList<>();
 			addDefaultSearchEngines(defaultPlatforms);
 			return defaultPlatforms;

@@ -180,7 +180,7 @@ public class AgentIntegrationUtil {
 		}
 
 
-		public void logSmartAgentFailureAndFallback(String operation, String question, String error,
+		public void logSmartAgentFailure(String operation, String question, String error,
 				String fallbackAction) {
 			logger.warn("{} 失败 - 问题: '{}', 错误: {}, 回退: {}", operation, question, error, fallbackAction);
 		}

@@ -93,14 +93,7 @@ public enum SearchPlatform {
 	}
 
 	/**
-	 * 根据Agent类型获取推荐的搜索平台列表
-	 */
-	public static List<SearchPlatform> getRecommendedPlatforms(AgentType agentType) {
-		return Arrays.stream(values()).filter(platform -> platform.supportedAgents.contains(agentType)).toList();
-	}
-
-	/**
-	 * 获取Agent类型的主要搜索平台
+	 * TODO:获取Agent类型的主要搜索平台
 	 */
 	public static SearchPlatform getPrimaryPlatform(AgentType agentType) {
 		return switch (agentType) {
