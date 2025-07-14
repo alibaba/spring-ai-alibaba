@@ -65,7 +65,7 @@ public class PythonExecuteNode extends AbstractPlanBasedNode {
 		Map<String, String> sqlExecuteResult = StateUtils.getObjectValue(state, SQL_EXECUTE_NODE_OUTPUT, Map.class,
 				new HashMap());
 
-    String systemPrompt = PromptConstant.getPythonExecutorPromptTemplate().render();
+		String systemPrompt = PromptConstant.getPythonExecutorPromptTemplate().render();
 		Flux<ChatResponse> pythonExecutionFlux = chatClient.prompt()
 			.system(systemPrompt)
 			.user(String.format("## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
