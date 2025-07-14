@@ -42,4 +42,4 @@ otel:
       headers:
         # Replace `YOUR_BASE64_ENCODED_CREDENTIALS` with your Base64-encoded `public_key:secret_key`.
         Authorization: "Basic ${YOUR_BASE64_ENCODED_CREDENTIALS}"
-      protocol: http/protobuf 
+      protocol: http/protobuf
