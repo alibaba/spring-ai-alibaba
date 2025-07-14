@@ -21,12 +21,16 @@ import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
+import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StepResultUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
+import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -70,10 +74,13 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> executeSqlQuery(OverAllState state, Integer currentStep, String sqlQuery) {
+		Flux<ChatResponse> preprocessingStatus = Flux.just(ChatResponseUtil.createCustomStatusResponse("开始执行SQL..."));
+
 		DbQueryParameter dbQueryParameter = new DbQueryParameter();
 		dbQueryParameter.setSql(sqlQuery);
-
+		Flux<ChatResponse> postprocessingStatus = Flux.just(ChatResponseUtil.createCustomStatusResponse("执行SQL查询"));
 		try {
+
 			ResultSetBO resultSetBO = dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
 			String jsonStr = resultSetBO.toJsonStr();
 
@@ -82,14 +89,40 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			Map<String, String> updatedResults = StepResultUtils.addStepResult(existingResults, currentStep, jsonStr);
 
 			logger.info("SQL执行成功，结果记录数: {}", resultSetBO.getData() != null ? resultSetBO.getData().size() : 0);
-
-			return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedResults, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, "");
+			Flux<ChatResponse> result = Flux.just(ChatResponseUtil.createCustomStatusResponse("执行SQL完成"));
+			Flux<ChatResponse> combinedFlux = Flux.concat(preprocessingStatus, postprocessingStatus,
+					Flux.just(ChatResponseUtil.createCustomStatusResponse("```" + sqlQuery + "```")), result);
+			var generator = StreamingChatGenerator.builder()
+				.startingNode(PLANNER_NODE)
+				.startingState(state)
+				.mapResult(response -> {
+					logger.info("{} 节点输出 content：{}", this.getClass().getSimpleName(),
+							response.getResult().getOutput().getText());
+					return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedResults, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, "");
+				})
+				.build(combinedFlux);
+			return Map.of(SQL_EXECUTE_NODE_OUTPUT, generator);
 		}
 		catch (Exception e) {
 			String errorMessage = e.getMessage();
 			logger.error("SQL执行失败 - SQL: [{}] ", sqlQuery, e);
-			return Map.of(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, errorMessage);
+			Flux<ChatResponse> errorResponse = Flux
+				.just(ChatResponseUtil.createCustomStatusResponse("SQL执行失败: " + errorMessage));
+			Flux<ChatResponse> combinedFlux = Flux.concat(preprocessingStatus, postprocessingStatus, errorResponse);
+			var generator = StreamingChatGenerator.builder()
+				.startingNode(PLANNER_NODE)
+				.startingState(state)
+				.mapResult(response -> {
+					logger.info("{} 节点输出 content：{}", this.getClass().getSimpleName(),
+							response.getResult().getOutput().getText());
+					return Map.of(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, errorMessage);
+				})
+				.build(combinedFlux);
+
+			return Map.of(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, generator); // TODO
+																			// 这里返回的key随便
 		}
+
 	}
 
 }

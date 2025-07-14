@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.prompt.PromptConstant;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.tool.PythonExecutorTool;
 import com.alibaba.cloud.ai.util.StateUtils;
@@ -25,6 +26,8 @@ import com.alibaba.cloud.ai.util.StepResultUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
+import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -62,28 +65,27 @@ public class PythonExecuteNode extends AbstractPlanBasedNode {
 		Map<String, String> sqlExecuteResult = StateUtils.getObjectValue(state, SQL_EXECUTE_NODE_OUTPUT, Map.class,
 				new HashMap());
 
-		String aiResponse = executeAnalysis(state, instruction, description, sqlExecuteResult);
+    String systemPrompt = PromptConstant.getPythonExecutorPromptTemplate().render();
+		Flux<ChatResponse> pythonExecutionFlux = chatClient.prompt()
+			.system(systemPrompt)
+			.user(String.format("## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
+					getPlan(state).toJsonStr(), instruction, description, sqlExecuteResult))
+			.stream()
+			.chatResponse();
 
-		return buildResult(currentStep, aiResponse, sqlExecuteResult);
-	}
+		var generator = StreamingChatGenerator.builder()
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				String aiResponse = response.getResult().getOutput().getText();
+				Map<String, String> updatedSqlResult = StepResultUtils.addStepResult(sqlExecuteResult, currentStep,
+						aiResponse);
+				logNodeOutput("analysis_result", aiResponse);
+				return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult, PLAN_CURRENT_STEP, currentStep + 1);
+			})
+			.build(pythonExecutionFlux);
 
-	private String executeAnalysis(OverAllState state, String instruction, String description,
-			Map<String, String> sqlExecuteResult) {
-		String userMessage = String.format(
-				"## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
-				getPlan(state).toJsonStr(), instruction, description, sqlExecuteResult);
-
-		String systemPrompt = PromptConstant.getPythonExecutorPromptTemplate().render();
-		return chatClient.prompt(systemPrompt).user(userMessage).call().content();
-	}
-
-	private Map<String, Object> buildResult(Integer currentStep, String aiResponse,
-			Map<String, String> sqlExecuteResult) {
-		Map<String, String> updatedSqlResult = StepResultUtils.addStepResult(sqlExecuteResult, currentStep, aiResponse);
-
-		logNodeOutput("analysis_result", aiResponse);
-
-		return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult, PLAN_CURRENT_STEP, currentStep + 1);
+		return Map.of(PYTHON_EXECUTE_NODE_OUTPUT, generator);
 	}
 
 }
