@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder;
 
+import java.util.List;
+
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
@@ -193,11 +195,14 @@ public interface PlanExecutionRecorder {
 		/** Execution status */
 		String status;
 
-		/** Whether a sub-plan was created */
-		boolean subPlanCreated;
+	/** Whether a sub-plan was created */
+	boolean subPlanCreated;
 
-		/** Execution summary */
-		String summary;
+	/** Action tool information list */
+	List<ThinkActRecord.ActToolInfo> actToolInfoList;
+
+	/** Execution summary */
+	String summary;
 
 		/** Maximum execution steps */
 		int maxSteps;
@@ -418,6 +423,14 @@ public interface PlanExecutionRecorder {
 
 		public void setSummary(String summary) {
 			this.summary = summary;
+		}
+
+		public List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord.ActToolInfo> getActToolInfoList() {
+			return actToolInfoList;
+		}
+
+		public void setActToolInfoList(List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord.ActToolInfo> actToolInfoList) {
+			this.actToolInfoList = actToolInfoList;
 		}
 
 	}

@@ -241,7 +241,7 @@ public class DynamicAgent extends ReActAgent {
 		return false;
 	}
 
-	private void setActToolInfoList(List<ToolCall> toolCalls) {
+	private List<ThinkActRecord.ActToolInfo> createActToolInfoList(List<ToolCall> toolCalls) {
 		List<ThinkActRecord.ActToolInfo> actToolInfoList = new ArrayList<>();
 		for (ToolCall toolCall : toolCalls) {
 			ThinkActRecord.ActToolInfo actToolInfo = new ThinkActRecord.ActToolInfo(toolCall.name(),
@@ -251,118 +251,64 @@ public class DynamicAgent extends ReActAgent {
 				break;
 			}
 		}
-		thinkActRecord.setActToolInfoList(actToolInfoList);
+		return actToolInfoList;
 	}
 
 	@Override
 	protected AgentExecResult act() {
 		ToolExecutionResult toolExecutionResult = null;
+		String lastToolCallResult = null;
+		List<ThinkActRecord.ActToolInfo> actToolInfoList = null;
 
 		try {
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
-			ToolCall toolCall = toolCalls.get(0);
-			String toolName = toolCall.name();
-			String toolParameters = toolCall.arguments();
-			String actionDescription = "Executing tool: " + toolName;
-
+			
+			// 创建 ActToolInfo 列表
+			actToolInfoList = createActToolInfoList(toolCalls);
+			
+			// 执行工具调用
 			toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 			processMemory(toolExecutionResult);
-			// Get current tool response
+			
+			// 获取工具响应消息
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
 
-			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
+			// 设置每个工具的执行结果
+			setActToolInfoResults(actToolInfoList, toolResponseMessage.getResponses());
+			
+			// 获取最后一个工具的执行结果
+			if (!toolResponseMessage.getResponses().isEmpty()) {
+				lastToolCallResult = toolResponseMessage.getResponses()
+					.get(toolResponseMessage.getResponses().size() - 1).responseData();
+			}
 
-			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
+			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), lastToolCallResult));
 
-			String toolcallName = toolCall.name();
-
-			// Get the tool instance based on toolCallName
-			ToolCallBiFunctionDef<?> toolInstance = getToolCallBackContext(toolcallName).getFunctionInstance();
+			// 处理特殊工具类型逻辑 - 只检查第一个工具
+			ToolCall firstToolCall = toolCalls.get(0);
+			String firstToolName = firstToolCall.name();
+			ToolCallBiFunctionDef<?> toolInstance = getToolCallBackContext(firstToolName).getFunctionInstance();
 
 			// Handle FormInputTool logic
 			if (toolInstance instanceof FormInputTool) {
-				FormInputTool formInputTool = (FormInputTool) toolInstance;
-				// Check if the tool is waiting for user input
-				if (formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) {
-					log.info("FormInputTool is awaiting user input for planId: {}", getCurrentPlanId());
-					userInputService.storeFormInputTool(getCurrentPlanId(), formInputTool);
-					// Wait for user input or timeout
-					waitForUserInputOrTimeout(formInputTool);
-
-					// After waiting, check the state again
-					if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_RECEIVED) {
-						log.info("User input received for planId: {}", getCurrentPlanId());
-						// The UserInputService.submitUserInputs would have updated
-						// the tool's internal state.
-						// We can now get the updated state string for the LLM.
-
-						UserMessage userMessage = UserMessage.builder()
-							.text("User input received for form: " + formInputTool.getCurrentToolStateString())
-							.build();
-						processUserInputToMemory(userMessage); // Process user input
-						// to memory
-						llmCallResponse = formInputTool.getCurrentToolStateString();
-
-					}
-					else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
-						log.warn("Input timeout occurred for FormInputTool for planId: {}", getCurrentPlanId());
-						// Handle input timeout
-
-						UserMessage userMessage = UserMessage.builder()
-							.text("Input timeout occurred for form: ")
-							.build();
-						processUserInputToMemory(userMessage);
-						userInputService.removeFormInputTool(getCurrentPlanId()); // Clean
-																					// up
-
-						// 记录输入超时的动作结果
-						PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
-						params.setCurrentPlanId(getCurrentPlanId());
-						params.setRootPlanId(getRootPlanId());
-						params.setThinkActRecordId(getThinkActRecordId());
-						params.setCreatedThinkActRecordId(currentThinkActRecordId);
-						params.setActionDescription(actionDescription);
-						params.setActionResult("Input timeout occurred");
-						params.setStatus("TIMEOUT");
-						params.setErrorMessage("Input timeout occurred for FormInputTool");
-						params.setToolName(toolName);
-						params.setToolParameters(toolParameters);
-						params.setSubPlanCreated(false);
-						planExecutionRecorder.recordActionResult(params);
-
-						return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS);
-					}
+				AgentExecResult formResult = handleFormInputTool((FormInputTool) toolInstance, actToolInfoList);
+				if (formResult != null) {
+					return formResult;
 				}
 			}
 
 			// Handle TerminableTool logic
 			if (toolInstance instanceof TerminableTool) {
 				TerminableTool terminableTool = (TerminableTool) toolInstance;
-				// Use canTerminate() to decide whether to terminate
 				if (terminableTool.canTerminate()) {
 					log.info("TerminableTool can terminate for planId: {}", getCurrentPlanId());
-					userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up
-																				// any
-																				// pending
-																				// form
+					userInputService.removeFormInputTool(getCurrentPlanId());
 
 					// 记录成功完成的动作结果
-					PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
-					params.setCurrentPlanId(getCurrentPlanId());
-					params.setRootPlanId(getRootPlanId());
-					params.setThinkActRecordId(getThinkActRecordId());
-					params.setCreatedThinkActRecordId(currentThinkActRecordId);
-					params.setActionDescription(actionDescription);
-					params.setActionResult(llmCallResponse);
-					params.setStatus("COMPLETED");
-					params.setErrorMessage(null);
-					params.setToolName(toolName);
-					params.setToolParameters(toolParameters);
-					params.setSubPlanCreated(false);
-					planExecutionRecorder.recordActionResult(params);
+					recordActionResult(actToolInfoList, lastToolCallResult, "COMPLETED", null, false);
 
-					return new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
+					return new AgentExecResult(lastToolCallResult, AgentState.COMPLETED);
 				}
 				else {
 					log.info("TerminableTool cannot terminate yet for planId: {}", getCurrentPlanId());
@@ -370,19 +316,7 @@ public class DynamicAgent extends ReActAgent {
 			}
 
 			// 记录成功的动作结果
-			PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
-			params.setCurrentPlanId(getCurrentPlanId());
-			params.setRootPlanId(getRootPlanId());
-			params.setThinkActRecordId(getThinkActRecordId());
-			params.setCreatedThinkActRecordId(currentThinkActRecordId);
-			params.setActionDescription(actionDescription);
-			params.setActionResult(llmCallResponse);
-			params.setStatus("SUCCESS");
-			params.setErrorMessage(null);
-			params.setToolName(toolName);
-			params.setToolParameters(toolParameters);
-			params.setSubPlanCreated(false);
-			planExecutionRecorder.recordActionResult(params);
+			recordActionResult(actToolInfoList, lastToolCallResult, "SUCCESS", null, false);
 
 			return new AgentExecResult(lastToolCallResult, AgentState.IN_PROGRESS);
 		}
@@ -391,55 +325,39 @@ public class DynamicAgent extends ReActAgent {
 			log.info("Exception occurred", e);
 
 			// 记录失败的动作结果
-			String toolName = null;
-			String toolParameters = null;
-			String actionDescription = "Tool execution failed";
-			if (response != null && response.getResult() != null && response.getResult().getOutput() != null) {
+			if (actToolInfoList == null && response != null && response.getResult() != null && response.getResult().getOutput() != null) {
 				List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 				if (!toolCalls.isEmpty()) {
-					toolName = toolCalls.get(0).name();
-					toolParameters = toolCalls.get(0).arguments();
-					actionDescription = "Executing tool: " + toolName;
+					actToolInfoList = createActToolInfoList(toolCalls);
 				}
 			}
-
-			PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
-			params.setCurrentPlanId(getCurrentPlanId());
-			params.setRootPlanId(getRootPlanId());
-			params.setThinkActRecordId(getThinkActRecordId());
-			params.setCreatedThinkActRecordId(currentThinkActRecordId);
-			params.setActionDescription(actionDescription);
-			params.setActionResult(null);
-			params.setStatus("FAILED");
-			params.setErrorMessage(e.getMessage());
-			params.setToolName(toolName);
-			params.setToolParameters(toolParameters);
-			params.setSubPlanCreated(false);
-			planExecutionRecorder.recordActionResult(params);
+			
+			recordActionResult(actToolInfoList, null, "FAILED", e.getMessage(), false);
 
 			userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error
 			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
 		}
-
 	}
 
+
 	/**
-	 * Set act tool info result
+	 * Set act tool info results for all executed tools
 	 */
-	private void setActToolInfoResult(List<ToolResponseMessage.ToolResponse> responses) {
+	private void setActToolInfoResults(List<ThinkActRecord.ActToolInfo> actToolInfoList, 
+			List<ToolResponseMessage.ToolResponse> responses) {
 		for (ToolResponseMessage.ToolResponse toolResponse : responses) {
 			String curToolResp = toolResponse.responseData();
 			log.info("🔧 Tool {}'s executing result: {}", getName(), curToolResp);
-			ThinkActRecord.ActToolInfo actToolInfo = thinkActRecord.getActToolInfoList()
-				.stream()
-				.filter(item -> item.getId().equals(toolResponse.id()))
-				.findFirst()
-				.orElseThrow(() -> {
-					log.warn("Tool response not found for tool id: {}", toolResponse.id());
-					return new RuntimeException("Tool response not found for tool id: " + toolResponse.id());
-				});
-			actToolInfo.setResult(curToolResp);
+			
+			// 找到对应的 ActToolInfo 并设置结果
+			for (ThinkActRecord.ActToolInfo actToolInfo : actToolInfoList) {
+				if (actToolInfo.getId().equals(toolResponse.id())) {
+					actToolInfo.setResult(curToolResp);
+					break;
+				}
+			}
+			
 			if (!manusProperties.getParallelToolCalls()) {
 				break;
 			}
@@ -447,25 +365,82 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	/**
-	 * Set act tool info result
+	 * Handle FormInputTool specific logic
 	 */
-	private void setActToolInfoResult(List<ToolResponseMessage.ToolResponse> responses) {
-		for (ToolResponseMessage.ToolResponse toolResponse : responses) {
-			String curToolResp = toolResponse.responseData();
-			log.info("🔧 Tool {}'s executing result: {}", getName(), curToolResp);
-			ThinkActRecord.ActToolInfo actToolInfo = thinkActRecord.getActToolInfoList()
-				.stream()
-				.filter(item -> item.getId().equals(toolResponse.id()))
-				.findFirst()
-				.orElseThrow(() -> {
-					log.warn("Tool response not found for tool id: {}", toolResponse.id());
-					return new RuntimeException("Tool response not found for tool id: " + toolResponse.id());
-				});
-			actToolInfo.setResult(curToolResp);
-			if (!manusProperties.getParallelToolCalls()) {
-				break;
+	private AgentExecResult handleFormInputTool(FormInputTool formInputTool, 
+			List<ThinkActRecord.ActToolInfo> actToolInfoList) {
+		// Check if the tool is waiting for user input
+		if (formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) {
+			log.info("FormInputTool is awaiting user input for planId: {}", getCurrentPlanId());
+			userInputService.storeFormInputTool(getCurrentPlanId(), formInputTool);
+			// Wait for user input or timeout
+			waitForUserInputOrTimeout(formInputTool);
+
+			// After waiting, check the state again
+			if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_RECEIVED) {
+				log.info("User input received for planId: {}", getCurrentPlanId());
+				
+				UserMessage userMessage = UserMessage.builder()
+					.text("User input received for form: " + formInputTool.getCurrentToolStateString())
+					.build();
+				processUserInputToMemory(userMessage);
+				
+				// Update the result in actToolInfoList
+				if (!actToolInfoList.isEmpty()) {
+					actToolInfoList.get(0).setResult(formInputTool.getCurrentToolStateString());
+				}
+			}
+			else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
+				log.warn("Input timeout occurred for FormInputTool for planId: {}", getCurrentPlanId());
+				
+				UserMessage userMessage = UserMessage.builder()
+					.text("Input timeout occurred for form: ")
+					.build();
+				processUserInputToMemory(userMessage);
+				userInputService.removeFormInputTool(getCurrentPlanId());
+
+				// 记录输入超时的动作结果
+				recordActionResult(actToolInfoList, "Input timeout occurred", "TIMEOUT", 
+					"Input timeout occurred for FormInputTool", false);
+
+				return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS);
 			}
 		}
+		return null;
+	}
+
+	/**
+	 * Record action result with simplified parameters
+	 */
+	private void recordActionResult(List<ThinkActRecord.ActToolInfo> actToolInfoList, 
+			String actionResult, String status, String errorMessage, boolean subPlanCreated) {
+		
+		String toolName = null;
+		String toolParameters = null;
+		String actionDescription = "Tool execution";
+		
+		if (actToolInfoList != null && !actToolInfoList.isEmpty()) {
+			ThinkActRecord.ActToolInfo firstTool = actToolInfoList.get(0);
+			toolName = firstTool.getName();
+			toolParameters = firstTool.getParameters();
+			actionDescription = "Executing tool: " + toolName;
+		}
+
+		PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
+		params.setCurrentPlanId(getCurrentPlanId());
+		params.setRootPlanId(getRootPlanId());
+		params.setThinkActRecordId(getThinkActRecordId());
+		params.setCreatedThinkActRecordId(currentThinkActRecordId);
+		params.setActionDescription(actionDescription);
+		params.setActionResult(actionResult);
+		params.setStatus(status);
+		params.setErrorMessage(errorMessage);
+		params.setToolName(toolName);
+		params.setToolParameters(toolParameters);
+		params.setSubPlanCreated(subPlanCreated);
+		params.setActToolInfoList(actToolInfoList);
+		
+		planExecutionRecorder.recordActionResult(params);
 	}
 
 	private void processUserInputToMemory(UserMessage userMessage) {
