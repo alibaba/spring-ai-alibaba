@@ -199,7 +199,24 @@ public class HttpNode implements NodeAction {
 				MultiValueMap<String, Object> multipart = new LinkedMultiValueMap<>();
 				for (BodyData item : body.getData()) {
 					String key = replaceVariables(item.getKey(), state);
-					if (item.getType() == BodyType.BINARY) {
+					if (item.getFileId() != null) {
+						InMemoryFileStorage.FileRecord fileRecord = InMemoryFileStorage.get(item.getFileId());
+						if (fileRecord != null) {
+							ByteArrayResource resource = new ByteArrayResource(fileRecord.getContent()) {
+								@Override
+								public String getFilename() {
+									return fileRecord.getName();
+								}
+							};
+							multipart.add(key, resource);
+							continue;
+						}
+						else {
+							logger.warn("FileId {} not found in InMemoryFileStorage.", item.getFileId());
+							continue;
+						}
+					}
+					if (item.getType() == BodyType.BINARY && item.getFileBytes() != null) {
 						ByteArrayResource resource = new ByteArrayResource(item.getFileBytes()) {
 							@Override
 							public String getFilename() {
@@ -485,11 +502,26 @@ public class HttpNode implements NodeAction {
 								bd3.setKey(key);
 
 								Object type0 = item.get("type");
-								if (type0 instanceof String) {
-									bd3.setType(BodyType.from((String) type0));
+								if (type0 instanceof String && "file".equalsIgnoreCase((String) type0)) {
+									bd3.setType(BodyType.FORM_DATA);
+									Object fileList = item.get("file");
+									if (fileList instanceof List<?> && !((List<?>) fileList).isEmpty()) {
+										bd3.setFileId(((List<?>) fileList).get(0).toString());
+									}
+									else {
+										Object val0 = item.get("value");
+										if (val0 instanceof String && !((String) val0).isEmpty()) {
+											bd3.setFileId((String) val0);
+										}
+									}
 								}
 								else {
-									bd3.setType(BodyType.NONE);
+									if (type0 instanceof String) {
+										bd3.setType(BodyType.from((String) type0));
+									}
+									else {
+										bd3.setType(BodyType.NONE);
+									}
 								}
 
 								Object val0 = item.get("value");
@@ -728,6 +760,8 @@ public class HttpNode implements NodeAction {
 
 		private String mimeType;
 
+		private String fileId;
+
 		public String getKey() {
 			return key;
 		}
@@ -774,6 +808,14 @@ public class HttpNode implements NodeAction {
 
 		public void setMimeType(String mimeType) {
 			this.mimeType = mimeType;
+		}
+
+		public String getFileId() {
+			return fileId;
+		}
+
+		public void setFileId(String fileId) {
+			this.fileId = fileId;
 		}
 
 	}
