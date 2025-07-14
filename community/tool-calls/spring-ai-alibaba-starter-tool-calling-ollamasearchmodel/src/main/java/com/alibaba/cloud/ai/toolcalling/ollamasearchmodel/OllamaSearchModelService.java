@@ -59,7 +59,7 @@ public class OllamaSearchModelService
 	}
 
 	@JsonClassDescription("ollama search api result")
-	public record Response(@JsonPropertyDescription("Receive model detail") String detail) {
+	public record Response(@JsonPropertyDescription("Receive model detail") String information) {
 	}
 
 }
