@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.schema.Plan;
@@ -25,8 +26,10 @@ import com.alibaba.cloud.ai.util.StateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
+import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.List;
@@ -73,11 +76,19 @@ public class ReportGeneratorNode implements NodeAction {
 		String summaryAndRecommendations = executionStep.getToolParameters().getSummaryAndRecommendations();
 
 		// 构建报告
-		String reportContent = generateReport(userInput, plan, executionResults, summaryAndRecommendations);
+		Flux<ChatResponse> reportGenerationFlux = generateReport(userInput, plan, executionResults, summaryAndRecommendations);
 
-		logger.info("生成的报告内容: {}", reportContent);
+		var generator = StreamingChatGenerator.builder()
+				.startingNode(this.getClass().getSimpleName())
+				.startingState(state)
+				.mapResult(response -> {
+					String reportContent = response.getResult().getOutput().getText();
+					logger.info("生成的报告内容: {}", reportContent);
+					return buildFinalResult(reportContent);
+				})
+				.build(reportGenerationFlux);
 
-		return buildFinalResult(reportContent);
+		return Map.of(RESULT, generator);
 	}
 
 	/**
@@ -100,7 +111,7 @@ public class ReportGeneratorNode implements NodeAction {
 	/**
 	 * 生成报告
 	 */
-	private String generateReport(String userInput, Plan plan, HashMap<String, String> executionResults,
+	private Flux<ChatResponse> generateReport(String userInput, Plan plan, HashMap<String, String> executionResults,
 			String summaryAndRecommendations) {
 		// 构建用户需求和计划描述
 		String userRequirementsAndPlan = buildUserRequirementsAndPlan(userInput, plan);
@@ -112,7 +123,7 @@ public class ReportGeneratorNode implements NodeAction {
 		String reportPrompt = PromptHelper.buildReportGeneratorPrompt(userRequirementsAndPlan, analysisStepsAndData,
 				summaryAndRecommendations);
 
-		return chatClient.prompt().user(reportPrompt).call().content();
+		return chatClient.prompt().user(reportPrompt).stream().chatResponse();
 	}
 
 	/**
@@ -182,7 +193,7 @@ public class ReportGeneratorNode implements NodeAction {
 
 				sb.append("**执行结果**: \n```json\n").append(stepResult).append("\n```\n\n");
 			}
-		}
+			}
 
 		return sb.toString();
 	}

@@ -18,14 +18,18 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
+import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
@@ -62,12 +66,31 @@ public class TableRelationNode implements NodeAction {
 		List<List<Document>> columnDocumentsByKeywords = StateUtils.getDocumentListList(state,
 				COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT);
 
-		// 构建和处理Schema
-		SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
-		SchemaDTO result = processSchemaSelection(schemaDTO, input, evidenceList, state);
+		Flux<ChatResponse> tableRelationFlux = Flux.create(emitter -> {
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始构建初始Schema..."));
+			// 构建和处理Schema
+			SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("初始Schema构建完成."));
 
-		logger.info("[{}] Schema处理结果: {}", this.getClass().getSimpleName(), result);
-		return Map.of(TABLE_RELATION_OUTPUT, result);
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始处理Schema选择..."));
+			SchemaDTO result = processSchemaSelection(schemaDTO, input, evidenceList, state);
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("Schema选择处理完成."));
+
+			logger.info("[{}] Schema处理结果: {}", this.getClass().getSimpleName(), result);
+			emitter.complete();
+		});
+
+		var generator = StreamingChatGenerator.builder()
+				.startingNode(this.getClass().getSimpleName())
+				.startingState(state)
+				.mapResult(response -> {
+					SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
+					SchemaDTO result = processSchemaSelection(schemaDTO, input, evidenceList, state);
+					return Map.of(TABLE_RELATION_OUTPUT, result);
+				})
+				.build(tableRelationFlux);
+
+		return Map.of(TABLE_RELATION_OUTPUT, generator);
 	}
 
 	/**

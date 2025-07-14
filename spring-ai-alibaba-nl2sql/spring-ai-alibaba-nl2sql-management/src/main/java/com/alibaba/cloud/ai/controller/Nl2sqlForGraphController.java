@@ -87,28 +87,37 @@ public class Nl2sqlForGraphController {
 		return overAllState.value(RESULT).get().toString();
 	}
 
-	@GetMapping(value = "/stream/search", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	public Flux<ServerSentEvent<String>> streamSearch(@RequestParam String query, HttpServletResponse response) throws Exception {
-		response.setCharacterEncoding("UTF-8");
-
-		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
-
+	@GetMapping("/init")
+	public void init() throws Exception {
 		// 初始化向量
 		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
 		schemaInitRequest.setDbConfig(dbConfig);
 		schemaInitRequest
 				.setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
 		simpleVectorStoreService.schema(schemaInitRequest);
+	}
+
+	@GetMapping(value = "/stream/search", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public Flux<ServerSentEvent<String>> streamSearch(@RequestParam String query, HttpServletResponse response) throws Exception {
+		response.setCharacterEncoding("UTF-8");
+
+		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
+
 		// 使用流式处理
 		AsyncGenerator<NodeOutput> generator = compiledGraph.stream(Map.of(INPUT_KEY, query));
 
 		CompletableFuture.runAsync(() -> {
 			generator.forEachAsync(output -> {
 				try {
-					System.out.println("output = " + output);
+//					System.out.println("output = " + output);
 					if (output instanceof StreamingOutput) {
 						StreamingOutput streamingOutput = (StreamingOutput) output;
-						sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(streamingOutput.chunk())).build());
+						String chunk = streamingOutput.chunk();
+						if(chunk!=null){
+							sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(chunk)).build());
+						}else{
+							logger.warn("Received null chunk from streaming output, skipping emission.");
+						}
 					}
 //					else {
 //						sink.tryEmitNext(
@@ -116,10 +125,12 @@ public class Nl2sqlForGraphController {
 //					}
 				}
 				catch (Exception e) {
+					e.printStackTrace();
 					throw new CompletionException(e);
 				}
-			}).thenRun(() -> sink.tryEmitComplete()).exceptionally(ex -> {
-				sink.tryEmitError(ex);
+			}).thenAccept(v -> sink.tryEmitComplete()).exceptionally(e -> {
+				logger.error("Error in stream processing", e);
+				sink.tryEmitError(e);
 				return null;
 			});
 		});
