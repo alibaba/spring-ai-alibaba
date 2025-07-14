@@ -40,7 +40,7 @@ import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
-import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -80,9 +80,6 @@ import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
-
-	@Autowired
-	private SearchBeanUtil searchBeanUtil;
 
 	@Autowired
 	private ObjectProvider<ChatClient.Builder> coderAgent;
@@ -129,6 +126,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private ChatClient routerAgent;
+
+	@Autowired
+	private SearchFilterService searchFilterService;
 
 	@Bean
 	public ReflectionProcessor reflectionProcessor() {
@@ -190,7 +190,8 @@ public class DeepResearchConfiguration {
 			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent, routerAgent)))
 			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(researchChatClientBuilder)))
 			.addNode("background_investigator",
-					node_async(new BackgroundInvestigationNode(searchBeanUtil, jinaCrawlerService, infoCheckService)))
+					node_async(
+							new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService, searchFilterService)))
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
@@ -239,8 +240,8 @@ public class DeepResearchConfiguration {
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
 			.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 			String nodeId = "researcher_" + i;
-			stateGraph.addNode(nodeId, node_async(
-					new ResearcherNode(researchAgent, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
+			stateGraph.addNode(nodeId, node_async(new ResearcherNode(researchAgent, String.valueOf(i),
+					reflectionProcessor, mcpProviderFactory, searchFilterService)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}

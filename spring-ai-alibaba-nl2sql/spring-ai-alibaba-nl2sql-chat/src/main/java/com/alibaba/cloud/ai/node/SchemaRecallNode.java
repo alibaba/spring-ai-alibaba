@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
+import com.alibaba.cloud.ai.util.StateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -38,12 +39,9 @@ public class SchemaRecallNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(SchemaRecallNode.class);
 
-	private final ChatClient chatClient;
-
 	private final BaseSchemaService baseSchemaService;
 
 	public SchemaRecallNode(ChatClient.Builder chatClientBuilder, BaseSchemaService baseSchemaService) {
-		this.chatClient = chatClientBuilder.build();
 		this.baseSchemaService = baseSchemaService;
 	}
 
@@ -52,13 +50,8 @@ public class SchemaRecallNode implements NodeAction {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 
 		// 获取必要的输入参数
-		String input = state.value(INPUT_KEY)
-			.map(String.class::cast)
-			.orElseThrow(() -> new IllegalStateException("Input key not found"));
-
-		List<String> keywords = state.value(KEYWORD_EXTRACT_NODE_OUTPUT)
-			.map(v -> (List<String>) v)
-			.orElseThrow(() -> new IllegalStateException("Keywords not found"));
+		String input = StateUtils.getStringValue(state, INPUT_KEY);
+		List<String> keywords = StateUtils.getListValue(state, KEYWORD_EXTRACT_NODE_OUTPUT);
 
 		// 获取表和列的文档信息
 		List<Document> tableDocuments = baseSchemaService.getTableDocuments(input);

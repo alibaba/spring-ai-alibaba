@@ -31,7 +31,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -51,7 +50,7 @@ import java.util.logging.Logger;
 
 import static com.github.dockerjava.api.model.HostConfig.newHostConfig;
 
-@Service
+//@Service
 public class PythonReplTool {
 
 	private static final Logger logger = Logger.getLogger(PythonReplTool.class.getName());
@@ -356,7 +355,7 @@ public class PythonReplTool {
 	}
 
 	/**
-	 * 创��Docker客户端，支持多种连接方式的回退机制
+	 * 创建Docker客户端，支持多种连接方式的回退机制
 	 * @param config Docker客户端配置
 	 * @return DockerClient实例
 	 * @throws Exception 如果所有连接方式都失败

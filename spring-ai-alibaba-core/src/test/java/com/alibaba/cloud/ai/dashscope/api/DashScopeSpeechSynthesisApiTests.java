@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests for DashScopeSpeechSynthesisApi class functionality
+ * Tests for DashScopeAudioSpeechApi class functionality
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -32,53 +32,52 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class DashScopeSpeechSynthesisApiTests {
 
-	private DashScopeSpeechSynthesisApi speechSynthesisApi;
+	private DashScopeAudioSpeechApi speechSynthesisApi;
 
 	@BeforeEach
 	void setUp() {
-		// Initialize DashScopeSpeechSynthesisApi with test API key
-		speechSynthesisApi = new DashScopeSpeechSynthesisApi("test-api-key");
+		// Initialize DashScopeAudioSpeechApi with test API key
+		speechSynthesisApi = new DashScopeAudioSpeechApi("test-api-key");
 	}
 
 	@Test
 	void testConstructorWithApiKey() {
 		// Test constructor with only API key
-		DashScopeSpeechSynthesisApi api = new DashScopeSpeechSynthesisApi("test-api-key");
-		assertNotNull(api, "DashScopeSpeechSynthesisApi should be created with API key");
+		DashScopeAudioSpeechApi api = new DashScopeAudioSpeechApi("test-api-key");
+		assertNotNull(api, "DashScopeAudioSpeechApi should be created with API key");
 	}
 
 	@Test
 	void testConstructorWithApiKeyAndWorkspaceId() {
 		// Test constructor with API key and workspace ID
-		DashScopeSpeechSynthesisApi api = new DashScopeSpeechSynthesisApi("test-api-key", "test-workspace-id");
-		assertNotNull(api, "DashScopeSpeechSynthesisApi should be created with API key and workspace ID");
+		DashScopeAudioSpeechApi api = new DashScopeAudioSpeechApi("test-api-key", "test-workspace-id");
+		assertNotNull(api, "DashScopeAudioSpeechApi should be created with API key and workspace ID");
 	}
 
 	@Test
 	void testConstructorWithApiKeyWorkspaceIdAndWebsocketUrl() {
 		// Test constructor with API key, workspace ID, and websocket URL
-		DashScopeSpeechSynthesisApi api = new DashScopeSpeechSynthesisApi("test-api-key", "test-workspace-id",
+		DashScopeAudioSpeechApi api = new DashScopeAudioSpeechApi("test-api-key", "test-workspace-id",
 				"wss://test-websocket-url.com");
-		assertNotNull(api,
-				"DashScopeSpeechSynthesisApi should be created with API key, workspace ID, and websocket URL");
+		assertNotNull(api, "DashScopeAudioSpeechApi should be created with API key, workspace ID, and websocket URL");
 	}
 
 	@Test
 	void testRequestClasses() {
 		// Test creating request objects
-		DashScopeSpeechSynthesisApi.Request.RequestHeader header = new DashScopeSpeechSynthesisApi.Request.RequestHeader(
+		DashScopeAudioSpeechApi.Request.RequestHeader header = new DashScopeAudioSpeechApi.Request.RequestHeader(
 				"action", "task-id", "true");
 
-		DashScopeSpeechSynthesisApi.Request.RequestPayload.RequestPayloadInput input = new DashScopeSpeechSynthesisApi.Request.RequestPayload.RequestPayloadInput(
+		DashScopeAudioSpeechApi.Request.RequestPayload.RequestPayloadInput input = new DashScopeAudioSpeechApi.Request.RequestPayload.RequestPayloadInput(
 				"Hello, world!");
 
-		DashScopeSpeechSynthesisApi.Request.RequestPayload.RequestPayloadParameters parameters = new DashScopeSpeechSynthesisApi.Request.RequestPayload.RequestPayloadParameters(
+		DashScopeAudioSpeechApi.Request.RequestPayload.RequestPayloadParameters parameters = new DashScopeAudioSpeechApi.Request.RequestPayload.RequestPayloadParameters(
 				100, "plain", "female", 16000, 1.0F, "wav", 1.0, true, true);
 
-		DashScopeSpeechSynthesisApi.Request.RequestPayload payload = new DashScopeSpeechSynthesisApi.Request.RequestPayload(
+		DashScopeAudioSpeechApi.Request.RequestPayload payload = new DashScopeAudioSpeechApi.Request.RequestPayload(
 				"model", "task-group", "task", "function", input, parameters);
 
-		DashScopeSpeechSynthesisApi.Request request = new DashScopeSpeechSynthesisApi.Request(header, payload);
+		DashScopeAudioSpeechApi.Request request = new DashScopeAudioSpeechApi.Request(header, payload);
 
 		// Verify request properties
 		assertNotNull(request, "Request object should be created");
@@ -116,18 +115,17 @@ class DashScopeSpeechSynthesisApiTests {
 	@Test
 	void testRequestTextTypeEnum() {
 		// Test RequestTextType enum values
-		assertEquals("PlainText", DashScopeSpeechSynthesisApi.RequestTextType.PLAIN_TEXT.getValue(),
+		assertEquals("PlainText", DashScopeAudioSpeechApi.RequestTextType.PLAIN_TEXT.getValue(),
 				"PLAIN_TEXT should have value 'PlainText'");
-		assertEquals("SSML", DashScopeSpeechSynthesisApi.RequestTextType.SSML.getValue(),
-				"SSML should have value 'SSML'");
+		assertEquals("SSML", DashScopeAudioSpeechApi.RequestTextType.SSML.getValue(), "SSML should have value 'SSML'");
 	}
 
 	@Test
 	void testResponseFormatEnum() {
 		// Test ResponseFormat enum values
-		assertEquals("pcm", DashScopeSpeechSynthesisApi.ResponseFormat.PCM.getValue(), "PCM should have value 'pcm'");
-		assertEquals("wav", DashScopeSpeechSynthesisApi.ResponseFormat.WAV.getValue(), "WAV should have value 'wav'");
-		assertEquals("mp3", DashScopeSpeechSynthesisApi.ResponseFormat.MP3.getValue(), "MP3 should have value 'mp3'");
+		assertEquals("pcm", DashScopeAudioSpeechApi.ResponseFormat.PCM.getValue(), "PCM should have value 'pcm'");
+		assertEquals("wav", DashScopeAudioSpeechApi.ResponseFormat.WAV.getValue(), "WAV should have value 'wav'");
+		assertEquals("mp3", DashScopeAudioSpeechApi.ResponseFormat.MP3.getValue(), "MP3 should have value 'mp3'");
 	}
 
 }

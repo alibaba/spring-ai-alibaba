@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.dashscope.audio;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioSpeechApi;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisOptions;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author kevinlin09
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
+public class DashScopeAudioSpeechOptions implements SpeechSynthesisOptions {
 
 	// @formatter:off
     /**
@@ -49,7 +49,7 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
 	 * Input Text type.
 	 */
 	@JsonProperty("request_text_type")
-	private DashScopeSpeechSynthesisApi.RequestTextType requestTextType = DashScopeSpeechSynthesisApi.RequestTextType.PLAIN_TEXT;
+	private DashScopeAudioSpeechApi.RequestTextType requestTextType = DashScopeAudioSpeechApi.RequestTextType.PLAIN_TEXT;
 
     /**
      * synthesis audio sample rate.
@@ -92,11 +92,11 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
      * to mp3.
      */
     @JsonProperty("response_format")
-    private DashScopeSpeechSynthesisApi.ResponseFormat responseFormat = DashScopeSpeechSynthesisApi.ResponseFormat.MP3;
+    private DashScopeAudioSpeechApi.ResponseFormat responseFormat = DashScopeAudioSpeechApi.ResponseFormat.MP3;
 
     // @formatter:on
-	public static DashScopeSpeechSynthesisOptions.Builder builder() {
-		return new DashScopeSpeechSynthesisOptions.Builder();
+	public static DashScopeAudioSpeechOptions.Builder builder() {
+		return new DashScopeAudioSpeechOptions.Builder();
 	}
 
 	@Override
@@ -175,15 +175,15 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
 		this.enablePhonemeTimestamp = enablePhonemeTimestamp;
 	}
 
-	public DashScopeSpeechSynthesisApi.ResponseFormat getResponseFormat() {
+	public DashScopeAudioSpeechApi.ResponseFormat getResponseFormat() {
 		return responseFormat;
 	}
 
-	public void setResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat responseFormat) {
+	public void setResponseFormat(DashScopeAudioSpeechApi.ResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
-	public DashScopeSpeechSynthesisApi.RequestTextType getRequestTextType() {
+	public DashScopeAudioSpeechApi.RequestTextType getRequestTextType() {
 		return requestTextType;
 	}
 
@@ -200,66 +200,65 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
 	 */
 	public static class Builder {
 
-		private final DashScopeSpeechSynthesisOptions options = new DashScopeSpeechSynthesisOptions();
+		private final DashScopeAudioSpeechOptions options = new DashScopeAudioSpeechOptions();
 
-		public DashScopeSpeechSynthesisOptions.Builder model(String model) {
+		public DashScopeAudioSpeechOptions.Builder model(String model) {
 			options.model = model;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder test(String text) {
+		public DashScopeAudioSpeechOptions.Builder test(String text) {
 			options.text = text;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder voice(String voice) {
+		public DashScopeAudioSpeechOptions.Builder voice(String voice) {
 			options.voice = voice;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder requestText(
-				DashScopeSpeechSynthesisApi.RequestTextType requestTextType) {
+		public DashScopeAudioSpeechOptions.Builder requestText(
+				DashScopeAudioSpeechApi.RequestTextType requestTextType) {
 			options.requestTextType = requestTextType;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder sampleRate(Integer sampleRate) {
+		public DashScopeAudioSpeechOptions.Builder sampleRate(Integer sampleRate) {
 			options.sampleRate = sampleRate;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder volume(Integer volume) {
+		public DashScopeAudioSpeechOptions.Builder volume(Integer volume) {
 			options.volume = volume;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder speed(Float speed) {
+		public DashScopeAudioSpeechOptions.Builder speed(Float speed) {
 			options.speed = speed;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder responseFormat(
-				DashScopeSpeechSynthesisApi.ResponseFormat format) {
+		public DashScopeAudioSpeechOptions.Builder responseFormat(DashScopeAudioSpeechApi.ResponseFormat format) {
 			options.responseFormat = format;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder pitch(Double pitch) {
+		public DashScopeAudioSpeechOptions.Builder pitch(Double pitch) {
 			options.pitch = pitch;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder enableWordTimestamp(Boolean enableWordTimestamp) {
+		public DashScopeAudioSpeechOptions.Builder enableWordTimestamp(Boolean enableWordTimestamp) {
 			options.enableWordTimestamp = enableWordTimestamp;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder enablePhonemeTimestamp(Boolean enablePhonemeTimestamp) {
+		public DashScopeAudioSpeechOptions.Builder enablePhonemeTimestamp(Boolean enablePhonemeTimestamp) {
 			options.enablePhonemeTimestamp = enablePhonemeTimestamp;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions build() {
+		public DashScopeAudioSpeechOptions build() {
 			return options;
 		}
 
