@@ -25,10 +25,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = OllamaSearchModelConstants.CONFIG_PREFIX)
 public class OllamaSearchModelProperties extends CommonToolCallProperties {
 
-	public static final String QUERY_BASE_URL = "https://ollama.com";
-
 	public OllamaSearchModelProperties() {
-		super(QUERY_BASE_URL);
+		super(OllamaSearchModelConstants.BASE_URL);
 	}
 
 }

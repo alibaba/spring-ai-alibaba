@@ -24,4 +24,6 @@ public final class OllamaSearchModelConstants {
 
 	public static final String TOOL_NAME = "ollamaSearchModel";
 
+	public static final String BASE_URL = "https://ollama.com";
+
 }
