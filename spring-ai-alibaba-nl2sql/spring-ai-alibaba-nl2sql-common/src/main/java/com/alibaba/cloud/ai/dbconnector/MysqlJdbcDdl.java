@@ -15,13 +15,12 @@
  */
 package com.alibaba.cloud.ai.dbconnector;
 
-import com.alibaba.cloud.ai.dbconnector.bo.ColumnInfoBO;
 import com.alibaba.cloud.ai.dbconnector.bo.DatabaseInfoBO;
-import com.alibaba.cloud.ai.dbconnector.bo.ForeignKeyInfoBO;
-import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.dbconnector.bo.SchemaInfoBO;
 import com.alibaba.cloud.ai.dbconnector.bo.TableInfoBO;
-import lombok.AllArgsConstructor;
+import com.alibaba.cloud.ai.dbconnector.bo.ColumnInfoBO;
+import com.alibaba.cloud.ai.dbconnector.bo.ForeignKeyInfoBO;
+import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -37,7 +36,6 @@ import java.util.stream.Collectors;
 import static com.alibaba.cloud.ai.dbconnector.ColumnTypeParser.wrapType;
 
 @Service
-@AllArgsConstructor
 public class MysqlJdbcDdl extends AbstractJdbcDdl {
 
 	@Override

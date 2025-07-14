@@ -89,6 +89,8 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tavilysearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-searches</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tencentmap</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tushare</module>
 
         <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
@@ -158,6 +160,9 @@
         <!-- Spring AI Alibaba Nacos Prompt Template -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
 
+        <!-- Spring AI Alibaba Graph Observation -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-graph-observation</module>
+
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
@@ -169,6 +174,7 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-gateway</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
     </modules>
 
     <scm>
@@ -207,7 +213,7 @@
 
         <!-- Nacos -->
         <nacos2.version>2.5.1</nacos2.version>
-        <nacos3.version>3.0.1</nacos3.version>
+        <nacos3.version>3.0.2</nacos3.version>
         <nacos-client-mse-extension.version>1.0.4</nacos-client-mse-extension.version>
         <spring-alibaba-nacos-config.version>2023.0.1.3</spring-alibaba-nacos-config.version>
 

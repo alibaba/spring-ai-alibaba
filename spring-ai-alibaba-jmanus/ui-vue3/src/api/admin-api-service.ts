@@ -67,7 +67,7 @@ export class AdminApiService {
    * Batch update configuration items
    */
   public static async batchUpdateConfigs(configs: ConfigItem[]): Promise<ApiResponse> {
-    if (!configs || configs.length === 0) {
+    if (configs.length === 0) {
       return { success: true, message: 'No configuration needs to be updated' }
     }
 

@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
+import com.alibaba.cloud.ai.util.StateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -40,15 +41,12 @@ public class TableRelationNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(TableRelationNode.class);
 
-	private final ChatClient chatClient;
-
 	private final BaseSchemaService baseSchemaService;
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
 	public TableRelationNode(ChatClient.Builder chatClientBuilder, BaseSchemaService baseSchemaService,
 			BaseNl2SqlService baseNl2SqlService) {
-		this.chatClient = chatClientBuilder.build();
 		this.baseSchemaService = baseSchemaService;
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
@@ -58,38 +56,46 @@ public class TableRelationNode implements NodeAction {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 
 		// 获取必要的输入参数
-		String input = state.value(INPUT_KEY)
-			.map(String.class::cast)
-			.orElseThrow(() -> new IllegalStateException("Input key not found"));
+		String input = StateUtils.getStringValue(state, INPUT_KEY);
+		List<String> evidenceList = StateUtils.getListValue(state, EVIDENCES);
+		List<Document> tableDocuments = StateUtils.getDocumentList(state, TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT);
+		List<List<Document>> columnDocumentsByKeywords = StateUtils.getDocumentListList(state,
+				COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT);
 
-		List<String> evidenceList = state.value(EVIDENCES)
-			.map(v -> (List<String>) v)
-			.orElseThrow(() -> new IllegalStateException("Evidence list not found"));
-
-		List<Document> tableDocuments = state.value(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT)
-			.map(v -> (List<Document>) v)
-			.orElseThrow(() -> new IllegalStateException("Table documents not found"));
-
-		List<List<Document>> columnDocumentsByKeywords = state.value(COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT)
-			.map(v -> (List<List<Document>>) v)
-			.orElseThrow(() -> new IllegalStateException("Column documents not found"));
-
-		// 初始化并构建Schema
-		SchemaDTO schemaDTO = new SchemaDTO();
-		baseSchemaService.extractDatabaseName(schemaDTO);
-		baseSchemaService.buildSchemaFromDocuments(columnDocumentsByKeywords, tableDocuments, schemaDTO);
-
-		// 处理Schema选择
-		SchemaDTO result = state.value(SQL_GENERATE_SCHEMA_MISSING_ADVICE).map(String.class::cast).map(advice -> {
-			logger.info("[{}] 使用Schema补充建议处理: {}", this.getClass().getSimpleName(), advice);
-			return baseNl2SqlService.fineSelect(schemaDTO, input, evidenceList, advice);
-		}).orElseGet(() -> {
-			logger.info("[{}] 执行常规Schema选择", this.getClass().getSimpleName());
-			return baseNl2SqlService.fineSelect(schemaDTO, input, evidenceList);
-		});
+		// 构建和处理Schema
+		SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
+		SchemaDTO result = processSchemaSelection(schemaDTO, input, evidenceList, state);
 
 		logger.info("[{}] Schema处理结果: {}", this.getClass().getSimpleName(), result);
 		return Map.of(TABLE_RELATION_OUTPUT, result);
+	}
+
+	/**
+	 * 构建初始Schema
+	 */
+	private SchemaDTO buildInitialSchema(List<List<Document>> columnDocumentsByKeywords,
+			List<Document> tableDocuments) {
+		SchemaDTO schemaDTO = new SchemaDTO();
+		baseSchemaService.extractDatabaseName(schemaDTO);
+		baseSchemaService.buildSchemaFromDocuments(columnDocumentsByKeywords, tableDocuments, schemaDTO);
+		return schemaDTO;
+	}
+
+	/**
+	 * 处理Schema选择
+	 */
+	private SchemaDTO processSchemaSelection(SchemaDTO schemaDTO, String input, List<String> evidenceList,
+			OverAllState state) {
+		String schemaAdvice = StateUtils.getStringValue(state, SQL_GENERATE_SCHEMA_MISSING_ADVICE, null);
+
+		if (schemaAdvice != null) {
+			logger.info("[{}] 使用Schema补充建议处理: {}", this.getClass().getSimpleName(), schemaAdvice);
+			return baseNl2SqlService.fineSelect(schemaDTO, input, evidenceList, schemaAdvice);
+		}
+		else {
+			logger.info("[{}] 执行常规Schema选择", this.getClass().getSimpleName());
+			return baseNl2SqlService.fineSelect(schemaDTO, input, evidenceList);
+		}
 	}
 
 }

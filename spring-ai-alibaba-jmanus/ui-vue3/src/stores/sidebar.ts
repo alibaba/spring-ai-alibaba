@@ -45,8 +45,8 @@ export const useSidebarStore = defineStore('sidebar', () => {
   // Computed properties
   const sortedTemplates = computed(() => {
     return [...planTemplateList.value].sort((a, b) => {
-      const timeA = new Date(a.updateTime || a.createTime)
-      const timeB = new Date(b.updateTime || b.createTime)
+      const timeA = new Date(a.updateTime ?? a.createTime)
+      const timeB = new Date(b.updateTime ?? b.createTime)
       return timeB.getTime() - timeA.getTime()
     })
   })
@@ -73,13 +73,6 @@ export const useSidebarStore = defineStore('sidebar', () => {
     isCollapsed.value = !isCollapsed.value
   }
 
-  const showSidebar = () => {
-    isCollapsed.value = false
-  }
-
-  const hideSidebar = () => {
-    isCollapsed.value = true
-  }
 
   const switchToTab = (tab: 'list' | 'config') => {
     currentTab.value = tab
@@ -93,7 +86,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
       console.log('[SidebarStore] Starting to load plan template list...')
       const response = await PlanActApiService.getAllPlanTemplates()
 
-      if (response && response.templates && Array.isArray(response.templates)) {
+      if (response?.templates && Array.isArray(response.templates)) {
         planTemplateList.value = response.templates
         console.log(`[SidebarStore] Successfully loaded ${response.templates.length} plan templates`)
       } else {
@@ -138,7 +131,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
           if (parsed.params) {
             executionParams.value = parsed.params
           }
-        } catch (e) {
+        } catch {
           console.warn('Unable to parse JSON content to get prompt information')
         }
       } else {
@@ -174,7 +167,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
   }
 
   const deleteTemplate = async (template: PlanTemplate) => {
-    if (!template || !template.id) {
+    if (!template.id) {
       console.warn('[SidebarStore] deleteTemplate: Invalid template object or ID')
       return
     }
@@ -276,7 +269,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
         try {
           const planData = JSON.parse(response.planJson || '{}')
           title = planData.title || title
-        } catch (e) {
+        } catch {
           console.warn('Unable to parse plan JSON to get title')
         }
 
@@ -349,11 +342,11 @@ export const useSidebarStore = defineStore('sidebar', () => {
       try {
         planData = JSON.parse(jsonContent.value)
         planData.planTemplateId = selectedTemplate.value.id
-      } catch (e) {
+      } catch {
         planData = {
           planTemplateId: selectedTemplate.value.id,
           planId: selectedTemplate.value.id,
-          title: selectedTemplate.value.title || '执行计划',
+          title: selectedTemplate.value.title ?? '执行计划',
           steps: [
             { stepRequirement: '[BROWSER_AGENT] 访问百度搜索阿里巴巴的最新股价' },
             { stepRequirement: '[DEFAULT_AGENT] 提取和整理搜索结果中的股价信息' },
@@ -363,7 +356,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
         }
       }
 
-      const title = selectedTemplate.value.title || planData.title || 'Execution Plan'
+      const title = selectedTemplate.value.title ?? planData.title ?? 'Execution Plan'
 
       return {
         title,
@@ -406,8 +399,6 @@ export const useSidebarStore = defineStore('sidebar', () => {
 
     // Actions
     toggleSidebar,
-    showSidebar,
-    hideSidebar,
     switchToTab,
     loadPlanTemplateList,
     selectTemplate,

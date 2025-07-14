@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.analyticdb;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -26,8 +24,6 @@ import java.util.Map;
 /**
  * @author HeYQ
  */
-@Setter
-@Getter
 @ConfigurationProperties("spring.ai.vectorstore.analytic")
 public class AnalyticDbVectorStoreProperties extends CommonVectorStoreProperties {
 
@@ -67,6 +63,118 @@ public class AnalyticDbVectorStoreProperties extends CommonVectorStoreProperties
 		params.put("readTimeout", this.readTimeout);
 		params.put("userAgent", this.userAgent);
 		return params;
+	}
+
+	public String getCollectName() {
+		return collectName;
+	}
+
+	public void setCollectName(String collectName) {
+		this.collectName = collectName;
+	}
+
+	public String getAccessKeyId() {
+		return accessKeyId;
+	}
+
+	public void setAccessKeyId(String accessKeyId) {
+		this.accessKeyId = accessKeyId;
+	}
+
+	public String getAccessKeySecret() {
+		return accessKeySecret;
+	}
+
+	public void setAccessKeySecret(String accessKeySecret) {
+		this.accessKeySecret = accessKeySecret;
+	}
+
+	public String getRegionId() {
+		return regionId;
+	}
+
+	public void setRegionId(String regionId) {
+		this.regionId = regionId;
+	}
+
+	public String getDbInstanceId() {
+		return dbInstanceId;
+	}
+
+	public void setDbInstanceId(String dbInstanceId) {
+		this.dbInstanceId = dbInstanceId;
+	}
+
+	public String getManagerAccount() {
+		return managerAccount;
+	}
+
+	public void setManagerAccount(String managerAccount) {
+		this.managerAccount = managerAccount;
+	}
+
+	public String getManagerAccountPassword() {
+		return managerAccountPassword;
+	}
+
+	public void setManagerAccountPassword(String managerAccountPassword) {
+		this.managerAccountPassword = managerAccountPassword;
+	}
+
+	public String getNamespace() {
+		return namespace;
+	}
+
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
+	}
+
+	public String getNamespacePassword() {
+		return namespacePassword;
+	}
+
+	public void setNamespacePassword(String namespacePassword) {
+		this.namespacePassword = namespacePassword;
+	}
+
+	public String getMetrics() {
+		return metrics;
+	}
+
+	public void setMetrics(String metrics) {
+		this.metrics = metrics;
+	}
+
+	public Integer getReadTimeout() {
+		return readTimeout;
+	}
+
+	public void setReadTimeout(Integer readTimeout) {
+		this.readTimeout = readTimeout;
+	}
+
+	public String getUserAgent() {
+		return userAgent;
+	}
+
+	public void setUserAgent(String userAgent) {
+		this.userAgent = userAgent;
+	}
+
+	public Integer getDefaultTopK() {
+		return defaultTopK;
+	}
+
+	public void setDefaultTopK(Integer defaultTopK) {
+		this.defaultTopK = defaultTopK;
+	}
+
+	public Double getDefaultSimilarityThreshold() {
+		return defaultSimilarityThreshold;
+	}
+
+	public void setDefaultSimilarityThreshold(Double defaultSimilarityThreshold) {
+		this.defaultSimilarityThreshold = defaultSimilarityThreshold;
 	}
 
 }

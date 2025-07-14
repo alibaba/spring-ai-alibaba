@@ -15,14 +15,11 @@
  */
 package com.alibaba.cloud.ai.dbconnector;
 
-import lombok.Getter;
-
 /**
  * 数据库连接相关的错误码定义。
  * <p>
  * 包含标准 SQLState 码、自定义码以及对应的中文提示信息。 可作为开源项目的基础错误码模块，便于统一处理异常。
  */
-@Getter
 public enum ErrorCodeEnum {
 
 	/**
@@ -154,6 +151,14 @@ public enum ErrorCodeEnum {
 	@Override
 	public String toString() {
 		return "[" + code + "] " + message;
+	}
+
+	public String getCode() {
+		return code;
+	}
+
+	public String getMessage() {
+		return message;
 	}
 
 }

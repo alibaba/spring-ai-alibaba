@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.mcp.nacos.client.transport;
 
+import com.alibaba.cloud.ai.mcp.nacos.client.builder.WebFluxSseClientTransportBuilder;
 import com.alibaba.cloud.ai.mcp.nacos.client.utils.NacosMcpClientUtils;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.cloud.ai.mcp.nacos.service.model.NacosMcpServerEndpoint;
@@ -62,6 +63,8 @@ public class LoadbalancedMcpSyncClient {
 
 	private final McpSyncClientConfigurer mcpSyncClientConfigurer;
 
+	private final WebFluxSseClientTransportBuilder webFluxSseClientTransportBuilder;
+
 	private final ObjectMapper objectMapper;
 
 	private final ApplicationContext applicationContext;
@@ -100,6 +103,7 @@ public class LoadbalancedMcpSyncClient {
 		mcpSyncClientConfigurer = this.applicationContext.getBean(McpSyncClientConfigurer.class);
 		objectMapper = this.applicationContext.getBean(ObjectMapper.class);
 		webClientBuilderTemplate = this.applicationContext.getBean(WebClient.Builder.class);
+		webFluxSseClientTransportBuilder = this.applicationContext.getBean(WebFluxSseClientTransportBuilder.class);
 	}
 
 	public void init() {
@@ -278,7 +282,8 @@ public class LoadbalancedMcpSyncClient {
 		McpSyncClient syncClient;
 		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
-		WebFluxSseClientTransport transport = new WebFluxSseClientTransport(webClientBuilder, objectMapper, exportPath);
+		WebFluxSseClientTransport transport = webFluxSseClientTransportBuilder.build(webClientBuilder, objectMapper,
+				exportPath);
 		NamedClientMcpTransport namedTransport = new NamedClientMcpTransport(
 				serverName + "-" + NacosMcpClientUtils.getMcpEndpointInfoId(mcpEndpointInfo, exportPath), transport);
 		McpSchema.Implementation clientInfo = new McpSchema.Implementation(
