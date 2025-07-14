@@ -121,10 +121,6 @@ public class Nl2sqlForGraphController {
 							logger.warn("Received null chunk from streaming output, skipping emission.");
 						}
 					}
-					// else {
-					// sink.tryEmitNext(
-					// ServerSentEvent.builder(JSON.toJSONString(output.state().value("messages"))).build());
-					// }
 				}
 				catch (Exception e) {
 					e.printStackTrace();
