@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service.container;
+package com.alibaba.cloud.ai.service.executor;
 
 import com.alibaba.cloud.ai.config.ContainerProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -36,6 +35,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author vlsmb
@@ -63,6 +63,12 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 	// 已经就绪的临时容器
 	protected final ArrayBlockingQueue<String> readyTempContainer;
 
+	// 当前核心容器的数量
+	protected final AtomicInteger currentCoreContainerSize;
+
+	// 当前临时容器的数量
+	protected final AtomicInteger currentTempContainerSize;
+
 	// 线程池，运行临时存放的任务
 	protected final ExecutorService consumerThreadPool;
 
@@ -80,6 +86,8 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 		this.consumerThreadPool = new ThreadPoolExecutor(properties.getCoreThreadSize(), properties.getMaxThreadSize(),
 				properties.getKeepThreadAliveTime(), TimeUnit.SECONDS,
 				new ArrayBlockingQueue<>(properties.getThreadQueueSize()));
+		this.currentCoreContainerSize = new AtomicInteger(0);
+		this.currentTempContainerSize = new AtomicInteger(0);
 		// 注册关闭钩子
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			log.info("Shutting down container pool executor...");
@@ -158,18 +166,16 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 	}
 
 	// 使用核心容器
-	private TaskResponse useCoreContainer(TaskRequest request) {
+	private TaskResponse useCoreContainer(String containerId, TaskRequest request) {
 		try {
-			String containerId = this.readyCoreContainer.poll();
-			if (!StringUtils.hasText(containerId) || this.coreContainerState.get(containerId) != State.READY) {
-				// 容器被别的线程抢走，重新选择使用策略
-				log.debug("reselect strategy: {} ...", request.toString());
-				return this.runTask(request);
-			}
 			// 执行任务
 			this.coreContainerState.replace(containerId, State.RUNNING);
 			TaskResponse resp = this.execTaskInContainer(request, containerId);
 			this.coreContainerState.replace(containerId, State.READY);
+			// 放回阻塞队列中
+			this.readyCoreContainer.add(containerId);
+			// 运行任务队列里的任务，如果有
+			this.popTaskQueue();
 			return resp;
 		}
 		catch (Exception e) {
@@ -179,14 +185,8 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 	}
 
 	// 使用临时容器
-	private TaskResponse useTempContainer(TaskRequest request) {
+	private TaskResponse useTempContainer(String containerId, TaskRequest request) {
 		try {
-			String containerId = this.readyTempContainer.poll();
-			if (!StringUtils.hasText(containerId) || this.tempContainerState.get(containerId) != State.READY) {
-				// 容器被别的线程抢走或销毁，重新选择使用策略
-				log.debug("reselect strategy: {} ...", request.toString());
-				return this.runTask(request);
-			}
 			Future<?> future = this.tempContainerRemoveFuture.remove(containerId);
 			// 取消临时容器的销毁线程
 			if (future != null) {
@@ -201,8 +201,12 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 			this.tempContainerState.replace(containerId, State.RUNNING);
 			TaskResponse resp = this.execTaskInContainer(request, containerId);
 			this.tempContainerState.replace(containerId, State.READY);
+			// 放回阻塞队列中
+			this.readyTempContainer.add(containerId);
 			// 重新创建临时容器的销毁线程
 			this.tempContainerRemoveFuture.put(containerId, this.registerRemoveTempContainer(containerId));
+			// 运行任务队列里的任务，如果有
+			this.popTaskQueue();
 			return resp;
 		}
 		catch (Exception e) {
@@ -221,22 +225,10 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 			log.error("create new container failed, {}", e.getMessage(), e);
 			return TaskResponse.error(e.getMessage());
 		}
-		if (this.coreContainerState.size() >= this.properties.getCoreContainerNum()) {
-			// 别的线程抢先创建满了核心容器，重新选择策略
-			log.debug("Other threads preemptively created the core container to its capacity");
-			try {
-				this.removeContainer(containerId);
-			}
-			catch (Exception e) {
-				log.error("Remove container failed, containerId {}, {}", containerId, e.getMessage(), e);
-			}
-			return this.runTask(request);
-		}
 		// 记录新增的容器
 		this.coreContainerState.put(containerId, State.READY);
-		this.readyCoreContainer.add(containerId);
 		// 使用容器
-		return this.useCoreContainer(request);
+		return this.useCoreContainer(containerId, request);
 	}
 
 	// 创建并使用临时容器
@@ -249,22 +241,10 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 			log.error("create new container failed, {}", e.getMessage(), e);
 			return TaskResponse.error(e.getMessage());
 		}
-		if (this.tempContainerState.size() >= this.properties.getTempContainerNum()) {
-			// 别的线程抢先创建满了核心容器，重新选择策略
-			log.debug("Other threads preemptively created the temp container to its capacity");
-			try {
-				this.removeContainer(containerId);
-			}
-			catch (Exception e) {
-				log.error("Remove container failed, containerId: {}, {}", containerId, e.getMessage(), e);
-			}
-			return this.runTask(request);
-		}
 		// 记录新增的容器
 		this.tempContainerState.put(containerId, State.READY);
-		this.readyTempContainer.add(containerId);
 		// 使用容器
-		return this.useTempContainer(request);
+		return this.useTempContainer(containerId, request);
 	}
 
 	private TaskResponse pushTaskQueue(TaskRequest request) throws ExecutionException, InterruptedException {
@@ -272,29 +252,69 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 			log.info("Execute tasks in the BlockingQueue {} ...", request.toString());
 			return this.runTask(request);
 		});
-		this.taskQueue.add(ft);
+		this.taskQueue.put(ft);
 		return ft.get();
+	}
+
+	// 运行任务队列里的任务，如果有
+	private void popTaskQueue() {
+		FutureTask<ContainerPoolExecutor.TaskResponse> future = this.taskQueue.poll();
+		if (future == null) {
+			return;
+		}
+		log.info("Get task from the BlockingQueue ...");
+		this.consumerThreadPool.submit(future);
 	}
 
 	@Override
 	public TaskResponse runTask(TaskRequest request) {
-		// 判断当前容器池状态，选择不同的策略
-		if (!this.readyCoreContainer.isEmpty()) {
+		// 使用可用的核心容器
+		String freeCoreId = this.readyCoreContainer.poll();
+		if (freeCoreId != null) {
 			log.debug("Use free core container to run task {} ...", request.toString());
-			return this.useCoreContainer(request);
+			return this.useCoreContainer(freeCoreId, request);
 		}
-		if (!this.readyTempContainer.isEmpty()) {
+
+		// 使用可用的临时容器
+		String freeTempId = this.readyTempContainer.poll();
+		if (freeTempId != null) {
 			log.debug("Use free temp container to run task {} ...", request.toString());
-			return this.useTempContainer(request);
+			return this.useTempContainer(freeTempId, request);
 		}
-		if (this.coreContainerState.size() < properties.getCoreContainerNum()) {
+
+		// 创建新的核心容器
+		int currentCore;
+		boolean useCoreContainer = true;
+		do {
+			currentCore = this.currentCoreContainerSize.get();
+			if (currentCore >= properties.getCoreContainerNum()) {
+				useCoreContainer = false;
+				break;
+			}
+		}
+		while (!this.currentCoreContainerSize.compareAndSet(currentCore, currentCore + 1));
+		if (useCoreContainer) {
 			log.debug("Create new core container to run task {} ...", request.toString());
 			return this.createAndUseCoreContainer(request);
 		}
-		if (this.tempContainerState.size() < properties.getTempContainerNum()) {
+
+		// 创建新的临时容器
+		int currentTemp;
+		boolean useTempContainer = true;
+		do {
+			currentTemp = this.currentTempContainerSize.get();
+			if (currentTemp >= properties.getTempContainerNum()) {
+				useTempContainer = false;
+				break;
+			}
+		}
+		while (!this.currentTempContainerSize.compareAndSet(currentTemp, currentTemp + 1));
+		if (useTempContainer) {
 			log.debug("Create new temp container to run task {} ...", request.toString());
 			return this.createAndUseTempContainer(request);
 		}
+
+		// 放入任务队列里等待
 		try {
 			log.debug("push task into BlockingQueue: {} ...", request.toString());
 			return this.pushTaskQueue(request);
@@ -340,7 +360,8 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 	 * 生成唯一的容器名称
 	 */
 	protected String generateContainerName() {
-		return this.properties.getContainerNamePrefix() + "_" + System.currentTimeMillis();
+		return this.properties.getContainerNamePrefix() + "_" + System.currentTimeMillis() + "_"
+				+ Thread.currentThread().getName();
 	}
 
 }

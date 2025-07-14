@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service.container;
+package com.alibaba.cloud.ai.service.executor;
 
 import com.alibaba.cloud.ai.config.ContainerProperties;
 import com.github.dockerjava.api.DockerClient;
@@ -233,7 +233,9 @@ public class DockerContainerPoolExecutor extends AbstractContainerPoolExecutor i
 			.withName(containerName)
 			.withWorkingDir("/app")
 			.withHostConfig(hostConfig)
-			.withCmd()
+			.withCmd("sh", "-c", String.format(
+					"if [ -s requirements.txt ]; then pip install --no-cache-dir -r requirements.txt > /dev/null; fi && timeout -s SIGKILL %s python3 script.py < input_data.txt",
+					properties.getCodeTimeout()))
 			.exec();
 		String containerId = container.getId();
 		// 保存临时目录对象

@@ -16,7 +16,8 @@
 
 package com.alibaba.cloud.ai.config;
 
-import com.alibaba.cloud.ai.service.container.ContainerPoolExecutor;
+import com.alibaba.cloud.ai.service.executor.ContainerPoolExecutor;
+import com.alibaba.cloud.ai.tool.PythonExecutorTool;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +33,11 @@ public class ContainerConfiguration {
 	@Bean
 	public ContainerPoolExecutor containerPoolExecutor(ContainerProperties properties) {
 		return ContainerPoolExecutor.getInstance(properties);
+	}
+
+	@Bean
+	public PythonExecutorTool pythonExecutorTool(ContainerPoolExecutor executor) {
+		return new PythonExecutorTool(executor);
 	}
 
 }

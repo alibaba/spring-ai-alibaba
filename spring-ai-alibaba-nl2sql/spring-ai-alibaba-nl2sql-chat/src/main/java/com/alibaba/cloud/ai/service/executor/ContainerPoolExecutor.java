@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service.container;
+package com.alibaba.cloud.ai.service.executor;
 
 import com.alibaba.cloud.ai.config.ContainerProperties;
 

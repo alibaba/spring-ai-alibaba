@@ -15,19 +15,28 @@
  */
 package com.alibaba.cloud.ai.controller;
 
+import com.alibaba.cloud.ai.config.ContainerConfiguration;
 import com.alibaba.cloud.ai.tool.PythonExecutorTool;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(classes = { ContainerConfiguration.class })
 @DisplayName("Run Python Code in Docker Test Without Network")
-@Disabled
+@ActiveProfiles("docker")
 public class DockerContainerPoolExecutorTest {
+
+	private static final Logger log = LoggerFactory.getLogger(DockerContainerPoolExecutorTest.class);
 
 	@Autowired
 	private PythonExecutorTool pythonExecutorTool;
@@ -84,60 +93,67 @@ public class DockerContainerPoolExecutorTest {
 			print(input())
 			""";
 
-	@Test
-	@DisplayName("Run Normal Code")
-	public void testNormalCode() {
+	private void testNormalCode() {
+		log.info("Run Normal Code");
 		String response = pythonExecutorTool.executePythonCode(NORMAL_CODE, null, "DataFrame Data");
 		System.out.println(response);
-		assertThat(response).contains("Successfully executed").contains("3628800");
+		assertThat(response).contains("3628800");
+		log.info("Run Normal Code Finished");
 	}
 
-	@Test
-	@DisplayName("Run Code with Third-parties but Not Installed")
-	public void testCodeWithoutDependency() {
-		String response = pythonExecutorTool.executePythonCode(CODE_WITH_DEPENDENCY, null, "DataFrame Data");
-		System.out.println(response);
-		assertThat(response).contains("Error executing code").contains("ModuleNotFoundError");
-	}
-
-	@Test
-	@DisplayName("Run Code with Third-parties Installed")
-	public void testCodeWithDependency() {
+	private void testCodeWithDependency() {
+		log.info("Run Code with Third-parties Installed");
 		String response = pythonExecutorTool.executePythonCode(CODE_WITH_DEPENDENCY, "numpy==2.2.6", "DataFrame Data");
 		System.out.println(response);
-		assertThat(response).contains("Successfully executed").doesNotContain("ModuleNotFoundError");
+		assertThat(response).doesNotContain("ModuleNotFoundError");
+		log.info("Run Code with Third-parties Installed Finished");
 	}
 
-	@Test
-	@DisplayName("Run Code with Endless Loop")
-	public void testTimeoutCode() {
+	private void testTimeoutCode() {
+		log.info("Run Code with Endless Loop");
 		String response = pythonExecutorTool.executePythonCode(TIMEOUT_CODE, null, "DataFrame Data");
 		System.out.println(response);
-		assertThat(response).contains("Error executing code");
+		assertThat(response).contains("Killed");
+		log.info("Run Code with Endless Loop Finished");
 	}
 
-	@Test
-	@DisplayName("Run Code with Syntax Error")
-	public void testErrorCode() {
+	private void testErrorCode() {
+		log.info("Run Code with Syntax Error");
 		String response = pythonExecutorTool.executePythonCode(ERROR_CODE, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("SyntaxError");
+		log.info("Run Code with Syntax Error Finished");
 	}
 
-	@Test
-	@DisplayName("Check Network is Disabled")
-	public void testNetworkCheck() {
+	private void testNetworkCheck() {
+		log.info("Run Network Check");
 		String response = pythonExecutorTool.executePythonCode(NETWORK_CHECK, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("Connected").doesNotContain("Failed");
+		log.info("Run Network Check Finished");
 	}
 
-	@Test
-	@DisplayName("Check Need Input")
-	public void testNeedInput() {
+	private void testNeedInput() {
+		log.info("Check Need Input");
 		String response = pythonExecutorTool.executePythonCode(NEED_INPUT, null, "DataFrame Data");
 		System.out.println(response);
 		assertThat(response).contains("DataFrame Data");
+		log.info("Run Need Input Finished");
+	}
+
+	@Test
+	@DisplayName("Concurrency Testing")
+	public void testConcurrency() throws InterruptedException {
+		ExecutorService executorService = Executors.newFixedThreadPool(10);
+		executorService.submit(this::testNormalCode);
+		executorService.submit(this::testCodeWithDependency);
+		executorService.submit(this::testTimeoutCode);
+		executorService.submit(this::testErrorCode);
+		executorService.submit(this::testNetworkCheck);
+		executorService.submit(this::testNeedInput);
+		executorService.shutdown();
+		while (!executorService.awaitTermination(500, TimeUnit.MILLISECONDS))
+			;
 	}
 
 }

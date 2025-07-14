@@ -16,18 +16,16 @@
 
 package com.alibaba.cloud.ai.tool;
 
-import com.alibaba.cloud.ai.service.container.ContainerPoolExecutor;
+import com.alibaba.cloud.ai.service.executor.ContainerPoolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.stereotype.Service;
 
 /**
  * @author vlsmb
  * @since 2025/7/14
  */
-@Service
 public class PythonExecutorTool {
 
 	private static final Logger log = LoggerFactory.getLogger(PythonExecutorTool.class);
