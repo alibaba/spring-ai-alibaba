@@ -262,25 +262,26 @@ public class DynamicAgent extends ReActAgent {
 
 		try {
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
-			
+
 			// 创建 ActToolInfo 列表
 			actToolInfoList = createActToolInfoList(toolCalls);
-			
+
 			// 执行工具调用
 			toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 			processMemory(toolExecutionResult);
-			
+
 			// 获取工具响应消息
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
 
 			// 设置每个工具的执行结果
 			setActToolInfoResults(actToolInfoList, toolResponseMessage.getResponses());
-			
+
 			// 获取最后一个工具的执行结果
 			if (!toolResponseMessage.getResponses().isEmpty()) {
 				lastToolCallResult = toolResponseMessage.getResponses()
-					.get(toolResponseMessage.getResponses().size() - 1).responseData();
+					.get(toolResponseMessage.getResponses().size() - 1)
+					.responseData();
 			}
 
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), lastToolCallResult));
@@ -325,13 +326,14 @@ public class DynamicAgent extends ReActAgent {
 			log.info("Exception occurred", e);
 
 			// 记录失败的动作结果
-			if (actToolInfoList == null && response != null && response.getResult() != null && response.getResult().getOutput() != null) {
+			if (actToolInfoList == null && response != null && response.getResult() != null
+					&& response.getResult().getOutput() != null) {
 				List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 				if (!toolCalls.isEmpty()) {
 					actToolInfoList = createActToolInfoList(toolCalls);
 				}
 			}
-			
+
 			recordActionResult(actToolInfoList, null, "FAILED", e.getMessage(), false);
 
 			userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up on error
@@ -340,16 +342,15 @@ public class DynamicAgent extends ReActAgent {
 		}
 	}
 
-
 	/**
 	 * Set act tool info results for all executed tools
 	 */
-	private void setActToolInfoResults(List<ThinkActRecord.ActToolInfo> actToolInfoList, 
+	private void setActToolInfoResults(List<ThinkActRecord.ActToolInfo> actToolInfoList,
 			List<ToolResponseMessage.ToolResponse> responses) {
 		for (ToolResponseMessage.ToolResponse toolResponse : responses) {
 			String curToolResp = toolResponse.responseData();
 			log.info("🔧 Tool {}'s executing result: {}", getName(), curToolResp);
-			
+
 			// 找到对应的 ActToolInfo 并设置结果
 			for (ThinkActRecord.ActToolInfo actToolInfo : actToolInfoList) {
 				if (actToolInfo.getId().equals(toolResponse.id())) {
@@ -357,7 +358,7 @@ public class DynamicAgent extends ReActAgent {
 					break;
 				}
 			}
-			
+
 			if (!manusProperties.getParallelToolCalls()) {
 				break;
 			}
@@ -367,7 +368,7 @@ public class DynamicAgent extends ReActAgent {
 	/**
 	 * Handle FormInputTool specific logic
 	 */
-	private AgentExecResult handleFormInputTool(FormInputTool formInputTool, 
+	private AgentExecResult handleFormInputTool(FormInputTool formInputTool,
 			List<ThinkActRecord.ActToolInfo> actToolInfoList) {
 		// Check if the tool is waiting for user input
 		if (formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) {
@@ -379,12 +380,12 @@ public class DynamicAgent extends ReActAgent {
 			// After waiting, check the state again
 			if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_RECEIVED) {
 				log.info("User input received for planId: {}", getCurrentPlanId());
-				
+
 				UserMessage userMessage = UserMessage.builder()
 					.text("User input received for form: " + formInputTool.getCurrentToolStateString())
 					.build();
 				processUserInputToMemory(userMessage);
-				
+
 				// Update the result in actToolInfoList
 				if (!actToolInfoList.isEmpty()) {
 					actToolInfoList.get(0).setResult(formInputTool.getCurrentToolStateString());
@@ -392,16 +393,14 @@ public class DynamicAgent extends ReActAgent {
 			}
 			else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
 				log.warn("Input timeout occurred for FormInputTool for planId: {}", getCurrentPlanId());
-				
-				UserMessage userMessage = UserMessage.builder()
-					.text("Input timeout occurred for form: ")
-					.build();
+
+				UserMessage userMessage = UserMessage.builder().text("Input timeout occurred for form: ").build();
 				processUserInputToMemory(userMessage);
 				userInputService.removeFormInputTool(getCurrentPlanId());
 
 				// 记录输入超时的动作结果
-				recordActionResult(actToolInfoList, "Input timeout occurred", "TIMEOUT", 
-					"Input timeout occurred for FormInputTool", false);
+				recordActionResult(actToolInfoList, "Input timeout occurred", "TIMEOUT",
+						"Input timeout occurred for FormInputTool", false);
 
 				return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS);
 			}
@@ -412,13 +411,13 @@ public class DynamicAgent extends ReActAgent {
 	/**
 	 * Record action result with simplified parameters
 	 */
-	private void recordActionResult(List<ThinkActRecord.ActToolInfo> actToolInfoList, 
-			String actionResult, String status, String errorMessage, boolean subPlanCreated) {
-		
+	private void recordActionResult(List<ThinkActRecord.ActToolInfo> actToolInfoList, String actionResult,
+			String status, String errorMessage, boolean subPlanCreated) {
+
 		String toolName = null;
 		String toolParameters = null;
 		String actionDescription = "Tool execution";
-		
+
 		if (actToolInfoList != null && !actToolInfoList.isEmpty()) {
 			ThinkActRecord.ActToolInfo firstTool = actToolInfoList.get(0);
 			toolName = firstTool.getName();
@@ -439,7 +438,7 @@ public class DynamicAgent extends ReActAgent {
 		params.setToolParameters(toolParameters);
 		params.setSubPlanCreated(subPlanCreated);
 		params.setActToolInfoList(actToolInfoList);
-		
+
 		planExecutionRecorder.recordActionResult(params);
 	}
 

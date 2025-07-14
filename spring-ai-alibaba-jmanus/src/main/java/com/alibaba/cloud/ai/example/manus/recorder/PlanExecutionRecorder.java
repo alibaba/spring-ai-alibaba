@@ -195,14 +195,14 @@ public interface PlanExecutionRecorder {
 		/** Execution status */
 		String status;
 
-	/** Whether a sub-plan was created */
-	boolean subPlanCreated;
+		/** Whether a sub-plan was created */
+		boolean subPlanCreated;
 
-	/** Action tool information list */
-	List<ThinkActRecord.ActToolInfo> actToolInfoList;
+		/** Action tool information list */
+		List<ThinkActRecord.ActToolInfo> actToolInfoList;
 
-	/** Execution summary */
-	String summary;
+		/** Execution summary */
+		String summary;
 
 		/** Maximum execution steps */
 		int maxSteps;
@@ -429,7 +429,8 @@ public interface PlanExecutionRecorder {
 			return actToolInfoList;
 		}
 
-		public void setActToolInfoList(List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord.ActToolInfo> actToolInfoList) {
+		public void setActToolInfoList(
+				List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord.ActToolInfo> actToolInfoList) {
 			this.actToolInfoList = actToolInfoList;
 		}
 
