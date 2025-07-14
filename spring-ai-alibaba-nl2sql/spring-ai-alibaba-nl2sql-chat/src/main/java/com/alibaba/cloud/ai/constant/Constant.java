@@ -55,8 +55,28 @@ public class Constant {
 
 	public static final String SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT = "SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT";
 
+	public static final String PLANNER_NODE_OUTPUT = "PLANNER_NODE_OUTPUT";
+
+	public static final String SQL_EXECUTE_NODE_OUTPUT = "SQL_EXECUTE_NODE_OUTPUT";
+
+	public static final String SQL_EXECUTE_NODE_EXCEPTION_OUTPUT = "SQL_EXECUTE_NODE_EXCEPTION_OUTPUT";
+
+	public static final String PYTHON_EXECUTE_NODE_OUTPUT = "PYTHON_EXECUTE_NODE_OUTPUT";
+
+	// Plan当前需要执行的步骤编号
+	public static final String PLAN_CURRENT_STEP = "PLAN_CURRENT_STEP";
+
+	// Plan下一个需要进入的节点
+	public static final String PLAN_NEXT_NODE = "PLAN_NEXT_NODE";
+
 	// 节点KEY
+	public static final String PLANNER_NODE = "PLANNER_NODE";
+
+	public static final String PLAN_EXECUTOR_NODE = "PLAN_EXECUTOR_NODE";
+
 	public static final String QUERY_REWRITE_NODE = "QUERY_REWRITE_NODE";
+
+	public static final String REPORT_GENERATOR_NODE = "REPORT_GENERATOR_NODE";
 
 	public static final String KEYWORD_EXTRACT_NODE = "KEYWORD_EXTRACT_NODE";
 
@@ -67,6 +87,10 @@ public class Constant {
 	public static final String SQL_GENERATE_NODE = "SQL_GENERATE_NODE";
 
 	public static final String SQL_VALIDATE_NODE = "SQL_VALIDATE_NODE";
+
+	public static final String SQL_EXECUTE_NODE = "SQL_EXECUTE_NODE";
+
+	public static final String PYTHON_EXECUTE_NODE = "PYTHON_EXECUTE_NODE";
 
 	public static final String SEMANTIC_CONSISTENC_NODE = "SEMANTIC_CONSISTENC_NODE";
 

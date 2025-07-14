@@ -63,5 +63,15 @@ public record ChatRequest(
 		/**
 		 * 搜索引擎，默认为Tavily
 		 */
-		@JsonProperty(value = "search_engine", defaultValue = "tavily") SearchEnum searchEngine) {
+		@JsonProperty(value = "search_engine", defaultValue = "tavily") SearchEnum searchEngine,
+
+		/**
+		 * 是否开启网站过滤，默认为true
+		 */
+		@JsonProperty(value = "enable_search_filter", defaultValue = "true") Boolean enableSearchFilter,
+
+		/**
+		 * 优化查询条数，默认为3
+		 */
+		@JsonProperty(value = "optimize_query_num", defaultValue = "3") Integer optimizeQueryNum) {
 }

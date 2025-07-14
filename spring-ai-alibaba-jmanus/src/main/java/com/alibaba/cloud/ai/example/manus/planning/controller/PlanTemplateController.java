@@ -39,9 +39,10 @@ import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Plan template controller, handles API requests for the plan template page
@@ -64,6 +65,18 @@ public class PlanTemplateController {
 
 	@Autowired
 	private PlanIdDispatcher planIdDispatcher;
+
+	private final ObjectMapper objectMapper = new ObjectMapper();
+
+	/**
+	 * 将计划对象序列化为JSON字符串
+	 * @param plan 计划对象
+	 * @return 格式化的JSON字符串（带缩进和换行）
+	 * @throws Exception 序列化失败时抛出异常
+	 */
+	private String planToJson(PlanInterface plan) throws Exception {
+		return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(plan);
+	}
 
 	/**
 	 * Generate plan
@@ -96,7 +109,8 @@ public class PlanTemplateController {
 
 		// Use PlanIdDispatcher to generate a unique plan template ID
 		String planTemplateId = planIdDispatcher.generatePlanTemplateId();
-		context.setPlanId(planTemplateId);
+		context.setCurrentPlanId(planTemplateId);
+		context.setRootPlanId(planTemplateId);
 		context.setNeedSummary(false); // We don't need to generate a summary, because we
 										// only need the plan
 
@@ -114,8 +128,16 @@ public class PlanTemplateController {
 					.body(Map.of("error", "Plan generation failed, cannot get plan data"));
 			}
 
-			// Get plan JSON
-			String planJson = context.getPlan().toJson();
+			// 获取计划JSON - 使用 Jackson 序列化
+			String planJson;
+			try {
+				planJson = planToJson(context.getPlan());
+			}
+			catch (Exception jsonException) {
+				logger.error("序列化计划为JSON失败", jsonException);
+				return ResponseEntity.internalServerError()
+					.body(Map.of("error", "序列化计划失败: " + jsonException.getMessage()));
+			}
 
 			// Save to version history
 			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planTemplateId, planJson);
@@ -206,13 +228,18 @@ public class PlanTemplateController {
 			// Get planning flow, using the new plan ID
 			PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(newPlanId);
 			ExecutionContext context = new ExecutionContext();
-			context.setPlanId(newPlanId);
+			context.setCurrentPlanId(newPlanId);
+			context.setRootPlanId(newPlanId);
 			context.setNeedSummary(true); // We need to generate a summary
 
 			try {
-				ExecutionPlan plan = ExecutionPlan.fromJson(planJson, newPlanId);
+				// 使用 Jackson 反序列化 JSON 为 PlanInterface 对象（支持多态）
+				PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
 
-				// Set URL parameters to ExecutionPlan
+				// 设置新的计划ID，覆盖JSON中的ID
+				plan.setCurrentPlanId(newPlanId);
+				plan.setRootPlanId(newPlanId);
+				// 设置URL参数到计划中
 				if (rawParam != null && !rawParam.isEmpty()) {
 					logger.info("Set execution parameters to plan: {}", rawParam);
 					plan.setExecutionParams(rawParam);
@@ -485,7 +512,8 @@ public class PlanTemplateController {
 		context.setUserRequest(enhancedQuery);
 
 		// Use the existing plan template ID
-		context.setPlanId(planId);
+		context.setCurrentPlanId(planId);
+		context.setRootPlanId(planId);
 		context.setNeedSummary(false); // We don't need to generate a summary, because we
 										// only need the plan
 
@@ -503,8 +531,16 @@ public class PlanTemplateController {
 					.body(Map.of("error", "Plan update failed, cannot get plan data"));
 			}
 
-			// Get plan JSON
-			String planJson = context.getPlan().toJson();
+			// 获取计划JSON - 使用 Jackson 序列化
+			String planJson;
+			try {
+				planJson = planToJson(context.getPlan());
+			}
+			catch (Exception jsonException) {
+				logger.error("序列化计划为JSON失败", jsonException);
+				return ResponseEntity.internalServerError()
+					.body(Map.of("error", "序列化计划失败: " + jsonException.getMessage()));
+			}
 
 			// Save to version history
 			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planId, planJson);

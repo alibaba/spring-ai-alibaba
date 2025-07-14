@@ -15,15 +15,14 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
-import org.junit.jupiter.api.Test;
-
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -103,9 +102,8 @@ class ApiUtilsTests {
 	void testGetAudioTranscriptionHeaders() {
 		// Test getting audio transcription headers
 		HttpHeaders headers = new HttpHeaders();
-		ApiUtils.getAudioTranscriptionHeaders(TEST_API_KEY, TEST_WORKSPACE_ID, true, true, true).accept(headers);
+		ApiUtils.getAudioTranscriptionHeaders(TEST_WORKSPACE_ID, true, true, true).accept(headers);
 
-		assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
 		assertThat(headers.getFirst("X-DashScope-WorkSpace")).isEqualTo(TEST_WORKSPACE_ID);
 		assertThat(headers.getFirst("X-DashScope-DataInspection")).isEqualTo("enable");
 		assertThat(headers.getFirst("X-DashScope-Async")).isEqualTo("enable");
