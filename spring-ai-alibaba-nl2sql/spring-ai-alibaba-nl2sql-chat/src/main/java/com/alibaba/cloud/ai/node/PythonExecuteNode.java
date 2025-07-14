@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.prompt.PromptConstant;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.tool.PythonExecutorTool;
 import com.alibaba.cloud.ai.util.StateUtils;
@@ -31,22 +32,13 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
- * Python执行节点 TODO 当前是模拟执行，需结合Python工具进行执行
+ * Python执行节点 TODO 完善Prompt内容
  *
  * @author zhangshenghang
  */
 public class PythonExecuteNode extends AbstractPlanBasedNode {
 
 	private static final Logger logger = LoggerFactory.getLogger(PythonExecuteNode.class);
-
-	private static final String SYSTEM_PROMPT = """
-			你将模拟Python的执行，根据我提供的需求和数据进行详细分析，并给出最终的数据结果。
-			在进行分析时，请按照以下要求操作：
-			1. 仔细理解需求和数据的内容。
-			2. 运用类似于Python的逻辑和方法进行分析。
-			3. 给出详细的分析过程和推理依据。
-			4. 输出详细、全面的数据结果。
-			""";
 
 	private final ChatClient chatClient;
 
@@ -81,7 +73,8 @@ public class PythonExecuteNode extends AbstractPlanBasedNode {
 				"## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
 				getPlan(state).toJsonStr(), instruction, description, sqlExecuteResult);
 
-		return chatClient.prompt(SYSTEM_PROMPT).user(userMessage).call().content();
+		String systemPrompt = PromptConstant.getPythonExecutorPromptTemplate().render();
+		return chatClient.prompt(systemPrompt).user(userMessage).call().content();
 	}
 
 	private Map<String, Object> buildResult(Integer currentStep, String aiResponse,
