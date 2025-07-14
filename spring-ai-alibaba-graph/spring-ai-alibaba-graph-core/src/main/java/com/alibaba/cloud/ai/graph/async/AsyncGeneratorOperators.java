@@ -102,7 +102,8 @@ public interface AsyncGeneratorOperators<E> {
 				future = future.thenCompose(v -> finalNext.embed.generator.async(executor()).forEachAsync(consumer));
 			}
 			else {
-				future = future.thenCompose(v -> finalNext.data.thenAcceptAsync(consumer, executor()).thenApply(x -> null));
+				future = future
+					.thenCompose(v -> finalNext.data.thenAcceptAsync(consumer, executor()).thenApply(x -> null));
 			}
 		}
 		return future;
