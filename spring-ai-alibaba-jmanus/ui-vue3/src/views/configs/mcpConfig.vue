@@ -147,7 +147,7 @@
                     value="STREAMING"
                 />
                 <label for="mcp-connection-type-streaming" class="radio-label">
-                  <span class="radio-title">Streaming HTTP</span>
+                  <span class="radio-title">Streamable HTTP</span>
                   <span class="connection-type-desc">基于HTTP的流式传输协议，支持实时数据交换</span>
                 </label>
               </div>
