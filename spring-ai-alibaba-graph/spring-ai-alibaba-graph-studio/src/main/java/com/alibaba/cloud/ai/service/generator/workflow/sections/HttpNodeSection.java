@@ -59,7 +59,7 @@ public class HttpNodeSection implements NodeSection {
 			sb.append(String.format(".queryParam(\"%s\", \"%s\")%n", escape(entry.getKey()), escape(entry.getValue())));
 		}
 
-		if (d.getRawBodyMap() != null && !d.getRawBodyMap().isEmpty()) {
+		if (d.getRawBodyMap() != null && !d.getRawBodyMap().isEmpty() && !"none".equals(d.getRawBodyMap().get("type"))) {
 			String rawJson;
 			try {
 				rawJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(d.getRawBodyMap());
