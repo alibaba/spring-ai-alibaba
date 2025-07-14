@@ -66,10 +66,10 @@ public class AiConfiguration {
 	@Value("${spring.ai.openai.api-key}")
 	private String openAiApiKey;
 
-	@Value("${spring.ai.openai.base-url}")
+	@Value("${spring.ai.openai.base-url:}")
 	private String baseUrl;
 
-	@Value("${spring.ai.openai.model}")
+	@Value("${spring.ai.openai.model:}")
 	private String model;
 
 	@Value("${spring.ai.dashscope.api-key:}")
@@ -80,6 +80,12 @@ public class AiConfiguration {
 
 	@Value("${spring.ai.openai.embedding.model:text-embedding-ada-002}")
 	private String openAiEmbeddingModel;
+
+	@Value("${spring.ai.openai.embedding.embeddings-path:}")
+	private String openAiEmbeddingsPath;
+
+	@Value("${spring.ai.openai.completions-path:}")
+	private String openAiCompletionsPath;
 
 	@Bean
 	public ChatModel chatModel() {
@@ -126,7 +132,14 @@ public class AiConfiguration {
 			throw new IllegalStateException(
 					"Either spring.ai.dashscope.api-key or spring.ai.openai.api-key must be configured");
 		}
-		OpenAiApi openAiApi = OpenAiApi.builder().apiKey(openAiApiKey).baseUrl(baseUrl).build();
+		OpenAiApi.Builder builder = OpenAiApi.builder().apiKey(openAiApiKey).baseUrl(baseUrl);
+		if (StringUtils.hasText(openAiEmbeddingsPath)) {
+			builder.embeddingsPath(openAiEmbeddingsPath);
+		}
+		if (StringUtils.hasText(openAiCompletionsPath)) {
+			builder.completionsPath(openAiCompletionsPath);
+		}
+		OpenAiApi openAiApi = builder.build();
 		OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder().model(openAiEmbeddingModel).build();
 		return new OpenAiEmbeddingModel(openAiApi, MetadataMode.EMBED, options);
 	}
