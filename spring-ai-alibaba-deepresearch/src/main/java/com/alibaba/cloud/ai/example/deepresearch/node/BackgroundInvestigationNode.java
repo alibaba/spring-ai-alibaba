@@ -16,8 +16,12 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
+import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -52,11 +56,25 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final SearchFilterService searchFilterService;
 
+	private final QuestionClassifierService questionClassifierService;
+
+	private final SearchPlatformSelectionService platformSelectionService;
+
+	private final SmartAgentProperties smartAgentProperties;
+
+	private final AgentIntegrationUtil.SmartAgentSelectionHelper smartAgentSelectionHelper;
+
 	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
-			SearchFilterService searchFilterService) {
+			SearchFilterService searchFilterService, QuestionClassifierService questionClassifierService,
+			SearchPlatformSelectionService platformSelectionService, SmartAgentProperties smartAgentProperties) {
 		this.jinaCrawlerService = jinaCrawlerService;
 		this.infoCheckService = infoCheckService;
 		this.searchFilterService = searchFilterService;
+		this.questionClassifierService = questionClassifierService;
+		this.platformSelectionService = platformSelectionService;
+		this.smartAgentProperties = smartAgentProperties;
+		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties, null,
+				questionClassifierService, platformSelectionService);
 	}
 
 	@Override
@@ -131,6 +149,13 @@ public class BackgroundInvestigationNode implements NodeAction {
 		}
 
 		return resultMap;
+	}
+
+	/**
+	 * 这边判断是否开启智能Agent功能
+	 */
+	private SearchEnum getSearchEnum(OverAllState state, String query) {
+		return smartAgentSelectionHelper.intelligentSearchEngineSelection(state, query);
 	}
 
 }

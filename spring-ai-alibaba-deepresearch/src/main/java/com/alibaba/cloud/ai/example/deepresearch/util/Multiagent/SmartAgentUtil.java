@@ -1,0 +1,223 @@
+/*
+ * Copyright 2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.alibaba.cloud.ai.example.deepresearch.util.Multiagent;
+
+import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
+import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentType;
+import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.SearchPlatform;
+import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.regex.Pattern;
+
+/**
+ * 智能Agent系统通用工具类 整合开关检查、类型转换、状态管理等通用逻辑
+ *
+ * @author Makoto
+ * @since 2025/01/28
+ */
+public class SmartAgentUtil {
+
+	private static final Logger logger = LoggerFactory.getLogger(SmartAgentUtil.class);
+
+	private static final Pattern ACADEMIC_PATTERN = Pattern
+		.compile("(?i).*(论文|期刊|学术|研究|科研|技术|算法|学者|引用|文献|会议|学科|理论|实验|分析|方法|模型|框架|综述|调研).*");
+
+	private static final Pattern LIFESTYLE_PATTERN = Pattern
+		.compile("(?i).*(旅游|旅行|攻略|美食|餐厅|酒店|景点|购物|生活|娱乐|休闲|度假|出行|路线|推荐|体验|民宿|特产|文化|风俗).*");
+
+	private static final Pattern ENCYCLOPEDIA_PATTERN = Pattern
+		.compile("(?i).*(什么是|定义|概念|历史|由来|起源|介绍|解释|含义|意思|百科|知识|科普|基础|原理|背景).*");
+
+	private static final Pattern DATA_ANALYSIS_PATTERN = Pattern
+		.compile("(?i).*(数据|统计|分析|趋势|指标|报告|图表|比较|增长|下降|占比|排名|调查|市场|行业|经济|财务).*");
+
+
+	public static boolean isSmartAgentAvailable(SmartAgentProperties smartAgentProperties, Object... services) {
+		if (smartAgentProperties == null || !smartAgentProperties.isEnabled()) {
+			logger.debug("智能Agent功能未开启");
+			return false;
+		}
+
+		for (Object service : services) {
+			if (service == null) {
+				logger.warn("智能Agent必要服务不可用");
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * 基于关键词快速分类问题
+	 * @param question 用户问题
+	 * @return Agent类型，如果无法匹配返回GENERAL_RESEARCH
+	 */
+	public static AgentType quickClassifyByKeywords(String question) {
+		if (question == null || question.trim().isEmpty()) {
+			return AgentType.GENERAL_RESEARCH;
+		}
+
+		if (ACADEMIC_PATTERN.matcher(question).find()) {
+			return AgentType.ACADEMIC_RESEARCH;
+		}
+
+		if (LIFESTYLE_PATTERN.matcher(question).find()) {
+			return AgentType.LIFESTYLE_TRAVEL;
+		}
+
+		if (ENCYCLOPEDIA_PATTERN.matcher(question).find()) {
+			return AgentType.ENCYCLOPEDIA;
+		}
+
+		if (DATA_ANALYSIS_PATTERN.matcher(question).find()) {
+			return AgentType.DATA_ANALYSIS;
+		}
+
+		return AgentType.GENERAL_RESEARCH;
+	}
+
+	/**
+	 * 解析AI分类结果
+	 * @param aiResponse AI返回的分类结果
+	 * @return 解析后的Agent类型
+	 */
+	public static AgentType parseAiClassification(String aiResponse) {
+		if (aiResponse == null) {
+			return AgentType.GENERAL_RESEARCH;
+		}
+
+		String response = aiResponse.toLowerCase().trim();
+
+		if (response.contains("academic_research") || response.contains("学术研究")) {
+			return AgentType.ACADEMIC_RESEARCH;
+		}
+		else if (response.contains("lifestyle_travel") || response.contains("生活") || response.contains("旅游")) {
+			return AgentType.LIFESTYLE_TRAVEL;
+		}
+		else if (response.contains("encyclopedia") || response.contains("百科")) {
+			return AgentType.ENCYCLOPEDIA;
+		}
+		else if (response.contains("data_analysis") || response.contains("数据分析")) {
+			return AgentType.DATA_ANALYSIS;
+		}
+
+		return AgentType.GENERAL_RESEARCH;
+	}
+
+	/**
+	 * 将SearchPlatform转换为SearchEnum
+	 * @param platform 搜索平台枚举
+	 * @return 对应的SearchEnum
+	 */
+	public static SearchEnum convertToSearchEnum(SearchPlatform platform) {
+		return switch (platform) {
+			case TAVILY -> SearchEnum.TAVILY;
+			case ALIYUN_AI_SEARCH -> SearchEnum.ALIYUN;
+			case BAIDU_SEARCH -> SearchEnum.BAIDU;
+			case SERPAPI -> SearchEnum.SERPAPI;
+
+			// TODO: 根据实际情况添加更多映射,并且暂时使用默认引擎
+			case GOOGLE_SCHOLAR -> SearchEnum.SERPAPI;
+			case XIAOHONGSHU -> SearchEnum.BAIDU;
+			case WIKIPEDIA -> SearchEnum.TAVILY;
+			case NATIONAL_STATISTICS -> SearchEnum.ALIYUN;
+			case GOOGLE_TRENDS -> SearchEnum.SERPAPI;
+			case BAIDU_INDEX -> SearchEnum.BAIDU;
+		};
+	}
+
+	/**
+	 * 检查搜索引擎是否在启用列表中
+	 * @param searchEnum 搜索引擎枚举
+	 * @param enabledSearchEngines 启用的搜索引擎列表
+	 * @return true表示已启用
+	 */
+	public static boolean isSearchEngineEnabled(SearchEnum searchEnum, List<String> enabledSearchEngines) {
+		if (enabledSearchEngines == null || enabledSearchEngines.isEmpty()) {
+			return true;
+		}
+
+		String searchName = searchEnum.name().toLowerCase();
+		return enabledSearchEngines.contains(searchName);
+	}
+
+	/**
+	 * 更新状态中的智能Agent相关配置
+	 * @param state 全局状态
+	 * @param searchPlatforms 选择的搜索平台列表
+	 * @param agentType Agent类型
+	 */
+	public static void updateStateWithSmartAgentConfig(OverAllState state, List<SearchEnum> searchPlatforms,
+			AgentType agentType) {
+		state.data().put("selectedSearchPlatforms", searchPlatforms);
+		state.data().put("agentType", agentType);
+		state.data().put("searchPlatformCount", searchPlatforms.size());
+
+		if (!searchPlatforms.isEmpty()) {
+			state.data().put("primarySearchEngine", searchPlatforms.get(0).name());
+		}
+
+		state.data().put("agentTypeName", agentType.getName());
+		state.data().put("agentTypeCode", agentType.getCode());
+
+		logger.debug("Updated state with smart agent config: agentType={}, searchPlatforms={}", agentType,
+				searchPlatforms);
+	}
+
+	/**
+	 * 获取Agent类型的搜索策略描述
+	 * @param agentType Agent类型
+	 * @return 搜索策略描述
+	 */
+	public static String getSearchStrategyDescription(AgentType agentType) {
+		return switch (agentType) {
+			case ACADEMIC_RESEARCH -> "优先使用学术搜索引擎，重点关注论文、期刊和学术资源";
+			case LIFESTYLE_TRAVEL -> "优先使用生活和旅游平台，重点关注实用信息和用户体验";
+			case ENCYCLOPEDIA -> "优先使用百科和知识库，重点关注权威和准确的基础信息";
+			case DATA_ANALYSIS -> "优先使用数据和统计平台，重点关注官方数据和市场分析";
+			case GENERAL_RESEARCH -> "使用通用搜索引擎进行综合性研究";
+		};
+	}
+
+	/**
+	 * 构建智能Agent错误信息
+	 * @param operation 操作名称
+	 * @param question 用户问题
+	 * @param cause 错误原因
+	 * @return 格式化的错误信息
+	 */
+	public static String buildErrorMessage(String operation, String question, String cause) {
+		return String.format("智能Agent %s失败 - 问题: '%s', 原因: %s", operation, question, cause);
+	}
+
+	/**
+	 * 构建成功日志信息
+	 * @param operation 操作名称
+	 * @param question 用户问题
+	 * @param result 操作结果
+	 * @return 格式化的成功信息
+	 */
+	public static String buildSuccessMessage(String operation, String question, Object result) {
+		return String.format("智能Agent %s成功 - 问题: '%s', 结果: %s", operation, question, result);
+	}
+
+}

@@ -36,7 +36,10 @@ import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.RewriteAndMultiQueryNode;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.SmartAgentDispatcher;
 
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
@@ -126,6 +129,18 @@ public class DeepResearchConfiguration {
 	@Autowired
 	private SearchFilterService searchFilterService;
 
+	@Autowired(required = false)
+	private QuestionClassifierService questionClassifierService;
+
+	@Autowired(required = false)
+	private SearchPlatformSelectionService searchPlatformSelectionService;
+
+	@Autowired(required = false)
+	private SmartAgentDispatcher smartAgentDispatcher;
+
+	@Autowired(required = false)
+	private SmartAgentProperties smartAgentProperties;
+
 	@Bean
 	public ReflectionProcessor reflectionProcessor() {
 		if (!reflectionProperties.isEnabled()) {
@@ -187,7 +202,8 @@ public class DeepResearchConfiguration {
 			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
 			.addNode("background_investigator",
 					node_async(
-							new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService, searchFilterService)))
+							new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService, searchFilterService,
+									questionClassifierService, searchPlatformSelectionService, smartAgentProperties)))
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
@@ -236,8 +252,9 @@ public class DeepResearchConfiguration {
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
 			.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 			String nodeId = "researcher_" + i;
-			stateGraph.addNode(nodeId, node_async(new ResearcherNode(researchAgent, String.valueOf(i),
-					reflectionProcessor, mcpProviderFactory, searchFilterService)));
+			stateGraph.addNode(nodeId,
+					node_async(new ResearcherNode(researchAgent, String.valueOf(i), reflectionProcessor,
+							mcpProviderFactory, searchFilterService, smartAgentDispatcher, smartAgentProperties)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
