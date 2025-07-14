@@ -36,7 +36,9 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.Collections;
 
 @Service
 @Primary
@@ -51,6 +53,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	private final DbConfig dbConfig;
 
 	private final EmbeddingModel embeddingModel;
+
+	private final Map<String, Set<String>> documentIdsByType = new ConcurrentHashMap<>();
 
 	@Autowired
 	public SimpleVectorStoreService(EmbeddingModel embeddingModel, Gson gson, DbAccessor dbAccessor,
@@ -78,12 +82,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			.setSchema(dbConfig.getSchema())
 			.setTables(schemaInitRequest.getTables());
 
-		DeleteRequest deleteRequest = new DeleteRequest();
-		deleteRequest.setVectorType("column");
-		deleteDocuments(deleteRequest);
-		deleteRequest.setVectorType("table");
-		deleteDocuments(deleteRequest);
-
+		deleteDocumentsByVectorType("column");
+		deleteDocumentsByVectorType("table");
 		List<ForeignKeyInfoBO> foreignKeyInfoBOS = dbAccessor.showForeignKeys(dbConfig, dqp);
 		Map<String, List<String>> foreignKeyMap = buildForeignKeyMap(foreignKeyInfoBOS);
 
@@ -103,12 +103,16 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		}).collect(Collectors.toList());
 
 		vectorStore.add(columnDocuments);
+		documentIdsByType.computeIfAbsent("column", k -> ConcurrentHashMap.newKeySet())
+			.addAll(columnDocuments.stream().map(Document::getId).toList());
 
 		List<Document> tableDocuments = tableInfoBOS.stream()
 			.map(this::convertTableToDocument)
 			.collect(Collectors.toList());
 
 		vectorStore.add(tableDocuments);
+		documentIdsByType.computeIfAbsent("table", k -> ConcurrentHashMap.newKeySet())
+			.addAll(tableDocuments.stream().map(Document::getId).toList());
 
 		return true;
 	}
@@ -184,30 +188,39 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	 * @return 是否删除成功
 	 */
 	public Boolean deleteDocuments(DeleteRequest deleteRequest) throws Exception {
-		try {
-			if (deleteRequest.getId() != null && !deleteRequest.getId().isEmpty()) {
-				vectorStore.delete(Arrays.asList("comment_count"));
-			}
-			else if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
-				FilterExpressionBuilder b = new FilterExpressionBuilder();
-				Filter.Expression expression = b.eq("vectorType", deleteRequest.getVectorType()).build();
-				List<Document> documents = vectorStore
-					.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
-						.topK(Integer.MAX_VALUE)
-						.filterExpression(expression)
-						.build());
-				if (documents != null && !documents.isEmpty()) {
-					vectorStore.delete(documents.stream().map(Document::getId).toList());
-				}
-			}
-			else {
-				throw new IllegalArgumentException("Either id or vectorType must be specified.");
+		if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
+			Set<String> idsToDelete = documentIdsByType.remove(deleteRequest.getVectorType());
+			if (idsToDelete != null && !idsToDelete.isEmpty()) {
+				vectorStore.delete(new ArrayList<>(idsToDelete));
 			}
 			return true;
 		}
-		catch (Exception e) {
-			throw new Exception("Failed to delete collection data by filterExpression: " + e.getMessage(), e);
+
+		if (deleteRequest.getId() != null && !deleteRequest.getId().isEmpty()) {
+			vectorStore.delete(Collections.singletonList(deleteRequest.getId()));
+			// Also remove from our cache if it exists
+			documentIdsByType.values().forEach(ids -> ids.remove(deleteRequest.getId()));
+			return true;
 		}
+
+		throw new IllegalArgumentException("Either id or vectorType must be specified for deletion.");
+	}
+
+	/**
+	 * 删除指定条件的向量数据
+	 * @param vectorType 向量类型
+	 * @return 是否删除成功
+	 */
+	public Boolean deleteDocumentsByVectorType(String vectorType) {
+		if (vectorType != null && !vectorType.isEmpty()) {
+			Set<String> idsToDelete = documentIdsByType.remove(vectorType);
+			if (idsToDelete != null && !idsToDelete.isEmpty()) {
+				vectorStore.delete(new ArrayList<>(idsToDelete));
+			}
+			return true;
+		}
+
+		throw new IllegalArgumentException("Either vectorType must be specified for deletion.");
 	}
 
 	/**
