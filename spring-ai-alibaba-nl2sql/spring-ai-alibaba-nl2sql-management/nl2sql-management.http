@@ -1,0 +1,12 @@
+### 用于测试自然语言闲聊能力，返回与输入内容相关的回复。
+GET http://localhost:8065/nl2sql/search?query=你好
+Accept: application/json
+
+### 查询每个商品分类下，已成交且销量最高的商品及其销售总量。每个分类仅返回销量最高的商品。
+GET http://localhost:8065/nl2sql/search?query=查询每个分类下已经成交且销量最高的商品及其销售总量，每个分类只返回销量最高的商品。
+Accept: application/json
+
+
+### 查询每个商品分类下，已成交商品中销量最高的商品及其销售总量（每个分类仅返回销量最高的商品），同时统计所有商品的总数量及分类的总数量。
+GET http://localhost:8065/nl2sql/search?query=查询每个分类下已成交商品中销量最高的商品及其销售总量（每个分类仅返回销量最高的商品），同时统计商品的总数量及分类的总数量。
+Accept: application/json
