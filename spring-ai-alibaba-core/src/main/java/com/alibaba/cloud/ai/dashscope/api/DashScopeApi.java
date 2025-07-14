@@ -1283,16 +1283,22 @@ public class DashScopeApi {
 		 * @param image The image content of the message. You can pass multiple images
 		 * @param video The image list of video. by adding multiple image_url content
 		 * parts. Image input is only supported when using the glm-4v model.
+		 * @param audio The audio content of the message.
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record MediaContent(@JsonProperty("type") String type, @JsonProperty("text") String text,
-				@JsonProperty("image") String image, @JsonProperty("video") List<String> video) {
+				@JsonProperty("image") String image, @JsonProperty("video") List<String> video,
+				@JsonProperty("audio") String audio) {
 			/**
 			 * Shortcut constructor for a text content.
 			 * @param text The text content of the message.
 			 */
 			public MediaContent(String text) {
 				this("text", text, null, null);
+			}
+
+			public MediaContent(String type, String text, String image, List<String> video) {
+				this(type, text, image, video, null);
 			}
 		}
 
