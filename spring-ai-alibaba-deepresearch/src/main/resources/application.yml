@@ -67,19 +67,14 @@ spring:
           # search-platform-mapping:
           #   academic_research:
           #     primary: google_scholar
-          #     fallback: [serpapi, tavily]
           #   lifestyle_travel:
           #     primary: xiaohongshu
-          #     fallback: [baidu, tavily]
           #   encyclopedia:
           #     primary: wikipedia
-          #     fallback: [tavily, aliyun]
           #   data_analysis:
           #     primary: national_statistics
-          #     fallback: [google_trends, serpapi]
           #   general_research:
           #     primary: tavily
-          #     fallback: [aliyun, baidu]
         mcp:
           enabled: false
           config-location: classpath:mcp-config.json
