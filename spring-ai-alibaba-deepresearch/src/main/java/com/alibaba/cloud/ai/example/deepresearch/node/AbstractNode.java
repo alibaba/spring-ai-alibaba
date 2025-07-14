@@ -69,11 +69,10 @@ public abstract class AbstractNode {
 			var text = response.getResult().getOutput().getText();
 			return objectMapper.readValue(text, new TypeReference<NodeDefinition.SelectionNode>() {
 			}).selection();
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			return "planner";
 		}
-
-
 
 	}
 
