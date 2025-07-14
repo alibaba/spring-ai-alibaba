@@ -28,21 +28,21 @@ import org.springframework.boot.test.context.SpringBootTest;
  * @author dahua
  * @since 2025/07/14
  */
-@SpringBootTest(classes = {OllamaSearchModelAutoConfiguration.class, CommonToolCallAutoConfiguration.class})
+@SpringBootTest(classes = { OllamaSearchModelAutoConfiguration.class, CommonToolCallAutoConfiguration.class })
 @DisplayName("ollamaSearchModel tool call Test")
 class OllamaSearchModelTest {
 
-    @Autowired
-    private OllamaSearchModelService ollamaSearchModelService;
+	@Autowired
+	private OllamaSearchModelService ollamaSearchModelService;
 
-    private static final Logger logger = LoggerFactory.getLogger(OllamaSearchModelTest.class);
+	private static final Logger logger = LoggerFactory.getLogger(OllamaSearchModelTest.class);
 
-    @Test
-    @DisplayName("Tool-Calling Test")
-    void testOllamaSearchModel() {
-        OllamaSearchModelService.Response result = ollamaSearchModelService
-                .apply(new OllamaSearchModelService.Request("qwen3"));
-        logger.info("ollamasearchmodel result: {}", result);
-    }
+	@Test
+	@DisplayName("Tool-Calling Test")
+	void testOllamaSearchModel() {
+		OllamaSearchModelService.Response result = ollamaSearchModelService
+			.apply(new OllamaSearchModelService.Request("qwen3"));
+		logger.info("ollamasearchmodel result: {}", result);
+	}
 
 }

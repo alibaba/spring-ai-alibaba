@@ -31,15 +31,18 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @ConditionalOnClass(OllamaSearchModelAutoConfiguration.class)
-@ConditionalOnProperty(prefix = OllamaSearchModelConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = OllamaSearchModelConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @EnableConfigurationProperties(OllamaSearchModelProperties.class)
 public class OllamaSearchModelAutoConfiguration {
 
-    @Bean(name = OllamaSearchModelConstants.TOOL_NAME)
-    @ConditionalOnMissingBean
-    @Description("Query courier tracking information")
-    public OllamaSearchModelService queryTrack(JsonParseTool jsonParseTool, OllamaSearchModelProperties ollamaSearchModelProperties) {
-        RestClientTool restClientTool = RestClientTool.builder(jsonParseTool, ollamaSearchModelProperties).build();
-        return new OllamaSearchModelService(restClientTool);
-    }
+	@Bean(name = OllamaSearchModelConstants.TOOL_NAME)
+	@ConditionalOnMissingBean
+	@Description("Search model information from ollama")
+	public OllamaSearchModelService searchModelService(JsonParseTool jsonParseTool,
+			OllamaSearchModelProperties ollamaSearchModelProperties) {
+		RestClientTool restClientTool = RestClientTool.builder(jsonParseTool, ollamaSearchModelProperties).build();
+		return new OllamaSearchModelService(restClientTool);
+	}
+
 }

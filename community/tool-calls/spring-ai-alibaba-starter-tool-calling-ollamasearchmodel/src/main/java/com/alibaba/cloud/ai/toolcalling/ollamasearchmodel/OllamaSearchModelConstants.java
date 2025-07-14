@@ -19,7 +19,9 @@ import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 
 public final class OllamaSearchModelConstants {
 
-	public static final String CONFIG_PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".ollamasearchmodel";
+	public static final String CONFIG_PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX
+			+ ".ollamasearchmodel";
 
 	public static final String TOOL_NAME = "ollamaSearchModel";
+
 }

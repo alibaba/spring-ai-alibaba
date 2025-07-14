@@ -28,39 +28,38 @@ import java.util.function.Function;
  * @author dahua
  * @since 2025/07/14
  */
-public class OllamaSearchModelService implements Function<OllamaSearchModelService.Request, OllamaSearchModelService.Response> {
+public class OllamaSearchModelService
+		implements Function<OllamaSearchModelService.Request, OllamaSearchModelService.Response> {
 
-    private final RestClientTool restClientTool;
+	private final RestClientTool restClientTool;
 
-    public OllamaSearchModelService(RestClientTool restClientTool) {
-        this.restClientTool = restClientTool;
-    }
+	public OllamaSearchModelService(RestClientTool restClientTool) {
+		this.restClientTool = restClientTool;
+	}
 
-    @Override
-    public Response apply(Request request) {
-        String result;
-        try {
-            String htmlContent = restClientTool.get(String.format("/library/%s", request.modelName));
-            Document doc = Jsoup.parse(htmlContent);
-            Elements elementsWithAlt = doc.select("img[alt]");
-            elementsWithAlt.remove();
-            doc.outputSettings(new Document.OutputSettings()
-                    .prettyPrint(true)
-                    .outline(false)
-                    .charset("UTF-8"));
-            result = doc.text();
-        } catch (Exception e) {
-            result = "This model is not available on the ollama!";
-        }
-        return new Response(result);
-    }
+	@Override
+	public Response apply(Request request) {
+		String result;
+		try {
+			String htmlContent = restClientTool.get(String.format("/library/%s", request.modelName));
+			Document doc = Jsoup.parse(htmlContent);
+			Elements elementsWithAlt = doc.select("img[alt]");
+			elementsWithAlt.remove();
+			doc.outputSettings(new Document.OutputSettings().prettyPrint(true).outline(false).charset("UTF-8"));
+			result = doc.text();
+		}
+		catch (Exception e) {
+			result = "This model is not available on the ollama!";
+		}
+		return new Response(result);
+	}
 
-    @JsonClassDescription("get response from ollama search api")
-    public record Request(@JsonPropertyDescription("Search model name") String modelName) {
-    }
+	@JsonClassDescription("get response from ollama search api")
+	public record Request(@JsonPropertyDescription("Search model name") String modelName) {
+	}
 
-    @JsonClassDescription("ollama search api result")
-    public record Response(@JsonPropertyDescription("Receive model detail") String detail) {
-    }
+	@JsonClassDescription("ollama search api result")
+	public record Response(@JsonPropertyDescription("Receive model detail") String detail) {
+	}
 
 }
