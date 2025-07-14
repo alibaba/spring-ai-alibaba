@@ -30,53 +30,89 @@ public class ContainerProperties {
 
 	}
 
+	/**
+	 * 指定容器池的实现类
+	 */
 	ContainerImpl containerImpl = ContainerImpl.DOCKER;
 
-	// 服务Host，为null则使用默认地址
+	/**
+	 * 服务Host，为null则使用默认地址
+	 */
 	String host = null;
 
+	/**
+	 * 镜像名称，可以自定义带有常用第三方依赖的镜像来替换此配置
+	 */
 	String imageName = "python:3-slim";
 
+	/**
+	 * 容器名称前缀
+	 */
 	String containerNamePrefix = "nl2sql-python-exec-";
 
+	/**
+	 * 任务阻塞队列大小
+	 */
 	Integer taskQueueSize = 5;
 
+	/**
+	 * 核心容器的最大数量
+	 */
 	Integer coreContainerNum = 2;
 
+	/**
+	 * 临时容器的最大数量
+	 */
 	Integer tempContainerNum = 2;
 
+	/**
+	 * 线程池的核心线程数量
+	 */
 	Integer coreThreadSize = 5;
 
+	/**
+	 * 线程池的最大线程数量
+	 */
 	Integer maxThreadSize = 5;
 
-	// 单位分
+	/**
+	 * 临时容器的存活时间，单位分
+	 */
 	Integer tempContainerAliveTime = 5;
 
-	// 单位秒
+	/**
+	 * 线程池的任务存活时间，单位秒
+	 */
 	Long keepThreadAliveTime = 60L;
 
+	/**
+	 * 线程池的任务阻塞队列大小
+	 */
 	Integer threadQueueSize = 10;
 
 	/**
-	 * Memory size limit (MB)
+	 * 容器最大内存，单位MB
 	 */
 	Long limitMemory = 500L;
 
 	/**
-	 * Container CPU core limit
+	 * 容器CPU核心数
 	 */
 	Long cpuCore = 1L;
 
 	/**
-	 * Timeout of python code
+	 * Python代码运行上限时间
 	 */
 	String codeTimeout = "60s";
 
 	/**
-	 * Timeout of Docker (s)
+	 * 容器运行最大时间
 	 */
-	Long dockerTimeout = 3000L;
+	Long containerTimeout = 3000L;
 
+	/**
+	 * 容器网络模式
+	 */
 	String networkMode = "bridge";
 
 	public ContainerImpl getContainerImpl() {
@@ -199,12 +235,12 @@ public class ContainerProperties {
 		this.codeTimeout = codeTimeout;
 	}
 
-	public Long getDockerTimeout() {
-		return dockerTimeout;
+	public Long getContainerTimeout() {
+		return containerTimeout;
 	}
 
-	public void setDockerTimeout(Long dockerTimeout) {
-		this.dockerTimeout = dockerTimeout;
+	public void setContainerTimeout(Long containerTimeout) {
+		this.containerTimeout = containerTimeout;
 	}
 
 	public String getNetworkMode() {

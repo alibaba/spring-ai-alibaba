@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.service.executor;
 import com.alibaba.cloud.ai.config.ContainerProperties;
 
 /**
- * Docker容器池
+ * 运行Python任务的容器池接口
  *
  * @author vlsmb
  * @since 2025/7/12
@@ -48,22 +48,7 @@ public interface ContainerPoolExecutor {
 
 	enum State {
 
-		READY("ready"), RUNNING("running");
-
-		private final String state;
-
-		public String getState() {
-			return state;
-		}
-
-		@Override
-		public String toString() {
-			return "State{" + "state='" + state + '\'' + '}';
-		}
-
-		State(String state) {
-			this.state = state;
-		}
+		READY, RUNNING
 
 	}
 

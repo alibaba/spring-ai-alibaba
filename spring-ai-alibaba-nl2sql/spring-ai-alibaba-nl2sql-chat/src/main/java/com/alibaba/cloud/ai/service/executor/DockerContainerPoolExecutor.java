@@ -51,6 +51,8 @@ import java.util.concurrent.TimeUnit;
 import static com.github.dockerjava.api.model.HostConfig.newHostConfig;
 
 /**
+ * 运行Python任务的容器池（Docker实现类）
+ *
  * @author vlsmb
  * @since 2025/7/12
  */
@@ -272,7 +274,7 @@ public class DockerContainerPoolExecutor extends AbstractContainerPoolExecutor i
 				.withTailAll();
 			dockerClient.waitContainerCmd(containerId)
 				.start()
-				.awaitCompletion(this.properties.getDockerTimeout(), TimeUnit.SECONDS);
+				.awaitCompletion(this.properties.getContainerTimeout(), TimeUnit.SECONDS);
 
 			// get stdout and stderr
 			logContainerCmd.exec(new ResultCallback.Adapter<Frame>() {
