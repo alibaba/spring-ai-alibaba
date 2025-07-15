@@ -102,7 +102,7 @@ public class AgentsConfiguration {
 	}
 
 	/**
-	 * 提取MtiAgent配置
+	 * //TODO:提取MutiAgent配置，这边是否可以把Agent的配置提取到一个公共方法中？像是prompt加载和工具回调的配置。对代码进行复用。
 	 */
 	private ChatClient.Builder configureAgentBuilder(ChatClient.Builder builder, String agentName,
 			AgentType agentType) {

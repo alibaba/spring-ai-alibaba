@@ -152,7 +152,11 @@ public class BackgroundInvestigationNode implements NodeAction {
 	}
 
 	/**
-	 * 这边判断是否开启智能Agent功能
+	 * 获取智能选择的搜索引擎
+	 *
+	 * @param state 全局状态
+	 * @param query 查询内容
+	 * @return 搜索引擎枚举
 	 */
 	private SearchEnum getSearchEnum(OverAllState state, String query) {
 		return smartAgentSelectionHelper.intelligentSearchEngineSelection(state, query);
