@@ -43,14 +43,10 @@ package com.alibaba.cloud.ai.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
-import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatResponse;
-import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
@@ -67,7 +63,7 @@ public class QueryRewriteNode implements NodeAction {
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
-	public QueryRewriteNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService) {
+	public QueryRewriteNode(BaseNl2SqlService baseNl2SqlService) {
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
 
@@ -78,40 +74,15 @@ public class QueryRewriteNode implements NodeAction {
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
 		logger.info("[{}] 处理用户输入: {}", this.getClass().getSimpleName(), input);
 
-		final StringBuilder rewriteResult = new StringBuilder();
-		
-		Flux<ChatResponse> rewriteFlux = Flux.create(emitter -> {
-			try {
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始进行问题重写..."));
-				
-				baseNl2SqlService.rewriteStream(input)
-					.doOnNext(response -> {
-						String content = response.getResult().getOutput().getText();
-						rewriteResult.append(content);
-						// 输出到流中供用户查看
-						emitter.next(response);
-					})
-					.doOnComplete(() -> {
-						rewriteResult.append("\n");
-						emitter.next(ChatResponseUtil.createCustomStatusResponse("问题重写完成！"));
-						logger.info("[{}] 问题重写处理完成", this.getClass().getSimpleName());
-						emitter.complete();
-					})
-					.doOnError(error -> {
-						logger.error("问题重写出错", error);
-						emitter.error(error);
-					})
-					.subscribe();
-			} catch (Exception e) {
-				logger.error("问题重写流程出错", e);
-				emitter.error(e);
-			}
-		});
-
-		var generator = StreamingChatGeneratorUtil.createGenerator(this.getClass(), state, response -> {
-			String finalRewrite = rewriteResult.toString().trim();
-			return Map.of(QUERY_REWRITE_NODE_OUTPUT, finalRewrite, RESULT, finalRewrite);
-		}, rewriteFlux);
+		// 使用通用的流式处理工具类
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
+			this.getClass(),
+			state,
+			"开始进行问题重写...",
+			"问题重写完成！",
+			finalResult -> Map.of(QUERY_REWRITE_NODE_OUTPUT, finalResult, RESULT, finalResult),
+			baseNl2SqlService.rewriteStream(input)
+		);
 
 		return Map.of(QUERY_REWRITE_NODE_OUTPUT, generator);
 	}

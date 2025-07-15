@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.node;
+package com.alibaba.cloud.ai.example;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
-import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
+import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -34,17 +34,18 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
- * 关键词、实体、时间等信息抽取，为后续 Schema 召回做准备
+ * KeywordExtractNode 的简化版本示例
+ * 展示使用业务逻辑执行器的更简洁方式
  *
  * @author zhangshenghang
  */
-public class KeywordExtractNode implements NodeAction {
+public class SimplifiedKeywordExtractNode implements NodeAction {
 
-	private static final Logger logger = LoggerFactory.getLogger(KeywordExtractNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(SimplifiedKeywordExtractNode.class);
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
-	public KeywordExtractNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService) {
+	public SimplifiedKeywordExtractNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService) {
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
 
@@ -52,29 +53,33 @@ public class KeywordExtractNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 
+		// 获取输入
 		String input = StateUtils.getStringValue(state, QUERY_REWRITE_NODE_OUTPUT,
 				StateUtils.getStringValue(state, INPUT_KEY));
 
-		List<String> evidences = baseNl2SqlService.extractEvidences(input);
-		List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);
-		
-		logger.info("[{}] 提取结果 - 证据: {}, 关键词: {}", this.getClass().getSimpleName(), evidences, keywords);
-
+		// 创建显示流程（用户看到的过程）
 		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始提取关键词..."));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("正在提取证据..."));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("提取的证据: " + String.join(",", evidences)));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("正在提取关键词..."));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("提取的关键词: " + String.join(",", keywords)));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("关键词提取完成."));
 			emitter.complete();
 		});
 
-		// 使用业务逻辑执行器，避免重复执行业务逻辑
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
+		// 使用业务逻辑执行器 - 这是最简洁的方式
+		var generator = StreamingChatGeneratorUtil.createBusinessLogicGenerator(
 			this.getClass(),
 			state,
+			"开始提取关键词...",
+			"关键词提取完成!",
 			currentState -> {
+				// 在mapResult中执行真正的业务逻辑
+				List<String> evidences = baseNl2SqlService.extractEvidences(input);
+				List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);
+				
+				logger.info("[{}] 提取结果 - 证据: {}, 关键词: {}", 
+					this.getClass().getSimpleName(), evidences, keywords);
+				
 				return Map.of(
 					KEYWORD_EXTRACT_NODE_OUTPUT, keywords,
 					EVIDENCES, evidences,
@@ -86,5 +91,4 @@ public class KeywordExtractNode implements NodeAction {
 
 		return Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, generator);
 	}
-
 }
