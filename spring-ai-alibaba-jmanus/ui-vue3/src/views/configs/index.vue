@@ -36,7 +36,7 @@
           :key="index"
           class="nav-item"
           :class="{ active: activeCategory === item.key }"
-          @click="activeCategory = item.key"
+          @click="handleNavClick(item.key)"
         >
           <Icon :icon="item.icon" width="20" />
           <span>{{ item.label }}</span>
@@ -49,6 +49,7 @@
         <AgentConfig v-if="activeCategory === 'agent'" />
         <ModelConfig v-if="activeCategory === 'model'" />
         <McpConfig v-if="activeCategory === 'mcp'" />
+        <dynamicPromptConfig v-if="activeCategory === 'prompt'" />
       </div>
     </div>
   </div>
@@ -56,23 +57,41 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import BasicConfig from './basicConfig.vue'
 import AgentConfig from './agentConfig.vue'
 import ModelConfig from './modelConfig.vue'
 import McpConfig from './mcpConfig.vue'
+import dynamicPromptConfig from './dynamicPromptConfig.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
 
 const { t } = useI18n()
 
-const activeCategory = ref('basic')
+const route = useRoute()
+const router = useRouter()
+
+const activeCategory = ref(route.params.category || 'basic')
 const categories = computed(() => [
   { key: 'basic', label: t('config.categories.basic'), icon: 'carbon:settings' },
   { key: 'agent', label: t('config.categories.agent'), icon: 'carbon:bot' },
   { key: 'model', label: t('config.categories.model'), icon: 'carbon:build-image' },
   { key: 'mcp', label: t('config.categories.mcp'), icon: 'carbon:tool-box' },
+  { key: 'prompt', label: t('config.categories.prompt'), icon: 'carbon:repo-artifact' },
 ])
+const handleNavClick = (categoryKey: string) => {
+  activeCategory.value = categoryKey
+
+  router.push({
+    name: route.name as string,
+    params: {
+      ...route.params,
+      category: categoryKey,
+    },
+    query: route.query,
+  })
+}
 </script>
 
 <style scoped>
@@ -111,7 +130,7 @@ const categories = computed(() => [
 }
 
 .config-nav {
-  width: 240px;
+  width: 242px;
   padding: 20px;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
