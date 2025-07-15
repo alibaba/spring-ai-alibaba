@@ -18,13 +18,12 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
-import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
+import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,11 +57,9 @@ public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logNodeEntry();
 
-		// 获取必要的输入参数
 		List<String> evidenceList = StateUtils.getListValue(state, EVIDENCES);
 		SchemaDTO schemaDTO = StateUtils.getObjectValue(state, TABLE_RELATION_OUTPUT, SchemaDTO.class);
 
-		// 获取当前执行步骤和SQL查询
 		ExecutionStep executionStep = getCurrentExecutionStep(state);
 		Integer currentStep = getCurrentStepNumber(state);
 		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
@@ -71,31 +68,24 @@ public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 		logger.info("开始语义一致性校验 - SQL: {}", sqlQuery);
 		logger.info("步骤描述: {}", toolParameters.getDescription());
 
-		// 创建开始校验状态流
-		Flux<ChatResponse> startValidationFlux = Flux.just(ChatResponseUtil.createCustomStatusResponse("开始语义一致性校验"));
-
-		// 通过流式API获取语义验证结果
 		Flux<ChatResponse> validationResultFlux = performSemanticValidationStream(schemaDTO, evidenceList,
-				toolParameters, sqlQuery)
-			.doOnComplete(() -> {
-				logger.info("语义一致性校验流式处理完成");
-			})
-			.doOnError(error -> {
-				logger.error("语义一致性校验出错", error);
-			});
+				toolParameters, sqlQuery);
 
-		// 处理验证结果
-		var chatGenerator = StreamingChatGenerator.builder()
-			.startingNode(this.getClass().getSimpleName())
-			.startingState(state)
-			.mapResult(response -> {
-				String validationResult = response.getResult().getOutput().getText();
-				boolean isPassed = !validationResult.startsWith("不通过");
-				return buildValidationResult(isPassed, validationResult, currentStep);
-			})
-			.build(Flux.concat(startValidationFlux, validationResultFlux));
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
+			this.getClass(),
+			state,
+			"开始语义一致性校验",
+			"语义一致性校验完成",
+				validationResult -> {
+					boolean isPassed = !validationResult.startsWith("不通过");
+					Map<String, Object> result = buildValidationResult(isPassed, validationResult, currentStep);
+					logger.info("[{}] 语义一致性校验结果: {}, 是否通过: {}", this.getClass().getSimpleName(), validationResult, isPassed);
+					return result;
+				},
+			validationResultFlux
+		);
 
-		return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, chatGenerator);
+		return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, generator);
 	}
 
 	/**

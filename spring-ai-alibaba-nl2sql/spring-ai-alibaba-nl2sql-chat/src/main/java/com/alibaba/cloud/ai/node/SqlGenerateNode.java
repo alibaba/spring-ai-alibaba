@@ -19,13 +19,13 @@ package com.alibaba.cloud.ai.node;
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.schema.Plan;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
+import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -73,7 +73,6 @@ public class SqlGenerateNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 
-		// 获取必要的输入参数
 		String plannerNodeOutput = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT);
 		Plan plan = converter.convert(plannerNodeOutput);
 		Integer currentStep = StateUtils.getObjectValue(state, PLAN_CURRENT_STEP, Integer.class, 1);
@@ -82,52 +81,42 @@ public class SqlGenerateNode implements NodeAction {
 		ExecutionStep executionStep = executionPlan.get(currentStep - 1);
 		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
 
-		Flux<ChatResponse> sqlGenerationFlux = Flux.create(emitter -> {
-			try {
-				if (StateUtils.hasValue(state, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT)) {
-					emitter.next(ChatResponseUtil.createCustomStatusResponse("检测到SQL执行异常，开始重新生成SQL..."));
-					String newSql = handleSqlExecutionException(state, plan, toolParameters);
-					emitter.next(ChatResponseUtil.createCustomStatusResponse("重新生成的SQL: " + newSql));
-					emitter.complete();
-				}
-				else if (isSemanticConsistencyFailed(state)) {
-					emitter.next(ChatResponseUtil.createCustomStatusResponse("语义一致性校验未通过，开始重新生成SQL..."));
-					String newSql = handleSemanticConsistencyFailure(state, toolParameters);
-					emitter.next(ChatResponseUtil.createCustomStatusResponse("重新生成的SQL: " + newSql));
-					emitter.complete();
-				}
-				else {
-					emitter.error(new IllegalStateException("SQL生成节点被意外调用"));
-				}
+		Map<String, Object> result;
+		String displayMessage;
+		
+		if (StateUtils.hasValue(state, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT)) {
+			displayMessage = "检测到SQL执行异常，开始重新生成SQL...";
+			String newSql = handleSqlExecutionException(state, plan, toolParameters);
+			toolParameters.setSqlQuery(newSql);
+			result = Map.of(SQL_GENERATE_OUTPUT, SQL_EXECUTE_NODE, PLANNER_NODE_OUTPUT, plan.toJsonStr());
+			logger.info("[{}] 重新生成的SQL: {}", this.getClass().getSimpleName(), newSql);
+		}
+		else if (isSemanticConsistencyFailed(state)) {
+			displayMessage = "语义一致性校验未通过，开始重新生成SQL...";
+			String newSql = handleSemanticConsistencyFailure(state, toolParameters);
+			result = Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
+			logger.info("[{}] 重新生成的SQL: {}", this.getClass().getSimpleName(), newSql);
+		}
+		else {
+			throw new IllegalStateException("SQL生成节点被意外调用");
+		}
+
+		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
+			emitter.next(ChatResponseUtil.createCustomStatusResponse(displayMessage));
+			if (result.containsKey(RESULT)) {
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("重新生成的SQL: " + result.get(RESULT)));
+			} else if (result.containsKey(SQL_GENERATE_OUTPUT) && result.get(SQL_GENERATE_OUTPUT).equals(SQL_EXECUTE_NODE)) {
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("SQL重新生成完成，准备执行"));
 			}
-			catch (Exception e) {
-				emitter.error(e);
-			}
+			emitter.complete();
 		});
 
-		var generator = StreamingChatGenerator.builder()
-			.startingNode(this.getClass().getSimpleName())
-			.startingState(state)
-			.mapResult(response -> {
-				try {
-					if (StateUtils.hasValue(state, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT)) {
-						String newSql = handleSqlExecutionException(state, plan, toolParameters);
-						toolParameters.setSqlQuery(newSql);
-						return Map.of(SQL_GENERATE_OUTPUT, SQL_EXECUTE_NODE, PLANNER_NODE_OUTPUT, plan.toJsonStr());
-					}
-					else if (isSemanticConsistencyFailed(state)) {
-						String newSql = handleSemanticConsistencyFailure(state, toolParameters);
-						return Map.of(SQL_GENERATE_OUTPUT, newSql, RESULT, newSql);
-					}
-					else {
-						throw new IllegalStateException("SQL生成节点被意外调用");
-					}
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			})
-			.build(sqlGenerationFlux);
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
+			this.getClass(),
+			state,
+			v -> result,
+			displayFlux
+		);
 
 		return Map.of(SQL_GENERATE_OUTPUT, generator);
 	}

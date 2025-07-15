@@ -18,10 +18,10 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
+import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -53,37 +53,36 @@ public class SchemaRecallNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 
-		// 获取必要的输入参数
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
 		List<String> keywords = StateUtils.getListValue(state, KEYWORD_EXTRACT_NODE_OUTPUT);
 
-		Flux<ChatResponse> schemaRecallFlux = Flux.create(emitter -> {
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始召回Schema信息..."));
-			// 获取表和列的文档信息
-			List<Document> tableDocuments = baseSchemaService.getTableDocuments(input);
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("表信息召回完成，数量: " + tableDocuments.size()));
-			List<List<Document>> columnDocumentsByKeywords = baseSchemaService.getColumnDocumentsByKeywords(keywords);
-			emitter
-				.next(ChatResponseUtil.createCustomStatusResponse("列信息召回完成，数量: " + columnDocumentsByKeywords.size()));
+		List<Document> tableDocuments = baseSchemaService.getTableDocuments(input);
+		List<List<Document>> columnDocumentsByKeywords = baseSchemaService.getColumnDocumentsByKeywords(keywords);
+		
+		logger.info("[{}] Schema召回结果 - 表文档数量: {}, 关键词相关列文档组数: {}", 
+			this.getClass().getSimpleName(), tableDocuments.size(), columnDocumentsByKeywords.size());
 
-			// 记录处理结果
-			logger.info("[{}] Schema召回结果 - 表文档数量: {}, 关键词相关列文档组数: {}", this.getClass().getSimpleName(),
-					tableDocuments.size(), columnDocumentsByKeywords.size());
+		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始召回Schema信息..."));
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("表信息召回完成，数量: " + tableDocuments.size()));
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("列信息召回完成，数量: " + columnDocumentsByKeywords.size()));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("Schema信息召回完成."));
 			emitter.complete();
 		});
 
-		var generator = StreamingChatGenerator.builder()
-			.startingNode(this.getClass().getSimpleName())
-			.startingState(state)
-			.mapResult(response -> {
-				List<Document> tableDocuments = baseSchemaService.getTableDocuments(input);
-				List<List<Document>> columnDocumentsByKeywords = baseSchemaService
-					.getColumnDocumentsByKeywords(keywords);
-				return Map.of(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, tableDocuments, COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT,
-						columnDocumentsByKeywords);
-			})
-			.build(schemaRecallFlux);
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
+			this.getClass(),
+			state,
+			currentState -> {
+				logger.info("表文档详情: {}", tableDocuments);
+				logger.info("关键词相关列文档详情: {}", columnDocumentsByKeywords);
+				return Map.of(
+					TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, tableDocuments,
+					COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT, columnDocumentsByKeywords
+				);
+			},
+			displayFlux
+		);
 
 		// 返回处理结果
 		return Map.of(SCHEMA_RECALL_NODE_OUTPUT, generator);

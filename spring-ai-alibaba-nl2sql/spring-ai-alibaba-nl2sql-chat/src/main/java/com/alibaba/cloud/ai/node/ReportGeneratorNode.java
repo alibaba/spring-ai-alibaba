@@ -18,11 +18,11 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.schema.Plan;
 import com.alibaba.cloud.ai.util.StateUtils;
+import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -75,19 +75,27 @@ public class ReportGeneratorNode implements NodeAction {
 		ExecutionStep executionStep = getCurrentExecutionStep(plan, currentStep);
 		String summaryAndRecommendations = executionStep.getToolParameters().getSummaryAndRecommendations();
 
-		// 构建报告
+		// 生成报告流
 		Flux<ChatResponse> reportGenerationFlux = generateReport(userInput, plan, executionResults,
 				summaryAndRecommendations);
 
-		var generator = StreamingChatGenerator.builder()
-			.startingNode(this.getClass().getSimpleName())
-			.startingState(state)
-			.mapResult(response -> {
-				String reportContent = response.getResult().getOutput().getText();
+		// 使用通用工具类创建流式生成器，基于流内容进行处理
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
+			this.getClass(),
+			state,
+			"开始生成报告...",
+			"报告生成完成！",
+			reportContent -> {
 				logger.info("生成的报告内容: {}", reportContent);
-				return buildFinalResult(reportContent);
-			})
-			.build(reportGenerationFlux);
+				Map<String, Object> result = new HashMap<>();
+				result.put(RESULT, reportContent);
+				result.put(SQL_EXECUTE_NODE_OUTPUT, null);
+				result.put(PLAN_CURRENT_STEP, null);
+				result.put(PLANNER_NODE_OUTPUT, null);
+				return result;
+			},
+			reportGenerationFlux
+		);
 
 		return Map.of(RESULT, generator);
 	}
@@ -197,19 +205,6 @@ public class ReportGeneratorNode implements NodeAction {
 		}
 
 		return sb.toString();
-	}
-
-	/**
-	 * 构建最终结果
-	 */
-	private Map<String, Object> buildFinalResult(String reportContent) {
-		Map<String, Object> result = new HashMap<>();
-		result.put(RESULT, reportContent);
-		// 清理临时状态
-		result.put(SQL_EXECUTE_NODE_OUTPUT, null);
-		result.put(PLAN_CURRENT_STEP, null);
-		result.put(PLANNER_NODE_OUTPUT, null);
-		return result;
 	}
 
 }

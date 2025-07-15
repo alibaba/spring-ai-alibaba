@@ -74,13 +74,11 @@ public class KeywordExtractNode implements NodeAction {
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
 			this.getClass(),
 			state,
-			currentState -> {
-				return Map.of(
-					KEYWORD_EXTRACT_NODE_OUTPUT, keywords,
-					EVIDENCES, evidences,
-					RESULT, keywords
-				);
-			},
+			v -> Map.of(
+                KEYWORD_EXTRACT_NODE_OUTPUT, keywords,
+                EVIDENCES, evidences,
+                RESULT, keywords
+            ),
 			displayFlux
 		);
 

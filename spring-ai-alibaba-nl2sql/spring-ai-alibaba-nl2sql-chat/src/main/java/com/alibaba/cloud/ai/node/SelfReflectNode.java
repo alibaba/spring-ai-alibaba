@@ -31,6 +31,7 @@ import static com.alibaba.cloud.ai.constant.Constant.RESULT;
  *
  * @author zhangshenghang
  */
+@Deprecated
 public class SelfReflectNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(SelfReflectNode.class);

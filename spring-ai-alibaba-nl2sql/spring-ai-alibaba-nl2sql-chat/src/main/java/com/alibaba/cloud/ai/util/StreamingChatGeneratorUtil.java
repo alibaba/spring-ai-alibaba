@@ -533,36 +533,7 @@ public class StreamingChatGeneratorUtil {
 				.resultMapper(resultMapper)
 				.build(sourceFlux);
 	}
-	
-	/**
-	 * 创建专门用于业务逻辑处理的流式生成器
-	 * 适用于需要在mapResult中执行业务逻辑而非依赖流内容的场景
-	 * 
-	 * @param nodeClass 节点类
-	 * @param state 状态
-	 * @param startMessage 开始消息
-	 * @param completionMessage 完成消息
-	 * @param businessLogicExecutor 业务逻辑执行器，在mapResult时调用
-	 * @param displayFlux 用于显示的流（用户看到的过程）
-	 * @return AsyncGenerator实例
-	 */
-	public static AsyncGenerator<? extends NodeOutput> createBusinessLogicGenerator(
-			Class<?> nodeClass,
-			OverAllState state,
-			String startMessage,
-			String completionMessage,
-			Function<OverAllState, Map<String, Object>> businessLogicExecutor,
-			Flux<ChatResponse> displayFlux) {
-		
-		return createStreamingProcessor()
-			.nodeClass(nodeClass)
-			.state(state)
-			.startMessage(startMessage)
-			.completionMessage(completionMessage)
-			.businessLogicExecutor(businessLogicExecutor)
-			.build(displayFlux);
-	}
-	
+
 	/**
 	 * 创建多阶段处理的流式生成器
 	 * 支持在显示流程中执行多个步骤，每个步骤都有自己的消息和逻辑

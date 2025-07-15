@@ -18,12 +18,12 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
+import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -66,29 +66,28 @@ public class TableRelationNode implements NodeAction {
 		List<List<Document>> columnDocumentsByKeywords = StateUtils.getDocumentListList(state,
 				COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT);
 
-		Flux<ChatResponse> tableRelationFlux = Flux.create(emitter -> {
+		// 先执行业务逻辑，获取最终结果
+		SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
+		SchemaDTO result = processSchemaSelection(schemaDTO, input, evidenceList, state);
+		
+		logger.info("[{}] Schema处理结果: {}", this.getClass().getSimpleName(), result);
+
+		// 创建显示流，仅用于用户体验
+		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始构建初始Schema..."));
-			// 构建和处理Schema
-			SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("初始Schema构建完成."));
-
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始处理Schema选择..."));
-			SchemaDTO result = processSchemaSelection(schemaDTO, input, evidenceList, state);
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("Schema选择处理完成."));
-
-			logger.info("[{}] Schema处理结果: {}", this.getClass().getSimpleName(), result);
 			emitter.complete();
 		});
 
-		var generator = StreamingChatGenerator.builder()
-			.startingNode(this.getClass().getSimpleName())
-			.startingState(state)
-			.mapResult(response -> {
-				SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
-				SchemaDTO result = processSchemaSelection(schemaDTO, input, evidenceList, state);
-				return Map.of(TABLE_RELATION_OUTPUT, result);
-			})
-			.build(tableRelationFlux);
+		// 使用工具类创建生成器，直接返回业务逻辑计算的结果
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
+			this.getClass(),
+			state,
+			v -> Map.of(TABLE_RELATION_OUTPUT, result),
+			displayFlux
+		);
 
 		return Map.of(TABLE_RELATION_OUTPUT, generator);
 	}
