@@ -25,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * 智能Agent系统通用工具类 整合开关检查、类型转换、状态管理等通用逻辑
