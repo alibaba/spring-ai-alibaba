@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.graph.action;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-
+import io.opentelemetry.context.Context;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -34,9 +34,10 @@ import java.util.function.Function;
 public interface AsyncNodeAction extends Function<OverAllState, CompletableFuture<Map<String, Object>>> {
 
 	Executor BOUNDED_ELASTIC_EXECUTOR = Executors.newWorkStealingPool(); // You can
-																			// customize a
-																			// dedicated
-																			// thread pool
+
+	// customize a
+	// dedicated
+	// thread pool
 
 	/**
 	 * Applies this action to the given agent state.
@@ -51,13 +52,18 @@ public interface AsyncNodeAction extends Function<OverAllState, CompletableFutur
 	 * @return an asynchronous node action
 	 */
 	static AsyncNodeAction node_async(NodeAction syncAction) {
-		return state -> CompletableFuture.supplyAsync(() -> {
-					try {
-							return syncAction.apply(state);
-					} catch (Exception e) {
-							throw new CompletionException(e);
-					}
-	}, AsyncNodeAction.BOUNDED_ELASTIC_EXECUTOR); // 你可以自定义一个专门的线程池
+		return state -> {
+			Context context = Context.current();
+			return CompletableFuture.supplyAsync(context.wrapSupplier(() -> {
+				try {
+					return syncAction.apply(state);
+				}
+				catch (Exception e) {
+					throw new CompletionException(e);
+				}
+			}), BOUNDED_ELASTIC_EXECUTOR // 显式指定线程池
+			);
+		};
 	}
 
 }
