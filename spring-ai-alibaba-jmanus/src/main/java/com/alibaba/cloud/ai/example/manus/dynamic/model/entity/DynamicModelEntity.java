@@ -20,120 +20,140 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
 import jakarta.persistence.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "dynamic_models")
 public class DynamicModelEntity {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    /**
+     * 无法设置自增
+     * 因为加载初始化配置的模型需要添加到数据库，此配置模型需要有固定id
+     * 否则会无法通过页面配置
+     */
+    @Id
+    @Column(nullable = false)
+    private Long id;
 
-	@Column(nullable = false)
-	private String baseUrl;
+    @Column(nullable = false)
+    private String baseUrl;
 
-	@Column(nullable = false)
-	private String apiKey;
+    @Column(nullable = false)
+    private String apiKey;
 
-	@Column(nullable = false)
-	private String modelName;
+    @Convert(converter = MapToStringConverter.class)
+    @Column(columnDefinition = "VARCHAR")
+    private Map<String, String> headers;
 
-	@Column(nullable = false, length = 1000)
-	private String modelDescription;
+    @Column(nullable = false)
+    private String modelName;
 
-	@Column(nullable = false)
-	private String type;
+    @Column(nullable = false, length = 1000)
+    private String modelDescription;
 
-	@OneToMany(mappedBy = "model")
-	private List<DynamicAgentEntity> agents;
+    @Column(nullable = false)
+    private String type;
 
-	public DynamicModelEntity() {
-	}
+    @OneToMany(mappedBy = "model")
+    private List<DynamicAgentEntity> agents;
 
-	public DynamicModelEntity(Long id) {
-		this.id = id;
-	}
+    public DynamicModelEntity() {
+        this.id = System.currentTimeMillis();
+    }
 
-	// Getters and Setters
-	public Long getId() {
-		return id;
-	}
+    public DynamicModelEntity(Long id) {
+        this.id = id;
+    }
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
 
-	public String getBaseUrl() {
-		return baseUrl;
-	}
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-	public void setBaseUrl(String baseUrl) {
-		this.baseUrl = baseUrl;
-	}
+    public String getBaseUrl() {
+        return baseUrl;
+    }
 
-	public String getApiKey() {
-		return apiKey;
-	}
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
 
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
-	}
+    public String getApiKey() {
+        return apiKey;
+    }
 
-	public String getModelName() {
-		return modelName;
-	}
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
 
-	public void setModelName(String modelName) {
-		this.modelName = modelName;
-	}
+    public String getModelName() {
+        return modelName;
+    }
 
-	public String getModelDescription() {
-		return modelDescription;
-	}
+    public void setModelName(String modelName) {
+        this.modelName = modelName;
+    }
 
-	public void setModelDescription(String modelDescription) {
-		this.modelDescription = modelDescription;
-	}
+    public String getModelDescription() {
+        return modelDescription;
+    }
 
-	public String getType() {
-		return type;
-	}
+    public void setModelDescription(String modelDescription) {
+        this.modelDescription = modelDescription;
+    }
 
-	public void setType(String type) {
-		this.type = type;
-	}
+    public String getType() {
+        return type;
+    }
 
-	public List<DynamicAgentEntity> getAgents() {
-		return agents;
-	}
+    public void setType(String type) {
+        this.type = type;
+    }
 
-	public void setAgents(List<DynamicAgentEntity> agents) {
-		this.agents = agents;
-	}
+    public List<DynamicAgentEntity> getAgents() {
+        return agents;
+    }
 
-	public ModelConfig mapToModelConfig() {
-		ModelConfig config = new ModelConfig();
-		config.setId(this.getId());
-		config.setBaseUrl(this.getBaseUrl());
-		config.setApiKey(maskValue(this.getApiKey()));
-		config.setModelName(this.getModelName());
-		config.setModelDescription(this.getModelDescription());
-		config.setType(this.getType());
-		return config;
-	}
+    public void setAgents(List<DynamicAgentEntity> agents) {
+        this.agents = agents;
+    }
 
-	/**
-	 * Obscures the string, keeping the first 4 and last 4 characters visible, replacing
-	 * the rest with asterisks (*)
-	 */
-	private String maskValue(String value) {
-		if (value == null || value.length() <= 8) {
-			return "*";
-		}
-		int length = value.length();
-		String front = value.substring(0, 4);
-		String end = value.substring(length - 4);
-		return front + "*".repeat(length - 8) + end;
-	}
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(Map<String, String> headers) {
+        this.headers = headers;
+    }
+
+    public ModelConfig mapToModelConfig() {
+        ModelConfig config = new ModelConfig();
+        config.setId(this.getId());
+        config.setHeaders(this.getHeaders());
+        config.setBaseUrl(this.getBaseUrl());
+        config.setApiKey(maskValue(this.getApiKey()));
+        config.setModelName(this.getModelName());
+        config.setModelDescription(this.getModelDescription());
+        config.setType(this.getType());
+        return config;
+    }
+
+    /**
+     * Obscures the string, keeping the first 4 and last 4 characters visible, replacing
+     * the rest with asterisks (*)
+     */
+    private String maskValue(String value) {
+        if (value == null || value.length() <= 8) {
+            return "*";
+        }
+        int length = value.length();
+        String front = value.substring(0, 4);
+        String end = value.substring(length - 4);
+        return front + "*".repeat(length - 8) + end;
+    }
 
 }

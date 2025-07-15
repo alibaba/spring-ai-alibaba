@@ -54,7 +54,7 @@
               <span class="model-tag">
                 {{ model.type }}
               </span>
-          </div>
+            </div>
           </div>
         </div>
 
@@ -112,6 +112,15 @@
         </div>
 
         <div class="form-item">
+          <label>{{ t('config.modelConfig.headers') }} </label>
+          <input
+              type="text"
+              v-model="selectedModel.headers"
+              :placeholder="t('config.modelConfig.headersPlaceholder')"
+          />
+        </div>
+
+        <div class="form-item">
           <label>{{ t('config.modelConfig.apiKey') }} <span class="required">*</span></label>
           <input
               type="text"
@@ -161,6 +170,7 @@
               :placeholder="t('config.modelConfig.typePlaceholder')"
               :dropdown-title="t('config.modelConfig.typePlaceholder')"
               icon="carbon:types"
+              required
           />
         </div>
         <div class="form-item">
@@ -170,6 +180,14 @@
               v-model="newModel.baseUrl"
               :placeholder="t('config.modelConfig.baseUrlPlaceholder')"
               required
+          />
+        </div>
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.headers') }} </label>
+          <input
+              type="text"
+              v-model="newModel.headers"
+              :placeholder="t('config.modelConfig.headersPlaceholder')"
           />
         </div>
         <div class="form-item">
@@ -253,6 +271,7 @@ const showDeleteModal = ref(false)
 // 新建Model表单数据
 const newModel = reactive<Omit<Model, 'id'>>({
   baseUrl:  '',
+  headers:  '',
   apiKey:  '',
   modelName:  '',
   modelDescription:  '',
@@ -303,6 +322,9 @@ const selectModel = async (model: Model) => {
   try {
     // 加载详细信息
     const detailedModel = await ModelApiService.getModelById(model.id)
+    if(detailedModel.headers) {
+      detailedModel.headers = JSON.stringify(detailedModel.headers)
+    }
     selectedModel.value = {
       ...detailedModel
     }
@@ -319,6 +341,7 @@ const selectModel = async (model: Model) => {
 // 显示新建Model弹窗
 const showAddModelModal = () => {
   newModel.baseUrl = ''
+  newModel.headers = ''
   newModel.apiKey = ''
   newModel.modelName = ''
   newModel.modelDescription = ''
@@ -334,8 +357,13 @@ const handleAddModel = async () => {
   }
 
   try {
+    let headers = null
+    if(newModel.headers){
+      headers = JSON.parse(newModel.headers)
+    }
     const modelData: Omit<Model, 'id'> = {
       baseUrl: newModel.baseUrl.trim(),
+      headers: headers,
       apiKey: newModel.apiKey.trim(),
       modelName: newModel.modelName.trim(),
       modelDescription: newModel.modelDescription.trim(),
@@ -343,6 +371,9 @@ const handleAddModel = async () => {
     }
 
     const createdModel = await ModelApiService.createModel(modelData)
+    if(createdModel.headers) {
+      createdModel.headers = JSON.stringify(createdModel.headers)
+    }
     models.push(createdModel)
     selectedModel.value = createdModel
     showModal.value = false
@@ -362,6 +393,11 @@ const handleSave = async () => {
   }
 
   try {
+    if(selectedModel.value.headers) {
+      selectedModel.value.headers = JSON.parse(selectedModel.value.headers)
+    } else {
+      selectedModel.value.headers = null
+    }
     const savedModel = await ModelApiService.updateModel(selectedModel.value.id, selectedModel.value)
 
     // 更新本地列表中的数据
@@ -370,6 +406,9 @@ const handleSave = async () => {
       models[index] = savedModel
     }
 
+    if(savedModel.headers) {
+      savedModel.headers = JSON.stringify(savedModel.headers)
+    }
     selectedModel.value = savedModel
     showMessage(t('config.modelConfig.saveSuccess'), 'success')
   } catch (err: any) {

@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.example.manus.llm;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
+import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -22,108 +26,245 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiChatProperties;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingProperties;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-public class LlmService {
+public class LlmService implements JmanusListener<ModelChangeEvent> {
 
-	private static final Logger log = LoggerFactory.getLogger(LlmService.class);
+    private static final Logger log = LoggerFactory.getLogger(LlmService.class);
 
-	private final ChatClient agentExecutionClient;
+    private ChatClient agentExecutionClient;
 
-	private final ChatClient planningChatClient;
+    private ChatClient planningChatClient;
 
-	private final ChatClient finalizeChatClient;
+    private ChatClient finalizeChatClient;
 
-	private ChatMemory conversationMemory;
+    private ChatMemory conversationMemory;
 
-	private ChatMemory agentMemory;
+    private ChatMemory agentMemory;
 
-	private final ChatModel chatModel;
+    private ChatModel chatModel;
 
-	public LlmService(ChatModel chatModel) {
+    private Map<ChatClient, Long> clients = new ConcurrentHashMap<>();
 
-		this.chatModel = chatModel;
-		// Execute and summarize planning, use the same memory
-		this.planningChatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
-			.build();
+    /*
+    创建自定义chatModel所需
+     */
+    @Autowired
+    private ObjectProvider<RestClient.Builder> restClientBuilderProvider;
+    @Autowired
+    private ObjectProvider<WebClient.Builder> webClientBuilderProvider;
+    @Autowired
+    private ToolCallingManager toolCallingManager;
+    @Autowired
+    private RetryTemplate retryTemplate;
+    @Autowired
+    private ResponseErrorHandler responseErrorHandler;
+    @Autowired
+    private ObjectProvider<ObservationRegistry> observationRegistry;
+    @Autowired
+    private ObjectProvider<ChatModelObservationConvention> observationConvention;
+    @Autowired
+    private ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate;
 
-		// Each agent execution process uses independent memory
+    public LlmService(ChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
 
-		this.agentExecutionClient = ChatClient.builder(chatModel)
-			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-			.build();
+    public ChatClient getAgentChatClient() {
+        return agentExecutionClient;
+    }
 
-		this.finalizeChatClient = ChatClient.builder(chatModel)
-			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.build();
+    public ChatClient getDynamicChatClient(String host, String apiKey, String modelName) {
+        OpenAiApi openAiApi = OpenAiApi.builder().baseUrl(host).apiKey(apiKey).build();
 
-	}
+        OpenAiChatOptions chatOptions = OpenAiChatOptions.builder().model(modelName).build();
 
-	public ChatClient getAgentChatClient() {
-		return agentExecutionClient;
-	}
+        OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
+                .openAiApi(openAiApi)
+                .defaultOptions(chatOptions)
+                .build();
+        return ChatClient.builder(openAiChatModel)
+                // .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
+                .defaultAdvisors(new SimpleLoggerAdvisor())
+                .defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+                .build();
+    }
 
-	public ChatClient getDynamicChatClient(String host, String apiKey, String modelName) {
-		OpenAiApi openAiApi = OpenAiApi.builder().baseUrl(host).apiKey(apiKey).build();
+    public ChatMemory getAgentMemory(Integer maxMessages) {
+        if (agentMemory == null) {
+            agentMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+        }
+        return agentMemory;
+    }
 
-		OpenAiChatOptions chatOptions = OpenAiChatOptions.builder().model(modelName).build();
+    public void clearAgentMemory(String planId) {
+        this.agentMemory.clear(planId);
+    }
 
-		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
-			.openAiApi(openAiApi)
-			.defaultOptions(chatOptions)
-			.build();
-		return ChatClient.builder(openAiChatModel)
-			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-			.build();
-	}
+    public ChatClient getPlanningChatClient() {
+        return planningChatClient;
+    }
 
-	public ChatMemory getAgentMemory(Integer maxMessages) {
-		if (agentMemory == null) {
-			agentMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
-		}
-		return agentMemory;
-	}
+    public void clearConversationMemory(String planId) {
+        if (this.conversationMemory == null) {
+            // Default to 100 messages if not specified elsewhere
+            this.conversationMemory = MessageWindowChatMemory.builder().maxMessages(100).build();
+        }
+        this.conversationMemory.clear(planId);
+    }
 
-	public void clearAgentMemory(String planId) {
-		this.agentMemory.clear(planId);
-	}
+    public ChatClient getFinalizeChatClient() {
+        return finalizeChatClient;
+    }
 
-	public ChatClient getPlanningChatClient() {
-		return planningChatClient;
-	}
+    public ChatMemory getConversationMemory(Integer maxMessages) {
+        if (conversationMemory == null) {
+            conversationMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+        }
+        return conversationMemory;
+    }
 
-	public void clearConversationMemory(String planId) {
-		if (this.conversationMemory == null) {
-			// Default to 100 messages if not specified elsewhere
-			this.conversationMemory = MessageWindowChatMemory.builder().maxMessages(100).build();
-		}
-		this.conversationMemory.clear(planId);
-	}
+    @Override
+    public void onEvent(ModelChangeEvent event) {
 
-	public ChatClient getFinalizeChatClient() {
-		return finalizeChatClient;
-	}
+        OpenAiChatOptions defaultOptions = (OpenAiChatOptions) chatModel.getDefaultOptions();
+        DynamicModelEntity dynamicModelEntity = event.getDynamicModelEntity();
 
-	public ChatModel getChatModel() {
-		return chatModel;
-	}
+        Long moduleId = dynamicModelEntity.getId();
 
-	public ChatMemory getConversationMemory(Integer maxMessages) {
-		if (conversationMemory == null) {
-			conversationMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
-		}
-		return conversationMemory;
-	}
+        if (this.planningChatClient == null) {
+            // Execute and summarize planning, use the same memory
+            this.planningChatClient = buildPlanningChatClient(dynamicModelEntity, defaultOptions);
+            clients.put(this.planningChatClient, moduleId);
+        } else {
+            Long planningModuleId = clients.get(this.planningChatClient);
+            if (moduleId.equals(planningModuleId)) {
+                this.planningChatClient = buildPlanningChatClient(dynamicModelEntity, defaultOptions);
+                clients.put(this.planningChatClient, moduleId);
+                log.info("Re-created planning chat client for module {}", moduleId);
+            }
+        }
 
+        if (this.agentExecutionClient == null) {
+            // Each agent execution process uses independent memory
+            this.agentExecutionClient = buildAgentExecutionClient(dynamicModelEntity, defaultOptions);
+            clients.put(this.agentExecutionClient, moduleId);
+        } else {
+            Long agentExecutionModuleId = clients.get(this.agentExecutionClient);
+            if (moduleId.equals(agentExecutionModuleId)) {
+                this.agentExecutionClient = buildAgentExecutionClient(dynamicModelEntity, defaultOptions);
+                clients.put(this.agentExecutionClient, moduleId);
+                log.info("Created agent execution chat client for module {}", moduleId);
+            }
+        }
+
+        if (this.finalizeChatClient == null) {
+            this.finalizeChatClient = buildFinalizeChatClient(dynamicModelEntity, defaultOptions);
+            clients.put(this.finalizeChatClient, moduleId);
+        } else {
+            Long finalizeClientId = clients.get(this.finalizeChatClient);
+            if (moduleId.equals(finalizeClientId)) {
+                this.finalizeChatClient = buildFinalizeChatClient(dynamicModelEntity, defaultOptions);
+                clients.put(this.finalizeChatClient, moduleId);
+                log.info("Updated finalizeChatClient for moduleId: {}", moduleId);
+            }
+        }
+    }
+
+    private ChatClient buildPlanningChatClient(DynamicModelEntity dynamicModelEntity, OpenAiChatOptions defaultOptions) {
+        OpenAiChatModel chatModel = openAiChatModel(dynamicModelEntity, defaultOptions);
+        return ChatClient.builder(chatModel)
+                .defaultAdvisors(new SimpleLoggerAdvisor())
+                .defaultOptions(OpenAiChatOptions.fromOptions(defaultOptions))
+                .build();
+    }
+
+    private ChatClient buildAgentExecutionClient(DynamicModelEntity dynamicModelEntity, OpenAiChatOptions defaultOptions) {
+        defaultOptions.setInternalToolExecutionEnabled(false);
+        OpenAiChatModel chatModel = openAiChatModel(dynamicModelEntity, defaultOptions);
+        return ChatClient.builder(chatModel)
+                // .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
+                .defaultAdvisors(new SimpleLoggerAdvisor())
+                .defaultOptions(OpenAiChatOptions.fromOptions(defaultOptions))
+                .build();
+    }
+
+    private ChatClient buildFinalizeChatClient(DynamicModelEntity dynamicModelEntity, OpenAiChatOptions defaultOptions) {
+        OpenAiChatModel chatModel = openAiChatModel(dynamicModelEntity, defaultOptions);
+        return ChatClient.builder(chatModel)
+                // .defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
+                .defaultAdvisors(new SimpleLoggerAdvisor())
+                .build();
+    }
+
+    public OpenAiChatModel openAiChatModel(DynamicModelEntity dynamicModelEntity, OpenAiChatOptions defaultOptions) {
+        defaultOptions.setModel(dynamicModelEntity.getModelName());
+        Map<String, String> headers = dynamicModelEntity.getHeaders();
+        if (headers != null) {
+            defaultOptions.setHttpHeaders(headers);
+        }
+        var openAiApi = openAiApi(
+                restClientBuilderProvider.getIfAvailable(RestClient::builder),
+                webClientBuilderProvider.getIfAvailable(WebClient::builder),
+                responseErrorHandler,
+                dynamicModelEntity);
+        OpenAiChatOptions options = OpenAiChatOptions.fromOptions(defaultOptions);
+        var chatModel = OpenAiChatModel.builder()
+                .openAiApi(openAiApi)
+                .defaultOptions(options)
+                .toolCallingManager(toolCallingManager)
+                .toolExecutionEligibilityPredicate(
+                        openAiToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+                .retryTemplate(retryTemplate)
+                .observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+                .build();
+
+        observationConvention.ifAvailable(chatModel::setObservationConvention);
+
+        return chatModel;
+    }
+
+    private OpenAiApi openAiApi(RestClient.Builder restClientBuilder,
+                                WebClient.Builder webClientBuilder,
+                                ResponseErrorHandler responseErrorHandler,
+                                DynamicModelEntity dynamicModelEntity) {
+        Map<String, String> headers = dynamicModelEntity.getHeaders();
+        MultiValueMap<String, String> multiValueMap = new LinkedMultiValueMap<>();
+        if (headers != null) {
+            headers.forEach((key, value) -> multiValueMap.add(key, value));
+        }
+
+        return OpenAiApi.builder()
+                .baseUrl(dynamicModelEntity.getBaseUrl())
+                .apiKey(new SimpleApiKey(dynamicModelEntity.getApiKey()))
+                .headers(multiValueMap)
+                .completionsPath(OpenAiChatProperties.DEFAULT_COMPLETIONS_PATH)
+                .embeddingsPath(OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH)
+                .restClientBuilder(restClientBuilder)
+                .webClientBuilder(webClientBuilder)
+                .responseErrorHandler(responseErrorHandler)
+                .build();
+    }
 }
