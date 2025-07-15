@@ -249,7 +249,7 @@ const words: I18nType = {
     deleteSuccess: 'Agent deleted successfully',
     deleteFailed: 'Failed to delete agent'
   },
-  // Model 配置
+  // Model Configuration
   model: {
     title: 'Model Configuration',
     name: 'Model Name',
