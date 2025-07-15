@@ -17,5 +17,3 @@ spring:
 logging:
   level:
     root: INFO
-    com.alibaba.cloud.ai.example.manus: INFO
-    com.alibaba.cloud.ai.example.manus.config.PlaywrightConfig: DEBUG 
