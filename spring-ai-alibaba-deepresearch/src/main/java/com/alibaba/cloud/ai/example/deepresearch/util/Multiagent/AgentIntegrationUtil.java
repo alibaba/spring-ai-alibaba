@@ -164,36 +164,6 @@ public class AgentIntegrationUtil {
 	}
 
 	/**
-	 * 错误处理和日志记录工具类
-	 */
-	public static class ErrorHandlingHelper {
-
-		private final Logger logger;
-
-		public ErrorHandlingHelper(Logger logger) {
-			this.logger = logger;
-		}
-
-		public void logSmartAgentSuccess(String operation, String question, AgentType agentType) {
-			logger.info("{} 成功 - 问题: '{}', Agent类型: {}", operation, question, agentType);
-		}
-
-		public void logSmartAgentFailure(String operation, String question, String error, String fallbackAction) {
-			logger.warn("{} 失败 - 问题: '{}', 错误: {}, 回退: {}", operation, question, error, fallbackAction);
-		}
-
-		public void logSmartAgentConfigurationStatus(boolean enabled, int availableServices) {
-			if (enabled) {
-				logger.info("智能Agent功能已启用，可用服务数: {}", availableServices);
-			}
-			else {
-				logger.debug("智能Agent功能未启用，使用默认配置");
-			}
-		}
-
-	}
-
-	/**
 	 * 创建智能Agent选择辅助器
 	 */
 	public static SmartAgentSelectionHelper createSelectionHelper(SmartAgentProperties smartAgentProperties,
@@ -201,13 +171,6 @@ public class AgentIntegrationUtil {
 			SearchPlatformSelectionService searchPlatformSelectionService) {
 		return new SmartAgentSelectionHelper(smartAgentProperties, smartAgentDispatcher, questionClassifierService,
 				searchPlatformSelectionService);
-	}
-
-	/**
-	 * 创建错误处理辅助器
-	 */
-	public static ErrorHandlingHelper createErrorHelper(Logger logger) {
-		return new ErrorHandlingHelper(logger);
 	}
 
 	public static boolean isSmartAgentAvailable(SmartAgentProperties smartAgentProperties, Object... services) {

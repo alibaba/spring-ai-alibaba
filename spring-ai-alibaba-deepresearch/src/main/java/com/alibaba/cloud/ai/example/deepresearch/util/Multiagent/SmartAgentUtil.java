@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.util.Multiagent;
 
-import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentType;
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.SearchPlatform;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
@@ -35,22 +34,6 @@ import java.util.List;
 public class SmartAgentUtil {
 
 	private static final Logger logger = LoggerFactory.getLogger(SmartAgentUtil.class);
-
-	public static boolean isSmartAgentAvailable(SmartAgentProperties smartAgentProperties, Object... services) {
-		if (smartAgentProperties == null || !smartAgentProperties.isEnabled()) {
-			logger.debug("智能Agent功能未开启");
-			return false;
-		}
-
-		for (Object service : services) {
-			if (service == null) {
-				logger.warn("智能Agent必要服务不可用");
-				return false;
-			}
-		}
-
-		return true;
-	}
 
 	/**
 	 * 解析AI分类结果
@@ -153,28 +136,6 @@ public class SmartAgentUtil {
 			case DATA_ANALYSIS -> "优先使用数据和统计平台，重点关注官方数据和市场分析";
 			case GENERAL_RESEARCH -> "使用通用搜索引擎进行综合性研究";
 		};
-	}
-
-	/**
-	 * 构建智能Agent错误信息
-	 * @param operation 操作名称
-	 * @param question 用户问题
-	 * @param cause 错误原因
-	 * @return 格式化的错误信息
-	 */
-	public static String buildErrorMessage(String operation, String question, String cause) {
-		return String.format("智能Agent %s失败 - 问题: '%s', 原因: %s", operation, question, cause);
-	}
-
-	/**
-	 * 构建成功日志信息
-	 * @param operation 操作名称
-	 * @param question 用户问题
-	 * @param result 操作结果
-	 * @return 格式化的成功信息
-	 */
-	public static String buildSuccessMessage(String operation, String question, Object result) {
-		return String.format("智能Agent %s成功 - 问题: '%s', 结果: %s", operation, question, result);
 	}
 
 }
