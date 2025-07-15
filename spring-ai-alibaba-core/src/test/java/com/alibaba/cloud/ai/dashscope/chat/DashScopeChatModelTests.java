@@ -143,7 +143,8 @@ class DashScopeChatModelTests {
 
 		ChatCompletionChunk chunk1 = new ChatCompletionChunk(TEST_REQUEST_ID, output1, null);
 		ChatCompletionChunk chunk2 = new ChatCompletionChunk(TEST_REQUEST_ID, output2, null);
-		ChatCompletionChunk chunk3 = new ChatCompletionChunk(TEST_REQUEST_ID, output3, new TokenUsage(10, 5, 15, null, null, null, null, null, null, null));
+		ChatCompletionChunk chunk3 = new ChatCompletionChunk(TEST_REQUEST_ID, output3,
+				new TokenUsage(10, 5, 15, null, null, null, null, null, null, null));
 
 		when(dashScopeApi.chatCompletionStream(any(ChatCompletionRequest.class), any()))
 			.thenReturn(Flux.just(chunk1, chunk2, chunk3));
@@ -273,7 +274,8 @@ class DashScopeChatModelTests {
 		ChatCompletionChunk chunk2Response = new ChatCompletionChunk("test-id",
 				new ChatCompletionOutput(chunk2, List.of(choice2)), null);
 		ChatCompletionChunk chunk3Response = new ChatCompletionChunk("test-id",
-				new ChatCompletionOutput(chunk3, List.of(choice3)), new TokenUsage(10, 5, 15, null, null, null, null, null, null, null));
+				new ChatCompletionOutput(chunk3, List.of(choice3)),
+				new TokenUsage(10, 5, 15, null, null, null, null, null, null, null));
 
 		when(dashScopeApi.chatCompletionStream(any(), any()))
 			.thenReturn(Flux.just(chunk1Response, chunk2Response, chunk3Response));

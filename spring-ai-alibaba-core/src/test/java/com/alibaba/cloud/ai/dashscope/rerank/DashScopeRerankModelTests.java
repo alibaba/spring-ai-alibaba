@@ -201,7 +201,8 @@ class DashScopeRerankModelTests {
 		// Mock API response
 		RerankResponseOutputResult result = new RerankResponseOutputResult(0, TEST_SCORE, new HashMap<>());
 		RerankResponseOutput output = new RerankResponseOutput(Collections.singletonList(result));
-		RerankResponse apiResponse = new RerankResponse(output, new TokenUsage(10, 5, 15, null, null, null, null, null, null, null), "test-request-id");
+		RerankResponse apiResponse = new RerankResponse(output,
+				new TokenUsage(10, 5, 15, null, null, null, null, null, null, null), "test-request-id");
 
 		when(dashScopeApi.rerankEntity(any())).thenReturn(ResponseEntity.ok(apiResponse));
 

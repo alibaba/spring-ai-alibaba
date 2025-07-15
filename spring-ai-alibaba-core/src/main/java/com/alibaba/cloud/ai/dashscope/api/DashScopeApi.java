@@ -1502,10 +1502,8 @@ public class DashScopeApi {
 	// format: off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record TokenUsage(@JsonProperty("output_tokens") Integer outputTokens,
-			@JsonProperty("input_tokens") Integer inputTokens,
-			@JsonProperty("total_tokens") Integer totalTokens,
-			@JsonProperty("image_tokens") Integer imageTokens,
-			@JsonProperty("video_tokens ") Integer videoTokens,
+			@JsonProperty("input_tokens") Integer inputTokens, @JsonProperty("total_tokens") Integer totalTokens,
+			@JsonProperty("image_tokens") Integer imageTokens, @JsonProperty("video_tokens ") Integer videoTokens,
 			@JsonProperty("audio_tokens ") Integer audioTokens,
 			@JsonProperty("prompt_tokens_details") Object promptTokensDetails,
 			@JsonProperty("input_tokens_details") InputTokenDetailed inputTokensDetails,
