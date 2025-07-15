@@ -63,27 +63,27 @@ public class McpService {
 	private McpConfigRepository mcpConfigRepository;
 
 	private final LoadingCache<String, Map<String, McpServiceEntity>> toolCallbackMapCache = CacheBuilder.newBuilder()
-			.expireAfterAccess(10, TimeUnit.MINUTES)
-			.removalListener((RemovalListener<String, Map<String, McpServiceEntity>>) notification -> {
-				Map<String, McpServiceEntity> mcpServiceEntityMap = notification.getValue();
-				if (mcpServiceEntityMap == null) {
-					return;
+		.expireAfterAccess(10, TimeUnit.MINUTES)
+		.removalListener((RemovalListener<String, Map<String, McpServiceEntity>>) notification -> {
+			Map<String, McpServiceEntity> mcpServiceEntityMap = notification.getValue();
+			if (mcpServiceEntityMap == null) {
+				return;
+			}
+			for (McpServiceEntity mcpServiceEntity : mcpServiceEntityMap.values()) {
+				try {
+					mcpServiceEntity.getMcpAsyncClient().close();
 				}
-				for (McpServiceEntity mcpServiceEntity : mcpServiceEntityMap.values()) {
-					try {
-						mcpServiceEntity.getMcpAsyncClient().close();
-					}
-					catch (Throwable t) {
-						logger.error("Failed to close MCP client", t);
-					}
+				catch (Throwable t) {
+					logger.error("Failed to close MCP client", t);
 				}
-			})
-			.build(new CacheLoader<>() {
-				@Override
-				public Map<String, McpServiceEntity> load(String key) throws Exception {
-					return loadMcpServices(mcpConfigRepository.findAll());
-				}
-			});
+			}
+		})
+		.build(new CacheLoader<>() {
+			@Override
+			public Map<String, McpServiceEntity> load(String key) throws Exception {
+				return loadMcpServices(mcpConfigRepository.findAll());
+			}
+		});
 
 	private Map<String, McpServiceEntity> loadMcpServices(List<McpConfigEntity> mcpConfigEntities) throws IOException {
 		Map<String, McpServiceEntity> toolCallbackMap = new ConcurrentHashMap<>();
@@ -207,10 +207,10 @@ public class McpService {
 
 			// Create WebClient and add necessary request headers
 			WebClient.Builder webClientBuilder = WebClient.builder()
-					.baseUrl(baseUrl)
-					.defaultHeader("Accept", "text/event-stream")
-					.defaultHeader("Content-Type", "application/json")
-					.defaultHeader("User-Agent", "MCP-Client/1.0.0");
+				.baseUrl(baseUrl)
+				.defaultHeader("Accept", "text/event-stream")
+				.defaultHeader("Content-Type", "application/json")
+				.defaultHeader("User-Agent", "MCP-Client/1.0.0");
 			if (sseEndpoint != null && !sseEndpoint.isEmpty()) {
 				transport = new WebFluxSseClientTransport(webClientBuilder, new ObjectMapper(), sseEndpoint);
 			}
@@ -295,8 +295,8 @@ public class McpService {
 
 			// 创建WebClient时不再设置baseUrl，直接用完整url
 			WebClient.Builder webClientBuilder = WebClient.builder()
-					.defaultHeader("Accept", "application/json, text/event-stream")
-					.defaultHeader("Content-Type", "application/json");
+				.defaultHeader("Accept", "application/json, text/event-stream")
+				.defaultHeader("Content-Type", "application/json");
 
 			transport = new StreamableHttpClientTransport(webClientBuilder, new ObjectMapper(), url);
 			return configureMcpTransport(serverName, transport);
@@ -311,8 +311,8 @@ public class McpService {
 			throws IOException {
 		if (transport != null) {
 			McpAsyncClient mcpAsyncClient = McpClient.async(transport)
-					.clientInfo(new McpSchema.Implementation(mcpServerName, "1.0.0"))
-					.build();
+				.clientInfo(new McpSchema.Implementation(mcpServerName, "1.0.0"))
+				.build();
 
 			// Retry mechanism: maximum 3 retries
 			int maxRetries = 3;
@@ -323,10 +323,11 @@ public class McpService {
 					logger.debug("Attempting to initialize MCP transport for: {} (attempt {}/{})", mcpServerName,
 							attempt, maxRetries);
 					mcpAsyncClient.initialize()
-							.timeout(Duration.ofSeconds(60))  // 增加到60秒
-							.doOnSuccess(result -> logger.info("MCP client initialized successfully for {}", mcpServerName))
-							.doOnError(error -> logger.error("Failed to initialize MCP client for {}: {}", mcpServerName, error.getMessage()))
-							.block();
+						.timeout(Duration.ofSeconds(60)) // 增加到60秒
+						.doOnSuccess(result -> logger.info("MCP client initialized successfully for {}", mcpServerName))
+						.doOnError(error -> logger.error("Failed to initialize MCP client for {}: {}", mcpServerName,
+								error.getMessage()))
+						.block();
 					logger.info("MCP transport configured successfully for: {} (attempt {})", mcpServerName, attempt);
 
 					AsyncMcpToolCallbackProvider callbackProvider = new AsyncMcpToolCallbackProvider(mcpAsyncClient);
