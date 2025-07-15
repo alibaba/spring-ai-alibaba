@@ -152,7 +152,7 @@
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-server</module>
         <!-- Nacos3 version -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-server</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-discovery</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-gateway</module>
 
         <!-- Spring AI Alibaba Nacos Prompt Template -->
