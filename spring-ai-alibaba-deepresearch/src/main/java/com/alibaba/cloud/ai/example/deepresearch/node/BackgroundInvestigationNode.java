@@ -84,7 +84,8 @@ public class BackgroundInvestigationNode implements NodeAction {
 		assert queries != null && !queries.isEmpty();
 		List<List<Map<String, String>>> resultsList = new ArrayList<>();
 		for (String query : queries) {
-			SearchEnum searchEnum = state.value("search_engine", SearchEnum.class).orElseThrow();
+			// 如果mutiAgent功能开启且配置了专用搜索平台，则使用智能搜索引擎选择,否则使用默认的通用搜索引擎
+			SearchEnum searchEnum = getSearchEnum(state, query);
 			List<Map<String, String>> results = new ArrayList<>();
 
 			// Retry logic
@@ -153,7 +154,6 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	/**
 	 * 获取智能选择的搜索引擎
-	 *
 	 * @param state 全局状态
 	 * @param query 查询内容
 	 * @return 搜索引擎枚举

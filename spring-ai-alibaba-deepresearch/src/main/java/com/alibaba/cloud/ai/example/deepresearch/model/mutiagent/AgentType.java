@@ -58,13 +58,4 @@ public enum AgentType {
 		return description;
 	}
 
-	public static AgentType fromCode(String code) {
-		for (AgentType type : values()) {
-			if (type.code.equals(code)) {
-				return type;
-			}
-		}
-		return GENERAL_RESEARCH;
-	}
-
 }

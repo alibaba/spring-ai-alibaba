@@ -16,12 +16,14 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.service.mutiagent;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentType;
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.SearchPlatform;
 import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.SmartAgentUtil;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 搜索平台选择服务，根据Agent类型和问题内容智能选择最合适的搜索平台
@@ -43,6 +46,9 @@ public class SearchPlatformSelectionService {
 
 	private static final Logger logger = LoggerFactory.getLogger(SearchPlatformSelectionService.class);
 
+	@Autowired
+	private SmartAgentProperties smartAgentProperties;
+
 	@Value("${spring.ai.alibaba.deepresearch.search-list:tavily,aliyun,baidu,serpapi}")
 	private List<String> enabledSearchEngines;
 
@@ -53,8 +59,13 @@ public class SearchPlatformSelectionService {
 		List<SearchEnum> searchPlatforms = new ArrayList<>();
 
 		try {
-			// 根据具体问题内容选择主要搜索平台
-			SearchPlatform primaryPlatform = selectPrimaryPlatform(agentType, question);
+			// 首先尝试从配置中获取主要搜索平台
+			SearchPlatform primaryPlatform = getPrimaryPlatformFromConfig(agentType);
+
+			// 如果配置中没有，则根据问题内容和agent进行选择
+			if (primaryPlatform == null) {
+				primaryPlatform = selectPrimaryPlatform(agentType, question);
+			}
 
 			SearchEnum primarySearchEnum = SmartAgentUtil.convertToSearchEnum(primaryPlatform);
 			if (primarySearchEnum != null
@@ -80,6 +91,30 @@ public class SearchPlatformSelectionService {
 	}
 
 	/**
+	 * 从配置中获取主要搜索平台
+	 */
+	private SearchPlatform getPrimaryPlatformFromConfig(AgentType agentType) {
+		if (smartAgentProperties.getSearchPlatformMapping() == null) {
+			return null;
+		}
+
+		SmartAgentProperties.SearchPlatformConfig config = smartAgentProperties.getSearchPlatformMapping()
+			.get(agentType.name().toLowerCase());
+
+		if (config == null || config.getPrimary() == null) {
+			return null;
+		}
+
+		try {
+			return SearchPlatform.valueOf(config.getPrimary().toUpperCase());
+		}
+		catch (IllegalArgumentException e) {
+			logger.warn("Invalid search platform configuration: {}", config.getPrimary());
+			return null;
+		}
+	}
+
+	/**
 	 * 根据Agent类型和问题内容选择主要搜索平台
 	 */
 	private SearchPlatform selectPrimaryPlatform(AgentType agentType, String question) {
@@ -101,22 +136,15 @@ public class SearchPlatformSelectionService {
 				return SearchPlatform.XIAOHONGSHU;
 
 			case ENCYCLOPEDIA:
-				if (lowerQuestion.contains("wikipedia") || lowerQuestion.contains("维基百科")
-						|| lowerQuestion.contains("wiki")) {
+				if (lowerQuestion.contains("维基百科") || lowerQuestion.contains("wikipedia")
+						|| lowerQuestion.contains("百科")) {
 					return SearchPlatform.WIKIPEDIA;
 				}
 				return SearchPlatform.WIKIPEDIA;
 
 			case DATA_ANALYSIS:
-				if (lowerQuestion.contains("趋势") || lowerQuestion.contains("trends") || lowerQuestion.contains("热度")
-						|| lowerQuestion.contains("流行")) {
-					return SearchPlatform.GOOGLE_TRENDS;
-				}
-				else if (lowerQuestion.contains("百度指数") || lowerQuestion.contains("baidu index")) {
-					return SearchPlatform.BAIDU_INDEX;
-				}
-				else if (lowerQuestion.contains("统计局") || lowerQuestion.contains("官方数据")
-						|| lowerQuestion.contains("统计数据")) {
+				if (lowerQuestion.contains("统计数据") || lowerQuestion.contains("数据分析")
+						|| lowerQuestion.contains("national statistics")) {
 					return SearchPlatform.NATIONAL_STATISTICS;
 				}
 				return SearchPlatform.NATIONAL_STATISTICS;
@@ -134,16 +162,19 @@ public class SearchPlatformSelectionService {
 				SearchEnum.SERPAPI);
 
 		for (SearchEnum engine : defaultEngines) {
-			if (SmartAgentUtil.isSearchEngineEnabled(engine, enabledSearchEngines)
-					&& !searchPlatforms.contains(engine)) {
+			if (SmartAgentUtil.isSearchEngineEnabled(engine, enabledSearchEngines)) {
 				searchPlatforms.add(engine);
 				break;
 			}
 		}
+
+		if (searchPlatforms.isEmpty()) {
+			searchPlatforms.add(SearchEnum.TAVILY);
+		}
 	}
 
 	/**
-	 * 获取Agent类型的搜索策略描述
+	 * 获取搜索策略描述
 	 */
 	public String getSearchStrategyDescription(AgentType agentType) {
 		return SmartAgentUtil.getSearchStrategyDescription(agentType);

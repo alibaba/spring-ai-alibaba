@@ -98,13 +98,4 @@ public class AgentPromptTemplateUtil {
 		return getSystemPrompt(agentType) + "\n\n" + getCitationGuidance(agentType);
 	}
 
-	/**
-	 * 检查Agent类型是否有自定义提示词
-	 * @param agentType Agent类型
-	 * @return true表示有自定义提示词
-	 */
-	public static boolean hasCustomPrompt(AgentType agentType) {
-		return agentType != null && PROMPT_FILE_PATHS.containsKey(agentType);
-	}
-
 }

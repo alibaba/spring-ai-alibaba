@@ -79,29 +79,4 @@ public enum SearchPlatform {
 		return supportedAgents;
 	}
 
-	/**
-	 * 根据code获取搜索平台
-	 */
-	public static SearchPlatform fromCode(String code) {
-		for (SearchPlatform platform : values()) {
-			if (platform.code.equals(code)) {
-				return platform;
-			}
-		}
-		return TAVILY;
-	}
-
-	/**
-	 * TODO:获取Agent类型的主要搜索平台
-	 */
-	public static SearchPlatform getPrimaryPlatform(AgentType agentType) {
-		return switch (agentType) {
-			case ACADEMIC_RESEARCH -> GOOGLE_SCHOLAR;
-			case LIFESTYLE_TRAVEL -> XIAOHONGSHU;
-			case ENCYCLOPEDIA -> WIKIPEDIA;
-			case DATA_ANALYSIS -> NATIONAL_STATISTICS;
-			case GENERAL_RESEARCH -> TAVILY;
-		};
-	}
-
 }

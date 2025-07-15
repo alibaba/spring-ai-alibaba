@@ -114,20 +114,6 @@ public class SmartAgentDispatcher {
 	}
 
 	/**
-	 * 检查Agent是否可用
-	 */
-	public boolean isAgentAvailable(AgentType agentType) {
-		try {
-			ChatClient agent = selectAgent(agentType);
-			return agent != null;
-		}
-		catch (Exception e) {
-			logger.warn("Agent {} is not available: {}", agentType, e.getMessage());
-			return false;
-		}
-	}
-
-	/**
 	 * Agent分派结果
 	 */
 	public static class AgentDispatchResult {
