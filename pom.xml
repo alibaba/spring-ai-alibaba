@@ -138,6 +138,7 @@
         <module>community/memories/spring-ai-alibaba-starter-memory-redis</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-jdbc</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-elasticsearch</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-mongodb</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
