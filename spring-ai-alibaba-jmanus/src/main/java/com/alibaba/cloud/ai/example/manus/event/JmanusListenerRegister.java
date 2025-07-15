@@ -14,23 +14,25 @@ import org.springframework.stereotype.Component;
 @Component
 public class JmanusListenerRegister implements BeanPostProcessor {
 
-    @Autowired
-    private JmanusEventPublisher jmanusEventPublisher;
+	@Autowired
+	private JmanusEventPublisher jmanusEventPublisher;
 
-    @Override
-    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        if (bean instanceof JmanusListener) {
-            ResolvableType resolvableType = ResolvableType.forClass(bean.getClass()).as(JmanusListener.class);
-            ResolvableType eventType = resolvableType.getGeneric(0);
-            Class<?> eventClass = eventType.resolve();
-            Class<? extends JmanusEvent> jmanusEventClass;
-            try {
-                jmanusEventClass = (Class<? extends JmanusEvent>) eventClass;
-            } catch (Exception e) {
-                throw new IllegalArgumentException("The listener can only listen to JmanusEvent type");
-            }
-            jmanusEventPublisher.registerListener(jmanusEventClass, (JmanusListener) bean);
-        }
-        return bean;
-    }
+	@Override
+	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+		if (bean instanceof JmanusListener) {
+			ResolvableType resolvableType = ResolvableType.forClass(bean.getClass()).as(JmanusListener.class);
+			ResolvableType eventType = resolvableType.getGeneric(0);
+			Class<?> eventClass = eventType.resolve();
+			Class<? extends JmanusEvent> jmanusEventClass;
+			try {
+				jmanusEventClass = (Class<? extends JmanusEvent>) eventClass;
+			}
+			catch (Exception e) {
+				throw new IllegalArgumentException("The listener can only listen to JmanusEvent type");
+			}
+			jmanusEventPublisher.registerListener(jmanusEventClass, (JmanusListener) bean);
+		}
+		return bean;
+	}
+
 }

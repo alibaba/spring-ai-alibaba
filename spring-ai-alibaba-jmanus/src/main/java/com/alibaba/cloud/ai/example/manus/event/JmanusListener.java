@@ -7,5 +7,6 @@ package com.alibaba.cloud.ai.example.manus.event;
  */
 public interface JmanusListener<T extends JmanusEvent> {
 
-    void onEvent(T event);
+	void onEvent(T event);
+
 }

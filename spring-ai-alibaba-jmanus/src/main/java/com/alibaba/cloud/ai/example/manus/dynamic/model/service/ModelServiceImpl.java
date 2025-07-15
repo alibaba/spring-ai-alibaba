@@ -76,7 +76,7 @@ public class ModelServiceImpl implements ModelService {
 			updateEntityFromConfig(entity, config);
 			entity = repository.save(entity);
 			log.info("Successfully created new Model: {}", config.getModelName());
-			//触发模型变化事件
+			// 触发模型变化事件
 			publisher.publish(new ModelChangeEvent(entity));
 			return entity.mapToModelConfig();
 		}

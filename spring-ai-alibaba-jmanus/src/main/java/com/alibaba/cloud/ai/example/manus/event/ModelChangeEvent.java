@@ -9,19 +9,21 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntit
  */
 public class ModelChangeEvent implements JmanusEvent {
 
-    private DynamicModelEntity dynamicModelEntity;
-    private long createTime;
+	private DynamicModelEntity dynamicModelEntity;
 
-    public ModelChangeEvent(DynamicModelEntity dynamicModelEntity) {
-        this.dynamicModelEntity = dynamicModelEntity;
-        this.createTime = System.currentTimeMillis();
-    }
+	private long createTime;
 
-    public DynamicModelEntity getDynamicModelEntity() {
-        return dynamicModelEntity;
-    }
+	public ModelChangeEvent(DynamicModelEntity dynamicModelEntity) {
+		this.dynamicModelEntity = dynamicModelEntity;
+		this.createTime = System.currentTimeMillis();
+	}
 
-    public long getCreateTime() {
-        return createTime;
-    }
+	public DynamicModelEntity getDynamicModelEntity() {
+		return dynamicModelEntity;
+	}
+
+	public long getCreateTime() {
+		return createTime;
+	}
+
 }

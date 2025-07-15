@@ -6,4 +6,5 @@ package com.alibaba.cloud.ai.example.manus.event;
  * @desc jmanus事件接口
  */
 public interface JmanusEvent {
+
 }
