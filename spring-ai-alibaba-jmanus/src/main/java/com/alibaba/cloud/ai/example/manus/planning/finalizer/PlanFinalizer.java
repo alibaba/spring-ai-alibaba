@@ -79,13 +79,11 @@ public class PlanFinalizer {
 		try {
 			String userRequest = context.getUserRequest();
 
-			Message systemMessage = promptService.createSystemMessage(
-					PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(), Map.of("executionDetail", executionDetail));
+			Message combinedMessage = promptService.createUserMessage(
+					PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(),
+					Map.of("executionDetail", executionDetail, "userRequest", userRequest));
 
-			Message userMessage = promptService.createUserMessage(PromptEnum.PLANNING_USER_REQUEST.getPromptName(),
-					Map.of("userRequest", userRequest));
-
-			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
+			Prompt prompt = new Prompt(List.of(combinedMessage));
 
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 			if (context.isUseMemory()) {
