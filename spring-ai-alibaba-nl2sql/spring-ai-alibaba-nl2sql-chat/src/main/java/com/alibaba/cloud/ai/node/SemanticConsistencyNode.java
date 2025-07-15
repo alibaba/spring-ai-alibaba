@@ -49,7 +49,7 @@ public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 	private final BaseNl2SqlService baseNl2SqlService;
 
 	public SemanticConsistencyNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
-								   DbConfig dbConfig) {
+			DbConfig dbConfig) {
 		super();
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
