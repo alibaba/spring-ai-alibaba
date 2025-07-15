@@ -15,54 +15,34 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
+import java.util.List;
+
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.ENABLED;
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.HEADER_ASYNC;
 
 /**
  * @author nuocheng.lxm
- * @since 1.0.0-M2
+ * @author yuluo-yx
+ * @author Soryu
  */
+
 public class DashScopeImageApi {
 
 	public static final String DEFAULT_IMAGE_MODEL = ImageModel.WANX_V1.getValue();
 
 	private final RestClient restClient;
 
-	public DashScopeImageApi(String apiKey) {
-		this(DEFAULT_BASE_URL, apiKey, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	public DashScopeImageApi(String apiKey, String workSpaceId) {
-		this(DEFAULT_BASE_URL, apiKey, workSpaceId, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	public DashScopeImageApi(String baseUrl, String apiKey, String workSpaceId) {
-		this(baseUrl, apiKey, workSpaceId, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	public DashScopeImageApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(ApiUtils.getJsonContentHeaders(apiKey))
-			.defaultStatusHandler(responseErrorHandler)
-			.build();
-	}
-
+	// format: off
 	public DashScopeImageApi(String baseUrl, String apiKey, String workSpaceId, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(ApiUtils.getJsonContentHeaders(apiKey, workSpaceId))
 			.defaultStatusHandler(responseErrorHandler)
@@ -70,17 +50,20 @@ public class DashScopeImageApi {
 	}
 
 	public ResponseEntity<DashScopeImageAsyncReponse> submitImageGenTask(DashScopeImageRequest request) {
-		String url = "/api/v1/services/aigc/";
-		if (request.model().equals("wanx2.1-imageedit") || request.model().equals("wanx-x-painting")
-				|| request.model().equals("wanx-sketch-to-image-lite"))
-			url += "image2image";
-		else
-			url += "text2image";
-		url += "/image-synthesis";
+
+		String baseUrl = "/api/v1/services/aigc/";
+		String model = request.model();
+		String endpoint = model.equals(ImageModel.WANX2_1_IMAGE_EDIT.getValue())
+				|| model.equals(ImageModel.WANX_X_PAINTING.getValue())
+				|| model.equals(ImageModel.WANX_SKETCH_TO_IMAGE_LITE.getValue())
+				|| model.equals(ImageModel.IMAGE_OUT_PAINTING.getValue()) ? "image2image" : "text2image";
+
+		String url = baseUrl + endpoint + "/image-synthesis";
+
 		return this.restClient.post()
 			.uri(url)
-			// issue: https://github.com/alibaba/spring-ai-alibaba/issues/29
-			.header("X-DashScope-Async", "enable")
+			// todo: add workspaceId header
+			.header(HEADER_ASYNC, ENABLED)
 			.body(request)
 			.retrieve()
 			.toEntity(DashScopeImageAsyncReponse.class);
@@ -93,13 +76,26 @@ public class DashScopeImageApi {
 			.toEntity(DashScopeImageAsyncReponse.class);
 	}
 
-	/*******************************************
-	 * Embedding相关
-	 **********************************************/
-
 	public enum ImageModel {
 
-		WANX_V1("wanx-v1");
+		// WANX V1 models.
+		WANX_V1("wanx-v1"),
+
+		// WANX V2 models.
+		WANX2_1_T2I_TURBO("wanx2.1-t2i-turbo"), WANX2_1_T2I_PLUS("wanx2.1-t2i-plus"),
+		WANX2_0_T2I_TURBO("wanx2.0-t2i-turbo"),
+
+		// WANX Image edit model.
+		WANX2_1_IMAGE_EDIT("wanx2.1-imageedit"),
+
+		// Images doodle painting
+		WANX_SKETCH_TO_IMAGE_LITE("wanx-sketch-to-image-lite"),
+
+		// Image partial repainting
+		WANX_X_PAINTING("wanx-x-painting"),
+
+		// Image screen expansion.
+		IMAGE_OUT_PAINTING("image-out-painting");
 
 		public final String value;
 
@@ -166,5 +162,8 @@ public class DashScopeImageApi {
 		public record DashScopeImageAsyncReponseResult(@JsonProperty("url") String url) {
 		}
 	}
+	// format: on
+
+	// todo: add image options builder.
 
 }

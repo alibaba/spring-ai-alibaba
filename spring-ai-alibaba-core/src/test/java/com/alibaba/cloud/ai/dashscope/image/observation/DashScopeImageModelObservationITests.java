@@ -25,11 +25,9 @@ import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
 import com.alibaba.cloud.ai.dashscope.observation.conventions.AiProvider;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
-import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.mockito.Mockito;
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImagePrompt;
@@ -40,8 +38,10 @@ import org.springframework.ai.image.observation.ImageModelObservationDocumentati
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.http.ResponseEntity;
 
-import static org.mockito.ArgumentMatchers.any;
+import java.util.List;
+
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 
 /**
  * @author Polaris
@@ -56,7 +56,8 @@ class DashScopeImageModelObservationTests {
 
 	public DashScopeImageModelObservationTests() {
 		this.observationRegistry = TestObservationRegistry.create();
-		this.imageModel = new DashScopeImageModel(new DashScopeImageApi("sk" + "-7a74bd9492b24f6f835a03e01affe294"),
+		this.imageModel = new DashScopeImageModel(
+				new DashScopeImageApi(null, "sk" + "-7a74bd9492b24f6f835a03e01affe294", null, null, null, null),
 				observationRegistry);
 		DefaultImageModelObservationConvention defaultImageModelObservationConvention = new DefaultImageModelObservationConvention();
 		this.imageModel.setObservationConvention(defaultImageModelObservationConvention);
