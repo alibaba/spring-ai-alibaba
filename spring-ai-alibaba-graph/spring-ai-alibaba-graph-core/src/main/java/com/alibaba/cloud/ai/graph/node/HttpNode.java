@@ -429,6 +429,12 @@ public class HttpNode implements NodeAction {
 			this.data = data != null ? data : List.of();
 		}
 
+		public static HttpRequestNodeBody fromJson(String json) throws JsonProcessingException {
+			ObjectMapper objectMapper = new ObjectMapper();
+			Map<String, Object> map = objectMapper.readValue(json, Map.class);
+			return from(map);
+		}
+
 		public static HttpRequestNodeBody from(Object raw) throws JsonProcessingException {
 			if (raw == null) {
 				return new HttpRequestNodeBody(BodyType.NONE, null);
