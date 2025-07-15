@@ -63,8 +63,6 @@ class DashScopeChatModelTests {
 	// Test constants
 	private static final String TEST_MODEL = "qwen-turbo";
 
-	private static final String TEST_API_KEY = "test-api-key";
-
 	private static final String TEST_REQUEST_ID = "test-request-id";
 
 	private static final String TEST_PROMPT = "Hello, how are you?";
@@ -307,7 +305,7 @@ class DashScopeChatModelTests {
 		// Test handling of empty response
 		ChatCompletionOutput output = new ChatCompletionOutput("", Collections.emptyList());
 		// Add non-null TokenUsage with zero values
-		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
+		TokenUsage usage = new TokenUsage(0, 0, 0, null, null, null, null, null, null, null);
 		ChatCompletion completion = new ChatCompletion("test-id", output, usage);
 
 		when(dashScopeApi.chatCompletionEntity(any(), any())).thenReturn(ResponseEntity.ok(completion));
@@ -363,9 +361,9 @@ class DashScopeChatModelTests {
 		assertThat(response.getMetadata()).isNotNull();
 		assertThat(response.getMetadata().getId()).isEqualTo(TEST_REQUEST_ID);
 		DefaultUsage aiUsage = (DefaultUsage) response.getMetadata().getUsage();
-		assertThat(aiUsage.getPromptTokens()).isEqualTo(10L);
-		assertThat(aiUsage.getCompletionTokens()).isEqualTo(20);
-		assertThat(aiUsage.getTotalTokens()).isEqualTo(30L);
+		assertThat(aiUsage.getPromptTokens()).isEqualTo(5L);
+		assertThat(aiUsage.getCompletionTokens()).isEqualTo(10);
+		assertThat(aiUsage.getTotalTokens()).isEqualTo(15L);
 	}
 
 	@Test
