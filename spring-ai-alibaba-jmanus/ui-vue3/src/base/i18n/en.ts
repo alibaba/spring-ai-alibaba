@@ -200,8 +200,8 @@ const words: I18nType = {
       instructionStep1: 'Find the configuration JSON for your MCP server:',
       instructionStep1Local: 'Local (STDIO)',
       instructionStep1LocalDesc: 'Available at mcp.so, requires Node.js environment and understanding of each item in the configuration JSON for proper adjustments like setting access keys',
-      instructionStep1Remote: 'Remote Service (SSE)',
-      instructionStep1RemoteDesc: 'Available at mcp.higress.ai/, offers SSE and STREAMING types, currently SSE protocol is more complete',
+      instructionStep1Remote: 'Remote Service (SSE/STREAMING)',
+      instructionStep1RemoteDesc: 'Available at mcp.higress.ai/, offers SSE and STREAMING types, currently STREAM protocol is more complete',
       instructionStep2: 'Copy the JSON configuration to the input box above, select STUDIO for local, STREAMING or SSE for remote, then submit',
       instructionStep3: 'This will successfully register the MCP tools.',
       instructionStep4: 'Then you need to create a new agent in Agent Configuration, and add the specific MCP tools you just added, which can greatly reduce conflicts and enhance the accuracy of tools being selected by agents',
@@ -249,7 +249,7 @@ const words: I18nType = {
     deleteSuccess: 'Agent deleted successfully',
     deleteFailed: 'Failed to delete agent'
   },
-  // Model 配置
+  // Model Configuration
   model: {
     title: 'Model Configuration',
     name: 'Model Name',
