@@ -1,7 +1,31 @@
 /*
  * Copyright 2025 the original author or authors.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Lic		// 使用新的有序通知方法，确保按顺序输出：开始消息 -> 主处理 -> 完成消息
+		var generator = StreamingChatGeneratorUtil.createGeneratorWithOrderedNotifications(
+			this.getClass(), state, response -> {
+				String rewrite = response.getResult().getOutput().getText();
+				return Map.of(QUERY_REWRITE_NODE_OUTPUT, rewrite, RESULT, rewrite);
+			}, rewriteFlux, "开始进行问题重写...", "问题重写完成！");
+
+		// 返回处理结果
+		return Map.of(getStreamReturnKey(), generator, QUERY_REWRITE_NODE_OUTPUT, generator);
+
+		// 备选方案：如果你想要更简单的实现，可以使用以下代码替换上面的部分：
+		// 
+		// AsyncGenerator<? extends NodeOutput> startGenerator = StreamingChatGeneratorUtil
+		//     .createStreamPrintGenerator("开始进行问题重写...");
+		// 
+		// var mainGenerator = StreamingChatGeneratorUtil.createGeneratorWithComposeCompletion(
+		//     this.getClass(), state, response -> {
+		//         String rewrite = response.getResult().getOutput().getText();
+		//         return Map.of(QUERY_REWRITE_NODE_OUTPUT, rewrite, RESULT, rewrite);
+		//     }, rewriteFlux, "问题重写完成！");
+		// 
+		// return Map.of(
+		//     getStreamReturnKey(), startGenerator, 
+		//     QUERY_REWRITE_NODE_OUTPUT, mainGenerator
+		// );er the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -18,10 +42,10 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
+import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -51,41 +75,44 @@ public class QueryRewriteNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("进入 {} 节点", this.getClass().getSimpleName());
 
-		// 获取用户输入
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
 		logger.info("[{}] 处理用户输入: {}", this.getClass().getSimpleName(), input);
 
-		Flux<ChatResponse> queryRewriteFlux = Flux.create(emitter -> {
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始进行问题重写..."));
-			// 执行问题重写
-			String rewrite = null;
+		final StringBuilder rewriteResult = new StringBuilder();
+		
+		Flux<ChatResponse> rewriteFlux = Flux.create(emitter -> {
 			try {
-				rewrite = baseNl2SqlService.rewrite(input);
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始进行问题重写..."));
+				
+				baseNl2SqlService.rewriteStream(input)
+					.doOnNext(response -> {
+						String content = response.getResult().getOutput().getText();
+						rewriteResult.append(content);
+						// 输出到流中供用户查看
+						emitter.next(response);
+					})
+					.doOnComplete(() -> {
+						rewriteResult.append("\n");
+						emitter.next(ChatResponseUtil.createCustomStatusResponse("问题重写完成！"));
+						logger.info("[{}] 问题重写处理完成", this.getClass().getSimpleName());
+						emitter.complete();
+					})
+					.doOnError(error -> {
+						logger.error("问题重写出错", error);
+						emitter.error(error);
+					})
+					.subscribe();
+			} catch (Exception e) {
+				logger.error("问题重写流程出错", e);
+				emitter.error(e);
 			}
-			catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-			logger.info("[{}] 问题重写结果: {}", this.getClass().getSimpleName(), rewrite);
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("问题重写完成: " + rewrite));
-			emitter.complete();
 		});
 
-		var generator = StreamingChatGenerator.builder()
-			.startingNode(this.getClass().getSimpleName())
-			.startingState(state)
-			.mapResult(response -> {
-				String rewrite = null;
-				try {
-					rewrite = baseNl2SqlService.rewrite(input);
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-				return Map.of(QUERY_REWRITE_NODE_OUTPUT, rewrite, RESULT, rewrite);
-			})
-			.build(queryRewriteFlux);
+		var generator = StreamingChatGeneratorUtil.createGenerator(this.getClass(), state, response -> {
+			String finalRewrite = rewriteResult.toString().trim();
+			return Map.of(QUERY_REWRITE_NODE_OUTPUT, finalRewrite, RESULT, finalRewrite);
+		}, rewriteFlux);
 
-		// 返回处理结果
 		return Map.of(QUERY_REWRITE_NODE_OUTPUT, generator);
 	}
 
