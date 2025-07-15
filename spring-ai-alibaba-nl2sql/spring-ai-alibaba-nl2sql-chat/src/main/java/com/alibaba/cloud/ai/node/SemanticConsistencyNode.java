@@ -42,14 +42,14 @@ import static com.alibaba.cloud.ai.constant.Constant.*;
  *
  * @author zhangshenghang
  */
-public class SemanticConsistencNode extends AbstractPlanBasedNode {
+public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 
-	private static final Logger logger = LoggerFactory.getLogger(SemanticConsistencNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(SemanticConsistencyNode.class);
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
-	public SemanticConsistencNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
-			DbConfig dbConfig) {
+	public SemanticConsistencyNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
+								   DbConfig dbConfig) {
 		super();
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
