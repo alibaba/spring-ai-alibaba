@@ -199,6 +199,28 @@ public class ManusProperties {
 		this.maxMemory = maxMemory;
 	}
 
+	@ConfigProperty(group = "manus", subGroup = "agent", key = "parallelToolCalls",
+			path = "manus.agent.parallelToolCalls", description = "并行工具调用", defaultValue = "false",
+			inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+	private volatile Boolean parallelToolCalls;
+
+	public Boolean getParallelToolCalls() {
+		String configPath = "manus.agent.parallelToolCalls";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			parallelToolCalls = Boolean.valueOf(value);
+		}
+		if (value == null) {
+			parallelToolCalls = false;
+		}
+		return parallelToolCalls;
+	}
+
+	public void setParallelToolCalls(Boolean parallelToolCalls) {
+		this.parallelToolCalls = parallelToolCalls;
+	}
+
 	// Agent Settings
 	// End-----------------------------------------------------------------------------------------------
 
