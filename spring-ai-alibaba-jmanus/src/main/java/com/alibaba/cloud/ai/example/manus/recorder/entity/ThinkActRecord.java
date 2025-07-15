@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Records the thinking and action process of an agent in a single execution step. Exists
@@ -98,6 +99,10 @@ public class ThinkActRecord {
 
 	// Sub-plan execution record for tool calls that create new execution plans
 	private PlanExecutionRecord subPlanExecutionRecord;
+
+	// Action tool information(When disabling parallel tool calls, there is always only
+	// one)
+	private List<ActToolInfo> actToolInfoList;
 
 	// Default constructor
 	public ThinkActRecord() {
@@ -321,10 +326,56 @@ public class ThinkActRecord {
 		return this.subPlanExecutionRecord != null;
 	}
 
+	public List<ActToolInfo> getActToolInfoList() {
+		return actToolInfoList;
+	}
+
+	public void setActToolInfoList(List<ActToolInfo> actToolInfoList) {
+		this.actToolInfoList = actToolInfoList;
+	}
+
 	@Override
 	public String toString() {
 		return "ThinkActRecord{" + "id='" + id + '\'' + ", parentExecutionId='" + parentExecutionId + '\''
 				+ ", actionNeeded=" + actionNeeded + ", status='" + status + '\'' + '}';
+	}
+
+	public static class ActToolInfo {
+
+		private String name;
+
+		private String parameters;
+
+		private String result;
+
+		private String id;
+
+		public ActToolInfo(String name, String arguments, String id) {
+			this.name = name;
+			this.parameters = arguments;
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getParameters() {
+			return parameters;
+		}
+
+		public String getResult() {
+			return result;
+		}
+
+		public void setResult(String result) {
+			this.result = result;
+		}
+
+		public String getId() {
+			return id;
+		}
+
 	}
 
 }

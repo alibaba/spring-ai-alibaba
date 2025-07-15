@@ -22,7 +22,6 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecordEntity;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.repository.PlanExecutionRecordRepository;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder.PlanExecutionParams;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -378,6 +377,11 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			// Record error if any
 			if (params.getErrorMessage() != null) {
 				thinkActRecord.recordError(params.getErrorMessage());
+			}
+
+			// Set actToolInfoList if available
+			if (params.getActToolInfoList() != null) {
+				thinkActRecord.setActToolInfoList(params.getActToolInfoList());
 			}
 
 			// Set think-act execution to update the record

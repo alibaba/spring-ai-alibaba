@@ -57,7 +57,7 @@ export const routes: Readonly<RouteRecordType[]> = [
         },
       },
       {
-        path: '/configs',
+        path: '/configs/:category?',
         name: 'configs',
         component: () => import('../views/configs/index.vue'),
         meta: {
