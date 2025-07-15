@@ -30,16 +30,14 @@ import org.springframework.ai.transformer.splitter.TextSplitter;
 public class RecursiveCharacterTextSplitter extends TextSplitter {
 
 	/**
-	 * Maximum size of each chunk
-	 * 最大块大小
+	 * Maximum size of each chunk 最大块大小
 	 */
 	private final int chunkSize;
+
 	/**
-	 * Array of separators to use for splitting
-	 * 分隔符
+	 * Array of separators to use for splitting 分隔符
 	 */
 	private final String[] separators;
-
 
 	/**
 	 * Create with default separators
@@ -65,10 +63,10 @@ public class RecursiveCharacterTextSplitter extends TextSplitter {
 		if (chunkSize <= 0) {
 			throw new IllegalArgumentException("Chunk size must be positive");
 		}
-		
+
 		this.chunkSize = chunkSize;
 		this.separators = Objects.requireNonNullElse(separators,
-			new String[]{"\n\n", "\n", "。", "！", "？", ";", "，"," "});
+				new String[] { "\n\n", "\n", "。", "！", "？", ";", "，", " " });
 	}
 
 	@Override
@@ -82,7 +80,7 @@ public class RecursiveCharacterTextSplitter extends TextSplitter {
 		if (text.isEmpty()) {
 			return;
 		}
-		
+
 		if (text.length() <= chunkSize) {
 			chunks.add(text);
 			return;
@@ -105,7 +103,8 @@ public class RecursiveCharacterTextSplitter extends TextSplitter {
 			for (int i = 0; i < text.length(); i++) {
 				splits[i] = String.valueOf(text.charAt(i));
 			}
-		} else {
+		}
+		else {
 			// Split by separator
 			splits = text.split(separator);
 		}
@@ -113,9 +112,11 @@ public class RecursiveCharacterTextSplitter extends TextSplitter {
 		for (String split : splits) {
 			if (split.length() > chunkSize) {
 				splitText(split, separatorIndex + 1, chunks);
-			} else {
+			}
+			else {
 				chunks.add(split);
 			}
 		}
 	}
+
 }
