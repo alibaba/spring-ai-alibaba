@@ -17,8 +17,12 @@ package com.alibaba.cloud.ai.graph.action;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 
+
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 /**
@@ -28,6 +32,11 @@ import java.util.function.Function;
  */
 @FunctionalInterface
 public interface AsyncNodeAction extends Function<OverAllState, CompletableFuture<Map<String, Object>>> {
+
+	Executor BOUNDED_ELASTIC_EXECUTOR = Executors.newWorkStealingPool(); // You can
+																			// customize a
+																			// dedicated
+																			// thread pool
 
 	/**
 	 * Applies this action to the given agent state.
@@ -42,16 +51,13 @@ public interface AsyncNodeAction extends Function<OverAllState, CompletableFutur
 	 * @return an asynchronous node action
 	 */
 	static AsyncNodeAction node_async(NodeAction syncAction) {
-		return state -> {
-			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
-			try {
-				result.complete(syncAction.apply(state));
-			}
-			catch (Exception e) {
-				result.completeExceptionally(e);
-			}
-			return result;
-		};
+		return state -> CompletableFuture.supplyAsync(() -> {
+					try {
+							return syncAction.apply(state);
+					} catch (Exception e) {
+							throw new CompletionException(e);
+					}
+	}, AsyncNodeAction.BOUNDED_ELASTIC_EXECUTOR); // 你可以自定义一个专门的线程池
 	}
 
 }
