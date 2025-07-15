@@ -53,6 +53,9 @@ public class DynamicAgentEntity {
 	@JoinColumn(name = "model_id")
 	private DynamicModelEntity model;
 
+	@Column(nullable = true)
+	private String namespace;
+
 	// Getters and Setters
 	public Long getId() {
 		return id;
@@ -128,6 +131,14 @@ public class DynamicAgentEntity {
 
 	public void setModel(DynamicModelEntity model) {
 		this.model = model;
+	}
+
+	public String getNamespace() {
+		return namespace;
+	}
+
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
 	}
 
 }

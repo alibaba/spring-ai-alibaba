@@ -17,9 +17,11 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +50,9 @@ public class DynamicAgentLoader {
 
 	private final PromptService promptService;
 
+	@Value("${namespace.value}")
+	private String namespace;
+
 	public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy LlmService llmService,
 			PlanExecutionRecorder recorder, ManusProperties properties, @Lazy ToolCallingManager toolCallingManager,
 			UserInputService userInputService, PromptService promptService) {
@@ -61,7 +66,7 @@ public class DynamicAgentLoader {
 	}
 
 	public DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting) {
-		DynamicAgentEntity entity = repository.findByAgentName(agentName);
+		DynamicAgentEntity entity = repository.findByNamespaceAndAgentName(namespace, agentName);
 		if (entity == null) {
 			throw new IllegalArgumentException("Agent not found: " + agentName);
 		}
@@ -72,7 +77,10 @@ public class DynamicAgentLoader {
 	}
 
 	public List<DynamicAgentEntity> getAllAgents() {
-		return repository.findAll();
+		return repository.findAll()
+			.stream()
+			.filter(entity -> Objects.equals(entity.getNamespace(), namespace))
+			.toList();
 	}
 
 }
