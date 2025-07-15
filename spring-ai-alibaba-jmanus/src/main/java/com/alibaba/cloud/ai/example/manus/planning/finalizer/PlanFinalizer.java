@@ -80,7 +80,7 @@ public class PlanFinalizer {
 			String userRequest = context.getUserRequest();
 
 			Message combinedMessage = promptService.createUserMessage(
-					PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(), 
+					PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(),
 					Map.of("executionDetail", executionDetail, "userRequest", userRequest));
 
 			Prompt prompt = new Prompt(List.of(combinedMessage));
