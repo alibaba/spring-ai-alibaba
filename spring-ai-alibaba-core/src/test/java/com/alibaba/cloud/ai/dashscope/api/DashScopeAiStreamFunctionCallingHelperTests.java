@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import java.util.List;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage;
@@ -28,6 +26,8 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choi
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -218,7 +218,7 @@ public class DashScopeAiStreamFunctionCallingHelperTests {
 		ChatCompletionMessage message = new ChatCompletionMessage(content, role);
 		Choice choice = new Choice(finishReason, message);
 		ChatCompletionOutput output = new ChatCompletionOutput(null, List.of(choice));
-		TokenUsage usage = new TokenUsage(10, 5, 15);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
 		return new ChatCompletionChunk(requestId, output, usage);
 	}
 
@@ -237,7 +237,7 @@ public class DashScopeAiStreamFunctionCallingHelperTests {
 				null);
 		Choice choice = new Choice(finishReason, message);
 		ChatCompletionOutput output = new ChatCompletionOutput(null, List.of(choice));
-		TokenUsage usage = new TokenUsage(10, 5, 15);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
 		return new ChatCompletionChunk(requestId, output, usage);
 	}
 
@@ -251,7 +251,7 @@ public class DashScopeAiStreamFunctionCallingHelperTests {
 				List.of(toolCall1, toolCall2), null);
 		Choice choice = new Choice(null, message);
 		ChatCompletionOutput output = new ChatCompletionOutput(null, List.of(choice));
-		TokenUsage usage = new TokenUsage(10, 5, 15);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
 		return new ChatCompletionChunk(requestId, output, usage);
 	}
 

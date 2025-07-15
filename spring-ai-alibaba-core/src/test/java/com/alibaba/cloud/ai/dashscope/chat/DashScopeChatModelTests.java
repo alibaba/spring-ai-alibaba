@@ -15,9 +15,6 @@
  */
 package com.alibaba.cloud.ai.dashscope.chat;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
@@ -30,9 +27,6 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import reactor.core.publisher.Flux;
-import reactor.test.StepVerifier;
-
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -43,6 +37,11 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.http.ResponseEntity;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
+
+import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -106,7 +105,7 @@ class DashScopeChatModelTests {
 				ChatCompletionMessage.Role.ASSISTANT);
 		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage);
 		ChatCompletionOutput output = new ChatCompletionOutput(TEST_RESPONSE, List.of(choice));
-		TokenUsage usage = new TokenUsage(20, 10, 30);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
 		ChatCompletion chatCompletion = new ChatCompletion(TEST_REQUEST_ID, output, usage);
 		ResponseEntity<ChatCompletion> responseEntity = ResponseEntity.ok(chatCompletion);
 
@@ -144,7 +143,7 @@ class DashScopeChatModelTests {
 
 		ChatCompletionChunk chunk1 = new ChatCompletionChunk(TEST_REQUEST_ID, output1, null);
 		ChatCompletionChunk chunk2 = new ChatCompletionChunk(TEST_REQUEST_ID, output2, null);
-		ChatCompletionChunk chunk3 = new ChatCompletionChunk(TEST_REQUEST_ID, output3, new TokenUsage(10, 5, 15));
+		ChatCompletionChunk chunk3 = new ChatCompletionChunk(TEST_REQUEST_ID, output3, new TokenUsage(10, 5, 15, null, null, null, null, null, null, null));
 
 		when(dashScopeApi.chatCompletionStream(any(ChatCompletionRequest.class), any()))
 			.thenReturn(Flux.just(chunk1, chunk2, chunk3));
@@ -177,7 +176,7 @@ class DashScopeChatModelTests {
 		ChatCompletionOutput output = new ChatCompletionOutput(response, List.of(choice));
 
 		// Add non-null TokenUsage with zero values
-		TokenUsage usage = new TokenUsage(0, 0, 0);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
 
 		ChatCompletion completion = new ChatCompletion("test-id", output, usage);
 
@@ -219,7 +218,7 @@ class DashScopeChatModelTests {
 		Choice toolChoice = new Choice(ChatCompletionFinishReason.TOOL_CALLS, toolMessage);
 
 		// Add non-null TokenUsage with zero values
-		TokenUsage usage = new TokenUsage(0, 0, 0);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
 
 		ChatCompletionOutput toolOutput = new ChatCompletionOutput(toolCallResponse, List.of(toolChoice));
 		ChatCompletion toolCompletion = new ChatCompletion("test-id", toolOutput, usage);
@@ -274,7 +273,7 @@ class DashScopeChatModelTests {
 		ChatCompletionChunk chunk2Response = new ChatCompletionChunk("test-id",
 				new ChatCompletionOutput(chunk2, List.of(choice2)), null);
 		ChatCompletionChunk chunk3Response = new ChatCompletionChunk("test-id",
-				new ChatCompletionOutput(chunk3, List.of(choice3)), new TokenUsage(15, 25, 40));
+				new ChatCompletionOutput(chunk3, List.of(choice3)), new TokenUsage(10, 5, 15, null, null, null, null, null, null, null));
 
 		when(dashScopeApi.chatCompletionStream(any(), any()))
 			.thenReturn(Flux.just(chunk1Response, chunk2Response, chunk3Response));
@@ -306,7 +305,7 @@ class DashScopeChatModelTests {
 		// Test handling of empty response
 		ChatCompletionOutput output = new ChatCompletionOutput("", Collections.emptyList());
 		// Add non-null TokenUsage with zero values
-		TokenUsage usage = new TokenUsage(0, 0, 0);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
 		ChatCompletion completion = new ChatCompletion("test-id", output, usage);
 
 		when(dashScopeApi.chatCompletionEntity(any(), any())).thenReturn(ResponseEntity.ok(completion));
@@ -347,14 +346,11 @@ class DashScopeChatModelTests {
 		Message message = new UserMessage(TEST_PROMPT);
 		Prompt prompt = new Prompt(List.of(message));
 
-		Map<String, Object> customMetadata = Map.of("custom_field", "custom_value", "timestamp",
-				System.currentTimeMillis());
-
 		ChatCompletionMessage responseMessage = new ChatCompletionMessage(TEST_RESPONSE,
 				ChatCompletionMessage.Role.ASSISTANT);
 		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage);
 		ChatCompletionOutput output = new ChatCompletionOutput(TEST_RESPONSE, List.of(choice));
-		TokenUsage usage = new TokenUsage(20, 10, 30);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
 		ChatCompletion chatCompletion = new ChatCompletion(TEST_REQUEST_ID, output, usage);
 		ResponseEntity<ChatCompletion> responseEntity = ResponseEntity.ok(chatCompletion);
 
@@ -401,7 +397,7 @@ class DashScopeChatModelTests {
 		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage);
 		ChatCompletionOutput output = new ChatCompletionOutput("It's sunny today!", List.of(choice));
 		// Add non-null TokenUsage with zero values
-		TokenUsage usage = new TokenUsage(0, 0, 0);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
 		ChatCompletion completion = new ChatCompletion("test-id", output, usage);
 
 		when(dashScopeApi.chatCompletionEntity(any(), any())).thenReturn(ResponseEntity.ok(completion));
