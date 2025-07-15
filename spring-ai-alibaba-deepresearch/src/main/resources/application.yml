@@ -56,6 +56,7 @@ spring:
           - aliyun
           - baidu
           - serpapi
+#         TODO: 搜索引擎配置
 #          - google_scholar  # 学术
 #          - xiaohongshu     # 生活
 #          - wikipedia       # 百科
