@@ -29,9 +29,19 @@ public class McpRecoveryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.recovery";
 
+	private Duration ping = Duration.ofSeconds(5L);
+
 	private Duration delay = Duration.ofSeconds(5L);
 
 	private Duration stop = Duration.ofSeconds(10L);
+
+	public Duration getPing() {
+		return ping;
+	}
+
+	public void setPing(Duration ping) {
+		this.ping = ping;
+	}
 
 	public Duration getDelay() {
 		return delay;

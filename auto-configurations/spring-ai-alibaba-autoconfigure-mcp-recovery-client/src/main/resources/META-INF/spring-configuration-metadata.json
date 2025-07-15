@@ -23,6 +23,13 @@
       "defaultValue": "5s"
     },
     {
+      "name": "spring.ai.alibaba.mcp.recovery.ping",
+      "type": "java.time.Duration",
+      "description": "ping MCP Server.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties",
+      "defaultValue": "5s"
+    },
+    {
       "name": "spring.ai.alibaba.mcp.recovery.stop",
       "type": "java.time.Duration",
       "description": "Duration after which MCP recovery attempts will stop.",

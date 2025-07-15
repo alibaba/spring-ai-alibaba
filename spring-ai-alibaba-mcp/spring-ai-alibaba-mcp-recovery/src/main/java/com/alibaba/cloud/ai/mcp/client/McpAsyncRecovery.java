@@ -170,8 +170,8 @@ public class McpAsyncRecovery {
 	}
 
 	public void startScheduledPolling() {
-		pingScheduler.scheduleAtFixedRate(this::checkMcpClients, mcpRecoveryProperties.getDelay().getSeconds(),
-				mcpRecoveryProperties.getDelay().getSeconds(), TimeUnit.SECONDS);
+		pingScheduler.scheduleAtFixedRate(this::checkMcpClients, mcpRecoveryProperties.getPing().getSeconds(),
+				mcpRecoveryProperties.getPing().getSeconds(), TimeUnit.SECONDS);
 	}
 
 	private void checkMcpClients() {
