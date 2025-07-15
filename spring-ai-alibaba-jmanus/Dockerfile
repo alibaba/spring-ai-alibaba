@@ -86,6 +86,12 @@ COPY target/spring-ai-alibaba-jmanus-3.0.0-SNAPSHOT.jar app.jar
 # Install Playwright browsers using Java CLI to ensure compatibility
 RUN java -jar app.jar playwright-init
 
+# Extract JAR file for faster startup
+RUN mkdir -p /app/extracted && \
+    cd /app/extracted && \
+    jar -xf /app/app.jar && \
+    rm /app/app.jar
+
 # Verify browser installation and set permissions
 RUN ls -la /root/.cache/ms-playwright/ && \
     find /root/.cache/ms-playwright -name "chrome*" -type f -exec chmod +x {} \; 2>/dev/null && \
@@ -101,8 +107,8 @@ RUN java -version && \
 RUN mkdir -p /app/logs /app/h2-data /app/playwright
 
 # Copy application configuration files
-COPY src/main/resources/application*.yml /app/
-COPY src/main/resources/application-docker.yml /app/
+COPY src/main/resources/application*.yml /app/extracted/BOOT-INF/classes/
+COPY src/main/resources/application-docker.yml /app/extracted/BOOT-INF/classes/
 
 # Set environment variables for headless mode and Playwright browser path
 ENV DISPLAY=:99
@@ -128,7 +134,8 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'export PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright' >> /app/start.sh && \
     echo 'export DOCKER_ENV=true' >> /app/start.sh && \
     echo 'echo "Starting application with docker profile..."' >> /app/start.sh && \
-    echo 'exec java $JAVA_OPTS -jar app.jar --spring.profiles.active=h2,docker' >> /app/start.sh && \
+    echo 'cd /app/extracted' >> /app/start.sh && \
+    echo 'exec java $JAVA_OPTS -cp /app/extracted/BOOT-INF/classes:/app/extracted/BOOT-INF/lib/*:. com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication --spring.profiles.active=h2,docker' >> /app/start.sh && \
     chmod +x /app/start.sh
 
 # Set entrypoint
