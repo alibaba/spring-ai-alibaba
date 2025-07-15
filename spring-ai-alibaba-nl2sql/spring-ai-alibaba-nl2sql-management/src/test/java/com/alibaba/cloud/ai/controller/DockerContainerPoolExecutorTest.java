@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.util.StringUtils;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -94,6 +95,141 @@ public class DockerContainerPoolExecutorTest {
 			print(input())
 			""";
 
+	static final String STUDENT_SCORE_ANALYSIS = """
+			import json
+			import sys
+			from collections import defaultdict
+
+			def main():
+			    # 从标准输入读取JSON数据
+			    data = json.load(sys.stdin)
+
+			    # 1. 计算每个学生的总分和平均分
+			    subjects = set()
+			    for student in data:
+			        scores = student["scores"]
+			        student["total_score"] = sum(scores.values())
+			        student["average_score"] = round(student["total_score"] / len(scores), 2)
+			        subjects.update(scores.keys())
+
+			    # 2. 按总分排序并计算排名
+			    data.sort(key=lambda x: (-x["total_score"], x["student_id"]))
+			    rank = 1
+			    prev_score = None
+			    for i, student in enumerate(data):
+			        if prev_score is not None and student["total_score"] < prev_score:
+			            rank = i + 1
+			        student["rank"] = rank
+			        prev_score = student["total_score"]
+
+			    # 3. 按班级分组统计
+			    class_stats = defaultdict(lambda: {
+			        "subject_avg": {subj: [] for subj in subjects},
+			        "subject_max": {subj: float('-inf') for subj in subjects},
+			        "subject_min": {subj: float('inf') for subj in subjects},
+			        "class_avg_total": [],
+			        "class_max_total": float('-inf'),
+			        "class_min_total": float('inf')
+			    })
+
+			    for student in data:
+			        cls = student["class"]
+			        total = student["total_score"]
+			        stats = class_stats[cls]
+
+			        # 更新班级总分统计
+			        stats["class_avg_total"].append(total)
+			        stats["class_max_total"] = max(stats["class_max_total"], total)
+			        stats["class_min_total"] = min(stats["class_min_total"], total)
+
+			        # 更新各科目统计
+			        for subj, score in student["scores"].items():
+			            stats["subject_avg"][subj].append(score)
+			            stats["subject_max"][subj] = max(stats["subject_max"][subj], score)
+			            stats["subject_min"][subj] = min(stats["subject_min"][subj], score)
+
+			    # 4. 计算班级平均分并构建结果
+			    class_summary = {}
+			    for cls, stats in class_stats.items():
+			        class_summary[cls] = {
+			            "subjects": {
+			                subj: {
+			                    "average": round(sum(scores)/len(scores), 2),
+			                    "max": stats["subject_max"][subj],
+			                    "min": stats["subject_min"][subj]
+			                } for subj, scores in stats["subject_avg"].items()
+			            },
+			            "total_score": {
+			                "average": round(sum(stats["class_avg_total"])/len(stats["class_avg_total"]), 2),
+			                "max": stats["class_max_total"],
+			                "min": stats["class_min_total"]
+			            }
+			        }
+
+			    # 5. 构建最终结果
+			    result = {
+			        "students": [{
+			            "student_id": s["student_id"],
+			            "name": s["name"],
+			            "class": s["class"],
+			            "total_score": s["total_score"],
+			            "average_score": s["average_score"],
+			            "rank": s["rank"]
+			        } for s in data],
+			        "class_summary": class_summary
+			    }
+
+			    print(json.dumps(result, indent=2, ensure_ascii=False))
+
+			if __name__ == "__main__":
+			    main()
+			""";
+
+	static final String STUDENT_SCORE_ANALYSIS_INPUT = """
+			[
+			  {
+			    "student_id": "S001",
+			    "name": "User1",
+			    "class": "ClassA",
+			    "scores": {
+			      "math": 92,
+			      "english": 88,
+			      "science": 95
+			    }
+			  },
+			  {
+			    "student_id": "S002",
+			    "name": "User2",
+			    "class": "ClassB",
+			    "scores": {
+			      "math": 85,
+			      "english": 92,
+			      "science": 89
+			    }
+			  },
+			  {
+			    "student_id": "S003",
+			    "name": "User3",
+			    "class": "ClassA",
+			    "scores": {
+			      "math": 78,
+			      "english": 85,
+			      "science": 92
+			    }
+			  },
+			  {
+			    "student_id": "S004",
+			    "name": "User4",
+			    "class": "ClassB",
+			    "scores": {
+			      "math": 95,
+			      "english": 90,
+			      "science": 87
+			    }
+			  }
+			]
+			""";
+
 	private void testNormalCode() {
 		log.info("Run Normal Code");
 		String response = pythonExecutorTool.executePythonCode(NORMAL_CODE, null, "DataFrame Data");
@@ -142,11 +278,20 @@ public class DockerContainerPoolExecutorTest {
 		log.info("Run Need Input Finished");
 	}
 
+	private void testStudentScoreAnalysis() {
+		log.info("Run Student Score Analysis");
+		String response = pythonExecutorTool.executePythonCode(STUDENT_SCORE_ANALYSIS, null,
+				STUDENT_SCORE_ANALYSIS_INPUT);
+		System.out.println(response);
+		assert StringUtils.hasText(response);
+		log.info("Run Student Score Analysis Finished");
+	}
+
 	@Test
 	@DisplayName("Concurrency Testing")
 	public void testConcurrency() throws InterruptedException {
 		ExecutorService executorService = Executors.newFixedThreadPool(10);
-		CountDownLatch countDownLatch = new CountDownLatch(6);
+		CountDownLatch countDownLatch = new CountDownLatch(7);
 		executorService.submit(() -> {
 			try {
 				this.testNormalCode();
@@ -205,6 +350,17 @@ public class DockerContainerPoolExecutorTest {
 		executorService.submit(() -> {
 			try {
 				this.testNeedInput();
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			finally {
+				countDownLatch.countDown();
+			}
+		});
+		executorService.submit(() -> {
+			try {
+				this.testStudentScoreAnalysis();
 			}
 			catch (Exception e) {
 				throw new RuntimeException(e);
