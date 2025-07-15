@@ -39,13 +39,22 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.image.*;
+import org.springframework.ai.image.ImageMessage;
+import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImageOptionsBuilder;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 
 @Service
 public class ChatModelDelegateImpl implements ChatModelDelegate {
@@ -194,7 +203,9 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 			if (imageOptions != null) {
 				try {
 					log.info("set image options, {}", objectMapper.writeValueAsString(imageOptions));
-					var dashScopeImageApi = new DashScopeImageApi(key);
+
+					// todo: adapt new image api
+					var dashScopeImageApi = new DashScopeImageApi(DEFAULT_BASE_URL, key, "", RestClient.builder(), null, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 					dashScopeImageModel = new DashScopeImageModel(dashScopeImageApi, imageOptions);
 				}
 				catch (Exception e) {
