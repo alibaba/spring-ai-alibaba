@@ -260,10 +260,10 @@ import type { PlanTemplate } from '@/types/plan-template'
 
 const { t } = useI18n()
 
-// 使用pinia store
+// Use pinia store
 const sidebarStore = useSidebarStore()
 
-// Emits - 保留部分事件用于与外部组件通信
+// Emits - Keep some events for communication with external components
 const emit = defineEmits<{
   planExecutionRequested: [payload: { title: string; planData: any; params?: string | undefined }]
 }>()
@@ -359,7 +359,7 @@ const handleExecutePlan = async () => {
   }
 }
 
-// 工具函数
+// Utility functions
 const getRelativeTimeString = (date: Date): string => {
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -385,7 +385,7 @@ onMounted(() => {
   sidebarStore.loadPlanTemplateList()
 })
 
-// 暴露方法供父组件调用
+// Expose methods for parent component to call
 defineExpose({
   loadPlanTemplateList: sidebarStore.loadPlanTemplateList,
   toggleSidebar: sidebarStore.toggleSidebar,
