@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -36,6 +37,9 @@ public class PromptDataInitializer implements CommandLineRunner {
 	private final PromptRepository promptRepository;
 
 	private final PromptLoader promptLoader;
+
+	@Value("${namespace.value}")
+	private String namespace;
 
 	@Autowired
 	private PlatformTransactionManager transactionManager;
@@ -78,6 +82,7 @@ public class PromptDataInitializer implements CommandLineRunner {
 		if (promptEntity == null) {
 			promptEntity = new PromptEntity();
 			promptEntity.setPromptName(prompt.getPromptName());
+			promptEntity.setNamespace(namespace);
 			promptEntity.setPromptDescription(prompt.getPromptDescription());
 			promptEntity.setMessageType(prompt.getMessageType().name());
 			promptEntity.setType(prompt.getType().name());
