@@ -88,17 +88,19 @@ public class SmartContentSavingService {
 
 		// Check if infinite context is enabled
 		boolean infiniteContextEnabled = isInfiniteContextEnabled();
-		
+
 		if (!infiniteContextEnabled) {
-			// When infinite context is disabled, return content directly without any processing
-			log.info("Infinite context disabled for plan {}, returning content directly without smart processing", planId);
+			// When infinite context is disabled, return content directly without any
+			// processing
+			log.info("Infinite context disabled for plan {}, returning content directly without smart processing",
+					planId);
 			return new SmartProcessResult(null, content);
 		}
 
 		// Use configured threshold from ManusProperties when infinite context is enabled
 		int threshold = manusProperties.getInfiniteContextTaskContextSize();
 
-		log.info("Processing content for plan {}: content length = {}, threshold = {}, infinite context enabled", 
+		log.info("Processing content for plan {}: content length = {}, threshold = {}, infinite context enabled",
 				planId, content.length(), threshold);
 
 		// If content is within threshold, return directly

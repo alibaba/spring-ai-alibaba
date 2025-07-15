@@ -701,7 +701,8 @@ public class MapReduceTool extends AbstractBaseTool<MapReduceTool.MapReduceInput
 
 			}
 			else if (isDirectory) {
-				// Process all text files in directory - use infinite context task context size
+				// Process all text files in directory - use infinite context task context
+				// size
 				int splitSize = getInfiniteContextTaskContextSize();
 				List<Path> textFiles = Files.list(path)
 					.filter(Files::isRegularFile)
