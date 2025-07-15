@@ -22,7 +22,7 @@
             class="tab-button active"
         >
           <Icon icon="carbon:events"/>
-          步骤执行详情
+          {{ t('rightPanel.stepExecutionDetails') }}
         </button>
       </div>
     </div>
@@ -36,38 +36,38 @@
             {{
               selectedStep.title ||
               selectedStep.description ||
-              `步骤 ${selectedStep.index + 1}`
+              t('rightPanel.defaultStepTitle', { number: selectedStep.index + 1 })
             }}
           </h3>
 
           <div class="agent-info" v-if="selectedStep.agentExecution">
             <div class="info-item">
-              <span class="label">{{ $t('rightPanel.executingAgent') }}:</span>
+              <span class="label">{{ t('rightPanel.executingAgent') }}:</span>
               <span class="value">{{ selectedStep.agentExecution.agentName }}</span>
             </div>
             <div class="info-item">
-              <span class="label">{{ $t('rightPanel.description') }}:</span>
+              <span class="label">{{ t('rightPanel.description') }}:</span>
               <span class="value">{{
                   selectedStep.agentExecution.agentDescription || ''
                 }}</span>
             </div>
             <div class="info-item">
-              <span class="label">{{ $t('rightPanel.callingModel') }}:</span>
+              <span class="label">{{ t('rightPanel.callingModel') }}:</span>
               <span class="value">{{ selectedStep.agentExecution.modelName }}</span>
             </div>
             <div class="info-item">
-              <span class="label">{{ $t('rightPanel.request') }}:</span>
+              <span class="label">{{ t('rightPanel.request') }}:</span>
               <span class="value">{{
                   selectedStep.agentExecution.agentRequest || ''
                 }}</span>
             </div>
             <div class="info-item">
-              <span class="label">{{ $t('rightPanel.executionResult') }}:</span>
+              <span class="label">{{ t('rightPanel.executionResult') }}:</span>
               <span
                   class="value"
                   :class="{ success: selectedStep.agentExecution.isCompleted }"
               >
-                {{ selectedStep.agentExecution.result || $t('rightPanel.executing') }}
+                {{ selectedStep.agentExecution.result || t('rightPanel.executing') }}
               </span>
             </div>
           </div>
@@ -104,7 +104,7 @@
                 class="think-act-steps"
                 v-if="selectedStep.agentExecution?.thinkActSteps && selectedStep.agentExecution.thinkActSteps.length > 0"
             >
-              <h4>{{ $t('rightPanel.thinkAndActionSteps') }}</h4>
+              <h4>{{ t('rightPanel.thinkAndActionSteps') }}</h4>
               <div class="steps-container">
                 <div
                     v-for="(tas, index) in selectedStep.agentExecution.thinkActSteps"
@@ -114,7 +114,7 @@
                   <div class="step-header">
                     <span class="step-number">#{{ index + 1 }}</span>
                     <span class="step-status" :class="tas.status">{{
-                        tas.status || $t('rightPanel.executing')
+                        tas.status || t('rightPanel.executing')
                       }}</span>
                   </div>
 
@@ -122,15 +122,15 @@
                   <div class="think-section">
                     <h5>
                       <Icon icon="carbon:thinking"/>
-                      {{ $t('rightPanel.thinking') }}
+                      {{ t('rightPanel.thinking') }}
                     </h5>
                     <div class="think-content">
                       <div class="input">
-                        <span class="label">{{ $t('rightPanel.input') }}:</span>
+                        <span class="label">{{ t('rightPanel.input') }}:</span>
                         <pre>{{ formatJson(tas.thinkInput) }}</pre>
                       </div>
                       <div class="output">
-                        <span class="label">{{ $t('rightPanel.output') }}:</span>
+                        <span class="label">{{ t('rightPanel.output') }}:</span>
                         <pre>{{ formatJson(tas.thinkOutput) }}</pre>
                       </div>
                     </div>
@@ -140,20 +140,20 @@
                   <div v-if="tas.actionNeeded" class="action-section">
                     <h5>
                       <Icon icon="carbon:play"/>
-                      {{ $t('rightPanel.action') }}
+                      {{ t('rightPanel.action') }}
                     </h5>
                     <div class="action-content">
                       <div v-for="(actToolInfo, index) in tas.actToolInfoList" :key="index">
                         <div class="tool-info">
-                          <span class="label">{{ $t('rightPanel.tool') }}:</span>
+                          <span class="label">{{ t('rightPanel.tool') }}:</span>
                           <span class="value">{{ actToolInfo.name || '' }}</span>
                         </div>
                         <div class="input">
-                          <span class="label">{{ $t('rightPanel.toolParameters') }}:</span>
+                          <span class="label">{{ t('rightPanel.toolParameters') }}:</span>
                           <pre>{{ formatJson(actToolInfo.parameters) }}</pre>
                         </div>
                         <div class="output">
-                          <span class="label">{{ $t('rightPanel.executionResult') }}:</span>
+                          <span class="label">{{ t('rightPanel.executionResult') }}:</span>
                           <pre>{{ formatJson(actToolInfo.result) }}</pre>
                         </div>
                       </div>
@@ -163,7 +163,7 @@
                     <div v-if="tas.subPlanExecutionRecord" class="sub-plan-section">
                       <h5>
                         <Icon icon="carbon:tree-view"/>
-                        子执行计划
+                        {{ t('rightPanel.subPlan') }}
                       </h5>
                       <div class="sub-plan-content">
                         <div class="sub-plan-header">
@@ -200,7 +200,7 @@
               "
                   class="no-steps-message"
               >
-                <p>{{ $t('rightPanel.noStepDetails') }}</p>
+                <p>{{ t('rightPanel.noStepDetails') }}</p>
               </div>
 
               <!-- Handle no agentExecution case -->
@@ -209,10 +209,10 @@
                   class="no-execution-message"
               >
                 <Icon icon="carbon:information" class="info-icon"/>
-                <h4>步骤信息</h4>
+                <h4>{{ t('rightPanel.stepInfo') }}</h4>
                 <div class="step-basic-info">
                   <div class="info-item">
-                    <span class="label">步骤名称:</span>
+                    <span class="label">{{ t('rightPanel.stepName') }}:</span>
                     <span class="value">{{
                         selectedStep.title ||
                         selectedStep.description ||
@@ -237,7 +237,7 @@
                   </span>
                   </div>
                 </div>
-                <p class="no-execution-hint">该步骤暂无详细执行信息</p>
+                <p class="no-execution-hint">{{ t('rightPanel.noExecutionInfo') }}</p>
               </div>
 
               <!-- Dynamic effect during execution -->
@@ -252,7 +252,7 @@
                 </div>
                 <p class="execution-text">
                   <Icon icon="carbon:in-progress" class="rotating-icon"/>
-                  {{ $t('rightPanel.stepExecuting') }}
+                  {{ t('rightPanel.stepExecuting') }}
                 </p>
               </div>
             </div>
@@ -270,7 +270,7 @@
                 v-if="showScrollToBottomButton"
                 @click="scrollToBottom"
                 class="scroll-to-bottom-btn"
-                :title="$t('rightPanel.scrollToBottom')"
+                :title="t('rightPanel.scrollToBottom')"
             >
               <Icon icon="carbon:chevron-down"/>
             </button>
@@ -329,9 +329,9 @@ const shouldAutoScrollToBottom = ref(true)
 
 const stepStatusText = computed(() => {
   if (!selectedStep.value) return ''
-  if (selectedStep.value.completed) return '已完成'
-  if (selectedStep.value.current) return '执行中'
-  return '等待执行'
+  if (selectedStep.value.completed) return t('rightPanel.status.completed')
+  if (selectedStep.value.current) return t('rightPanel.status.executing')
+  return t('rightPanel.status.waiting')
 })
 
 // Actions - Plan data management and refresh control
