@@ -107,3 +107,4 @@ defineExpose<ToastInstance>({ show })
   border: 1px solid rgba(234, 102, 102, 0.5);
 }
 </style>
+
