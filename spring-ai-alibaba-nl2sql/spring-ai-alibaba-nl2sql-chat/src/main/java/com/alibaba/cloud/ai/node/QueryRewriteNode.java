@@ -1,31 +1,7 @@
 /*
  * Copyright 2025 the original author or authors.
  *
- * Lic		// 使用新的有序通知方法，确保按顺序输出：开始消息 -> 主处理 -> 完成消息
-		var generator = StreamingChatGeneratorUtil.createGeneratorWithOrderedNotifications(
-			this.getClass(), state, response -> {
-				String rewrite = response.getResult().getOutput().getText();
-				return Map.of(QUERY_REWRITE_NODE_OUTPUT, rewrite, RESULT, rewrite);
-			}, rewriteFlux, "开始进行问题重写...", "问题重写完成！");
-
-		// 返回处理结果
-		return Map.of(getStreamReturnKey(), generator, QUERY_REWRITE_NODE_OUTPUT, generator);
-
-		// 备选方案：如果你想要更简单的实现，可以使用以下代码替换上面的部分：
-		//
-		// AsyncGenerator<? extends NodeOutput> startGenerator = StreamingChatGeneratorUtil
-		//     .createStreamPrintGenerator("开始进行问题重写...");
-		//
-		// var mainGenerator = StreamingChatGeneratorUtil.createGeneratorWithComposeCompletion(
-		//     this.getClass(), state, response -> {
-		//         String rewrite = response.getResult().getOutput().getText();
-		//         return Map.of(QUERY_REWRITE_NODE_OUTPUT, rewrite, RESULT, rewrite);
-		//     }, rewriteFlux, "问题重写完成！");
-		//
-		// return Map.of(
-		//     getStreamReturnKey(), startGenerator,
-		//     QUERY_REWRITE_NODE_OUTPUT, mainGenerator
-		// );er the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -53,7 +29,11 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
- * 问题重写与意图澄清，提升意图理解准确性。
+ * Query rewriting and intent clarification node to improve intent understanding accuracy.
+ *
+ * This node is responsible for: - Rewriting user queries to clarify intent - Improving
+ * understanding accuracy through query transformation - Providing streaming feedback
+ * during rewriting process
  *
  * @author zhangshenghang
  */
@@ -69,12 +49,12 @@ public class QueryRewriteNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+		logger.info("Entering {} node", this.getClass().getSimpleName());
 
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
-		logger.info("[{}] 处理用户输入: {}", this.getClass().getSimpleName(), input);
+		logger.info("[{}] Processing user input: {}", this.getClass().getSimpleName(), input);
 
-		// 使用通用的流式处理工具类
+		// Use streaming utility class for content collection and result mapping
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
 				"开始进行问题重写...", "问题重写完成！",
 				finalResult -> Map.of(QUERY_REWRITE_NODE_OUTPUT, finalResult, RESULT, finalResult),

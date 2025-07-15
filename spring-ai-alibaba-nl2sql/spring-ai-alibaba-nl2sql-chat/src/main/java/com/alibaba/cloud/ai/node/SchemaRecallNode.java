@@ -35,7 +35,12 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
- * 根据关键词和意图，召回相关表、字段、关系等数据库 Schema 信息。
+ * Schema recall node that retrieves relevant database schema information based on
+ * keywords and intent.
+ *
+ * This node is responsible for: - Recalling relevant tables based on user input -
+ * Retrieving column documents based on extracted keywords - Organizing schema information
+ * for subsequent processing - Providing streaming feedback during recall process
  *
  * @author zhangshenghang
  */
@@ -51,16 +56,18 @@ public class SchemaRecallNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+		logger.info("Entering {} node", this.getClass().getSimpleName());
 
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
 		List<String> keywords = StateUtils.getListValue(state, KEYWORD_EXTRACT_NODE_OUTPUT);
 
+		// Execute business logic first - recall schema information immediately
 		List<Document> tableDocuments = baseSchemaService.getTableDocuments(input);
 		List<List<Document>> columnDocumentsByKeywords = baseSchemaService.getColumnDocumentsByKeywords(keywords);
 
-		logger.info("[{}] Schema召回结果 - 表文档数量: {}, 关键词相关列文档组数: {}", this.getClass().getSimpleName(),
-				tableDocuments.size(), columnDocumentsByKeywords.size());
+		logger.info(
+				"[{}] Schema recall results - table documents count: {}, keyword-related column document groups: {}",
+				this.getClass().getSimpleName(), tableDocuments.size(), columnDocumentsByKeywords.size());
 
 		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始召回Schema信息..."));
@@ -73,13 +80,13 @@ public class SchemaRecallNode implements NodeAction {
 
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
 				currentState -> {
-					logger.info("表文档详情: {}", tableDocuments);
-					logger.info("关键词相关列文档详情: {}", columnDocumentsByKeywords);
+					logger.info("Table document details: {}", tableDocuments);
+					logger.info("Keyword-related column document details: {}", columnDocumentsByKeywords);
 					return Map.of(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, tableDocuments,
 							COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT, columnDocumentsByKeywords);
 				}, displayFlux);
 
-		// 返回处理结果
+		// Return the processing result
 		return Map.of(SCHEMA_RECALL_NODE_OUTPUT, generator);
 	}
 

@@ -34,7 +34,12 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
- * 关键词、实体、时间等信息抽取，为后续 Schema 召回做准备
+ * Keyword, entity, and temporal information extraction node to prepare for subsequent
+ * schema recall.
+ *
+ * This node is responsible for: - Extracting evidences from user input - Extracting
+ * keywords based on evidences - Preparing structured information for schema recall -
+ * Providing streaming feedback during extraction process
  *
  * @author zhangshenghang
  */
@@ -50,15 +55,17 @@ public class KeywordExtractNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+		logger.info("Entering {} node", this.getClass().getSimpleName());
 
 		String input = StateUtils.getStringValue(state, QUERY_REWRITE_NODE_OUTPUT,
 				StateUtils.getStringValue(state, INPUT_KEY));
 
+		// Execute business logic first - extract evidences and keywords immediately
 		List<String> evidences = baseNl2SqlService.extractEvidences(input);
 		List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);
 
-		logger.info("[{}] 提取结果 - 证据: {}, 关键词: {}", this.getClass().getSimpleName(), evidences, keywords);
+		logger.info("[{}] Extraction results - evidences: {}, keywords: {}", this.getClass().getSimpleName(), evidences,
+				keywords);
 
 		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始提取关键词..."));
@@ -70,7 +77,7 @@ public class KeywordExtractNode implements NodeAction {
 			emitter.complete();
 		});
 
-		// 使用业务逻辑执行器，避免重复执行业务逻辑
+		// Use business logic executor to avoid duplicate business logic execution
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
 				v -> Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, keywords, EVIDENCES, evidences, RESULT, keywords),
 				displayFlux);
