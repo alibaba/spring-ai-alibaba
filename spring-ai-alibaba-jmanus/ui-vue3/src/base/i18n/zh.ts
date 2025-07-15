@@ -304,6 +304,40 @@ const words: I18nType = {
     deleteSuccess: 'Model删除成功',
     deleteFailed: 'Model删除失败'
   },
+<<<<<<< HEAD
+=======
+
+  // 计划模板配置
+  planTemplate: {
+    title: '计划模板配置',
+    generator: '计划生成器',
+    execution: '计划执行',
+    prompt: '生成提示',
+    promptPlaceholder: '描述您想要生成的计划...',
+    generating: '生成中...',
+    generate: '生成计划',
+    updatePlan: '更新计划',
+    executing: '执行中...',
+    execute: '执行计划',
+    executionParams: '执行参数',
+    executionParamsPlaceholder: '输入执行参数（可选）...',
+    apiUrl: 'API 调用地址',
+    clearParams: '清空参数',
+    versionControl: '版本控制',
+    rollback: '回滚',
+    restore: '恢复',
+    currentVersion: '当前版本',
+    saveTemplate: '保存模板',
+    loadTemplate: '加载模板',
+    templateSaved: '模板已保存',
+    templateLoaded: '模板已加载',
+    executionSuccess: '执行成功',
+    executionFailed: '执行失败',
+    generationSuccess: '生成成功',
+    generationFailed: '生成失败',
+  },
+
+>>>>>>> 1b011c3b (feat(jmanus): 新增动态 Prompt 配置功能)
   // 聊天组件
   chat: {
     botName: 'TaskPilot:',
@@ -418,10 +452,13 @@ const words: I18nType = {
     updateFailed: '更新计划失败',
     executeFailed: '执行计划失败',
     unknown: '未知',
+<<<<<<< HEAD
     newTemplateName: '新建的执行计划',
     newTemplateDescription: '请使用计划生成器创建新的计划模板',
     generatedTemplateDescription: '通过生成器创建的计划模板',
     defaultExecutionPlanTitle: '执行计划',
+=======
+>>>>>>> 1b011c3b (feat(jmanus): 新增动态 Prompt 配置功能)
   },
 
   // 模态框

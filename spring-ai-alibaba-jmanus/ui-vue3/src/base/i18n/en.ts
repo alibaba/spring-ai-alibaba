@@ -332,6 +332,38 @@ const words: I18nType = {
     loadDataFailed: 'Failed to load data',
     loadDetailsFailed: 'Failed to load model details',
     invalidFormat: 'Model configuration format is invalid: missing required fields',
+<<<<<<< HEAD
+=======
+  },
+  // Plan template configuration
+  planTemplate: {
+    title: 'Plan Template Configuration',
+    generator: 'Plan Generator',
+    execution: 'Plan Execution',
+    prompt: 'Generation Prompt',
+    promptPlaceholder: 'Describe the plan you want to generate...',
+    generating: 'Generating...',
+    generate: 'Generate Plan',
+    updatePlan: 'Update Plan',
+    executing: 'Executing...',
+    execute: 'Execute Plan',
+    executionParams: 'Execution Parameters',
+    executionParamsPlaceholder: 'Enter execution parameters (optional)...',
+    apiUrl: 'API Call URL',
+    clearParams: 'Clear Parameters',
+    versionControl: 'Version Control',
+    rollback: 'Rollback',
+    restore: 'Restore',
+    currentVersion: 'Current Version',
+    saveTemplate: 'Save Template',
+    loadTemplate: 'Load Template',
+    templateSaved: 'Template saved',
+    templateLoaded: 'Template loaded',
+    executionSuccess: 'Execution successful',
+    executionFailed: 'Execution failed',
+    generationSuccess: 'Generation successful',
+    generationFailed: 'Generation failed',
+>>>>>>> 1b011c3b (feat(jmanus): 新增动态 Prompt 配置功能)
   },
 
   // Chat component
@@ -449,10 +481,13 @@ const words: I18nType = {
     updateFailed: 'Failed to update plan',
     executeFailed: 'Failed to execute plan',
     unknown: 'Unknown',
+<<<<<<< HEAD
     newTemplateName: 'New Execution Plan',
     newTemplateDescription: 'Please use the plan generator to create a new plan template',
     generatedTemplateDescription: 'Plan template created by generator',
     defaultExecutionPlanTitle: 'Execution Plan',
+=======
+>>>>>>> 1b011c3b (feat(jmanus): 新增动态 Prompt 配置功能)
   },
 
   // Modal
