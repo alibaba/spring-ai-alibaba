@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo;
 
+import java.util.Map;
+
 /**
  * @author lizhenning
  * @date 2025/7/8
@@ -24,6 +26,8 @@ public class ModelConfig {
 	private Long id;
 
 	private String baseUrl;
+
+	private Map<String, String> headers;
 
 	private String apiKey;
 
@@ -79,6 +83,14 @@ public class ModelConfig {
 
 	public void setType(String type) {
 		this.type = type;
+	}
+
+	public Map<String, String> getHeaders() {
+		return headers;
+	}
+
+	public void setHeaders(Map<String, String> headers) {
+		this.headers = headers;
 	}
 
 }

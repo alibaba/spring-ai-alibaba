@@ -8,7 +8,7 @@ spring:
   ai:
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
-      api-key: ${DASHSCOPE_API_KEY}
+      api-key: sk-5627eb7a629042ca8e48c81352fc6ce0
       chat:
         options:
           model: qwen-plus

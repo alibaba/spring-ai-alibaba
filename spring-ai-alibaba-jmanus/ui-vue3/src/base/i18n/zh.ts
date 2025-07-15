@@ -162,6 +162,8 @@ const words: I18nType = {
       typePlaceholder: '选择模型类型',
       baseUrl: 'Base Url',
       baseUrlPlaceholder: '输入 Base Url',
+      headers: 'Headers',
+      headersPlaceholder: '输入 Headers 如 {"key": "value"}',
       apiKey: 'API密钥',
       apiKeyPlaceholder: '输入API密钥',
       modelName: '模型名称',

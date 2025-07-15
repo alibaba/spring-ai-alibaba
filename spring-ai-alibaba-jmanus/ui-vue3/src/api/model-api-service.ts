@@ -17,6 +17,7 @@
 // Define interface types
 export interface Model {
     id: string
+    headers: any
     baseUrl: string
     apiKey: string
     modelName: string
