@@ -377,7 +377,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onUnmounted, reactive } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 
@@ -425,6 +425,7 @@ interface Message {
 
 interface Props {
   mode?: 'plan' | 'direct' // Plan mode or direct chat mode
+  initialPrompt?: string | undefined // Initial prompt to process
 }
 
 interface Emits {
@@ -500,12 +501,26 @@ const handleDirectMode = async (query: string) => {
     // Execute directly
     const response = await DirectApiService.sendMessage(query)
 
-    // Clear thinking state - Use `delete` instead of assigning `undefined`
-    delete assistantMessage.thinking
+    if (response.planId) {
+      console.log('[ChatComponent] Received planId from direct execution:', response.planId)
 
-    // Generate a natural and human-like response
-    const finalResponse = generateDirectModeResponse(response, query)
-    assistantMessage.content = finalResponse
+      if (!assistantMessage.planExecution) {
+        assistantMessage.planExecution = {} as any
+      }
+      assistantMessage.planExecution!.currentPlanId = response.planId
+
+      planExecutionManager.handlePlanExecutionRequested(response.planId, query)
+
+      delete assistantMessage.thinking
+
+      console.log('[ChatComponent] Started polling for plan execution updates')
+    } else {
+      delete assistantMessage.thinking
+
+      // Generate a natural and human-like response
+      const finalResponse = generateDirectModeResponse(response, query)
+      assistantMessage.content = finalResponse
+    }
   } catch (error: any) {
     console.error('Direct mode error:', error)
     updateLastMessage({
@@ -601,7 +616,7 @@ const handleSendMessage = (message: string) => {
     // In plan mode, events are no longer triggered, allowing the parent component to directly invoke the corresponding methods.
     // The logic here is handled by the parent component through direct calls
     console.log('[ChatComponent] Plan mode message sent, parent should handle:', message)
-  } else { 
+  } else {
     // Direct mode is still handled directly
     handleDirectMode(message)
   }
@@ -640,7 +655,7 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
       console.log(`[ChatComponent] No agentExecution found for step ${stepIndex}`)
       return []
     }
-    
+
     if (!agentExecution.thinkActSteps) {
       console.log(`[ChatComponent] No thinkActSteps found for step ${stepIndex}`)
       return []
@@ -689,7 +704,7 @@ const getSubPlanStepStatus = (
     if (!agentExecution) {
       return 'pending'
     }
-    
+
     if (!agentExecution.thinkActSteps) {
       return 'pending'
     }
@@ -743,7 +758,7 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
       console.warn('[ChatComponent] No agentExecution found for step', stepIndex)
       return
     }
-    
+
     if (!agentExecution.thinkActSteps) {
       console.warn('[ChatComponent] No thinkActSteps found for step', stepIndex)
       return
@@ -1017,10 +1032,10 @@ const handlePlanUpdate = (rootPlanId: string) => {
   }
 
   // Handle plans with steps...
-  
+
   // Clear the initial thinking state to display the plan execution information
   delete message.thinking
-  
+
   // Process step information - Ensure consistent format and maintain a user-friendly display
   const formattedSteps = planDetails.steps.map((step: any) => {
     // If the step is a string, return it directly
@@ -1290,16 +1305,45 @@ const handleUserInputSubmit = async (message: Message) => {
   }
 }
 
+watch(
+  () => props.initialPrompt,
+  (newPrompt, oldPrompt) => {
+    console.log('[ChatComponent] initialPrompt changed from:', oldPrompt, 'to:', newPrompt)
+    if (newPrompt && typeof newPrompt === 'string' && newPrompt.trim() && newPrompt !== oldPrompt) {
+      console.log('[ChatComponent] Processing changed initial prompt:', newPrompt)
+      nextTick(() => {
+        handleSendMessage(newPrompt)
+      })
+    }
+  },
+  { immediate: false }
+)
+
 onMounted(() => {
   console.log('[ChatComponent] Mounted, setting up event listeners')
 
-  // Add a scroll listener after waiting for the DOM to update
+  planExecutionManager.setEventCallbacks({
+    onPlanUpdate: handlePlanUpdate,
+    onPlanCompleted: handlePlanCompleted,
+    onDialogRoundStart: handleDialogRoundStart,
+    onChatInputUpdateState: (rootPlanId: string) => {
+      console.log('[ChatComponent] Chat input state update for rootPlanId:', rootPlanId)
+    },
+    onChatInputClear: () => {
+      console.log('[ChatComponent] Chat input clear requested')
+    }
+  })
+
   nextTick(() => {
     addScrollListener()
   })
 
-  // Remove the logic to automatically send initial prompts and let the PlanExecutionComponent handle it uniformly
-  // This can avoid sending duplicate messages
+  if (props.initialPrompt && typeof props.initialPrompt === 'string' && props.initialPrompt.trim()) {
+    console.log('[ChatComponent] Processing initial prompt:', props.initialPrompt)
+    nextTick(() => {
+      handleSendMessage(props.initialPrompt!)
+    })
+  }
 })
 
 onUnmounted(() => {
