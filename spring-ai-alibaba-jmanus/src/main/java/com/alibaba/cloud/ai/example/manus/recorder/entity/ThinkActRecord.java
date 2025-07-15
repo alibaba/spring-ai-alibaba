@@ -44,6 +44,16 @@ public class ThinkActRecord {
 	// Unique identifier of the record
 	private Long id;
 
+	// 生成唯一ID的方法
+	private Long generateId() {
+		if (this.id == null) {
+			long timestamp = System.currentTimeMillis();
+			int random = (int) (Math.random() * 1000000);
+			this.id = timestamp * 1000 + random;
+		}
+		return this.id;
+	}
+
 	// ID of parent execution record, linked to AgentExecutionRecord
 	private Long parentExecutionId;
 
@@ -91,12 +101,14 @@ public class ThinkActRecord {
 
 	// Default constructor
 	public ThinkActRecord() {
+		this.id = generateId();
 	}
 
 	// Constructor with parent execution ID
 	public ThinkActRecord(Long parentExecutionId) {
 		this.parentExecutionId = parentExecutionId;
 		this.thinkStartTime = LocalDateTime.now();
+		this.id = generateId();
 	}
 
 	/**
@@ -145,27 +157,11 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * Generate unique ID if not already set
-	 * @return Generated or existing ID
-	 */
-	private Long ensureIdGenerated() {
-		if (this.id == null) {
-			// Use combination of timestamp and random number to generate ID
-			long timestamp = System.currentTimeMillis();
-			int random = (int) (Math.random() * 1000000);
-			this.id = timestamp * 1000 + random;
-		}
-		return this.id;
-	}
-
-	/**
 	 * Save record to persistent storage. Empty implementation, to be overridden by
 	 * specific storage implementations
 	 * @return Record ID after saving
 	 */
 	public Long save() {
-		// Ensure ID is generated before saving
-		ensureIdGenerated();
 
 		// Save sub-plan execution record if exists
 		if (subPlanExecutionRecord != null) {
@@ -179,7 +175,10 @@ public class ThinkActRecord {
 
 	public Long getId() {
 		// Ensure ID is generated when accessing
-		return ensureIdGenerated();
+		if (this.id == null) {
+			this.id = generateId();
+		}
+		return this.id;
 	}
 
 	public void setId(Long id) {

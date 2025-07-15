@@ -111,14 +111,16 @@ public class SerpApiService implements SearchService, Function<SerpApiService.Re
 			for (Map<String, Object> result : organicResults) {
 				String title = (String) result.get("title");
 				String link = (String) result.get("link");
-
+				String snippet = (String) result.get("snippet");
 				try {
 					Document document = Jsoup.connect(link).userAgent(SerpApiProperties.USER_AGENT_VALUE).get();
 					String textContent = document.body().text();
-					resultList.add(new SearchResult(title, textContent));
+					resultList.add(new SearchResult(title, textContent, link));
 				}
 				catch (Exception e) {
 					logger.error("Failed to parse SERP API search link {}, caused by: {}", link, e.getMessage());
+					// use snippet instead of textContent
+					resultList.add(new SearchResult(title, snippet, link));
 				}
 			}
 		}
@@ -147,12 +149,12 @@ public class SerpApiService implements SearchService, Function<SerpApiService.Re
 		public SearchService.SearchResult getSearchResult() {
 			return new SearchService.SearchResult(this.results()
 				.stream()
-				.map(item -> new SearchService.SearchContent(item.title(), item.text(), null))
+				.map(item -> new SearchService.SearchContent(item.title(), item.text(), item.url()))
 				.toList());
 		}
 	}
 
-	public record SearchResult(String title, String text) {
+	public record SearchResult(String title, String text, String url) {
 	}
 
 }

@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.mockito.Mockito;
+import org.springframework.http.MediaType;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -74,7 +75,11 @@ public class DashScopeMultiModalChatTests {
 
 	private static final String TEST_VIDEO_PROMPT = "这是一组从视频中提取的图片帧，请描述此视频中的内容。";
 
+	private static final String TEST_AUDIO_PROMPT = "这是一个音频文件，请描述此音频中的内容。";
+
 	private static final String TEST_VIDEO_RESPONSE = "视频展示了一系列连续的画面，内容是...";
+
+	private static final String TEST_AUDIO_RESPONSE = "音频中是一个男性的声音，说的是...";
 
 	private DashScopeApi dashScopeApi;
 
@@ -208,6 +213,45 @@ public class DashScopeMultiModalChatTests {
 		// Verify response
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isEqualTo(TEST_VIDEO_RESPONSE);
+	}
+
+	/**
+	 * Test audio processing with multiple frames
+	 */
+	@Test
+	void testAudioWithMultipleFrames() {
+		// Setup mock response
+		ChatCompletionMessage responseMessage = new ChatCompletionMessage(TEST_AUDIO_RESPONSE,
+				ChatCompletionMessage.Role.ASSISTANT);
+		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage);
+		ChatCompletionOutput output = new ChatCompletionOutput(TEST_AUDIO_RESPONSE, List.of(choice));
+		TokenUsage usage = new TokenUsage(20, 10, 30);
+		ChatCompletion chatCompletion = new ChatCompletion(TEST_REQUEST_ID, output, usage);
+		ResponseEntity<ChatCompletion> responseEntity = ResponseEntity.ok(chatCompletion);
+
+		when(dashScopeApi.chatCompletionEntity(any(ChatCompletionRequest.class), any())).thenReturn(responseEntity);
+
+		// Create media list with multiple frames (simulating video frames)
+		List<Media> mediaList = new ArrayList<>();
+		for (int i = 0; i < 10; i++) {
+			mediaList.add(new Media(MediaType.parseMediaType("audio/mpeg"),
+					URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/welcome.mp3")));
+		}
+
+		// Create user message with media
+		UserMessage message = UserMessage.builder().text(TEST_AUDIO_PROMPT).media(mediaList).build();
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.AUDIO);
+
+		// Create prompt with options
+		Prompt prompt = new Prompt(message,
+				DashScopeChatOptions.builder().withModel(TEST_MODEL).withMultiModel(true).build());
+
+		// Call the chat model
+		ChatResponse response = chatModel.call(prompt);
+
+		// Verify response
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isEqualTo(TEST_AUDIO_RESPONSE);
 	}
 
 	/**
@@ -367,6 +411,43 @@ public class DashScopeMultiModalChatTests {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 		System.out.println("Video Frames Response: " + response.getResult().getOutput().getText());
+	}
+
+	/**
+	 * Integration test for audio processing with multiple frames This test will only run
+	 * if DASHSCOPE_API_KEY environment variable is set
+	 */
+	@Test
+	@Tag("integration")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	void integrationTestAudioWithMultipleFrames() throws IOException {
+		// Create real API client
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
+
+		// Create real chat model
+		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
+
+		// Create media with multiple frames (simulating audio frames)
+		Media media = new Media(MediaType.parseMediaType("audio/mpeg"),
+				URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/welcome.mp3"));
+
+		// Create user message with media
+		UserMessage message = UserMessage.builder().text(TEST_AUDIO_PROMPT).media(media).build();
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.AUDIO);
+
+		// Create prompt
+		Prompt prompt = new Prompt(message,
+				DashScopeChatOptions.builder().withModel("qwen-audio-turbo-latest").withMultiModel(true).build());
+
+		// Call the chat model
+		ChatResponse response = realChatModel.call(prompt);
+
+		// Verify response
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+		System.out.println("Audio Frames Response: " + response.getResult().getOutput().getText());
 	}
 
 	/**

@@ -21,9 +21,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
@@ -268,16 +265,13 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 	 */
 	private Long getCurrentThinkActRecordId() {
 		try {
-			// 获取当前计划的执行记录
-			PlanExecutionRecord record = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId, null);
-			AgentExecutionRecord currentAgentRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(record);
-
-			if (currentAgentRecord != null && currentAgentRecord.getThinkActSteps() != null
-					&& !currentAgentRecord.getThinkActSteps().isEmpty()) {
-				// 获取最后一个 think-act 记录（当前正在执行的）
-				List<ThinkActRecord> steps = currentAgentRecord.getThinkActSteps();
-				ThinkActRecord lastStep = steps.get(steps.size() - 1);
-				return lastStep.getId();
+			Long thinkActRecordId = planExecutionRecorder.getCurrentThinkActRecordId(currentPlanId, rootPlanId);
+			if (thinkActRecordId != null) {
+				log.info("当前 think-act 记录ID: {}", thinkActRecordId);
+				return thinkActRecordId;
+			}
+			else {
+				log.warn("当前没有 think-act 记录ID");
 			}
 		}
 		catch (Exception e) {

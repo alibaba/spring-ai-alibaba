@@ -21,8 +21,6 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -202,25 +200,15 @@ public abstract class BaseAgent {
 			throw new IllegalStateException("Cannot run agent from state: " + state);
 		}
 
-		PlanExecutionRecord planRecord = null;
-
-		// Create agent execution record
-		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getCurrentPlanId(), getName(), getDescription());
-		agentRecord.setMaxSteps(maxSteps);
-		agentRecord.setStatus(state.toString());
-		// Record execution in recorder if we have a plan ID
-		if (currentPlanId != null && planExecutionRecorder != null) {
-			// Use unified method that handles both main plan and sub-plan cases
-			planRecord = planExecutionRecorder.getExecutionRecord(currentPlanId, rootPlanId, thinkActRecordId);
-
-			if (planRecord != null) {
-				planExecutionRecorder.recordAgentExecution(planRecord, agentRecord);
-			}
-		}
+		LocalDateTime startTime = LocalDateTime.now();
 		List<String> results = new ArrayList<>();
+		boolean completed = false;
+		boolean stuck = false;
+		String errorMessage = null;
+		String finalResult = null;
+
 		try {
 			state = AgentState.IN_PROGRESS;
-			agentRecord.setStatus(state.toString());
 
 			while (currentStep < maxSteps && !state.equals(AgentState.COMPLETED)) {
 				currentStep++;
@@ -229,7 +217,8 @@ public abstract class BaseAgent {
 				AgentExecResult stepResult = step();
 
 				if (isStuck()) {
-					handleStuckState(agentRecord);
+					handleStuckState();
+					stuck = true;
 				}
 				else {
 					// Update global state for consistency
@@ -238,53 +227,82 @@ public abstract class BaseAgent {
 				}
 
 				results.add("Round " + currentStep + ": " + stepResult.getResult());
-
-				// Update agent record after each step
-				agentRecord.setCurrentStep(currentStep);
 			}
 
 			if (currentStep >= maxSteps) {
 				results.add("Terminated: Reached max rounds (" + maxSteps + ")");
 			}
 
-			// Set final state in record
-			agentRecord.setEndTime(LocalDateTime.now());
-			agentRecord.setStatus(state.toString());
-			agentRecord.setCompleted(state.equals(AgentState.COMPLETED));
+			completed = state.equals(AgentState.COMPLETED) && !stuck;
 
 			// Calculate execution time in seconds
-			long executionTimeSeconds = java.time.Duration.between(agentRecord.getStartTime(), agentRecord.getEndTime())
-				.getSeconds();
-			String status = agentRecord.isCompleted() ? "成功" : (agentRecord.isStuck() ? "执行卡住" : "未完成");
-			agentRecord.setResult(String.format("执行%s [耗时%d秒] [消耗步骤%d] ", status, executionTimeSeconds, currentStep));
+			LocalDateTime endTime = LocalDateTime.now();
+			long executionTimeSeconds = java.time.Duration.between(startTime, endTime).getSeconds();
+			String status = completed ? "成功" : (stuck ? "执行卡住" : "未完成");
+			finalResult = String.format("执行%s [耗时%d秒] [消耗步骤%d] ", status, executionTimeSeconds, currentStep);
 
 		}
 		catch (Exception e) {
 			log.error("Agent execution failed", e);
-			// Record exception information to agentRecord
-			agentRecord.setErrorMessage(e.getMessage());
-			agentRecord.setCompleted(false);
-			agentRecord.setEndTime(LocalDateTime.now());
-			agentRecord.setResult(String.format("执行失败 [错误: %s]", e.getMessage()));
+			errorMessage = e.getMessage();
+			completed = false;
+			LocalDateTime endTime = LocalDateTime.now();
+			finalResult = String.format("执行失败 [错误: %s]", e.getMessage());
 			results.add("Execution failed: " + e.getMessage());
+
+			// Record execution at the end - even for failures
+			if (currentPlanId != null && planExecutionRecorder != null) {
+				PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
+				params.setCurrentPlanId(currentPlanId);
+				params.setRootPlanId(rootPlanId);
+				params.setThinkActRecordId(thinkActRecordId);
+				params.setAgentName(getName());
+				params.setAgentDescription(getDescription());
+				params.setMaxSteps(maxSteps);
+				params.setActualSteps(currentStep);
+				params.setCompleted(completed);
+				params.setStuck(stuck);
+				params.setErrorMessage(errorMessage);
+				params.setResult(finalResult);
+				params.setStartTime(startTime);
+				params.setEndTime(endTime);
+				planExecutionRecorder.recordCompleteAgentExecution(params);
+			}
+
 			throw e; // Re-throw the exception to let the caller know that an error
-			// occurred
+						// occurred
 		}
 		finally {
 			state = AgentState.COMPLETED; // Reset state after execution
-
-			agentRecord.setStatus(state.toString());
-			if (planRecord != null) {
-				planExecutionRecorder.recordAgentExecution(planRecord, agentRecord);
-			}
 			llmService.clearAgentMemory(currentPlanId);
 		}
+
+		// Record execution at the end - only once
+		if (currentPlanId != null && planExecutionRecorder != null) {
+			LocalDateTime endTime = LocalDateTime.now();
+			PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
+			params.setCurrentPlanId(currentPlanId);
+			params.setRootPlanId(rootPlanId);
+			params.setThinkActRecordId(thinkActRecordId);
+			params.setAgentName(getName());
+			params.setAgentDescription(getDescription());
+			params.setMaxSteps(maxSteps);
+			params.setActualSteps(currentStep);
+			params.setCompleted(completed);
+			params.setStuck(stuck);
+			params.setErrorMessage(errorMessage);
+			params.setResult(finalResult);
+			params.setStartTime(startTime);
+			params.setEndTime(endTime);
+			planExecutionRecorder.recordCompleteAgentExecution(params);
+		}
+
 		return results.isEmpty() ? "" : results.get(results.size() - 1);
 	}
 
 	protected abstract AgentExecResult step();
 
-	private void handleStuckState(AgentExecutionRecord agentRecord) {
+	private void handleStuckState() {
 		log.warn("Agent stuck detected - Missing tool calls");
 
 		// End current step
@@ -296,11 +314,6 @@ public abstract class BaseAgent {
 				Current step: %d
 				Execution status: Force terminated
 				""".formatted(currentStep);
-
-		// Update agent record
-		agentRecord.setStuck(true);
-		agentRecord.setErrorMessage(stuckPrompt);
-		agentRecord.setStatus(state.toString());
 
 		log.error(stuckPrompt);
 	}

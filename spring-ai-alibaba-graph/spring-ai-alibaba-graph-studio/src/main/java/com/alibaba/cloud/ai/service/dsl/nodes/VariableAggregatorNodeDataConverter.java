@@ -161,7 +161,7 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
 		if (origKey == null) {
 			data.setOutputKey(newKey);
 		}
-		data.setOutputs(List.of(new com.alibaba.cloud.ai.model.Variable(data.getOutputKey(), data.getOutputType())));
+		data.setOutputs(List.of(new Variable(data.getOutputKey(), data.getOutputType())));
 	}
 
 }

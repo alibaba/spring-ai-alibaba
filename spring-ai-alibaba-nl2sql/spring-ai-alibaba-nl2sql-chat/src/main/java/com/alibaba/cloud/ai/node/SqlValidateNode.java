@@ -21,10 +21,14 @@ import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
+import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
+import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
@@ -63,24 +67,46 @@ public class SqlValidateNode implements NodeAction {
 		String sql = StateUtils.getStringValue(state, "SQL_GENERATE_OUTPUT");
 		logger.info("[{}] 开始验证SQL语句: {}", this.getClass().getSimpleName(), sql);
 
-		// 构建查询参数并执行验证
-		DbQueryParameter dbQueryParameter = new DbQueryParameter();
-		dbQueryParameter.setSql(sql);
+		Flux<ChatResponse> sqlValidationFlux = Flux.create(emitter -> {
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始验证SQL语句..."));
+			// 构建查询参数并执行验证
+			DbQueryParameter dbQueryParameter = new DbQueryParameter();
+			dbQueryParameter.setSql(sql);
 
-		try {
-			// 执行SQL验证
-			dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
-			logger.info("[{}] SQL语法验证通过", this.getClass().getSimpleName());
-			return Map.of(SQL_VALIDATE_NODE_OUTPUT, true);
+			try {
+				// 执行SQL验证
+				dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
+				logger.info("[{}] SQL语法验证通过", this.getClass().getSimpleName());
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("SQL语法验证通过."));
+				emitter.complete();
 
-		}
-		catch (Exception e) {
-			// 处理验证失败情况
-			String errorMessage = e.getMessage();
-			logger.error("[{}] SQL语法验证失败 - 原因: {}", this.getClass().getSimpleName(), errorMessage);
+			}
+			catch (Exception e) {
+				// 处理验证失败情况
+				String errorMessage = e.getMessage();
+				logger.error("[{}] SQL语法验证失败 - 原因: {}", this.getClass().getSimpleName(), errorMessage);
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("SQL语法验证失败: " + errorMessage));
+				emitter.complete();
+			}
+		});
 
-			return Map.of(SQL_VALIDATE_NODE_OUTPUT, false, SQL_VALIDATE_EXCEPTION_OUTPUT, errorMessage);
-		}
+		var generator = StreamingChatGenerator.builder()
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				DbQueryParameter dbQueryParameter = new DbQueryParameter();
+				dbQueryParameter.setSql(sql);
+				try {
+					dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
+					return Map.of(SQL_VALIDATE_NODE_OUTPUT, true);
+				}
+				catch (Exception e) {
+					return Map.of(SQL_VALIDATE_NODE_OUTPUT, false, SQL_VALIDATE_EXCEPTION_OUTPUT, e.getMessage());
+				}
+			})
+			.build(sqlValidationFlux);
+
+		return Map.of(SQL_VALIDATE_NODE_OUTPUT, generator);
 	}
 
 }

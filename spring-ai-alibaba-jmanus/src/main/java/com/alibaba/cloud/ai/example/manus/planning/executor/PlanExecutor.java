@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.executor;
 
-import cn.hutool.core.collection.CollectionUtil;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
@@ -57,10 +56,10 @@ public class PlanExecutor extends AbstractPlanExecutor {
 		plan.updateStepIndices();
 
 		try {
-			recordPlanExecutionStart(context);
+			recorder.recordPlanExecutionStart(context);
 			List<ExecutionStep> steps = plan.getAllSteps();
 
-			if (CollectionUtil.isNotEmpty(steps)) {
+			if (steps != null && !steps.isEmpty()) {
 				for (ExecutionStep step : steps) {
 					BaseAgent stepExecutor = executeStep(step, context);
 					if (stepExecutor != null) {

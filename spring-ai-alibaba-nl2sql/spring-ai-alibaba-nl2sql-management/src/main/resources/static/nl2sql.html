@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NL2SQL Stream Search</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 2em;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: #fff;
+            padding: 2em;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        #query {
+            width: calc(100% - 22px);
+            padding: 12px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 1em;
+            box-sizing: border-box;
+        }
+
+        #search {
+            padding: 12px 20px;
+            font-size: 1em;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #search:hover {
+            background-color: #2980b9;
+        }
+
+        h2 {
+            text-align: left;
+            color: #34495e;
+            font-weight: 400;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5em;
+            margin-top: 2em;
+        }
+
+        #results {
+            margin-top: 1em;
+            padding: 1em;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 150px;
+            max-height: 400px; /* Added max-height */
+            overflow-y: auto; /* Added overflow-y */
+            background-color: #fafafa;
+            text-align: left;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1em;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NL2SQL Stream Search</h1>
+        <input type="text" id="query" placeholder="Enter your natural language query...">
+        <button id="search">查询</button>
+        <h2>Results:</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const queryInput = document.getElementById('query');
+        const searchButton = document.getElementById('search');
+        const resultsDiv = document.getElementById('results');
+
+        let eventSource;
+        let fullContent = '';
+
+        const performSearch = () => {
+            const query = queryInput.value;
+            if (!query) {
+                alert('Please enter a query.');
+                return;
+            }
+
+            resultsDiv.innerHTML = '';
+            fullContent = '';
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(query)}`);
+
+            eventSource.onopen = () => {
+                console.log('Connection to stream opened.');
+                resultsDiv.innerHTML = 'Stream opened...';
+            };
+
+            eventSource.onmessage = (event) => {
+                let currentContent = '';
+                try {
+                    currentContent = JSON.parse(event.data);
+                } catch (e) {
+                    currentContent = event.data;
+                }
+                fullContent += currentContent;
+
+                const sanitizedContent = fullContent.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const parts = sanitizedContent.split('```');
+                let html = '';
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    if (i % 2 === 1) {
+                        html += `<pre><code>${part}</code></pre>`;
+                    } else {
+                        html += part.replace(/\n/g, '<br>');
+                    }
+                }
+                resultsDiv.innerHTML = html;
+                resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            };
+
+            eventSource.onerror = (err) => {
+                console.error('EventSource failed:', err);
+                resultsDiv.innerHTML += '<br>Error connecting to stream.';
+                eventSource.close();
+            };
+        };
+
+        searchButton.addEventListener('click', performSearch);
+
+        queryInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        });
+    </script>
+</body>
+</html>

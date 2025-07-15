@@ -1,0 +1,4 @@
+[
+  {"host": "github.com", "weight": 1.0},
+  {"host": "www.baidu.com", "weight": 0.9}
+]

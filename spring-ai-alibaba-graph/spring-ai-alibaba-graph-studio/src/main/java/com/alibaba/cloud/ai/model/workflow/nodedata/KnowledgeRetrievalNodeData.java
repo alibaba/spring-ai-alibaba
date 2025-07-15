@@ -68,12 +68,22 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 
 	private VectorStore vectorStore;
 
+	private String outputKey;
+
 	public KnowledgeRetrievalNodeData() {
 		super(Collections.emptyList(), DEFAULT_OUTPUT_SCHEMA);
 	}
 
 	public KnowledgeRetrievalNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
 		super(inputs, outputs);
+	}
+
+	public String getOutputKey() {
+		return outputKey;
+	}
+
+	public void setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
 	}
 
 	public String getUserPromptKey() {

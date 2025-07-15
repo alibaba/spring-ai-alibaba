@@ -82,8 +82,12 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			.setSchema(dbConfig.getSchema())
 			.setTables(schemaInitRequest.getTables());
 
-		deleteDocumentsByVectorType("column");
-		deleteDocumentsByVectorType("table");
+		DeleteRequest deleteRequest = new DeleteRequest();
+		deleteRequest.setVectorType("column");
+		// deleteDocuments(deleteRequest);
+		deleteRequest.setVectorType("table");
+		// deleteDocuments(deleteRequest);
+
 		List<ForeignKeyInfoBO> foreignKeyInfoBOS = dbAccessor.showForeignKeys(dbConfig, dqp);
 		Map<String, List<String>> foreignKeyMap = buildForeignKeyMap(foreignKeyInfoBOS);
 

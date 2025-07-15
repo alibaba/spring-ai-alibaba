@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.schema;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,8 +65,13 @@ public class TableDTO {
 
 	@Override
 	public String toString() {
-		return "TableDTO{" + "name='" + name + '\'' + ", description='" + description + '\'' + ", column=" + column
-				+ ", primaryKeys=" + primaryKeys + '}';
+		ObjectMapper objectMapper = new ObjectMapper();
+		try {
+			return objectMapper.writeValueAsString(this);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException("Failed to convert object to JSON string", e);
+		}
 	}
 
 }

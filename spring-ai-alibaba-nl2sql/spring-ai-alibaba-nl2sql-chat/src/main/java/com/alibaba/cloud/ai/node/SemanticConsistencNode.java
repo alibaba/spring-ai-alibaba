@@ -18,15 +18,19 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
+import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
@@ -68,18 +72,47 @@ public class SemanticConsistencNode extends AbstractPlanBasedNode {
 		logger.info("开始语义一致性校验 - SQL: {}", sqlQuery);
 		logger.info("步骤描述: {}", toolParameters.getDescription());
 
-		// 执行语义一致性检查
-		String validationResult = performSemanticValidation(schemaDTO, evidenceList, toolParameters, sqlQuery);
+		Flux<ChatResponse> semanticValidationFlux = Flux.create(emitter -> {
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始语义一致性校验..."));
+			// 执行语义一致性检查
+			String validationResult = null;
+			try {
+				validationResult = performSemanticValidation(schemaDTO, evidenceList, toolParameters, sqlQuery);
+			}
+			catch (Exception e) {
+				emitter.error(e);
+				return;
+			}
 
-		// 判断校验结果
-		boolean passed = !validationResult.startsWith("不通过");
-		logger.info("语义一致性校验结果: {}", passed ? "通过" : "未通过");
+			// 判断校验结果
+			boolean passed = !validationResult.startsWith("不通过");
+			logger.info("语义一致性校验结果: {}", passed ? "通过" : "未通过");
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("语义一致性校验结果: " + (passed ? "通过" : "未通过")));
 
-		if (!passed) {
-			logger.info("语义一致性校验详情: {}", validationResult);
-		}
+			if (!passed) {
+				logger.info("语义一致性校验详情: {}", validationResult);
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("校验详情: " + validationResult));
+			}
+			emitter.complete();
+		});
 
-		return buildValidationResult(passed, validationResult, currentStep);
+		var generator = StreamingChatGenerator.builder()
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				String validationResult = null;
+				try {
+					validationResult = performSemanticValidation(schemaDTO, evidenceList, toolParameters, sqlQuery);
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+				boolean passed = !validationResult.startsWith("不通过");
+				return buildValidationResult(passed, validationResult, currentStep);
+			})
+			.build(semanticValidationFlux);
+
+		return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, generator);
 	}
 
 	/**

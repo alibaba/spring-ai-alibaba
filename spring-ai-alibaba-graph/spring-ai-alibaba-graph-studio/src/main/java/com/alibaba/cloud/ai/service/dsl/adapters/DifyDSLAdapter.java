@@ -25,11 +25,13 @@ import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
+import com.alibaba.cloud.ai.model.workflow.nodedata.CodeNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
 import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.AbstractDSLAdapter;
+import com.alibaba.cloud.ai.model.VariableSelector;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -138,6 +140,22 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		}
 
 		Graph graph = constructGraph((Map<String, Object>) workflowData.get("graph"));
+
+		// del codeNode
+		Map<String, String> idToVarName = graph.getNodes()
+			.stream()
+			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
+
+		for (Node node : graph.getNodes()) {
+			if (NodeType.CODE.value().equals(node.getType())) {
+				CodeNodeData cd = (CodeNodeData) node.getData();
+				for (VariableSelector sel : cd.getInputs()) {
+					String upstreamId = sel.getNamespace();
+					String upstreamVar = idToVarName.get(upstreamId);
+					sel.setName(upstreamVar + "_output");
+				}
+			}
+		}
 		workflow.setGraph(graph);
 		// register overAllState output key
 		List<Variable> extraVars = graph.getNodes().stream().flatMap(node -> {

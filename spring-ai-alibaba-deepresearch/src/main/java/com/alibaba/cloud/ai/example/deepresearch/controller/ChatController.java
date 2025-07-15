@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
 import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
-import com.alibaba.cloud.ai.example.deepresearch.tool.SearchBeanUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.SearchBeanUtil;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;

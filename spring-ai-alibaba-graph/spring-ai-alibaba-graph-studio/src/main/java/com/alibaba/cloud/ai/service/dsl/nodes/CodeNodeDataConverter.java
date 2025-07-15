@@ -109,4 +109,15 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 		return "codeNode" + count;
 	}
 
+	@Override
+	public void postProcess(CodeNodeData nodeData, String varName) {
+		String origKey = nodeData.getOutputKey();
+		String newKey = varName + "_output";
+
+		if (origKey == null) {
+			nodeData.setOutputKey(newKey);
+		}
+		nodeData.setOutputs(List.of(new Variable(nodeData.getOutputKey(), VariableType.STRING.value())));
+	}
+
 }

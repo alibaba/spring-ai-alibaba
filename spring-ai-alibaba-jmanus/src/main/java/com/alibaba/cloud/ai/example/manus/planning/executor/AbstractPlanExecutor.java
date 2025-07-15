@@ -24,9 +24,7 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 计划执行器的抽象基类 包含所有执行器类型的共同逻辑和基本功能
+ * Abstract base class for plan executors. Contains common logic and basic functionality
+ * for all executor types.
  */
 public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
@@ -46,7 +45,8 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
 	protected final PlanExecutionRecorder recorder;
 
-	// 匹配字符串开头的方括号，支持中文和其他字符
+	// Pattern to match square brackets at the beginning of a string, supports Chinese and
+	// other characters
 	protected final Pattern pattern = Pattern.compile("^\\s*\\[([^\\]]+)\\]");
 
 	protected final List<DynamicAgentEntity> agents;
@@ -78,10 +78,10 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	}
 
 	/**
-	 * 执行单个步骤的通用逻辑
-	 * @param step 执行步骤
-	 * @param context 执行上下文
-	 * @return 步骤执行器
+	 * General logic for executing a single step.
+	 * @param step The execution step
+	 * @param context The execution context
+	 * @return The step executor
 	 */
 	protected BaseAgent executeStep(ExecutionStep step, ExecutionContext context) {
 		try {
@@ -109,7 +109,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			step.setAgent(executor);
 			executor.setState(AgentState.IN_PROGRESS);
 
-			recordStepStart(step, context);
+			recorder.recordStepStart(step, context);
 			String stepResultStr = executor.run();
 			step.setResult(stepResultStr);
 
@@ -120,13 +120,13 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			step.setResult("Execution failed: " + e.getMessage());
 		}
 		finally {
-			recordStepEnd(step, context);
+			recorder.recordStepEnd(step, context);
 		}
 		return null;
 	}
 
 	/**
-	 * 从步骤需求中提取步骤类型
+	 * Extract the step type from the step requirement string.
 	 */
 	protected String getStepFromStepReq(String stepRequirement) {
 		Matcher matcher = pattern.matcher(stepRequirement);
@@ -137,7 +137,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	}
 
 	/**
-	 * 获取步骤的执行器
+	 * Get the executor for the step.
 	 */
 	protected BaseAgent getExecutorForStep(String stepType, ExecutionContext context, Map<String, Object> initSettings,
 			List<String> columns) {
@@ -161,67 +161,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	}
 
 	/**
-	 * 记录计划执行开始
-	 */
-	protected void recordPlanExecutionStart(ExecutionContext context) {
-		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(context);
-
-		record.setCurrentPlanId(context.getPlan().getCurrentPlanId());
-		record.setStartTime(LocalDateTime.now());
-		record.setTitle(context.getPlan().getTitle());
-		record.setUserRequest(context.getUserRequest());
-		retrieveExecutionSteps(context, record);
-		getRecorder().recordPlanExecution(record);
-	}
-
-	/**
-	 * 检索执行步骤信息
-	 */
-	protected void retrieveExecutionSteps(ExecutionContext context, PlanExecutionRecord record) {
-		List<String> steps = new ArrayList<>();
-		for (ExecutionStep step : context.getPlan().getAllSteps()) {
-			steps.add(step.getStepInStr());
-		}
-		record.setSteps(steps);
-	}
-
-	/**
-	 * 获取或创建计划执行记录
-	 */
-	protected PlanExecutionRecord getOrCreatePlanExecutionRecord(ExecutionContext context) {
-		PlanExecutionRecord record = getRecorder().getOrCreatePlanExecutionRecord(context.getCurrentPlanId(),
-				context.getRootPlanId(), context.getThinkActRecordId());
-		return record;
-	}
-
-	/**
-	 * 记录步骤执行开始
-	 */
-	protected void recordStepStart(ExecutionStep step, ExecutionContext context) {
-		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(context);
-		if (record != null) {
-			int currentStepIndex = step.getStepIndex();
-			record.setCurrentStepIndex(currentStepIndex);
-			retrieveExecutionSteps(context, record);
-			getRecorder().recordPlanExecution(record);
-		}
-	}
-
-	/**
-	 * 记录步骤执行完成
-	 */
-	protected void recordStepEnd(ExecutionStep step, ExecutionContext context) {
-		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(context);
-		if (record != null) {
-			int currentStepIndex = step.getStepIndex();
-			record.setCurrentStepIndex(currentStepIndex);
-			retrieveExecutionSteps(context, record);
-			getRecorder().recordPlanExecution(record);
-		}
-	}
-
-	/**
-	 * Parse columns string by splitting with comma or Chinese comma
+	 * Parse columns string by splitting with comma or Chinese comma.
 	 * @param columnsInString the columns string to parse
 	 * @return list of column names
 	 */
@@ -244,7 +184,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	}
 
 	/**
-	 * 执行完成后的清理工作
+	 * Cleanup work after execution is completed.
 	 */
 	protected void performCleanup(ExecutionContext context, BaseAgent lastExecutor) {
 		String planId = context.getCurrentPlanId();
