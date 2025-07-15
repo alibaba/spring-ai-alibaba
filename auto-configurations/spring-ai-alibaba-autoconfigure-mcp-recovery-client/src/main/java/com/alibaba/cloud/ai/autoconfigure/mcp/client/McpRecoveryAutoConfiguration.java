@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.mcp.client.config;
+package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 
-import com.alibaba.cloud.ai.autoconfigure.mcp.client.McpAsyncRecovery;
-import com.alibaba.cloud.ai.autoconfigure.mcp.client.McpSyncRecovery;
+import com.alibaba.cloud.ai.mcp.client.McpAsyncRecovery;
+import com.alibaba.cloud.ai.mcp.client.McpSyncRecovery;
+import com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties;
 import org.springframework.ai.mcp.client.autoconfigure.configurer.McpAsyncClientConfigurer;
 import org.springframework.ai.mcp.client.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
@@ -39,17 +40,17 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @AutoConfiguration
 @EnableScheduling
 @EnableConfigurationProperties({ McpSseClientProperties.class, McpClientCommonProperties.class,
-		McpRecoveryAutoProperties.class })
-@ConditionalOnProperty(prefix = McpRecoveryAutoProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
+		McpRecoveryProperties.class })
+@ConditionalOnProperty(prefix = McpRecoveryProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 public class McpRecoveryAutoConfiguration {
 
 	@Bean(name = "mcpSyncRecovery")
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "SYNC",
 			matchIfMissing = true)
-	public McpSyncRecovery mcpSyncRecovery(McpRecoveryAutoProperties mcpRecoveryAutoProperties,
+	public McpSyncRecovery mcpSyncRecovery(McpRecoveryProperties mcpRecoveryProperties,
 			McpSseClientProperties mcpSseClientProperties, McpClientCommonProperties mcpClientCommonProperties,
 			McpSyncClientConfigurer mcpSyncClientConfigurer) {
-		McpSyncRecovery mcpSyncRecovery = new McpSyncRecovery(mcpRecoveryAutoProperties, mcpSseClientProperties,
+		McpSyncRecovery mcpSyncRecovery = new McpSyncRecovery(mcpRecoveryProperties, mcpSseClientProperties,
 				mcpClientCommonProperties, mcpSyncClientConfigurer);
 		mcpSyncRecovery.init();
 		mcpSyncRecovery.startScheduledPolling();
@@ -60,10 +61,10 @@ public class McpRecoveryAutoConfiguration {
 
 	@Bean(name = "mcpAsyncRecovery")
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "ASYNC")
-	public McpAsyncRecovery mcpAsyncRecovery(McpRecoveryAutoProperties mcpRecoveryAutoProperties,
+	public McpAsyncRecovery mcpAsyncRecovery(McpRecoveryProperties mcpRecoveryProperties,
 			McpSseClientProperties mcpSseClientProperties, McpClientCommonProperties mcpClientCommonProperties,
 			McpAsyncClientConfigurer mcpAsyncClientConfigurer) {
-		McpAsyncRecovery mcpAsyncRecovery = new McpAsyncRecovery(mcpRecoveryAutoProperties, mcpSseClientProperties,
+		McpAsyncRecovery mcpAsyncRecovery = new McpAsyncRecovery(mcpRecoveryProperties, mcpSseClientProperties,
 				mcpClientCommonProperties, mcpAsyncClientConfigurer);
 		mcpAsyncRecovery.init();
 		mcpAsyncRecovery.startScheduledPolling();

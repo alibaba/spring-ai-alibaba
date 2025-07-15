@@ -14,30 +14,30 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.mcp.client.component;
+package com.alibaba.cloud.ai.mcp.client.component;
 
-import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.client.McpAsyncClient;
 import org.springframework.ai.tool.ToolCallback;
 
 import java.util.List;
 
 /**
  * @author yingzi
- * @since 2025/7/14
+ * @since 2025/7/15
  */
 
-public class McpSyncClientWrapper {
+public class McpAsyncClientWrapper {
 
-	private final McpSyncClient client;
+	private final McpAsyncClient client;
 
 	private final List<ToolCallback> toolCallbacks;
 
-	public McpSyncClientWrapper(McpSyncClient client, List<ToolCallback> toolCallbacks) {
+	public McpAsyncClientWrapper(McpAsyncClient client, List<ToolCallback> toolCallbacks) {
 		this.client = client;
 		this.toolCallbacks = toolCallbacks;
 	}
 
-	public McpSyncClient getClient() {
+	public McpAsyncClient getClient() {
 		return client;
 	}
 

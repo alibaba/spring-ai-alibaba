@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.mcp.client;
+package com.alibaba.cloud.ai.mcp.client;
 
-import com.alibaba.cloud.ai.autoconfigure.mcp.client.component.McpAsyncClientWrapper;
-import com.alibaba.cloud.ai.autoconfigure.mcp.client.component.McpReconnectTask;
-import com.alibaba.cloud.ai.autoconfigure.mcp.client.config.McpRecoveryAutoProperties;
+import com.alibaba.cloud.ai.mcp.client.component.McpAsyncClientWrapper;
+import com.alibaba.cloud.ai.mcp.client.component.McpReconnectTask;
+import com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpClient;
@@ -56,7 +56,7 @@ public class McpAsyncRecovery {
 
 	private static final Logger logger = LoggerFactory.getLogger(McpSyncRecovery.class);
 
-	private final McpRecoveryAutoProperties mcpRecoveryAutoProperties;
+	private final McpRecoveryProperties mcpRecoveryProperties;
 
 	private final McpSseClientProperties mcpSseClientProperties;
 
@@ -78,10 +78,10 @@ public class McpAsyncRecovery {
 
 	private final DelayQueue<McpReconnectTask> reconnectTaskQueue = new DelayQueue<>();
 
-	public McpAsyncRecovery(McpRecoveryAutoProperties mcpRecoveryAutoProperties,
+	public McpAsyncRecovery(McpRecoveryProperties mcpRecoveryAutoProperties,
 			McpSseClientProperties mcpSseClientProperties, McpClientCommonProperties mcpClientCommonProperties,
 			McpAsyncClientConfigurer mcpAsyncClientConfigurer) {
-		this.mcpRecoveryAutoProperties = mcpRecoveryAutoProperties;
+		this.mcpRecoveryProperties = mcpRecoveryAutoProperties;
 
 		this.mcpSseClientProperties = mcpSseClientProperties;
 		this.commonProperties = mcpClientCommonProperties;
@@ -170,8 +170,8 @@ public class McpAsyncRecovery {
 	}
 
 	public void startScheduledPolling() {
-		pingScheduler.scheduleAtFixedRate(this::checkMcpClients, mcpRecoveryAutoProperties.getDelay().getSeconds(),
-				mcpRecoveryAutoProperties.getDelay().getSeconds(), TimeUnit.SECONDS);
+		pingScheduler.scheduleAtFixedRate(this::checkMcpClients, mcpRecoveryProperties.getDelay().getSeconds(),
+				mcpRecoveryProperties.getDelay().getSeconds(), TimeUnit.SECONDS);
 	}
 
 	private void checkMcpClients() {
@@ -183,7 +183,7 @@ public class McpAsyncRecovery {
 				logger.error("Ping failed for {}", serviceName);
 				mcpClientWrapperMap.remove(serviceName);
 				reconnectTaskQueue.offer(new McpReconnectTask(serviceName,
-						mcpRecoveryAutoProperties.getDelay().getSeconds(), TimeUnit.SECONDS));
+						mcpRecoveryProperties.getDelay().getSeconds(), TimeUnit.SECONDS));
 				logger.info("need reconnect: {}", serviceName);
 			}).subscribe();
 		});
@@ -212,8 +212,7 @@ public class McpAsyncRecovery {
 		// 关闭异步任务线程池
 		try {
 			reconnectExecutor.shutdown();
-			if (!reconnectExecutor.awaitTermination(mcpRecoveryAutoProperties.getStop().getSeconds(),
-					TimeUnit.SECONDS)) {
+			if (!reconnectExecutor.awaitTermination(mcpRecoveryProperties.getStop().getSeconds(), TimeUnit.SECONDS)) {
 				reconnectExecutor.shutdownNow();
 			}
 			logger.info("异步重连任务线程池已关闭");

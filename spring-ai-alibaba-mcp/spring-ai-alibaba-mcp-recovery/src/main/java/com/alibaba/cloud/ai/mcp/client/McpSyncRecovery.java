@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.mcp.client;
+package com.alibaba.cloud.ai.mcp.client;
 
-import com.alibaba.cloud.ai.autoconfigure.mcp.client.component.McpReconnectTask;
-import com.alibaba.cloud.ai.autoconfigure.mcp.client.component.McpSyncClientWrapper;
-import com.alibaba.cloud.ai.autoconfigure.mcp.client.config.McpRecoveryAutoProperties;
+import com.alibaba.cloud.ai.mcp.client.component.McpReconnectTask;
+import com.alibaba.cloud.ai.mcp.client.component.McpSyncClientWrapper;
+import com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpClient;
@@ -58,7 +58,7 @@ public class McpSyncRecovery {
 
 	private static final Logger logger = LoggerFactory.getLogger(McpSyncRecovery.class);
 
-	private final McpRecoveryAutoProperties mcpRecoveryAutoProperties;
+	private final McpRecoveryProperties mcpRecoveryProperties;
 
 	private final McpSseClientProperties mcpSseClientProperties;
 
@@ -80,10 +80,9 @@ public class McpSyncRecovery {
 
 	private final DelayQueue<McpReconnectTask> reconnectTaskQueue = new DelayQueue<>();
 
-	public McpSyncRecovery(McpRecoveryAutoProperties mcpRecoveryAutoProperties,
-			McpSseClientProperties mcpSseClientProperties, McpClientCommonProperties mcpClientCommonProperties,
-			McpSyncClientConfigurer mcpSyncClientConfigurer) {
-		this.mcpRecoveryAutoProperties = mcpRecoveryAutoProperties;
+	public McpSyncRecovery(McpRecoveryProperties mcpRecoveryProperties, McpSseClientProperties mcpSseClientProperties,
+			McpClientCommonProperties mcpClientCommonProperties, McpSyncClientConfigurer mcpSyncClientConfigurer) {
+		this.mcpRecoveryProperties = mcpRecoveryProperties;
 
 		this.mcpSseClientProperties = mcpSseClientProperties;
 		this.commonProperties = mcpClientCommonProperties;
@@ -101,7 +100,7 @@ public class McpSyncRecovery {
 			if (!clientCreated) {
 				// 如果创建失败，将任务重新放回队列
 				reconnectTaskQueue.offer(new McpReconnectTask(serviceName,
-						mcpRecoveryAutoProperties.getDelay().getSeconds(), TimeUnit.SECONDS));
+						mcpRecoveryProperties.getDelay().getSeconds(), TimeUnit.SECONDS));
 				logger.warn("Failed to create client for serviceName: {}, will retry.", serviceName);
 			}
 		});
@@ -185,8 +184,8 @@ public class McpSyncRecovery {
 	}
 
 	public void startScheduledPolling() {
-		pingScheduler.scheduleAtFixedRate(this::checkMcpClients, mcpRecoveryAutoProperties.getDelay().getSeconds(),
-				mcpRecoveryAutoProperties.getDelay().getSeconds(), TimeUnit.SECONDS);
+		pingScheduler.scheduleAtFixedRate(this::checkMcpClients, mcpRecoveryProperties.getDelay().getSeconds(),
+				mcpRecoveryProperties.getDelay().getSeconds(), TimeUnit.SECONDS);
 	}
 
 	private void checkMcpClients() {
@@ -205,7 +204,7 @@ public class McpSyncRecovery {
 					logger.error("Ping failed for {}", serviceName);
 					mcpClientWrapperMap.remove(serviceName);
 					reconnectTaskQueue.offer(new McpReconnectTask(serviceName,
-							mcpRecoveryAutoProperties.getDelay().getSeconds(), TimeUnit.SECONDS));
+							mcpRecoveryProperties.getDelay().getSeconds(), TimeUnit.SECONDS));
 					logger.info("need reconnect: {}", serviceName);
 				}).subscribe();
 			}
@@ -238,8 +237,7 @@ public class McpSyncRecovery {
 		// 关闭异步任务线程池
 		try {
 			reconnectExecutor.shutdown();
-			if (!reconnectExecutor.awaitTermination(mcpRecoveryAutoProperties.getStop().getSeconds(),
-					TimeUnit.SECONDS)) {
+			if (!reconnectExecutor.awaitTermination(mcpRecoveryProperties.getStop().getSeconds(), TimeUnit.SECONDS)) {
 				reconnectExecutor.shutdownNow();
 			}
 			logger.info("异步重连任务线程池已关闭");

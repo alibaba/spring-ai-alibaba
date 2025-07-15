@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.mcp.client.component;
+package com.alibaba.cloud.ai.mcp.client.component;
 
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
