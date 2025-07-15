@@ -22,7 +22,9 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -68,6 +70,22 @@ public class LlmService {
 
 	public ChatClient getAgentChatClient() {
 		return agentExecutionClient;
+	}
+
+	public ChatClient getDynamicChatClient(String host, String apiKey, String modelName) {
+		OpenAiApi openAiApi = OpenAiApi.builder().baseUrl(host).apiKey(apiKey).build();
+
+		OpenAiChatOptions chatOptions = OpenAiChatOptions.builder().model(modelName).build();
+
+		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
+			.openAiApi(openAiApi)
+			.defaultOptions(chatOptions)
+			.build();
+		return ChatClient.builder(openAiChatModel)
+			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.build();
 	}
 
 	public ChatMemory getAgentMemory(Integer maxMessages) {

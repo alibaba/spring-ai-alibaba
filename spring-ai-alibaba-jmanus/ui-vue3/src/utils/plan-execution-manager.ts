@@ -19,13 +19,13 @@ import { PlanActApiService } from '@/api/plan-act-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { CommonApiService } from '@/api/common-api-service'
 import type { PlanExecutionRecord } from '@/types/plan-execution-record'
+import type { UIStateData } from '@/types/cache-data'
 
 // Define event callback interface
 interface EventCallbacks {
   onPlanUpdate?: (rootPlanId: string) => void
   onPlanCompleted?: (rootPlanId: string) => void
   onDialogRoundStart?: (rootPlanId: string) => void
-  onMessageUpdate?: (rootPlanId: string) => void
   onChatInputUpdateState?: (rootPlanId: string) => void
   onChatInputClear?: () => void
 }
@@ -56,9 +56,8 @@ export class PlanExecutionManager {
   // Cache for PlanExecutionRecord by rootPlanId
   private planExecutionCache = new Map<string, PlanExecutionRecord>()
   
-  // Cache for error messages and UI state by rootPlanId
-  private messageCache = new Map<string, any>()
-  private uiStateCache = new Map<string, any>()
+  // Cache for UI state by rootPlanId
+  private uiStateCache = new Map<string, UIStateData>()
 
   /**
    * Get cached plan execution record by rootPlanId
@@ -68,31 +67,16 @@ export class PlanExecutionManager {
   }
 
   /**
-   * Get cached message data by rootPlanId
-   */
-  getCachedMessage(rootPlanId: string): any {
-    return this.messageCache.get(rootPlanId)
-  }
-
-  /**
    * Get cached UI state by rootPlanId
    */
-  getCachedUIState(rootPlanId: string): any {
+  getCachedUIState(rootPlanId: string): UIStateData | undefined {
     return this.uiStateCache.get(rootPlanId)
-  }
-
-  /**
-   * Set cached message data by rootPlanId
-   */
-  setCachedMessage(rootPlanId: string, messageData: any): void {
-    this.messageCache.set(rootPlanId, messageData)
-    console.log(`[PlanExecutionManager] Cached message data for rootPlanId: ${rootPlanId}`)
   }
 
   /**
    * Set cached UI state by rootPlanId
    */
-  setCachedUIState(rootPlanId: string, uiState: any): void {
+  setCachedUIState(rootPlanId: string, uiState: UIStateData): void {
     this.uiStateCache.set(rootPlanId, uiState)
     console.log(`[PlanExecutionManager] Cached UI state for rootPlanId: ${rootPlanId}`)
   }
@@ -135,14 +119,12 @@ export class PlanExecutionManager {
    */
   clearAllCachedRecords(): void {
     const planCacheSize = this.planExecutionCache.size
-    const messageCacheSize = this.messageCache.size
     const uiStateCacheSize = this.uiStateCache.size
     
     this.planExecutionCache.clear()
-    this.messageCache.clear()
     this.uiStateCache.clear()
     
-    console.log(`[PlanExecutionManager] Cleared all caches - Plans: ${planCacheSize}, Messages: ${messageCacheSize}, UI States: ${uiStateCacheSize}`)
+    console.log(`[PlanExecutionManager] Cleared all caches - Plans: ${planCacheSize}, UI States: ${uiStateCacheSize}`)
   }
 
   private constructor() {
@@ -199,16 +181,11 @@ export class PlanExecutionManager {
         throw new Error('Failed to get valid plan ID')
       }
     } catch (error: any) {
-      // Cache error message data first
+      console.error('[PlanExecutionManager] Failed to send user message:', error)
+      // Set UI state to enabled for error recovery
       const errorPlanId = this.state.activePlanId ?? 'error'
-      this.setCachedMessage(errorPlanId, {
-        content: `Send failed: ${error.message}`,
-        type: 'error',
-        planId: this.state.activePlanId
-      })
       this.setCachedUIState(errorPlanId, { enabled: true })
       
-      this.emitMessageUpdate(errorPlanId)
       this.emitChatInputUpdateState(errorPlanId)
       this.state.activePlanId = null
     }
@@ -254,15 +231,7 @@ export class PlanExecutionManager {
     }
 
     if (this.state.activePlanId) {
-      // Cache error message data first
-      const errorPlanId = this.state.activePlanId
-      this.setCachedMessage(errorPlanId, {
-        content: 'There is a task currently executing, please wait for completion before submitting a new task',
-        type: 'error',
-        planId: this.state.activePlanId
-      })
-      
-      this.emitMessageUpdate(errorPlanId)
+      // There is already an active plan, cannot start new request
       return false
     }
 
@@ -465,12 +434,6 @@ export class PlanExecutionManager {
   }
 
   // Event emission helpers - Use callback functions instead of window events
-  private emitMessageUpdate(rootPlanId: string): void {
-    if (this.callbacks.onMessageUpdate) {
-      this.callbacks.onMessageUpdate(rootPlanId)
-    }
-  }
-
   private emitChatInputClear(): void {
     if (this.callbacks.onChatInputClear) {
       this.callbacks.onChatInputClear()

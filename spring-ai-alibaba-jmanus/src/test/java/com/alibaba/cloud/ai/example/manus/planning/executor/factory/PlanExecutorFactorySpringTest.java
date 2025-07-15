@@ -43,7 +43,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(classes = OpenManusSpringBootApplication.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @ActiveProfiles("test")
-@Disabled("For local testing only, skip in CI environment")
+@Disabled("for local testing only, skip in CI environment")
 class PlanExecutorFactorySpringTest {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanExecutorFactorySpringTest.class);

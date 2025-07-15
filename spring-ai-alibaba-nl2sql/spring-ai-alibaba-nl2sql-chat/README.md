@@ -271,15 +271,43 @@ spring:
         model: text-embedding-ada-002   # 可选：默认为 text-embedding-ada-002
 ```
 
-#### 🤖 自动选择逻辑
-系统会根据以下优先级自动选择 EmbeddingModel：
-1. **优先级1**：如果配置了 `spring.ai.dashscope.api-key`，使用 DashScope
-2. **优先级2**：如果未配置 DashScope，使用 OpenAI（需要配置 OpenAI API Key）
+#### 3️⃣ Ollama 本地大模型配置示例
 
-> 💡 **建议**：
-> - 中文业务场景：推荐使用 DashScope，对中文语义理解更好
-> - 国际化场景：可以使用 OpenAI，支持多语言
-> - 开发测试：两种模型都可以，根据 API 可用性选择
+如需使用 Ollama 部署本地大模型，可在 `application.yml` 中添加如下配置：
+
+```yaml
+spring:
+  openai:
+    base-url: http://localhost:11434
+    api-key: ${API_KEY}
+    model: qwen2.5:7b
+    embedding:
+      model: bge-m3:latest
+```
+
+- `base-url`：Ollama 服务的本地地址，默认端口为 11434。
+- `api-key`：API 密钥（如无可留空）。
+- `model`：主模型名称（如 qwen2.5:7b）。
+- `embedding.model`：用于向量检索的 embedding 模型（如 bge-m3:latest）。
+
+---
+
+#### 4️⃣ Ark 大模型配置示例
+
+```yaml
+openai:
+  # API Key Configuration。
+  api-key: ${API_KEY}                # Ark 平台申请的 API Key
+  # Ark LLM API Base URL
+  base-url: https://ark.cn-beijing.volces.com/api  # Ark LLM 服务地址
+  model: deepseek-v3-250324          # 主模型名称（如 deepseek-v3-250324）
+  completions-path: /v3/chat/completions  # 聊天补全接口路径
+  embedding:
+    model: doubao-embedding-large-text-250515      # 向量模型名称（如 doubao-embedding-large-text-250515）
+    embeddings-path: /v3/embeddings                # 向量接口路径
+```
+
+---
 
 </details>
 

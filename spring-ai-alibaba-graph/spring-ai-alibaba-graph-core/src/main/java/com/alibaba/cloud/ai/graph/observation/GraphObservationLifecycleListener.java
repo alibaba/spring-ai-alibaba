@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.observation.graph.DefaultGraphObservationConve
 import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationContext;
 import com.alibaba.cloud.ai.graph.observation.node.DefaultGraphNodeObservationConvention;
 import com.alibaba.cloud.ai.graph.observation.node.GraphNodeObservationContext;
+import com.alibaba.cloud.ai.graph.observation.node.GraphNodeObservationDocumentation;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
@@ -31,8 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Lifecycle listener for graph observation operations. Implements GraphLifecycleListener
- * to create observations for different graph lifecycle events. Handles cross-thread
- * observation propagation for async execution environments.
+ * to create observations for different graph lifecycle events. Records complete node
+ * execution information including input and output states.
  */
 public class GraphObservationLifecycleListener implements GraphLifecycleListener {
 
@@ -84,8 +85,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	}
 
 	/**
-	 * Handles the before execution phase of a graph node. Creates a node-level
-	 * observation and maintains scope for cross-thread propagation.
+	 * Handles the before execution phase of a graph node. Creates node observation and
+	 * records input state.
 	 * @param nodeId the identifier of the node
 	 * @param state the current state of the graph execution
 	 * @param config the runnable configuration for the node
@@ -95,12 +96,20 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	public void before(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
 		log.debug("Starting observation for node: {}", nodeId);
 
+		// Create minimal context for the observation
+		GraphNodeObservationContext context = new GraphNodeObservationContext(nodeId, "execution");
+
 		Observation nodeObservation = Observation.createNotStarted(DEFAULT_GRAPH_NODE_OBSERVATION_CONVENTION,
-				() -> new GraphNodeObservationContext(nodeId, "execution", state, null), observationRegistry);
+				() -> context, observationRegistry);
 
 		if (graphObservation != null) {
 			nodeObservation.parentObservation(graphObservation);
 		}
+
+		// Add input state using Documentation constant
+		nodeObservation.highCardinalityKeyValue(
+				GraphNodeObservationDocumentation.HighCardinalityKeyNames.GEN_AI_PROMPT.asString(),
+				state != null ? state.toString() : "");
 
 		nodeObservation.start();
 		nodeObservations.put(nodeId, nodeObservation);
@@ -110,8 +119,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	}
 
 	/**
-	 * Handles the after execution phase of a graph node. Properly closes scope and stops
-	 * the node observation.
+	 * Handles the after execution phase of a graph node. Adds output state and stops
+	 * observation.
 	 * @param nodeId the identifier of the node
 	 * @param state the current state of the graph execution
 	 * @param config the runnable configuration for the node
@@ -127,7 +136,13 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 		}
 
 		Observation nodeObservation = nodeObservations.remove(nodeId);
+
 		if (nodeObservation != null) {
+			// Add output state using Documentation constant
+			nodeObservation.highCardinalityKeyValue(
+					GraphNodeObservationDocumentation.HighCardinalityKeyNames.GEN_AI_COMPLETION.asString(),
+					state != null ? state.toString() : "");
+
 			nodeObservation.stop();
 		}
 		else {
@@ -136,8 +151,8 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	}
 
 	/**
-	 * Handles errors during graph node execution. Records the error and properly cleans
-	 * up scope and observation.
+	 * Handles errors during graph node execution. Records the error and stops
+	 * observation.
 	 * @param nodeId the identifier of the node that encountered an error
 	 * @param state the current state of the graph execution
 	 * @param ex the exception that occurred
@@ -153,7 +168,13 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 		}
 
 		Observation nodeObservation = nodeObservations.remove(nodeId);
+
 		if (nodeObservation != null) {
+			// Add error state using Documentation constant
+			nodeObservation.highCardinalityKeyValue(
+					GraphNodeObservationDocumentation.HighCardinalityKeyNames.GEN_AI_COMPLETION.asString(),
+					state != null ? state.toString() : "");
+
 			nodeObservation.error(ex).stop();
 		}
 
@@ -163,7 +184,7 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	}
 
 	/**
-	 * Handles the completion of graph execution. Cleans up all observations and scopes.
+	 * Handles the completion of graph execution. Cleans up all observations.
 	 * @param nodeId the identifier of the completed node
 	 * @param state the current state of the graph execution
 	 * @param config the runnable configuration for the node

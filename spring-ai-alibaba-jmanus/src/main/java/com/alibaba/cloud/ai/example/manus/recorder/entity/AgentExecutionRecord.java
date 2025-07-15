@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.fasterxml.jackson.databind.JsonSerializable;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -88,9 +91,14 @@ public class AgentExecutionRecord {
 	// Error message if execution encounters problems
 	private String errorMessage;
 
+	// Actual calling model
+	private String modelName;
+
 	// Default constructor
 	public AgentExecutionRecord() {
 		this.thinkActSteps = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
 	// Constructor with parameters
@@ -104,6 +112,8 @@ public class AgentExecutionRecord {
 		this.isStuck = false;
 		this.currentStep = 0;
 		this.thinkActSteps = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
 	/**
@@ -118,9 +128,27 @@ public class AgentExecutionRecord {
 		this.currentStep = this.thinkActSteps.size();
 	}
 
+	/**
+	 * Generate unique ID if not already set
+	 * @return Generated or existing ID
+	 */
+	private Long generateId() {
+		if (this.id == null) {
+			// Use combination of timestamp and random number to generate ID
+			long timestamp = System.currentTimeMillis();
+			int random = (int) (Math.random() * 1000000);
+			this.id = timestamp * 1000 + random;
+		}
+		return this.id;
+	}
+
 	// Getters and setters
 
 	public Long getId() {
+		// Ensure ID is generated when accessing
+		if (this.id == null) {
+			this.id = generateId();
+		}
 		return id;
 	}
 
@@ -233,6 +261,14 @@ public class AgentExecutionRecord {
 		this.errorMessage = errorMessage;
 	}
 
+	public String getModelName() {
+		return modelName;
+	}
+
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
+	}
+
 	@Override
 	public String toString() {
 		return "AgentExecutionRecord{" + "id='" + id + '\'' + ", conversationId='" + conversationId + '\''
@@ -262,6 +298,14 @@ public class AgentExecutionRecord {
 			}
 		}
 		return this.id;
+	}
+
+	public String getConversationId() {
+		return conversationId;
+	}
+
+	public void setConversationId(String conversationId) {
+		this.conversationId = conversationId;
 	}
 
 }

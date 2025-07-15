@@ -44,7 +44,7 @@ public class SqlGenerateDispatcher implements EdgeAction {
 				return KEYWORD_EXTRACT_NODE;
 			default:
 				logger.info("SQL生成成功，进入SQL校验节点: {}", SQL_VALIDATE_NODE);
-				return SQL_VALIDATE_NODE;
+				return SQL_EXECUTE_NODE;
 		}
 	}
 

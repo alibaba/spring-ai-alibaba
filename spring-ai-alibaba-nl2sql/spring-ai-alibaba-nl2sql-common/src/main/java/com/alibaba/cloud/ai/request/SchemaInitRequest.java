@@ -16,16 +16,51 @@
 package com.alibaba.cloud.ai.request;
 
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
-import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
-@Data
 public class SchemaInitRequest implements Serializable {
 
 	private DbConfig dbConfig;
 
 	private List<String> tables;
+
+	public DbConfig getDbConfig() {
+		return dbConfig;
+	}
+
+	public void setDbConfig(DbConfig dbConfig) {
+		this.dbConfig = dbConfig;
+	}
+
+	public List<String> getTables() {
+		return tables;
+	}
+
+	public void setTables(List<String> tables) {
+		this.tables = tables;
+	}
+
+	@Override
+	public String toString() {
+		return "SchemaInitRequest{" + "dbConfig=" + dbConfig + ", tables=" + tables + '}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		SchemaInitRequest that = (SchemaInitRequest) o;
+		return Objects.equals(dbConfig, that.dbConfig) && Objects.equals(tables, that.tables);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(dbConfig, tables);
+	}
 
 }

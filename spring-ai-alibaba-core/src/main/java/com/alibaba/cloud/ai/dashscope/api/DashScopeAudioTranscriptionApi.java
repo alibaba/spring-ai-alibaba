@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.dashscope.api;
 
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionOptions;
@@ -24,80 +25,118 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.Assert;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import reactor.core.publisher.Flux;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.net.URL;
+import java.util.function.Consumer;
+
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.AUDIO_TRANSCRIPTION_RESTFUL_URL;
+
+/**
+ * Turn audio into text or text into audio. Based on <a href=
+ * "https://help.aliyun.com/zh/model-studio/user-guide/speech-recognition-and-synthesis">DashScope
+ * Audio Model</a>
+ *
+ * @author Kevin Lin
+ * @author yuluo-yx
+ */
 
 public class DashScopeAudioTranscriptionApi {
 
-	private static final Logger logger = LoggerFactory.getLogger(DashScopeAudioTranscriptionApi.class);
+	private String baseUrl;
+
+	private String model;
+
+	private ApiKey apiKey;
+
+	private String workSpaceId;
+
+	private String webSocketUrl = DashScopeApiConstants.DEFAULT_WEBSOCKET_URL;
+
+	private MultiValueMap<String, String> headers;
 
 	private final RestClient restClient;
 
 	private final DashScopeWebSocketClient webSocketClient;
 
-	public DashScopeAudioTranscriptionApi(String apiKey) {
-		this(apiKey, null);
-	}
+	private RestClient.Builder restClientBuilder;
 
-	public DashScopeAudioTranscriptionApi(String apiKey, String workSpaceId) {
-		this(DashScopeApiConstants.DEFAULT_BASE_URL, apiKey, workSpaceId, DashScopeApiConstants.DEFAULT_WEBSOCKET_URL,
-				RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
+	private ResponseErrorHandler responseErrorHandler;
 
-	public DashScopeAudioTranscriptionApi(String apiKey, String workSpaceId, String websocketUrl) {
-		this(DashScopeApiConstants.DEFAULT_BASE_URL, apiKey, workSpaceId, websocketUrl, RestClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
+	// @formatter:off
+	public DashScopeAudioTranscriptionApi(
+			String baseUrl,
+			ApiKey apiKey,
+			String model,
+			String workSpaceId,
+			String webSocketUrl,
+			MultiValueMap<String, String> headers,
+			RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler
+	) {
 
-	public DashScopeAudioTranscriptionApi(String baseUrl, String apiKey, String workSpaceId, String websocketUrl) {
-		this(baseUrl, apiKey, workSpaceId, websocketUrl, RestClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
+		this.model = model;
+		this.apiKey = apiKey;
+		this.workSpaceId = workSpaceId;
+		this.webSocketUrl = webSocketUrl;
+		this.baseUrl = baseUrl;
+		this.headers = headers;
+		this.restClientBuilder = restClientBuilder;
+		this.responseErrorHandler = responseErrorHandler;
 
-	public DashScopeAudioTranscriptionApi(String baseUrl, String apiKey, String websocketUrl,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(ApiUtils.getAudioTranscriptionHeaders(apiKey, null, true, false, false))
-			.defaultStatusHandler(responseErrorHandler)
-			.build();
+		Consumer<HttpHeaders> authHeaders = h -> h.addAll(headers);
 
-		this.webSocketClient = new DashScopeWebSocketClient(DashScopeWebSocketClientOptions.builder()
-			.withApiKey(apiKey)
-			.withWorkSpaceId(null)
-			.withUrl(websocketUrl)
-			.build());
-	}
-
-	public DashScopeAudioTranscriptionApi(String baseUrl, String apiKey, String workSpaceId, String websocketUrl,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(ApiUtils.getAudioTranscriptionHeaders(apiKey, workSpaceId, true, false, false))
-			.defaultStatusHandler(responseErrorHandler)
-			.build();
+		this.restClient = restClientBuilder.clone()
+				.baseUrl(baseUrl)
+				.defaultHeaders(authHeaders)
+				.defaultStatusHandler(responseErrorHandler)
+				.defaultRequest(requestHeadersSpec -> {
+					if (!(apiKey instanceof NoopApiKey)) {
+						requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+					}
+				})
+				.build();
 
 		this.webSocketClient = new DashScopeWebSocketClient(DashScopeWebSocketClientOptions.builder()
-			.withApiKey(apiKey)
+			.withApiKey(apiKey.getValue())
 			.withWorkSpaceId(workSpaceId)
-			.withUrl(websocketUrl)
+			.withUrl(webSocketUrl)
 			.build());
+	}
+	// @formatter:on
+
+	/**
+	 * Returns a builder pre-populated with the current configuration for mutation.
+	 */
+	public Builder mutate() {
+		return new Builder(this);
+	}
+
+	public static Builder builder() {
+
+		return new Builder();
 	}
 
 	public ResponseEntity<Response> call(DashScopeAudioTranscriptionApi.Request request) {
-		String uri = "/api/v1/services/audio/asr/transcription";
-		return restClient.post().uri(uri).body(request).retrieve().toEntity(Response.class);
+
+		return restClient.post().uri(AUDIO_TRANSCRIPTION_RESTFUL_URL).body(request).retrieve().toEntity(Response.class);
 	}
 
 	public ResponseEntity<Response> callWithTaskId(DashScopeAudioTranscriptionApi.Request request, String taskId) {
+
 		String uri = "/api/v1/tasks/" + taskId;
 		return restClient.post().uri(uri).body(request).retrieve().toEntity(Response.class);
 	}
@@ -127,7 +166,7 @@ public class DashScopeAudioTranscriptionApi {
 		ObjectMapper objectMapper = new ObjectMapper();
 
 		try {
-			InputStream inputStream = new URL(transcriptionUrl).openStream();
+			InputStream inputStream = URI.create(transcriptionUrl).toURL().openStream();
 			Outcome outcome = objectMapper.readValue(inputStream, Outcome.class);
 			inputStream.close();
 			return outcome;
@@ -135,6 +174,37 @@ public class DashScopeAudioTranscriptionApi {
 		catch (Exception e) {
 			throw new DashScopeException("get transcription outcome failed", e);
 		}
+	}
+
+	/**
+	 * Audio Transcription model list. More models:
+	 * <a href="https://help.aliyun.com/zh/model-studio/sambert-java-sdk">Model Stt
+	 * Models</a>
+	 */
+	public enum AudioTranscriptionModel {
+
+		@JsonProperty("paraformer-realtime-v2")
+		PARAFORMER_REALTIME_V2("paraformer-realtime-v2"),
+
+		@JsonProperty("paraformer-realtime-v1")
+		PARAFORMER_REALTIME_V1("paraformer-realtime-v1"),
+
+		@JsonProperty("paraformer-realtime-8k-v2")
+		PARAFORMER_REALTIME_8K_V2("paraformer-realtime-8k-v2"),
+
+		@JsonProperty("paraformer-realtime-8k-v1")
+		PARAFORMER_REALTIME_8K_V1("paraformer-realtime-8k-v1");
+
+		private final String model;
+
+		AudioTranscriptionModel(String model) {
+			this.model = model;
+		}
+
+		public String getValue() {
+			return this.model;
+		}
+
 	}
 
 	// @formatter:off
@@ -333,6 +403,112 @@ public class DashScopeAudioTranscriptionApi {
 
 		public String getValue() {
 			return status;
+		}
+
+	}
+
+	ApiKey getApiKey() {
+		return apiKey;
+	}
+
+	String getBaseUrl() {
+		return baseUrl;
+	}
+
+	String getWorkSpaceId() {
+		return workSpaceId;
+	}
+
+	String getModel() {
+		return model;
+	}
+
+	MultiValueMap<String, String> getHeaders() {
+		return this.headers;
+	}
+
+	ResponseErrorHandler getResponseErrorHandler() {
+		return this.responseErrorHandler;
+	}
+
+	public static class Builder {
+
+		public Builder() {
+		}
+
+		public Builder(DashScopeAudioTranscriptionApi api) {
+			this.baseUrl = api.getBaseUrl();
+			this.apiKey = api.getApiKey();
+			this.webSocketUrl = api.webSocketUrl;
+			this.model = api.getModel();
+			this.headers = new LinkedMultiValueMap<>(api.getHeaders());
+			this.restClientBuilder = api.restClient != null ? api.restClient.mutate() : RestClient.builder();
+			this.responseErrorHandler = api.getResponseErrorHandler();
+		}
+
+		private String baseUrl = DashScopeApiConstants.DEFAULT_BASE_URL;
+
+		private String workSpaceId;
+
+		private String model;
+
+		private ApiKey apiKey;
+
+		private String webSocketUrl = DashScopeApiConstants.DEFAULT_WEBSOCKET_URL;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder workSpaceId(String workSpaceId) {
+			this.workSpaceId = workSpaceId;
+			return this;
+		}
+
+		public Builder apiKey(ApiKey apiKey) {
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder model(String model) {
+			this.model = model;
+			return this;
+		}
+
+		public Builder webSocketUrl(String webSocketUrl) {
+			this.webSocketUrl = webSocketUrl;
+			return this;
+		}
+
+		public Builder headers(MultiValueMap<String, String> headers) {
+			this.headers = headers;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public DashScopeAudioTranscriptionApi build() {
+
+			Assert.notNull(this.apiKey, "apiKey must be set");
+			Assert.notNull(this.model, "model must be set");
+
+			return new DashScopeAudioTranscriptionApi(this.baseUrl, this.apiKey, this.model, this.workSpaceId,
+					this.webSocketUrl, this.headers, this.restClientBuilder, this.responseErrorHandler);
 		}
 
 	}

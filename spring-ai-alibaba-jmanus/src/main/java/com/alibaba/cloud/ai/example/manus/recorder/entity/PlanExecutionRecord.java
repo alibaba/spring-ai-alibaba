@@ -85,6 +85,9 @@ public class PlanExecutionRecord {
 	// Field to store user input wait state
 	private UserInputWaitState userInputWaitState;
 
+	// Actual calling model
+	private String modelName;
+
 	/**
 	 * Default constructor for Jackson and other frameworks.
 	 */
@@ -98,6 +101,8 @@ public class PlanExecutionRecord {
 		// default constructor
 		this.completed = false;
 		this.agentExecutionSequence = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
 	/**
@@ -111,6 +116,8 @@ public class PlanExecutionRecord {
 		this.startTime = LocalDateTime.now();
 		this.completed = false;
 		this.agentExecutionSequence = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
 	/**
@@ -152,6 +159,20 @@ public class PlanExecutionRecord {
 	}
 
 	/**
+	 * Generate unique ID if not already set
+	 * @return Generated or existing ID
+	 */
+	private Long generateId() {
+		if (this.id == null) {
+			// Use combination of timestamp and random number to generate ID
+			long timestamp = System.currentTimeMillis();
+			int random = (int) (Math.random() * 1000000);
+			this.id = timestamp * 1000 + random;
+		}
+		return this.id;
+	}
+
+	/**
 	 * Save record to persistent storage. Empty implementation, to be overridden by
 	 * specific storage implementations. Also recursively saves all AgentExecutionRecord
 	 * @return Record ID after saving
@@ -177,6 +198,10 @@ public class PlanExecutionRecord {
 	// Getters and Setters
 
 	public Long getId() {
+		// Ensure ID is generated when accessing
+		if (this.id == null) {
+			this.id = generateId();
+		}
 		return id;
 	}
 
@@ -278,6 +303,14 @@ public class PlanExecutionRecord {
 
 	public void setSummary(String summary) {
 		this.summary = summary;
+	}
+
+	public String getModelName() {
+		return modelName;
+	}
+
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
 	}
 
 	/**

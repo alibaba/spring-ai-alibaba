@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Records the thinking and action process of an agent in a single execution step. Exists
@@ -43,6 +44,16 @@ public class ThinkActRecord {
 
 	// Unique identifier of the record
 	private Long id;
+
+	// 生成唯一ID的方法
+	private Long generateId() {
+		if (this.id == null) {
+			long timestamp = System.currentTimeMillis();
+			int random = (int) (Math.random() * 1000000);
+			this.id = timestamp * 1000 + random;
+		}
+		return this.id;
+	}
 
 	// ID of parent execution record, linked to AgentExecutionRecord
 	private Long parentExecutionId;
@@ -89,14 +100,20 @@ public class ThinkActRecord {
 	// Sub-plan execution record for tool calls that create new execution plans
 	private PlanExecutionRecord subPlanExecutionRecord;
 
+	// Action tool information(When disabling parallel tool calls, there is always only
+	// one)
+	private List<ActToolInfo> actToolInfoList;
+
 	// Default constructor
 	public ThinkActRecord() {
+		this.id = generateId();
 	}
 
 	// Constructor with parent execution ID
 	public ThinkActRecord(Long parentExecutionId) {
 		this.parentExecutionId = parentExecutionId;
 		this.thinkStartTime = LocalDateTime.now();
+		this.id = generateId();
 	}
 
 	/**
@@ -145,27 +162,11 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * Generate unique ID if not already set
-	 * @return Generated or existing ID
-	 */
-	private Long ensureIdGenerated() {
-		if (this.id == null) {
-			// Use combination of timestamp and random number to generate ID
-			long timestamp = System.currentTimeMillis();
-			int random = (int) (Math.random() * 1000000);
-			this.id = timestamp * 1000 + random;
-		}
-		return this.id;
-	}
-
-	/**
 	 * Save record to persistent storage. Empty implementation, to be overridden by
 	 * specific storage implementations
 	 * @return Record ID after saving
 	 */
 	public Long save() {
-		// Ensure ID is generated before saving
-		ensureIdGenerated();
 
 		// Save sub-plan execution record if exists
 		if (subPlanExecutionRecord != null) {
@@ -179,7 +180,10 @@ public class ThinkActRecord {
 
 	public Long getId() {
 		// Ensure ID is generated when accessing
-		return ensureIdGenerated();
+		if (this.id == null) {
+			this.id = generateId();
+		}
+		return this.id;
 	}
 
 	public void setId(Long id) {
@@ -322,10 +326,56 @@ public class ThinkActRecord {
 		return this.subPlanExecutionRecord != null;
 	}
 
+	public List<ActToolInfo> getActToolInfoList() {
+		return actToolInfoList;
+	}
+
+	public void setActToolInfoList(List<ActToolInfo> actToolInfoList) {
+		this.actToolInfoList = actToolInfoList;
+	}
+
 	@Override
 	public String toString() {
 		return "ThinkActRecord{" + "id='" + id + '\'' + ", parentExecutionId='" + parentExecutionId + '\''
 				+ ", actionNeeded=" + actionNeeded + ", status='" + status + '\'' + '}';
+	}
+
+	public static class ActToolInfo {
+
+		private String name;
+
+		private String parameters;
+
+		private String result;
+
+		private String id;
+
+		public ActToolInfo(String name, String arguments, String id) {
+			this.name = name;
+			this.parameters = arguments;
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getParameters() {
+			return parameters;
+		}
+
+		public String getResult() {
+			return result;
+		}
+
+		public void setResult(String result) {
+			this.result = result;
+		}
+
+		public String getId() {
+			return id;
+		}
+
 	}
 
 }

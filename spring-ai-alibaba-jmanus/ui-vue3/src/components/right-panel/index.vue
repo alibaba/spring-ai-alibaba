@@ -19,9 +19,9 @@
       <div class="preview-tabs">
         <!-- Only show details tab -->
         <button
-          class="tab-button active"
+            class="tab-button active"
         >
-          <Icon icon="carbon:events" />
+          <Icon icon="carbon:events"/>
           步骤执行详情
         </button>
       </div>
@@ -43,27 +43,31 @@
           <div class="agent-info" v-if="selectedStep.agentExecution">
             <div class="info-item">
               <span class="label">{{ $t('rightPanel.executingAgent') }}:</span>
-              <span class="value">{{ selectedStep.agentExecution.agentName  }}</span>
+              <span class="value">{{ selectedStep.agentExecution.agentName }}</span>
             </div>
             <div class="info-item">
               <span class="label">{{ $t('rightPanel.description') }}:</span>
               <span class="value">{{
-                selectedStep.agentExecution.agentDescription || ''
-              }}</span>
+                  selectedStep.agentExecution.agentDescription || ''
+                }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">{{ $t('rightPanel.callingModel') }}:</span>
+              <span class="value">{{ selectedStep.agentExecution.modelName }}</span>
             </div>
             <div class="info-item">
               <span class="label">{{ $t('rightPanel.request') }}:</span>
               <span class="value">{{
-                selectedStep.agentExecution.agentRequest || ''
-              }}</span>
+                  selectedStep.agentExecution.agentRequest || ''
+                }}</span>
             </div>
             <div class="info-item">
               <span class="label">{{ $t('rightPanel.executionResult') }}:</span>
               <span
-                class="value"
-                :class="{ success: selectedStep.agentExecution.isCompleted }"
+                  class="value"
+                  :class="{ success: selectedStep.agentExecution.isCompleted }"
               >
-                {{ selectedStep.agentExecution.result  || $t('rightPanel.executing') }}
+                {{ selectedStep.agentExecution.result || $t('rightPanel.executing') }}
               </span>
             </div>
           </div>
@@ -71,16 +75,16 @@
           <div class="execution-status">
             <div class="status-item">
               <Icon
-                icon="carbon:checkmark-filled"
-                v-if="selectedStep.completed"
-                class="status-icon success"
+                  icon="carbon:checkmark-filled"
+                  v-if="selectedStep.completed"
+                  class="status-icon success"
               />
               <Icon
-                icon="carbon:in-progress"
-                v-else-if="selectedStep.current"
-                class="status-icon progress"
+                  icon="carbon:in-progress"
+                  v-else-if="selectedStep.current"
+                  class="status-icon progress"
               />
-              <Icon icon="carbon:time" v-else class="status-icon pending" />
+              <Icon icon="carbon:time" v-else class="status-icon pending"/>
               <span class="status-text">
                 {{ stepStatusText }}
               </span>
@@ -90,37 +94,40 @@
 
         <!-- Scrollable detailed content area -->
         <div
-          ref="scrollContainer"
-          class="step-details-scroll-container"
-          @scroll="checkScrollState"
+            ref="scrollContainer"
+            class="step-details-scroll-container"
+            @scroll="checkScrollState"
         >
           <div v-if="selectedStep">
             <!-- Think and action steps -->
             <div
-              class="think-act-steps"
-              v-if="selectedStep.agentExecution?.thinkActSteps && selectedStep.agentExecution.thinkActSteps.length > 0"
+                class="think-act-steps"
+                v-if="selectedStep.agentExecution?.thinkActSteps && selectedStep.agentExecution.thinkActSteps.length > 0"
             >
               <h4>{{ $t('rightPanel.thinkAndActionSteps') }}</h4>
               <div class="steps-container">
                 <div
-                  v-for="(tas, index) in selectedStep.agentExecution.thinkActSteps"
-                  :key="index"
-                  class="think-act-step"
+                    v-for="(tas, index) in selectedStep.agentExecution.thinkActSteps"
+                    :key="index"
+                    class="think-act-step"
                 >
                   <div class="step-header">
                     <span class="step-number">#{{ index + 1 }}</span>
                     <span class="step-status" :class="tas.status">{{
-                      tas.status || $t('rightPanel.executing')
-                    }}</span>
+                        tas.status || $t('rightPanel.executing')
+                      }}</span>
                   </div>
 
                   <!-- Think section - strictly follow right-sidebar.js logic -->
                   <div class="think-section">
-                    <h5><Icon icon="carbon:thinking" /> {{ $t('rightPanel.thinking') }}</h5>
+                    <h5>
+                      <Icon icon="carbon:thinking"/>
+                      {{ $t('rightPanel.thinking') }}
+                    </h5>
                     <div class="think-content">
                       <div class="input">
                         <span class="label">{{ $t('rightPanel.input') }}:</span>
-                        <pre>{{formatJson(tas.thinkInput) }}</pre>
+                        <pre>{{ formatJson(tas.thinkInput) }}</pre>
                       </div>
                       <div class="output">
                         <span class="label">{{ $t('rightPanel.output') }}:</span>
@@ -131,136 +138,144 @@
 
                   <!-- Action section - strictly follow right-sidebar.js logic -->
                   <div v-if="tas.actionNeeded" class="action-section">
-                    <h5><Icon icon="carbon:play" /> {{ $t('rightPanel.action') }}</h5>
+                    <h5>
+                      <Icon icon="carbon:play"/>
+                      {{ $t('rightPanel.action') }}
+                    </h5>
                     <div class="action-content">
-                      <div class="tool-info">
-                        <span class="label">{{ $t('rightPanel.tool') }}:</span>
-                        <span class="value">{{ tas.toolName || '' }}</span>
-                      </div>
-                      <div class="input">
-                        <span class="label">{{ $t('rightPanel.toolParameters') }}:</span>
-                        <pre>{{ formatJson(tas.toolParameters)  }}</pre>
-                      </div>
-                      <div class="output">
-                        <span class="label">{{ $t('rightPanel.executionResult') }}:</span>
-                        <pre>{{ formatJson(tas.actionResult) }}</pre>
+                      <div v-for="(actToolInfo, index) in tas.actToolInfoList" :key="index">
+                        <div class="tool-info">
+                          <span class="label">{{ $t('rightPanel.tool') }}:</span>
+                          <span class="value">{{ actToolInfo.name || '' }}</span>
+                        </div>
+                        <div class="input">
+                          <span class="label">{{ $t('rightPanel.toolParameters') }}:</span>
+                          <pre>{{ formatJson(actToolInfo.parameters) }}</pre>
+                        </div>
+                        <div class="output">
+                          <span class="label">{{ $t('rightPanel.executionResult') }}:</span>
+                          <pre>{{ formatJson(actToolInfo.result) }}</pre>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <!-- 子执行计划部分 - 新增功能 -->
-                  <div v-if="tas.subPlanExecutionRecord" class="sub-plan-section">
-                    <h5><Icon icon="carbon:tree-view" /> 子执行计划</h5>
-                    <div class="sub-plan-content">
-                      <div class="sub-plan-header">
-                        <div class="sub-plan-info">
-                          <span class="label">子计划ID:</span>
-                          <span class="value">{{ tas.subPlanExecutionRecord.currentPlanId }}</span>
-                        </div>
-                        <div class="sub-plan-info" v-if="tas.subPlanExecutionRecord.title">
-                          <span class="label">标题:</span>
-                          <span class="value">{{ tas.subPlanExecutionRecord.title }}</span>
-                        </div>
-                        <div class="sub-plan-status">
-                          <Icon
-                            icon="carbon:checkmark-filled"
-                            v-if="tas.subPlanExecutionRecord.completed"
-                            class="status-icon success"
-                          />
-                          <Icon icon="carbon:in-progress" v-else class="status-icon progress" />
-                          <span class="status-text">
+                    <!-- 子执行计划部分 - 新增功能 -->
+                    <div v-if="tas.subPlanExecutionRecord" class="sub-plan-section">
+                      <h5>
+                        <Icon icon="carbon:tree-view"/>
+                        子执行计划
+                      </h5>
+                      <div class="sub-plan-content">
+                        <div class="sub-plan-header">
+                          <div class="sub-plan-info">
+                            <span class="label">子计划ID:</span>
+                            <span class="value">{{ tas.subPlanExecutionRecord.currentPlanId }}</span>
+                          </div>
+                          <div class="sub-plan-info" v-if="tas.subPlanExecutionRecord.title">
+                            <span class="label">标题:</span>
+                            <span class="value">{{ tas.subPlanExecutionRecord.title }}</span>
+                          </div>
+                          <div class="sub-plan-status">
+                            <Icon
+                                icon="carbon:checkmark-filled"
+                                v-if="tas.subPlanExecutionRecord.completed"
+                                class="status-icon success"
+                            />
+                            <Icon icon="carbon:in-progress" v-else class="status-icon progress"/>
+                            <span class="status-text">
                             {{ tas.subPlanExecutionRecord.completed ? '已完成' : '执行中' }}
                           </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div
-              v-else-if="
+              <div
+                  v-if="
                 selectedStep.agentExecution &&
                 !selectedStep.agentExecution.thinkActSteps?.length
               "
-              class="no-steps-message"
-            >
-              <p>{{ $t('rightPanel.noStepDetails') }}</p>
-            </div>
+                  class="no-steps-message"
+              >
+                <p>{{ $t('rightPanel.noStepDetails') }}</p>
+              </div>
 
-            <!-- Handle no agentExecution case -->
-            <div
-              v-else-if="!selectedStep.agentExecution"
-              class="no-execution-message"
-            >
-              <Icon icon="carbon:information" class="info-icon" />
-              <h4>步骤信息</h4>
-              <div class="step-basic-info">
-                <div class="info-item">
-                  <span class="label">步骤名称:</span>
-                  <span class="value">{{
-                    selectedStep.title ||
-                    selectedStep.description ||
-                    `步骤 ${selectedStep.index + 1}`
-                  }}</span>
-                </div>
-                <div class="info-item" v-if="selectedStep.description">
-                  <span class="label">描述:</span>
-                  <span class="value">{{ selectedStep.description }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="label">状态:</span>
-                  <span class="value" :class="{
+              <!-- Handle no agentExecution case -->
+              <div
+                  v-else-if="!selectedStep.agentExecution"
+                  class="no-execution-message"
+              >
+                <Icon icon="carbon:information" class="info-icon"/>
+                <h4>步骤信息</h4>
+                <div class="step-basic-info">
+                  <div class="info-item">
+                    <span class="label">步骤名称:</span>
+                    <span class="value">{{
+                        selectedStep.title ||
+                        selectedStep.description ||
+                        `步骤 ${selectedStep.index + 1}`
+                      }}</span>
+                  </div>
+                  <div class="info-item" v-if="selectedStep.description">
+                    <span class="label">描述:</span>
+                    <span class="value">{{ selectedStep.description }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">状态:</span>
+                    <span class="value" :class="{
                     'status-completed': selectedStep.completed,
                     'status-current': selectedStep.current,
                     'status-pending': !selectedStep.completed && !selectedStep.current
                   }">
                     {{
-                      selectedStep.completed ? '已完成' :
-                      selectedStep.current ? '执行中' : '待执行'
-                    }}
+                        selectedStep.completed ? '已完成' :
+                            selectedStep.current ? '执行中' : '待执行'
+                      }}
                   </span>
+                  </div>
                 </div>
+                <p class="no-execution-hint">该步骤暂无详细执行信息</p>
               </div>
-              <p class="no-execution-hint">该步骤暂无详细执行信息</p>
+
+              <!-- Dynamic effect during execution -->
+              <div
+                  v-if="selectedStep.current && !selectedStep.completed"
+                  class="execution-indicator"
+              >
+                <div class="execution-waves">
+                  <div class="wave wave-1"></div>
+                  <div class="wave wave-2"></div>
+                  <div class="wave wave-3"></div>
+                </div>
+                <p class="execution-text">
+                  <Icon icon="carbon:in-progress" class="rotating-icon"/>
+                  {{ $t('rightPanel.stepExecuting') }}
+                </p>
+              </div>
             </div>
 
-            <!-- Dynamic effect during execution -->
-            <div
-              v-if="selectedStep.current && !selectedStep.completed"
-              class="execution-indicator"
+            <div v-else class="no-selection">
+              <Icon icon="carbon:events" class="empty-icon"/>
+              <h3>{{ t('rightPanel.noStepSelected') }}</h3>
+              <p>{{ t('rightPanel.selectStepHint') }}</p>
+            </div>
+          </div>
+
+          <!-- Scroll to bottom button -->
+          <Transition name="scroll-button">
+            <button
+                v-if="showScrollToBottomButton"
+                @click="scrollToBottom"
+                class="scroll-to-bottom-btn"
+                :title="$t('rightPanel.scrollToBottom')"
             >
-              <div class="execution-waves">
-                <div class="wave wave-1"></div>
-                <div class="wave wave-2"></div>
-                <div class="wave wave-3"></div>
-              </div>
-              <p class="execution-text">
-                <Icon icon="carbon:in-progress" class="rotating-icon" />
-                {{ $t('rightPanel.stepExecuting') }}
-              </p>
-            </div>
-          </div>
-
-          <div v-else class="no-selection">
-            <Icon icon="carbon:events" class="empty-icon" />
-            <h3>{{ t('rightPanel.noStepSelected') }}</h3>
-            <p>{{ t('rightPanel.selectStepHint') }}</p>
-          </div>
+              <Icon icon="carbon:chevron-down"/>
+            </button>
+          </Transition>
         </div>
-
-        <!-- Scroll to bottom button -->
-        <Transition name="scroll-button">
-          <button
-            v-if="showScrollToBottomButton"
-            @click="scrollToBottom"
-            class="scroll-to-bottom-btn"
-            :title="$t('rightPanel.scrollToBottom')"
-          >
-            <Icon icon="carbon:chevron-down" />
-          </button>
-        </Transition>
       </div>
     </div>
   </div>
@@ -322,12 +337,12 @@ const stepStatusText = computed(() => {
 // Actions - Plan data management and refresh control
 /**
  * Primary method for external refresh control of the right panel component.
- * 
+ *
  * USAGE:
- * This method should be called by external components (typically Direct component) 
- * to trigger a refresh of the plan progress display and step details. It serves as 
+ * This method should be called by external components (typically Direct component)
+ * to trigger a refresh of the plan progress display and step details. It serves as
  * the main entry point for updating the component's state based on plan execution changes.
- * 
+ *
  * REFRESH LOGIC:
  * 1. Validates if the provided rootPlanId matches the currently displayed plan
  * 2. Updates plan progress information (current step vs total steps)
@@ -335,23 +350,23 @@ const stepStatusText = computed(() => {
  *    - Re-fetches the latest plan execution data
  *    - Refreshes the step details display with updated information
  *    - Auto-scrolls to show latest content if user was previously at bottom
- * 
+ *
  * KEY DESIGN PRINCIPLE:
- * This component does NOT maintain internal auto-refresh timers. Instead, it relies 
+ * This component does NOT maintain internal auto-refresh timers. Instead, it relies
  * entirely on external calls to this method for updates. This allows parent components
  * to have full control over when and how frequently the refresh occurs.
- * 
+ *
  * CONSISTENCY CHECK:
  * Only updates are allowed for the currently displayed plan to prevent conflicting updates.
- * 
+ *
  * ================================================================================
- * 
+ *
  * 右侧面板组件外部刷新控制的主要方法。
- * 
+ *
  * 使用方式：
  * 此方法应由外部组件（通常是 Direct 组件）调用，用于触发计划进度显示和步骤详情的刷新。
  * 它作为基于计划执行变化更新组件状态的主要入口点。
- * 
+ *
  * 刷新逻辑：
  * 1. 验证提供的 rootPlanId 是否与当前显示的计划匹配
  * 2. 更新计划进度信息（当前步骤 vs 总步骤数）
@@ -359,60 +374,60 @@ const stepStatusText = computed(() => {
  *    - 重新获取最新的计划执行数据
  *    - 刷新步骤详情显示并更新信息
  *    - 如果用户之前在底部，则自动滚动显示最新内容
- * 
+ *
  * 关键设计原则：
  * 此组件不维护内部自动刷新定时器。相反，它完全依赖于对此方法的外部调用来进行更新。
  * 这使得父组件可以完全控制何时以及多频繁地进行刷新。
- * 
+ *
  * 一致性检查：
  * 只允许对当前显示的计划进行更新，以防止冲突的更新操作。
- * 
+ *
  * @param rootPlanId - The ID of the root plan execution to refresh
  */
 const updateDisplayedPlanProgress = (rootPlanId: string) => {
   console.log(`[RightPanel] updateDisplayedPlanProgress called with rootPlanId: ${rootPlanId}`)
-  
+
   // Check if there's a currently selected step and validate plan consistency
   if (selectedStep.value && currentStepContext.value) {
     // Determine the current root plan ID based on step context
     const currentRootPlanId = currentStepContext.value.rootPlanId ?? currentDisplayedPlanId.value
-    
+
     // Only update if the provided rootPlanId matches the currently displayed plan
     if (currentRootPlanId && currentRootPlanId !== rootPlanId) {
       console.log(`[RightPanel] Plan ID mismatch - skipping update. Current: ${currentRootPlanId}, Requested: ${rootPlanId}`)
       return
     }
   }
-  
+
   console.log(`[RightPanel] Plan ID validation passed - proceeding with update for rootPlanId: ${rootPlanId}`)
-  
+
   // Get plan data from plan execution manager
   const planData = planExecutionManager.getCachedPlanRecord(rootPlanId)
   if (!planData) {
     console.warn(`[RightPanel] Plan data not found for rootPlanId: ${rootPlanId}`)
     return
   }
-  
+
   // Update UI state, such as progress bars
   if (planData.steps && planData.steps.length > 0) {
     const totalSteps = planData.steps.length
     const currentStep = (planData.currentStepIndex ?? 0) + 1
     console.log(`[RightPanel] Progress: ${currentStep} / ${totalSteps}`)
   }
-  
+
   // If there's a selected step and it belongs to the current plan, refresh its details
   if (selectedStep.value && currentDisplayedPlanId.value) {
     // Check if the selected step belongs to the current root plan
-    const isCurrentPlanStep = currentDisplayedPlanId.value === rootPlanId || 
+    const isCurrentPlanStep = currentDisplayedPlanId.value === rootPlanId ||
                              (currentStepContext.value?.rootPlanId === rootPlanId)
-    
+
     if (isCurrentPlanStep) {
       console.log(`[RightPanel] Refreshing selected step details for plan: ${rootPlanId}`)
-      
+
       // Get the current step context
       if (currentStepContext.value) {
         const ctx = currentStepContext.value
-        
+
         // Re-fetch and update the step details
         const planRecord = findPlanExecutionRecord(ctx.planId, ctx.rootPlanId, ctx.subPlanId)
         if (planRecord) {
@@ -437,22 +452,22 @@ const updateDisplayedPlanProgress = (rootPlanId: string) => {
  * @param subStepIndex - Optional sub-step index for sub-plan steps
  */
 const handleStepSelected = (
-  planId: string, 
-  stepIndex: number, 
-  rootPlanId?: string, 
-  subPlanId?: string, 
+  planId: string,
+  stepIndex: number,
+  rootPlanId?: string,
+  subPlanId?: string,
   subStepIndex?: number
 ) => {
-  console.log('[RightPanel] Step selected:', { 
-    planId, 
-    stepIndex, 
-    rootPlanId, 
-    subPlanId, 
-    subStepIndex 
+  console.log('[RightPanel] Step selected:', {
+    planId,
+    stepIndex,
+    rootPlanId,
+    subPlanId,
+    subStepIndex
   })
-  
+
   const isSubPlan = !!(rootPlanId && subPlanId && subStepIndex !== undefined)
-  
+
   // Set current step context for auto-refresh
   currentStepContext.value = {
     planId,
@@ -460,17 +475,17 @@ const handleStepSelected = (
     isSubPlan,
     ...(isSubPlan && { rootPlanId, subPlanId, subStepIndex })
   }
-  
+
   // Find the PlanExecutionRecord based on parameters
   const planRecord = findPlanExecutionRecord(planId, rootPlanId, subPlanId)
-  
+
   if (!planRecord) {
     console.warn('[RightPanel] Plan data not found:', { planId, rootPlanId, subPlanId })
     selectedStep.value = null
     currentStepContext.value = null
     return
   }
-  
+
   // Display step details using unified logic
   displayStepDetails(planRecord, stepIndex, planId, isSubPlan)
 }
@@ -481,27 +496,27 @@ const handleStepSelected = (
  * For sub-plan steps: traverse root plan to find the sub-plan record
  */
 const findPlanExecutionRecord = (
-  planId: string, 
-  rootPlanId?: string, 
+  planId: string,
+  rootPlanId?: string,
   subPlanId?: string
 ): PlanExecutionRecord | null => {
   // For regular steps, directly get from manager
   if (!rootPlanId || !subPlanId) {
     return planExecutionManager.getCachedPlanRecord(planId) ?? null
   }
-  
+
   // For sub-plan steps, first try direct access
   const directRecord = planExecutionManager.getCachedPlanRecord(planId)
   if (directRecord) {
     return directRecord
   }
-  
+
   // If direct access fails, traverse root plan to find sub-plan
   const rootPlanData = planExecutionManager.getCachedPlanRecord(rootPlanId)
   if (!rootPlanData?.agentExecutionSequence) {
     return null
   }
-  
+
   // Traverse all agent execution records to find the sub-plan
   for (const agentExecution of rootPlanData.agentExecutionSequence) {
     if (agentExecution.thinkActSteps) {
@@ -512,7 +527,7 @@ const findPlanExecutionRecord = (
       }
     }
   }
-  
+
   return null
 }
 
@@ -520,9 +535,9 @@ const findPlanExecutionRecord = (
  * Unified display logic for step details
  */
 const displayStepDetails = (
-  planRecord: PlanExecutionRecord, 
-  stepIndex: number, 
-  planId: string, 
+  planRecord: PlanExecutionRecord,
+  stepIndex: number,
+  planId: string,
   isSubPlan: boolean
 ) => {
   // Validate step index
@@ -538,11 +553,11 @@ const displayStepDetails = (
     })
     return
   }
-  
+
   currentDisplayedPlanId.value = planId
   const step = planRecord.steps[stepIndex]
   const agentExecution = planRecord.agentExecutionSequence?.[stepIndex]
-  
+
   console.log('[RightPanel] Step data details:', {
     planId,
     stepIndex,
@@ -554,35 +569,35 @@ const displayStepDetails = (
     thinkActStepsLength: agentExecution?.thinkActSteps?.length,
     isSubPlan
   })
-  
+
   // Determine if step is completed
   const isStepCompleted =
     agentExecution?.isCompleted ??
     planRecord.completed ??
     (planRecord.currentStepIndex !== undefined && stepIndex < planRecord.currentStepIndex)
-  
+
   const isCurrent =
     !isStepCompleted && stepIndex === planRecord.currentStepIndex && !planRecord.completed
-  
+
   // Construct step details object
   const stepData: SelectedStep = {
     planId: planId,
     index: stepIndex,
     title: typeof step === 'string'
       ? step
-      : (step as any).title || (step as any).description || (step as any).name || 
+      : (step as any).title || (step as any).description || (step as any).name ||
         `${isSubPlan ? '子' : ''}步骤 ${stepIndex + 1}`,
     description: typeof step === 'string' ? step : (step as any).description || step,
     completed: isStepCompleted,
     current: isCurrent,
   }
-  
+
   if (agentExecution) {
     stepData.agentExecution = agentExecution
   }
-  
+
   selectedStep.value = stepData
-  
+
   console.log('[RightPanel] Step details updated:', {
     planId,
     stepIndex,
@@ -595,7 +610,7 @@ const displayStepDetails = (
     planCompleted: planRecord.completed,
     isSubPlan
   })
-  
+
   // Process sub-plan data if exists - just log for debugging
   if (agentExecution?.thinkActSteps) {
     agentExecution.thinkActSteps.forEach((thinkActStep: any, index: number) => {
@@ -604,15 +619,15 @@ const displayStepDetails = (
       }
     })
   }
-  
+
   // Note: Auto-refresh is now controlled externally via updateDisplayedPlanProgress
   // No internal auto-refresh logic needed
-  
+
   // Delay scroll state check to ensure DOM is updated
   setTimeout(() => {
     checkScrollState()
   }, 100)
-  
+
   // After data update, auto-scroll to latest content if previously at bottom
   autoScrollToBottomIfNeeded()
 }
@@ -631,7 +646,7 @@ const handleSubPlanStepSelected = (rootPlanId: string, subPlanId: string, stepIn
     stepIndex,
     subStepIndex
   })
-  
+
   // Delegate to unified handler
   handleStepSelected(subPlanId, subStepIndex, rootPlanId, subPlanId, subStepIndex)
 }

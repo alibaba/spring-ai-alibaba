@@ -15,12 +15,15 @@
  */
 
 // Define interface types
+import type {Model} from "@/api/model-api-service";
+
 export interface Agent {
   id: string
   name: string
   description: string
   availableTools: string[]
-  nextStepPrompt?: string
+  nextStepPrompt?: string,
+  model?: Model | null
 }
 
 export interface Tool {
