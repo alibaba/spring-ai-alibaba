@@ -34,7 +34,8 @@ import java.util.function.Function;
 import java.util.List;
 
 /**
- * StreamingChatGenerator utility class for creating and configuring StreamingChatGenerator instances
+ * StreamingChatGenerator utility class for creating and configuring
+ * StreamingChatGenerator instances
  *
  * @author zhangshenghang
  */
@@ -114,7 +115,8 @@ public class StreamingChatGeneratorUtil {
 	}
 
 	/**
-	 * Create a StreamingChatGenerator using the class object to obtain the node name and a custom result mapping function
+	 * Create a StreamingChatGenerator using the class object to obtain the node name and
+	 * a custom result mapping function
 	 * @param nodeClass node class
 	 * @param state state
 	 * @param mapResultFunction result mapping function
@@ -127,13 +129,14 @@ public class StreamingChatGeneratorUtil {
 	}
 
 	/**
-	 * Create a StreamingChatGenerator with a completion callback
-	 * When the generator finishes processing, the completion callback will be executed
+	 * Create a StreamingChatGenerator with a completion callback When the generator
+	 * finishes processing, the completion callback will be executed
 	 * @param nodeClass node class
 	 * @param state state
 	 * @param mapResultFunction result mapping function
 	 * @param flux response stream
-	 * @param onCompleteCallback callback function executed upon completion, providing the final processing result as a parameter
+	 * @param onCompleteCallback callback function executed upon completion, providing the
+	 * final processing result as a parameter
 	 * @return AsyncGenerator instance
 	 */
 	public static AsyncGenerator<? extends NodeOutput> createGeneratorWithCallback(Class<?> nodeClass,
@@ -156,7 +159,8 @@ public class StreamingChatGeneratorUtil {
 		}).doFinally(signalType -> {
 			if (signalType == SignalType.ON_COMPLETE) {
 				try {
-					// If the future is already complete, get the result and execute the callback
+					// If the future is already complete, get the result and execute the
+					// callback
 					if (resultFuture.isDone()) {
 						onCompleteCallback.accept(resultFuture.get());
 					}
@@ -176,13 +180,14 @@ public class StreamingChatGeneratorUtil {
 	}
 
 	/**
-	 * Create a StreamingChatGenerator with a completion callback
-	 * When the generator finishes processing, the completion callback will be executed
+	 * Create a StreamingChatGenerator with a completion callback When the generator
+	 * finishes processing, the completion callback will be executed
 	 * @param nodeName node name
 	 * @param state state
 	 * @param mapResultFunction result mapping function
 	 * @param flux response stream
-	 * @param onCompleteCallback callback function executed upon completion, providing the final processing result as a parameter
+	 * @param onCompleteCallback callback function executed upon completion, providing the
+	 * final processing result as a parameter
 	 * @return AsyncGenerator instance
 	 */
 	public static AsyncGenerator<? extends NodeOutput> createGeneratorWithCallback(String nodeName, OverAllState state,
@@ -221,7 +226,8 @@ public class StreamingChatGeneratorUtil {
 	}
 
 	/**
-	 * Create a generator with ordered notifications, ensuring sequential output: start message -> main processing -> completion message
+	 * Create a generator with ordered notifications, ensuring sequential output: start
+	 * message -> main processing -> completion message
 	 * @param nodeClass node class
 	 * @param state state
 	 * @param mapResultFunction result mapping function
@@ -258,7 +264,8 @@ public class StreamingChatGeneratorUtil {
 							.next();
 						if (startData.isDone()) {
 							phase = 1; // Switch to main processing phase
-							logger.info("[{}] Start message completed, entering main processing phase", nodeClass.getSimpleName());
+							logger.info("[{}] Start message completed, entering main processing phase",
+									nodeClass.getSimpleName());
 						}
 						return startData;
 
@@ -270,8 +277,10 @@ public class StreamingChatGeneratorUtil {
 							// Save the result of main processing
 							finalResult = mainData.resultValue().orElse(null);
 							phase = 2; // Switch to completion message phase
-							logger.info("[{}] Main processing completed, entering completion message phase", nodeClass.getSimpleName());
-							// Immediately start the completion message phase, do not return mainData
+							logger.info("[{}] Main processing completed, entering completion message phase",
+									nodeClass.getSimpleName());
+							// Immediately start the completion message phase, do not
+							// return mainData
 							return next();
 						}
 						return mainData;
@@ -283,7 +292,8 @@ public class StreamingChatGeneratorUtil {
 						if (completionData.isDone()) {
 							phase = 3; // All done
 							logger.info("[{}] Completion message output completed", nodeClass.getSimpleName());
-							// After the completion message phase ends, return the final completion status
+							// After the completion message phase ends, return the final
+							// completion status
 							return AsyncGenerator.Data.done(finalResult);
 						}
 						return completionData;
@@ -296,7 +306,8 @@ public class StreamingChatGeneratorUtil {
 	}
 
 	/**
-	 * Create a simple generator with a completion callback, using AsyncGenerator's composeWith mechanism
+	 * Create a simple generator with a completion callback, using AsyncGenerator's
+	 * composeWith mechanism
 	 * @param nodeClass node class
 	 * @param state state
 	 * @param mapResultFunction result mapping function
@@ -317,7 +328,8 @@ public class StreamingChatGeneratorUtil {
 		AsyncGenerator<NodeOutput> completionNotificationGenerator = (AsyncGenerator<NodeOutput>) createStreamPrintGenerator(
 				completionMessage);
 
-		// Use composeWith to execute completion notification after the main generator completes
+		// Use composeWith to execute completion notification after the main generator
+		// completes
 		return new AsyncGenerator<NodeOutput>() {
 			@Override
 			public AsyncGenerator.Data<NodeOutput> next() {
@@ -334,7 +346,6 @@ public class StreamingChatGeneratorUtil {
 			}
 		};
 	}
-
 
 	public static class StreamingProcessorBuilder {
 
@@ -359,19 +370,16 @@ public class StreamingChatGeneratorUtil {
 		private StreamingProcessorBuilder() {
 		}
 
-
 		public StreamingProcessorBuilder startMessage(String startMessage) {
 			this.startMessage = startMessage;
 			return this;
 		}
-
 
 		public StreamingProcessorBuilder completionMessage(String completionMessage) {
 			this.completionMessage = completionMessage;
 			return this;
 		}
 
-	
 		public StreamingProcessorBuilder contentExtractor(Function<ChatResponse, String> contentExtractor) {
 			this.contentExtractor = contentExtractor;
 			return this;
@@ -469,7 +477,7 @@ public class StreamingChatGeneratorUtil {
 					}).doOnComplete(() -> {
 						// 3. Send completion message
 						if (completionMessage != null && !completionMessage.isEmpty()) {
-							emitter.next(ChatResponseUtil.createCustomStatusResponse("\n" + completionMessage ));
+							emitter.next(ChatResponseUtil.createCustomStatusResponse("\n" + completionMessage));
 						}
 						logger.debug("[{}] Streaming processing completed", nodeName);
 						emitter.complete();
@@ -536,8 +544,8 @@ public class StreamingChatGeneratorUtil {
 	}
 
 	/**
-	 * Create multi-step processing streaming generator 
-	 * Supports executing multiple steps in the display process, each step has its own message and logic
+	 * Create multi-step processing streaming generator Supports executing multiple steps
+	 * in the display process, each step has its own message and logic
 	 * @param nodeClass node class
 	 * @param state state
 	 * @param processingSteps processing steps list
@@ -589,7 +597,6 @@ public class StreamingChatGeneratorUtil {
 			} : currentState -> Map.of())
 			.build(multiStepFlux);
 	}
-
 
 	public static class ProcessingStep {
 

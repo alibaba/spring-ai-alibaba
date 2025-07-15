@@ -31,8 +31,8 @@ import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 
 /**
- * Abstract base class for plan-based execution nodes
- * Provides common functionality for nodes that execute based on predefined plans
+ * Abstract base class for plan-based execution nodes Provides common functionality for
+ * nodes that execute based on predefined plans
  *
  * @author zhangshenghang
  */
@@ -51,7 +51,8 @@ public abstract class AbstractPlanBasedNode implements NodeAction {
 	 * Get the current execution step from the plan
 	 * @param state the overall state containing plan information
 	 * @return the current execution step
-	 * @throws IllegalStateException if plan output is empty, plan parsing fails, or step index is out of range
+	 * @throws IllegalStateException if plan output is empty, plan parsing fails, or step
+	 * index is out of range
 	 */
 	protected ExecutionStep getCurrentExecutionStep(OverAllState state) {
 		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
