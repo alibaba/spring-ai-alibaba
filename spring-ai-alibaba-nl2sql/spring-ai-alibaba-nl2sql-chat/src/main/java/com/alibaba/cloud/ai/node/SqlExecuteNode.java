@@ -77,7 +77,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 		// 先执行业务逻辑
 		DbQueryParameter dbQueryParameter = new DbQueryParameter();
 		dbQueryParameter.setSql(sqlQuery);
-		
+
 		try {
 			// 执行SQL查询，获取结果
 			ResultSetBO resultSetBO = dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
@@ -88,8 +88,9 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			Map<String, String> updatedResults = StepResultUtils.addStepResult(existingResults, currentStep, jsonStr);
 
 			logger.info("SQL执行成功，结果记录数: {}", resultSetBO.getData() != null ? resultSetBO.getData().size() : 0);
-			
-			Map<String, Object> result = Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedResults, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, "");
+
+			Map<String, Object> result = Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedResults,
+					SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, "");
 
 			// 创建显示流，仅用于用户体验
 			Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
@@ -101,19 +102,15 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			});
 
 			// 使用工具类创建生成器，直接返回业务逻辑计算的结果
-			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
-				this.getClass(),
-				state,
-				v -> result,
-				displayFlux
-			);
-			
+			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+					v -> result, displayFlux);
+
 			return Map.of(SQL_EXECUTE_NODE_OUTPUT, generator);
 		}
 		catch (Exception e) {
 			String errorMessage = e.getMessage();
 			logger.error("SQL执行失败 - SQL: [{}] ", sqlQuery, e);
-			
+
 			Map<String, Object> errorResult = Map.of(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, errorMessage);
 
 			// 创建错误显示流
@@ -125,12 +122,8 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			});
 
 			// 使用工具类创建错误生成器
-			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
-				this.getClass(),
-				state,
-				v -> errorResult,
-				errorDisplayFlux
-			);
+			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+					v -> errorResult, errorDisplayFlux);
 
 			return Map.of(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, generator);
 		}

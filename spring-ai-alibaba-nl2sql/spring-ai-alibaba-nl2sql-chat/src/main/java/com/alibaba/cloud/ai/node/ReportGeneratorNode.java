@@ -80,22 +80,16 @@ public class ReportGeneratorNode implements NodeAction {
 				summaryAndRecommendations);
 
 		// 使用通用工具类创建流式生成器，基于流内容进行处理
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
-			this.getClass(),
-			state,
-			"开始生成报告...",
-			"报告生成完成！",
-			reportContent -> {
-				logger.info("生成的报告内容: {}", reportContent);
-				Map<String, Object> result = new HashMap<>();
-				result.put(RESULT, reportContent);
-				result.put(SQL_EXECUTE_NODE_OUTPUT, null);
-				result.put(PLAN_CURRENT_STEP, null);
-				result.put(PLANNER_NODE_OUTPUT, null);
-				return result;
-			},
-			reportGenerationFlux
-		);
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				"开始生成报告...", "报告生成完成！", reportContent -> {
+					logger.info("生成的报告内容: {}", reportContent);
+					Map<String, Object> result = new HashMap<>();
+					result.put(RESULT, reportContent);
+					result.put(SQL_EXECUTE_NODE_OUTPUT, null);
+					result.put(PLAN_CURRENT_STEP, null);
+					result.put(PLANNER_NODE_OUTPUT, null);
+					return result;
+				}, reportGenerationFlux);
 
 		return Map.of(RESULT, generator);
 	}

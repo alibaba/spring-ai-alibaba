@@ -57,7 +57,7 @@ public class KeywordExtractNode implements NodeAction {
 
 		List<String> evidences = baseNl2SqlService.extractEvidences(input);
 		List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);
-		
+
 		logger.info("[{}] 提取结果 - 证据: {}, 关键词: {}", this.getClass().getSimpleName(), evidences, keywords);
 
 		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
@@ -71,16 +71,9 @@ public class KeywordExtractNode implements NodeAction {
 		});
 
 		// 使用业务逻辑执行器，避免重复执行业务逻辑
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
-			this.getClass(),
-			state,
-			v -> Map.of(
-                KEYWORD_EXTRACT_NODE_OUTPUT, keywords,
-                EVIDENCES, evidences,
-                RESULT, keywords
-            ),
-			displayFlux
-		);
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				v -> Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, keywords, EVIDENCES, evidences, RESULT, keywords),
+				displayFlux);
 
 		return Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, generator);
 	}

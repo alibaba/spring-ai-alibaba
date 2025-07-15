@@ -83,7 +83,7 @@ public class SqlGenerateNode implements NodeAction {
 
 		Map<String, Object> result;
 		String displayMessage;
-		
+
 		if (StateUtils.hasValue(state, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT)) {
 			displayMessage = "检测到SQL执行异常，开始重新生成SQL...";
 			String newSql = handleSqlExecutionException(state, plan, toolParameters);
@@ -105,18 +105,16 @@ public class SqlGenerateNode implements NodeAction {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse(displayMessage));
 			if (result.containsKey(RESULT)) {
 				emitter.next(ChatResponseUtil.createCustomStatusResponse("重新生成的SQL: " + result.get(RESULT)));
-			} else if (result.containsKey(SQL_GENERATE_OUTPUT) && result.get(SQL_GENERATE_OUTPUT).equals(SQL_EXECUTE_NODE)) {
+			}
+			else if (result.containsKey(SQL_GENERATE_OUTPUT)
+					&& result.get(SQL_GENERATE_OUTPUT).equals(SQL_EXECUTE_NODE)) {
 				emitter.next(ChatResponseUtil.createCustomStatusResponse("SQL重新生成完成，准备执行"));
 			}
 			emitter.complete();
 		});
 
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
-			this.getClass(),
-			state,
-			v -> result,
-			displayFlux
-		);
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				v -> result, displayFlux);
 
 		return Map.of(SQL_GENERATE_OUTPUT, generator);
 	}

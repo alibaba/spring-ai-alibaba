@@ -12,18 +12,18 @@
 		return Map.of(getStreamReturnKey(), generator, QUERY_REWRITE_NODE_OUTPUT, generator);
 
 		// 备选方案：如果你想要更简单的实现，可以使用以下代码替换上面的部分：
-		// 
+		//
 		// AsyncGenerator<? extends NodeOutput> startGenerator = StreamingChatGeneratorUtil
 		//     .createStreamPrintGenerator("开始进行问题重写...");
-		// 
+		//
 		// var mainGenerator = StreamingChatGeneratorUtil.createGeneratorWithComposeCompletion(
 		//     this.getClass(), state, response -> {
 		//         String rewrite = response.getResult().getOutput().getText();
 		//         return Map.of(QUERY_REWRITE_NODE_OUTPUT, rewrite, RESULT, rewrite);
 		//     }, rewriteFlux, "问题重写完成！");
-		// 
+		//
 		// return Map.of(
-		//     getStreamReturnKey(), startGenerator, 
+		//     getStreamReturnKey(), startGenerator,
 		//     QUERY_REWRITE_NODE_OUTPUT, mainGenerator
 		// );er the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,14 +75,10 @@ public class QueryRewriteNode implements NodeAction {
 		logger.info("[{}] 处理用户输入: {}", this.getClass().getSimpleName(), input);
 
 		// 使用通用的流式处理工具类
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
-			this.getClass(),
-			state,
-			"开始进行问题重写...",
-			"问题重写完成！",
-			finalResult -> Map.of(QUERY_REWRITE_NODE_OUTPUT, finalResult, RESULT, finalResult),
-			baseNl2SqlService.rewriteStream(input)
-		);
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				"开始进行问题重写...", "问题重写完成！",
+				finalResult -> Map.of(QUERY_REWRITE_NODE_OUTPUT, finalResult, RESULT, finalResult),
+				baseNl2SqlService.rewriteStream(input));
 
 		return Map.of(QUERY_REWRITE_NODE_OUTPUT, generator);
 	}

@@ -58,31 +58,26 @@ public class SchemaRecallNode implements NodeAction {
 
 		List<Document> tableDocuments = baseSchemaService.getTableDocuments(input);
 		List<List<Document>> columnDocumentsByKeywords = baseSchemaService.getColumnDocumentsByKeywords(keywords);
-		
-		logger.info("[{}] Schema召回结果 - 表文档数量: {}, 关键词相关列文档组数: {}", 
-			this.getClass().getSimpleName(), tableDocuments.size(), columnDocumentsByKeywords.size());
+
+		logger.info("[{}] Schema召回结果 - 表文档数量: {}, 关键词相关列文档组数: {}", this.getClass().getSimpleName(),
+				tableDocuments.size(), columnDocumentsByKeywords.size());
 
 		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始召回Schema信息..."));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("表信息召回完成，数量: " + tableDocuments.size()));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("列信息召回完成，数量: " + columnDocumentsByKeywords.size()));
+			emitter
+				.next(ChatResponseUtil.createCustomStatusResponse("列信息召回完成，数量: " + columnDocumentsByKeywords.size()));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("Schema信息召回完成."));
 			emitter.complete();
 		});
 
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
-			this.getClass(),
-			state,
-			currentState -> {
-				logger.info("表文档详情: {}", tableDocuments);
-				logger.info("关键词相关列文档详情: {}", columnDocumentsByKeywords);
-				return Map.of(
-					TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, tableDocuments,
-					COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT, columnDocumentsByKeywords
-				);
-			},
-			displayFlux
-		);
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				currentState -> {
+					logger.info("表文档详情: {}", tableDocuments);
+					logger.info("关键词相关列文档详情: {}", columnDocumentsByKeywords);
+					return Map.of(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, tableDocuments,
+							COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT, columnDocumentsByKeywords);
+				}, displayFlux);
 
 		// 返回处理结果
 		return Map.of(SCHEMA_RECALL_NODE_OUTPUT, generator);

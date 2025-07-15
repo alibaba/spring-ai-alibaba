@@ -73,9 +73,10 @@ public class PythonExecuteNode extends AbstractPlanBasedNode {
 				new HashMap());
 
 		// 创建流式输出
-		String prompt = String.format("## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
+		String prompt = String.format(
+				"## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
 				getPlan(state).toJsonStr(), instruction, description, sqlExecuteResult);
-		
+
 		Flux<ChatResponse> pythonExecutionFlux = chatClient.prompt()
 			.system(SYSTEM_PROMPT)
 			.user(prompt)
@@ -83,18 +84,13 @@ public class PythonExecuteNode extends AbstractPlanBasedNode {
 			.chatResponse();
 
 		// 使用工具类创建生成器，进行流内容收集
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
-			this.getClass(),
-			state,
-			"开始执行Python分析",
-			"Python分析执行完成",
-			aiResponse -> {
-				Map<String, String> updatedSqlResult = StepResultUtils.addStepResult(sqlExecuteResult, currentStep, aiResponse);
-				logNodeOutput("analysis_result", aiResponse);
-				return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult, PLAN_CURRENT_STEP, currentStep + 1);
-			},
-			pythonExecutionFlux
-		);
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				"开始执行Python分析", "Python分析执行完成", aiResponse -> {
+					Map<String, String> updatedSqlResult = StepResultUtils.addStepResult(sqlExecuteResult, currentStep,
+							aiResponse);
+					logNodeOutput("analysis_result", aiResponse);
+					return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult, PLAN_CURRENT_STEP, currentStep + 1);
+				}, pythonExecutionFlux);
 
 		return Map.of(PYTHON_EXECUTE_NODE_OUTPUT, generator);
 	}

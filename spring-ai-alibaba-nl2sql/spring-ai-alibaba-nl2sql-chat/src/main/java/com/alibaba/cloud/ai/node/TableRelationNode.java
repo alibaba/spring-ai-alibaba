@@ -69,7 +69,7 @@ public class TableRelationNode implements NodeAction {
 		// 先执行业务逻辑，获取最终结果
 		SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
 		SchemaDTO result = processSchemaSelection(schemaDTO, input, evidenceList, state);
-		
+
 		logger.info("[{}] Schema处理结果: {}", this.getClass().getSimpleName(), result);
 
 		// 创建显示流，仅用于用户体验
@@ -82,12 +82,8 @@ public class TableRelationNode implements NodeAction {
 		});
 
 		// 使用工具类创建生成器，直接返回业务逻辑计算的结果
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
-			this.getClass(),
-			state,
-			v -> Map.of(TABLE_RELATION_OUTPUT, result),
-			displayFlux
-		);
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				v -> Map.of(TABLE_RELATION_OUTPUT, result), displayFlux);
 
 		return Map.of(TABLE_RELATION_OUTPUT, generator);
 	}

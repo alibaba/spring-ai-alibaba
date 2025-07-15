@@ -20,6 +20,11 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 
+import java.util.List;
+
+/**
+ * @author zhangshenghang
+ */
 public class ChatResponseUtil {
 
 	/**
@@ -28,10 +33,9 @@ public class ChatResponseUtil {
 	 * @return ChatResponse 状态响应对象
 	 */
 	public static ChatResponse createCustomStatusResponse(String statusMessage) {
-		statusMessage = statusMessage + "\n";
-		AssistantMessage assistantMessage = new AssistantMessage(statusMessage);
+		AssistantMessage assistantMessage = new AssistantMessage(statusMessage + "\n");
 		Generation generation = new Generation(assistantMessage);
-		return new ChatResponse(java.util.List.of(generation));
+		return new ChatResponse(List.of(generation));
 	}
 
 }

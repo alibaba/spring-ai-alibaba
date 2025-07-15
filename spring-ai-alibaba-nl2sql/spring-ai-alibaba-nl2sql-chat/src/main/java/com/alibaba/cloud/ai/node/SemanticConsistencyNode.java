@@ -71,19 +71,14 @@ public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 		Flux<ChatResponse> validationResultFlux = performSemanticValidationStream(schemaDTO, evidenceList,
 				toolParameters, sqlQuery);
 
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
-			this.getClass(),
-			state,
-			"开始语义一致性校验",
-			"语义一致性校验完成",
-				validationResult -> {
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				"开始语义一致性校验", "语义一致性校验完成", validationResult -> {
 					boolean isPassed = !validationResult.startsWith("不通过");
 					Map<String, Object> result = buildValidationResult(isPassed, validationResult, currentStep);
-					logger.info("[{}] 语义一致性校验结果: {}, 是否通过: {}", this.getClass().getSimpleName(), validationResult, isPassed);
+					logger.info("[{}] 语义一致性校验结果: {}, 是否通过: {}", this.getClass().getSimpleName(), validationResult,
+							isPassed);
 					return result;
-				},
-			validationResultFlux
-		);
+				}, validationResultFlux);
 
 		return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, generator);
 	}

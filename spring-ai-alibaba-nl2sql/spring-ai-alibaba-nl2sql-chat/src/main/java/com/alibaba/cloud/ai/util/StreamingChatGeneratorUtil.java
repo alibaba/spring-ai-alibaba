@@ -228,39 +228,42 @@ public class StreamingChatGeneratorUtil {
 	 * @param completionMessage 完成消息
 	 * @return 组合后的生成器
 	 */
-	public static AsyncGenerator<? extends NodeOutput> createGeneratorWithOrderedNotifications(
-			Class<?> nodeClass, OverAllState state, Function<ChatResponse, Map<String, Object>> mapResultFunction,
-			Flux<ChatResponse> flux, String startMessage, String completionMessage) {
+	public static AsyncGenerator<? extends NodeOutput> createGeneratorWithOrderedNotifications(Class<?> nodeClass,
+			OverAllState state, Function<ChatResponse, Map<String, Object>> mapResultFunction, Flux<ChatResponse> flux,
+			String startMessage, String completionMessage) {
 
 		// 创建开始消息生成器
 		AsyncGenerator<? extends NodeOutput> startGenerator = createStreamPrintGenerator(startMessage);
-		
+
 		// 创建主处理生成器
 		AsyncGenerator<? extends NodeOutput> mainGenerator = createGenerator(nodeClass, state, mapResultFunction, flux);
-		
+
 		// 创建完成消息生成器
 		AsyncGenerator<? extends NodeOutput> completionGenerator = createStreamPrintGenerator(completionMessage);
 
 		// 组合生成器，确保按顺序执行
 		return new AsyncGenerator<NodeOutput>() {
 			private int phase = 0; // 0: start, 1: main, 2: completion, 3: done
+
 			private Object finalResult = null; // 保存最终结果
-			
+
 			@Override
 			public AsyncGenerator.Data<NodeOutput> next() {
 				switch (phase) {
 					case 0: // 开始阶段
 						@SuppressWarnings("unchecked")
-						AsyncGenerator.Data<NodeOutput> startData = (AsyncGenerator.Data<NodeOutput>) startGenerator.next();
+						AsyncGenerator.Data<NodeOutput> startData = (AsyncGenerator.Data<NodeOutput>) startGenerator
+							.next();
 						if (startData.isDone()) {
 							phase = 1; // 转到主处理阶段
 							logger.info("[{}] 开始消息完成，进入主处理阶段", nodeClass.getSimpleName());
 						}
 						return startData;
-						
+
 					case 1: // 主处理阶段
 						@SuppressWarnings("unchecked")
-						AsyncGenerator.Data<NodeOutput> mainData = (AsyncGenerator.Data<NodeOutput>) mainGenerator.next();
+						AsyncGenerator.Data<NodeOutput> mainData = (AsyncGenerator.Data<NodeOutput>) mainGenerator
+							.next();
 						if (mainData.isDone()) {
 							// 保存主处理的结果
 							finalResult = mainData.resultValue().orElse(null);
@@ -270,10 +273,11 @@ public class StreamingChatGeneratorUtil {
 							return next();
 						}
 						return mainData;
-						
+
 					case 2: // 完成消息阶段
 						@SuppressWarnings("unchecked")
-						AsyncGenerator.Data<NodeOutput> completionData = (AsyncGenerator.Data<NodeOutput>) completionGenerator.next();
+						AsyncGenerator.Data<NodeOutput> completionData = (AsyncGenerator.Data<NodeOutput>) completionGenerator
+							.next();
 						if (completionData.isDone()) {
 							phase = 3; // 全部完成
 							logger.info("[{}] 完成消息输出完毕", nodeClass.getSimpleName());
@@ -281,7 +285,7 @@ public class StreamingChatGeneratorUtil {
 							return AsyncGenerator.Data.done(finalResult);
 						}
 						return completionData;
-						
+
 					default: // 全部完成
 						return AsyncGenerator.Data.done(finalResult);
 				}
@@ -299,29 +303,31 @@ public class StreamingChatGeneratorUtil {
 	 * @return 带完成通知的生成器
 	 */
 	@SuppressWarnings("unchecked")
-	public static AsyncGenerator<? extends NodeOutput> createGeneratorWithComposeCompletion(
-			Class<?> nodeClass, OverAllState state, Function<ChatResponse, Map<String, Object>> mapResultFunction,
-			Flux<ChatResponse> flux, String completionMessage) {
+	public static AsyncGenerator<? extends NodeOutput> createGeneratorWithComposeCompletion(Class<?> nodeClass,
+			OverAllState state, Function<ChatResponse, Map<String, Object>> mapResultFunction, Flux<ChatResponse> flux,
+			String completionMessage) {
 
 		// 创建主生成器
-		AsyncGenerator<NodeOutput> mainGenerator = (AsyncGenerator<NodeOutput>) createGenerator(nodeClass, state, mapResultFunction, flux);
-		
+		AsyncGenerator<NodeOutput> mainGenerator = (AsyncGenerator<NodeOutput>) createGenerator(nodeClass, state,
+				mapResultFunction, flux);
+
 		// 创建完成通知生成器
-		AsyncGenerator<NodeOutput> completionNotificationGenerator = (AsyncGenerator<NodeOutput>) createStreamPrintGenerator(completionMessage);
+		AsyncGenerator<NodeOutput> completionNotificationGenerator = (AsyncGenerator<NodeOutput>) createStreamPrintGenerator(
+				completionMessage);
 
 		// 使用 composeWith 在主生成器完成后执行完成通知
 		return new AsyncGenerator<NodeOutput>() {
 			@Override
 			public AsyncGenerator.Data<NodeOutput> next() {
 				AsyncGenerator.Data<NodeOutput> mainData = mainGenerator.next();
-				
+
 				if (mainData.isDone()) {
 					// 主生成器完成，组合完成通知生成器
 					return AsyncGenerator.Data.composeWith(completionNotificationGenerator, resultValue -> {
 						logger.info("[{}] 完成通知已输出", nodeClass.getSimpleName());
 					});
 				}
-				
+
 				return mainData;
 			}
 		};
@@ -331,17 +337,28 @@ public class StreamingChatGeneratorUtil {
 	 * 通用的流式处理建造者类，支持自定义状态消息和结果收集
 	 */
 	public static class StreamingProcessorBuilder {
+
 		private String startMessage;
+
 		private String completionMessage;
-		private Function<ChatResponse, String> contentExtractor = response -> response.getResult().getOutput().getText();
+
+		private Function<ChatResponse, String> contentExtractor = response -> response.getResult()
+			.getOutput()
+			.getText();
+
 		private String nodeName;
+
 		private OverAllState state;
+
 		private Function<String, Map<String, Object>> resultMapper;
+
 		private Function<OverAllState, Map<String, Object>> businessLogicExecutor;
+
 		private boolean trimResult = true;
-		
-		private StreamingProcessorBuilder() {}
-		
+
+		private StreamingProcessorBuilder() {
+		}
+
 		/**
 		 * 设置开始处理时的状态消息
 		 */
@@ -349,7 +366,7 @@ public class StreamingChatGeneratorUtil {
 			this.startMessage = startMessage;
 			return this;
 		}
-		
+
 		/**
 		 * 设置处理完成时的状态消息
 		 */
@@ -357,7 +374,7 @@ public class StreamingChatGeneratorUtil {
 			this.completionMessage = completionMessage;
 			return this;
 		}
-		
+
 		/**
 		 * 设置从 ChatResponse 中提取内容的方式
 		 */
@@ -365,7 +382,7 @@ public class StreamingChatGeneratorUtil {
 			this.contentExtractor = contentExtractor;
 			return this;
 		}
-		
+
 		/**
 		 * 设置节点名称
 		 */
@@ -373,7 +390,7 @@ public class StreamingChatGeneratorUtil {
 			this.nodeName = nodeName;
 			return this;
 		}
-		
+
 		/**
 		 * 设置节点类（自动提取类名作为节点名称）
 		 */
@@ -381,7 +398,7 @@ public class StreamingChatGeneratorUtil {
 			this.nodeName = nodeClass.getSimpleName();
 			return this;
 		}
-		
+
 		/**
 		 * 设置状态
 		 */
@@ -389,7 +406,7 @@ public class StreamingChatGeneratorUtil {
 			this.state = state;
 			return this;
 		}
-		
+
 		/**
 		 * 设置结果映射函数（将收集到的内容转换为最终返回的Map）
 		 */
@@ -397,7 +414,7 @@ public class StreamingChatGeneratorUtil {
 			this.resultMapper = resultMapper;
 			return this;
 		}
-		
+
 		/**
 		 * 设置是否对最终结果进行trim处理
 		 */
@@ -405,15 +422,16 @@ public class StreamingChatGeneratorUtil {
 			this.trimResult = trimResult;
 			return this;
 		}
-		
+
 		/**
 		 * 设置业务逻辑执行器（用于在mapResult中执行业务逻辑）
 		 */
-		public StreamingProcessorBuilder businessLogicExecutor(Function<OverAllState, Map<String, Object>> businessLogicExecutor) {
+		public StreamingProcessorBuilder businessLogicExecutor(
+				Function<OverAllState, Map<String, Object>> businessLogicExecutor) {
 			this.businessLogicExecutor = businessLogicExecutor;
 			return this;
 		}
-		
+
 		/**
 		 * 构建流式处理器
 		 * @param sourceFlux 源数据流
@@ -423,20 +441,20 @@ public class StreamingChatGeneratorUtil {
 			if (nodeName == null || state == null) {
 				throw new IllegalArgumentException("节点名称和状态不能为空");
 			}
-			
+
 			// 如果有业务逻辑执行器，优先使用它
 			if (businessLogicExecutor != null) {
 				return createGenerator(nodeName, state, response -> businessLogicExecutor.apply(state), sourceFlux);
 			}
-			
+
 			// 否则使用原有的结果映射逻辑
 			if (resultMapper == null) {
 				throw new IllegalArgumentException("结果映射函数不能为空");
 			}
-			
+
 			// 用于收集真实处理结果
 			final StringBuilder collectedResult = new StringBuilder();
-			
+
 			// 创建包装后的流
 			Flux<ChatResponse> wrappedFlux = Flux.create(emitter -> {
 				try {
@@ -444,37 +462,34 @@ public class StreamingChatGeneratorUtil {
 					if (startMessage != null && !startMessage.isEmpty()) {
 						emitter.next(ChatResponseUtil.createCustomStatusResponse(startMessage));
 					}
-					
+
 					// 2. 处理源数据流
-					sourceFlux
-						.doOnNext(response -> {
-							// 提取并收集真实内容
-							String content = contentExtractor.apply(response);
-							if (content != null) {
-								collectedResult.append(content);
-							}
-							// 将响应发送到流中供用户查看
-							emitter.next(response);
-						})
-						.doOnComplete(() -> {
-							// 3. 发送完成消息
-							if (completionMessage != null && !completionMessage.isEmpty()) {
-								emitter.next(ChatResponseUtil.createCustomStatusResponse(completionMessage));
-							}
-							logger.debug("[{}] 流式处理完成", nodeName);
-							emitter.complete();
-						})
-						.doOnError(error -> {
-							logger.error("[{}] 流式处理出错", nodeName, error);
-							emitter.error(error);
-						})
-						.subscribe();
-				} catch (Exception e) {
+					sourceFlux.doOnNext(response -> {
+						// 提取并收集真实内容
+						String content = contentExtractor.apply(response);
+						if (content != null) {
+							collectedResult.append(content);
+						}
+						// 将响应发送到流中供用户查看
+						emitter.next(response);
+					}).doOnComplete(() -> {
+						// 3. 发送完成消息
+						if (completionMessage != null && !completionMessage.isEmpty()) {
+							emitter.next(ChatResponseUtil.createCustomStatusResponse(completionMessage + "\n"));
+						}
+						logger.debug("[{}] 流式处理完成", nodeName);
+						emitter.complete();
+					}).doOnError(error -> {
+						logger.error("[{}] 流式处理出错", nodeName, error);
+						emitter.error(error);
+					}).subscribe();
+				}
+				catch (Exception e) {
 					logger.error("[{}] 流式处理启动失败", nodeName, e);
 					emitter.error(e);
 				}
 			});
-			
+
 			// 创建生成器，使用收集到的结果
 			return createGenerator(nodeName, state, response -> {
 				String finalResult = collectedResult.toString();
@@ -484,8 +499,9 @@ public class StreamingChatGeneratorUtil {
 				return resultMapper.apply(finalResult);
 			}, wrappedFlux);
 		}
+
 	}
-	
+
 	/**
 	 * 创建流式处理建造者实例
 	 * @return StreamingProcessorBuilder实例
@@ -493,7 +509,7 @@ public class StreamingChatGeneratorUtil {
 	public static StreamingProcessorBuilder createStreamingProcessor() {
 		return new StreamingProcessorBuilder();
 	}
-	
+
 	/**
 	 * 快速创建带有开始和结束消息的流式生成器
 	 * @param nodeClass 节点类
@@ -504,16 +520,11 @@ public class StreamingChatGeneratorUtil {
 	 * @param sourceFlux 源数据流
 	 * @return AsyncGenerator实例
 	 */
-	public static AsyncGenerator<? extends NodeOutput> createStreamingGeneratorWithMessages(
-			Class<?> nodeClass, 
-			OverAllState state,
-			String startMessage,
-			String completionMessage,
-			Function<String, Map<String, Object>> resultMapper,
-			Flux<ChatResponse> sourceFlux) {
-		
-		return createStreamingProcessor()
-			.nodeClass(nodeClass)
+	public static AsyncGenerator<? extends NodeOutput> createStreamingGeneratorWithMessages(Class<?> nodeClass,
+			OverAllState state, String startMessage, String completionMessage,
+			Function<String, Map<String, Object>> resultMapper, Flux<ChatResponse> sourceFlux) {
+
+		return createStreamingProcessor().nodeClass(nodeClass)
 			.state(state)
 			.startMessage(startMessage)
 			.completionMessage(completionMessage)
@@ -521,113 +532,114 @@ public class StreamingChatGeneratorUtil {
 			.build(sourceFlux);
 	}
 
-	public static AsyncGenerator<? extends NodeOutput> createStreamingGeneratorWithMessages(
-			Class<?> nodeClass,
-			OverAllState state,
-			Function<String, Map<String, Object>> resultMapper,
-			Flux<ChatResponse> sourceFlux) {
+	public static AsyncGenerator<? extends NodeOutput> createStreamingGeneratorWithMessages(Class<?> nodeClass,
+			OverAllState state, Function<String, Map<String, Object>> resultMapper, Flux<ChatResponse> sourceFlux) {
 
-		return createStreamingProcessor()
-				.nodeClass(nodeClass)
-				.state(state)
-				.resultMapper(resultMapper)
-				.build(sourceFlux);
+		return createStreamingProcessor().nodeClass(nodeClass)
+			.state(state)
+			.resultMapper(resultMapper)
+			.build(sourceFlux);
 	}
 
 	/**
-	 * 创建多阶段处理的流式生成器
-	 * 支持在显示流程中执行多个步骤，每个步骤都有自己的消息和逻辑
-	 * 
+	 * 创建多阶段处理的流式生成器 支持在显示流程中执行多个步骤，每个步骤都有自己的消息和逻辑
 	 * @param nodeClass 节点类
 	 * @param state 状态
 	 * @param processingSteps 处理步骤列表
 	 * @param finalResultMapper 最终结果映射函数
 	 * @return AsyncGenerator实例
 	 */
-	public static AsyncGenerator<? extends NodeOutput> createMultiStepGenerator(
-			Class<?> nodeClass,
-			OverAllState state,
+	public static AsyncGenerator<? extends NodeOutput> createMultiStepGenerator(Class<?> nodeClass, OverAllState state,
 			List<ProcessingStep> processingSteps,
 			Function<Map<String, Object>, Map<String, Object>> finalResultMapper) {
-		
+
 		// 创建多步骤显示流
 		Flux<ChatResponse> multiStepFlux = Flux.create(emitter -> {
 			try {
 				Map<String, Object> stepResults = new HashMap<>();
-				
+
 				for (ProcessingStep step : processingSteps) {
 					// 发送步骤开始消息
 					if (step.getMessage() != null) {
 						emitter.next(ChatResponseUtil.createCustomStatusResponse(step.getMessage()));
 					}
-					
+
 					// 执行步骤逻辑并收集结果
 					Map<String, Object> stepResult = step.getExecutor().apply(state);
 					stepResults.putAll(stepResult);
-					
+
 					// 发送步骤结果消息
 					if (step.getResultMessage() != null) {
 						String resultMsg = step.getResultMessage().apply(stepResult);
 						emitter.next(ChatResponseUtil.createCustomStatusResponse(resultMsg));
 					}
 				}
-				
+
 				emitter.complete();
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				emitter.error(e);
 			}
 		});
-		
-		return createStreamingProcessor()
-			.nodeClass(nodeClass)
+
+		return createStreamingProcessor().nodeClass(nodeClass)
 			.state(state)
-			.businessLogicExecutor(finalResultMapper != null ? 
-				currentState -> {
-					// 重新执行所有步骤以获取最终结果
-					Map<String, Object> allResults = new HashMap<>();
-					for (ProcessingStep step : processingSteps) {
-						allResults.putAll(step.getExecutor().apply(currentState));
-					}
-					return finalResultMapper.apply(allResults);
-				} :
-				currentState -> Map.of())
+			.businessLogicExecutor(finalResultMapper != null ? currentState -> {
+				// 重新执行所有步骤以获取最终结果
+				Map<String, Object> allResults = new HashMap<>();
+				for (ProcessingStep step : processingSteps) {
+					allResults.putAll(step.getExecutor().apply(currentState));
+				}
+				return finalResultMapper.apply(allResults);
+			} : currentState -> Map.of())
 			.build(multiStepFlux);
 	}
-	
+
 	/**
 	 * 处理步骤定义类
 	 */
 	public static class ProcessingStep {
+
 		private final String message;
+
 		private final Function<OverAllState, Map<String, Object>> executor;
+
 		private final Function<Map<String, Object>, String> resultMessage;
-		
-		public ProcessingStep(String message, 
-							  Function<OverAllState, Map<String, Object>> executor,
-							  Function<Map<String, Object>, String> resultMessage) {
+
+		public ProcessingStep(String message, Function<OverAllState, Map<String, Object>> executor,
+				Function<Map<String, Object>, String> resultMessage) {
 			this.message = message;
 			this.executor = executor;
 			this.resultMessage = resultMessage;
 		}
-		
+
 		public ProcessingStep(String message, Function<OverAllState, Map<String, Object>> executor) {
 			this(message, executor, null);
 		}
-		
+
 		// Getters
-		public String getMessage() { return message; }
-		public Function<OverAllState, Map<String, Object>> getExecutor() { return executor; }
-		public Function<Map<String, Object>, String> getResultMessage() { return resultMessage; }
-		
+		public String getMessage() {
+			return message;
+		}
+
+		public Function<OverAllState, Map<String, Object>> getExecutor() {
+			return executor;
+		}
+
+		public Function<Map<String, Object>, String> getResultMessage() {
+			return resultMessage;
+		}
+
 		// 静态工厂方法
 		public static ProcessingStep of(String message, Function<OverAllState, Map<String, Object>> executor) {
 			return new ProcessingStep(message, executor);
 		}
-		
-		public static ProcessingStep of(String message, 
-										Function<OverAllState, Map<String, Object>> executor,
-										Function<Map<String, Object>, String> resultMessage) {
+
+		public static ProcessingStep of(String message, Function<OverAllState, Map<String, Object>> executor,
+				Function<Map<String, Object>, String> resultMessage) {
 			return new ProcessingStep(message, executor, resultMessage);
 		}
+
 	}
+
 }
