@@ -15,7 +15,7 @@
 -->
 <template>
   <div class="home-page">
-    <!-- 简化的 Hello World 主页 -->
+    <!-- Simplified Hello World Home Page -->
     <div class="welcome-container">
       <!-- Background effects -->
       <div class="background-effects">
@@ -123,7 +123,7 @@ onMounted(() => {
   console.log('[Home] taskStore:', taskStore)
   console.log('[Home] examples:', examples)
   
-  // 标记已访问过 home 页面
+  // Mark that the home page has been visited
   taskStore.markHomeVisited()
   console.log('[Home] Home visited marked')
 })
@@ -156,11 +156,11 @@ const handleSend = () => {
   const taskContent = userInput.value.trim()
   console.log('[Home] Setting task to store:', taskContent)
   
-  // 使用 store 传递任务数据
+  // Use the store to pass task data
   taskStore.setTask(taskContent)
   console.log('[Home] Task set to store, current task:', taskStore.currentTask)
   
-  // 导航到 direct 页面
+  // Navigate to direct page
   const chatId = Date.now().toString()
   console.log('[Home] Navigating to direct page with chatId:', chatId)
   
@@ -178,11 +178,11 @@ const selectExample = (example: any) => {
   console.log('[Home] selectExample called with example:', example)
   console.log('[Home] Example prompt:', example.prompt)
   
-  // 直接使用示例的 prompt 发送任务
+  // Send the task directly using the example's prompt
   taskStore.setTask(example.prompt)
   console.log('[Home] Task set to store from example, current task:', taskStore.currentTask)
   
-  // 导航到 direct 页面
+  // Navigate to direct page
   const chatId = Date.now().toString()
   console.log('[Home] Navigating to direct page with chatId:', chatId)
   
