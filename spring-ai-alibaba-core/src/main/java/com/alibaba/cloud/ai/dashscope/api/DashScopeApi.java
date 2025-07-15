@@ -1128,14 +1128,16 @@ public class DashScopeApi {
 	 * @param enableThinking Whether to enable the model to think before generating
 	 * responses. This is useful for complex tasks where the model needs to reason through
 	 * the problem before providing an answer.
-	 * @param thinkingBudget The maximum length of the thinking process takes effect
-	 * when enable_thinking is true, and is suitable for Qwen3 full system model.
-	 * @param vlEnableImageHwOutput Whether to return the size after image scaling.
-	 * The model will scale the input image. When configured as True,
-	 * it will return the height and width of the image after being scaled.
-	 * When the streaming output is turned on, this information will be returned in the last data block (chunk)
+	 * @param thinkingBudget The maximum length of the thinking process takes effect when
+	 * enable_thinking is true, and is suitable for Qwen3 full system model.
+	 * @param vlEnableImageHwOutput Whether to return the size after image scaling. The
+	 * model will scale the input image. When configured as True, it will return the
+	 * height and width of the image after being scaled. When the streaming output is
+	 * turned on, this information will be returned in the last data block (chunk)
 	 * @param logprobs Whether to return the logarithmic probability of the output token.
-	 * @param topLogprobs Specifies the number of candidate tokens that return the maximum probability of the model when generated at each step. Value range: [0,5] Effective only if logprobs is true.
+	 * @param topLogprobs Specifies the number of candidate tokens that return the maximum
+	 * probability of the model when generated at each step. Value range: [0,5] Effective
+	 * only if logprobs is true.
 	 */
 	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1203,41 +1205,39 @@ public class DashScopeApi {
 	// @formatter:on
 
 	/**
-	 * Translation parameters that need to be configured when you use the translation model
-	 * TranslationMemory A pair of statements representing the source and target languages in translation memory。
-	 * Term Terminology pairs representing source and target languages
+	 * Translation parameters that need to be configured when you use the translation
+	 * model TranslationMemory A pair of statements representing the source and target
+	 * languages in translation memory。 Term Terminology pairs representing source and
+	 * target languages
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record TranslationOptions(
-			@JsonProperty("source_lang") String sourceLang,
-			@JsonProperty("target_lang") String targetLang,
-			@JsonProperty("terms") List<LanguagePair> terms,
-			@JsonProperty("tm_list") List<LanguagePair> tmList,
-			@JsonProperty("domains") String domains
-	) {
+	public record TranslationOptions(@JsonProperty("source_lang") String sourceLang,
+			@JsonProperty("target_lang") String targetLang, @JsonProperty("terms") List<LanguagePair> terms,
+			@JsonProperty("tm_list") List<LanguagePair> tmList, @JsonProperty("domains") String domains) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record LanguagePair(
-			@JsonProperty("source") String source,
-			@JsonProperty("target") String target
-	) {
+	public record LanguagePair(@JsonProperty("source") String source, @JsonProperty("target") String target) {
 	}
 
 	/**
-	 * OCR recognizes parameter configuration, where task is the built-in task name, and the supported options are: "text_recognition": general text recognition "key_information_extraction": information extraction "document_parsing": document parsing "table_parsing": table parsing "formula_recognition": formula recognition "multi_lan": multilingual recognition taskConfig is (optional) Used when the built-in task task is "key_information_extraction". where result_schema object (required) represents the field that needs to be extracted by the model. It can be any form of JSON structure and can be nested up to 3 layers of JSON objects. You just need to fill in the key of the JSON object and keep the value empty.
+	 * OCR recognizes parameter configuration, where task is the built-in task name, and
+	 * the supported options are: "text_recognition": general text recognition
+	 * "key_information_extraction": information extraction "document_parsing": document
+	 * parsing "table_parsing": table parsing "formula_recognition": formula recognition
+	 * "multi_lan": multilingual recognition taskConfig is (optional) Used when the
+	 * built-in task task is "key_information_extraction". where result_schema object
+	 * (required) represents the field that needs to be extracted by the model. It can be
+	 * any form of JSON structure and can be nested up to 3 layers of JSON objects. You
+	 * just need to fill in the key of the JSON object and keep the value empty.
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record OCRConfig(
-			@JsonProperty("task") String task,
-			@JsonProperty("task_config") List<TaskConfig> taskConfig
-	) {
+	public record OCRConfig(@JsonProperty("task") String task,
+			@JsonProperty("task_config") List<TaskConfig> taskConfig) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record TaskConfig(
-			@JsonProperty("result_schema") Object resultSchema
-	) {
+	public record TaskConfig(@JsonProperty("result_schema") Object resultSchema) {
 	}
 
 	/**
@@ -1252,32 +1252,28 @@ public class DashScopeApi {
 	/**
 	 * Message comprising the conversation.
 	 *
-	 * @param rawContent       The contents of the message. Can be either a {@link MediaContent}
-	 *                         or a {@link String}. The response message content is always a {@link String}.
-	 * @param role             The role of the messages author. Could be one of the {@link Role}
-	 *                         types.
-	 * @param name             An optional name for the participant. Provides the model information to
-	 *                         differentiate between participants of the same role. In case of Function calling,
-	 *                         the name is the function name that the message is responding to.
-	 * @param toolCallId       Tool call that this message is responding to. Only applicable for
-	 *                         the {@link Role#TOOL} role and null otherwise.
-	 * @param toolCalls        The tool calls generated by the model, such as function calls.
+	 * @param rawContent The contents of the message. Can be either a {@link MediaContent}
+	 * or a {@link String}. The response message content is always a {@link String}.
+	 * @param role The role of the messages author. Could be one of the {@link Role}
+	 * types.
+	 * @param name An optional name for the participant. Provides the model information to
+	 * differentiate between participants of the same role. In case of Function calling,
+	 * the name is the function name that the message is responding to.
+	 * @param toolCallId Tool call that this message is responding to. Only applicable for
+	 * the {@link Role#TOOL} role and null otherwise.
+	 * @param toolCalls The tool calls generated by the model, such as function calls.
 	 * @param reasoningContent The reasoning content of the message. <a href=
-	 *                         "https://help.aliyun.com/zh/model-studio/developer-reference/deepseek">DeepSeek
-	 *                         ReasoningContent</a> Applicable only for {@link Role#ASSISTANT} role and null
-	 *                         otherwise.
+	 * "https://help.aliyun.com/zh/model-studio/developer-reference/deepseek">DeepSeek
+	 * ReasoningContent</a> Applicable only for {@link Role#ASSISTANT} role and null
+	 * otherwise.
 	 */
 	// format: off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	public record ChatCompletionMessage(
-			@JsonProperty("content") Object rawContent,
-			@JsonProperty("role") Role role,
-			@JsonProperty("name") String name,
-			@JsonProperty("tool_call_id") String toolCallId,
+	public record ChatCompletionMessage(@JsonProperty("content") Object rawContent, @JsonProperty("role") Role role,
+			@JsonProperty("name") String name, @JsonProperty("tool_call_id") String toolCallId,
 			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
-			@JsonProperty("reasoning_content") String reasoningContent
-	) {
+			@JsonProperty("reasoning_content") String reasoningContent) {
 
 		/**
 		 * Get message content as String.
@@ -1311,9 +1307,8 @@ public class DashScopeApi {
 		/**
 		 * Create a chat completion message with the given content and role. All other
 		 * fields are null.
-		 *
 		 * @param content The contents of the message.
-		 * @param role    The role of the author of this message.
+		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
 
@@ -1353,10 +1348,10 @@ public class DashScopeApi {
 		 * An array of content parts with a defined type. Each MediaContent can be of
 		 * either "text" or "image_url" type. Not both.
 		 *
-		 * @param text  The text content of the message.
+		 * @param text The text content of the message.
 		 * @param image The image content of the message. You can pass multiple images
 		 * @param video The image list of video. by adding multiple image_url content
-		 *              parts. Image input is only supported when using the glm-4v model.
+		 * parts. Image input is only supported when using the glm-4v model.
 		 * @param audio The audio content of the message.
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1365,7 +1360,6 @@ public class DashScopeApi {
 				@JsonProperty("audio") String audio) {
 			/**
 			 * Shortcut constructor for a text content.
-			 *
 			 * @param text The text content of the message.
 			 */
 			public MediaContent(String text) {
@@ -1380,10 +1374,10 @@ public class DashScopeApi {
 		/**
 		 * The relevant tool call.
 		 *
-		 * @param id       The ID of the tool call. This ID must be referenced when you submit
-		 *                 the tool outputs in using the Submit tool outputs to run endpoint.
-		 * @param type     The type of tool call the output is required for. For now, this is
-		 *                 always function.
+		 * @param id The ID of the tool call. This ID must be referenced when you submit
+		 * the tool outputs in using the Submit tool outputs to run endpoint.
+		 * @param type The type of tool call the output is required for. For now, this is
+		 * always function.
 		 * @param function The function definition.
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1394,9 +1388,9 @@ public class DashScopeApi {
 		/**
 		 * The function definition.
 		 *
-		 * @param name      The name of the function.
+		 * @param name The name of the function.
 		 * @param arguments The arguments that the model expects you to pass to the
-		 *                  function.
+		 * function.
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record ChatCompletionFunction(@JsonProperty("name") String name,
@@ -1460,26 +1454,24 @@ public class DashScopeApi {
 	 * input.
 	 *
 	 * @param requestId A unique identifier for the chat completion.
-	 * @param output    chat completion output.
-	 * @param usage     Usage statistics for the completion request.
+	 * @param output chat completion output.
+	 * @param usage Usage statistics for the completion request.
 	 */
 	// format: off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record ChatCompletion(
-			@JsonProperty("request_id") String requestId,
-			@JsonProperty("output") ChatCompletionOutput output,
-			@JsonProperty("usage") TokenUsage usage
-	) {}
+	public record ChatCompletion(@JsonProperty("request_id") String requestId,
+			@JsonProperty("output") ChatCompletionOutput output, @JsonProperty("usage") TokenUsage usage) {
+	}
 	// format: on
 
 	/**
 	 * Represents a chat completion response returned by model, based on the provided
 	 * input.
 	 *
-	 * @param text    chat completion text if result format is text.
+	 * @param text chat completion text if result format is text.
 	 * @param choices A list of chat completion choices. Can be more than one if n is
-	 *                greater than 1. used in conjunction with the seed request parameter to understand
-	 *                when backend changes have been made that might impact determinism.
+	 * greater than 1. used in conjunction with the seed request parameter to understand
+	 * when backend changes have been made that might impact determinism.
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletionOutput(@JsonProperty("text") String text,
@@ -1489,7 +1481,7 @@ public class DashScopeApi {
 		 * Chat completion choice.
 		 *
 		 * @param finishReason The reason the model stopped generating tokens.
-		 * @param message      A chat completion message generated by the model.
+		 * @param message A chat completion message generated by the model.
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record Choice(@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
@@ -1502,46 +1494,36 @@ public class DashScopeApi {
 	 * Usage statistics for the completion request.
 	 *
 	 * @param outputTokens Number of tokens in the generated completion. Only applicable
-	 *                     for completion requests.
-	 * @param inputTokens  Number of tokens in the prompt.
-	 * @param totalTokens  Total number of tokens used in the request (prompt +
-	 *                     completion).
+	 * for completion requests.
+	 * @param inputTokens Number of tokens in the prompt.
+	 * @param totalTokens Total number of tokens used in the request (prompt +
+	 * completion).
 	 */
 	// format: off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record TokenUsage(
-			@JsonProperty("output_tokens") Integer outputTokens,
-			@JsonProperty("input_tokens") Integer inputTokens,
-			@JsonProperty("total_tokens") Integer totalTokens,
-			@JsonProperty("image_tokens") Integer imageTokens,
-			@JsonProperty("video_tokens ") Integer videoTokens,
+	public record TokenUsage(@JsonProperty("output_tokens") Integer outputTokens,
+			@JsonProperty("input_tokens") Integer inputTokens, @JsonProperty("total_tokens") Integer totalTokens,
+			@JsonProperty("image_tokens") Integer imageTokens, @JsonProperty("video_tokens ") Integer videoTokens,
 			@JsonProperty("audio_tokens ") Integer audioTokens,
 			@JsonProperty("prompt_tokens_details") Object promptTokensDetails,
 			@JsonProperty("input_tokens_details") InputTokenDetailed inputTokensDetails,
 			@JsonProperty("output_tokens_details") OutputTokenDetailed outputTokensDetails,
-			@JsonProperty("prompt_tokens_details") PromptTokenDetailed promptTokenDetailed
-	) {}
-
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record InputTokenDetailed(
-			@JsonProperty("text_tokens ") Integer text,
-			@JsonProperty("image_tokens ") Integer image,
-			@JsonProperty("image_tokens ") Integer audio
-	) {
+			@JsonProperty("prompt_tokens_details") PromptTokenDetailed promptTokenDetailed) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record OutputTokenDetailed(
-			@JsonProperty("text_tokens") Integer text,
+	public record InputTokenDetailed(@JsonProperty("text_tokens ") Integer text,
+			@JsonProperty("image_tokens ") Integer image, @JsonProperty("image_tokens ") Integer audio) {
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record OutputTokenDetailed(@JsonProperty("text_tokens") Integer text,
 			// Only qwen3 models.
-			@JsonProperty("reasoning_tokens") Integer image
-	) {
+			@JsonProperty("reasoning_tokens") Integer image) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record PromptTokenDetailed(
-			@JsonProperty("cached_tokens ") Integer cachedTokens
-	) {
+	public record PromptTokenDetailed(@JsonProperty("cached_tokens ") Integer cachedTokens) {
 	}
 	// format: on
 
@@ -1550,8 +1532,8 @@ public class DashScopeApi {
 	 * input.
 	 *
 	 * @param requestId A unique identifier for the chat completion.
-	 * @param output    chat completion output.
-	 * @param usage     Usage statistics for the completion request.
+	 * @param output chat completion output.
+	 * @param usage Usage statistics for the completion request.
 	 */
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1562,7 +1544,7 @@ public class DashScopeApi {
 	/**
 	 * Represents dashscope rerank request input
 	 *
-	 * @param query     query string for rerank.
+	 * @param query query string for rerank.
 	 * @param documents list of documents for rerank.
 	 */
 	public record RerankRequestInput(@JsonProperty("query") String query,
@@ -1572,8 +1554,8 @@ public class DashScopeApi {
 	/**
 	 * Represents rerank request parameters.
 	 *
-	 * @param topN            return top n documents, it will return all the documents if top n not
-	 *                        pass.
+	 * @param topN return top n documents, it will return all the documents if top n not
+	 * pass.
 	 * @param returnDocuments if need to return original documents
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1584,8 +1566,8 @@ public class DashScopeApi {
 	/**
 	 * Represents rerank request information.
 	 *
-	 * @param model      ID of the model to use.
-	 * @param input      dashscope rerank input.
+	 * @param model ID of the model to use.
+	 * @param input dashscope rerank input.
 	 * @param parameters rerank parameters.
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1596,9 +1578,9 @@ public class DashScopeApi {
 	/**
 	 * Represents rerank output result
 	 *
-	 * @param index          index of input document list
+	 * @param index index of input document list
 	 * @param relevanceScore relevance score between query and document
-	 * @param document       original document
+	 * @param document original document
 	 */
 	public record RerankResponseOutputResult(@JsonProperty("index") Integer index,
 			@JsonProperty("relevance_score") Double relevanceScore,
@@ -1616,8 +1598,8 @@ public class DashScopeApi {
 	/**
 	 * Represents rerank response
 	 *
-	 * @param output    rerank response output
-	 * @param usage     rerank token usage
+	 * @param output rerank response output
+	 * @param usage rerank token usage
 	 * @param requestId rerank request id
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1628,7 +1610,6 @@ public class DashScopeApi {
 
 	/**
 	 * Creates a model response for the given chat conversation.
-	 *
 	 * @param chatRequest The chat completion request.
 	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
 	 * and headers.
@@ -1639,10 +1620,9 @@ public class DashScopeApi {
 
 	/**
 	 * Creates a model response for the given chat conversation.
-	 *
-	 * @param chatRequest          The chat completion request.
+	 * @param chatRequest The chat completion request.
 	 * @param additionalHttpHeader Optional, additional HTTP headers to be added to the
-	 *                             request.
+	 * request.
 	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
 	 * and headers.
 	 */
