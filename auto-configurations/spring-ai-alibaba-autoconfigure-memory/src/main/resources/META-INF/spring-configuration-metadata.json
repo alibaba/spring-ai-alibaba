@@ -187,6 +187,65 @@
       "description": "Whether to initialize the database schema for the SQL Server chat memory repository.",
       "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.SqlServerChatMemoryProperties",
       "defaultValue": true
+    },
+    {
+      "name": "spring.ai.memory.tablestore.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable Tablestore chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.TablestoreChatMemoryProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.memory.tablestore.endpoint",
+      "type": "java.lang.String",
+      "description": "Tablestore Instance endpoint.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.TablestoreChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.memory.tablestore.instance-name",
+      "type": "java.lang.String",
+      "description": "Tablestore Instance instanceName.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.TablestoreChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.memory.tablestore.access-key-id",
+      "type": "java.lang.String",
+      "description": "Tablestore Instance accessKeyId.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.TablestoreChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.memory.tablestore.access-key-secret",
+      "type": "java.lang.String",
+      "description": "Tablestore Instance accessKeySecret.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.TablestoreChatMemoryProperties"
+    }, 
+    {
+      "name": "spring.ai.memory.tablestore.session-table-name",
+      "type": "java.lang.String",
+      "description": "Tablestore Instance sessionTableName.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.TablestoreChatMemoryProperties",
+      "defaultValue": "session"
+    },
+    {
+      "name": "spring.ai.memory.tablestore.session-secondary-index-name",
+      "type": "java.lang.String",
+      "description": "Tablestore Instance sessionSecondaryIndexName.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.TablestoreChatMemoryProperties",
+      "defaultValue": "session_secondary_index"
+    },
+    {
+      "name": "spring.ai.memory.tablestore.message-table-name",
+      "type": "java.lang.String",
+      "description": "Tablestore Instance messageTableName.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.TablestoreChatMemoryProperties",
+      "defaultValue": "message"
+    },
+    {
+      "name": "spring.ai.memory.tablestore.message-secondary-index-name",
+      "type": "java.lang.String",
+      "description": "Tablestore Instance messageSecondaryIndexName.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.TablestoreChatMemoryProperties",
+      "defaultValue": "message_secondary_index"
     }
   ],
   "hints": []
