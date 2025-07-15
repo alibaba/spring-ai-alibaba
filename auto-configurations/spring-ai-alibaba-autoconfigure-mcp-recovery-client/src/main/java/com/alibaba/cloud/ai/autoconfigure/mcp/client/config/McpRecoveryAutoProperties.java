@@ -31,8 +31,6 @@ public class McpRecoveryAutoProperties {
 
 	private Duration delay = Duration.ofSeconds(5L);
 
-	;
-
 	private Duration stop = Duration.ofSeconds(10L);
 
 	public Duration getDelay() {

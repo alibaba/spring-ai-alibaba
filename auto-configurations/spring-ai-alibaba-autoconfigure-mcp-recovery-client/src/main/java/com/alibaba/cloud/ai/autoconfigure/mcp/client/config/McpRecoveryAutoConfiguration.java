@@ -29,12 +29,8 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-
-import java.util.concurrent.ExecutorService;
 
 /**
  * @author yingzi
@@ -47,26 +43,14 @@ import java.util.concurrent.ExecutorService;
 @ConditionalOnProperty(prefix = McpRecoveryAutoProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 public class McpRecoveryAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean
-	public ThreadPoolTaskScheduler pingScheduler(ThreadPoolTaskScheduler pingScheduler) {
-		return pingScheduler;
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public ExecutorService reconnectExecutor(ExecutorService reconnectExecutor) {
-		return reconnectExecutor;
-	}
-
-	@Bean
+	@Bean(name = "mcpSyncRecovery")
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "SYNC",
 			matchIfMissing = true)
 	public McpSyncRecovery mcpSyncRecovery(McpRecoveryAutoProperties mcpRecoveryAutoProperties,
-			ThreadPoolTaskScheduler pingScheduler, ExecutorService reconnectExecutor,
-			ApplicationContext applicationContext) {
-		McpSyncRecovery mcpSyncRecovery = new McpSyncRecovery(mcpRecoveryAutoProperties, pingScheduler,
-				reconnectExecutor, applicationContext);
+			McpSseClientProperties mcpSseClientProperties, McpClientCommonProperties mcpClientCommonProperties,
+			McpSyncClientConfigurer mcpSyncClientConfigurer) {
+		McpSyncRecovery mcpSyncRecovery = new McpSyncRecovery(mcpRecoveryAutoProperties, mcpSseClientProperties,
+				mcpClientCommonProperties, mcpSyncClientConfigurer);
 		mcpSyncRecovery.init();
 		mcpSyncRecovery.startScheduledPolling();
 		mcpSyncRecovery.startReconnectTask();
@@ -74,13 +58,13 @@ public class McpRecoveryAutoConfiguration {
 		return mcpSyncRecovery;
 	}
 
-	@Bean
+	@Bean(name = "mcpAsyncRecovery")
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "ASYNC")
 	public McpAsyncRecovery mcpAsyncRecovery(McpRecoveryAutoProperties mcpRecoveryAutoProperties,
-			ThreadPoolTaskScheduler pingScheduler, ExecutorService reconnectExecutor,
-			ApplicationContext applicationContext) {
-		McpAsyncRecovery mcpAsyncRecovery = new McpAsyncRecovery(mcpRecoveryAutoProperties, pingScheduler,
-				reconnectExecutor, applicationContext);
+			McpSseClientProperties mcpSseClientProperties, McpClientCommonProperties mcpClientCommonProperties,
+			McpAsyncClientConfigurer mcpAsyncClientConfigurer) {
+		McpAsyncRecovery mcpAsyncRecovery = new McpAsyncRecovery(mcpRecoveryAutoProperties, mcpSseClientProperties,
+				mcpClientCommonProperties, mcpAsyncClientConfigurer);
 		mcpAsyncRecovery.init();
 		mcpAsyncRecovery.startScheduledPolling();
 		mcpAsyncRecovery.startReconnectTask();
