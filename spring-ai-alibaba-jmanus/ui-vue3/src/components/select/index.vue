@@ -70,7 +70,7 @@
 import {ref, computed} from 'vue'
 import {Icon} from '@iconify/vue'
 
-// 定义 props
+// Define props
 const props = defineProps<{
   modelValue?: string | null
   options: Array<{ id: string; name: string }>
@@ -79,30 +79,30 @@ const props = defineProps<{
   icon?: string
 }>()
 
-// 定义 emit
+// Define emit
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string | null): void
 }>()
 
-// 控制下拉框显示隐藏
+// Control the display and hiding of the dropdown
 const showDropdown = ref(false)
 
-// 当前选中的选项对象
+// Current selected option object
 const selectedOption = computed(() => {
   return props.options.find(opt => opt.id === props.modelValue)
 })
 
-// 判断是否已选中该选项
+// Check if the option is selected
 const isSelected = (option: { id: string }) => {
   return option.id === props.modelValue
 }
 
-// 切换下拉框
+// Toggle the dropdown
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
 }
 
-// 选择某个选项时触发
+// Triggered when an option is selected
 const selectOption = (option: { id: string }) => {
   emit('update:modelValue', option.id)
   showDropdown.value = false

@@ -72,7 +72,8 @@ const words: I18nType = {
     exitFullscreen: '退出全屏',
     parameters: '参数',
     thinking: '思考',
-    input: '输入'
+    input: '输入',
+    actions: '操作'
   },
 
   // 配置相关
@@ -201,9 +202,9 @@ const words: I18nType = {
       instructions: '使用说明：',
       instructionStep1: '找到你要用的mcp server的配置json：',
       instructionStep1Local: '本地(STDIO)',
-      instructionStep1LocalDesc: '可以在 mcp.so 上找到，需要你有Node.js环境并理解你要配置的json里面的每一个项，做对应调整比如配置ak',
-      instructionStep1Remote: '远程服务(SSE)',
-      instructionStep1RemoteDesc: 'mcp.higress.ai/ 上可以找到，有SSE和STREAMING两种，目前SSE协议更完备一些',
+      instructionStep1LocalDesc: '本地mcp server，目前市面上主流的是这个',
+      instructionStep1Remote: '远程服务(SSE/STREAMING)',
+      instructionStep1RemoteDesc: 'mcp.higress.ai/ 上可以找到，有SSE和STREAMING两种，目前STREAM协议更完备一些',
       instructionStep2: '将json配置复制到上面的输入框，本地选STUDIO，远程选STREAMING或SSE，提交',
       instructionStep3: '这样mcp tools就注册成功了。',
       instructionStep4: '然后需要在Agent配置里面，新建一个agent，然后增加指定你刚才添加的mcp tools，这样可以极大减少冲突，增强tools被agent选择的准确性',
@@ -211,6 +212,9 @@ const words: I18nType = {
       invalidJson: '配置JSON格式不正确，请检查语法',
       addFailed: '添加MCP服务器失败，请重试',
       deleteFailed: '删除MCP服务器失败，请重试',
+      deleteConfirm: '确定要删除这个MCP服务器配置吗？此操作不可恢复。',
+      addSuccess: '添加MCP服务器成功',
+      deleteSuccess: '删除MCP服务器成功',
       studioExample: '请输入MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
       sseExample: '请输入SSE MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}'
     },
@@ -570,6 +574,10 @@ const words: I18nType = {
     toolParameters: '工具参数',
     noStepDetails: '暂无详细步骤信息',
     scrollToBottom: '滚动到底部',
+    stepInfo: '步骤信息',
+    stepName: '步骤名称',
+    noExecutionInfo: '该步骤暂无详细执行信息',
+    subPlan: '子执行计划',
     // 步骤状态
     status: {
       completed: '已完成',

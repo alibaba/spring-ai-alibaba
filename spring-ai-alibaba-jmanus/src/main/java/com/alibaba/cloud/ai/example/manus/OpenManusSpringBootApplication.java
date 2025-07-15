@@ -16,15 +16,24 @@
 
 package com.alibaba.cloud.ai.example.manus;
 
+import com.microsoft.playwright.Playwright;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import java.io.IOException;
 
 @SpringBootApplication
 public class OpenManusSpringBootApplication {
 
-	public static void main(String[] args) {
-
-		SpringApplication.run(OpenManusSpringBootApplication.class, args);
+	public static void main(String[] args) throws IOException, InterruptedException {
+		if (args != null && args.length >= 1 && args[0].equals("playwright-init")) {
+			Playwright.create();
+			System.out.println("Playwright init finished");
+			System.exit(0);
+		}
+		else {
+			SpringApplication.run(OpenManusSpringBootApplication.class, args);
+		}
 	}
 
 }
