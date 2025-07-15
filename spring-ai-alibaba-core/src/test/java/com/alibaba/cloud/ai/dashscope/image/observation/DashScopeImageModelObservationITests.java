@@ -59,7 +59,8 @@ class DashScopeImageModelObservationTests {
 	public DashScopeImageModelObservationTests() {
 		this.observationRegistry = TestObservationRegistry.create();
 		this.imageModel = new DashScopeImageModel(
-				new DashScopeImageApi(null, "sk" + "-7a74bd9492b24f6f835a03e01affe294", null, RestClient.builder(), null, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER),
+				new DashScopeImageApi(null, "sk" + "-7a74bd9492b24f6f835a03e01affe294", null, RestClient.builder(),
+						null, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER),
 				observationRegistry);
 		DefaultImageModelObservationConvention defaultImageModelObservationConvention = new DefaultImageModelObservationConvention();
 		this.imageModel.setObservationConvention(defaultImageModelObservationConvention);
