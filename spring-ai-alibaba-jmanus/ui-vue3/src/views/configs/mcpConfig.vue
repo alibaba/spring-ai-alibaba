@@ -38,19 +38,19 @@
       </div>
     </div>
 
-    <!-- 加载状态 -->
+    <!-- Loading State -->
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
       <p>{{ t('config.loading') }}</p>
     </div>
 
-    <!-- MCP布局 -->
+    <!-- MCP Layout -->
     <div v-else class="mcp-layout">
-      <!-- MCP服务器列表 -->
+      <!-- MCP Server List -->
       <div class="mcp-table-container">
         <h3 class="section-title">{{ t('config.mcpConfig.serverList') }}</h3>
 
-        <!-- 空状态 -->
+        <!-- Empty State -->
         <div v-if="filteredMcpServers.length === 0" class="empty-state">
           <div class="empty-state-icon">📂</div>
           <div class="empty-state-text">
@@ -58,7 +58,7 @@
           </div>
         </div>
 
-        <!-- MCP服务器表格 -->
+        <!-- MCP Server Table -->
         <div v-else class="mcp-table-wrapper">
           <table class="mcp-table">
             <thead>
@@ -104,14 +104,14 @@
         </div>
       </div>
 
-      <!-- 添加MCP服务器表单 -->
+      <!-- Add MCP Server Form -->
       <div class="add-mcp-container">
         <div class="add-mcp-header">
           <h3 class="add-mcp-title">{{ t('config.mcpConfig.addMcpServer') }}</h3>
         </div>
 
         <div class="mcp-form">
-          <!-- 连接类型选择 -->
+          <!-- Connection Type Selection -->
           <div class="mcp-form-group">
             <label class="form-label">{{ t('config.mcpConfig.connectionType') }}：</label>
             <div class="connection-type-options">
@@ -154,7 +154,7 @@
             </div>
           </div>
 
-          <!-- JSON配置输入 -->
+          <!-- JSON Config Input -->
           <div class="mcp-form-group">
             <label class="form-label">{{ t('config.mcpConfig.configJsonLabel') }}</label>
             <textarea
@@ -165,7 +165,7 @@
             ></textarea>
           </div>
 
-          <!-- 操作按钮 -->
+          <!-- Action Buttons -->
           <div class="mcp-form-actions">
             <button @click="addMcpServer" class="action-btn add-btn" :disabled="loading">
               {{ t('common.add') }}
@@ -177,7 +177,7 @@
           </div>
         </div>
 
-        <!-- 使用说明 -->
+        <!-- Usage Instructions -->
         <div class="mcp-form-instructions">
           <h4>{{ t('config.mcpConfig.instructions') }}</h4>
           <ol>
@@ -195,7 +195,7 @@
       </div>
     </div>
 
-    <!-- 消息提示 -->
+    <!-- Message Toast -->
     <transition name="message-fade">
       <div v-if="message.show" :class="['message-toast', message.type]">
         {{ message.text }}
@@ -209,33 +209,33 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { McpApiService, type McpServer, type McpServerRequest } from '@/api/mcp-api-service'
 
-// 国际化
+// Internationalization
 const { t } = useI18n()
 
-// 响应式数据
+// Reactive data
 const loading = ref(false)
 const mcpServers = ref<McpServer[]>([])
 const searchQuery = ref('')
 
-// 新增MCP服务器表单
+// Add MCP Server Form
 const newMcpServer = reactive<McpServerRequest & { configJson: string }>({
   connectionType: 'STUDIO',
   configJson: ''
 })
 
-// 消息提示
+// Message Toast
 const message = reactive({
   show: false,
   text: '',
   type: 'success' as 'success' | 'error'
 })
 
-// 计算属性：是否可以提交
+// Computed property: Whether it can be submitted
 const canSubmit = computed(() => {
   return newMcpServer.configJson.trim().length > 0
 })
 
-// 计算属性：过滤的MCP服务器
+// Computed property: Filtered MCP servers
 const filteredMcpServers = computed(() => {
   if (!searchQuery.value.trim()) {
     return mcpServers.value
@@ -249,11 +249,11 @@ const filteredMcpServers = computed(() => {
   )
 })
 
-// 格式化配置信息
+// Format configuration information
 const formatConfig = (config: string): string => {
   if (!config) return ''
 
-  // 如果配置信息太长，截断显示
+  // If the configuration information is too long, truncate it for display
   if (config.length > 50) {
     return config.substring(0, 50) + '...'
   }
@@ -261,7 +261,7 @@ const formatConfig = (config: string): string => {
   return config
 }
 
-// 显示消息
+// Show message toast
 const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
   message.text = text
   message.type = type
@@ -272,7 +272,7 @@ const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
   }, 3000)
 }
 
-// 加载MCP服务器列表
+// Load MCP servers list
 const loadMcpServers = async () => {
   try {
     loading.value = true
@@ -285,14 +285,14 @@ const loadMcpServers = async () => {
   }
 }
 
-// 添加MCP服务器
+// Add MCP server
 const addMcpServer = async () => {
   if (!canSubmit.value) {
     showMessage(t('config.mcpConfig.configRequired'), 'error')
     return
   }
 
-  // 验证JSON格式
+  // Validate JSON format
   try {
     JSON.parse(newMcpServer.configJson)
   } catch {
@@ -313,7 +313,7 @@ const addMcpServer = async () => {
     if (result.success) {
       showMessage(t('config.mcpConfig.addSuccess'))
       resetForm()
-      await loadMcpServers() // 重新加载列表
+      await loadMcpServers() // Reload the list
     } else {
       showMessage(result.message || t('config.mcpConfig.addFailed'), 'error')
     }
@@ -325,7 +325,7 @@ const addMcpServer = async () => {
   }
 }
 
-// 删除MCP服务器
+// Delete MCP Server
 const removeMcpServer = async (id: number) => {
   if (!confirm(t('config.mcpConfig.deleteConfirm'))) {
     return
@@ -338,7 +338,7 @@ const removeMcpServer = async (id: number) => {
 
     if (result.success) {
       showMessage(t('config.mcpConfig.deleteSuccess'))
-      await loadMcpServers() // 重新加载列表
+      await loadMcpServers() // Reload the list
     } else {
       showMessage(result.message || t('config.mcpConfig.deleteFailed'), 'error')
     }
@@ -350,13 +350,13 @@ const removeMcpServer = async (id: number) => {
   }
 }
 
-// 重置表单
+// Reset form
 const resetForm = () => {
   newMcpServer.connectionType = 'STUDIO'
   newMcpServer.configJson = ''
 }
 
-// 组件挂载时加载数据
+// Load data when the component is mounted
 onMounted(() => {
   loadMcpServers()
 })
