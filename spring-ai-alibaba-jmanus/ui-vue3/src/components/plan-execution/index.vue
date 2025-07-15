@@ -17,7 +17,7 @@
   <div class="plan-execution-container">
     <ChatContainer
       ref="chatRef"
-      :initial-prompt="initialPrompt"
+      :initial-prompt="initialPrompt || ''"
       @user-message-send-requested="handleMessageSent"
       @plan-update="handlePlanUpdate"
       @plan-completed="handlePlanCompleted"
