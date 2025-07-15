@@ -174,17 +174,13 @@ public class AgentIntegrationUtil {
 			this.logger = logger;
 		}
 
-
 		public void logSmartAgentSuccess(String operation, String question, AgentType agentType) {
 			logger.info("{} 成功 - 问题: '{}', Agent类型: {}", operation, question, agentType);
 		}
 
-
-		public void logSmartAgentFailure(String operation, String question, String error,
-				String fallbackAction) {
+		public void logSmartAgentFailure(String operation, String question, String error, String fallbackAction) {
 			logger.warn("{} 失败 - 问题: '{}', 错误: {}, 回退: {}", operation, question, error, fallbackAction);
 		}
-
 
 		public void logSmartAgentConfigurationStatus(boolean enabled, int availableServices) {
 			if (enabled) {

@@ -54,7 +54,6 @@ public class AgentPromptTemplateUtil {
 			AgentType.DATA_ANALYSIS,
 			"数据分析报告：请引用官方统计数据和权威数据源，提供数据的时间范围和准确性说明。文末参考资料格式：\n- [数据来源 - 发布机构, 时间](URL)\n\n- [统计资料](URL)");
 
-
 	private static String loadFileContent(String filePath) {
 		try {
 			ClassPathResource resource = new ClassPathResource(filePath);
@@ -67,7 +66,6 @@ public class AgentPromptTemplateUtil {
 		}
 	}
 
-	
 	public static String getSystemPrompt(AgentType agentType) {
 		String filePath = PROMPT_FILE_PATHS.get(agentType);
 		if (filePath == null) {
@@ -84,7 +82,6 @@ public class AgentPromptTemplateUtil {
 	public static String getClassificationPrompt() {
 		return loadFileContent(CLASSIFIER_PROMPT_PATH);
 	}
-
 
 	public static String getCitationGuidance(AgentType agentType) {
 		return CITATION_GUIDANCE.getOrDefault(agentType,
