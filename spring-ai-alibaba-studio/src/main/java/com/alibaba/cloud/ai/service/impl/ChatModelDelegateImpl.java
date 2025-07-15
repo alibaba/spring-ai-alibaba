@@ -205,7 +205,8 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 					log.info("set image options, {}", objectMapper.writeValueAsString(imageOptions));
 
 					// todo: adapt new image api
-					var dashScopeImageApi = new DashScopeImageApi(DEFAULT_BASE_URL, key, "", RestClient.builder(), null, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+					var dashScopeImageApi = new DashScopeImageApi(DEFAULT_BASE_URL, key, "", RestClient.builder(), null,
+							RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 					dashScopeImageModel = new DashScopeImageModel(dashScopeImageApi, imageOptions);
 				}
 				catch (Exception e) {
