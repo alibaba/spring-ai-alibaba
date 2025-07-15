@@ -17,10 +17,10 @@
   <div class="mcp-config-panel">
     <div class="mcp-header">
       <div class="header-left">
-        <h2>MCP配置</h2>
+        <h2>{{ t('config.mcpConfig.title') }}</h2>
         <div class="mcp-stats">
           <span class="stat-item">
-            <span class="stat-label">总服务器:</span>
+            <span class="stat-label">{{ t('config.mcpConfig.mcpServers') }}:</span>
             <span class="stat-value">{{ mcpServers.length }}</span>
           </span>
         </div>
@@ -30,7 +30,7 @@
           <input
               v-model="searchQuery"
               type="text"
-              placeholder="搜索MCP服务器..."
+              :placeholder="t('config.mcpSearch')"
               class="search-input"
           />
           <span class="search-icon">🔍</span>
@@ -41,20 +41,20 @@
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
-      <p>正在加载MCP服务器...</p>
+      <p>{{ t('config.loading') }}</p>
     </div>
 
     <!-- MCP布局 -->
     <div v-else class="mcp-layout">
       <!-- MCP服务器列表 -->
       <div class="mcp-table-container">
-        <h3 class="section-title">已配置的MCP服务器</h3>
+        <h3 class="section-title">{{ t('config.mcpConfig.serverList') }}</h3>
 
         <!-- 空状态 -->
         <div v-if="filteredMcpServers.length === 0" class="empty-state">
           <div class="empty-state-icon">📂</div>
           <div class="empty-state-text">
-            {{ searchQuery ? '未找到匹配的MCP服务器' : '暂无MCP服务器配置' }}
+            {{ searchQuery ? t('config.notFound') : t('config.mcpConfig.noServers') }}
           </div>
         </div>
 
@@ -64,10 +64,10 @@
             <thead>
             <tr>
               <th>ID</th>
-              <th>服务器名称</th>
-              <th>连接类型</th>
-              <th>连接配置</th>
-              <th>操作</th>
+              <th>{{ t('agent.name') }}</th>
+              <th>{{ t('config.mcpConfig.connectionType') }}</th>
+              <th>{{ t('config.mcpConfig.configJsonLabel') }}</th>
+              <th>{{ t('common.actions') }}</th>
             </tr>
             </thead>
             <tbody>
@@ -95,7 +95,7 @@
                     class="action-btn delete-btn"
                     :disabled="loading"
                 >
-                  删除
+                  {{ t('common.delete') }}
                 </button>
               </td>
             </tr>
@@ -107,13 +107,13 @@
       <!-- 添加MCP服务器表单 -->
       <div class="add-mcp-container">
         <div class="add-mcp-header">
-          <h3 class="add-mcp-title">添加MCP服务器</h3>
+          <h3 class="add-mcp-title">{{ t('config.mcpConfig.addMcpServer') }}</h3>
         </div>
 
         <div class="mcp-form">
           <!-- 连接类型选择 -->
           <div class="mcp-form-group">
-            <label class="form-label">连接类型：</label>
+            <label class="form-label">{{ t('config.mcpConfig.connectionType') }}：</label>
             <div class="connection-type-options">
               <div class="connection-type-option">
                 <input
@@ -124,7 +124,7 @@
                 />
                 <label for="mcp-connection-type-studio" class="radio-label">
                   <span class="radio-title">STUDIO</span>
-                  <span class="connection-type-desc">本地mcp server，目前市面上主流的是这个</span>
+                  <span class="connection-type-desc">{{ t('config.mcpConfig.instructionStep1LocalDesc') }}</span>
                 </label>
               </div>
               <div class="connection-type-option">
@@ -136,7 +136,7 @@
                 />
                 <label for="mcp-connection-type-sse" class="radio-label">
                   <span class="radio-title">SSE</span>
-                  <span class="connection-type-desc">通过http server等提供的，目前网络上比较少见</span>
+                  <span class="connection-type-desc">{{ t('config.mcpConfig.instructionStep1RemoteDesc') }}</span>
                 </label>
               </div>
               <div class="connection-type-option">
@@ -148,7 +148,7 @@
                 />
                 <label for="mcp-connection-type-streaming" class="radio-label">
                   <span class="radio-title">Streamable HTTP</span>
-                  <span class="connection-type-desc">基于HTTP的流式传输协议，支持实时数据交换</span>
+                  <span class="connection-type-desc">{{ t('config.mcpConfig.instructionStep1RemoteDesc') }}</span>
                 </label>
               </div>
             </div>
@@ -156,7 +156,7 @@
 
           <!-- JSON配置输入 -->
           <div class="mcp-form-group">
-            <label class="form-label">mcp json配置：</label>
+            <label class="form-label">{{ t('config.mcpConfig.configJsonLabel') }}</label>
             <textarea
                 v-model="newMcpServer.configJson"
                 :placeholder="t('config.mcpConfig.configJsonPlaceholder')"
@@ -179,17 +179,17 @@
 
         <!-- 使用说明 -->
         <div class="mcp-form-instructions">
-          <h4>使用说明：</h4>
+          <h4>{{ t('config.mcpConfig.instructions') }}</h4>
           <ol>
-            <li>找到你要用的mcp server的配置json：
+            <li>{{ t('config.mcpConfig.instructionStep1') }}
               <ul class="indented-list">
-                <li><strong>本地(STDIO)</strong>：可以在<a href="https://mcp.so" target="_blank" rel="noopener">mcp.so</a>上找到，需要你有Node.js环境并理解你要配置的json里面的每一个项，做对应调整比如配置ak</li>
-                <li><strong>远程服务(SSE)</strong>：<a href="https://mcp.higress.ai/" target="_blank" rel="noopener">mcp.higress.ai/</a>上可以找到，有SSE和STREAMING两种，目前SSE协议更完备一些</li>
+                <li><strong>{{ t('config.mcpConfig.instructionStep1Local') }}</strong>：{{ t('config.mcpConfig.instructionStep1LocalDesc') }}</li>
+                <li><strong>{{ t('config.mcpConfig.instructionStep1Remote') }}</strong>：{{ t('config.mcpConfig.instructionStep1RemoteDesc') }}</li>
               </ul>
             </li>
-            <li>将json配置复制到上面的输入框，本地选STUDIO，远程选STREAMING或SSE，提交</li>
-            <li>这样mcp tools就注册成功了。</li>
-            <li>然后需要在Agent配置里面，新建一个agent，然后增加指定你刚才添加的mcp tools，这样可以极大减少冲突，增强tools被agent选择的准确性</li>
+            <li>{{ t('config.mcpConfig.instructionStep2') }}</li>
+            <li>{{ t('config.mcpConfig.instructionStep3') }}</li>
+            <li>{{ t('config.mcpConfig.instructionStep4') }}</li>
           </ol>
         </div>
       </div>
@@ -279,7 +279,7 @@ const loadMcpServers = async () => {
     mcpServers.value = await McpApiService.getAllMcpServers()
   } catch (error) {
     console.error('加载MCP服务器列表失败:', error)
-    showMessage('加载MCP服务器列表失败', 'error')
+    showMessage(t('config.basicConfig.loadConfigFailed'), 'error')
   } finally {
     loading.value = false
   }
@@ -311,7 +311,7 @@ const addMcpServer = async () => {
     const result = await McpApiService.addMcpServer(requestData)
 
     if (result.success) {
-      showMessage('添加MCP服务器成功')
+      showMessage(t('config.mcpConfig.addSuccess'))
       resetForm()
       await loadMcpServers() // 重新加载列表
     } else {
@@ -327,7 +327,7 @@ const addMcpServer = async () => {
 
 // 删除MCP服务器
 const removeMcpServer = async (id: number) => {
-  if (!confirm('确定要删除这个MCP服务器配置吗？此操作不可恢复。')) {
+  if (!confirm(t('config.mcpConfig.deleteConfirm'))) {
     return
   }
 
@@ -337,7 +337,7 @@ const removeMcpServer = async (id: number) => {
     const result = await McpApiService.removeMcpServer(id)
 
     if (result.success) {
-      showMessage('删除MCP服务器成功')
+      showMessage(t('config.mcpConfig.deleteSuccess'))
       await loadMcpServers() // 重新加载列表
     } else {
       showMessage(result.message || t('config.mcpConfig.deleteFailed'), 'error')
