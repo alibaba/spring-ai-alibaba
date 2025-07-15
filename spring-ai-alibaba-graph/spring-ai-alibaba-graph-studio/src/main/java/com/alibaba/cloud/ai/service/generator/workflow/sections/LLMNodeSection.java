@@ -43,7 +43,7 @@ public class LLMNodeSection implements NodeSection {
 		LLMNodeData d = (LLMNodeData) node.getData();
 		List<String> promptList = new ArrayList<>();
 		List<PromptTemplate> promptTemplates = null;
-		if(d.getPromptTemplate() != null){
+		if (d.getPromptTemplate() != null) {
 			promptTemplates = d.getPromptTemplate();
 			for (PromptTemplate promptTemplate : promptTemplates) {
 				if (promptTemplate.getRole() != null && promptTemplate.getText() != null) {
@@ -52,10 +52,10 @@ public class LLMNodeSection implements NodeSection {
 			}
 		}
 
-		if(d.getSystemPromptTemplate() != null){
+		if (d.getSystemPromptTemplate() != null) {
 			promptList.add(transformPlaceholders(d.getSystemPromptTemplate()));
 		}
-		if(d.getUserPromptTemplate()!= null) {
+		if (d.getUserPromptTemplate() != null) {
 			promptList.add(transformPlaceholders(d.getUserPromptTemplate()));
 		}
 
@@ -68,20 +68,24 @@ public class LLMNodeSection implements NodeSection {
 		for (PromptTemplate promptTemplate : promptTemplates) {
 			if (promptTemplate.getRole() != null && promptTemplate.getText() != null) {
 				if (promptTemplate.getRole().equals("system")) {
-					sb.append(String.format(".systemPromptTemplate(\"%s\")%n", escape(transformPlaceholders(promptTemplate.getText()))));
+					sb.append(String.format(".systemPromptTemplate(\"%s\")%n",
+							escape(transformPlaceholders(promptTemplate.getText()))));
 				}
 				else if (promptTemplate.getRole().equals("user")) {
-					sb.append(String.format(".userPromptTemplate(\"%s\")%n", escape(transformPlaceholders(promptTemplate.getText()))));
+					sb.append(String.format(".userPromptTemplate(\"%s\")%n",
+							escape(transformPlaceholders(promptTemplate.getText()))));
 				}
 			}
 		}
 
 		if (d.getSystemPromptTemplate() != null) {
-			sb.append(String.format(".systemPromptTemplate(\"%s\")%n", escape(transformPlaceholders(d.getSystemPromptTemplate()))));
+			sb.append(String.format(".systemPromptTemplate(\"%s\")%n",
+					escape(transformPlaceholders(d.getSystemPromptTemplate()))));
 		}
 
 		if (d.getUserPromptTemplate() != null) {
-			sb.append(String.format(".userPromptTemplate(\"%s\")%n", escape(transformPlaceholders(d.getUserPromptTemplate()))));
+			sb.append(String.format(".userPromptTemplate(\"%s\")%n",
+					escape(transformPlaceholders(d.getUserPromptTemplate()))));
 		}
 
 		if (d.getSystemPromptTemplateKey() != null) {
@@ -94,8 +98,7 @@ public class LLMNodeSection implements NodeSection {
 
 		List<String> params = extractKeysFromList(promptList);
 		if (!params.isEmpty()) {
-			Map<String, String> paramMap = params.stream()
-				.collect(Collectors.toMap(k -> k, k -> ""));
+			Map<String, String> paramMap = params.stream().collect(Collectors.toMap(k -> k, k -> ""));
 
 			String joined = paramMap.entrySet()
 				.stream()
@@ -104,7 +107,6 @@ public class LLMNodeSection implements NodeSection {
 
 			sb.append(String.format(".params(Map.of(%s))%n", joined));
 		}
-
 
 		if (d.getParamsKey() != null) {
 			sb.append(String.format(".paramsKey(\"%s\")%n", escape(d.getParamsKey())));
@@ -155,7 +157,8 @@ public class LLMNodeSection implements NodeSection {
 
 		return sb.toString();
 	}
-	private static  List<String> extractKeysFromList(List<String> inputList) {
+
+	private static List<String> extractKeysFromList(List<String> inputList) {
 		List<String> result = new ArrayList<>();
 		Pattern pattern = Pattern.compile("\\{(\\w+)}");
 
@@ -167,8 +170,10 @@ public class LLMNodeSection implements NodeSection {
 		}
 		return result;
 	}
+
 	private static String transformPlaceholders(String input) {
-		if (input == null) return null;
+		if (input == null)
+			return null;
 
 		Pattern pattern = Pattern.compile("\\{\\{#.*?\\.(.*?)#}}");
 		Matcher matcher = pattern.matcher(input);

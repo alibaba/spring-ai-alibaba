@@ -329,4 +329,5 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 			data.setUserPromptTemplate(fixRefs.apply(data.getUserPromptTemplate()));
 		}
 	}
+
 }
