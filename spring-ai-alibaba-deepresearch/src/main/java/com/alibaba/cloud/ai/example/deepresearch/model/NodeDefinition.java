@@ -22,29 +22,8 @@ package com.alibaba.cloud.ai.example.deepresearch.model;
  * @author ViliamSun
  * @since 1.0.0
  */
-public class NodeDefinition {
+public record NodeDefinition (String name, String description) {
 
-	// The name of the node.
-	private String name;
-
-	// The description of the node.
-	private String description;
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
 
 	public record SelectionNode(
 			// The reasoning behind the selection.

@@ -40,8 +40,8 @@ public class AgenticConfig implements InitializingBean {
 
 	public AgenticConfig(List<AbstractNode> nodes) {
 		this.agentDescriptions = nodes.stream()
-			.collect(Collectors.toMap(node -> node.getNodeDefinition().getName(),
-					node -> node.getNodeDefinition().getDescription()));
+			.collect(Collectors.toMap(node -> node.getNodeDefinition().name(),
+					node -> node.getNodeDefinition().description()));
 	}
 
 	@Override
