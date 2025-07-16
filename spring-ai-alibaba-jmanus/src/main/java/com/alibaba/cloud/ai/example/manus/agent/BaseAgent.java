@@ -271,7 +271,8 @@ public abstract class BaseAgent {
 				params.setAgentDescription(getDescription());
 				params.setMaxSteps(maxSteps);
 				params.setActualSteps(currentStep);
-				params.setStatus(stuck ? ExecutionStatus.IDLE : (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
+				params.setStatus(stuck ? ExecutionStatus.IDLE
+						: (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
 				params.setErrorMessage(errorMessage);
 				params.setResult(finalResult);
 				params.setStartTime(startTime);
@@ -298,7 +299,8 @@ public abstract class BaseAgent {
 			params.setAgentDescription(getDescription());
 			params.setMaxSteps(maxSteps);
 			params.setActualSteps(currentStep);
-			params.setStatus(stuck ? ExecutionStatus.IDLE : (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
+			params.setStatus(
+					stuck ? ExecutionStatus.IDLE : (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
 			params.setErrorMessage(errorMessage);
 			params.setResult(finalResult);
 			params.setStartTime(startTime);

@@ -49,7 +49,6 @@ import java.util.List;
  * @see JsonSerializable
  */
 
-
 public class AgentExecutionRecord {
 
 	// Unique identifier of the record
@@ -257,15 +256,9 @@ public class AgentExecutionRecord {
 
 	@Override
 	public String toString() {
-		return "AgentExecutionRecord{" +
-				"id='" + id + '\'' +
-				", conversationId='" + conversationId + '\'' +
-				", agentName='" + agentName + '\'' +
-				", status='" + status + '\'' +
-				", currentStep=" + currentStep +
-				", maxSteps=" + maxSteps +
-				", stepsCount=" + (thinkActSteps != null ? thinkActSteps.size() : 0) +
-				'}';
+		return "AgentExecutionRecord{" + "id='" + id + '\'' + ", conversationId='" + conversationId + '\''
+				+ ", agentName='" + agentName + '\'' + ", status='" + status + '\'' + ", currentStep=" + currentStep
+				+ ", maxSteps=" + maxSteps + ", stepsCount=" + (thinkActSteps != null ? thinkActSteps.size() : 0) + '}';
 	}
 
 	/**

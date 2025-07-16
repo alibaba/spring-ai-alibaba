@@ -224,15 +224,15 @@ public class PlanningFactory {
 		// Create FunctionToolCallback for each tool
 		for (ToolCallBiFunctionDef<?> toolDefinition : toolDefinitions) {
 			FunctionToolCallback<?, ToolExecuteResult> functionToolcallback = FunctionToolCallback
-					.builder(toolDefinition.getName(), toolDefinition)
-					.description(toolDefinition.getDescription())
-					.inputSchema(toolDefinition.getParameters())
-					.inputType(toolDefinition.getInputType())
-					.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
-					.build();
+				.builder(toolDefinition.getName(), toolDefinition)
+				.description(toolDefinition.getDescription())
+				.inputSchema(toolDefinition.getParameters())
+				.inputType(toolDefinition.getInputType())
+				.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
+				.build();
 			toolDefinition.setCurrentPlanId(planId);
 			toolDefinition.setRootPlanId(rootPlanId);
-			 log.info("Registering tool: {}", toolDefinition.getName());
+			log.info("Registering tool: {}", toolDefinition.getName());
 			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
 					toolDefinition);
 			toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
@@ -244,11 +244,11 @@ public class PlanningFactory {
 	public RestClient.Builder createRestClient() {
 		// Create RequestConfig and set the timeout (10 minutes for all timeouts)
 		RequestConfig requestConfig = RequestConfig.custom()
-				.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection
-																		// timeout
-				.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.build();
+			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection
+																	// timeout
+			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.build();
 
 		// Create CloseableHttpClient and apply the configuration
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
