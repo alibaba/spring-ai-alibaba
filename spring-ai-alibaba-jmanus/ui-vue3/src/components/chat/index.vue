@@ -1138,7 +1138,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
     }
 
     // Generate natural, human-like responses
-    message.content = generateCompletedPlanResponse(finalResponse, planDetails)
+    message.content = generateCompletedPlanResponse(finalResponse)
 
     console.log('[ChatComponent] Updated completed message:', message.content)
   }
@@ -1178,28 +1178,10 @@ const generateNaturalResponse = (text: string): string => {
 }
 
 // Generate a natural response for a completed plan
-const generateCompletedPlanResponse = (text: string, planDetails: any): string => {
+const generateCompletedPlanResponse = (text: string): string => {
   if (!text) return '任务已完成！还有什么我可以帮您的吗？'
-
-  // If it's already in a natural conversation format, ensure it has an appropriate ending
-  if (text.includes('我') || text.includes('您')) {
-    if (
-      !text.includes('?') &&
-      !text.includes('？') &&
-      !text.includes('。') &&
-      !text.includes('！')
-    ) {
-      return `${text}。还有其他需要帮助的地方吗？`
-    }
-    return text
-  }
-
-  // Generate a response based on the plan type
-  const hasSteps = planDetails?.steps?.length > 0
-  if (hasSteps) {
-    return `很好！我已经完成了您的任务：${text}\n\n所有步骤都已成功执行。还有什么我可以帮您处理的吗？`
-  } else {
-    return `${text}\n\n希望这个回答对您有帮助！如果还有其他问题，请随时告诉我。`
+  else{
+    return `${text}`;
   }
 }
 
