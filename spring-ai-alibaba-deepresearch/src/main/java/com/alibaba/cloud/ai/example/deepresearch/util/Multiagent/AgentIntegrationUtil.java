@@ -17,10 +17,10 @@
 package com.alibaba.cloud.ai.example.deepresearch.util.Multiagent;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.SmartAgentDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelper;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,10 +37,10 @@ public class AgentIntegrationUtil {
 	/**
 	 * 创建智能Agent选择辅助器
 	 */
-	public static SmartAgentSelectionHelper createSelectionHelper(SmartAgentProperties smartAgentProperties,
-			SmartAgentDispatcher smartAgentDispatcher, QuestionClassifierService questionClassifierService,
-			SearchPlatformSelectionService searchPlatformSelectionService) {
-		return new SmartAgentSelectionHelper(smartAgentProperties, smartAgentDispatcher, questionClassifierService,
+	public static SmartAgentSelectionHelperService createSelectionHelper(SmartAgentProperties smartAgentProperties,
+																		 SmartAgentDispatcherService smartAgentDispatcher, QuestionClassifierService questionClassifierService,
+																		 SearchPlatformSelectionService searchPlatformSelectionService) {
+		return new SmartAgentSelectionHelperService(smartAgentProperties, smartAgentDispatcher, questionClassifierService,
 				searchPlatformSelectionService);
 	}
 

@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.dispatcher;
+package com.alibaba.cloud.ai.example.deepresearch.service.mutiagent;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentDispatchResult;
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentType;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
 import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.SmartAgentUtil;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -42,9 +40,9 @@ import java.util.List;
 @Component
 @ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
 		matchIfMissing = false)
-public class SmartAgentDispatcher {
+public class SmartAgentDispatcherService {
 
-	private static final Logger logger = LoggerFactory.getLogger(SmartAgentDispatcher.class);
+	private static final Logger logger = LoggerFactory.getLogger(SmartAgentDispatcherService.class);
 
 	@Autowired
 	private QuestionClassifierService questionClassifierService;

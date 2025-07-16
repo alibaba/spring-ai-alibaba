@@ -39,7 +39,7 @@ import com.alibaba.cloud.ai.example.deepresearch.node.RewriteAndMultiQueryNode;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.SmartAgentDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
 
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
@@ -136,7 +136,7 @@ public class DeepResearchConfiguration {
 	private SearchPlatformSelectionService searchPlatformSelectionService;
 
 	@Autowired(required = false)
-	private SmartAgentDispatcher smartAgentDispatcher;
+	private SmartAgentDispatcherService smartAgentDispatcher;
 
 	@Autowired(required = false)
 	private SmartAgentProperties smartAgentProperties;

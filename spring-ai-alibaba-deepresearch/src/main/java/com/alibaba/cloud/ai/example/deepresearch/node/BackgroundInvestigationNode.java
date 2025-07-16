@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
 import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelper;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -57,7 +57,7 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final SearchFilterService searchFilterService;
 
-	private final SmartAgentSelectionHelper smartAgentSelectionHelper;
+	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
 
 	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
 			SearchFilterService searchFilterService, QuestionClassifierService questionClassifierService,

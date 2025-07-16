@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.example.deepresearch.service.mutiagent;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.SmartAgentDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentDispatchResult;
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentSelectionResult;
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentType;
@@ -36,21 +35,21 @@ import java.util.List;
  * @author Makoto
  * @since 2025/01/28
  */
-public class SmartAgentSelectionHelper {
+public class SmartAgentSelectionHelperService {
 
-	private static final Logger logger = LoggerFactory.getLogger(SmartAgentSelectionHelper.class);
+	private static final Logger logger = LoggerFactory.getLogger(SmartAgentSelectionHelperService.class);
 
 	private final SmartAgentProperties smartAgentProperties;
 
-	private final SmartAgentDispatcher smartAgentDispatcher;
+	private final SmartAgentDispatcherService smartAgentDispatcher;
 
 	private final QuestionClassifierService questionClassifierService;
 
 	private final SearchPlatformSelectionService searchPlatformSelectionService;
 
-	public SmartAgentSelectionHelper(SmartAgentProperties smartAgentProperties,
-			SmartAgentDispatcher smartAgentDispatcher, QuestionClassifierService questionClassifierService,
-			SearchPlatformSelectionService searchPlatformSelectionService) {
+	public SmartAgentSelectionHelperService(SmartAgentProperties smartAgentProperties,
+											SmartAgentDispatcherService smartAgentDispatcher, QuestionClassifierService questionClassifierService,
+											SearchPlatformSelectionService searchPlatformSelectionService) {
 		this.smartAgentProperties = smartAgentProperties;
 		this.smartAgentDispatcher = smartAgentDispatcher;
 		this.questionClassifierService = questionClassifierService;
