@@ -11,10 +11,6 @@
 
 📚 Developer Docs: [Quick Start (EN)](./README-dev-en.md) | [开发者快速入门 (中文)](./README-dev.md)
 
-**A comprehensive implementation of the OpenManus multi-agent framework, natively integrated with MCP and supporting the plan-act paradigm, featuring unlimited context capabilities**
-
-*Designed to be easily integrated into existing Java business systems to provide enhanced AI capabilities*
-
 [About](#-about) • [Quick Start](#-quick-start) • [Contributing](#-contributing)
 
 </div>
@@ -23,12 +19,13 @@
 
 ---
 
-## 🎯 About
+##  About
 
 JManus is a Java implementation of Manus, currently used in many applications within Alibaba Group. It is primarily used for handling exploratory tasks that require a certain degree of determinism, such as quickly finding data from massive datasets and converting it into a single row in a database, or analyzing logs and issuing alerts.
 
+JManus also provides HTTP service invocation capabilities, making it suitable for integration into existing projects. For details, please refer to the developer quick start guide.
 
-## JManus Product Features
+## 🎯 JManus Product Features
 
 ### - 🤖 **Pure Java Manus Implementation**: 
 
