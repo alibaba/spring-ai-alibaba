@@ -15,6 +15,7 @@
  */
 
 
+import { reactive } from 'vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import type { PlanTemplate } from '@/types/plan-template'
 
@@ -336,5 +337,5 @@ export class SidebarStore {
   }
 }
 
-export const sidebarStore = new SidebarStore()
+export const sidebarStore = reactive(new SidebarStore())
 

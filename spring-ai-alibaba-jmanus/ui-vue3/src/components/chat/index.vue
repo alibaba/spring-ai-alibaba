@@ -1202,7 +1202,7 @@ const handlePlanCompleted = (rootPlanId: string) => {
 
   console.log('[ChatComponent] Plan details:', details);
 
-  if (details?.rootPlanId) {
+  if (details.rootPlanId) {
     const messageIndex = messages.value.findIndex(
       m => m.planExecution?.currentPlanId === details.rootPlanId
     );
