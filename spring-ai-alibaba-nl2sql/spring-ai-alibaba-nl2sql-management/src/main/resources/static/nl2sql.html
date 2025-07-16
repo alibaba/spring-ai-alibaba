@@ -1,139 +1,857 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
-    <title>NL2SQL Stream Search</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NL2SQL 自然语言转SQL演示</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap');
+        :root {
+            --primary-color: #1890ff;
+            --secondary-color: #52c41a;
+            --background-color: #f5f8fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #e8e8e8;
+            --code-bg: #282c34;
+            --code-color: #abb2bf;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --radius: 8px;
+        }
 
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
+        * {
             margin: 0;
-            padding: 2em;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 800px;
-            background: #fff;
-            padding: 2em;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        h1 {
-            color: #2c3e50;
-            font-weight: 500;
-        }
-
-        #query {
-            width: calc(100% - 22px);
-            padding: 12px;
-            font-size: 1em;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            margin-bottom: 1em;
+            padding: 0;
             box-sizing: border-box;
         }
 
-        #search {
-            padding: 12px 20px;
-            font-size: 1em;
-            background-color: #3498db;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background-color: var(--card-bg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+
+        .search-button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: var(--radius);
+            font-size: 1rem;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        #search:hover {
-            background-color: #2980b9;
+        .search-button:hover {
+            background-color: #40a9ff;
         }
 
-        h2 {
-            text-align: left;
-            color: #34495e;
-            font-weight: 400;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.5em;
-            margin-top: 2em;
+        .search-button:active {
+            background-color: #096dd9;
         }
 
-        #results {
-            margin-top: 1em;
-            padding: 1em;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            min-height: 150px;
-            max-height: 400px; /* Added max-height */
-            overflow-y: auto; /* Added overflow-y */
+        .result-container {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .result-header {
+            padding: 1rem 1.5rem;
             background-color: #fafafa;
-            text-align: left;
-            font-family: 'Courier New', Courier, monospace;
-            overflow-wrap: break-word;
-            word-wrap: break-word;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result-content {
+            padding: 1.5rem;
+            min-height: 200px;
+            max-height: 600px;
+            overflow-y: auto;
+            line-height: 1.7;
+        }
+
+        .result-section {
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-content {
+            background-color: #f9f9f9;
+            border-radius: var(--radius);
+            padding: 1rem;
+            border: 1px solid var(--border-color);
         }
 
         pre {
-            background-color: #2d2d2d;
-            color: #f8f8f2;
-            padding: 1em;
-            border-radius: 5px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
+            background-color: var(--code-bg);
+            color: var(--code-color);
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 0;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
         }
 
         code {
-            font-family: 'Courier New', Courier, monospace;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        }
+
+        .sql-keyword {
+            color: #c678dd;
+        }
+
+        .sql-function {
+            color: #61afef;
+        }
+
+        .sql-string {
+            color: #98c379;
+        }
+
+        .sql-number {
+            color: #d19a66;
+        }
+
+        .sql-operator {
+            color: #56b6c2;
+        }
+
+        .sql-comment {
+            color: #5c6370;
+            font-style: italic;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+            font-style: italic;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 20px;
+            background-color: #e6f7ff;
+            color: var(--primary-color);
+            margin-left: 0.5rem;
+        }
+
+        .badge-success {
+            background-color: #f6ffed;
+            color: var(--secondary-color);
+        }
+
+        .badge-warning {
+            background-color: #fffbe6;
+            color: #faad14;
+        }
+
+        .badge-error {
+            background-color: #fff2f0;
+            color: #ff4d4f;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1rem;
+            color: #999;
+            text-align: center;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #ccc;
+        }
+
+        .empty-text {
+            font-size: 1rem;
+            max-width: 400px;
+        }
+
+        .example-queries {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .example-query {
+            padding: 0.5rem 1rem;
+            background-color: #f0f5ff;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #d6e4ff;
+        }
+
+        .example-query:hover {
+            background-color: #d6e4ff;
+        }
+
+        .copy-button {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .copy-button:hover {
+            color: var(--primary-color);
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        .table th {
+            background-color: #fafafa;
+            font-weight: 500;
+        }
+
+        .table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* 打字机效果相关样式 */
+        .typewriter-text {
+            display: inline-block;
+            overflow: hidden;
+            border-right: 0.15em solid var(--primary-color);
+            white-space: nowrap;
+            margin: 0;
+            letter-spacing: 0.05em;
+            animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+        }
+
+        @keyframes typing {
+            from {
+                width: 0
+            }
+
+            to {
+                width: 100%
+            }
+        }
+
+        @keyframes blink-caret {
+
+            from,
+            to {
+                border-color: transparent
+            }
+
+            50% {
+                border-color: var(--primary-color)
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .search-container {
+                flex-direction: column;
+            }
+
+            .search-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* 解释内容的打字机效果 */
+        .typing-effect {
+            overflow: hidden;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 0.5em;
+            height: 1em;
+            background-color: var(--primary-color);
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
         }
     </style>
 </head>
+
 <body>
+    <div class="header">
+        <div class="container">
+            <div class="title">
+                <i class="bi bi-database"></i> NL2SQL 自然语言转SQL演示
+            </div>
+            <div class="subtitle">输入自然语言问题，系统将自动转换为SQL查询语句</div>
+        </div>
+    </div>
+
     <div class="container">
-        <h1>NL2SQL Stream Search</h1>
-        <input type="text" id="query" placeholder="Enter your natural language query...">
-        <button id="search">查询</button>
-        <h2>Results:</h2>
-        <div id="results"></div>
+        <div class="search-container">
+            <input type="text" id="query" class="search-input" placeholder="例如：查询销售额前10的产品..." autofocus>
+            <button id="search" class="search-button">
+                <i class="bi bi-search"></i> 查询
+            </button>
+        </div>
+
+        <div class="result-container">
+            <div class="result-header">
+                <div class="result-title">
+                    <i class="bi bi-file-earmark-text"></i> 查询结果
+                </div>
+                <div id="status"></div>
+            </div>
+            <div class="result-content" id="results">
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-chat-square-text"></i>
+                    </div>
+                    <div class="empty-text">
+                        输入自然语言问题，查看系统如何将其转换为SQL查询语句
+                    </div>
+                    <div class="example-queries">
+                        <div class="example-query">查询销售额最高的5个产品</div>
+                        <div class="example-query">统计各部门员工数量</div>
+                        <div class="example-query">查找去年订单金额超过1万的客户</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const queryInput = document.getElementById('query');
         const searchButton = document.getElementById('search');
         const resultsDiv = document.getElementById('results');
+        const statusDiv = document.getElementById('status');
+        const exampleQueries = document.querySelectorAll('.example-query');
 
         let eventSource;
         let fullContent = '';
+        let processingContent = {};
+        let typingTimers = {};
 
-        const performSearch = () => {
-            const query = queryInput.value;
-            if (!query) {
-                alert('Please enter a query.');
+        // 高亮SQL语法
+        function highlightSQL(sql) {
+            // 简单的SQL语法高亮
+            return sql
+                .replace(/\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|HAVING|JOIN|LEFT|RIGHT|INNER|OUTER|UNION|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|AS|ON|AND|OR|NOT|IN|BETWEEN|LIKE|IS NULL|IS NOT NULL|ASC|DESC|DISTINCT|LIMIT)\b/gi,
+                    match => `<span class="sql-keyword">${match}</span>`)
+                .replace(/\b(COUNT|SUM|AVG|MIN|MAX|COALESCE|CASE|WHEN|THEN|ELSE|END)\b/gi,
+                    match => `<span class="sql-function">${match}</span>`)
+                .replace(/'([^']*)'/g,
+                    match => `<span class="sql-string">${match}</span>`)
+                .replace(/\b(\d+)\b/g,
+                    match => `<span class="sql-number">${match}</span>`)
+                .replace(/(\(|\)|\+|\-|\*|\/|=|<>|<|>|<=|>=)/g,
+                    match => `<span class="sql-operator">${match}</span>`)
+                .replace(/--.*$/gm,
+                    match => `<span class="sql-comment">${match}</span>`);
+        }
+
+        // 格式化JSON
+        function formatJSON(json) {
+            try {
+                const obj = JSON.parse(json);
+                return JSON.stringify(obj, null, 2);
+            } catch (e) {
+                return json;
+            }
+        }
+
+        // 处理流式内容
+        function processStreamContent(content) {
+            // 初始化处理内容对象 - 只在第一次初始化
+            if (processingContent.initialized !== true) {
+                processingContent = {
+                    rewrite: '',
+                    sql: '',
+                    sqlRaw: '',
+                    explanation: '',
+                    result: '',
+                    initialized: true,
+                    resultFound: false,
+                    lastContentLength: 0
+                };
+            }
+
+            // 如果内容没有变化，直接返回上次的处理结果
+            if (content.length === processingContent.lastContentLength) {
+                return {
+                    rewrite: processingContent.rewrite,
+                    sql: processingContent.sql,
+                    sqlRaw: processingContent.sqlRaw,
+                    explanation: processingContent.explanation,
+                    result: processingContent.result
+                };
+            }
+
+            // 更新内容长度
+            processingContent.lastContentLength = content.length;
+
+            // 提取需求重写部分 - 通常在内容开始部分
+            const rewriteRegex = /(需求类型：《.*?》\s*语种类型：《.*?》\s*需求内容：.*?)(?=\n\n|\n$|$)/;
+            const rewriteMatch = content.match(rewriteRegex);
+            if (rewriteMatch && rewriteMatch[1]) {
+                processingContent.rewrite = rewriteMatch[1];
+            }
+
+            // 提取SQL部分 - 查找所有SQL块，取最后一个（最终结果）
+            const sqlRegex = /```sql\s*([\s\S]*?)```/g;
+            let sqlMatch;
+            let lastSqlMatch = null;
+            let lastSqlContent = null;
+
+            while ((sqlMatch = sqlRegex.exec(content)) !== null) {
+                lastSqlMatch = sqlMatch[0];
+                lastSqlContent = sqlMatch[1];
+            }
+
+            if (lastSqlMatch) {
+                // 保存原始SQL和高亮后的SQL
+                processingContent.sqlRaw = lastSqlContent;
+                processingContent.sql = `<pre>${highlightSQL(lastSqlContent)}</pre>`;
+            }
+
+            // 提取查询结果 - 通常在SQL之后，包含表格或结果描述
+            // 首先检查是否有表格数据
+            let resultFound = false;
+
+            // 查找表格格式的结果 - 更精确的表格识别
+            const tableRegex = /(?:查询结果[:：]|执行结果[:：]|返回\s*\d+\s*条记录|共\s*\d+\s*条数据|表\s*\d+\s*行)?([\s\S]*?)(\|[\s\S]*?\|\s*\n\|\s*[-:]+\s*\|[\s\S]*?)(?=\n\n|\n```|\n$|$)/;
+            const tableMatch = content.match(tableRegex);
+
+            if (tableMatch && tableMatch[2] && tableMatch[2].includes('|')) {
+                // 处理表格内容
+                let resultContent = tableMatch[0];
+                const mdTableMatch = resultContent.match(/\|\s*(.*?)\s*\|\n\|\s*[-:]+\s*\|\s*[-:]+\s*\|[\s\S]*?(?=\n\n|\n$|$)/g);
+
+                if (mdTableMatch) {
+                    mdTableMatch.forEach(table => {
+                        const htmlTable = convertMarkdownTableToHTML(table);
+                        resultContent = resultContent.replace(table, htmlTable);
+                    });
+                }
+
+                processingContent.result = resultContent;
+                resultFound = true;
+            }
+
+            // 如果没有找到表格，查找结果描述文本
+            if (!resultFound) {
+                const resultTextRegex = /(?:查询结果[:：]|执行结果[:：]|返回\s*\d+\s*条记录|共\s*\d+\s*条数据|表\s*\d+\s*行)([\s\S]*?)(?=\n\n|\n```|\n$|$)/;
+                const resultTextMatch = content.match(resultTextRegex);
+
+                if (resultTextMatch) {
+                    processingContent.result = resultTextMatch[0];
+                    resultFound = true;
+                }
+            }
+
+            // 标记是否找到结果
+            processingContent.resultFound = resultFound;
+
+            // 提取解释内容 - 使用更智能的方法
+            // 首先创建一个临时的内容副本
+            let tempContent = content;
+
+            // 移除已识别的部分
+            if (lastSqlMatch) {
+                tempContent = tempContent.replace(lastSqlMatch, '');
+            }
+
+            if (processingContent.rewrite) {
+                tempContent = tempContent.replace(processingContent.rewrite, '');
+            }
+
+            if (processingContent.result && processingContent.resultFound) {
+                tempContent = tempContent.replace(processingContent.result, '');
+            }
+
+            // 清理并提取解释内容
+            const explanationLines = tempContent.split('\n')
+                .filter(line => line.trim() !== '')
+                .filter(line => !line.includes('```'))
+                .filter(line => !line.match(/^需求类型|^语种类型|^需求内容/))
+                .filter(line => !line.match(/^\|.*\|$/)) // 排除可能的表格行
+                .filter(line => !line.match(/^[-+]{3,}$/)); // 排除分隔线
+
+            if (explanationLines.length > 0) {
+                // 合并解释内容，避免重复
+                const newExplanation = explanationLines.join('\n');
+
+                // 如果有新内容，更新解释
+                if (newExplanation.trim() !== '') {
+                    // 智能合并解释内容，避免重复
+                    if (!processingContent.explanation) {
+                        processingContent.explanation = newExplanation;
+                    } else {
+                        // 检查新内容是否已包含在现有内容中
+                        if (!processingContent.explanation.includes(newExplanation)) {
+                            // 检查现有内容是否已包含在新内容中
+                            if (newExplanation.includes(processingContent.explanation)) {
+                                processingContent.explanation = newExplanation;
+                            } else {
+                                // 两者都不包含对方，追加新内容
+                                processingContent.explanation += '\n' + newExplanation;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 返回处理后的各部分内容，而不是HTML
+            return {
+                rewrite: processingContent.rewrite,
+                sql: processingContent.sql,
+                sqlRaw: processingContent.sqlRaw,
+                explanation: processingContent.explanation,
+                result: processingContent.result
+            };
+        }
+
+        // 将Markdown表格转换为HTML表格
+        function convertMarkdownTableToHTML(markdownTable) {
+            const lines = markdownTable.trim().split('\n');
+            if (lines.length < 3) return markdownTable; // 不是有效的表格
+
+            // 确保第一行是表头，第二行是分隔符
+            if (!lines[1].includes('---') && !lines[1].includes(':-')) {
+                return markdownTable; // 不符合Markdown表格格式
+            }
+
+            const headers = lines[0].split('|')
+                .filter(cell => cell !== undefined)
+                .map(cell => cell.trim());
+
+            // 移除空的首尾单元格（如果存在）
+            if (headers[0] === '') headers.shift();
+            if (headers[headers.length - 1] === '') headers.pop();
+
+            let html = '<table class="table">\n<thead>\n<tr>\n';
+
+            // 添加表头
+            headers.forEach(header => {
+                html += `<th>${header}</th>\n`;
+            });
+
+            html += '</tr>\n</thead>\n<tbody>\n';
+
+            // 添加数据行（跳过表头和分隔行）
+            for (let i = 2; i < lines.length; i++) {
+                if (!lines[i].trim()) continue; // 跳过空行
+
+                const rowCells = lines[i].split('|')
+                    .filter(cell => cell !== undefined)
+                    .map(cell => cell.trim());
+
+                // 移除空的首尾单元格（如果存在）
+                if (rowCells[0] === '') rowCells.shift();
+                if (rowCells[rowCells.length - 1] === '') rowCells.pop();
+
+                // 确保单元格数量与表头一致
+                if (rowCells.length > 0) {
+                    html += '<tr>\n';
+
+                    // 填充单元格，如果数据不足则留空
+                    for (let j = 0; j < headers.length; j++) {
+                        const cellContent = j < rowCells.length ? rowCells[j] : '';
+                        html += `<td>${cellContent}</td>\n`;
+                    }
+
+                    html += '</tr>\n';
+                }
+            }
+
+            html += '</tbody>\n</table>';
+            return html;
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard(button) {
+            const content = button.getAttribute('data-content');
+            navigator.clipboard.writeText(content).then(() => {
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-check2"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalIcon;
+                }, 2000);
+            });
+        }
+
+        // 打字机效果函数
+        function typeText(element, text, speed = 10, startIndex = 0) {
+            // 清除之前的计时器
+            if (typingTimers[element.id]) {
+                clearTimeout(typingTimers[element.id]);
+            }
+
+            // 如果已经完成打字，直接返回
+            if (startIndex >= text.length) {
                 return;
             }
 
+            // 添加一个字符
+            element.textContent = text.substring(0, startIndex + 1);
+
+            // 设置下一个字符的计时器
+            typingTimers[element.id] = setTimeout(() => {
+                typeText(element, text, speed, startIndex + 1);
+            }, speed);
+        }
+
+        // 初始化UI结构
+        function initUI() {
+            // 清除加载状态和之前的内容
             resultsDiv.innerHTML = '';
+
+            // 创建固定的DOM结构
+            resultsDiv.innerHTML = `
+                <div id="result-sections-container">
+                    <div id="rewrite-section" class="result-section" style="display: none;">
+                        <div class="section-title">
+                            <i class="bi bi-pencil-square"></i> 需求理解
+                            <span class="badge">重写</span>
+                        </div>
+                        <div class="section-content">
+                            <div id="rewrite-content"></div>
+                        </div>
+                    </div>
+                    <div id="sql-section" class="result-section" style="display: none;">
+                        <div class="section-title">
+                            <i class="bi bi-code-square"></i> 生成的SQL
+                            <span class="badge badge-success">SQL</span>
+                            <button class="copy-button" id="copy-sql-button" style="display: none;">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <div class="section-content" id="sql-content"></div>
+                    </div>
+                    <div id="explanation-section" class="result-section" style="display: none;">
+                        <div class="section-title">
+                            <i class="bi bi-info-circle"></i> 解释说明
+                        </div>
+                        <div class="section-content">
+                            <div id="explanation-content" class="typing-effect"></div>
+                            <span id="typing-cursor" class="typing-cursor"></span>
+                        </div>
+                    </div>
+                    <div id="result-section" class="result-section" style="display: none;">
+                        <div class="section-title">
+                            <i class="bi bi-table"></i> 查询结果
+                            <span class="badge badge-success">数据</span>
+                        </div>
+                        <div class="section-content" id="result-content"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 执行搜索
+        const performSearch = () => {
+            const query = queryInput.value;
+            if (!query) {
+                alert('请输入查询内容');
+                return;
+            }
+
+            // 重置状态
             fullContent = '';
+            processingContent = {};
+
+            // 清除之前的计时器
+            Object.keys(typingTimers).forEach(key => {
+                clearTimeout(typingTimers[key]);
+            });
+            typingTimers = {};
+
+            statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div> 正在处理...</div>';
+
             if (eventSource) {
                 eventSource.close();
             }
 
+            // 初始化UI结构
+            initUI();
+
+            // 显示加载状态
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading';
+            loadingDiv.innerHTML = '<div class="spinner"></div> 正在分析您的问题...';
+            resultsDiv.appendChild(loadingDiv);
+
             eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(query)}`);
 
             eventSource.onopen = () => {
-                console.log('Connection to stream opened.');
-                resultsDiv.innerHTML = 'Stream opened...';
+                console.log('连接已建立');
+            };
+
+            // 保存上一次的内容，用于比较变化
+            let lastContents = {
+                rewrite: '',
+                explanation: '',
+                sql: '',
+                sqlRaw: '',
+                result: ''
             };
 
             eventSource.onmessage = (event) => {
+                // 移除加载状态
+                const loadingElement = resultsDiv.querySelector('.loading');
+                if (loadingElement) {
+                    loadingElement.remove();
+                }
+
                 let currentContent = '';
                 try {
                     currentContent = JSON.parse(event.data);
@@ -142,28 +860,106 @@
                 }
                 fullContent += currentContent;
 
+                // 处理内容
                 const sanitizedContent = fullContent.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                const parts = sanitizedContent.split('```');
-                let html = '';
-                for (let i = 0; i < parts.length; i++) {
-                    const part = parts[i];
-                    if (i % 2 === 1) {
-                        html += `<pre><code>${part}</code></pre>`;
-                    } else {
-                        html += part.replace(/\n/g, '<br>');
-                    }
+                const { rewrite, sql, explanation, result, sqlRaw } = processStreamContent(sanitizedContent);
+
+                // 更新需求重写部分
+                if (rewrite && rewrite !== lastContents.rewrite) {
+                    const rewriteSection = document.getElementById('rewrite-section');
+                    const rewriteContent = document.getElementById('rewrite-content');
+
+                    rewriteSection.style.display = 'block';
+                    rewriteContent.innerHTML = rewrite.replace(/\n/g, '<br>');
+                    lastContents.rewrite = rewrite;
                 }
-                resultsDiv.innerHTML = html;
+
+                // 更新SQL部分
+                if (sql && sql !== lastContents.sql) {
+                    const sqlSection = document.getElementById('sql-section');
+                    const sqlContent = document.getElementById('sql-content');
+                    const copyButton = document.getElementById('copy-sql-button');
+
+                    sqlSection.style.display = 'block';
+                    sqlContent.innerHTML = sql;
+
+                    if (sqlRaw) {
+                        copyButton.style.display = 'inline-block';
+                        copyButton.setAttribute('data-content', sqlRaw);
+                        copyButton.onclick = function () {
+                            copyToClipboard(this);
+                        };
+                    }
+
+                    lastContents.sql = sql;
+                    lastContents.sqlRaw = sqlRaw;
+                }
+
+                // 更新解释部分 - 使用打字机效果
+                if (explanation && explanation !== lastContents.explanation) {
+                    const explanationSection = document.getElementById('explanation-section');
+                    const explanationContent = document.getElementById('explanation-content');
+                    const typingCursor = document.getElementById('typing-cursor');
+
+                    explanationSection.style.display = 'block';
+
+                    // 如果是新内容，使用打字机效果
+                    if (!lastContents.explanation || explanation.length > lastContents.explanation.length) {
+                        // 显示打字机光标
+                        typingCursor.style.display = 'inline-block';
+
+                        // 计算新增的文本
+                        const newText = explanation.replace(/\n/g, ' ');
+
+                        // 使用打字机效果显示文本
+                        explanationContent.textContent = '';
+                        typeText(explanationContent, newText, 5);
+
+                        // 打字完成后隐藏光标
+                        setTimeout(() => {
+                            typingCursor.style.display = 'none';
+                            // 将换行符转换为<br>标签
+                            explanationContent.innerHTML = explanation.replace(/\n/g, '<br>');
+                        }, newText.length * 5 + 100);
+                    }
+
+                    lastContents.explanation = explanation;
+                }
+
+                // 更新结果部分
+                if (result && result !== lastContents.result) {
+                    const resultSection = document.getElementById('result-section');
+                    const resultContent = document.getElementById('result-content');
+
+                    resultSection.style.display = 'block';
+                    resultContent.innerHTML = result.replace(/\n/g, '<br>');
+
+                    lastContents.result = result;
+                }
+
+                // 滚动到底部
                 resultsDiv.scrollTop = resultsDiv.scrollHeight;
             };
 
             eventSource.onerror = (err) => {
-                console.error('EventSource failed:', err);
-                resultsDiv.innerHTML += '<br>Error connecting to stream.';
+                console.error('EventSource错误:', err);
+                statusDiv.innerHTML = '<span class="badge badge-error">连接错误</span>';
                 eventSource.close();
             };
+
+            eventSource.addEventListener('complete', function (e) {
+                statusDiv.innerHTML = '<span class="badge badge-success">查询完成</span>';
+                eventSource.close();
+
+                // 隐藏打字机光标
+                const typingCursor = document.getElementById('typing-cursor');
+                if (typingCursor) {
+                    typingCursor.style.display = 'none';
+                }
+            });
         };
 
+        // 事件监听
         searchButton.addEventListener('click', performSearch);
 
         queryInput.addEventListener('keyup', (event) => {
@@ -171,6 +967,15 @@
                 performSearch();
             }
         });
+
+        // 示例查询点击事件
+        exampleQueries.forEach(example => {
+            example.addEventListener('click', () => {
+                queryInput.value = example.textContent;
+                performSearch();
+            });
+        });
     </script>
 </body>
+
 </html>
