@@ -42,6 +42,7 @@ import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 
@@ -58,10 +59,12 @@ class DashScopeImageModelObservationTests {
 
 	public DashScopeImageModelObservationTests() {
 		this.observationRegistry = TestObservationRegistry.create();
-		this.imageModel = new DashScopeImageModel(
-				new DashScopeImageApi(null, "sk" + "-7a74bd9492b24f6f835a03e01affe294", null, RestClient.builder(),
-						null, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER),
-				observationRegistry);
+		this.imageModel = new DashScopeImageModel(DashScopeImageApi.builder()
+			.apiKey("sk" + "-7a74bd9492b24f6f835a03e01affe294")
+			.restClientBuilder(RestClient.builder())
+			.baseUrl(DEFAULT_BASE_URL)
+			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+			.build(), observationRegistry);
 		DefaultImageModelObservationConvention defaultImageModelObservationConvention = new DefaultImageModelObservationConvention();
 		this.imageModel.setObservationConvention(defaultImageModelObservationConvention);
 	}

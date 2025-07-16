@@ -81,6 +81,10 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private NacosMcpOperationService nacosMcpOperationService;
 
+	private McpServerDetailInfo serverDetailInfo;
+
+	private boolean success = false;
+
 	public NacosMcpRegister(NacosMcpOperationService nacosMcpOperationService, McpAsyncServer mcpAsyncServer,
 			NacosMcpProperties nacosMcpProperties, NacosMcpRegistryProperties nacosMcpRegistryProperties,
 			McpServerProperties mcpServerProperties, String type) {
@@ -124,10 +128,12 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 					log.error("check Tools compatible false", e);
 					throw e;
 				}
+				this.serverDetailInfo = serverDetailInfo;
 				if (this.serverCapabilities.tools() != null) {
 					updateTools(serverDetailInfo);
 				}
 				subscribe();
+				this.success = true;
 				return;
 			}
 
@@ -161,7 +167,9 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				endpointSpec.setType(AiConstants.Mcp.MCP_ENDPOINT_TYPE_REF);
 				Map<String, String> endpointSpecData = new HashMap<>();
 				endpointSpecData.put("serviceName", getRegisterServiceName());
-				endpointSpecData.put("groupName", this.nacosMcpRegistryProperties.getServiceGroup());
+				String groupName = StringUtils.isBlank(this.nacosMcpRegistryProperties.getServiceGroup())
+						? "DEFAULT_GROUP" : this.nacosMcpRegistryProperties.getServiceGroup();
+				endpointSpecData.put("groupName", groupName);
 				endpointSpec.setData(endpointSpecData);
 
 				McpServerRemoteServiceConfig remoteServerConfigInfo = new McpServerRemoteServiceConfig();
@@ -191,8 +199,13 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 					this.nacosMcpOperationService.updateMcpServer(this.serverInfo.name(), serverBasicInfo, mcpToolSpec,
 							endpointSpec);
 				}
+				else if (!checkCompatible(recheckServerDetailInfo)) {
+					log.error("check mcp server compatible false");
+					throw new Exception("check mcp server compatible false");
+				}
 			}
-
+			subscribe();
+			this.success = true;
 		}
 		catch (Exception e) {
 			log.error("Failed to register mcp server to nacos", e);
@@ -203,6 +216,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		nacosMcpOperationService.subscribeNacosMcpServer(this.serverInfo.name() + "::" + this.serverInfo.version(),
 				(mcpServerDetailInfo) -> {
 					if (this.serverCapabilities.tools() != null) {
+						this.serverDetailInfo = mcpServerDetailInfo;
 						updateTools(mcpServerDetailInfo);
 					}
 				});
@@ -295,7 +309,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	@Override
 	public void onApplicationEvent(WebServerInitializedEvent event) {
-		if ("stdio".equals(this.type) || !nacosMcpRegistryProperties.isServiceRegister()) {
+		if ("stdio".equals(this.type) || !nacosMcpRegistryProperties.isServiceRegister() || !this.success) {
 			log.info("No need to register mcp server service to nacos");
 			return;
 		}
@@ -311,8 +325,14 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			instance.setIp(this.nacosMcpProperties.getIp());
 			instance.setPort(port);
 			instance.setEphemeral(this.nacosMcpRegistryProperties.isServiceEphemeral());
-			nacosMcpOperationService.registerService(this.getRegisterServiceName(),
-					this.nacosMcpRegistryProperties.getServiceGroup(), instance);
+			String groupName = StringUtils.isBlank(this.nacosMcpRegistryProperties.getServiceGroup()) ? "DEFAULT_GROUP"
+					: this.nacosMcpRegistryProperties.getServiceGroup();
+			String serviceName = this.getRegisterServiceName();
+			if (this.serverDetailInfo != null) {
+				serviceName = this.serverDetailInfo.getRemoteServerConfig().getServiceRef().getServiceName();
+				groupName = this.serverDetailInfo.getRemoteServerConfig().getServiceRef().getGroupName();
+			}
+			nacosMcpOperationService.registerService(serviceName, groupName, instance);
 			log.info("Register mcp server service to nacos successfully");
 		}
 		catch (NacosException e) {
@@ -370,11 +390,12 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 	}
 
 	private boolean isServiceRefSame(McpServiceRef serviceRef) {
-		String serviceName = getRegisterServiceName();
-		if (!StringUtils.equals(serviceRef.getServiceName(), serviceName)) {
+		if (!StringUtils.isBlank(this.nacosMcpRegistryProperties.getServiceName())
+				&& !StringUtils.equals(serviceRef.getServiceName(), this.nacosMcpRegistryProperties.getServiceName())) {
 			return false;
 		}
-		if (!StringUtils.equals(serviceRef.getGroupName(), this.nacosMcpRegistryProperties.getServiceGroup())) {
+		if (!StringUtils.isBlank(this.nacosMcpRegistryProperties.getServiceGroup())
+				&& !StringUtils.equals(serviceRef.getGroupName(), this.nacosMcpRegistryProperties.getServiceGroup())) {
 			return false;
 		}
 		if (!StringUtils.equals(serviceRef.getNamespaceId(), this.nacosMcpProperties.getnamespace())) {
