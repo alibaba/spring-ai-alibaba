@@ -205,13 +205,16 @@
 
           <!-- Section 3: Execution Controller -->
           <div class="config-section">
-            <div class="section-header">
-              <Icon icon="carbon:play" width="16" />
-              <span>{{ $t('sidebar.executionController') }}</span>
-            </div>
+              <div class="section-header">
+                <Icon icon="carbon:play" width="16" />
+                <span>{{ $t('sidebar.executionController') }}</span>
+              </div>
             <div class="execution-content">
               <div class="params-input-group">
                 <label>{{ $t('sidebar.executionParams') }}</label>
+                <div class="params-help-text">
+                  {{ $t('sidebar.executionParamsHelp') }}
+                </div>
                 <div class="params-input-container">
                   <input
                     v-model="sidebarStore.executionParams"
@@ -623,6 +626,17 @@ defineExpose({
                   color: #ff6b6b;
                 }
               }
+            }
+
+            .params-help-text {
+              margin-bottom: 6px;
+              font-size: 11px;
+              color: rgba(255, 255, 255, 0.6);
+              line-height: 1.4;
+              padding: 6px 8px;
+              background: rgba(102, 126, 234, 0.1);
+              border: 1px solid rgba(102, 126, 234, 0.2);
+              border-radius: 4px;
             }
           }
 
