@@ -44,7 +44,7 @@
       <!-- List Tab Content -->
       <div v-if="sidebarStore.currentTab === 'list'" class="tab-content">
         <div class="new-task-section">
-          <button class="new-task-btn" @click="handleNewTaskButtonClick">
+          <button class="new-task-btn" @click="sidebarStore.createNewTemplate()">
             <Icon icon="carbon:add" width="16" />
             {{ $t('sidebar.newPlan') }}
             <span class="shortcut">⌘ K</span>
@@ -81,7 +81,7 @@
               'sidebar-content-list-item-active':
                 template.id === sidebarStore.currentPlanTemplateId,
             }"
-            @click="handlePlanTemplateClick(template)"
+            @click="sidebarStore.selectTemplate(template)"
           >
             <div class="task-icon">
               <Icon icon="carbon:document" width="20" />
@@ -99,7 +99,7 @@
               <button
                 class="delete-task-btn"
                 :title="$t('sidebar.deleteTemplate')"
-                @click.stop="handleDeletePlanTemplate(template)"
+                @click.stop="sidebarStore.deleteTemplate(template)"
               >
                 <Icon icon="carbon:close" width="16" />
               </button>
@@ -255,46 +255,18 @@
 import { onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import { useSidebarStore } from '@/stores/sidebar'
-import type { PlanTemplate } from '@/types/plan-template'
+import { sidebarStore } from '@/stores/sidebar'
 
 const { t } = useI18n()
 
 // Use pinia store
-const sidebarStore = useSidebarStore()
+// 使用 TS 对象实现的 sidebarStore
+// 直接使用 sidebarStore 实例，无需 pinia
 
 // Emits - Keep some events for communication with external components
 const emit = defineEmits<{
   planExecutionRequested: [payload: { title: string; planData: any; params?: string | undefined }]
 }>()
-
-// Methods
-const handleNewTaskButtonClick = () => {
-  sidebarStore.createNewTemplate()
-  console.log('[PlanTemplateSidebar] 创建新的空白计划模板，切换到配置标签页')
-}
-
-const handlePlanTemplateClick = async (template: PlanTemplate) => {
-  try {
-    await sidebarStore.selectTemplate(template)
-    console.log(`[PlanTemplateSidebar] 选择了计划模板: ${template.id}`)
-  } catch (error: any) {
-    console.error('选择计划模板失败:', error)
-    alert(t('sidebar.selectTemplateFailed') + ': ' + error.message)
-  }
-}
-
-const handleDeletePlanTemplate = async (template: PlanTemplate) => {
-  if (confirm(t('sidebar.confirmDelete', { name: template.title ?? t('sidebar.unnamedPlan') }))) {
-    try {
-      await sidebarStore.deleteTemplate(template)
-      alert(t('sidebar.templateDeleted'))
-    } catch (error: any) {
-      console.error('删除计划模板失败:', error)
-      alert(t('sidebar.deleteTemplateFailed') + ': ' + error.message)
-    }
-  }
-}
 
 const handleSaveTemplate = async () => {
   try {

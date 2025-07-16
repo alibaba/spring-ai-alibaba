@@ -87,13 +87,12 @@ import InputArea from '@/components/input/index.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { useTaskStore } from '@/stores/task'
-import { useSidebarStore } from '@/stores/sidebar'
+import { sidebarStore } from '@/stores/sidebar'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 
 const route = useRoute()
 const router = useRouter()
 const taskStore = useTaskStore()
-const sidebarStore = useSidebarStore()
 const { t } = useI18n()
 
 const prompt = ref<string>('')
