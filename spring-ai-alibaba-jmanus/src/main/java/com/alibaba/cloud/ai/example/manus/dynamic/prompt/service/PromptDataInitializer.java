@@ -67,6 +67,23 @@ public class PromptDataInitializer implements CommandLineRunner {
 
 	}
 
+	/**
+	 * 碰到 could not execute statement [Unique index or primary key violation:
+	 * "public.unique_prompt_name_INDEX_C ON public.prompt(prompt_name NULLS FIRST) VALUES
+	 * ( 'PLANNING_PLAN_CREATION' )"; SQL statement: 是因为，老的约束是
+	 * 针对prompt_name的唯一约束，而新的约束是针对namespace和prompt_name的唯一约束. jpa无法处理这种情况，所以需要你删除一下
+	 * prompt表， 然后 重启应用，他会自动处理 。
+	 *
+	 * english ver : The error "could not execute statement [Unique index or primary key
+	 * violation: "public.unique_prompt_name_INDEX_C ON public.prompt(prompt_name NULLS
+	 * FIRST) VALUES ( 'PLANNING_PLAN_CREATION' )"; SQL statement:" occurs because the old
+	 * constraint was a unique constraint on prompt_name, while the new constraint is a
+	 * unique constraint on both namespace and prompt_name. JPA cannot handle this
+	 * situation, so you need to delete the prompt table and restart the application,
+	 * which will automatically handle it.
+	 *
+	 *
+	 */
 	private void createPromptIfNotExists(PromptEnum prompt) {
 		// 开启事务为了兼容postgres数据库的大型对象无法被使用在自动确认事物交易模式问题
 		DefaultTransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
