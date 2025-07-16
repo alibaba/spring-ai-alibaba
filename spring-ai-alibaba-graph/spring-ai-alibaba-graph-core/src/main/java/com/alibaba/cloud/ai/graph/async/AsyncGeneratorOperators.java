@@ -95,23 +95,18 @@ public interface AsyncGeneratorOperators<E> {
 	 * @return a CompletableFuture representing the completion of the iteration process.
 	 */
 	default CompletableFuture<Object> forEachAsync(Consumer<E> consumer) {
-
-		final var next = next();
-		if (next.isDone()) {
-			return completedFuture(next.resultValue);
+		CompletableFuture<Object> future = completedFuture(null);
+		for (AsyncGenerator.Data<E> next = next(); !next.isDone(); next = next()) {
+			final AsyncGenerator.Data<E> finalNext = next;
+			if (finalNext.embed != null) {
+				future = future.thenCompose(v -> finalNext.embed.generator.async(executor()).forEachAsync(consumer));
+			}
+			else {
+				future = future
+					.thenCompose(v -> finalNext.data.thenAcceptAsync(consumer, executor()).thenApply(x -> null));
+			}
 		}
-		if (next.embed != null) {
-			return next.embed.generator.async(executor())
-				.forEachAsync(consumer)
-				.thenCompose(v -> forEachAsync(consumer));
-		}
-		else {
-			return next.data.thenApplyAsync(v -> {
-				consumer.accept(v);
-				return null;
-			}, executor()).thenCompose(v -> forEachAsync(consumer));
-		}
-
+		return future;
 	}
 
 	/**
@@ -122,15 +117,15 @@ public interface AsyncGeneratorOperators<E> {
 	 * @return a CompletableFuture representing the completion of the collection process
 	 */
 	default <R extends List<E>> CompletableFuture<R> collectAsync(R result, BiConsumer<R, E> consumer) {
-		final var next = next();
-		if (next.isDone()) {
-			return completedFuture(result);
+		CompletableFuture<R> future = completedFuture(result);
+		for (AsyncGenerator.Data<E> next = next(); !next.isDone(); next = next()) {
+			final AsyncGenerator.Data<E> finalNext = next;
+			future = future.thenCompose(res -> finalNext.data.thenApplyAsync(v -> {
+				consumer.accept(res, v);
+				return res;
+			}, executor()));
 		}
-		return next.data.thenApplyAsync(v -> {
-			consumer.accept(result, v);
-			return null;
-		}, executor()).thenCompose(v -> collectAsync(result, consumer));
-
+		return future;
 	}
 
 }

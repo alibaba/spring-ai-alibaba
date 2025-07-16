@@ -30,7 +30,7 @@
     </div>
 
     <div class="agent-layout">
-      <!-- Agent列表 -->
+      <!-- Agent List -->
       <div class="agent-list">
         <div class="list-header">
           <h3>{{ t('config.agentConfig.configuredAgents') }}</h3>
@@ -85,7 +85,7 @@
         </button>
       </div>
 
-      <!-- Agent详情 -->
+      <!-- Agent Details -->
       <div class="agent-detail" v-if="selectedAgent">
         <div class="detail-header">
           <h3>{{ selectedAgent.name }}</h3>
@@ -131,7 +131,7 @@
           ></textarea>
         </div>
 
-        <!-- 模型分配区域 -->
+        <!-- Model Allocation Area -->
         <div class="model-section">
           <h4>{{ t('config.agentConfig.modelConfiguration') }}</h4>
           <div class="form-item">
@@ -190,11 +190,11 @@
           </div>
         </div>
 
-        <!-- 工具分配区域 -->
+        <!-- Tool Allocation Area -->
         <div class="tools-section">
           <h4>{{ t('config.agentConfig.toolConfiguration') }}</h4>
           
-          <!-- 已分配的工具 -->
+          <!-- Assigned Tools -->
           <div class="assigned-tools">
             <div class="section-header">
               <span>{{ t('config.agentConfig.assignedTools') }} ({{ (selectedAgent.availableTools || []).length }})</span>
@@ -221,14 +221,14 @@
         </div>
       </div>
       
-      <!-- 空状态 -->
+      <!-- Empty State -->
       <div v-else class="no-selection">
         <Icon icon="carbon:bot" class="placeholder-icon" />
         <p>{{ t('config.agentConfig.selectAgentHint') }}</p>
       </div>
     </div>
 
-    <!-- 新建Agent弹窗 -->
+    <!-- New Agent Popup -->
     <Modal v-model="showModal" :title="t('config.agentConfig.newAgent')" @confirm="handleAddAgent">
       <div class="modal-form">
         <div class="form-item">
@@ -261,7 +261,7 @@
       </div>
     </Modal>
 
-    <!-- 工具选择弹窗 -->
+    <!-- Tool Selection Popup -->
     <ToolSelectionModal
       v-model="showToolModal"
       :tools="availableTools"
@@ -269,7 +269,7 @@
       @confirm="handleToolSelectionConfirm"
     />
 
-    <!-- 删除确认弹窗 -->
+    <!-- Delete Confirmation Popup -->
     <Modal v-model="showDeleteModal" :title="t('config.agentConfig.deleteConfirm')">
       <div class="delete-confirm">
         <Icon icon="carbon:warning" class="warning-icon" />
@@ -282,13 +282,13 @@
       </template>
     </Modal>
 
-    <!-- 错误提示 -->
+    <!-- Error Prompt -->
     <div v-if="error" class="error-toast" @click="error = ''">
       <Icon icon="carbon:error" />
       {{ error }}
     </div>
 
-    <!-- 成功提示 -->
+    <!-- Success Prompt -->
     <div v-if="success" class="success-toast" @click="success = ''">
       <Icon icon="carbon:checkmark" />
       {{ success }}
@@ -305,10 +305,10 @@ import ToolSelectionModal from '@/components/tool-selection-modal/index.vue'
 import { AgentApiService, type Agent, type Tool } from '@/api/agent-api-service'
 import {type Model, ModelApiService} from "@/api/model-api-service";
 
-// 国际化
+// Internationalization
 const { t } = useI18n()
 
-// 响应式数据
+// Reactive data
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
@@ -333,28 +333,28 @@ const selectModel = (option: Model) => {
 }
 
 
-// 新建Agent表单数据
+// New Agent form data
 const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
   name: '',
   description: '',
   nextStepPrompt: ''
 })
 
-// 计算属性 - removed unused unassignedTools since it's not used in the template
+// Computed property - removed unused unassignedTools since it's not used in the template
 
-// 工具显示名称获取
+// Get tool display name
 const getToolDisplayName = (toolId: string): string => {
   const tool = availableTools.find(t => t.key === toolId)
   return tool ? tool.name : toolId
 }
 
-// 工具描述获取
+// Tool description retrieval
 const getToolDescription = (toolId: string): string => {
   const tool = availableTools.find(t => t.key === toolId)
   return tool ? tool.description : ''
 }
 
-// 消息提示
+// Message Prompt
 const showMessage = (msg: string, type: 'success' | 'error') => {
   if (type === 'success') {
     success.value = msg
@@ -365,18 +365,18 @@ const showMessage = (msg: string, type: 'success' | 'error') => {
   }
 }
 
-// 加载数据
+// Load data
 const loadData = async () => {
   loading.value = true
   try {
-    // 并行加载Agent列表和可用工具
+    // Load the Agent list and available tools in parallel
     const [loadedAgents, loadedTools, loadedModels] = await Promise.all([
       AgentApiService.getAllAgents(),
       AgentApiService.getAvailableTools(),
       ModelApiService.getAllModels()
     ])
     
-    // 确保每个agent都有availableTools数组
+// Ensure each agent has an availableTools array
     const normalizedAgents = loadedAgents.map(agent => ({
       ...agent,
       availableTools: agent.availableTools,
@@ -387,7 +387,7 @@ const loadData = async () => {
     availableTools.splice(0, availableTools.length, ...loadedTools)
     modelOptions.splice(0, modelOptions.length, ...loadedModels)
 
-    // 选中第一个Agent
+    // Select the first agent
     if (normalizedAgents.length > 0) {
       await selectAgent(normalizedAgents[0])
     }
@@ -395,7 +395,7 @@ const loadData = async () => {
     console.error('加载数据失败:', err)
     showMessage(t('config.agentConfig.loadDataFailed') + ': ' + err.message, 'error')
     
-    // 提供演示数据作为后备
+    // Provide demo data as a fallback
     const demoTools = [
       {
         key: 'search-web',
@@ -503,12 +503,12 @@ const loadData = async () => {
   }
 }
 
-// 选择Agent
+// Select Agent
 const selectAgent = async (agent: Agent) => {
   try {
-    // 加载详细信息
+    // Load the detailed information
     const detailedAgent = await AgentApiService.getAgentById(agent.id)
-    // Agent接口保证availableTools是数组
+    // Agent interface guarantees availableTools is an array
     selectedAgent.value = {
       ...detailedAgent,
       availableTools: detailedAgent.availableTools
@@ -517,7 +517,7 @@ const selectAgent = async (agent: Agent) => {
   } catch (err: any) {
     console.error('加载Agent详情失败:', err)
     showMessage(t('config.agentConfig.loadDetailsFailed') + ': ' + err.message, 'error')
-    // 使用基本信息作为后备
+    // Use basic information as a fallback
     selectedAgent.value = {
       ...agent,
       availableTools: agent.availableTools
@@ -525,7 +525,7 @@ const selectAgent = async (agent: Agent) => {
   }
 }
 
-// 显示新建Agent弹窗
+// Show the new Agent modal
 const showAddAgentModal = () => {
   newAgent.name = ''
   newAgent.description = ''
@@ -533,7 +533,7 @@ const showAddAgentModal = () => {
   showModal.value = true
 }
 
-// 创建新Agent
+// Create a new Agent
 const handleAddAgent = async () => {
   if (!newAgent.name.trim() || !newAgent.description.trim()) {
     showMessage(t('config.agentConfig.requiredFields'), 'error')
@@ -557,23 +557,23 @@ const handleAddAgent = async () => {
   }
 }
 
-// 显示工具选择弹窗
+// Show the tool selection popup
 const showToolSelectionModal = () => {
   showToolModal.value = true
 }
 
-// 处理工具选择确认
+// Handle tool selection confirmation
 const handleToolSelectionConfirm = (selectedToolIds: string[]) => {
   if (selectedAgent.value) {
     selectedAgent.value.availableTools = [...selectedToolIds]
   }
 }
 
-// removed unused addTool function since it's not used anywhere in the code
+// Removed unused addTool function since it's not used anywhere in the code
 
 
 
-// 保存Agent
+// Save Agent
 const handleSave = async () => {
   if (!selectedAgent.value) return
 
@@ -586,7 +586,7 @@ const handleSave = async () => {
     selectedAgent.value.model = chooseModel.value
     const savedAgent = await AgentApiService.updateAgent(selectedAgent.value.id, selectedAgent.value)
     
-    // 更新本地列表中的数据
+    // Update the data in the local list
     const index = agents.findIndex(a => a.id === savedAgent.id)
     if (index !== -1) {
       agents[index] = savedAgent
@@ -600,25 +600,25 @@ const handleSave = async () => {
   }
 }
 
-// 显示删除确认
+// Show the delete confirmation popup
 const showDeleteConfirm = () => {
   showDeleteModal.value = true
 }
 
-// 删除Agent
+// Delete Agent
 const handleDelete = async () => {
   if (!selectedAgent.value) return
 
   try {
     await AgentApiService.deleteAgent(selectedAgent.value.id)
     
-    // 从列表中移除
+    // Remove from the list
     const index = agents.findIndex(a => a.id === selectedAgent.value!.id)
     if (index !== -1) {
       agents.splice(index, 1)
     }
 
-    // 选择其他Agent或清除选中状态
+    // Select another Agent or clear the selection
     selectedAgent.value = agents.length > 0 ? agents[0] : null
     showDeleteModal.value = false
     showMessage(t('config.agentConfig.deleteSuccess'), 'success')
@@ -627,7 +627,7 @@ const handleDelete = async () => {
   }
 }
 
-// 导入Agent
+// Import Agent
 const handleImport = () => {
   const input = document.createElement('input')
   input.type = 'file'
@@ -639,12 +639,12 @@ const handleImport = () => {
       reader.onload = async (e) => {
         try {
           const agentData = JSON.parse(e.target?.result as string)
-          // 基本验证
+          // Basic validation
           if (!agentData.name || !agentData.description) {
             throw new Error(t('config.agentConfig.invalidFormat'))
           }
           
-          // 移除id字段，让后端分配新的id
+          // Remove the id field and let the backend assign a new id
           const { id: _id, ...importData } = agentData
           const savedAgent = await AgentApiService.createAgent(importData)
           agents.push(savedAgent)
@@ -660,7 +660,7 @@ const handleImport = () => {
   input.click()
 }
 
-// 导出Agent
+// Export Agent
 const handleExport = () => {
   if (!selectedAgent.value) return
 
@@ -679,7 +679,7 @@ const handleExport = () => {
   }
 }
 
-// 组件挂载时加载数据
+// Load data when the component is mounted
 onMounted(() => {
   loadData()
 })
