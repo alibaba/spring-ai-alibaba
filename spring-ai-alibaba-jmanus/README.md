@@ -10,9 +10,9 @@
 🌍 [English](./README.md) | [中文](./README-zh.md)
 📚 Developer Docs: [Quick Start (EN)](./README-dev-en.md) | [开发者快速入门 (中文)](./README-dev.md)
 
-**A comprehensive Java implementation of the OpenManus Multi-Agent Framework featuring UNLIMITED context window capabilities**
+**A comprehensive implementation of the OpenManus multi-agent framework, natively integrated with MCP and supporting the plan-act paradigm, featuring unlimited context capabilities**
 
-*Empowering developers of all skill levels to effortlessly build sophisticated multi-agent systems and unlock unprecedented productivity*
+*Designed to be easily integrated into existing Java business systems to provide enhanced AI capabilities*
 
 [About](#-about) • [Quick Start](#-quick-start) • [Contributing](#-contributing)
 
@@ -30,15 +30,15 @@ JManus is a Java implementation of Manus, currently used in many applications wi
 ### JManus Product Features
 
 - 🤖 **Pure Java Manus Implementation**: A pure Java multi-agent collaboration implementation that provides a complete set of HTTP call interfaces, suitable for secondary integration by Java developers.
-![Image](https://github.com/user-attachments/assets/f27b763e-9c68-44e0-a57d-4f31d04c0200)
+![Image](https://github.com/user-attachments/assets/893c7fc1-5e6e-4ec9-8389-182f14d86b18)
 - 🌊 **Infinite Context Handling**: Overcomes single-model context limitations through intelligent multi-agent collaboration, enabling infinite content processing.
 ![Image](https://github.com/user-attachments/assets/a0245658-fbb7-41dc-989f-86574592f188)
 - 🎯 **Excellent Plan-Act Mode**: Fully implements the Plan-Act paradigm, featuring a separation of intelligent planning and execution.
-![Image](https://github.com/user-attachments/assets/d00fc59d-3f10-4163-a548-784eb21f77d6)
+![Image](https://github.com/user-attachments/assets/d9cbf980-9d56-4b58-b165-6840b6c9411b)
 - 🔗 **MCP Integration**: Natively supports the Model Context Protocol (MCP) for seamless integration with external services and tools.
-![Image](https://github.com/user-attachments/assets/df24679a-77f1-4e66-a15f-5e0fadcffacf)
+![Image](https://github.com/user-attachments/assets/31d915a9-04dc-45b2-9635-488cc06ba468)
 - 📜 **Web Interface for Agent Configuration**: Easily configure agents through an intuitive web management interface without modifying code.
-![Image](https://github.com/user-attachments/assets/96d5902a-f741-4e82-9007-136cf4c56bb0)
+![Image](https://github.com/user-attachments/assets/5afdfe2e-0e98-4100-bff1-b7aaf413850b)
 
 
 ## 🚀 Quick Start
@@ -117,6 +117,14 @@ JManus supports both H2 (default)、MySQL and PostgreSQL databases.
 Navigate to `http://localhost:18080` in your browser.
 
 🎉 **Congratulations!** Your multi-agent system is now live and ready for action.
+
+
+
+## stable Release
+
+you can find stable release from here:
+[release](https://github.com/rainerWJY/Java-Open-Manus/releases)
+
 
 ## 🤝 Contributing
 

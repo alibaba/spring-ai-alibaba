@@ -8,11 +8,12 @@
 [![GitHub Stars](https://img.shields.io/github/stars/alibaba/spring-ai-alibaba.svg)](https://github.com/alibaba/spring-ai-alibaba/stargazers)
 
 [English](./README.md) | 🌍 **中文**
+
 📚 开发者文档: [Quick Start (EN)](./README-dev-en.md) | [开发者快速入门 (中文)](./README-dev.md)
 
 **一个全面实现了 OpenManus 的多 Agent 框架，默认集成MCP并提供 plan-act模式，具备无限上下文能力**
 
-*赋能各种用户，轻松构建复杂的多 Agent 系统，释放前所未有的生产力*
+*适合被集成到既有的Java业务中提供更多的AI能力*
 
 [关于](#-关于) • [快速开始](#-快速开始) • [如何贡献](#-如何贡献)
 
@@ -27,15 +28,16 @@ JManus 是 Manus 的一个Java实现，目前已经在阿里巴巴集团内的�
 ### JManus的产品特性
 
 - 🤖 **纯Java的Manus实现**：一个纯粹的Java 多智能体协作实现，提供了完整的http调用接口，适合Java开发者做二次集成。
-![Image](https://github.com/user-attachments/assets/f27b763e-9c68-44e0-a57d-4f31d04c0200)
+![Image](https://github.com/user-attachments/assets/893c7fc1-5e6e-4ec9-8389-182f14d86b18)
 - 🌊 **无限上下文处理**：通过智能的多 Agent 协作，克服单模型上下文限制，实现无限内容处理。
 ![Image](https://github.com/user-attachments/assets/a0245658-fbb7-41dc-989f-86574592f188)
 - 🎯 **卓越的 Plan-Act 模式**：完整实现 Plan-Act 范式，具有智能规划和执行分离的特点。
-![Image](https://github.com/user-attachments/assets/d00fc59d-3f10-4163-a548-784eb21f77d6)
+![Image](https://github.com/user-attachments/assets/d9cbf980-9d56-4b58-b165-6840b6c9411b)
 - 🔗 **MCP 集成**：原生支持模型上下文协议（Model Context Protocol），实现与外部服务和工具的无缝集成。
-![Image](https://github.com/user-attachments/assets/df24679a-77f1-4e66-a15f-5e0fadcffacf)
+![Image](https://github.com/user-attachments/assets/31d915a9-04dc-45b2-9635-488cc06ba468)
 - 📜 **网页界面配置 Agent**：通过直观的网页管理界面轻松配置 agent，无需修改代码。
-![Image](https://github.com/user-attachments/assets/96d5902a-f741-4e82-9007-136cf4c56bb0)
+![Image](https://github.com/user-attachments/assets/5afdfe2e-0e98-4100-bff1-b7aaf413850b)
+
 
 
 ## 🚀 快速开始
@@ -113,6 +115,13 @@ JManus 支持 H2（默认）、MySQL以及PostgreSQL数据库。
 在您的浏览器中访问 `http://localhost:18080`。
 
 🎉 **恭喜!** 您的多 Agent 系统现已上线并准备就绪。
+
+
+## 稳定版本的Release
+
+如果你想要之前的稳定版本，可以在这里找到：
+[稳定release版](https://github.com/rainerWJY/Java-Open-Manus/releases)
+
 
 ## 🤝 如何贡献
 
