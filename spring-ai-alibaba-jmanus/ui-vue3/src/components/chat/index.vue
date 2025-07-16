@@ -425,7 +425,7 @@ interface Message {
 
 interface Props {
   mode?: 'plan' | 'direct' // Plan mode or direct chat mode
-  initialPrompt?: string | undefined // Initial prompt to process
+  initialPrompt?: string // Initial prompt to process
 }
 
 interface Emits {
@@ -441,6 +441,7 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   mode: 'plan', // Use plan mode, handled by plan-execution-manager
+  initialPrompt: '', // Default value for initialPrompt
 })
 const emit = defineEmits<Emits>()
 
@@ -626,13 +627,14 @@ const handleSendMessage = (message: string) => {
 // Get agent execution status based on index
 const getAgentExecutionStatus = (message: Message, index: number): string => {
   const agentExecutionSequence = message.planExecution?.agentExecutionSequence ?? []
-  const agentExecution = agentExecutionSequence[index]
-
-  if (!agentExecution) {
-    // 如果没有对应的 AgentExecutionRecord，返回待执行状态
+  
+  // 检查索引是否在数组范围内
+  if (index >= agentExecutionSequence.length) {
     return 'IDLE'
   }
-
+  
+  const agentExecution = agentExecutionSequence[index]
+  
   // 返回 AgentExecutionRecord 的状态
   return agentExecution.status ?? 'IDLE'
 }
@@ -828,7 +830,7 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
     for (let index = 0; index < sequenceLength; index++) {
       const execution = planDetails.agentExecutionSequence[index]
 
-      if (execution?.thinkActSteps?.length) {
+      if (execution.thinkActSteps?.length) {
         const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1]
 
         if (latestThinkAct.actionDescription && latestThinkAct.toolParameters) {
