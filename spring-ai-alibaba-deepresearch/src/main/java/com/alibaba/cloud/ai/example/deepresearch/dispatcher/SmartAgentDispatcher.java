@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.dispatcher;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentDispatchResult;
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentType;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
@@ -111,65 +112,6 @@ public class SmartAgentDispatcher {
 			case DATA_ANALYSIS -> dataAnalysisAgent;
 			case GENERAL_RESEARCH -> researchAgent;
 		};
-	}
-
-	/**
-	 * Agent分派结果
-	 */
-	public static class AgentDispatchResult {
-
-		private final ChatClient agent;
-
-		private final AgentType agentType;
-
-		private final List<SearchEnum> searchPlatforms;
-
-		private final String searchStrategy;
-
-		private final boolean success;
-
-		private final String errorMessage;
-
-		public AgentDispatchResult(ChatClient agent, AgentType agentType, List<SearchEnum> searchPlatforms,
-				String searchStrategy, boolean success, String errorMessage) {
-			this.agent = agent;
-			this.agentType = agentType;
-			this.searchPlatforms = searchPlatforms;
-			this.searchStrategy = searchStrategy;
-			this.success = success;
-			this.errorMessage = errorMessage;
-		}
-
-		public ChatClient getAgent() {
-			return agent;
-		}
-
-		public AgentType getAgentType() {
-			return agentType;
-		}
-
-		public List<SearchEnum> getSearchPlatforms() {
-			return searchPlatforms;
-		}
-
-		public String getSearchStrategy() {
-			return searchStrategy;
-		}
-
-		public boolean isSuccess() {
-			return success;
-		}
-
-		public String getErrorMessage() {
-			return errorMessage;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("AgentDispatchResult{agentType=%s, searchPlatforms=%s, success=%s}", agentType,
-					searchPlatforms, success);
-		}
-
 	}
 
 }

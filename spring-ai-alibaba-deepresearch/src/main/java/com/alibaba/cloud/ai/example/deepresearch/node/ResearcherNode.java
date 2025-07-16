@@ -23,6 +23,8 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.SmartAgentDispatcher
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
 import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelper;
+import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentSelectionResult;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
@@ -69,7 +71,7 @@ public class ResearcherNode implements NodeAction {
 
 	private final SmartAgentProperties smartAgentProperties;
 
-	private final AgentIntegrationUtil.SmartAgentSelectionHelper smartAgentSelectionHelper;
+	private final SmartAgentSelectionHelper smartAgentSelectionHelper;
 
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
 			McpProviderFactory mcpFactory, SearchFilterService searchFilterService,
@@ -219,8 +221,8 @@ public class ResearcherNode implements NodeAction {
 			questionContent += " " + step.getDescription();
 		}
 
-		AgentIntegrationUtil.AgentSelectionResult selectionResult = smartAgentSelectionHelper
-			.selectSmartAgent(questionContent, state, researchAgent);
+		AgentSelectionResult selectionResult = smartAgentSelectionHelper.selectSmartAgent(questionContent, state,
+				researchAgent);
 
 		if (selectionResult.isSmartAgent()) {
 			logger.info("为研究任务选择智能Agent: {} -> {} (executorNodeId: {})", questionContent,
