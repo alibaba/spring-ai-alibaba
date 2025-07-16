@@ -48,7 +48,6 @@ class DashScopeImageApiTests {
 
 		// Initialize DashScopeImageApi with test API key
 		imageApi = DashScopeImageApi.builder()
-			.baseUrl(null)
 			.apiKey("test-api-key")
 			.workSpaceId(null)
 			.restClientBuilder(RestClient.builder())
@@ -63,7 +62,6 @@ class DashScopeImageApiTests {
 		// Test constructor with only API key
 		DashScopeImageApi api = DashScopeImageApi.builder()
 			.apiKey("test-api-key")
-			.baseUrl(null)
 			.workSpaceId(null)
 			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
 			.restClientBuilder(RestClient.builder())
@@ -78,7 +76,6 @@ class DashScopeImageApiTests {
 		DashScopeImageApi api = DashScopeImageApi.builder()
 			.apiKey("test-api-key")
 			.workSpaceId("test-workspace-id")
-			.baseUrl(null)
 			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
 			.restClientBuilder(RestClient.builder())
 			.build();
