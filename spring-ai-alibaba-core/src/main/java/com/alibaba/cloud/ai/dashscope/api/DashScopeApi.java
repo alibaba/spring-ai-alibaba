@@ -1505,7 +1505,6 @@ public class DashScopeApi {
 			@JsonProperty("input_tokens") Integer inputTokens, @JsonProperty("total_tokens") Integer totalTokens,
 			@JsonProperty("image_tokens") Integer imageTokens, @JsonProperty("video_tokens ") Integer videoTokens,
 			@JsonProperty("audio_tokens ") Integer audioTokens,
-			@JsonProperty("prompt_tokens_details") Object promptTokensDetails,
 			@JsonProperty("input_tokens_details") InputTokenDetailed inputTokensDetails,
 			@JsonProperty("output_tokens_details") OutputTokenDetailed outputTokensDetails,
 			@JsonProperty("prompt_tokens_details") PromptTokenDetailed promptTokenDetailed) {
