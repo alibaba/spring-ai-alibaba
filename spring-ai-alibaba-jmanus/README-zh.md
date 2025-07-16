@@ -17,7 +17,7 @@
 </div>
 
 
-##  JManus 简介
+## ✨ JManus 简介
 
 JManus 是 Manus 的一个Java实现，目前已经在阿里巴巴集团内的很多应用都有使用，主要用于处理需要有一定确定性要求的探索性任务，比如，快速从海量数据中找到数据并转换成数据库内的一行数据，或者分析日志并给出告警等。
 
@@ -36,7 +36,7 @@ JManus也提供了http的服务调用能力，适合被集成到既有的项目�
 支持从巨量内容中精准抓取目标信息，不依赖特定的长上下文模型。
 ![Image](https://github.com/user-attachments/assets/a0245658-fbb7-41dc-989f-86574592f188)
 
-### - 🎯 **Plan-Act 模式**：
+### - 🛠️ **Plan-Act 模式**：
 
 精确控制每一步执行细节，提供极高的执行确定性
 ![Image](https://github.com/user-attachments/assets/d9cbf980-9d56-4b58-b165-6840b6c9411b)

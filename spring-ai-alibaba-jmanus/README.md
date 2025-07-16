@@ -19,7 +19,7 @@
 
 ---
 
-##  About JManus
+## ✨ About JManus
 
 JManus is a Java implementation of Manus, currently used in many applications within Alibaba Group. It is primarily used for handling exploratory tasks that require a certain degree of determinism, such as quickly finding data from massive datasets and converting it into a single row in a database, or analyzing logs and issuing alerts.
 
@@ -33,7 +33,7 @@ A pure Java multi-agent collaboration implementation that provides a complete se
 
 ![Image](https://github.com/user-attachments/assets/3d98c1c6-aabb-45a2-b192-7b687093a1ee)
 
-### - 🎯 **Plan-Act Mode**: 
+### - 🛠️ **Plan-Act Mode**: 
 
 Allows you to precisely control every execution detail, providing extremely high execution determinism.
 
