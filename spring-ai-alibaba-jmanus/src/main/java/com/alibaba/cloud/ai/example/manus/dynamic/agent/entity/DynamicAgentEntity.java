@@ -21,14 +21,15 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntit
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "dynamic_agents")
+@Table(name = "dynamic_agents", uniqueConstraints = {
+		@UniqueConstraint(columnNames = { "namespace", "agent_name" }, name = "unique_namespace_agent_name") })
 public class DynamicAgentEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = false, unique = false)
 	private String agentName;
 
 	@Column(nullable = false, length = 1000)

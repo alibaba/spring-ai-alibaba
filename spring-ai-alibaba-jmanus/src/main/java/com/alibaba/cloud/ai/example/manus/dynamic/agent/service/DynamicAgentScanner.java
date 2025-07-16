@@ -15,9 +15,13 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
-import java.util.List;
-import java.util.Set;
-
+import com.alibaba.cloud.ai.example.manus.config.ConfigService;
+import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentDefinition;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent.StartupAgentConfigLoader;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,14 +31,8 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Service;
 
-import com.alibaba.cloud.ai.example.manus.config.ConfigService;
-import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentDefinition;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent.StartupAgentConfigLoader;
-
-import jakarta.annotation.PostConstruct;
+import java.util.List;
+import java.util.Set;
 
 @Service
 public class DynamicAgentScanner {
@@ -189,16 +187,13 @@ public class DynamicAgentScanner {
 			try {
 				StartupAgentConfigLoader.AgentConfig agentConfig = startupAgentConfigLoader.loadAgentConfig(agentDir);
 				if (agentConfig != null) {
-					// Check if this is an override or new creation
-					DynamicAgentEntity existingEntity = repository.findByAgentName(agentConfig.getAgentName());
-					if (existingEntity != null) {
+					boolean isOverride = saveStartupAgent(agentConfig);
+					if (isOverride) {
 						overriddenCount++;
 					}
 					else {
 						createdCount++;
 					}
-
-					saveStartupAgent(agentConfig);
 					processedCount++;
 				}
 			}
@@ -213,13 +208,33 @@ public class DynamicAgentScanner {
 
 	/**
 	 * Save/Override StartupAgent loaded from configuration file
+	 * @return true if agent was overridden, false if newly created
 	 */
-	private void saveStartupAgent(StartupAgentConfigLoader.AgentConfig agentConfig) {
+
+	/**
+	 * 碰到 could not execute statement [Unique index or primary key violation:
+	 * "public.uk5l18y2e2ndgsf08xbj2s731ah_INDEX_F ON public.dynamic_agents(agent_name
+	 * NULLS FIRST) VALUES ( /// 1 /// 'BROWSER_AGENT' )//"; SQL statement:: 是因为，老的约束是
+	 * 针对agent_name的唯一约束，而新的约束是针对namespace和agent_name的唯一约束. jpa无法处理这种情况，所以需要你删除一下 prompt表，
+	 * 然后 重启应用，他会自动处理 。
+	 *
+	 * english ver : could not execute statement [Unique index or primary key violation: *
+	 * "public.uk5l18y2e2ndgsf08xbj2s731ah_INDEX_F ON public.dynamic_agents(agent_name
+	 * NULLS FIRST) VALUES * ( /// 1 /// 'BROWSER_AGENT' )//"; SQL statement:: occurs
+	 * because the old constraint was a unique constraint on agent_name, while the new
+	 * constraint is a unique constraint on both namespace and agent_name. JPA cannot
+	 * handle this situation, so you need to delete the prompt table and restart the
+	 * application, which will automatically handle it.
+	 *
+	 */
+	private boolean saveStartupAgent(StartupAgentConfigLoader.AgentConfig agentConfig) {
 		// Check if there is a dynamic agent with the same name
-		DynamicAgentEntity existingEntity = repository.findByAgentName(agentConfig.getAgentName());
+		DynamicAgentEntity existingEntity = repository.findByNamespaceAndAgentName(namespace,
+				agentConfig.getAgentName());
+		boolean isOverride = existingEntity != null;
 
 		// Create or update dynamic agent entity
-		DynamicAgentEntity entity = (existingEntity != null) ? existingEntity : new DynamicAgentEntity();
+		DynamicAgentEntity entity = isOverride ? existingEntity : new DynamicAgentEntity();
 
 		// Update all fields (force override if exists)
 		entity.setAgentName(agentConfig.getAgentName());
@@ -232,8 +247,10 @@ public class DynamicAgentScanner {
 
 		// Save or update entity
 		repository.save(entity);
-		String action = (existingEntity != null) ? "🔄 Overridden" : "✨ Created";
+		String action = isOverride ? "🔄 Overridden" : "✨ Created";
 		log.info("{} agent from YAML config: {}", action, entity.getAgentName());
+
+		return isOverride;
 	}
 
 }
