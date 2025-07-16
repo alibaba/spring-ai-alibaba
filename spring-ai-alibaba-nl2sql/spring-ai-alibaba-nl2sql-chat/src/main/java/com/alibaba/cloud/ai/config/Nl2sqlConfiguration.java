@@ -121,7 +121,7 @@ public class Nl2sqlConfiguration {
 			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(chatClientBuilder)))
 			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
 			.addNode(SEMANTIC_CONSISTENC_NODE,
-					node_async(new SemanticConsistencNode(chatClientBuilder, nl2SqlService, dbConfig)));
+					node_async(new SemanticConsistencyNode(chatClientBuilder, nl2SqlService, dbConfig)));
 
 		stateGraph.addEdge(START, QUERY_REWRITE_NODE)
 			.addConditionalEdges(QUERY_REWRITE_NODE, edge_async(new QueryRewriteDispatcher()),
