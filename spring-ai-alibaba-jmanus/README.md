@@ -19,7 +19,7 @@
 
 ---
 
-##  About
+##  About JManus
 
 JManus is a Java implementation of Manus, currently used in many applications within Alibaba Group. It is primarily used for handling exploratory tasks that require a certain degree of determinism, such as quickly finding data from massive datasets and converting it into a single row in a database, or analyzing logs and issuing alerts.
 
