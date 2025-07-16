@@ -1,0 +1,3 @@
+com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeVideoAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.prompt.PromptTemplateAutoConfiguration
