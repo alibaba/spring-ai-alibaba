@@ -351,7 +351,7 @@ const words: I18nType = {
   input: {
     placeholder: '向 JTaskPilot 发送消息',
     send: '发送',
-    planMode: '计划模式',
+    planMode: 'PLAN-ACT计划模式',
     waiting: '等待任务完成...',
     maxLength: '最大长度',
     charactersRemaining: '剩余字符',
@@ -359,7 +359,7 @@ const words: I18nType = {
 
   // 侧边栏
   sidebar: {
-    title: '计划模板',
+    title: 'PLAN-ACT 计划模板',
     templateList: '模板列表',
     configuration: '配置',
     newPlan: '新建计划',
@@ -384,6 +384,7 @@ const words: I18nType = {
     executionParamsHelp: '在重复执行时，你可以将step2里面的一些内容设置为变量，然后在这里指定该变量的具体值。例如json里面设置 变量1 ，然后在这里则设置 变量1=阿里巴巴 。 就可以实现类似函数的参数的效果。',
     clearParams: '清空参数',
     apiUrl: 'HTTP GET URL',
+    statusApiUrl: '状态查询 API',
     executing: '执行中...',
     executePlan: '执行计划',
     newTemplate: '新建模板',

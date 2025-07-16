@@ -234,6 +234,10 @@
                 <span class="api-url-label">{{ $t('sidebar.apiUrl') }}:</span>
                 <code class="api-url">{{ sidebarStore.computedApiUrl }}</code>
               </div>
+              <div class="api-url-display">
+                <span class="api-url-label">{{ $t('sidebar.statusApiUrl') }}:</span>
+                <code class="api-url">/api/executor/details/{planId}</code>
+              </div>
               <button
                 class="btn btn-primary execute-btn"
                 @click="handleExecutePlan"

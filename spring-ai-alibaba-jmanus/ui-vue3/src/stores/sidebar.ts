@@ -64,10 +64,11 @@ export class SidebarStore {
   }
 
   get computedApiUrl(): string {
-    if (!this.selectedTemplate) return ''
-    const baseUrl = `/api/plan-template/executePlanByTemplateId/${this.selectedTemplate.id}`
-    const params = this.executionParams.trim()
-    return params ? `${baseUrl}?${encodeURIComponent(params)}` : baseUrl
+  if (!this.selectedTemplate) return ''
+  const baseUrl = `/api/plan-template/execute/${this.selectedTemplate.id}`
+  const params = this.executionParams.trim()
+  // GET 方式，参数名为 allParams
+  return params ? `${baseUrl}?allParams=${encodeURIComponent(params)}` : baseUrl
   }
 
   // Actions

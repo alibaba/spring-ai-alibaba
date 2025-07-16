@@ -381,7 +381,7 @@ const words: I18nType = {
   input: {
     placeholder: 'Send a message to JTaskPilot',
     send: 'Send',
-    planMode: 'Plan Mode',
+    planMode: 'PLAN-ACT Template Mode',
     waiting: 'Waiting for task completion...',
     maxLength: 'Max Length',
     charactersRemaining: 'Characters Remaining',
@@ -389,7 +389,7 @@ const words: I18nType = {
 
   // Sidebar
   sidebar: {
-    title: 'Plan Templates',
+    title: 'PLAN-ACT Templates',
     templateList: 'Template List',
     configuration: 'Configuration',
     newPlan: 'New Plan',
@@ -414,6 +414,7 @@ const words: I18nType = {
     executionParamsHelp: 'When executing repeatedly, you can set some content in Step 2 as variables, then specify the specific values for those variables here. For example, set "Variable1" in the JSON, then set "Variable1=Alibaba" here to achieve function parameter-like effects.',
     clearParams: 'Clear Parameters',
     apiUrl: 'HTTP GET URL',
+    statusApiUrl: 'Status Query API',
     executing: 'Executing...',
     executePlan: 'Execute Plan',
     newTemplate: 'New Template',
