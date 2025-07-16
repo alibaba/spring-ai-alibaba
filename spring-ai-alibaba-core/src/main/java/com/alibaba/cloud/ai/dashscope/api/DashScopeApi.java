@@ -1069,11 +1069,15 @@ public class DashScopeApi {
 	 * @param model ID of the model to use.
 	 * @param input request input of chat.
 	 */
+	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record ChatCompletionRequest(@JsonProperty("model") String model,
+	public record ChatCompletionRequest(
+			@JsonProperty("model") String model,
 			@JsonProperty("input") ChatCompletionRequestInput input,
 			@JsonProperty("parameters") ChatCompletionRequestParameter parameters,
-			@JsonProperty("stream") Boolean stream, @JsonIgnore Boolean multiModel) {
+			@JsonProperty("stream") Boolean stream,
+			@JsonIgnore Boolean multiModel
+	) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages and
@@ -1081,10 +1085,15 @@ public class DashScopeApi {
 		 * @param model ID of the model to use.
 		 * @param input request input of chat.
 		 */
-		public ChatCompletionRequest(String model, ChatCompletionRequestInput input, Boolean stream) {
+		public ChatCompletionRequest(
+				String model,
+				ChatCompletionRequestInput input,
+				Boolean stream
+		) {
 			this(model, input, null, stream, false);
 		}
 	}
+	// @formatter:on
 
 	/**
 	 * Creates a model response for the given chat conversation.
@@ -1119,30 +1128,53 @@ public class DashScopeApi {
 	 * @param enableThinking Whether to enable the model to think before generating
 	 * responses. This is useful for complex tasks where the model needs to reason through
 	 * the problem before providing an answer.
-	 *
+	 * @param thinkingBudget The maximum length of the thinking process takes effect when
+	 * enable_thinking is true, and is suitable for Qwen3 full system model.
+	 * @param vlEnableImageHwOutput Whether to return the size after image scaling. The
+	 * model will scale the input image. When configured as True, it will return the
+	 * height and width of the image after being scaled. When the streaming output is
+	 * turned on, this information will be returned in the last data block (chunk)
+	 * @param logprobs Whether to return the logarithmic probability of the output token.
+	 * @param topLogprobs Specifies the number of candidate tokens that return the maximum
+	 * probability of the model when generated at each step. Value range: [0,5] Effective
+	 * only if logprobs is true.
 	 */
+	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record ChatCompletionRequestParameter(@JsonProperty("result_format") String resultFormat,
-			@JsonProperty("seed") Integer seed, @JsonProperty("max_tokens") Integer maxTokens,
-			@JsonProperty("top_p") Double topP, @JsonProperty("top_k") Integer topK,
+	public record ChatCompletionRequestParameter(
+			@JsonProperty("result_format") String resultFormat,
+			@JsonProperty("seed") Integer seed,
+			@JsonProperty("max_tokens") Integer maxTokens,
+			@JsonProperty("top_p") Double topP,
+			@JsonProperty("top_k") Integer topK,
 			@JsonProperty("repetition_penalty") Double repetitionPenalty,
-			@JsonProperty("presence_penalty") Double presencePenalty, @JsonProperty("temperature") Double temperature,
-			@JsonProperty("stop") List<Object> stop, @JsonProperty("enable_search") Boolean enableSearch,
+			@JsonProperty("presence_penalty") Double presencePenalty,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("stop") List<Object> stop,
+			@JsonProperty("enable_search") Boolean enableSearch,
 			@JsonProperty("response_format") DashScopeResponseFormat responseFormat,
 			@JsonProperty("incremental_output") Boolean incrementalOutput,
-			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("tool_choice") Object toolChoice,
+			@JsonProperty("tools") List<FunctionTool> tools,
+			@JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("vl_high_resolution_images") Boolean vlHighResolutionImages,
 			@JsonProperty("enable_thinking") Boolean enableThinking,
 			@JsonProperty("search_options") SearchOptions searchOptions,
-			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls) {
+			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
+			@JsonProperty("thinking_budget ") Integer thinkingBudget,
+			@JsonProperty("vl_enable_image_hw_output ") Boolean vlEnableImageHwOutput,
+			@JsonProperty("ocr_options ")  OCRConfig ocrOptions,
+			@JsonProperty("logprobs ") Boolean logprobs,
+			@JsonProperty("top_logprobs ") Integer topLogprobs,
+			@JsonProperty("translation_options") TranslationOptions translationOptions
+	) {
 
 		/**
 		 * shortcut constructor for chat request parameter
 		 */
 		public ChatCompletionRequestParameter() {
-			this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-					null, null);
+			this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+					null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1169,6 +1201,43 @@ public class DashScopeApi {
 			}
 
 		}
+	}
+	// @formatter:on
+
+	/**
+	 * Translation parameters that need to be configured when you use the translation
+	 * model TranslationMemory A pair of statements representing the source and target
+	 * languages in translation memory。 Term Terminology pairs representing source and
+	 * target languages
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record TranslationOptions(@JsonProperty("source_lang") String sourceLang,
+			@JsonProperty("target_lang") String targetLang, @JsonProperty("terms") List<LanguagePair> terms,
+			@JsonProperty("tm_list") List<LanguagePair> tmList, @JsonProperty("domains") String domains) {
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record LanguagePair(@JsonProperty("source") String source, @JsonProperty("target") String target) {
+	}
+
+	/**
+	 * OCR recognizes parameter configuration, where task is the built-in task name, and
+	 * the supported options are: "text_recognition": general text recognition
+	 * "key_information_extraction": information extraction "document_parsing": document
+	 * parsing "table_parsing": table parsing "formula_recognition": formula recognition
+	 * "multi_lan": multilingual recognition taskConfig is (optional) Used when the
+	 * built-in task task is "key_information_extraction". where result_schema object
+	 * (required) represents the field that needs to be extracted by the model. It can be
+	 * any form of JSON structure and can be nested up to 3 layers of JSON objects. You
+	 * just need to fill in the key of the JSON object and keep the value empty.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record OCRConfig(@JsonProperty("task") String task,
+			@JsonProperty("task_config") List<TaskConfig> taskConfig) {
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record TaskConfig(@JsonProperty("result_schema") Object resultSchema) {
 	}
 
 	/**
@@ -1388,10 +1457,12 @@ public class DashScopeApi {
 	 * @param output chat completion output.
 	 * @param usage Usage statistics for the completion request.
 	 */
+	// format: off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletion(@JsonProperty("request_id") String requestId,
 			@JsonProperty("output") ChatCompletionOutput output, @JsonProperty("usage") TokenUsage usage) {
 	}
+	// format: on
 
 	/**
 	 * Represents a chat completion response returned by model, based on the provided
@@ -1420,51 +1491,6 @@ public class DashScopeApi {
 	}
 
 	/**
-	 * Log probability information for the choice.
-	 *
-	 * @param content A list of message content tokens with log probability information.
-	 */
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record LogProbs(@JsonProperty("content") List<Content> content) {
-
-		/**
-		 * Message content tokens with log probability information.
-		 *
-		 * @param token The token.
-		 * @param logprob The log probability of the token.
-		 * @param probBytes A list of integers representing the UTF-8 bytes representation
-		 * of the token. Useful in instances where characters are represented by multiple
-		 * tokens and their byte representations must be combined to generate the correct
-		 * text representation. Can be null if there is no bytes representation for the
-		 * token.
-		 * @param topLogprobs List of the most likely tokens and their log probability, at
-		 * this token position. In rare cases, there may be fewer than the number of
-		 * requested top_logprobs returned.
-		 */
-		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record Content(@JsonProperty("token") String token, @JsonProperty("logprob") Float logprob,
-				@JsonProperty("bytes") List<Integer> probBytes,
-				@JsonProperty("top_logprobs") List<TopLogProbs> topLogprobs) {
-
-			/**
-			 * The most likely tokens and their log probability, at this token position.
-			 *
-			 * @param token The token.
-			 * @param logprob The log probability of the token.
-			 * @param probBytes A list of integers representing the UTF-8 bytes
-			 * representation of the token. Useful in instances where characters are
-			 * represented by multiple tokens and their byte representations must be
-			 * combined to generate the correct text representation. Can be null if there
-			 * is no bytes representation for the token.
-			 */
-			@JsonInclude(JsonInclude.Include.NON_NULL)
-			public record TopLogProbs(@JsonProperty("token") String token, @JsonProperty("logprob") Float logprob,
-					@JsonProperty("bytes") List<Integer> probBytes) {
-			}
-		}
-	}
-
-	/**
 	 * Usage statistics for the completion request.
 	 *
 	 * @param outputTokens Number of tokens in the generated completion. Only applicable
@@ -1473,11 +1499,33 @@ public class DashScopeApi {
 	 * @param totalTokens Total number of tokens used in the request (prompt +
 	 * completion).
 	 */
+	// format: off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record TokenUsage(@JsonProperty("output_tokens") Integer outputTokens,
-			@JsonProperty("input_tokens") Integer inputTokens, @JsonProperty("total_tokens") Integer totalTokens) {
-
+			@JsonProperty("input_tokens") Integer inputTokens, @JsonProperty("total_tokens") Integer totalTokens,
+			@JsonProperty("image_tokens") Integer imageTokens, @JsonProperty("video_tokens ") Integer videoTokens,
+			@JsonProperty("audio_tokens ") Integer audioTokens,
+			@JsonProperty("prompt_tokens_details") Object promptTokensDetails,
+			@JsonProperty("input_tokens_details") InputTokenDetailed inputTokensDetails,
+			@JsonProperty("output_tokens_details") OutputTokenDetailed outputTokensDetails,
+			@JsonProperty("prompt_tokens_details") PromptTokenDetailed promptTokenDetailed) {
 	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record InputTokenDetailed(@JsonProperty("text_tokens ") Integer text,
+			@JsonProperty("image_tokens ") Integer image, @JsonProperty("image_tokens ") Integer audio) {
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record OutputTokenDetailed(@JsonProperty("text_tokens") Integer text,
+			// Only qwen3 models.
+			@JsonProperty("reasoning_tokens") Integer image) {
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record PromptTokenDetailed(@JsonProperty("cached_tokens ") Integer cachedTokens) {
+	}
+	// format: on
 
 	/**
 	 * Represents a chat completion response returned by model, based on the provided
@@ -1487,6 +1535,7 @@ public class DashScopeApi {
 	 * @param output chat completion output.
 	 * @param usage Usage statistics for the completion request.
 	 */
+
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletionChunk(@JsonProperty("request_id") String requestId,
 			@JsonProperty("output") ChatCompletionOutput output, @JsonProperty("usage") TokenUsage usage) {
