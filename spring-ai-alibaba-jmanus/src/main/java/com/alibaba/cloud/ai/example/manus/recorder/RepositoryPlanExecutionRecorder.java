@@ -384,6 +384,11 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 				thinkActRecord.setActToolInfoList(params.getActToolInfoList());
 			}
 
+			// 如果是浏览器工具
+			if ("browser_use".equals(params.getToolName())) {
+				thinkActRecord.setActionResultImage(params.getActionResultImage());
+			}
+
 			// Set think-act execution to update the record
 			setThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(), thinkActRecord);
 

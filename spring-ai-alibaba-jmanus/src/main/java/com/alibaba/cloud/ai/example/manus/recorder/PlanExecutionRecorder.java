@@ -192,6 +192,9 @@ public interface PlanExecutionRecorder {
 		/** Action result */
 		String actionResult;
 
+		/** 行动结果图片（base64）*/
+		private String actionResultImage;
+
 		/** Execution status */
 		String status;
 
@@ -423,6 +426,14 @@ public interface PlanExecutionRecorder {
 
 		public void setSummary(String summary) {
 			this.summary = summary;
+		}
+
+		public String getActionResultImage() {
+			return actionResultImage;
+		}
+
+		public void setActionResultImage(String actionResultImage) {
+			this.actionResultImage = actionResultImage;
 		}
 
 		public List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord.ActToolInfo> getActToolInfoList() {

@@ -15,12 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -28,6 +23,9 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntit
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
+import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.LoadState;
 import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -299,6 +297,20 @@ public class DynamicAgent extends ReActAgent {
 				}
 			}
 
+			// Handle BrowserUseTool logic
+			if (toolInstance instanceof BrowserUseTool browserUseTool) {
+				// Take a screenshot
+				Page currentPage = browserUseTool.getDriver().getCurrentPage();
+				// Wait for DOMContentLoaded
+				currentPage.waitForLoadState(LoadState.DOMCONTENTLOADED, new Page.WaitForLoadStateOptions().setTimeout(3000));
+				byte[] screenshot = currentPage.screenshot();
+				// 添加截图数据，为了不改变结果，这里用一个emoji分割
+				// 记录成功的动作结果
+				recordActionResult(actToolInfoList, lastToolCallResult + "🈹" + (Base64.getEncoder().encodeToString(screenshot)), "SUCCESS", null, false);
+
+				return new AgentExecResult(lastToolCallResult, AgentState.IN_PROGRESS);
+			}
+
 			// Handle TerminableTool logic
 			if (toolInstance instanceof TerminableTool) {
 				TerminableTool terminableTool = (TerminableTool) toolInstance;
@@ -431,7 +443,15 @@ public class DynamicAgent extends ReActAgent {
 		params.setThinkActRecordId(getThinkActRecordId());
 		params.setCreatedThinkActRecordId(currentThinkActRecordId);
 		params.setActionDescription(actionDescription);
-		params.setActionResult(actionResult);
+		if ("browser_use".equals(toolName)) {
+			String[] split = actionResult.split("🈹");
+			params.setActionResult(split[0]);
+			if (split.length > 1) {
+				params.setActionResultImage(split[1]);
+			}
+		} else {
+			params.setActionResult(actionResult);
+		}
 		params.setStatus(status);
 		params.setErrorMessage(errorMessage);
 		params.setToolName(toolName);

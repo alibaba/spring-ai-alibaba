@@ -85,6 +85,9 @@ public class ThinkActRecord {
 	// Result of action execution
 	private String actionResult;
 
+	// 行动结果图片（base64）
+	private String actionResultImage;
+
 	// Status of this think-act cycle (success, failure, etc.)
 	private String status;
 
@@ -268,6 +271,14 @@ public class ThinkActRecord {
 
 	public void setActionResult(String actionResult) {
 		this.actionResult = actionResult;
+	}
+
+	public String getActionResultImage() {
+		return actionResultImage;
+	}
+
+	public void setActionResultImage(String actionResultImage) {
+		this.actionResultImage = actionResultImage;
 	}
 
 	public String getStatus() {
