@@ -67,10 +67,6 @@ public class ResearcherNode implements NodeAction {
 	// MCP工厂
 	private final McpProviderFactory mcpFactory;
 
-	private final SmartAgentDispatcher smartAgentDispatcher;
-
-	private final SmartAgentProperties smartAgentProperties;
-
 	private final SmartAgentSelectionHelper smartAgentSelectionHelper;
 
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
@@ -82,8 +78,6 @@ public class ResearcherNode implements NodeAction {
 		this.reflectionProcessor = reflectionProcessor;
 		this.mcpFactory = mcpFactory;
 		this.searchFilterService = searchFilterService;
-		this.smartAgentDispatcher = smartAgentDispatcher;
-		this.smartAgentProperties = smartAgentProperties;
 		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties,
 				smartAgentDispatcher, null, null);
 	}

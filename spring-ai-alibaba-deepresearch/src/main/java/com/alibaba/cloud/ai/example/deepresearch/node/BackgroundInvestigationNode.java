@@ -57,12 +57,6 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final SearchFilterService searchFilterService;
 
-	private final QuestionClassifierService questionClassifierService;
-
-	private final SearchPlatformSelectionService platformSelectionService;
-
-	private final SmartAgentProperties smartAgentProperties;
-
 	private final SmartAgentSelectionHelper smartAgentSelectionHelper;
 
 	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
@@ -71,9 +65,6 @@ public class BackgroundInvestigationNode implements NodeAction {
 		this.jinaCrawlerService = jinaCrawlerService;
 		this.infoCheckService = infoCheckService;
 		this.searchFilterService = searchFilterService;
-		this.questionClassifierService = questionClassifierService;
-		this.platformSelectionService = platformSelectionService;
-		this.smartAgentProperties = smartAgentProperties;
 		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties, null,
 				questionClassifierService, platformSelectionService);
 	}
