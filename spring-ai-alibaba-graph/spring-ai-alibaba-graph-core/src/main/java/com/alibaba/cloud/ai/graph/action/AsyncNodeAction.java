@@ -20,7 +20,6 @@ import io.opentelemetry.context.Context;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -54,15 +53,16 @@ public interface AsyncNodeAction extends Function<OverAllState, CompletableFutur
 	static AsyncNodeAction node_async(NodeAction syncAction) {
 		return state -> {
 			Context context = Context.current();
-			return CompletableFuture.supplyAsync(context.wrapSupplier(() -> {
-				try {
-					return syncAction.apply(state);
-				}
-				catch (Exception e) {
-					throw new CompletionException(e);
-				}
-			}), BOUNDED_ELASTIC_EXECUTOR // 显式指定线程池
-			);
+			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
+			try {
+				// context.wrap(() -> result.complete(syncAction.apply(state)));
+				result.complete(syncAction.apply(state));
+			}
+			catch (Exception e) {
+				// context.wrap(() -> result.completeExceptionally(e));
+				result.completeExceptionally(e);
+			}
+			return result;
 		};
 	}
 

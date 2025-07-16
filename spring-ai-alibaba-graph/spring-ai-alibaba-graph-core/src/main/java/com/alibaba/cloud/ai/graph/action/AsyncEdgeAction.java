@@ -44,14 +44,16 @@ public interface AsyncEdgeAction extends Function<OverAllState, CompletableFutur
 	static AsyncEdgeAction edge_async(EdgeAction syncAction) {
 		return state -> {
 			Context context = Context.current();
-			return CompletableFuture.supplyAsync(context.wrapSupplier(() -> {
-				try {
-					return syncAction.apply(state);
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}), AsyncNodeAction.BOUNDED_ELASTIC_EXECUTOR);
+			CompletableFuture<String> result = new CompletableFuture<>();
+			try {
+				// context.wrap(() -> result.complete(syncAction.apply(state)));
+				result.complete(syncAction.apply(state));
+			}
+			catch (Exception e) {
+				// context.wrap(() -> result.completeExceptionally(e));
+				result.completeExceptionally(e);
+			}
+			return result;
 		};
 	}
 
