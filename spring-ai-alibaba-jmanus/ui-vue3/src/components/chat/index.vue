@@ -76,18 +76,18 @@
                     :key="index"
                     class="ai-section"
                     :class="{
-                      current: index === (message.planExecution?.currentStepIndex ?? -1),
-                      completed: index < (message.planExecution?.currentStepIndex ?? 0),
-                      pending: index > (message.planExecution?.currentStepIndex ?? 0),
+                      running: getAgentExecutionStatus(message, index) === 'RUNNING',
+                      completed: getAgentExecutionStatus(message, index) === 'FINISHED',
+                      pending: getAgentExecutionStatus(message, index) === 'IDLE',
                     }"
                     @click.stop="handleStepClick(message, index)"
                   >
                     <div class="section-header">
                       <span class="step-icon">
                         {{
-                          index < (message.planExecution?.currentStepIndex ?? 0)
+                          getAgentExecutionStatus(message, index) === 'FINISHED'
                             ? '✓'
-                            : index === (message.planExecution?.currentStepIndex ?? -1)
+                            : getAgentExecutionStatus(message, index) === 'RUNNING'
                               ? '▶'
                               : '○'
                         }}
@@ -96,13 +96,13 @@
                         {{ step || `${$t('chat.step')} ${index + 1}` }}
                       </span>
                       <span
-                        v-if="index === (message.planExecution?.currentStepIndex ?? -1)"
+                        v-if="getAgentExecutionStatus(message, index) === 'RUNNING'"
                         class="step-status current"
                       >
                         {{ $t('chat.status.executing') }}
                       </span>
                       <span
-                        v-else-if="index < (message.planExecution?.currentStepIndex ?? 0)"
+                        v-else-if="getAgentExecutionStatus(message, index) === 'FINISHED'"
                         class="step-status completed"
                       >
                         {{ $t('chat.status.completed') }}
@@ -196,7 +196,7 @@
                     <div
                       v-if="
                         message.planExecution?.userInputWaitState &&
-                        index === (message.planExecution?.currentStepIndex ?? -1)
+                        getAgentExecutionStatus(message, index) === 'RUNNING'
                       "
                       class="user-input-form-container"
                     >
@@ -621,6 +621,20 @@ const handleSendMessage = (message: string) => {
     // Direct mode is still handled directly
     handleDirectMode(message)
   }
+}
+
+// Get agent execution status based on index
+const getAgentExecutionStatus = (message: Message, index: number): string => {
+  const agentExecutionSequence = message.planExecution?.agentExecutionSequence ?? []
+  const agentExecution = agentExecutionSequence[index]
+
+  if (!agentExecution) {
+    // 如果没有对应的 AgentExecutionRecord，返回待执行状态
+    return 'IDLE'
+  }
+
+  // 返回 AgentExecutionRecord 的状态
+  return agentExecution.status ?? 'IDLE'
 }
 
 // Handle step click events - Only expose events without handling specific logic
@@ -1177,40 +1191,42 @@ const generateCompletedPlanResponse = (text: string): string => {
 }
 
 // Handle the plan completion event
-const handlePlanCompleted = (details: PlanExecutionRecord) => {
-  console.log('[ChatComponent] Plan completed:', details)
+const handlePlanCompleted = (rootPlanId: string) => {
+  console.log('[ChatComponent] Plan completed with rootPlanId:', rootPlanId);
 
-  if (details?.planId) {
-    // Find the corresponding message and update it to the completed state
+  const details = planExecutionManager.getCachedPlanRecord(rootPlanId);
+  if (!details) {
+    console.warn('[ChatComponent] No cached plan data found for rootPlanId:', rootPlanId);
+    return;
+  }
+
+  console.log('[ChatComponent] Plan details:', details);
+
+  if (details?.rootPlanId) {
     const messageIndex = messages.value.findIndex(
-      m => m.planExecution?.currentPlanId === details.planId
-    )
+      m => m.planExecution?.currentPlanId === details.rootPlanId
+    );
     if (messageIndex !== -1) {
-      const message = messages.value[messageIndex]
-      // Clear all processing states and mark as completed
-      delete message.thinking
+      const message = messages.value[messageIndex];
+      delete message.thinking;
 
-      // Generate a humanized final response
-      const summary = details.summary ?? details.result ?? '任务已完成'
-
-      // Ensure the response sounds more like a human conversation
-      let finalResponse = summary
+      const summary = details.summary ?? details.result ?? '任务已完成';
+      let finalResponse = summary;
       if (!finalResponse.includes('我') && !finalResponse.includes('您')) {
         if (finalResponse.includes('成功') || finalResponse.includes('完成')) {
-          finalResponse = `很好！${finalResponse}。如果您还有其他需要帮助的地方，请随时告诉我。`
+          finalResponse = `很好！${finalResponse}。如果您还有其他需要帮助的地方，请随时告诉我。`;
         } else {
-          finalResponse = `我已经完成了您的请求：${finalResponse}`
+          finalResponse = `我已经完成了您的请求：${finalResponse}`;
         }
       }
 
-      message.content = finalResponse
-
-      console.log('[ChatComponent] Updated completed message:', message.content)
+      message.content = finalResponse;
+      console.log('[ChatComponent] Updated completed message:', message.content);
     } else {
-      console.warn('[ChatComponent] No message found for completed planId:', details.planId)
+      console.warn('[ChatComponent] No message found for completed rootPlanId:', details.rootPlanId);
     }
   }
-}
+};
 
 // Format the response text to make it more like a natural conversation
 const formatResponseText = (text: string): string => {
@@ -1718,7 +1734,7 @@ defineExpose({
         background: rgba(255, 255, 255, 0.05);
       }
 
-      &.current {
+      &.running {
         background: rgba(102, 126, 234, 0.1);
         border-left: 3px solid #667eea;
       }
@@ -1767,7 +1783,7 @@ defineExpose({
             color: #22c55e;
           }
 
-          &.current {
+          &.running {
             background: rgba(102, 126, 234, 0.2);
             color: #667eea;
           }
@@ -1915,7 +1931,7 @@ defineExpose({
             border-color: rgba(34, 197, 94, 0.2);
           }
 
-          &.current {
+          &.running {
             background: rgba(102, 126, 234, 0.05);
             border-color: rgba(102, 126, 234, 0.3);
             box-shadow: 0 0 4px rgba(102, 126, 234, 0.2);

@@ -49,15 +49,15 @@ public interface PlanExecutionRecorder {
 	 * @param step Execution step
 	 * @param context Execution context
 	 */
-	void recordStepEnd(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep step,
-			com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
+	void recordStepEnd(ExecutionStep step,
+			ExecutionContext context);
 
 	/**
 	 * Record the start of plan execution.
 	 * @param context Execution context containing user request and execution process
 	 * information
 	 */
-	void recordPlanExecutionStart(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
+	void recordPlanExecutionStart(ExecutionContext context);
 
 	/**
 	 * Record think-act execution

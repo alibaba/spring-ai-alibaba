@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder;
 
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -35,7 +36,8 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * The in-memory PlanExecutionRecorder cannot be used in a distributed environment, so it
+ * The in-memory PlanExecutionRecorder cannot be used in a distributed
+ * environment, so it
  * is necessary to use DB persistence for PlanExecutionRecord.
  *
  * fix feature: https://github.com/alibaba/spring-ai-alibaba/issues/1391
@@ -50,9 +52,10 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Record think-act execution with PlanExecutionRecord parameter
+	 * 
 	 * @param planExecutionRecord Plan execution record
-	 * @param agentExecutionId Agent execution ID
-	 * @param thinkActRecord Think-act record
+	 * @param agentExecutionId    Agent execution ID
+	 * @param thinkActRecord      Think-act record
 	 */
 	@Override
 	public void setThinkActExecution(PlanExecutionRecord planExecutionRecord, Long agentExecutionId,
@@ -71,8 +74,9 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Record plan completion with PlanExecutionRecord parameter
+	 * 
 	 * @param planExecutionRecord Plan execution record
-	 * @param summary Execution summary
+	 * @param summary             Execution summary
 	 */
 	@Override
 	public void setPlanCompletion(PlanExecutionRecord planExecutionRecord, String summary) {
@@ -82,9 +86,12 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * Save execution records of the specified plan ID to persistent storage. This method
-	 * will recursively call save methods of PlanExecutionRecord, AgentExecutionRecord and
+	 * Save execution records of the specified plan ID to persistent storage. This
+	 * method
+	 * will recursively call save methods of PlanExecutionRecord,
+	 * AgentExecutionRecord and
 	 * ThinkActRecord
+	 * 
 	 * @param rootPlanId Plan ID to save
 	 * @return Returns true if record is found and saved, false otherwise
 	 */
@@ -96,6 +103,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Delete execution record of the specified plan ID
+	 * 
 	 * @param planId Plan ID to delete
 	 */
 	@Override
@@ -135,7 +143,24 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			int currentStepIndex = step.getStepIndex();
 			recordToUpdate.setCurrentStepIndex(currentStepIndex);
 			retrieveExecutionSteps(context, recordToUpdate);
-
+			List<AgentExecutionRecord> agentExecutionSequence = recordToUpdate.getAgentExecutionSequence();
+			AgentExecutionRecord agentExecutionRecord;
+			if (agentExecutionSequence.size() > currentStepIndex) {
+				agentExecutionRecord = agentExecutionSequence.get(currentStepIndex);
+			} else {
+				// create and add new AgentExecutionRecord
+				agentExecutionRecord = new AgentExecutionRecord(
+						recordToUpdate.getCurrentPlanId(),
+						null, 
+						null 
+				);
+				// 补齐到 currentStepIndex
+				while (agentExecutionSequence.size() < currentStepIndex) {
+					agentExecutionSequence.add(new AgentExecutionRecord());
+				}
+				agentExecutionSequence.add(agentExecutionRecord);
+			}
+			agentExecutionRecord.setStatus(ExecutionStatus.RUNNING);
 			// Save the correct plan (parent for sub-plan, self for root plan)
 			if (rootPlan != null) {
 				savePlanExecutionRecords(rootPlan);
@@ -155,7 +180,10 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			int currentStepIndex = step.getStepIndex();
 			recordToUpdate.setCurrentStepIndex(currentStepIndex);
 			retrieveExecutionSteps(context, recordToUpdate);
-
+			AgentExecutionRecord agentExecutionRecord = recordToUpdate.getAgentExecutionSequence()
+					.get(currentStepIndex);
+			agentExecutionRecord.setStatus(
+					step.getStatus() == AgentState.COMPLETED ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING);
 			// Save the correct plan (parent for sub-plan, self for root plan)
 			if (rootPlan != null) {
 				savePlanExecutionRecords(rootPlan);
@@ -164,13 +192,15 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * Get the plan execution record to update in memory. Returns the record that should
+	 * Get the plan execution record to update in memory. Returns the record that
+	 * should
 	 * be updated with current execution data.
 	 */
 	private PlanExecutionRecord getRecordToUpdate(ExecutionContext context, PlanExecutionRecord rootRecord) {
 		Long thinkActRecordId = context.getThinkActRecordId();
 
-		// For sub-plan execution, we want to save to parent plan, so return the root plan
+		// For sub-plan execution, we want to save to parent plan, so return the root
+		// plan
 		// record
 		if (thinkActRecordId != null) {
 			// This is a sub-plan execution - save data to parent plan
@@ -179,13 +209,11 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 				// If currentPlanId starts with "sub-", it indicates a sub-plan execution
 				// Use the root record to create or get the sub-plan execution record
 				return getOrCreateSubPlanExecutionRecord(rootRecord, currentPlanId, thinkActRecordId, true);
-			}
-			else {
+			} else {
 				throw new IllegalArgumentException("Current plan ID is not a sub-plan: " + currentPlanId);
 			}
 
-		}
-		else {
+		} else {
 			// This is a parent/root plan execution - update the plan itself (the record
 			// we already have)
 			return rootRecord;
@@ -193,7 +221,8 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * Record complete agent execution at the end. This method handles all agent execution
+	 * Record complete agent execution at the end. This method handles all agent
+	 * execution
 	 * record management logic without exposing internal record objects.
 	 */
 	@Override
@@ -226,8 +255,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 					setAgentExecution(planRecord, agentRecord);
 				}
 			}
-		}
-		else {
+		} else {
 			// For root plan execution
 			planRecord = getOrCreateRootPlanExecutionRecord(params.getCurrentPlanId(), true);
 			if (planRecord != null) {
@@ -242,7 +270,8 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * 接口1: 记录思考和执行动作 Record thinking and action execution process. This method handles
+	 * 接口1: 记录思考和执行动作 Record thinking and action execution process. This method
+	 * handles
 	 * ThinkActRecord creation and thinking process without exposing internal record
 	 * objects.
 	 */
@@ -263,8 +292,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 						params.getThinkActRecordId(), true);
 				planToSave = parentPlan; // Save parent plan for sub-plan execution
 			}
-		}
-		else {
+		} else {
 			planExecutionRecord = getOrCreateRootPlanExecutionRecord(params.getCurrentPlanId(), true);
 			planToSave = planExecutionRecord; // Save the root plan record itself
 		}
@@ -319,7 +347,8 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * 接口2: 记录执行结果 Record action execution result. This method updates the ThinkActRecord
+	 * 接口2: 记录执行结果 Record action execution result. This method updates the
+	 * ThinkActRecord
 	 * with action results without exposing internal record objects.
 	 */
 	@Override
@@ -341,8 +370,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 						params.getThinkActRecordId(), true);
 				planToSave = parentPlan; // Save parent plan for sub-plan execution
 			}
-		}
-		else {
+		} else {
 			// Root plan execution: no thinkActRecordId means this is a main plan
 			planExecutionRecord = getOrCreateRootPlanExecutionRecord(params.getCurrentPlanId(), true);
 			planToSave = planExecutionRecord; // Save the root plan record itself
@@ -390,15 +418,15 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			if (planToSave != null) {
 				savePlanExecutionRecords(planToSave);
 			}
-		}
-		else {
+		} else {
 			logger.warn("ThinkActRecord not found with ID: {} for plan: {}", params.getCreatedThinkActRecordId(),
 					params.getCurrentPlanId());
 		}
 	}
 
 	/**
-	 * 接口3: 记录计划完成 Record plan completion. This method handles plan completion recording
+	 * 接口3: 记录计划完成 Record plan completion. This method handles plan completion
+	 * recording
 	 * logic without exposing internal record objects.
 	 */
 	@Override
@@ -420,8 +448,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 						false);
 				planToSave = parentPlan; // Save parent plan for sub-plan execution
 			}
-		}
-		else {
+		} else {
 			// Root plan execution: no thinkActRecordId means this is a main plan
 			planExecutionRecord = getOrCreateRootPlanExecutionRecord(currentPlanId, false);
 			planToSave = planExecutionRecord; // Save the root plan record itself
@@ -450,10 +477,12 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Gets or creates root plan execution record
-	 * @param rootPlanId Root plan ID
+	 * 
+	 * @param rootPlanId        Root plan ID
 	 * @param createIfNotExists Whether to create if not exists
-	 * @return Root plan execution record, or null if not found and createIfNotExists is
-	 * false
+	 * @return Root plan execution record, or null if not found and
+	 *         createIfNotExists is
+	 *         false
 	 */
 	private PlanExecutionRecord getOrCreateRootPlanExecutionRecord(String rootPlanId, boolean createIfNotExists) {
 		logger.info("Enter getOrCreateRootPlanExecutionRecord with rootPlanId: {}, createIfNotExists: {}", rootPlanId,
@@ -479,12 +508,14 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Gets or creates sub-plan execution record from parent plan
-	 * @param parentPlan Parent plan execution record
-	 * @param subPlanId Sub-plan ID
-	 * @param thinkActRecordId Think-act record ID that contains the sub-plan
+	 * 
+	 * @param parentPlan        Parent plan execution record
+	 * @param subPlanId         Sub-plan ID
+	 * @param thinkActRecordId  Think-act record ID that contains the sub-plan
 	 * @param createIfNotExists Whether to create if not exists
-	 * @return Sub-plan execution record, or null if thinkActRecordId is null or not found
-	 * and createIfNotExists is false
+	 * @return Sub-plan execution record, or null if thinkActRecordId is null or not
+	 *         found
+	 *         and createIfNotExists is false
 	 */
 	private PlanExecutionRecord getOrCreateSubPlanExecutionRecord(PlanExecutionRecord parentPlan, String subPlanId,
 			Long thinkActRecordId, boolean createIfNotExists) {
@@ -526,7 +557,8 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Helper method to find ThinkActRecord in a plan
-	 * @param plan Plan execution record
+	 * 
+	 * @param plan             Plan execution record
 	 * @param thinkActRecordId Think-act record ID
 	 * @return ThinkActRecord if found, null otherwise
 	 */
@@ -547,6 +579,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Get current agent execution record for a specific plan execution record
+	 * 
 	 * @param planExecutionRecord Plan execution record
 	 * @return Current active agent execution record, or null if none exists
 	 */
@@ -569,7 +602,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	private void saveExecutionRecord(PlanExecutionRecord planExecutionRecord) {
 		PlanExecutionRecordEntity entity = planExecutionRecordRepository
-			.findByPlanId(planExecutionRecord.getRootPlanId());
+				.findByPlanId(planExecutionRecord.getRootPlanId());
 		if (entity == null) {
 			entity = new PlanExecutionRecordEntity();
 			entity.setPlanId(planExecutionRecord.getRootPlanId());
@@ -598,14 +631,13 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 		// 会多次调用，因此需要根据id修改
 		ThinkActRecord exist = agentRecord.getThinkActSteps()
-			.stream()
-			.filter(r -> r.getId().equals(thinkActRecord.getId()))
-			.findFirst()
-			.orElse(null);
+				.stream()
+				.filter(r -> r.getId().equals(thinkActRecord.getId()))
+				.findFirst()
+				.orElse(null);
 		if (exist == null) {
 			agentRecord.getThinkActSteps().add(thinkActRecord);
-		}
-		else {
+		} else {
 			BeanUtils.copyProperties(thinkActRecord, exist);
 		}
 	}
@@ -623,8 +655,9 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Record agent execution with PlanExecutionRecord parameter
+	 * 
 	 * @param planExecutionRecord Plan execution record
-	 * @param agentRecord Agent execution record
+	 * @param agentRecord         Agent execution record
 	 * @return Agent execution ID
 	 */
 	private Long setAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord) {
@@ -636,8 +669,9 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * get current think-act record ID
+	 * 
 	 * @param currentPlanId 当前计划ID
-	 * @param rootPlanId 根计划ID
+	 * @param rootPlanId    根计划ID
 	 * @return 当前 think-act 记录ID，如果没有则返回 null
 	 */
 	public Long getCurrentThinkActRecordId(String currentPlanId, String rootPlanId) {
@@ -655,8 +689,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 						return lastStep.getId();
 					}
 				}
-			}
-			else {
+			} else {
 				planExecutionRecord = getOrCreateRootPlanExecutionRecord(currentPlanId, false);
 				if (planExecutionRecord != null) {
 					AgentExecutionRecord currentAgentRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
@@ -668,8 +701,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 					}
 				}
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.warn("Failed to get current think-act record ID: {}", e.getMessage());
 		}
 
