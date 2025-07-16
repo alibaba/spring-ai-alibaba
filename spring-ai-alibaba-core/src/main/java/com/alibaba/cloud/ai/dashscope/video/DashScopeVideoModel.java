@@ -15,18 +15,14 @@
  */
 package com.alibaba.cloud.ai.dashscope.video;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.Objects;
-
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
-import org.springframework.util.Assert;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeVideoApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeVideoApi.VideoGenerationRequest;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeVideoApi.VideoGenerationResponse;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.Assert;
+
+import java.time.Duration;
+import java.util.Objects;
 
 /**
  * DashScope Video Generation Model.
