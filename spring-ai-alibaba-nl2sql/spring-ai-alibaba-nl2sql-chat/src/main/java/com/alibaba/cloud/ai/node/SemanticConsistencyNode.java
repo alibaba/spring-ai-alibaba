@@ -42,13 +42,13 @@ import static com.alibaba.cloud.ai.constant.Constant.*;
  *
  * @author zhangshenghang
  */
-public class SemanticConsistencNode extends AbstractPlanBasedNode {
+public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 
-	private static final Logger logger = LoggerFactory.getLogger(SemanticConsistencNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(SemanticConsistencyNode.class);
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
-	public SemanticConsistencNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
+	public SemanticConsistencyNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
 			DbConfig dbConfig) {
 		super();
 		this.baseNl2SqlService = baseNl2SqlService;
@@ -59,7 +59,6 @@ public class SemanticConsistencNode extends AbstractPlanBasedNode {
 		logNodeEntry();
 
 		// 获取必要的输入参数
-		String input = StateUtils.getStringValue(state, INPUT_KEY);
 		List<String> evidenceList = StateUtils.getListValue(state, EVIDENCES);
 		SchemaDTO schemaDTO = StateUtils.getObjectValue(state, TABLE_RELATION_OUTPUT, SchemaDTO.class);
 
@@ -72,47 +71,31 @@ public class SemanticConsistencNode extends AbstractPlanBasedNode {
 		logger.info("开始语义一致性校验 - SQL: {}", sqlQuery);
 		logger.info("步骤描述: {}", toolParameters.getDescription());
 
-		Flux<ChatResponse> semanticValidationFlux = Flux.create(emitter -> {
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始语义一致性校验..."));
-			// 执行语义一致性检查
-			String validationResult = null;
-			try {
-				validationResult = performSemanticValidation(schemaDTO, evidenceList, toolParameters, sqlQuery);
-			}
-			catch (Exception e) {
-				emitter.error(e);
-				return;
-			}
+		// 创建开始校验状态流
+		Flux<ChatResponse> startValidationFlux = Flux.just(ChatResponseUtil.createCustomStatusResponse("开始语义一致性校验"));
 
-			// 判断校验结果
-			boolean passed = !validationResult.startsWith("不通过");
-			logger.info("语义一致性校验结果: {}", passed ? "通过" : "未通过");
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("语义一致性校验结果: " + (passed ? "通过" : "未通过")));
+		// 通过流式API获取语义验证结果
+		Flux<ChatResponse> validationResultFlux = performSemanticValidationStream(schemaDTO, evidenceList,
+				toolParameters, sqlQuery)
+			.doOnComplete(() -> {
+				logger.info("语义一致性校验流式处理完成");
+			})
+			.doOnError(error -> {
+				logger.error("语义一致性校验出错", error);
+			});
 
-			if (!passed) {
-				logger.info("语义一致性校验详情: {}", validationResult);
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("校验详情: " + validationResult));
-			}
-			emitter.complete();
-		});
-
-		var generator = StreamingChatGenerator.builder()
+		// 处理验证结果
+		var chatGenerator = StreamingChatGenerator.builder()
 			.startingNode(this.getClass().getSimpleName())
 			.startingState(state)
 			.mapResult(response -> {
-				String validationResult = null;
-				try {
-					validationResult = performSemanticValidation(schemaDTO, evidenceList, toolParameters, sqlQuery);
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-				boolean passed = !validationResult.startsWith("不通过");
-				return buildValidationResult(passed, validationResult, currentStep);
+				String validationResult = response.getResult().getOutput().getText();
+				boolean isPassed = !validationResult.startsWith("不通过");
+				return buildValidationResult(isPassed, validationResult, currentStep);
 			})
-			.build(semanticValidationFlux);
+			.build(Flux.concat(startValidationFlux, validationResultFlux));
 
-		return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, generator);
+		return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, chatGenerator);
 	}
 
 	/**
@@ -127,6 +110,20 @@ public class SemanticConsistencNode extends AbstractPlanBasedNode {
 
 		// 执行语义一致性检查
 		return baseNl2SqlService.semanticConsistency(sqlQuery, context);
+	}
+
+	/**
+	 * 执行语义一致性验证
+	 */
+	private Flux<ChatResponse> performSemanticValidationStream(SchemaDTO schemaDTO, List<String> evidenceList,
+			ExecutionStep.ToolParameters toolParameters, String sqlQuery) throws Exception {
+		// 构建验证上下文
+		String schema = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
+		String evidence = StringUtils.join(evidenceList, ";\n");
+		String context = String.join("\n", schema, evidence, toolParameters.getDescription());
+
+		// 执行语义一致性检查
+		return baseNl2SqlService.semanticConsistencyStream(sqlQuery, context);
 	}
 
 	/**
