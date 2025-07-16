@@ -8,6 +8,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/alibaba/spring-ai-alibaba.svg)](https://github.com/alibaba/spring-ai-alibaba/stargazers)
 
 🌍 [English](./README.md) | [中文](./README-zh.md)
+📚 Developer Docs: [Quick Start (EN)](./README-dev-en.md) | [开发者快速入门 (中文)](./README-dev.md)
 
 **A comprehensive Java implementation of the OpenManus Multi-Agent Framework featuring UNLIMITED context window capabilities**
 
@@ -23,25 +24,22 @@
 
 ## 🎯 About
 
-JManus is a robust, production-ready implementation of the [OpenManus](https://github.com/FoundationAgents/OpenManus) multi-agent framework, built on the solid foundation of Spring AI. It empowers developers to create sophisticated AI agent ecosystems with minimal configuration while ensuring enterprise-grade reliability and scalability. 
+JManus is a Java implementation of Manus, currently used in many applications within Alibaba Group. It is primarily used for handling exploratory tasks that require a certain degree of determinism, such as quickly finding data from massive datasets and converting it into a single row in a database, or analyzing logs and issuing alerts.
 
-Leveraging the proven Plan-Act architectural pattern, JManus supports **custom agent definitions** and intelligently **decomposes complex tasks** into collaborative subtasks distributed across multiple specialized agents. This innovative approach enables **unlimited context processing** through strategic multi-agent orchestration, transcending the limitations of single-model context windows.
 
-### Why Choose JManus?
+### JManus Product Features
 
-- 🤖 **Native Multi-Agent Architecture**: Built-in collaborative framework supporting user-defined agent capabilities and specialized roles
-- 🌊 **Unlimited Context Processing**: Overcome single-model context limitations through intelligent multi-agent coordination for infinite content handling
-- 🎯 **Plan-Act Pattern Excellence**: Complete implementation of the Plan-Act paradigm with intelligent planning and execution separation
-- 🔗 **MCP Integration**: Native Model Context Protocol support enabling seamless integration with external services and tools
+- 🤖 **Pure Java Manus Implementation**: A pure Java multi-agent collaboration implementation that provides a complete set of HTTP call interfaces, suitable for secondary integration by Java developers.
+![Image](https://github.com/user-attachments/assets/f27b763e-9c68-44e0-a57d-4f31d04c0200)
+- 🌊 **Infinite Context Handling**: Overcomes single-model context limitations through intelligent multi-agent collaboration, enabling infinite content processing.
+![Image](https://github.com/user-attachments/assets/a0245658-fbb7-41dc-989f-86574592f188)
+- 🎯 **Excellent Plan-Act Mode**: Fully implements the Plan-Act paradigm, featuring a separation of intelligent planning and execution.
+![Image](https://github.com/user-attachments/assets/d00fc59d-3f10-4163-a548-784eb21f77d6)
+- 🔗 **MCP Integration**: Natively supports the Model Context Protocol (MCP) for seamless integration with external services and tools.
+![Image](https://github.com/user-attachments/assets/df24679a-77f1-4e66-a15f-5e0fadcffacf)
+- 📜 **Web Interface for Agent Configuration**: Easily configure agents through an intuitive web management interface without modifying code.
+![Image](https://github.com/user-attachments/assets/96d5902a-f741-4e82-9007-136cf4c56bb0)
 
-### 💡 Real-World Applications
-
-- **🤝 Customer Experience**: Automated multi-tier customer support with intelligent escalation and resolution
-- **📊 Data Intelligence**: Complex ETL pipelines with AI-driven data processing and quality assurance
-- **🔍 Research & Analytics**: Automated information discovery, synthesis, and report generation
-- **💼 Business Automation**: End-to-end workflow orchestration across diverse enterprise systems
-- **🎓 Educational Technology**: Interactive learning environments with personalized content generation
-- **🧪 Quality Assurance**: Comprehensive automated testing workflows with intelligent validation and reporting
 
 ## 🚀 Quick Start
 
