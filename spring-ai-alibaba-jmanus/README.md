@@ -28,33 +28,33 @@
 JManus is a Java implementation of Manus, currently used in many applications within Alibaba Group. It is primarily used for handling exploratory tasks that require a certain degree of determinism, such as quickly finding data from massive datasets and converting it into a single row in a database, or analyzing logs and issuing alerts.
 
 
-### JManus Product Features
+## JManus Product Features
 
-#### - 🤖 **Pure Java Manus Implementation**: 
+### - 🤖 **Pure Java Manus Implementation**: 
 
 A pure Java multi-agent collaboration implementation that provides a complete set of HTTP call interfaces, suitable for secondary integration by Java developers.
 
 ![Image](https://github.com/user-attachments/assets/3d98c1c6-aabb-45a2-b192-7b687093a1ee)
 
-#### - 🎯 **Plan-Act Mode**: 
+### - 🎯 **Plan-Act Mode**: 
 
 Allows you to precisely control every execution detail, providing extremely high execution determinism.
 
 ![Image](https://github.com/user-attachments/assets/a689791f-adf5-44b6-9ea6-151f557a26d4)
 
-#### - 🔗 **MCP Integration**:
+### - 🔗 **MCP Integration**:
 
  Natively supports the Model Context Protocol (MCP) for seamless integration with external services and tools.
 
 ![Image](https://github.com/user-attachments/assets/2d3f833f-ba45-42b6-8e1b-f3e9cfd40212)
 
-#### - 📜 **Web Interface for Agent Configuration**:
+### - 📜 **Web Interface for Agent Configuration**:
 
  Easily configure agents through an intuitive web management interface without modifying code.
 
 ![Image](https://github.com/user-attachments/assets/bb25f778-f8c3-46da-9da3-6f7ea2f0917d)
 
-#### - 🌊 **Infinite Context Handling**: 
+### - 🌊 **Infinite Context Handling**: 
 
 Supports precise extraction of target information from massive content without relying on specific long-context models.
 
