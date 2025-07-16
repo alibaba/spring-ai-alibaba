@@ -184,8 +184,7 @@ public class DynamicAgent extends ReActAgent {
 				chatClient = llmService.getAgentChatClient();
 			}
 			else {
-				chatClient = llmService.getDynamicChatClient(model.getBaseUrl(), model.getApiKey(),
-						model.getModelName());
+				chatClient = llmService.getDynamicChatClient(model);
 			}
 			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
 			String modelName = response.getMetadata().getModel();

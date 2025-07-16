@@ -37,48 +37,55 @@ import java.util.Map;
 @Service
 public class ModelDataInitialization {
 
-	@Value("${spring.ai.openai.api-key}")
-	private String openAiApiKey;
+    @Value("${spring.ai.openai.api-key}")
+    private String openAiApiKey;
 
-	@Value("${spring.ai.openai.base-url}")
-	private String baseUrl;
+    @Value("${spring.ai.openai.base-url}")
+    private String baseUrl;
 
-	@Value("${spring.ai.openai.chat.options.model}")
-	private String model;
+    @Value("${spring.ai.openai.chat.options.model}")
+    private String model;
 
-	@Autowired
-	private OpenAiChatModel openAiChatModel;
+    @Autowired
+    private OpenAiChatModel openAiChatModel;
 
-	// 为了保障llmService先初始化
-	@Autowired
-	private LlmService llmService;
+    // 为了保障llmService先初始化
+    @Autowired
+    private LlmService llmService;
 
-	@Autowired
-	private JmanusEventPublisher jmanusEventPublisher;
+    @Autowired
+    private JmanusEventPublisher<ModelChangeEvent> jmanusEventPublisher;
 
-	private final DynamicModelRepository repository;
+    private final DynamicModelRepository repository;
 
-	public ModelDataInitialization(DynamicModelRepository repository) {
-		this.repository = repository;
-	}
+    public ModelDataInitialization(DynamicModelRepository repository) {
+        this.repository = repository;
+    }
 
-	@PostConstruct
-	public void init() {
-		OpenAiChatOptions defaultOptions = (OpenAiChatOptions) openAiChatModel.getDefaultOptions();
-		// 保持固定id，每次启动配置的模型都将覆盖存储
-		DynamicModelEntity dynamicModelEntity = new DynamicModelEntity(123456789L);
-		dynamicModelEntity.setBaseUrl(baseUrl);
-		Map<String, String> httpHeaders = defaultOptions.getHttpHeaders();
-		if (httpHeaders.isEmpty()) {
-			httpHeaders = null;
-		}
-		dynamicModelEntity.setHeaders(httpHeaders);
-		dynamicModelEntity.setApiKey(openAiApiKey);
-		dynamicModelEntity.setModelName(model);
-		dynamicModelEntity.setModelDescription("base model");
-		dynamicModelEntity.setType(ModelType.GENERAL.name());
-		DynamicModelEntity save = repository.save(dynamicModelEntity);
-		jmanusEventPublisher.publish(new ModelChangeEvent(save));
-	}
+    @PostConstruct
+    public void init() {
+
+        OpenAiChatOptions defaultOptions = (OpenAiChatOptions) openAiChatModel.getDefaultOptions();
+        // 保持固定id，每次启动配置的模型都将覆盖存储
+        DynamicModelEntity dynamicModelEntity = new DynamicModelEntity();
+        dynamicModelEntity.setBaseUrl(baseUrl);
+        Map<String, String> httpHeaders = defaultOptions.getHttpHeaders();
+        if (httpHeaders.isEmpty()) {
+            httpHeaders = null;
+        }
+        dynamicModelEntity.setHeaders(httpHeaders);
+        dynamicModelEntity.setApiKey(openAiApiKey);
+        dynamicModelEntity.setModelName(model);
+        dynamicModelEntity.setModelDescription("base model");
+        dynamicModelEntity.setType(ModelType.GENERAL.name());
+        dynamicModelEntity.setAllowChange(false);
+        DynamicModelEntity existingModel = repository.findByModelName(model);
+        if (existingModel != null) {
+            dynamicModelEntity.setId(existingModel.getId());
+        }
+        DynamicModelEntity save = repository.save(dynamicModelEntity);
+        jmanusEventPublisher.publish(new ModelChangeEvent(save));
+
+    }
 
 }

@@ -34,98 +34,106 @@ import java.util.stream.Collectors;
 @Service
 public class ModelServiceImpl implements ModelService {
 
-	private static final Logger log = LoggerFactory.getLogger(ModelServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(ModelServiceImpl.class);
 
-	private final DynamicModelRepository repository;
+    private final DynamicModelRepository repository;
 
-	private final DynamicAgentRepository agentRepository;
+    private final DynamicAgentRepository agentRepository;
 
-	@Autowired
-	private JmanusEventPublisher publisher;
+    @Autowired
+    private JmanusEventPublisher<ModelChangeEvent> publisher;
 
-	@Autowired
-	public ModelServiceImpl(DynamicModelRepository repository, DynamicAgentRepository agentRepository) {
-		this.repository = repository;
-		this.agentRepository = agentRepository;
-	}
+    @Autowired
+    public ModelServiceImpl(DynamicModelRepository repository, DynamicAgentRepository agentRepository) {
+        this.repository = repository;
+        this.agentRepository = agentRepository;
+    }
 
-	@Override
-	public List<ModelConfig> getAllModels() {
-		return repository.findAll().stream().map(DynamicModelEntity::mapToModelConfig).collect(Collectors.toList());
-	}
+    @Override
+    public List<ModelConfig> getAllModels() {
+        return repository.findAll().stream().map(DynamicModelEntity::mapToModelConfig).collect(Collectors.toList());
+    }
 
-	@Override
-	public ModelConfig getModelById(String id) {
-		DynamicModelEntity entity = repository.findById(Long.parseLong(id))
-			.orElseThrow(() -> new IllegalArgumentException("Model not found: " + id));
-		return entity.mapToModelConfig();
-	}
+    @Override
+    public ModelConfig getModelById(String id) {
+        DynamicModelEntity entity = repository.findById(Long.parseLong(id))
+                .orElseThrow(() -> new IllegalArgumentException("Model not found: " + id));
+        return entity.mapToModelConfig();
+    }
 
-	@Override
-	public ModelConfig createModel(ModelConfig config) {
-		try {
-			// Check if an Model with the same name already exists
-			DynamicModelEntity existingModel = repository.findByModelName(config.getModelName());
-			if (existingModel != null) {
-				log.info("Found Model with same name: {}, updating Model", config.getModelName());
-				config.setId(existingModel.getId());
-				return updateModel(config);
-			}
+    @Override
+    public ModelConfig createModel(ModelConfig config) {
+        try {
+            // Check if an Model with the same name already exists
+            DynamicModelEntity existingModel = repository.findByModelName(config.getModelName());
+            if (existingModel != null) {
+                log.info("Found Model with same name: {}, updating Model", config.getModelName());
+                config.setId(existingModel.getId());
+                ModelConfig modelConfig = updateModel(config);
+                return modelConfig;
+            }
 
-			DynamicModelEntity entity = new DynamicModelEntity();
-			updateEntityFromConfig(entity, config);
-			entity = repository.save(entity);
-			log.info("Successfully created new Model: {}", config.getModelName());
-			// 触发模型变化事件
-			publisher.publish(new ModelChangeEvent(entity));
-			return entity.mapToModelConfig();
-		}
-		catch (Exception e) {
-			log.warn("Exception occurred during Model creation: {}, error message: {}", config.getModelName(),
-					e.getMessage());
-			// If it's a uniqueness constraint violation exception, try returning the
-			// existing Model
-			if (e.getMessage() != null && e.getMessage().contains("Unique")) {
-				DynamicModelEntity existingModel = repository.findByModelName(config.getModelName());
-				if (existingModel != null) {
-					log.info("Return existing Model: {}", config.getModelName());
-					return existingModel.mapToModelConfig();
-				}
-			}
-			throw e;
-		}
-	}
+            DynamicModelEntity entity = new DynamicModelEntity();
+            updateEntityFromConfig(entity, config);
+            entity = repository.save(entity);
+            publisher.publish(new ModelChangeEvent(entity));
+            log.info("Successfully created new Model: {}", config.getModelName());
+            return entity.mapToModelConfig();
+        } catch (Exception e) {
+            log.warn("Exception occurred during Model creation: {}, error message: {}", config.getModelName(),
+                    e.getMessage());
+            // If it's a uniqueness constraint violation exception, try returning the
+            // existing Model
+            if (e.getMessage() != null && e.getMessage().contains("Unique")) {
+                DynamicModelEntity existingModel = repository.findByModelName(config.getModelName());
+                if (existingModel != null) {
+                    log.info("Return existing Model: {}", config.getModelName());
+                    return existingModel.mapToModelConfig();
+                }
+            }
+            throw e;
+        }
+    }
 
-	@Override
-	public ModelConfig updateModel(ModelConfig config) {
-		DynamicModelEntity entity = repository.findById(config.getId())
-			.orElseThrow(() -> new IllegalArgumentException("Model not found: " + config.getId()));
-		updateEntityFromConfig(entity, config);
-		entity = repository.save(entity);
-		publisher.publish(new ModelChangeEvent(entity));
-		return entity.mapToModelConfig();
-	}
+    @Override
+    public ModelConfig updateModel(ModelConfig config) {
+        DynamicModelEntity entity = repository.findById(config.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Model not found: " + config.getId()));
+        //如果不允许修改，则返回原有数据
+        if (!entity.isAllowChange()) {
+            return entity.mapToModelConfig();
+        }
+        updateEntityFromConfig(entity, config);
+        entity = repository.save(entity);
+        publisher.publish(new ModelChangeEvent(entity));
+        return entity.mapToModelConfig();
+    }
 
-	@Override
-	public void deleteModel(String id) {
-		List<DynamicAgentEntity> allByModel = agentRepository
-			.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
-		if (allByModel != null && !allByModel.isEmpty()) {
-			allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
-			agentRepository.saveAll(allByModel);
-		}
-		repository.deleteById(Long.parseLong(id));
-	}
+    @Override
+    public void deleteModel(String id) {
+        DynamicModelEntity entity = repository.findById(Long.parseLong(id))
+                .orElseThrow(() -> new IllegalArgumentException("Model not found: " + id));
+        //如果不允许修改，则返回原有数据
+        if (entity.isAllowChange()) {
+            List<DynamicAgentEntity> allByModel = agentRepository
+                    .findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
+            if (allByModel != null && !allByModel.isEmpty()) {
+                allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
+                agentRepository.saveAll(allByModel);
+            }
+            repository.deleteById(Long.parseLong(id));
+        }
+    }
 
-	private void updateEntityFromConfig(DynamicModelEntity entity, ModelConfig config) {
-		if (StrUtil.isNotBlank(config.getApiKey()) && !config.getApiKey().contains("*")) {
-			entity.setApiKey(config.getApiKey());
-		}
-		entity.setBaseUrl(config.getBaseUrl());
-		entity.setHeaders(config.getHeaders());
-		entity.setModelName(config.getModelName());
-		entity.setModelDescription(config.getModelDescription());
-		entity.setType(config.getType());
-	}
+    private void updateEntityFromConfig(DynamicModelEntity entity, ModelConfig config) {
+        if (StrUtil.isNotBlank(config.getApiKey()) && !config.getApiKey().contains("*")) {
+            entity.setApiKey(config.getApiKey());
+        }
+        entity.setBaseUrl(config.getBaseUrl());
+        entity.setHeaders(config.getHeaders());
+        entity.setModelName(config.getModelName());
+        entity.setModelDescription(config.getModelDescription());
+        entity.setType(config.getType());
+    }
 
 }
