@@ -122,46 +122,7 @@
             </button>
           </div>
 
-          <!-- Section 1: JSON Editor -->
-          <div class="config-section">
-            <div class="section-header">
-              <Icon icon="carbon:code" width="16" />
-              <span>{{ $t('sidebar.jsonTemplate') }}</span>
-              <div class="section-actions">
-                <button
-                  class="btn btn-sm"
-                  @click="sidebarStore.rollbackVersion"
-                  :disabled="!sidebarStore.canRollback"
-                  :title="$t('sidebar.rollback')"
-                >
-                  <Icon icon="carbon:undo" width="14" />
-                </button>
-                <button
-                  class="btn btn-sm"
-                  @click="sidebarStore.restoreVersion"
-                  :disabled="!sidebarStore.canRestore"
-                  :title="$t('sidebar.restore')"
-                >
-                  <Icon icon="carbon:redo" width="14" />
-                </button>
-                <button
-                  class="btn btn-primary btn-sm"
-                  @click="handleSaveTemplate"
-                  :disabled="sidebarStore.isGenerating || sidebarStore.isExecuting"
-                >
-                  <Icon icon="carbon:save" width="14" />
-                </button>
-              </div>
-            </div>
-            <textarea
-              v-model="sidebarStore.jsonContent"
-              class="json-editor"
-              :placeholder="$t('sidebar.jsonPlaceholder')"
-              rows="8"
-            ></textarea>
-          </div>
-
-          <!-- Section 2: Plan Generator -->
+          <!-- Section 1: Plan Generator -->
           <div class="config-section">
             <div class="section-header">
               <Icon icon="carbon:generate" width="16" />
@@ -201,6 +162,45 @@
                 </button>
               </div>
             </div>
+          </div>
+
+          <!-- Section 2: JSON Editor -->
+          <div class="config-section">
+            <div class="section-header">
+              <Icon icon="carbon:code" width="16" />
+              <span>{{ $t('sidebar.jsonTemplate') }}</span>
+              <div class="section-actions">
+                <button
+                  class="btn btn-sm"
+                  @click="sidebarStore.rollbackVersion"
+                  :disabled="!sidebarStore.canRollback"
+                  :title="$t('sidebar.rollback')"
+                >
+                  <Icon icon="carbon:undo" width="14" />
+                </button>
+                <button
+                  class="btn btn-sm"
+                  @click="sidebarStore.restoreVersion"
+                  :disabled="!sidebarStore.canRestore"
+                  :title="$t('sidebar.restore')"
+                >
+                  <Icon icon="carbon:redo" width="14" />
+                </button>
+                <button
+                  class="btn btn-primary btn-sm"
+                  @click="handleSaveTemplate"
+                  :disabled="sidebarStore.isGenerating || sidebarStore.isExecuting"
+                >
+                  <Icon icon="carbon:save" width="14" />
+                </button>
+              </div>
+            </div>
+            <textarea
+              v-model="sidebarStore.jsonContent"
+              class="json-editor"
+              :placeholder="$t('sidebar.jsonPlaceholder')"
+              rows="8"
+            ></textarea>
           </div>
 
           <!-- Section 3: Execution Controller -->
