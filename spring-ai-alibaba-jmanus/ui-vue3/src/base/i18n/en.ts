@@ -449,6 +449,10 @@ const words: I18nType = {
     updateFailed: 'Failed to update plan',
     executeFailed: 'Failed to execute plan',
     unknown: 'Unknown',
+    newTemplateName: 'New Execution Plan',
+    newTemplateDescription: 'Please use the plan generator to create a new plan template',
+    generatedTemplateDescription: 'Plan template created by generator',
+    defaultExecutionPlanTitle: 'Execution Plan',
   },
 
   // Modal

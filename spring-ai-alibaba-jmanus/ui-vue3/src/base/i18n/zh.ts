@@ -418,6 +418,10 @@ const words: I18nType = {
     updateFailed: '更新计划失败',
     executeFailed: '执行计划失败',
     unknown: '未知',
+    newTemplateName: '新建的执行计划',
+    newTemplateDescription: '请使用计划生成器创建新的计划模板',
+    generatedTemplateDescription: '通过生成器创建的计划模板',
+    defaultExecutionPlanTitle: '执行计划',
   },
 
   // 模态框

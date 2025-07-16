@@ -18,6 +18,7 @@
 import { reactive } from 'vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import type { PlanTemplate } from '@/types/plan-template'
+import { i18n } from '@/base/i18n'
 
 type TabType = 'list' | 'config'
 
@@ -143,8 +144,8 @@ export class SidebarStore {
   createNewTemplate() {
     const emptyTemplate: PlanTemplate = {
       id: `new-${Date.now()}`,
-      title: '新建计划',
-      description: '请使用计划生成器创建新的计划模板',
+      title: i18n.global.t('sidebar.newTemplateName'),
+      description: i18n.global.t('sidebar.newTemplateDescription'),
       createTime: new Date().toISOString(),
       updateTime: new Date().toISOString(),
     }
@@ -252,7 +253,7 @@ export class SidebarStore {
         this.selectedTemplate = {
           id: response.planTemplateId,
           title: title,
-          description: '通过生成器创建的计划模板',
+          description: i18n.global.t('sidebar.generatedTemplateDescription'),
           createTime: new Date().toISOString(),
           updateTime: new Date().toISOString(),
           planJson: response.planJson,
@@ -311,7 +312,7 @@ export class SidebarStore {
         planData = {
           planTemplateId: this.selectedTemplate.id,
           planId: this.selectedTemplate.id,
-          title: this.selectedTemplate.title ?? '执行计划',
+          title: this.selectedTemplate.title ?? i18n.global.t('sidebar.defaultExecutionPlanTitle'),
           steps: [
             { stepRequirement: '[BROWSER_AGENT] 访问百度搜索阿里巴巴的最新股价' },
             { stepRequirement: '[DEFAULT_AGENT] 提取和整理搜索结果中的股价信息' },
