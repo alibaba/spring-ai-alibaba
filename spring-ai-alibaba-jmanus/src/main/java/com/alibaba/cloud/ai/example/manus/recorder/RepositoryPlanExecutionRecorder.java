@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecordEntity;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.repository.PlanExecutionRecordRepository;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -206,13 +207,11 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 				params.getAgentDescription());
 		agentRecord.setMaxSteps(params.getMaxSteps());
 		agentRecord.setCurrentStep(params.getActualSteps());
-		agentRecord.setCompleted(params.isCompleted());
-		agentRecord.setStuck(params.isStuck());
 		agentRecord.setErrorMessage(params.getErrorMessage());
 		agentRecord.setResult(params.getResult());
 		agentRecord.setStartTime(params.getStartTime());
 		agentRecord.setEndTime(params.getEndTime());
-		agentRecord.setStatus(params.isCompleted() ? "COMPLETED" : (params.isStuck() ? "STUCK" : "FAILED"));
+		agentRecord.setStatus(params.getStatus());
 
 		PlanExecutionRecord planRecord = null;
 		PlanExecutionRecord rootPlan = getOrCreateRootPlanExecutionRecord(params.getRootPlanId(), true);
@@ -302,7 +301,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			thinkActRecord.setActionNeeded(true);
 			thinkActRecord.setToolName(params.getToolName());
 			thinkActRecord.setToolParameters(params.getToolParameters());
-			thinkActRecord.setStatus("SUCCESS");
+			thinkActRecord.setStatus(ExecutionStatus.RUNNING);
 		}
 
 		if (params.getErrorMessage() != null) {

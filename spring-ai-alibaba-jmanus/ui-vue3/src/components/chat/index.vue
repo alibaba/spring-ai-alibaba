@@ -613,9 +613,10 @@ const handleSendMessage = (message: string) => {
 
   // Handle messages according to the mode
   if (props.mode === 'plan') {
-    // In plan mode, events are no longer triggered, allowing the parent component to directly invoke the corresponding methods.
-    // The logic here is handled by the parent component through direct calls
+    // In plan mode, only add UI message, parent component handles the API call
+    // This prevents double API calls
     console.log('[ChatComponent] Plan mode message sent, parent should handle:', message)
+    // Don't call any API here, just add to UI
   } else {
     // Direct mode is still handled directly
     handleDirectMode(message)
@@ -792,7 +793,7 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
 }
 
 // Update step execution actions (based on chat-handler.js logic)
-const updateStepActions = (message: Message, planDetails: any) => {
+const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) => {
   if (!message.planExecution?.steps) return
 
   console.log(
@@ -802,12 +803,9 @@ const updateStepActions = (message: Message, planDetails: any) => {
     planDetails.agentExecutionSequence?.length ?? 0
   )
 
-  // Initialize storage for the last execution action of each step
   const lastStepActions = new Array(message.planExecution.steps.length).fill(null)
 
-  // Traverse all execution sequences, match steps and update actions
   if (planDetails.agentExecutionSequence?.length) {
-    // Check if execution sequence matches step count
     const sequenceLength = Math.min(
       planDetails.agentExecutionSequence.length,
       message.planExecution.steps.length
@@ -816,11 +814,10 @@ const updateStepActions = (message: Message, planDetails: any) => {
     for (let index = 0; index < sequenceLength; index++) {
       const execution = planDetails.agentExecutionSequence[index]
 
-      if (execution?.thinkActSteps?.length > 0) {
+      if (execution?.thinkActSteps?.length) {
         const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1]
 
         if (latestThinkAct?.actionDescription && latestThinkAct?.toolParameters) {
-          // Save the last execution action for this step
           lastStepActions[index] = {
             actionDescription: latestThinkAct.actionDescription,
             toolParameters:
@@ -830,24 +827,23 @@ const updateStepActions = (message: Message, planDetails: any) => {
             thinkInput: latestThinkAct.thinkInput ?? '',
             thinkOutput: latestThinkAct.thinkOutput ?? '',
             status:
-              index < planDetails.currentStepIndex
+              planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex
                 ? 'completed'
-                : index === planDetails.currentStepIndex
-                  ? 'current'
-                  : 'pending',
+                : planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex
+                ? 'current'
+                : 'pending',
           }
 
           console.log(
             `[ChatComponent] Step ${index} action set: ${lastStepActions[index].actionDescription}`
           )
         } else if (latestThinkAct) {
-          // Thinking state
           lastStepActions[index] = {
             actionDescription: '思考中',
             toolParameters: '等待决策',
             thinkInput: latestThinkAct.thinkInput ?? '',
             thinkOutput: latestThinkAct.thinkOutput ?? '',
-            status: index === planDetails.currentStepIndex ? 'current' : 'pending',
+            status: planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex ? 'current' : 'pending',
           }
 
           console.log(`[ChatComponent] Step ${index} is thinking`)
@@ -863,13 +859,12 @@ const updateStepActions = (message: Message, planDetails: any) => {
           console.log(`[ChatComponent] Step ${index} execution completed`)
         }
       } else {
-        // Case without thinkActSteps
         lastStepActions[index] = {
-          actionDescription: index < planDetails.currentStepIndex ? '已完成' : '等待中',
+          actionDescription: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? '已完成' : '等待中',
           toolParameters: '无工具参数',
           thinkInput: '',
           thinkOutput: '',
-          status: index < planDetails.currentStepIndex ? 'completed' : 'pending',
+          status: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? 'completed' : 'pending',
         }
 
         console.log(
@@ -881,8 +876,6 @@ const updateStepActions = (message: Message, planDetails: any) => {
     console.log('[ChatComponent] 没有执行序列数据')
   }
 
-  // Attach step action information to the message - Use Vue 3 reactivity-friendly approach
-  // Overwrite the entire array directly to ensure the Vue reactivity system detects changes
   message.stepActions = [...lastStepActions]
 
   console.log(
@@ -890,8 +883,6 @@ const updateStepActions = (message: Message, planDetails: any) => {
     JSON.stringify(lastStepActions.map(a => a?.actionDescription))
   )
 
-  // Use Vue's reactivity system instead of force update
-  // The UI will automatically update when stepActions array changes
   nextTick(() => {
     console.log('[ChatComponent] UI update completed via reactivity')
   })
@@ -1186,7 +1177,7 @@ const generateCompletedPlanResponse = (text: string): string => {
 }
 
 // Handle the plan completion event
-const handlePlanCompleted = (details: any) => {
+const handlePlanCompleted = (details: PlanExecutionRecord) => {
   console.log('[ChatComponent] Plan completed:', details)
 
   if (details?.planId) {

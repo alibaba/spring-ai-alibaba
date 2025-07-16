@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
 
 /**
  * Plan execution recorder interface that defines methods for recording and retrieving
@@ -193,7 +194,7 @@ public interface PlanExecutionRecorder {
 		String actionResult;
 
 		/** Execution status */
-		String status;
+		ExecutionStatus status;
 
 		/** Whether a sub-plan was created */
 		boolean subPlanCreated;
@@ -209,12 +210,6 @@ public interface PlanExecutionRecorder {
 
 		/** Actual steps executed */
 		int actualSteps;
-
-		/** Whether execution completed successfully */
-		boolean completed;
-
-		/** Whether agent got stuck */
-		boolean stuck;
 
 		/** Final execution result */
 		String result;
@@ -240,23 +235,6 @@ public interface PlanExecutionRecorder {
 		public void setActualSteps(int actualSteps) {
 			this.actualSteps = actualSteps;
 		}
-
-		public boolean isCompleted() {
-			return completed;
-		}
-
-		public void setCompleted(boolean completed) {
-			this.completed = completed;
-		}
-
-		public boolean isStuck() {
-			return stuck;
-		}
-
-		public void setStuck(boolean stuck) {
-			this.stuck = stuck;
-		}
-
 		public String getResult() {
 			return result;
 		}
@@ -401,11 +379,11 @@ public interface PlanExecutionRecorder {
 			this.actionResult = actionResult;
 		}
 
-		public String getStatus() {
+		public ExecutionStatus getStatus() {
 			return status;
 		}
 
-		public void setStatus(String status) {
+		public void setStatus(ExecutionStatus status) {
 			this.status = status;
 		}
 

@@ -48,6 +48,8 @@ import java.util.List;
  * @see ThinkActRecord
  * @see JsonSerializable
  */
+
+
 public class AgentExecutionRecord {
 
 	// Unique identifier of the record
@@ -79,13 +81,7 @@ public class AgentExecutionRecord {
 	private int currentStep;
 
 	// Execution status (IDLE, RUNNING, FINISHED)
-	private String status;
-
-	// Whether execution is completed
-	private boolean isCompleted;
-
-	// Whether stuck
-	private boolean isStuck;
+	private ExecutionStatus status;
 
 	// Record list of think-act steps, existing as sub-steps
 	private List<ThinkActRecord> thinkActSteps;
@@ -115,9 +111,7 @@ public class AgentExecutionRecord {
 		this.agentName = agentName;
 		this.agentDescription = agentDescription;
 		this.startTime = LocalDateTime.now();
-		this.status = "IDLE";
-		this.isCompleted = false;
-		this.isStuck = false;
+		this.status = ExecutionStatus.IDLE; // Use enum value
 		this.currentStep = 0;
 		this.thinkActSteps = new ArrayList<>();
 		// Ensure ID is generated during initialization
@@ -212,28 +206,12 @@ public class AgentExecutionRecord {
 		this.currentStep = currentStep;
 	}
 
-	public String getStatus() {
+	public ExecutionStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(String status) {
+	public void setStatus(ExecutionStatus status) {
 		this.status = status;
-	}
-
-	public boolean isCompleted() {
-		return isCompleted;
-	}
-
-	public void setCompleted(boolean completed) {
-		isCompleted = completed;
-	}
-
-	public boolean isStuck() {
-		return isStuck;
-	}
-
-	public void setStuck(boolean stuck) {
-		isStuck = stuck;
 	}
 
 	public List<ThinkActRecord> getThinkActSteps() {
@@ -279,10 +257,15 @@ public class AgentExecutionRecord {
 
 	@Override
 	public String toString() {
-		return "AgentExecutionRecord{" + "id='" + id + '\'' + ", conversationId='" + conversationId + '\''
-				+ ", agentName='" + agentName + '\'' + ", status='" + status + '\'' + ", currentStep=" + currentStep
-				+ ", maxSteps=" + maxSteps + ", isCompleted=" + isCompleted + ", isStuck=" + isStuck + ", stepsCount="
-				+ (thinkActSteps != null ? thinkActSteps.size() : 0) + '}';
+		return "AgentExecutionRecord{" +
+				"id='" + id + '\'' +
+				", conversationId='" + conversationId + '\'' +
+				", agentName='" + agentName + '\'' +
+				", status='" + status + '\'' +
+				", currentStep=" + currentStep +
+				", maxSteps=" + maxSteps +
+				", stepsCount=" + (thinkActSteps != null ? thinkActSteps.size() : 0) +
+				'}';
 	}
 
 	/**
