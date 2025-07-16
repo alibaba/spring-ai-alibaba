@@ -58,6 +58,8 @@ import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.util.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -98,6 +100,8 @@ public class PlanningFactory {
 	private final SmartContentSavingService innerStorageService;
 
 	private final UnifiedDirectoryManager unifiedDirectoryManager;
+
+	private final static Logger log = LoggerFactory.getLogger(PlanningFactory.class);
 
 	@Autowired
 	private AgentService agentService;
@@ -185,7 +189,14 @@ public class PlanningFactory {
 			List<String> terminateColumns) {
 		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
 		List<ToolCallBiFunctionDef<?>> toolDefinitions = new ArrayList<>();
-
+		if (chromeDriverService == null) {
+			log.error("ChromeDriverService is null, skipping BrowserUseTool registration");
+			return toolCallbackMap;
+		}
+		if (innerStorageService == null) {
+			log.error("SmartContentSavingService is null, skipping BrowserUseTool registration");
+			return toolCallbackMap;
+		}
 		// Add all tool definitions
 		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService));
 		toolDefinitions.add(new TerminateTool(planId, terminateColumns));
@@ -221,6 +232,7 @@ public class PlanningFactory {
 				.build();
 			toolDefinition.setCurrentPlanId(planId);
 			toolDefinition.setRootPlanId(rootPlanId);
+			log.info("Registering tool: {}", toolDefinition.getName());
 			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
 					toolDefinition);
 			toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
