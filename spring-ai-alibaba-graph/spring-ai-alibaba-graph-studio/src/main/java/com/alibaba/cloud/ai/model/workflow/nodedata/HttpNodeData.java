@@ -49,6 +49,11 @@ public class HttpNodeData extends NodeData {
 	/** body */
 	private HttpRequestNodeBody body = new HttpRequestNodeBody();
 
+	/**
+	 * rawBodyMap
+	 */
+	private Map<String, Object> rawBodyMap;
+
 	/** authConfig */
 	private AuthConfig authConfig;
 
@@ -75,6 +80,7 @@ public class HttpNodeData extends NodeData {
 		this.retryConfig = retryConfig != null ? retryConfig : new RetryConfig(3, 1000, true);
 		this.timeoutConfig = timeoutConfig;
 		this.outputKey = outputKey;
+		this.rawBodyMap = null;
 	}
 
 	public HttpNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs) {
@@ -145,6 +151,14 @@ public class HttpNodeData extends NodeData {
 
 	public void setOutputKey(String outputKey) {
 		this.outputKey = outputKey;
+	}
+
+	public Map<String, Object> getRawBodyMap() {
+		return rawBodyMap;
+	}
+
+	public void setRawBodyMap(Map<String, Object> rawBodyMap) {
+		this.rawBodyMap = rawBodyMap;
 	}
 
 }

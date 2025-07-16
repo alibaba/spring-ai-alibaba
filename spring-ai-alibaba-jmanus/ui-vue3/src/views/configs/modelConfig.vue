@@ -30,7 +30,7 @@
     </div>
 
     <div class="model-layout">
-      <!-- Model列表 -->
+      <!-- Model list -->
       <div class="model-list">
         <div class="list-header">
           <h3>{{ t('config.modelConfig.configuredModels') }}</h3>
@@ -74,7 +74,7 @@
         </button>
       </div>
 
-      <!-- Model详情 -->
+      <!-- Model details -->
       <div class="model-detail" v-if="selectedModel">
         <div class="detail-header">
           <h3>{{ selectedModel.modelName }}</h3>
@@ -152,14 +152,14 @@
 
       </div>
 
-      <!-- 空状态 -->
+      <!-- Empty state -->
       <div v-else class="no-selection">
         <Icon icon="carbon:bot" class="placeholder-icon" />
         <p>{{ t('config.modelConfig.selectModelHint') }}</p>
       </div>
     </div>
 
-    <!-- 新建Model弹窗 -->
+    <!-- New Model modal -->
     <Modal v-model="showModal" :title="t('config.modelConfig.newModel')" @confirm="handleAddModel">
       <div class="modal-form">
         <div class="form-item">
@@ -220,8 +220,8 @@
       </div>
     </Modal>
 
-    <!-- 删除确认弹窗 -->
-    <Modal v-model="showDeleteModal" title="删除确认">
+    <!-- Delete confirmation modal -->
+    <Modal v-model="showDeleteModal" title="Delete confirmation">
       <div class="delete-confirm">
         <Icon icon="carbon:warning" class="warning-icon" />
         <p>{{ t('config.modelConfig.deleteConfirmText') }} <strong>{{ selectedModel?.modelName }}</strong> {{ t('common.confirm') }}？</p>
@@ -233,13 +233,13 @@
       </template>
     </Modal>
 
-    <!-- 错误提示 -->
+    <!-- Error toast -->
     <div v-if="error" class="error-toast" @click="error = ''">
       <Icon icon="carbon:error" />
       {{ error }}
     </div>
 
-    <!-- 成功提示 -->
+    <!-- Success toast -->
     <div v-if="success" class="success-toast" @click="success = ''">
       <Icon icon="carbon:checkmark" />
       {{ success }}
@@ -255,10 +255,10 @@ import Modal from '@/components/modal/index.vue'
 import CustomSelect from '@/components/select/index.vue'
 import { ModelApiService, type Model } from '@/api/model-api-service'
 
-// 国际化
+// Internationalization
 const { t } = useI18n()
 
-// 响应式数据
+// Reactive data
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
@@ -268,7 +268,7 @@ const selectedModel = ref<Model | null>(null)
 const showModal = ref(false)
 const showDeleteModal = ref(false)
 
-// 新建Model表单数据
+// New Model form data
 const newModel = reactive<Omit<Model, 'id'>>({
   baseUrl:  '',
   headers:  '',
@@ -278,7 +278,7 @@ const newModel = reactive<Omit<Model, 'id'>>({
   type:  '',
 })
 
-// 消息提示
+// Message toast
 const showMessage = (msg: string, type: 'success' | 'error') => {
   if (type === 'success') {
     success.value = msg
@@ -289,11 +289,11 @@ const showMessage = (msg: string, type: 'success' | 'error') => {
   }
 }
 
-// 加载数据
+// Load data
 const loadData = async () => {
   loading.value = true
   try {
-    // 并行加载Model列表和可用工具
+    // Load the Model list and available types in parallel
     const [loadedModels, loadedTypes] = await Promise.all([
       ModelApiService.getAllModels(),
       ModelApiService.getAllTypes()
@@ -303,9 +303,9 @@ const loadData = async () => {
     }))
 
     models.splice(0, models.length, ...normalizedModels)
-    modelTypes.splice(0, models.length, ...loadedTypes)
+    modelTypes.splice(0, modelTypes.length, ...loadedTypes)
 
-    // 选中第一个Model
+    // Select the first Model
     if (normalizedModels.length > 0) {
       await selectModel(normalizedModels[0])
     }
@@ -317,10 +317,10 @@ const loadData = async () => {
   }
 }
 
-// 选择Model
+// Select Model
 const selectModel = async (model: Model) => {
   try {
-    // 加载详细信息
+    // Load the detailed information
     const detailedModel = await ModelApiService.getModelById(model.id)
     if(detailedModel.headers) {
       detailedModel.headers = JSON.stringify(detailedModel.headers)
@@ -331,14 +331,14 @@ const selectModel = async (model: Model) => {
   } catch (err: any) {
     console.error('加载Model详情失败:', err)
     showMessage(t('config.modelConfig.loadDetailsFailed') + ': ' + err.message, 'error')
-    // 使用基本信息作为后备
+    // Use basic information as a fallback
     selectedModel.value = {
       ...model
     }
   }
 }
 
-// 显示新建Model弹窗
+// Show the new Model modal
 const showAddModelModal = () => {
   newModel.baseUrl = ''
   newModel.headers = ''
@@ -349,7 +349,7 @@ const showAddModelModal = () => {
   showModal.value = true
 }
 
-// 创建新Model
+// Create new Model
 const handleAddModel = async () => {
   if (!newModel.modelName.trim() || !newModel.modelDescription.trim()) {
     showMessage(t('config.modelConfig.requiredFields'), 'error')
@@ -383,7 +383,7 @@ const handleAddModel = async () => {
   }
 }
 
-// 保存Model
+// Save Model
 const handleSave = async () => {
   if (!selectedModel.value) return
 
@@ -400,7 +400,7 @@ const handleSave = async () => {
     }
     const savedModel = await ModelApiService.updateModel(selectedModel.value.id, selectedModel.value)
 
-    // 更新本地列表中的数据
+// Update the data in the local list
     const index = models.findIndex(a => a.id === savedModel.id)
     if (index !== -1) {
       models[index] = savedModel
@@ -416,25 +416,25 @@ const handleSave = async () => {
   }
 }
 
-// 显示删除确认
+// Show the delete confirmation modal
 const showDeleteConfirm = () => {
   showDeleteModal.value = true
 }
 
-// 删除Model
+// Delete Model
 const handleDelete = async () => {
   if (!selectedModel.value) return
 
   try {
     await ModelApiService.deleteModel(selectedModel.value.id)
 
-    // 从列表中移除
+    // Remove from the local list
     const index = models.findIndex(a => a.id === selectedModel.value!.id)
     if (index !== -1) {
       models.splice(index, 1)
     }
 
-    // 选择其他Model或清除选中状态
+    // Select the next Model or clear the selection
     selectedModel.value = models.length > 0 ? models[0] : null
     showDeleteModal.value = false
     showMessage(t('config.modelConfig.deleteSuccess'), 'success')
@@ -443,7 +443,7 @@ const handleDelete = async () => {
   }
 }
 
-// 导入Model
+// Import Model
 const handleImport = () => {
   const input = document.createElement('input')
   input.type = 'file'
@@ -455,12 +455,12 @@ const handleImport = () => {
       reader.onload = async (e) => {
         try {
           const modelData = JSON.parse(e.target?.result as string)
-          // 基本验证
+          // Basic verification
           if (!modelData.modelName || !modelData.modelDescription) {
             throw new Error(t('config.modelConfig.invalidFormat'))
           }
 
-          // 移除id字段，让后端分配新的id
+          // Remove the id field and let the backend assign a new id
           const { id: _id, ...importData } = modelData
           const savedModel = await ModelApiService.createModel(importData)
           models.push(savedModel)
@@ -476,7 +476,7 @@ const handleImport = () => {
   input.click()
 }
 
-// 导出Model
+// Export Model
 const handleExport = () => {
   if (!selectedModel.value) return
 
@@ -495,7 +495,7 @@ const handleExport = () => {
   }
 }
 
-// 组件挂载时加载数据
+// Load data when the component is mounted
 onMounted(() => {
   loadData()
 })

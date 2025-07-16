@@ -27,7 +27,11 @@ import com.alibaba.cloud.ai.util.DateTimeUtil;
 import com.alibaba.cloud.ai.util.MarkdownParser;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
+import reactor.core.publisher.Flux;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -42,6 +46,8 @@ import static com.alibaba.cloud.ai.prompt.PromptHelper.buildMixMacSqlDbPrompt;
 import static com.alibaba.cloud.ai.prompt.PromptHelper.buildMixSelectorPrompt;
 
 public class BaseNl2SqlService {
+
+	private static final Logger logger = LoggerFactory.getLogger(BaseNl2SqlService.class);
 
 	protected final BaseVectorStoreService vectorStoreService;
 
@@ -97,10 +103,17 @@ public class BaseNl2SqlService {
 		return MdTableGenerator.generateTable(resultSet);
 	}
 
+	@Deprecated
 	public String semanticConsistency(String sql, String queryPrompt) throws Exception {
-		String semanticConsistenPrompt = PromptHelper.buildSemanticConsistenPrompt(queryPrompt, sql);
-		String call = aiService.call(semanticConsistenPrompt);
+		String semanticConsistencyPrompt = PromptHelper.buildSemanticConsistenPrompt(queryPrompt, sql);
+		String call = aiService.call(semanticConsistencyPrompt);
 		return call;
+	}
+
+	public Flux<ChatResponse> semanticConsistencyStream(String sql, String queryPrompt) throws Exception {
+		String semanticConsistencyPrompt = PromptHelper.buildSemanticConsistenPrompt(queryPrompt, sql);
+		logger.info("semanticConsistencyPrompt = {}", semanticConsistencyPrompt);
+		return aiService.streamCall(semanticConsistencyPrompt);
 	}
 
 	/**

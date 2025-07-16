@@ -25,6 +25,8 @@ public interface PromptService {
 
 	List<PromptVO> getAll();
 
+	List<PromptVO> getAllByNamespace(String namespace);
+
 	PromptVO getById(Long id);
 
 	PromptVO create(PromptVO promptVO);
