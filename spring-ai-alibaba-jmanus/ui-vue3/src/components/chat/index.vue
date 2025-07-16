@@ -831,7 +831,7 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
       if (execution?.thinkActSteps?.length) {
         const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1]
 
-        if (latestThinkAct?.actionDescription && latestThinkAct?.toolParameters) {
+        if (latestThinkAct.actionDescription && latestThinkAct.toolParameters) {
           lastStepActions[index] = {
             actionDescription: latestThinkAct.actionDescription,
             toolParameters:
@@ -851,7 +851,7 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
           console.log(
             `[ChatComponent] Step ${index} action set: ${lastStepActions[index].actionDescription}`
           )
-        } else if (latestThinkAct) {
+        } else {
           lastStepActions[index] = {
             actionDescription: '思考中',
             toolParameters: '等待决策',
@@ -861,17 +861,7 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
           }
 
           console.log(`[ChatComponent] Step ${index} is thinking`)
-        } else {
-          lastStepActions[index] = {
-            actionDescription: '执行完成',
-            toolParameters: '无工具',
-            thinkInput: '',
-            thinkOutput: '',
-            status: 'completed',
-          }
-
-          console.log(`[ChatComponent] Step ${index} execution completed`)
-        }
+        } 
       } else {
         lastStepActions[index] = {
           actionDescription: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? '已完成' : '等待中',
