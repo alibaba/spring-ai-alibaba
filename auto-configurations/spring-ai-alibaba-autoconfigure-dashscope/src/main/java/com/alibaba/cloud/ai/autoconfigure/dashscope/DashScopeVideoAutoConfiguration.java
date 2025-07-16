@@ -44,9 +44,10 @@ public class DashScopeVideoAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public DashScopeVideoApi dashScopeVideoApi(RestClient restClient, WebClient webClient,
+	public DashScopeVideoApi dashScopeVideoApi(RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
-		return new DashScopeVideoApi(restClient, webClient, responseErrorHandler);
+
+		return new DashScopeVideoApi(restClientBuilder.build(), webClientBuilder.build(), responseErrorHandler);
 	}
 
 	@Bean
