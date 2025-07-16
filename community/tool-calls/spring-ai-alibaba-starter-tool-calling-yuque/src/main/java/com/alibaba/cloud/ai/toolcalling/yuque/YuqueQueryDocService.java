@@ -15,14 +15,12 @@
  */
 package com.alibaba.cloud.ai.toolcalling.yuque;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.http.HttpMethod;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.function.Function;
-
-import static com.alibaba.cloud.ai.toolcalling.yuque.YuqueProperties.BASE_URL;
 
 /**
  * @author 北极星
@@ -35,41 +33,37 @@ public class YuqueQueryDocService
 	 * @param queryDocRequest the function argument
 	 * @return the function result
 	 */
-	private final WebClient webClient;
+	private static final Logger logger = LoggerFactory.getLogger(YuqueQueryDocService.class);
 
-	public YuqueQueryDocService(YuqueProperties yuqueProperties) {
+	private final WebClientTool webClientTool;
 
-		this.webClient = WebClient.builder()
-			.baseUrl(BASE_URL)
-			.defaultHeader("X-Auth-Token", yuqueProperties.getAuthToken())
-			.build();
+	private final JsonParseTool jsonParseTool;
 
+	public YuqueQueryDocService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
+		this.webClientTool = webClientTool;
+		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
 	public queryDocResponse apply(queryDocRequest queryDocRequest) {
-		Mono<queryDocResponse> queryDocResponseMono = webClient.method(HttpMethod.POST)
-			.uri("/repos/{book_id}/docs/{id}", queryDocRequest.bookId, queryDocRequest.id)
-			.retrieve()
-			.bodyToMono(queryDocResponse.class);
-
-		return queryDocResponseMono.block();
+		if (queryDocRequest.bookId == null || queryDocRequest.id == null) {
+			return null;
+		}
+		String uri = "/repos/" + queryDocRequest.bookId + "/docs/" + queryDocRequest.id;
+		try {
+			String json = webClientTool.get(uri).block();
+			return jsonParseTool.jsonToObject(json, queryDocResponse.class);
+		}
+		catch (Exception e) {
+			logger.error("Failed to query the Yuque document.", e);
+			return null;
+		}
 	}
 
-	protected record queryDocRequest(@JsonProperty("slug") String slug, @JsonProperty("title") String title,
-			String bookId, String id) {
+	public record queryDocRequest(String bookId, String id) {
 	}
 
-	protected record queryDocResponse(@JsonProperty("id") String id, @JsonProperty("docId") String docId,
-			@JsonProperty("slug") String slug, @JsonProperty("title") String title,
-			@JsonProperty("userId") String userId, @JsonProperty("user") UserSerializer user,
-			@JsonProperty("draft") String draft, @JsonProperty("body") String body,
-			@JsonProperty("bodyAsl") String bodyAsl, @JsonProperty("bodyHtml") String bodyHtml,
-			@JsonProperty("createdAt") String createdAt, @JsonProperty("updatedAt") String updatedAt) {
-	}
-
-	protected record UserSerializer(@JsonProperty String id, @JsonProperty String type, @JsonProperty String login,
-			@JsonProperty String name) {
+	public record queryDocResponse(@JsonProperty("data") YuqueConstants.DocSerializer data) {
 	}
 
 }

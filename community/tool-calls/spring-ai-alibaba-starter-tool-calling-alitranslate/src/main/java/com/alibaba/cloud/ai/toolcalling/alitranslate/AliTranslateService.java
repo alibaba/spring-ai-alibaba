@@ -20,51 +20,38 @@ import com.aliyun.auth.credentials.provider.StaticCredentialProvider;
 import com.aliyun.sdk.service.alimt20181012.AsyncClient;
 import com.aliyun.sdk.service.alimt20181012.models.TranslateGeneralRequest;
 import com.aliyun.sdk.service.alimt20181012.models.TranslateGeneralResponse;
+import com.aliyun.sdk.service.alimt20181012.models.TranslateGeneralResponseBody;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import darabonba.core.client.ClientOverrideConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
+import java.io.Closeable;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 /**
  * @author yunlong
+ * @author Allen Hu
  */
-public class AliTranslateService implements Function<AliTranslateService.Request, AliTranslateService.Response> {
+public class AliTranslateService
+		implements Function<AliTranslateService.Request, AliTranslateService.Response>, Closeable {
+
+	private static final Logger logger = LoggerFactory.getLogger(AliTranslateService.class);
 
 	private final AsyncClient client;
 
-	/**
-	 * version of the api
-	 */
-	public static final String SCENE = "general";
-
-	/**
-	 * FormatType text or html
-	 */
-	public static final String FORM_TYPE = "text";
-
-	/**
-	 * offline doc:
-	 * https://help.aliyun.com/zh/machine-translation/support/supported-languages-and-codes?spm=api-workbench.api_explorer.0.0.37a94eecsclZw9
-	 */
-	public static final String LANGUAGE_CODE = "zh";
-
 	public AliTranslateService(AliTranslateProperties properties) {
-		assert StringUtils.hasText(properties.getRegion());
-		assert StringUtils.hasText(properties.getAccessKeyId());
-		assert StringUtils.hasText(properties.getAccessKeySecret());
 		StaticCredentialProvider provider = StaticCredentialProvider.create(Credential.builder()
 			.accessKeyId(properties.getAccessKeyId())
-			.accessKeySecret(properties.getAccessKeySecret())
+			.accessKeySecret(properties.getSecretKey())
 			.build());
 
 		this.client = AsyncClient.builder()
-			.region(properties.getRegion()) // Region ID
 			.credentialsProvider(provider)
 			.overrideConfiguration(ClientOverrideConfiguration.create().setEndpointOverride("mt.aliyuncs.com"))
 			.build();
@@ -72,52 +59,71 @@ public class AliTranslateService implements Function<AliTranslateService.Request
 
 	@Override
 	public Response apply(Request request) {
-		if (request == null || !StringUtils.hasText(request.text) || !StringUtils.hasText(request.targetLanguage)) {
+		if (request == null || !StringUtils.hasText(request.text) || !StringUtils.hasText(request.sourceLanguage)
+				|| !StringUtils.hasText(request.targetLanguage)) {
 			return null;
 		}
 
 		TranslateGeneralRequest translateGeneralRequest = TranslateGeneralRequest.builder()
-			.formatType(FORM_TYPE)
-			.sourceLanguage(LANGUAGE_CODE)
+			.formatType(AliTranslateConstants.FORM_TYPE)
+			.sourceLanguage(request.sourceLanguage)
 			.targetLanguage(request.targetLanguage)
 			.sourceText(request.text)
-			.scene(SCENE)
+			.scene(AliTranslateConstants.SCENE)
 			.build();
 
 		CompletableFuture<TranslateGeneralResponse> response = client.translateGeneral(translateGeneralRequest);
 
-		TranslateGeneralResponse resp = null;
 		try {
-			resp = response.get();
+			TranslateGeneralResponse resp = response.get();
+			String translated = getTranslatedText(resp);
+			return new Response(translated);
 		}
 		catch (Exception e) {
-			throw new RuntimeException(e);
+			logger.error("Failed to invoke alitranslate caused by:{}", e.getMessage());
+			return null;
+		}
+	}
+
+	@Override
+	public void close() {
+		client.close();
+	}
+
+	private String getTranslatedText(TranslateGeneralResponse resp) throws IllegalStateException {
+		if (null == resp || !Objects.equals(200, resp.getStatusCode())) {
+			throw new IllegalStateException("Failed to invoke alitranslate, caused response error.");
 		}
 
-		// 假设 resp 是一个对象
-		String jsonString = new Gson().toJson(resp);
-		JsonObject jsonObject = new Gson().fromJson(jsonString, JsonObject.class);
-		String result = jsonObject.get("body")
-			.getAsJsonObject()
-			.get("data")
-			.getAsJsonObject()
-			.get("translated")
-			.toString();
+		TranslateGeneralResponseBody body = resp.getBody();
+		if (null == body) {
+			throw new IllegalStateException("Failed to invoke alitranslate, caused body is null.");
+		}
+		Integer code = body.getCode();
+		if (!Objects.equals(200, code)) {
+			throw new IllegalStateException(code + " - " + body.getMessage());
+		}
 
-		client.close();
-		return new Response(result);
-
+		TranslateGeneralResponseBody.Data data = body.getData();
+		if (null == data) {
+			throw new IllegalStateException("Failed to invoke alitranslate, caused data is null.");
+		}
+		return data.getTranslated();
 	}
 
 	@JsonClassDescription("Request to alitranslate text to a target language")
 	public record Request(
 			@JsonProperty(required = true,
 					value = "text") @JsonPropertyDescription("Content that needs to be translated") String text,
+
 			@JsonProperty(required = false,
-					value = "targetLanguage") @JsonPropertyDescription("Target language to alitranslate into") String targetLanguage) {
+					value = "sourceLanguage") @JsonPropertyDescription("Source language of the text, default is zh") String sourceLanguage,
+
+			@JsonProperty(required = false,
+					value = "targetLanguage") @JsonPropertyDescription("Target language to alitranslate into, default is en") String targetLanguage) {
 
 		public Request(@JsonProperty("text") String text) {
-			this(text, "en"); // 默认目标语言为英语
+			this(text, AliTranslateConstants.LANGUAGE_CODE_ZH, AliTranslateConstants.LANGUAGE_CODE_EN);
 		}
 	}
 

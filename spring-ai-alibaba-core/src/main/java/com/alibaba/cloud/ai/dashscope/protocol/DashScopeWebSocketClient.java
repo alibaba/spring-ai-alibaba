@@ -177,6 +177,7 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 	public void onClosing(WebSocket webSocket, int code, String reason) {
 		logger.info("receive ws event onClosing: handle={}, code={}, reason={}", webSocket.toString(), code, reason);
 		emittersComplete("closing");
+		webSocket.close(code, reason);
 	}
 
 	@Override
@@ -328,6 +329,6 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 			@JsonProperty("usage")  JsonNode usage
 		){}
 	}
-	// @formatter:onf
+	// @formatter:on
 
 }

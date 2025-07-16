@@ -15,18 +15,17 @@
  */
 package com.alibaba.cloud.ai.toolcalling.microsofttranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.List;
@@ -38,18 +37,15 @@ public class MicroSoftTranslateService
 
 	private static final Logger logger = LoggerFactory.getLogger(MicroSoftTranslateService.class);
 
-	private static final String TRANSLATE_HOST_URL = "https://api.cognitive.microsofttranslator.com";
+	private static final String TRANSLATE_PATH = "/translate?api-version=3.0";
 
-	private static final String TRANSLATE_PATH = "/microsofttranslate?api-version=3.0";
+	private final WebClientTool webClientTool;
 
-	private final WebClient webClient;
+	private final JsonParseTool jsonParseTool;
 
-	public MicroSoftTranslateService(MicroSoftTranslateProperties properties) {
-		assert StringUtils.hasText(properties.getApiKey());
-		this.webClient = WebClient.builder()
-			.defaultHeader(MicroSoftTranslateProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getApiKey())
-			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-			.build();
+	public MicroSoftTranslateService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
+		this.webClientTool = webClientTool;
+		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
@@ -57,17 +53,23 @@ public class MicroSoftTranslateService
 		if (request == null || !StringUtils.hasText(request.text) || !StringUtils.hasText(request.targetLanguage)) {
 			return null;
 		}
-		String url = UriComponentsBuilder.fromHttpUrl(TRANSLATE_HOST_URL + TRANSLATE_PATH)
+		String uri = UriComponentsBuilder.fromHttpUrl(TRANSLATE_PATH)
 			.queryParam("to", request.targetLanguage)
 			.toUriString();
+		logger.info("Request uri: {}", uri);
 		try {
 			String body = constructRequestBody(request);
-			Mono<String> responseMono = webClient.post().uri(url).bodyValue(body).retrieve().bodyToMono(String.class);
+			logger.info("Request body: {}", body);
 
-			String responseData = responseMono.block();
-			assert responseData != null;
+			String responseData = webClientTool.getWebClient()
+				.post()
+				.uri(uri)
+				.bodyValue(body)
+				.retrieve()
+				.bodyToMono(String.class)
+				.block();
+
 			logger.info("Translation request: {}, response: {}", request.text, responseData);
-
 			return parseResponse(responseData);
 		}
 		catch (Exception e) {
@@ -81,14 +83,14 @@ public class MicroSoftTranslateService
 	}
 
 	private Response parseResponse(String responseData) {
-		Gson gson = new Gson();
-		List<Map<String, Object>> responseList = gson.fromJson(responseData,
-				new TypeToken<List<Map<String, Object>>>() {
-				}.getType());
-		Map<String, String> translations = new HashMap<>();
-		for (Map<String, Object> item : responseList) {
-			if (item.containsKey("translations")) {
-				List<Map<String, Object>> translationsList = (List<Map<String, Object>>) item.get("translations");
+		try {
+			Map<String, String> translations = new HashMap<>();
+
+			String firstElement = jsonParseTool.getFirstElementFromJsonArrayString(responseData);
+			if (firstElement != null) {
+				List<Map<String, Object>> translationsList = jsonParseTool.getFieldValue(firstElement,
+						new TypeReference<List<Map<String, Object>>>() {
+						}, "translations");
 				for (Map<String, Object> translation : translationsList) {
 					String to = (String) translation.get("to");
 					String translatedText = (String) translation.get("text");
@@ -96,9 +98,12 @@ public class MicroSoftTranslateService
 					logger.info("Translated text to {}: {}", to, translatedText);
 				}
 			}
+			return new Response(translations);
 		}
-
-		return new Response(translations);
+		catch (JsonProcessingException e) {
+			logger.error("Failed to parse response JSON: {}", responseData, e);
+			throw new RuntimeException("JSON parsing failed", e);
+		}
 	}
 
 	@JsonClassDescription("Request to microsofttranslate text to a target language")

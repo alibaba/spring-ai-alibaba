@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.dashscope.rag;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
-import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -86,7 +85,7 @@ public class DashScopeCloudStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(String query) {
 
-		return similaritySearch(SearchRequest.builder().query(query).toString());
+		return similaritySearch(SearchRequest.builder().query(query).build());
 
 	}
 

@@ -36,24 +36,19 @@ import org.springframework.util.CollectionUtils;
  */
 public class DashScopeChatModelObservationConvention extends DefaultChatModelObservationConvention {
 
-	public static final String DEFAULT_NAME = "gen_ai.client.operation";
-
 	private static final String ILLEGAL_STOP_CONTENT = "<illegal_stop_content>";
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
-	@Override
-	public String getName() {
-		return DEFAULT_NAME;
-	}
-
 	// Request
+	@Override
 	protected KeyValues requestStopSequences(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getRequest().getOptions() instanceof DashScopeChatOptions) {
 			List<Object> stop = ((DashScopeChatOptions) context.getRequest().getOptions()).getStop();
 			if (CollectionUtils.isEmpty(stop)) {
 				return keyValues;
 			}
+
 			KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES, stop,
 					Objects::nonNull);
 

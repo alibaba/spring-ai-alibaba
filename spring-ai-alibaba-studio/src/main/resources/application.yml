@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: spring-ai-alibaba-studio
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY}
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    cache-enabled: false
+    map-underscore-to-camel-case: true
+server:
+  port: 8080

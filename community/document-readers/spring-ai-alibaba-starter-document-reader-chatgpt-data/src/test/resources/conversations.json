@@ -1,0 +1,117 @@
+[
+    {
+        "id": "conversation_1",
+        "title": "Understanding Machine Learning",
+        "create_time": "2023-01-15T10:30:00Z",
+        "update_time": "2023-01-15T11:15:00Z",
+        "mapping": {
+            "message_1": {
+                "id": "message_1",
+                "role": "user",
+                "content": {
+                    "content_type": "text",
+                    "parts": [
+                        "Can you explain what machine learning is in simple terms?"
+                    ]
+                },
+                "create_time": "2023-01-15T10:30:00Z"
+            },
+            "message_2": {
+                "id": "message_2",
+                "role": "assistant",
+                "content": {
+                    "content_type": "text",
+                    "parts": [
+                        "Machine learning is a type of artificial intelligence that allows computers to learn from data without being explicitly programmed. Instead of writing specific instructions for every task, we provide examples and the computer figures out patterns on its own. It's like teaching a child by showing examples rather than explaining detailed rules."
+                    ]
+                },
+                "create_time": "2023-01-15T10:31:00Z"
+            },
+            "message_3": {
+                "id": "message_3",
+                "role": "user",
+                "content": {
+                    "content_type": "text",
+                    "parts": [
+                        "What are some common applications of machine learning?"
+                    ]
+                },
+                "create_time": "2023-01-15T10:35:00Z"
+            },
+            "message_4": {
+                "id": "message_4",
+                "role": "assistant",
+                "content": {
+                    "content_type": "text",
+                    "parts": [
+                        "Common applications of machine learning include: 1) Recommendation systems (like those used by Netflix or Amazon), 2) Image and speech recognition, 3) Email spam filtering, 4) Fraud detection in banking, 5) Medical diagnosis, 6) Natural language processing for chatbots and virtual assistants, 7) Self-driving cars, and 8) Predictive maintenance in manufacturing."
+                    ]
+                },
+                "create_time": "2023-01-15T10:36:00Z"
+            }
+        },
+        "current_node": "message_4"
+    },
+    {
+        "id": "conversation_2",
+        "title": "Python Programming Tips",
+        "create_time": "2023-02-20T14:45:00Z",
+        "update_time": "2023-02-20T15:30:00Z",
+        "mapping": {
+            "message_1": {
+                "id": "message_1",
+                "role": "user",
+                "content": {
+                    "content_type": "text",
+                    "parts": [
+                        "What are some best practices for writing clean Python code?"
+                    ]
+                },
+                "create_time": "2023-02-20T14:45:00Z"
+            },
+            "message_2": {
+                "id": "message_2",
+                "role": "assistant",
+                "content": {
+                    "content_type": "text",
+                    "parts": [
+                        "Here are some best practices for writing clean Python code:\n\n1. Follow PEP 8 style guide\n2. Use meaningful variable and function names\n3. Write docstrings for functions and classes\n4. Keep functions small and focused on a single task\n5. Use list comprehensions when appropriate\n6. Handle exceptions properly\n7. Use virtual environments for dependencies\n8. Write unit tests for your code\n9. Use type hints for better readability\n10. Avoid global variables"
+                    ]
+                },
+                "create_time": "2023-02-20T14:47:00Z"
+            }
+        },
+        "current_node": "message_2"
+    },
+    {
+        "id": "conversation_3",
+        "title": "Web Development Frameworks",
+        "create_time": "2023-03-10T09:15:00Z",
+        "update_time": "2023-03-10T10:00:00Z",
+        "mapping": {
+            "message_1": {
+                "id": "message_1",
+                "role": "user",
+                "content": {
+                    "content_type": "text",
+                    "parts": [
+                        "What are the most popular web development frameworks in 2023?"
+                    ]
+                },
+                "create_time": "2023-03-10T09:15:00Z"
+            },
+            "message_2": {
+                "id": "message_2",
+                "role": "assistant",
+                "content": {
+                    "content_type": "text",
+                    "parts": [
+                        "The most popular web development frameworks in 2023 include:\n\nFrontend:\n1. React.js - Maintained by Facebook, offers component-based architecture\n2. Angular - Full-featured framework by Google\n3. Vue.js - Progressive framework known for its simplicity\n4. Next.js - React framework with server-side rendering\n5. Svelte - Compiler-based approach with less boilerplate\n\nBackend:\n1. Express.js (Node.js) - Minimalist and flexible\n2. Django (Python) - Full-featured with admin panel\n3. Spring Boot (Java) - Enterprise-grade applications\n4. Laravel (PHP) - Elegant syntax and tools\n5. Ruby on Rails - Convention over configuration\n6. ASP.NET Core (C#) - Cross-platform from Microsoft\n\nFull-stack:\n1. MERN (MongoDB, Express, React, Node)\n2. MEAN (MongoDB, Express, Angular, Node)\n3. Flask (Python) with React or Vue"
+                    ]
+                },
+                "create_time": "2023-03-10T09:17:00Z"
+            }
+        },
+        "current_node": "message_2"
+    }
+]

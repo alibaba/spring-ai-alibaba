@@ -27,13 +27,14 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @EnableConfigurationProperties(DingTalkProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.dingtalk", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = DingTalkConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class DingTalkAutoConfiguration {
 
-	@Bean
+	@Bean(name = DingTalkConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Send DingTalk group chat messages using a custom robot")
-	public DingTalkRobotService dingTalkGroupSendMessageByCustomRobotFunction(DingTalkProperties dingTalkProperties) {
+	public DingTalkRobotService dingTalkGroupSendMessageByCustomRobot(DingTalkProperties dingTalkProperties) {
 		return new DingTalkRobotService(dingTalkProperties);
 	}
 

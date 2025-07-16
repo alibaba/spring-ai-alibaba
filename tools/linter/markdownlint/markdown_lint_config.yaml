@@ -1,0 +1,43 @@
+#
+# Copyright 2024-2025 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# MD009/no-trailing-spaces Trailing spaces
+MD009: false
+# MD013 Line length
+MD013: false
+# MD014 Dollar signs used before commands without showing output
+MD014: false
+# MD024 Multiple headings with the same content
+MD024: false
+# MD026/no-trailing-punctuation Trailing punctuation in heading
+MD026: false
+# MD029/ol-prefix Ordered list item prefix
+MD029: false
+# MD033/no-inline-html
+MD033: false
+# MD034/no-bare-urls
+MD034: false
+# MD040/fenced-code-language
+MD040: false
+# MD041/first-line-heading/first-line-h1 First line in file should be a top level heading
+MD041: false
+# MD036/emphasis used instead of a header
+MD036: false
+# MD051/first-heading-h1-first
+MD051: false
+# MD056/table-column-count Table
+MD056: false
+# MD055/table-pipe-style
+MD055: false

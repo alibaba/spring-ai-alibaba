@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.dashscope.agent;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -29,17 +30,32 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 
 public class DashScopeAgentOptions implements ChatOptions {
 
+	@JsonProperty("app_id")
 	private String appId;
 
+	@JsonProperty("session_id")
 	private String sessionId;
 
+	@JsonProperty("memory_id")
 	private String memoryId;
 
+	@JsonProperty("incremental_output")
 	private Boolean incrementalOutput;
 
+	@JsonProperty("has_thoughts")
 	private Boolean hasThoughts;
 
+	@JsonProperty("images")
+	private List<String> images;
+
+	@JsonProperty("biz_params")
 	private JsonNode bizParams;
+
+	@JsonProperty("rag_options")
+	private DashScopeAgentRagOptions ragOptions;
+
+	@JsonProperty("flow_stream_mode")
+	private DashScopeAgentFlowStreamMode flowStreamMode;
 
 	@Override
 	public String getModel() {
@@ -121,12 +137,36 @@ public class DashScopeAgentOptions implements ChatOptions {
 		this.hasThoughts = hasThoughts;
 	}
 
+	public List<String> getImages() {
+		return images;
+	}
+
+	public void setImages(List<String> images) {
+		this.images = images;
+	}
+
 	public JsonNode getBizParams() {
 		return bizParams;
 	}
 
 	public void setBizParams(JsonNode bizParams) {
 		this.bizParams = bizParams;
+	}
+
+	public DashScopeAgentRagOptions getRagOptions() {
+		return ragOptions;
+	}
+
+	public void setRagOptions(DashScopeAgentRagOptions ragOptions) {
+		this.ragOptions = ragOptions;
+	}
+
+	public DashScopeAgentFlowStreamMode getFlowStreamMode() {
+		return flowStreamMode;
+	}
+
+	public void setFlowStreamMode(DashScopeAgentFlowStreamMode flowStreamMode) {
+		this.flowStreamMode = flowStreamMode;
 	}
 
 	@Override
@@ -138,6 +178,7 @@ public class DashScopeAgentOptions implements ChatOptions {
 		return DashScopeAgentOptions.builder()
 			.withAppId(options.getAppId())
 			.withSessionId(options.getSessionId())
+			.withMemoryId(options.getMemoryId())
 			.withIncrementalOutput(options.getIncrementalOutput())
 			.withHasThoughts(options.getHasThoughts())
 			.withBizParams(options.getBizParams())
@@ -186,8 +227,23 @@ public class DashScopeAgentOptions implements ChatOptions {
 			return this;
 		}
 
+		public Builder withImages(List<String> images) {
+			this.options.images = images;
+			return this;
+		}
+
 		public Builder withBizParams(JsonNode bizParams) {
 			this.options.bizParams = bizParams;
+			return this;
+		}
+
+		public Builder withRagOptions(DashScopeAgentRagOptions ragOptions) {
+			this.options.ragOptions = ragOptions;
+			return this;
+		}
+
+		public Builder withFlowStreamMode(DashScopeAgentFlowStreamMode flowStreamMode) {
+			this.options.flowStreamMode = flowStreamMode;
 			return this;
 		}
 
@@ -205,7 +261,10 @@ public class DashScopeAgentOptions implements ChatOptions {
 		sb.append(", memoryId='").append(memoryId).append('\'');
 		sb.append(", incrementalOutput=").append(incrementalOutput);
 		sb.append(", hasThoughts=").append(hasThoughts);
+		sb.append(", images=").append(images);
 		sb.append(", bizParams=").append(bizParams);
+		sb.append(", ragOptions=").append(ragOptions);
+		sb.append(", flowStreamMode=").append(flowStreamMode);
 		sb.append('}');
 		return sb.toString();
 	}

@@ -15,24 +15,28 @@
  */
 package com.alibaba.cloud.ai.toolcalling.microsofttranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author 31445
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.microsofttranslate")
-public class MicroSoftTranslateProperties {
+@ConfigurationProperties(prefix = MicroSoftTranslateConstants.CONFIG_PREFIX)
+public class MicroSoftTranslateProperties extends CommonToolCallProperties {
 
-	public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
+	private String region;
 
-	private String apiKey;
-
-	public String getApiKey() {
-		return apiKey;
+	public MicroSoftTranslateProperties() {
+		super("https://api.cognitive.microsofttranslator.com");
+		this.setPropertiesFromEnv(MicroSoftTranslateConstants.API_KEY_ENV, null, null, null);
 	}
 
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
+	public String getRegion() {
+		return region;
+	}
+
+	public void setRegion(final String region) {
+		this.region = region;
 	}
 
 }

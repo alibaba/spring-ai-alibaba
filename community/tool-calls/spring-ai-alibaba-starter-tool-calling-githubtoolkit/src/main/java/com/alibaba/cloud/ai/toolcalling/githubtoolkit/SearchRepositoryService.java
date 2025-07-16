@@ -15,26 +15,26 @@
  */
 package com.alibaba.cloud.ai.toolcalling.githubtoolkit;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-@JsonClassDescription("Search repositories operation")
-public class SearchRepositoryService implements Function<Request, Response> {
-
-	private static final String GITHUB_API_URL = "https://api.github.com";
+public class SearchRepositoryService implements Function<SearchRepositoryService.Request, Response> {
 
 	private static final String SEARCH_REPOS_ENDPOINT = "/search/repositories";
 
@@ -42,35 +42,25 @@ public class SearchRepositoryService implements Function<Request, Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(SearchRepositoryService.class);
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private final WebClientTool webClientTool;
 
-	private final WebClient webClient;
+	private final JsonParseTool jsonParseTool;
 
-	private final GithubToolKitProperties properties;
-
-	public SearchRepositoryService(GithubToolKitProperties properties) {
-		assert properties.getToken() != null && properties.getToken().length() == 40;
-		this.properties = properties;
-		this.webClient = WebClient.builder()
-			.defaultHeader(HttpHeaders.USER_AGENT, HttpHeaders.USER_AGENT)
-			.defaultHeader(HttpHeaders.ACCEPT, "application/vnd.github.v3+json")
-			.defaultHeader("X-GitHub-Api-Version", GithubToolKitProperties.X_GitHub_Api_Version)
-			.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getToken())
-			.build();
+	public SearchRepositoryService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
+		this.webClientTool = webClientTool;
+		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
 	public Response apply(Request request) {
-		String baseUrl = GITHUB_API_URL + SEARCH_REPOS_ENDPOINT;
-		URI uri = UriComponentsBuilder.fromHttpUrl(baseUrl)
-			.queryParam("q", request.query())
-			.queryParam("per_page", DEFAULT_PER_PAGE)
-			.queryParam("sort", request.sort() != null ? request.sort() : "best match")
-			.queryParam("order", request.order() != null ? request.order() : "desc")
-			.build(properties.getOwner(), properties.getRepository());
+		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+		params.add("q", request.query());
+		params.add("per_page", DEFAULT_PER_PAGE);
+		params.add("sort", request.sort() != null ? request.sort() : "best match");
+		params.add("order", request.order() != null ? request.order() : "desc");
+
 		try {
-			Mono<String> responseMono = webClient.get().uri(uri).retrieve().bodyToMono(String.class);
-			String responseData = responseMono.block();
+			String responseData = webClientTool.get(SEARCH_REPOS_ENDPOINT, params).block();
 			logger.info("SearchRepositoriesOperation success");
 
 			return new Response<>(parseRepositorySearchResults(responseData));
@@ -81,34 +71,39 @@ public class SearchRepositoryService implements Function<Request, Response> {
 		}
 	}
 
-	public static List<Repository> parseRepositorySearchResults(String json) throws IOException {
-		JsonNode rootNode = objectMapper.readTree(json);
-		JsonNode itemsNode = rootNode.get("items");
-		List<Repository> repositories = new ArrayList<>();
+	public List<Repository> parseRepositorySearchResults(String json) throws JsonProcessingException {
+		List<Map<String, Object>> itemMaps = jsonParseTool.getFieldValue(json,
+				new TypeReference<List<Map<String, Object>>>() {
+				}, "items");
 
-		if (itemsNode != null && itemsNode.isArray()) {
-			for (JsonNode itemNode : itemsNode) {
-				long id = itemNode.get("id").asLong();
-				String name = itemNode.get("name").asText();
-				String fullName = itemNode.get("full_name").asText();
-				String description = itemNode.has("description") && !itemNode.get("description").isNull()
-						? itemNode.get("description").asText() : null;
-				String htmlUrl = itemNode.get("html_url").asText();
-				int stargazersCount = itemNode.get("stargazers_count").asInt();
-				int forksCount = itemNode.get("forks_count").asInt();
-				String language = itemNode.has("language") && !itemNode.get("language").isNull()
-						? itemNode.get("language").asText() : null;
+		return itemMaps.stream().map(itemMap -> {
+			long id = ((Number) itemMap.get("id")).longValue();
+			String name = (String) itemMap.get("name");
+			String fullName = (String) itemMap.get("full_name");
+			String description = (String) itemMap.get("description");
+			String htmlUrl = (String) itemMap.get("html_url");
+			int stargazersCount = ((Number) itemMap.get("stargazers_count")).intValue();
+			int forksCount = ((Number) itemMap.get("forks_count")).intValue();
+			String language = (String) itemMap.get("language");
 
-				repositories.add(new Repository(id, name, fullName, description, htmlUrl, stargazersCount, forksCount,
-						language));
-			}
-		}
-
-		return repositories;
+			return new Repository(id, name, fullName, description, htmlUrl, stargazersCount, forksCount, language);
+		}).collect(Collectors.toList());
 	}
 
 	public record Repository(long id, String name, String fullName, String description, String htmlUrl,
 			int stargazersCount, int forksCount, String language) {
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonClassDescription("GitHub Repository search request")
+	public record Request(@JsonProperty(required = true,
+			value = "query") @JsonPropertyDescription("Keywords used for queries, useful for getting a list of repositories") String query,
+
+			@JsonProperty(
+					value = "sort") @JsonPropertyDescription("Sorts the results of your query by number of stars, forks, or help-wanted-issues or how recently the items were updated.") String sort,
+
+			@JsonProperty(
+					value = "order") @JsonPropertyDescription("Determines whether the first search result returned is the highest number of matches (desc) or lowest number of matches (asc). This parameter is ignored unless you provide sort.") String order) {
 	}
 
 }

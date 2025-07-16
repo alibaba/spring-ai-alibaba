@@ -63,6 +63,11 @@ public class AnswerCorrectnessEvaluator extends LaajEvaluator {
 
 	@Override
 	public EvaluationResponse evaluate(EvaluationRequest evaluationRequest) {
+		// Add parameter validation
+		if (evaluationRequest == null) {
+			throw new IllegalArgumentException("EvaluationRequest must not be null");
+		}
+
 		var response = doGetResponse(evaluationRequest);
 		var context = doGetSupportingData(evaluationRequest);
 

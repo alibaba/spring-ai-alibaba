@@ -15,52 +15,50 @@
  */
 package com.alibaba.cloud.ai.toolcalling.serpapi;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
-
+import org.springframework.util.CollectionUtils;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
-
-import static com.alibaba.cloud.ai.toolcalling.serpapi.SerpApiProperties.SERP_API_URL;
-import static com.alibaba.cloud.ai.toolcalling.serpapi.SerpApiProperties.USER_AGENT_VALUE;
 
 /**
  * @author 北极星
+ * @author sixiyida
  */
-public class SerpApiService implements Function<SerpApiService.Request, SerpApiService.Response> {
+public class SerpApiService implements SearchService, Function<SerpApiService.Request, SerpApiService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(SerpApiService.class);
 
-	private final WebClient webClient;
+	private final JsonParseTool jsonParseTool;
 
-	private final String apikey;
+	private final WebClientTool webClientTool;
 
-	private final String engine;
+	private final SerpApiProperties properties;
 
-	public SerpApiService(SerpApiProperties properties) {
-		this.apikey = properties.getApikey();
-		this.engine = properties.getEngine();
-		this.webClient = WebClient.builder()
-			.baseUrl(SERP_API_URL)
-			.defaultHeader(HttpHeaders.USER_AGENT, USER_AGENT_VALUE)
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
-			.build();
+	public SerpApiService(SerpApiProperties properties, JsonParseTool jsonParseTool, WebClientTool webClientTool) {
+		this.properties = properties;
+		this.jsonParseTool = jsonParseTool;
+		this.webClientTool = webClientTool;
+	}
+
+	@Override
+	public SearchService.Response query(String query) {
+		return this.apply(new Request(query));
 	}
 
 	/**
@@ -69,67 +67,94 @@ public class SerpApiService implements Function<SerpApiService.Request, SerpApiS
 	 * @return responseMono
 	 */
 	@Override
-	public Response apply(Request request) {
-		if (request == null || !StringUtils.hasText(request.query)) {
+	public SerpApiService.Response apply(SerpApiService.Request request) {
+		if (CommonToolCallUtils.isInvalidateRequestParams(request, request.query)) {
 			return null;
 		}
-		try {
-			Mono<String> responseMono = webClient.method(HttpMethod.GET)
-				.uri(uriBuilder -> uriBuilder.queryParam("api_key", apikey)
-					.queryParam("engine", engine)
+
+		return CommonToolCallUtils.handleServiceError("SerpApi", () -> {
+			String response = webClientTool.getWebClient()
+				.get()
+				.uri(uriBuilder -> uriBuilder.queryParam("api_key", properties.getApiKey())
+					.queryParam("engine", properties.getEngine())
 					.queryParam("q", request.query)
 					.build())
+				.acceptCharset(StandardCharsets.UTF_8)
 				.retrieve()
-				.bodyToMono(String.class);
-			String response = responseMono.block();
-			assert response != null;
-			logger.info("serpapi search: {},result:{}", request.query, response);
-			List<SearchResult> resultList = parseJson(response);
-			for (SearchResult result : resultList) {
-				logger.info("{}\n{}", result.title(), result.text());
+				.bodyToMono(String.class)
+				.block();
+
+			List<SearchResult> results = CommonToolCallUtils.handleResponse(response, this::parseJson, logger);
+
+			if (CollectionUtils.isEmpty(results)) {
+				return null;
 			}
-			return new Response(resultList);
-		}
-		catch (Exception e) {
-			logger.error("failed to invoke serpapi search, caused by:{}", e.getMessage());
-			return null;
-		}
+
+			logger.info("serpapi search: {},result:{}", request.query, response);
+
+			for (SearchResult d : results) {
+				logger.info("{}\n{}", d.title(), d.text());
+			}
+			return new Response(results);
+		}, logger);
 	}
 
 	private List<SearchResult> parseJson(String jsonResponse) {
-		Gson gson = new Gson();
-		JsonObject object = gson.fromJson(jsonResponse, JsonObject.class);
-		JsonArray jsonArray = object.getAsJsonArray("organic_results");
 		List<SearchResult> resultList = new ArrayList<>();
+		try {
+			TypeReference<List<Map<String, Object>>> typeRef = new TypeReference<>() {
+			};
 
-		for (JsonElement jsonElement : jsonArray) {
-			JsonObject resultObject = jsonElement.getAsJsonObject();
-			String title = resultObject.get("title").getAsString();
-			String link = resultObject.get("link").getAsString();
+			List<Map<String, Object>> organicResults = jsonParseTool.getFieldValue(jsonResponse, typeRef,
+					"organic_results");
 
-			try {
-				Document document = Jsoup.connect(link).userAgent(USER_AGENT_VALUE).get();
-				String textContent = document.body().text();
-				resultList.add(new SearchResult(title, textContent));
-			}
-			catch (Exception e) {
-				logger.error("Failed to parse SERP API search link, caused by: {}", e.getMessage());
+			for (Map<String, Object> result : organicResults) {
+				String title = (String) result.get("title");
+				String link = (String) result.get("link");
+				String snippet = (String) result.get("snippet");
+				try {
+					Document document = Jsoup.connect(link).userAgent(SerpApiProperties.USER_AGENT_VALUE).get();
+					String textContent = document.body().text();
+					resultList.add(new SearchResult(title, textContent, link));
+				}
+				catch (Exception e) {
+					logger.error("Failed to parse SERP API search link {}, caused by: {}", link, e.getMessage());
+					// use snippet instead of textContent
+					resultList.add(new SearchResult(title, snippet, link));
+				}
 			}
 		}
+		catch (JsonProcessingException e) {
+			logger.error("Failed to parse JSON response, caused by: {}", e.getMessage());
+		}
+
 		return resultList;
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("serpapi search request")
-	record Request(@JsonProperty(required = true,
-			value = "query") @JsonPropertyDescription("The query " + "keyword e.g. Alibaba") String query) {
+	public record Request(@JsonProperty(required = true,
+			value = "query") @JsonPropertyDescription("The query " + "keyword e.g. Alibaba") String query)
+			implements
+				SearchService.Request {
+		@Override
+		public String getQuery() {
+			return this.query();
+		}
 	}
 
 	@JsonClassDescription("serpapi search response")
-	record Response(List<SearchResult> results) {
+	public record Response(List<SearchResult> results) implements SearchService.Response {
+		@Override
+		public SearchService.SearchResult getSearchResult() {
+			return new SearchService.SearchResult(this.results()
+				.stream()
+				.map(item -> new SearchService.SearchContent(item.title(), item.text(), item.url()))
+				.toList());
+		}
 	}
 
-	record SearchResult(String title, String text) {
+	public record SearchResult(String title, String text, String url) {
 	}
 
 }

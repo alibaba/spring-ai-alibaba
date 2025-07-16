@@ -18,6 +18,9 @@ package com.alibaba.cloud.ai.dashscope.rag;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author nuocheng.lxm
  * @since 2024/8/6 11:04
@@ -43,6 +46,8 @@ public class DashScopeDocumentRetrieverOptions {
 
 	private @JsonProperty("rerank_top_n") int rerankTopN = 5;
 
+	private @JsonProperty("search_filters") List<Map<String, Object>> searchFilters;
+
 	public static DashScopeDocumentRetrieverOptions.Builder builder() {
 		return new DashScopeDocumentRetrieverOptions.Builder();
 	}
@@ -59,7 +64,7 @@ public class DashScopeDocumentRetrieverOptions {
 		return denseSimilarityTopK;
 	}
 
-	public void setDenseSimilarityTopk(int denseSimilarityTopK) {
+	public void setDenseSimilarityTopK(int denseSimilarityTopK) {
 		this.denseSimilarityTopK = denseSimilarityTopK;
 	}
 
@@ -67,7 +72,7 @@ public class DashScopeDocumentRetrieverOptions {
 		return sparseSimilarityTopK;
 	}
 
-	public void setSparseSimilarityTopk(int sparseSimilarityTopK) {
+	public void setSparseSimilarityTopK(int sparseSimilarityTopK) {
 		this.sparseSimilarityTopK = sparseSimilarityTopK;
 	}
 
@@ -119,6 +124,14 @@ public class DashScopeDocumentRetrieverOptions {
 		this.rerankTopN = rerankTopN;
 	}
 
+	public void setSearchFilters(List<Map<String, Object>> searchFilters) {
+		this.searchFilters = searchFilters;
+	}
+
+	public List<Map<String, Object>> getSearchFilters() {
+		return searchFilters;
+	}
+
 	public static class Builder {
 
 		protected DashScopeDocumentRetrieverOptions options;
@@ -133,12 +146,12 @@ public class DashScopeDocumentRetrieverOptions {
 		}
 
 		public DashScopeDocumentRetrieverOptions.Builder withDenseSimilarityTopK(Integer denseSimilarityTopK) {
-			this.options.setDenseSimilarityTopk(denseSimilarityTopK);
+			this.options.setDenseSimilarityTopK(denseSimilarityTopK);
 			return this;
 		}
 
 		public DashScopeDocumentRetrieverOptions.Builder withSparseSimilarityTopK(int sparseSimilarityTopK) {
-			this.options.setSparseSimilarityTopk(sparseSimilarityTopK);
+			this.options.setSparseSimilarityTopK(sparseSimilarityTopK);
 			return this;
 		}
 
@@ -169,6 +182,11 @@ public class DashScopeDocumentRetrieverOptions {
 
 		public DashScopeDocumentRetrieverOptions.Builder withRerankTopN(int rerankTopN) {
 			this.options.setRerankTopN(rerankTopN);
+			return this;
+		}
+
+		public DashScopeDocumentRetrieverOptions.Builder withSearchFilters(List<Map<String, Object>> searchFilters) {
+			this.options.setSearchFilters(searchFilters);
 			return this;
 		}
 

@@ -25,16 +25,23 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.embedding.*;
+import org.springframework.ai.embedding.AbstractEmbeddingModel;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -80,8 +87,7 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 				DashScopeEmbeddingOptions.builder()
 					.withModel(DashScopeApi.DEFAULT_EMBEDDING_MODEL)
 					.withTextType(DashScopeApi.DEFAULT_EMBEDDING_TEXT_TYPE)
-					.build(),
-				RetryUtils.DEFAULT_RETRY_TEMPLATE);
+					.build());
 	}
 
 	public DashScopeEmbeddingModel(DashScopeApi dashScopeApi, MetadataMode metadataMode,
@@ -117,13 +123,15 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
-		DashScopeEmbeddingOptions requestOptions = mergeOptions(request.getOptions(), this.defaultOptions);
-		DashScopeApi.EmbeddingRequest apiRequest = createRequest(request, requestOptions);
+		// Before moving any further, build the final request EmbeddingRequest,
+		// merging runtime and default options.
+		EmbeddingRequest embeddingRequest = buildEmbeddingRequest(request);
+
+		DashScopeApi.EmbeddingRequest apiRequest = createRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(request)
+			.embeddingRequest(embeddingRequest)
 			.provider(DashScopeApiConstants.PROVIDER_NAME)
-			.requestOptions(requestOptions)
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -131,15 +139,13 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 					this.observationRegistry)
 			.observe(() -> {
 				DashScopeApi.EmbeddingList apiEmbeddingResponse = this.retryTemplate.execute(ctx -> {
-					DashScopeApi.EmbeddingList embeddingResponse = null;
 					try {
-						embeddingResponse = this.dashScopeApi.embeddings(apiRequest).getBody();
+						return this.dashScopeApi.embeddings(apiRequest).getBody();
 					}
 					catch (Exception e) {
 						logger.error("Error embedding request: {}", request.getInstructions(), e);
 						throw e;
 					}
-					return embeddingResponse;
 				});
 
 				if (apiEmbeddingResponse == null) {
@@ -153,7 +159,11 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 							+ ", message:" + apiEmbeddingResponse.message());
 				}
 
-				var metadata = generateResponseMetadata(apiRequest.model(), apiEmbeddingResponse.usage());
+				DashScopeApi.EmbeddingUsage usage = apiEmbeddingResponse.usage();
+
+				Usage embeddingUsage = usage != null ? this.getDefaultUsage(usage) : new EmptyUsage();
+
+				var metadata = generateResponseMetadata(apiRequest.model(), embeddingUsage);
 				List<Embedding> embeddings = apiEmbeddingResponse.output()
 					.embeddings()
 					.stream()
@@ -168,36 +178,47 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 			});
 	}
 
-	private DashScopeApi.EmbeddingRequest createRequest(EmbeddingRequest request,
-			DashScopeEmbeddingOptions requestOptions) {
-		return new DashScopeApi.EmbeddingRequest(request.getInstructions(), requestOptions.getModel(),
-				requestOptions.getTextType());
+	private DefaultUsage getDefaultUsage(DashScopeApi.EmbeddingUsage usage) {
+		return new DefaultUsage(usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens(), usage);
 	}
 
-	/**
-	 * Merge runtime and default {@link EmbeddingOptions} to compute the final options to
-	 * use in the request.
-	 */
-	private DashScopeEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions runtimeOptions,
-			DashScopeEmbeddingOptions defaultOptions) {
-		if (runtimeOptions == null) {
-			return defaultOptions;
+	private EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		// Process runtime options
+		DashScopeEmbeddingOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					DashScopeEmbeddingOptions.class);
 		}
 
-		return DashScopeEmbeddingOptions.builder()
-			// Handle portable embedding options
-			.withModel(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
-			.withDimensions(
-					ModelOptionsUtils.mergeOption(runtimeOptions.getDimensions(), defaultOptions.getDimensions()))
-			// Handle DashScope specific embedding options
-			.withTextType(defaultOptions.getTextType())
+		DashScopeEmbeddingOptions requestOptions = runtimeOptions == null ? this.defaultOptions
+				: DashScopeEmbeddingOptions.builder()
+					// Handle portable embedding options
+					.withModel(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), this.defaultOptions.getModel()))
+					.withDimensions(ModelOptionsUtils.mergeOption(runtimeOptions.getDimensions(),
+							defaultOptions.getDimensions()))
+
+					// Handle dashscope specific embedding options
+					.withTextType(
+							ModelOptionsUtils.mergeOption(runtimeOptions.getTextType(), defaultOptions.getTextType()))
+					.build();
+
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+	}
+
+	private DashScopeApi.EmbeddingRequest createRequest(EmbeddingRequest request) {
+		DashScopeEmbeddingOptions requestOptions = (DashScopeEmbeddingOptions) request.getOptions();
+		return DashScopeApi.EmbeddingRequest.builder()
+			.model(requestOptions.getModel())
+			.texts(request.getInstructions())
+			.textType(requestOptions.getTextType())
+			.dimension(requestOptions.getDimensions())
 			.build();
 	}
 
-	private EmbeddingResponseMetadata generateResponseMetadata(String model, DashScopeApi.EmbeddingUsage usage) {
+	private EmbeddingResponseMetadata generateResponseMetadata(String model, Usage usage) {
 		Map<String, Object> map = new HashMap<>();
 		map.put("model", model);
-		map.put("total-tokens", usage.totalTokens());
+		map.put("total-tokens", usage.getTotalTokens());
 
 		return new EmbeddingResponseMetadata(model, usage, map);
 	}

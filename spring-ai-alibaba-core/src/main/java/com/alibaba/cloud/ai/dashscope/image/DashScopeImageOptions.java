@@ -20,9 +20,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.image.ImageOptions;
 
+import java.util.Arrays;
+
 /**
  * @author nuocheng.lxm
  * @author yuluo
+ * @author Polaris
  * @since 2024/8/16 11:29
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -43,13 +46,13 @@ public class DashScopeImageOptions implements ImageOptions {
 	/**
 	 * The width of the generated images. Must be one of 720, 1024, 1280
 	 */
-	@JsonProperty("size_width")
+	@JsonProperty("width")
 	private Integer width;
 
 	/**
 	 * The height of the generated images. Must be one of 720, 1024, 1280
 	 */
-	@JsonProperty("size_height")
+	@JsonProperty("height")
 	private Integer height;
 
 	/**
@@ -87,6 +90,13 @@ public class DashScopeImageOptions implements ImageOptions {
 	private Float refStrength;
 
 	/**
+	 * The format in which the generated images are returned. Must be one of url or
+	 * b64_json.
+	 */
+	@JsonProperty("response_format")
+	private String responseFormat;
+
+	/**
 	 * refer mode,Must be one of repaint,refonly
 	 */
 	@JsonProperty("ref_mode")
@@ -94,6 +104,116 @@ public class DashScopeImageOptions implements ImageOptions {
 
 	@JsonProperty("negative_prompt")
 	private String negativePrompt;
+
+	@JsonProperty("prompt_extend")
+	private Boolean promptExtend;
+
+	@JsonProperty("watermark")
+	private Boolean watermark;
+
+	@JsonProperty("function")
+	private String function;
+
+	@JsonProperty("base_image_url")
+	private String baseImageUrl;
+
+	@JsonProperty("mask_image_url")
+	private String maskImageUrl;
+
+	@JsonProperty("sketch_image_url")
+	private String sketchImageUrl;
+
+	@JsonProperty("sketch_weight")
+	private Integer sketchWeight;
+
+	@JsonProperty("sketch_extraction")
+	private Boolean sketchExtraction;
+
+	@JsonProperty("sketch_color")
+	private Integer[][] sketchColor;
+
+	@JsonProperty("mask_color")
+	private Integer[][] maskColor;
+
+	public Boolean getPromptExtend() {
+		return promptExtend;
+	}
+
+	public void setPromptExtend(Boolean promptExtend) {
+		this.promptExtend = promptExtend;
+	}
+
+	public Boolean getWatermark() {
+		return watermark;
+	}
+
+	public void setWatermark(Boolean watermark) {
+		this.watermark = watermark;
+	}
+
+	public String getFunction() {
+		return function;
+	}
+
+	public void setFunction(String function) {
+		this.function = function;
+	}
+
+	public String getBaseImageUrl() {
+		return baseImageUrl;
+	}
+
+	public void setBaseImageUrl(String baseImageUrl) {
+		this.baseImageUrl = baseImageUrl;
+	}
+
+	public String getMaskImageUrl() {
+		return maskImageUrl;
+	}
+
+	public void setMaskImageUrl(String maskImageUrl) {
+		this.maskImageUrl = maskImageUrl;
+	}
+
+	public String getSketchImageUrl() {
+		return sketchImageUrl;
+	}
+
+	public void setSketchImageUrl(String sketchImageUrl) {
+		this.sketchImageUrl = sketchImageUrl;
+	}
+
+	public Integer getSketchWeight() {
+		return sketchWeight;
+	}
+
+	public void setSketchWeight(Integer sketchWeight) {
+		this.sketchWeight = sketchWeight;
+	}
+
+	public Boolean getSketchExtraction() {
+		return sketchExtraction;
+	}
+
+	public void setSketchExtraction(Boolean sketchExtraction) {
+		this.sketchExtraction = sketchExtraction;
+	}
+
+	public Integer[][] getSketchColor() {
+		return sketchColor;
+	}
+
+	public void setSketchColor(Integer[][] sketchColor) {
+		this.sketchColor = sketchColor;
+	}
+
+	public Integer[][] getMaskColor() {
+		return maskColor;
+	}
+
+	public void setMaskColor(Integer[][] maskColor) {
+		this.maskColor = maskColor;
+	}
 
 	public static Builder builder() {
 		return new Builder();
@@ -139,9 +259,10 @@ public class DashScopeImageOptions implements ImageOptions {
 
 	@Override
 	public String getResponseFormat() {
-		return null;
+		return this.responseFormat;
 	}
 
+	@Override
 	public String getStyle() {
 		return this.style;
 	}
@@ -158,6 +279,7 @@ public class DashScopeImageOptions implements ImageOptions {
 		return (this.width != null && this.height != null) ? this.width + "*" + this.height : null;
 	}
 
+	@Deprecated
 	public void setSize(String size) {
 		this.size = size;
 	}
@@ -204,11 +326,14 @@ public class DashScopeImageOptions implements ImageOptions {
 
 	@Override
 	public String toString() {
-
 		return "DashScopeImageOptions{" + "model='" + model + '\'' + ", n=" + n + ", width=" + width + ", height="
 				+ height + ", size='" + size + '\'' + ", style='" + style + '\'' + ", seed=" + seed + ", refImg='"
 				+ refImg + '\'' + ", refStrength=" + refStrength + ", refMode='" + refMode + '\'' + ", negativePrompt='"
-				+ negativePrompt + '\'' + '}';
+				+ negativePrompt + '\'' + ", promptExtend=" + promptExtend + ", watermark=" + watermark + ", function='"
+				+ function + '\'' + ", baseImageUrl='" + baseImageUrl + '\'' + ", maskImageUrl='" + maskImageUrl + '\''
+				+ ", sketchImageUrl='" + sketchImageUrl + '\'' + ", sketchWeight=" + sketchWeight
+				+ ", sketchExtraction=" + sketchExtraction + ", sketchColor=" + Arrays.toString(sketchColor)
+				+ ", maskColor=" + Arrays.toString(maskColor) + '}';
 	}
 
 	public static class Builder {
@@ -264,8 +389,69 @@ public class DashScopeImageOptions implements ImageOptions {
 			return this;
 		}
 
+		@Deprecated
+		public Builder withSize(String size) {
+			options.setSize(size);
+			return this;
+		}
+
 		public Builder withNegativePrompt(String negativePrompt) {
 			options.setNegativePrompt(negativePrompt);
+			return this;
+		}
+
+		public Builder withPromptExtend(Boolean promptExtend) {
+			this.options.promptExtend = promptExtend;
+			return this;
+		}
+
+		public Builder withWatermark(Boolean watermark) {
+			this.options.watermark = watermark;
+			return this;
+		}
+
+		public Builder withFunction(String function) {
+			this.options.function = function;
+			return this;
+		}
+
+		public Builder withBaseImageUrl(String baseImageUrl) {
+			this.options.baseImageUrl = baseImageUrl;
+			return this;
+		}
+
+		public Builder withMaskImageUrl(String maskImageUrl) {
+			this.options.maskImageUrl = maskImageUrl;
+			return this;
+		}
+
+		public Builder withSketchImageUrl(String sketchImageUrl) {
+			this.options.sketchImageUrl = sketchImageUrl;
+			return this;
+		}
+
+		public Builder withSketchWeight(Integer sketchWeight) {
+			this.options.sketchWeight = sketchWeight;
+			return this;
+		}
+
+		public Builder withSketchExtraction(Boolean sketchExtraction) {
+			this.options.sketchExtraction = sketchExtraction;
+			return this;
+		}
+
+		public Builder withSketchColor(Integer[][] sketchColor) {
+			this.options.sketchColor = sketchColor;
+			return this;
+		}
+
+		public Builder withMaskColor(Integer[][] maskColor) {
+			this.options.maskColor = maskColor;
+			return this;
+		}
+
+		public Builder withResponseFormat(String responseFormat) {
+			this.options.responseFormat = responseFormat;
 			return this;
 		}
 

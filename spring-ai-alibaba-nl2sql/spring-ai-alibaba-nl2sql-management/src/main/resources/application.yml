@@ -1,0 +1,35 @@
+server:
+  port: 8062 # 服务器端口配置
+spring:
+  ai:
+    dashscope:
+      api-key:
+    mcp:
+      server:
+        name: xiyan-server # MCP服务器名称
+        version: 0.0.1 # 服务器版本号
+    vectorstore:
+      analytic:
+        collectName:
+        regionId:
+        dbInstanceId:
+        managerAccount:
+        managerAccountPassword:
+        namespace:
+        namespacePassword:
+        defaultTopK: 6
+        defaultSimilarityThreshold: 0.75
+        accessKeyId:
+        accessKeySecret:
+    openai:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      api-key:
+      model: qwen-max
+chatBi:
+  dbConfig:
+    url:
+    username:
+    password:
+    schema:
+    connection-type: jdbc
+    dialect-type: mysql

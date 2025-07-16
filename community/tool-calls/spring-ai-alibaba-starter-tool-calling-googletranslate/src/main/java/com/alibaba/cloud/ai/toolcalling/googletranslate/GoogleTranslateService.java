@@ -15,17 +15,17 @@
  */
 package com.alibaba.cloud.ai.toolcalling.googletranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.List;
@@ -40,67 +40,58 @@ public class GoogleTranslateService
 
 	private static final Logger log = LoggerFactory.getLogger(GoogleTranslateService.class);
 
-	private static final String TRANSLATE_HOST = "https://translation.googleapis.com";
-
-	private static final String TRANSLATE_PATH = "/language/translate/v2";
-
 	private final GoogleTranslateProperties properties;
 
-	private final WebClient webClient;
+	private final WebClientTool webClientTool;
 
-	public GoogleTranslateService(GoogleTranslateProperties properties) {
+	private final JsonParseTool jsonPraseTool;
+
+	public GoogleTranslateService(GoogleTranslateProperties properties, WebClientTool webClientTool,
+			JsonParseTool jsonPraseTool) {
 		assert StringUtils.hasText(properties.getApiKey());
 		this.properties = properties;
-		this.webClient = WebClient.builder().defaultHeader("Content-Type", "application/json").build();
+		this.webClientTool = webClientTool;
+		this.jsonPraseTool = jsonPraseTool;
 	}
 
 	@Override
 	public Response apply(Request request) {
-		if (request == null || request.text == null || request.text.isEmpty()
-				|| !StringUtils.hasText(properties.getApiKey()) || !StringUtils.hasText(request.targetLanguage)) {
+		if (CommonToolCallUtils.isInvalidateRequestParams(request, request.text, request.targetLanguage)) {
 			return null;
 		}
 
-		String requestUrl = UriComponentsBuilder.fromHttpUrl(TRANSLATE_HOST + TRANSLATE_PATH)
-			.queryParam("key", properties.getApiKey())
-			.queryParam("target", request.targetLanguage)
-			.queryParam("q", request.text)
-			.queryParam("format", "text")
-			.toUriString();
-		try {
-			Mono<String> responseMono = webClient.post().uri(requestUrl).retrieve().bodyToMono(String.class);
-
-			String responseData = responseMono.block();
-			assert responseData != null;
-			log.info("GoogleTranslation request: {}, response: {}", request.text, responseData);
-			return parseResponseData(responseData, request.text);
-		}
-		catch (Exception e) {
-			log.error("Using the googleTranslate service failed due to {}", e.getMessage());
-		}
-		return null;
+		return CommonToolCallUtils.handleServiceError("GoogleTranslate", () -> {
+			try {
+				MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
+					.add("key", properties.getApiKey())
+					.add("target", request.targetLanguage)
+					.add("q", jsonPraseTool.objectToJson(request.text))
+					.add("format", "text")
+					.build();
+				String responseData = webClientTool.post("/", params, "").block();
+				return CommonToolCallUtils.handleResponse(responseData, data -> parseResponseData(data, request.text),
+						log);
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}, log);
 	}
 
 	private Response parseResponseData(String responseData, List<String> query) {
-		ObjectMapper mapper = new ObjectMapper();
 		Map<String, String> translationResult = new HashMap<>();
 		try {
-			JsonNode rootNode = mapper.readTree(responseData);
-			JsonNode data = rootNode.path("data");
-			if (data == null || data.isNull()) {
-				translateFailed(rootNode);
-				return null;
-			}
-			JsonNode translations = data.path("translations");
+			String translationStr = jsonPraseTool.getDepthFieldValueAsString(responseData, "data", "translations");
+			List<String> translations = jsonPraseTool.jsonToList(translationStr, String.class);
 			assert translations != null;
 			assert query.size() == translations.size();
 			for (int i = 0; i < translations.size(); i++) {
-				translationResult.put(query.get(i), translations.get(i).asText());
+				translationResult.put(query.get(i), translations.get(i));
 			}
 			return new Response(translationResult);
 		}
 		catch (Exception e) {
-			log.error("failed to convert the response to json object  due to {}", e.getMessage());
+			log.error("Failed to parse response data: {}", e.getMessage());
 			return null;
 		}
 	}
@@ -111,6 +102,7 @@ public class GoogleTranslateService
 		log.info("Translate Text Failed. message:{} code:{}", errorMessage, code);
 	}
 
+	@JsonClassDescription("Request to translate text to the target language")
 	public record Request(
 			@JsonProperty(required = true,
 					value = "text") @JsonPropertyDescription("Content that needs to be translated") List<String> text,

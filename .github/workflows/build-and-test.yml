@@ -13,33 +13,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-name: PR Check
-
+name: 🛠️ Build and Test
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
   pull_request:
     branches:
       - main
-
+    paths-ignore:
+      - '**.md'
+env:
+  ENABLE_TEST_CI: true
+permissions:
+  contents: read
 jobs:
+  format:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./tools/github-actions/setup-deps
+      - run: make tools
+      - run: make format-check
+  check-style:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./tools/github-actions/setup-deps
+      - run: make tools
+      - run: make checkstyle-check
+  test:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
+    runs-on: ubuntu-22.04
+    needs: [format, check-style]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./tools/github-actions/setup-deps
+      - run: make tools
+      - run: make test
   build:
-     name: Build branch
-     runs-on: ubuntu-latest
-     steps:
-       - name: Checkout source code
-         uses: actions/checkout@v4
-  
-       - name: Set up JDK 17
-         uses: actions/setup-java@v4
-         with:
-           java-version: '17'
-           distribution: 'temurin'
-           cache: 'maven'
-
-# skip test.
-#       - name: Build with Maven
-#         run: ./mvnw -B package --file pom.xml
-#
-#       - name: Run tests
-#         run: |
-#           ./mvnw test
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
+    runs-on: ubuntu-22.04
+    needs: [format, check-style, test]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./tools/github-actions/setup-deps
+      - run: make tools
+      - run: make build

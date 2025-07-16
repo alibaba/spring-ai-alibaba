@@ -51,7 +51,7 @@ public class AnswerRelevancyEvaluator extends LaajEvaluator {
 			避免简单地陈述正确答案。
 
 			最终答案按照标准的json格式输出, 比如:
-			{"score": 0.7, "feedback": "GROUND TRUTH ANSWER与STUDENT ANSWER完全不相关。"}
+			\\{"score": 0.7, "feedback": "GROUND TRUTH ANSWER与STUDENT ANSWER完全不相关。"\\}
 
 			QUESTION: {question}
 			GROUND TRUTH ANSWER: {correct_answer}
@@ -77,6 +77,9 @@ public class AnswerRelevancyEvaluator extends LaajEvaluator {
 
 	@Override
 	public EvaluationResponse evaluate(EvaluationRequest evaluationRequest) {
+		if (evaluationRequest == null) {
+			throw new IllegalArgumentException("EvaluationRequest must not be null");
+		}
 		var response = doGetResponse(evaluationRequest);
 		var context = doGetSupportingData(evaluationRequest);
 

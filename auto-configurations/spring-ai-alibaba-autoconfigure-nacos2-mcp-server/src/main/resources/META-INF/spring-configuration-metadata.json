@@ -1,0 +1,120 @@
+{
+  "groups": [
+    {
+      "name": "spring.ai.alibaba.mcp.nacos",
+      "type": "com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties",
+      "description": "Configuration properties for Nacos2 MCP integration."
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.registry",
+      "type": "com.alibaba.cloud.ai.mcp.nacos2.registry.NacosMcpRegistryProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.registry.NacosMcpRegistryProperties",
+      "description": "Configuration properties for Nacos2 MCP server registration."
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.gateway",
+      "type": "com.alibaba.cloud.ai.mcp.nacos2.gateway.properties.NacosMcpGatewayProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.gateway.properties.NacosMcpGatewayProperties",
+      "description": "Configuration properties for Nacos2 MCP gateway server."
+    }
+  ],
+  "properties": [
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to register MCP server information to Nacos.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.server-addr",
+      "type": "java.lang.String",
+      "description": "Nacos server address.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties",
+      "defaultValue": "localhost:8848"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.username",
+      "type": "java.lang.String",
+      "description": "Nacos username to authenticate.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.password",
+      "type": "java.lang.String",
+      "description": "Nacos password to authenticate.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.access-key",
+      "type": "java.lang.String",
+      "description": "Nacos access key to authenticate.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.secret-key",
+      "type": "java.lang.String",
+      "description": "Nacos secret key to authenticate.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.namespace",
+      "type": "java.lang.String",
+      "description": "Nacos namespace.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.endpoint",
+      "type": "java.lang.String",
+      "description": "Nacos server endpoint.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.registry.service-register",
+      "type": "java.lang.Boolean",
+      "description": "Whether to register MCP server service to Nacos.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.registry.NacosMcpRegistryProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.registry.service-namespace",
+      "type": "java.lang.String",
+      "description": "Namespace for MCP server service.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.registry.NacosMcpRegistryProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.registry.service-group",
+      "type": "java.lang.String",
+      "description": "Group for MCP server service.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.registry.NacosMcpRegistryProperties",
+      "defaultValue": "DEFAULT_GROUP"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.registry.sse-export-context-path",
+      "type": "java.lang.String",
+      "description": "Base context path for SSE MCP server.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.registry.NacosMcpRegistryProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.gateway.service-namespace",
+      "type": "java.lang.String",
+      "description": "Namespace for dynamically reading MCP server info from Nacos.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.gateway.properties.NacosMcpGatewayProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.gateway.service-group",
+      "type": "java.lang.String",
+      "description": "Group for dynamically reading MCP server info from Nacos.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.gateway.properties.NacosMcpGatewayProperties",
+      "defaultValue": "DEFAULT_GROUP"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.gateway.service-names",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Service names for dynamically reading MCP server info from Nacos.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.gateway.properties.NacosMcpGatewayProperties"
+    }
+  ],
+  "hints": []
+}

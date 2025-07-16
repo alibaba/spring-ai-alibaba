@@ -15,28 +15,24 @@
  */
 package com.alibaba.cloud.ai.toolcalling.githubtoolkit;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Yeaury
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.github")
-public class GithubToolKitProperties {
+@ConfigurationProperties(prefix = GithubToolKitConstants.CONFIG_PREFIX)
+public class GithubToolKitProperties extends CommonToolCallProperties {
 
 	public static final String X_GitHub_Api_Version = "2022-11-28";
-
-	private String token;
 
 	private String owner;
 
 	private String repository;
 
-	public String getToken() {
-		return token;
-	}
-
-	public void setToken(String token) {
-		this.token = token;
+	public GithubToolKitProperties() {
+		super("https://api.github.com");
+		setPropertiesFromEnv(null, null, null, GithubToolKitConstants.TOKEN_ENV);
 	}
 
 	public String getOwner() {

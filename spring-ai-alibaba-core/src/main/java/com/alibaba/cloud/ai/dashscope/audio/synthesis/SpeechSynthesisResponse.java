@@ -16,8 +16,6 @@
 package com.alibaba.cloud.ai.dashscope.audio.synthesis;
 
 import org.springframework.ai.model.ModelResponse;
-import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResult;
-import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResponseMetadata;
 
 import java.util.Collections;
 import java.util.List;
@@ -58,10 +56,12 @@ public class SpeechSynthesisResponse implements ModelResponse<SpeechSynthesisRes
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof SpeechSynthesisResponse that))
+		}
+		if (!(o instanceof SpeechSynthesisResponse that)) {
 			return false;
+		}
 		return Objects.equals(this.result, that.result) && Objects.equals(this.metadata, that.metadata);
 	}
 

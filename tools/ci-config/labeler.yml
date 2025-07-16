@@ -1,0 +1,86 @@
+#
+# Copyright 2024-2025 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+"area/infra":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**/*"
+          - "tools/**/*"
+          - ".asf.yaml"
+          - ".gitignore"
+          - ".licenserc.yaml"
+          - "SECURITY.md"
+          - "CODE_OF_CONDUCT.md"
+          - "CONTRIBUTING.md"
+          - "CONTRIBUTING-zh.md"
+          - "GOVERNANCE.md"
+"area/docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/README.md"
+          - "**/README-zh.md"
+          - "**/README-ja.md"
+          - "SECURITY.md"
+"area/jmanus":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "spring-ai-alibaba-jmanus/**/*"
+"area/graph":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "spring-ai-alibaba-graph/**/*"
+"area/core":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "spring-ai-alibaba-core/**/*"
+          - "spring-ai-alibaba-bom/**/*"
+          - "auto-configurations/**/*"
+          - "spring-ai-alibaba-spring-boot-starter/**/*"
+"area/studio":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "spring-ai-alibaba-studio/**/*"
+"area/mcp":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "spring-ai-alibaba-mcp/**/*"
+"area/deepresearch":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "spring-ai-alibaba-deepresearch/**/*"
+"area/nl2sql":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "spring-ai-alibaba-nl2sql/**/*"
+"area/community":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "community/**/*"
+"area/tools":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "community/tool-calls/**/*"
+"area/document-reader":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "community/document-readers/**/*"
+"area/document-parser":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "community/document-parser/**/*"
+"area/memory":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "community/memories/**/*"

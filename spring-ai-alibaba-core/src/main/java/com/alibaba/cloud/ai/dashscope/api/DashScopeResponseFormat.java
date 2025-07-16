@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Lets you specify the format of the returned content. Valid values: {"type": "text"} or
  * {"type": "json_object"}. When set to {"type": "json_object"}, a JSON string in standard
  * format is output. Params reference:
- * <a href="https://help.aliyun.com/zh/dashscope/developer-reference/qwen-api">...</a>
+ * <a href= "https://help.aliyun.com/zh/dashscope/developer-reference/qwen-api">...</a>
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -84,8 +84,8 @@ public class DashScopeResponseFormat {
 
 	@Override
 	public String toString() {
-
-		return "DashScopeResponseFormat { " + "type='" + type + '}';
+		String typeValue = type == Type.TEXT ? "text" : "json_object";
+		return "{\"type\":\"" + typeValue + "\"}";
 	}
 
 	@Override

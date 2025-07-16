@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
 import com.alibaba.cloud.ai.dashscope.common.ErrorCodeEnum;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -38,8 +39,6 @@ import org.springframework.http.ResponseEntity;
  *
  */
 public class DashScopeDocumentCloudReader implements DocumentReader {
-
-	public static final int MAX_TRY_COUNT = 10;
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeDocumentCloudReader.class);
 
@@ -65,16 +64,14 @@ public class DashScopeDocumentCloudReader implements DocumentReader {
 	@Override
 	public List<Document> get() {
 		String fileMD5;
-		FileInputStream fileInputStream;
-		try {
-			fileInputStream = new FileInputStream(file);
+		try (FileInputStream fileInputStream = new FileInputStream(file)) {
 			fileMD5 = DigestUtils.md5Hex(fileInputStream);
 			DashScopeApi.UploadRequest uploadRequest = new DashScopeApi.UploadRequest(readerConfig.getCategoryId(),
 					file.getName(), file.length(), fileMD5);
 			String fileId = dashScopeApi.upload(file, uploadRequest);
 			// Polling for results
 			int tryCount = 0;
-			while (tryCount < MAX_TRY_COUNT) {
+			while (tryCount < DashScopeApiConstants.MAX_TRY_COUNT) {
 				ResponseEntity<DashScopeApi.CommonResponse<DashScopeApi.QueryFileResponseData>> response = dashScopeApi
 					.queryFileInfo(readerConfig.getCategoryId(),
 							new DashScopeApi.UploadRequest.QueryFileRequest(fileId));
@@ -82,7 +79,7 @@ public class DashScopeDocumentCloudReader implements DocumentReader {
 					DashScopeApi.QueryFileResponseData queryFileResponseData = response.getBody().data();
 					String fileStatus = queryFileResponseData.status();
 					if ("PARSE_SUCCESS".equals(fileStatus)) {
-						// downloadn files
+						// download files
 						String parseResult = dashScopeApi.getFileParseResult(readerConfig.getCategoryId(),
 								new DashScopeApi.UploadRequest.QueryFileRequest(fileId));
 						return List.of(toDocument(fileId, parseResult));
