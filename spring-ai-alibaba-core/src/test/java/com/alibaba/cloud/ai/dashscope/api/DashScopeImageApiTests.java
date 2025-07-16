@@ -47,31 +47,54 @@ class DashScopeImageApiTests {
 		mockRestClient = mock(RestClient.class);
 
 		// Initialize DashScopeImageApi with test API key
-		imageApi = new DashScopeImageApi(null, "test-api-key", null, RestClient.builder(), null,
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		imageApi = DashScopeImageApi.builder()
+			.apiKey("test-api-key")
+			.workSpaceId(null)
+			.restClientBuilder(RestClient.builder())
+			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+			.build();
+
 	}
 
 	@Test
 	void testConstructorWithApiKey() {
+
 		// Test constructor with only API key
-		DashScopeImageApi api = new DashScopeImageApi(null, "test-api-key", null, RestClient.builder(), null,
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		DashScopeImageApi api = DashScopeImageApi.builder()
+			.apiKey("test-api-key")
+			.workSpaceId(null)
+			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+			.restClientBuilder(RestClient.builder())
+			.build();
 		assertNotNull(api, "DashScopeImageApi should be created with API key");
 	}
 
 	@Test
 	void testConstructorWithApiKeyAndWorkspaceId() {
+
 		// Test constructor with API key and workspace ID
-		DashScopeImageApi api = new DashScopeImageApi(null, "test-api-key", "test-workspace-id", RestClient.builder(),
-				null, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		DashScopeImageApi api = DashScopeImageApi.builder()
+			.apiKey("test-api-key")
+			.workSpaceId("test-workspace-id")
+			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+			.restClientBuilder(RestClient.builder())
+			.build();
+
 		assertNotNull(api, "DashScopeImageApi should be created with API key and workspace ID");
 	}
 
 	@Test
 	void testConstructorWithApiKeyWorkspaceIdAndBaseUrl() {
+
 		// Test constructor with API key, workspace ID, and base URL
-		DashScopeImageApi api = new DashScopeImageApi("/api/v1/services/aigc/", "test-api-key", "test-workspace-id",
-				RestClient.builder(), null, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		DashScopeImageApi api = DashScopeImageApi.builder()
+			.apiKey("test-api-key")
+			.workSpaceId("test-workspace-id")
+			.baseUrl("/api/v1/services/aigc/")
+			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+			.restClientBuilder(RestClient.builder())
+			.build();
+
 		assertNotNull(api, "DashScopeImageApi should be created with API key, workspace ID, and base URL");
 	}
 

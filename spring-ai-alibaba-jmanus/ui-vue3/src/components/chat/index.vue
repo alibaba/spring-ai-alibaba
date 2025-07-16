@@ -627,6 +627,7 @@ const handleSendMessage = (message: string) => {
 // Get agent execution status based on index
 const getAgentExecutionStatus = (message: Message, index: number): string => {
   const agentExecutionSequence = message.planExecution?.agentExecutionSequence ?? []
+<<<<<<< HEAD
   
   // 检查索引是否在数组范围内
   if (index >= agentExecutionSequence.length) {
@@ -635,6 +636,15 @@ const getAgentExecutionStatus = (message: Message, index: number): string => {
   
   const agentExecution = agentExecutionSequence[index]
   
+=======
+  const agentExecution = agentExecutionSequence[index]
+
+  if (!agentExecution) {
+    // 如果没有对应的 AgentExecutionRecord，返回待执行状态
+    return 'IDLE'
+  }
+
+>>>>>>> upstream/main
   // 返回 AgentExecutionRecord 的状态
   return agentExecution.status ?? 'IDLE'
 }
@@ -830,10 +840,17 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
     for (let index = 0; index < sequenceLength; index++) {
       const execution = planDetails.agentExecutionSequence[index]
 
+<<<<<<< HEAD
       if (execution.thinkActSteps?.length) {
         const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1]
 
         if (latestThinkAct.actionDescription && latestThinkAct.toolParameters) {
+=======
+      if (execution?.thinkActSteps?.length) {
+        const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1]
+
+        if (latestThinkAct?.actionDescription && latestThinkAct?.toolParameters) {
+>>>>>>> upstream/main
           lastStepActions[index] = {
             actionDescription: latestThinkAct.actionDescription,
             toolParameters:
@@ -853,7 +870,11 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
           console.log(
             `[ChatComponent] Step ${index} action set: ${lastStepActions[index].actionDescription}`
           )
+<<<<<<< HEAD
         } else {
+=======
+        } else if (latestThinkAct) {
+>>>>>>> upstream/main
           lastStepActions[index] = {
             actionDescription: '思考中',
             toolParameters: '等待决策',
@@ -1194,7 +1215,11 @@ const handlePlanCompleted = (rootPlanId: string) => {
 
   console.log('[ChatComponent] Plan details:', details);
 
+<<<<<<< HEAD
   if (details.rootPlanId) {
+=======
+  if (details?.rootPlanId) {
+>>>>>>> upstream/main
     const messageIndex = messages.value.findIndex(
       m => m.planExecution?.currentPlanId === details.rootPlanId
     );
