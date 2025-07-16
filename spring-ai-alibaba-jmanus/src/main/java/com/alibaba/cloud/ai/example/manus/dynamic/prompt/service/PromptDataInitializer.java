@@ -73,7 +73,7 @@ public class PromptDataInitializer implements CommandLineRunner {
 		TransactionStatus transaction = transactionManager.getTransaction(transactionDefinition);
 		PromptEntity promptEntity = null;
 		try {
-			promptEntity = promptRepository.findByPromptName(prompt.getPromptName());
+			promptEntity = promptRepository.findByNamespaceAndPromptName(namespace, prompt.getPromptName());
 			transactionManager.commit(transaction);
 		}
 		catch (TransactionException e) {
