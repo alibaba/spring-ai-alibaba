@@ -42,17 +42,16 @@ public class ChatResponseUtil {
 	 * @param statusMessage 状态消息
 	 * @return ChatResponse 状态响应对象
 	 */
-	public static ChatResponse createCustomStatusResponse(String statusMessage , StreamResponseType type) {
+	public static ChatResponse createCustomStatusResponse(String statusMessage, StreamResponseType type) {
 		AssistantMessage assistantMessage = new AssistantMessage(JsonUtils.toJson(type, statusMessage + "\n"));
 		Generation generation = new Generation(assistantMessage);
 		return new ChatResponse(List.of(generation));
 	}
 
-	public static ChatResponse createStatusResponse(String statusMessage , StreamResponseType type) {
-		AssistantMessage assistantMessage = new AssistantMessage(JsonUtils.toJson(type, statusMessage ));
+	public static ChatResponse createStatusResponse(String statusMessage, StreamResponseType type) {
+		AssistantMessage assistantMessage = new AssistantMessage(JsonUtils.toJson(type, statusMessage));
 		Generation generation = new Generation(assistantMessage);
 		return new ChatResponse(List.of(generation));
 	}
-
 
 }

@@ -477,20 +477,21 @@ public class StreamingChatGeneratorUtil {
 					sourceFlux.doOnNext(response -> {
 						// Extract and collect actual content
 						String content = contentExtractor.apply(response);
-//						if(JSONValidator.from(content).validate()){
-//							content = JSONObject.parseObject(content).getString("data");
-//						}
+						// if(JSONValidator.from(content).validate()){
+						// content = JSONObject.parseObject(content).getString("data");
+						// }
 						if (content != null) {
 							collectedResult.append(content);
 						}
 						// Send response to stream for user viewing
-						emitter.next(ChatResponseUtil.createStatusResponse(response.getResult().getOutput().getText(), type));
+						emitter.next(ChatResponseUtil.createStatusResponse(response.getResult().getOutput().getText(),
+								type));
 					}).doOnComplete(() -> {
 						// 3. Send completion message
-                        if (completionMessage != null && !completionMessage.isEmpty()) {
-                            emitter.next(ChatResponseUtil.createCustomStatusResponse("\n" + completionMessage, type));
-                        }
-                        logger.debug("[{}] Streaming processing completed", nodeName);
+						if (completionMessage != null && !completionMessage.isEmpty()) {
+							emitter.next(ChatResponseUtil.createCustomStatusResponse("\n" + completionMessage, type));
+						}
+						logger.debug("[{}] Streaming processing completed", nodeName);
 						emitter.complete();
 					}).doOnError(error -> {
 						logger.error("[{}] Error in streaming processing", nodeName, error);
@@ -546,35 +547,37 @@ public class StreamingChatGeneratorUtil {
 	}
 
 	public static AsyncGenerator<? extends NodeOutput> createStreamingGeneratorWithMessages(Class<?> nodeClass,
-																							OverAllState state, String startMessage, String completionMessage,
-																							Function<String, Map<String, Object>> resultMapper, Flux<ChatResponse> sourceFlux,StreamResponseType type) {
-
-		return createStreamingProcessor().nodeClass(nodeClass)
-				.state(state)
-				.startMessage(startMessage)
-				.type(type)
-				.completionMessage(completionMessage)
-				.resultMapper(resultMapper)
-				.build(sourceFlux);
-	}
-
-	public static AsyncGenerator<? extends NodeOutput> createStreamingGeneratorWithMessages(Class<?> nodeClass,
-			OverAllState state, Function<String, Map<String, Object>> resultMapper, Flux<ChatResponse> sourceFlux , StreamResponseType type) {
+			OverAllState state, String startMessage, String completionMessage,
+			Function<String, Map<String, Object>> resultMapper, Flux<ChatResponse> sourceFlux,
+			StreamResponseType type) {
 
 		return createStreamingProcessor().nodeClass(nodeClass)
 			.state(state)
-				.type(type)
+			.startMessage(startMessage)
+			.type(type)
+			.completionMessage(completionMessage)
 			.resultMapper(resultMapper)
 			.build(sourceFlux);
 	}
 
 	public static AsyncGenerator<? extends NodeOutput> createStreamingGeneratorWithMessages(Class<?> nodeClass,
-																							OverAllState state, Function<String, Map<String, Object>> resultMapper, Flux<ChatResponse> sourceFlux ) {
+			OverAllState state, Function<String, Map<String, Object>> resultMapper, Flux<ChatResponse> sourceFlux,
+			StreamResponseType type) {
 
 		return createStreamingProcessor().nodeClass(nodeClass)
-				.state(state)
-				.resultMapper(resultMapper)
-				.build(sourceFlux);
+			.state(state)
+			.type(type)
+			.resultMapper(resultMapper)
+			.build(sourceFlux);
+	}
+
+	public static AsyncGenerator<? extends NodeOutput> createStreamingGeneratorWithMessages(Class<?> nodeClass,
+			OverAllState state, Function<String, Map<String, Object>> resultMapper, Flux<ChatResponse> sourceFlux) {
+
+		return createStreamingProcessor().nodeClass(nodeClass)
+			.state(state)
+			.resultMapper(resultMapper)
+			.build(sourceFlux);
 	}
 
 	/**

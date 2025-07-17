@@ -57,19 +57,20 @@ public class PlannerNode implements NodeAction {
 		Flux<ChatResponse> chatResponseFlux = chatClient.prompt().user(plannerPrompt).stream().chatResponse();
 
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-				v -> Map.of(PLANNER_NODE_OUTPUT, v),
-				chatResponseFlux, StreamResponseType.PLAN_GENERATION);
+				v -> Map.of(PLANNER_NODE_OUTPUT, v), chatResponseFlux, StreamResponseType.PLAN_GENERATION);
 
-//		var generator = StreamingChatGenerator.builder()
-//			.startingNode(PLANNER_NODE)
-//			.startingState(state)
-//			.mapResult(response -> {
-//				logger.info("{} node output content: {}", this.getClass().getSimpleName(),
-//						response.getResult().getOutput().getText());
-//				return Map.of(PLANNER_NODE_OUTPUT, Objects.requireNonNull(response.getResult().getOutput().getText()));
-//			})
-//			.build(chatResponseFlux.map(response -> ChatResponseUtil.createCustomStatusResponse(response.getResult().getOutput().getText(), StreamResponseType.PLAN_GENERATION)));
-
+		// var generator = StreamingChatGenerator.builder()
+		// .startingNode(PLANNER_NODE)
+		// .startingState(state)
+		// .mapResult(response -> {
+		// logger.info("{} node output content: {}", this.getClass().getSimpleName(),
+		// response.getResult().getOutput().getText());
+		// return Map.of(PLANNER_NODE_OUTPUT,
+		// Objects.requireNonNull(response.getResult().getOutput().getText()));
+		// })
+		// .build(chatResponseFlux.map(response ->
+		// ChatResponseUtil.createCustomStatusResponse(response.getResult().getOutput().getText(),
+		// StreamResponseType.PLAN_GENERATION)));
 
 		Map<String, Object> updated = Map.of(PLANNER_NODE_OUTPUT, generator);
 		return updated;

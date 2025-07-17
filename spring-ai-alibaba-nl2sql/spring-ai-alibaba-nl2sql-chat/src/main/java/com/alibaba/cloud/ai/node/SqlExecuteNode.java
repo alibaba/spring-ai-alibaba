@@ -123,7 +123,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			// Create generator using utility class, returning pre-computed business logic
 			// result
 			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-					v -> result, displayFlux , StreamResponseType.EXECUTE_SQL);
+					v -> result, displayFlux, StreamResponseType.EXECUTE_SQL);
 
 			return Map.of(SQL_EXECUTE_NODE_OUTPUT, generator);
 		}
