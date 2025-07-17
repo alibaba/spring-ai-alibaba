@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -46,7 +46,7 @@ public class PlanCreator {
 
 	private final List<DynamicAgentEntity> agents;
 
-	private final LlmService llmService;
+	private final ILlmService llmService;
 
 	private final PlanningToolInterface planningTool;
 
@@ -56,7 +56,7 @@ public class PlanCreator {
 
 	private final ManusProperties manusProperties;
 
-	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningToolInterface planningTool,
+	public PlanCreator(List<DynamicAgentEntity> agents, ILlmService llmService, PlanningToolInterface planningTool,
 			PlanExecutionRecorder recorder, PromptService promptService, ManusProperties manusProperties) {
 		this.agents = agents;
 		this.llmService = llmService;

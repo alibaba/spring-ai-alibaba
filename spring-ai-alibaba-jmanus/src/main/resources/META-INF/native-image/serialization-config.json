@@ -1,0 +1,17 @@
+[
+  {
+    "name": "org.springframework.aop.framework.CglibAopProxy$SerializableNoOp"
+  },
+  {
+    "name": "org.springframework.cglib.proxy.Dispatcher"
+  },
+  {
+    "name": "org.springframework.cglib.proxy.MethodInterceptor"
+  },
+  {
+    "name": "com.alibaba.cloud.ai.example.manus.config.ManusProperties"
+  },
+  {
+    "name": "com.alibaba.cloud.ai.example.manus.config.ConfigService"
+  }
+]

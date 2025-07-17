@@ -31,7 +31,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 @Component
-public class PromptDataInitializer implements CommandLineRunner {
+public class PromptDataInitializer implements CommandLineRunner, IPromptDataInitializer {
 
 	private final PromptRepository promptRepository;
 

@@ -25,11 +25,11 @@ import com.alibaba.cloud.ai.example.manus.config.entity.ConfigInputType;
 
 @Component
 @ConfigurationProperties(prefix = "manus")
-public class ManusProperties {
+public class ManusProperties implements IManusProperties {
 
 	@Lazy
 	@Autowired
-	private ConfigService configService;
+	private IConfigService configService;
 
 	// Browser Settings
 	// Begin-------------------------------------------------------------------------------------------

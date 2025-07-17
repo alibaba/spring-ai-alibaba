@@ -185,6 +185,7 @@ public class PromptServiceImpl implements PromptService {
 			throw new IllegalArgumentException("Prompt not found: " + promptName);
 		}
 
+		log.info(promptName + " prompt content: {}", promptEntity.getPromptContent());
 		PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
 		return template.render(variables != null ? variables : Map.of());
 	}

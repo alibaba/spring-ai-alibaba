@@ -26,17 +26,15 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Service;
 
-import com.alibaba.cloud.ai.example.manus.config.ConfigService;
+import com.alibaba.cloud.ai.example.manus.config.IConfigService;
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentDefinition;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent.StartupAgentConfigLoader;
 
-import jakarta.annotation.PostConstruct;
-
 @Service
-public class DynamicAgentScanner {
+public class DynamicAgentScanner implements IDynamicAgentScanner {
 
 	private static final Logger log = LoggerFactory.getLogger(DynamicAgentScanner.class);
 
@@ -45,7 +43,7 @@ public class DynamicAgentScanner {
 	private final String basePackage = "com.alibaba.cloud.ai.example.manus";
 
 	@Autowired
-	private ConfigService configService;
+	private IConfigService configService;
 
 	@Autowired
 	private StartupAgentConfigLoader startupAgentConfigLoader;
@@ -55,7 +53,6 @@ public class DynamicAgentScanner {
 		this.repository = repository;
 	}
 
-	@PostConstruct
 	public void scanAndSaveAgents() {
 		// Check configuration for YAML-based agent override behavior
 		ConfigEntity overrideConfig = configService.getConfig("manus.agents.forceOverrideFromYaml")
