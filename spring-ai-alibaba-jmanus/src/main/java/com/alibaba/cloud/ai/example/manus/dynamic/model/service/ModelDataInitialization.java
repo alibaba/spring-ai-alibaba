@@ -35,7 +35,7 @@ import java.util.Map;
  * @date 2025/7/8
  */
 @Service
-public class ModelDataInitialization {
+public class ModelDataInitialization implements IModelDataInitialization {
 
     @Value("${spring.ai.openai.api-key}")
     private String openAiApiKey;

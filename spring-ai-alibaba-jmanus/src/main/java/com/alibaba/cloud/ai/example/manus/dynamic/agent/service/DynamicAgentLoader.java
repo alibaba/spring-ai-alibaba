@@ -29,16 +29,16 @@ import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 @Service
-public class DynamicAgentLoader {
+public class DynamicAgentLoader implements IDynamicAgentLoader {
 
 	private final DynamicAgentRepository repository;
 
-	private final LlmService llmService;
+	private final ILlmService llmService;
 
 	private final PlanExecutionRecorder recorder;
 
@@ -53,7 +53,7 @@ public class DynamicAgentLoader {
 	@Value("${namespace.value}")
 	private String namespace;
 
-	public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy LlmService llmService,
+	public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy ILlmService llmService,
 			PlanExecutionRecorder recorder, ManusProperties properties, @Lazy ToolCallingManager toolCallingManager,
 			UserInputService userInputService, PromptService promptService) {
 		this.repository = repository;

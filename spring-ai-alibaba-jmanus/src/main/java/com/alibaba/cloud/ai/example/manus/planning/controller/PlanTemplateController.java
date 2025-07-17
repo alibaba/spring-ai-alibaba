@@ -140,7 +140,7 @@ public class PlanTemplateController {
 			}
 
 			// Save to version history
-			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planTemplateId, planJson);
+			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planJson);
 
 			// Return plan data
 			Map<String, Object> response = new HashMap<>();
@@ -288,32 +288,71 @@ public class PlanTemplateController {
 
 	/**
 	 * Save version history
-	 * @param planId Plan ID
 	 * @param planJson Plan JSON data
 	 * @return Save result
 	 */
-	private PlanTemplateService.VersionSaveResult saveToVersionHistory(String planId, String planJson) {
-		// Extract title from JSON
-		String title = planTemplateService.extractTitleFromPlan(planJson);
+	private PlanTemplateService.VersionSaveResult saveToVersionHistory(String planJson) {
+		try {
+			// Parse JSON to extract planTemplateId and title
+			ObjectMapper mapper = new ObjectMapper();
+			PlanInterface planData = mapper.readValue(planJson, PlanInterface.class);
 
-		// Check if the plan exists
-		PlanTemplate template = planTemplateService.getPlanTemplate(planId);
-		if (template == null) {
-			// If it doesn't exist, create a new plan
-			planTemplateService.savePlanTemplate(planId, title, "User request to generate plan: " + planId, planJson);
-			logger.info("New plan created: {}", planId);
-			return new PlanTemplateService.VersionSaveResult(true, false, "New plan created", 0);
-		}
-		else {
-			// If it exists, save a new version
-			PlanTemplateService.VersionSaveResult result = planTemplateService.saveToVersionHistory(planId, planJson);
-			if (result.isSaved()) {
-				logger.info("New version of plan {} saved", planId, result.getVersionIndex());
+			String planTemplateId = planData.getRootPlanId();
+			if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
+				planTemplateId = planData.getCurrentPlanId();
+			}
+
+			// Check if planTemplateId is empty or starts with "new-", then generate a new
+			// one
+			if (planTemplateId == null || planTemplateId.trim().isEmpty() || planTemplateId.startsWith("new-")) {
+				String newPlanTemplateId = planIdDispatcher.generatePlanTemplateId();
+				logger.info(
+						"Original planTemplateId '{}' is empty or starts with 'new-', generated new planTemplateId: {}",
+						planTemplateId, newPlanTemplateId);
+
+				// Update the plan object with new ID
+				planData.setCurrentPlanId(newPlanTemplateId);
+				planData.setRootPlanId(newPlanTemplateId);
+
+				// Re-serialize the updated plan object to JSON
+				planJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(planData);
+				planTemplateId = newPlanTemplateId;
+			}
+
+			String title = planData.getTitle();
+
+			if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
+				throw new IllegalArgumentException("Plan ID cannot be found in JSON");
+			}
+			if (title == null || title.trim().isEmpty()) {
+				title = "Untitled Plan";
+			}
+
+			// Check if the plan exists
+			PlanTemplate template = planTemplateService.getPlanTemplate(planTemplateId);
+			if (template == null) {
+				// If it doesn't exist, create a new plan
+				planTemplateService.savePlanTemplate(planTemplateId, title,
+						"User request to generate plan: " + planTemplateId, planJson);
+				logger.info("New plan created: {}", planTemplateId);
+				return new PlanTemplateService.VersionSaveResult(true, false, "New plan created", 0);
 			}
 			else {
-				logger.info("Plan {} is the same, no new version saved", planId);
+				// If it exists, save a new version
+				PlanTemplateService.VersionSaveResult result = planTemplateService.saveToVersionHistory(planTemplateId,
+						planJson);
+				if (result.isSaved()) {
+					logger.info("New version of plan {} saved", planTemplateId, result.getVersionIndex());
+				}
+				else {
+					logger.info("Plan {} is the same, no new version saved", planTemplateId);
+				}
+				return result;
 			}
-			return result;
+		}
+		catch (Exception e) {
+			logger.error("Failed to parse plan JSON", e);
+			throw new RuntimeException("Failed to save version history: " + e.getMessage());
 		}
 	}
 
@@ -324,20 +363,42 @@ public class PlanTemplateController {
 	 */
 	@PostMapping("/save")
 	public ResponseEntity<Map<String, Object>> savePlan(@RequestBody Map<String, String> request) {
-		String planId = request.get("planId");
 		String planJson = request.get("planJson");
-
-		if (planId == null || planId.trim().isEmpty()) {
-			return ResponseEntity.badRequest().body(Map.of("error", "Plan ID cannot be empty"));
-		}
 
 		if (planJson == null || planJson.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Plan data cannot be empty"));
 		}
 
 		try {
+			// Parse JSON to get planId
+			ObjectMapper mapper = new ObjectMapper();
+			PlanInterface planData = mapper.readValue(planJson, PlanInterface.class);
+			String planId = planData.getCurrentPlanId();
+			if (planId == null) {
+				planId = planData.getRootPlanId();
+			}
+
+			// Check if planId is empty or starts with "new-", then generate a new one
+			if (planId == null || planId.trim().isEmpty() || planId.startsWith("new-")) {
+				String newPlanId = planIdDispatcher.generatePlanTemplateId();
+				logger.info("Original planId '{}' is empty or starts with 'new-', generated new planId: {}", planId,
+						newPlanId);
+
+				// Update the plan object with new ID
+				planData.setCurrentPlanId(newPlanId);
+				planData.setRootPlanId(newPlanId);
+
+				// Re-serialize the updated plan object to JSON
+				planJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(planData);
+				planId = newPlanId;
+			}
+
+			if (planId == null || planId.trim().isEmpty()) {
+				return ResponseEntity.badRequest().body(Map.of("error", "Plan ID cannot be found in JSON"));
+			}
+
 			// Save to version history
-			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planId, planJson);
+			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planJson);
 
 			// Calculate version count
 			List<String> versions = planTemplateService.getPlanVersions(planId);
@@ -543,7 +604,7 @@ public class PlanTemplateController {
 			}
 
 			// Save to version history
-			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planId, planJson);
+			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planJson);
 
 			// Return plan data
 			Map<String, Object> response = new HashMap<>();

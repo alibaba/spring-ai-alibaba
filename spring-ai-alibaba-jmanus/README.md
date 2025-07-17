@@ -8,11 +8,8 @@
 [![GitHub Stars](https://img.shields.io/github/stars/alibaba/spring-ai-alibaba.svg)](https://github.com/alibaba/spring-ai-alibaba/stargazers)
 
 🌍 [English](./README.md) | [中文](./README-zh.md)
+
 📚 Developer Docs: [Quick Start (EN)](./README-dev-en.md) | [开发者快速入门 (中文)](./README-dev.md)
-
-**A comprehensive implementation of the OpenManus multi-agent framework, natively integrated with MCP and supporting the plan-act paradigm, featuring unlimited context capabilities**
-
-*Designed to be easily integrated into existing Java business systems to provide enhanced AI capabilities*
 
 [About](#-about) • [Quick Start](#-quick-start) • [Contributing](#-contributing)
 
@@ -22,22 +19,42 @@
 
 ---
 
-## 🎯 About
+## ✨ About JManus
 
 JManus is a Java implementation of Manus, currently used in many applications within Alibaba Group. It is primarily used for handling exploratory tasks that require a certain degree of determinism, such as quickly finding data from massive datasets and converting it into a single row in a database, or analyzing logs and issuing alerts.
 
+JManus also provides HTTP service invocation capabilities, making it suitable for integration into existing projects. For details, please refer to the developer quick start guide.
 
-### JManus Product Features
+## 🎯 JManus Product Features
 
-- 🤖 **Pure Java Manus Implementation**: A pure Java multi-agent collaboration implementation that provides a complete set of HTTP call interfaces, suitable for secondary integration by Java developers.
+### - 🤖 **Pure Java Manus Implementation**: 
+
+A pure Java multi-agent collaboration implementation that provides a complete set of HTTP call interfaces, suitable for secondary integration by Java developers.
+
 ![Image](https://github.com/user-attachments/assets/3d98c1c6-aabb-45a2-b192-7b687093a1ee)
-- 🎯 **Excellent Plan-Act Mode**: Fully implements the Plan-Act paradigm, featuring a separation of intelligent planning and execution.
-![Image](https://github.com/user-attachments/assets/b2014ce9-fc87-409b-b246-5beccf93ce73)
-- 🔗 **MCP Integration**: Natively supports the Model Context Protocol (MCP) for seamless integration with external services and tools.
+
+### - 🛠️ **Plan-Act Mode**: 
+
+Allows you to precisely control every execution detail, providing extremely high execution determinism.
+
+![Image](https://github.com/user-attachments/assets/a689791f-adf5-44b6-9ea6-151f557a26d4)
+
+### - 🔗 **MCP Integration**:
+
+ Natively supports the Model Context Protocol (MCP) for seamless integration with external services and tools.
+
 ![Image](https://github.com/user-attachments/assets/2d3f833f-ba45-42b6-8e1b-f3e9cfd40212)
-- 📜 **Web Interface for Agent Configuration**: Easily configure agents through an intuitive web management interface without modifying code.
+
+### - 📜 **Web Interface for Agent Configuration**:
+
+ Easily configure agents through an intuitive web management interface without modifying code.
+
 ![Image](https://github.com/user-attachments/assets/bb25f778-f8c3-46da-9da3-6f7ea2f0917d)
-- 🌊 **Infinite Context Handling**: Overcomes single-model context limitations through intelligent multi-agent collaboration, enabling infinite content processing.
+
+### - 🌊 **Infinite Context Handling**: 
+
+Supports precise extraction of target information from massive content without relying on specific long-context models.
+
 ![Image](https://github.com/user-attachments/assets/a0245658-fbb7-41dc-989f-86574592f188)
 
 

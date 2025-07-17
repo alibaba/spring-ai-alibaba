@@ -68,12 +68,19 @@ public class BaseNl2SqlService {
 		this.dbConfig = dbConfig;
 	}
 
+	public Flux<ChatResponse> rewriteStream(String query) throws Exception {
+		List<String> evidences = extractEvidences(query);
+		SchemaDTO schemaDTO = select(query, evidences);
+		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
+		return aiService.streamCall(prompt);
+	}
+
 	public String rewrite(String query) throws Exception {
 		List<String> evidences = extractEvidences(query);
 		SchemaDTO schemaDTO = select(query, evidences);
 		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
 		String responseContent = aiService.call(prompt);
-		String[] splits = responseContent.split("\\n");
+		String[] splits = responseContent.split("\n");
 		for (String line : splits) {
 			if (line.startsWith("需求类型：")) {
 				String content = line.substring(5).trim();

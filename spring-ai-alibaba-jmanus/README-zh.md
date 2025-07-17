@@ -11,31 +11,44 @@
 
 📚 开发者文档: [Quick Start (EN)](./README-dev-en.md) | [开发者快速入门 (中文)](./README-dev.md)
 
-**一个全面实现了 OpenManus 的多 Agent 框架，默认集成MCP并提供 plan-act模式，具备无限上下文能力**
-
-*适合被集成到既有的Java业务中提供更多的AI能力*
 
 [关于](#-关于) • [快速开始](#-快速开始) • [如何贡献](#-如何贡献)
 
 </div>
 
 
-## 🎯 关于
+## ✨ JManus 简介
 
 JManus 是 Manus 的一个Java实现，目前已经在阿里巴巴集团内的很多应用都有使用，主要用于处理需要有一定确定性要求的探索性任务，比如，快速从海量数据中找到数据并转换成数据库内的一行数据，或者分析日志并给出告警等。
 
+JManus也提供了http的服务调用能力，适合被集成到既有的项目中。具体可以见开发者快速入门
 
-### JManus的产品特性
 
-- 🤖 **纯Java的Manus实现**：一个纯粹的Java 多智能体协作实现，提供了完整的http调用接口，适合Java开发者做二次集成。
+## 🎯 JManus的产品特性
+
+### - 🤖 **纯Java的Manus实现**：
+
+纯粹的Java多智能体协作实现，提供了完整的http调用接口，适合Java开发者做二次集成。
 ![Image](https://github.com/user-attachments/assets/893c7fc1-5e6e-4ec9-8389-182f14d86b18)
-- 🌊 **无限上下文处理**：通过智能的多 Agent 协作，克服单模型上下文限制，实现无限内容处理。
+
+### - 🌊 **无限上下文处理**：
+
+支持从巨量内容中精准抓取目标信息，不依赖特定的长上下文模型。
 ![Image](https://github.com/user-attachments/assets/a0245658-fbb7-41dc-989f-86574592f188)
-- 🎯 **卓越的 Plan-Act 模式**：完整实现 Plan-Act 范式，具有智能规划和执行分离的特点。
+
+### - 🛠️ **Plan-Act 模式**：
+
+精确控制每一步执行细节，提供极高的执行确定性
 ![Image](https://github.com/user-attachments/assets/d9cbf980-9d56-4b58-b165-6840b6c9411b)
-- 🔗 **MCP 集成**：原生支持模型上下文协议（Model Context Protocol），实现与外部服务和工具的无缝集成。
+
+### - 🔗 **MCP 集成**：
+
+原生支持模型上下文协议（Model Context Protocol），实现与外部服务和工具的无缝集成。
 ![Image](https://github.com/user-attachments/assets/31d915a9-04dc-45b2-9635-488cc06ba468)
-- 📜 **网页界面配置 Agent**：通过直观的网页管理界面轻松配置 agent，无需修改代码。
+
+### - 📜 **网页界面配置 Agent**：
+
+通过直观的网页管理界面轻松配置 agent，无需修改代码。
 ![Image](https://github.com/user-attachments/assets/5afdfe2e-0e98-4100-bff1-b7aaf413850b)
 
 

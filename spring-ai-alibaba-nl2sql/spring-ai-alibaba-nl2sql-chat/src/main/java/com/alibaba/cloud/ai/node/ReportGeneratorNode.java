@@ -18,11 +18,11 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.schema.Plan;
 import com.alibaba.cloud.ai.util.StateUtils;
+import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -38,7 +38,12 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
- * 报告生成节点
+ * Report generation node that creates comprehensive analysis reports based on execution
+ * results.
+ *
+ * This node is responsible for: - Generating detailed analysis reports from SQL execution
+ * results - Summarizing data insights and findings - Providing comprehensive answers to
+ * user queries - Creating structured final output for users
  *
  * @author zhangshenghang
  */
@@ -58,9 +63,9 @@ public class ReportGeneratorNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+		logger.info("Entering {} node", this.getClass().getSimpleName());
 
-		// 获取必要的输入参数
+		// Get necessary input parameters
 		String plannerNodeOutput = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT);
 		String userInput = StateUtils.getStringValue(state, INPUT_KEY);
 		Integer currentStep = StateUtils.getObjectValue(state, PLAN_CURRENT_STEP, Integer.class, 1);
@@ -68,59 +73,61 @@ public class ReportGeneratorNode implements NodeAction {
 		HashMap<String, String> executionResults = StateUtils.getObjectValue(state, SQL_EXECUTE_NODE_OUTPUT,
 				HashMap.class, new HashMap<>());
 
-		logger.info("计划节点输出: {}", plannerNodeOutput);
+		logger.info("Planner node output: {}", plannerNodeOutput);
 
-		// 解析计划并获取当前步骤
+		// Parse plan and get current step
 		Plan plan = converter.convert(plannerNodeOutput);
 		ExecutionStep executionStep = getCurrentExecutionStep(plan, currentStep);
 		String summaryAndRecommendations = executionStep.getToolParameters().getSummaryAndRecommendations();
 
-		// 构建报告
+		// Generate report streaming flux
 		Flux<ChatResponse> reportGenerationFlux = generateReport(userInput, plan, executionResults,
 				summaryAndRecommendations);
 
-		var generator = StreamingChatGenerator.builder()
-			.startingNode(this.getClass().getSimpleName())
-			.startingState(state)
-			.mapResult(response -> {
-				String reportContent = response.getResult().getOutput().getText();
-				logger.info("生成的报告内容: {}", reportContent);
-				return buildFinalResult(reportContent);
-			})
-			.build(reportGenerationFlux);
+		// Use utility class to create streaming generator with content collection
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				"开始生成报告...", "报告生成完成！", reportContent -> {
+					logger.info("Generated report content: {}", reportContent);
+					Map<String, Object> result = new HashMap<>();
+					result.put(RESULT, reportContent);
+					result.put(SQL_EXECUTE_NODE_OUTPUT, null);
+					result.put(PLAN_CURRENT_STEP, null);
+					result.put(PLANNER_NODE_OUTPUT, null);
+					return result;
+				}, reportGenerationFlux);
 
 		return Map.of(RESULT, generator);
 	}
 
 	/**
-	 * 获取当前执行步骤
+	 * Gets the current execution step from the plan.
 	 */
 	private ExecutionStep getCurrentExecutionStep(Plan plan, Integer currentStep) {
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
 		if (executionPlan == null || executionPlan.isEmpty()) {
-			throw new IllegalStateException("执行计划为空");
+			throw new IllegalStateException("Execution plan is empty");
 		}
 
 		int stepIndex = currentStep - 1;
 		if (stepIndex < 0 || stepIndex >= executionPlan.size()) {
-			throw new IllegalStateException("当前步骤索引超出范围: " + stepIndex);
+			throw new IllegalStateException("Current step index out of range: " + stepIndex);
 		}
 
 		return executionPlan.get(stepIndex);
 	}
 
 	/**
-	 * 生成报告
+	 * Generates the analysis report.
 	 */
 	private Flux<ChatResponse> generateReport(String userInput, Plan plan, HashMap<String, String> executionResults,
 			String summaryAndRecommendations) {
-		// 构建用户需求和计划描述
+		// Build user requirements and plan description
 		String userRequirementsAndPlan = buildUserRequirementsAndPlan(userInput, plan);
 
-		// 构建分析步骤和数据结果描述
+		// Build analysis steps and data results description
 		String analysisStepsAndData = buildAnalysisStepsAndData(plan, executionResults);
 
-		// 使用PromptHelper构建报告生成提示词
+		// Use PromptHelper to build report generation prompt
 		String reportPrompt = PromptHelper.buildReportGeneratorPrompt(userRequirementsAndPlan, analysisStepsAndData,
 				summaryAndRecommendations);
 
@@ -128,7 +135,7 @@ public class ReportGeneratorNode implements NodeAction {
 	}
 
 	/**
-	 * 构建用户需求和计划描述
+	 * Builds user requirements and plan description.
 	 */
 	private String buildUserRequirementsAndPlan(String userInput, Plan plan) {
 		StringBuilder sb = new StringBuilder();
@@ -154,7 +161,7 @@ public class ReportGeneratorNode implements NodeAction {
 	}
 
 	/**
-	 * 构建分析步骤和数据结果描述
+	 * Builds analysis steps and data results description.
 	 */
 	private String buildAnalysisStepsAndData(Plan plan, HashMap<String, String> executionResults) {
 		StringBuilder sb = new StringBuilder();
@@ -171,7 +178,7 @@ public class ReportGeneratorNode implements NodeAction {
 
 				sb.append("### ").append(stepKey).append("\n");
 
-				// 尝试获取对应步骤的描述
+				// Try to get corresponding step description
 				try {
 					int stepIndex = Integer.parseInt(stepKey.replace("step_", "")) - 1;
 					if (stepIndex >= 0 && stepIndex < executionPlan.size()) {
@@ -189,7 +196,7 @@ public class ReportGeneratorNode implements NodeAction {
 					}
 				}
 				catch (NumberFormatException e) {
-					// 忽略解析错误
+					// Ignore parsing errors
 				}
 
 				sb.append("**执行结果**: \n```json\n").append(stepResult).append("\n```\n\n");
@@ -197,19 +204,6 @@ public class ReportGeneratorNode implements NodeAction {
 		}
 
 		return sb.toString();
-	}
-
-	/**
-	 * 构建最终结果
-	 */
-	private Map<String, Object> buildFinalResult(String reportContent) {
-		Map<String, Object> result = new HashMap<>();
-		result.put(RESULT, reportContent);
-		// 清理临时状态
-		result.put(SQL_EXECUTE_NODE_OUTPUT, null);
-		result.put(PLAN_CURRENT_STEP, null);
-		result.put(PLANNER_NODE_OUTPUT, null);
-		return result;
 	}
 
 }

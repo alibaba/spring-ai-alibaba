@@ -367,7 +367,8 @@ public class DashScopeChatModel implements ChatModel {
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
 		return new ChatCompletion(chunk.requestId(),
-				new ChatCompletionOutput(chunk.output().text(), chunk.output().choices()), chunk.usage());
+				new ChatCompletionOutput(chunk.output().text(), chunk.output().choices(), chunk.output().searchInfo()),
+				chunk.usage());
 	}
 
 	private ChatResponseMetadata from(ChatCompletion result, Usage usage) {

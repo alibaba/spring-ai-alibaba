@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * configuration file, supporting caching mechanism to improve performance
  */
 @Component
-public class StartupAgentConfigLoader {
+public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 
 	private static final Logger log = LoggerFactory.getLogger(StartupAgentConfigLoader.class);
 
