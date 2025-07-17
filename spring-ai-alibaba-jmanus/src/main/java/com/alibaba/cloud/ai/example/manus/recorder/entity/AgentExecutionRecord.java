@@ -15,6 +15,13 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.fasterxml.jackson.databind.JsonSerializable;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +48,7 @@ import java.util.List;
  * @see ThinkActRecord
  * @see JsonSerializable
  */
+
 public class AgentExecutionRecord {
 
 	// Unique identifier of the record
@@ -56,9 +64,13 @@ public class AgentExecutionRecord {
 	private String agentDescription;
 
 	// Timestamp when execution started
+	@JsonSerialize(using = LocalDateTimeSerializer.class)
+	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime startTime;
 
 	// Timestamp when execution ended
+	@JsonSerialize(using = LocalDateTimeSerializer.class)
+	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime endTime;
 
 	// Maximum allowed number of steps
@@ -68,13 +80,7 @@ public class AgentExecutionRecord {
 	private int currentStep;
 
 	// Execution status (IDLE, RUNNING, FINISHED)
-	private String status;
-
-	// Whether execution is completed
-	private boolean isCompleted;
-
-	// Whether stuck
-	private boolean isStuck;
+	private ExecutionStatus status;
 
 	// Record list of think-act steps, existing as sub-steps
 	private List<ThinkActRecord> thinkActSteps;
@@ -88,9 +94,14 @@ public class AgentExecutionRecord {
 	// Error message if execution encounters problems
 	private String errorMessage;
 
+	// Actual calling model
+	private String modelName;
+
 	// Default constructor
 	public AgentExecutionRecord() {
 		this.thinkActSteps = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
 	// Constructor with parameters
@@ -99,11 +110,11 @@ public class AgentExecutionRecord {
 		this.agentName = agentName;
 		this.agentDescription = agentDescription;
 		this.startTime = LocalDateTime.now();
-		this.status = "IDLE";
-		this.isCompleted = false;
-		this.isStuck = false;
+		this.status = ExecutionStatus.IDLE; // Use enum value
 		this.currentStep = 0;
 		this.thinkActSteps = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
 	/**
@@ -118,9 +129,27 @@ public class AgentExecutionRecord {
 		this.currentStep = this.thinkActSteps.size();
 	}
 
+	/**
+	 * Generate unique ID if not already set
+	 * @return Generated or existing ID
+	 */
+	private Long generateId() {
+		if (this.id == null) {
+			// Use combination of timestamp and random number to generate ID
+			long timestamp = System.currentTimeMillis();
+			int random = (int) (Math.random() * 1000000);
+			this.id = timestamp * 1000 + random;
+		}
+		return this.id;
+	}
+
 	// Getters and setters
 
 	public Long getId() {
+		// Ensure ID is generated when accessing
+		if (this.id == null) {
+			this.id = generateId();
+		}
 		return id;
 	}
 
@@ -176,28 +205,12 @@ public class AgentExecutionRecord {
 		this.currentStep = currentStep;
 	}
 
-	public String getStatus() {
+	public ExecutionStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(String status) {
+	public void setStatus(ExecutionStatus status) {
 		this.status = status;
-	}
-
-	public boolean isCompleted() {
-		return isCompleted;
-	}
-
-	public void setCompleted(boolean completed) {
-		isCompleted = completed;
-	}
-
-	public boolean isStuck() {
-		return isStuck;
-	}
-
-	public void setStuck(boolean stuck) {
-		isStuck = stuck;
 	}
 
 	public List<ThinkActRecord> getThinkActSteps() {
@@ -233,12 +246,19 @@ public class AgentExecutionRecord {
 		this.errorMessage = errorMessage;
 	}
 
+	public String getModelName() {
+		return modelName;
+	}
+
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
+	}
+
 	@Override
 	public String toString() {
 		return "AgentExecutionRecord{" + "id='" + id + '\'' + ", conversationId='" + conversationId + '\''
 				+ ", agentName='" + agentName + '\'' + ", status='" + status + '\'' + ", currentStep=" + currentStep
-				+ ", maxSteps=" + maxSteps + ", isCompleted=" + isCompleted + ", isStuck=" + isStuck + ", stepsCount="
-				+ (thinkActSteps != null ? thinkActSteps.size() : 0) + '}';
+				+ ", maxSteps=" + maxSteps + ", stepsCount=" + (thinkActSteps != null ? thinkActSteps.size() : 0) + '}';
 	}
 
 	/**
@@ -262,6 +282,14 @@ public class AgentExecutionRecord {
 			}
 		}
 		return this.id;
+	}
+
+	public String getConversationId() {
+		return conversationId;
+	}
+
+	public void setConversationId(String conversationId) {
+		this.conversationId = conversationId;
 	}
 
 }

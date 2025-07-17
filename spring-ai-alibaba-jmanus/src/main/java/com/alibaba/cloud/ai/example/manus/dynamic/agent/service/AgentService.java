@@ -25,6 +25,8 @@ public interface AgentService {
 
 	List<AgentConfig> getAllAgents();
 
+	List<AgentConfig> getAllAgentsByNamespace(String namespace);
+
 	AgentConfig getAgentById(String id);
 
 	AgentConfig createAgent(AgentConfig agentConfig);
@@ -42,6 +44,7 @@ public interface AgentService {
 	 * @param planId Plan ID, used to identify the plan the agent belongs to
 	 * @return Created BaseAgent object
 	 */
-	BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting);
+	BaseAgent createDynamicBaseAgent(String name, String currentPlanId, String rootPlanId,
+			Map<String, Object> initialAgentSetting, List<String> columns);
 
 }

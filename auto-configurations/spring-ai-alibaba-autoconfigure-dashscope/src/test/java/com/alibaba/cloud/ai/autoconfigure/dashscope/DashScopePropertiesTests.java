@@ -18,10 +18,10 @@ package com.alibaba.cloud.ai.autoconfigure.dashscope;
 import java.util.List;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioSpeechApi;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionOptions;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
@@ -174,7 +174,7 @@ public class DashScopePropertiesTests {
 				assertThat(speechProperties.getOptions().getModel()).isEqualTo("TTS_1");
 				assertThat(speechProperties.getOptions().getVoice()).isEqualTo("longhua_test");
 				assertThat(speechProperties.getOptions().getResponseFormat())
-					.isEqualTo(DashScopeSpeechSynthesisApi.ResponseFormat.MP3);
+					.isEqualTo(DashScopeAudioSpeechApi.ResponseFormat.MP3);
 				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(0.75f);
 			});
 	}
@@ -206,7 +206,7 @@ public class DashScopePropertiesTests {
 				assertThat(speechProperties.getOptions().getModel()).isEqualTo("TTS_2");
 				assertThat(speechProperties.getOptions().getVoice()).isEqualTo("echo");
 				assertThat(speechProperties.getOptions().getResponseFormat())
-					.isEqualTo(DashScopeSpeechSynthesisApi.ResponseFormat.PCM);
+					.isEqualTo(DashScopeAudioSpeechApi.ResponseFormat.PCM);
 				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(0.8f);
 			});
 	}
@@ -541,7 +541,7 @@ public class DashScopePropertiesTests {
 			.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
 			.run(context -> {
 				assertNotNull(context.getBeansOfType(DashScopeAudioSpeechSynthesisProperties.class));
-				assertNotNull(context.getBeansOfType(DashScopeSpeechSynthesisModel.class));
+				assertNotNull(context.getBeansOfType(DashScopeAudioSpeechModel.class));
 			});
 
 		new ApplicationContextRunner()
@@ -549,7 +549,7 @@ public class DashScopePropertiesTests {
 			.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
 			.run(context -> {
 				assertNotNull(context.getBeansOfType(DashScopeAudioSpeechSynthesisProperties.class));
-				assertNotNull(context.getBeansOfType(DashScopeSpeechSynthesisModel.class));
+				assertNotNull(context.getBeansOfType(DashScopeAudioSpeechModel.class));
 			});
 
 		new ApplicationContextRunner()
@@ -558,7 +558,7 @@ public class DashScopePropertiesTests {
 			.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
 			.run(context -> {
 				assertNotNull(context.getBeansOfType(DashScopeAudioSpeechSynthesisProperties.class));
-				assertNotNull(context.getBeansOfType(DashScopeSpeechSynthesisModel.class));
+				assertNotNull(context.getBeansOfType(DashScopeAudioSpeechModel.class));
 			});
 
 	}

@@ -23,20 +23,20 @@
         :class="{ user: message.type === 'user', assistant: message.type === 'assistant' }"
       >
         <div class="message-content">
-          <!-- 用户消息部分 -->
+          <!-- User message section -->
           <div v-if="message.type === 'user'" class="user-message">
             {{ message.content }}
           </div>
 
-          <!-- 助手消息的三部分结构 -->
+          <!-- Three-part structure of assistant message -->
           <div v-else class="assistant-message">
-            <!-- 1. TaskPilot 思考/处理部分 - 只在有处理内容时显示 -->
+            <!-- 1. TaskPilot Thinking/Processing Section - Only displayed when there is processing content -->
             <div
               class="thinking-section"
               v-if="
                 message.thinking ||
-                message.progress !== undefined ||
-                (message.steps && message.steps.length > 0)
+                message.planExecution?.progress !== undefined ||
+                (message.planExecution?.steps?.length ?? 0) > 0
               "
             >
               <div class="thinking-header">
@@ -47,62 +47,72 @@
               </div>
 
               <div class="thinking-content">
-                <!-- 基础思考状态 -->
+                <!-- Basic thinking state -->
                 <div class="thinking" v-if="message.thinking">
                   <Icon icon="carbon:thinking" class="thinking-icon" />
                   <span>{{ message.thinking }}</span>
                 </div>
 
-                <!-- 进度条 -->
-                <div class="progress" v-if="message.progress !== undefined">
+                <!-- Progress bar -->
+                <div class="progress" v-if="message.planExecution?.progress !== undefined">
                   <div class="progress-bar">
-                    <div class="progress-fill" :style="{ width: message.progress + '%' }"></div>
+                    <div
+                      class="progress-fill"
+                      :style="{ width: message.planExecution.progress + '%' }"
+                    ></div>
                   </div>
-                  <span class="progress-text">{{ message.progressText || $t('chat.processing') + '...' }}</span>
+                  <span class="progress-text">{{
+                    message.planExecution.progressText ?? $t('chat.processing') + '...'
+                  }}</span>
                 </div>
 
-                <!-- 步骤执行详情 -->
-                <div class="steps-container" v-if="message.steps && message.steps.length > 0">
+                <!-- Step execution details -->
+                <div class="steps-container" v-if="(message.planExecution?.steps?.length ?? 0) > 0">
                   <h4 class="steps-title">{{ $t('chat.stepExecutionDetails') }}</h4>
 
                   <!-- 遍历所有步骤 -->
                   <div
-                    v-for="(step, index) in message.steps"
+                    v-for="(step, index) in message.planExecution?.steps"
                     :key="index"
                     class="ai-section"
                     :class="{
-                      current: index === message.currentStepIndex,
-                      completed: index < (message.currentStepIndex || 0),
-                      pending: index > (message.currentStepIndex || 0),
+                      running: getAgentExecutionStatus(message, index) === 'RUNNING',
+                      completed: getAgentExecutionStatus(message, index) === 'FINISHED',
+                      pending: getAgentExecutionStatus(message, index) === 'IDLE',
                     }"
                     @click.stop="handleStepClick(message, index)"
                   >
                     <div class="section-header">
                       <span class="step-icon">
                         {{
-                          index < (message.currentStepIndex || 0)
+                          getAgentExecutionStatus(message, index) === 'FINISHED'
                             ? '✓'
-                            : index === (message.currentStepIndex || 0)
+                            : getAgentExecutionStatus(message, index) === 'RUNNING'
                               ? '▶'
                               : '○'
                         }}
                       </span>
                       <span class="step-title">
-                        {{ step.title || step.description || step || `${$t('chat.step')} ${index + 1}` }}
+                        {{ step || `${$t('chat.step')} ${index + 1}` }}
                       </span>
-                      <span v-if="index === message.currentStepIndex" class="step-status current">
+                      <span
+                        v-if="getAgentExecutionStatus(message, index) === 'RUNNING'"
+                        class="step-status current"
+                      >
                         {{ $t('chat.status.executing') }}
                       </span>
                       <span
-                        v-else-if="index < (message.currentStepIndex || 0)"
+                        v-else-if="getAgentExecutionStatus(message, index) === 'FINISHED'"
                         class="step-status completed"
                       >
                         {{ $t('chat.status.completed') }}
                       </span>
-                      <span v-else class="step-status pending"> {{ $t('chat.status.pending') }} </span>
+                      <span v-else class="step-status pending">
+                        {{ $t('chat.status.pending') }}
+                      </span>
                     </div>
 
-                    <!-- 显示步骤执行动作信息 -->
+                    <!-- Display step execution action information -->
                     <div
                       v-if="message.stepActions && message.stepActions[index]"
                       class="action-info"
@@ -141,65 +151,125 @@
                       </div>
                     </div>
 
-                    <!-- 用户输入表单 -->
+                    <!-- Sub-plan steps - New feature -->
+                    <div v-if="getSubPlanSteps(message, index)?.length > 0" class="sub-plan-steps">
+                      <div class="sub-plan-header">
+                        <Icon icon="carbon:tree-view" class="sub-plan-icon" />
+                        <span class="sub-plan-title">子执行计划</span>
+                      </div>
+                      <div class="sub-plan-step-list">
+                        <div
+                          v-for="(subStep, subStepIndex) in getSubPlanSteps(message, index)"
+                          :key="`sub-${index}-${subStepIndex}`"
+                          class="sub-plan-step-item"
+                          :class="{
+                            completed:
+                              getSubPlanStepStatus(message, index, subStepIndex) === 'completed',
+                            current:
+                              getSubPlanStepStatus(message, index, subStepIndex) === 'current',
+                            pending:
+                              getSubPlanStepStatus(message, index, subStepIndex) === 'pending',
+                          }"
+                          @click.stop="handleSubPlanStepClick(message, index, subStepIndex)"
+                        >
+                          <div class="sub-step-indicator">
+                            <span class="sub-step-icon">
+                              {{
+                                getSubPlanStepStatus(message, index, subStepIndex) === 'completed'
+                                  ? '✓'
+                                  : getSubPlanStepStatus(message, index, subStepIndex) === 'current'
+                                    ? '▶'
+                                    : '○'
+                              }}
+                            </span>
+                            <span class="sub-step-number">{{ subStepIndex + 1 }}</span>
+                          </div>
+                          <div class="sub-step-content">
+                            <span class="sub-step-title">{{ subStep }}</span>
+                            <span class="sub-step-badge">子步骤</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- User input form -->
                     <div
-                      v-if="message.userInputWaitState && index === message.currentStepIndex"
+                      v-if="
+                        message.planExecution?.userInputWaitState &&
+                        getAgentExecutionStatus(message, index) === 'RUNNING'
+                      "
                       class="user-input-form-container"
                     >
                       <p class="user-input-message">
-                        {{ message.userInputWaitState.message || $t('chat.userInput.message') }}
+                        {{
+                          message.planExecution?.userInputWaitState?.message ??
+                          $t('chat.userInput.message')
+                        }}
                       </p>
-                      <p v-if="message.userInputWaitState.formDescription" class="form-description">
-                        {{ message.userInputWaitState.formDescription }}
+                      <p
+                        v-if="message.planExecution?.userInputWaitState?.formDescription"
+                        class="form-description"
+                      >
+                        {{ message.planExecution?.userInputWaitState?.formDescription }}
                       </p>
 
                       <form
-                        @submit.prevent="handleUserInputSubmit(message, index)"
+                        @submit.prevent="handleUserInputSubmit(message)"
                         class="user-input-form"
                       >
-                        <div
+                        <template
                           v-if="
-                            message.userInputWaitState.formInputs &&
-                            message.userInputWaitState.formInputs.length > 0
+                            message.planExecution?.userInputWaitState?.formInputs &&
+                            message.planExecution.userInputWaitState.formInputs.length > 0
                           "
-                          v-for="(input, inputIndex) in message.userInputWaitState.formInputs"
-                          :key="inputIndex"
-                          class="form-group"
                         >
-                          <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
-                            {{ input.label }}:
-                          </label>
-                          <input
-                            type="text"
-                            :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                            :name="input.label"
-                            v-model="message.userInputWaitState.formInputs[inputIndex].value"
-                            class="form-input"
-                          />
-                        </div>
+                          <div
+                            v-for="(input, inputIndex) in message.planExecution?.userInputWaitState
+                              ?.formInputs"
+                            :key="inputIndex"
+                            class="form-group"
+                          >
+                            <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
+                              {{ input.label }}:
+                            </label>
+                            <input
+                              type="text"
+                              :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                              :name="input.label"
+                              v-model="formInputsStore[message.id][inputIndex]"
+                              class="form-input"
+                            />
+                          </div>
+                        </template>
 
-                        <div v-else class="form-group">
-                          <label for="form-input-genericInput">{{ $t('common.input') }}:</label>
-                          <input
-                            type="text"
-                            id="form-input-genericInput"
-                            name="genericInput"
-                            v-model="message.genericInput"
-                            class="form-input"
-                          />
-                        </div>
+                        <template v-else>
+                          <div class="form-group">
+                            <label for="form-input-genericInput">{{ $t('common.input') }}:</label>
+                            <input
+                              type="text"
+                              id="form-input-genericInput"
+                              name="genericInput"
+                              v-model="message.genericInput"
+                              class="form-input"
+                            />
+                          </div>
+                        </template>
 
-                        <button type="submit" class="submit-user-input-btn">{{ $t('chat.userInput.submit') }}</button>
+                        <button type="submit" class="submit-user-input-btn">
+                          {{ $t('chat.userInput.submit') }}
+                        </button>
                       </form>
                     </div>
                   </div>
                 </div>
 
-                <!-- 只在没有最终内容且正在处理时显示默认处理状态 -->
+                <!-- Display the default processing state only when there is no final content and processing is in progress -->
                 <div
                   v-else-if="
                     !message.content &&
-                    (message.thinking || (message.progress !== undefined && message.progress < 100))
+                    (message.thinking ||
+                      (message.planExecution?.progress !== undefined &&
+                        (message.planExecution?.progress ?? 0) < 100))
                   "
                   class="default-processing"
                 >
@@ -209,13 +279,13 @@
                       <span></span>
                       <span></span>
                     </div>
-                    <span>{{ message.thinking || $t('chat.thinkingProcessing') }}</span>
+                    <span>{{ message.thinking ?? $t('chat.thinkingProcessing') }}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- 2. TaskPilot 最终回复部分 - 独立的人性化对话单元 -->
+            <!-- 2. TaskPilot Final Response Section - Independent humanized dialogue unit -->
             <div class="response-section">
               <div class="response-header">
                 <div class="response-avatar">
@@ -246,7 +316,7 @@
       <div v-if="isLoading" class="message assistant">
         <div class="message-content">
           <div class="assistant-message">
-            <!-- 加载状态的思考部分 -->
+            <!-- Thinking section in loading state -->
             <div class="thinking-section">
               <div class="thinking-header">
                 <div class="thinking-avatar">
@@ -268,7 +338,7 @@
               </div>
             </div>
 
-            <!-- 加载状态的回复部分 -->
+            <!-- Response section in loading state -->
             <div class="response-section">
               <div class="response-header">
                 <div class="response-avatar">
@@ -294,7 +364,7 @@
       </div>
     </div>
 
-    <!-- 滚动到底部按钮 -->
+    <!-- Scroll to bottom button -->
     <div
       v-if="showScrollToBottom"
       class="scroll-to-bottom-btn"
@@ -307,30 +377,43 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onUnmounted } from 'vue'
-import { Icon } from '@iconify/vue'
+import { ref, nextTick, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Icon } from '@iconify/vue'
 
-const { t } = useI18n()
-import { PlanActApiService } from '@/api/plan-act-api-service'
 import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
-import { useRightPanelStore } from '@/stores/right-panel'
+import { planExecutionManager } from '@/utils/plan-execution-manager'
+import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
 
+/**
+ * Chat message interface that includes PlanExecutionRecord for plan-based messages
+ * Removes all duplicate fields that exist in PlanExecutionRecord
+ */
 interface Message {
+  /** Unique message identifier for Vue rendering */
   id: string
+
+  /** Message type: user input or assistant response */
   type: 'user' | 'assistant'
+
+  /** Main content for display */
   content: string
-  thinking?: string
-  progress?: number
-  progressText?: string
+
+  /** Message timestamp */
   timestamp: Date
-  planId?: string
-  executionId?: string
-  steps?: any[]
-  currentStepIndex?: number
-  planCompleted?: boolean
+
+  /** AI thinking process text (for loading states) */
+  thinking?: string
+
+  /** Generic user input field for simple interactions */
+  genericInput?: string
+
+  /** Plan execution data - contains all plan-related information */
+  planExecution?: PlanExecutionRecord
+
+  /** Legacy step actions for UI display (computed from planExecution) */
   stepActions?: Array<{
     actionDescription: string
     toolParameters: string
@@ -338,52 +421,43 @@ interface Message {
     thinkOutput: string
     status: 'completed' | 'current' | 'pending'
   } | null>
-  userInputWaitState?: {
-    message?: string
-    formDescription?: string
-    formInputs?: Array<{
-      label: string
-      value?: string
-    }>
-  }
-  genericInput?: string
 }
 
 interface Props {
-  initialPrompt?: string
-  mode?: 'plan' | 'direct' // 计划模式或直接聊天模式
+  mode?: 'plan' | 'direct' // Plan mode or direct chat mode
+  initialPrompt?: string // Initial prompt to process
 }
 
 interface Emits {
-  (e: 'plan-update', planData: any): void
-  (e: 'execution-state-changed', executionData: any): void
-  (e: 'plan-completed', result: any): void
-  (e: 'user-message-send-requested', message: string): void
-  (e: 'input-clear'): void
-  (e: 'input-update-state', enabled: boolean, placeholder?: string): void
-  (e: 'input-focus'): void
   (e: 'step-selected', planId: string, stepIndex: number): void
-  (e: 'dialog-round-start', planId: string, query: string): void
+  (
+    e: 'sub-plan-step-selected',
+    parentPlanId: string,
+    subPlanId: string,
+    stepIndex: number,
+    subStepIndex: number
+  ): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mode: 'plan', // 使用计划模式，通过 plan-execution-manager 处理
+  mode: 'plan', // Use plan mode, handled by plan-execution-manager
+  initialPrompt: '', // Default value for initialPrompt
 })
 const emit = defineEmits<Emits>()
 
-// 使用计划执行管理器
-const planExecution = usePlanExecution()
+// Initialize i18n
+const { t } = useI18n()
 
-// 使用right-panel store
-const rightPanelStore = useRightPanelStore()
+// Use the plan execution manager
+const planExecution = usePlanExecution()
 
 const messagesRef = ref<HTMLElement>()
 const isLoading = ref(false)
 const messages = ref<Message[]>([])
-const currentPlanId = ref<string>()
-const currentExecutionId = ref<string>()
 const pollingInterval = ref<number>()
 const showScrollToBottom = ref(false)
+const formInputsStore = reactive<Record<string, Record<number, string>>>({})
+// Remove forceUpdateKey as it causes DOM to be recreated and scroll position to reset
 
 const addMessage = (type: 'user' | 'assistant', content: string, options?: Partial<Message>) => {
   const message: Message = {
@@ -394,7 +468,7 @@ const addMessage = (type: 'user' | 'assistant', content: string, options?: Parti
     ...options,
   }
 
-  // 如果是助手消息，确保有基本的思考状态，即使没有内容
+  // If it's an assistant message, ensure there's a basic thinking state even if there's no content
   if (type === 'assistant') {
     if (!message.thinking && !message.content) {
       message.thinking = t('chat.thinking')
@@ -402,60 +476,17 @@ const addMessage = (type: 'user' | 'assistant', content: string, options?: Parti
   }
 
   messages.value.push(message)
-  // 新消息时强制滚动到底部
-  forceScrollToBottom()
+  // Remove forced scroll to bottom for new messages
+  // Users can manually scroll if needed
   return message
 }
 
 const updateLastMessage = (updates: Partial<Message>) => {
   const lastMessage = messages.value[messages.value.length - 1]
-  if (lastMessage && lastMessage.type === 'assistant') {
+  if (lastMessage.type === 'assistant') {
     Object.assign(lastMessage, updates)
-    // 内容更新时也要滚动，确保用户能看到最新内容
-    scrollToBottom()
-  }
-}
-
-const handlePlanMode = async (query: string) => {
-  try {
-    isLoading.value = true
-
-    // 添加思考状态消息
-    const assistantMessage = addMessage('assistant', '', {
-      thinking: t('chat.analyzingNeedsAndGeneratingPlan'),
-    })
-
-    // 生成计划
-    const planResponse = await PlanActApiService.generatePlan(query)
-
-    if (planResponse.planId) {
-      currentPlanId.value = planResponse.planId
-      assistantMessage.planId = planResponse.planId
-      assistantMessage.thinking = undefined
-
-      // 重要：使用 plan execution manager 来处理执行
-      // 这会触发轮询和所有相关的事件处理逻辑
-      planExecution.startExecution(query, planResponse.planId)
-
-      assistantMessage.content = t('chat.planGeneratedStartingExecution')
-      assistantMessage.steps = planResponse.plan?.steps || []
-      assistantMessage.currentStepIndex = 0
-      assistantMessage.progress = 10
-      assistantMessage.progressText = t('chat.preparingExecution')
-    } else {
-      assistantMessage.thinking = undefined
-      assistantMessage.content = t('chat.planGenerationFailed')
-    }
-  } catch (error: any) {
-    console.error('Plan mode error:', error)
-    updateLastMessage({
-      thinking: undefined,
-      content: `${t('chat.executionError')}：${error?.message || t('chat.unknownError')}`,
-      progress: undefined,
-      progressText: undefined,
-    })
-  } finally {
-    isLoading.value = false
+    // Remove automatic scroll when content updates
+    // Let users control their viewing position
   }
 }
 
@@ -463,23 +494,37 @@ const handleDirectMode = async (query: string) => {
   try {
     isLoading.value = true
 
-    // 添加思考状态消息
+    // Add a thinking state message
     const assistantMessage = addMessage('assistant', '', {
       thinking: '正在理解您的请求并准备回复...',
     })
 
-    // 直接执行
+    // Execute directly
     const response = await DirectApiService.sendMessage(query)
 
-    assistantMessage.thinking = undefined
+    if (response.planId) {
+      console.log('[ChatComponent] Received planId from direct execution:', response.planId)
 
-    // 生成自然的人性化回复
-    const finalResponse = generateDirectModeResponse(response, query)
-    assistantMessage.content = finalResponse
+      if (!assistantMessage.planExecution) {
+        assistantMessage.planExecution = {} as any
+      }
+      assistantMessage.planExecution!.currentPlanId = response.planId
+
+      planExecutionManager.handlePlanExecutionRequested(response.planId, query)
+
+      delete assistantMessage.thinking
+
+      console.log('[ChatComponent] Started polling for plan execution updates')
+    } else {
+      delete assistantMessage.thinking
+
+      // Generate a natural and human-like response
+      const finalResponse = generateDirectModeResponse(response, query)
+      assistantMessage.content = finalResponse
+    }
   } catch (error: any) {
     console.error('Direct mode error:', error)
     updateLastMessage({
-      thinking: undefined,
       content: generateErrorResponse(error),
     })
   } finally {
@@ -487,52 +532,16 @@ const handleDirectMode = async (query: string) => {
   }
 }
 
-// 生成直接模式的自然回复
-const generateDirectModeResponse = (response: any, originalQuery: string): string => {
-  const result = response.result || response.message || response.content || ''
-
-  if (!result) {
-    return `我理解了您的问题，但暂时没有获得具体的结果。能否请您提供更多详细信息，这样我可以更好地帮助您。`
-  }
-
-  // 如果回复已经是自然对话形式，稍作调整使其更完整
-  if (result.includes('我') || result.includes('您') || result.includes('可以')) {
-    // 确保回复有合适的结尾
-    if (!result.includes('?') && !result.includes('。') && !result.includes('！')) {
-      return `${result}。还有什么我可以帮您的吗？`
-    }
-    return result
-  }
-
-  // 根据查询类型和结果长度生成不同风格的回复
-  const isQuestion =
-    originalQuery.includes('?') ||
-    originalQuery.includes('？') ||
-    originalQuery.includes('什么') ||
-    originalQuery.includes('如何') ||
-    originalQuery.includes('怎么')
-
-  if (isQuestion) {
-    if (result.length > 200) {
-      return `关于您的问题，我来详细回答一下：\n\n${result}\n\n希望这个回答对您有帮助。如果还有疑问，请随时告诉我。`
-    } else {
-      return `${result}。这样回答您的问题是否清楚？如果还需要更多信息，请告诉我。`
-    }
-  } else {
-    // 任务或请求类型
-    if (result.length > 150) {
-      return `好的，我已经处理了您的请求：\n\n${result}\n\n任务完成！还有其他需要帮助的吗？`
-    } else {
-      return `完成了！${result}。还有什么我可以帮您处理的吗？`
-    }
-  }
+// Get the response content from the response
+const generateDirectModeResponse = (response: any, _originalQuery: string): string => {
+  return response.result ?? response.message ?? response.content ?? ''
 }
 
-// 生成错误响应
+// Generate an error response
 const generateErrorResponse = (error: any): string => {
-  const errorMsg = error?.message || error?.toString() || '未知错误'
+  const errorMsg = error?.message ?? error?.toString() ?? '未知错误'
 
-  // 常见错误类型的友好提示
+  // Common error types with friendly prompts
   if (errorMsg.includes('网络') || errorMsg.includes('network') || errorMsg.includes('timeout')) {
     return `抱歉，似乎网络连接有些问题。请检查您的网络连接后再试一次，或者稍等几分钟再重新提问。`
   }
@@ -545,84 +554,8 @@ const generateErrorResponse = (error: any): string => {
     return `抱歉，您的请求格式可能有些问题。能否请您重新表述一下您的需求？我会尽力理解并帮助您。`
   }
 
-  // 通用错误回复
+  // Generic error response
   return `抱歉，处理您的请求时遇到了一些问题（${errorMsg}）。请稍后再试，或者换个方式表达您的需求，我会尽力帮助您的。`
-}
-
-const startExecutionPolling = (planId: string, executionId: string) => {
-  if (pollingInterval.value) {
-    clearInterval(pollingInterval.value)
-  }
-
-  pollingInterval.value = window.setInterval(async () => {
-    try {
-      // 获取计划详情来检查执行状态
-      const details = await CommonApiService.getDetails(planId)
-
-      if (details) {
-        updateExecutionProgress(details)
-
-        // 检查是否完成
-        if (details.completed || details.status === 'completed') {
-          clearInterval(pollingInterval.value!)
-          pollingInterval.value = undefined
-
-          updateLastMessage({
-            progress: 100,
-            progressText: '执行完成！',
-            content: details.summary || '计划执行完成',
-            steps: details.steps,
-          })
-
-          emit('plan-completed', details)
-        }
-      }
-    } catch (error: any) {
-      console.error('Polling error:', error)
-      // 继续轮询，不中断
-    }
-  }, 2000) // 每2秒轮询一次
-}
-
-const updateExecutionProgress = (details: any) => {
-  if (!details.steps || !Array.isArray(details.steps)) return
-
-  const totalSteps = details.steps.length
-  const currentStep = details.currentStepIndex || 0
-  const progress = Math.min(Math.round((currentStep / totalSteps) * 80) + 20, 95) // 20-95%
-
-  let progressText = `执行步骤 ${currentStep + 1}/${totalSteps}`
-  if (details.steps[currentStep]) {
-    progressText += `: ${details.steps[currentStep].title || details.steps[currentStep].description || ''}`
-  }
-
-  updateLastMessage({
-    progress,
-    progressText,
-    steps: details.steps,
-    currentStepIndex: currentStep,
-  })
-}
-
-const getStepStatus = (stepIndex: number, currentStepIndex?: number) => {
-  if (currentStepIndex === undefined) return 'pending'
-  if (stepIndex < currentStepIndex) return 'completed'
-  if (stepIndex === currentStepIndex) return 'current'
-  return 'pending'
-}
-
-const getStepStatusText = (stepIndex: number, currentStepIndex?: number) => {
-  const status = getStepStatus(stepIndex, currentStepIndex)
-  switch (status) {
-    case 'completed':
-      return '已完成'
-    case 'current':
-      return '执行中'
-    case 'pending':
-      return '待执行'
-    default:
-      return '待执行'
-  }
 }
 
 const scrollToBottom = (force = false) => {
@@ -630,12 +563,12 @@ const scrollToBottom = (force = false) => {
     if (messagesRef.value) {
       const container = messagesRef.value
 
-      // 检查是否需要滚动到底部
+      // Check if scrolling to the bottom is required
       const isNearBottom =
         force || container.scrollHeight - container.scrollTop - container.clientHeight < 150
 
       if (isNearBottom) {
-        // 使用 smooth 滚动，除非强制滚动
+        // Use smooth scrolling unless forced scrolling is specified.
         container.scrollTo({
           top: container.scrollHeight,
           behavior: force ? 'auto' : 'smooth',
@@ -645,14 +578,14 @@ const scrollToBottom = (force = false) => {
   })
 }
 
-// 强制滚动到底部的辅助函数
+// Helper function to force scroll to the bottom
 const forceScrollToBottom = () => {
   scrollToBottom(true)
-  // 滚动后隐藏滚动按钮
+  // Hide scroll button after scrolling
   showScrollToBottom.value = false
 }
 
-// 检查是否需要显示滚动到底部按钮
+// Check if the scroll-to-bottom button needs to be displayed
 const checkScrollPosition = () => {
   if (messagesRef.value) {
     const container = messagesRef.value
@@ -661,14 +594,14 @@ const checkScrollPosition = () => {
   }
 }
 
-// 添加滚动监听器
+// Add a scroll listener
 const addScrollListener = () => {
   if (messagesRef.value) {
     messagesRef.value.addEventListener('scroll', checkScrollPosition)
   }
 }
 
-// 移除滚动监听器
+// Remove a scroll listener
 const removeScrollListener = () => {
   if (messagesRef.value) {
     messagesRef.value.removeEventListener('scroll', checkScrollPosition)
@@ -676,140 +609,261 @@ const removeScrollListener = () => {
 }
 
 const handleSendMessage = (message: string) => {
-  // 首先添加用户消息到UI
+  // First, add the user message to the UI.
   addMessage('user', message)
 
-  // 通过 emit 通知父组件清空输入
-  emit('input-clear')
-
-  // 根据模式处理消息
+  // Handle messages according to the mode
   if (props.mode === 'plan') {
-    // 在计划模式下，触发用户消息发送请求事件
-    emit('user-message-send-requested', message)
+    // In plan mode, only add UI message, parent component handles the API call
+    // This prevents double API calls
+    console.log('[ChatComponent] Plan mode message sent, parent should handle:', message)
+    // Don't call any API here, just add to UI
   } else {
-    // 直接模式仍然直接处理
+    // Direct mode is still handled directly
     handleDirectMode(message)
   }
 }
 
-// 处理步骤点击事件
+// Get agent execution status based on index
+const getAgentExecutionStatus = (message: Message, index: number): string => {
+  const agentExecutionSequence = message.planExecution?.agentExecutionSequence ?? []
+  const agentExecution = agentExecutionSequence[index]
+  // 直接返回 AgentExecutionRecord 的状态，无需判断 agentExecution 是否存在
+  return agentExecution.status ?? 'IDLE'
+}
+
+// Handle step click events - Only expose events without handling specific logic
 const handleStepClick = (message: Message, stepIndex: number) => {
-  if (!message.planId) {
-    console.warn('[ChatComponent] Cannot handle step click: missing planId')
+  if (!message.planExecution?.currentPlanId) {
+    console.warn('[ChatComponent] Cannot handle step click: missing currentPlanId')
     return
   }
 
   console.log('[ChatComponent] Step clicked:', {
-    planId: message.planId,
+    planId: message.planExecution.currentPlanId,
     stepIndex: stepIndex,
-    stepTitle: message.steps?.[stepIndex]?.title || message.steps?.[stepIndex],
+    stepTitle: message.planExecution.steps?.[stepIndex],
   })
 
-  // 直接使用right-panel store显示步骤详情，替代emit事件
-  rightPanelStore.showStepDetails(message.planId, stepIndex)
+  // Emit a step selection event to the parent component
+  emit('step-selected', message.planExecution.currentPlanId, stepIndex)
 }
 
-// 旧的handlePlanUpdate函数已移除，保留计算进度和更新步骤动作的函数
+// Get sub-plan steps from agentExecutionSequence
+const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
+  try {
+    // Find sub-plan from planExecution.agentExecutionSequence
+    const agentExecutionSequence = message.planExecution?.agentExecutionSequence
+    if (!agentExecutionSequence?.length) {
+      console.log('[ChatComponent] No agentExecutionSequence found')
+      return []
+    }
 
-// 计算执行进度（基于 chat-handler.js 逻辑）
-const calculateProgress = (planDetails: any) => {
-  const totalSteps = planDetails.steps?.length || 0
-  const currentStep = planDetails.currentStepIndex ?? 0
+    // Get corresponding step's agentExecution
+    const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
+    if (!agentExecution) {
+      console.log(`[ChatComponent] No agentExecution found for step ${stepIndex}`)
+      return []
+    }
 
-  if (totalSteps === 0) {
-    return { percentage: 0, text: '准备中...' }
+    if (!agentExecution.thinkActSteps) {
+      console.log(`[ChatComponent] No thinkActSteps found for step ${stepIndex}`)
+      return []
+    }
+
+    // Find sub-plan in thinkActSteps
+    for (const thinkActStep of agentExecution.thinkActSteps) {
+      if (thinkActStep.subPlanExecutionRecord) {
+        console.log(
+          `[ChatComponent] Found sub-plan for step ${stepIndex}:`,
+          thinkActStep.subPlanExecutionRecord
+        )
+        const rawSteps = thinkActStep.subPlanExecutionRecord.steps ?? []
+        // Apply the same formatting logic as main steps
+        return rawSteps.map((step: any) => {
+          if (typeof step === 'string') {
+            return step
+          } else if (typeof step === 'object' && step !== null) {
+            return step.title || step.description || `子步骤`
+          }
+          return `子步骤`
+        })
+      }
+    }
+
+    return []
+  } catch (error) {
+    console.warn('[ChatComponent] Error getting sub-plan steps:', error)
+    return []
   }
-
-  const percentage = Math.min(Math.round((currentStep / totalSteps) * 80) + 20, 95)
-  let text = `执行步骤 ${currentStep + 1}/${totalSteps}`
-
-  if (planDetails.steps[currentStep]) {
-    const stepTitle =
-      planDetails.steps[currentStep].title ||
-      planDetails.steps[currentStep].description ||
-      planDetails.steps[currentStep]
-    text += `: ${stepTitle}`
-  }
-
-  return { percentage, text }
 }
 
-// 更新步骤执行动作（基于 chat-handler.js 逻辑）
-const updateStepActions = (message: Message, planDetails: any) => {
-  if (!message.steps) return
+// Get sub-plan step status - new feature
+const getSubPlanStepStatus = (
+  message: Message,
+  stepIndex: number,
+  subStepIndex: number
+): string => {
+  try {
+    const agentExecutionSequence = message.planExecution?.agentExecutionSequence
+    if (!agentExecutionSequence?.length) {
+      return 'pending'
+    }
+
+    const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
+    if (!agentExecution) {
+      return 'pending'
+    }
+
+    if (!agentExecution.thinkActSteps) {
+      return 'pending'
+    }
+
+    // Find sub-plan in thinkActSteps
+    let subPlan = null
+    for (const thinkActStep of agentExecution.thinkActSteps) {
+      if (thinkActStep.subPlanExecutionRecord) {
+        subPlan = thinkActStep.subPlanExecutionRecord
+        break
+      }
+    }
+
+    if (!subPlan) {
+      return 'pending'
+    }
+
+    const currentStepIndex = subPlan.currentStepIndex
+    if (subPlan.completed) {
+      return 'completed'
+    }
+
+    if (currentStepIndex == null) {
+      return subStepIndex === 0 ? 'current' : 'pending'
+    }
+
+    if (subStepIndex < currentStepIndex) {
+      return 'completed'
+    } else if (subStepIndex === currentStepIndex) {
+      return 'current'
+    } else {
+      return 'pending'
+    }
+  } catch (error) {
+    console.warn('[ChatComponent] Error getting sub-plan step status:', error)
+    return 'pending'
+  }
+}
+
+// Handle sub-plan step click - simplified to only emit events
+const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepIndex: number) => {
+  try {
+    const agentExecutionSequence = message.planExecution?.agentExecutionSequence
+    if (!agentExecutionSequence?.length) {
+      console.warn('[ChatComponent] No agentExecutionSequence data for sub-plan step click')
+      return
+    }
+
+    const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
+    if (!agentExecution) {
+      console.warn('[ChatComponent] No agentExecution found for step', stepIndex)
+      return
+    }
+
+    if (!agentExecution.thinkActSteps) {
+      console.warn('[ChatComponent] No thinkActSteps found for step', stepIndex)
+      return
+    }
+
+    // Find sub-plan in thinkActSteps
+    let subPlan = null
+    for (const thinkActStep of agentExecution.thinkActSteps) {
+      if (thinkActStep.subPlanExecutionRecord) {
+        subPlan = thinkActStep.subPlanExecutionRecord
+        break
+      }
+    }
+
+    if (!subPlan?.currentPlanId) {
+      console.warn('[ChatComponent] No sub-plan data for step click')
+      return
+    }
+
+    // Emit event with necessary identifiers for parent component to handle
+    emit(
+      'sub-plan-step-selected',
+      message.planExecution?.currentPlanId ?? '',
+      subPlan.currentPlanId,
+      stepIndex,
+      subStepIndex
+    )
+  } catch (error) {
+    console.error('[ChatComponent] Error handling sub-plan step click:', error)
+  }
+}
+
+// Update step execution actions (based on chat-handler.js logic)
+const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) => {
+  if (!message.planExecution?.steps) return
 
   console.log(
-    '[ChatComponent] 开始更新步骤动作, 步骤数:',
-    message.steps.length,
-    '执行序列:',
-    planDetails.agentExecutionSequence?.length || 0
+    '[ChatComponent] Starting to update step actions, steps count:',
+    message.planExecution.steps.length,
+    'execution sequence:',
+    planDetails.agentExecutionSequence?.length ?? 0
   )
 
-  // 初始化存储每个步骤的最后执行动作
-  const lastStepActions = new Array(message.steps.length).fill(null)
+  const lastStepActions = new Array(message.planExecution.steps.length).fill(null)
 
-  // 遍历所有执行序列，匹配步骤并更新动作
-  if (planDetails.agentExecutionSequence?.length > 0) {
-    // 检查执行序列与步骤数是否匹配
-    const sequenceLength = Math.min(planDetails.agentExecutionSequence.length, message.steps.length)
+  if (planDetails.agentExecutionSequence?.length) {
+    const sequenceLength = Math.min(
+      planDetails.agentExecutionSequence.length,
+      message.planExecution.steps.length
+    )
 
     for (let index = 0; index < sequenceLength; index++) {
-      const execution = planDetails.agentExecutionSequence[index]
+  const execution = planDetails.agentExecutionSequence[index]
 
-      if (execution?.thinkActSteps?.length > 0) {
+  if (execution.thinkActSteps?.length) {
         const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1]
 
-        if (latestThinkAct?.actionDescription && latestThinkAct?.toolParameters) {
-          // 保存此步骤的最后执行动作
+        if (latestThinkAct.actionDescription && latestThinkAct.toolParameters) {
           lastStepActions[index] = {
             actionDescription: latestThinkAct.actionDescription,
             toolParameters:
               typeof latestThinkAct.toolParameters === 'string'
                 ? latestThinkAct.toolParameters
                 : JSON.stringify(latestThinkAct.toolParameters, null, 2),
-            thinkInput: latestThinkAct.thinkInput || '',
-            thinkOutput: latestThinkAct.thinkOutput || '',
+            thinkInput: latestThinkAct.thinkInput ?? '',
+            thinkOutput: latestThinkAct.thinkOutput ?? '',
             status:
-              index < planDetails.currentStepIndex
+              planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex
                 ? 'completed'
-                : index === planDetails.currentStepIndex
-                  ? 'current'
-                  : 'pending',
+                : planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex
+                ? 'current'
+                : 'pending',
           }
 
           console.log(
-            `[ChatComponent] 步骤 ${index} 已设置动作: ${lastStepActions[index].actionDescription}`
+            `[ChatComponent] Step ${index} action set: ${lastStepActions[index].actionDescription}`
           )
-        } else if (latestThinkAct) {
-          // 思考中状态
-          lastStepActions[index] = {
-            actionDescription: t('chat.thinking'),
-            toolParameters: t('chat.waitingDecision'),
-            thinkInput: latestThinkAct.thinkInput || '',
-            thinkOutput: latestThinkAct.thinkOutput || '',
-            status: index === planDetails.currentStepIndex ? 'current' : 'pending',
-          }
-
-          console.log(`[ChatComponent] 步骤 ${index} 正在思考中`)
         } else {
           lastStepActions[index] = {
-            actionDescription: t('chat.executionCompleted'),
-            toolParameters: t('chat.noTool'),
-            thinkInput: '',
-            thinkOutput: '',
-            status: 'completed',
+            actionDescription: '思考中',
+            toolParameters: '等待决策',
+            thinkInput: latestThinkAct.thinkInput ?? '',
+            thinkOutput: latestThinkAct.thinkOutput ?? '',
+            status: planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex ? 'current' : 'pending',
           }
 
-          console.log(`[ChatComponent] 步骤 ${index} 执行完成`)
+          console.log(`[ChatComponent] Step ${index} is thinking`)
         }
       } else {
-        // 没有thinkActSteps的情况
         lastStepActions[index] = {
-          actionDescription: index < planDetails.currentStepIndex ? t('chat.status.completed') : t('chat.status.pending'),
-          toolParameters: t('chat.noToolParameters'),
+          actionDescription: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? '已完成' : '等待中',
+          toolParameters: '无工具参数',
           thinkInput: '',
           thinkOutput: '',
-          status: index < planDetails.currentStepIndex ? 'completed' : 'pending',
+          status: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? 'completed' : 'pending',
         }
 
         console.log(
@@ -821,95 +875,93 @@ const updateStepActions = (message: Message, planDetails: any) => {
     console.log('[ChatComponent] 没有执行序列数据')
   }
 
-  // 将步骤动作信息附加到消息上
-  message.stepActions = lastStepActions
+  message.stepActions = [...lastStepActions]
 
   console.log(
     '[ChatComponent] 步骤动作更新完成:',
     JSON.stringify(lastStepActions.map(a => a?.actionDescription))
   )
+
+  nextTick(() => {
+    console.log('[ChatComponent] UI update completed via reactivity')
+  })
 }
 
-// 处理对话轮次开始
-const handleDialogRoundStart = (planId: string, query: string) => {
-  console.log('[ChatComponent] Starting dialog round with planId:', planId, 'query:', query)
+// Handle the start of a dialog round
+const handleDialogRoundStart = (planId: string) => {
+  console.log('[ChatComponent] Starting dialog round with planId:', planId)
 
-  if (planId && query) {
-    // 添加用户消息（如果还没有的话）
-    const hasUserMessage = messages.value.findIndex(m => m.type === 'user' && m.content === query)
-
-    if (hasUserMessage === -1) {
-      addMessage('user', query)
-      console.log('[ChatComponent] Added user message:', query)
-    } else {
-      console.log('[ChatComponent] User message already exists:', query)
-    }
-
-    // 检查是否已经有针对此计划的助手消息，使用与 handlePlanUpdate 相同的查找逻辑
+  if (planId) {
+    // Check if there is already an assistant message for this plan
     const existingAssistantMsg = messages.value.findIndex(
-      m => m.planId === planId && m.type === 'assistant'
+      m => m.planExecution?.currentPlanId === planId && m.type === 'assistant'
     )
 
-    // 如果没有现有消息，添加助手消息准备显示步骤
+    // If there is no existing message, add an assistant message to prepare to display steps
     if (existingAssistantMsg === -1) {
-      const assistantMessage = addMessage('assistant', '', {
-        planId: planId,
-        thinking: t('chat.thinkingAnalyzing'),
-        steps: [],
-        currentStepIndex: 0,
-        progress: 5,
-        progressText: t('chat.preparing'),
+      addMessage('assistant', '', {
+        planExecution: { currentPlanId: planId } as PlanExecutionRecord,
+        thinking: '正在准备执行计划...',
       })
-
       console.log('[ChatComponent] Created new assistant message for planId:', planId)
     } else {
       console.log('[ChatComponent] Found existing assistant message for planId:', planId)
     }
 
-    // 滚动到底部确保用户能看到最新进展
-    scrollToBottom()
+    // Remove automatic scroll for dialog round start
+    // Keep user at their current viewing position
   }
 }
 
-// 处理计划更新
-const handlePlanUpdate = (planDetails: any) => {
-  console.log('[ChatComponent] Processing plan update:', planDetails)
-  console.log('[ChatComponent] Plan steps:', planDetails?.steps)
-  console.log('[ChatComponent] Plan completed:', planDetails?.completed)
+// Handle plan updates - Use a new scheme based on rootPlanId
+const handlePlanUpdate = (rootPlanId: string) => {
+  console.log('[ChatComponent] Processing plan update with rootPlanId:', rootPlanId)
 
-  if (!planDetails || !planDetails.planId) {
-    console.warn('[ChatComponent] Plan update missing planId')
+  // Get the PlanExecutionRecord from the cache
+  const planDetails = planExecutionManager.getCachedPlanRecord(rootPlanId)
+
+  if (!planDetails) {
+    console.warn('[ChatComponent] No cached plan data found for rootPlanId:', rootPlanId)
     return
   }
 
-  // 直接使用right-panel store处理计划更新，替代emit事件
-  rightPanelStore.handlePlanUpdate(planDetails)
+  console.log('[ChatComponent] Retrieved plan details from cache:', planDetails)
+  console.log('[ChatComponent] Plan steps:', planDetails.steps)
+  console.log('[ChatComponent] Plan completed:', planDetails.completed)
 
-  // 找到对应的消息
+  if (!planDetails.currentPlanId) {
+    console.warn('[ChatComponent] Plan update missing currentPlanId')
+    return
+  }
+
+  // Find the corresponding message - Use the currentPlanId field
   const messageIndex = messages.value.findIndex(
-    m => m.planId === planDetails.planId && m.type === 'assistant'
+    m => m.planExecution?.currentPlanId === planDetails.currentPlanId && m.type === 'assistant'
   )
   let message
 
   if (messageIndex !== -1) {
     message = messages.value[messageIndex]
-    console.log('[ChatComponent] Found existing assistant message for planId:', planDetails.planId)
+    console.log(
+      '[ChatComponent] Found existing assistant message for currentPlanId:',
+      planDetails.currentPlanId
+    )
   } else {
     console.warn(
-      '[ChatComponent] No existing assistant message found for planId:',
-      planDetails.planId
+      '[ChatComponent] No existing assistant message found for currentPlanId:',
+      planDetails.currentPlanId
     )
     console.log(
       '[ChatComponent] Current messages:',
       messages.value.map(m => ({
         type: m.type,
-        planId: m.planId,
-        content: m.content?.substring(0, 50),
+        planId: m.planExecution?.currentPlanId,
+        content: m.content.substring(0, 50),
       }))
     )
 
-    // 如果找不到对应消息，应该已经由 handleDialogRoundStart 创建了，这里不再创建新消息
-    // 而是尝试找到最近的助手消息来更新
+    // If no corresponding message is found, it should have been created by handleDialogRoundStart. Do not create a new message here
+    // Instead, try to find the latest assistant message to update
     let lastAssistantIndex = -1
     for (let i = messages.value.length - 1; i >= 0; i--) {
       if (messages.value[i].type === 'assistant') {
@@ -920,11 +972,14 @@ const handlePlanUpdate = (planDetails: any) => {
 
     if (lastAssistantIndex !== -1) {
       message = messages.value[lastAssistantIndex]
-      // 更新 planId 以确保后续更新能找到它
-      message.planId = planDetails.planId
+      // 更新 planExecution 以确保后续更新能找到它
+      if (!message.planExecution) {
+        message.planExecution = {} as PlanExecutionRecord
+      }
+      message.planExecution.currentPlanId = planDetails.currentPlanId
       console.log(
-        '[ChatComponent] Using last assistant message and updating planId to:',
-        planDetails.planId
+        '[ChatComponent] Using last assistant message and updating planExecution.currentPlanId to:',
+        planDetails.currentPlanId
       )
     } else {
       console.error('[ChatComponent] No assistant message found at all, this should not happen')
@@ -932,84 +987,82 @@ const handlePlanUpdate = (planDetails: any) => {
     }
   }
 
-  // 处理简单响应（没有步骤的情况）
+  // Ensure planExecution exists
+  if (!message.planExecution) {
+    message.planExecution = {} as PlanExecutionRecord
+  }
+
+  // Update planExecution data - Use deep copy to ensure reactivity
+  message.planExecution = JSON.parse(JSON.stringify(planDetails))
+
+  // Handle simple responses (cases without steps)
   if (!planDetails.steps || planDetails.steps.length === 0) {
     console.log('[ChatComponent] Handling simple response without steps')
 
     if (planDetails.completed) {
       // 直接设置最终回复，清除所有处理状态
-      message.thinking = undefined
-      message.progress = undefined
-      message.progressText = undefined
+      delete message.thinking
 
-      let finalResponse =
-        planDetails.summary || planDetails.result || planDetails.message || '处理完成'
-      // 确保回复自然
+      const finalResponse =
+        planDetails.summary ?? planDetails.result ?? planDetails.message ?? '处理完成'
+      // Ensure the response is natural
       message.content = generateNaturalResponse(finalResponse)
 
       console.log('[ChatComponent] Set simple response content:', message.content)
     } else {
-      // 如果有标题或状态信息，更新思考状态
+      // If there is a title or status information, update the thinking state
       if (planDetails.title) {
-        message.thinking = t('chat.thinkingExecuting', { title: planDetails.title })
+        message.thinking = `正在执行: ${planDetails.title}`
       }
     }
 
-    scrollToBottom()
-    emit('plan-update', planDetails)
+    // Remove automatic scroll in simple response
+    // Users can manually scroll if they want to see the latest content
     return
   }
 
-  // 处理有步骤的计划...
-  // 处理步骤信息 - 确保格式一致
+  // Handle plans with steps...
+
+  // Clear the initial thinking state to display the plan execution information
+  delete message.thinking
+
+  // Process step information - Ensure consistent format and maintain a user-friendly display
   const formattedSteps = planDetails.steps.map((step: any) => {
-    // 如果步骤是字符串，转换为对象格式
+    // If the step is a string, return it directly
     if (typeof step === 'string') {
-      return { title: step, description: step }
+      return step
     }
-    // 如果是对象但缺少title，使用description
-    else if (typeof step === 'object') {
-      return {
-        title: step.title || step.description || `步骤`,
-        description: step.description || step.title || '',
-        ...step,
-      }
+    // If it's an object, extract the title for display
+    else if (typeof step === 'object' && step !== null) {
+      return step.title || step.description || `步骤`
     }
-    return step
+    return `步骤`
   })
 
-  // 更新消息的步骤信息
-  message.steps = formattedSteps
-  message.currentStepIndex =
-    planDetails.currentStepIndex !== undefined ? planDetails.currentStepIndex : 0
+  // Update the step information in planExecution
+  if (message.planExecution) {
+    message.planExecution.steps = formattedSteps
+  }
 
-  // 标记计划是否已完成（用于步骤状态显示）
-  message.planCompleted = planDetails.completed || planDetails.status === 'completed'
-
-  // 更新进度信息
-  const progress = calculateProgress(planDetails)
-  message.progress = progress.percentage
-  message.progressText = progress.text
-
-  // 处理执行序列和步骤动作 - 参考chat-handler.js的逻辑
-  if (planDetails.agentExecutionSequence?.length > 0) {
+  // Process the execution sequence and step actions - Refer to the logic in chat-handler.js
+  if (planDetails.agentExecutionSequence && planDetails.agentExecutionSequence.length > 0) {
     console.log(
       '[ChatComponent] 发现执行序列数据，数量:',
       planDetails.agentExecutionSequence.length
     )
 
-    // 调用updateStepActions更新步骤动作信息
+    // Call updateStepActions to update the step action information
     updateStepActions(message, planDetails)
 
-    // 从当前正在执行的步骤更新思考状态
-    const currentStepIndex = planDetails.currentStepIndex || 0
+    // Update the thinking state from the currently executing step
+    const currentStepIndex = planDetails.currentStepIndex ?? 0
     if (currentStepIndex >= 0 && currentStepIndex < planDetails.agentExecutionSequence.length) {
       const currentExecution = planDetails.agentExecutionSequence[currentStepIndex]
-      if (currentExecution?.thinkActSteps?.length > 0) {
-        const latestThinkAct =
-          currentExecution.thinkActSteps[currentExecution.thinkActSteps.length - 1]
-        if (latestThinkAct?.thinkOutput) {
-          // 如果思考输出太长，截断它
+      const thinkActSteps = currentExecution.thinkActSteps
+      if (thinkActSteps && thinkActSteps.length > 0) {
+        const latestThinkAct = thinkActSteps[thinkActSteps.length - 1]
+        if (latestThinkAct.thinkOutput) {
+          // If the think output is too long, truncate it
           const maxLength = 150
           const displayOutput =
             latestThinkAct.thinkOutput.length > maxLength
@@ -1021,55 +1074,50 @@ const handlePlanUpdate = (planDetails: any) => {
       }
     }
   } else {
-    // 如果没有执行序列，使用基本思考状态
-    const currentStep = message.steps?.[message.currentStepIndex || 0]
-    const stepTitle = currentStep?.title || currentStep?.description || '处理中'
-    message.thinking = t('chat.thinkingExecuting', { title: stepTitle })
+    // If there is no execution sequence, use the basic thinking state
+    if (message.planExecution) {
+      const currentStepIndex = message.planExecution.currentStepIndex ?? 0
+      const currentStep = message.planExecution.steps?.[currentStepIndex]
+      const stepTitle = typeof currentStep === 'string' ? currentStep : ''
+      message.thinking = `正在执行: ${stepTitle}`
+    }
   }
 
-  // 处理用户输入等待状态
-  if (planDetails.userInputWaitState) {
+  // Handle the user input waiting state
+  if (planDetails.userInputWaitState && message.planExecution) {
     console.log('[ChatComponent] 需要用户输入:', planDetails.userInputWaitState)
 
-    // 将用户输入等待状态附加到消息上
-    message.userInputWaitState = {
-      message: planDetails.userInputWaitState.message,
-      formDescription: planDetails.userInputWaitState.formDescription,
+    // Attach the user input waiting state to planExecution
+    if (!message.planExecution.userInputWaitState) {
+      message.planExecution.userInputWaitState = {}
+    }
+    message.planExecution.userInputWaitState = {
+      message: planDetails.userInputWaitState.message ?? '',
+      formDescription: planDetails.userInputWaitState.formDescription ?? '',
       formInputs:
         planDetails.userInputWaitState.formInputs?.map((input: any) => ({
           label: input.label,
           value: input.value || '',
-        })) || [],
+        })) ?? [],
     }
 
-    // 清除思考状态，显示等待用户输入的消息
+    formInputsStore[message.id] ??= {}
+    // Clear the thinking state and display the message waiting for user input
     message.thinking = '等待用户输入...'
   } else {
-    // 如果没有用户输入等待状态，清除之前的状态
-    if (message.userInputWaitState) {
-      message.userInputWaitState = undefined
+    // If there is no user input waiting state, clear the previous state
+    if (message.planExecution?.userInputWaitState) {
+      delete message.planExecution.userInputWaitState
     }
   }
 
-  // 检查计划是否已完成
-  if (planDetails.completed || planDetails.status === 'completed') {
+  // Check if the plan is completed
+  if (planDetails.completed ?? planDetails.status === 'completed') {
     console.log('[ChatComponent] Plan is completed, updating final response')
-    // 清除所有处理状态
-    message.progress = undefined
-    message.progressText = undefined
-    message.thinking = undefined
+    // Clear all processing states
+    delete message.thinking
 
-    // 重要：设置 currentStepIndex 为总步骤数，这样所有步骤都会显示为"已完成"
-    if (message.steps && message.steps.length > 0) {
-      message.currentStepIndex = message.steps.length
-      console.log(
-        '[ChatComponent] Set currentStepIndex to',
-        message.steps.length,
-        'to mark all steps as completed'
-      )
-    }
-
-    // 设置最终响应内容 - 模拟人类对话回复
+    // Set the final response content - Simulate a human conversation response
     let finalResponse = ''
     if (planDetails.summary) {
       finalResponse = planDetails.summary
@@ -1079,24 +1127,27 @@ const handlePlanUpdate = (planDetails: any) => {
       finalResponse = '任务已完成'
     }
 
-    // 生成自然的人性化回复
-    message.content = generateCompletedPlanResponse(finalResponse, planDetails)
+    // Generate natural, human-like responses
+    message.content = generateCompletedPlanResponse(finalResponse)
 
     console.log('[ChatComponent] Updated completed message:', message.content)
   }
 
-  // 滚动到底部确保用户能看到最新进展
-  scrollToBottom()
+  // Remove automatic scroll to bottom for plan updates
+  // Let users stay at their current viewing position
 
-  // 通知父组件
-  emit('plan-update', planDetails)
+  // Use Vue's reactivity system instead of force update
+  // The UI will automatically update when planExecution data changes
+  nextTick(() => {
+    console.log('[ChatComponent] Plan update UI refresh completed via reactivity')
+  })
 }
 
-// 生成自然回复的辅助函数
+// Helper function to generate natural responses
 const generateNaturalResponse = (text: string): string => {
   if (!text) return '我明白了，还有什么我可以帮您的吗？'
 
-  // 如果已经是自然对话形式，直接返回
+  // If it's already in a natural conversation format, return it directly
   if (
     text.includes('我') ||
     text.includes('您') ||
@@ -1106,7 +1157,7 @@ const generateNaturalResponse = (text: string): string => {
     return text
   }
 
-  // 根据文本内容生成更自然的回复
+  // Generate a more natural response based on the text content
   if (text.length < 10) {
     return `${text}！还有什么需要我帮助的吗？`
   } else if (text.length < 50) {
@@ -1116,81 +1167,63 @@ const generateNaturalResponse = (text: string): string => {
   }
 }
 
-// 生成完成计划的自然回复
-const generateCompletedPlanResponse = (text: string, planDetails: any): string => {
+// Generate a natural response for a completed plan
+const generateCompletedPlanResponse = (text: string): string => {
   if (!text) return '任务已完成！还有什么我可以帮您的吗？'
-
-  // 如果已经是自然对话形式，确保有合适的结尾
-  if (text.includes('我') || text.includes('您')) {
-    if (
-      !text.includes('?') &&
-      !text.includes('？') &&
-      !text.includes('。') &&
-      !text.includes('！')
-    ) {
-      return `${text}。还有其他需要帮助的地方吗？`
-    }
-    return text
-  }
-
-  // 根据计划类型生成回复
-  const hasSteps = planDetails?.steps?.length > 0
-  if (hasSteps) {
-    return `很好！我已经完成了您的任务：${text}\n\n所有步骤都已成功执行。还有什么我可以帮您处理的吗？`
-  } else {
-    return `${text}\n\n希望这个回答对您有帮助！如果还有其他问题，请随时告诉我。`
+  else{
+    return `${text}`;
   }
 }
 
-// 处理计划完成事件
-const handlePlanCompleted = (details: any) => {
-  console.log('[ChatComponent] Plan completed:', details)
+// Handle the plan completion event
+const handlePlanCompleted = (rootPlanId: string) => {
+  console.log('[ChatComponent] Plan completed with rootPlanId:', rootPlanId);
 
-  if (details && details.planId) {
-    // 找到对应的消息并更新为完成状态
-    const messageIndex = messages.value.findIndex(m => m.planId === details.planId)
+  const details = planExecutionManager.getCachedPlanRecord(rootPlanId);
+  if (!details) {
+    console.warn('[ChatComponent] No cached plan data found for rootPlanId:', rootPlanId);
+    return;
+  }
+
+  console.log('[ChatComponent] Plan details:', details);
+
+  if (details.rootPlanId) {
+    const messageIndex = messages.value.findIndex(
+      m => m.planExecution?.currentPlanId === details.rootPlanId
+    );
     if (messageIndex !== -1) {
-      const message = messages.value[messageIndex]
-      // 清除所有处理状态，显示为完成
-      message.progress = undefined
-      message.progressText = undefined
-      message.thinking = undefined
+      const message = messages.value[messageIndex];
+      delete message.thinking;
 
-      // 生成人性化的最终回复
-      const summary = details.summary || details.result || '任务已完成'
-
-      // 确保回复听起来更像人类对话
-      let finalResponse = summary
+      const summary = details.summary ?? details.result ?? '任务已完成';
+      let finalResponse = summary;
       if (!finalResponse.includes('我') && !finalResponse.includes('您')) {
         if (finalResponse.includes('成功') || finalResponse.includes('完成')) {
-          finalResponse = `很好！${finalResponse}。如果您还有其他需要帮助的地方，请随时告诉我。`
+          finalResponse = `很好！${finalResponse}。如果您还有其他需要帮助的地方，请随时告诉我。`;
         } else {
-          finalResponse = `我已经完成了您的请求：${finalResponse}`
+          finalResponse = `我已经完成了您的请求：${finalResponse}`;
         }
       }
 
-      message.content = finalResponse
-
-      console.log('[ChatComponent] Updated completed message:', message.content)
-
-      emit('plan-completed', details)
+      message.content = finalResponse;
+      console.log('[ChatComponent] Updated completed message:', message.content);
     } else {
-      console.warn('[ChatComponent] No message found for completed planId:', details.planId)
+      console.warn('[ChatComponent] No message found for completed rootPlanId:', details.rootPlanId);
     }
   }
-}
+};
 
-// 格式化回复文本，让其更像自然对话
+// Format the response text to make it more like a natural conversation
 const formatResponseText = (text: string): string => {
   if (!text) return ''
 
-  // 将换行符转换为HTML换行
+  // Convert line breaks to HTML line breaks
   let formatted = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>')
 
-  // 添加适当的段落间距和格式
+  // Add appropriate paragraph spacing and formatting
   formatted = formatted.replace(/(<br><br>)/g, '</p><p>')
 
-  // 如果有多个段落，用p标签包装
+  // Wrap with p tags if there are multiple paragraphs
   if (formatted.includes('</p><p>')) {
     formatted = `<p>${formatted}</p>`
   }
@@ -1198,37 +1231,44 @@ const formatResponseText = (text: string): string => {
   return formatted
 }
 
-// 处理用户输入表单提交
-const handleUserInputSubmit = async (message: Message, stepIndex: number) => {
-  if (!message.planId || !message.userInputWaitState) {
-    console.error('[ChatComponent] 缺少planId或userInputWaitState')
+// Handle user input form submission
+const handleUserInputSubmit = async (message: Message) => {
+  if (!message.planExecution?.currentPlanId || !message.planExecution.userInputWaitState) {
+    console.error('[ChatComponent] 缺少planExecution.currentPlanId或userInputWaitState')
     return
   }
 
   try {
-    // 收集表单数据
-    let inputData: any = {}
+    // Collect form data
+    const inputData: any = {}
 
-    if (message.userInputWaitState.formInputs && message.userInputWaitState.formInputs.length > 0) {
-      // 多个字段的情况
-      message.userInputWaitState.formInputs.forEach(input => {
-        inputData[input.label] = input.value || ''
+    const formInputs = message.planExecution.userInputWaitState.formInputs
+    if (formInputs && formInputs.length > 0) {
+      // Multiple fields case
+      Object.entries(formInputsStore[message.id]).forEach(([index, value]) => {
+        const numIndex = parseInt(index, 10)
+        const label = formInputs[numIndex]?.label || `input_${index}`
+        inputData[label] = value
       })
     } else {
-      // 单个通用输入的情况
-      inputData.genericInput = message.genericInput || ''
+      // Single generic input case
+      inputData.genericInput = message.genericInput ?? ''
     }
 
     console.log('[ChatComponent] 提交用户输入:', inputData)
 
-    // 通过API提交用户输入
-    const response = await CommonApiService.submitFormInput(message.planId, inputData)
+    // Submit user input via API
+    const response = await CommonApiService.submitFormInput(
+      message.planExecution.currentPlanId,
+      inputData
+    )
 
-    // 清除用户输入等待状态
-    message.userInputWaitState = undefined
-    message.genericInput = undefined
+    // Clear the user input waiting state
+    delete message.planExecution.userInputWaitState
+    delete message.genericInput
+    delete formInputsStore[message.id]
 
-    // 继续轮询以获取计划更新（提交后应该会自动继续执行）
+    // Continue polling for plan updates (should resume automatically after submission)
     planExecution.startPolling()
 
     console.log('[ChatComponent] 用户输入提交成功:', response)
@@ -1239,121 +1279,66 @@ const handleUserInputSubmit = async (message: Message, stepIndex: number) => {
   }
 }
 
-// 定义事件处理器，以便可以正确地添加和移除事件监听器
-const eventHandlers = {
-  onPlanUpdate: (event: CustomEvent) => {
-    console.log('[ChatComponent] Received PLAN_UPDATE event:', event.detail)
-
-    // 检查是否有有效的计划详情
-    if (event.detail && event.detail.planId) {
-      // 添加调试信息
-      if (event.detail.agentExecutionSequence) {
-        console.log(
-          `[ChatComponent] 计划包含 ${event.detail.agentExecutionSequence.length} 个执行序列`
-        )
-
-        // 输出每个执行序列的基本信息
-        event.detail.agentExecutionSequence.forEach((execution: any, index: number) => {
-          if (execution?.thinkActSteps?.length) {
-            console.log(
-              `[ChatComponent] 序列 ${index}: ${execution.thinkActSteps.length} 个思考步骤`
-            )
-          }
-        })
-      }
-
-      // 处理计划更新
-      handlePlanUpdate(event.detail)
-    } else {
-      console.warn('[ChatComponent] 收到无效的计划更新事件:', event.detail)
+watch(
+  () => props.initialPrompt,
+  (newPrompt, oldPrompt) => {
+    console.log('[ChatComponent] initialPrompt changed from:', oldPrompt, 'to:', newPrompt)
+    if (newPrompt && typeof newPrompt === 'string' && newPrompt.trim() && newPrompt !== oldPrompt) {
+      console.log('[ChatComponent] Processing changed initial prompt:', newPrompt)
+      nextTick(() => {
+        handleSendMessage(newPrompt)
+      })
     }
   },
-
-  onPlanCompleted: (event: CustomEvent) => {
-    console.log('[ChatComponent] Received PLAN_COMPLETED event:', event.detail)
-    handlePlanCompleted(event.detail)
-  },
-
-  onDialogRoundStart: (event: CustomEvent) => {
-    console.log('[ChatComponent] Received DIALOG_ROUND_START event:', event.detail)
-    if (event.detail && event.detail.planId && event.detail.query) {
-      handleDialogRoundStart(event.detail.planId, event.detail.query)
-    }
-  },
-
-  onMessageUpdate: (event: CustomEvent) => {
-    console.log('[ChatComponent] Received MESSAGE_UPDATE event:', event.detail)
-    const data = event.detail
-    if (data && data.content) {
-      // 查找或创建对应planId的消息
-      let message
-      if (data.planId) {
-        const index = messages.value.findIndex(m => m.planId === data.planId)
-        if (index >= 0) {
-          message = messages.value[index]
-        } else {
-          // 如果找不到对应的消息，创建一个新的
-          message = addMessage('assistant', '', { planId: data.planId })
-        }
-
-        // 根据消息类型更新不同的内容
-        if (data.type === 'status') {
-          message.thinking = data.content
-        } else if (data.type === 'step') {
-          message.progressText = data.content
-        } else if (data.type === 'completion') {
-          message.content = data.content
-          message.thinking = undefined
-          message.progress = 100
-        } else if (data.type === 'error') {
-          message.content = data.content
-          message.thinking = undefined
-        }
-      }
-    }
-  },
-
-  onChatInputUpdateState: (event: CustomEvent) => {
-    console.log('[ChatComponent] Received CHAT_INPUT_UPDATE_STATE event:', event.detail)
-    if (event.detail) {
-      emit('input-update-state', event.detail?.enabled, event.detail.placeholder)
-    }
-  },
-
-  onChatInputClear: () => {
-    console.log('[ChatComponent] Received CHAT_INPUT_CLEAR event')
-    emit('input-clear')
-  },
-}
+  { immediate: false }
+)
 
 onMounted(() => {
   console.log('[ChatComponent] Mounted, setting up event listeners')
 
-  // 等待 DOM 更新后添加滚动监听器
+  planExecutionManager.setEventCallbacks({
+    onPlanUpdate: handlePlanUpdate,
+    onPlanCompleted: handlePlanCompleted,
+    onDialogRoundStart: handleDialogRoundStart,
+    onChatInputUpdateState: (rootPlanId: string) => {
+      console.log('[ChatComponent] Chat input state update for rootPlanId:', rootPlanId)
+    },
+    onChatInputClear: () => {
+      console.log('[ChatComponent] Chat input clear requested')
+    }
+  })
+
   nextTick(() => {
     addScrollListener()
   })
 
-  // 移除自动发送初始提示的逻辑，让 PlanExecutionComponent 统一处理
-  // 这样可以避免重复发送消息
+  if (props.initialPrompt && typeof props.initialPrompt === 'string' && props.initialPrompt.trim()) {
+    console.log('[ChatComponent] Processing initial prompt:', props.initialPrompt)
+    nextTick(() => {
+      handleSendMessage(props.initialPrompt!)
+    })
+  }
 })
 
 onUnmounted(() => {
   console.log('[ChatComponent] Unmounting, cleaning up resources')
 
-  // 移除滚动监听器
+  // Remove the scroll listener
   removeScrollListener()
 
-  // 清理轮询
+  // Clean up polling
   if (pollingInterval.value) {
     clearInterval(pollingInterval.value)
   }
 
-  // 清理计划执行管理器资源
+  // Clean up plan execution manager resources
   planExecution.cleanup()
+
+  // Clear form inputs
+  Object.keys(formInputsStore).forEach(key => delete formInputsStore[key])
 })
 
-// 暴露方法给父组件使用
+// Expose methods to parent components for usage
 defineExpose({
   handleSendMessage,
   handlePlanUpdate,
@@ -1365,28 +1350,29 @@ defineExpose({
 
 <style lang="less" scoped>
 .chat-container {
-  flex: 1; /* 占据剩余空间 */
+  flex: 1; /* Occupy the remaining space of the parent container */
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 确保可以收缩 */
-  overflow: hidden; /* 防止容器溢出 */
+  height: 100%; /* Fill the height of the parent container */
+  min-height: 0; /* Allow shrinking */
+  overflow: hidden; /* Prevent container overflow */
 }
 
 .messages {
   padding: 24px;
-  flex: 1; /* 使用 flex: 1 而不是 height: 100% */
+  flex: 1; /* Use flex: 1 instead of height: 100% */
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto; /* 使用 auto 而不是 scroll */
-  min-height: 0; /* 确保可以收缩 */
-  /* 添加平滑滚动 */
+  overflow-y: auto; /* Use auto instead of scroll */
+  min-height: 0; /* Ensure it can shrink */
+  /* Add smooth scrolling */
   scroll-behavior: smooth;
-  /* 改善滚动条样式 */
+  /* Improve scrollbar style */
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
 
-  /* Webkit 滚动条样式 */
+  /* WebKit scrollbar styling */
   &::-webkit-scrollbar {
     width: 8px;
   }
@@ -1441,7 +1427,7 @@ defineExpose({
 }
 
 .assistant-message {
-  /* 1. TaskPilot 思考/处理部分样式 */
+  /* 1. TaskPilot Thinking/Processing Section Style */
   .thinking-section {
     margin-bottom: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1517,7 +1503,7 @@ defineExpose({
     }
   }
 
-  /* 2. TaskPilot 最终回复部分样式 - 模拟人类对话单元 */
+  /* 2. TaskPilot Final Response Section Style - Simulate Human Conversation Unit */
   .response-section {
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 18px;
@@ -1599,7 +1585,7 @@ defineExpose({
             -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
             sans-serif;
 
-          /* 让文本看起来更像自然对话 */
+          /* Make the text look more like a natural conversation */
           p {
             margin: 0 0 12px 0;
 
@@ -1608,7 +1594,7 @@ defineExpose({
             }
           }
 
-          /* 增强可读性 */
+          /* Enhance readability */
           strong {
             color: #f8fafc;
             font-weight: 600;
@@ -1733,7 +1719,7 @@ defineExpose({
         background: rgba(255, 255, 255, 0.05);
       }
 
-      &.current {
+      &.running {
         background: rgba(102, 126, 234, 0.1);
         border-left: 3px solid #667eea;
       }
@@ -1782,7 +1768,7 @@ defineExpose({
             color: #22c55e;
           }
 
-          &.current {
+          &.running {
             background: rgba(102, 126, 234, 0.2);
             color: #667eea;
           }
@@ -1872,6 +1858,126 @@ defineExpose({
               max-height: 120px;
               overflow-y: auto;
               color: #bbbbbb;
+            }
+          }
+        }
+      }
+
+      /* Sub-plan Step Style - New Feature */
+      .sub-plan-steps {
+        margin-top: 8px;
+        padding: 8px 16px;
+        background: rgba(102, 126, 234, 0.05);
+        border-top: 1px solid rgba(102, 126, 234, 0.2);
+
+        .sub-plan-header {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 8px;
+
+          .sub-plan-icon {
+            font-size: 14px;
+            color: #667eea;
+          }
+
+          .sub-plan-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #667eea;
+          }
+        }
+
+        .sub-plan-step-list {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .sub-plan-step-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 8px;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          margin-left: 20px; /* 缩进显示父子关系 */
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(102, 126, 234, 0.3);
+          }
+
+          &.completed {
+            background: rgba(34, 197, 94, 0.05);
+            border-color: rgba(34, 197, 94, 0.2);
+          }
+
+          &.running {
+            background: rgba(102, 126, 234, 0.05);
+            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow: 0 0 4px rgba(102, 126, 234, 0.2);
+          }
+
+          &.pending {
+            opacity: 0.6;
+          }
+
+          .sub-step-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+
+            .sub-step-icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 16px;
+              height: 16px;
+              background: rgba(102, 126, 234, 0.1);
+              border-radius: 50%;
+              font-size: 10px;
+              font-weight: bold;
+              color: #667eea;
+            }
+
+            .sub-step-number {
+              font-size: 10px;
+              color: #888888;
+              font-weight: 500;
+              min-width: 12px;
+              text-align: center;
+            }
+          }
+
+          .sub-step-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 0;
+
+            .sub-step-title {
+              color: #cccccc;
+              font-size: 12px;
+              line-height: 1.3;
+              word-break: break-word;
+              flex: 1;
+            }
+
+            .sub-step-badge {
+              background: rgba(102, 126, 234, 0.15);
+              color: #667eea;
+              font-size: 9px;
+              padding: 1px 4px;
+              border-radius: 8px;
+              font-weight: 500;
+              flex-shrink: 0;
+              margin-left: 6px;
             }
           }
         }
@@ -2040,10 +2146,10 @@ defineExpose({
   }
 }
 
-/* 滚动到底部按钮 */
+/* Scroll to Bottom Button */
 .scroll-to-bottom-btn {
   position: absolute;
-  bottom: 120px; /* 在输入框上方 */
+  bottom: 120px; /* Above the input field */
   right: 24px;
   width: 48px;
   height: 48px;
@@ -2071,7 +2177,7 @@ defineExpose({
     color: #ffffff;
   }
 
-  /* 添加脉冲动画 */
+  /* Add pulse animation */
   animation: pulse-glow 2s infinite;
 }
 

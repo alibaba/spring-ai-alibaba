@@ -15,17 +15,16 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
-import org.jetbrains.annotations.NotNull;
-
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 /**
  * @author yuluo
@@ -55,8 +54,8 @@ public final class DashScopeConnectionUtils {
 
 		// Get apikey from system env.
 		if (Objects.isNull(apiKey)) {
-			if (Objects.nonNull(System.getenv(DashScopeApiConstants.DASHSCOPE_API_KEY))) {
-				apiKey = System.getenv(DashScopeApiConstants.DASHSCOPE_API_KEY);
+			if (Objects.nonNull(System.getenv(DashScopeApiConstants.AI_DASHSCOPE_API_KEY))) {
+				apiKey = System.getenv(DashScopeApiConstants.AI_DASHSCOPE_API_KEY);
 			}
 		}
 

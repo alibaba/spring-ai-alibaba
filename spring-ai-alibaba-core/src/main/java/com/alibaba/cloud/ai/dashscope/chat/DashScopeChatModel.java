@@ -367,7 +367,8 @@ public class DashScopeChatModel implements ChatModel {
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
 		return new ChatCompletion(chunk.requestId(),
-				new ChatCompletionOutput(chunk.output().text(), chunk.output().choices()), chunk.usage());
+				new ChatCompletionOutput(chunk.output().text(), chunk.output().choices(), chunk.output().searchInfo()),
+				chunk.usage());
 	}
 
 	private ChatResponseMetadata from(ChatCompletion result, Usage usage) {
@@ -522,6 +523,16 @@ public class DashScopeChatModel implements ChatModel {
 
 			contentList.add(new MediaContent("video", null, null, mediaList));
 		}
+		else if (format == MessageFormat.AUDIO) {
+			MediaContent mediaContent = new MediaContent(message.getText());
+			contentList.add(mediaContent);
+
+			contentList.addAll(message.getMedia()
+				.stream()
+				.map(media -> new MediaContent("audio", null, null, null,
+						this.fromMediaData(media.getMimeType(), media.getData())))
+				.toList());
+		}
 		else {
 			MediaContent mediaContent = new MediaContent(message.getText());
 			contentList.add(mediaContent);
@@ -566,13 +577,14 @@ public class DashScopeChatModel implements ChatModel {
 			return new ChatCompletionRequestParameter();
 		}
 
+		// todo: sync modify by {@link ChatCompletionRequestParameter} new params.
 		Boolean incrementalOutput = stream && options.getIncrementalOutput();
 		return new ChatCompletionRequestParameter("message", options.getSeed(), options.getMaxTokens(),
 				options.getTopP(), options.getTopK(), options.getRepetitionPenalty(), options.getPresencePenalty(),
 				options.getTemperature(), options.getStop(), options.getEnableSearch(), options.getResponseFormat(),
 				incrementalOutput, options.getTools(), options.getToolChoice(), stream,
 				options.getVlHighResolutionImages(), options.getEnableThinking(), options.getSearchOptions(),
-				options.getParallelToolCalls());
+				options.getParallelToolCalls(), null, null, null, null, null, null);
 	}
 
 	/**

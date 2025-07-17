@@ -21,9 +21,14 @@ import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
+import com.alibaba.cloud.ai.util.ChatResponseUtil;
+import com.alibaba.cloud.ai.util.StateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
+import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
@@ -31,10 +36,13 @@ import static com.alibaba.cloud.ai.constant.Constant.SQL_VALIDATE_EXCEPTION_OUTP
 import static com.alibaba.cloud.ai.constant.Constant.SQL_VALIDATE_NODE_OUTPUT;
 
 /**
- * 校验 SQL 语句
+ * Validate SQL statement syntax correctness
  *
+ * @deprecated This node is deprecated, please use SemanticConsistencyNode for semantic
+ * consistency validation
  * @author zhangshenghang
  */
+@Deprecated
 public class SqlValidateNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(SqlValidateNode.class);
@@ -53,33 +61,54 @@ public class SqlValidateNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+		logger.info("Entering {} node", this.getClass().getSimpleName());
+		logger.warn("This node is deprecated, please use SemanticConsistencyNode for semantic consistency validation");
 
-		// 获取SQL语句
-		String sql = state.value("SQL_GENERATE_OUTPUT")
-			.map(String.class::cast)
-			.orElseThrow(() -> new IllegalStateException("SQL statement not found"));
+		// Get SQL statement
+		String sql = StateUtils.getStringValue(state, "SQL_GENERATE_OUTPUT");
+		logger.info("[{}] Starting SQL statement validation: {}", this.getClass().getSimpleName(), sql);
 
-		// 构建查询参数
-		DbQueryParameter dbQueryParameter = new DbQueryParameter();
-		dbQueryParameter.setSql(sql);
+		Flux<ChatResponse> sqlValidationFlux = Flux.create(emitter -> {
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始验证SQL语句..."));
+			// Build query parameters and execute validation
+			DbQueryParameter dbQueryParameter = new DbQueryParameter();
+			dbQueryParameter.setSql(sql);
 
-		logger.info("[{}] 开始验证SQL语句: {}", this.getClass().getSimpleName(), sql);
+			try {
+				// Execute SQL validation
+				dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
+				logger.info("[{}] SQL syntax validation passed", this.getClass().getSimpleName());
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("SQL语法验证通过."));
+				emitter.complete();
 
-		try {
-			// 执行SQL验证
-			dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
-			logger.info("[{}] SQL语法验证通过", this.getClass().getSimpleName());
-			return Map.of(SQL_VALIDATE_NODE_OUTPUT, true);
+			}
+			catch (Exception e) {
+				// Handle validation failure case
+				String errorMessage = e.getMessage();
+				logger.error("[{}] SQL syntax validation failed - reason: {}", this.getClass().getSimpleName(),
+						errorMessage);
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("SQL语法验证失败: " + errorMessage));
+				emitter.complete();
+			}
+		});
 
-		}
-		catch (Exception e) {
-			// 处理验证失败情况
-			String errorMessage = e.getMessage();
-			logger.error("[{}] SQL语法验证失败 - 原因: {}", this.getClass().getSimpleName(), errorMessage);
+		var generator = StreamingChatGenerator.builder()
+			.startingNode(this.getClass().getSimpleName())
+			.startingState(state)
+			.mapResult(response -> {
+				DbQueryParameter dbQueryParameter = new DbQueryParameter();
+				dbQueryParameter.setSql(sql);
+				try {
+					dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
+					return Map.of(SQL_VALIDATE_NODE_OUTPUT, true);
+				}
+				catch (Exception e) {
+					return Map.of(SQL_VALIDATE_NODE_OUTPUT, false, SQL_VALIDATE_EXCEPTION_OUTPUT, e.getMessage());
+				}
+			})
+			.build(sqlValidationFlux);
 
-			return Map.of(SQL_VALIDATE_NODE_OUTPUT, false, SQL_VALIDATE_EXCEPTION_OUTPUT, errorMessage);
-		}
+		return Map.of(SQL_VALIDATE_NODE_OUTPUT, generator);
 	}
 
 }

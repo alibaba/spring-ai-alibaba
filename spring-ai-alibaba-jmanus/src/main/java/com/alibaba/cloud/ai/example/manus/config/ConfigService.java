@@ -20,13 +20,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,10 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
 import com.alibaba.cloud.ai.example.manus.config.repository.ConfigRepository;
 
-import jakarta.annotation.PostConstruct;
-
 @Service
-public class ConfigService {
+public class ConfigService implements IConfigService, ApplicationListener<ContextRefreshedEvent> {
 
 	private static final Logger log = LoggerFactory.getLogger(ConfigService.class);
 
@@ -52,8 +54,17 @@ public class ConfigService {
 
 	private final Map<String, ConfigCacheEntry<String>> configCache = new ConcurrentHashMap<>();
 
-	@PostConstruct
-	public void init() {
+	private boolean initialized = false;
+
+	@Override
+	public void onApplicationEvent(ContextRefreshedEvent event) {
+		if (!initialized) {
+			initialized = true;
+			init();
+		}
+	}
+
+	private void init() {
 		// Only get beans with @ConfigurationProperties annotation
 		Map<String, Object> configBeans = applicationContext.getBeansWithAnnotation(ConfigurationProperties.class);
 		log.info("Found {} configuration beans", configBeans.size());
@@ -63,6 +74,36 @@ public class ConfigService {
 	}
 
 	private void initializeConfig(Object bean) {
+		// Collect all valid config paths from the bean
+		Set<String> validConfigPaths = Arrays.stream(bean.getClass().getDeclaredFields())
+			.filter(field -> field.isAnnotationPresent(ConfigProperty.class))
+			.map(field -> field.getAnnotation(ConfigProperty.class).path())
+			.collect(Collectors.toSet());
+
+		// Remove obsolete configurations that are no longer defined in ManusProperties
+		if (bean instanceof ManusProperties) {
+			log.info("Cleaning up obsolete configurations not defined in ManusProperties...");
+			List<ConfigEntity> allConfigs = configRepository.findAll();
+			List<ConfigEntity> obsoleteConfigs = allConfigs.stream()
+				.filter(config -> !validConfigPaths.contains(config.getConfigPath()))
+				.collect(Collectors.toList());
+
+			if (!obsoleteConfigs.isEmpty()) {
+				log.info("Found {} obsolete configurations to remove:", obsoleteConfigs.size());
+				obsoleteConfigs.forEach(config -> {
+					log.info("  - Removing obsolete config: {} ({})", config.getConfigPath(), config.getDescription());
+					configRepository.delete(config);
+					// Remove from cache as well
+					configCache.remove(config.getConfigPath());
+				});
+				log.info("✅ Obsolete configuration cleanup completed");
+			}
+			else {
+				log.info("✅ No obsolete configurations found");
+			}
+		}
+
+		// Initialize/update configurations defined in the bean
 		Arrays.stream(bean.getClass().getDeclaredFields())
 			.filter(field -> field.isAnnotationPresent(ConfigProperty.class))
 			.forEach(field -> {

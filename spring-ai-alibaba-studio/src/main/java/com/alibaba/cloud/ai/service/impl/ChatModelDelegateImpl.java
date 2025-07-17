@@ -32,13 +32,19 @@ import com.alibaba.cloud.ai.vo.ChatModelRunResult;
 import com.alibaba.cloud.ai.vo.TelemetryResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.tracing.Tracer;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.image.*;
+import org.springframework.ai.image.ImageMessage;
+import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImageOptionsBuilder;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -47,8 +53,9 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Slf4j
 public class ChatModelDelegateImpl implements ChatModelDelegate {
+
+	private static final Logger log = LoggerFactory.getLogger(GraphServiceImpl.class);
 
 	private final Tracer tracer;
 
@@ -192,7 +199,9 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 			if (imageOptions != null) {
 				try {
 					log.info("set image options, {}", objectMapper.writeValueAsString(imageOptions));
-					var dashScopeImageApi = new DashScopeImageApi(key);
+
+					// todo: adapt new image api
+					var dashScopeImageApi = DashScopeImageApi.builder().apiKey(key).build();
 					dashScopeImageModel = new DashScopeImageModel(dashScopeImageApi, imageOptions);
 				}
 				catch (Exception e) {

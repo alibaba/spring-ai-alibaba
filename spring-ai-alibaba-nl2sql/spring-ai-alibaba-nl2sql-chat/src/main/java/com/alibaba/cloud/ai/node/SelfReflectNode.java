@@ -22,12 +22,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 
-import java.util.HashMap;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.constant.Constant.RESULT;
+
 /**
+ * 自反思节点，用于结果质量评估和优化建议
+ *
  * @author zhangshenghang
  */
+@Deprecated
 public class SelfReflectNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(SelfReflectNode.class);
@@ -40,9 +44,16 @@ public class SelfReflectNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
+		logger.info("Entering {} node", this.getClass().getSimpleName());
 
-		Map<String, Object> updated = new HashMap<>();
-		return updated;
+		// This node currently has no specific logic implemented, reserved for future
+		// extension
+		// Can add result quality assessment, optimization suggestions and other features
+		// here
+
+		logger.info("Self-reflection node has no specific logic implemented yet, returning empty result directly");
+
+		return Map.of(RESULT, "Self-reflection node execution completed");
 	}
 
 }

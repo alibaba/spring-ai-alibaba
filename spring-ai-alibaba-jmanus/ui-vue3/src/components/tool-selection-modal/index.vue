@@ -21,7 +21,7 @@
     @update:model-value="handleCancel"
   >
     <div class="tool-selection-content">
-      <!-- 搜索和排序 -->
+      <!-- Search and Sort -->
       <div class="tool-controls">
         <div class="search-container">
           <input
@@ -40,7 +40,7 @@
         </div>
       </div>
 
-      <!-- 工具统计 -->
+      <!-- Tool Statistics -->
       <div class="tool-summary">
         <span class="summary-text">
           共 {{ groupedTools.size }} 个服务组，{{ totalTools }} 个工具
@@ -48,14 +48,14 @@
         </span>
       </div>
 
-      <!-- 工具组列表 -->
+      <!-- Tool Group List -->
       <div class="tool-groups" v-if="groupedTools.size > 0">
         <div
           v-for="[groupName, tools] in groupedTools"
           :key="groupName"
           class="tool-group"
         >
-          <!-- 组标题 -->
+          <!-- Group Header -->
           <div 
             class="tool-group-header"
             :class="{ collapsed: collapsedGroups.has(groupName) }"
@@ -86,7 +86,7 @@
             </div>
           </div>
 
-          <!-- 组内容 -->
+          <!-- Group Content -->
           <div 
             class="tool-group-content"
             :class="{ collapsed: collapsedGroups.has(groupName) }"
@@ -118,7 +118,7 @@
         </div>
       </div>
 
-      <!-- 空状态 -->
+      <!-- Empty State -->
       <div v-else class="empty-state">
         <Icon icon="carbon:tools" class="empty-icon" />
         <p>没有找到工具</p>
@@ -147,7 +147,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-// 响应式状态
+// Reactive state
 const visible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
@@ -158,15 +158,15 @@ const sortBy = ref<'group' | 'name' | 'enabled'>('group')
 const collapsedGroups = ref(new Set<string>())
 const selectedTools = ref<string[]>([])
 
-// 设置组复选框的 indeterminate 状态
+// Set group checkbox indeterminate state
 const updateGroupCheckboxState = (groupName: string, tools: Tool[]) => {
-  const checkbox = document.querySelector(`input[data-group="${groupName}"]`) as HTMLInputElement
+  const checkbox = document.querySelector(`input[data-group="${groupName}"]`) as HTMLInputElement | null
   if (checkbox) {
     checkbox.indeterminate = isGroupPartiallySelected(tools)
   }
 }
 
-// 初始化选中的工具
+// Initialize the selected tools
 watch(
   () => props.selectedToolIds,
   (newIds) => {
@@ -175,22 +175,22 @@ watch(
   { immediate: true }
 )
 
-// 过滤和排序的工具
+// Filtered and sorted tools
 const filteredTools = computed(() => {
-  let filtered = props.tools.filter(tool => tool && tool.key) // 过滤掉无效工具
+  let filtered = props.tools.filter(tool => tool.key) // Filter out invalid tools
 
-  // 搜索过滤
+  // Search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(
       tool =>
         tool.name.toLowerCase().includes(query) ||
         tool.description.toLowerCase().includes(query) ||
-        (tool.serviceGroup && tool.serviceGroup.toLowerCase().includes(query))
+        (tool.serviceGroup?.toLowerCase().includes(query) ?? false)
     )
   }
 
-  // 排序
+  // Sorting
   switch (sortBy.value) {
     case 'name':
       filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
@@ -207,8 +207,8 @@ const filteredTools = computed(() => {
     case 'group':
     default:
       filtered = [...filtered].sort((a, b) => {
-        const groupA = a.serviceGroup || '未分组'
-        const groupB = b.serviceGroup || '未分组'
+        const groupA = a.serviceGroup ?? '未分组'
+        const groupB = b.serviceGroup ?? '未分组'
         if (groupA !== groupB) {
           return groupA.localeCompare(groupB)
         }
@@ -220,26 +220,26 @@ const filteredTools = computed(() => {
   return filtered
 })
 
-// 按组分组的工具
+// Tools grouped by service group
 const groupedTools = computed(() => {
   const groups = new Map<string, Tool[]>()
   
   filteredTools.value.forEach(tool => {
-    const groupName = tool.serviceGroup || '未分组'
+    const groupName = tool.serviceGroup ?? '未分组'
     if (!groups.has(groupName)) {
       groups.set(groupName, [])
     }
     groups.get(groupName)!.push(tool)
   })
 
-  // 对组进行排序
+  // Sort the groups
   return new Map([...groups.entries()].sort())
 })
 
-// 总工具数
+// Total number of tools
 const totalTools = computed(() => filteredTools.value.length)
 
-// 监听选中状态变化，更新组复选框的 indeterminate 状态
+// Watch for changes in the selected state and update the indeterminate state of group checkboxes
 watch(
   [selectedTools, groupedTools],
   () => {
@@ -252,7 +252,7 @@ watch(
   { flush: 'post', deep: false }
 )
 
-// 工具选择逻辑
+// Tool selection logic
 const isToolSelected = (toolKey: string) => {
   return selectedTools.value.includes(toolKey)
 }
@@ -262,24 +262,24 @@ const toggleToolSelection = (toolKey: string, event: Event) => {
   const target = event.target as HTMLInputElement
   const isChecked = target.checked
   
-  // 防止 undefined 的 toolKey
+  // Prevent undefined toolKey
   if (!toolKey) {
     console.error('toolKey is undefined, cannot proceed')
     return
   }
   
   if (isChecked) {
-    // 添加工具到选中列表
+    // Add the tool to the selected list
     if (!selectedTools.value.includes(toolKey)) {
       selectedTools.value = [...selectedTools.value, toolKey]
     }
   } else {
-    // 从选中列表中移除工具
+    // Remove the tool from the selected list
     selectedTools.value = selectedTools.value.filter(id => id !== toolKey)
   }
 }
 
-// 组选择逻辑
+// Group selection logic
 const getSelectedToolsInGroup = (tools: Tool[]) => {
   return tools.filter(tool => selectedTools.value.includes(tool.key))
 }
@@ -300,7 +300,7 @@ const toggleGroupSelection = (tools: Tool[], event: Event) => {
   const toolKeys = tools.map(tool => tool.key)
   
   if (isChecked) {
-    // 选择组中所有工具 - 使用新数组避免引用问题
+    // Select all tools in the group - Use a new array to avoid reference issues
     const newSelected = [...selectedTools.value]
     toolKeys.forEach(key => {
       if (!newSelected.includes(key)) {
@@ -309,12 +309,12 @@ const toggleGroupSelection = (tools: Tool[], event: Event) => {
     })
     selectedTools.value = newSelected
   } else {
-    // 取消选择组中所有工具 - 创建新数组
+    // Deselect all tools in the group - Create a new array
     selectedTools.value = selectedTools.value.filter(id => !toolKeys.includes(id))
   }
 }
 
-// 组折叠逻辑
+// Group collapse logic
 const toggleGroupCollapse = (groupName: string) => {
   if (collapsedGroups.value.has(groupName)) {
     collapsedGroups.value.delete(groupName)
@@ -323,25 +323,25 @@ const toggleGroupCollapse = (groupName: string) => {
   }
 }
 
-// 对话框事件处理
+// Dialog event handling
 const handleConfirm = () => {
   emit('confirm', [...selectedTools.value])
   emit('update:modelValue', false)
 }
 
 const handleCancel = () => {
-  // 重置为初始状态
+// Translate to English and follow frontend terminology
   selectedTools.value = [...props.selectedToolIds]
   emit('update:modelValue', false)
 }
 
-// 当模态框打开时，默认展开第一个组，折叠其他组
+// When the modal opens, expand the first group by default and collapse the others
 watch(visible, (newVisible) => {
   if (newVisible) {
     collapsedGroups.value.clear()
     const groupNames = Array.from(groupedTools.value.keys())
     if (groupNames.length > 1) {
-      // 除第一个组外，其他组默认折叠
+      // Collapse all groups except the first one by default
       groupNames.slice(1).forEach(name => {
         collapsedGroups.value.add(name)
       })

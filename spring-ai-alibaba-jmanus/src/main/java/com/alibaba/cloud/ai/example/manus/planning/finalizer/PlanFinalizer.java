@@ -21,9 +21,9 @@ import java.util.Map;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
  */
 public class PlanFinalizer {
 
-	private final LlmService llmService;
+	private final ILlmService llmService;
 
 	private static final Logger log = LoggerFactory.getLogger(PlanFinalizer.class);
 
@@ -50,7 +50,7 @@ public class PlanFinalizer {
 
 	private final ManusProperties manusProperties;
 
-	public PlanFinalizer(LlmService llmService, PlanExecutionRecorder recorder, PromptService promptService,
+	public PlanFinalizer(ILlmService llmService, PlanExecutionRecorder recorder, PromptService promptService,
 			ManusProperties manusProperties) {
 		this.llmService = llmService;
 		this.recorder = recorder;
@@ -74,22 +74,20 @@ public class PlanFinalizer {
 			recordPlanCompletion(context, summary);
 			return;
 		}
-		ExecutionPlan plan = context.getPlan();
+		PlanInterface plan = context.getPlan();
 		String executionDetail = plan.getPlanExecutionStateStringFormat(false);
 		try {
 			String userRequest = context.getUserRequest();
 
-			Message systemMessage = promptService.createSystemMessage(PromptEnum.PLANNING_PLAN_FINALIZER,
-					Map.of("executionDetail", executionDetail));
+			Message combinedMessage = promptService.createUserMessage(
+					PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(),
+					Map.of("executionDetail", executionDetail, "userRequest", userRequest));
 
-			Message userMessage = promptService.createUserMessage(PromptEnum.PLANNING_USER_REQUEST,
-					Map.of("userRequest", userRequest));
-
-			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
+			Prompt prompt = new Prompt(List.of(combinedMessage));
 
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 			if (context.isUseMemory()) {
-				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
+				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
 				requestSpec.advisors(MessageChatMemoryAdvisor
 					.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
 					.build());
@@ -107,19 +105,26 @@ public class PlanFinalizer {
 			throw new RuntimeException("Failed to generate summary", e);
 		}
 		finally {
-			llmService.clearConversationMemory(plan.getPlanId());
+			llmService.clearConversationMemory(plan.getCurrentPlanId());
 		}
 	}
 
 	/**
-	 * Record plan completion
-	 * @param context The execution context
-	 * @param summary The summary of the plan execution
+	 * Record plan completion with the given context and summary
+	 * @param context Execution context
+	 * @param summary Plan execution summary
 	 */
 	private void recordPlanCompletion(ExecutionContext context, String summary) {
-		recorder.recordPlanCompletion(context.getPlan().getPlanId(), summary);
+		if (context == null || context.getPlan() == null) {
+			log.warn("Cannot record plan completion: context or plan is null");
+			return;
+		}
 
-		log.info("Plan completed with ID: {} and summary: {}", context.getPlan().getPlanId(), summary);
+		String currentPlanId = context.getPlan().getCurrentPlanId();
+		String rootPlanId = context.getPlan().getRootPlanId();
+		Long thinkActRecordId = context.getThinkActRecordId();
+
+		recorder.recordPlanCompletion(currentPlanId, rootPlanId, thinkActRecordId, summary);
 	}
 
 }

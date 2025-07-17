@@ -15,14 +15,23 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.repository;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 
+import java.util.List;
+
 @Repository
 public interface DynamicAgentRepository extends JpaRepository<DynamicAgentEntity, Long> {
 
+	DynamicAgentEntity findByNamespaceAndAgentName(String namespace, String agentName);
+
 	DynamicAgentEntity findByAgentName(String agentName);
+
+	List<DynamicAgentEntity> findAllByNamespace(String namespace);
+
+	List<DynamicAgentEntity> findAllByModel(DynamicModelEntity model);
 
 }

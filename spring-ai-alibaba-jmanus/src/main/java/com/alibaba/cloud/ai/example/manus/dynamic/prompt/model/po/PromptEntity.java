@@ -19,33 +19,33 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "prompt", uniqueConstraints = {
-		@UniqueConstraint(name = "idx_prompt_name_namespace", columnNames = { "prompt_name", "namespace" }) })
+		@UniqueConstraint(columnNames = { "namespace", "prompt_name" }, name = "unique_namespace_prompt_name") })
 public class PromptEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(nullable = false)
+	@Column(name = "prompt_name", nullable = false)
 	private String promptName;
 
 	@Column(nullable = true)
 	private String namespace;
 
-	@Column(nullable = false)
+	@Column(name = "message_type", nullable = false)
 	private String messageType;
 
-	@Column(nullable = false)
+	@Column(name = "type", nullable = false)
 	private String type;
 
-	@Column(nullable = false)
+	@Column(name = "built_in", nullable = false)
 	private Boolean builtIn;
 
-	@Column(nullable = false, length = 1024)
+	@Column(name = "prompt_description", nullable = false, length = 1024)
 	private String promptDescription;
 
 	@Lob
-	@Column(columnDefinition = "TEXT", nullable = false)
+	@Column(name = "prompt_content", columnDefinition = "TEXT", nullable = false)
 	private String promptContent;
 
 	public Long getId() {

@@ -17,16 +17,8 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.entity;
 
 import java.util.List;
 
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "dynamic_agents")
@@ -56,6 +48,13 @@ public class DynamicAgentEntity {
 
 	@Column(nullable = false)
 	private String className;
+
+	@ManyToOne(fetch = FetchType.EAGER)
+	@JoinColumn(name = "model_id")
+	private DynamicModelEntity model;
+
+	@Column(nullable = true)
+	private String namespace;
 
 	// Getters and Setters
 	public Long getId() {
@@ -124,6 +123,22 @@ public class DynamicAgentEntity {
 
 	public void setClassName(String className) {
 		this.className = className;
+	}
+
+	public DynamicModelEntity getModel() {
+		return model;
+	}
+
+	public void setModel(DynamicModelEntity model) {
+		this.model = model;
+	}
+
+	public String getNamespace() {
+		return namespace;
+	}
+
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
 	}
 
 }

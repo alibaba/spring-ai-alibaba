@@ -26,7 +26,6 @@ import com.google.gson.reflect.TypeToken;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.document.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,22 +53,11 @@ public abstract class BaseSchemaService {
 	/**
 	 * 向量存储服务
 	 */
-	protected BaseVectorStoreService vectorStoreService;
-
-	protected final BaseVectorStoreService baseVectorStoreService;
+	protected final BaseVectorStoreService vectorStoreService;
 
 	public BaseSchemaService(DbConfig dbConfig, Gson gson, BaseVectorStoreService vectorStoreService) {
 		this.dbConfig = dbConfig;
 		this.gson = gson;
-		this.baseVectorStoreService = vectorStoreService;
-	}
-
-	/**
-	 * 设置向量存储服务
-	 * @param vectorStoreService 向量存储服务
-	 */
-	@Autowired
-	public void setVectorStoreService(BaseVectorStoreService vectorStoreService) {
 		this.vectorStoreService = vectorStoreService;
 	}
 
@@ -96,9 +84,9 @@ public abstract class BaseSchemaService {
 		// 处理列权重，并按表关联排序
 		processColumnWeights(columnDocumentList, tableDocuments);
 
-		// 初始化列选择器
-		Map<String, Document> weightedColumns = selectWeightedColumns(columnDocumentList, 100); // TODO
-																								// 上限100存在问题
+		// 初始化列选择器， TODO 上限100存在问题
+		Map<String, Document> weightedColumns = selectWeightedColumns(columnDocumentList, 100);
+
 		Set<String> foreignKeySet = extractForeignKeyRelations(tableDocuments);
 
 		// 构建表列表

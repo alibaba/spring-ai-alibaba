@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.example.manus.config.startUp;
 
 import java.awt.Desktop;
-import java.io.IOException;
 import java.net.URI;
 
 import org.slf4j.Logger;
@@ -61,7 +60,7 @@ public class AppStartupListener implements ApplicationListener<ApplicationReadyE
 				return;
 			}
 		}
-		catch (Exception e) {
+		catch (Throwable e) {
 			logger.warn("Failed to open browser using Desktop API, trying Runtime command execution", e);
 		}
 
@@ -101,7 +100,7 @@ public class AppStartupListener implements ApplicationListener<ApplicationReadyE
 				logger.warn("Unknown operating system, cannot auto-open browser, please manually access: {}", url);
 			}
 		}
-		catch (IOException e) {
+		catch (Throwable e) {
 			logger.error("Failed to open browser via Runtime command execution", e);
 			logger.info("Please manually access in browser: {}", url);
 		}

@@ -9,9 +9,7 @@
 
 🌍 [English](./README.md) | [中文](./README-zh.md)
 
-**A comprehensive Java implementation of the OpenManus Multi-Agent Framework featuring UNLIMITED context window capabilities**
-
-*Empowering developers of all skill levels to effortlessly build sophisticated multi-agent systems and unlock unprecedented productivity*
+📚 Developer Docs: [Quick Start (EN)](./README-dev-en.md) | [开发者快速入门 (中文)](./README-dev.md)
 
 [About](#-about) • [Quick Start](#-quick-start) • [Contributing](#-contributing)
 
@@ -21,27 +19,44 @@
 
 ---
 
-## 🎯 About
+## ✨ About JManus
 
-JManus is a robust, production-ready implementation of the [OpenManus](https://github.com/FoundationAgents/OpenManus) multi-agent framework, built on the solid foundation of Spring AI. It empowers developers to create sophisticated AI agent ecosystems with minimal configuration while ensuring enterprise-grade reliability and scalability. 
+JManus is a Java implementation of Manus, currently used in many applications within Alibaba Group. It is primarily used for handling exploratory tasks that require a certain degree of determinism, such as quickly finding data from massive datasets and converting it into a single row in a database, or analyzing logs and issuing alerts.
 
-Leveraging the proven Plan-Act architectural pattern, JManus supports **custom agent definitions** and intelligently **decomposes complex tasks** into collaborative subtasks distributed across multiple specialized agents. This innovative approach enables **unlimited context processing** through strategic multi-agent orchestration, transcending the limitations of single-model context windows.
+JManus also provides HTTP service invocation capabilities, making it suitable for integration into existing projects. For details, please refer to the developer quick start guide.
 
-### Why Choose JManus?
+## 🎯 JManus Product Features
 
-- 🤖 **Native Multi-Agent Architecture**: Built-in collaborative framework supporting user-defined agent capabilities and specialized roles
-- 🌊 **Unlimited Context Processing**: Overcome single-model context limitations through intelligent multi-agent coordination for infinite content handling
-- 🎯 **Plan-Act Pattern Excellence**: Complete implementation of the Plan-Act paradigm with intelligent planning and execution separation
-- 🔗 **MCP Integration**: Native Model Context Protocol support enabling seamless integration with external services and tools
+### - 🤖 **Pure Java Manus Implementation**: 
 
-### 💡 Real-World Applications
+A pure Java multi-agent collaboration implementation that provides a complete set of HTTP call interfaces, suitable for secondary integration by Java developers.
 
-- **🤝 Customer Experience**: Automated multi-tier customer support with intelligent escalation and resolution
-- **📊 Data Intelligence**: Complex ETL pipelines with AI-driven data processing and quality assurance
-- **🔍 Research & Analytics**: Automated information discovery, synthesis, and report generation
-- **💼 Business Automation**: End-to-end workflow orchestration across diverse enterprise systems
-- **🎓 Educational Technology**: Interactive learning environments with personalized content generation
-- **🧪 Quality Assurance**: Comprehensive automated testing workflows with intelligent validation and reporting
+![Image](https://github.com/user-attachments/assets/3d98c1c6-aabb-45a2-b192-7b687093a1ee)
+
+### - 🛠️ **Plan-Act Mode**: 
+
+Allows you to precisely control every execution detail, providing extremely high execution determinism.
+
+![Image](https://github.com/user-attachments/assets/a689791f-adf5-44b6-9ea6-151f557a26d4)
+
+### - 🔗 **MCP Integration**:
+
+ Natively supports the Model Context Protocol (MCP) for seamless integration with external services and tools.
+
+![Image](https://github.com/user-attachments/assets/2d3f833f-ba45-42b6-8e1b-f3e9cfd40212)
+
+### - 📜 **Web Interface for Agent Configuration**:
+
+ Easily configure agents through an intuitive web management interface without modifying code.
+
+![Image](https://github.com/user-attachments/assets/bb25f778-f8c3-46da-9da3-6f7ea2f0917d)
+
+### - 🌊 **Infinite Context Handling**: 
+
+Supports precise extraction of target information from massive content without relying on specific long-context models.
+
+![Image](https://github.com/user-attachments/assets/a0245658-fbb7-41dc-989f-86574592f188)
+
 
 ## 🚀 Quick Start
 
@@ -70,7 +85,39 @@ export DASHSCOPE_API_KEY=your_api_key_here
 > 
 > **Using other providers?** Update the configuration in `src/main/resources/application.yml` to use your preferred AI model platform.
 
-### 3. Launch the Application
+
+### 3. Database Configuration (Optional)
+
+JManus supports both H2 (default)、MySQL and PostgreSQL databases. 
+
+#### How To Use MySQL/PostgreSQL
+
+1. **Configure Database Connection**:
+   Update the database configuration and JPA database-platform in the application-mysql.yml/application-postgres.yml under 'src/main/resources/':
+
+   ```yaml
+   spring:
+     datasource:
+       url: your_url
+       username: your_username
+       password: your_password
+     jpa:
+       database-platform: org.hibernate.dialect.MySQLDialect/PostgreSQLDialect
+   ```
+
+3. **Activate MySQL/PostgreSQL Profile**:
+   Update configuration in `src/main/resources/application.yml`:
+
+   ```bash
+   spring:
+     ...
+     profiles:
+       active: mysql/postgres  
+   ```
+
+> 💡 **Note**: The application will automatically create required tables on first startup using JPA's `ddl-auto: update` configuration.
+
+### 4. Launch the Application
 
 **For Unix-like systems (macOS, Linux):**
 ```bash
@@ -82,17 +129,27 @@ export DASHSCOPE_API_KEY=your_api_key_here
 ../mvnw.cmd spring-boot:run
 ```
 
-### 4. Access Your Multi-Agent Dashboard
+### 5. Access Your Multi-Agent Dashboard
 
 Navigate to `http://localhost:18080` in your browser.
 
 🎉 **Congratulations!** Your multi-agent system is now live and ready for action.
+
+
+
+## stable Release
+
+you can find stable release from here:
+[release](https://github.com/rainerWJY/Java-Open-Manus/releases)
+
 
 ## 🤝 Contributing
 
 We enthusiastically welcome contributions from the developer community! Here's how you can make an impact:
 
 ### Contribution Opportunities
+
+You can find available tasks on our [project board](https://github.com/orgs/alibaba/projects/24).
 
 - 🐛 **Bug Reports**: [Submit detailed issue reports](https://github.com/alibaba/spring-ai-alibaba/issues)
 - 💡 **Feature Requests**: [Propose innovative enhancements](https://github.com/alibaba/spring-ai-alibaba/issues)

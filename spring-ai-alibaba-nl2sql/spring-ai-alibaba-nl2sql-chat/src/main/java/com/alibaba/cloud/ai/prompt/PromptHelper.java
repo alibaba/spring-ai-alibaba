@@ -225,4 +225,30 @@ public class PromptHelper {
 		return PromptConstant.SEMANTIC_CONSISTENC_PROMPT_TEMPLATE.render(params);
 	}
 
+	public static String buildReportGeneratorPrompt(String userRequirementsAndPlan, String analysisStepsAndData,
+			String summaryAndRecommendations) {
+		Map<String, Object> params = new HashMap<>();
+		params.put("user_requirements_and_plan", userRequirementsAndPlan);
+		params.put("analysis_steps_and_data", analysisStepsAndData);
+		params.put("summary_and_recommendations", summaryAndRecommendations);
+		return PromptConstant.getReportGeneratorPromptTemplate().render(params);
+	}
+
+	public static String buildSqlErrorFixerPrompt(String question, DbConfig dbConfig, SchemaDTO schemaDTO,
+			List<String> evidenceList, String errorSql, String errorMessage) {
+		String evidence = StringUtils.join(evidenceList, ";\n");
+		String schemaInfo = buildMixMacSqlDbPrompt(schemaDTO, true);
+		String dialect = BizDataSourceTypeEnum.fromTypeName(dbConfig.getDialectType()).getDialect();
+
+		Map<String, Object> params = new HashMap<>();
+		params.put("dialect", dialect);
+		params.put("question", question);
+		params.put("schema_info", schemaInfo);
+		params.put("evidence", evidence);
+		params.put("error_sql", errorSql);
+		params.put("error_message", errorMessage);
+
+		return PromptConstant.getSqlErrorFixerPromptTemplate().render(params);
+	}
+
 }

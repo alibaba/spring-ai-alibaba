@@ -27,7 +27,11 @@ import com.alibaba.cloud.ai.util.DateTimeUtil;
 import com.alibaba.cloud.ai.util.MarkdownParser;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
+import reactor.core.publisher.Flux;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -42,6 +46,8 @@ import static com.alibaba.cloud.ai.prompt.PromptHelper.buildMixMacSqlDbPrompt;
 import static com.alibaba.cloud.ai.prompt.PromptHelper.buildMixSelectorPrompt;
 
 public class BaseNl2SqlService {
+
+	private static final Logger logger = LoggerFactory.getLogger(BaseNl2SqlService.class);
 
 	protected final BaseVectorStoreService vectorStoreService;
 
@@ -62,12 +68,19 @@ public class BaseNl2SqlService {
 		this.dbConfig = dbConfig;
 	}
 
+	public Flux<ChatResponse> rewriteStream(String query) throws Exception {
+		List<String> evidences = extractEvidences(query);
+		SchemaDTO schemaDTO = select(query, evidences);
+		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
+		return aiService.streamCall(prompt);
+	}
+
 	public String rewrite(String query) throws Exception {
 		List<String> evidences = extractEvidences(query);
 		SchemaDTO schemaDTO = select(query, evidences);
 		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
 		String responseContent = aiService.call(prompt);
-		String[] splits = responseContent.split("\\n");
+		String[] splits = responseContent.split("\n");
 		for (String line : splits) {
 			if (line.startsWith("需求类型：")) {
 				String content = line.substring(5).trim();
@@ -97,10 +110,17 @@ public class BaseNl2SqlService {
 		return MdTableGenerator.generateTable(resultSet);
 	}
 
+	@Deprecated
 	public String semanticConsistency(String sql, String queryPrompt) throws Exception {
-		String semanticConsistenPrompt = PromptHelper.buildSemanticConsistenPrompt(queryPrompt, sql);
-		String call = aiService.call(semanticConsistenPrompt);
+		String semanticConsistencyPrompt = PromptHelper.buildSemanticConsistenPrompt(queryPrompt, sql);
+		String call = aiService.call(semanticConsistencyPrompt);
 		return call;
+	}
+
+	public Flux<ChatResponse> semanticConsistencyStream(String sql, String queryPrompt) throws Exception {
+		String semanticConsistencyPrompt = PromptHelper.buildSemanticConsistenPrompt(queryPrompt, sql);
+		logger.info("semanticConsistencyPrompt = {}", semanticConsistencyPrompt);
+		return aiService.streamCall(semanticConsistencyPrompt);
 	}
 
 	/**
@@ -155,14 +175,16 @@ public class BaseNl2SqlService {
 		}
 		expressionList.addAll(dateTimeList);
 
-		List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(query, dbConfig, schemaDTO, evidenceList);
 		String newSql = "";
 		if (sql != null && !sql.isEmpty()) {
-			newSql = aiService.callWithSystemPrompt(prompts.get(0),
-					prompts.get(1) + "\n 上面描述的是需求，目前我已经生成了一个SQL，但是报错了，SQL是:" + sql + "\n 错误信息是:" + exceptionMessage
-							+ "\n 请你帮我修改这个SQL，确保它能正确执行。");
+			// 使用专业的SQL错误修复提示词
+			String errorFixerPrompt = PromptHelper.buildSqlErrorFixerPrompt(query, dbConfig, schemaDTO, evidenceList,
+					sql, exceptionMessage);
+			newSql = aiService.call(errorFixerPrompt);
 		}
 		else {
+			// 正常的SQL生成流程
+			List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(query, dbConfig, schemaDTO, evidenceList);
 			newSql = aiService.callWithSystemPrompt(prompts.get(0), prompts.get(1));
 		}
 		return MarkdownParser.extractRawText(newSql).trim();

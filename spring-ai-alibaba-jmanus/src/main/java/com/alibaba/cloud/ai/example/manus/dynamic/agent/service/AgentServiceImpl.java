@@ -15,12 +15,15 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.IMcpService;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,36 +38,40 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.model.Tool;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.IPlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 
 @Service
 public class AgentServiceImpl implements AgentService {
 
 	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT";
 
+	// MapReduce protected agent names - cannot be deleted by users
+	private static final String[] PROTECTED_MAPREDUCE_AGENTS = { "MAPREDUCE_DATA_PREPARE_AGENT", "MAPREDUCE_FIN_AGENT",
+			"MAPREDUCE_MAP_TASK_AGENT", "MAPREDUCE_REDUCE_TASK_AGENT" };
+
 	private static final Logger log = LoggerFactory.getLogger(AgentServiceImpl.class);
 
-	private final DynamicAgentLoader dynamicAgentLoader;
+	private final IDynamicAgentLoader dynamicAgentLoader;
 
 	private final DynamicAgentRepository repository;
 
-	private final PlanningFactory planningFactory;
+	private final IPlanningFactory planningFactory;
 
-	private final McpService mcpService;
+	private final IMcpService mcpService;
 
 	@Autowired
 	@Lazy
-	private LlmService llmService;
+	private ILlmService llmService;
 
 	@Autowired
 	@Lazy
 	private ToolCallingManager toolCallingManager;
 
 	@Autowired
-	public AgentServiceImpl(@Lazy DynamicAgentLoader dynamicAgentLoader, DynamicAgentRepository repository,
-			@Lazy PlanningFactory planningFactory, @Lazy McpService mcpService) {
+	public AgentServiceImpl(@Lazy IDynamicAgentLoader dynamicAgentLoader, DynamicAgentRepository repository,
+			@Lazy IPlanningFactory planningFactory, @Lazy IMcpService mcpService) {
 		this.dynamicAgentLoader = dynamicAgentLoader;
 		this.repository = repository;
 		this.planningFactory = planningFactory;
@@ -74,6 +81,14 @@ public class AgentServiceImpl implements AgentService {
 	@Override
 	public List<AgentConfig> getAllAgents() {
 		return repository.findAll().stream().map(this::mapToAgentConfig).collect(Collectors.toList());
+	}
+
+	@Override
+	public List<AgentConfig> getAllAgentsByNamespace(String namespace) {
+		return repository.findAllByNamespace(namespace)
+			.stream()
+			.map(this::mapToAgentConfig)
+			.collect(Collectors.toList());
 	}
 
 	@Override
@@ -131,20 +146,25 @@ public class AgentServiceImpl implements AgentService {
 		DynamicAgentEntity entity = repository.findById(Long.parseLong(id))
 			.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
 
+		// Protect default agent from deletion
 		if (DEFAULT_AGENT_NAME.equals(entity.getAgentName())) {
 			throw new IllegalArgumentException("Cannot delete default Agent");
+		}
+
+		// Protect MapReduce system agents from deletion
+		if (Arrays.asList(PROTECTED_MAPREDUCE_AGENTS).contains(entity.getAgentName())) {
+			throw new IllegalArgumentException("Cannot delete protected system Agent: " + entity.getAgentName());
 		}
 
 		repository.deleteById(Long.parseLong(id));
 	}
 
-	@Override
 	public List<Tool> getAvailableTools() {
 
 		String uuid = UUID.randomUUID().toString();
-
+		List<String> columns = Arrays.asList("dummyColumn1", "dummyColumn2");
 		try {
-			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid);
+			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid, uuid, columns);
 			return toolcallContext.entrySet().stream().map(entry -> {
 				Tool tool = new Tool();
 				tool.setKey(entry.getKey());
@@ -171,6 +191,8 @@ public class AgentServiceImpl implements AgentService {
 		config.setNextStepPrompt(entity.getNextStepPrompt());
 		config.setAvailableTools(entity.getAvailableToolKeys());
 		config.setClassName(entity.getClassName());
+		DynamicModelEntity model = entity.getModel();
+		config.setModel(model == null ? null : model.mapToModelConfig());
 		return config;
 	}
 
@@ -196,6 +218,13 @@ public class AgentServiceImpl implements AgentService {
 		// 3. Convert to List and set
 		entity.setAvailableToolKeys(new java.util.ArrayList<>(toolSet));
 		entity.setClassName(config.getName());
+		ModelConfig model = config.getModel();
+		if (model != null) {
+			entity.setModel(new DynamicModelEntity(model.getId()));
+		}
+
+		// 4. Set the user-selected namespace
+		entity.setNamespace(config.getNamespace());
 	}
 
 	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity, String agentName) {
@@ -216,7 +245,8 @@ public class AgentServiceImpl implements AgentService {
 	}
 
 	@Override
-	public BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting) {
+	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
+			Map<String, Object> initialAgentSetting, List<String> columns) {
 
 		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
 
@@ -225,9 +255,11 @@ public class AgentServiceImpl implements AgentService {
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(name, initialAgentSetting);
 
 			// Set planId
-			agent.setPlanId(planId);
+			agent.setCurrentPlanId(planId);
+			agent.setRootPlanId(rootPlanId);
 			// Set tool callback mapping
-			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId);
+			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, rootPlanId,
+					columns);
 			agent.setToolCallbackProvider(new ToolCallbackProvider() {
 
 				@Override

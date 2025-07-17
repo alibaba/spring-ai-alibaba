@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Records the thinking and action process of an agent in a single execution step. Exists
@@ -43,6 +44,16 @@ public class ThinkActRecord {
 
 	// Unique identifier of the record
 	private Long id;
+
+	// 生成唯一ID的方法
+	private Long generateId() {
+		if (this.id == null) {
+			long timestamp = System.currentTimeMillis();
+			int random = (int) (Math.random() * 1000000);
+			this.id = timestamp * 1000 + random;
+		}
+		return this.id;
+	}
 
 	// ID of parent execution record, linked to AgentExecutionRecord
 	private Long parentExecutionId;
@@ -75,7 +86,7 @@ public class ThinkActRecord {
 	private String actionResult;
 
 	// Status of this think-act cycle (success, failure, etc.)
-	private String status;
+	private ExecutionStatus status;
 
 	// Error message if the cycle encountered problems
 	private String errorMessage;
@@ -86,14 +97,23 @@ public class ThinkActRecord {
 	// Tool parameters used for action (serialized, if applicable)
 	private String toolParameters;
 
+	// Sub-plan execution record for tool calls that create new execution plans
+	private PlanExecutionRecord subPlanExecutionRecord;
+
+	// Action tool information(When disabling parallel tool calls, there is always only
+	// one)
+	private List<ActToolInfo> actToolInfoList;
+
 	// Default constructor
 	public ThinkActRecord() {
+		this.id = generateId();
 	}
 
 	// Constructor with parent execution ID
 	public ThinkActRecord(Long parentExecutionId) {
 		this.parentExecutionId = parentExecutionId;
 		this.thinkStartTime = LocalDateTime.now();
+		this.id = generateId();
 	}
 
 	/**
@@ -127,7 +147,7 @@ public class ThinkActRecord {
 	/**
 	 * Record the end of action phase
 	 */
-	public void finishAction(String actionResult, String status) {
+	public void finishAction(String actionResult, ExecutionStatus status) {
 		this.actEndTime = LocalDateTime.now();
 		this.actionResult = actionResult;
 		this.status = status;
@@ -138,7 +158,7 @@ public class ThinkActRecord {
 	 */
 	public void recordError(String errorMessage) {
 		this.errorMessage = errorMessage;
-		this.status = "ERROR";
+		this.status = ExecutionStatus.RUNNING;
 	}
 
 	/**
@@ -147,20 +167,23 @@ public class ThinkActRecord {
 	 * @return Record ID after saving
 	 */
 	public Long save() {
-		// If ID is null, generate a random ID
-		if (this.id == null) {
-			// Use combination of timestamp and random number to generate ID
-			long timestamp = System.currentTimeMillis();
-			int random = (int) (Math.random() * 1000000);
-			this.id = timestamp * 1000 + random;
+
+		// Save sub-plan execution record if exists
+		if (subPlanExecutionRecord != null) {
+			subPlanExecutionRecord.save();
 		}
+
 		return this.id;
 	}
 
 	// Getters and setters
 
 	public Long getId() {
-		return id;
+		// Ensure ID is generated when accessing
+		if (this.id == null) {
+			this.id = generateId();
+		}
+		return this.id;
 	}
 
 	public void setId(Long id) {
@@ -247,11 +270,11 @@ public class ThinkActRecord {
 		this.actionResult = actionResult;
 	}
 
-	public String getStatus() {
+	public ExecutionStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(String status) {
+	public void setStatus(ExecutionStatus status) {
 		this.status = status;
 	}
 
@@ -279,10 +302,80 @@ public class ThinkActRecord {
 		this.toolParameters = toolParameters;
 	}
 
+	public PlanExecutionRecord getSubPlanExecutionRecord() {
+		return subPlanExecutionRecord;
+	}
+
+	public void setSubPlanExecutionRecord(PlanExecutionRecord subPlanExecutionRecord) {
+		this.subPlanExecutionRecord = subPlanExecutionRecord;
+	}
+
+	/**
+	 * Record a sub-plan execution triggered by tool call
+	 * @param subPlanRecord Sub-plan execution record
+	 */
+	public void recordSubPlanExecution(PlanExecutionRecord subPlanRecord) {
+		this.subPlanExecutionRecord = subPlanRecord;
+	}
+
+	/**
+	 * Check if this think-act record has a sub-plan execution
+	 * @return true if sub-plan exists, false otherwise
+	 */
+	public boolean hasSubPlanExecution() {
+		return this.subPlanExecutionRecord != null;
+	}
+
+	public List<ActToolInfo> getActToolInfoList() {
+		return actToolInfoList;
+	}
+
+	public void setActToolInfoList(List<ActToolInfo> actToolInfoList) {
+		this.actToolInfoList = actToolInfoList;
+	}
+
 	@Override
 	public String toString() {
 		return "ThinkActRecord{" + "id='" + id + '\'' + ", parentExecutionId='" + parentExecutionId + '\''
 				+ ", actionNeeded=" + actionNeeded + ", status='" + status + '\'' + '}';
+	}
+
+	public static class ActToolInfo {
+
+		private String name;
+
+		private String parameters;
+
+		private String result;
+
+		private String id;
+
+		public ActToolInfo(String name, String arguments, String id) {
+			this.name = name;
+			this.parameters = arguments;
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getParameters() {
+			return parameters;
+		}
+
+		public String getResult() {
+			return result;
+		}
+
+		public void setResult(String result) {
+			this.result = result;
+		}
+
+		public String getId() {
+			return id;
+		}
+
 	}
 
 }
