@@ -13,6 +13,15 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+
+<!--
+  Component for displaying a configuration panel with a title, actions, and body content.
+  
+  @slot title - The title of the panel.
+  @slot actions - Actions to be displayed alongside the title.
+  @slot default - The main content of the panel.
+-->
+
 <template>
   <div class="config-config">
     <div class="panel-header">
@@ -23,9 +32,7 @@
       </div>
     </div>
 
-    <div class="config-body">
-      <slot></slot>
-    </div>
+    <slot></slot>
   </div>
 </template>
 
@@ -56,5 +63,4 @@
 :deep(.panel-header h2) {
   margin-bottom: 0 !important;
 }
-
 </style>

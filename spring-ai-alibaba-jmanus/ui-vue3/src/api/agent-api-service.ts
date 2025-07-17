@@ -65,9 +65,9 @@ export class AgentApiService {
   /**
    * Get all Agent list
    */
-  static async getAllAgents(): Promise<Agent[]> {
+  static async getAllAgents(namespace:string): Promise<Agent[]> {
     try {
-      const response = await fetch(this.BASE_URL)
+     const response = await fetch(`${this.BASE_URL}/namespace/${namespace}`)
       const result = await this.handleResponse(response)
       return await result.json()
     } catch (error) {

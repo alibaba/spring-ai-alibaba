@@ -85,10 +85,13 @@ public class AgentServiceImpl implements AgentService {
 
 	@Override
 	public List<AgentConfig> getAllAgentsByNamespace(String namespace) {
-		return repository.findAllByNamespace(namespace)
-			.stream()
-			.map(this::mapToAgentConfig)
-			.collect(Collectors.toList());
+		List<DynamicAgentEntity> entities;
+		if ("default".equalsIgnoreCase(namespace)) {
+			entities = repository.findAll();
+		} else {
+			entities = repository.findAllByNamespace(namespace);
+		}
+		return entities.stream().map(this::mapToAgentConfig).collect(Collectors.toList());
 	}
 
 	@Override

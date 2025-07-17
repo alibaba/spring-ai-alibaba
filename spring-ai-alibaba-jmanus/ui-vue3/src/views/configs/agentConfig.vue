@@ -323,9 +323,12 @@ import Modal from '@/components/modal/index.vue'
 import ToolSelectionModal from '@/components/tool-selection-modal/index.vue'
 import { AgentApiService, type Agent, type Tool } from '@/api/agent-api-service'
 import { type Model, ModelApiService } from '@/api/model-api-service'
+import { usenameSpaceStore } from '@/stores/namespace'
 
 // Internationalization
 const { t } = useI18n()
+
+const namespaceStore = usenameSpaceStore()
 
 // Reactive data
 const loading = ref(false)
@@ -340,6 +343,8 @@ const showToolModal = ref(false)
 const showDropdown = ref(false)
 const chooseModel = ref<Model | null>(null)
 const modelOptions = reactive<Model[]>([])
+
+
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
@@ -392,7 +397,7 @@ const loadData = async () => {
   try {
     // Load the Agent list and available tools in parallel
     const [loadedAgents, loadedTools, loadedModels] = await Promise.all([
-      AgentApiService.getAllAgents(),
+      AgentApiService.getAllAgents(namespaceStore.namespace),
       AgentApiService.getAvailableTools(),
       ModelApiService.getAllModels(),
     ])
