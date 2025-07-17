@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.constant.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
@@ -80,7 +81,7 @@ public class KeywordExtractNode implements NodeAction {
 		// Use business logic executor to avoid duplicate business logic execution
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
 				v -> Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, keywords, EVIDENCES, evidences, RESULT, keywords),
-				displayFlux);
+				displayFlux, StreamResponseType.KEYWORD_EXTRACT);
 
 		return Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, generator);
 	}

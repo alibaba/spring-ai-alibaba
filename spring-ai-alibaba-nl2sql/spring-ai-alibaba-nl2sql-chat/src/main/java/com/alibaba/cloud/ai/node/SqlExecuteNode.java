@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.constant.StreamResponseType;
 import com.alibaba.cloud.ai.dbconnector.DbAccessor;
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
@@ -122,7 +123,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			// Create generator using utility class, returning pre-computed business logic
 			// result
 			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-					v -> result, displayFlux);
+					v -> result, displayFlux , StreamResponseType.EXECUTE_SQL);
 
 			return Map.of(SQL_EXECUTE_NODE_OUTPUT, generator);
 		}
@@ -143,7 +144,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 			// Create error generator using utility class
 			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-					v -> errorResult, errorDisplayFlux);
+					v -> errorResult, errorDisplayFlux, StreamResponseType.EXECUTE_SQL);
 
 			return Map.of(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, generator);
 		}
