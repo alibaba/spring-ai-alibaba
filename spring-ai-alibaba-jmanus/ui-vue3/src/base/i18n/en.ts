@@ -199,10 +199,13 @@ const words: I18nType = {
       instructions: 'Instructions:',
       instructionStep1: 'Find the configuration JSON for your MCP server:',
       instructionStep1Local: 'Local (STDIO)',
-      instructionStep1LocalDesc: 'Available at mcp.so, requires Node.js environment and understanding of each item in the configuration JSON for proper adjustments like setting access keys',
+      instructionStep1LocalDesc:
+        'Available at mcp.so, requires Node.js environment and understanding of each item in the configuration JSON for proper adjustments like setting access keys',
       instructionStep1Remote: 'Remote Service (SSE/STREAMING)',
-      instructionStep1RemoteDesc: 'Available at mcp.higress.ai/, offers SSE and STREAMING types, currently STREAM protocol is more complete',
-      instructionStep2: 'Copy the JSON configuration to the input box above, select STUDIO for local, STREAMING or SSE for remote, then submit',
+      instructionStep1RemoteDesc:
+        'Available at mcp.higress.ai/, offers SSE and STREAMING types, currently STREAM protocol is more complete',
+      instructionStep2:
+        'Copy the JSON configuration to the input box above, select STUDIO for local, STREAMING or SSE for remote, then submit',
       instructionStep3: 'This will successfully register the MCP tools.',
       instructionStep4:
         'Then you need to create a new agent in Agent Configuration, and add the specific MCP tools you just added, which can greatly reduce conflicts and enhance the accuracy of tools being selected by agents',
@@ -254,6 +257,20 @@ const words: I18nType = {
       deleteConfirm: 'Delete Confirmation',
       deleteConfirmText: 'Are you sure you want to delete',
       deleteWarning: 'This action cannot be undone.',
+    },
+    namespaceConfig: {
+      title: 'Namespace Configuration',
+      loadDetailsFailed: 'Failed to load namespace details',
+      createNew: 'Create New Namespace',
+      placeholder: 'Please enter',
+      saveSuccess: 'Saved successfully',
+      saveFailed: 'Failed to save',
+      deleteSuccess: 'Deleted successfully',
+      deleteFailed: 'Failed to delete',
+      deleteConfirm: 'Delete Confirmation',
+      deleteConfirmText: 'Are you sure you want to delete',
+      deleteWarning: 'This action cannot be undone.',
+      configured: 'Configured Namespaces',
     },
   },
 
@@ -332,8 +349,6 @@ const words: I18nType = {
     loadDataFailed: 'Failed to load data',
     loadDetailsFailed: 'Failed to load model details',
     invalidFormat: 'Model configuration format is invalid: missing required fields',
-<<<<<<< HEAD
-=======
   },
   // Plan template configuration
   planTemplate: {
@@ -363,7 +378,6 @@ const words: I18nType = {
     executionFailed: 'Execution failed',
     generationSuccess: 'Generation successful',
     generationFailed: 'Generation failed',
->>>>>>> 1b011c3b (feat(jmanus): 新增动态 Prompt 配置功能)
   },
 
   // Chat component
@@ -434,16 +448,19 @@ const words: I18nType = {
     jsonTemplate: 'JSON Template',
     rollback: 'Rollback',
     restore: 'Restore',
-  jsonPlaceholder: 'Step 2: Here you can directly modify the execution plan generated in Step 1 to make it more accurately follow your intentions. Then you can click Execute Plan to run this plan with high certainty.',
+    jsonPlaceholder:
+      'Step 2: Here you can directly modify the execution plan generated in Step 1 to make it more accurately follow your intentions. Then you can click Execute Plan to run this plan with high certainty.',
     planGenerator: 'Plan Generator',
-    generatorPlaceholder: 'Step 1: Enter the task you want to accomplish here in natural language, as detailed as possible. Then click Generate Plan to create a precise, repeatable plan.',
+    generatorPlaceholder:
+      'Step 1: Enter the task you want to accomplish here in natural language, as detailed as possible. Then click Generate Plan to create a precise, repeatable plan.',
     generating: 'Generating...',
     generatePlan: 'Generate Plan',
     updatePlan: 'Update Plan',
     executionController: 'Execution Controller',
     executionParams: 'Execution Parameters',
     executionParamsPlaceholder: 'Enter execution parameters...',
-    executionParamsHelp: 'When executing repeatedly, you can set some content in Step 2 as variables, then specify the specific values for those variables here. For example, set "Variable1" in the JSON, then set "Variable1=Alibaba" here to achieve function parameter-like effects.',
+    executionParamsHelp:
+      'When executing repeatedly, you can set some content in Step 2 as variables, then specify the specific values for those variables here. For example, set "Variable1" in the JSON, then set "Variable1=Alibaba" here to achieve function parameter-like effects.',
     clearParams: 'Clear Parameters',
     apiUrl: 'HTTP GET URL',
     statusApiUrl: 'Status Query API',
@@ -481,13 +498,10 @@ const words: I18nType = {
     updateFailed: 'Failed to update plan',
     executeFailed: 'Failed to execute plan',
     unknown: 'Unknown',
-<<<<<<< HEAD
     newTemplateName: 'New Execution Plan',
     newTemplateDescription: 'Please use the plan generator to create a new plan template',
     generatedTemplateDescription: 'Plan template created by generator',
     defaultExecutionPlanTitle: 'Execution Plan',
-=======
->>>>>>> 1b011c3b (feat(jmanus): 新增动态 Prompt 配置功能)
   },
 
   // Modal

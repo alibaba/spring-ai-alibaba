@@ -271,11 +271,15 @@ import { PromptApiService, type Prompt } from '@/api/prompt-api-service'
 import { useToast } from '@/plugins/useToast'
 import CustomSelect from './components/select.vue'
 import ConfigPanel from './components/configPanel.vue'
+import { usenameSpaceStore } from '@/stores/namespace'
+
 
 type PromptField = string | null | undefined
 
 const { t } = useI18n()
 const { success, error } = useToast()
+
+const namespaceStore = usenameSpaceStore()
 
 // Reactive data properties
 const loading = ref(false)
@@ -316,7 +320,7 @@ const newPrompt = reactive<Omit<Prompt, 'id'>>({ ...defaultPromptValues } as Omi
 const loadData = async () => {
   loading.value = true
   try {
-    const loadedPrompts = (await PromptApiService.getAllPrompts()) as Prompt[]
+    const loadedPrompts = (await PromptApiService.getAllPrompts(namespaceStore.namespace)) as Prompt[]
 
     if (loadedPrompts.length > 0) {
       await selectPrompt(loadedPrompts[0])

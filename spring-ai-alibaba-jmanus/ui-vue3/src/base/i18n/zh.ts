@@ -73,7 +73,7 @@ const words: I18nType = {
     parameters: '参数',
     thinking: '思考',
     input: '输入',
-    actions: '操作'
+    actions: '操作',
   },
 
   // 配置相关
@@ -186,7 +186,7 @@ const words: I18nType = {
       exportFailed: '导出Model失败',
       loadDataFailed: '加载数据失败',
       loadDetailsFailed: '加载Model详情失败',
-      invalidFormat: 'Model配置格式不正确：缺少必要字段'
+      invalidFormat: 'Model配置格式不正确：缺少必要字段',
     },
     // MCP配置页面
     mcpConfig: {
@@ -203,7 +203,8 @@ const words: I18nType = {
       instructionStep1Local: '本地(STDIO)',
       instructionStep1LocalDesc: '本地mcp server，目前市面上主流的是这个',
       instructionStep1Remote: '远程服务(SSE/STREAMING)',
-      instructionStep1RemoteDesc: 'mcp.higress.ai/ 上可以找到，有SSE和STREAMING两种，目前STREAM协议更完备一些',
+      instructionStep1RemoteDesc:
+        'mcp.higress.ai/ 上可以找到，有SSE和STREAMING两种，目前STREAM协议更完备一些',
       instructionStep2: '将json配置复制到上面的输入框，本地选STUDIO，远程选STREAMING或SSE，提交',
       instructionStep3: '这样mcp tools就注册成功了。',
       instructionStep4:
@@ -215,8 +216,10 @@ const words: I18nType = {
       deleteConfirm: '确定要删除这个MCP服务器配置吗？此操作不可恢复。',
       addSuccess: '添加MCP服务器成功',
       deleteSuccess: '删除MCP服务器成功',
-      studioExample: '请输入MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
-      sseExample: '请输入SSE MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}'
+      studioExample:
+        '请输入MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
+      sseExample:
+        '请输入SSE MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}',
     },
     // 基础配置
     basicConfig: {
@@ -241,7 +244,7 @@ const words: I18nType = {
       messageType: '消息类型',
       type: '领域类型',
       builtIn: '内置',
-      custom:"自定义",
+      custom: '自定义',
       namespace: '命名空间',
       promptNamePlaceholder: '输入Prompt名称',
       selectPromptHint: '请选择一个prompt进行配置',
@@ -257,6 +260,20 @@ const words: I18nType = {
       deleteConfirm: '删除确认',
       deleteConfirmText: '确定要删除',
       deleteWarning: '此操作不可恢复。',
+    },
+    namespaceConfig: {
+      title: '命名空间配置',
+      loadDetailsFailed: '加载namespace详情失败',
+      createNew: '新建命名空间',
+      placeholder: '请输入',
+      saveSuccess: '保存成功',
+      saveFailed: '保存失败',
+      deleteSuccess: '删除成功',
+      deleteFailed: '删除失败',
+      deleteConfirm: '删除确认',
+      deleteConfirmText: '确定要删除',
+      deleteWarning: '此操作不可恢复。',
+      configured: '已配置的命名空间',
     },
   },
 
@@ -302,10 +319,8 @@ const words: I18nType = {
     saveSuccess: 'Model保存成功',
     saveFailed: 'Model保存失败',
     deleteSuccess: 'Model删除成功',
-    deleteFailed: 'Model删除失败'
+    deleteFailed: 'Model删除失败',
   },
-<<<<<<< HEAD
-=======
 
   // 计划模板配置
   planTemplate: {
@@ -337,7 +352,6 @@ const words: I18nType = {
     generationFailed: '生成失败',
   },
 
->>>>>>> 1b011c3b (feat(jmanus): 新增动态 Prompt 配置功能)
   // 聊天组件
   chat: {
     botName: 'TaskPilot:',
@@ -406,16 +420,19 @@ const words: I18nType = {
     jsonTemplate: 'JSON 模板',
     rollback: '回滚',
     restore: '恢复',
-    jsonPlaceholder: 'step2 ： 你可以在这里直接修改在step1中生产出的执行计划，让他更精准的按照你的希望执行。然后你可以点击执行计划，高确定性的执行这个计划',
+    jsonPlaceholder:
+      'step2 ： 你可以在这里直接修改在step1中生产出的执行计划，让他更精准的按照你的希望执行。然后你可以点击执行计划，高确定性的执行这个计划',
     planGenerator: '计划生成器',
-    generatorPlaceholder: 'step1 : 在这里用自然语言输入你希望完成的任务，尽可能详细，然后点击生成计划，就可以生产一个可重复执行的精确计划',
+    generatorPlaceholder:
+      'step1 : 在这里用自然语言输入你希望完成的任务，尽可能详细，然后点击生成计划，就可以生产一个可重复执行的精确计划',
     generating: '生成中...',
     generatePlan: '生成计划',
     updatePlan: '更新计划',
     executionController: '执行控制器',
     executionParams: '执行参数',
     executionParamsPlaceholder: '输入执行参数...',
-    executionParamsHelp: '在重复执行时，你可以将step2里面的一些内容设置为变量，然后在这里指定该变量的具体值。例如json里面设置 变量1 ，然后在这里则设置 变量1=阿里巴巴 。 就可以实现类似函数的参数的效果。',
+    executionParamsHelp:
+      '在重复执行时，你可以将step2里面的一些内容设置为变量，然后在这里指定该变量的具体值。例如json里面设置 变量1 ，然后在这里则设置 变量1=阿里巴巴 。 就可以实现类似函数的参数的效果。',
     clearParams: '清空参数',
     apiUrl: 'HTTP GET URL',
     statusApiUrl: '状态查询 API',
@@ -452,13 +469,10 @@ const words: I18nType = {
     updateFailed: '更新计划失败',
     executeFailed: '执行计划失败',
     unknown: '未知',
-<<<<<<< HEAD
     newTemplateName: '新建的执行计划',
     newTemplateDescription: '请使用计划生成器创建新的计划模板',
     generatedTemplateDescription: '通过生成器创建的计划模板',
     defaultExecutionPlanTitle: '执行计划',
-=======
->>>>>>> 1b011c3b (feat(jmanus): 新增动态 Prompt 配置功能)
   },
 
   // 模态框
