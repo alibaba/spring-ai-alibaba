@@ -425,7 +425,7 @@ interface Message {
 
 interface Props {
   mode?: 'plan' | 'direct' // Plan mode or direct chat mode
-  initialPrompt?: string | undefined // Initial prompt to process
+  initialPrompt?: string // Initial prompt to process
 }
 
 interface Emits {
@@ -441,6 +441,7 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   mode: 'plan', // Use plan mode, handled by plan-execution-manager
+  initialPrompt: '', // Default value for initialPrompt
 })
 const emit = defineEmits<Emits>()
 
@@ -627,13 +628,7 @@ const handleSendMessage = (message: string) => {
 const getAgentExecutionStatus = (message: Message, index: number): string => {
   const agentExecutionSequence = message.planExecution?.agentExecutionSequence ?? []
   const agentExecution = agentExecutionSequence[index]
-
-  if (!agentExecution) {
-    // 如果没有对应的 AgentExecutionRecord，返回待执行状态
-    return 'IDLE'
-  }
-
-  // 返回 AgentExecutionRecord 的状态
+  // 直接返回 AgentExecutionRecord 的状态，无需判断 agentExecution 是否存在
   return agentExecution.status ?? 'IDLE'
 }
 
@@ -826,12 +821,12 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
     )
 
     for (let index = 0; index < sequenceLength; index++) {
-      const execution = planDetails.agentExecutionSequence[index]
+  const execution = planDetails.agentExecutionSequence[index]
 
-      if (execution?.thinkActSteps?.length) {
+  if (execution.thinkActSteps?.length) {
         const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1]
 
-        if (latestThinkAct?.actionDescription && latestThinkAct?.toolParameters) {
+        if (latestThinkAct.actionDescription && latestThinkAct.toolParameters) {
           lastStepActions[index] = {
             actionDescription: latestThinkAct.actionDescription,
             toolParameters:
@@ -851,7 +846,7 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
           console.log(
             `[ChatComponent] Step ${index} action set: ${lastStepActions[index].actionDescription}`
           )
-        } else if (latestThinkAct) {
+        } else {
           lastStepActions[index] = {
             actionDescription: '思考中',
             toolParameters: '等待决策',
@@ -861,16 +856,6 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
           }
 
           console.log(`[ChatComponent] Step ${index} is thinking`)
-        } else {
-          lastStepActions[index] = {
-            actionDescription: '执行完成',
-            toolParameters: '无工具',
-            thinkInput: '',
-            thinkOutput: '',
-            status: 'completed',
-          }
-
-          console.log(`[ChatComponent] Step ${index} execution completed`)
         }
       } else {
         lastStepActions[index] = {
@@ -1202,7 +1187,7 @@ const handlePlanCompleted = (rootPlanId: string) => {
 
   console.log('[ChatComponent] Plan details:', details);
 
-  if (details?.rootPlanId) {
+  if (details.rootPlanId) {
     const messageIndex = messages.value.findIndex(
       m => m.planExecution?.currentPlanId === details.rootPlanId
     );
