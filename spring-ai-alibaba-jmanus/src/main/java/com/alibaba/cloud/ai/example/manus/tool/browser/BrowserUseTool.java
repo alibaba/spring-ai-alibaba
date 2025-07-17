@@ -561,7 +561,7 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 	}
 
 	public ManusProperties getManusProperties() {
-		return this.chromeDriverService.getManusProperties();
+		return (ManusProperties) this.chromeDriverService.getManusProperties();
 	}
 
 }

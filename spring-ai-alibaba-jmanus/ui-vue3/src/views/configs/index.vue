@@ -15,9 +15,9 @@
 -->
 <template>
   <div class="config-container">
-    <!-- 顶部标题栏 -->
+    <!-- Top title bar -->
     <div class="config-header">
-      <!-- <h1>配置中心</h1> -->
+      <!-- <h1>Configuration Center</h1> -->
       <div class="header-actions">
         <button class="action-btn" @click="$router.push('/')">
           <Icon icon="carbon:arrow-left" />
@@ -27,9 +27,9 @@
       </div>
     </div>
 
-    <!-- 主体内容区域 -->
+    <!-- Main content area -->
     <div class="config-content">
-      <!-- 左侧导航 -->
+      <!-- Left navigation -->
       <nav class="config-nav">
         <div
           v-for="(item, index) in categories"
@@ -43,7 +43,7 @@
         </div>
       </nav>
 
-      <!-- 右侧配置详情 -->
+      <!-- Right configuration details -->
       <div class="config-details">
         <BasicConfig v-if="activeCategory === 'basic'" />
         <AgentConfig v-if="activeCategory === 'agent'" />

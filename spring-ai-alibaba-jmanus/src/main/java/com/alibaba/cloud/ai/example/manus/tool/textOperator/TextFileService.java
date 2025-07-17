@@ -38,7 +38,7 @@ import jakarta.annotation.PreDestroy;
 
 @Service
 @Primary
-public class TextFileService implements ApplicationRunner {
+public class TextFileService implements ApplicationRunner, ITextFileService {
 
 	private static final Logger log = LoggerFactory.getLogger(TextFileService.class);
 

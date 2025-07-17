@@ -304,37 +304,6 @@ const words: I18nType = {
     deleteSuccess: 'Model删除成功',
     deleteFailed: 'Model删除失败'
   },
-
-  // 计划模板配置
-  planTemplate: {
-    title: '计划模板配置',
-    generator: '计划生成器',
-    execution: '计划执行',
-    prompt: '生成提示',
-    promptPlaceholder: '描述您想要生成的计划...',
-    generating: '生成中...',
-    generate: '生成计划',
-    updatePlan: '更新计划',
-    executing: '执行中...',
-    execute: '执行计划',
-    executionParams: '执行参数',
-    executionParamsPlaceholder: '输入执行参数（可选）...',
-    apiUrl: 'API 调用地址',
-    clearParams: '清空参数',
-    versionControl: '版本控制',
-    rollback: '回滚',
-    restore: '恢复',
-    currentVersion: '当前版本',
-    saveTemplate: '保存模板',
-    loadTemplate: '加载模板',
-    templateSaved: '模板已保存',
-    templateLoaded: '模板已加载',
-    executionSuccess: '执行成功',
-    executionFailed: '执行失败',
-    generationSuccess: '生成成功',
-    generationFailed: '生成失败',
-  },
-
   // 聊天组件
   chat: {
     botName: 'TaskPilot:',
@@ -382,7 +351,7 @@ const words: I18nType = {
   input: {
     placeholder: '向 JTaskPilot 发送消息',
     send: '发送',
-    planMode: '计划模式',
+    planMode: 'PLAN-ACT计划模式',
     waiting: '等待任务完成...',
     maxLength: '最大长度',
     charactersRemaining: '剩余字符',
@@ -390,7 +359,7 @@ const words: I18nType = {
 
   // 侧边栏
   sidebar: {
-    title: '计划模板',
+    title: 'PLAN-ACT 计划模板',
     templateList: '模板列表',
     configuration: '配置',
     newPlan: '新建计划',
@@ -403,17 +372,19 @@ const words: I18nType = {
     jsonTemplate: 'JSON 模板',
     rollback: '回滚',
     restore: '恢复',
-    jsonPlaceholder: '输入 JSON 计划模板...',
+    jsonPlaceholder: 'step2 ： 你可以在这里直接修改在step1中生产出的执行计划，让他更精准的按照你的希望执行。然后你可以点击执行计划，高确定性的执行这个计划',
     planGenerator: '计划生成器',
-    generatorPlaceholder: '描述您想要生成的计划...',
+    generatorPlaceholder: 'step1 : 在这里用自然语言输入你希望完成的任务，尽可能详细，然后点击生成计划，就可以生产一个可重复执行的精确计划',
     generating: '生成中...',
     generatePlan: '生成计划',
     updatePlan: '更新计划',
     executionController: '执行控制器',
     executionParams: '执行参数',
     executionParamsPlaceholder: '输入执行参数...',
+    executionParamsHelp: '在重复执行时，你可以将step2里面的一些内容设置为变量，然后在这里指定该变量的具体值。例如json里面设置 变量1 ，然后在这里则设置 变量1=阿里巴巴 。 就可以实现类似函数的参数的效果。',
     clearParams: '清空参数',
-    apiUrl: 'API URL',
+    apiUrl: 'HTTP GET URL',
+    statusApiUrl: '状态查询 API',
     executing: '执行中...',
     executePlan: '执行计划',
     newTemplate: '新建模板',
@@ -447,6 +418,10 @@ const words: I18nType = {
     updateFailed: '更新计划失败',
     executeFailed: '执行计划失败',
     unknown: '未知',
+    newTemplateName: '新建的执行计划',
+    newTemplateDescription: '请使用计划生成器创建新的计划模板',
+    generatedTemplateDescription: '通过生成器创建的计划模板',
+    defaultExecutionPlanTitle: '执行计划',
   },
 
   // 模态框

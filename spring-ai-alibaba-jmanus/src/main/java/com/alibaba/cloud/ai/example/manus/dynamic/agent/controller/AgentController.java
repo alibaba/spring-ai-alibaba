@@ -46,6 +46,11 @@ public class AgentController {
 		return ResponseEntity.ok(agentService.getAllAgents());
 	}
 
+	@GetMapping("/namespace/{namespace}")
+	public ResponseEntity<List<AgentConfig>> getAgentsByNamespace(@PathVariable("namespace") String namespace) {
+		return ResponseEntity.ok(agentService.getAllAgentsByNamespace(namespace));
+	}
+
 	@GetMapping("/{id}")
 	public ResponseEntity<AgentConfig> getAgentById(@PathVariable("id") String id) {
 		return ResponseEntity.ok(agentService.getAgentById(id));

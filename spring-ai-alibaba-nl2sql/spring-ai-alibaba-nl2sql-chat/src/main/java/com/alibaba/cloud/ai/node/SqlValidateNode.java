@@ -36,9 +36,10 @@ import static com.alibaba.cloud.ai.constant.Constant.SQL_VALIDATE_EXCEPTION_OUTP
 import static com.alibaba.cloud.ai.constant.Constant.SQL_VALIDATE_NODE_OUTPUT;
 
 /**
- * 校验 SQL 语句的语法正确性
+ * Validate SQL statement syntax correctness
  *
- * @deprecated 此节点已废弃，建议使用 SemanticConsistencNode 进行语义一致性校验
+ * @deprecated This node is deprecated, please use SemanticConsistencyNode for semantic
+ * consistency validation
  * @author zhangshenghang
  */
 @Deprecated
@@ -60,31 +61,32 @@ public class SqlValidateNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("进入 {} 节点", this.getClass().getSimpleName());
-		logger.warn("此节点已废弃，建议使用 SemanticConsistencNode 进行语义一致性校验");
+		logger.info("Entering {} node", this.getClass().getSimpleName());
+		logger.warn("This node is deprecated, please use SemanticConsistencyNode for semantic consistency validation");
 
-		// 获取SQL语句
+		// Get SQL statement
 		String sql = StateUtils.getStringValue(state, "SQL_GENERATE_OUTPUT");
-		logger.info("[{}] 开始验证SQL语句: {}", this.getClass().getSimpleName(), sql);
+		logger.info("[{}] Starting SQL statement validation: {}", this.getClass().getSimpleName(), sql);
 
 		Flux<ChatResponse> sqlValidationFlux = Flux.create(emitter -> {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始验证SQL语句..."));
-			// 构建查询参数并执行验证
+			// Build query parameters and execute validation
 			DbQueryParameter dbQueryParameter = new DbQueryParameter();
 			dbQueryParameter.setSql(sql);
 
 			try {
-				// 执行SQL验证
+				// Execute SQL validation
 				dbAccessor.executeSqlAndReturnObject(dbConfig, dbQueryParameter);
-				logger.info("[{}] SQL语法验证通过", this.getClass().getSimpleName());
+				logger.info("[{}] SQL syntax validation passed", this.getClass().getSimpleName());
 				emitter.next(ChatResponseUtil.createCustomStatusResponse("SQL语法验证通过."));
 				emitter.complete();
 
 			}
 			catch (Exception e) {
-				// 处理验证失败情况
+				// Handle validation failure case
 				String errorMessage = e.getMessage();
-				logger.error("[{}] SQL语法验证失败 - 原因: {}", this.getClass().getSimpleName(), errorMessage);
+				logger.error("[{}] SQL syntax validation failed - reason: {}", this.getClass().getSimpleName(),
+						errorMessage);
 				emitter.next(ChatResponseUtil.createCustomStatusResponse("SQL语法验证失败: " + errorMessage));
 				emitter.complete();
 			}

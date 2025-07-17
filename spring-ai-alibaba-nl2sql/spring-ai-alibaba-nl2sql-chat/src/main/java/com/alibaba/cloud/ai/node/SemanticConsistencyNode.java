@@ -18,13 +18,12 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.schema.ExecutionStep;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
-import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
+import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,17 +37,21 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
- * 语义一致性校验节点
+ * Semantic consistency validation node that checks SQL query semantic consistency.
+ *
+ * This node is responsible for: - Validating SQL query semantic consistency against
+ * schema and evidence - Providing validation results for query refinement - Handling
+ * validation failures with recommendations - Managing step progression in execution plan
  *
  * @author zhangshenghang
  */
-public class SemanticConsistencNode extends AbstractPlanBasedNode {
+public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 
-	private static final Logger logger = LoggerFactory.getLogger(SemanticConsistencNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(SemanticConsistencyNode.class);
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
-	public SemanticConsistencNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
+	public SemanticConsistencyNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
 			DbConfig dbConfig) {
 		super();
 		this.baseNl2SqlService = baseNl2SqlService;
@@ -58,79 +61,64 @@ public class SemanticConsistencNode extends AbstractPlanBasedNode {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logNodeEntry();
 
-		// 获取必要的输入参数
-		String input = StateUtils.getStringValue(state, INPUT_KEY);
+		// Get necessary input parameters
 		List<String> evidenceList = StateUtils.getListValue(state, EVIDENCES);
 		SchemaDTO schemaDTO = StateUtils.getObjectValue(state, TABLE_RELATION_OUTPUT, SchemaDTO.class);
 
-		// 获取当前执行步骤和SQL查询
+		// Get current execution step and SQL query
 		ExecutionStep executionStep = getCurrentExecutionStep(state);
 		Integer currentStep = getCurrentStepNumber(state);
 		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
 		String sqlQuery = toolParameters.getSqlQuery();
 
-		logger.info("开始语义一致性校验 - SQL: {}", sqlQuery);
-		logger.info("步骤描述: {}", toolParameters.getDescription());
+		logger.info("Starting semantic consistency validation - SQL: {}", sqlQuery);
+		logger.info("Step description: {}", toolParameters.getDescription());
 
-		Flux<ChatResponse> semanticValidationFlux = Flux.create(emitter -> {
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始语义一致性校验..."));
-			// 执行语义一致性检查
-			String validationResult = null;
-			try {
-				validationResult = performSemanticValidation(schemaDTO, evidenceList, toolParameters, sqlQuery);
-			}
-			catch (Exception e) {
-				emitter.error(e);
-				return;
-			}
+		Flux<ChatResponse> validationResultFlux = performSemanticValidationStream(schemaDTO, evidenceList,
+				toolParameters, sqlQuery);
 
-			// 判断校验结果
-			boolean passed = !validationResult.startsWith("不通过");
-			logger.info("语义一致性校验结果: {}", passed ? "通过" : "未通过");
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("语义一致性校验结果: " + (passed ? "通过" : "未通过")));
-
-			if (!passed) {
-				logger.info("语义一致性校验详情: {}", validationResult);
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("校验详情: " + validationResult));
-			}
-			emitter.complete();
-		});
-
-		var generator = StreamingChatGenerator.builder()
-			.startingNode(this.getClass().getSimpleName())
-			.startingState(state)
-			.mapResult(response -> {
-				String validationResult = null;
-				try {
-					validationResult = performSemanticValidation(schemaDTO, evidenceList, toolParameters, sqlQuery);
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-				boolean passed = !validationResult.startsWith("不通过");
-				return buildValidationResult(passed, validationResult, currentStep);
-			})
-			.build(semanticValidationFlux);
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				"开始语义一致性校验", "语义一致性校验完成", validationResult -> {
+					boolean isPassed = !validationResult.startsWith("不通过");
+					Map<String, Object> result = buildValidationResult(isPassed, validationResult, currentStep);
+					logger.info("[{}] Semantic consistency validation result: {}, passed: {}",
+							this.getClass().getSimpleName(), validationResult, isPassed);
+					return result;
+				}, validationResultFlux);
 
 		return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, generator);
 	}
 
 	/**
-	 * 执行语义一致性验证
+	 * Perform semantic consistency validation
 	 */
 	private String performSemanticValidation(SchemaDTO schemaDTO, List<String> evidenceList,
 			ExecutionStep.ToolParameters toolParameters, String sqlQuery) throws Exception {
-		// 构建验证上下文
+		// Build validation context
 		String schema = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
 		String evidence = StringUtils.join(evidenceList, ";\n");
 		String context = String.join("\n", schema, evidence, toolParameters.getDescription());
 
-		// 执行语义一致性检查
+		// Execute semantic consistency check
 		return baseNl2SqlService.semanticConsistency(sqlQuery, context);
 	}
 
 	/**
-	 * 构建验证结果
+	 * Perform streaming semantic consistency validation
+	 */
+	private Flux<ChatResponse> performSemanticValidationStream(SchemaDTO schemaDTO, List<String> evidenceList,
+			ExecutionStep.ToolParameters toolParameters, String sqlQuery) throws Exception {
+		// Build validation context
+		String schema = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
+		String evidence = StringUtils.join(evidenceList, ";\n");
+		String context = String.join("\n", schema, evidence, toolParameters.getDescription());
+
+		// Execute semantic consistency check
+		return baseNl2SqlService.semanticConsistencyStream(sqlQuery, context);
+	}
+
+	/**
+	 * Build validation result
 	 */
 	private Map<String, Object> buildValidationResult(boolean passed, String validationResult, Integer currentStep) {
 		if (passed) {
