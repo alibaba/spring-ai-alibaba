@@ -157,7 +157,7 @@ const handleNavClick = (categoryKey: string) => {
 
 .config-details {
   flex: 1;
-  padding: 30px;
+  padding: 24px 30px;
   overflow-y: auto;
 }
 
