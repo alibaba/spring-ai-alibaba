@@ -477,327 +477,193 @@
         const exampleQueries = document.querySelectorAll('.example-query');
 
         let eventSource;
-        let fullContent = '';
-        let processingContent = {};
-        let typingTimers = {};
+        let streamState = {};
+        let currentType = null; // 记录当前的type
+        let typeCounters = {}; // 记录每个type出现的次数
+        let sectionCounter = 0; // 全局section计数器
 
-        // 高亮SQL语法
+        // --- Helper Functions ---
+
         function highlightSQL(sql) {
-            // 简单的SQL语法高亮
+            if (!sql) return '';
             return sql
-                .replace(/\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|HAVING|JOIN|LEFT|RIGHT|INNER|OUTER|UNION|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|AS|ON|AND|OR|NOT|IN|BETWEEN|LIKE|IS NULL|IS NOT NULL|ASC|DESC|DISTINCT|LIMIT)\b/gi,
-                    match => `<span class="sql-keyword">${match}</span>`)
-                .replace(/\b(COUNT|SUM|AVG|MIN|MAX|COALESCE|CASE|WHEN|THEN|ELSE|END)\b/gi,
-                    match => `<span class="sql-function">${match}</span>`)
-                .replace(/'([^']*)'/g,
-                    match => `<span class="sql-string">${match}</span>`)
-                .replace(/\b(\d+)\b/g,
-                    match => `<span class="sql-number">${match}</span>`)
-                .replace(/(\(|\)|\+|\-|\*|\/|=|<>|<|>|<=|>=)/g,
-                    match => `<span class="sql-operator">${match}</span>`)
-                .replace(/--.*$/gm,
-                    match => `<span class="sql-comment">${match}</span>`);
+                .replace(/\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|HAVING|JOIN|LEFT|RIGHT|INNER|OUTER|UNION|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|AS|ON|AND|OR|NOT|IN|BETWEEN|LIKE|IS NULL|IS NOT NULL|ASC|DESC|DISTINCT|LIMIT)\b/gi, match => `<span class="sql-keyword">${match}</span>`)
+                .replace(/\b(COUNT|SUM|AVG|MIN|MAX|COALESCE|CASE|WHEN|THEN|ELSE|END)\b/gi, match => `<span class="sql-function">${match}</span>`)
+                .replace(/'([^']*)'/g, match => `<span class="sql-string">${match}</span>`)
+                .replace(/\b(\d+)\b/g, match => `<span class="sql-number">${match}</span>`)
+                .replace(/(\(\|\)|\+|-|\*|\/|=|<|>|<=|>=)/g, match => `<span class="sql-operator">${match}</span>`)
+                .replace(/--.*$/gm, match => `<span class="sql-comment">${match}</span>`);
         }
 
-        // 格式化JSON
-        function formatJSON(json) {
+        function convertJsonToHTMLTable(jsonString) {
             try {
-                const obj = JSON.parse(json);
-                return JSON.stringify(obj, null, 2);
+                const data = JSON.parse(jsonString);
+                if (!data || !data.columns || !data.data) {
+                    return `<pre>${jsonString}</pre>`; // Not a valid table JSON, show raw
+                }
+
+                let html = '<table class="table"><thead><tr>';
+                data.columns.forEach(header => {
+                    html += `<th>${header}</th>`;
+                });
+                html += '</tr></thead><tbody>';
+
+                data.data.forEach(row => {
+                    html += '<tr>';
+                    // Ensure we handle rows that might not have the same number of cells as headers
+                    for (let i = 0; i < data.columns.length; i++) {
+                         html += `<td>${row[i] || ''}</td>`;
+                    }
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table>';
+                return html;
             } catch (e) {
-                return json;
+                // This will happen frequently with incomplete streams, so we just show the raw text.
+                return `<pre>${jsonString}</pre>`;
             }
         }
 
-        // 处理流式内容
-        function processStreamContent(content) {
-            // 初始化处理内容对象 - 只在第一次初始化
-            if (processingContent.initialized !== true) {
-                processingContent = {
-                    rewrite: '',
-                    sql: '',
-                    sqlRaw: '',
-                    explanation: '',
-                    result: '',
-                    initialized: true,
-                    resultFound: false,
-                    lastContentLength: 0
-                };
-            }
-
-            // 如果内容没有变化，直接返回上次的处理结果
-            if (content.length === processingContent.lastContentLength) {
-                return {
-                    rewrite: processingContent.rewrite,
-                    sql: processingContent.sql,
-                    sqlRaw: processingContent.sqlRaw,
-                    explanation: processingContent.explanation,
-                    result: processingContent.result
-                };
-            }
-
-            // 更新内容长度
-            processingContent.lastContentLength = content.length;
-
-            // 提取需求重写部分 - 通常在内容开始部分
-            const rewriteRegex = /(需求类型：《.*?》\s*语种类型：《.*?》\s*需求内容：.*?)(?=\n\n|\n$|$)/;
-            const rewriteMatch = content.match(rewriteRegex);
-            if (rewriteMatch && rewriteMatch[1]) {
-                processingContent.rewrite = rewriteMatch[1];
-            }
-
-            // 提取SQL部分 - 查找所有SQL块，取最后一个（最终结果）
-            const sqlRegex = /```sql\s*([\s\S]*?)```/g;
-            let sqlMatch;
-            let lastSqlMatch = null;
-            let lastSqlContent = null;
-
-            while ((sqlMatch = sqlRegex.exec(content)) !== null) {
-                lastSqlMatch = sqlMatch[0];
-                lastSqlContent = sqlMatch[1];
-            }
-
-            if (lastSqlMatch) {
-                // 保存原始SQL和高亮后的SQL
-                processingContent.sqlRaw = lastSqlContent;
-                processingContent.sql = `<pre>${highlightSQL(lastSqlContent)}</pre>`;
-            }
-
-            // 提取查询结果 - 通常在SQL之后，包含表格或结果描述
-            // 首先检查是否有表格数据
-            let resultFound = false;
-
-            // 查找表格格式的结果 - 更精确的表格识别
-            const tableRegex = /(?:查询结果[:：]|执行结果[:：]|返回\s*\d+\s*条记录|共\s*\d+\s*条数据|表\s*\d+\s*行)?([\s\S]*?)(\|[\s\S]*?\|\s*\n\|\s*[-:]+\s*\|[\s\S]*?)(?=\n\n|\n```|\n$|$)/;
-            const tableMatch = content.match(tableRegex);
-
-            if (tableMatch && tableMatch[2] && tableMatch[2].includes('|')) {
-                // 处理表格内容
-                let resultContent = tableMatch[0];
-                const mdTableMatch = resultContent.match(/\|\s*(.*?)\s*\|\n\|\s*[-:]+\s*\|\s*[-:]+\s*\|[\s\S]*?(?=\n\n|\n$|$)/g);
-
-                if (mdTableMatch) {
-                    mdTableMatch.forEach(table => {
-                        const htmlTable = convertMarkdownTableToHTML(table);
-                        resultContent = resultContent.replace(table, htmlTable);
-                    });
-                }
-
-                processingContent.result = resultContent;
-                resultFound = true;
-            }
-
-            // 如果没有找到表格，查找结果描述文本
-            if (!resultFound) {
-                const resultTextRegex = /(?:查询结果[:：]|执行结果[:：]|返回\s*\d+\s*条记录|共\s*\d+\s*条数据|表\s*\d+\s*行)([\s\S]*?)(?=\n\n|\n```|\n$|$)/;
-                const resultTextMatch = content.match(resultTextRegex);
-
-                if (resultTextMatch) {
-                    processingContent.result = resultTextMatch[0];
-                    resultFound = true;
-                }
-            }
-
-            // 标记是否找到结果
-            processingContent.resultFound = resultFound;
-
-            // 提取解释内容 - 使用更智能的方法
-            // 首先创建一个临时的内容副本
-            let tempContent = content;
-
-            // 移除已识别的部分
-            if (lastSqlMatch) {
-                tempContent = tempContent.replace(lastSqlMatch, '');
-            }
-
-            if (processingContent.rewrite) {
-                tempContent = tempContent.replace(processingContent.rewrite, '');
-            }
-
-            if (processingContent.result && processingContent.resultFound) {
-                tempContent = tempContent.replace(processingContent.result, '');
-            }
-
-            // 清理并提取解释内容
-            const explanationLines = tempContent.split('\n')
-                .filter(line => line.trim() !== '')
-                .filter(line => !line.includes('```'))
-                .filter(line => !line.match(/^需求类型|^语种类型|^需求内容/))
-                .filter(line => !line.match(/^\|.*\|$/)) // 排除可能的表格行
-                .filter(line => !line.match(/^[-+]{3,}$/)); // 排除分隔线
-
-            if (explanationLines.length > 0) {
-                // 合并解释内容，避免重复
-                const newExplanation = explanationLines.join('\n');
-
-                // 如果有新内容，更新解释
-                if (newExplanation.trim() !== '') {
-                    // 智能合并解释内容，避免重复
-                    if (!processingContent.explanation) {
-                        processingContent.explanation = newExplanation;
-                    } else {
-                        // 检查新内容是否已包含在现有内容中
-                        if (!processingContent.explanation.includes(newExplanation)) {
-                            // 检查现有内容是否已包含在新内容中
-                            if (newExplanation.includes(processingContent.explanation)) {
-                                processingContent.explanation = newExplanation;
-                            } else {
-                                // 两者都不包含对方，追加新内容
-                                processingContent.explanation += '\n' + newExplanation;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 返回处理后的各部分内容，而不是HTML
-            return {
-                rewrite: processingContent.rewrite,
-                sql: processingContent.sql,
-                sqlRaw: processingContent.sqlRaw,
-                explanation: processingContent.explanation,
-                result: processingContent.result
-            };
-        }
-
-        // 将Markdown表格转换为HTML表格
         function convertMarkdownTableToHTML(markdownTable) {
+            if (!markdownTable) return '';
             const lines = markdownTable.trim().split('\n');
-            if (lines.length < 3) return markdownTable; // 不是有效的表格
+            if (lines.length < 2 || !lines[1].includes('---')) return markdownTable;
 
-            // 确保第一行是表头，第二行是分隔符
-            if (!lines[1].includes('---') && !lines[1].includes(':-')) {
-                return markdownTable; // 不符合Markdown表格格式
-            }
+            const headers = lines[0].split('|').map(h => h.trim()).filter(Boolean);
+            let html = '<table class="table"><thead><tr>';
+            headers.forEach(header => { html += `<th>${header}</th>`; });
+            html += '</tr></thead><tbody>';
 
-            const headers = lines[0].split('|')
-                .filter(cell => cell !== undefined)
-                .map(cell => cell.trim());
-
-            // 移除空的首尾单元格（如果存在）
-            if (headers[0] === '') headers.shift();
-            if (headers[headers.length - 1] === '') headers.pop();
-
-            let html = '<table class="table">\n<thead>\n<tr>\n';
-
-            // 添加表头
-            headers.forEach(header => {
-                html += `<th>${header}</th>\n`;
-            });
-
-            html += '</tr>\n</thead>\n<tbody>\n';
-
-            // 添加数据行（跳过表头和分隔行）
             for (let i = 2; i < lines.length; i++) {
-                if (!lines[i].trim()) continue; // 跳过空行
-
-                const rowCells = lines[i].split('|')
-                    .filter(cell => cell !== undefined)
-                    .map(cell => cell.trim());
-
-                // 移除空的首尾单元格（如果存在）
-                if (rowCells[0] === '') rowCells.shift();
-                if (rowCells[rowCells.length - 1] === '') rowCells.pop();
-
-                // 确保单元格数量与表头一致
+                const rowCells = lines[i].split('|').map(c => c.trim()).filter(Boolean);
                 if (rowCells.length > 0) {
-                    html += '<tr>\n';
-
-                    // 填充单元格，如果数据不足则留空
+                    html += '<tr>';
                     for (let j = 0; j < headers.length; j++) {
-                        const cellContent = j < rowCells.length ? rowCells[j] : '';
-                        html += `<td>${cellContent}</td>\n`;
+                        html += `<td>${rowCells[j] || ''}</td>`;
                     }
-
-                    html += '</tr>\n';
+                    html += '</tr>';
                 }
             }
-
-            html += '</tbody>\n</table>';
+            html += '</tbody></table>';
             return html;
         }
 
-        // 复制到剪贴板
         function copyToClipboard(button) {
             const content = button.getAttribute('data-content');
             navigator.clipboard.writeText(content).then(() => {
                 const originalIcon = button.innerHTML;
                 button.innerHTML = '<i class="bi bi-check2"></i>';
-                setTimeout(() => {
-                    button.innerHTML = originalIcon;
-                }, 2000);
+                setTimeout(() => { button.innerHTML = originalIcon; }, 2000);
             });
         }
 
-        // 打字机效果函数
-        function typeText(element, text, speed = 10, startIndex = 0) {
-            // 清除之前的计时器
-            if (typingTimers[element.id]) {
-                clearTimeout(typingTimers[element.id]);
-            }
+        // --- UI Initialization and Update Functions ---
 
-            // 如果已经完成打字，直接返回
-            if (startIndex >= text.length) {
+        function initUI() {
+            resultsDiv.innerHTML = `<div id="result-sections-container"></div>`;
+            // 重置所有计数器
+            currentType = null;
+            typeCounters = {};
+            sectionCounter = 0;
+            streamState = {};
+        }
+
+        // 动态创建新的section
+        function createNewSection(type, data) {
+            sectionCounter++;
+
+            // 增加type计数器
+            if (!typeCounters[type]) {
+                typeCounters[type] = 0;
+            }
+            typeCounters[type]++;
+
+            const sectionId = `${type}-${typeCounters[type]}-section`;
+            const contentId = `${type}-${typeCounters[type]}-content`;
+
+            // 获取type的显示名称和图标
+            const typeInfo = getTypeInfo(type);
+
+            // 创建新的section HTML
+            const sectionHTML = `
+                <div id="${sectionId}" class="result-section">
+                    <div class="section-title">
+                        <i class="${typeInfo.icon}"></i> ${typeInfo.title} (${typeCounters[type]})
+                        ${type === 'sql' ? `<button class="copy-button" id="copy-${sectionId}-button" style="display: none;"><i class="bi bi-clipboard"></i></button>` : ''}
+                    </div>
+                    <div class="section-content" id="${contentId}"></div>
+                </div>
+            `;
+
+            // 添加到容器
+            const container = document.getElementById('result-sections-container');
+            container.insertAdjacentHTML('beforeend', sectionHTML);
+
+            console.log(`Created new section: ${sectionId}`);
+
+            // 立即更新内容
+            updateNewSection(type, sectionId, contentId, data);
+
+            return { sectionId, contentId };
+        }
+
+        // 获取type对应的显示信息
+        function getTypeInfo(type) {
+            const typeMapping = {
+                'status': { title: '当前状态', icon: 'bi bi-activity' },
+                'rewrite': { title: '需求理解', icon: 'bi bi-pencil-square' },
+                'keyword_extract': { title: '关键词提取', icon: 'bi bi-key' },
+                'plan_generation': { title: '计划生成', icon: 'bi bi-diagram-3' },
+                'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
+                'explanation': { title: '解释说明', icon: 'bi bi-info-circle' },
+                'result': { title: '查询结果', icon: 'bi bi-table' }
+            };
+
+            return typeMapping[type] || { title: type, icon: 'bi bi-file-text' };
+        }
+
+        // 更新新创建的section
+        function updateNewSection(type, sectionId, contentId, data) {
+            const section = document.getElementById(sectionId);
+            const content = document.getElementById(contentId);
+
+            if (!section || !content) {
+                console.error(`Element not found: section=${sectionId}, content=${contentId}`);
                 return;
             }
 
-            // 添加一个字符
-            element.textContent = text.substring(0, startIndex + 1);
+            section.style.display = 'block';
 
-            // 设置下一个字符的计时器
-            typingTimers[element.id] = setTimeout(() => {
-                typeText(element, text, speed, startIndex + 1);
-            }, speed);
+            // 根据类型格式化内容
+            let formattedContent;
+            if (type === 'sql') {
+                const copyButton = document.getElementById(`copy-${sectionId}-button`);
+                if (copyButton) {
+                    copyButton.style.display = 'inline-block';
+                    copyButton.setAttribute('data-content', data);
+                    copyButton.onclick = () => copyToClipboard(copyButton);
+                }
+                formattedContent = `<pre>${highlightSQL(data)}</pre>`;
+            } else if (type === 'result') {
+                let tableHtml = convertJsonToHTMLTable(data);
+                if (tableHtml.startsWith('<pre>')) {
+                    tableHtml = convertMarkdownTableToHTML(data);
+                    if (tableHtml === data) {
+                        tableHtml = `<pre>${data}</pre>`;
+                    }
+                }
+                formattedContent = tableHtml;
+            } else {
+                formattedContent = data.toString().replace(/\n/g, '<br>');
+            }
+
+            content.innerHTML = formattedContent;
+            console.log(`Updated section ${sectionId} with content:`, formattedContent);
         }
 
-        // 初始化UI结构
-        function initUI() {
-            // 清除加载状态和之前的内容
-            resultsDiv.innerHTML = '';
+        // --- Main Search Logic ---
 
-            // 创建固定的DOM结构
-            resultsDiv.innerHTML = `
-                <div id="result-sections-container">
-                    <div id="rewrite-section" class="result-section" style="display: none;">
-                        <div class="section-title">
-                            <i class="bi bi-pencil-square"></i> 需求理解
-                            <span class="badge">重写</span>
-                        </div>
-                        <div class="section-content">
-                            <div id="rewrite-content"></div>
-                        </div>
-                    </div>
-                    <div id="sql-section" class="result-section" style="display: none;">
-                        <div class="section-title">
-                            <i class="bi bi-code-square"></i> 生成的SQL
-                            <span class="badge badge-success">SQL</span>
-                            <button class="copy-button" id="copy-sql-button" style="display: none;">
-                                <i class="bi bi-clipboard"></i>
-                            </button>
-                        </div>
-                        <div class="section-content" id="sql-content"></div>
-                    </div>
-                    <div id="explanation-section" class="result-section" style="display: none;">
-                        <div class="section-title">
-                            <i class="bi bi-info-circle"></i> 解释说明
-                        </div>
-                        <div class="section-content">
-                            <div id="explanation-content" class="typing-effect"></div>
-                            <span id="typing-cursor" class="typing-cursor"></span>
-                        </div>
-                    </div>
-                    <div id="result-section" class="result-section" style="display: none;">
-                        <div class="section-title">
-                            <i class="bi bi-table"></i> 查询结果
-                            <span class="badge badge-success">数据</span>
-                        </div>
-                        <div class="section-content" id="result-content"></div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 执行搜索
         const performSearch = () => {
             const query = queryInput.value;
             if (!query) {
@@ -805,170 +671,138 @@
                 return;
             }
 
-            // 重置状态
-            fullContent = '';
-            processingContent = {};
-
-            // 清除之前的计时器
-            Object.keys(typingTimers).forEach(key => {
-                clearTimeout(typingTimers[key]);
-            });
-            typingTimers = {};
-
-            statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div> 正在处理...</div>';
-
             if (eventSource) {
                 eventSource.close();
             }
 
-            // 初始化UI结构
             initUI();
-
-            // 显示加载状态
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'loading';
-            loadingDiv.innerHTML = '<div class="spinner"></div> 正在分析您的问题...';
-            resultsDiv.appendChild(loadingDiv);
+            streamState = { status: '', rewrite: '', sql: '', explanation: '', result: '', keyword_extract: '', plan_generation: '' };
+            statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div> 正在处理...</div>';
 
             eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(query)}`);
 
             eventSource.onopen = () => {
-                console.log('连接已建立');
-            };
-
-            // 保存上一次的内容，用于比较变化
-            let lastContents = {
-                rewrite: '',
-                explanation: '',
-                sql: '',
-                sqlRaw: '',
-                result: ''
+                console.log('Stream connection established.');
             };
 
             eventSource.onmessage = (event) => {
-                // 移除加载状态
-                const loadingElement = resultsDiv.querySelector('.loading');
-                if (loadingElement) {
-                    loadingElement.remove();
-                }
+                console.log('Received raw data:', event.data);
+                statusDiv.innerHTML = ''; // Clear "正在处理..."
 
-                let currentContent = '';
+                let chunk;
+                let actualType;
+                let actualData;
+                
                 try {
-                    currentContent = JSON.parse(event.data);
+                    console.log('Raw event.data type:', typeof event.data);
+                    console.log('Raw event.data value:', event.data);
+                    
+                    // 尝试解析JSON
+                    let parsedData = JSON.parse(event.data);
+                    console.log('First parse result type:', typeof parsedData);
+                    console.log('First parse result:', parsedData);
+                    
+                    // 如果第一次解析结果还是字符串，再解析一次
+                    if (typeof parsedData === 'string') {
+                        console.log('Need second parse');
+                        chunk = JSON.parse(parsedData);
+                        console.log('Second parse result type:', typeof chunk);
+                        console.log('Second parse result:', chunk);
+                    } else {
+                        chunk = parsedData;
+                    }
+                    
+                    console.log('Final chunk type:', typeof chunk);
+                    console.log('Final chunk:', chunk);
+                    console.log('Final chunk keys:', Object.keys(chunk || {}));
+
+                    // 直接提取type和data，使用方括号语法
+                    actualType = chunk['type'];
+                    actualData = chunk['data'];
+                    
+                    console.log('Extracted - Type:', actualType, 'Data:', actualData);
+
+                    // 处理嵌套JSON的情况
+                    if (actualType === 'explanation' && typeof actualData === 'string') {
+                        try {
+                            const innerChunk = JSON.parse(actualData);
+                            if (innerChunk.type && innerChunk.data !== undefined) {
+                                actualType = innerChunk.type;
+                                actualData = innerChunk.data;
+                                console.log('After nested parsing - Type:', actualType, 'Data:', actualData);
+                            }
+                        } catch (e) {
+                            // 如果内层解析失败，保持原来的值
+                            console.log('Inner JSON parse failed, keeping original values');
+                        }
+                    }
+
                 } catch (e) {
-                    currentContent = event.data;
-                }
-                fullContent += currentContent;
-
-                // 处理内容
-                const sanitizedContent = fullContent.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                const { rewrite, sql, explanation, result, sqlRaw } = processStreamContent(sanitizedContent);
-
-                // 更新需求重写部分
-                if (rewrite && rewrite !== lastContents.rewrite) {
-                    const rewriteSection = document.getElementById('rewrite-section');
-                    const rewriteContent = document.getElementById('rewrite-content');
-
-                    rewriteSection.style.display = 'block';
-                    rewriteContent.innerHTML = rewrite.replace(/\n/g, '<br>');
-                    lastContents.rewrite = rewrite;
+                    console.warn("JSON parse failed, treating as plain text:", event.data);
+                    return;
                 }
 
-                // 更新SQL部分
-                if (sql && sql !== lastContents.sql) {
-                    const sqlSection = document.getElementById('sql-section');
-                    const sqlContent = document.getElementById('sql-content');
-                    const copyButton = document.getElementById('copy-sql-button');
+                console.log('Final values - Type:', actualType, 'Data:', actualData);
 
-                    sqlSection.style.display = 'block';
-                    sqlContent.innerHTML = sql;
+                if (actualType && actualData !== undefined && actualData !== null) {
+                    // 检查是否需要创建新的section
+                    if (currentType !== actualType) {
+                        // type切换了，创建新的section
+                        console.log(`Type changed from ${currentType} to ${actualType}, creating new section`);
+                        currentType = actualType;
 
-                    if (sqlRaw) {
-                        copyButton.style.display = 'inline-block';
-                        copyButton.setAttribute('data-content', sqlRaw);
-                        copyButton.onclick = function () {
-                            copyToClipboard(this);
-                        };
+                        // 直接创建新的section
+                        createNewSection(actualType, actualData);
+                    } else {
+                        // 同一个type，继续累积数据到当前section
+                        const currentCount = typeCounters[actualType];
+                        const currentSectionKey = `${actualType}_${currentCount}`;
+
+                        // 累积数据
+                        if (!streamState[currentSectionKey]) {
+                            streamState[currentSectionKey] = '';
+                        }
+                        streamState[currentSectionKey] += actualData;
+
+                        // 更新当前section的内容
+                        const sectionId = `${actualType}-${currentCount}-section`;
+                        const contentId = `${actualType}-${currentCount}-content`;
+                        updateNewSection(actualType, sectionId, contentId, streamState[currentSectionKey]);
+
+                        console.log(`Appended to ${currentSectionKey}:`, streamState[currentSectionKey]);
                     }
 
-                    lastContents.sql = sql;
-                    lastContents.sqlRaw = sqlRaw;
+                    // 自动滚动到底部
+                    resultsDiv.scrollTop = resultsDiv.scrollHeight;
+                } else {
+                    console.warn('Missing type or data:', {
+                        type: actualType,
+                        data: actualData,
+                        originalChunk: chunk
+                    });
                 }
-
-                // 更新解释部分 - 使用打字机效果
-                if (explanation && explanation !== lastContents.explanation) {
-                    const explanationSection = document.getElementById('explanation-section');
-                    const explanationContent = document.getElementById('explanation-content');
-                    const typingCursor = document.getElementById('typing-cursor');
-
-                    explanationSection.style.display = 'block';
-
-                    // 如果是新内容，使用打字机效果
-                    if (!lastContents.explanation || explanation.length > lastContents.explanation.length) {
-                        // 显示打字机光标
-                        typingCursor.style.display = 'inline-block';
-
-                        // 计算新增的文本
-                        const newText = explanation.replace(/\n/g, ' ');
-
-                        // 使用打字机效果显示文本
-                        explanationContent.textContent = '';
-                        typeText(explanationContent, newText, 5);
-
-                        // 打字完成后隐藏光标
-                        setTimeout(() => {
-                            typingCursor.style.display = 'none';
-                            // 将换行符转换为<br>标签
-                            explanationContent.innerHTML = explanation.replace(/\n/g, '<br>');
-                        }, newText.length * 5 + 100);
-                    }
-
-                    lastContents.explanation = explanation;
-                }
-
-                // 更新结果部分
-                if (result && result !== lastContents.result) {
-                    const resultSection = document.getElementById('result-section');
-                    const resultContent = document.getElementById('result-content');
-
-                    resultSection.style.display = 'block';
-                    resultContent.innerHTML = result.replace(/\n/g, '<br>');
-
-                    lastContents.result = result;
-                }
-
-                // 滚动到底部
-                resultsDiv.scrollTop = resultsDiv.scrollHeight;
             };
 
             eventSource.onerror = (err) => {
-                console.error('EventSource错误:', err);
+                console.error('EventSource error:', err);
                 statusDiv.innerHTML = '<span class="badge badge-error">连接错误</span>';
                 eventSource.close();
             };
 
             eventSource.addEventListener('complete', function (e) {
                 statusDiv.innerHTML = '<span class="badge badge-success">查询完成</span>';
-                eventSource.close();
-
-                // 隐藏打字机光标
                 const typingCursor = document.getElementById('typing-cursor');
-                if (typingCursor) {
-                    typingCursor.style.display = 'none';
-                }
+                if (typingCursor) typingCursor.style.display = 'none';
+                eventSource.close();
             });
         };
 
-        // 事件监听
+        // --- Event Listeners ---
+
         searchButton.addEventListener('click', performSearch);
-
         queryInput.addEventListener('keyup', (event) => {
-            if (event.key === 'Enter') {
-                performSearch();
-            }
+            if (event.key === 'Enter') performSearch();
         });
-
-        // 示例查询点击事件
         exampleQueries.forEach(example => {
             example.addEventListener('click', () => {
                 queryInput.value = example.textContent;
