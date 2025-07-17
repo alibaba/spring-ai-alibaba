@@ -17,24 +17,24 @@
   <div class="config-panel">
     <div class="config-header">
       <div class="header-left">
-        <h2>{{ t('config.basicConfig.title') }}</h2>
+        <h2>{{ $t('config.basicConfig.title') }}</h2>
         <div class="config-stats">
           <span class="stat-item">
-            <span class="stat-label">总配置项:</span>
+            <span class="stat-label">{{ $t('config.basicConfig.totalConfigs') }}:</span>
             <span class="stat-value">{{ configStats.total }}</span>
           </span>
           <span class="stat-item" v-if="configStats.modified > 0">
-            <span class="stat-label">已修改:</span>
+            <span class="stat-label">{{ $t('config.basicConfig.modified') }}:</span>
             <span class="stat-value modified">{{ configStats.modified }}</span>
           </span>
         </div>
       </div>
       <div class="header-right">
         <div class="import-export-actions">
-          <button @click="exportConfigs" class="action-btn" title="导出配置">
+          <button @click="exportConfigs" class="action-btn" :title="$t('config.basicConfig.exportConfigs')">
             📤
           </button>
-          <label class="action-btn" title="导入配置">
+          <label class="action-btn" :title="$t('config.basicConfig.importConfigs')">
             📥
             <input 
               type="file" 
@@ -351,34 +351,34 @@ const searchQuery = ref('')
 // Configuration item display name mapping
 const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   // Agent Settings
-  'maxSteps': '智能体执行最大步数',
-  'resetAllAgents': '重置所有agent',
-  'maxMemory': "能记住的最大消息数",
-  'parallelToolCalls':'并行工具调用',
+  'maxSteps': t('config.configDisplayNames.maxSteps'),
+  'resetAllAgents': t('config.configDisplayNames.resetAllAgents'),
+  'maxMemory': t('config.configDisplayNames.maxMemory'),
+  'parallelToolCalls': t('config.configDisplayNames.parallelToolCalls'),
   
   // Browser Settings
-  'headlessBrowser': '是否使用无头浏览器模式',
+  'headlessBrowser': t('config.configDisplayNames.headlessBrowser'),
   'browserTimeout': t('config.basicConfig.browserTimeout'),
-  'browserDebug': '浏览器debug模式',
+  'browserDebug': t('config.configDisplayNames.browserDebug'),
   
   // Interaction Settings
-  'autoOpenBrowser': '启动时自动打开浏览器',
-  'consoleInteractive': '启用控制台交互模式',
+  'autoOpenBrowser': t('config.configDisplayNames.autoOpenBrowser'),
+  'consoleInteractive': t('config.configDisplayNames.consoleInteractive'),
   
   // System Settings
-  'systemName': '系统名称',
-  'language': '默认语言',
-  'maxThreads': '最大线程数',
+  'systemName': t('config.configDisplayNames.systemName'),
+  'language': t('config.configDisplayNames.language'),
+  'maxThreads': t('config.configDisplayNames.maxThreads'),
   'timeoutSeconds': t('config.basicConfig.requestTimeout')
 }
 
 // Group display name mapping
 const GROUP_DISPLAY_NAMES: Record<string, string> = {
-  'manus': '智能体设置',
-  'browser': '浏览器设置', 
-  'interaction': '交互设置',
-  'system': '系统设置',
-  'performance': '性能设置'
+  'manus': t('config.groupDisplayNames.manus'),
+  'browser': t('config.groupDisplayNames.browser'), 
+  'interaction': t('config.groupDisplayNames.interaction'),
+  'system': t('config.groupDisplayNames.system'),
+  'performance': t('config.groupDisplayNames.performance')
 }
 
 // Group icon mapping
@@ -392,12 +392,12 @@ const GROUP_ICONS: Record<string, string> = {
 
 // Sub-group display name mapping
 const SUB_GROUP_DISPLAY_NAMES: Record<string, string> = {
-  'agent': '智能体设置',
-  'browser': '浏览器设置',
-  'interaction': '交互设置',
-  'system': '系统设置',
-  'performance': '性能设置',
-  'general': '常规设置'
+  'agent': t('config.subGroupDisplayNames.agent'),
+  'browser': t('config.subGroupDisplayNames.browser'),
+  'interaction': t('config.subGroupDisplayNames.interaction'),
+  'system': t('config.subGroupDisplayNames.system'),
+  'performance': t('config.subGroupDisplayNames.performance'),
+  'general': t('config.subGroupDisplayNames.general')
 }
 
 // Computed property: Whether there are changes
