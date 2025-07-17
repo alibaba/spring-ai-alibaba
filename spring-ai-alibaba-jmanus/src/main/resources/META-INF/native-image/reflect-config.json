@@ -842,5 +842,125 @@
         "allDeclaredConstructors": true,
         "unsafeAllocated": true,
         "allDeclaredFields": true
-    }
+    },
+    {
+        "name": "java.lang.String",
+        "allPublicMethods": true
+      },
+      {
+        "name": "java.lang.Object",
+        "allPublicMethods": true
+      },
+      {
+        "name": "java.util.ArrayList",
+        "allPublicMethods": true
+      },
+      {
+        "name": "java.util.HashMap",
+        "allPublicMethods": true
+      },
+      {
+        "name": "com.h2.Driver",
+        "allPublicMethods": true,
+        "allPublicConstructors": true
+      },
+      {
+        "name": "org.h2.Driver",
+        "allPublicMethods": true,
+        "allPublicConstructors": true
+      },
+      {
+        "name": "org.postgresql.Driver",
+        "allPublicMethods": true,
+        "allPublicConstructors": true
+      },
+      {
+        "name": "com.mysql.cj.jdbc.Driver",
+        "allPublicMethods": true,
+        "allPublicConstructors": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.PlanningTool$PlanningInput",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool$DocLoaderInput",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch$GoogleSearchInput",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool$MapReduceInput",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.bash.Bash$BashInput",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute$PythonInput",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator$TextFileInput",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool$InnerStorageContentInput",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.FormInputTool$UserFormInput",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.FormInputTool$InputItem",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiService$Request",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiService$Response",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      },
+      {
+        "name": "com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiService$SearchResult",
+        "allPublicMethods": true,
+        "allPublicConstructors": true,
+        "allDeclaredFields": true
+      }
 ]
