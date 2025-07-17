@@ -795,8 +795,15 @@
                         console.log(`Type changed from ${currentType} to ${actualType}, creating new section`);
                         currentType = actualType;
 
-                        // 直接创建新的section
+                        // 创建新的section
                         createNewSection(actualType, actualData);
+                        
+                        // 同时将第一条数据添加到streamState中
+                        const currentCount = typeCounters[actualType];
+                        const currentSectionKey = `${actualType}_${currentCount}`;
+                        streamState[currentSectionKey] = actualData;
+                        
+                        console.log(`Initialized ${currentSectionKey} with:`, actualData);
                     } else {
                         // 同一个type，继续累积数据到当前section
                         const currentCount = typeCounters[actualType];
