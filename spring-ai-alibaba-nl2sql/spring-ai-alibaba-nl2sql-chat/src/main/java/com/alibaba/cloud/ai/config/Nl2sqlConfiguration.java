@@ -108,7 +108,7 @@ public class Nl2sqlConfiguration {
 		};
 
 		StateGraph stateGraph = new StateGraph(NL2SQL_GRAPH_NAME, keyStrategyFactory)
-			.addNode(QUERY_REWRITE_NODE, node_async(new QueryRewriteNode(chatClientBuilder, nl2SqlService)))
+			.addNode(QUERY_REWRITE_NODE, node_async(new QueryRewriteNode(nl2SqlService)))
 			.addNode(KEYWORD_EXTRACT_NODE, node_async(new KeywordExtractNode(chatClientBuilder, nl2SqlService)))
 			.addNode(SCHEMA_RECALL_NODE, node_async(new SchemaRecallNode(chatClientBuilder, schemaService)))
 			.addNode(TABLE_RELATION_NODE,

@@ -18,10 +18,10 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
+import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -30,12 +30,16 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.constant.Constant.*;
 
 /**
- * 关键词、实体、时间等信息抽取，为后续 Schema 召回做准备
+ * Keyword, entity, and temporal information extraction node to prepare for subsequent
+ * schema recall.
+ *
+ * This node is responsible for: - Extracting evidences from user input - Extracting
+ * keywords based on evidences - Preparing structured information for schema recall -
+ * Providing streaming feedback during extraction process
  *
  * @author zhangshenghang
  */
@@ -51,43 +55,32 @@ public class KeywordExtractNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+		logger.info("Entering {} node", this.getClass().getSimpleName());
 
-		// 获取输入，优先使用重写后的查询，否则使用原始输入
 		String input = StateUtils.getStringValue(state, QUERY_REWRITE_NODE_OUTPUT,
 				StateUtils.getStringValue(state, INPUT_KEY));
 
-		Flux<ChatResponse> keywordExtractionFlux = Flux.create(emitter -> {
+		// Execute business logic first - extract evidences and keywords immediately
+		List<String> evidences = baseNl2SqlService.extractEvidences(input);
+		List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);
+
+		logger.info("[{}] Extraction results - evidences: {}, keywords: {}", this.getClass().getSimpleName(), evidences,
+				keywords);
+
+		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始提取关键词..."));
-
-			// 提取证据
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("正在提取证据..."));
-			List<String> evidences = baseNl2SqlService.extractEvidences(input);
-			emitter.next(ChatResponseUtil
-				.createCustomStatusResponse("提取的证据: " + evidences.stream().collect(Collectors.joining(","))));
-			logger.info("[{}] 提取结果 - 证据: {}", this.getClass().getSimpleName(), evidences);
-
-			// 提取关键词
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("提取的证据: " + String.join(",", evidences)));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("正在提取关键词..."));
-			List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);
-			emitter.next(ChatResponseUtil
-				.createCustomStatusResponse("提取的关键词: " + keywords.stream().collect(Collectors.joining(","))));
-			logger.info("[{}] 提取结果 - 关键词: {}", this.getClass().getSimpleName(), keywords);
-
+			emitter.next(ChatResponseUtil.createCustomStatusResponse("提取的关键词: " + String.join(",", keywords)));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("关键词提取完成."));
 			emitter.complete();
 		});
 
-		var generator = StreamingChatGenerator.builder()
-			.startingNode(this.getClass().getSimpleName())
-			.startingState(state)
-			.mapResult(response -> {
-				List<String> evidences = baseNl2SqlService.extractEvidences(input);
-				List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);
-				logger.info("[{}] 提取结果 - 证据: {}, 关键词: {}", this.getClass().getSimpleName(), evidences, keywords);
-				return Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, keywords, EVIDENCES, evidences, RESULT, keywords);
-			})
-			.build(keywordExtractionFlux);
+		// Use business logic executor to avoid duplicate business logic execution
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				v -> Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, keywords, EVIDENCES, evidences, RESULT, keywords),
+				displayFlux);
 
 		return Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, generator);
 	}

@@ -113,9 +113,9 @@ public class DashScopeMultiModalChatTests {
 		// Setup mock response
 		ChatCompletionMessage responseMessage = new ChatCompletionMessage(TEST_RESPONSE,
 				ChatCompletionMessage.Role.ASSISTANT);
-		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage);
-		ChatCompletionOutput output = new ChatCompletionOutput(TEST_RESPONSE, List.of(choice));
-		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
+		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage, null);
+		ChatCompletionOutput output = new ChatCompletionOutput(TEST_RESPONSE, List.of(choice), null);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
 		ChatCompletion chatCompletion = new ChatCompletion(TEST_REQUEST_ID, output, usage);
 		ResponseEntity<ChatCompletion> responseEntity = ResponseEntity.ok(chatCompletion);
 
@@ -149,9 +149,9 @@ public class DashScopeMultiModalChatTests {
 		// Setup mock response
 		ChatCompletionMessage responseMessage = new ChatCompletionMessage(TEST_RESPONSE,
 				ChatCompletionMessage.Role.ASSISTANT);
-		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage);
-		ChatCompletionOutput output = new ChatCompletionOutput(TEST_RESPONSE, List.of(choice));
-		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
+		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage, null);
+		ChatCompletionOutput output = new ChatCompletionOutput(TEST_RESPONSE, List.of(choice), null);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
 		ChatCompletion chatCompletion = new ChatCompletion(TEST_REQUEST_ID, output, usage);
 		ResponseEntity<ChatCompletion> responseEntity = ResponseEntity.ok(chatCompletion);
 
@@ -184,9 +184,9 @@ public class DashScopeMultiModalChatTests {
 		// Setup mock response
 		ChatCompletionMessage responseMessage = new ChatCompletionMessage(TEST_VIDEO_RESPONSE,
 				ChatCompletionMessage.Role.ASSISTANT);
-		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage);
-		ChatCompletionOutput output = new ChatCompletionOutput(TEST_VIDEO_RESPONSE, List.of(choice));
-		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
+		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage, null);
+		ChatCompletionOutput output = new ChatCompletionOutput(TEST_VIDEO_RESPONSE, List.of(choice), null);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
 		ChatCompletion chatCompletion = new ChatCompletion(TEST_REQUEST_ID, output, usage);
 		ResponseEntity<ChatCompletion> responseEntity = ResponseEntity.ok(chatCompletion);
 
@@ -222,9 +222,9 @@ public class DashScopeMultiModalChatTests {
 		// Setup mock response
 		ChatCompletionMessage responseMessage = new ChatCompletionMessage(TEST_AUDIO_RESPONSE,
 				ChatCompletionMessage.Role.ASSISTANT);
-		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage);
-		ChatCompletionOutput output = new ChatCompletionOutput(TEST_AUDIO_RESPONSE, List.of(choice));
-		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
+		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage, null);
+		ChatCompletionOutput output = new ChatCompletionOutput(TEST_AUDIO_RESPONSE, List.of(choice), null);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
 		ChatCompletion chatCompletion = new ChatCompletion(TEST_REQUEST_ID, output, usage);
 		ResponseEntity<ChatCompletion> responseEntity = ResponseEntity.ok(chatCompletion);
 
@@ -263,15 +263,15 @@ public class DashScopeMultiModalChatTests {
 		ChatCompletionMessage chunkMessage2 = new ChatCompletionMessage("小女孩和一只狗在户外。",
 				ChatCompletionMessage.Role.ASSISTANT);
 
-		Choice choice1 = new Choice(null, chunkMessage1);
-		Choice choice2 = new Choice(ChatCompletionFinishReason.STOP, chunkMessage2);
+		Choice choice1 = new Choice(null, chunkMessage1, null);
+		Choice choice2 = new Choice(ChatCompletionFinishReason.STOP, chunkMessage2, null);
 
-		ChatCompletionOutput output1 = new ChatCompletionOutput("图片中是一个", List.of(choice1));
-		ChatCompletionOutput output2 = new ChatCompletionOutput("小女孩和一只狗在户外。", List.of(choice2));
+		ChatCompletionOutput output1 = new ChatCompletionOutput("图片中是一个", List.of(choice1), null);
+		ChatCompletionOutput output2 = new ChatCompletionOutput("小女孩和一只狗在户外。", List.of(choice2), null);
 
 		ChatCompletionChunk chunk1 = new ChatCompletionChunk(TEST_REQUEST_ID, output1, null);
 		ChatCompletionChunk chunk2 = new ChatCompletionChunk(TEST_REQUEST_ID, output2,
-				new TokenUsage(10, 5, 15, null, null, null, null, null, null, null));
+				new TokenUsage(10, 5, 15, null, null, null, null, null, null));
 
 		when(dashScopeApi.chatCompletionStream(any(ChatCompletionRequest.class), any()))
 			.thenReturn(Flux.just(chunk1, chunk2));

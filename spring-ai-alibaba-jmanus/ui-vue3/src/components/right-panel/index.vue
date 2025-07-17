@@ -65,9 +65,9 @@
               <span class="label">{{ t('rightPanel.executionResult') }}:</span>
               <span
                   class="value"
-                  :class="{ success: selectedStep.agentExecution.isCompleted }"
+                  :class="{ success: selectedStep.agentExecution.status === 'FINISHED' }"
               >
-                {{ selectedStep.agentExecution.result || t('rightPanel.executing') }}
+                {{ selectedStep.agentExecution.status || t('rightPanel.executing') }}
               </span>
             </div>
           </div>
@@ -572,9 +572,7 @@ const displayStepDetails = (
 
   // Determine if step is completed
   const isStepCompleted =
-    agentExecution?.isCompleted ??
-    planRecord.completed ??
-    (planRecord.currentStepIndex !== undefined && stepIndex < planRecord.currentStepIndex)
+    agentExecution?.status === 'FINISHED' ;
 
   const isCurrent =
     !isStepCompleted && stepIndex === planRecord.currentStepIndex && !planRecord.completed

@@ -18,8 +18,8 @@ package com.alibaba.cloud.ai.example.manus.planning.executor.factory;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.executor.MapReducePlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
@@ -37,13 +37,13 @@ import java.util.List;
  * PlanInterface
  */
 @Component
-public class PlanExecutorFactory {
+public class PlanExecutorFactory implements IPlanExecutorFactory {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanExecutorFactory.class);
 
-	private final DynamicAgentLoader dynamicAgentLoader;
+	private final IDynamicAgentLoader dynamicAgentLoader;
 
-	private final LlmService llmService;
+	private final ILlmService llmService;
 
 	private final AgentService agentService;
 
@@ -51,8 +51,8 @@ public class PlanExecutorFactory {
 
 	private final ManusProperties manusProperties;
 
-	public PlanExecutorFactory(DynamicAgentLoader dynamicAgentLoader, LlmService llmService, AgentService agentService,
-			PlanExecutionRecorder recorder, ManusProperties manusProperties) {
+	public PlanExecutorFactory(IDynamicAgentLoader dynamicAgentLoader, ILlmService llmService,
+			AgentService agentService, PlanExecutionRecorder recorder, ManusProperties manusProperties) {
 		this.dynamicAgentLoader = dynamicAgentLoader;
 		this.llmService = llmService;
 		this.agentService = agentService;
