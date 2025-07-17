@@ -164,7 +164,7 @@ public class DashScopeImageModel implements ImageModel {
 		retryTemplate.execute(ctx -> {
 			observation.lowCardinalityKeyValue("retry.attempt", String.valueOf(ctx.getRetryCount()));
 
-			DashScopeImageApi.DashScopeImageAsyncReponse resp = getImageGenTask(taskId);
+			DashScopeImageApi.DashScopeImageAsyncResponse resp = getImageGenTask(taskId);
 			if (resp != null) {
 				String status = resp.output().taskStatus();
 				observation.lowCardinalityKeyValue("task.status", status);
@@ -191,7 +191,7 @@ public class DashScopeImageModel implements ImageModel {
 
 		DashScopeImageApi.DashScopeImageRequest dashScopeImageRequest = constructImageRequest(request, imageOptions);
 
-		ResponseEntity<DashScopeImageApi.DashScopeImageAsyncReponse> submitResponse = dashScopeImageApi
+		ResponseEntity<DashScopeImageApi.DashScopeImageAsyncResponse> submitResponse = dashScopeImageApi
 			.submitImageGenTask(dashScopeImageRequest);
 
 		if (submitResponse == null || submitResponse.getBody() == null) {
@@ -221,8 +221,8 @@ public class DashScopeImageModel implements ImageModel {
 		return currentOptions;
 	}
 
-	public DashScopeImageApi.DashScopeImageAsyncReponse getImageGenTask(String taskId) {
-		ResponseEntity<DashScopeImageApi.DashScopeImageAsyncReponse> getImageGenResponse = dashScopeImageApi
+	public DashScopeImageApi.DashScopeImageAsyncResponse getImageGenTask(String taskId) {
+		ResponseEntity<DashScopeImageApi.DashScopeImageAsyncResponse> getImageGenResponse = dashScopeImageApi
 			.getImageGenTaskResult(taskId);
 		if (getImageGenResponse == null || getImageGenResponse.getBody() == null) {
 			logger.warn("No image response returned for taskId: {}", taskId);
@@ -235,7 +235,7 @@ public class DashScopeImageModel implements ImageModel {
 		return this.defaultOptions;
 	}
 
-	private ImageResponse toImageResponse(DashScopeImageApi.DashScopeImageAsyncReponse asyncResp) {
+	private ImageResponse toImageResponse(DashScopeImageApi.DashScopeImageAsyncResponse asyncResp) {
 		var output = asyncResp.output();
 		var results = output.results();
 		ImageResponseMetadata md = toMetadata(asyncResp);
@@ -260,7 +260,7 @@ public class DashScopeImageModel implements ImageModel {
 						options.getMaskColor()));
 	}
 
-	private ImageResponseMetadata toMetadata(DashScopeImageApi.DashScopeImageAsyncReponse re) {
+	private ImageResponseMetadata toMetadata(DashScopeImageApi.DashScopeImageAsyncResponse re) {
 		var out = re.output();
 		var tm = out.taskMetrics();
 		var usage = re.usage();
@@ -268,7 +268,7 @@ public class DashScopeImageModel implements ImageModel {
 		ImageResponseMetadata md = new ImageResponseMetadata();
 
 		Optional.ofNullable(usage)
-			.map(DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseUsage::imageCount)
+			.map(DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseUsage::imageCount)
 			.ifPresent(count -> md.put("imageCount", count));
 		Optional.ofNullable(tm).ifPresent(metrics -> {
 			md.put("taskTotal", metrics.total());
