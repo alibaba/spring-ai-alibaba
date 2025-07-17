@@ -248,6 +248,7 @@ public class ManusProperties implements IManusProperties {
 	// End----------------------------------------------------------------------------------------------
 
 	// Infinite Context SubGroup
+	// Begin----------------------------------------------------------------------------------------------
 	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "enabled",
 			path = "manus.infiniteContext.enabled", description = "是否开启无限上下文", defaultValue = "true",
 			inputType = ConfigInputType.CHECKBOX,
@@ -311,7 +312,11 @@ public class ManusProperties implements IManusProperties {
 		this.infiniteContextTaskContextSize = infiniteContextTaskContextSize;
 	}
 
+	// Infinite Context SubGroup
+	// End----------------------------------------------------------------------------------------------
+
 	// File System Security SubGroup
+	// Begin----------------------------------------------------------------------------------------------
 	@ConfigProperty(group = "manus", subGroup = "filesystem", key = "allowExternalAccess",
 			path = "manus.filesystem.allowExternalAccess",
 			description = "Whether to allow file operations outside the working directory", defaultValue = "false",
@@ -335,5 +340,49 @@ public class ManusProperties implements IManusProperties {
 	public void setAllowExternalAccess(Boolean allowExternalAccess) {
 		this.allowExternalAccess = allowExternalAccess;
 	}
+
+	// File System Security SubGroup
+	// End----------------------------------------------------------------------------------------------
+
+	// Plan Settings
+	// Begin----------------------------------------------------------------------------------------------
+	@ConfigProperty(group = "manus", subGroup = "plan", key = "autoAcceptPlan", path = "manus.plan.autoAcceptPlan",
+			description = "是否自动接受计划", defaultValue = "true", inputType = ConfigInputType.BOOLEAN,
+			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+	private volatile Boolean autoAcceptPlan;
+
+	public Boolean getAutoAcceptPlan() {
+		String configPath = "manus.plan.autoAcceptPlan";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			autoAcceptPlan = Boolean.valueOf(value);
+		}
+		return autoAcceptPlan;
+	}
+
+	public void setAutoAcceptPlan(Boolean autoAcceptPlan) {
+		this.autoAcceptPlan = autoAcceptPlan;
+	}
+
+	@ConfigProperty(group = "manus", subGroup = "plan", key = "confirmPlanTimeout",
+			path = "manus.plan.confirmPlanTimeout", description = "确认计划超时时间(秒)", defaultValue = "60",
+			inputType = ConfigInputType.NUMBER)
+	private volatile Integer confirmPlanTimeout;
+
+	public Integer getConfirmPlanTimeout() {
+		String configPath = "manus.plan.confirmPlanTimeout";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			confirmPlanTimeout = Integer.valueOf(value);
+		}
+		return confirmPlanTimeout;
+	}
+
+	public void setConfirmPlanTimeout(Integer confirmPlanTimeout) {
+		this.confirmPlanTimeout = confirmPlanTimeout;
+	}
+
+	// Plan Settings
+	// End----------------------------------------------------------------------------------------------
 
 }

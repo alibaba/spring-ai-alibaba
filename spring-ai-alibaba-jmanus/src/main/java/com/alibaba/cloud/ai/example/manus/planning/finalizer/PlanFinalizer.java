@@ -67,6 +67,13 @@ public class PlanFinalizer {
 		if (context == null || context.getPlan() == null) {
 			throw new IllegalArgumentException("ExecutionContext or its plan cannot be null");
 		}
+		// If the plan is not accepted, end the current task
+		if (!context.getPlan().getAccepted()) {
+			String summary = "The current plan is not accepted, the task is over, please ask again.";
+			context.setResultSummary(summary);
+			recordPlanCompletion(context, summary);
+			return;
+		}
 		if (!context.isNeedSummary()) {
 			log.info("No need to generate summary, use code generate summary instead");
 			String summary = context.getPlan().getPlanExecutionStateStringFormat(false);

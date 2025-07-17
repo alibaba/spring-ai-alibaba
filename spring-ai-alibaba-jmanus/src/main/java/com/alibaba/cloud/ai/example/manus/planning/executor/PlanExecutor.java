@@ -57,17 +57,19 @@ public class PlanExecutor extends AbstractPlanExecutor {
 
 		try {
 			recorder.recordPlanExecutionStart(context);
-			List<ExecutionStep> steps = plan.getAllSteps();
-
-			if (steps != null && !steps.isEmpty()) {
-				for (ExecutionStep step : steps) {
-					BaseAgent stepExecutor = executeStep(step, context);
-					if (stepExecutor != null) {
-						lastExecutor = stepExecutor;
+			// If the plan is accepted, continue executing the step, otherwise end the
+			// current task
+			if (plan.getAccepted()) {
+				List<ExecutionStep> steps = plan.getAllSteps();
+				if (steps != null && !steps.isEmpty()) {
+					for (ExecutionStep step : steps) {
+						BaseAgent stepExecutor = executeStep(step, context);
+						if (stepExecutor != null) {
+							lastExecutor = stepExecutor;
+						}
 					}
 				}
 			}
-
 			context.setSuccess(true);
 		}
 		finally {

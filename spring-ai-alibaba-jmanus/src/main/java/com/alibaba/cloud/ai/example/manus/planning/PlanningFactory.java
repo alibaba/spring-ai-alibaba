@@ -31,6 +31,7 @@ import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinat
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
+import com.alibaba.cloud.ai.example.manus.planning.service.PlanConfirmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
@@ -133,9 +134,13 @@ public class PlanningFactory implements IPlanningFactory {
 	@Autowired
 	private PromptService promptService;
 
+	@Autowired
+	private PlanConfirmService planConfirmService;
+
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
-			SmartContentSavingService innerStorageService, UnifiedDirectoryManager unifiedDirectoryManager) {
+			SmartContentSavingService innerStorageService, UnifiedDirectoryManager unifiedDirectoryManager,
+			PlanConfirmService planConfirmService) {
 		this.chromeDriverService = chromeDriverService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
@@ -143,6 +148,7 @@ public class PlanningFactory implements IPlanningFactory {
 		this.mcpService = mcpService;
 		this.innerStorageService = innerStorageService;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
+		this.planConfirmService = planConfirmService;
 	}
 
 	// Use the enhanced PlanningCoordinator with dynamic executor selection
@@ -154,7 +160,7 @@ public class PlanningFactory implements IPlanningFactory {
 		PlanningToolInterface planningTool = new PlanningTool();
 
 		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
-				manusProperties);
+				manusProperties, planConfirmService);
 
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties);
 

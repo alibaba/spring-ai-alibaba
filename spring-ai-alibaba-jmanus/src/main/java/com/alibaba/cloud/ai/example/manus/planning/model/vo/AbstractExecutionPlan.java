@@ -47,6 +47,11 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	private String userRequest;
 
 	/**
+	 * 计划是否被接受
+	 */
+	private Boolean accepted;
+
+	/**
 	 * 默认构造函数
 	 */
 	public AbstractExecutionPlan() {
@@ -193,6 +198,24 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	 */
 	public void setUserRequest(String userRequest) {
 		this.userRequest = userRequest;
+	}
+
+	/**
+	 * 获取当前计划是否被用户接受
+	 * @return true被接受/false不被接受
+	 */
+	@Override
+	public Boolean getAccepted() {
+		return accepted;
+	}
+
+	/**
+	 * 设置当前计划是否被用户接受
+	 * @param accepted true被接受/false不被接受
+	 */
+	@Override
+	public void setAccepted(Boolean accepted) {
+		this.accepted = accepted;
 	}
 
 	/**

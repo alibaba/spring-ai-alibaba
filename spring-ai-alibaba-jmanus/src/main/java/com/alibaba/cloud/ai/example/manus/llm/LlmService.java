@@ -96,7 +96,9 @@ public class LlmService implements ILlmService {
 	}
 
 	public void clearAgentMemory(String planId) {
-		this.agentMemory.clear(planId);
+		if (this.agentMemory != null) {
+			this.agentMemory.clear(planId);
+		}
 	}
 
 	public ChatClient getPlanningChatClient() {

@@ -19,7 +19,9 @@ import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanConfirmData;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
+import com.alibaba.cloud.ai.example.manus.planning.service.PlanConfirmService;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
@@ -59,6 +61,9 @@ public class ManusController {
 
 	@Autowired
 	private UserInputService userInputService;
+
+	@Autowired
+	private PlanConfirmService planConfirmService;
 
 	@Autowired
 	public ManusController(ObjectMapper objectMapper) {
@@ -197,6 +202,27 @@ public class ManusController {
 					.body(Map.of("error", "Failed to submit input. Plan not waiting or input invalid.", "planId",
 							planId));
 			}
+		}
+		catch (IllegalArgumentException e) {
+			logger.error("Error submitting user input for plan {}: {}", planId, e.getMessage());
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.body(Map.of("error", e.getMessage(), "planId", planId));
+		}
+		catch (Exception e) {
+			logger.error("Unexpected error submitting user input for plan {}: {}", planId, e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(Map.of("error", "An unexpected error occurred.", "planId", planId));
+		}
+	}
+
+	@PostMapping("/confirm-plan/{planId}")
+	public ResponseEntity<Map<String, Object>> confirmPlan(@PathVariable("planId") String planId,
+			@RequestBody Map<String, String> formData) { // Changed formData to
+		// Map<String, String>
+		try {
+			logger.info("Received user confirm for plan {}: {}", planId, formData);
+			planConfirmService.storeConfirmData(planId, new PlanConfirmData(formData));
+			return ResponseEntity.ok(Map.of("message", "confirm submitted successfully", "planId", planId));
 		}
 		catch (IllegalArgumentException e) {
 			logger.error("Error submitting user input for plan {}: {}", planId, e.getMessage());
