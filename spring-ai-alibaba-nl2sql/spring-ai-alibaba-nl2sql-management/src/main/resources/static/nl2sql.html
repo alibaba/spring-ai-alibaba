@@ -29,6 +29,8 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         body {
@@ -93,6 +95,13 @@
             box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
         }
 
+        .search-input:disabled {
+            background-color: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+            border-color: #ddd;
+        }
+
         .search-button {
             padding: 0.75rem 1.5rem;
             background-color: var(--primary-color);
@@ -113,6 +122,58 @@
 
         .search-button:active {
             background-color: #096dd9;
+        }
+
+        .search-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .init-button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .init-button:hover {
+            background-color: #73d13d;
+        }
+
+        .init-button:active {
+            background-color: #389e0d;
+        }
+
+        .init-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .init-button.loading {
+            position: relative;
+        }
+
+        .init-button.loading::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
         .result-container {
@@ -169,6 +230,9 @@
             border-radius: var(--radius);
             padding: 1rem;
             border: 1px solid var(--border-color);
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         pre {
@@ -181,12 +245,28 @@
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
             font-size: 0.9rem;
             line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         code {
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
         }
 
+        /* SQL 代码块特定样式 */
+        .section-content pre {
+            background-color: var(--code-bg) !important;
+            margin: 0;
+            border-radius: 6px;
+        }
+
+        .section-content pre code.hljs {
+            background-color: transparent !important;
+            padding: 0;
+        }
+
+        /* 以下 SQL 样式已弃用，改为使用 highlight.js 的深色主题
         .sql-keyword {
             color: #c678dd;
         }
@@ -211,6 +291,7 @@
             color: #5c6370;
             font-style: italic;
         }
+        */
 
         .loading {
             display: flex;
@@ -316,6 +397,10 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 1rem;
+            table-layout: auto;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         .table th,
@@ -323,6 +408,10 @@
             padding: 0.75rem;
             border: 1px solid var(--border-color);
             text-align: left;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 200px;
         }
 
         .table th {
@@ -394,7 +483,8 @@
                 flex-direction: column;
             }
 
-            .search-button {
+            .search-button,
+            .init-button {
                 width: 100%;
                 justify-content: center;
             }
@@ -404,6 +494,9 @@
         .markdown-content {
             line-height: 1.6;
             color: #333;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         .markdown-content h1,
@@ -441,6 +534,9 @@
 
         .markdown-content p {
             margin-bottom: 1rem;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         .markdown-content ul,
@@ -451,6 +547,9 @@
 
         .markdown-content li {
             margin-bottom: 0.25rem;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         .markdown-content blockquote {
@@ -459,6 +558,9 @@
             border-left: 4px solid var(--primary-color);
             background-color: #f8f9fa;
             font-style: italic;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         .markdown-content code {
@@ -478,6 +580,9 @@
             margin: 1rem 0;
             border: 1px solid #444;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         .markdown-content pre code {
@@ -493,6 +598,10 @@
             border-collapse: collapse;
             margin: 1rem 0;
             width: 100%;
+            table-layout: auto;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         .markdown-content table th,
@@ -500,6 +609,10 @@
             border: 1px solid #ddd;
             padding: 0.5rem 0.75rem;
             text-align: left;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 200px;
         }
 
         .markdown-content table th {
@@ -562,6 +675,111 @@
                 opacity: 0;
             }
         }
+
+        /* 初始化提示样式 */
+        .init-success-tip, .init-error-tip {
+            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            animation: slideInDown 0.5s ease-out;
+            transition: all 0.5s ease-out;
+        }
+
+        .init-success-tip {
+            background: linear-gradient(135deg, #f6ffed 0%, #e6f7ff 100%);
+        }
+
+        .init-error-tip {
+            background: linear-gradient(135deg, #fff2f0 0%, #fff1f0 100%);
+        }
+
+        .init-tip-header {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem 0.5rem;
+            gap: 0.75rem;
+        }
+
+        .init-success-tip .init-tip-header i {
+            font-size: 1.25rem;
+            color: #52c41a;
+        }
+
+        .init-error-tip .init-tip-header i {
+            font-size: 1.25rem;
+            color: #ff4d4f;
+        }
+
+        .init-tip-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            flex: 1;
+        }
+
+        .init-tip-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            background-color: #52c41a;
+            color: white;
+        }
+
+        .init-tip-badge.error {
+            background-color: #ff4d4f;
+        }
+
+        .init-tip-content {
+            padding: 0.5rem 1.5rem 1.5rem;
+        }
+
+        .init-tip-result {
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .init-tip-result hr {
+            display: none;
+        }
+
+        .init-tip-guide {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .init-tip-guide i {
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+        .init-error-tip .init-tip-guide i {
+            color: #ff4d4f;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
@@ -580,6 +798,9 @@
             <input type="text" id="query" class="search-input" placeholder="例如：查询销售额前10的产品..." autofocus>
             <button id="search" class="search-button">
                 <i class="bi bi-search"></i> 查询
+            </button>
+            <button id="init" class="init-button">
+                <i class="bi bi-database-add"></i> 初始化数据源
             </button>
         </div>
 
@@ -600,8 +821,8 @@
                     </div>
                     <div class="example-queries">
                         <div class="example-query">查询销售额最高的5个产品</div>
-                        <div class="example-query">统计各部门员工数量</div>
-                        <div class="example-query">查找去年订单金额超过1万的客户</div>
+                        <div class="example-query">分析2025年6月的销售情况</div>
+                        <div class="example-query">查询每个分类下已成交商品中销量最高的商品及其销售总量（每个分类仅返回销量最高的商品），同时统计商品的总数量及分类的总数量。</div>
                     </div>
                 </div>
             </div>
@@ -611,15 +832,18 @@
     <script>
         const queryInput = document.getElementById('query');
         const searchButton = document.getElementById('search');
+        const initButton = document.getElementById('init');
         const resultsDiv = document.getElementById('results');
         const statusDiv = document.getElementById('status');
-        const exampleQueries = document.querySelectorAll('.example-query');
+        // const exampleQueries = document.querySelectorAll('.example-query'); // 不再需要，使用事件委托
 
         let eventSource;
         let streamState = {};
         let currentType = null; // 记录当前的type
         let typeCounters = {}; // 记录每个type出现的次数
         let sectionCounter = 0; // 全局section计数器
+        let isInitializing = false; // 标记是否正在初始化
+        let isInitialized = false; // 标记数据源是否已初始化
 
         // --- Helper Functions ---
 
@@ -692,16 +916,22 @@
             }
         }
 
-        function highlightSQL(sql) {
-            if (!sql) return '';
-            return sql
-                .replace(/\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|HAVING|JOIN|LEFT|RIGHT|INNER|OUTER|UNION|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|AS|ON|AND|OR|NOT|IN|BETWEEN|LIKE|IS NULL|IS NOT NULL|ASC|DESC|DISTINCT|LIMIT)\b/gi, match => `<span class="sql-keyword">${match}</span>`)
-                .replace(/\b(COUNT|SUM|AVG|MIN|MAX|COALESCE|CASE|WHEN|THEN|ELSE|END)\b/gi, match => `<span class="sql-function">${match}</span>`)
-                .replace(/'([^']*)'/g, match => `<span class="sql-string">${match}</span>`)
-                .replace(/\b(\d+)\b/g, match => `<span class="sql-number">${match}</span>`)
-                .replace(/(\(\|\)|\+|-|\*|\/|=|<|>|<=|>=)/g, match => `<span class="sql-operator">${match}</span>`)
-                .replace(/--.*$/gm, match => `<span class="sql-comment">${match}</span>`);
-        }
+        // 已弃用：改为使用 highlight.js 来处理 SQL 高亮
+        // function highlightSQL(sql) {
+        //     if (!sql) return '';
+        //     
+        //     // 首先确保SQL格式正确（保留换行和缩进）
+        //     let formattedSQL = sql.toString().trim();
+        //     
+        //     // 应用语法高亮
+        //     return formattedSQL
+        //         .replace(/\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|HAVING|JOIN|LEFT|RIGHT|INNER|OUTER|UNION|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|AS|ON|AND|OR|NOT|IN|BETWEEN|LIKE|IS NULL|IS NOT NULL|ASC|DESC|DISTINCT|LIMIT)\b/gi, match => `<span class="sql-keyword">${match}</span>`)
+        //         .replace(/\b(COUNT|SUM|AVG|MIN|MAX|COALESCE|CASE|WHEN|THEN|ELSE|END|YEAR|MONTH|DAY)\b/gi, match => `<span class="sql-function">${match}</span>`)
+        //         .replace(/'([^']*)'/g, match => `<span class="sql-string">${match}</span>`)
+        //         .replace(/\b(\d+)\b/g, match => `<span class="sql-number">${match}</span>`)
+        //         .replace(/(\(|\)|\+|-|\*|\/|=|<|>|<=|>=)/g, match => `<span class="sql-operator">${match}</span>`)
+        //         .replace(/--.*$/gm, match => `<span class="sql-comment">${match}</span>`);
+        // }
 
         function convertJsonToHTMLTable(jsonString) {
             try {
@@ -766,6 +996,177 @@
             });
         }
 
+        // --- Initialization Functions ---
+
+        function setUIState(initializing) {
+            isInitializing = initializing;
+            
+            if (initializing) {
+                // 禁用所有操作按钮
+                queryInput.disabled = true;
+                searchButton.disabled = true;
+                initButton.disabled = true;
+                initButton.classList.add('loading');
+                initButton.innerHTML = '<span style="opacity: 0;">初始化数据源</span>';
+                
+                // 显示初始化状态
+                statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div> 正在初始化数据源...</div>';
+            } else {
+                // 恢复操作，查询功能始终可用
+                queryInput.disabled = false;
+                searchButton.disabled = false;
+                initButton.disabled = false;
+                initButton.classList.remove('loading');
+                
+                if (isInitialized) {
+                    initButton.innerHTML = '<i class="bi bi-check-circle"></i> 重新初始化';
+                    initButton.style.backgroundColor = '#52c41a';
+                } else {
+                    initButton.innerHTML = '<i class="bi bi-database-add"></i> 初始化数据源';
+                    initButton.style.backgroundColor = '';
+                }
+                
+                statusDiv.innerHTML = '';
+            }
+        }
+
+        async function initializeDataSource() {
+            if (isInitializing) {
+                return; // 防止重复点击
+            }
+
+            try {
+                setUIState(true);
+                
+                const response = await fetch('/nl2sql/init', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.text();
+                    isInitialized = true; // 设置为已初始化状态
+                    statusDiv.innerHTML = '<span class="badge badge-success">数据源初始化完成</span>';
+                    
+                    // 检查当前结果区域是否显示推荐问题
+                    const hasEmptyState = resultsDiv.querySelector('.empty-state');
+                    
+                    if (hasEmptyState) {
+                        // 如果有推荐问题，在推荐问题上方添加初始化成功提示
+                        const existingContent = resultsDiv.innerHTML;
+                        resultsDiv.innerHTML = `
+                            <div class="init-success-tip">
+                                <div class="init-tip-header">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <span class="init-tip-title">数据源初始化完成</span>
+                                    <span class="init-tip-badge">SUCCESS</span>
+                                </div>
+                                <div class="init-tip-content">
+                                    <div class="init-tip-guide">
+                                        <i class="bi bi-lightbulb"></i>
+                                        现在您可以使用下面的推荐问题开始查询，或输入自己的问题
+                                    </div>
+                                </div>
+                            </div>
+                            ${existingContent}
+                        `;
+                        
+                        // 5秒后自动隐藏初始化提示
+                        setTimeout(() => {
+                            const initTip = resultsDiv.querySelector('.init-success-tip');
+                            if (initTip) {
+                                initTip.style.opacity = '0';
+                                initTip.style.transform = 'translateY(-10px)';
+                                initTip.style.transition = 'all 0.5s ease-out';
+                                setTimeout(() => {
+                                    if (initTip.parentNode) {
+                                        initTip.parentNode.removeChild(initTip);
+                                    }
+                                }, 500);
+                            }
+                        }, 5000);
+                    } else {
+                        // 如果没有推荐问题，则显示初始化结果
+                        resultsDiv.innerHTML = `
+                            <div class="result-section">
+                                <div class="section-title">
+                                    <i class="bi bi-check-circle"></i> 初始化完成
+                                </div>
+                                <div class="section-content">
+                                    ${result.replace(/\n/g, '<br>')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    setTimeout(() => {
+                        statusDiv.innerHTML = '';
+                    }, 3000);
+                } else {
+                    throw new Error(`初始化失败: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('初始化错误:', error);
+                statusDiv.innerHTML = '<span class="badge badge-error">初始化失败</span>';
+                
+                // 检查当前结果区域是否显示推荐问题
+                const hasEmptyState = resultsDiv.querySelector('.empty-state');
+                
+                if (hasEmptyState) {
+                    // 如果有推荐问题，在推荐问题上方添加初始化失败提示
+                    const existingContent = resultsDiv.innerHTML;
+                    resultsDiv.innerHTML = `
+                        <div class="init-error-tip">
+                            <div class="init-tip-header">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <span class="init-tip-title">数据源初始化失败</span>
+                                <span class="init-tip-badge error">ERROR</span>
+                            </div>
+                            <div class="init-tip-content">
+                                <div class="init-tip-guide">
+                                    <i class="bi bi-info-circle"></i>
+                                    请检查网络连接或联系管理员，然后重试初始化
+                                </div>
+                            </div>
+                        </div>
+                        ${existingContent}
+                    `;
+                    
+                    // 8秒后自动隐藏初始化失败提示
+                    setTimeout(() => {
+                        const errorTip = resultsDiv.querySelector('.init-error-tip');
+                        if (errorTip) {
+                            errorTip.style.opacity = '0';
+                            errorTip.style.transform = 'translateY(-10px)';
+                            errorTip.style.transition = 'all 0.5s ease-out';
+                            setTimeout(() => {
+                                if (errorTip.parentNode) {
+                                    errorTip.parentNode.removeChild(errorTip);
+                                }
+                            }, 500);
+                        }
+                    }, 8000);
+                } else {
+                    // 如果没有推荐问题，则显示初始化失败结果
+                    resultsDiv.innerHTML = `
+                        <div class="result-section">
+                            <div class="section-title">
+                                <i class="bi bi-exclamation-circle"></i> 初始化失败
+                            </div>
+                            <div class="section-content">
+                                ${error.message}
+                            </div>
+                        </div>
+                    `;
+                }
+                // 如果有推荐问题，保持原样，只显示状态消息
+            } finally {
+                setUIState(false);
+            }
+        }
+
         // --- UI Initialization and Update Functions ---
 
         function initUI() {
@@ -807,8 +1208,6 @@
             // 添加到容器
             const container = document.getElementById('result-sections-container');
             container.insertAdjacentHTML('beforeend', sectionHTML);
-
-            console.log(`Created new section: ${sectionId}`);
 
             // 立即更新内容
             updateNewSection(type, sectionId, contentId, data);
@@ -858,7 +1257,25 @@
                     copyButton.setAttribute('data-content', data);
                     copyButton.onclick = () => copyToClipboard(copyButton);
                 }
-                formattedContent = `<pre>${highlightSQL(data)}</pre>`;
+                // 数据在流处理阶段已经清理过了，直接使用
+                
+                // 使用 highlight.js 的深色主题来高亮 SQL
+                let highlightedSQL = data;
+                if (window.hljs) {
+                    try {
+                        highlightedSQL = hljs.highlight(data, { language: 'sql' }).value;
+                    } catch (e) {
+                        console.warn('SQL highlighting failed, using auto detection:', e);
+                        try {
+                            highlightedSQL = hljs.highlightAuto(data).value;
+                        } catch (e2) {
+                            console.warn('Auto highlighting failed, using plain text:', e2);
+                            highlightedSQL = data;
+                        }
+                    }
+                }
+                
+                formattedContent = `<pre><code class="hljs language-sql">${highlightedSQL}</code></pre>`;
             } else if (type === 'result') {
                 let tableHtml = convertJsonToHTMLTable(data);
                 if (tableHtml.startsWith('<pre>')) {
@@ -908,25 +1325,68 @@
                     }
                 }
                 
-                // 检查是否是Markdown格式，如果是则渲染为HTML
+                // 首先检查是否是Markdown格式（包含SQL代码块的也可能是Markdown）
                 if (isMarkdown(processedData)) {
+                    // 使用markdown渲染器，它会自动处理SQL代码块和其他markdown语法
                     formattedContent = renderMarkdown(processedData);
                 } else {
-                    formattedContent = processedData.toString().replace(/\n/g, '<br>');
+                    // 检查内容是否包含SQL代码块（用于非markdown格式的SQL）
+                    const sqlCodeBlockRegex = /```\s*sql?\s*([\s\S]*?)```/gi;
+                    const sqlMatches = processedData.match(sqlCodeBlockRegex);
+                    
+                    if (sqlMatches && sqlMatches.length > 0) {
+                        // 包含SQL代码块，进行特殊处理
+                        let htmlContent = processedData;
+                        
+                        // 替换每个SQL代码块为高亮显示
+                        htmlContent = htmlContent.replace(sqlCodeBlockRegex, (match, sqlContent) => {
+                            let cleanedSQL = sqlContent.trim();
+                            let highlightedSQL = cleanedSQL;
+                            
+                            if (window.hljs) {
+                                try {
+                                    highlightedSQL = hljs.highlight(cleanedSQL, { language: 'sql' }).value;
+                                } catch (e) {
+                                    try {
+                                        highlightedSQL = hljs.highlightAuto(cleanedSQL).value;
+                                    } catch (e2) {
+                                        highlightedSQL = cleanedSQL;
+                                    }
+                                }
+                            }
+                            
+                            return `<pre><code class="hljs language-sql">${highlightedSQL}</code></pre>`;
+                        });
+                        
+                        // 处理剩余的文本（将换行转换为<br>）
+                        formattedContent = htmlContent.replace(/\n/g, '<br>');
+                    } else {
+                        formattedContent = processedData.toString().replace(/\n/g, '<br>');
+                    }
                 }
             }
 
             content.innerHTML = formattedContent;
-            console.log(`Updated section ${sectionId} with content:`, formattedContent);
         }
 
         // --- Main Search Logic ---
 
         const performSearch = () => {
+            // 检查是否正在初始化
+            if (isInitializing) {
+                alert('正在初始化数据源，请等待完成后再进行查询');
+                return;
+            }
+
             const query = queryInput.value;
             if (!query) {
                 alert('请输入查询内容');
                 return;
+            }
+
+            // 如果未初始化，给出提示但仍允许查询（可能后端有默认数据源）
+            if (!isInitialized) {
+                console.warn('数据源未初始化，使用默认配置进行查询');
             }
 
             if (eventSource) {
@@ -940,11 +1400,10 @@
             eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(query)}`);
 
             eventSource.onopen = () => {
-                console.log('Stream connection established.');
+                // Stream connection established
             };
 
             eventSource.onmessage = (event) => {
-                console.log('Received raw data:', event.data);
                 statusDiv.innerHTML = ''; // Clear "正在处理..."
 
                 let chunk;
@@ -952,33 +1411,19 @@
                 let actualData;
                 
                 try {
-                    console.log('Raw event.data type:', typeof event.data);
-                    console.log('Raw event.data value:', event.data);
-                    
                     // 尝试解析JSON
                     let parsedData = JSON.parse(event.data);
-                    console.log('First parse result type:', typeof parsedData);
-                    console.log('First parse result:', parsedData);
                     
                     // 如果第一次解析结果还是字符串，再解析一次
                     if (typeof parsedData === 'string') {
-                        console.log('Need second parse');
                         chunk = JSON.parse(parsedData);
-                        console.log('Second parse result type:', typeof chunk);
-                        console.log('Second parse result:', chunk);
                     } else {
                         chunk = parsedData;
                     }
-                    
-                    console.log('Final chunk type:', typeof chunk);
-                    console.log('Final chunk:', chunk);
-                    console.log('Final chunk keys:', Object.keys(chunk || {}));
 
                     // 直接提取type和data，使用方括号语法
                     actualType = chunk['type'];
                     actualData = chunk['data'];
-                    
-                    console.log('Extracted - Type:', actualType, 'Data:', actualData);
 
                     // 处理嵌套JSON的情况
                     if (actualType === 'explanation' && typeof actualData === 'string') {
@@ -987,37 +1432,37 @@
                             if (innerChunk.type && innerChunk.data !== undefined) {
                                 actualType = innerChunk.type;
                                 actualData = innerChunk.data;
-                                console.log('After nested parsing - Type:', actualType, 'Data:', actualData);
                             }
                         } catch (e) {
                             // 如果内层解析失败，保持原来的值
-                            console.log('Inner JSON parse failed, keeping original values');
                         }
                     }
 
                 } catch (e) {
-                    console.warn("JSON parse failed, treating as plain text:", event.data);
                     return;
                 }
 
-                console.log('Final values - Type:', actualType, 'Data:', actualData);
-
                 if (actualType && actualData !== undefined && actualData !== null) {
+                    // 对数据进行预处理
+                    let processedData = actualData;
+                    
+                    // 只对SQL类型进行Markdown代码块标记的预清理
+                    if (actualType === 'sql' && typeof actualData === 'string') {
+                        processedData = actualData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
+                    }
+                    
                     // 检查是否需要创建新的section
                     if (currentType !== actualType) {
                         // type切换了，创建新的section
-                        console.log(`Type changed from ${currentType} to ${actualType}, creating new section`);
                         currentType = actualType;
 
                         // 创建新的section
-                        createNewSection(actualType, actualData);
+                        createNewSection(actualType, processedData);
                         
                         // 同时将第一条数据添加到streamState中
                         const currentCount = typeCounters[actualType];
                         const currentSectionKey = `${actualType}_${currentCount}`;
-                        streamState[currentSectionKey] = actualData;
-                        
-                        console.log(`Initialized ${currentSectionKey} with:`, actualData);
+                        streamState[currentSectionKey] = processedData;
                     } else {
                         // 同一个type，继续累积数据到当前section
                         const currentCount = typeCounters[actualType];
@@ -1027,14 +1472,17 @@
                         if (!streamState[currentSectionKey]) {
                             streamState[currentSectionKey] = '';
                         }
-                        streamState[currentSectionKey] += actualData;
+                        streamState[currentSectionKey] += processedData;
+                        
+                        console.log(`Appending data to ${currentSectionKey}:`, processedData);
+                        console.log(`Total accumulated data for ${currentSectionKey}:`, streamState[currentSectionKey]);
 
                         // 更新当前section的内容
                         const sectionId = `${actualType}-${currentCount}-section`;
                         const contentId = `${actualType}-${currentCount}-content`;
                         updateNewSection(actualType, sectionId, contentId, streamState[currentSectionKey]);
 
-                        console.log(`Appended to ${currentSectionKey}:`, streamState[currentSectionKey]);
+                        console.log(`Updated section ${sectionId} with accumulated data`);
                     }
 
                     // 自动滚动到底部
@@ -1065,20 +1513,27 @@
         // --- Event Listeners ---
 
         searchButton.addEventListener('click', performSearch);
+        initButton.addEventListener('click', initializeDataSource);
         queryInput.addEventListener('keyup', (event) => {
             if (event.key === 'Enter') performSearch();
         });
-        exampleQueries.forEach(example => {
-            example.addEventListener('click', () => {
-                queryInput.value = example.textContent;
+        // 使用事件委托来处理推荐问题点击，避免DOM重建后事件监听器失效
+        resultsDiv.addEventListener('click', (event) => {
+            if (event.target.classList.contains('example-query')) {
+                queryInput.value = event.target.textContent;
                 performSearch();
-            });
+            }
         });
 
         // 初始化highlight.js（如果可用）
         if (window.hljs) {
             hljs.highlightAll();
         }
+
+        // 页面加载时设置初始状态
+        document.addEventListener('DOMContentLoaded', function() {
+            setUIState(false); // 设置为未初始化状态
+        });
     </script>
 </body>
 
