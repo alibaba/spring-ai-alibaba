@@ -115,6 +115,9 @@ const words: I18nType = {
       system: '系统',
       performance: '性能',
       general: '通用',
+      agents: '多智能体',
+      infiniteContext: '无限上下文',
+      filesystem: '文件系统'
     },
     // Agent配置页面
     agentConfig: {
@@ -229,6 +232,40 @@ const words: I18nType = {
     // 基础配置
     basicConfig: {
       title: '基础配置',
+      browserSettings: {
+        headless: '是否使用无头浏览器模式',
+        requestTimeout: '浏览器请求超时时间(秒)'
+      },
+      general: {
+        debugDetail: 'debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢',
+        baseDir: 'manus根目录'
+      },
+      interactionSettings: {
+        openBrowser: '启动时自动打开浏览器'
+      },
+      agentSettings: {
+        maxSteps: '智能体执行最大步数',
+        userInputTimeout: '用户输入表单等待超时时间(秒)',
+        maxMemory: '能记住的最大消息数',
+        parallelToolCalls: '并行工具调用'
+      },
+      agents: {
+        forceOverrideFromYaml: '强制使用YAML配置文件覆盖同名Agent'
+      },
+      infiniteContext: {
+        enabled: '是否开启无限上下文',
+        parallelThreads: '并行处理线程数',
+        taskContextSize: '触发无限上下文的字符数阈值(字符数)'
+      },
+      fileSystem: {
+        allowExternalAccess: '是否允许文件操作超出工作目录'
+      },
+      systemSettings: {
+        systemName: '系统名称',
+        language: '语言',
+        maxThreads: '最大线程数',
+        timeoutSeconds: '请求超时时间(秒)'
+      },
       totalConfigs: '总配置数',
       modified: '已修改',
       exportConfigs: '导出配置',
@@ -244,27 +281,6 @@ const words: I18nType = {
       saveFailed: '保存失败，请重试',
       resetFailed: '重置失败，请重试',
       importFailed: '导入失败，请检查文件格式',
-      agentSettings: {
-        maxSteps: '最大步数',
-        resetAllAgents: '重置所有Agent',
-        maxMemory: '最大内存',
-        parallelToolCalls: '并行工具调用',
-      },
-      browserSettings: {
-        headlessBrowser: '无头浏览器',
-        browserTimeout: '浏览器超时时间',
-        browserDebug: '浏览器调试',
-      },
-      interactionSettings: {
-        autoOpenBrowser: '自动打开浏览器',
-        consoleInteractive: '控制台交互',
-      },
-      systemSettings: {
-        systemName: '系统名称',
-        language: '语言',
-        maxThreads: '最大线程数',
-        requestTimeout: '请求超时时间(秒)',
-      },
       groupDisplayNames: {
         manus: 'Manus',
         browser: '浏览器',

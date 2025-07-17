@@ -114,6 +114,9 @@ const words: I18nType = {
       system: 'System',
       performance: 'Performance',
       general: 'General',
+      agents: 'Multi - Agent',
+      infiniteContext: 'Infinite Context',
+      filesystem: 'File System'
     },
     // Agent configuration page
     agentConfig: {
@@ -226,6 +229,40 @@ const words: I18nType = {
     // Basic configuration
     basicConfig: {
       title: 'Basic Configuration',
+      browserSettings: {
+        headless: 'Whether to use headless browser mode',
+        requestTimeout: 'Browser request timeout (seconds)'
+      },
+      general: {
+        debugDetail: 'Debug mode: The model will output more content to facilitate problem - finding, but it will be slower',
+        baseDir: 'Manus root directory'
+      },
+      interactionSettings: {
+        openBrowser: 'Automatically open the browser on startup'
+      },
+      agentSettings: {
+        maxSteps: 'Max Steps',
+        userInputTimeout: 'User input form waiting timeout (seconds)',
+        maxMemory: 'Maximum number of messages that can be remembered',
+        parallelToolCalls: 'Parallel tool calls'
+      },
+      agents: {
+        forceOverrideFromYaml: 'Force override of agents with the same name using the YAML configuration file'
+      },
+      infiniteContext: {
+        enabled: 'Whether to enable infinite context',
+        parallelThreads: 'Number of parallel processing threads',
+        taskContextSize: 'Character count threshold for triggering infinite context (number of characters)'
+      },
+      fileSystem: {
+        allowExternalAccess: 'Whether to allow file operations beyond the working directory'
+      },
+      systemSettings: {
+        systemName: 'System Name',
+        language: 'Language',
+        maxThreads: 'Max Threads',
+        timeoutSeconds: 'Request Timeout (seconds)'
+      },
       totalConfigs: 'Total Configurations',
       modified: 'Modified',
       exportConfigs: 'Export Configurations',
@@ -241,27 +278,6 @@ const words: I18nType = {
       saveFailed: 'Save failed, please try again',
       resetFailed: 'Reset failed, please try again',
       importFailed: 'Import failed, please check file format',
-      agentSettings: {
-        maxSteps: 'Max Steps',
-        resetAllAgents: 'Reset All Agents',
-        maxMemory: 'Max Memory',
-        parallelToolCalls: 'Parallel Tool Calls',
-      },
-      browserSettings: {
-        headlessBrowser: 'Headless Browser',
-        browserTimeout: 'Browser Timeout',
-        browserDebug: 'Browser Debug',
-      },
-      interactionSettings: {
-        autoOpenBrowser: 'Auto Open Browser',
-        consoleInteractive: 'Console Interactive',
-      },
-      systemSettings: {
-        systemName: 'System Name',
-        language: 'Language',
-        maxThreads: 'Max Threads',
-        requestTimeout: 'Request Timeout (seconds)',
-      },
       groupDisplayNames: {
         manus: 'Manus',
         browser: 'Browser',
