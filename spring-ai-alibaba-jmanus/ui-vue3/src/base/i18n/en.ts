@@ -157,6 +157,8 @@ const words: I18nType = {
       loadDataFailed: 'Failed to load data',
       loadDetailsFailed: 'Failed to load agent details',
       invalidFormat: 'Invalid agent configuration format: missing required fields',
+      modelConfiguration: 'Model Configuration',
+      modelConfigurationLabel: 'Select Model',
     },
     // Model configuration page
     modelConfig: {
@@ -346,6 +348,7 @@ const words: I18nType = {
   // Model Configuration
   model: {
     title: 'Model Configuration',
+    switch: 'Switch Model',
     name: 'Model Name',
     description: 'Description',
     addModel: 'Add Model',

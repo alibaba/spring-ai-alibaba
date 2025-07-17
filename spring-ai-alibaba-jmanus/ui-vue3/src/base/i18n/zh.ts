@@ -350,6 +350,7 @@ const words: I18nType = {
   // Model 配置
   model: {
     title: 'Model 配置',
+    switch: '切换模型',
     name: 'Model名称',
     description: '描述',
     addModel: '新建Model',
