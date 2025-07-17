@@ -48,7 +48,7 @@ public class PlannerNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+		logger.info("Entering {} node", this.getClass().getSimpleName());
 		String input = (String) state.value(INPUT_KEY).orElseThrow();
 		SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
 		String schemaStr = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
@@ -59,7 +59,7 @@ public class PlannerNode implements NodeAction {
 			.startingNode(PLANNER_NODE)
 			.startingState(state)
 			.mapResult(response -> {
-				logger.info("{} 节点输出 content：{}", this.getClass().getSimpleName(),
+				logger.info("{} node output content: {}", this.getClass().getSimpleName(),
 						response.getResult().getOutput().getText());
 				return Map.of(PLANNER_NODE_OUTPUT, Objects.requireNonNull(response.getResult().getOutput().getText()));
 			})

@@ -31,6 +31,7 @@ import static com.alibaba.cloud.ai.constant.Constant.RESULT;
  *
  * @author zhangshenghang
  */
+@Deprecated
 public class SelfReflectNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(SelfReflectNode.class);
@@ -43,14 +44,16 @@ public class SelfReflectNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+		logger.info("Entering {} node", this.getClass().getSimpleName());
 
-		// 当前节点暂未实现具体逻辑，预留扩展点
-		// 可以在这里添加结果质量评估、优化建议等功能
+		// This node currently has no specific logic implemented, reserved for future
+		// extension
+		// Can add result quality assessment, optimization suggestions and other features
+		// here
 
-		logger.info("自反思节点暂未实现具体逻辑，直接返回空结果");
+		logger.info("Self-reflection node has no specific logic implemented yet, returning empty result directly");
 
-		return Map.of(RESULT, "自反思节点执行完成");
+		return Map.of(RESULT, "Self-reflection node execution completed");
 	}
 
 }
