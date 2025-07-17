@@ -48,7 +48,7 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 
 		private List<String> steps;
 
-	private String terminateColumns;
+		private String terminateColumns;
 
 		public PlanningInput() {
 		}
@@ -173,8 +173,8 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 		String title = input.getTitle();
 		List<String> steps = input.getSteps();
 
-		   return switch (command) {
-			   case "create" -> createPlan(planId, title, steps, input.getTerminateColumns());
+		return switch (command) {
+			case "create" -> createPlan(planId, title, steps, input.getTerminateColumns());
 			// case "update" -> updatePlan(planId, title, steps);
 			// case "get" -> getPlan(planId);
 			// case "mark_step" -> markStep(planId, stepIndex, stepStatus, stepNotes);
@@ -198,26 +198,27 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 		return executionStep;
 	}
 
-	   public ToolExecuteResult createPlan(String planId, String title, List<String> steps, String terminateColumns) {
-		   if (title == null || steps == null || steps.isEmpty()) {
-			   log.info("Missing required parameters when creating plan: planId={}, title={}, steps={}", planId, title, steps);
-			   return new ToolExecuteResult("Required parameters missing");
-		   }
+	public ToolExecuteResult createPlan(String planId, String title, List<String> steps, String terminateColumns) {
+		if (title == null || steps == null || steps.isEmpty()) {
+			log.info("Missing required parameters when creating plan: planId={}, title={}, steps={}", planId, title,
+					steps);
+			return new ToolExecuteResult("Required parameters missing");
+		}
 
-		   ExecutionPlan plan = new ExecutionPlan(planId, planId, title);
+		ExecutionPlan plan = new ExecutionPlan(planId, planId, title);
 
-		   int index = 0;
-		   for (String step : steps) {
-			   ExecutionStep execStep = createExecutionStep(step, index);
-			   if (terminateColumns != null && !terminateColumns.isEmpty()) {
-				   execStep.setTerminateColumns(terminateColumns);
-			   }
-			   plan.addStep(execStep);
-			   index++;
-		   }
+		int index = 0;
+		for (String step : steps) {
+			ExecutionStep execStep = createExecutionStep(step, index);
+			if (terminateColumns != null && !terminateColumns.isEmpty()) {
+				execStep.setTerminateColumns(terminateColumns);
+			}
+			plan.addStep(execStep);
+			index++;
+		}
 
-		   this.currentPlan = plan;
-		   return new ToolExecuteResult("Plan created: " + planId + "\n" + plan.getPlanExecutionStateStringFormat(false));
+		this.currentPlan = plan;
+		return new ToolExecuteResult("Plan created: " + planId + "\n" + plan.getPlanExecutionStateStringFormat(false));
 	}
 
 	// ToolCallBiFunctionDef interface methods

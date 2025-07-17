@@ -296,28 +296,31 @@ public class PlanTemplateController {
 			// Parse JSON to extract planTemplateId and title
 			ObjectMapper mapper = new ObjectMapper();
 			PlanInterface planData = mapper.readValue(planJson, PlanInterface.class);
-			
+
 			String planTemplateId = planData.getRootPlanId();
 			if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 				planTemplateId = planData.getCurrentPlanId();
 			}
-			
-			// Check if planTemplateId is empty or starts with "new-", then generate a new one
+
+			// Check if planTemplateId is empty or starts with "new-", then generate a new
+			// one
 			if (planTemplateId == null || planTemplateId.trim().isEmpty() || planTemplateId.startsWith("new-")) {
 				String newPlanTemplateId = planIdDispatcher.generatePlanTemplateId();
-				logger.info("Original planTemplateId '{}' is empty or starts with 'new-', generated new planTemplateId: {}", planTemplateId, newPlanTemplateId);
-				
+				logger.info(
+						"Original planTemplateId '{}' is empty or starts with 'new-', generated new planTemplateId: {}",
+						planTemplateId, newPlanTemplateId);
+
 				// Update the plan object with new ID
 				planData.setCurrentPlanId(newPlanTemplateId);
 				planData.setRootPlanId(newPlanTemplateId);
-				
+
 				// Re-serialize the updated plan object to JSON
 				planJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(planData);
 				planTemplateId = newPlanTemplateId;
 			}
-			
+
 			String title = planData.getTitle();
-			
+
 			if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 				throw new IllegalArgumentException("Plan ID cannot be found in JSON");
 			}
@@ -329,13 +332,15 @@ public class PlanTemplateController {
 			PlanTemplate template = planTemplateService.getPlanTemplate(planTemplateId);
 			if (template == null) {
 				// If it doesn't exist, create a new plan
-				planTemplateService.savePlanTemplate(planTemplateId, title, "User request to generate plan: " + planTemplateId, planJson);
+				planTemplateService.savePlanTemplate(planTemplateId, title,
+						"User request to generate plan: " + planTemplateId, planJson);
 				logger.info("New plan created: {}", planTemplateId);
 				return new PlanTemplateService.VersionSaveResult(true, false, "New plan created", 0);
 			}
 			else {
 				// If it exists, save a new version
-				PlanTemplateService.VersionSaveResult result = planTemplateService.saveToVersionHistory(planTemplateId, planJson);
+				PlanTemplateService.VersionSaveResult result = planTemplateService.saveToVersionHistory(planTemplateId,
+						planJson);
 				if (result.isSaved()) {
 					logger.info("New version of plan {} saved", planTemplateId, result.getVersionIndex());
 				}
@@ -344,7 +349,8 @@ public class PlanTemplateController {
 				}
 				return result;
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Failed to parse plan JSON", e);
 			throw new RuntimeException("Failed to save version history: " + e.getMessage());
 		}
@@ -371,21 +377,22 @@ public class PlanTemplateController {
 			if (planId == null) {
 				planId = planData.getRootPlanId();
 			}
-			
+
 			// Check if planId is empty or starts with "new-", then generate a new one
 			if (planId == null || planId.trim().isEmpty() || planId.startsWith("new-")) {
 				String newPlanId = planIdDispatcher.generatePlanTemplateId();
-				logger.info("Original planId '{}' is empty or starts with 'new-', generated new planId: {}", planId, newPlanId);
-				
+				logger.info("Original planId '{}' is empty or starts with 'new-', generated new planId: {}", planId,
+						newPlanId);
+
 				// Update the plan object with new ID
 				planData.setCurrentPlanId(newPlanId);
 				planData.setRootPlanId(newPlanId);
-				
+
 				// Re-serialize the updated plan object to JSON
 				planJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(planData);
 				planId = newPlanId;
 			}
-			
+
 			if (planId == null || planId.trim().isEmpty()) {
 				return ResponseEntity.badRequest().body(Map.of("error", "Plan ID cannot be found in JSON"));
 			}

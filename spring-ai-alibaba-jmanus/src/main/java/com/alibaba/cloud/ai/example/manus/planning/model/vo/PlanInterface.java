@@ -163,6 +163,7 @@ public interface PlanInterface {
 	String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress);
 
 	public void setPlanId(String planId);
+
 	public String getPlanId();
 
 	/**
