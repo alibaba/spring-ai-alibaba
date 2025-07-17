@@ -12,11 +12,11 @@ spring:
     proxy-target-class: true
   ai:
     openai:
-      base-url: https://dashscope.aliyuncs.com/compatible-mode
-      api-key: ${DASHSCOPE_API_KEY}
+      base-url: http://localhost:11434
+      api-key: ollama
       chat:
         options:
-          model: qwen-plus
+          model: qwen3:8b
     mcp:
       client:
         enabled: false

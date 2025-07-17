@@ -17,12 +17,17 @@
 // Define interface types
 export interface Model {
     id: string
-    headers: any
+    headers: Headers | null
     baseUrl: string
     apiKey: string
     modelName: string
     modelDescription: string
     type: string
+}
+
+export interface Headers {
+    key: string
+    value: string
 }
 
 export interface ApiResponse<T> {

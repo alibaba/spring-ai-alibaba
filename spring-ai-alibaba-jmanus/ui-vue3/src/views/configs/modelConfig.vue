@@ -115,7 +115,7 @@
           <label>{{ t('config.modelConfig.headers') }} </label>
           <input
               type="text"
-              v-model="selectedModel.headers"
+              v-model="selectedHeadersJson"
               :placeholder="t('config.modelConfig.headersPlaceholder')"
           />
         </div>
@@ -186,7 +186,7 @@
           <label>{{ t('config.modelConfig.headers') }} </label>
           <input
               type="text"
-              v-model="newModel.headers"
+              v-model="newHeadersJson"
               :placeholder="t('config.modelConfig.headersPlaceholder')"
           />
         </div>
@@ -248,7 +248,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted,computed } from 'vue'
+// 其余代码保持不变
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal/index.vue'
@@ -268,10 +269,37 @@ const selectedModel = ref<Model | null>(null)
 const showModal = ref(false)
 const showDeleteModal = ref(false)
 
+const selectedHeadersJson = computed({
+  get() {
+    if (!selectedModel.value?.headers) return ''
+    return JSON.stringify(selectedModel.value.headers, null, 2)
+  },
+  set(val) {
+    try {
+      if (!selectedModel.value) return
+      // 空值处理
+      selectedModel.value.headers = val.trim() ? JSON.parse(val) : null
+    } catch (e: any) {
+    }
+  }
+})
+
+const newHeadersJson = computed({
+  get() {
+    return newModel.headers ? JSON.stringify(newModel.headers, null, 2) : ''
+  },
+  set(val) {
+    try {
+      newModel.headers = val.trim() ? JSON.parse(val) : null
+    } catch (e: any) {
+    }
+  }
+})
+
 // New Model form data
 const newModel = reactive<Omit<Model, 'id'>>({
   baseUrl:  '',
-  headers:  '',
+  headers:  null,
   apiKey:  '',
   modelName:  '',
   modelDescription:  '',
@@ -322,9 +350,6 @@ const selectModel = async (model: Model) => {
   try {
     // Load the detailed information
     const detailedModel = await ModelApiService.getModelById(model.id)
-    if(detailedModel.headers) {
-      detailedModel.headers = JSON.stringify(detailedModel.headers)
-    }
     selectedModel.value = {
       ...detailedModel
     }
@@ -341,7 +366,7 @@ const selectModel = async (model: Model) => {
 // Show the new Model modal
 const showAddModelModal = () => {
   newModel.baseUrl = ''
-  newModel.headers = ''
+  newModel.headers = null
   newModel.apiKey = ''
   newModel.modelName = ''
   newModel.modelDescription = ''
@@ -357,13 +382,9 @@ const handleAddModel = async () => {
   }
 
   try {
-    let headers = null
-    if(newModel.headers){
-      headers = JSON.parse(newModel.headers)
-    }
     const modelData: Omit<Model, 'id'> = {
       baseUrl: newModel.baseUrl.trim(),
-      headers: headers,
+      headers: newModel.headers,
       apiKey: newModel.apiKey.trim(),
       modelName: newModel.modelName.trim(),
       modelDescription: newModel.modelDescription.trim(),
@@ -371,9 +392,6 @@ const handleAddModel = async () => {
     }
 
     const createdModel = await ModelApiService.createModel(modelData)
-    if(createdModel.headers) {
-      createdModel.headers = JSON.stringify(createdModel.headers)
-    }
     models.push(createdModel)
     selectedModel.value = createdModel
     showModal.value = false
@@ -393,21 +411,12 @@ const handleSave = async () => {
   }
 
   try {
-    if(selectedModel.value.headers) {
-      selectedModel.value.headers = JSON.parse(selectedModel.value.headers)
-    } else {
-      selectedModel.value.headers = null
-    }
     const savedModel = await ModelApiService.updateModel(selectedModel.value.id, selectedModel.value)
 
 // Update the data in the local list
     const index = models.findIndex(a => a.id === savedModel.id)
     if (index !== -1) {
       models[index] = savedModel
-    }
-
-    if(savedModel.headers) {
-      savedModel.headers = JSON.stringify(savedModel.headers)
     }
     selectedModel.value = savedModel
     showMessage(t('config.modelConfig.saveSuccess'), 'success')

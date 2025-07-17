@@ -26,30 +26,32 @@ import java.util.Map;
 @Component
 public class JmanusEventPublisher<T extends JmanusEvent> {
 
-    private static final Logger logger = LoggerFactory.getLogger(JmanusEventPublisher.class);
+	private static final Logger logger = LoggerFactory.getLogger(JmanusEventPublisher.class);
 
-    // 监听器无法动态注册，无需线程安全
-    private Map<Class<T>, List<JmanusListener<T>>> listeners = new HashMap<>();
+	// 监听器无法动态注册，无需线程安全
+	private Map<Class<T>, List<JmanusListener<T>>> listeners = new HashMap<>();
 
-    public void publish(T event) {
-        List<JmanusListener<T>> jmanusListeners = listeners.get(event.getClass());
-        for (JmanusListener<T> jmanusListener : jmanusListeners) {
-            try {
-                jmanusListener.onEvent(event);
-            } catch (Exception e) {
-                // 这里忽略异常，避免影响其他监听器的执行
-                logger.error("Error occurred while processing event: {}", e.getMessage());
-            }
-        }
-    }
+	public void publish(T event) {
+		List<JmanusListener<T>> jmanusListeners = listeners.get(event.getClass());
+		for (JmanusListener<T> jmanusListener : jmanusListeners) {
+			try {
+				jmanusListener.onEvent(event);
+			}
+			catch (Exception e) {
+				// 这里忽略异常，避免影响其他监听器的执行
+				logger.error("Error occurred while processing event: {}", e.getMessage());
+			}
+		}
+	}
 
-    void registerListener(Class<T> eventClass, JmanusListener<T> listener) {
-        List<JmanusListener<T>> jmanusListeners = listeners.get(eventClass);
-        if (jmanusListeners == null) {
-            listeners.put(eventClass, List.of(listener));
-        } else {
-            jmanusListeners.add(listener);
-        }
-    }
+	void registerListener(Class<T> eventClass, JmanusListener<T> listener) {
+		List<JmanusListener<T>> jmanusListeners = listeners.get(eventClass);
+		if (jmanusListeners == null) {
+			listeners.put(eventClass, List.of(listener));
+		}
+		else {
+			jmanusListeners.add(listener);
+		}
+	}
 
 }
