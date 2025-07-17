@@ -135,11 +135,6 @@ export interface AgentExecutionRecord {
   /** Execution status (IDLE, RUNNING, FINISHED) */
   status?: string
   
-  /** Whether execution is completed */
-  isCompleted?: boolean
-  
-  /** Whether stuck */
-  isStuck?: boolean
   
   /** Record list of think-act steps, existing as sub-steps */
   thinkActSteps?: ThinkActRecord[]

@@ -45,16 +45,12 @@ import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 
 @Service
 public class ChatModelDelegateImpl implements ChatModelDelegate {
@@ -205,8 +201,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 					log.info("set image options, {}", objectMapper.writeValueAsString(imageOptions));
 
 					// todo: adapt new image api
-					var dashScopeImageApi = new DashScopeImageApi(DEFAULT_BASE_URL, key, "", RestClient.builder(), null,
-							RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+					var dashScopeImageApi = DashScopeImageApi.builder().apiKey(key).build();
 					dashScopeImageModel = new DashScopeImageModel(dashScopeImageApi, imageOptions);
 				}
 				catch (Exception e) {

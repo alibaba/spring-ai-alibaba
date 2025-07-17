@@ -238,11 +238,13 @@ const cleanup = (): void => {
 // Input Area event handling
 const handleSendMessage = (message: string) => {
   console.log('[PlanExecutionComponent] Send message from input:', message)
-  // Instead of calling handleUserMessageSendRequested directly, handle it through ChatContainer
-  // This can avoid repeated calls
+  // Instead of calling both handleSendMessage and handleUserMessageSendRequested,
+  // only call chatRef.handleSendMessage for UI update, and handleUserMessageSendRequested for API call
   if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
     chatRef.value.handleSendMessage(message)
   }
+  // Then handle the API request
+  handleUserMessageSendRequested(message)
 }
 
 const handleInputClear = () => {
@@ -270,8 +272,8 @@ const handlePlanModeClicked = () => {
 const handleMessageSent = (message: string) => {
   console.log('[PlanExecutionComponent] Message sent from chat container:', message)
   emit('message-sent', message)
-  // Handle the user message send request from ChatContainer
-  handleUserMessageSendRequested(message)
+  // Remove the duplicate API call here since handleSendMessage already handles it
+  // handleUserMessageSendRequested(message) // Removed to prevent double API calls
 }
 
 const handlePlanUpdate = (planData: any) => {

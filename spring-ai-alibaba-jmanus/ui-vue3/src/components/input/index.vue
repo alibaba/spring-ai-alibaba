@@ -61,7 +61,6 @@ interface Emits {
   (e: 'send', message: string): void
   (e: 'clear'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
-  (e: 'message-sent', message: string): void
   (e: 'plan-mode-clicked'): void
 }
 
@@ -106,9 +105,6 @@ const handleSend = () => {
   
   // Clear the input
   clearInput()
-  
-  // Emit a message sent event
-  emit('message-sent', query)
 }
 
 const handlePlanModeClick = () => {
