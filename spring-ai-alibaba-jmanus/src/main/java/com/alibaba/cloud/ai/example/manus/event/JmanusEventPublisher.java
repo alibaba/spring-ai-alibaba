@@ -36,7 +36,7 @@ public class JmanusEventPublisher {
 		Class<? extends JmanusEvent> eventClass = event.getClass();
 		for (Map.Entry<Class<? extends JmanusEvent>, List<JmanusListener<? super JmanusEvent>>> entry : listeners
 			.entrySet()) {
-			//这里父类也可以通知
+			// 这里父类也可以通知
 			if (entry.getKey().isAssignableFrom(eventClass)) {
 				for (JmanusListener<? super JmanusEvent> listener : entry.getValue()) {
 					try {
