@@ -1,0 +1,8 @@
+# DatabaseTool MySQL datasource configuration
+# This file is used by DataSourceService (database_tool prefix)
+database_tool:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/amanus?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password:  
