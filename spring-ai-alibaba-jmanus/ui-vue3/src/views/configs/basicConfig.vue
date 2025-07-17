@@ -351,34 +351,34 @@ const searchQuery = ref('')
 // Configuration item display name mapping
 const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   // Agent Settings
-  'maxSteps': t('config.configDisplayNames.maxSteps'),
-  'resetAllAgents': t('config.configDisplayNames.resetAllAgents'),
-  'maxMemory': t('config.configDisplayNames.maxMemory'),
-  'parallelToolCalls': t('config.configDisplayNames.parallelToolCalls'),
+  'maxSteps': t('config.basicConfig.agentSettings.maxSteps'),
+  'resetAllAgents': t('config.basicConfig.agentSettings.resetAllAgents'),
+  'maxMemory': t('config.basicConfig.agentSettings.maxMemory'),
+  'parallelToolCalls': t('config.basicConfig.agentSettings.parallelToolCalls'),
   
   // Browser Settings
-  'headlessBrowser': t('config.configDisplayNames.headlessBrowser'),
-  'browserTimeout': t('config.basicConfig.browserTimeout'),
-  'browserDebug': t('config.configDisplayNames.browserDebug'),
+  'headlessBrowser': t('config.basicConfig.browserSettings.headlessBrowser'),
+  'browserTimeout': t('config.basicConfig.browserSettings.browserTimeout'),
+  'browserDebug': t('config.basicConfig.browserSettings.browserDebug'),
   
   // Interaction Settings
-  'autoOpenBrowser': t('config.configDisplayNames.autoOpenBrowser'),
-  'consoleInteractive': t('config.configDisplayNames.consoleInteractive'),
+  'autoOpenBrowser': t('config.basicConfig.interactionSettings.autoOpenBrowser'),
+  'consoleInteractive': t('config.basicConfig.interactionSettings.consoleInteractive'),
   
   // System Settings
-  'systemName': t('config.configDisplayNames.systemName'),
-  'language': t('config.configDisplayNames.language'),
-  'maxThreads': t('config.configDisplayNames.maxThreads'),
-  'timeoutSeconds': t('config.basicConfig.requestTimeout')
+  'systemName': t('config.basicConfig.systemSettings.systemName'),
+  'language': t('config.basicConfig.systemSettings.language'),
+  'maxThreads': t('config.basicConfig.systemSettings.maxThreads'),
+  'timeoutSeconds': t('config.basicConfig.systemSettings.requestTimeout')
 }
 
 // Group display name mapping
 const GROUP_DISPLAY_NAMES: Record<string, string> = {
-  'manus': t('config.groupDisplayNames.manus'),
-  'browser': t('config.groupDisplayNames.browser'), 
-  'interaction': t('config.groupDisplayNames.interaction'),
-  'system': t('config.groupDisplayNames.system'),
-  'performance': t('config.groupDisplayNames.performance')
+  'manus': t('config.basicConfig.groupDisplayNames.manus'),
+  'browser': t('config.basicConfig.groupDisplayNames.browser'), 
+  'interaction': t('config.basicConfig.groupDisplayNames.interaction'),
+  'system': t('config.basicConfig.groupDisplayNames.system'),
+  'performance': t('config.basicConfig.groupDisplayNames.performance')
 }
 
 // Group icon mapping
