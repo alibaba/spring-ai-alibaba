@@ -385,7 +385,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		// 获取MapReduceTool实例以获取Map任务结果
 		ToolCallBackContext mapReduceToolContext = null;
 		if (executor != null) {
-			mapReduceToolContext = executor.getToolCallBackContext("map_reduce_tool");
+			mapReduceToolContext = executor.getToolCallBackContext("reduce_operation_tool");
 		}
 
 		if (mapReduceToolContext == null) {

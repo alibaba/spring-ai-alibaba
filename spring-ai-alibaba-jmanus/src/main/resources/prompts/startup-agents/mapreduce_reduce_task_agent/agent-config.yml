@@ -12,7 +12,7 @@ nextStepPrompt: |
   简化的工作流程：
   1) 自动接收一批Map任务的输出结果（已通过上下文参数提供，无需手动读取文件）
   2) 根据操作步骤要求对多个Map的结果进行汇总、合并、聚合或综合分析
-  3) 使用 reduce_operation_tool 保存最终的Reduce处理结果（你应只使用get_lines, append或replace操作！不要使用record_map_output或split_data操作）
+  3) 使用 reduce_operation_tool 保存最终的Reduce处理结果（你应只使用get_lines, append或replace操作！），如果output.md文件不为空，则需要先用get_line 查询既有数据后，再进行append或replace操作
   4) 输出完成后调用Terminate工具，结束任务
 
   为完成Reduce任务，下一步应该做什么？

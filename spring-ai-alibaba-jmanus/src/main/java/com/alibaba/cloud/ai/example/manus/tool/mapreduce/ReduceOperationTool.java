@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.example.manus.tool.mapreduce;
 
 import java.io.*;
 import java.nio.file.*;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
@@ -62,22 +61,21 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	private static final int MAX_LINES_LIMIT = 500;
 
 	/**
+	 * Fixed file name for reduce operations
+	 */
+	private static final String REDUCE_FILE_NAME = "reduce_output.md";
+
+	/**
 	 * Internal input class for defining Reduce operation tool input parameters
 	 */
 	public static class ReduceOperationInput {
 
 		private String action;
 
-		@com.fasterxml.jackson.annotation.JsonProperty("file_name")
-		private String fileName;
-
 		private String content;
 
 		@com.fasterxml.jackson.annotation.JsonProperty("start_line")
 		private Integer startLine;
-
-		@com.fasterxml.jackson.annotation.JsonProperty("end_line")
-		private Integer endLine;
 
 		@com.fasterxml.jackson.annotation.JsonProperty("source_text")
 		private String sourceText;
@@ -96,14 +94,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 			this.action = action;
 		}
 
-		public String getFileName() {
-			return fileName;
-		}
-
-		public void setFileName(String fileName) {
-			this.fileName = fileName;
-		}
-
 		public String getContent() {
 			return content;
 		}
@@ -118,14 +108,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 
 		public void setStartLine(Integer startLine) {
 			this.startLine = startLine;
-		}
-
-		public Integer getEndLine() {
-			return endLine;
-		}
-
-		public void setEndLine(Integer endLine) {
-			this.endLine = endLine;
 		}
 
 		public String getSourceText() {
@@ -149,18 +131,19 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 
 	private static final String TOOL_DESCRIPTION = """
 			Reduce operation tool for MapReduce workflow file manipulation.
-			Supports file operations in root plan directory for Reduce stage processing.
+			Supports file operations on fixed reduce output file for Reduce stage processing.
+			All operations work on the fixed file: %s
 			Supported operations:
-			- get_lines: Get specified line range content from files in root plan directory (single request max %d lines).
-			- append: Append content to file in root plan directory (auto-create file and directory).
-			- replace: Replace specific text in file from root plan directory.
+			- get_lines: Get specified line range content from the reduce output file (single request max %d lines).
+			- append: Append content to the reduce output file (auto-create file and directory).
+			- replace: Replace specific text in the reduce output file.
 
 			This tool is specifically designed for Reduce stage operations that need to:
 			- Read and process Map output results
 			- Aggregate, merge, or combine data from multiple Map tasks
 			- Generate final consolidated output files
 			"""
-		.formatted(MAX_LINES_LIMIT);
+		.formatted(REDUCE_FILE_NAME, MAX_LINES_LIMIT);
 
 	private static final String PARAMETERS_JSON = """
 			{
@@ -172,20 +155,12 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 			                    "type": "string",
 			                    "const": "get_lines"
 			                },
-			                "file_name": {
-			                    "type": "string",
-			                    "description": "文件名（带扩展名），从根计划目录获取"
-			                },
 			                "start_line": {
 			                    "type": "integer",
-			                    "description": "起始行号，默认为1"
-			                },
-			                "end_line": {
-			                    "type": "integer",
-			                    "description": "结束行号，默认为文件末尾"
+			                    "description": "起始行号，默认为1，从该行开始读取到文件末尾"
 			                }
 			            },
-			            "required": ["action", "file_name"],
+			            "required": ["action"],
 			            "additionalProperties": false
 			        },
 			        {
@@ -195,16 +170,12 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 			                    "type": "string",
 			                    "const": "append"
 			                },
-			                "file_name": {
-			                    "type": "string",
-			                    "description": "文件名（带扩展名），在根计划目录中操作"
-			                },
 			                "content": {
 			                    "type": "string",
 			                    "description": "要追加的内容"
 			                }
 			            },
-			            "required": ["action", "file_name", "content"],
+			            "required": ["action", "content"],
 			            "additionalProperties": false
 			        },
 			        {
@@ -213,10 +184,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 			                "action": {
 			                    "type": "string",
 			                    "const": "replace"
-			                },
-			                "file_name": {
-			                    "type": "string",
-			                    "description": "文件名（带扩展名），在根计划目录中操作"
 			                },
 			                "source_text": {
 			                    "type": "string",
@@ -227,7 +194,7 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 			                    "description": "替换后的文本"
 			                }
 			            },
-			            "required": ["action", "file_name", "source_text", "target_text"],
+			            "required": ["action", "source_text", "target_text"],
 			            "additionalProperties": false
 			        }
 			    ]
@@ -305,7 +272,7 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	 */
 	@Override
 	public ToolExecuteResult run(ReduceOperationInput input) {
-		log.info("ReduceOperationTool input: action={}, fileName={}", input.getAction(), input.getFileName());
+		log.info("ReduceOperationTool input: action={}", input.getAction());
 		try {
 			String action = input.getAction();
 			if (action == null) {
@@ -314,39 +281,25 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 
 			ToolExecuteResult result = switch (action) {
 				case ACTION_GET_LINES -> {
-					String fileName = input.getFileName();
 					Integer startLine = input.getStartLine();
-					Integer endLine = input.getEndLine();
+					Integer endLine = startLine != null ? startLine + 500 : null;
 
-					if (fileName == null || fileName.trim().isEmpty()) {
-						yield new ToolExecuteResult("Error: file_name parameter is required");
-					}
-
-					yield getFileLines(fileName, startLine, endLine);
+					yield getFileLines(REDUCE_FILE_NAME, startLine, endLine);
 				}
 				case ACTION_APPEND -> {
-					String fileName = input.getFileName();
 					String content = input.getContent();
 
-					if (fileName == null || fileName.trim().isEmpty()) {
-						yield new ToolExecuteResult("Error: file_name parameter is required");
-					}
-
-					yield appendToFile(fileName, content);
+					yield appendToFile(REDUCE_FILE_NAME, content);
 				}
 				case ACTION_REPLACE -> {
-					String fileName = input.getFileName();
 					String sourceText = input.getSourceText();
 					String targetText = input.getTargetText();
 
-					if (fileName == null || fileName.trim().isEmpty()) {
-						yield new ToolExecuteResult("Error: file_name parameter is required");
-					}
 					if (sourceText == null || targetText == null) {
 						yield new ToolExecuteResult("Error: source_text and target_text parameters are required");
 					}
 
-					yield replaceInFile(fileName, sourceText, targetText);
+					yield replaceInFile(REDUCE_FILE_NAME, sourceText, targetText);
 				}
 				default -> new ToolExecuteResult("Unknown operation: " + action + ". Supported operations: "
 						+ ACTION_GET_LINES + ", " + ACTION_APPEND + ", " + ACTION_REPLACE);
@@ -370,10 +323,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	 */
 	private ToolExecuteResult getFileLines(String fileName, Integer startLine, Integer endLine) {
 		try {
-			if (fileName == null || fileName.trim().isEmpty()) {
-				return new ToolExecuteResult("Error: file_name parameter is required");
-			}
-
 			// Get file from root plan directory instead of subtask directory
 			Path rootPlanDir = getPlanDirectory(rootPlanId);
 			Path filePath = rootPlanDir.resolve(fileName);
@@ -449,9 +398,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	 */
 	private ToolExecuteResult appendToFile(String fileName, String content) {
 		try {
-			if (fileName == null || fileName.trim().isEmpty()) {
-				return new ToolExecuteResult("Error: file_name parameter is required");
-			}
 			if (content == null) {
 				content = "";
 			}
@@ -491,7 +437,11 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 				result.append(String.format("%4d: %s\n", i + 1, lines.get(i)));
 			}
 
-			return new ToolExecuteResult(result.toString());
+            String resultStr = result.toString();
+			if (sharedStateManager != null) {
+				sharedStateManager.setLastOperationResult(currentPlanId, resultStr);
+			}
+			return new ToolExecuteResult(resultStr);
 
 		}
 		catch (IOException e) {
@@ -506,9 +456,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	 */
 	private ToolExecuteResult replaceInFile(String fileName, String sourceText, String targetText) {
 		try {
-			if (fileName == null || fileName.trim().isEmpty()) {
-				return new ToolExecuteResult("Error: file_name parameter is required");
-			}
 			if (sourceText == null || targetText == null) {
 				return new ToolExecuteResult("Error: source_text and target_text parameters are required");
 			}

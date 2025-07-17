@@ -407,6 +407,11 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 			String result = String.format("Task %s status recorded: %s, output file: %s", taskId, status,
 					TASK_OUTPUT_FILE_NAME);
+            
+            String resultStr = result.toString();
+			if (sharedStateManager != null) {
+				sharedStateManager.setLastOperationResult(currentPlanId, resultStr);
+			}
 			log.info(result);
 			return new ToolExecuteResult(result);
 
