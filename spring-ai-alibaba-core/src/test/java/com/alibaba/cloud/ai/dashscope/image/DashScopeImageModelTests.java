@@ -168,7 +168,8 @@ class DashScopeImageModelTests {
 
 		// Mock failed task completion
 		DashScopeImageAsyncResponse failedResponse = new DashScopeImageAsyncResponse(TEST_REQUEST_ID,
-				new DashScopeImageAsyncResponseOutput(TEST_TASK_ID, "FAILED", null, null, "ERROR_CODE", "Error message"),
+				new DashScopeImageAsyncResponseOutput(TEST_TASK_ID, "FAILED", null, null, "ERROR_CODE",
+						"Error message"),
 				new DashScopeImageAsyncResponseUsage(1));
 		when(dashScopeImageApi.getImageGenTaskResult(TEST_TASK_ID)).thenReturn(ResponseEntity.ok(failedResponse));
 	}
