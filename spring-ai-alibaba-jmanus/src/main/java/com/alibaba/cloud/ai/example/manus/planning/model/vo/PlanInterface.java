@@ -162,6 +162,9 @@ public interface PlanInterface {
 	 */
 	String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress);
 
+	public void setPlanId(String planId);
+	public String getPlanId();
+
 	/**
 	 * 更新所有步骤的索引，从0开始递增。 Update the indices of all steps, starting from 0.
 	 */
