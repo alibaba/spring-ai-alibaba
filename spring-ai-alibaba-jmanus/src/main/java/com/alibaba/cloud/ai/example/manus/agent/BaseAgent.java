@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -271,8 +272,8 @@ public abstract class BaseAgent {
 				params.setAgentDescription(getDescription());
 				params.setMaxSteps(maxSteps);
 				params.setActualSteps(currentStep);
-				params.setCompleted(completed);
-				params.setStuck(stuck);
+				params.setStatus(stuck ? ExecutionStatus.IDLE
+						: (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
 				params.setErrorMessage(errorMessage);
 				params.setResult(finalResult);
 				params.setStartTime(startTime);
@@ -299,8 +300,8 @@ public abstract class BaseAgent {
 			params.setAgentDescription(getDescription());
 			params.setMaxSteps(maxSteps);
 			params.setActualSteps(currentStep);
-			params.setCompleted(completed);
-			params.setStuck(stuck);
+			params.setStatus(
+					stuck ? ExecutionStatus.IDLE : (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
 			params.setErrorMessage(errorMessage);
 			params.setResult(finalResult);
 			params.setStartTime(startTime);

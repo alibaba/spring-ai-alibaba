@@ -29,6 +29,10 @@ public final class DashScopeApiConstants {
 
 	public static final String HEADER_WORK_SPACE_ID = "X-DashScope-WorkSpace";
 
+	public static final String HEADER_ASYNC = "X-DashScope-Async";
+
+	public static final String ENABLED = "enabled";
+
 	public static final String SOURCE_FLAG = "CloudSDK";
 
 	public static final String SDK_FLAG = "SpringAIAlibaba";

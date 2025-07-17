@@ -15,9 +15,9 @@
 -->
 <template>
   <div class="config-container">
-    <!-- 顶部标题栏 -->
+    <!-- Top title bar -->
     <div class="config-header">
-      <!-- <h1>配置中心</h1> -->
+      <!-- <h1>Configuration Center</h1> -->
       <div class="header-actions">
         <button class="action-btn" @click="$router.push('/')">
           <Icon icon="carbon:arrow-left" />
@@ -27,28 +27,29 @@
       </div>
     </div>
 
-    <!-- 主体内容区域 -->
+    <!-- Main content area -->
     <div class="config-content">
-      <!-- 左侧导航 -->
+      <!-- Left navigation -->
       <nav class="config-nav">
         <div
           v-for="(item, index) in categories"
           :key="index"
           class="nav-item"
           :class="{ active: activeCategory === item.key }"
-          @click="activeCategory = item.key"
+          @click="handleNavClick(item.key)"
         >
           <Icon :icon="item.icon" width="20" />
           <span>{{ item.label }}</span>
         </div>
       </nav>
 
-      <!-- 右侧配置详情 -->
+      <!-- Right configuration details -->
       <div class="config-details">
         <BasicConfig v-if="activeCategory === 'basic'" />
         <AgentConfig v-if="activeCategory === 'agent'" />
         <ModelConfig v-if="activeCategory === 'model'" />
         <McpConfig v-if="activeCategory === 'mcp'" />
+        <dynamicPromptConfig v-if="activeCategory === 'prompt'" />
       </div>
     </div>
   </div>
@@ -56,23 +57,41 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import BasicConfig from './basicConfig.vue'
 import AgentConfig from './agentConfig.vue'
 import ModelConfig from './modelConfig.vue'
 import McpConfig from './mcpConfig.vue'
+import dynamicPromptConfig from './dynamicPromptConfig.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
 
 const { t } = useI18n()
 
-const activeCategory = ref('basic')
+const route = useRoute()
+const router = useRouter()
+
+const activeCategory = ref(route.params.category || 'basic')
 const categories = computed(() => [
   { key: 'basic', label: t('config.categories.basic'), icon: 'carbon:settings' },
   { key: 'agent', label: t('config.categories.agent'), icon: 'carbon:bot' },
   { key: 'model', label: t('config.categories.model'), icon: 'carbon:build-image' },
   { key: 'mcp', label: t('config.categories.mcp'), icon: 'carbon:tool-box' },
+  { key: 'prompt', label: t('config.categories.prompt'), icon: 'carbon:repo-artifact' },
 ])
+const handleNavClick = (categoryKey: string) => {
+  activeCategory.value = categoryKey
+
+  router.push({
+    name: route.name as string,
+    params: {
+      ...route.params,
+      category: categoryKey,
+    },
+    query: route.query,
+  })
+}
 </script>
 
 <style scoped>
@@ -111,7 +130,7 @@ const categories = computed(() => [
 }
 
 .config-nav {
-  width: 240px;
+  width: 242px;
   padding: 20px;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
 }

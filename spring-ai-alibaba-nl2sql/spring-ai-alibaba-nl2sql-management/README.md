@@ -1,34 +1,27 @@
-# 数据库 Schema 管控模块
+# NL2SQL 管控模块
 
 ## 模块简介
 
-本模块旨在提供一个轻量级的 `evidence` 及 `schema` 的管控服务，用于初始化数据库的 `schema` 信息，并支持对业务逻辑解释（evidence）进行增删改查操作。
+本模块为 NL2SQL (自然语言转SQL) 功能提供了一个后端管理系统和可视化操作界面。它支持知识配置、数据库 Schema 管理，并提供了一个交互式的聊天界面，用于将自然语言查询转换为 SQL。
 
-该模块被设计为可复用的 Service 层组件，**仅提供核心功能实现，不包含 RESTful 接口及独立启动能力**。适用于集成到其他 Spring Boot 项目中使用。
+本模块是一个可独立运行的 Spring Boot 应用。
 
 ---
 
 ## 功能特性
 
-- **数据库 Schema 初始化**  
-  提供一键初始化功能，快速生成指定的数据库表结构。
-
-- **业务逻辑管理**  
-  支持对业务逻辑的增删改查操作，方便开发者维护复杂的业务规则。
-
-- **向量化处理支持**  
-  集成 DashScope Embedding 模型，支持文本内容的向量化表示和搜索匹配。
-
-- **多数据库适配**  
-  支持 MySQL / PostgreSQL 等主流关系型数据库的 schema 读取与分析。
+- **数据库 Schema 管理**: 提供一键初始化功能，快速将指定数据库表的 Schema 信息生成并存入向量库。
+- **知识配置**: 支持对“证据”（即业务逻辑的文字解释）进行增删操作，并将其存入向量库。
+- **可视化界面**: 包含一个 Web UI，方便用户与 NL2SQL 服务进行交互。
+- **流式聊天**: 提供流式聊天接口，实时返回自然语言查询到 SQL 的转换结果。
+- **多向量库支持**: 同时支持 AnalyticDB 和 SimpleVectorStore 作为向量存储和检索方案。
 
 ---
 
 ## 技术栈
 
 - **后端**: Java 17+ (Spring Boot)
-- **依赖模块**: `com.alibaba.cloud.ai:${spring-ai-alibaba.version}`
-- **向量引擎**: 云原生数据仓库 AnalyticDB PostgreSQL 版、SimpleVector
+- **向量库**: AnalyticDB, SimpleVectorStore
 - **嵌入模型**: DashScope Embedding Model
 
 ---
@@ -38,96 +31,50 @@
 ### 前置依赖
 
 - [Java](https://www.oracle.com/java/technologies/javase-jdk17-downloads.html) >= 17
-- [PostgreSQL](https://www.postgresql.org/) >= 13（用于存储 schema 元数据）
-- [MySQL](https://www.mysql.com/)（可选）
-- [Gradle](https://gradle.org/) 或 [Maven](https://maven.apache.org/) 构建工具（用于主项目的构建）
+- [Maven](https://maven.apache.org/) (用于项目构建)
+- 一个正在运行的数据库实例 (例如 MySQL, PostgreSQL)
 
-### 引入方式
+### 运行应用
 
-将本模块作为依赖引入到你的 Spring Boot 项目中：
+1.  **配置数据库连接**:
+    在 `src/main/resources` 目录下，修改 `application.properties` 或 `application.yml` 文件，填入你的数据库连接信息 (URL, 用户名, 密码)。
 
-#### Maven 示例：
+2.  **构建并运行应用**:
+    你可以直接在 IDE 中运行 `com.alibaba.cloud.ai.Application` 类中的 `main` 方法来启动应用，或者使用以下 Maven 命令：
 
-```xml
-<dependency>
-  <groupId>com.alibaba.cloud.ai</groupId>
-  <artifactId>spring-ai-alibaba-starter-nl2sql</artifactId>
-  <version>${spring-ai-alibaba.version}</version>
-</dependency>
-```
+    ```bash
+    mvn spring-boot:run
+    ```
 
-#### Gradle 示例：
+3.  **访问应用**:
+    应用启动后，在浏览器中访问 `http://localhost:8080` 即可打开 Web 界面。
 
-```groovy
-implementation 'com.alibaba.cloud.ai:spring-ai-alibaba-starter-nl2sql:${spring-ai-alibaba.version}'
-```
+### API 端点
 
-### 配置说明
+本应用暴露了以下 RESTful API 端点：
 
-目前支持两种向量存储方式：
-- **AnalyticDB**（推荐生产环境，支持大规模数据和高性能检索）
-- **SimpleVector**（适合本地开发、测试或小规模场景，无需依赖外部数据库）
-
-#### AnalyticDB 配置示例
-
-在 `application.yml` 中配置以下参数以启用 AnalyticDB 向量功能：
-
-```yaml
-spring:
-  ai:
-    dashscope:
-      api-key: your-api-key
-    vectorstore:
-      analytic:
-        collectName: your-collection-name
-        regionId: cn-hangzhou
-        dbInstanceId: your-db-instance-id
-        managerAccount: manager-account
-        managerAccountPassword: manager-password
-        namespace: your-namespace
-        namespacePassword: namespace-password
-        defaultTopK: 6
-        defaultSimilarityThreshold: 0.75
-        accessKeyId: your-access-key-id
-        accessKeySecret: your-access-key-secret
-```
-
-> ⚠️ 注意：AnalyticDB PostgreSQL 实例需提前开启向量引擎优化，详见[创建实例文档](https://help.aliyun.com/zh/analyticdb/analyticdb-for-postgresql/getting-started/create-an-instance-instances-with-vector-engine-optimization-enabled)
-
-#### SimpleVector 配置示例
-
-无需配置，默认启动 SimpleVector
+- `GET /nl2sql/init`: 初始化数据库 Schema 到向量库。
+- `GET /nl2sql/search`: 执行一次非流式的 NL2SQL 查询。
+- `GET /nl2sql/stream/search`: 执行一次流式的 NL2SQL 查询。
+- `POST /chat`: 使用 AnalyticDB 时进行 NL2SQL 查询的端点。
+- `POST /simpleChat`: 使用 SimpleVectorStore 时进行 NL2SQL 查询的端点。
 
 ---
 
 ## 核心类说明
 
-- **`VectorStoreManagementService`**  
-  核心服务类，封装了以下功能：
-  - 将数据库 schema 信息写入向量数据库
-  - 对业务逻辑解释（evidence）进行增删改查
-  - 提供向量搜索接口，用于召回相关业务规则
-  - 支持执行向量查询/删除操作
+- **`Nl2sqlForGraphController`**: 处理 NL2SQL 请求（包括流式请求）的核心控制器。
+- **`VectorStoreManagementService`**: 用于管理向量库的接口，包含了对 `AnalyticDB` 和 `SimpleVectorStore` 的具体实现。
+- **`Application`**: Spring Boot 应用的主启动类。
 
 ---
 
 ## 贡献指南
 
-欢迎参与本模块的开发与优化！请参考 [Spring AI Alibaba 贡献指南](https://github.com/alibaba/spring-ai-alibaba/blob/main/CONTRIBUTING.md) 了解如何参与开源项目的开发。
+欢迎参与本模块的开发与优化！请参考 [Spring AI Alibaba 贡献指南](https://github.com/alibaba/spring-ai-alibaba/blob/main/CONTRIBUTING-zh.md) 了解如何参与开源项目的开发。
 
 ---
 
 ## 许可证
 
 本项目采用 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) 开源协议。
-
----
-
-## 联系方式
-
-如有任何问题，请联系：
-
-- 邮箱: xuqirui.xqr@alibaba-inc.com
-- GitHub: [littleahri](https://github.com/littleahri)
-
----

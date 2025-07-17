@@ -31,7 +31,8 @@ import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 
 /**
- * 基于计划执行的节点抽象基类
+ * Abstract base class for plan-based execution nodes Provides common functionality for
+ * nodes that execute based on predefined plans
  *
  * @author zhangshenghang
  */
@@ -47,7 +48,11 @@ public abstract class AbstractPlanBasedNode implements NodeAction {
 	}
 
 	/**
-	 * 获取当前执行步骤
+	 * Get the current execution step from the plan
+	 * @param state the overall state containing plan information
+	 * @return the current execution step
+	 * @throws IllegalStateException if plan output is empty, plan parsing fails, or step
+	 * index is out of range
 	 */
 	protected ExecutionStep getCurrentExecutionStep(OverAllState state) {
 		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
@@ -74,7 +79,10 @@ public abstract class AbstractPlanBasedNode implements NodeAction {
 	}
 
 	/**
-	 * 获取计划对象
+	 * Get the plan object from state
+	 * @param state the overall state containing plan information
+	 * @return the parsed plan object
+	 * @throws IllegalStateException if plan output is empty or plan parsing fails
 	 */
 	protected Plan getPlan(OverAllState state) {
 		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
@@ -87,24 +95,26 @@ public abstract class AbstractPlanBasedNode implements NodeAction {
 	}
 
 	/**
-	 * 获取当前步骤号
+	 * Get the current step number from state
+	 * @param state the overall state
+	 * @return the current step number (defaults to 1 if not set)
 	 */
 	protected Integer getCurrentStepNumber(OverAllState state) {
 		return state.value(PLAN_CURRENT_STEP, 1);
 	}
 
 	/**
-	 * 记录节点进入日志
+	 * Log node entry
 	 */
 	protected void logNodeEntry() {
-		logger.info("进入 {} 节点", this.getClass().getSimpleName());
+		logger.info("Entering {} node", this.getClass().getSimpleName());
 	}
 
 	/**
-	 * 记录节点输出日志
+	 * Log node output
 	 */
 	protected void logNodeOutput(String outputKey, Object output) {
-		logger.info("{} 节点输出 {}：{}", this.getClass().getSimpleName(), outputKey, output);
+		logger.info("{} node output {}: {}", this.getClass().getSimpleName(), outputKey, output);
 	}
 
 }

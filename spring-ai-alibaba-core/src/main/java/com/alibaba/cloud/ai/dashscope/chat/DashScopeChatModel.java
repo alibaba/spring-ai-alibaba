@@ -367,7 +367,8 @@ public class DashScopeChatModel implements ChatModel {
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
 		return new ChatCompletion(chunk.requestId(),
-				new ChatCompletionOutput(chunk.output().text(), chunk.output().choices()), chunk.usage());
+				new ChatCompletionOutput(chunk.output().text(), chunk.output().choices(), chunk.output().searchInfo()),
+				chunk.usage());
 	}
 
 	private ChatResponseMetadata from(ChatCompletion result, Usage usage) {
@@ -576,13 +577,14 @@ public class DashScopeChatModel implements ChatModel {
 			return new ChatCompletionRequestParameter();
 		}
 
+		// todo: sync modify by {@link ChatCompletionRequestParameter} new params.
 		Boolean incrementalOutput = stream && options.getIncrementalOutput();
 		return new ChatCompletionRequestParameter("message", options.getSeed(), options.getMaxTokens(),
 				options.getTopP(), options.getTopK(), options.getRepetitionPenalty(), options.getPresencePenalty(),
 				options.getTemperature(), options.getStop(), options.getEnableSearch(), options.getResponseFormat(),
 				incrementalOutput, options.getTools(), options.getToolChoice(), stream,
 				options.getVlHighResolutionImages(), options.getEnableThinking(), options.getSearchOptions(),
-				options.getParallelToolCalls());
+				options.getParallelToolCalls(), null, null, null, null, null, null);
 	}
 
 	/**

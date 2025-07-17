@@ -9,31 +9,49 @@
 
 [English](./README.md) | 🌍 **中文**
 
-**一个全面实现了 OpenManus 的多 Agent 框架，具备无限上下文能力**
+📚 开发者文档: [Quick Start (EN)](./README-dev-en.md) | [开发者快速入门 (中文)](./README-dev.md)
 
-*赋能各种用户，轻松构建复杂的多 Agent 系统，释放前所未有的生产力*
 
 [关于](#-关于) • [快速开始](#-快速开始) • [如何贡献](#-如何贡献)
 
 </div>
 
-![image](https://github.com/user-attachments/assets/07feeb29-c410-4f56-89bf-532210bc1b63)
 
----
+## ✨ JManus 简介
 
-## 🎯 关于
+JManus 是 Manus 的一个Java实现，目前已经在阿里巴巴集团内的很多应用都有使用，主要用于处理需要有一定确定性要求的探索性任务，比如，快速从海量数据中找到数据并转换成数据库内的一行数据，或者分析日志并给出告警等。
 
-JManus 是 [OpenManus](https://github.com/FoundationAgents/OpenManus) 模型的一个健壮、生产就绪的实现，构建在坚实的 Spring AI 基础之上。它使开发者能够以最少的配置创建复杂的 AI Agent 生态系统，同时确保企业级的可靠性和可伸缩性。
+JManus也提供了http的服务调用能力，适合被集成到既有的项目中。具体可以见开发者快速入门
 
-JManus 采用成熟的 Plan-Act 架构模式，支持**自定义 Agent**，并能智能地将**复杂任务分解**为由多个专业 Agent 协作完成的子任务。这种创新方法通过策略性的多 Agent 协同，实现了**无限的上下文处理**，超越了单模型上下文窗口的限制。
 
-### 为什么选择 JManus？
+## 🎯 JManus的产品特性
 
-- 🤖 **原生多 Agent 架构**：内置协作框架，支持用户自定义的 Agent 能力和专业角色。
-- 🌊 **无限上下文处理**：通过智能的多 Agent 协作，克服单模型上下文限制，实现无限内容处理。
-- 🎯 **卓越的 Plan-Act 模式**：完整实现 Plan-Act 范式，具有智能规划和执行分离的特点。
-- 🔗 **MCP 集成**：原生支持模型上下文协议（Model Context Protocol），实现与外部服务和工具的无缝集成。
-- 📜 **网页界面配置 Agent**：通过直观的网页管理界面轻松配置 agent，无需修改代码。
+### - 🤖 **纯Java的Manus实现**：
+
+纯粹的Java多智能体协作实现，提供了完整的http调用接口，适合Java开发者做二次集成。
+![Image](https://github.com/user-attachments/assets/893c7fc1-5e6e-4ec9-8389-182f14d86b18)
+
+### - 🌊 **无限上下文处理**：
+
+支持从巨量内容中精准抓取目标信息，不依赖特定的长上下文模型。
+![Image](https://github.com/user-attachments/assets/a0245658-fbb7-41dc-989f-86574592f188)
+
+### - 🛠️ **Plan-Act 模式**：
+
+精确控制每一步执行细节，提供极高的执行确定性
+![Image](https://github.com/user-attachments/assets/d9cbf980-9d56-4b58-b165-6840b6c9411b)
+
+### - 🔗 **MCP 集成**：
+
+原生支持模型上下文协议（Model Context Protocol），实现与外部服务和工具的无缝集成。
+![Image](https://github.com/user-attachments/assets/31d915a9-04dc-45b2-9635-488cc06ba468)
+
+### - 📜 **网页界面配置 Agent**：
+
+通过直观的网页管理界面轻松配置 agent，无需修改代码。
+![Image](https://github.com/user-attachments/assets/5afdfe2e-0e98-4100-bff1-b7aaf413850b)
+
+
 
 ## 🚀 快速开始
 
@@ -110,6 +128,13 @@ JManus 支持 H2（默认）、MySQL以及PostgreSQL数据库。
 在您的浏览器中访问 `http://localhost:18080`。
 
 🎉 **恭喜!** 您的多 Agent 系统现已上线并准备就绪。
+
+
+## 稳定版本的Release
+
+如果你想要之前的稳定版本，可以在这里找到：
+[稳定release版](https://github.com/rainerWJY/Java-Open-Manus/releases)
+
 
 ## 🤝 如何贡献
 

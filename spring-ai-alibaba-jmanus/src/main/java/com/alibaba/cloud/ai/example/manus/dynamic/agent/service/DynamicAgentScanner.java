@@ -21,6 +21,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
@@ -47,6 +48,9 @@ public class DynamicAgentScanner implements IDynamicAgentScanner {
 
 	@Autowired
 	private StartupAgentConfigLoader startupAgentConfigLoader;
+
+	@Value("${namespace.value}")
+	private String namespace;
 
 	@Autowired
 	public DynamicAgentScanner(DynamicAgentRepository repository) {
@@ -216,6 +220,7 @@ public class DynamicAgentScanner implements IDynamicAgentScanner {
 
 		// Update all fields (force override if exists)
 		entity.setAgentName(agentConfig.getAgentName());
+		entity.setNamespace(namespace);
 		entity.setAgentDescription(agentConfig.getAgentDescription());
 		entity.setNextStepPrompt(agentConfig.getNextStepPrompt());
 		entity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
