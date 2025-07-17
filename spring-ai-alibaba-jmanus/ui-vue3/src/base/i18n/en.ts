@@ -107,6 +107,17 @@ const words: I18nType = {
       mcp: 'Tools/MCP Configuration',
       prompt: 'Dynamic Prompt Configuration',
     },
+    subGroupDisplayNames: {
+      agent: 'Agent',
+      browser: 'Browser',
+      interaction: 'Interaction',
+      system: 'System',
+      performance: 'Performance',
+      general: 'General',
+      agents: 'Multi - Agent',
+      infiniteContext: 'Infinite Context',
+      filesystem: 'File System'
+    },
     // Agent configuration page
     agentConfig: {
       title: 'Agent Configuration',
@@ -146,6 +157,8 @@ const words: I18nType = {
       loadDataFailed: 'Failed to load data',
       loadDetailsFailed: 'Failed to load agent details',
       invalidFormat: 'Invalid agent configuration format: missing required fields',
+      modelConfiguration: 'Model Configuration',
+      modelConfigurationLabel: 'Select Model',
     },
     // Model configuration page
     modelConfig: {
@@ -218,12 +231,62 @@ const words: I18nType = {
     // Basic configuration
     basicConfig: {
       title: 'Basic Configuration',
+      browserSettings: {
+        headless: 'Whether to use headless browser mode',
+        requestTimeout: 'Browser request timeout (seconds)'
+      },
+      general: {
+        debugDetail: 'Debug mode: The model will output more content to facilitate problem - finding, but it will be slower',
+        baseDir: 'Manus root directory'
+      },
+      interactionSettings: {
+        openBrowser: 'Automatically open the browser on startup'
+      },
+      agentSettings: {
+        maxSteps: 'Max Steps',
+        userInputTimeout: 'User input form waiting timeout (seconds)',
+        maxMemory: 'Maximum number of messages that can be remembered',
+        parallelToolCalls: 'Parallel tool calls'
+      },
+      agents: {
+        forceOverrideFromYaml: 'Force override of agents with the same name using the YAML configuration file'
+      },
+      infiniteContext: {
+        enabled: 'Whether to enable infinite context',
+        parallelThreads: 'Number of parallel processing threads',
+        taskContextSize: 'Character count threshold for triggering infinite context (number of characters)'
+      },
+      fileSystem: {
+        allowExternalAccess: 'Whether to allow file operations beyond the working directory'
+      },
+      systemSettings: {
+        systemName: 'System Name',
+        language: 'Language',
+        maxThreads: 'Max Threads',
+        timeoutSeconds: 'Request Timeout (seconds)'
+      },
+      totalConfigs: 'Total Configurations',
+      modified: 'Modified',
+      exportConfigs: 'Export Configurations',
+      importConfigs: 'Import Configurations',
+      search: 'Search',
+      loading: 'Loading',
+      notFound: 'No configuration items found',
+      resetGroupConfirm: 'Reset all configurations in this group to default values',
+      reset: 'Reset',
       requestTimeout: 'Request timeout (seconds)',
       browserTimeout: 'Browser request timeout (seconds)',
       loadConfigFailed: 'Failed to load configuration, please refresh and try again',
       saveFailed: 'Save failed, please try again',
       resetFailed: 'Reset failed, please try again',
       importFailed: 'Import failed, please check file format',
+      groupDisplayNames: {
+        manus: 'Manus',
+        browser: 'Browser',
+        interaction: 'Interaction',
+        system: 'System',
+        performance: 'Performance',
+      },
     },
     promptConfig: {
       title: 'Dynamic Prompt Configuration',
@@ -285,6 +348,7 @@ const words: I18nType = {
   // Model Configuration
   model: {
     title: 'Model Configuration',
+    switch: 'Switch Model',
     name: 'Model Name',
     description: 'Description',
     addModel: 'Add Model',
@@ -332,35 +396,6 @@ const words: I18nType = {
     loadDataFailed: 'Failed to load data',
     loadDetailsFailed: 'Failed to load model details',
     invalidFormat: 'Model configuration format is invalid: missing required fields',
-  },
-  // Plan template configuration
-  planTemplate: {
-    title: 'Plan Template Configuration',
-    generator: 'Plan Generator',
-    execution: 'Plan Execution',
-    prompt: 'Generation Prompt',
-    promptPlaceholder: 'Describe the plan you want to generate...',
-    generating: 'Generating...',
-    generate: 'Generate Plan',
-    updatePlan: 'Update Plan',
-    executing: 'Executing...',
-    execute: 'Execute Plan',
-    executionParams: 'Execution Parameters',
-    executionParamsPlaceholder: 'Enter execution parameters (optional)...',
-    apiUrl: 'API Call URL',
-    clearParams: 'Clear Parameters',
-    versionControl: 'Version Control',
-    rollback: 'Rollback',
-    restore: 'Restore',
-    currentVersion: 'Current Version',
-    saveTemplate: 'Save Template',
-    loadTemplate: 'Load Template',
-    templateSaved: 'Template saved',
-    templateLoaded: 'Template loaded',
-    executionSuccess: 'Execution successful',
-    executionFailed: 'Execution failed',
-    generationSuccess: 'Generation successful',
-    generationFailed: 'Generation failed',
   },
 
   // Chat component
@@ -410,7 +445,7 @@ const words: I18nType = {
   input: {
     placeholder: 'Send a message to JTaskPilot',
     send: 'Send',
-    planMode: 'Plan Mode',
+    planMode: 'PLAN-ACT Template Mode',
     waiting: 'Waiting for task completion...',
     maxLength: 'Max Length',
     charactersRemaining: 'Characters Remaining',
@@ -418,7 +453,7 @@ const words: I18nType = {
 
   // Sidebar
   sidebar: {
-    title: 'Plan Templates',
+    title: 'PLAN-ACT Templates',
     templateList: 'Template List',
     configuration: 'Configuration',
     newPlan: 'New Plan',
@@ -431,17 +466,19 @@ const words: I18nType = {
     jsonTemplate: 'JSON Template',
     rollback: 'Rollback',
     restore: 'Restore',
-    jsonPlaceholder: 'Enter JSON plan template...',
+  jsonPlaceholder: 'Step 2: Here you can directly modify the execution plan generated in Step 1 to make it more accurately follow your intentions. Then you can click Execute Plan to run this plan with high certainty.',
     planGenerator: 'Plan Generator',
-    generatorPlaceholder: 'Describe the plan you want to generate...',
+    generatorPlaceholder: 'Step 1: Enter the task you want to accomplish here in natural language, as detailed as possible. Then click Generate Plan to create a precise, repeatable plan.',
     generating: 'Generating...',
     generatePlan: 'Generate Plan',
     updatePlan: 'Update Plan',
     executionController: 'Execution Controller',
     executionParams: 'Execution Parameters',
     executionParamsPlaceholder: 'Enter execution parameters...',
+    executionParamsHelp: 'When executing repeatedly, you can set some content in Step 2 as variables, then specify the specific values for those variables here. For example, set "Variable1" in the JSON, then set "Variable1=Alibaba" here to achieve function parameter-like effects.',
     clearParams: 'Clear Parameters',
-    apiUrl: 'API URL',
+    apiUrl: 'HTTP GET URL',
+    statusApiUrl: 'Status Query API',
     executing: 'Executing...',
     executePlan: 'Execute Plan',
     newTemplate: 'New Template',
@@ -476,6 +513,10 @@ const words: I18nType = {
     updateFailed: 'Failed to update plan',
     executeFailed: 'Failed to execute plan',
     unknown: 'Unknown',
+    newTemplateName: 'New Execution Plan',
+    newTemplateDescription: 'Please use the plan generator to create a new plan template',
+    generatedTemplateDescription: 'Plan template created by generator',
+    defaultExecutionPlanTitle: 'Execution Plan',
   },
 
   // Modal
