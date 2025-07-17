@@ -45,7 +45,7 @@
 
         .header {
             background-color: var(--card-bg);
-            padding: 1.5rem;
+            padding: 1rem;
             box-shadow: var(--shadow);
             position: sticky;
             top: 0;
@@ -53,31 +53,31 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 100%;
             margin: 0 auto;
-            padding: 1.5rem;
+            padding: 1rem 2rem;
         }
 
         .title {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 600;
             color: var(--primary-color);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.3rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
         .subtitle {
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: #666;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.8rem;
         }
 
         .search-container {
             display: flex;
             gap: 0.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .search-input {
@@ -780,6 +780,31 @@
                 transform: translateY(0);
             }
         }
+
+        .nav-links {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        .nav-link {
+            padding: 0.4rem 0.8rem;
+            text-decoration: none;
+            color: #666;
+            border-radius: var(--radius);
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .nav-link:hover {
+            background-color: #f0f5ff;
+            color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
     </style>
 </head>
 
@@ -790,6 +815,17 @@
                 <i class="bi bi-database"></i> NL2SQL 自然语言转SQL演示
             </div>
             <div class="subtitle">输入自然语言问题，系统将自动转换为SQL查询语句</div>
+            <div class="nav-links">
+                <a href="/nl2sql.html" class="nav-link active">
+                    <i class="bi bi-house"></i> 首页
+                </a>
+                <a href="/business-knowledge.html" class="nav-link">
+                    <i class="bi bi-book"></i> 业务知识管理
+                </a>
+                <a href="/semantic-model.html" class="nav-link">
+                    <i class="bi bi-diagram-3"></i> 语义模型配置
+                </a>
+            </div>
         </div>
     </div>
 
