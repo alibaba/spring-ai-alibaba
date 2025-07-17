@@ -48,9 +48,10 @@
 
         <!-- Input Area -->
         <InputArea
+          :key="$i18n.locale"
           ref="inputRef"
           :disabled="isLoading"
-          :placeholder="isLoading ? '等待任务完成...' : t('input.placeholder')"
+          :placeholder="isLoading ? t('input.waiting') : t('input.placeholder')"
           @send="handleSendMessage"
           @clear="handleInputClear"
           @focus="handleInputFocus"
@@ -108,6 +109,7 @@ const leftPanelWidth = ref(50) // Left panel width percentage
 const isResizing = ref(false)
 const startX = ref(0)
 const startLeftWidth = ref(0)
+
 
 onMounted(() => {
   console.log('[Direct] onMounted called')
