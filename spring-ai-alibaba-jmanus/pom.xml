@@ -444,11 +444,6 @@
                                 <buildArg>-H:IncludeResources=templates/.*</buildArg>
                                 <buildArg>--initialize-at-build-time=org.slf4j.LoggerFactory,org.slf4j.impl.StaticLoggerBinder</buildArg>
                                 <buildArg>--initialize-at-run-time=io.netty</buildArg>
-                                <buildArg>-H:DynamicProxyConfigurationFiles=proxy-config.json</buildArg>
-                                <buildArg>-H:ResourceConfigurationFiles=resource-config.json</buildArg>
-                                <buildArg>-H:ReflectionConfigurationFiles=reflect-config.json</buildArg>
-                                <buildArg>-H:SerializationConfigurationFiles=serialization-config.json</buildArg>
-                                <buildArg>-H:JNIConfigurationFiles=jni-config.json</buildArg>
                             </buildArgs>
                         </configuration>
                         <executions>
