@@ -7,7 +7,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.alibaba.cloud.ai.example.manus.tool.database.AbstractDatabaseAction;
+import com.alibaba.cloud.ai.example.manus.tool.database.action.AbstractDatabaseAction;
 import com.alibaba.cloud.ai.example.manus.tool.database.DatabaseRequestVO;
 import com.alibaba.cloud.ai.example.manus.tool.database.DataSourceService;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;

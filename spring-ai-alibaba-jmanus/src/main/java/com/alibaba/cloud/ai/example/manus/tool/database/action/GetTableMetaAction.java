@@ -1,7 +1,7 @@
 package com.alibaba.cloud.ai.example.manus.tool.database.action;
 
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.database.AbstractDatabaseAction;
+import com.alibaba.cloud.ai.example.manus.tool.database.action.AbstractDatabaseAction;
 import com.alibaba.cloud.ai.example.manus.tool.database.DatabaseRequestVO;
 import com.alibaba.cloud.ai.example.manus.tool.database.DataSourceService;
 import com.alibaba.cloud.ai.example.manus.tool.database.meta.TableMeta;
