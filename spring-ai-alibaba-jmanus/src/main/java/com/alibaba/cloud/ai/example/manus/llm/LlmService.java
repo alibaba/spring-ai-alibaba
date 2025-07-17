@@ -28,7 +28,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Service;
 
 @Service
-public class LlmService {
+public class LlmService implements ILlmService {
 
 	private static final Logger log = LoggerFactory.getLogger(LlmService.class);
 

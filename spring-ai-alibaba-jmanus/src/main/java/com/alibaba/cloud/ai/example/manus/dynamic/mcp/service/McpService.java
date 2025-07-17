@@ -55,7 +55,7 @@ import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 
 @Component
-public class McpService {
+public class McpService implements IMcpService {
 
 	private static final Logger logger = LoggerFactory.getLogger(McpService.class);
 

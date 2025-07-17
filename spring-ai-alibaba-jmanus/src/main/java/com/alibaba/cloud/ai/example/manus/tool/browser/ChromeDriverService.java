@@ -23,6 +23,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.config.IManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -40,7 +41,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Primary
-public class ChromeDriverService {
+public class ChromeDriverService implements IChromeDriverService {
 
 	private static final Logger log = LoggerFactory.getLogger(ChromeDriverService.class);
 
@@ -255,11 +256,11 @@ public class ChromeDriverService {
 		cleanupAllPlaywrightProcesses();
 	}
 
-	public void setManusProperties(ManusProperties manusProperties) {
-		this.manusProperties = manusProperties;
+	public void setManusProperties(IManusProperties manusProperties) {
+		this.manusProperties = (ManusProperties) manusProperties;
 	}
 
-	public ManusProperties getManusProperties() {
+	public IManusProperties getManusProperties() {
 		return manusProperties;
 	}
 

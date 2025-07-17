@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
  * interfaces, allowing both planId and planTemplateId to be supported
  */
 @Component
-public class PlanIdDispatcher {
+public class PlanIdDispatcher implements IPlanIdDispatcher {
 
 	private static final Logger logger = LoggerFactory.getLogger(PlanIdDispatcher.class);
 
