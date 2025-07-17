@@ -36,7 +36,8 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.Sequential
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
+import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapOutputTool;
+import com.alibaba.cloud.ai.example.manus.tool.mapreduce.ReduceOperationTool;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -182,15 +183,15 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			// 获取 MapReduceTool 的 ToolCallBackContext
 			ToolCallBackContext toolCallBackContext = null;
 			if (executor != null) {
-				logger.debug("尝试获取 map_reduce_tool 的 ToolCallBackContext，当前executor: {}",
+				logger.debug("尝试获取 map_output_tool 的 ToolCallBackContext，当前executor: {}",
 						executor.getClass().getSimpleName());
-				toolCallBackContext = executor.getToolCallBackContext("map_reduce_tool");
+				toolCallBackContext = executor.getToolCallBackContext("map_output_tool");
 				if (toolCallBackContext == null) {
-					logger.warn("无法获取 map_reduce_tool 的 ToolCallBackContext，工具可能未正确注册或名称不匹配");
+					logger.warn("无法获取 map_output_tool 的 ToolCallBackContext，工具可能未正确注册或名称不匹配");
 				}
 			}
 			else {
-				logger.error("executor 为空，无法获取 MapReduceTool 的 ToolCallBackContext");
+				logger.error("executor 为空，无法获取 MapOutputTool 的 ToolCallBackContext");
 			}
 			executor = executeMapPhase(mapSteps, context, toolCallBackContext);
 		}
@@ -277,12 +278,12 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			logger.error("ToolCallBiFunctionDef is null, cannot execute Map phase");
 			return null;
 		}
-		if (!(callFunc instanceof MapReduceTool)) {
-			logger.error("ToolCallBiFunctionDef is not MapReduceTool, cannot execute Map phase. 实际类型: {}",
+		if (!(callFunc instanceof MapOutputTool)) {
+			logger.error("ToolCallBiFunctionDef is not MapOutputTool, cannot execute Map phase. 实际类型: {}",
 					callFunc.getClass().getSimpleName());
 			return null;
 		}
-		MapReduceTool splitTool = (MapReduceTool) callFunc;
+		MapOutputTool splitTool = (MapOutputTool) callFunc;
 
 		List<CompletableFuture<BaseAgent>> futures = new ArrayList<>();
 		BaseAgent lastExecutor = null;
@@ -393,12 +394,12 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		}
 
 		ToolCallBiFunctionDef<?> mapReduceToolFunc = mapReduceToolContext.getFunctionInstance();
-		if (!(mapReduceToolFunc instanceof MapReduceTool)) {
-			logger.error("获取的工具不是MapReduceTool实例，无法执行Reduce阶段");
+		if (!(mapReduceToolFunc instanceof ReduceOperationTool)) {
+			logger.error("获取的工具不是ReduceOperationTool实例，无法执行Reduce阶段");
 			throw new RuntimeException("工具类型错误，无法执行Reduce阶段");
 		}
 
-		MapReduceTool mapReduceTool = (MapReduceTool) mapReduceToolFunc;
+		ReduceOperationTool mapReduceTool = (ReduceOperationTool) mapReduceToolFunc;
 
 		List<String> taskDirectories = mapReduceTool.getSplitResults();
 		if (taskDirectories.isEmpty()) {
