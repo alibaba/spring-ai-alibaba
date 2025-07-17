@@ -91,7 +91,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 		this.rootPlanId = planId;
 	}
 
-	@JsonIgnore
 	public String getPlanId() {
 		return rootPlanId;
 	}
