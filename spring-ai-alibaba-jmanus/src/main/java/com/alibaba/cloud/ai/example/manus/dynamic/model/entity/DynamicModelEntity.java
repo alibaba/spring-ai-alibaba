@@ -20,120 +20,146 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
 import jakarta.persistence.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "dynamic_models")
 public class DynamicModelEntity {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Column(nullable = false)
-	private String baseUrl;
+    @Column(nullable = false)
+    private String baseUrl;
 
-	@Column(nullable = false)
-	private String apiKey;
+    @Column(nullable = false)
+    private String apiKey;
 
-	@Column(nullable = false)
-	private String modelName;
+    @Convert(converter = MapToStringConverter.class)
+    @Column(columnDefinition = "VARCHAR")
+    private Map<String, String> headers;
 
-	@Column(nullable = false, length = 1000)
-	private String modelDescription;
+    @Column(nullable = false)
+    private String modelName;
 
-	@Column(nullable = false)
-	private String type;
+    @Column(nullable = false, length = 1000)
+    private String modelDescription;
 
-	@OneToMany(mappedBy = "model")
-	private List<DynamicAgentEntity> agents;
+    @Column(nullable = false)
+    private String type;
 
-	public DynamicModelEntity() {
-	}
+    @Column(nullable = false)
+    private Boolean allowChange = true;
 
-	public DynamicModelEntity(Long id) {
-		this.id = id;
-	}
+    @OneToMany(mappedBy = "model")
+    private List<DynamicAgentEntity> agents;
 
-	// Getters and Setters
-	public Long getId() {
-		return id;
-	}
+    public DynamicModelEntity() {
+    }
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    public DynamicModelEntity(Long id) {
+        this.id = id;
+    }
 
-	public String getBaseUrl() {
-		return baseUrl;
-	}
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
 
-	public void setBaseUrl(String baseUrl) {
-		this.baseUrl = baseUrl;
-	}
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-	public String getApiKey() {
-		return apiKey;
-	}
+    public String getBaseUrl() {
+        return baseUrl;
+    }
 
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
-	}
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
 
-	public String getModelName() {
-		return modelName;
-	}
+    public String getApiKey() {
+        return apiKey;
+    }
 
-	public void setModelName(String modelName) {
-		this.modelName = modelName;
-	}
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
 
-	public String getModelDescription() {
-		return modelDescription;
-	}
+    public String getModelName() {
+        return modelName;
+    }
 
-	public void setModelDescription(String modelDescription) {
-		this.modelDescription = modelDescription;
-	}
+    public void setModelName(String modelName) {
+        this.modelName = modelName;
+    }
 
-	public String getType() {
-		return type;
-	}
+    public String getModelDescription() {
+        return modelDescription;
+    }
 
-	public void setType(String type) {
-		this.type = type;
-	}
+    public void setModelDescription(String modelDescription) {
+        this.modelDescription = modelDescription;
+    }
 
-	public List<DynamicAgentEntity> getAgents() {
-		return agents;
-	}
+    public String getType() {
+        return type;
+    }
 
-	public void setAgents(List<DynamicAgentEntity> agents) {
-		this.agents = agents;
-	}
+    public void setType(String type) {
+        this.type = type;
+    }
 
-	public ModelConfig mapToModelConfig() {
-		ModelConfig config = new ModelConfig();
-		config.setId(this.getId());
-		config.setBaseUrl(this.getBaseUrl());
-		config.setApiKey(maskValue(this.getApiKey()));
-		config.setModelName(this.getModelName());
-		config.setModelDescription(this.getModelDescription());
-		config.setType(this.getType());
-		return config;
-	}
+    public List<DynamicAgentEntity> getAgents() {
+        return agents;
+    }
 
-	/**
-	 * Obscures the string, keeping the first 4 and last 4 characters visible, replacing
-	 * the rest with asterisks (*)
-	 */
-	private String maskValue(String value) {
-		if (value == null || value.length() <= 8) {
-			return "*";
-		}
-		int length = value.length();
-		String front = value.substring(0, 4);
-		String end = value.substring(length - 4);
-		return front + "*".repeat(length - 8) + end;
-	}
+    public void setAgents(List<DynamicAgentEntity> agents) {
+        this.agents = agents;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(Map<String, String> headers) {
+        this.headers = headers;
+    }
+
+    public Boolean isAllowChange() {
+        return allowChange;
+    }
+
+    public void setAllowChange(Boolean allowChange) {
+        this.allowChange = allowChange;
+    }
+
+    public ModelConfig mapToModelConfig() {
+        ModelConfig config = new ModelConfig();
+        config.setId(this.getId());
+        config.setHeaders(this.getHeaders());
+        config.setBaseUrl(this.getBaseUrl());
+        config.setApiKey(maskValue(this.getApiKey()));
+        config.setModelName(this.getModelName());
+        config.setModelDescription(this.getModelDescription());
+        config.setType(this.getType());
+        return config;
+    }
+
+    /**
+     * Obscures the string, keeping the first 4 and last 4 characters visible, replacing
+     * the rest with asterisks (*)
+     */
+    private String maskValue(String value) {
+        if (value == null || value.length() <= 8) {
+            return "*";
+        }
+        int length = value.length();
+        String front = value.substring(0, 4);
+        String end = value.substring(length - 4);
+        return front + "*".repeat(length - 8) + end;
+    }
+
 
 }

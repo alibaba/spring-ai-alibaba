@@ -141,6 +141,7 @@ public class AgentServiceImpl implements AgentService {
 		return mapToAgentConfig(entity);
 	}
 
+
 	@Override
 	public void deleteAgent(String id) {
 		DynamicAgentEntity entity = repository.findById(Long.parseLong(id))
