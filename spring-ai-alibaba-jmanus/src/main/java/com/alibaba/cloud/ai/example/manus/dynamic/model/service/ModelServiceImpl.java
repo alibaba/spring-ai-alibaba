@@ -41,7 +41,7 @@ public class ModelServiceImpl implements ModelService {
 	private final DynamicAgentRepository agentRepository;
 
 	@Autowired
-	private JmanusEventPublisher<ModelChangeEvent> publisher;
+	private JmanusEventPublisher publisher;
 
 	@Autowired
 	public ModelServiceImpl(DynamicModelRepository repository, DynamicAgentRepository agentRepository) {

@@ -50,7 +50,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-public class LlmService implements JmanusListener<ModelChangeEvent> {
+public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent> {
 
 	private static final Logger log = LoggerFactory.getLogger(LlmService.class);
 
@@ -99,10 +99,12 @@ public class LlmService implements JmanusListener<ModelChangeEvent> {
 		this.chatModel = chatModel;
 	}
 
+	@Override
 	public ChatClient getAgentChatClient() {
 		return agentExecutionClient;
 	}
 
+	@Override
 	public ChatClient getDynamicChatClient(DynamicModelEntity model) {
 		Long modelId = model.getId();
 		if (clients.containsKey(modelId)) {
@@ -137,6 +139,7 @@ public class LlmService implements JmanusListener<ModelChangeEvent> {
 		return client;
 	}
 
+	@Override
 	public ChatMemory getAgentMemory(Integer maxMessages) {
 		if (agentMemory == null) {
 			agentMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
@@ -144,14 +147,17 @@ public class LlmService implements JmanusListener<ModelChangeEvent> {
 		return agentMemory;
 	}
 
+	@Override
 	public void clearAgentMemory(String planId) {
 		this.agentMemory.clear(planId);
 	}
 
+	@Override
 	public ChatClient getPlanningChatClient() {
 		return planningChatClient;
 	}
 
+	@Override
 	public void clearConversationMemory(String planId) {
 		if (this.conversationMemory == null) {
 			// Default to 100 messages if not specified elsewhere
@@ -160,10 +166,17 @@ public class LlmService implements JmanusListener<ModelChangeEvent> {
 		this.conversationMemory.clear(planId);
 	}
 
+	@Override
 	public ChatClient getFinalizeChatClient() {
 		return finalizeChatClient;
 	}
 
+	@Override
+	public ChatModel getChatModel() {
+		return this.chatModel;
+	}
+
+	@Override
 	public ChatMemory getConversationMemory(Integer maxMessages) {
 		if (conversationMemory == null) {
 			conversationMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();

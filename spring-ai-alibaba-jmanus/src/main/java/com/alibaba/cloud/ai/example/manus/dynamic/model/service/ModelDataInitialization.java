@@ -54,7 +54,7 @@ public class ModelDataInitialization implements IModelDataInitialization {
 	private LlmService llmService;
 
 	@Autowired
-	private JmanusEventPublisher<ModelChangeEvent> jmanusEventPublisher;
+	private JmanusEventPublisher jmanusEventPublisher;
 
 	private final DynamicModelRepository repository;
 
