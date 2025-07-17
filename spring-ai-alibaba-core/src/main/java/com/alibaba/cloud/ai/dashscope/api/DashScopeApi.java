@@ -1437,11 +1437,6 @@ public class DashScopeApi {
 		@JsonProperty("tool_calls")
 		TOOL_CALLS,
 		/**
-		 * (deprecated) The model called a function.
-		 */
-		@JsonProperty("function_call")
-		FUNCTION_CALL,
-		/**
 		 * Only for compatibility with Mistral AI API.
 		 */
 		@JsonProperty("tool_call")
@@ -1474,8 +1469,8 @@ public class DashScopeApi {
 	 * when backend changes have been made that might impact determinism.
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record ChatCompletionOutput(@JsonProperty("text") String text,
-			@JsonProperty("choices") List<Choice> choices) {
+	public record ChatCompletionOutput(@JsonProperty("text") String text, @JsonProperty("choices") List<Choice> choices,
+			@JsonProperty("search_info") SearchInfo searchInfo) {
 
 		/**
 		 * Chat completion choice.
@@ -1485,9 +1480,32 @@ public class DashScopeApi {
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record Choice(@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
-				@JsonProperty("message") ChatCompletionMessage message) {
-
+				@JsonProperty("message") ChatCompletionMessage message,
+				@JsonProperty("logprobs ") ChatCompletionLogprobs logprobs) {
 		}
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record SearchInfo(@JsonProperty("search_results") List<SearchResult> searchResults) {
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		public record SearchResult(@JsonProperty("site_name") String siteName, @JsonProperty("icon") String icon,
+				@JsonProperty("index") Integer index, @JsonProperty("title") String title,
+				@JsonProperty("url") String url) {
+		}
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record ChatCompletionLogprobs(@JsonProperty("content") List<TokenInfo> content) {
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record TokenInfo(@JsonProperty("token") String token, @JsonProperty("bytes") byte[] bytes,
+			@JsonProperty("logprob") Float logprob, @JsonProperty("top_logprobs") List<TopLogprobs> topLogprobs) {
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record TopLogprobs(@JsonProperty("token") String token, @JsonProperty("bytes") byte[] bytes,
+			@JsonProperty("logprob") Float logprob) {
 	}
 
 	/**
@@ -1505,7 +1523,6 @@ public class DashScopeApi {
 			@JsonProperty("input_tokens") Integer inputTokens, @JsonProperty("total_tokens") Integer totalTokens,
 			@JsonProperty("image_tokens") Integer imageTokens, @JsonProperty("video_tokens ") Integer videoTokens,
 			@JsonProperty("audio_tokens ") Integer audioTokens,
-			@JsonProperty("prompt_tokens_details") Object promptTokensDetails,
 			@JsonProperty("input_tokens_details") InputTokenDetailed inputTokensDetails,
 			@JsonProperty("output_tokens_details") OutputTokenDetailed outputTokensDetails,
 			@JsonProperty("prompt_tokens_details") PromptTokenDetailed promptTokenDetailed) {

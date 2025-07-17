@@ -87,13 +87,12 @@ import InputArea from '@/components/input/index.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { useTaskStore } from '@/stores/task'
-import { useSidebarStore } from '@/stores/sidebar'
+import { sidebarStore } from '@/stores/sidebar'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 
 const route = useRoute()
 const router = useRouter()
 const taskStore = useTaskStore()
-const sidebarStore = useSidebarStore()
 const { t } = useI18n()
 
 const prompt = ref<string>('')
@@ -340,7 +339,8 @@ const shouldProcessEventForCurrentPlan = (rootPlanId: string, allowSpecialIds: b
 const handleSendMessage = (message: string) => {
   console.log('[DirectView] Send message from input:', message)
 
-  // First call chat component's handleSendMessage to update UI
+  // In direct mode, only call chat component's handleSendMessage
+  // It will handle both UI update and API call via handleDirectMode
   if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
     console.log('[DirectView] Calling chatRef.handleSendMessage:', message)
     chatRef.value.handleSendMessage(message)
@@ -348,9 +348,8 @@ const handleSendMessage = (message: string) => {
     console.warn('[DirectView] chatRef.handleSendMessage method not available')
   }
 
-  // Then use planExecutionManager to handle user message send request
-  console.log('[DirectView] Delegating message to planExecutionManager:', message)
-  planExecutionManager.handleUserMessageSendRequested(message)
+  // Remove the duplicate API call - chat component's handleDirectMode will handle this
+  // planExecutionManager.handleUserMessageSendRequested(message) // Removed to prevent double API calls
 }
 
 const handleInputClear = () => {

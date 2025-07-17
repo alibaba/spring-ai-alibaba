@@ -76,18 +76,18 @@
                     :key="index"
                     class="ai-section"
                     :class="{
-                      current: index === (message.planExecution?.currentStepIndex ?? -1),
-                      completed: index < (message.planExecution?.currentStepIndex ?? 0),
-                      pending: index > (message.planExecution?.currentStepIndex ?? 0),
+                      running: getAgentExecutionStatus(message, index) === 'RUNNING',
+                      completed: getAgentExecutionStatus(message, index) === 'FINISHED',
+                      pending: getAgentExecutionStatus(message, index) === 'IDLE',
                     }"
                     @click.stop="handleStepClick(message, index)"
                   >
                     <div class="section-header">
                       <span class="step-icon">
                         {{
-                          index < (message.planExecution?.currentStepIndex ?? 0)
+                          getAgentExecutionStatus(message, index) === 'FINISHED'
                             ? '✓'
-                            : index === (message.planExecution?.currentStepIndex ?? -1)
+                            : getAgentExecutionStatus(message, index) === 'RUNNING'
                               ? '▶'
                               : '○'
                         }}
@@ -96,13 +96,13 @@
                         {{ step || `${$t('chat.step')} ${index + 1}` }}
                       </span>
                       <span
-                        v-if="index === (message.planExecution?.currentStepIndex ?? -1)"
+                        v-if="getAgentExecutionStatus(message, index) === 'RUNNING'"
                         class="step-status current"
                       >
                         {{ $t('chat.status.executing') }}
                       </span>
                       <span
-                        v-else-if="index < (message.planExecution?.currentStepIndex ?? 0)"
+                        v-else-if="getAgentExecutionStatus(message, index) === 'FINISHED'"
                         class="step-status completed"
                       >
                         {{ $t('chat.status.completed') }}
@@ -196,7 +196,7 @@
                     <div
                       v-if="
                         message.planExecution?.userInputWaitState &&
-                        index === (message.planExecution?.currentStepIndex ?? -1)
+                        getAgentExecutionStatus(message, index) === 'RUNNING'
                       "
                       class="user-input-form-container"
                     >
@@ -425,7 +425,7 @@ interface Message {
 
 interface Props {
   mode?: 'plan' | 'direct' // Plan mode or direct chat mode
-  initialPrompt?: string | undefined // Initial prompt to process
+  initialPrompt?: string // Initial prompt to process
 }
 
 interface Emits {
@@ -441,6 +441,7 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   mode: 'plan', // Use plan mode, handled by plan-execution-manager
+  initialPrompt: '', // Default value for initialPrompt
 })
 const emit = defineEmits<Emits>()
 
@@ -613,13 +614,22 @@ const handleSendMessage = (message: string) => {
 
   // Handle messages according to the mode
   if (props.mode === 'plan') {
-    // In plan mode, events are no longer triggered, allowing the parent component to directly invoke the corresponding methods.
-    // The logic here is handled by the parent component through direct calls
+    // In plan mode, only add UI message, parent component handles the API call
+    // This prevents double API calls
     console.log('[ChatComponent] Plan mode message sent, parent should handle:', message)
+    // Don't call any API here, just add to UI
   } else {
     // Direct mode is still handled directly
     handleDirectMode(message)
   }
+}
+
+// Get agent execution status based on index
+const getAgentExecutionStatus = (message: Message, index: number): string => {
+  const agentExecutionSequence = message.planExecution?.agentExecutionSequence ?? []
+  const agentExecution = agentExecutionSequence[index]
+  // 直接返回 AgentExecutionRecord 的状态，无需判断 agentExecution 是否存在
+  return agentExecution.status ?? 'IDLE'
 }
 
 // Handle step click events - Only expose events without handling specific logic
@@ -792,7 +802,7 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
 }
 
 // Update step execution actions (based on chat-handler.js logic)
-const updateStepActions = (message: Message, planDetails: any) => {
+const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) => {
   if (!message.planExecution?.steps) return
 
   console.log(
@@ -802,25 +812,21 @@ const updateStepActions = (message: Message, planDetails: any) => {
     planDetails.agentExecutionSequence?.length ?? 0
   )
 
-  // Initialize storage for the last execution action of each step
   const lastStepActions = new Array(message.planExecution.steps.length).fill(null)
 
-  // Traverse all execution sequences, match steps and update actions
   if (planDetails.agentExecutionSequence?.length) {
-    // Check if execution sequence matches step count
     const sequenceLength = Math.min(
       planDetails.agentExecutionSequence.length,
       message.planExecution.steps.length
     )
 
     for (let index = 0; index < sequenceLength; index++) {
-      const execution = planDetails.agentExecutionSequence[index]
+  const execution = planDetails.agentExecutionSequence[index]
 
-      if (execution?.thinkActSteps?.length > 0) {
+  if (execution.thinkActSteps?.length) {
         const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1]
 
-        if (latestThinkAct?.actionDescription && latestThinkAct?.toolParameters) {
-          // Save the last execution action for this step
+        if (latestThinkAct.actionDescription && latestThinkAct.toolParameters) {
           lastStepActions[index] = {
             actionDescription: latestThinkAct.actionDescription,
             toolParameters:
@@ -830,46 +836,34 @@ const updateStepActions = (message: Message, planDetails: any) => {
             thinkInput: latestThinkAct.thinkInput ?? '',
             thinkOutput: latestThinkAct.thinkOutput ?? '',
             status:
-              index < planDetails.currentStepIndex
+              planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex
                 ? 'completed'
-                : index === planDetails.currentStepIndex
-                  ? 'current'
-                  : 'pending',
+                : planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex
+                ? 'current'
+                : 'pending',
           }
 
           console.log(
             `[ChatComponent] Step ${index} action set: ${lastStepActions[index].actionDescription}`
           )
-        } else if (latestThinkAct) {
-          // Thinking state
+        } else {
           lastStepActions[index] = {
             actionDescription: '思考中',
             toolParameters: '等待决策',
             thinkInput: latestThinkAct.thinkInput ?? '',
             thinkOutput: latestThinkAct.thinkOutput ?? '',
-            status: index === planDetails.currentStepIndex ? 'current' : 'pending',
+            status: planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex ? 'current' : 'pending',
           }
 
           console.log(`[ChatComponent] Step ${index} is thinking`)
-        } else {
-          lastStepActions[index] = {
-            actionDescription: '执行完成',
-            toolParameters: '无工具',
-            thinkInput: '',
-            thinkOutput: '',
-            status: 'completed',
-          }
-
-          console.log(`[ChatComponent] Step ${index} execution completed`)
         }
       } else {
-        // Case without thinkActSteps
         lastStepActions[index] = {
-          actionDescription: index < planDetails.currentStepIndex ? '已完成' : '等待中',
+          actionDescription: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? '已完成' : '等待中',
           toolParameters: '无工具参数',
           thinkInput: '',
           thinkOutput: '',
-          status: index < planDetails.currentStepIndex ? 'completed' : 'pending',
+          status: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? 'completed' : 'pending',
         }
 
         console.log(
@@ -881,8 +875,6 @@ const updateStepActions = (message: Message, planDetails: any) => {
     console.log('[ChatComponent] 没有执行序列数据')
   }
 
-  // Attach step action information to the message - Use Vue 3 reactivity-friendly approach
-  // Overwrite the entire array directly to ensure the Vue reactivity system detects changes
   message.stepActions = [...lastStepActions]
 
   console.log(
@@ -890,8 +882,6 @@ const updateStepActions = (message: Message, planDetails: any) => {
     JSON.stringify(lastStepActions.map(a => a?.actionDescription))
   )
 
-  // Use Vue's reactivity system instead of force update
-  // The UI will automatically update when stepActions array changes
   nextTick(() => {
     console.log('[ChatComponent] UI update completed via reactivity')
   })
@@ -1138,7 +1128,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
     }
 
     // Generate natural, human-like responses
-    message.content = generateCompletedPlanResponse(finalResponse, planDetails)
+    message.content = generateCompletedPlanResponse(finalResponse)
 
     console.log('[ChatComponent] Updated completed message:', message.content)
   }
@@ -1178,66 +1168,50 @@ const generateNaturalResponse = (text: string): string => {
 }
 
 // Generate a natural response for a completed plan
-const generateCompletedPlanResponse = (text: string, planDetails: any): string => {
+const generateCompletedPlanResponse = (text: string): string => {
   if (!text) return '任务已完成！还有什么我可以帮您的吗？'
-
-  // If it's already in a natural conversation format, ensure it has an appropriate ending
-  if (text.includes('我') || text.includes('您')) {
-    if (
-      !text.includes('?') &&
-      !text.includes('？') &&
-      !text.includes('。') &&
-      !text.includes('！')
-    ) {
-      return `${text}。还有其他需要帮助的地方吗？`
-    }
-    return text
-  }
-
-  // Generate a response based on the plan type
-  const hasSteps = planDetails?.steps?.length > 0
-  if (hasSteps) {
-    return `很好！我已经完成了您的任务：${text}\n\n所有步骤都已成功执行。还有什么我可以帮您处理的吗？`
-  } else {
-    return `${text}\n\n希望这个回答对您有帮助！如果还有其他问题，请随时告诉我。`
+  else{
+    return `${text}`;
   }
 }
 
 // Handle the plan completion event
-const handlePlanCompleted = (details: any) => {
-  console.log('[ChatComponent] Plan completed:', details)
+const handlePlanCompleted = (rootPlanId: string) => {
+  console.log('[ChatComponent] Plan completed with rootPlanId:', rootPlanId);
 
-  if (details?.planId) {
-    // Find the corresponding message and update it to the completed state
+  const details = planExecutionManager.getCachedPlanRecord(rootPlanId);
+  if (!details) {
+    console.warn('[ChatComponent] No cached plan data found for rootPlanId:', rootPlanId);
+    return;
+  }
+
+  console.log('[ChatComponent] Plan details:', details);
+
+  if (details.rootPlanId) {
     const messageIndex = messages.value.findIndex(
-      m => m.planExecution?.currentPlanId === details.planId
-    )
+      m => m.planExecution?.currentPlanId === details.rootPlanId
+    );
     if (messageIndex !== -1) {
-      const message = messages.value[messageIndex]
-      // Clear all processing states and mark as completed
-      delete message.thinking
+      const message = messages.value[messageIndex];
+      delete message.thinking;
 
-      // Generate a humanized final response
-      const summary = details.summary ?? details.result ?? '任务已完成'
-
-      // Ensure the response sounds more like a human conversation
-      let finalResponse = summary
+      const summary = details.summary ?? details.result ?? '任务已完成';
+      let finalResponse = summary;
       if (!finalResponse.includes('我') && !finalResponse.includes('您')) {
         if (finalResponse.includes('成功') || finalResponse.includes('完成')) {
-          finalResponse = `很好！${finalResponse}。如果您还有其他需要帮助的地方，请随时告诉我。`
+          finalResponse = `很好！${finalResponse}。如果您还有其他需要帮助的地方，请随时告诉我。`;
         } else {
-          finalResponse = `我已经完成了您的请求：${finalResponse}`
+          finalResponse = `我已经完成了您的请求：${finalResponse}`;
         }
       }
 
-      message.content = finalResponse
-
-      console.log('[ChatComponent] Updated completed message:', message.content)
+      message.content = finalResponse;
+      console.log('[ChatComponent] Updated completed message:', message.content);
     } else {
-      console.warn('[ChatComponent] No message found for completed planId:', details.planId)
+      console.warn('[ChatComponent] No message found for completed rootPlanId:', details.rootPlanId);
     }
   }
-}
+};
 
 // Format the response text to make it more like a natural conversation
 const formatResponseText = (text: string): string => {
@@ -1745,7 +1719,7 @@ defineExpose({
         background: rgba(255, 255, 255, 0.05);
       }
 
-      &.current {
+      &.running {
         background: rgba(102, 126, 234, 0.1);
         border-left: 3px solid #667eea;
       }
@@ -1794,7 +1768,7 @@ defineExpose({
             color: #22c55e;
           }
 
-          &.current {
+          &.running {
             background: rgba(102, 126, 234, 0.2);
             color: #667eea;
           }
@@ -1942,7 +1916,7 @@ defineExpose({
             border-color: rgba(34, 197, 94, 0.2);
           }
 
-          &.current {
+          &.running {
             background: rgba(102, 126, 234, 0.05);
             border-color: rgba(102, 126, 234, 0.3);
             box-shadow: 0 0 4px rgba(102, 126, 234, 0.2);
