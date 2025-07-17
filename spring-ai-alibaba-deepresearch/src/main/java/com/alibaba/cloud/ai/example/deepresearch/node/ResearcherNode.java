@@ -70,8 +70,8 @@ public class ResearcherNode implements NodeAction {
 	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
 
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
-						  McpProviderFactory mcpFactory, SearchFilterService searchFilterService,
-						  SmartAgentDispatcherService smartAgentDispatcher, SmartAgentProperties smartAgentProperties) {
+			McpProviderFactory mcpFactory, SearchFilterService searchFilterService,
+			SmartAgentDispatcherService smartAgentDispatcher, SmartAgentProperties smartAgentProperties) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;

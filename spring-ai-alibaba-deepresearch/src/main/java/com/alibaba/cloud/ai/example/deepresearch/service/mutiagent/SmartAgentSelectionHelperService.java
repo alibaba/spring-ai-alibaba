@@ -48,8 +48,8 @@ public class SmartAgentSelectionHelperService {
 	private final SearchPlatformSelectionService searchPlatformSelectionService;
 
 	public SmartAgentSelectionHelperService(SmartAgentProperties smartAgentProperties,
-											SmartAgentDispatcherService smartAgentDispatcher, QuestionClassifierService questionClassifierService,
-											SearchPlatformSelectionService searchPlatformSelectionService) {
+			SmartAgentDispatcherService smartAgentDispatcher, QuestionClassifierService questionClassifierService,
+			SearchPlatformSelectionService searchPlatformSelectionService) {
 		this.smartAgentProperties = smartAgentProperties;
 		this.smartAgentDispatcher = smartAgentDispatcher;
 		this.questionClassifierService = questionClassifierService;

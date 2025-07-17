@@ -38,10 +38,10 @@ public class AgentIntegrationUtil {
 	 * 创建智能Agent选择辅助器
 	 */
 	public static SmartAgentSelectionHelperService createSelectionHelper(SmartAgentProperties smartAgentProperties,
-																		 SmartAgentDispatcherService smartAgentDispatcher, QuestionClassifierService questionClassifierService,
-																		 SearchPlatformSelectionService searchPlatformSelectionService) {
-		return new SmartAgentSelectionHelperService(smartAgentProperties, smartAgentDispatcher, questionClassifierService,
-				searchPlatformSelectionService);
+			SmartAgentDispatcherService smartAgentDispatcher, QuestionClassifierService questionClassifierService,
+			SearchPlatformSelectionService searchPlatformSelectionService) {
+		return new SmartAgentSelectionHelperService(smartAgentProperties, smartAgentDispatcher,
+				questionClassifierService, searchPlatformSelectionService);
 	}
 
 	public static boolean isSmartAgentAvailable(SmartAgentProperties smartAgentProperties, Object... services) {
