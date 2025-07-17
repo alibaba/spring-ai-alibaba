@@ -21,7 +21,7 @@ import java.util.Map;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -40,7 +40,7 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
  */
 public class PlanFinalizer {
 
-	private final LlmService llmService;
+	private final ILlmService llmService;
 
 	private static final Logger log = LoggerFactory.getLogger(PlanFinalizer.class);
 
@@ -50,7 +50,7 @@ public class PlanFinalizer {
 
 	private final ManusProperties manusProperties;
 
-	public PlanFinalizer(LlmService llmService, PlanExecutionRecorder recorder, PromptService promptService,
+	public PlanFinalizer(ILlmService llmService, PlanExecutionRecorder recorder, PromptService promptService,
 			ManusProperties manusProperties) {
 		this.llmService = llmService;
 		this.recorder = recorder;

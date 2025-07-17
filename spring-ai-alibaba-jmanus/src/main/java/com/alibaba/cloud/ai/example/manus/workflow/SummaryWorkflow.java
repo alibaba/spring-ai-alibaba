@@ -34,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
  * 基于MapReduce的内容总结工作流 用于对大量内容进行智能提取和结构化总结
  */
 @Component
-public class SummaryWorkflow {
+public class SummaryWorkflow implements ISummaryWorkflow {
 
 	private static final Logger logger = LoggerFactory.getLogger(SummaryWorkflow.class);
 

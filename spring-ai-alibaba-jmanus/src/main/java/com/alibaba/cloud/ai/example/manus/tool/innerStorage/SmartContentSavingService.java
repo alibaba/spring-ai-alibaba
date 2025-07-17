@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
  * 内部文件存储服务，用于MapReduce流程中存储中间数据
  */
 @Service
-public class SmartContentSavingService {
+public class SmartContentSavingService implements ISmartContentSavingService {
 
 	private static final Logger log = LoggerFactory.getLogger(SmartContentSavingService.class);
 

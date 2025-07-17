@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.agent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -74,7 +75,7 @@ public abstract class BaseAgent {
 
 	private AgentState state = AgentState.NOT_STARTED;
 
-	protected LlmService llmService;
+	protected ILlmService llmService;
 
 	protected final ManusProperties manusProperties;
 
@@ -195,7 +196,7 @@ public abstract class BaseAgent {
 
 	public abstract ToolCallBackContext getToolCallBackContext(String toolKey);
 
-	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+	public BaseAgent(ILlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService) {
 		this.llmService = llmService;
 		this.planExecutionRecorder = planExecutionRecorder;
