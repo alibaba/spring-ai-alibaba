@@ -30,7 +30,7 @@ import org.springframework.stereotype.Service;
  * 问题分类器服务，根据用户问题内容判断应该使用哪种类型的Agent 重构后使用SmartAgentUtil和AgentPromptTemplateUtil工具类
  *
  * @author Makoto
- * @since 2025/01/28
+ * @since 2025/07/17
  */
 @Service
 @ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",

@@ -35,7 +35,7 @@ import java.util.List;
  * 智能Agent调度器，根据问题分类结果将任务分配给对应的Agent
  *
  * @author Makoto
- * @since 2025/01/28
+ * @since 2025/07/17
  */
 @Component
 @ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",

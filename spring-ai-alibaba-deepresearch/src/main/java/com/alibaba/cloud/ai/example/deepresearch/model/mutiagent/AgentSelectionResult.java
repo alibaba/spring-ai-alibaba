@@ -22,7 +22,7 @@ import org.springframework.ai.chat.client.ChatClient;
  * 智能Agent选择结果
  *
  * @author Makoto
- * @since 2025/01/28
+ * @since 2025/07/17
  */
 public class AgentSelectionResult {
 

@@ -29,7 +29,7 @@ import java.util.List;
  * 智能Agent系统通用工具类 整合开关检查、类型转换、状态管理等通用逻辑
  *
  * @author Makoto
- * @since 2025/01/28
+ * @since 2025/07/17
  */
 public class SmartAgentUtil {
 

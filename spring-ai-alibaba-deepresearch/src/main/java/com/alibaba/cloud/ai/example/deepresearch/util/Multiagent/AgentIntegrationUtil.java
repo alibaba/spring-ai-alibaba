@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * Agent集成工具类 统一处理智能Agent的集成逻辑，提供智能Agent选择、错误处理等功能
  *
  * @author Makoto
- * @since 2025/01/28
+ * @since 2025/07/17
  */
 public class AgentIntegrationUtil {
 

@@ -22,7 +22,7 @@ import java.util.List;
  * 搜索平台枚举，定义不同主题对应的搜索平台
  *
  * @author Makoto
- * @since 2025/01/28
+ * @since 2025/07/17
  */
 public enum SearchPlatform {
 

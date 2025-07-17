@@ -25,7 +25,7 @@ import java.util.List;
  * Agent分派结果
  *
  * @author Makoto
- * @since 2025/01/28
+ * @since 2025/07/17
  */
 public class AgentDispatchResult {
 

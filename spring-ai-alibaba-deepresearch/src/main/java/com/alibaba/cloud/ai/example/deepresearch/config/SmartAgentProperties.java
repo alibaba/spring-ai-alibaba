@@ -25,7 +25,7 @@ import java.util.Map;
  * 智能Agent配置属性
  *
  * @author Makoto
- * @since 2025/01/28
+ * @since 2025/07/17
  */
 @Component
 @ConfigurationProperties(prefix = "spring.ai.alibaba.deepresearch.smart-agents")

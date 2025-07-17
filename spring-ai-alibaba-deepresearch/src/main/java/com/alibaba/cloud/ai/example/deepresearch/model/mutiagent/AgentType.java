@@ -20,7 +20,7 @@ package com.alibaba.cloud.ai.example.deepresearch.model.mutiagent;
  * Agent类型枚举，定义不同类型的研究Agent
  *
  * @author Makoto
- * @since 2025/01/28
+ * @since 2025/07/17
  */
 public enum AgentType {
 

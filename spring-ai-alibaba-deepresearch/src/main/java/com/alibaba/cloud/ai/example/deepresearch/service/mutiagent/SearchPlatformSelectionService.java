@@ -36,7 +36,7 @@ import java.util.List;
  * 搜索平台选择服务，根据Agent类型和问题内容智能选择最合适的搜索平台
  *
  * @author Makoto
- * @since 2025/01/28
+ * @since 2025/07/17
  */
 @Service
 @ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
