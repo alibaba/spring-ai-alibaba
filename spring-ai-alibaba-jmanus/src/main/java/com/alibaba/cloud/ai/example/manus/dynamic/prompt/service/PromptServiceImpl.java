@@ -54,10 +54,14 @@ public class PromptServiceImpl implements PromptService {
 
 	@Override
 	public List<PromptVO> getAllByNamespace(String namespace) {
-		return promptRepository.getAllByNamespace(namespace)
-			.stream()
-			.map(this::mapToPromptVO)
-			.collect(Collectors.toList());
+		List<PromptEntity> entities;
+		if ("default".equalsIgnoreCase(namespace)) {
+			entities = promptRepository.findAll();
+		}
+		else {
+			entities = promptRepository.getAllByNamespace(namespace);
+		}
+		return entities.stream().map(this::mapToPromptVO).collect(Collectors.toList());
 	}
 
 	@Override

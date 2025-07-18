@@ -13,33 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent;
+package com.alibaba.cloud.ai.example.manus.dynamic.namespace.repository;
 
-import java.util.List;
+import com.alibaba.cloud.ai.example.manus.dynamic.namespace.entity.NamespaceEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-/**
- * Interface for startup agent configuration loader
- */
-public interface IStartupAgentConfigLoader {
+@Repository
+public interface NamespaceRepository extends JpaRepository<NamespaceEntity, Long> {
 
-	/**
-	 * Clear cache
-	 */
-	void clearCache();
+	NamespaceEntity findByName(String name);
 
-	/**
-	 * Get cache size
-	 */
-	int getCacheSize();
-
-	/**
-	 * Load agent configuration by name
-	 */
-	StartupAgentConfigLoader.AgentConfig loadAgentConfig(String agentName);
-
-	/**
-	 * Scan available agents
-	 */
-	List<String> scanAvailableAgents();
+	NamespaceEntity findByCode(String code);
 
 }
