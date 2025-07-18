@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-export interface Prompt {
+export interface Namespace {
   id: string
-  builtIn: boolean
-  type: string
-  promptName: string
-  messageType: string
-  promptDescription: string
-  promptContent: string
-  namespace?: string
+  code: string
+  name: string
 }
 
-export class PromptApiService {
-  private static readonly BASE_URL = '/api/prompt'
+export class NamespaceApiService {
+  private static readonly BASE_URL = '/api/namespace'
 
   /**
    * Handle HTTP response
@@ -44,87 +39,89 @@ export class PromptApiService {
   }
 
   /**
-   * Get all Prompt list
+   * Get all Namespace list
    */
-  static async getAllPrompts(namespace: string): Promise<Prompt[]> {
+  static async getAllNamespaces(): Promise<Namespace[]> {
     try {
-      const response = await fetch(`${this.BASE_URL}/namespace/${namespace}`)
+      const response = await fetch(`${this.BASE_URL}`)
       const result = await this.handleResponse(response)
       return await result.json()
     } catch (error) {
-      console.error('Failed to get Prompt list:', error)
+      console.error('Failed to get Namespace list:', error)
       throw error
     }
   }
 
   /**
-   * Get Prompt details by ID
+   * Get Namespace details by ID
    */
-  static async getPromptById(id: string): Promise<Prompt> {
+  static async getNamespaceById(id: string): Promise<Namespace> {
     try {
       const response = await fetch(`${this.BASE_URL}/${id}`)
       const result = await this.handleResponse(response)
       return await result.json()
     } catch (error) {
-      console.error(`Failed to get Pr'o'm'p't[${id}] details:`, error)
+      console.error(`Failed to get Namespace[${id}] details:`, error)
       throw error
     }
   }
 
   /**
-   * Create new Prompt
+   * Create new Namespace
    */
-  static async createPrompt(promptConfig: Omit<Prompt, 'id'>): Promise<Prompt> {
+  static async createNamespace(namespaceConfig: Omit<Namespace, 'id'>): Promise<Namespace> {
     try {
       const response = await fetch(this.BASE_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(promptConfig),
+        body: JSON.stringify(namespaceConfig),
       })
       const result = await this.handleResponse(response)
       return await result.json()
     } catch (error) {
-      console.error('Failed to create Prompt:', error)
+      console.error('Failed to create Namespace:', error)
       throw error
     }
   }
+
   /**
-   * Update Prompt configuration
+   * Update Namespace configuration
    */
-  static async updatePrompt(id: string, PromptConfig: Prompt): Promise<Prompt> {
+  static async updateNamespace(id: string, namespaceConfig: Namespace): Promise<Namespace> {
     try {
       const response = await fetch(`${this.BASE_URL}/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(PromptConfig),
+        body: JSON.stringify(namespaceConfig),
       })
       const result = await this.handleResponse(response)
       return await result.json()
     } catch (error) {
-      console.error(`Failed to update Prompt[${id}]:`, error)
+      console.error(`Failed to update Namespace[${id}]:`, error)
       throw error
     }
   }
 
   /**
-   * Delete Prompt
+   * Delete Namespace
    */
-  static async deletePrompt(id: string): Promise<void> {
+  static async deleteNamespace(id: string): Promise<void> {
     try {
       const response = await fetch(`${this.BASE_URL}/${id}`, {
         method: 'DELETE',
       })
       if (response.status === 400) {
-        throw new Error('Cannot delete default Prompt')
+        throw new Error('Cannot delete default Namespace')
       }
       await this.handleResponse(response)
     } catch (error) {
-      console.error(`Failed to delete Prompt[${id}]:`, error)
+      console.error(`Failed to delete Namespace[${id}]:`, error)
       throw error
     }
   }
 }
+

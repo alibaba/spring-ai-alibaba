@@ -26,10 +26,10 @@
     - Allow editing of promptName during edit mode (originally was disabled)
 -->
 <template>
-  <div class="config-panel">
-    <div class="panel-header">
+  <ConfigPanel>
+    <template #title>
       <h2>{{ t('config.promptConfig.title') }}</h2>
-    </div>
+    </template>
 
     <div class="prompt-layout">
       <!--left prompt list-->
@@ -114,17 +114,6 @@
             required
           />
         </div>
-
-        <!--
-          // todo 
-          <div class="form-item">
-          <label>{{ t('config.promptConfig.namespace') }} </label>
-          <input
-            type="text"
-            v-model="selectedPrompt.namespace"
-            :placeholder="t('config.promptConfig.placeholder')"
-          />
-        </div> -->
 
         <div class="form-item">
           <label>
@@ -226,14 +215,6 @@
             :options="typeEnum"
             :placeholder="t('config.promptConfig.placeholder')"
           />
-          <!--
-           // 命名空间先隐藏
-           <input
-            type="text"
-            v-model="newPrompt.type"
-            :placeholder="t('config.promptConfig.placeholder')"
-            required
-          /> -->
         </div>
         <div class="form-item">
           <label>
@@ -261,7 +242,7 @@
       </div>
     </Modal>
 
-    <!-- 删除确认弹窗 -->
+    <!-- Delete confirmation dialog -->
     <Modal v-model="showDeleteModal" :title="t('config.promptConfig.deleteConfirm')">
       <div class="delete-confirm">
         <Icon icon="carbon:warning" class="warning-icon" />
@@ -278,7 +259,7 @@
         <button class="confirm-btn danger" @click="handleDelete">{{ t('common.delete') }}</button>
       </template>
     </Modal>
-  </div>
+  </ConfigPanel>
 </template>
 
 <script setup lang="ts">
@@ -289,11 +270,16 @@ import Modal from '@/components/modal/index.vue'
 import { PromptApiService, type Prompt } from '@/api/prompt-api-service'
 import { useToast } from '@/plugins/useToast'
 import CustomSelect from './components/select.vue'
+import ConfigPanel from './components/configPanel.vue'
+import { usenameSpaceStore } from '@/stores/namespace'
+
 
 type PromptField = string | null | undefined
 
 const { t } = useI18n()
 const { success, error } = useToast()
+
+const namespaceStore = usenameSpaceStore()
 
 // Reactive data properties
 const loading = ref(false)
@@ -334,7 +320,7 @@ const newPrompt = reactive<Omit<Prompt, 'id'>>({ ...defaultPromptValues } as Omi
 const loadData = async () => {
   loading.value = true
   try {
-    const loadedPrompts = (await PromptApiService.getAllPrompts()) as Prompt[]
+    const loadedPrompts = (await PromptApiService.getAllPrompts(namespaceStore.namespace)) as Prompt[]
 
     if (loadedPrompts.length > 0) {
       await selectPrompt(loadedPrompts[0])
@@ -426,7 +412,7 @@ const handleDelete = async () => {
   }
 }
 
-function validatePrompt(prompt: Omit<Prompt, 'id'> | Prompt ): prompt is Prompt {
+function validatePrompt(prompt: Omit<Prompt, 'id'> | Prompt): prompt is Prompt {
   const requiredFields = ['promptName', 'messageType', 'type', 'promptContent'] as const
 
   for (const field of requiredFields) {
@@ -489,45 +475,16 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.config-panel {
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.panel-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.panel-actions {
-  display: flex;
-  gap: 12px;
-}
 
 .prompt-layout {
   display: flex;
-  gap: 30px;
+  gap: 12px;
   flex: 1;
   min-height: 0;
 }
 
 .prompt-list {
-  width: 320px;
+  width: 336px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -688,7 +645,7 @@ onMounted(() => {
   flex: 1;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
-  padding: 24px;
+  padding: 12px 24px;
   overflow-y: auto;
 }
 
@@ -712,7 +669,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
