@@ -30,72 +30,75 @@ import java.util.List;
 @Controller
 @RequestMapping("/api/semantic-model")
 public class SemanticModelController {
-    
-    @Autowired
-    private SemanticModelService semanticModelService;
-    
-    @GetMapping("/page")
-    public String page() {
-        return "semantic-model";
-    }
-    
-    @GetMapping
-    @ResponseBody
-    public ResponseEntity<List<SemanticModel>> list(@RequestParam(required = false) String datasetId,
-                                                   @RequestParam(required = false) String keyword) {
-        List<SemanticModel> result;
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            result = semanticModelService.search(keyword);
-        } else if (datasetId != null && !datasetId.trim().isEmpty()) {
-            result = semanticModelService.findByDatasetId(datasetId);
-        } else {
-            result = semanticModelService.findAll();
-        }
-        return ResponseEntity.ok(result);
-    }
-    
-    @GetMapping("/{id}")
-    @ResponseBody
-    public ResponseEntity<SemanticModel> get(@PathVariable Long id) {
-        SemanticModel model = semanticModelService.findById(id);
-        if (model == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(model);
-    }
-    
-    @PostMapping
-    @ResponseBody
-    public ResponseEntity<SemanticModel> create(@RequestBody SemanticModel model) {
-        SemanticModel saved = semanticModelService.save(model);
-        return ResponseEntity.ok(saved);
-    }
-    
-    @PutMapping("/{id}")
-    @ResponseBody
-    public ResponseEntity<SemanticModel> update(@PathVariable Long id, @RequestBody SemanticModel model) {
-        if (semanticModelService.findById(id) == null) {
-            return ResponseEntity.notFound().build();
-        }
-        model.setId(id);
-        SemanticModel updated = semanticModelService.save(model);
-        return ResponseEntity.ok(updated);
-    }
-    
-    @DeleteMapping("/{id}")
-    @ResponseBody
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (semanticModelService.findById(id) == null) {
-            return ResponseEntity.notFound().build();
-        }
-        semanticModelService.deleteById(id);
-        return ResponseEntity.ok().build();
-    }
-    
-    @PostMapping("/batch-enable")
-    @ResponseBody
-    public ResponseEntity<Void> batchEnable(@RequestParam String datasetId, @RequestParam boolean enabled) {
-        semanticModelService.batchUpdateEnabled(datasetId, enabled);
-        return ResponseEntity.ok().build();
-    }
+
+	@Autowired
+	private SemanticModelService semanticModelService;
+
+	@GetMapping("/page")
+	public String page() {
+		return "semantic-model";
+	}
+
+	@GetMapping
+	@ResponseBody
+	public ResponseEntity<List<SemanticModel>> list(@RequestParam(required = false) String datasetId,
+			@RequestParam(required = false) String keyword) {
+		List<SemanticModel> result;
+		if (keyword != null && !keyword.trim().isEmpty()) {
+			result = semanticModelService.search(keyword);
+		}
+		else if (datasetId != null && !datasetId.trim().isEmpty()) {
+			result = semanticModelService.findByDatasetId(datasetId);
+		}
+		else {
+			result = semanticModelService.findAll();
+		}
+		return ResponseEntity.ok(result);
+	}
+
+	@GetMapping("/{id}")
+	@ResponseBody
+	public ResponseEntity<SemanticModel> get(@PathVariable Long id) {
+		SemanticModel model = semanticModelService.findById(id);
+		if (model == null) {
+			return ResponseEntity.notFound().build();
+		}
+		return ResponseEntity.ok(model);
+	}
+
+	@PostMapping
+	@ResponseBody
+	public ResponseEntity<SemanticModel> create(@RequestBody SemanticModel model) {
+		SemanticModel saved = semanticModelService.save(model);
+		return ResponseEntity.ok(saved);
+	}
+
+	@PutMapping("/{id}")
+	@ResponseBody
+	public ResponseEntity<SemanticModel> update(@PathVariable Long id, @RequestBody SemanticModel model) {
+		if (semanticModelService.findById(id) == null) {
+			return ResponseEntity.notFound().build();
+		}
+		model.setId(id);
+		SemanticModel updated = semanticModelService.save(model);
+		return ResponseEntity.ok(updated);
+	}
+
+	@DeleteMapping("/{id}")
+	@ResponseBody
+	public ResponseEntity<Void> delete(@PathVariable Long id) {
+		if (semanticModelService.findById(id) == null) {
+			return ResponseEntity.notFound().build();
+		}
+		semanticModelService.deleteById(id);
+		return ResponseEntity.ok().build();
+	}
+
+	@PostMapping("/batch-enable")
+	@ResponseBody
+	public ResponseEntity<Void> batchEnable(@RequestParam String datasetId, @RequestParam boolean enabled) {
+		semanticModelService.batchUpdateEnabled(datasetId, enabled);
+		return ResponseEntity.ok().build();
+	}
+
 }

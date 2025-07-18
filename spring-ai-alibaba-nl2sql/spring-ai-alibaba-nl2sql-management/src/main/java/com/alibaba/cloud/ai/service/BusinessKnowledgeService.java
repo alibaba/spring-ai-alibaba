@@ -29,59 +29,64 @@ import java.util.stream.Collectors;
  */
 @Service
 public class BusinessKnowledgeService {
-    
-    private final Map<Long, BusinessKnowledge> knowledgeStore = new ConcurrentHashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
-    
-    public BusinessKnowledgeService() {
-        // 初始化示例数据
-        initSampleData();
-    }
-    
-    private void initSampleData() {
-        save(new BusinessKnowledge("年龄分布", "分别计算劳动人口占比，少年儿童占比，老年人口占比三个字段指标的平均值", "年龄画像,年龄构成,年龄结构", true, "dataset_001"));
-        save(new BusinessKnowledge("搜索业绩口径", "定义：订单/流量计入搜索", "搜索业绩,搜索口径", false, "dataset_001"));
-        save(new BusinessKnowledge("GMV", "商品交易总额，包含付款和未付款的订单金额", "交易总额,成交总额", true, "dataset_002"));
-    }
-    
-    public List<BusinessKnowledge> findAll() {
-        return new ArrayList<>(knowledgeStore.values());
-    }
-    
-    public List<BusinessKnowledge> findByDatasetId(String datasetId) {
-        return knowledgeStore.values().stream()
-                .filter(k -> Objects.equals(k.getDatasetId(), datasetId))
-                .collect(Collectors.toList());
-    }
-    
-    public BusinessKnowledge findById(Long id) {
-        return knowledgeStore.get(id);
-    }
-    
-    public BusinessKnowledge save(BusinessKnowledge knowledge) {
-        if (knowledge.getId() == null) {
-            knowledge.setId(idGenerator.getAndIncrement());
-            knowledge.setCreateTime(LocalDateTime.now());
-        }
-        knowledge.setUpdateTime(LocalDateTime.now());
-        knowledgeStore.put(knowledge.getId(), knowledge);
-        return knowledge;
-    }
-    
-    public void deleteById(Long id) {
-        knowledgeStore.remove(id);
-    }
-    
-    public List<BusinessKnowledge> search(String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return findAll();
-        }
-        
-        String lowerKeyword = keyword.toLowerCase();
-        return knowledgeStore.values().stream()
-                .filter(k -> k.getBusinessTerm().toLowerCase().contains(lowerKeyword) ||
-                           k.getDescription().toLowerCase().contains(lowerKeyword) ||
-                           (k.getSynonyms() != null && k.getSynonyms().toLowerCase().contains(lowerKeyword)))
-                .collect(Collectors.toList());
-    }
+
+	private final Map<Long, BusinessKnowledge> knowledgeStore = new ConcurrentHashMap<>();
+
+	private final AtomicLong idGenerator = new AtomicLong(1);
+
+	public BusinessKnowledgeService() {
+		// 初始化示例数据
+		initSampleData();
+	}
+
+	private void initSampleData() {
+		save(new BusinessKnowledge("年龄分布", "分别计算劳动人口占比，少年儿童占比，老年人口占比三个字段指标的平均值", "年龄画像,年龄构成,年龄结构", true,
+				"dataset_001"));
+		save(new BusinessKnowledge("搜索业绩口径", "定义：订单/流量计入搜索", "搜索业绩,搜索口径", false, "dataset_001"));
+		save(new BusinessKnowledge("GMV", "商品交易总额，包含付款和未付款的订单金额", "交易总额,成交总额", true, "dataset_002"));
+	}
+
+	public List<BusinessKnowledge> findAll() {
+		return new ArrayList<>(knowledgeStore.values());
+	}
+
+	public List<BusinessKnowledge> findByDatasetId(String datasetId) {
+		return knowledgeStore.values()
+			.stream()
+			.filter(k -> Objects.equals(k.getDatasetId(), datasetId))
+			.collect(Collectors.toList());
+	}
+
+	public BusinessKnowledge findById(Long id) {
+		return knowledgeStore.get(id);
+	}
+
+	public BusinessKnowledge save(BusinessKnowledge knowledge) {
+		if (knowledge.getId() == null) {
+			knowledge.setId(idGenerator.getAndIncrement());
+			knowledge.setCreateTime(LocalDateTime.now());
+		}
+		knowledge.setUpdateTime(LocalDateTime.now());
+		knowledgeStore.put(knowledge.getId(), knowledge);
+		return knowledge;
+	}
+
+	public void deleteById(Long id) {
+		knowledgeStore.remove(id);
+	}
+
+	public List<BusinessKnowledge> search(String keyword) {
+		if (keyword == null || keyword.trim().isEmpty()) {
+			return findAll();
+		}
+
+		String lowerKeyword = keyword.toLowerCase();
+		return knowledgeStore.values()
+			.stream()
+			.filter(k -> k.getBusinessTerm().toLowerCase().contains(lowerKeyword)
+					|| k.getDescription().toLowerCase().contains(lowerKeyword)
+					|| (k.getSynonyms() != null && k.getSynonyms().toLowerCase().contains(lowerKeyword)))
+			.collect(Collectors.toList());
+	}
+
 }

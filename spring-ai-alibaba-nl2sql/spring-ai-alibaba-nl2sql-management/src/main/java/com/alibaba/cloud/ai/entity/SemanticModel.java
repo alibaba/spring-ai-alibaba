@@ -21,72 +21,145 @@ import java.time.LocalDateTime;
  * 语义模型配置实体类
  */
 public class SemanticModel {
-    
-    private Long id;
-    private String datasetId;           // 数据集ID
-    private String originalFieldName;   // 原始字段名
-    private String agentFieldName;      // 智能体字段名称
-    private String fieldSynonyms;       // 字段名称同义词，逗号分隔
-    private String fieldDescription;    // 字段描述
-    private Boolean defaultRecall;      // 默认召回
-    private Boolean enabled;            // 是否启用
-    private String fieldType;           // 字段类型
-    private String originalDescription; // 原始字段描述
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
-    
-    public SemanticModel() {}
-    
-    public SemanticModel(String datasetId, String originalFieldName, String agentFieldName,
-                        String fieldSynonyms, String fieldDescription, Boolean defaultRecall,
-                        Boolean enabled, String fieldType, String originalDescription) {
-        this.datasetId = datasetId;
-        this.originalFieldName = originalFieldName;
-        this.agentFieldName = agentFieldName;
-        this.fieldSynonyms = fieldSynonyms;
-        this.fieldDescription = fieldDescription;
-        this.defaultRecall = defaultRecall;
-        this.enabled = enabled;
-        this.fieldType = fieldType;
-        this.originalDescription = originalDescription;
-        this.createTime = LocalDateTime.now();
-        this.updateTime = LocalDateTime.now();
-    }
-    
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    
-    public String getDatasetId() { return datasetId; }
-    public void setDatasetId(String datasetId) { this.datasetId = datasetId; }
-    
-    public String getOriginalFieldName() { return originalFieldName; }
-    public void setOriginalFieldName(String originalFieldName) { this.originalFieldName = originalFieldName; }
-    
-    public String getAgentFieldName() { return agentFieldName; }
-    public void setAgentFieldName(String agentFieldName) { this.agentFieldName = agentFieldName; }
-    
-    public String getFieldSynonyms() { return fieldSynonyms; }
-    public void setFieldSynonyms(String fieldSynonyms) { this.fieldSynonyms = fieldSynonyms; }
-    
-    public String getFieldDescription() { return fieldDescription; }
-    public void setFieldDescription(String fieldDescription) { this.fieldDescription = fieldDescription; }
-    
-    public Boolean getDefaultRecall() { return defaultRecall; }
-    public void setDefaultRecall(Boolean defaultRecall) { this.defaultRecall = defaultRecall; }
-    
-    public Boolean getEnabled() { return enabled; }
-    public void setEnabled(Boolean enabled) { this.enabled = enabled; }
-    
-    public String getFieldType() { return fieldType; }
-    public void setFieldType(String fieldType) { this.fieldType = fieldType; }
-    
-    public String getOriginalDescription() { return originalDescription; }
-    public void setOriginalDescription(String originalDescription) { this.originalDescription = originalDescription; }
-    
-    public LocalDateTime getCreateTime() { return createTime; }
-    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
-    
-    public LocalDateTime getUpdateTime() { return updateTime; }
-    public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+
+	private Long id;
+
+	private String datasetId; // 数据集ID
+
+	private String originalFieldName; // 原始字段名
+
+	private String agentFieldName; // 智能体字段名称
+
+	private String fieldSynonyms; // 字段名称同义词，逗号分隔
+
+	private String fieldDescription; // 字段描述
+
+	private Boolean defaultRecall; // 默认召回
+
+	private Boolean enabled; // 是否启用
+
+	private String fieldType; // 字段类型
+
+	private String originalDescription; // 原始字段描述
+
+	private LocalDateTime createTime;
+
+	private LocalDateTime updateTime;
+
+	public SemanticModel() {
+	}
+
+	public SemanticModel(String datasetId, String originalFieldName, String agentFieldName, String fieldSynonyms,
+			String fieldDescription, Boolean defaultRecall, Boolean enabled, String fieldType,
+			String originalDescription) {
+		this.datasetId = datasetId;
+		this.originalFieldName = originalFieldName;
+		this.agentFieldName = agentFieldName;
+		this.fieldSynonyms = fieldSynonyms;
+		this.fieldDescription = fieldDescription;
+		this.defaultRecall = defaultRecall;
+		this.enabled = enabled;
+		this.fieldType = fieldType;
+		this.originalDescription = originalDescription;
+		this.createTime = LocalDateTime.now();
+		this.updateTime = LocalDateTime.now();
+	}
+
+	// Getters and Setters
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getDatasetId() {
+		return datasetId;
+	}
+
+	public void setDatasetId(String datasetId) {
+		this.datasetId = datasetId;
+	}
+
+	public String getOriginalFieldName() {
+		return originalFieldName;
+	}
+
+	public void setOriginalFieldName(String originalFieldName) {
+		this.originalFieldName = originalFieldName;
+	}
+
+	public String getAgentFieldName() {
+		return agentFieldName;
+	}
+
+	public void setAgentFieldName(String agentFieldName) {
+		this.agentFieldName = agentFieldName;
+	}
+
+	public String getFieldSynonyms() {
+		return fieldSynonyms;
+	}
+
+	public void setFieldSynonyms(String fieldSynonyms) {
+		this.fieldSynonyms = fieldSynonyms;
+	}
+
+	public String getFieldDescription() {
+		return fieldDescription;
+	}
+
+	public void setFieldDescription(String fieldDescription) {
+		this.fieldDescription = fieldDescription;
+	}
+
+	public Boolean getDefaultRecall() {
+		return defaultRecall;
+	}
+
+	public void setDefaultRecall(Boolean defaultRecall) {
+		this.defaultRecall = defaultRecall;
+	}
+
+	public Boolean getEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(Boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public String getFieldType() {
+		return fieldType;
+	}
+
+	public void setFieldType(String fieldType) {
+		this.fieldType = fieldType;
+	}
+
+	public String getOriginalDescription() {
+		return originalDescription;
+	}
+
+	public void setOriginalDescription(String originalDescription) {
+		this.originalDescription = originalDescription;
+	}
+
+	public LocalDateTime getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(LocalDateTime createTime) {
+		this.createTime = createTime;
+	}
+
+	public LocalDateTime getUpdateTime() {
+		return updateTime;
+	}
+
+	public void setUpdateTime(LocalDateTime updateTime) {
+		this.updateTime = updateTime;
+	}
+
 }

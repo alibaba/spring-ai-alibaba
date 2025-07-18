@@ -21,51 +21,100 @@ import java.time.LocalDateTime;
  * 业务知识管理实体类
  */
 public class BusinessKnowledge {
-    
-    private Long id;
-    private String businessTerm;     // 业务名词
-    private String description;      // 说明
-    private String synonyms;         // 同义词，逗号分隔
-    private Boolean defaultRecall;   // 默认召回
-    private String datasetId;        // 关联的数据集ID
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
-    
-    public BusinessKnowledge() {}
-    
-    public BusinessKnowledge(String businessTerm, String description, String synonyms, 
-                           Boolean defaultRecall, String datasetId) {
-        this.businessTerm = businessTerm;
-        this.description = description;
-        this.synonyms = synonyms;
-        this.defaultRecall = defaultRecall;
-        this.datasetId = datasetId;
-        this.createTime = LocalDateTime.now();
-        this.updateTime = LocalDateTime.now();
-    }
-    
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    
-    public String getBusinessTerm() { return businessTerm; }
-    public void setBusinessTerm(String businessTerm) { this.businessTerm = businessTerm; }
-    
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    
-    public String getSynonyms() { return synonyms; }
-    public void setSynonyms(String synonyms) { this.synonyms = synonyms; }
-    
-    public Boolean getDefaultRecall() { return defaultRecall; }
-    public void setDefaultRecall(Boolean defaultRecall) { this.defaultRecall = defaultRecall; }
-    
-    public String getDatasetId() { return datasetId; }
-    public void setDatasetId(String datasetId) { this.datasetId = datasetId; }
-    
-    public LocalDateTime getCreateTime() { return createTime; }
-    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
-    
-    public LocalDateTime getUpdateTime() { return updateTime; }
-    public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+
+	private Long id;
+
+	private String businessTerm; // 业务名词
+
+	private String description; // 说明
+
+	private String synonyms; // 同义词，逗号分隔
+
+	private Boolean defaultRecall; // 默认召回
+
+	private String datasetId; // 关联的数据集ID
+
+	private LocalDateTime createTime;
+
+	private LocalDateTime updateTime;
+
+	public BusinessKnowledge() {
+	}
+
+	public BusinessKnowledge(String businessTerm, String description, String synonyms, Boolean defaultRecall,
+			String datasetId) {
+		this.businessTerm = businessTerm;
+		this.description = description;
+		this.synonyms = synonyms;
+		this.defaultRecall = defaultRecall;
+		this.datasetId = datasetId;
+		this.createTime = LocalDateTime.now();
+		this.updateTime = LocalDateTime.now();
+	}
+
+	// Getters and Setters
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getBusinessTerm() {
+		return businessTerm;
+	}
+
+	public void setBusinessTerm(String businessTerm) {
+		this.businessTerm = businessTerm;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public String getSynonyms() {
+		return synonyms;
+	}
+
+	public void setSynonyms(String synonyms) {
+		this.synonyms = synonyms;
+	}
+
+	public Boolean getDefaultRecall() {
+		return defaultRecall;
+	}
+
+	public void setDefaultRecall(Boolean defaultRecall) {
+		this.defaultRecall = defaultRecall;
+	}
+
+	public String getDatasetId() {
+		return datasetId;
+	}
+
+	public void setDatasetId(String datasetId) {
+		this.datasetId = datasetId;
+	}
+
+	public LocalDateTime getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(LocalDateTime createTime) {
+		this.createTime = createTime;
+	}
+
+	public LocalDateTime getUpdateTime() {
+		return updateTime;
+	}
+
+	public void setUpdateTime(LocalDateTime updateTime) {
+		this.updateTime = updateTime;
+	}
+
 }

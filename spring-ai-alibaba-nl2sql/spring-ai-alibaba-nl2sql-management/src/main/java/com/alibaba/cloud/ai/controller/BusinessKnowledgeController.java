@@ -30,65 +30,68 @@ import java.util.List;
 @Controller
 @RequestMapping("/api/business-knowledge")
 public class BusinessKnowledgeController {
-    
-    @Autowired
-    private BusinessKnowledgeService businessKnowledgeService;
-    
-    @GetMapping("/page")
-    public String page() {
-        return "business-knowledge";
-    }
-    
-    @GetMapping
-    @ResponseBody
-    public ResponseEntity<List<BusinessKnowledge>> list(@RequestParam(required = false) String datasetId,
-                                                       @RequestParam(required = false) String keyword) {
-        List<BusinessKnowledge> result;
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            result = businessKnowledgeService.search(keyword);
-        } else if (datasetId != null && !datasetId.trim().isEmpty()) {
-            result = businessKnowledgeService.findByDatasetId(datasetId);
-        } else {
-            result = businessKnowledgeService.findAll();
-        }
-        return ResponseEntity.ok(result);
-    }
-    
-    @GetMapping("/{id}")
-    @ResponseBody
-    public ResponseEntity<BusinessKnowledge> get(@PathVariable Long id) {
-        BusinessKnowledge knowledge = businessKnowledgeService.findById(id);
-        if (knowledge == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(knowledge);
-    }
-    
-    @PostMapping
-    @ResponseBody
-    public ResponseEntity<BusinessKnowledge> create(@RequestBody BusinessKnowledge knowledge) {
-        BusinessKnowledge saved = businessKnowledgeService.save(knowledge);
-        return ResponseEntity.ok(saved);
-    }
-    
-    @PutMapping("/{id}")
-    @ResponseBody
-    public ResponseEntity<BusinessKnowledge> update(@PathVariable Long id, @RequestBody BusinessKnowledge knowledge) {
-        if (businessKnowledgeService.findById(id) == null) {
-            return ResponseEntity.notFound().build();
-        }
-        knowledge.setId(id);
-        BusinessKnowledge updated = businessKnowledgeService.save(knowledge);
-        return ResponseEntity.ok(updated);
-    }
-    
-    @DeleteMapping("/{id}")
-    @ResponseBody
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (businessKnowledgeService.findById(id) == null) {
-            return ResponseEntity.notFound().build();
-        }
-        businessKnowledgeService.deleteById(id);
-        return ResponseEntity.ok().build();
-    }
+
+	@Autowired
+	private BusinessKnowledgeService businessKnowledgeService;
+
+	@GetMapping("/page")
+	public String page() {
+		return "business-knowledge";
+	}
+
+	@GetMapping
+	@ResponseBody
+	public ResponseEntity<List<BusinessKnowledge>> list(@RequestParam(required = false) String datasetId,
+			@RequestParam(required = false) String keyword) {
+		List<BusinessKnowledge> result;
+		if (keyword != null && !keyword.trim().isEmpty()) {
+			result = businessKnowledgeService.search(keyword);
+		}
+		else if (datasetId != null && !datasetId.trim().isEmpty()) {
+			result = businessKnowledgeService.findByDatasetId(datasetId);
+		}
+		else {
+			result = businessKnowledgeService.findAll();
+		}
+		return ResponseEntity.ok(result);
+	}
+
+	@GetMapping("/{id}")
+	@ResponseBody
+	public ResponseEntity<BusinessKnowledge> get(@PathVariable Long id) {
+		BusinessKnowledge knowledge = businessKnowledgeService.findById(id);
+		if (knowledge == null) {
+			return ResponseEntity.notFound().build();
+		}
+		return ResponseEntity.ok(knowledge);
+	}
+
+	@PostMapping
+	@ResponseBody
+	public ResponseEntity<BusinessKnowledge> create(@RequestBody BusinessKnowledge knowledge) {
+		BusinessKnowledge saved = businessKnowledgeService.save(knowledge);
+		return ResponseEntity.ok(saved);
+	}
+
+	@PutMapping("/{id}")
+	@ResponseBody
+	public ResponseEntity<BusinessKnowledge> update(@PathVariable Long id, @RequestBody BusinessKnowledge knowledge) {
+		if (businessKnowledgeService.findById(id) == null) {
+			return ResponseEntity.notFound().build();
+		}
+		knowledge.setId(id);
+		BusinessKnowledge updated = businessKnowledgeService.save(knowledge);
+		return ResponseEntity.ok(updated);
+	}
+
+	@DeleteMapping("/{id}")
+	@ResponseBody
+	public ResponseEntity<Void> delete(@PathVariable Long id) {
+		if (businessKnowledgeService.findById(id) == null) {
+			return ResponseEntity.notFound().build();
+		}
+		businessKnowledgeService.deleteById(id);
+		return ResponseEntity.ok().build();
+	}
+
 }
