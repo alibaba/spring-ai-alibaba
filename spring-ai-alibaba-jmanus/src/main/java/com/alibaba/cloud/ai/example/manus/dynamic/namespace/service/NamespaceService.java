@@ -13,33 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent;
+package com.alibaba.cloud.ai.example.manus.dynamic.namespace.service;
+
+import com.alibaba.cloud.ai.example.manus.dynamic.namespace.namespace.vo.NamespaceConfig;
 
 import java.util.List;
 
-/**
- * Interface for startup agent configuration loader
- */
-public interface IStartupAgentConfigLoader {
+public interface NamespaceService {
 
-	/**
-	 * Clear cache
-	 */
-	void clearCache();
+	List<NamespaceConfig> getAllNamespaces();
 
-	/**
-	 * Get cache size
-	 */
-	int getCacheSize();
+	NamespaceConfig getNamespaceById(String id);
 
-	/**
-	 * Load agent configuration by name
-	 */
-	StartupAgentConfigLoader.AgentConfig loadAgentConfig(String agentName);
+	NamespaceConfig createNamespace(NamespaceConfig namespaceConfig);
 
-	/**
-	 * Scan available agents
-	 */
-	List<String> scanAvailableAgents();
+	NamespaceConfig updateNamespace(NamespaceConfig namespaceConfig);
+
+	void deleteNamespace(String id);
 
 }

@@ -25,8 +25,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 /**
  * DashScope Video Generation API client.
  *
- * @author dashscope
+ * @author windWheel
+ * @author yuluo
+ * @since 1.0.0.3
  */
+
 public class DashScopeVideoApi {
 
 	private final RestClient restClient;
