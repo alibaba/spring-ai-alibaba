@@ -285,7 +285,7 @@ const formattedJsonContent = computed({
       
       // Return formatted JSON
       return JSON.stringify(filtered, null, 2)
-    } catch (_) {
+    } catch {
       // If parsing fails, return original content
       return sidebarStore.jsonContent
     }
@@ -316,7 +316,7 @@ const formattedJsonContent = computed({
       })
       
       sidebarStore.jsonContent = JSON.stringify(merged)
-    } catch (_) {
+    } catch {
       // If parsing fails, store as-is
       sidebarStore.jsonContent = value
     }

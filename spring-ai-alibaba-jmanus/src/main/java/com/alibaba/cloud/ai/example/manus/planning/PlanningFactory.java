@@ -45,6 +45,7 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
 // import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageTool;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.FileMergeTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.DataSplitTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.FinalizeTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapOutputTool;
@@ -206,6 +207,7 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, unifiedDirectoryManager));
 		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
 		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
+		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
 		// toolDefinitions.add(new GoogleSearch());
 		// toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());

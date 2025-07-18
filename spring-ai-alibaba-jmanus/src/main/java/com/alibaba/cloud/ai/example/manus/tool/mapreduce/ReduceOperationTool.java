@@ -142,6 +142,12 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 			- Read and process Map output results
 			- Aggregate, merge, or combine data from multiple Map tasks
 			- Generate final consolidated output files
+
+			**IMPORTANT TERMINATION BEHAVIOR**:
+			- append and replace operations will trigger tool termination mechanism after execution
+			- LLM should complete all content output in a single append or replace call
+			- Do NOT make multiple append or replace calls, as the tool will terminate after the first call
+			- Recommended workflow: use get_lines to review file content first, then complete final output in one operation
 			"""
 		.formatted(REDUCE_FILE_NAME, MAX_LINES_LIMIT);
 
@@ -288,8 +294,10 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 				}
 				case ACTION_APPEND -> {
 					String content = input.getContent();
-
-					yield appendToFile(REDUCE_FILE_NAME, content);
+					ToolExecuteResult appendResult = appendToFile(REDUCE_FILE_NAME, content);
+					// Mark operation as completed for termination capability after append
+					this.operationCompleted = true;
+					yield appendResult;
 				}
 				case ACTION_REPLACE -> {
 					String sourceText = input.getSourceText();
@@ -299,14 +307,15 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 						yield new ToolExecuteResult("Error: source_text and target_text parameters are required");
 					}
 
-					yield replaceInFile(REDUCE_FILE_NAME, sourceText, targetText);
+					ToolExecuteResult replaceResult = replaceInFile(REDUCE_FILE_NAME, sourceText, targetText);
+					// Mark operation as completed for termination capability after replace
+					this.operationCompleted = true;
+					yield replaceResult;
 				}
 				default -> new ToolExecuteResult("Unknown operation: " + action + ". Supported operations: "
 						+ ACTION_GET_LINES + ", " + ACTION_APPEND + ", " + ACTION_REPLACE);
 			};
 
-			// Mark operation as completed for termination capability
-			this.operationCompleted = true;
 			return result;
 
 		}
@@ -327,8 +336,12 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 			Path rootPlanDir = getPlanDirectory(rootPlanId);
 			Path filePath = rootPlanDir.resolve(fileName);
 
+			// If file doesn't exist, create it with empty content
 			if (!Files.exists(filePath)) {
-				return new ToolExecuteResult("Error: File does not exist: " + fileName);
+				ensureDirectoryExists(rootPlanDir);
+				Files.createFile(filePath);
+				log.info("File created: {}", fileName);
+				return new ToolExecuteResult("File created: " + fileName + " (empty file)");
 			}
 
 			List<String> lines = Files.readAllLines(filePath);
@@ -560,8 +573,9 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 
 	@Override
 	public boolean canTerminate() {
-		// ReduceOperationTool can be terminated after any operation has completed
-		// This allows flexible termination for various Reduce operations
+		// ReduceOperationTool can be terminated only after append or replace operations
+		// get_lines operations do not trigger termination, allowing multiple reads
+		// This ensures LLM completes all output in a single append/replace call
 		return operationCompleted;
 	}
 

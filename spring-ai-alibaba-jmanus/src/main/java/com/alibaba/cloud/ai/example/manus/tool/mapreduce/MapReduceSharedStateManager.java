@@ -303,7 +303,7 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 		sb.append("- 最后处理文件: ")
 			.append(planState.getLastProcessedFile().isEmpty() ? "无" : planState.getLastProcessedFile())
 			.append("\n");
-		sb.append("- 最后操作结果: ").append(planState.getLastOperationResult().isEmpty() ? "无" : "已完成").append("\n");
+		sb.append("- 最后操作结果: ").append(planState.getLastOperationResult().isEmpty() ? "无" : "已完成: " + planState.getLastOperationResult()).append("\n");
 		return sb.toString();
 	}
 
