@@ -181,7 +181,7 @@ public class LLMNodeSection implements NodeSection {
 		StringBuffer sb = new StringBuffer();
 		while (matcher.find()) {
 			String key = matcher.group(1);
-			matcher.appendReplacement(sb, "{" + key+ "}");
+			matcher.appendReplacement(sb, "{" + key + "}");
 		}
 		matcher.appendTail(sb);
 		return sb.toString();
