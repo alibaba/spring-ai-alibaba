@@ -16,9 +16,9 @@
 package com.alibaba.cloud.ai.dashscope.image.observation;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncReponse;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncResponse;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseOutput;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseResult;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageRequest;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
@@ -121,15 +121,15 @@ class DashScopeImageModelObservationTests {
 		DashScopeImageApi mockApi = Mockito.mock(DashScopeImageApi.class);
 
 		// mock
-		var fakeResult = new DashScopeImageAsyncReponseResult("https://example-image.url/image.png");
+		var fakeResult = new DashScopeImageAsyncResponseResult("https://example-image.url/image.png");
 
-		var output = new DashScopeImageAsyncReponseOutput("00001", "SUCCEEDED", List.of(fakeResult), null, "code",
+		var output = new DashScopeImageAsyncResponseOutput("00001", "SUCCEEDED", List.of(fakeResult), null, "code",
 				"msg");
 
-		var response = new DashScopeImageAsyncReponse("req-test", output, null);
+		var response = new DashScopeImageAsyncResponse("req-test", output, null);
 
 		Mockito.when(mockApi.submitImageGenTask(any(DashScopeImageRequest.class)))
-			.thenReturn(ResponseEntity.ok(new DashScopeImageAsyncReponse(output.taskId(), output, null)));
+			.thenReturn(ResponseEntity.ok(new DashScopeImageAsyncResponse(output.taskId(), output, null)));
 
 		Mockito.when(mockApi.getImageGenTaskResult(any(String.class))).thenReturn(ResponseEntity.ok(response));
 
