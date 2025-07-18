@@ -41,7 +41,7 @@ public class TavilySearchServiceTest {
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	public void tavilySearchTest() {
 		var resp = tavilySearchService.apply(new TavilySearchService.Request("apple", null, null, null, null, null,
-				null, null, null, null, null, null, null));
+				null, null, null, null, null, null, null, true));
 		assert resp != null && resp.results() != null;
 		log.info("results: " + resp.results());
 	}
