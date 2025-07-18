@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.prompt.repository;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.po.PromptEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
