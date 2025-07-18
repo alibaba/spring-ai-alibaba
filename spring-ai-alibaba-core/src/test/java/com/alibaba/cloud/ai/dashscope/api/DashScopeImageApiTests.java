@@ -137,22 +137,22 @@ class DashScopeImageApiTests {
 	@Test
 	void testImageResponseClasses() {
 		// Test creating image response objects
-		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult result = new DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult(
+		DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseResult result = new DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseResult(
 				"https://example.com/image.png");
 
-		List<DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult> results = Collections
+		List<DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseResult> results = Collections
 			.singletonList(result);
 
-		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseTaskMetrics metrics = new DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseTaskMetrics(
+		DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseTaskMetrics metrics = new DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseTaskMetrics(
 				1, 1, 0);
 
-		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput output = new DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput(
+		DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseOutput output = new DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseOutput(
 				"task-id", "completed", results, metrics, "200", "success");
 
-		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseUsage usage = new DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseUsage(
+		DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseUsage usage = new DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseUsage(
 				1);
 
-		DashScopeImageApi.DashScopeImageAsyncReponse response = new DashScopeImageApi.DashScopeImageAsyncReponse(
+		DashScopeImageApi.DashScopeImageAsyncResponse response = new DashScopeImageApi.DashScopeImageAsyncResponse(
 				"request-id", output, usage);
 
 		// Verify response properties
