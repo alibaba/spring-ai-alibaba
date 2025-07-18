@@ -48,9 +48,10 @@
 
         <!-- Input Area -->
         <InputArea
+          :key="$i18n.locale"
           ref="inputRef"
           :disabled="isLoading"
-          :placeholder="isLoading ? '等待任务完成...' : t('input.placeholder')"
+          :placeholder="isLoading ? t('input.waiting') : t('input.placeholder')"
           @send="handleSendMessage"
           @clear="handleInputClear"
           @focus="handleInputFocus"

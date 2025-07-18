@@ -107,6 +107,17 @@ const words: I18nType = {
       mcp: 'Tools/MCP Configuration',
       prompt: 'Dynamic Prompt Configuration',
     },
+    subGroupDisplayNames: {
+      agent: 'Agent',
+      browser: 'Browser',
+      interaction: 'Interaction',
+      system: 'System',
+      performance: 'Performance',
+      general: 'General',
+      agents: 'Multi - Agent',
+      infiniteContext: 'Infinite Context',
+      filesystem: 'File System'
+    },
     // Agent configuration page
     agentConfig: {
       title: 'Agent Configuration',
@@ -146,6 +157,8 @@ const words: I18nType = {
       loadDataFailed: 'Failed to load data',
       loadDetailsFailed: 'Failed to load agent details',
       invalidFormat: 'Invalid agent configuration format: missing required fields',
+      modelConfiguration: 'Model Configuration',
+      modelConfigurationLabel: 'Select Model',
     },
     // Model configuration page
     modelConfig: {
@@ -221,12 +234,62 @@ const words: I18nType = {
     // Basic configuration
     basicConfig: {
       title: 'Basic Configuration',
+      browserSettings: {
+        headless: 'Whether to use headless browser mode',
+        requestTimeout: 'Browser request timeout (seconds)'
+      },
+      general: {
+        debugDetail: 'Debug mode: The model will output more content to facilitate problem - finding, but it will be slower',
+        baseDir: 'Manus root directory'
+      },
+      interactionSettings: {
+        openBrowser: 'Automatically open the browser on startup'
+      },
+      agentSettings: {
+        maxSteps: 'Max Steps',
+        userInputTimeout: 'User input form waiting timeout (seconds)',
+        maxMemory: 'Maximum number of messages that can be remembered',
+        parallelToolCalls: 'Parallel tool calls'
+      },
+      agents: {
+        forceOverrideFromYaml: 'Force override of agents with the same name using the YAML configuration file'
+      },
+      infiniteContext: {
+        enabled: 'Whether to enable infinite context',
+        parallelThreads: 'Number of parallel processing threads',
+        taskContextSize: 'Character count threshold for triggering infinite context (number of characters)'
+      },
+      fileSystem: {
+        allowExternalAccess: 'Whether to allow file operations beyond the working directory'
+      },
+      systemSettings: {
+        systemName: 'System Name',
+        language: 'Language',
+        maxThreads: 'Max Threads',
+        timeoutSeconds: 'Request Timeout (seconds)'
+      },
+      totalConfigs: 'Total Configurations',
+      modified: 'Modified',
+      exportConfigs: 'Export Configurations',
+      importConfigs: 'Import Configurations',
+      search: 'Search',
+      loading: 'Loading',
+      notFound: 'No configuration items found',
+      resetGroupConfirm: 'Reset all configurations in this group to default values',
+      reset: 'Reset',
       requestTimeout: 'Request timeout (seconds)',
       browserTimeout: 'Browser request timeout (seconds)',
       loadConfigFailed: 'Failed to load configuration, please refresh and try again',
       saveFailed: 'Save failed, please try again',
       resetFailed: 'Reset failed, please try again',
       importFailed: 'Import failed, please check file format',
+      groupDisplayNames: {
+        manus: 'Manus',
+        browser: 'Browser',
+        interaction: 'Interaction',
+        system: 'System',
+        performance: 'Performance',
+      },
     },
     promptConfig: {
       title: 'Dynamic Prompt Configuration',
@@ -302,6 +365,7 @@ const words: I18nType = {
   // Model Configuration
   model: {
     title: 'Model Configuration',
+    switch: 'Switch Model',
     name: 'Model Name',
     description: 'Description',
     addModel: 'Add Model',
