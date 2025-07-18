@@ -34,7 +34,7 @@
     "markdown-it-mathjax3": "^4.3.2",
     "monaco-editor": "^0.45.0",
     "nprogress": "^0.2.0",
-    "pinia": "^2.3.1",
+    "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.4.0",
     "uuid": "^11.1.0",
     "vue": "^3.3.8",
