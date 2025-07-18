@@ -138,7 +138,7 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify response
 		assertThat(response).isNotNull();
-		assertThat(response.getResult().getOutput().getText()).isEqualTo(TEST_RESPONSE);
+		assertThat(response.result().getOutput().getText()).isEqualTo(TEST_RESPONSE);
 	}
 
 	/**
@@ -173,7 +173,7 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify response
 		assertThat(response).isNotNull();
-		assertThat(response.getResult().getOutput().getText()).isEqualTo(TEST_RESPONSE);
+		assertThat(response.result().getOutput().getText()).isEqualTo(TEST_RESPONSE);
 	}
 
 	/**
@@ -211,7 +211,7 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify response
 		assertThat(response).isNotNull();
-		assertThat(response.getResult().getOutput().getText()).isEqualTo(TEST_VIDEO_RESPONSE);
+		assertThat(response.result().getOutput().getText()).isEqualTo(TEST_VIDEO_RESPONSE);
 	}
 
 	/**
@@ -250,7 +250,7 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify response
 		assertThat(response).isNotNull();
-		assertThat(response.getResult().getOutput().getText()).isEqualTo(TEST_AUDIO_RESPONSE);
+		assertThat(response.result().getOutput().getText()).isEqualTo(TEST_AUDIO_RESPONSE);
 	}
 
 	/**
@@ -292,9 +292,9 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify streaming response
 		StepVerifier.create(responseFlux).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("图片中是一个");
+			assertThat(response.result().getOutput().getText()).isEqualTo("图片中是一个");
 		}).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("小女孩和一只狗在户外。");
+			assertThat(response.result().getOutput().getText()).isEqualTo("小女孩和一只狗在户外。");
 		}).verifyComplete();
 	}
 
@@ -334,8 +334,8 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify response
 		assertThat(response).isNotNull();
-		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-		System.out.println("Image URL Response: " + response.getResult().getOutput().getText());
+		assertThat(response.result().getOutput().getText()).isNotEmpty();
+		System.out.println("Image URL Response: " + response.result().getOutput().getText());
 	}
 
 	/**
@@ -370,8 +370,8 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify response
 		assertThat(response).isNotNull();
-		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-		System.out.println("Binary Image Response: " + response.getResult().getOutput().getText());
+		assertThat(response.result().getOutput().getText()).isNotEmpty();
+		System.out.println("Binary Image Response: " + response.result().getOutput().getText());
 	}
 
 	/**
@@ -409,8 +409,8 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify response
 		assertThat(response).isNotNull();
-		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-		System.out.println("Video Frames Response: " + response.getResult().getOutput().getText());
+		assertThat(response.result().getOutput().getText()).isNotEmpty();
+		System.out.println("Video Frames Response: " + response.result().getOutput().getText());
 	}
 
 	/**
@@ -446,8 +446,8 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify response
 		assertThat(response).isNotNull();
-		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-		System.out.println("Audio Frames Response: " + response.getResult().getOutput().getText());
+		assertThat(response.result().getOutput().getText()).isNotEmpty();
+		System.out.println("Audio Frames Response: " + response.result().getOutput().getText());
 	}
 
 	/**
@@ -485,7 +485,7 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify streaming response
 		responseFlux.doOnNext(response -> {
-			String content = response.getResult().getOutput().getText();
+			String content = response.result().getOutput().getText();
 			System.out.println("Streaming chunk: " + content);
 			responseBuilder.get().append(content);
 		}).blockLast(Duration.ofSeconds(30));
@@ -528,8 +528,8 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify response
 		assertThat(response).isNotNull();
-		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-		System.out.println("Image Analysis Response: " + response.getResult().getOutput().getText());
+		assertThat(response.result().getOutput().getText()).isNotEmpty();
+		System.out.println("Image Analysis Response: " + response.result().getOutput().getText());
 	}
 
 }

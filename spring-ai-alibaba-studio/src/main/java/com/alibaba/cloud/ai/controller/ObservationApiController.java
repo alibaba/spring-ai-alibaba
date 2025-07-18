@@ -87,7 +87,7 @@ public class ObservationApiController {
 
 	@GetMapping("/chatModel")
 	R<String> chatModel(String input) {
-		var reply = chatModel.call(new Prompt(input)).getResult().getOutput().getText();
+		var reply = chatModel.call(new Prompt(input)).result().getOutput().getText();
 		return R.success(reply);
 	}
 

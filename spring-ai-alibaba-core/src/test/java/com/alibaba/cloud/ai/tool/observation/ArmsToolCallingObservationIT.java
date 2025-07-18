@@ -246,7 +246,7 @@ public class ArmsToolCallingObservationIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+		assertThat(response.result().getOutput().getText()).contains("30", "10", "15");
 
 		validate();
 	}

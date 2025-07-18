@@ -143,7 +143,7 @@ public class DashScopeImageModel implements ImageModel {
 	@Override
 	public ImageResponse call(ImagePrompt request) {
 		Assert.notNull(request, "Prompt must not be null");
-		Assert.isTrue(!CollectionUtils.isEmpty(request.getInstructions()), "Prompt messages must " + "not be empty");
+		Assert.isTrue(!CollectionUtils.isEmpty(request.getInstructions()), "Prompt messages must not be empty");
 
 		String taskId = submitImageGenTask(request);
 		if (taskId == null) {
@@ -170,11 +170,12 @@ public class DashScopeImageModel implements ImageModel {
 				observation.lowCardinalityKeyValue("task.status", status);
 
 				switch (status) {
-					case "SUCCEEDED":
+					case "SUCCEEDED" -> {
 						return toImageResponse(resp);
-					case "FAILED":
-					case "UNKNOWN":
+					}
+					case "FAILED", "UNKNOWN" -> {
 						return new ImageResponse(List.of(), toMetadata(resp));
+					}
 				}
 			}
 			throw new RuntimeException("Image generation still pending");

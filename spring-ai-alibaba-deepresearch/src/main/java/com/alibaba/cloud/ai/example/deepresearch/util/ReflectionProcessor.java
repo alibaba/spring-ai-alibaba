@@ -117,7 +117,7 @@ public class ReflectionProcessor {
 		try {
 			var response = reflectionAgent.prompt(converter.getFormat()).user(evaluationPrompt).call().chatResponse();
 
-			String responseText = response.getResult().getOutput().getText().trim();
+			String responseText = response.result().getOutput().getText().trim();
 			ReflectionResult reflectionResult = converter.convert(responseText);
 
 			// Add execution result to reflection record

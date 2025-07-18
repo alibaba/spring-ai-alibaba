@@ -97,7 +97,7 @@ public class CalculateAgent implements NodeAction {
 			.chatResponse();
 
 		Map<String, Object> updatedState = new HashMap<>();
-		updatedState.put(SOLUTION, response.getResult().getOutput().getText());
+		updatedState.put(SOLUTION, response.result().getOutput().getText());
 		return updatedState;
 	}
 

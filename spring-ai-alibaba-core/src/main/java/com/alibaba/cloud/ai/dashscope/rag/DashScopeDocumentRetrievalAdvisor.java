@@ -163,7 +163,7 @@ public class DashScopeDocumentRetrievalAdvisor implements BaseAdvisor {
 		}
 		else {
 			chatResponseBuilder = ChatResponse.builder().from(response.chatResponse());
-			var result = response.chatResponse().getResult();
+			var result = response.chatResponse().result();
 			if (enableReference) {
 				ChatCompletionFinishReason finishReason = ChatCompletionFinishReason
 					.valueOf(result.getMetadata().getFinishReason());

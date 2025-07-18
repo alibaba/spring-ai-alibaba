@@ -131,7 +131,7 @@ public class ParameterParsingNode implements NodeAction {
 			.call()
 			.chatResponse();
 
-		String rawJson = response.getResult().getOutput().getText();
+		String rawJson = response.result().getOutput().getText();
 		ObjectMapper mapper = new ObjectMapper();
 		Map<String, Object> updateState = new HashMap<>();
 		try {

@@ -108,7 +108,7 @@ public class PlanCreator {
 							.build());
 					}
 					ChatClient.CallResponseSpec response = requestSpec.call();
-					outputText = response.chatResponse().getResult().getOutput().getText();
+					outputText = response.chatResponse().result().getOutput().getText();
 
 					executionPlan = planningTool.getCurrentPlan();
 

@@ -86,7 +86,7 @@ class RerankResponseTests {
 		RerankResponse response = new RerankResponse(new ArrayList<>());
 
 		// Verify null is returned when documents list is empty
-		assertThat(response.getResult()).isNull();
+		assertThat(response.result()).isNull();
 	}
 
 	@Test
@@ -95,7 +95,7 @@ class RerankResponseTests {
 		RerankResponse response = new RerankResponse(documents);
 
 		// Verify first document is returned
-		assertThat(response.getResult()).isEqualTo(documents.get(0));
+		assertThat(response.result()).isEqualTo(documents.get(0));
 	}
 
 	@Test

@@ -69,7 +69,7 @@ public class CoordinatorNode implements NodeAction {
 
 		// 获取 assistant 消息内容
 		assert response != null;
-		AssistantMessage assistantMessage = response.getResult().getOutput();
+		AssistantMessage assistantMessage = response.result().getOutput();
 		// 判断是否触发工具调用
 		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
 			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
@@ -77,7 +77,7 @@ public class CoordinatorNode implements NodeAction {
 		}
 		else {
 			logger.warn("❌ 未触发工具调用");
-			logger.debug("Coordinator response: {}", response.getResult());
+			logger.debug("Coordinator response: {}", response.result());
 			updated.put("output", assistantMessage.getText());
 		}
 		updated.put("coordinator_next_node", nextStep);

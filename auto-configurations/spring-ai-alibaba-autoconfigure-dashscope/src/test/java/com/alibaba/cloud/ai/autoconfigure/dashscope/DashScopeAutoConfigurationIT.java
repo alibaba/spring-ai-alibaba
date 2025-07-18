@@ -96,7 +96,7 @@ public class DashScopeAutoConfigurationIT {
 							DashScopeAudioSpeechOptions.builder()
 								.responseFormat(DashScopeAudioSpeechApi.ResponseFormat.MP3)
 								.build()))
-					.getResult()
+					.result()
 					.getOutput()
 					.getAudio()
 					.array();
@@ -138,7 +138,7 @@ public class DashScopeAutoConfigurationIT {
 					.stream()
 					.map(chatResponse -> {
 						streamingTokenUsage[0] = chatResponse.getMetadata().getUsage();
-						return (chatResponse.getResult() != null) ? chatResponse.getResult().getOutput().getText() : "";
+						return (chatResponse.result() != null) ? chatResponse.result().getOutput().getText() : "";
 					})
 					.collect(Collectors.joining());
 
@@ -198,10 +198,10 @@ public class DashScopeAutoConfigurationIT {
 			.run(context -> {
 				DashScopeImageModel imageModel = context.getBean(DashScopeImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("tree"));
-				System.out.println(imageResponse.getResult().getOutput().getUrl());
+				System.out.println(imageResponse.result().getOutput().getUrl());
 				assertThat(imageResponse.getResults()).hasSize(1);
-				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+				assertThat(imageResponse.result().getOutput().getUrl()).isNotEmpty();
+				logger.info("Generated image: " + imageResponse.result().getOutput().getUrl());
 			});
 	}
 
@@ -215,8 +215,8 @@ public class DashScopeAutoConfigurationIT {
 				DashScopeImageModel imageModel = context.getBean(DashScopeImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("tree"));
 				assertThat(imageResponse.getResults()).hasSize(1);
-				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+				assertThat(imageResponse.result().getOutput().getUrl()).isNotEmpty();
+				logger.info("Generated image: " + imageResponse.result().getOutput().getUrl());
 			});
 	}
 

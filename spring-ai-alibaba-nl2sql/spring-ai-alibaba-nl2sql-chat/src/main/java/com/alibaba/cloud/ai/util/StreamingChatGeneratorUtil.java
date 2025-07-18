@@ -356,9 +356,7 @@ public class StreamingChatGeneratorUtil {
 
 		private StreamResponseType type = StreamResponseType.EXPLANATION;
 
-		private Function<ChatResponse, String> contentExtractor = response -> response.getResult()
-			.getOutput()
-			.getText();
+		private Function<ChatResponse, String> contentExtractor = response -> response.result().getOutput().getText();
 
 		private String nodeName;
 
@@ -484,8 +482,8 @@ public class StreamingChatGeneratorUtil {
 							collectedResult.append(content);
 						}
 						// Send response to stream for user viewing
-						emitter.next(ChatResponseUtil.createStatusResponse(response.getResult().getOutput().getText(),
-								type));
+						emitter
+							.next(ChatResponseUtil.createStatusResponse(response.result().getOutput().getText(), type));
 					}).doOnComplete(() -> {
 						// 3. Send completion message
 						if (completionMessage != null && !completionMessage.isEmpty()) {

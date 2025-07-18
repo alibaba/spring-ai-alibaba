@@ -114,9 +114,9 @@ class DashScopeChatModelTests {
 
 		// Verify results
 		assertThat(response).isNotNull();
-		assertThat(response.getResult()).isNotNull();
-		assertThat(response.getResult().getOutput()).isInstanceOf(AssistantMessage.class);
-		assertThat(response.getResult().getOutput().getText()).isEqualTo(TEST_RESPONSE);
+		assertThat(response.result()).isNotNull();
+		assertThat(response.result().getOutput()).isInstanceOf(AssistantMessage.class);
+		assertThat(response.result().getOutput().getText()).isEqualTo(TEST_RESPONSE);
 		assertThat(response.getMetadata().getId()).isEqualTo(TEST_REQUEST_ID);
 	}
 
@@ -152,11 +152,11 @@ class DashScopeChatModelTests {
 
 		// Verify results
 		StepVerifier.create(responseFlux).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("I'm ");
+			assertThat(response.result().getOutput().getText()).isEqualTo("I'm ");
 		}).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("doing ");
+			assertThat(response.result().getOutput().getText()).isEqualTo("doing ");
 		}).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("well!");
+			assertThat(response.result().getOutput().getText()).isEqualTo("well!");
 			assertThat(response.getMetadata().getUsage()).isNotNull();
 		}).verifyComplete();
 	}
@@ -406,7 +406,7 @@ class DashScopeChatModelTests {
 		ChatResponse response = chatModel.call(prompt);
 
 		assertThat(response).isNotNull();
-		assertThat(response.getResult().getOutput().getText()).isEqualTo("It's sunny today!");
+		assertThat(response.result().getOutput().getText()).isEqualTo("It's sunny today!");
 	}
 
 	// @Test

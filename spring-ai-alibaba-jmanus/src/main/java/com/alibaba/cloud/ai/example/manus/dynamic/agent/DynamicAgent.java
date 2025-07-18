@@ -190,8 +190,8 @@ public class DynamicAgent extends ReActAgent {
 			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
 			String modelName = response.getMetadata().getModel();
 
-			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
-			String responseByLLm = response.getResult().getOutput().getText();
+			List<ToolCall> toolCalls = response.result().getOutput().getToolCalls();
+			String responseByLLm = response.result().getOutput().getText();
 
 			log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
 			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
@@ -262,7 +262,7 @@ public class DynamicAgent extends ReActAgent {
 		List<ThinkActRecord.ActToolInfo> actToolInfoList = null;
 
 		try {
-			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
+			List<ToolCall> toolCalls = response.result().getOutput().getToolCalls();
 
 			// 创建 ActToolInfo 列表
 			actToolInfoList = createActToolInfoList(toolCalls);
@@ -327,9 +327,9 @@ public class DynamicAgent extends ReActAgent {
 			log.info("Exception occurred", e);
 
 			// 记录失败的动作结果
-			if (actToolInfoList == null && response != null && response.getResult() != null
-					&& response.getResult().getOutput() != null) {
-				List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
+			if (actToolInfoList == null && response != null && response.result() != null
+					&& response.result().getOutput() != null) {
+				List<ToolCall> toolCalls = response.result().getOutput().getToolCalls();
 				if (!toolCalls.isEmpty()) {
 					actToolInfoList = createActToolInfoList(toolCalls);
 				}

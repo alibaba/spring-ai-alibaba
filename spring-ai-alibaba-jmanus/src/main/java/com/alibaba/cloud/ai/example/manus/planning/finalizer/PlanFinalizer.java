@@ -94,7 +94,7 @@ public class PlanFinalizer {
 			}
 			ChatResponse response = requestSpec.call().chatResponse();
 
-			String summary = response.getResult().getOutput().getText();
+			String summary = response.result().getOutput().getText();
 			context.setResultSummary(summary);
 
 			recordPlanCompletion(context, summary);

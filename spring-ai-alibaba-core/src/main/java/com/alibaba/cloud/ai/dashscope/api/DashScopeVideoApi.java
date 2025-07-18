@@ -13,14 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.dashscope.api;
 
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ModelResult;
+import org.springframework.ai.model.NoopApiKey;
+import org.springframework.ai.model.ResultMetadata;
+import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.function.Consumer;
+
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.ENABLED;
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.HEADER_ASYNC;
 
 /**
  * DashScope Video Generation API client.
@@ -32,24 +48,55 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 public class DashScopeVideoApi {
 
-	private final RestClient restClient;
+	public static final String DEFAULT_VIDEO_MODEL = VideoModel.WANX2_1_I2V_TURBO.getValue();
 
-	private final WebClient webClient;
+	private final String baseUrl;
+
+	private final ApiKey apiKey;
+
+	private final RestClient restClient;
 
 	private final ResponseErrorHandler responseErrorHandler;
 
-	public DashScopeVideoApi(RestClient restClient, WebClient webClient, ResponseErrorHandler responseErrorHandler) {
-		this.restClient = restClient;
-		this.webClient = webClient;
+	public Builder mutate() {
+		return new Builder(this);
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public DashScopeVideoApi(String baseUrl, ApiKey apiKey, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
+
+		this.baseUrl = baseUrl;
+		this.apiKey = apiKey;
 		this.responseErrorHandler = responseErrorHandler;
+
+		// Check API Key in headers.
+		Consumer<HttpHeaders> finalHeaders = h -> {
+			if (!(apiKey instanceof NoopApiKey)) {
+				h.setBearerAuth(apiKey.getValue());
+			}
+
+			h.setContentType(MediaType.APPLICATION_JSON);
+			h.set(HEADER_ASYNC, ENABLED);
+		};
+
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
+			.defaultHeaders(finalHeaders)
+			.defaultStatusHandler(responseErrorHandler)
+			.build();
 	}
 
 	/**
 	 * Submit video generation task.
 	 */
-	public ResponseEntity<VideoGenerationResponse> submitTask(VideoGenerationRequest request) {
+	public ResponseEntity<VideoGenerationResponse> submitVideoGenTask(VideoGenerationRequest request) {
+
 		return this.restClient.post()
-			.uri("/api/v1/services/aigc/text2video/generation")
+			.uri("/api/v1/services/aigc/video-generation/video-synthesis")
 			.body(request)
 			.retrieve()
 			.toEntity(VideoGenerationResponse.class);
@@ -58,9 +105,9 @@ public class DashScopeVideoApi {
 	/**
 	 * Query video generation task status.
 	 */
-	public ResponseEntity<VideoGenerationResponse> queryTask(String taskId) {
+	public ResponseEntity<VideoGenerationResponse> queryVideoGenTask(String taskId) {
 		return this.restClient.get()
-			.uri("/api/v1/services/aigc/text2video/generation/{taskId}", taskId)
+			.uri("/api/v1/tasks/{taskId}", taskId)
 			.retrieve()
 			.toEntity(VideoGenerationResponse.class);
 	}
@@ -79,9 +126,6 @@ public class DashScopeVideoApi {
 
 		@JsonProperty("parameters")
 		private VideoParameters parameters;
-
-		public VideoGenerationRequest() {
-		}
 
 		public VideoGenerationRequest(String model, VideoInput input, VideoParameters parameters) {
 			this.model = model;
@@ -122,11 +166,89 @@ public class DashScopeVideoApi {
 			@JsonProperty("prompt")
 			private String prompt;
 
-			public VideoInput() {
-			}
+			/**
+			 * Reverse prompt words are used to describe content that you do not want to
+			 * see in the video screen, and can limit the video screen.
+			 */
+			@JsonProperty("negative_prompt ")
+			private String negativePrompt;
+
+			@JsonProperty("image_url")
+			private String imageUrl;
+
+			@JsonProperty("template")
+			private String template;
+
+			@JsonProperty("first_frame_url ")
+			private String firstFrameUrl;
+
+			@JsonProperty("last_frame_url ")
+			private String lastFrameUrl;
 
 			public VideoInput(String prompt) {
 				this.prompt = prompt;
+			}
+
+			public VideoInput(String prompt, String negativePrompt) {
+				this.prompt = prompt;
+				this.negativePrompt = negativePrompt;
+			}
+
+			public VideoInput(String prompt, String negativePrompt, String imageUrl, String template) {
+				this.prompt = prompt;
+				this.negativePrompt = negativePrompt;
+				this.imageUrl = imageUrl;
+				this.template = template;
+			}
+
+			public VideoInput(String prompt, String negativePrompt, String imageUrl, String template,
+					String firstFrameUrl, String lastFrameUrl) {
+				this.prompt = prompt;
+				this.negativePrompt = negativePrompt;
+				this.imageUrl = imageUrl;
+				this.template = template;
+				this.firstFrameUrl = firstFrameUrl;
+				this.lastFrameUrl = lastFrameUrl;
+			}
+
+			public String getFirstFrameUrl() {
+				return firstFrameUrl;
+			}
+
+			public void setFirstFrameUrl(String firstFrameUrl) {
+				this.firstFrameUrl = firstFrameUrl;
+			}
+
+			public String getLastFrameUrl() {
+				return lastFrameUrl;
+			}
+
+			public void setLastFrameUrl(String lastFrameUrl) {
+				this.lastFrameUrl = lastFrameUrl;
+			}
+
+			public String getNegativePrompt() {
+				return this.negativePrompt;
+			}
+
+			public void setNegativePrompt(String negativePrompt) {
+				this.negativePrompt = negativePrompt;
+			}
+
+			public String getImageUrl() {
+				return imageUrl;
+			}
+
+			public void setImageUrl(String imageUrl) {
+				this.imageUrl = imageUrl;
+			}
+
+			public String getTemplate() {
+				return template;
+			}
+
+			public void setTemplate(String template) {
+				this.template = template;
 			}
 
 			public String getPrompt() {
@@ -137,6 +259,63 @@ public class DashScopeVideoApi {
 				this.prompt = prompt;
 			}
 
+			public static Builder builder() {
+				return new Builder();
+			}
+
+			public static class Builder {
+
+				private String prompt;
+
+				private String negativePrompt;
+
+				private String imageUrl;
+
+				private String template;
+
+				private String firstFrameUrl;
+
+				private String lastFrameUrl;
+
+				public Builder() {
+				}
+
+				public Builder prompt(String prompt) {
+					this.prompt = prompt;
+					return this;
+				}
+
+				public Builder negativePrompt(String negativePrompt) {
+					this.negativePrompt = negativePrompt;
+					return this;
+				}
+
+				public Builder imageUrl(String imageUrl) {
+					this.imageUrl = imageUrl;
+					return this;
+				}
+
+				public Builder template(String template) {
+					this.template = template;
+					return this;
+				}
+
+				public Builder firstFrameUrl(String firstFrameUrl) {
+					this.firstFrameUrl = firstFrameUrl;
+					return this;
+				}
+
+				public Builder lastFrameUrl(String lastFrameUrl) {
+					this.lastFrameUrl = lastFrameUrl;
+					return this;
+				}
+
+				public VideoInput build() {
+					return new VideoInput(prompt, negativePrompt, imageUrl, template, firstFrameUrl, lastFrameUrl);
+				}
+
+			}
+
 		}
 
 		/**
@@ -145,51 +324,45 @@ public class DashScopeVideoApi {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public static class VideoParameters {
 
-			@JsonProperty("width")
-			private Integer width;
+			@JsonProperty("resolution")
+			private String resolution;
 
-			@JsonProperty("height")
-			private Integer height;
+			@JsonProperty("size")
+			private String size;
 
 			@JsonProperty("duration")
 			private Integer duration;
 
-			@JsonProperty("fps")
-			private Integer fps;
-
+			/**
+			 * Random number seeds are used to control the randomness of the content
+			 * generated by the model. The value range is [0, 2147483647].
+			 */
 			@JsonProperty("seed")
 			private Long seed;
 
-			@JsonProperty("num_frames")
-			private Integer numFrames;
+			/**
+			 * Whether to enable propt intelligent rewriting. After turning on, use the
+			 * big model to intelligently rewrite the input propt. The generation effect
+			 * of shorter propts is significantly improved, but it will increase
+			 * time-consuming.
+			 */
+			@JsonProperty("prompt_extend ")
+			private Boolean promptExtend;
 
-			public VideoParameters() {
-			}
-
-			public VideoParameters(Integer width, Integer height, Integer duration, Integer fps, Long seed,
-					Integer numFrames) {
-				this.width = width;
-				this.height = height;
-				this.duration = duration;
-				this.fps = fps;
+			public VideoParameters(String size, Integer duration, Long seed, String resolution, Boolean promptExtend) {
+				this.promptExtend = promptExtend;
+				this.resolution = resolution;
+				this.size = size;
 				this.seed = seed;
-				this.numFrames = numFrames;
+				this.duration = duration;
 			}
 
-			public Integer getWidth() {
-				return this.width;
+			public String getResolution() {
+				return resolution;
 			}
 
-			public void setWidth(Integer width) {
-				this.width = width;
-			}
-
-			public Integer getHeight() {
-				return this.height;
-			}
-
-			public void setHeight(Integer height) {
-				this.height = height;
+			public void setResolution(String resolution) {
+				this.resolution = resolution;
 			}
 
 			public Integer getDuration() {
@@ -200,14 +373,6 @@ public class DashScopeVideoApi {
 				this.duration = duration;
 			}
 
-			public Integer getFps() {
-				return this.fps;
-			}
-
-			public void setFps(Integer fps) {
-				this.fps = fps;
-			}
-
 			public Long getSeed() {
 				return this.seed;
 			}
@@ -216,14 +381,148 @@ public class DashScopeVideoApi {
 				this.seed = seed;
 			}
 
-			public Integer getNumFrames() {
-				return this.numFrames;
+			public Boolean getPromptExtend() {
+				return this.promptExtend;
 			}
 
-			public void setNumFrames(Integer numFrames) {
-				this.numFrames = numFrames;
+			public void setPromptExtend(Boolean promptExtend) {
+				this.promptExtend = promptExtend;
 			}
 
+			public String getSize() {
+				return this.size;
+			}
+
+			public void setSize(String size) {
+				this.size = size;
+			}
+
+			public static Builder builder() {
+				return new Builder();
+			}
+
+			public static class Builder {
+
+				private String size;
+
+				private Integer duration;
+
+				private Long seed;
+
+				private Boolean promptExtend;
+
+				private String resolution;
+
+				public Builder() {
+				}
+
+				public Builder size(String size) {
+					this.size = size;
+					return this;
+				}
+
+				public Builder duration(Integer duration) {
+					this.duration = duration;
+					return this;
+				}
+
+				public Builder seed(Long seed) {
+					this.seed = seed;
+					return this;
+				}
+
+				public Builder promptExtend(Boolean promptExtend) {
+					this.promptExtend = promptExtend;
+					return this;
+				}
+
+				public Builder resolution(String resolution) {
+					this.resolution = resolution;
+					return this;
+				}
+
+				public VideoParameters build() {
+					return new VideoParameters(this.size, this.duration, this.seed, this.resolution, this.promptExtend);
+				}
+
+			}
+
+		}
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static final class Builder {
+
+			private String model;
+
+			private VideoInput input;
+
+			private VideoParameters parameters;
+
+			public Builder() {
+			}
+
+			public Builder model(String model) {
+				this.model = model;
+				return this;
+			}
+
+			public Builder input(VideoInput input) {
+				this.input = input;
+				return this;
+			}
+
+			public Builder parameters(VideoParameters parameters) {
+				this.parameters = parameters;
+				return this;
+			}
+
+			public VideoGenerationRequest build() {
+				return new VideoGenerationRequest(this.model, this.input, this.parameters);
+			}
+
+		}
+
+	}
+
+	/**
+	 * https://help.aliyun.com/zh/model-studio/text-to-video-api-reference
+	 */
+	public enum VideoModel implements ModelDescription {
+
+		/**
+		 * Generate videos based on the first frame, the generation speed is faster, and
+		 * it takes only one-third of the plus model, and it has a higher
+		 * cost-effectiveness.
+		 */
+		WANX2_1_I2V_TURBO("wanx2.1-i2v-turbo"),
+
+		/**
+		 * Generate videos based on the first frame, Generate more details and more
+		 * textured pictures.
+		 */
+		WANX2_1_I2V_PLUS("wanx2.1-i2v-plus"),
+
+		/**
+		 * Generate video based on the beginning and end frames
+		 */
+		WANX2_1_KF2V_PLUS("wanx2.1-kf2v-plus");
+
+		public final String value;
+
+		VideoModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+		@Override
+		public String getName() {
+			return this.value;
 		}
 
 	}
@@ -232,16 +531,10 @@ public class DashScopeVideoApi {
 	 * Video generation response.
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public static class VideoGenerationResponse {
+	public static class VideoGenerationResponse implements ModelResult<VideoGenerationResponse.VideoOutput> {
 
 		@JsonProperty("request_id")
 		private String requestId;
-
-		@JsonProperty("code")
-		private String code;
-
-		@JsonProperty("message")
-		private String message;
 
 		@JsonProperty("output")
 		private VideoOutput output;
@@ -252,6 +545,14 @@ public class DashScopeVideoApi {
 		public VideoGenerationResponse() {
 		}
 
+		public VideoUsage getUsage() {
+			return usage;
+		}
+
+		public void setUsage(VideoUsage usage) {
+			this.usage = usage;
+		}
+
 		public String getRequestId() {
 			return this.requestId;
 		}
@@ -260,36 +561,60 @@ public class DashScopeVideoApi {
 			this.requestId = requestId;
 		}
 
-		public String getCode() {
-			return this.code;
-		}
-
-		public void setCode(String code) {
-			this.code = code;
-		}
-
-		public String getMessage() {
-			return this.message;
-		}
-
-		public void setMessage(String message) {
-			this.message = message;
-		}
-
 		public VideoOutput getOutput() {
 			return this.output;
+		}
+
+		@Override
+		public ResultMetadata getMetadata() {
+
+			// todo: add metadata
+			return null;
 		}
 
 		public void setOutput(VideoOutput output) {
 			this.output = output;
 		}
 
-		public VideoUsage getUsage() {
-			return this.usage;
-		}
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		public static class VideoUsage {
 
-		public void setUsage(VideoUsage usage) {
-			this.usage = usage;
+			@JsonProperty("video_duration")
+			private Integer videoDuration;
+
+			@JsonProperty("video_ratio")
+			private String videoRatio;
+
+			@JsonProperty("video_count")
+			private Integer videoCount;
+
+			public VideoUsage() {
+			}
+
+			public Integer getVideoDuration() {
+				return this.videoDuration;
+			}
+
+			public void setVideoDuration(Integer videoDuration) {
+				this.videoDuration = videoDuration;
+			}
+
+			public String getVideoRatio() {
+				return this.videoRatio;
+			}
+
+			public void setVideoRatio(String videoRatio) {
+				this.videoRatio = videoRatio;
+			}
+
+			public Integer getVideoCount() {
+				return this.videoCount;
+			}
+
+			public void setVideoCount(Integer videoCount) {
+				this.videoCount = videoCount;
+			}
+
 		}
 
 		/**
@@ -304,8 +629,29 @@ public class DashScopeVideoApi {
 			@JsonProperty("task_status")
 			private String taskStatus;
 
-			@JsonProperty("results")
-			private VideoResult[] results;
+			@JsonProperty("submit_time")
+			private String submitTimes;
+
+			@JsonProperty("end_time")
+			private String endTime;
+
+			@JsonProperty("scheduled_time")
+			private String scheduledTime;
+
+			@JsonProperty("video_url")
+			private String videoUrl;
+
+			@JsonProperty("orig_prompt ")
+			private String origPrompt;
+
+			@JsonProperty("actual_prompt ")
+			private String actualPrompt;
+
+			@JsonProperty("code")
+			private String code;
+
+			@JsonProperty("message")
+			private String message;
 
 			public VideoOutput() {
 			}
@@ -326,69 +672,263 @@ public class DashScopeVideoApi {
 				this.taskStatus = taskStatus;
 			}
 
-			public VideoResult[] getResults() {
-				return this.results;
+			public String getSubmitTimes() {
+				return this.submitTimes;
 			}
 
-			public void setResults(VideoResult[] results) {
-				this.results = results;
+			public void setSubmitTimes(String submitTimes) {
+				this.submitTimes = submitTimes;
 			}
 
-			/**
-			 * Video result.
-			 */
-			@JsonInclude(JsonInclude.Include.NON_NULL)
-			public static class VideoResult {
+			public String getEndTime() {
+				return this.endTime;
+			}
 
-				@JsonProperty("url")
-				private String url;
+			public void setEndTime(String endTime) {
+				this.endTime = endTime;
+			}
 
-				@JsonProperty("video_url")
-				private String videoUrl;
+			public String getScheduledTime() {
+				return this.scheduledTime;
+			}
 
-				public VideoResult() {
-				}
+			public void setScheduledTime(String scheduledTime) {
+				this.scheduledTime = scheduledTime;
+			}
 
-				public String getUrl() {
-					return this.url;
-				}
+			public String getVideoUrl() {
+				return this.videoUrl;
+			}
 
-				public void setUrl(String url) {
-					this.url = url;
-				}
+			public void setVideoUrl(String videoUrl) {
+				this.videoUrl = videoUrl;
+			}
 
-				public String getVideoUrl() {
-					return this.videoUrl;
-				}
+			public String getOrigPrompt() {
+				return this.origPrompt;
+			}
 
-				public void setVideoUrl(String videoUrl) {
-					this.videoUrl = videoUrl;
-				}
+			public void setOrigPrompt(String origPrompt) {
+				this.origPrompt = origPrompt;
+			}
 
+			public String getActualPrompt() {
+				return this.actualPrompt;
+			}
+
+			public void setActualPrompt(String actualPrompt) {
+				this.actualPrompt = actualPrompt;
+			}
+
+			public String getCode() {
+				return this.code;
+			}
+
+			public void setCode(String code) {
+				this.code = code;
+			}
+
+			public String getMessage() {
+				return this.message;
+			}
+
+			public void setMessage(String message) {
+				this.message = message;
 			}
 
 		}
 
+	}
+
+	public enum VideoTemplate {
+
+		// 通用特效
+
 		/**
-		 * Video usage.
+		 * 解压捏捏
 		 */
-		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public static class VideoUsage {
+		SQUISH("squish"),
 
-			@JsonProperty("total_tokens")
-			private Integer totalTokens;
+		/**
+		 * 戳戳乐
+		 */
+		POKE("poke"),
 
-			public VideoUsage() {
-			}
+		/**
+		 * 转圈圈
+		 */
+		ROTATION("rotation"),
 
-			public Integer getTotalTokens() {
-				return this.totalTokens;
-			}
+		/**
+		 * 气球膨胀
+		 */
+		INFLATE("inflate"),
 
-			public void setTotalTokens(Integer totalTokens) {
-				this.totalTokens = totalTokens;
-			}
+		/**
+		 * 分子扩散
+		 */
+		DISSOLVE("dissolve"),
 
+		// 单人特效
+
+		/**
+		 * 时光木马
+		 */
+		CAROUSEL("carousel"),
+
+		/**
+		 * 爱你哟
+		 */
+		SINGLEHEART("singleheart"),
+
+		/**
+		 * 摇摆时刻
+		 */
+		DANCE1("dance1"),
+
+		/**
+		 * 头号甩舞
+		 */
+		DANCE2("dance2"),
+
+		/**
+		 * 星摇时刻
+		 */
+		DANCE3("dance3"),
+
+		/**
+		 * 人鱼觉醒
+		 */
+		MERMAID("mermaid"),
+
+		/**
+		 * 学术加冕
+		 */
+		GRADUATION("graduation"),
+
+		/**
+		 * 巨兽追袭
+		 */
+		DEAGON("dragon"),
+
+		/**
+		 * 财从天降
+		 */
+		MONEY("money"),
+
+		// 单人或动物特效
+
+		/**
+		 * 魔法悬浮
+		 */
+		FLYING("flying"),
+
+		/**
+		 * 赠人玫瑰
+		 */
+		ROSE("rose"),
+
+		/**
+		 * 闪亮玫瑰
+		 */
+		CRYSTALROSE("crystalrose"),
+
+		// 双人特效
+
+		/**
+		 * 爱的抱抱
+		 */
+		HUG("hug"),
+
+		/**
+		 * 唇齿相依
+		 */
+		FRENCHKISS("frenchkiss"),
+
+		/**
+		 * 双倍心动
+		 */
+		COUPLEHEART("coupleheart");
+
+		private final String value;
+
+		VideoTemplate(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+
+	}
+
+	String getBaseUrl() {
+		return this.baseUrl;
+	}
+
+	ApiKey getApiKey() {
+		return this.apiKey;
+	}
+
+	RestClient getRestClient() {
+		return this.restClient;
+	}
+
+	ResponseErrorHandler getResponseErrorHandler() {
+		return this.responseErrorHandler;
+	}
+
+	public static class Builder {
+
+		public Builder() {
+		}
+
+		// Copy constructor for mutate()
+		public Builder(DashScopeVideoApi api) {
+			this.baseUrl = api.getBaseUrl();
+			this.apiKey = api.getApiKey();
+			this.restClientBuilder = api.restClient != null ? api.restClient.mutate() : RestClient.builder();
+			this.responseErrorHandler = api.getResponseErrorHandler();
+		}
+
+		private String baseUrl = DashScopeApiConstants.DEFAULT_BASE_URL;
+
+		private ApiKey apiKey;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+
+			Assert.notNull(baseUrl, "Base URL cannot be null");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "Simple api key cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "Rest client builder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "Response error handler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public DashScopeVideoApi build() {
+
+			Assert.notNull(apiKey, "API key cannot be null");
+
+			return new DashScopeVideoApi(this.baseUrl, this.apiKey, this.restClientBuilder, this.responseErrorHandler);
 		}
 
 	}

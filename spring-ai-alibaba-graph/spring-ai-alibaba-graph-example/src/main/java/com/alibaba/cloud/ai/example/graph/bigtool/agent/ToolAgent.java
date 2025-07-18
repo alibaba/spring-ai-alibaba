@@ -81,12 +81,12 @@ public class ToolAgent implements NodeAction {
 			.call()
 			.chatResponse();
 
-		List<Document> hitTool = vectorStoreService.search(response.getResult().getOutput().getText(), 3);
+		List<Document> hitTool = vectorStoreService.search(response.result().getOutput().getText(), 3);
 
 		Map<String, Object> updatedState = new HashMap<>();
 		updatedState.put(HIT_TOOL, hitTool);
 		if (state.value(inputTextKey).isPresent()) {
-			updatedState.put(inputTextKey, response.getResult().getOutput().getText());
+			updatedState.put(inputTextKey, response.result().getOutput().getText());
 		}
 
 		return updatedState;

@@ -119,9 +119,9 @@ public class QuestionClassifierNode implements NodeAction {
 			.chatResponse();
 
 		Map<String, Object> updatedState = new HashMap<>();
-		updatedState.put(outputKey, response.getResult().getOutput().getText());
+		updatedState.put(outputKey, response.result().getOutput().getText());
 		if (state.value("messages").isPresent()) {
-			updatedState.put("messages", response.getResult().getOutput());
+			updatedState.put("messages", response.result().getOutput());
 		}
 
 		return updatedState;

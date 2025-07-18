@@ -80,7 +80,7 @@ class DashScopeChatIT {
 		Prompt prompt = new Prompt(message);
 
 		// Call the chat model
-		Generation response = chatModel.call(prompt).getResult();
+		Generation response = chatModel.call(prompt).result();
 
 		// Verify response
 		assertThat(response).isNotNull();
@@ -111,7 +111,7 @@ class DashScopeChatIT {
 
 		// Call the streaming API and collect responses
 		StringBuilder responseBuilder = new StringBuilder();
-		Flux<Generation> responseFlux = chatModel.stream(prompt).map(ChatResponse::getResult);
+		Flux<Generation> responseFlux = chatModel.stream(prompt).map(ChatResponse::result);
 
 		responseFlux.doOnNext(generation -> {
 			String content = generation.getOutput().getText();
