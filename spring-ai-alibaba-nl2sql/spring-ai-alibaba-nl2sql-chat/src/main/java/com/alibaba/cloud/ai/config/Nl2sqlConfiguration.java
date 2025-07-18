@@ -122,7 +122,7 @@ public class Nl2sqlConfiguration {
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
 			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(chatClientBuilder, dbAccessor, dbConfig)))
-			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(chatClientBuilder, pythonExecutorTool)))
+			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(chatClientBuilder)))
 			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
 			.addNode(SEMANTIC_CONSISTENC_NODE,
 					node_async(new SemanticConsistencyNode(chatClientBuilder, nl2SqlService, dbConfig)));
