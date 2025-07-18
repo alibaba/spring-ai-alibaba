@@ -158,6 +158,7 @@ public class LLMNodeSection implements NodeSection {
 		return sb.toString();
 	}
 
+	// Extract variable
 	private static List<String> extractKeysFromList(List<String> inputList) {
 		List<String> result = new ArrayList<>();
 		Pattern pattern = Pattern.compile("\\{(\\w+)}");
@@ -171,6 +172,7 @@ public class LLMNodeSection implements NodeSection {
 		return result;
 	}
 
+	// Format prompt
 	private static String transformPlaceholders(String input) {
 		if (input == null)
 			return null;
