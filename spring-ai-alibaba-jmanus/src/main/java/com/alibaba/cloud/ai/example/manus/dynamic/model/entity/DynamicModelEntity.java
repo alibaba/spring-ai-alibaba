@@ -49,8 +49,8 @@ public class DynamicModelEntity {
 	@Column(nullable = false)
 	private String type;
 
-	@Column(nullable = false)
-	private Boolean allowChange = true;
+	@Column(nullable = false, columnDefinition = "boolean default false")
+	private boolean allowChange;
 
 	@OneToMany(mappedBy = "model")
 	private List<DynamicAgentEntity> agents;
@@ -148,7 +148,8 @@ public class DynamicModelEntity {
 	}
 
 	/**
-	 * Obscures the string, keeping the first 4 and last 4 characters visible, replacing
+	 * Obscures the string, keeping the first 4 and last 4 characters visible,
+	 * replacing
 	 * the rest with asterisks (*)
 	 */
 	private String maskValue(String value) {

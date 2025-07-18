@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -35,19 +36,22 @@ public class MapToStringConverter implements AttributeConverter<Map<String, Stri
 	public String convertToDatabaseColumn(Map<String, String> attribute) {
 		try {
 			return objectMapper.writeValueAsString(attribute);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new IllegalArgumentException("Error converting map to string", e);
 		}
 	}
 
 	@Override
 	public Map<String, String> convertToEntityAttribute(String dbData) {
+		// 增加一个 null 或空字符串的检查
+		if (dbData == null || dbData.isEmpty()) {
+			// 返回一个空的 Map 或者 null，根据业务逻辑决定
+			return new HashMap<>();
+		}
 		try {
 			return objectMapper.readValue(dbData, new TypeReference<>() {
 			});
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new IllegalArgumentException("Error converting string to map", e);
 		}
 	}
