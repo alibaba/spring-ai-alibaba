@@ -68,11 +68,11 @@ public class ModelServiceImpl implements ModelService {
 			DynamicModelEntity existingModel = repository.findByModelName(config.getModelName());
 			if (existingModel != null) {
 				log.info("Found Model with same name: {}, updating Model", config.getModelName());
-				ModelConfig modelConfig = updateModel(existingModel);
-				return modelConfig;
+				return updateModel(existingModel);
 			}
 
 			DynamicModelEntity entity = new DynamicModelEntity();
+			entity.setAllowChange(true);
 			updateEntityFromConfig(entity, config);
 			entity = repository.save(entity);
 			publisher.publish(new ModelChangeEvent(entity));
@@ -106,7 +106,7 @@ public class ModelServiceImpl implements ModelService {
 	public ModelConfig updateModel(DynamicModelEntity entity) {
 		// 如果不允许修改，则返回原有数据
 		if (!entity.isAllowChange()) {
-			return entity.mapToModelConfig();
+			throw new UnsupportedOperationException("Not supported yet.");
 		}
 		entity = repository.save(entity);
 		publisher.publish(new ModelChangeEvent(entity));
@@ -126,6 +126,8 @@ public class ModelServiceImpl implements ModelService {
 				agentRepository.saveAll(allByModel);
 			}
 			repository.deleteById(Long.parseLong(id));
+		} else {
+			throw new UnsupportedOperationException("Not supported yet.");
 		}
 	}
 

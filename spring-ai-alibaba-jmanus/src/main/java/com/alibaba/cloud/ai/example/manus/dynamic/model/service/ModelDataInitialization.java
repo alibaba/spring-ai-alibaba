@@ -78,7 +78,6 @@ public class ModelDataInitialization implements IModelDataInitialization {
 		dynamicModelEntity.setModelName(model);
 		dynamicModelEntity.setModelDescription("base model");
 		dynamicModelEntity.setType(ModelType.GENERAL.name());
-		dynamicModelEntity.setAllowChange(false);
 		DynamicModelEntity existingModel = repository.findByModelName(model);
 		if (existingModel != null) {
 			dynamicModelEntity.setId(existingModel.getId());
