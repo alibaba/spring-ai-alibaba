@@ -42,6 +42,7 @@ public class LLMNodeSection implements NodeSection {
 	public String render(Node node, String varName) {
 		LLMNodeData d = (LLMNodeData) node.getData();
 		List<String> promptList = new ArrayList<>();
+
 		List<PromptTemplate> promptTemplates = null;
 		if (d.getPromptTemplate() != null) {
 			promptTemplates = d.getPromptTemplate();
