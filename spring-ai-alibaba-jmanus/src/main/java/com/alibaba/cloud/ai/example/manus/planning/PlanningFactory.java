@@ -206,7 +206,6 @@ public class PlanningFactory {
 		toolDefinitions.add(new FormInputTool());
 		toolDefinitions.add(new MapReduceTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
 				terminateColumns));
-				
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
