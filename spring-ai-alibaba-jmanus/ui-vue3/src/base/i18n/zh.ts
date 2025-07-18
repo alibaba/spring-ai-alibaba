@@ -73,7 +73,7 @@ const words: I18nType = {
     parameters: '参数',
     thinking: '思考',
     input: '输入',
-    actions: '操作'
+    actions: '操作',
   },
 
   // 配置相关
@@ -107,6 +107,17 @@ const words: I18nType = {
       model: 'Model配置',
       mcp: 'Tools/MCP配置',
       prompt: '动态Prompt配置',
+    },
+    subGroupDisplayNames: {
+      agent: 'Agent',
+      browser: '浏览器',
+      interaction: '交互',
+      system: '系统',
+      performance: '性能',
+      general: '通用',
+      agents: '多智能体',
+      infiniteContext: '无限上下文',
+      filesystem: '文件系统'
     },
     // Agent配置页面
     agentConfig: {
@@ -188,7 +199,7 @@ const words: I18nType = {
       exportFailed: '导出Model失败',
       loadDataFailed: '加载数据失败',
       loadDetailsFailed: '加载Model详情失败',
-      invalidFormat: 'Model配置格式不正确：缺少必要字段'
+      invalidFormat: 'Model配置格式不正确：缺少必要字段',
     },
     // MCP配置页面
     mcpConfig: {
@@ -205,7 +216,8 @@ const words: I18nType = {
       instructionStep1Local: '本地(STDIO)',
       instructionStep1LocalDesc: '本地mcp server，目前市面上主流的是这个',
       instructionStep1Remote: '远程服务(SSE/STREAMING)',
-      instructionStep1RemoteDesc: 'mcp.higress.ai/ 上可以找到，有SSE和STREAMING两种，目前STREAM协议更完备一些',
+      instructionStep1RemoteDesc:
+        'mcp.higress.ai/ 上可以找到，有SSE和STREAMING两种，目前STREAM协议更完备一些',
       instructionStep2: '将json配置复制到上面的输入框，本地选STUDIO，远程选STREAMING或SSE，提交',
       instructionStep3: '这样mcp tools就注册成功了。',
       instructionStep4:
@@ -217,18 +229,70 @@ const words: I18nType = {
       deleteConfirm: '确定要删除这个MCP服务器配置吗？此操作不可恢复。',
       addSuccess: '添加MCP服务器成功',
       deleteSuccess: '删除MCP服务器成功',
-      studioExample: '请输入MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
-      sseExample: '请输入SSE MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}'
+      studioExample:
+        '请输入MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
+      sseExample:
+        '请输入SSE MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}',
     },
     // 基础配置
     basicConfig: {
       title: '基础配置',
+      browserSettings: {
+        headless: '是否使用无头浏览器模式',
+        requestTimeout: '浏览器请求超时时间(秒)'
+      },
+      general: {
+        debugDetail: 'debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢',
+        baseDir: 'manus根目录'
+      },
+      interactionSettings: {
+        openBrowser: '启动时自动打开浏览器'
+      },
+      agentSettings: {
+        maxSteps: '智能体执行最大步数',
+        userInputTimeout: '用户输入表单等待超时时间(秒)',
+        maxMemory: '能记住的最大消息数',
+        parallelToolCalls: '并行工具调用'
+      },
+      agents: {
+        forceOverrideFromYaml: '强制使用YAML配置文件覆盖同名Agent'
+      },
+      infiniteContext: {
+        enabled: '是否开启无限上下文',
+        parallelThreads: '并行处理线程数',
+        taskContextSize: '触发无限上下文的字符数阈值(字符数)'
+      },
+      fileSystem: {
+        allowExternalAccess: '是否允许文件操作超出工作目录'
+      },
+      systemSettings: {
+        systemName: '系统名称',
+        language: '语言',
+        maxThreads: '最大线程数',
+        timeoutSeconds: '请求超时时间(秒)'
+      },
+      totalConfigs: '总配置数',
+      modified: '已修改',
+      exportConfigs: '导出配置',
+      importConfigs: '导入配置',
+      search: '搜索',
+      loading: '加载中',
+      notFound: '未找到配置项',
+      resetGroupConfirm: '重置该组所有配置为默认值',
+      reset: '重置',
       requestTimeout: '请求超时时间(秒)',
       browserTimeout: '浏览器请求超时时间(秒)',
       loadConfigFailed: '加载配置失败，请刷新重试',
       saveFailed: '保存失败，请重试',
       resetFailed: '重置失败，请重试',
       importFailed: '导入失败，请检查文件格式',
+      groupDisplayNames: {
+        manus: 'Manus',
+        browser: '浏览器',
+        interaction: '交互',
+        system: '系统',
+        performance: '性能',
+      },
     },
     promptConfig: {
       title: '动态Prompt配置',
@@ -243,7 +307,7 @@ const words: I18nType = {
       messageType: '消息类型',
       type: '领域类型',
       builtIn: '内置',
-      custom:"自定义",
+      custom: '自定义',
       namespace: '命名空间',
       promptNamePlaceholder: '输入Prompt名称',
       selectPromptHint: '请选择一个prompt进行配置',
@@ -259,6 +323,20 @@ const words: I18nType = {
       deleteConfirm: '删除确认',
       deleteConfirmText: '确定要删除',
       deleteWarning: '此操作不可恢复。',
+    },
+    namespaceConfig: {
+      title: '命名空间配置',
+      loadDetailsFailed: '加载namespace详情失败',
+      createNew: '新建命名空间',
+      placeholder: '请输入',
+      saveSuccess: '保存成功',
+      saveFailed: '保存失败',
+      deleteSuccess: '删除成功',
+      deleteFailed: '删除失败',
+      deleteConfirm: '删除确认',
+      deleteConfirmText: '确定要删除',
+      deleteWarning: '此操作不可恢复。',
+      configured: '已配置的命名空间',
     },
   },
 
@@ -291,6 +369,7 @@ const words: I18nType = {
   // Model 配置
   model: {
     title: 'Model 配置',
+    switch: '切换模型',
     name: 'Model名称',
     description: '描述',
     addModel: '新建Model',
@@ -304,8 +383,39 @@ const words: I18nType = {
     saveSuccess: 'Model保存成功',
     saveFailed: 'Model保存失败',
     deleteSuccess: 'Model删除成功',
-    deleteFailed: 'Model删除失败'
+    deleteFailed: 'Model删除失败',
   },
+
+  // 计划模板配置
+  planTemplate: {
+    title: '计划模板配置',
+    generator: '计划生成器',
+    execution: '计划执行',
+    prompt: '生成提示',
+    promptPlaceholder: '描述您想要生成的计划...',
+    generating: '生成中...',
+    generate: '生成计划',
+    updatePlan: '更新计划',
+    executing: '执行中...',
+    execute: '执行计划',
+    executionParams: '执行参数',
+    executionParamsPlaceholder: '输入执行参数（可选）...',
+    apiUrl: 'API 调用地址',
+    clearParams: '清空参数',
+    versionControl: '版本控制',
+    rollback: '回滚',
+    restore: '恢复',
+    currentVersion: '当前版本',
+    saveTemplate: '保存模板',
+    loadTemplate: '加载模板',
+    templateSaved: '模板已保存',
+    templateLoaded: '模板已加载',
+    executionSuccess: '执行成功',
+    executionFailed: '执行失败',
+    generationSuccess: '生成成功',
+    generationFailed: '生成失败',
+  },
+
   // 聊天组件
   chat: {
     botName: 'TaskPilot:',
@@ -374,16 +484,19 @@ const words: I18nType = {
     jsonTemplate: 'JSON 模板',
     rollback: '回滚',
     restore: '恢复',
-    jsonPlaceholder: 'step2 ： 你可以在这里直接修改在step1中生产出的执行计划，让他更精准的按照你的希望执行。然后你可以点击执行计划，高确定性的执行这个计划',
+    jsonPlaceholder:
+      'step2 ： 你可以在这里直接修改在step1中生产出的执行计划，让他更精准的按照你的希望执行。然后你可以点击执行计划，高确定性的执行这个计划',
     planGenerator: '计划生成器',
-    generatorPlaceholder: 'step1 : 在这里用自然语言输入你希望完成的任务，尽可能详细，然后点击生成计划，就可以生产一个可重复执行的精确计划',
+    generatorPlaceholder:
+      'step1 : 在这里用自然语言输入你希望完成的任务，尽可能详细，然后点击生成计划，就可以生产一个可重复执行的精确计划',
     generating: '生成中...',
     generatePlan: '生成计划',
     updatePlan: '更新计划',
     executionController: '执行控制器',
     executionParams: '执行参数',
     executionParamsPlaceholder: '输入执行参数...',
-    executionParamsHelp: '在重复执行时，你可以将step2里面的一些内容设置为变量，然后在这里指定该变量的具体值。例如json里面设置 变量1 ，然后在这里则设置 变量1=阿里巴巴 。 就可以实现类似函数的参数的效果。',
+    executionParamsHelp:
+      '在重复执行时，你可以将step2里面的一些内容设置为变量，然后在这里指定该变量的具体值。例如json里面设置 变量1 ，然后在这里则设置 变量1=阿里巴巴 。 就可以实现类似函数的参数的效果。',
     clearParams: '清空参数',
     apiUrl: 'HTTP GET URL',
     statusApiUrl: '状态查询 API',
