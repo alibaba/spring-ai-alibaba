@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.node.HttpNode.AuthConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.HttpRequestNodeBody;
 import com.alibaba.cloud.ai.graph.node.HttpNode.RetryConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.TimeoutConfig;
+import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
@@ -149,11 +150,14 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 				}
 
 				// output_key
-				String nodeId = (String) data.get("id");
-				String outputKey = (String) data.getOrDefault("output_key", HttpNodeData.defaultOutputKey(nodeId));
+				String outputKey = (String) data.get("output_key");
 
-				return new HttpNodeData(inputs, outputs, method, url, headers, queryParams, body, auth, retryConfig,
-						timeoutConfig, outputKey);
+				HttpNodeData nd = new HttpNodeData(inputs, outputs, method, url, headers, queryParams, body, auth,
+						retryConfig, timeoutConfig, outputKey);
+				if (rawBody instanceof Map<?, ?>) {
+					nd.setRawBodyMap((Map<String, Object>) rawBody);
+				}
+				return nd;
 			}
 
 			@Override
@@ -227,6 +231,23 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 			return this.converter;
 		}
 
+	}
+
+	@Override
+	public String generateVarName(int count) {
+		return "httpNode" + count;
+	}
+
+	@Override
+	public void postProcess(HttpNodeData data, String varName) {
+		String origKey = data.getOutputKey();
+		String newKey = varName + "_output";
+
+		if (origKey == null) {
+			data.setOutputKey(newKey);
+		}
+		data.setOutputs(
+				List.of(new Variable(data.getOutputKey(), com.alibaba.cloud.ai.model.VariableType.STRING.value())));
 	}
 
 }

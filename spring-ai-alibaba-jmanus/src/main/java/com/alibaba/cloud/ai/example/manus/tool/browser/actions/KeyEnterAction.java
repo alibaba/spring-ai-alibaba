@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import com.microsoft.playwright.Page;
-
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -33,18 +31,11 @@ public class KeyEnterAction extends BrowserAction {
 		if (index == null) {
 			return new ToolExecuteResult("Index is required for 'key_enter' action");
 		}
-
-		Page page = getCurrentPage();
-		// 获取注册表
-		var driverWrapper = getDriverWrapper();
-		var registry = driverWrapper.getInteractiveElementRegistry();
-		// 获取目标元素
-		var elementOpt = registry.getElementById(index);
-		if (elementOpt.isEmpty()) {
+		InteractiveElement enterElement = getInteractiveElement(index);
+		if (enterElement == null) {
 			return new ToolExecuteResult("Element with index " + index + " not found");
 		}
-		InteractiveElement enterElement = elementOpt.get();
-		// 执行回车操作
+		// Execute the enter operation
 		try {
 			enterElement.getLocator().press("Enter");
 		}

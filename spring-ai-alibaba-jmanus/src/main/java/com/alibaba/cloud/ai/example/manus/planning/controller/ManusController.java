@@ -70,9 +70,9 @@ public class ManusController {
 	}
 
 	/**
-	 * 异步执行 Manus 请求
-	 * @param request 包含用户查询的请求
-	 * @return 任务ID及状态
+	 * Asynchronous execution of Manus request
+	 * @param request Request containing user query
+	 * @return Task ID and status
 	 */
 	@PostMapping("/execute")
 	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, String> request) {
@@ -82,25 +82,26 @@ public class ManusController {
 		}
 		ExecutionContext context = new ExecutionContext();
 		context.setUserRequest(query);
-		// 使用 PlanIdDispatcher 生成唯一的计划ID
+		// Use PlanIdDispatcher to generate a unique plan ID
 		String planId = planIdDispatcher.generatePlanId();
-		context.setPlanId(planId);
+		context.setCurrentPlanId(planId);
+		context.setRootPlanId(planId);
 		context.setNeedSummary(true);
-		// 获取或创建规划流程
+		// Get or create planning flow
 		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(planId);
 
-		// 异步执行任务
+		// Asynchronous execution of task
 		CompletableFuture.supplyAsync(() -> {
 			try {
 				return planningFlow.executePlan(context);
 			}
 			catch (Exception e) {
-				logger.error("执行计划失败", e);
-				throw new RuntimeException("执行计划失败: " + e.getMessage(), e);
+				logger.error("Failed to execute plan", e);
+				throw new RuntimeException("Failed to execute plan: " + e.getMessage(), e);
 			}
 		});
 
-		// 返回任务ID及初始状态
+		// Return task ID and initial status
 		Map<String, Object> response = new HashMap<>();
 		response.put("planId", planId);
 		response.put("status", "processing");
@@ -110,13 +111,13 @@ public class ManusController {
 	}
 
 	/**
-	 * 获取详细的执行记录
-	 * @param planId 计划ID
-	 * @return 执行记录的 JSON 表示
+	 * Get detailed execution record
+	 * @param planId Plan ID
+	 * @return JSON representation of execution record
 	 */
 	@GetMapping("/details/{planId}")
 	public synchronized ResponseEntity<?> getExecutionDetails(@PathVariable("planId") String planId) {
-		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
+		PlanExecutionRecord planRecord = planExecutionRecorder.getRootPlanExecutionRecord(planId);
 
 		if (planRecord == null) {
 			return ResponseEntity.notFound().build();
@@ -136,7 +137,7 @@ public class ManusController {
 		}
 
 		try {
-			// 使用Jackson ObjectMapper将对象转换为JSON字符串
+			// Use Jackson ObjectMapper to convert object to JSON string
 			String jsonResponse = objectMapper.writeValueAsString(planRecord);
 			return ResponseEntity.ok(jsonResponse);
 		}
@@ -148,13 +149,13 @@ public class ManusController {
 	}
 
 	/**
-	 * 删除指定计划ID的执行记录
-	 * @param planId 计划ID
-	 * @return 删除操作的结果
+	 * Delete execution record for specified plan ID
+	 * @param planId Plan ID
+	 * @return Result of delete operation
 	 */
 	@DeleteMapping("/details/{planId}")
 	public ResponseEntity<Map<String, String>> removeExecutionDetails(@PathVariable("planId") String planId) {
-		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
+		PlanExecutionRecord planRecord = planExecutionRecorder.getRootPlanExecutionRecord(planId);
 		if (planRecord == null) {
 			return ResponseEntity.notFound().build();
 		}
@@ -164,7 +165,8 @@ public class ManusController {
 			return ResponseEntity.ok(Map.of("message", "执行记录已成功删除", "planId", planId));
 		}
 		catch (Exception e) {
-			return ResponseEntity.internalServerError().body(Map.of("error", "删除记录失败: " + e.getMessage()));
+			return ResponseEntity.internalServerError()
+				.body(Map.of("error", "Failed to delete record: " + e.getMessage()));
 		}
 	}
 

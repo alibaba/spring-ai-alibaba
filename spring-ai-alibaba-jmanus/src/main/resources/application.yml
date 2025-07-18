@@ -3,6 +3,13 @@ server:
 spring:
   application:
     name: spring-ai-alibaba-openmanus
+  profiles:
+    active: h2
+  main:
+    allow-circular-references: true
+    lazy-initialization: false
+  aop:
+    proxy-target-class: true
   ai:
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
@@ -13,28 +20,32 @@ spring:
     mcp:
       client:
         enabled: false
-  # H2 数据库配置
+  # Hikari Configuration
   datasource:
-    url: jdbc:h2:file:./h2-data/openmanus_db;MODE=MYSQL;DATABASE_TO_LOWER=TRUE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: $FSD#@!@#!#$!12341234
-  # JPA 配置
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: Spring-AI-Alibaba-JManus-${spring.profiles.active}-Pool
+      connection-test-query: SELECT 1
+      validation-timeout: 5000
+      leak-detection-threshold: 60000
+  # JPA Configuration
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
-  # H2 控制台配置
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+
 logging:
   file:
     name: ./logs/info.log
   level:
     root: INFO
+
+namespace:
+  value: default

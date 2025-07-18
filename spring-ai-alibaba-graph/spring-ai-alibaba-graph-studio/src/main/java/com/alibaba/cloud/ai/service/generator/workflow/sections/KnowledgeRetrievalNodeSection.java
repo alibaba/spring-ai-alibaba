@@ -84,10 +84,13 @@ public class KnowledgeRetrievalNodeSection implements NodeSection {
 		if (d.getVectorStoreKey() != null) {
 			sb.append(String.format(".vectorStoreKey(\"%s\")%n", escape(d.getVectorStoreKey())));
 		}
+		if (d.getOutputKey() != null) {
+			sb.append(String.format(".outputKey(\"%s\")%n", escape(d.getOutputKey())));
+		}
 		sb.append(".vectorStore(vectorStore)\n");
 
 		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
 		return sb.toString();
 	}
 

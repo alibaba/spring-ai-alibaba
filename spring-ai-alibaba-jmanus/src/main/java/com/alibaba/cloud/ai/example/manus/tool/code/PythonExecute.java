@@ -17,22 +17,21 @@ package com.alibaba.cloud.ai.example.manus.tool.code;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
-public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.PythonInput> {
+public class PythonExecute extends AbstractBaseTool<PythonExecute.PythonInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(PythonExecute.class);
 
 	/**
-	 * 内部输入类，用于定义Python执行工具的输入参数
+	 * Internal input class for defining input parameters of Python execution tool
 	 */
 	public static class PythonInput {
 
@@ -147,7 +146,7 @@ public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.Python
 				String result = codeExecutionResult.getLogs();
 				this.lastExecutionResult = result;
 
-				// 检查执行结果中是否包含 Python 错误信息
+				// Check if the execution result contains Python error information
 				if (result.contains("SyntaxError") || result.contains("IndentationError")
 						|| result.contains("NameError") || result.contains("TypeError") || result.contains("ValueError")
 						|| result.contains("ImportError")) {
@@ -175,7 +174,7 @@ public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.Python
 	}
 
 	private String extractErrorMessage(String output) {
-		// 从 Python 错误输出中提取错误信息
+		// Extract error information from Python error output
 		String[] lines = output.split("\n");
 		StringBuilder errorMsg = new StringBuilder();
 		boolean foundError = false;
@@ -211,15 +210,6 @@ public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.Python
 	}
 
 	@Override
-	public boolean isReturnDirect() {
-		return false;
-	}
-
-	@Override
-	public ToolExecuteResult apply(PythonInput input, ToolContext toolContext) {
-		return run(input);
-	}
-
 	public ToolExecuteResult run(PythonInput input) {
 		String code = input.getCode();
 		log.info("PythonExecute code: {}", code);
@@ -233,7 +223,7 @@ public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.Python
 			String result = codeExecutionResult.getLogs();
 			this.lastExecutionResult = result;
 
-			// 检查执行结果中是否包含 Python 错误信息
+			// Check if the execution result contains Python error information
 			if (result.contains("SyntaxError") || result.contains("IndentationError") || result.contains("NameError")
 					|| result.contains("TypeError") || result.contains("ValueError")
 					|| result.contains("ImportError")) {
@@ -258,12 +248,6 @@ public class PythonExecute implements ToolCallBiFunctionDef<PythonExecute.Python
 	@Override
 	public void cleanup(String planId) {
 		// do nothing
-	}
-
-	// Implement the setPlanId method to satisfy the interface
-	@Override
-	public void setPlanId(String planId) {
-		// No operation needed as planId is no longer used
 	}
 
 	@Override

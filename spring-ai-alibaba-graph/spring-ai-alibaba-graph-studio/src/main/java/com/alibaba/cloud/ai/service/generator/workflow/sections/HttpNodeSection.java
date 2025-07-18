@@ -21,6 +21,8 @@ import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
@@ -58,9 +60,16 @@ public class HttpNodeSection implements NodeSection {
 			sb.append(String.format(".queryParam(\"%s\", \"%s\")%n", escape(entry.getKey()), escape(entry.getValue())));
 		}
 
-		HttpNode.HttpRequestNodeBody body = d.getBody();
-		if (body != null && body.hasContent()) {
-			sb.append(".body(HttpRequestNodeBody.from(/* raw body value */))\n");
+		if (d.getRawBodyMap() != null && !d.getRawBodyMap().isEmpty()
+				&& !"none".equals(d.getRawBodyMap().get("type"))) {
+			String rawJson;
+			try {
+				rawJson = new ObjectMapper().writeValueAsString(d.getRawBodyMap());
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException("serialization Http body map failed", e);
+			}
+			sb.append(String.format(".body(HttpRequestNodeBody.fromJson(\"%s\"))%n", escape(rawJson)));
 		}
 
 		HttpNode.AuthConfig ac = d.getAuthConfig();
@@ -85,7 +94,7 @@ public class HttpNodeSection implements NodeSection {
 		}
 
 		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
 
 		return sb.toString();
 	}

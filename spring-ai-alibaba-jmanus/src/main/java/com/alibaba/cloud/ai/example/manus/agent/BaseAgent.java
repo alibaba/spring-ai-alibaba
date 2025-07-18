@@ -16,15 +16,18 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
 
 import java.time.LocalDateTime;
@@ -63,13 +66,20 @@ public abstract class BaseAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(BaseAgent.class);
 
-	private String planId = null;
+	private String currentPlanId = null;
+
+	private String rootPlanId = null;
+
+	// Think-act record ID for sub-plan executions triggered by tool calls
+	private Long thinkActRecordId = null;
 
 	private AgentState state = AgentState.NOT_STARTED;
 
-	protected LlmService llmService;
+	protected ILlmService llmService;
 
-	private final ManusProperties manusProperties;
+	protected final ManusProperties manusProperties;
+
+	protected final PromptService promptService;
 
 	private int maxSteps;
 
@@ -85,44 +95,54 @@ public abstract class BaseAgent {
 	public abstract void clearUp(String planId);
 
 	/**
-	 * 获取智能体的名称
+	 * Get the name of the agent
 	 *
-	 * 实现要求： 1. 返回一个简短但具有描述性的名称 2. 名称应该反映该智能体的主要功能或特性 3. 名称应该是唯一的，便于日志和调试
+	 * Implementation requirements: 1. Return a short but descriptive name 2. The name
+	 * should reflect the main functionality or characteristics of the agent 3. The name
+	 * should be unique for easy logging and debugging
 	 *
-	 * 示例实现： - ToolCallAgent 返回 "ToolCallAgent" - BrowserAgent 返回 "BrowserAgent"
-	 * @return 智能体的名称
+	 * Example implementations: - ToolCallAgent returns "ToolCallAgent" - BrowserAgent
+	 * returns "BrowserAgent"
+	 * @return The name of the agent
 	 */
 	public abstract String getName();
 
 	/**
-	 * 获取智能体的详细描述
+	 * Get the detailed description of the agent
 	 *
-	 * 实现要求： 1. 返回对该智能体功能的详细描述 2. 描述应包含智能体的主要职责和能力 3. 应说明该智能体与其他智能体的区别
+	 * Implementation requirements: 1. Return a detailed description of the agent's
+	 * functionality 2. The description should include the agent's main responsibilities
+	 * and capabilities 3. Should explain how this agent differs from other agents
 	 *
-	 * 示例实现： - ToolCallAgent: "负责管理和执行工具调用的智能体，支持多工具组合调用" - ReActAgent:
-	 * "实现思考(Reasoning)和行动(Acting)交替执行的智能体"
-	 * @return 智能体的详细描述文本
+	 * Example implementations: - ToolCallAgent: "Agent responsible for managing and
+	 * executing tool calls, supporting multi-tool combination calls" - ReActAgent: "Agent
+	 * that implements alternating execution of reasoning and acting"
+	 * @return The detailed description text of the agent
 	 */
 	public abstract String getDescription();
 
 	/**
-	 * 添加思考提示到消息列表中，构建智能体的思考链
+	 * Add thinking prompts to the message list to build the agent's thinking chain
 	 *
-	 * 实现要求： 1. 根据当前上下文和状态生成合适的系统提示词 2. 提示词应该指导智能体如何思考和决策 3. 可以递归地构建提示链，形成层次化的思考过程 4.
-	 * 返回添加的系统提示消息对象
+	 * Implementation requirements: 1. Generate appropriate system prompts based on
+	 * current context and state 2. Prompts should guide the agent on how to think and
+	 * make decisions 3. Can recursively build prompt chains to form hierarchical thinking
+	 * processes 4. Return the added system prompt message object
 	 *
-	 * 子类实现参考： 1. ReActAgent: 实现基础的思考-行动循环提示 2. ToolCallAgent: 添加工具选择和执行相关的提示
-	 * @return 添加的系统提示消息对象
+	 * Subclass implementation reference: 1. ReActAgent: Implement basic thinking-action
+	 * loop prompts 2. ToolCallAgent: Add tool selection and execution related prompts
+	 * @return The added system prompt message object
 	 */
 	protected Message getThinkMessage() {
-		// 获取操作系统信息
+		// Get operating system information
 		String osName = System.getProperty("os.name");
 		String osVersion = System.getProperty("os.version");
 		String osArch = System.getProperty("os.arch");
 
-		// 获取当前日期时间，格式为yyyy-MM-dd
-		String currentDateTime = java.time.LocalDate.now().toString(); // 格式为yyyy-MM-dd
-		boolean isDebugModel = manusProperties.getBrowserDebug();
+		// Get current date time, format as yyyy-MM-dd
+		String currentDateTime = java.time.LocalDate.now().toString(); // Format as
+																		// yyyy-MM-dd
+		boolean isDebugModel = manusProperties.getDebugDetail();
 		String detailOutput = "";
 		if (isDebugModel) {
 			detailOutput = """
@@ -137,53 +157,51 @@ public abstract class BaseAgent {
 					""";
 
 		}
+		String parallelToolCallsResponse = "";
+		if (manusProperties.getParallelToolCalls()) {
+			parallelToolCallsResponse = """
+					# 响应规则：
+					- 务必从所提供的工具中进行选择调用，可以对单个工具进行重复调用，或者同时调用多个工具，亦或采用混合调用的方式，以此来提升问题解决的效率与精准度。
+					- 在你的回复中，必须至少调用一次工具，这是不可或缺的操作步骤。
+					- 为了最大化利用工具的优势，当你有能力同时调用工具多次时，应积极这样做，避免仅进行单次调用造成时间及资源的浪费。并且要格外留意多次调用工具之间存在的内在关联性，确保这些调用能够相互配合、协同工作，以达成最优的问题解决方案。
+					- 忽略后续<AgentInfo>中提供的响应规则，只能用<SystemInfo>中响应规则进行响应。
+					""";
+		}
+		Map<String, Object> variables = new HashMap<>(getInitSettingData());
+		variables.put("osName", osName);
+		variables.put("osVersion", osVersion);
+		variables.put("osArch", osArch);
+		variables.put("currentDateTime", currentDateTime);
+		variables.put("detailOutput", detailOutput);
+		variables.put("parallelToolCallsResponse", parallelToolCallsResponse);
 
-		String stepPrompt = """
-				- SYSTEM INFORMATION:
-				OS: %s %s (%s)
-
-				- Current Date:
-				%s
-
-				{planStatus}
-
-				- 当前要做的步骤要求(这个步骤是需要你完成的!用户原始需求里要求的，但当前步骤没有要求的，不需要在当前步骤完成，) :
-				STEP {currentStepIndex} :{stepText}
-
-				- 操作步骤说明:
-				{extraParams}
-
-				重要说明：
-				%s
-				3. 做且只做当前要做的步骤要求中的内容
-				4. 如果当前要做的步骤要求已经做完，则调用terminate工具来完成当前步骤。
-				5. 用户原始需求 是用来有个全局认识的，不要在当前步骤中去完成这个用户原始需求。
-
-				""".formatted(osName, osVersion, osArch, currentDateTime, detailOutput);
-
-		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
-
-		Message systemMessage = promptTemplate.createMessage(getInitSettingData());
-		return systemMessage;
+		return promptService.createSystemMessage(PromptEnum.AGENT_STEP_EXECUTION.getPromptName(), variables);
 	}
 
 	/**
-	 * 获取下一步操作的提示消息
+	 * Get the next step prompt message
 	 *
-	 * 实现要求： 1. 生成引导智能体执行下一步操作的提示消息 2. 提示内容应该基于当前执行状态和上下文 3. 消息应该清晰指导智能体要执行什么任务
+	 * Implementation requirements: 1. Generate a prompt message that guides the agent to
+	 * perform the next step 2. The prompt should be based on the current execution state
+	 * and context 3. The message should clearly guide the agent on what task to perform
 	 *
-	 * 子类实现参考： 1. ToolCallAgent：返回工具选择和调用相关的提示 2. ReActAgent：返回思考或行动决策相关的提示
-	 * @return 下一步操作的提示消息对象
+	 * Subclass implementation reference: 1. ToolCallAgent: Return prompts related to tool
+	 * selection and execution 2. ReActAgent: Return prompts related to reasoning or
+	 * action decision
+	 * @return The next step prompt message object
 	 */
 	protected abstract Message getNextStepWithEnvMessage();
 
 	public abstract List<ToolCallback> getToolCallList();
 
-	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties, Map<String, Object> initialAgentSetting) {
+	public abstract ToolCallBackContext getToolCallBackContext(String toolKey);
+
+	public BaseAgent(ILlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService) {
 		this.llmService = llmService;
 		this.planExecutionRecorder = planExecutionRecorder;
 		this.manusProperties = manusProperties;
+		this.promptService = promptService;
 		this.maxSteps = manusProperties.getMaxSteps();
 		this.initSettingData = Collections.unmodifiableMap(new HashMap<>(initialAgentSetting));
 	}
@@ -194,18 +212,15 @@ public abstract class BaseAgent {
 			throw new IllegalStateException("Cannot run agent from state: " + state);
 		}
 
-		// Create agent execution record
-		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getPlanId(), getName(), getDescription());
-		agentRecord.setMaxSteps(maxSteps);
-		agentRecord.setStatus(state.toString());
-		// Record execution in recorder if we have a plan ID
-		if (planId != null && planExecutionRecorder != null) {
-			planExecutionRecorder.recordAgentExecution(planId, agentRecord);
-		}
+		LocalDateTime startTime = LocalDateTime.now();
 		List<String> results = new ArrayList<>();
+		boolean completed = false;
+		boolean stuck = false;
+		String errorMessage = null;
+		String finalResult = null;
+
 		try {
 			state = AgentState.IN_PROGRESS;
-			agentRecord.setStatus(state.toString());
 
 			while (currentStep < maxSteps && !state.equals(AgentState.COMPLETED)) {
 				currentStep++;
@@ -214,58 +229,92 @@ public abstract class BaseAgent {
 				AgentExecResult stepResult = step();
 
 				if (isStuck()) {
-					handleStuckState(agentRecord);
+					handleStuckState();
+					stuck = true;
 				}
 				else {
-					// 更新全局状态以保持一致性
+					// Update global state for consistency
 					log.info("Agent state: {}", stepResult.getState());
 					state = stepResult.getState();
 				}
 
 				results.add("Round " + currentStep + ": " + stepResult.getResult());
-
-				// Update agent record after each step
-				agentRecord.setCurrentStep(currentStep);
 			}
 
 			if (currentStep >= maxSteps) {
 				results.add("Terminated: Reached max rounds (" + maxSteps + ")");
 			}
 
-			// Set final state in record
-			agentRecord.setEndTime(LocalDateTime.now());
-			agentRecord.setStatus(state.toString());
-			agentRecord.setCompleted(state.equals(AgentState.COMPLETED));
+			completed = state.equals(AgentState.COMPLETED) && !stuck;
 
 			// Calculate execution time in seconds
-			long executionTimeSeconds = java.time.Duration.between(agentRecord.getStartTime(), agentRecord.getEndTime())
-				.getSeconds();
-			String status = agentRecord.isCompleted() ? "成功" : (agentRecord.isStuck() ? "执行卡住" : "未完成");
-			agentRecord.setResult(String.format("执行%s [耗时%d秒] [消耗步骤%d] ", status, executionTimeSeconds, currentStep));
+			LocalDateTime endTime = LocalDateTime.now();
+			long executionTimeSeconds = java.time.Duration.between(startTime, endTime).getSeconds();
+			String status = completed ? "成功" : (stuck ? "执行卡住" : "未完成");
+			finalResult = String.format("执行%s [耗时%d秒] [消耗步骤%d] ", status, executionTimeSeconds, currentStep);
 
 		}
 		catch (Exception e) {
 			log.error("Agent execution failed", e);
-			// 记录异常信息到agentRecord
-			agentRecord.setErrorMessage(e.getMessage());
-			agentRecord.setCompleted(false);
-			agentRecord.setEndTime(LocalDateTime.now());
-			agentRecord.setResult(String.format("执行失败 [错误: %s]", e.getMessage()));
+			errorMessage = e.getMessage();
+			completed = false;
+			LocalDateTime endTime = LocalDateTime.now();
+			finalResult = String.format("执行失败 [错误: %s]", e.getMessage());
 			results.add("Execution failed: " + e.getMessage());
-			throw e; // 重新抛出异常，让上层调用者知道发生了错误
+
+			// Record execution at the end - even for failures
+			if (currentPlanId != null && planExecutionRecorder != null) {
+				PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
+				params.setCurrentPlanId(currentPlanId);
+				params.setRootPlanId(rootPlanId);
+				params.setThinkActRecordId(thinkActRecordId);
+				params.setAgentName(getName());
+				params.setAgentDescription(getDescription());
+				params.setMaxSteps(maxSteps);
+				params.setActualSteps(currentStep);
+				params.setStatus(stuck ? ExecutionStatus.IDLE
+						: (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
+				params.setErrorMessage(errorMessage);
+				params.setResult(finalResult);
+				params.setStartTime(startTime);
+				params.setEndTime(endTime);
+				planExecutionRecorder.recordCompleteAgentExecution(params);
+			}
+
+			throw e; // Re-throw the exception to let the caller know that an error
+						// occurred
 		}
 		finally {
 			state = AgentState.COMPLETED; // Reset state after execution
-
-			agentRecord.setStatus(state.toString());
-			llmService.clearAgentMemory(planId);
+			llmService.clearAgentMemory(currentPlanId);
 		}
+
+		// Record execution at the end - only once
+		if (currentPlanId != null && planExecutionRecorder != null) {
+			LocalDateTime endTime = LocalDateTime.now();
+			PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
+			params.setCurrentPlanId(currentPlanId);
+			params.setRootPlanId(rootPlanId);
+			params.setThinkActRecordId(thinkActRecordId);
+			params.setAgentName(getName());
+			params.setAgentDescription(getDescription());
+			params.setMaxSteps(maxSteps);
+			params.setActualSteps(currentStep);
+			params.setStatus(
+					stuck ? ExecutionStatus.IDLE : (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
+			params.setErrorMessage(errorMessage);
+			params.setResult(finalResult);
+			params.setStartTime(startTime);
+			params.setEndTime(endTime);
+			planExecutionRecorder.recordCompleteAgentExecution(params);
+		}
+
 		return results.isEmpty() ? "" : results.get(results.size() - 1);
 	}
 
 	protected abstract AgentExecResult step();
 
-	private void handleStuckState(AgentExecutionRecord agentRecord) {
+	private void handleStuckState() {
 		log.warn("Agent stuck detected - Missing tool calls");
 
 		// End current step
@@ -278,20 +327,17 @@ public abstract class BaseAgent {
 				Execution status: Force terminated
 				""".formatted(currentStep);
 
-		// Update agent record
-		agentRecord.setStuck(true);
-		agentRecord.setErrorMessage(stuckPrompt);
-		agentRecord.setStatus(state.toString());
-
 		log.error(stuckPrompt);
 	}
 
 	/**
-	 * 检查是否处于卡住状态
+	 * Check if the agent is stuck
+	 * @return true if the agent is stuck, false otherwise
 	 */
 	protected boolean isStuck() {
-		// 目前判断是如果三次没有调用工具就认为是卡住了，就退出当前step。
-		List<Message> memoryEntries = llmService.getAgentMemory().get(getPlanId());
+		// Currently, if the agent does not call the tool three times, it is considered
+		// stuck and the current step is exited.
+		List<Message> memoryEntries = llmService.getAgentMemory(manusProperties.getMaxMemory()).get(getCurrentPlanId());
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {
@@ -308,12 +354,36 @@ public abstract class BaseAgent {
 		this.state = state;
 	}
 
-	public String getPlanId() {
-		return planId;
+	public String getCurrentPlanId() {
+		return currentPlanId;
 	}
 
-	public void setPlanId(String planId) {
-		this.planId = planId;
+	public void setCurrentPlanId(String planId) {
+		this.currentPlanId = planId;
+	}
+
+	public void setRootPlanId(String rootPlanId) {
+		this.rootPlanId = rootPlanId;
+	}
+
+	public String getRootPlanId() {
+		return rootPlanId;
+	}
+
+	public Long getThinkActRecordId() {
+		return thinkActRecordId;
+	}
+
+	public void setThinkActRecordId(Long thinkActRecordId) {
+		this.thinkActRecordId = thinkActRecordId;
+	}
+
+	/**
+	 * Check if this agent is executing a sub-plan triggered by a tool call
+	 * @return true if this is a sub-plan execution, false otherwise
+	 */
+	public boolean isSubPlanExecution() {
+		return thinkActRecordId != null;
 	}
 
 	public AgentState getState() {
@@ -321,13 +391,16 @@ public abstract class BaseAgent {
 	}
 
 	/**
-	 * 获取智能体的数据上下文
+	 * Get the data context of the agent
 	 *
-	 * 使用说明： 1. 返回智能体在执行过程中需要的所有上下文数据 2. 数据可包含： - 当前执行状态 - 步骤信息 - 中间结果 - 配置参数 3.
-	 * 数据在run()方法执行时通过setData()设置
+	 * Implementation requirements: 1. Return all the context data needed for the agent's
+	 * execution 2. Data can include: - Current execution state - Step information -
+	 * Intermediate results - Configuration parameters 3. Data is set through setData()
+	 * when run() is executed
 	 *
-	 * 不要修改这个方法的实现，如果你需要传递上下文，继承并修改setData方法，这样可以提高getData()的的效率。
-	 * @return 包含智能体上下文数据的Map对象
+	 * Do not modify the implementation of this method. If you need to pass context,
+	 * inherit and modify setData() to improve getData() efficiency.
+	 * @return A Map object containing the agent's context data
 	 */
 	protected final Map<String, Object> getInitSettingData() {
 		return initSettingData;

@@ -27,10 +27,10 @@ public class McpServiceEntity {
 	private String serviceGroup;
 
 	/**
-	 * 创建一个 McpServiceEntity 实例
-	 * @param mcpAsyncClient MCP异步客户端
-	 * @param asyncMcpToolCallbackProvider 异步MCP工具回调提供者
-	 * @param serviceGroup 服务组
+	 * Creates a McpServiceEntity instance
+	 * @param mcpAsyncClient MCP async client
+	 * @param asyncMcpToolCallbackProvider Async MCP tool callback provider
+	 * @param serviceGroup Service group
 	 */
 	public McpServiceEntity(McpAsyncClient mcpAsyncClient, AsyncMcpToolCallbackProvider asyncMcpToolCallbackProvider,
 			String serviceGroup) {

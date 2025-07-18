@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Mac命令执行器实现
+ * Mac command executor implementation
  */
 public class MacShellExecutor implements ShellCommandExecutor {
 
@@ -34,44 +34,50 @@ public class MacShellExecutor implements ShellCommandExecutor {
 
 	private Process currentProcess;
 
-	private static final int DEFAULT_TIMEOUT = 60; // 默认超时时间(秒)
+	private static final int DEFAULT_TIMEOUT = 60; // Default timeout in seconds
 
 	private BufferedWriter processInput;
+
+	// Cache for shell path to avoid repeated detection
+	private static String shellPath = null;
 
 	@Override
 	public List<String> execute(List<String> commands, String workingDir) {
 		return commands.stream().map(command -> {
 			try {
-				// 如果是空命令，返回当前进程的额外日志
+				// If empty command, return additional logs from current process
 				if (command.trim().isEmpty() && currentProcess != null) {
 					return processOutput(currentProcess);
 				}
 
-				// 如果是ctrl+c命令，发送中断信号
+				// If ctrl+c command, send interrupt signal
 				if ("ctrl+c".equalsIgnoreCase(command.trim()) && currentProcess != null) {
 					terminate();
 					return "Process terminated by ctrl+c";
 				}
 
-				ProcessBuilder pb = new ProcessBuilder("/bin/zsh", "-c", command);
+				// Use dynamic shell path detection
+				String shell = getShellPath();
+				ProcessBuilder pb = new ProcessBuilder(shell, "-c", command);
 				if (!StringUtils.isEmpty(workingDir)) {
 					pb.directory(new File(workingDir));
 				}
 
-				// 设置环境变量
+				// Set environment variables
 				pb.environment().put("LANG", "en_US.UTF-8");
 				pb.environment().put("PATH", System.getenv("PATH") + ":/usr/local/bin");
 
 				currentProcess = pb.start();
 				processInput = new BufferedWriter(new OutputStreamWriter(currentProcess.getOutputStream()));
 
-				// 设置超时处理
+				// Set timeout handling
 				try {
-					if (!command.endsWith("&")) { // 不是后台命令才设置超时
+					if (!command.endsWith("&")) { // Only set timeout for non-background
+													// commands
 						if (!currentProcess.waitFor(DEFAULT_TIMEOUT, TimeUnit.SECONDS)) {
 							log.warn("Command timed out. Sending SIGINT to the process");
 							terminate();
-							// 在后台重试命令
+							// Retry command in background
 							if (!command.endsWith("&")) {
 								command += " &";
 							}
@@ -95,12 +101,12 @@ public class MacShellExecutor implements ShellCommandExecutor {
 	@Override
 	public void terminate() {
 		if (currentProcess != null && currentProcess.isAlive()) {
-			// 首先尝试发送SIGINT (ctrl+c)
+			// First try to send SIGINT (ctrl+c)
 			currentProcess.destroy();
 			try {
-				// 等待进程响应SIGINT
+				// Wait for process to respond to SIGINT
 				if (!currentProcess.waitFor(5, TimeUnit.SECONDS)) {
-					// 如果进程没有响应SIGINT，强制终止
+					// If process doesn't respond to SIGINT, force terminate
 					currentProcess.destroyForcibly();
 				}
 			}
@@ -112,11 +118,72 @@ public class MacShellExecutor implements ShellCommandExecutor {
 		}
 	}
 
+	/**
+	 * Dynamically detect the best available shell path Priority: zsh -> bash (as
+	 * fallback)
+	 * @return The path to the shell executable
+	 */
+	private String getShellPath() {
+		// Return cached path if already detected
+		if (shellPath != null) {
+			return shellPath;
+		}
+
+		// Try to find zsh in common locations
+		String[] zshPaths = { "/bin/zsh", "/usr/bin/zsh", "/usr/local/bin/zsh", "/opt/homebrew/bin/zsh" };
+
+		for (String path : zshPaths) {
+			if (new File(path).exists() && new File(path).canExecute()) {
+				log.info("Found zsh at: {}", path);
+				shellPath = path;
+				return shellPath;
+			}
+		}
+
+		// If zsh not found, use 'which' command to find it
+		try {
+			Process whichProcess = new ProcessBuilder("which", "zsh").start();
+			whichProcess.waitFor(5, TimeUnit.SECONDS);
+			if (whichProcess.exitValue() == 0) {
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(whichProcess.getInputStream()))) {
+					String path = reader.readLine();
+					if (path != null && !path.trim().isEmpty()) {
+						File zshFile = new File(path.trim());
+						if (zshFile.exists() && zshFile.canExecute()) {
+							log.info("Found zsh via 'which' command at: {}", path.trim());
+							shellPath = path.trim();
+							return shellPath;
+						}
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			log.warn("Failed to find zsh using 'which' command: {}", e.getMessage());
+		}
+
+		// Fall back to bash if zsh is not available
+		String[] bashPaths = { "/bin/bash", "/usr/bin/bash", "/usr/local/bin/bash" };
+
+		for (String path : bashPaths) {
+			if (new File(path).exists() && new File(path).canExecute()) {
+				log.warn("zsh not found, falling back to bash at: {}", path);
+				shellPath = path;
+				return shellPath;
+			}
+		}
+
+		// Final fallback - use system default
+		log.error("Neither zsh nor bash found in standard locations, using /bin/bash as final fallback");
+		shellPath = "/bin/bash";
+		return shellPath;
+	}
+
 	private String processOutput(Process process) throws IOException, InterruptedException {
 		StringBuilder outputBuilder = new StringBuilder();
 		StringBuilder errorBuilder = new StringBuilder();
 
-		// 读取标准输出
+		// Read standard output
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"))) {
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -125,7 +192,7 @@ public class MacShellExecutor implements ShellCommandExecutor {
 			}
 		}
 
-		// 读取错误输出
+		// Read error output
 		try (BufferedReader errorReader = new BufferedReader(
 				new InputStreamReader(process.getErrorStream(), "UTF-8"))) {
 			String line;

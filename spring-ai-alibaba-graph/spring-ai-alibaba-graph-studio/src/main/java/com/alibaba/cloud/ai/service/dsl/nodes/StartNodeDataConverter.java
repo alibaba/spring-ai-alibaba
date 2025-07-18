@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @Component
@@ -96,6 +97,33 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 			this.dialectConverter = dialectConverter;
 		}
 
+	}
+
+	@Override
+	public String generateVarName(int count) {
+		return "startNode" + count;
+	}
+
+	@Override
+	public Stream<Variable> extractWorkflowVars(StartNodeData data) {
+		return Optional.ofNullable(data.getStartInputs())
+			.stream()
+			.flatMap(List::stream)
+			.map(sel -> new Variable(sel.getVariable(), com.alibaba.cloud.ai.model.VariableType.STRING.value()));
+	}
+
+	@Override
+	public void postProcess(StartNodeData data, String varName) {
+		String outputKey = varName + "_output";
+		data.setOutputKey(outputKey);
+
+		List<Variable> vars = new ArrayList<>(data.getStartInputs()
+			.stream()
+			.map(input -> new Variable(input.getVariable(), VariableType.STRING.value()))
+			.toList());
+
+		vars.add(new Variable(outputKey, VariableType.STRING.value()));
+		data.setOutputs(vars);
 	}
 
 }

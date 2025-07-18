@@ -148,4 +148,20 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
 
 	}
 
+	@Override
+	public String generateVarName(int count) {
+		return "variableAggregatorNode" + count;
+	}
+
+	@Override
+	public void postProcess(VariableAggregatorNodeData data, String varName) {
+		String origKey = data.getOutputKey();
+		String newKey = varName + "_output";
+
+		if (origKey == null) {
+			data.setOutputKey(newKey);
+		}
+		data.setOutputs(List.of(new Variable(data.getOutputKey(), data.getOutputType())));
+	}
+
 }

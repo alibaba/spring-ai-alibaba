@@ -14,346 +14,305 @@
  * limitations under the License.
  */
 
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+
+import { reactive } from 'vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import type { PlanTemplate } from '@/types/plan-template'
+import { i18n } from '@/base/i18n'
 
-export const useSidebarStore = defineStore('sidebar', () => {
-  // 基本状态
-  const isCollapsed = ref(true) // 默认隐藏侧边栏
-  const currentTab = ref<'list' | 'config'>('list')
+type TabType = 'list' | 'config'
 
-  // 模板列表相关状态
-  const currentPlanTemplateId = ref<string | null>(null)
-  const planTemplateList = ref<PlanTemplate[]>([])
-  const selectedTemplate = ref<PlanTemplate | null>(null)
-  const isLoading = ref(false)
-  const errorMessage = ref<string>('')
+export class SidebarStore {
+  // Basic state
+  isCollapsed = true
+  currentTab: TabType = 'list'
 
-  // 配置相关状态
-  const jsonContent = ref('')
-  const generatorPrompt = ref('')
-  const executionParams = ref('')
-  const isGenerating = ref(false)
-  const isExecuting = ref(false)
+  // Template list related state
+  currentPlanTemplateId: string | null = null
+  planTemplateList: PlanTemplate[] = []
+  selectedTemplate: PlanTemplate | null = null
+  isLoading = false
+  errorMessage = ''
 
-  // 版本控制
-  const planVersions = ref<string[]>([])
-  const currentVersionIndex = ref(-1)
+  // Configuration related state
+  jsonContent = ''
+  generatorPrompt = ''
+  executionParams = ''
+  isGenerating = false
+  isExecuting = false
 
-  // 计算属性
-  const sortedTemplates = computed(() => {
-    return [...planTemplateList.value].sort((a, b) => {
-      const timeA = new Date(a.updateTime || a.createTime)
-      const timeB = new Date(b.updateTime || b.createTime)
+  // Version control
+  planVersions: string[] = []
+  currentVersionIndex = -1
+
+  // Computed properties
+  get sortedTemplates(): PlanTemplate[] {
+    return [...this.planTemplateList].sort((a, b) => {
+      const timeA = new Date(a.updateTime ?? a.createTime)
+      const timeB = new Date(b.updateTime ?? b.createTime)
       return timeB.getTime() - timeA.getTime()
     })
-  })
+  }
 
-  const canRollback = computed(() => {
-    return planVersions.value.length > 1 && currentVersionIndex.value > 0
-  })
+  get canRollback(): boolean {
+    return this.planVersions.length > 1 && this.currentVersionIndex > 0
+  }
 
-  const canRestore = computed(() => {
+  get canRestore(): boolean {
     return (
-      planVersions.value.length > 1 && currentVersionIndex.value < planVersions.value.length - 1
+      this.planVersions.length > 1 && this.currentVersionIndex < this.planVersions.length - 1
     )
-  })
+  }
 
-  const computedApiUrl = computed(() => {
-    if (!selectedTemplate.value) return ''
-    const baseUrl = `/api/plan-template/executePlanByTemplateId/${selectedTemplate.value.id}`
-    const params = executionParams.value.trim()
-    return params ? `${baseUrl}?${encodeURIComponent(params)}` : baseUrl
-  })
+  get computedApiUrl(): string {
+  if (!this.selectedTemplate) return ''
+  const baseUrl = `/api/plan-template/execute/${this.selectedTemplate.id}`
+  const params = this.executionParams.trim()
+  // GET 方式，参数名为 allParams
+  return params ? `${baseUrl}?allParams=${encodeURIComponent(params)}` : baseUrl
+  }
 
   // Actions
-  const toggleSidebar = () => {
-    isCollapsed.value = !isCollapsed.value
+  toggleSidebar() {
+    this.isCollapsed = !this.isCollapsed
   }
 
-  const showSidebar = () => {
-    isCollapsed.value = false
+  switchToTab(tab: TabType) {
+    this.currentTab = tab
   }
 
-  const hideSidebar = () => {
-    isCollapsed.value = true
-  }
-
-  const switchToTab = (tab: 'list' | 'config') => {
-    currentTab.value = tab
-  }
-
-  const loadPlanTemplateList = async () => {
-    isLoading.value = true
-    errorMessage.value = ''
-
+  async loadPlanTemplateList() {
+    this.isLoading = true
+    this.errorMessage = ''
     try {
-      console.log('[SidebarStore] 开始加载计划模板列表...')
+      console.log('[SidebarStore] Starting to load plan template list...')
       const response = await PlanActApiService.getAllPlanTemplates()
-
-      if (response && response.templates && Array.isArray(response.templates)) {
-        planTemplateList.value = response.templates
-        console.log(`[SidebarStore] 成功加载 ${response.templates.length} 个计划模板`)
+      if (response?.templates && Array.isArray(response.templates)) {
+        this.planTemplateList = response.templates
+        console.log(`[SidebarStore] Successfully loaded ${response.templates.length} plan templates`)
       } else {
-        planTemplateList.value = []
-        console.warn('[SidebarStore] API 返回的数据格式异常，使用空列表', response)
+        this.planTemplateList = []
+        console.warn('[SidebarStore] API returned abnormal data format, using empty list', response)
       }
     } catch (error: any) {
-      console.error('[SidebarStore] 加载计划模板列表失败:', error)
-      planTemplateList.value = []
-      errorMessage.value = `加载失败: ${error.message}`
+      console.error('[SidebarStore] Failed to load plan template list:', error)
+      this.planTemplateList = []
+      this.errorMessage = `Load failed: ${error.message}`
     } finally {
-      isLoading.value = false
+      this.isLoading = false
     }
   }
 
-  const selectTemplate = async (template: PlanTemplate) => {
-    currentPlanTemplateId.value = template.id
-    selectedTemplate.value = template
-    currentTab.value = 'config'
-
-    // 加载模板数据
-    await loadTemplateData(template)
-    console.log(`[SidebarStore] 选择了计划模板: ${template.id}`)
+  async selectTemplate(template: PlanTemplate) {
+    this.currentPlanTemplateId = template.id
+    this.selectedTemplate = template
+    this.currentTab = 'config'
+    await this.loadTemplateData(template)
+    console.log(`[SidebarStore] Selected plan template: ${template.id}`)
   }
 
-  const loadTemplateData = async (template: PlanTemplate) => {
+  async loadTemplateData(template: PlanTemplate) {
     try {
       const versionsResponse = await PlanActApiService.getPlanVersions(template.id)
-      planVersions.value = versionsResponse.versions || []
-
-      if (planVersions.value.length > 0) {
-        const latestContent = planVersions.value[planVersions.value.length - 1]
-        jsonContent.value = latestContent
-        currentVersionIndex.value = planVersions.value.length - 1
-
-        // 解析并设置提示信息
+      this.planVersions = versionsResponse.versions || []
+      if (this.planVersions.length > 0) {
+        const latestContent = this.planVersions[this.planVersions.length - 1]
+        this.jsonContent = latestContent
+        this.currentVersionIndex = this.planVersions.length - 1
         try {
           const parsed = JSON.parse(latestContent)
           if (parsed.prompt) {
-            generatorPrompt.value = parsed.prompt
+            this.generatorPrompt = parsed.prompt
           }
           if (parsed.params) {
-            executionParams.value = parsed.params
+            this.executionParams = parsed.params
           }
-        } catch (e) {
-          console.warn('无法解析JSON内容获取提示信息')
+        } catch {
+          console.warn('Unable to parse JSON content to get prompt information')
         }
       } else {
-        jsonContent.value = ''
-        generatorPrompt.value = ''
-        executionParams.value = ''
+        this.jsonContent = ''
+        this.generatorPrompt = ''
+        this.executionParams = ''
       }
     } catch (error: any) {
-      console.error('加载模板数据失败:', error)
+      console.error('Failed to load template data:', error)
       throw error
     }
   }
 
-  const createNewTemplate = () => {
+  createNewTemplate() {
     const emptyTemplate: PlanTemplate = {
       id: `new-${Date.now()}`,
-      title: '新建计划',
-      description: '请使用计划生成器创建新的计划模板',
+      title: i18n.global.t('sidebar.newTemplateName'),
+      description: i18n.global.t('sidebar.newTemplateDescription'),
       createTime: new Date().toISOString(),
       updateTime: new Date().toISOString(),
     }
-
-    selectedTemplate.value = emptyTemplate
-    currentPlanTemplateId.value = null
-    jsonContent.value = ''
-    generatorPrompt.value = ''
-    executionParams.value = ''
-    planVersions.value = []
-    currentVersionIndex.value = -1
-    currentTab.value = 'config'
-
-    console.log('[SidebarStore] 创建新的空白计划模板，切换到配置标签页')
+    this.selectedTemplate = emptyTemplate
+    this.currentPlanTemplateId = null
+    this.jsonContent = ''
+    this.generatorPrompt = ''
+    this.executionParams = ''
+    this.planVersions = []
+    this.currentVersionIndex = -1
+    this.currentTab = 'config'
+    console.log('[SidebarStore] Created new empty plan template, switching to config tab')
   }
 
-  const deleteTemplate = async (template: PlanTemplate) => {
-    if (!template || !template.id) {
-      console.warn('[SidebarStore] deleteTemplate: 无效的模板对象或ID')
+  async deleteTemplate(template: PlanTemplate) {
+    if (!template.id) {
+      console.warn('[SidebarStore] deleteTemplate: Invalid template object or ID')
       return
     }
-
     try {
       await PlanActApiService.deletePlanTemplate(template.id)
-
-      if (currentPlanTemplateId.value === template.id) {
-        // 如果删除的是当前选中的模板，清空选择和相关内容
-        clearSelection()
+      if (this.currentPlanTemplateId === template.id) {
+        this.clearSelection()
       }
-
-      // 重新加载列表
-      await loadPlanTemplateList()
-      console.log(`[SidebarStore] 计划模板 ${template.id} 已删除`)
+      await this.loadPlanTemplateList()
+      console.log(`[SidebarStore] Plan template ${template.id} has been deleted`)
     } catch (error: any) {
-      console.error('删除计划模板失败:', error)
-      // 即使出错也刷新列表以确保一致性
-      await loadPlanTemplateList()
+      console.error('Failed to delete plan template:', error)
+      await this.loadPlanTemplateList()
       throw error
     }
   }
 
-  const clearSelection = () => {
-    currentPlanTemplateId.value = null
-    selectedTemplate.value = null
-    jsonContent.value = ''
-    generatorPrompt.value = ''
-    executionParams.value = ''
-    planVersions.value = []
-    currentVersionIndex.value = -1
-    currentTab.value = 'list'
+  clearSelection() {
+    this.currentPlanTemplateId = null
+    this.selectedTemplate = null
+    this.jsonContent = ''
+    this.generatorPrompt = ''
+    this.executionParams = ''
+    this.planVersions = []
+    this.currentVersionIndex = -1
+    this.currentTab = 'list'
   }
 
-  const clearExecutionParams = () => {
-    executionParams.value = ''
+  clearExecutionParams() {
+    this.executionParams = ''
   }
 
-  const rollbackVersion = () => {
-    if (canRollback.value) {
-      currentVersionIndex.value--
-      jsonContent.value = planVersions.value[currentVersionIndex.value]
+  rollbackVersion() {
+    if (this.canRollback) {
+      this.currentVersionIndex--
+      this.jsonContent = this.planVersions[this.currentVersionIndex]
     }
   }
 
-  const restoreVersion = () => {
-    if (canRestore.value) {
-      currentVersionIndex.value++
-      jsonContent.value = planVersions.value[currentVersionIndex.value]
+  restoreVersion() {
+    if (this.canRestore) {
+      this.currentVersionIndex++
+      this.jsonContent = this.planVersions[this.currentVersionIndex]
     }
   }
 
-  const saveTemplate = async () => {
-    if (!selectedTemplate.value) return
-
-    const content = jsonContent.value.trim()
+  async saveTemplate() {
+    if (!this.selectedTemplate) return
+    const content = this.jsonContent.trim()
     if (!content) {
-      throw new Error('内容不能为空')
+      throw new Error('Content cannot be empty')
     }
-
     try {
       JSON.parse(content)
     } catch (e: any) {
-      throw new Error('格式无效，请修正后再保存。\n错误: ' + e.message)
+      throw new Error('Invalid format, please correct and save.\nError: ' + e.message)
     }
-
     try {
       const saveResult = await PlanActApiService.savePlanTemplate(
-        selectedTemplate.value.id,
+        this.selectedTemplate.id,
         content
       )
-
-      // 保存到本地版本历史
-      if (currentVersionIndex.value < planVersions.value.length - 1) {
-        planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
+      if (this.currentVersionIndex < this.planVersions.length - 1) {
+        this.planVersions = this.planVersions.slice(0, this.currentVersionIndex + 1)
       }
-      planVersions.value.push(content)
-      currentVersionIndex.value = planVersions.value.length - 1
-
+      this.planVersions.push(content)
+      this.currentVersionIndex = this.planVersions.length - 1
       return saveResult
     } catch (error: any) {
-      console.error('保存计划修改失败:', error)
+      console.error('Failed to save plan template:', error)
       throw error
     }
   }
 
-  const generatePlan = async () => {
-    if (!generatorPrompt.value.trim()) return
-
-    isGenerating.value = true
-
+  async generatePlan() {
+    if (!this.generatorPrompt.trim()) return
+    this.isGenerating = true
     try {
-      const response = await PlanActApiService.generatePlan(generatorPrompt.value)
-      jsonContent.value = response.planJson || ''
-
-      // 如果是新建的模板，更新模板信息
-      if (selectedTemplate.value && selectedTemplate.value.id.startsWith('new-')) {
-        let title = '新建计划模板'
+      const response = await PlanActApiService.generatePlan(this.generatorPrompt)
+      this.jsonContent = response.planJson || ''
+      if (this.selectedTemplate && this.selectedTemplate.id.startsWith('new-')) {
+        let title = 'New Plan Template'
         try {
           const planData = JSON.parse(response.planJson || '{}')
           title = planData.title || title
-        } catch (e) {
-          console.warn('无法解析计划JSON获取标题')
+        } catch {
+          console.warn('Unable to parse plan JSON to get title')
         }
-
-        selectedTemplate.value = {
+        this.selectedTemplate = {
           id: response.planTemplateId,
           title: title,
-          description: '通过生成器创建的计划模板',
+          description: i18n.global.t('sidebar.generatedTemplateDescription'),
           createTime: new Date().toISOString(),
           updateTime: new Date().toISOString(),
           planJson: response.planJson,
         }
-
-        currentPlanTemplateId.value = response.planTemplateId
-        await loadPlanTemplateList()
+        this.currentPlanTemplateId = response.planTemplateId
+        await this.loadPlanTemplateList()
       }
-
-      // 保存到版本历史
-      if (currentVersionIndex.value < planVersions.value.length - 1) {
-        planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
+      if (this.currentVersionIndex < this.planVersions.length - 1) {
+        this.planVersions = this.planVersions.slice(0, this.currentVersionIndex + 1)
       }
-      planVersions.value.push(jsonContent.value)
-      currentVersionIndex.value = planVersions.value.length - 1
-
+      this.planVersions.push(this.jsonContent)
+      this.currentVersionIndex = this.planVersions.length - 1
       return response
     } catch (error: any) {
-      console.error('生成计划失败:', error)
+      console.error('Failed to generate plan:', error)
       throw error
     } finally {
-      isGenerating.value = false
+      this.isGenerating = false
     }
   }
 
-  const updatePlan = async () => {
-    if (!generatorPrompt.value.trim() || !jsonContent.value.trim()) return
-    if (!selectedTemplate.value) return
-
-    isGenerating.value = true
-
+  async updatePlan() {
+    if (!this.generatorPrompt.trim() || !this.jsonContent.trim()) return
+    if (!this.selectedTemplate) return
+    this.isGenerating = true
     try {
       const response = await PlanActApiService.updatePlanTemplate(
-        selectedTemplate.value.id,
-        generatorPrompt.value,
-        jsonContent.value
+        this.selectedTemplate.id,
+        this.generatorPrompt,
+        this.jsonContent
       )
-      jsonContent.value = response.planJson || ''
-
-      // 保存到版本历史
-      if (currentVersionIndex.value < planVersions.value.length - 1) {
-        planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
+      this.jsonContent = response.planJson || ''
+      if (this.currentVersionIndex < this.planVersions.length - 1) {
+        this.planVersions = this.planVersions.slice(0, this.currentVersionIndex + 1)
       }
-      planVersions.value.push(jsonContent.value)
-      currentVersionIndex.value = planVersions.value.length - 1
-
+      this.planVersions.push(this.jsonContent)
+      this.currentVersionIndex = this.planVersions.length - 1
       return response
     } catch (error: any) {
-      console.error('更新计划失败:', error)
+      console.error('Failed to update plan:', error)
       throw error
     } finally {
-      isGenerating.value = false
+      this.isGenerating = false
     }
   }
 
-  const preparePlanExecution = () => {
-    if (!selectedTemplate.value) return null
-
-    isExecuting.value = true
-
+  preparePlanExecution() {
+    if (!this.selectedTemplate) return null
+    this.isExecuting = true
     try {
       let planData
       try {
-        planData = JSON.parse(jsonContent.value)
-        planData.planTemplateId = selectedTemplate.value.id
-      } catch (e) {
+        planData = JSON.parse(this.jsonContent)
+        planData.planTemplateId = this.selectedTemplate.id
+      } catch {
         planData = {
-          planTemplateId: selectedTemplate.value.id,
-          planId: selectedTemplate.value.id,
-          title: selectedTemplate.value.title || '执行计划',
+          planTemplateId: this.selectedTemplate.id,
+          planId: this.selectedTemplate.id,
+          title: this.selectedTemplate.title ?? i18n.global.t('sidebar.defaultExecutionPlanTitle'),
           steps: [
             { stepRequirement: '[BROWSER_AGENT] 访问百度搜索阿里巴巴的最新股价' },
             { stepRequirement: '[DEFAULT_AGENT] 提取和整理搜索结果中的股价信息' },
@@ -362,65 +321,23 @@ export const useSidebarStore = defineStore('sidebar', () => {
           ],
         }
       }
-
-      const title = selectedTemplate.value.title || planData.title || '执行计划'
-
+      const title = this.selectedTemplate.title ?? planData.title ?? 'Execution Plan'
       return {
         title,
         planData,
-        params: executionParams.value.trim() || undefined,
+        params: this.executionParams.trim() || undefined,
       }
     } catch (error: any) {
-      console.error('准备计划执行失败:', error)
-      isExecuting.value = false
+      console.error('Failed to prepare plan execution:', error)
+      this.isExecuting = false
       throw error
     }
   }
 
-  const finishPlanExecution = () => {
-    isExecuting.value = false
+  finishPlanExecution() {
+    this.isExecuting = false
   }
+}
 
-  return {
-    // 状态
-    isCollapsed,
-    currentTab,
-    currentPlanTemplateId,
-    planTemplateList,
-    selectedTemplate,
-    isLoading,
-    errorMessage,
-    jsonContent,
-    generatorPrompt,
-    executionParams,
-    isGenerating,
-    isExecuting,
-    planVersions,
-    currentVersionIndex,
+export const sidebarStore = reactive(new SidebarStore())
 
-    // 计算属性
-    sortedTemplates,
-    canRollback,
-    canRestore,
-    computedApiUrl,
-
-    // Actions
-    toggleSidebar,
-    showSidebar,
-    hideSidebar,
-    switchToTab,
-    loadPlanTemplateList,
-    selectTemplate,
-    createNewTemplate,
-    deleteTemplate,
-    clearSelection,
-    clearExecutionParams,
-    rollbackVersion,
-    restoreVersion,
-    saveTemplate,
-    generatePlan,
-    updatePlan,
-    preparePlanExecution,
-    finishPlanExecution,
-  }
-})

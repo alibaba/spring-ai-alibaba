@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 /**
- * Admin API 服务
- * 负责处理所有与管理配置相关的 API 交互
+ * Admin API Service
+ * Handles all API interactions related to administration configuration
  */
 
 export interface ConfigOption {
@@ -48,27 +48,27 @@ export class AdminApiService {
   private static readonly BASE_URL = '/api/config'
 
   /**
-   * 根据组名获取配置项
+   * Get configuration items by group name
    */
   public static async getConfigsByGroup(groupName: string): Promise<ConfigItem[]> {
     try {
       const response = await fetch(`${this.BASE_URL}/group/${groupName}`)
       if (!response.ok) {
-        throw new Error(`获取${groupName}组配置失败: ${response.status}`)
+        throw new Error(`Failed to get ${groupName} group configuration: ${response.status}`)
       }
       return await response.json()
     } catch (error) {
-      console.error(`获取${groupName}组配置失败:`, error)
+      console.error(`Failed to get ${groupName} group configuration:`, error)
       throw error
     }
   }
 
   /**
-   * 批量更新配置项
+   * Batch update configuration items
    */
   public static async batchUpdateConfigs(configs: ConfigItem[]): Promise<ApiResponse> {
-    if (!configs || configs.length === 0) {
-      return { success: true, message: '没有需要更新的配置' }
+    if (configs.length === 0) {
+      return { success: true, message: 'No configuration needs to be updated' }
     }
 
     try {
@@ -81,37 +81,37 @@ export class AdminApiService {
       })
 
       if (!response.ok) {
-        throw new Error(`批量更新配置失败: ${response.status}`)
+        throw new Error(`Batch update configuration failed: ${response.status}`)
       }
 
-      return { success: true, message: '配置保存成功' }
+      return { success: true, message: 'Configuration saved successfully' }
     } catch (error) {
-      console.error('批量更新配置失败:', error)
+      console.error('Batch update configuration failed:', error)
       return { 
         success: false, 
-        message: error instanceof Error ? error.message : '更新失败，请重试' 
+        message: error instanceof Error ? error.message : 'Update failed, please try again' 
       }
     }
   }
 
   /**
-   * 获取单个配置项
+   * Get single configuration item
    */
   public static async getConfigById(id: number): Promise<ConfigItem> {
     try {
       const response = await fetch(`${this.BASE_URL}/${id}`)
       if (!response.ok) {
-        throw new Error(`获取配置项失败: ${response.status}`)
+        throw new Error(`Failed to get configuration item: ${response.status}`)
       }
       return await response.json()
     } catch (error) {
-      console.error(`获取配置项[${id}]失败:`, error)
+      console.error(`Failed to get configuration item[${id}]:`, error)
       throw error
     }
   }
 
   /**
-   * 更新单个配置项
+   * Update single configuration item
    */
   public static async updateConfig(config: ConfigItem): Promise<ApiResponse> {
     try {
@@ -124,15 +124,15 @@ export class AdminApiService {
       })
 
       if (!response.ok) {
-        throw new Error(`更新配置项失败: ${response.status}`)
+        throw new Error(`Failed to update configuration item: ${response.status}`)
       }
 
-      return { success: true, message: '配置更新成功' }
+      return { success: true, message: 'Configuration updated successfully' }
     } catch (error) {
-      console.error('更新配置项失败:', error)
+      console.error('Failed to update configuration item:', error)
       return { 
         success: false, 
-        message: error instanceof Error ? error.message : '更新失败，请重试' 
+        message: error instanceof Error ? error.message : 'Update failed, please try again' 
       }
     }
   }

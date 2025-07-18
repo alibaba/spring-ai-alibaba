@@ -24,16 +24,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class DocLoaderTool implements ToolCallBiFunctionDef<DocLoaderTool.DocLoaderInput> {
+public class DocLoaderTool extends AbstractBaseTool<DocLoaderTool.DocLoaderInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(DocLoaderTool.class);
 
 	/**
-	 * 内部输入类，用于定义文档加载工具的输入参数
+	 * Internal input class for defining input parameters of the document loading tool
 	 */
 	public static class DocLoaderInput {
 
@@ -101,10 +100,13 @@ public class DocLoaderTool implements ToolCallBiFunctionDef<DocLoaderTool.DocLoa
 	}
 
 	/**
-	 * 获取用于 Spring AI 的 FunctionToolCallback
+	 * Get FunctionToolCallback for Spring AI
 	 */
 	public static FunctionToolCallback<DocLoaderInput, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, new DocLoaderTool()::apply)
+		return FunctionToolCallback
+			.<DocLoaderInput, ToolExecuteResult>builder(name,
+					(DocLoaderInput input, org.springframework.ai.chat.model.ToolContext context) -> new DocLoaderTool()
+						.run(input))
 			.description(description)
 			.inputType(DocLoaderInput.class)
 			.build();
@@ -119,6 +121,7 @@ public class DocLoaderTool implements ToolCallBiFunctionDef<DocLoaderTool.DocLoa
 
 	private String lastFileType = "";
 
+	@Override
 	public ToolExecuteResult run(DocLoaderInput input) {
 		String fileType = input.getFileType();
 		String filePath = input.getFilePath();
@@ -169,21 +172,6 @@ public class DocLoaderTool implements ToolCallBiFunctionDef<DocLoaderTool.DocLoa
 	@Override
 	public Class<DocLoaderInput> getInputType() {
 		return DocLoaderInput.class;
-	}
-
-	@Override
-	public boolean isReturnDirect() {
-		return false;
-	}
-
-	@Override
-	public ToolExecuteResult apply(DocLoaderInput input, ToolContext context) {
-		return run(input);
-	}
-
-	@Override
-	public void setPlanId(String planId) {
-		// Implementation for setting planId if required in the future.
 	}
 
 	@Override

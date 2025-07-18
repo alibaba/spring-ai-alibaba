@@ -20,7 +20,9 @@ import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Page;
 
 /**
- * WebElement的包装类，同时包含元素本身和元素的详细信息。 这个类使得在处理网页元素时能够一次获取ElementHandle及其相关信息。
+ * A wrapper class for WebElement, which contains both the element itself and its detailed
+ * information. This class allows obtaining an ElementHandle and its related information
+ * in one operation when processing web elements.
  */
 public class WebElementWrapper {
 
@@ -28,14 +30,16 @@ public class WebElementWrapper {
 
 	private final String elementInfoString;
 
-	private Frame iframeElement; // 元素所属的iframe元素，如果在主文档中则为null
+	private Frame iframeElement; // The iframe element that the element belongs to, or
+									// null if in the main document
 
-	private String iframePath; // iframe的路径，如"0/2/1"表示第一个iframe中的第三个iframe中的第二个iframe
+	private String iframePath; // The path of the iframe, such as "0/2/1" representing the
+								// second iframe in the third iframe in the first iframe
 
 	/**
-	 * 构造一个新的WebElementWrapper实例
-	 * @param element ElementHandle对象
-	 * @param elementInfoString 元素的详细信息字符串
+	 * Construct a new WebElementWrapper instance
+	 * @param element ElementHandle object
+	 * @param elementInfoString The detailed information string of the element
 	 */
 	public WebElementWrapper(ElementHandle element, String elementInfoString) {
 		this.element = element;
@@ -45,11 +49,12 @@ public class WebElementWrapper {
 	}
 
 	/**
-	 * 构造一个新的WebElementWrapper实例，包含iframe信息
-	 * @param element ElementHandle对象
-	 * @param elementInfoString 元素的详细信息字符串
-	 * @param iframeElement 元素所属的iframe元素
-	 * @param iframePath iframe的路径
+	 * Construct a new WebElementWrapper instance, including iframe information
+	 * @param element ElementHandle object
+	 * @param elementInfoString The detailed information string of the element
+	 * @param iframeElement The iframe element that the element belongs to
+	 * @param iframePath The path of the iframe, such as "0/2/1" representing the second
+	 * iframe in the third iframe in the first iframe
 	 */
 	public WebElementWrapper(ElementHandle element, String elementInfoString, Frame iframeElement, String iframePath) {
 		this.element = element;
@@ -59,63 +64,65 @@ public class WebElementWrapper {
 	}
 
 	/**
-	 * 获取包装的ElementHandle对象
-	 * @return ElementHandle对象
+	 * Get the wrapped ElementHandle object
+	 * @return ElementHandle object
 	 */
 	public ElementHandle getElement() {
 		return element;
 	}
 
 	/**
-	 * 获取元素的详细信息字符串
-	 * @return 元素详细信息字符串
+	 * Get the detailed information string of the element
+	 * @return The detailed information string of the element
 	 */
 	public String getElementInfoString() {
 		return elementInfoString;
 	}
 
 	/**
-	 * 获取元素所属的iframe元素
-	 * @return 元素所属的iframe元素，如果在主文档中则为null
+	 * Get the iframe element that the element belongs to
+	 * @return The iframe element that the element belongs to, or null if in the main
+	 * document
 	 */
 	public Frame getIframeElement() {
 		return iframeElement;
 	}
 
 	/**
-	 * 设置元素所属的iframe元素
-	 * @param iframeElement 元素所属的iframe元素
+	 * Set the iframe element that the element belongs to
+	 * @param iframeElement The iframe element that the element belongs to
 	 */
 	public void setIframeElement(Frame iframeElement) {
 		this.iframeElement = iframeElement;
 	}
 
 	/**
-	 * 获取iframe的路径
-	 * @return iframe的路径，如"0/2/1"表示第一个iframe中的第三个iframe中的第二个iframe
+	 * Get the path of the iframe
+	 * @return The path of the iframe, such as "0/2/1" representing the second iframe in
+	 * the third iframe in the first iframe
 	 */
 	public String getIframePath() {
 		return iframePath;
 	}
 
 	/**
-	 * 设置iframe的路径
-	 * @param iframePath iframe的路径
+	 * Set the path of the iframe
+	 * @param iframePath The path of the iframe
 	 */
 	public void setIframePath(String iframePath) {
 		this.iframePath = iframePath;
 	}
 
 	/**
-	 * 在交互前切换到正确的iframe上下文
-	 * @param page Playwright的Page实例
+	 * Switch to the correct iframe context before interaction
+	 * @param page The Playwright Page instance
 	 */
 	public void prepareForInteraction(Page page) {
 		if (iframePath != null && !iframePath.isEmpty()) {
-			// 首先切换到顶层文档
+			// First switch to the top-level document
 			Frame currentFrame = page.mainFrame();
 
-			// 按路径依次切换iframe
+			// Switch to the iframe according to the path
 			String[] indices = iframePath.split("/");
 			for (String index : indices) {
 				int frameIndex = Integer.parseInt(index);
@@ -127,8 +134,8 @@ public class WebElementWrapper {
 	}
 
 	/**
-	 * 获取元素的简短描述，可用于日志记录和调试
-	 * @return 元素的字符串表示
+	 * Get a short description of the element, which can be used for logging and debugging
+	 * @return The string representation of the element
 	 */
 	@Override
 	public String toString() {

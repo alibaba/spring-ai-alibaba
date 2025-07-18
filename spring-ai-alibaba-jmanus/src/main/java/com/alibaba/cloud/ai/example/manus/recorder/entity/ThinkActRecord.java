@@ -16,83 +16,108 @@
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
- * 记录智能体在单个执行步骤中的思考和行动过程。 作为AgentExecutionRecord的子步骤存在，专注于记录思考和行动阶段的处理消息。
+ * Records the thinking and action process of an agent in a single execution step. Exists
+ * as a sub-step of AgentExecutionRecord, focusing on recording processing messages during
+ * thinking and action phases.
  *
- * 数据结构简化为三个主要部分：
+ * Data structure simplified into three main parts:
  *
- * 1. 基本信息 (Basic Info) - id: 记录的唯一标识 - stepNumber: 步骤编号 - parentExecutionId: 父执行记录ID
+ * 1. Basic Info - id: unique identifier of the record - stepNumber: step number -
+ * parentExecutionId: parent execution record ID
  *
- * 2. 思考阶段 (Think Phase) - thinkStartTime: 思考开始时间 - thinkInput: 思考输入内容 - thinkOutput:
- * 思考输出结果 - thinkEndTime: 思考结束时间
+ * 2. Think Phase - thinkStartTime: thinking start time - thinkInput: thinking input
+ * content - thinkOutput: thinking output result - thinkEndTime: thinking end time
  *
- * 3. 行动阶段 (Act Phase) - actStartTime: 行动开始时间 - toolName: 使用的工具名称 - toolParameters: 工具参数 -
- * actionNeeded: 是否需要执行动作 - actionDescription: 行动描述 - actionResult: 行动执行结果 - actEndTime:
- * 行动结束时间 - status: 执行状态 - errorMessage: 错误信息（如有）
+ * 3. Act Phase - actStartTime: action start time - toolName: tool name used -
+ * toolParameters: tool parameters - actionNeeded: whether action execution is needed -
+ * actionDescription: action description - actionResult: action execution result -
+ * actEndTime: action end time - status: execution status - errorMessage: error message
+ * (if any)
  *
  * @see AgentExecutionRecord
  * @see JsonSerializable
  */
 public class ThinkActRecord {
 
-	// 记录的唯一标识符
+	// Unique identifier of the record
 	private Long id;
 
-	// 父执行记录的ID，关联到AgentExecutionRecord
-	private Long parentExecutionId;
-
-	// 思考开始的时间戳
-	private LocalDateTime thinkStartTime;
-
-	// 思考完成的时间戳
-	private LocalDateTime thinkEndTime;
-
-	// 行动开始的时间戳
-	private LocalDateTime actStartTime;
-
-	// 行动完成的时间戳
-	private LocalDateTime actEndTime;
-
-	// 思考过程的输入上下文
-	private String thinkInput;
-
-	// 思考过程的输出结果
-	private String thinkOutput;
-
-	// 思考是否确定需要采取行动
-	private boolean actionNeeded;
-
-	// 将要采取的行动描述
-	private String actionDescription;
-
-	// 行动执行的结果
-	private String actionResult;
-
-	// 此思考-行动周期的状态（成功、失败等）
-	private String status;
-
-	// 如果周期遇到问题的错误消息
-	private String errorMessage;
-
-	// 用于行动的工具名称（如适用）
-	private String toolName;
-
-	// 用于行动的工具参数（序列化，如适用）
-	private String toolParameters;
-
-	// 默认构造函数
-	public ThinkActRecord() {
+	// 生成唯一ID的方法
+	private Long generateId() {
+		if (this.id == null) {
+			long timestamp = System.currentTimeMillis();
+			int random = (int) (Math.random() * 1000000);
+			this.id = timestamp * 1000 + random;
+		}
+		return this.id;
 	}
 
-	// 带父执行ID的构造函数
+	// ID of parent execution record, linked to AgentExecutionRecord
+	private Long parentExecutionId;
+
+	// Timestamp when thinking started
+	private LocalDateTime thinkStartTime;
+
+	// Timestamp when thinking completed
+	private LocalDateTime thinkEndTime;
+
+	// Timestamp when action started
+	private LocalDateTime actStartTime;
+
+	// Timestamp when action completed
+	private LocalDateTime actEndTime;
+
+	// Input context for the thinking process
+	private String thinkInput;
+
+	// Output result of the thinking process
+	private String thinkOutput;
+
+	// Whether thinking determined that action is needed
+	private boolean actionNeeded;
+
+	// Description of the action to be taken
+	private String actionDescription;
+
+	// Result of action execution
+	private String actionResult;
+
+	// Status of this think-act cycle (success, failure, etc.)
+	private ExecutionStatus status;
+
+	// Error message if the cycle encountered problems
+	private String errorMessage;
+
+	// Tool name used for action (if applicable)
+	private String toolName;
+
+	// Tool parameters used for action (serialized, if applicable)
+	private String toolParameters;
+
+	// Sub-plan execution record for tool calls that create new execution plans
+	private PlanExecutionRecord subPlanExecutionRecord;
+
+	// Action tool information(When disabling parallel tool calls, there is always only
+	// one)
+	private List<ActToolInfo> actToolInfoList;
+
+	// Default constructor
+	public ThinkActRecord() {
+		this.id = generateId();
+	}
+
+	// Constructor with parent execution ID
 	public ThinkActRecord(Long parentExecutionId) {
 		this.parentExecutionId = parentExecutionId;
 		this.thinkStartTime = LocalDateTime.now();
+		this.id = generateId();
 	}
 
 	/**
-	 * 记录思考阶段开始
+	 * Record the start of thinking phase
 	 */
 	public void startThinking(String thinkInput) {
 
@@ -101,7 +126,7 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * 记录思考阶段结束
+	 * Record the end of thinking phase
 	 */
 	public void finishThinking(String thinkOutput) {
 		this.thinkEndTime = LocalDateTime.now();
@@ -109,7 +134,7 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * 记录行动阶段开始
+	 * Record the start of action phase
 	 */
 	public void startAction(String actionDescription, String toolName, String toolParameters) {
 		this.actStartTime = LocalDateTime.now();
@@ -120,41 +145,45 @@ public class ThinkActRecord {
 	}
 
 	/**
-	 * 记录行动阶段结束
+	 * Record the end of action phase
 	 */
-	public void finishAction(String actionResult, String status) {
+	public void finishAction(String actionResult, ExecutionStatus status) {
 		this.actEndTime = LocalDateTime.now();
 		this.actionResult = actionResult;
 		this.status = status;
 	}
 
 	/**
-	 * 记录错误信息
+	 * Record error information
 	 */
 	public void recordError(String errorMessage) {
 		this.errorMessage = errorMessage;
-		this.status = "ERROR";
+		this.status = ExecutionStatus.RUNNING;
 	}
 
 	/**
-	 * 保存记录到持久化存储 空实现，由具体的存储实现来覆盖
-	 * @return 保存后的记录ID
+	 * Save record to persistent storage. Empty implementation, to be overridden by
+	 * specific storage implementations
+	 * @return Record ID after saving
 	 */
 	public Long save() {
-		// 如果ID为空，生成一个随机ID
-		if (this.id == null) {
-			// 使用时间戳和随机数组合生成ID
-			long timestamp = System.currentTimeMillis();
-			int random = (int) (Math.random() * 1000000);
-			this.id = timestamp * 1000 + random;
+
+		// Save sub-plan execution record if exists
+		if (subPlanExecutionRecord != null) {
+			subPlanExecutionRecord.save();
 		}
+
 		return this.id;
 	}
 
 	// Getters and setters
 
 	public Long getId() {
-		return id;
+		// Ensure ID is generated when accessing
+		if (this.id == null) {
+			this.id = generateId();
+		}
+		return this.id;
 	}
 
 	public void setId(Long id) {
@@ -241,11 +270,11 @@ public class ThinkActRecord {
 		this.actionResult = actionResult;
 	}
 
-	public String getStatus() {
+	public ExecutionStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(String status) {
+	public void setStatus(ExecutionStatus status) {
 		this.status = status;
 	}
 
@@ -273,10 +302,80 @@ public class ThinkActRecord {
 		this.toolParameters = toolParameters;
 	}
 
+	public PlanExecutionRecord getSubPlanExecutionRecord() {
+		return subPlanExecutionRecord;
+	}
+
+	public void setSubPlanExecutionRecord(PlanExecutionRecord subPlanExecutionRecord) {
+		this.subPlanExecutionRecord = subPlanExecutionRecord;
+	}
+
+	/**
+	 * Record a sub-plan execution triggered by tool call
+	 * @param subPlanRecord Sub-plan execution record
+	 */
+	public void recordSubPlanExecution(PlanExecutionRecord subPlanRecord) {
+		this.subPlanExecutionRecord = subPlanRecord;
+	}
+
+	/**
+	 * Check if this think-act record has a sub-plan execution
+	 * @return true if sub-plan exists, false otherwise
+	 */
+	public boolean hasSubPlanExecution() {
+		return this.subPlanExecutionRecord != null;
+	}
+
+	public List<ActToolInfo> getActToolInfoList() {
+		return actToolInfoList;
+	}
+
+	public void setActToolInfoList(List<ActToolInfo> actToolInfoList) {
+		this.actToolInfoList = actToolInfoList;
+	}
+
 	@Override
 	public String toString() {
 		return "ThinkActRecord{" + "id='" + id + '\'' + ", parentExecutionId='" + parentExecutionId + '\''
 				+ ", actionNeeded=" + actionNeeded + ", status='" + status + '\'' + '}';
+	}
+
+	public static class ActToolInfo {
+
+		private String name;
+
+		private String parameters;
+
+		private String result;
+
+		private String id;
+
+		public ActToolInfo(String name, String arguments, String id) {
+			this.name = name;
+			this.parameters = arguments;
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getParameters() {
+			return parameters;
+		}
+
+		public String getResult() {
+			return result;
+		}
+
+		public void setResult(String result) {
+			this.result = result;
+		}
+
+		public String getId() {
+			return id;
+		}
+
 	}
 
 }

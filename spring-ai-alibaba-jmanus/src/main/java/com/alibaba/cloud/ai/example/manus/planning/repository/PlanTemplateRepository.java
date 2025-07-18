@@ -23,21 +23,21 @@ import org.springframework.stereotype.Repository;
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 
 /**
- * 计划模板数据访问接口
+ * The data access interface for the plan template
  */
 @Repository
 public interface PlanTemplateRepository extends JpaRepository<PlanTemplate, String> {
 
 	/**
-	 * 根据计划模板ID查找计划模板
-	 * @param planTemplateId 计划模板ID
-	 * @return 计划模板实体
+	 * Find the plan template by the plan template ID
+	 * @param planTemplateId the plan template ID
+	 * @return the plan template entity
 	 */
 	Optional<PlanTemplate> findByPlanTemplateId(String planTemplateId);
 
 	/**
-	 * 根据计划模板ID删除计划模板
-	 * @param planTemplateId 计划模板ID
+	 * Delete the plan template by the plan template ID
+	 * @param planTemplateId the plan template ID
 	 */
 	void deleteByPlanTemplateId(String planTemplateId);
 

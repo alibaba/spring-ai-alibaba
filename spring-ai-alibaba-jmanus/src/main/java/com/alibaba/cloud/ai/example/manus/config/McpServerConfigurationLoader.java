@@ -46,71 +46,73 @@ public class McpServerConfigurationLoader implements EnvironmentPostProcessor {
 
 	@Override
 	public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
-		logger.info("开始处理 MCP 服务器配置...");
+		logger.info("Starting to process MCP server configuration...");
 		String enabled = environment.getProperty("spring.ai.mcp.enabled", "true");
-		logger.info("MCP 配置状态: enabled={}", enabled);
+		logger.info("MCP configuration status: enabled={}", enabled);
 
 		if (!Boolean.parseBoolean(enabled)) {
-			logger.info("MCP 配置已禁用，跳过处理");
+			logger.info("MCP configuration is disabled, skipping processing");
 			return;
 		}
 
 		try {
-			// 读取原始配置文件
+			// Read the original configuration file
 			Resource resource = new ClassPathResource(CONFIG_FILE);
-			logger.info("加载配置文件: {}", resource.getURL());
+			logger.info("Loading configuration file: {}", resource.getURL());
 			ObjectMapper objectMapper = new ObjectMapper();
 
-			// 创建临时目录存放处理后的配置
+			// Create a temporary directory to store the processed configuration
 			Path tempDir = Files.createTempDirectory(TEMP_DIR_PREFIX);
 			tempDir.toFile().deleteOnExit();
 			Path tempConfigPath = tempDir.resolve(CONFIG_FILE);
-			logger.info("创建临时配置文件: {}", tempConfigPath);
+			logger.info("Created temporary configuration file: {}", tempConfigPath);
 
-			// 读取并处理配置
+			// Read and process the configuration
 			try (InputStream is = resource.getInputStream()) {
 				JsonNode rootNode = objectMapper.readTree(is);
-				logger.debug("原始配置内容: {}", objectMapper.writeValueAsString(rootNode));
+				logger.debug("Original configuration content: {}", objectMapper.writeValueAsString(rootNode));
 
 				if (rootNode.has("mcpServers")) {
 					ObjectNode mcpServers = (ObjectNode) rootNode.get("mcpServers");
 					mcpServers.fields().forEachRemaining(entry -> {
 						String serverName = entry.getKey();
 						ObjectNode serverConfig = (ObjectNode) entry.getValue();
-						logger.info("处理服务器配置: {}", serverName);
+						logger.info("Processing server configuration: {}", serverName);
 
 						if (serverConfig.has("command") && "npx".equals(serverConfig.get("command").asText())) {
 							String npxCommand = isWindows() ? WINDOWS_NPX : UNIX_NPX;
 							serverConfig.put("command", npxCommand);
-							logger.info("更新服务器 {} 的命令: {} -> {}", serverName, "npx", npxCommand);
+							logger.info("Updated server {} command: {} -> {}", serverName, "npx", npxCommand);
 						}
 					});
 
-					// 将处理后的配置写入临时文件
+					// Write the processed configuration to the temporary file
 					objectMapper.writerWithDefaultPrettyPrinter().writeValue(tempConfigPath.toFile(), rootNode);
-					logger.debug("处理后的配置内容: {}", objectMapper.writeValueAsString(rootNode));
+					logger.debug("Processed configuration content: {}", objectMapper.writeValueAsString(rootNode));
 
-					// 设置系统属性，指向新的配置文件位置
+					// Set the system property to point to the new configuration file
+					// location
 					String newConfigPath = "file:" + tempConfigPath.toAbsolutePath();
 					System.setProperty("spring.ai.mcp.client.stdio.servers-configuration", newConfigPath);
-					logger.info("已更新配置文件路径: {}", newConfigPath);
+					logger.info("Updated configuration file path: {}", newConfigPath);
 
-					logger.info("MCP 服务器配置处理完成，当前操作系统: {}", getOsType());
+					logger.info("MCP server configuration processing completed, current operating system: {}",
+							getOsType());
 				}
 				else {
-					logger.warn("配置文件中未找到 mcpServers 节点");
+					logger.warn("mcpServers node not found in configuration file");
 				}
 			}
 		}
 		catch (IOException e) {
-			logger.error("处理 MCP 服务器配置时发生错误", e);
-			logger.error("错误详情: ", e);
+			logger.error("Error processing MCP server configuration", e);
+			logger.error("Error details: ", e);
 		}
 	}
 
 	private boolean isWindows() {
 		String os = System.getProperty("os.name").toLowerCase();
-		logger.debug("当前操作系统: {}", os);
+		logger.debug("Current operating system: {}", os);
 		return os.contains("win");
 	}
 

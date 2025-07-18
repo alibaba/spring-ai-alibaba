@@ -112,4 +112,14 @@ public class DocumentExtractorNodeDataConverter extends AbstractNodeDataConverte
 
 	}
 
+	@Override
+	public String generateVarName(int count) {
+		return "documentExtractorNode" + count;
+	}
+
+	@Override
+	public void postProcess(DocumentExtractorNodeData data, String varName) {
+		data.setOutputs(List.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA));
+	}
+
 }

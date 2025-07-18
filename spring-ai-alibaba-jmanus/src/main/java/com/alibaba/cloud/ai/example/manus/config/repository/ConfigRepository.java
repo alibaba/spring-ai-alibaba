@@ -26,74 +26,74 @@ import org.springframework.stereotype.Repository;
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
 
 /**
- * 系统配置数据访问接口
+ * System configuration data access interface
  */
 @Repository
 public interface ConfigRepository extends JpaRepository<ConfigEntity, Long> {
 
 	/**
-	 * 根据配置路径查找配置项
-	 * @param configPath 配置路径
-	 * @return 配置项
+	 * Find configuration item by configuration path
+	 * @param configPath Configuration path
+	 * @return Configuration entity
 	 */
 	Optional<ConfigEntity> findByConfigPath(String configPath);
 
 	/**
-	 * 根据配置组和子组查找配置项列表
-	 * @param configGroup 配置组
-	 * @param configSubGroup 配置子组
-	 * @return 配置项列表
+	 * Find configuration list by config group and sub group
+	 * @param configGroup Configuration group
+	 * @param configSubGroup Configuration sub group
+	 * @return Configuration entity list
 	 */
 	List<ConfigEntity> findByConfigGroupAndConfigSubGroup(String configGroup, String configSubGroup);
 
 	/**
-	 * 根据配置组查找配置项列表
-	 * @param configGroup 配置组
-	 * @return 配置项列表
+	 * Find configuration list by config group
+	 * @param configGroup Configuration group
+	 * @return Configuration entity list
 	 */
 	List<ConfigEntity> findByConfigGroup(String configGroup);
 
 	/**
-	 * 检查配置路径是否存在
-	 * @param configPath 配置路径
-	 * @return 是否存在
+	 * Check if configuration path exists
+	 * @param configPath Configuration path
+	 * @return Whether exists
 	 */
 	boolean existsByConfigPath(String configPath);
 
 	/**
-	 * 根据配置路径删除配置项
-	 * @param configPath 配置路径
+	 * Delete configuration by path
+	 * @param configPath Configuration path
 	 */
 	void deleteByConfigPath(String configPath);
 
 	/**
-	 * 获取所有配置组
-	 * @return 配置组列表
+	 * Get all configuration groups
+	 * @return Configuration group list
 	 */
 	@Query("SELECT DISTINCT c.configGroup FROM ConfigEntity c ORDER BY c.configGroup")
 	List<String> findAllGroups();
 
 	/**
-	 * 获取指定配置组下的所有子组
-	 * @param configGroup 配置组
-	 * @return 子组列表
+	 * Get all sub groups under specified configuration group
+	 * @param configGroup Configuration group
+	 * @return Sub group list
 	 */
 	@Query("SELECT DISTINCT c.configSubGroup FROM ConfigEntity c WHERE c.configGroup = :group ORDER BY c.configSubGroup")
 	List<String> findSubGroupsByGroup(@Param("group") String configGroup);
 
 	/**
-	 * 批量更新配置值
-	 * @param configPath 配置路径
-	 * @param configValue 配置值
-	 * @return 更新的记录数
+	 * Batch update configuration value
+	 * @param configPath Configuration path
+	 * @param configValue Configuration value
+	 * @return Number of updated records
 	 */
 	@Query("UPDATE ConfigEntity c SET c.configValue = :value WHERE c.configPath = :path")
 	int updateConfigValue(@Param("path") String configPath, @Param("value") String configValue);
 
 	/**
-	 * 根据配置路径批量获取配置项
-	 * @param configPaths 配置路径列表
-	 * @return 配置项列表
+	 * Batch get configuration entities by configuration paths
+	 * @param configPaths Configuration path list
+	 * @return Configuration entity list
 	 */
 	List<ConfigEntity> findByConfigPathIn(List<String> configPaths);
 

@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.example.manus.config.startUp;
 
 import java.awt.Desktop;
-import java.io.IOException;
 import java.net.URI;
 
 import org.slf4j.Logger;
@@ -36,7 +35,7 @@ public class AppStartupListener implements ApplicationListener<ApplicationReadyE
 	private static final Logger logger = LoggerFactory.getLogger(AppStartupListener.class);
 
 	@Value("${server.port:18080}")
-	// 这里用的spring原始的，因为要跟配置文件保持一致。
+	// Using Spring's original here to keep consistent with configuration file.
 	private String serverPort;
 
 	@Autowired
@@ -44,43 +43,43 @@ public class AppStartupListener implements ApplicationListener<ApplicationReadyE
 
 	@Override
 	public void onApplicationEvent(ApplicationReadyEvent event) {
-		// 只有当配置允许自动打开浏览器时才执行
+		// Only execute when configuration allows auto-opening browser
 		if (!manusProperties.getOpenBrowserAuto()) {
-			logger.info("自动打开浏览器功能已禁用");
+			logger.info("Auto-open browser feature is disabled");
 			return;
 		}
 
 		String url = "http://localhost:" + serverPort + "/ui/index.html";
-		logger.info("应用已启动，正在尝试打开浏览器访问: {}", url);
+		logger.info("Application started, attempting to open browser to access: {}", url);
 
-		// 首先尝试使用Desktop API
+		// First try using Desktop API
 		try {
 			if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
 				Desktop.getDesktop().browse(new URI(url));
-				logger.info("已通过Desktop API成功打开浏览器");
+				logger.info("Successfully opened browser via Desktop API");
 				return;
 			}
 		}
-		catch (Exception e) {
-			logger.warn("使用Desktop API打开浏览器失败，尝试使用Runtime执行命令", e);
+		catch (Throwable e) {
+			logger.warn("Failed to open browser using Desktop API, trying Runtime command execution", e);
 		}
 
-		// 如果Desktop API失败，尝试使用Runtime执行命令
+		// If Desktop API fails, try using Runtime command execution
 		String os = System.getProperty("os.name").toLowerCase();
 		Runtime rt = Runtime.getRuntime();
 		try {
 			if (os.contains("mac")) {
-				// macOS特定命令
+				// macOS specific command
 				rt.exec(new String[] { "open", url });
-				logger.info("已通过macOS open命令成功打开浏览器");
+				logger.info("Successfully opened browser via macOS open command");
 			}
 			else if (os.contains("win")) {
-				// Windows特定命令
+				// Windows specific command
 				rt.exec(new String[] { "cmd", "/c", "start", url });
-				logger.info("已通过Windows命令成功打开浏览器");
+				logger.info("Successfully opened browser via Windows command");
 			}
 			else if (os.contains("nix") || os.contains("nux")) {
-				// Linux特定命令，尝试几种常见的浏览器打开方式
+				// Linux specific command, try several common browser opening methods
 				String[] browsers = { "google-chrome", "firefox", "mozilla", "epiphany", "konqueror", "netscape",
 						"opera", "links", "lynx" };
 
@@ -95,15 +94,15 @@ public class AppStartupListener implements ApplicationListener<ApplicationReadyE
 				}
 
 				rt.exec(new String[] { "sh", "-c", cmd.toString() });
-				logger.info("已通过Linux命令尝试打开浏览器");
+				logger.info("Attempted to open browser via Linux command");
 			}
 			else {
-				logger.warn("未知操作系统，无法自动打开浏览器，请手动访问: {}", url);
+				logger.warn("Unknown operating system, cannot auto-open browser, please manually access: {}", url);
 			}
 		}
-		catch (IOException e) {
-			logger.error("通过Runtime执行命令打开浏览器失败", e);
-			logger.info("请手动在浏览器中访问: {}", url);
+		catch (Throwable e) {
+			logger.error("Failed to open browser via Runtime command execution", e);
+			logger.info("Please manually access in browser: {}", url);
 		}
 	}
 

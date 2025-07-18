@@ -10,8 +10,8 @@
 * Properties 类命名为：`${name}Properties`，例如：`BaiduSearchProperties`。
 * ToolFunction Impl name 命名为：`${name}Service`，通常是由声明 Bean 注解的方法名确定，如 `baiduSearchService`（建议，请根据插件实际情况确定）
 * ToolFunction bean name 命名为：`${name}`。
-* Constants 类命名为：``。
-* 单元测试类的名称为：``。
+* Constants 类命名为：`${name}Constants`，且为`final`。
+* 单元测试类的名称为：`${name}Test`。
 
 2. 使用 **org.springframework.context.annotation.Description** `@Description("xxx")` 注解描述插件的功能，应提供对插件功能清晰明确的描述，例如：`@Description("百度搜索插件，用于查询百度上的新闻事件等信息")`
 3. 如果 Function Impl 实现较为复杂，需要使用一些自定义函数，方法命名规范为：`${name}Tool`，例如：`BaiduSearchTool`, 目录层级和实现类保持一致

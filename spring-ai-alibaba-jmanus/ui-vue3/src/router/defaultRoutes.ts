@@ -15,7 +15,6 @@
  */
 
 import type { RouteRecordRaw } from 'vue-router'
-import * as _ from 'lodash'
 
 export declare type RouteRecordType = RouteRecordRaw & {
   key?: string
@@ -31,7 +30,7 @@ export const routes: Readonly<RouteRecordType[]> = [
     path: '/',
     name: 'Root',
     redirect: () => {
-      // 检查用户是否已经访问过首页
+      // Check if user has visited the homepage before
       const hasVisited = localStorage.getItem('hasVisitedHome') === 'true'
       return hasVisited ? '/direct' : '/home'
     },
@@ -58,7 +57,7 @@ export const routes: Readonly<RouteRecordType[]> = [
         },
       },
       {
-        path: '/configs',
+        path: '/configs/:category?',
         name: 'configs',
         component: () => import('../views/configs/index.vue'),
         meta: {
@@ -88,7 +87,7 @@ function handleRoutes(
   if (!routes) return
   for (const route of routes) {
     if (parent) {
-      route.path = handlePath(parent?.path, route.path)
+      route.path = handlePath(parent.path, route.path)
     }
     if (route.redirect && typeof route.redirect === 'string') {
       route.redirect = handlePath(route.path, route.redirect || '')

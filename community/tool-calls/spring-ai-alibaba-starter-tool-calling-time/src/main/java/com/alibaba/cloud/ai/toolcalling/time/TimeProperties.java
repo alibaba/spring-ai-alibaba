@@ -18,14 +18,10 @@ package com.alibaba.cloud.ai.toolcalling.time;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
-
 /**
  * @author fengluo
  */
-@ConfigurationProperties(prefix = TimeProperties.TIME_PREFIX)
+@ConfigurationProperties(prefix = TimeConstants.CONFIG_PREFIX)
 public class TimeProperties extends CommonToolCallProperties {
-
-	protected static final String TIME_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".time";
 
 }

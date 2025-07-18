@@ -15,7 +15,7 @@
 -->
 <template>
   <div class="home-page">
-    <!-- 简化的 Hello World 主页 -->
+    <!-- Simplified Hello World Home Page -->
     <div class="welcome-container">
       <!-- Background effects -->
       <div class="background-effects">
@@ -26,12 +26,15 @@
       
       <!-- Header -->
       <header class="header">
+        <div class="header-top">
+          <LanguageSwitcher />
+        </div>
         <div class="logo-container">
           <div class="logo">
             <img src="/Java-AI.svg" alt="JTaskPoilot" class="java-logo" />
             <h1>JTaskPoilot</h1>
           </div>
-          <span class="tagline">Java AI 智能体</span>
+                      <span class="tagline">{{ $t('home.tagline') }}</span>
         </div>
       </header>
 
@@ -40,8 +43,8 @@
         <div class="conversation-container">
           <!-- Welcome section -->
           <div class="welcome-section">
-            <h2 class="welcome-title">欢迎使用 JTaskPoilot！</h2>
-            <p class="welcome-subtitle">您的 Java AI 智能助手，帮助您构建和完成各种任务。</p>
+            <h2 class="welcome-title">{{ $t('home.welcomeTitle') }}</h2>
+            <p class="welcome-subtitle">{{ $t('home.welcomeSubtitle') }}</p>
           </div>
 
           <!-- Input section -->
@@ -51,7 +54,7 @@
                 v-model="userInput"
                 ref="textareaRef"
                 class="main-input"
-                placeholder="描述您想构建或完成的内容..."
+                :placeholder="$t('home.inputPlaceholder')"
                 @keydown="handleKeydown"
                 @input="adjustTextareaHeight"
               ></textarea>
@@ -79,10 +82,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import BlurCard from '@/components/blurCard/index.vue'
+import LanguageSwitcher from '@/components/language-switcher/index.vue'
 import { useTaskStore } from '@/stores/task'
 
 const router = useRouter()
@@ -90,33 +95,35 @@ const taskStore = useTaskStore()
 const userInput = ref('')
 const textareaRef = ref<HTMLTextAreaElement>()
 
-const examples = [
+const { t } = useI18n()
+
+const examples = computed(() => [
   {
-    title: '查询股价',
-    description: '获取今天阿里巴巴的最新股价（Agent可以使用浏览器工具）',
+    title: t('home.examples.stockPrice.title'),
+    description: t('home.examples.stockPrice.description'),
     icon: 'carbon:chart-line-data',
-    prompt: '用浏览器基于百度，查询今天阿里巴巴的股价，并返回最新股价',
+    prompt: t('home.examples.stockPrice.prompt'),
   },
   {
-    title: '生成一个中篇小说',
-    description: '帮我生成一个中篇小说（Agent可以生成更长的内容）',
+    title: t('home.examples.novel.title'),
+    description: t('home.examples.novel.description'),
     icon: 'carbon:book',
-    prompt: '请帮我写一个关于机器人取代人类的小说。20000字。 使用TEXT_FILE_AGENT ，先生成提纲，然后，完善和丰满整个提纲的内容为一篇通顺的小说，最后再全局通顺一下语法',
+    prompt: t('home.examples.novel.prompt'),
   },
   {
-    title: '查询天气',
-    description: '获取北京今天的天气情况（Agent可以使用MCP工具服务）',
+    title: t('home.examples.weather.title'),
+    description: t('home.examples.weather.description'),
     icon: 'carbon:partly-cloudy',
-    prompt: '用浏览器，基于百度，查询北京今天的天气',
+    prompt: t('home.examples.weather.prompt'),
   },
-]
+])
 
 onMounted(() => {
   console.log('[Home] onMounted called')
   console.log('[Home] taskStore:', taskStore)
   console.log('[Home] examples:', examples)
   
-  // 标记已访问过 home 页面
+  // Mark that the home page has been visited
   taskStore.markHomeVisited()
   console.log('[Home] Home visited marked')
 })
@@ -149,11 +156,11 @@ const handleSend = () => {
   const taskContent = userInput.value.trim()
   console.log('[Home] Setting task to store:', taskContent)
   
-  // 使用 store 传递任务数据
+  // Use the store to pass task data
   taskStore.setTask(taskContent)
   console.log('[Home] Task set to store, current task:', taskStore.currentTask)
   
-  // 导航到 direct 页面
+  // Navigate to direct page
   const chatId = Date.now().toString()
   console.log('[Home] Navigating to direct page with chatId:', chatId)
   
@@ -171,11 +178,11 @@ const selectExample = (example: any) => {
   console.log('[Home] selectExample called with example:', example)
   console.log('[Home] Example prompt:', example.prompt)
   
-  // 直接使用示例的 prompt 发送任务
+  // Send the task directly using the example's prompt
   taskStore.setTask(example.prompt)
   console.log('[Home] Task set to store from example, current task:', taskStore.currentTask)
   
-  // 导航到 direct 页面
+  // Navigate to direct page
   const chatId = Date.now().toString()
   console.log('[Home] Navigating to direct page with chatId:', chatId)
   
@@ -202,7 +209,6 @@ const selectExample = (example: any) => {
   height: 100vh;
   background: #0a0a0a;
   position: relative;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -270,8 +276,16 @@ const selectExample = (example: any) => {
 
 .header {
   position: relative;
-  z-index: 1;
+  z-index: 1000;
   padding: 32px 32px 0;
+}
+
+.header-top {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1001;
 }
 
 .logo-container {

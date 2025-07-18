@@ -19,18 +19,25 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * 计划模板实体类，用于存储计划模板的基本信息
+ * The entity class for the plan template, used to store the basic information of the plan
+ * template
  */
 @Entity
 @Table(name = "plan_template")
 public class PlanTemplate {
 
 	@Id
-	@Column(name = "plan_template_id", length = 50)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id")
+	private Long id;
+
+	@Column(name = "plan_template_id", length = 50, unique = true, nullable = false)
 	private String planTemplateId;
 
 	@Column(name = "title", length = 255)
@@ -45,7 +52,7 @@ public class PlanTemplate {
 	@Column(name = "update_time", nullable = false)
 	private LocalDateTime updateTime;
 
-	// 构造函数
+	// Constructor
 	public PlanTemplate() {
 	}
 
@@ -57,7 +64,15 @@ public class PlanTemplate {
 		this.updateTime = LocalDateTime.now();
 	}
 
-	// Getters and Setters
+	// Getters and setters
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
 	public String getPlanTemplateId() {
 		return planTemplateId;
 	}

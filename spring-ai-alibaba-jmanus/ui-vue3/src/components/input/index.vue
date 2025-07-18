@@ -24,30 +24,33 @@
         ref="inputRef"
         class="chat-input"
         :placeholder="currentPlaceholder"
-        :disabled="disabled"
+        :disabled="isDisabled"
         @keydown="handleKeydown"
         @input="adjustInputHeight"
       ></textarea>
-      <button class="plan-mode-btn" title="进入计划模式" @click="handlePlanModeClick">
+      <button class="plan-mode-btn" :title="$t('input.planMode')" @click="handlePlanModeClick">
         <Icon icon="carbon:document" />
-        计划模式
+        {{ $t('input.planMode') }}
       </button>
       <button
         class="send-button"
-        :disabled="!currentInput.trim() || disabled"
+        :disabled="!currentInput.trim() || isDisabled"
         @click="handleSend"
-        title="发送"
+        :title="$t('input.send')"
       >
         <Icon icon="carbon:send-alt" />
-        发送
+        {{ $t('input.send') }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   placeholder?: string
@@ -57,14 +60,12 @@ interface Props {
 interface Emits {
   (e: 'send', message: string): void
   (e: 'clear'): void
-  (e: 'focus'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
-  (e: 'message-sent', message: string): void
   (e: 'plan-mode-clicked'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: '向 JTaskPilot 发送消息',
+  placeholder: '',
   disabled: false,
 })
 
@@ -72,10 +73,11 @@ const emit = defineEmits<Emits>()
 
 const inputRef = ref<HTMLTextAreaElement>()
 const currentInput = ref('')
-const currentPlaceholder = ref(props.placeholder)
+const defaultPlaceholder = computed(() => props.placeholder || t('input.placeholder'))
+const currentPlaceholder = ref(defaultPlaceholder.value)
 
-// 监听全局事件来清空输入和更新状态
-const eventBus = ref<any>()
+// Computed property to ensure 'disabled' is a boolean type
+const isDisabled = computed(() => Boolean(props.disabled))
 
 const adjustInputHeight = () => {
   nextTick(() => {
@@ -94,27 +96,24 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 const handleSend = () => {
-  if (!currentInput.value.trim() || props.disabled) return
+  if (!currentInput.value.trim() || isDisabled.value) return
 
   const query = currentInput.value.trim()
   
-  // 使用 Vue 的 emit 发送消息
+  // Use Vue's emit to send a message
   emit('send', query)
   
-  // 清空输入
+  // Clear the input
   clearInput()
-  
-  // 发送消息已发送事件
-  emit('message-sent', query)
 }
 
 const handlePlanModeClick = () => {
-  // 触发计划模式切换事件
+  // Trigger the plan mode toggle event
   emit('plan-mode-clicked')
 }
 
 /**
- * 清空输入框
+ * Clear the input box
  */
 const clearInput = () => {
   currentInput.value = ''
@@ -123,34 +122,27 @@ const clearInput = () => {
 }
 
 /**
- * 更新输入区域的状态（启用/禁用）
- * @param {boolean} enabled - 是否启用输入
- * @param {string} [placeholder] - 启用时的占位文本
+ * Update the state of the input area (enable/disable)
+ * @param {boolean} enabled - Whether to enable input
+ * @param {string} [placeholder] - Placeholder text when enabled
  */
 const updateState = (enabled: boolean, placeholder?: string) => {
   if (placeholder) {
-    currentPlaceholder.value = enabled ? placeholder : '等待任务完成...'
+    currentPlaceholder.value = enabled ? placeholder : t('input.waiting')
   }
   emit('update-state', enabled, placeholder)
 }
 
-/**
- * 聚焦输入框
- */
-const focus = () => {
-  inputRef.value?.focus()
-  emit('focus')
-}
 
 /**
- * 获取当前输入框的值
- * @returns {string} 当前输入框的文本值 (已去除首尾空格)
+ * Get the current value of the input box
+ * @returns {string} The text value of the current input box (trimmed)
  */
 const getQuery = () => {
   return currentInput.value.trim()
 }
 
-// 暴露方法给父组件使用
+// Expose methods to the parent component
 defineExpose({
   clearInput,
   updateState,
@@ -159,11 +151,11 @@ defineExpose({
 })
 
 onMounted(() => {
-  // 组件挂载后的初始化逻辑
+  // Initialization logic after component mounting
 })
 
 onUnmounted(() => {
-  // 组件卸载前的清理逻辑
+  // Cleanup logic before component unmounting
 })
 </script>
 
@@ -173,12 +165,12 @@ onUnmounted(() => {
   padding: 20px 24px;
   border-top: 1px solid #1a1a1a;
   background: rgba(255, 255, 255, 0.02);
-  /* 确保输入区域始终在底部 */
-  flex-shrink: 0; /* 不会被压缩 */
-  position: sticky; /* 固定在底部 */
+  /* Ensure the input area is always at the bottom */
+  flex-shrink: 0; /* Won't be compressed */
+  position: sticky; /* Fixed at the bottom */
   bottom: 0;
   z-index: 100;
-  /* 添加轻微的阴影以区分消息区域 */
+  /* Add a slight shadow to distinguish the message area */
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(20px);
 }

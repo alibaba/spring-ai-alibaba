@@ -25,6 +25,8 @@ public interface AgentService {
 
 	List<AgentConfig> getAllAgents();
 
+	List<AgentConfig> getAllAgentsByNamespace(String namespace);
+
 	AgentConfig getAgentById(String id);
 
 	AgentConfig createAgent(AgentConfig agentConfig);
@@ -36,11 +38,13 @@ public interface AgentService {
 	List<Tool> getAvailableTools();
 
 	/**
-	 * 创建并返回一个可用的BaseAgent对象 类似于PlanningFactory中的createPlanningCoordinator方法
-	 * @param name 代理名称
-	 * @param planId 计划ID，用于标识代理所属的计划
-	 * @return 创建的BaseAgent对象
+	 * Create and return a usable BaseAgent object, similar to the
+	 * createPlanningCoordinator method in PlanningFactory
+	 * @param name Agent name
+	 * @param planId Plan ID, used to identify the plan the agent belongs to
+	 * @return Created BaseAgent object
 	 */
-	BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting);
+	BaseAgent createDynamicBaseAgent(String name, String currentPlanId, String rootPlanId,
+			Map<String, Object> initialAgentSetting, List<String> columns);
 
 }

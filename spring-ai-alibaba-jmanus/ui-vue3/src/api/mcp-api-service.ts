@@ -16,8 +16,8 @@
 
 
 /**
- * MCP API 服务
- * 负责处理所有与 MCP 配置相关的 API 交互
+ * MCP API Service
+ * Responsible for handling all API interactions related to MCP configuration
  */
 
 export interface McpServer {
@@ -42,18 +42,18 @@ export class McpApiService {
   private static readonly BASE_URL = '/api/mcp'
 
   /**
-   * 获取所有 MCP 服务器配置
+   * Get all MCP server configurations
    */
   public static async getAllMcpServers(): Promise<McpServer[]> {
     const response = await fetch(`${this.BASE_URL}/list`)
     if (!response.ok) {
-      throw new Error(`获取 MCP 服务器列表失败: ${response.status}`)
+      throw new Error(`Failed to get MCP server list: ${response.status}`)
     }
     return await response.json()
   }
 
   /**
-   * 添加新的 MCP 服务器配置
+   * Add new MCP server configuration
    */
   public static async addMcpServer(mcpConfig: McpServerRequest): Promise<ApiResponse> {
     try {
@@ -66,34 +66,34 @@ export class McpApiService {
       })
       
       if (!response.ok) {
-        throw new Error(`添加 MCP 服务器失败: ${response.status}`)
+        throw new Error(`Failed to add MCP server: ${response.status}`)
       }
       
-      return { success: true, message: '添加 MCP 服务器成功' }
+      return { success: true, message: 'Successfully added MCP server' }
     } catch (error) {
-      console.error('添加 MCP 服务器失败:', error)
+      console.error('Failed to add MCP server:', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : '添加失败，请重试'
+        message: error instanceof Error ? error.message : 'Failed to add, please retry'
       }
     }
   }
 
   /**
-   * 删除 MCP 服务器配置
+   * Delete MCP server configuration
    */
   public static async removeMcpServer(id: number): Promise<ApiResponse> {
     try {
       const response = await fetch(`${this.BASE_URL}/remove?id=${id}`)
       if (!response.ok) {
-        throw new Error(`删除 MCP 服务器失败: ${response.status}`)
+        throw new Error(`Failed to delete MCP server: ${response.status}`)
       }
-      return { success: true, message: '删除 MCP 服务器成功' }
+      return { success: true, message: 'Successfully deleted MCP server' }
     } catch (error) {
-      console.error(`删除 MCP 服务器[${id}]失败:`, error)
+      console.error(`Failed to delete MCP server[${id}]:`, error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : '删除失败，请重试'
+        message: error instanceof Error ? error.message : 'Failed to delete, please retry'
       }
     }
   }

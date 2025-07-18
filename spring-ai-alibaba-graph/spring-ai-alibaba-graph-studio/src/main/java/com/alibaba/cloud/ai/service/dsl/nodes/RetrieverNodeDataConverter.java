@@ -104,4 +104,9 @@ public class RetrieverNodeDataConverter extends AbstractNodeDataConverter<Retrie
 
 	}
 
+	@Override
+	public String generateVarName(int count) {
+		return "retrieverNode" + count;
+	}
+
 }

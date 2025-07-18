@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
-public class UserInputService {
+public class UserInputService implements IUserInputService {
 
 	private final ConcurrentHashMap<String, FormInputTool> formInputToolMap = new ConcurrentHashMap<>();
 
@@ -44,9 +44,12 @@ public class UserInputService {
 	public UserInputWaitState createUserInputWaitState(String planId, String message, FormInputTool formInputTool) {
 		UserInputWaitState waitState = new UserInputWaitState(planId, message, true);
 		if (formInputTool != null) {
-			// 假设 FormInputTool 有方法 getFormDescription() 和 getFormInputs() 来获取表单信息
-			// 这需要 FormInputTool 类支持这些方法，或者有其他方式获取这些信息
-			// 此处为示意性代码，具体实现取决于 FormInputTool 的实际结构
+			// Assume FormInputTool has methods getFormDescription() and getFormInputs()
+			// to get form information
+			// This requires FormInputTool class to support these methods, or other ways
+			// to get this information
+			// This is indicative code, specific implementation depends on the actual
+			// structure of FormInputTool
 			FormInputTool.UserFormInput latestFormInput = formInputTool.getLatestUserFormInput();
 			if (latestFormInput != null) {
 				waitState.setFormDescription(latestFormInput.getDescription());
