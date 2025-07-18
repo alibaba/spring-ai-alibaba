@@ -13,34 +13,88 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+
 <template>
   <div>
     <CustomSelect
       v-model="namespace"
-      :options="db"
-      dropdown-title="命名空间"
+      :options="namespaces"
+      :dropdown-title="t('config.namespaceConfig.namespace.namespace')"
       @change="handleNamespaceChange"
-      placeholder="请选择命名空间"
+      :placeholder="t('config.namespaceConfig.namespace.selectNamespace')"
       direction="right"
       :dropStyles="{
-        minWidth: '180px',
+        minWidth: '220px',
       }"
     />
+    <span
+      onclick="event.stopPropagation()"
+      class="setting-icon-wrapper"
+      @click="handleChangeNamespace"
+    >
+      <Icon icon="carbon:settings-edit" class="setting-icon" width="20" />
+    </span>
   </div>
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import CustomSelect from '@/components/select/index.vue'
+import { storeToRefs } from 'pinia'
 import { usenameSpaceStore } from '@/stores/namespace'
-// import { useI18n } from 'vue-i18n'
+import { Icon } from '@iconify/vue'
+import { useRoute, useRouter } from 'vue-router'
+import { NamespaceApiService, type Namespace } from '@/api/namespace-api-service'
 
-// const { t } = useI18n()
+import { useI18n } from 'vue-i18n'
 
-const {namespace,setNamespace,db} = usenameSpaceStore()
+const { t } = useI18n()
+
+const route = useRoute()
+const router = useRouter()
+
+const namespaceStore = usenameSpaceStore()
+const { namespace, namespaces } = storeToRefs(namespaceStore)
+const { setCurrentNs, setNamespaces } = namespaceStore
 
 const handleNamespaceChange = (value: string) => {
-  setNamespace(value)
+  setCurrentNs(value)
 }
+
+const getAllNamespaces = async () => {
+  const loadedNamespaces = (await NamespaceApiService.getAllNamespaces()) as Namespace[]
+  const defaultNamespaceCode = loadedNamespaces[0]?.code || ''
+
+  setCurrentNs(defaultNamespaceCode)
+  setNamespaces(
+    loadedNamespaces.map(namespace => ({
+      id: namespace.code,
+      name: namespace.name,
+    }))
+  )
+}
+const handleChangeNamespace = () => {
+  router.push({
+    name: route.name,
+    params: {
+      ...route.params,
+      category: 'namespace',
+    },
+    query: {
+      "namespace": namespace.value,
+    },
+  })
+}
+
+onMounted(async () => {
+  getAllNamespaces()
+})
 </script>
 
-<style scoped></style>
+<style scoped>
+.setting-icon {
+  color: #667eea;
+  margin-left: 4px;
+  cursor: pointer;
+}
+</style>

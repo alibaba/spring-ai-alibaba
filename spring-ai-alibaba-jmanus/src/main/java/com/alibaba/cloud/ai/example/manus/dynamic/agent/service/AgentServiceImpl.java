@@ -87,7 +87,7 @@ public class AgentServiceImpl implements AgentService {
 	public List<AgentConfig> getAllAgentsByNamespace(String namespace) {
 		List<DynamicAgentEntity> entities;
 		if ("default".equalsIgnoreCase(namespace)) {
-			entities = repository.findAll();
+			entities = repository.findByNamespaceWithDefault(namespace);
 		}
 		else {
 			entities = repository.findAllByNamespace(namespace);
