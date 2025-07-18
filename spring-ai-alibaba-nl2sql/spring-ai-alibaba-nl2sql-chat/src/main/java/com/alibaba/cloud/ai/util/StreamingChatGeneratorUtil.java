@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.util;
 
+import com.alibaba.cloud.ai.constant.StreamResponseType;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
@@ -27,11 +28,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.SignalType;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.List;
 
 /**
  * StreamingChatGenerator utility class for creating and configuring
@@ -353,6 +354,8 @@ public class StreamingChatGeneratorUtil {
 
 		private String completionMessage;
 
+		private StreamResponseType type = StreamResponseType.EXPLANATION;
+
 		private Function<ChatResponse, String> contentExtractor = response -> response.getResult()
 			.getOutput()
 			.getText();
@@ -377,6 +380,11 @@ public class StreamingChatGeneratorUtil {
 
 		public StreamingProcessorBuilder completionMessage(String completionMessage) {
 			this.completionMessage = completionMessage;
+			return this;
+		}
+
+		public StreamingProcessorBuilder type(StreamResponseType type) {
+			this.type = type;
 			return this;
 		}
 
@@ -462,22 +470,26 @@ public class StreamingChatGeneratorUtil {
 				try {
 					// 1. Send start message
 					if (startMessage != null && !startMessage.isEmpty()) {
-						emitter.next(ChatResponseUtil.createCustomStatusResponse(startMessage));
+						emitter.next(ChatResponseUtil.createCustomStatusResponse(startMessage, type));
 					}
 
 					// 2. Process source data stream
 					sourceFlux.doOnNext(response -> {
 						// Extract and collect actual content
 						String content = contentExtractor.apply(response);
+						// if(JSONValidator.from(content).validate()){
+						// content = JSONObject.parseObject(content).getString("data");
+						// }
 						if (content != null) {
 							collectedResult.append(content);
 						}
 						// Send response to stream for user viewing
-						emitter.next(response);
+						emitter.next(ChatResponseUtil.createStatusResponse(response.getResult().getOutput().getText(),
+								type));
 					}).doOnComplete(() -> {
 						// 3. Send completion message
 						if (completionMessage != null && !completionMessage.isEmpty()) {
-							emitter.next(ChatResponseUtil.createCustomStatusResponse("\n" + completionMessage));
+							emitter.next(ChatResponseUtil.createCustomStatusResponse("\n" + completionMessage, type));
 						}
 						logger.debug("[{}] Streaming processing completed", nodeName);
 						emitter.complete();
@@ -530,6 +542,31 @@ public class StreamingChatGeneratorUtil {
 			.state(state)
 			.startMessage(startMessage)
 			.completionMessage(completionMessage)
+			.resultMapper(resultMapper)
+			.build(sourceFlux);
+	}
+
+	public static AsyncGenerator<? extends NodeOutput> createStreamingGeneratorWithMessages(Class<?> nodeClass,
+			OverAllState state, String startMessage, String completionMessage,
+			Function<String, Map<String, Object>> resultMapper, Flux<ChatResponse> sourceFlux,
+			StreamResponseType type) {
+
+		return createStreamingProcessor().nodeClass(nodeClass)
+			.state(state)
+			.startMessage(startMessage)
+			.type(type)
+			.completionMessage(completionMessage)
+			.resultMapper(resultMapper)
+			.build(sourceFlux);
+	}
+
+	public static AsyncGenerator<? extends NodeOutput> createStreamingGeneratorWithMessages(Class<?> nodeClass,
+			OverAllState state, Function<String, Map<String, Object>> resultMapper, Flux<ChatResponse> sourceFlux,
+			StreamResponseType type) {
+
+		return createStreamingProcessor().nodeClass(nodeClass)
+			.state(state)
+			.type(type)
 			.resultMapper(resultMapper)
 			.build(sourceFlux);
 	}
