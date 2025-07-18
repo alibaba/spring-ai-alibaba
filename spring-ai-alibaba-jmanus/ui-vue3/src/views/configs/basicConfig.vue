@@ -17,24 +17,24 @@
   <div class="config-panel">
     <div class="config-header">
       <div class="header-left">
-        <h2>{{ t('config.basicConfig.title') }}</h2>
+        <h2>{{ $t('config.basicConfig.title') }}</h2>
         <div class="config-stats">
           <span class="stat-item">
-            <span class="stat-label">总配置项:</span>
+            <span class="stat-label">{{ $t('config.basicConfig.totalConfigs') }}:</span>
             <span class="stat-value">{{ configStats.total }}</span>
           </span>
           <span class="stat-item" v-if="configStats.modified > 0">
-            <span class="stat-label">已修改:</span>
+            <span class="stat-label">{{ $t('config.basicConfig.modified') }}:</span>
             <span class="stat-value modified">{{ configStats.modified }}</span>
           </span>
         </div>
       </div>
       <div class="header-right">
         <div class="import-export-actions">
-          <button @click="exportConfigs" class="action-btn" title="导出配置">
+          <button @click="exportConfigs" class="action-btn" :title="$t('config.basicConfig.exportConfigs')">
             📤
           </button>
-          <label class="action-btn" title="导入配置">
+          <label class="action-btn" :title="$t('config.basicConfig.importConfigs')">
             📥
             <input 
               type="file" 
@@ -99,7 +99,7 @@
             >
               <div class="sub-group-info">
                 <span class="sub-group-icon">📁</span>
-                <h4 class="sub-group-title">{{ subGroup.displayName }}</h4>
+                <h4 class="sub-group-title">{{ $t(subGroup.displayName) }}</h4>
                 <span class="item-count">({{ subGroup.items.length }})</span>
               </div>
               <span 
@@ -128,7 +128,7 @@
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge boolean">{{ item.inputType === 'CHECKBOX' ? $t('config.types.checkbox') : $t('config.types.boolean') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -170,7 +170,7 @@
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge select">{{ $t('config.types.select') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -201,7 +201,7 @@
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge textarea">{{ $t('config.types.textarea') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -226,7 +226,7 @@
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge number">{{ $t('config.types.number') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -258,7 +258,7 @@
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge string">{{ item.inputType === 'TEXT' ? $t('config.types.text') : $t('config.types.string') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -350,35 +350,49 @@ const searchQuery = ref('')
 
 // Configuration item display name mapping
 const CONFIG_DISPLAY_NAMES: Record<string, string> = {
-  // Agent Settings
-  'maxSteps': '智能体执行最大步数',
-  'resetAllAgents': '重置所有agent',
-  'maxMemory': "能记住的最大消息数",
-  'parallelToolCalls':'并行工具调用',
-  
   // Browser Settings
-  'headlessBrowser': '是否使用无头浏览器模式',
-  'browserTimeout': t('config.basicConfig.browserTimeout'),
-  'browserDebug': '浏览器debug模式',
-  
+  'headless': ('config.basicConfig.browserSettings.headless'), // "是否使用无头浏览器模式"
+  'requestTimeout': ('config.basicConfig.browserSettings.requestTimeout'), // "浏览器请求超时时间(秒)"
+
+  // General Settings
+  'debugDetail': ('config.basicConfig.general.debugDetail'), // "debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢"
+  'baseDir': ('config.basicConfig.general.baseDir'), // "manus根目录"
+
   // Interaction Settings
-  'autoOpenBrowser': '启动时自动打开浏览器',
-  'consoleInteractive': '启用控制台交互模式',
+  'openBrowser': ('config.basicConfig.interactionSettings.openBrowser'), // "启动时自动打开浏览器"
+
+  // Agent Settings
+  'maxSteps': ('config.basicConfig.agentSettings.maxSteps'), // "智能体执行最大步数"
+  'userInputTimeout': ('config.basicConfig.agentSettings.userInputTimeout'), // "用户输入表单等待超时时间(秒)"
+  'maxMemory': ('config.basicConfig.agentSettings.maxMemory'), // "能记住的最大消息数"
+  'parallelToolCalls': ('config.basicConfig.agentSettings.parallelToolCalls'), // "并行工具调用"
   
-  // System Settings
-  'systemName': '系统名称',
-  'language': '默认语言',
-  'maxThreads': '最大线程数',
-  'timeoutSeconds': t('config.basicConfig.requestTimeout')
+  // Agents
+  'forceOverrideFromYaml': ('config.basicConfig.agents.forceOverrideFromYaml'), // ""强制使用YAML配置文件覆盖同名Agent""
+
+  // Infinite Context
+  'enabled': ('config.basicConfig.infiniteContext.enabled'), // "是否开启无限上下文"
+  'parallelThreads': ('config.basicConfig.infiniteContext.parallelThreads'), // "并行处理线程数"
+  'taskContextSize': ('config.basicConfig.infiniteContext.taskContextSize'), // "触发无限上下文的字符数阈值(字符数)"
+
+  // File System
+  'allowExternalAccess': ('config.basicConfig.fileSystem.allowExternalAccess'), // "是否允许文件操作超出工作目录"
+
+  // System Settings (not used)
+  // 'systemName': t('config.basicConfig.systemSettings.systemName'),
+  // 'language': t('config.basicConfig.systemSettings.language'),
+  // 'maxThreads': t('config.basicConfig.systemSettings.maxThreads'),
+  // 'timeoutSeconds': t('config.basicConfig.systemSettings.requestTimeout')
 }
 
-// Group display name mapping
+// Biggest Group display name mapping, 
+// The four configuration groups 'browser', 'interaction', 'system', and 'performance' have no corresponding backend responses and have been temporarily removed.
 const GROUP_DISPLAY_NAMES: Record<string, string> = {
-  'manus': '智能体设置',
-  'browser': '浏览器设置', 
-  'interaction': '交互设置',
-  'system': '系统设置',
-  'performance': '性能设置'
+  'manus': ('config.basicConfig.groupDisplayNames.manus'), // "Manus"
+  // 'browser': t('config.basicConfig.groupDisplayNames.browser'), 
+  // 'interaction': t('config.basicConfig.groupDisplayNames.interaction'),
+  // 'system': t('config.basicConfig.groupDisplayNames.system'),
+  // 'performance': t('config.basicConfig.groupDisplayNames.performance')
 }
 
 // Group icon mapping
@@ -392,12 +406,13 @@ const GROUP_ICONS: Record<string, string> = {
 
 // Sub-group display name mapping
 const SUB_GROUP_DISPLAY_NAMES: Record<string, string> = {
-  'agent': '智能体设置',
-  'browser': '浏览器设置',
-  'interaction': '交互设置',
-  'system': '系统设置',
-  'performance': '性能设置',
-  'general': '常规设置'
+  'agent': ('config.subGroupDisplayNames.agent'), // "智能体"
+  'browser': ('config.subGroupDisplayNames.browser'), // "浏览器"
+  'interaction': ('config.subGroupDisplayNames.interaction'), // "交互"
+  'agents': ('config.subGroupDisplayNames.agents'), // "多智能体"
+  'infiniteContext': ('config.subGroupDisplayNames.infiniteContext'), // "无限上下文"
+  'general': ('config.subGroupDisplayNames.general'), // "通用"
+  'filesystem': ('config.subGroupDisplayNames.filesystem'), // "文件系统"
 }
 
 // Computed property: Whether there are changes
@@ -532,13 +547,14 @@ const loadAllConfigs = async () => {
     initialLoading.value = true
     
     // Define known configuration groups (avoid relying on the backend's getAllGroups interface)
-    const knownGroups = ['manus', 'browser', 'interaction', 'system', 'performance']
+    // The four configuration groups 'browser', 'interaction', 'system', and 'performance' have no corresponding backend responses and have been temporarily removed.
+    const knownGroups = ['manus']
     
     // Load each group's configuration
     const groupPromises = knownGroups.map(async (groupName: string) => {
       try {
         const items = await AdminApiService.getConfigsByGroup(groupName)
-        
+        console.log('加载配置组:', groupName, items)
         // If there are no configuration items in this group, skip it
         if (items.length === 0) {
           return null
@@ -547,7 +563,7 @@ const loadAllConfigs = async () => {
         // Set display name for each configuration item (prioritize description)
         const processedItems: ExtendedConfigItem[] = items.map(item => ({
           ...item,
-          displayName: item.description ?? (CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey),
+          displayName: (CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey),
           min: getConfigMin(item.configKey),
           max: getConfigMax(item.configKey)
         }))
@@ -571,13 +587,13 @@ const loadAllConfigs = async () => {
         // Convert to sub-group array
         const subGroups: ConfigSubGroup[] = Array.from(subGroupsMap.entries()).map(([name, items]) => ({
           name,
-          displayName: SUB_GROUP_DISPLAY_NAMES[name] || name,
+          displayName: (SUB_GROUP_DISPLAY_NAMES[name] || name),
           items
         }))
         
         return {
           name: groupName,
-          displayName: GROUP_DISPLAY_NAMES[groupName] || groupName,
+          displayName: (GROUP_DISPLAY_NAMES[groupName] || groupName),
           subGroups
         }
       } catch (error) {
