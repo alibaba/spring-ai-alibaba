@@ -91,7 +91,7 @@ public class AgentServiceImpl implements AgentService {
 	@Override
 	public List<AgentConfig> getAllAgentsByNamespace(String namespace) {
 		List<DynamicAgentEntity> entities;
-		if(namespace == null || namespace.trim().isEmpty()) {
+		if (namespace == null || namespace.trim().isEmpty()) {
 			// If namespace is null or empty, use default namespace
 			namespace = "default";
 			log.info("Namespace not specified, using default namespace: {}", namespace);
@@ -119,7 +119,8 @@ public class AgentServiceImpl implements AgentService {
 			if (config.getNamespace() == null || config.getNamespace().trim().isEmpty()) {
 				String defaultNamespace = getDefaultNamespace();
 				config.setNamespace(defaultNamespace);
-				log.info("Namespace not specified for Agent: {}, using default namespace: {}", config.getName(), defaultNamespace);
+				log.info("Namespace not specified for Agent: {}, using default namespace: {}", config.getName(),
+						defaultNamespace);
 			}
 
 			// Check if an Agent with the same name already exists
@@ -219,9 +220,8 @@ public class AgentServiceImpl implements AgentService {
 	}
 
 	/**
-	 * Get default namespace code when no namespace is specified.
-	 * Uses the first available namespace from getAllNamespaces(),
-	 * or "default" if no namespaces exist.
+	 * Get default namespace code when no namespace is specified. Uses the first available
+	 * namespace from getAllNamespaces(), or "default" if no namespaces exist.
 	 * @return default namespace code
 	 */
 	private String getDefaultNamespace() {
@@ -239,7 +239,8 @@ public class AgentServiceImpl implements AgentService {
 				String firstNamespaceCode = namespaces.get(0).getCode();
 				log.debug("Using first namespace as default: {}", firstNamespaceCode);
 				return firstNamespaceCode;
-			} else {
+			}
+			else {
 				// If no namespaces exist, return "default"
 				log.warn("No namespaces found, using fallback default namespace code: default");
 				return "default";
@@ -256,7 +257,8 @@ public class AgentServiceImpl implements AgentService {
 		if (config.getNamespace() == null || config.getNamespace().trim().isEmpty()) {
 			String defaultNamespace = getDefaultNamespace();
 			config.setNamespace(defaultNamespace);
-			log.info("Namespace not specified for Agent: {}, using default namespace: {}", config.getName(), defaultNamespace);
+			log.info("Namespace not specified for Agent: {}, using default namespace: {}", config.getName(),
+					defaultNamespace);
 		}
 
 		entity.setAgentName(config.getName());
