@@ -25,7 +25,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 public class TemplateTransformNodeIntegrationTest {
 
 	public static void main(String[] args) {
-	
+
 		System.out.println("=== Demo 1: Basic Template Transformation ===");
 		TemplateTransformNode basicNode = TemplateTransformNode.builder()
 			.template("Hello {{name}}, welcome to {{platform}}!")
@@ -39,7 +39,6 @@ public class TemplateTransformNodeIntegrationTest {
 		System.out.println("Expected: Hello Alice, welcome to Spring AI Alibaba!");
 		System.out.println();
 
-		
 		System.out.println("=== Demo 2: Missing Variables ===");
 		TemplateTransformNode missingVarNode = TemplateTransformNode.builder()
 			.template("Available: {{found}}, Missing: {{missing}}")
@@ -51,7 +50,6 @@ public class TemplateTransformNodeIntegrationTest {
 		System.out.println("Expected: Available: value, Missing: {{missing}}");
 		System.out.println();
 
-	
 		System.out.println("=== Demo 3: Complex Template ===");
 		TemplateTransformNode complexNode = TemplateTransformNode.builder()
 			.template("User {{user.name}} ({{user.email}}) has {{user.score}} points")

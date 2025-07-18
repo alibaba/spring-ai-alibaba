@@ -22,10 +22,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 public class TemplateTransformNode implements NodeAction {
 
@@ -59,11 +57,11 @@ public class TemplateTransformNode implements NodeAction {
 
 		while (matcher.find()) {
 			String key = matcher.group(1).trim();
-			Optional<Object> valueOpt = state.value(key);
 			String replacement;
 
-			if (valueOpt.isPresent()) {
-				Object val = valueOpt.get();
+			// Check if the key exists in the state data (even if the value is null)
+			if (state.data().containsKey(key)) {
+				Object val = state.data().get(key);
 				replacement = val != null ? val.toString() : "null";
 				// Escape special regex characters in replacement
 				replacement = replacement.replace("\\", "\\\\").replace("$", "\\$");
@@ -89,10 +87,6 @@ public class TemplateTransformNode implements NodeAction {
 		return result;
 	}
 
-	/**
-	 * Create a new builder for TemplateTransformNode
-	 * @return a new Builder instance
-	 */
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -106,12 +100,6 @@ public class TemplateTransformNode implements NodeAction {
 
 		private String outputKey;
 
-		/**
-		 * Set the template string with placeholders
-		 * @param template the template string, e.g., "Hello {{name}}!"
-		 * @return this builder
-		 * @throws IllegalArgumentException if template is null
-		 */
 		public Builder template(String template) {
 			if (template == null) {
 				throw new IllegalArgumentException("Template cannot be null");
@@ -120,24 +108,16 @@ public class TemplateTransformNode implements NodeAction {
 			return this;
 		}
 
-		/**
-		 * Set the output key for the transformed result
-		 * @param outputKey the key to store the result in state, defaults to "result"
-		 * @return this builder
-		 */
+		
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
 			return this;
 		}
 
-		/**
-		 * Build the TemplateTransformNode
-		 * @return a new TemplateTransformNode instance
-		 * @throws IllegalArgumentException if template is null or empty
-		 */
+		
 		public TemplateTransformNode build() {
-			if (template == null || template.trim().isEmpty()) {
-				throw new IllegalArgumentException("Template cannot be null or empty");
+			if (template == null) {
+				throw new IllegalArgumentException("Template cannot be null");
 			}
 			return new TemplateTransformNode(template, outputKey);
 		}

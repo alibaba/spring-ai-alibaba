@@ -39,18 +39,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 public class TemplateTransformNodeTest {
 
 	@Test
 	void testBasicTemplateTransformation() {
-	
+
 		String template = "Hello {{name}}, welcome to {{platform}}!";
 		TemplateTransformNode node = TemplateTransformNode.builder().template(template).outputKey("greeting").build();
 
 		OverAllState state = new OverAllState(Map.of("name", "Alice", "platform", "Spring AI Alibaba"));
 
-		
 		Map<String, Object> result = node.apply(state);
 
 		assertNotNull(result);
@@ -64,16 +62,14 @@ public class TemplateTransformNodeTest {
 
 		OverAllState state = new OverAllState(Map.of("value", "success"));
 
-	
 		Map<String, Object> result = node.apply(state);
 
-		
 		assertEquals("Result: success", result.get("result"));
 	}
 
 	@Test
 	void testMultipleVariablesInTemplate() {
-	
+
 		String template = "{{user}} logged in at {{time}}. User {{user}} has {{count}} messages.";
 		TemplateTransformNode node = TemplateTransformNode.builder()
 			.template(template)
@@ -82,17 +78,15 @@ public class TemplateTransformNodeTest {
 
 		OverAllState state = new OverAllState(Map.of("user", "john_doe", "time", "2024-01-15 10:30:00", "count", 5));
 
-	
 		Map<String, Object> result = node.apply(state);
 
-	
 		String expected = "john_doe logged in at 2024-01-15 10:30:00. User john_doe has 5 messages.";
 		assertEquals(expected, result.get("log_message"));
 	}
 
 	@Test
 	void testComplexNestedVariables() {
-	
+
 		String template = "Order #{{order.id}} for {{customer.name}} ({{customer.email}}) - Total: ${{order.total}} - Items: {{order.itemCount}}";
 		TemplateTransformNode node = TemplateTransformNode.builder()
 			.template(template)
@@ -110,7 +104,7 @@ public class TemplateTransformNodeTest {
 
 	@Test
 	void testMissingVariablesKeptAsPlaceholders() {
-	
+
 		String template = "Available: {{available_var}}, Missing: {{missing_var}}";
 		TemplateTransformNode node = TemplateTransformNode.builder()
 			.template(template)
@@ -121,13 +115,12 @@ public class TemplateTransformNodeTest {
 
 		Map<String, Object> result = node.apply(state);
 
-
 		assertEquals("Available: found, Missing: {{missing_var}}", result.get("partial_result"));
 	}
 
 	@Test
 	void testEmptyTemplate() {
-	
+
 		TemplateTransformNode node = TemplateTransformNode.builder().template("").build();
 
 		OverAllState state = new OverAllState(Map.of("var", "value"));
@@ -146,7 +139,6 @@ public class TemplateTransformNodeTest {
 
 		OverAllState state = new OverAllState(Map.of("unused", "value"));
 
-		
 		Map<String, Object> result = node.apply(state);
 
 		assertEquals(staticText, result.get("static_message"));
@@ -154,7 +146,7 @@ public class TemplateTransformNodeTest {
 
 	@Test
 	void testSpecialCharactersInVariables() {
-	
+
 		String template = "Message: {{msg}} | Symbols: {{symbols}} | Numbers: {{numbers}}";
 		TemplateTransformNode node = TemplateTransformNode.builder()
 			.template(template)
@@ -172,25 +164,23 @@ public class TemplateTransformNodeTest {
 
 	@Test
 	void testBuilderValidation() {
-	
+
 		TemplateTransformNode.Builder builder = TemplateTransformNode.builder();
 
-		
 		assertThrows(IllegalArgumentException.class, builder::build);
 	}
 
 	@Test
 	void testBuilderWithNullTemplate() {
-		
+
 		TemplateTransformNode.Builder builder = TemplateTransformNode.builder();
 
-	
 		assertThrows(IllegalArgumentException.class, () -> builder.template(null));
 	}
 
 	@Test
 	void testBuilderChaining() {
-	
+
 		TemplateTransformNode.Builder builder = TemplateTransformNode.builder();
 
 		TemplateTransformNode node = builder.template("Test {{var}}").outputKey("test_output").build();
@@ -204,7 +194,7 @@ public class TemplateTransformNodeTest {
 
 	@Test
 	void testLargeTemplate() {
-	
+
 		StringBuilder templateBuilder = new StringBuilder();
 		Map<String, Object> variables = Map.of("title", "Annual Report", "year", 2024, "company", "Alibaba Cloud",
 				"revenue", "1.2B", "growth", "15%");
@@ -222,10 +212,8 @@ public class TemplateTransformNodeTest {
 
 		OverAllState state = new OverAllState(variables);
 
-		
 		Map<String, Object> result = node.apply(state);
 
-		
 		String output = (String) result.get("report");
 		assertNotNull(output);
 		assertTrue(output.contains("Annual Report 2024"));
@@ -236,7 +224,7 @@ public class TemplateTransformNodeTest {
 
 	@Test
 	void testVariableWithNullValue() {
-	
+
 		TemplateTransformNode node = TemplateTransformNode.builder()
 			.template("Value: {{nullVar}}, Other: {{validVar}}")
 			.build();
@@ -246,10 +234,8 @@ public class TemplateTransformNodeTest {
 		variables.put("validVar", "valid");
 		OverAllState state = new OverAllState(variables);
 
-		
 		Map<String, Object> result = node.apply(state);
 
-		
 		assertEquals("Value: null, Other: valid", result.get("result"));
 	}
 
