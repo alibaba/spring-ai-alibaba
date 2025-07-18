@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.constant.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
@@ -58,7 +59,7 @@ public class QueryRewriteNode implements NodeAction {
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
 				"开始进行问题重写...", "问题重写完成！",
 				finalResult -> Map.of(QUERY_REWRITE_NODE_OUTPUT, finalResult, RESULT, finalResult),
-				baseNl2SqlService.rewriteStream(input));
+				baseNl2SqlService.rewriteStream(input), StreamResponseType.REWRITE);
 
 		return Map.of(QUERY_REWRITE_NODE_OUTPUT, generator);
 	}

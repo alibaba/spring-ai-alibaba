@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.constant.StreamResponseType;
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
@@ -84,7 +85,7 @@ public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 					logger.info("[{}] Semantic consistency validation result: {}, passed: {}",
 							this.getClass().getSimpleName(), validationResult, isPassed);
 					return result;
-				}, validationResultFlux);
+				}, validationResultFlux, StreamResponseType.VALIDATION);
 
 		return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, generator);
 	}
