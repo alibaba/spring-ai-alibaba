@@ -55,7 +55,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -98,9 +97,8 @@ public class DeepResearchConfiguration {
 	@Autowired
 	private ChatClient reflectionAgent;
 
-	@Qualifier("chatClientBuilder")
 	@Autowired
-	private ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
+	private ChatClient.Builder rewriteAndMultiQueryChatClientBuilder;
 
 	@Autowired
 	private DeepResearchProperties deepResearchProperties;
@@ -163,6 +161,7 @@ public class DeepResearchConfiguration {
 
 			// 节点输出
 			keyStrategyHashMap.put("background_investigation_results", new ReplaceStrategy());
+			keyStrategyHashMap.put("site_information", new ReplaceStrategy());
 			keyStrategyHashMap.put("output", new ReplaceStrategy());
 			keyStrategyHashMap.put("plan_iterations", new ReplaceStrategy());
 			keyStrategyHashMap.put("current_plan", new ReplaceStrategy());
@@ -184,7 +183,8 @@ public class DeepResearchConfiguration {
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
-			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
+			.addNode("rewrite_multi_query",
+					node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryChatClientBuilder)))
 			.addNode("background_investigator",
 					node_async(
 							new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService, searchFilterService)))
@@ -237,7 +237,7 @@ public class DeepResearchConfiguration {
 			.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 			String nodeId = "researcher_" + i;
 			stateGraph.addNode(nodeId, node_async(new ResearcherNode(researchAgent, String.valueOf(i),
-					reflectionProcessor, mcpProviderFactory, searchFilterService)));
+					reflectionProcessor, mcpProviderFactory, searchFilterService, jinaCrawlerService)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}

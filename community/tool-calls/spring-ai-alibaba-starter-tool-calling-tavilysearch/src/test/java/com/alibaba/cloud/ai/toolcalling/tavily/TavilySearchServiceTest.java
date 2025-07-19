@@ -40,8 +40,7 @@ public class TavilySearchServiceTest {
 	@EnabledIfEnvironmentVariable(named = TavilySearchConstants.API_KEY_ENV,
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	public void tavilySearchTest() {
-		var resp = tavilySearchService.apply(new TavilySearchService.Request("apple", null, null, null, null, null,
-				null, null, null, null, null, null, null));
+		var resp = tavilySearchService.apply(TavilySearchService.Request.simpleQuery("apple"));
 		assert resp != null && resp.results() != null;
 		log.info("results: " + resp.results());
 	}

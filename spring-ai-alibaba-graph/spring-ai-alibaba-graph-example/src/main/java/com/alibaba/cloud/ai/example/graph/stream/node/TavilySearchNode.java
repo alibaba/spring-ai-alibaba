@@ -43,7 +43,7 @@ public class TavilySearchNode implements NodeAction {
 		if (value.isPresent()) {
 			String input = value.get();
 			TavilySearchService.Request request = new TavilySearchService.Request(input, null, null, null, 1, null,
-					null, null, null, null, null, null, null);
+					null, null, null, null, null, null, null, true);
 			TavilySearchService.Response apply = tavilySearchService.apply(request);
 			if (apply != null) {
 				List<TavilySearchService.Response.ResultInfo> results = apply.results();

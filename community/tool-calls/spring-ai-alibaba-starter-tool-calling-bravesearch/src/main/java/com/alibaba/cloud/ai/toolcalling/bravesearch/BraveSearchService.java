@@ -99,7 +99,7 @@ public class BraveSearchService
 			return new SearchService.SearchResult(this.web()
 				.results()
 				.stream()
-				.map(item -> new SearchService.SearchContent(item.title(), item.description(), item.url()))
+				.map(item -> new SearchService.SearchContent(item.title(), item.description(), item.url(), null))
 				.toList());
 		}
 
