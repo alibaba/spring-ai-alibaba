@@ -19,16 +19,20 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
+import io.opentelemetry.context.Context;
 
 public interface AsyncCommandAction extends BiFunction<OverAllState, RunnableConfig, CompletableFuture<Command>> {
 
 	static AsyncCommandAction node_async(CommandAction syncAction) {
 		return (state, config) -> {
+			Context context = Context.current();
 			var result = new CompletableFuture<Command>();
 			try {
+				// context.wrap(() -> result.complete(syncAction.apply(state, config)));
 				result.complete(syncAction.apply(state, config));
 			}
 			catch (Exception e) {
+				// context.wrap(() -> result.completeExceptionally(e));
 				result.completeExceptionally(e);
 			}
 			return result;

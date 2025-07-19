@@ -16,9 +16,12 @@
 package com.alibaba.cloud.ai.graph.action;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import io.opentelemetry.context.Context;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 /**
@@ -28,6 +31,12 @@ import java.util.function.Function;
  */
 @FunctionalInterface
 public interface AsyncNodeAction extends Function<OverAllState, CompletableFuture<Map<String, Object>>> {
+
+	Executor BOUNDED_ELASTIC_EXECUTOR = Executors.newWorkStealingPool(); // You can
+
+	// customize a
+	// dedicated
+	// thread pool
 
 	/**
 	 * Applies this action to the given agent state.
@@ -43,11 +52,14 @@ public interface AsyncNodeAction extends Function<OverAllState, CompletableFutur
 	 */
 	static AsyncNodeAction node_async(NodeAction syncAction) {
 		return state -> {
+			Context context = Context.current();
 			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
 			try {
+				// context.wrap(() -> result.complete(syncAction.apply(state)));
 				result.complete(syncAction.apply(state));
 			}
 			catch (Exception e) {
+				// context.wrap(() -> result.completeExceptionally(e));
 				result.completeExceptionally(e);
 			}
 			return result;
