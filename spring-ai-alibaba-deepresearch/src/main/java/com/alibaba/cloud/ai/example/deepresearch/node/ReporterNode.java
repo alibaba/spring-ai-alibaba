@@ -98,7 +98,7 @@ public class ReporterNode implements NodeAction {
 			.startingNode("reporter_llm_stream")
 			.startingState(state)
 			.mapResult(response -> {
-				String finalReport = Objects.requireNonNull(response.result().getOutput().getText());
+				String finalReport = Objects.requireNonNull(response.getResult().getOutput().getText());
 				try {
 					reportService.saveReport(threadId, finalReport);
 					logger.info("Report saved successfully, Thread ID: {}", threadId);

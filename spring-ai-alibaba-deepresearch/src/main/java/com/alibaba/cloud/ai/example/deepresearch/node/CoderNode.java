@@ -124,7 +124,7 @@ public class CoderNode implements NodeAction {
 				finalAssignedStep
 					.setExecutionStatus(ReflectionUtil.getCompletionStatus(reflectionProcessor != null, nodeName));
 
-				String coderContent = response.result().getOutput().getText();
+				String coderContent = response.getResult().getOutput().getText();
 				finalAssignedStep.setExecutionRes(Objects.requireNonNull(coderContent));
 
 				logger.info("{} completed, content: {}", nodeName, coderContent);

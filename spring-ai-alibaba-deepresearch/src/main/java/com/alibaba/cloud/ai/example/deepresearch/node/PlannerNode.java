@@ -87,7 +87,7 @@ public class PlannerNode implements NodeAction {
 			.startingNode("planner_llm_stream")
 			.startingState(state)
 			.mapResult(response -> Map.of("planner_content",
-					Objects.requireNonNull(response.result().getOutput().getText())))
+					Objects.requireNonNull(response.getResult().getOutput().getText())))
 			.build(streamResult);
 
 		return Map.of("planner_content", generator);

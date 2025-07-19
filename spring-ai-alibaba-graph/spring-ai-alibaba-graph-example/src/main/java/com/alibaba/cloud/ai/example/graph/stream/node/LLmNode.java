@@ -74,7 +74,7 @@ public class LLmNode implements NodeAction {
 		var generator = StreamingChatGenerator.builder()
 			.startingNode("llmNode")
 			.startingState(t)
-			.mapResult(response -> Map.of("messages", Objects.requireNonNull(response.result().getOutput().getText())))
+			.mapResult(response -> Map.of("messages", Objects.requireNonNull(response.getResult().getOutput().getText())))
 			.build(flux);
 
 		return Map.of("messages1", generator, "messages", "test");

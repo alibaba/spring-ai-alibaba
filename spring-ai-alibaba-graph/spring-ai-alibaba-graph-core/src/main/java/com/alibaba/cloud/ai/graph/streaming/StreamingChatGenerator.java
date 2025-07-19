@@ -104,13 +104,13 @@ public interface StreamingChatGenerator {
 						return response;
 					}
 
-					var currentMessage = response.result().getOutput();
+					var currentMessage = response.getResult().getOutput();
 
 					if (currentMessage.hasToolCalls()) {
 						return response;
 					}
 
-					var lastMessage = lastResponse.result().getOutput();
+					var lastMessage = lastResponse.getResult().getOutput();
 
 					var newMessage = new AssistantMessage(
 							Objects.requireNonNull(ofNullable(currentMessage.getText()).map(text -> {
@@ -119,14 +119,14 @@ public interface StreamingChatGenerator {
 							}).orElse(lastMessage.getText())), currentMessage.getMetadata(),
 							currentMessage.getToolCalls(), currentMessage.getMedia());
 
-					var newGeneration = new Generation(newMessage, response.result().getMetadata());
+					var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
 					return new ChatResponse(List.of(newGeneration), response.getMetadata());
 
 				});
 			};
 
 			var processedFlux = flux.doOnNext(mergeMessage::accept)
-				.map(next -> new StreamingOutput(next.result().getOutput().getText(), startingNode, startingState));
+				.map(next -> new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState));
 
 			return FlowGenerator.fromPublisher(FlowAdapters.toFlowPublisher(processedFlux),
 					() -> mapResult.apply(result.get()));

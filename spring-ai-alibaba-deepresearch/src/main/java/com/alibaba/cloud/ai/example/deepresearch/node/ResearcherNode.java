@@ -144,7 +144,7 @@ public class ResearcherNode implements NodeAction {
 				finalAssignedStep
 					.setExecutionStatus(ReflectionUtil.getCompletionStatus(reflectionProcessor != null, nodeName));
 
-				String researchContent = response.result().getOutput().getText();
+				String researchContent = response.getResult().getOutput().getText();
 				finalAssignedStep.setExecutionRes(Objects.requireNonNull(researchContent));
 				logger.info("{} completed, content: {}", nodeName, researchContent);
 

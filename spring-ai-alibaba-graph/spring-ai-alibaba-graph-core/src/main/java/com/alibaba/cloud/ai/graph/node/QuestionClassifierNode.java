@@ -15,14 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -30,6 +24,11 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class QuestionClassifierNode implements NodeAction {
 
@@ -119,9 +118,9 @@ public class QuestionClassifierNode implements NodeAction {
 			.chatResponse();
 
 		Map<String, Object> updatedState = new HashMap<>();
-		updatedState.put(outputKey, response.result().getOutput().getText());
+		updatedState.put(outputKey, response.getResult().getOutput().getText());
 		if (state.value("messages").isPresent()) {
-			updatedState.put("messages", response.result().getOutput());
+			updatedState.put("messages", response.getResult().getOutput());
 		}
 
 		return updatedState;

@@ -15,19 +15,22 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
+import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
+import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,18 +51,14 @@ import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 
-import com.alibaba.cloud.ai.example.manus.agent.AgentState;
-import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
-import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
-import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class DynamicAgent extends ReActAgent {
 
@@ -190,8 +189,8 @@ public class DynamicAgent extends ReActAgent {
 			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
 			String modelName = response.getMetadata().getModel();
 
-			List<ToolCall> toolCalls = response.result().getOutput().getToolCalls();
-			String responseByLLm = response.result().getOutput().getText();
+			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
+			String responseByLLm = response.getResult().getOutput().getText();
 
 			log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
 			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
@@ -262,7 +261,7 @@ public class DynamicAgent extends ReActAgent {
 		List<ThinkActRecord.ActToolInfo> actToolInfoList = null;
 
 		try {
-			List<ToolCall> toolCalls = response.result().getOutput().getToolCalls();
+			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 
 			// 创建 ActToolInfo 列表
 			actToolInfoList = createActToolInfoList(toolCalls);
@@ -327,9 +326,9 @@ public class DynamicAgent extends ReActAgent {
 			log.info("Exception occurred", e);
 
 			// 记录失败的动作结果
-			if (actToolInfoList == null && response != null && response.result() != null
-					&& response.result().getOutput() != null) {
-				List<ToolCall> toolCalls = response.result().getOutput().getToolCalls();
+			if (actToolInfoList == null && response != null && response.getResult() != null
+					&& response.getResult().getOutput() != null) {
+				List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 				if (!toolCalls.isEmpty()) {
 					actToolInfoList = createActToolInfoList(toolCalls);
 				}

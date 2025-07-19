@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.graph.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
-import java.util.Optional;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.Message;
@@ -33,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public class LlmNode implements NodeAction {
 
@@ -90,7 +90,7 @@ public class LlmNode implements NodeAction {
 				.startingNode("llmNode")
 				.startingState(state)
 				.mapResult(response -> Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages",
-						Objects.requireNonNull(response.result().getOutput())))
+						Objects.requireNonNull(response.getResult().getOutput())))
 				.build(chatResponseFlux);
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", generator);
 		}
@@ -98,9 +98,9 @@ public class LlmNode implements NodeAction {
 			ChatResponse response = call();
 
 			Map<String, Object> updatedState = new HashMap<>();
-			updatedState.put("messages", response.result().getOutput());
+			updatedState.put("messages", response.getResult().getOutput());
 			if (StringUtils.hasLength(this.outputKey)) {
-				updatedState.put(this.outputKey, response.result().getOutput());
+				updatedState.put(this.outputKey, response.getResult().getOutput());
 			}
 			return updatedState;
 		}
