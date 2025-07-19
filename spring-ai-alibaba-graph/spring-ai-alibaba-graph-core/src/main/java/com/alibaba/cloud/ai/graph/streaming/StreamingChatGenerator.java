@@ -125,7 +125,7 @@ public interface StreamingChatGenerator {
 				});
 			};
 
-			var processedFlux = flux.doOnNext(mergeMessage::accept)
+			var processedFlux = flux.doOnNext(mergeMessage)
 					.map(next -> new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState));
 
 			return FlowGenerator.fromPublisher(FlowAdapters.toFlowPublisher(processedFlux),
