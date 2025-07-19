@@ -16,105 +16,106 @@
 
 // Common request methods (TypeScript version, suitable for Vue projects)
 
-import type { PlanExecutionRecordResponse } from '@/types/plan-execution-record'
+import type {PlanExecutionRecordResponse} from '@/types/plan-execution-record'
 
 export class CommonApiService {
-  private static readonly BASE_URL = '/api/executor'
+    private static readonly BASE_URL = '/api/executor'
 
-  // Get detailed execution records
-  public static async getDetails(planId: string): Promise<PlanExecutionRecordResponse> {
-    try {
-      const response = await fetch(`${this.BASE_URL}/details/${planId}`)
-      if (response.status === 404) {
-        // 404 returns null
-        return null
-      }
-      if (!response.ok) throw new Error(`Failed to get detailed information: ${response.status}`)
-      const rawText = await response.text()
-      const data = JSON.parse(rawText)
+    // Get detailed execution records
+    public static async getDetails(planId: string): Promise<PlanExecutionRecordResponse> {
+        try {
+            const response = await fetch(`${this.BASE_URL}/details/${planId}`)
+            if (response.status === 404) {
+                // 404 returns null
+                return null
+            }
+            if (!response.ok) throw new Error(`Failed to get detailed information: ${response.status}`)
+            const rawText = await response.text()
+            const data = JSON.parse(rawText)
 
-      // Type validation - ensure the response contains required currentPlanId
-      if (data && typeof data === 'object' && !data.currentPlanId) {
-        // If currentPlanId is missing from response, add it from the parameter
-        data.currentPlanId = planId
-      }
+            // Type validation - ensure the response contains required currentPlanId
+            if (data && typeof data === 'object' && !data.currentPlanId) {
+                // If currentPlanId is missing from response, add it from the parameter
+                data.currentPlanId = planId
+            }
 
-      return data
-    } catch (error: any) {
-      // Log error but don't throw exception
-      console.error('[CommonApiService] Failed to get plan details:', error)
-      return null
+            return data
+        } catch (error: any) {
+            // Log error but don't throw exception
+            console.error('[CommonApiService] Failed to get plan details:', error)
+            return null
+        }
     }
-  }
 
-  // Submit user form input
-  public static async submitFormInput(planId: string, formData: any): Promise<any> {
-    const response = await fetch(`${this.BASE_URL}/submit-input/${planId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
-    })
-    if (!response.ok) {
-      let errorData
-      try {
-        errorData = await response.json()
-      } catch {
-        errorData = { message: `Failed to submit form input: ${response.status}` }
-      }
-      throw new Error(errorData.message || `Failed to submit form input: ${response.status}`)
+    // Submit user form input
+    public static async submitFormInput(planId: string, formData: any): Promise<any> {
+        const response = await fetch(`${this.BASE_URL}/submit-input/${planId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData),
+        })
+        if (!response.ok) {
+            let errorData
+            try {
+                errorData = await response.json()
+            } catch {
+                errorData = {message: `Failed to submit form input: ${response.status}`}
+            }
+            throw new Error(errorData.message || `Failed to submit form input: ${response.status}`)
+        }
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.indexOf('application/json') !== -1) {
+            return await response.json()
+        }
+        return {success: true}
     }
-    const contentType = response.headers.get('content-type')
-    if (contentType && contentType.indexOf('application/json') !== -1) {
-      return await response.json()
-    }
-    return { success: true }
-  }
 
-  /**
-   * Get all Prompt list
-   */
-  static async getAllPrompts(): Promise<any[]> {
-    try {
-      const response = await fetch(this.BASE_URL)
-      const result = await this.handleResponse(response)
-      return await result.json()
-    } catch (error) {
-      console.error('Failed to get Prompt list:', error)
-      throw error
+    /**
+     * Get all Prompt list
+     */
+    static async getAllPrompts(): Promise<any[]> {
+        try {
+            const response = await fetch(this.BASE_URL)
+            const result = await this.handleResponse(response)
+            return await result.json()
+        } catch (error) {
+            console.error('Failed to get Prompt list:', error)
+            throw error
+        }
     }
-  }
 
-  private static async handleResponse(response: Response) {
-    if (!response.ok) {
-      try {
-        const errorData = await response.json()
-        throw new Error(errorData.message || `API request failed: ${response.status}`)
-      } catch {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`)
-      }
+    private static async handleResponse(response: Response) {
+        if (!response.ok) {
+            try {
+                const errorData = await response.json()
+                throw new Error(errorData.message || `API request failed: ${response.status}`)
+            } catch {
+                throw new Error(`API request failed: ${response.status} ${response.statusText}`)
+            }
+        }
+        return response
     }
-    return response
-  }
-  
-  // Submit user confirm plan
-  public static async submitConfirmPlan(planId: string, formData: any): Promise<any> {
-    const response = await fetch(`${this.BASE_URL}/confirm-plan/${planId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    })
-    if (!response.ok) {
-      let errorData
-      try {
-        errorData = await response.json()
-      } catch {
-        errorData = { message: `Failed to submit confirm plan: ${response.status}` }
-      }
-      throw new Error(errorData.message || `Failed to submit confirm plan: ${response.status}`)
+
+    // Submit user confirm plan
+    public static async submitConfirmPlan(planId: string, formData: any): Promise<any> {
+        const response = await fetch(`${this.BASE_URL}/confirm-plan/${planId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
+        })
+        if (!response.ok) {
+            let errorData
+            try {
+                errorData = await response.json()
+            } catch {
+                errorData = {message: `Failed to submit confirm plan: ${response.status}`}
+            }
+            throw new Error(errorData.message || `Failed to submit confirm plan: ${response.status}`)
+        }
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.indexOf('application/json') !== -1) {
+            return await response.json()
+        }
+        return {success: true}
     }
-    const contentType = response.headers.get('content-type')
-    if (contentType && contentType.indexOf('application/json') !== -1) {
-      return await response.json()
-    }
-    return { success: true }
 }
