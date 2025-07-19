@@ -211,7 +211,7 @@ class DashScopeDocumentRetrievalAdvisorTests {
 		// Verify response
 		assertThat(response).isNotNull();
 		assertThat(response.chatResponse()).isNotNull();
-		assertThat(response.chatResponse().result().getOutput().getText()).isEqualTo("Test response");
+		assertThat(response.chatResponse().getResult().getOutput().getText()).isEqualTo("Test response");
 	}
 
 	@Test

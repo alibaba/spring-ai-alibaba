@@ -94,7 +94,7 @@ class DashScopeImageModelObservationTests {
 		ImageResponseMetadata imageResponseMetadata = imageResponse.getMetadata();
 		assertThat(imageResponseMetadata.getCreated()).isPositive();
 
-		var generation = imageResponse.result();
+		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
 		assertThat(image.getUrl()).isNotEmpty();
 
@@ -151,7 +151,7 @@ class DashScopeImageModelObservationTests {
 
 		assertThat(responseObj).isNotNull();
 		assertThat(responseObj.getResults()).hasSize(1);
-		assertThat(responseObj.result().getOutput().getUrl()).isEqualTo("https://example-image.url/image.png");
+		assertThat(responseObj.getResult().getOutput().getUrl()).isEqualTo("https://example-image.url/image.png");
 
 		TestObservationRegistryAssert.assertThat(observationRegistry)
 			.hasObservationWithNameEqualTo("dashscope.image.model.operation")

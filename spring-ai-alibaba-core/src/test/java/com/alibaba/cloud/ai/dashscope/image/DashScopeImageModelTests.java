@@ -83,7 +83,7 @@ class DashScopeImageModelTests {
 		ImageResponse response = imageModel.call(prompt);
 
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.result().getOutput().getUrl()).isEqualTo(TEST_IMAGE_URL);
+		assertThat(response.getResult().getOutput().getUrl()).isEqualTo(TEST_IMAGE_URL);
 	}
 
 	@Test
@@ -104,7 +104,7 @@ class DashScopeImageModelTests {
 		ImageResponse response = imageModel.call(prompt);
 
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.result().getOutput().getUrl()).isEqualTo(TEST_IMAGE_URL);
+		assertThat(response.getResult().getOutput().getUrl()).isEqualTo(TEST_IMAGE_URL);
 	}
 
 	@Test
