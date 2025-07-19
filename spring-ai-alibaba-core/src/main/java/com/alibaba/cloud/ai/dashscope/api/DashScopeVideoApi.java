@@ -359,9 +359,9 @@ public class DashScopeVideoApi {
 			private Long seed;
 
 			/**
-			 * Whether to enable propt intelligent rewriting. After turning on, use the
-			 * big model to intelligently rewrite the input propt. The generation effect
-			 * of shorter propts is significantly improved, but it will increase
+			 * Whether to enable prompt intelligent rewriting. After turning on, use the
+			 * big model to intelligently rewrite the input prompt. The generation effect
+			 * of shorter prompts is significantly improved, but it will increase
 			 * time-consuming.
 			 */
 			@JsonProperty("prompt_extend")
