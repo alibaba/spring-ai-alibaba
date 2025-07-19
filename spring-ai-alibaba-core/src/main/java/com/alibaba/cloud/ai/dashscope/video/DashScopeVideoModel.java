@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeVideoApi.VideoGenerationRespo
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -43,7 +44,7 @@ public class DashScopeVideoModel implements VideoModel {
 
 	private final static Logger logger = LoggerFactory.getLogger(DashScopeVideoModel.class);
 
-	private static final int MAX_RETRY_COUNT = 5;
+	private static final int MAX_RETRY_COUNT = 10;
 
 	private final DashScopeVideoApi dashScopeVideoApi;
 
@@ -63,10 +64,16 @@ public class DashScopeVideoModel implements VideoModel {
 
 		SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(MAX_RETRY_COUNT);
 		FixedBackOffPolicy backOff = new FixedBackOffPolicy();
-		backOff.setBackOffPeriod(15_000L);
+		// Because the video generation takes a long time,
+		// change the retry time to 1 minute
+		backOff.setBackOffPeriod(60_000L);
 		retryTemplate.setRetryPolicy(retryPolicy);
 		retryTemplate.setBackOffPolicy(backOff);
 		this.retryTemplate = retryTemplate;
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
@@ -75,8 +82,11 @@ public class DashScopeVideoModel implements VideoModel {
 	@Override
 	public VideoResponse call(VideoPrompt prompt) {
 
+		// Video Prompt use template gen, can null.
 		Assert.notNull(prompt, "Prompt must not be null");
 		Assert.notEmpty(prompt.getInstructions(), "Prompt instructions must not be empty");
+
+		System.out.println("Video generation task submitted with prompt: " + prompt.getOptions());
 
 		String taskId = submitGenTask(prompt);
 		if (Objects.isNull(taskId)) {
@@ -89,9 +99,13 @@ public class DashScopeVideoModel implements VideoModel {
 
 			var resp = getVideoTask(taskId);
 			if (Objects.nonNull(resp)) {
+
+				logger.debug(String.valueOf(resp));
+
 				String status = resp.getOutput().getTaskStatus();
 				switch (status) {
-					case "SUCCESS" -> {
+					// status enum SUCCEEDED, FAILED, PENDING, RUNNING
+					case "SUCCEEDED" -> {
 						logger.info("Video generation task completed successfully: {}", taskId);
 						return toVideoResponse(resp);
 					}
@@ -99,16 +113,9 @@ public class DashScopeVideoModel implements VideoModel {
 						logger.error("Video generation task failed: {}", resp.getOutput());
 						return new VideoResponse(null);
 					}
-					default -> {
-						logger.info("Video generation task is still in progress: {}, status: {}", taskId, status);
-						return null; // continue polling
-					}
 				}
 			}
-			throw new RuntimeException("Video generation still pending");
-		}, context -> {
-			// Handle retry context
-			return new VideoResponse(null);
+			throw new RuntimeException("Video generation still pending, retry ...");
 		});
 	}
 
@@ -166,7 +173,7 @@ public class DashScopeVideoModel implements VideoModel {
 				.imageUrl(options.getImageUrl())
 				.firstFrameUrl(options.getFirstFrameUrl())
 				.lastFrameUrl(options.getLastFrameUrl())
-				.template(options.getTemplate().getValue())
+				.template(options.getTemplate())
 				.build())
 			.parameters(DashScopeVideoApi.VideoGenerationRequest.VideoParameters.builder()
 				.duration(options.getDuration())
@@ -194,6 +201,38 @@ public class DashScopeVideoModel implements VideoModel {
 		currentOptions = ModelOptionsUtils.merge(currentOptions, this.defaultOptions, DashScopeVideoOptions.class);
 
 		return currentOptions;
+	}
+
+	public static final class Builder {
+
+		private DashScopeVideoApi videoApi;
+
+		private DashScopeVideoOptions defaultOptions = DashScopeVideoOptions.builder().model(DEFAULT_MODEL).build();
+
+		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+
+		private Builder() {
+		}
+
+		public Builder videoApi(DashScopeVideoApi videoApi) {
+			this.videoApi = videoApi;
+			return this;
+		}
+
+		public Builder defaultOptions(DashScopeVideoOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
+
+		public Builder retryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
+		public DashScopeVideoModel build() {
+			return new DashScopeVideoModel(this.videoApi, this.defaultOptions, this.retryTemplate);
+		}
+
 	}
 
 }

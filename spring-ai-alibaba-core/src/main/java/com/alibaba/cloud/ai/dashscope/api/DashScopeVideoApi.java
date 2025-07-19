@@ -19,6 +19,8 @@ package com.alibaba.cloud.ai.dashscope.api;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelResult;
@@ -33,6 +35,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.ENABLED;
@@ -48,7 +51,9 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.HEADER
 
 public class DashScopeVideoApi {
 
-	public static final String DEFAULT_VIDEO_MODEL = VideoModel.WANX2_1_I2V_TURBO.getValue();
+	private static final Logger logger = LoggerFactory.getLogger(DashScopeVideoApi.class);
+
+	public static final String DEFAULT_VIDEO_MODEL = VideoModel.WANX2_1_T2V_TURBO.getValue();
 
 	private final String baseUrl;
 
@@ -78,9 +83,7 @@ public class DashScopeVideoApi {
 			if (!(apiKey instanceof NoopApiKey)) {
 				h.setBearerAuth(apiKey.getValue());
 			}
-
 			h.setContentType(MediaType.APPLICATION_JSON);
-			h.set(HEADER_ASYNC, ENABLED);
 		};
 
 		this.restClient = restClientBuilder.clone()
@@ -95,9 +98,12 @@ public class DashScopeVideoApi {
 	 */
 	public ResponseEntity<VideoGenerationResponse> submitVideoGenTask(VideoGenerationRequest request) {
 
+		logger.debug("Submitting video generation task with options: {}", request);
+
 		return this.restClient.post()
 			.uri("/api/v1/services/aigc/video-generation/video-synthesis")
 			.body(request)
+			.header(HEADER_ASYNC, ENABLED)
 			.retrieve()
 			.toEntity(VideoGenerationResponse.class);
 	}
@@ -170,19 +176,19 @@ public class DashScopeVideoApi {
 			 * Reverse prompt words are used to describe content that you do not want to
 			 * see in the video screen, and can limit the video screen.
 			 */
-			@JsonProperty("negative_prompt ")
+			@JsonProperty("negative_prompt")
 			private String negativePrompt;
 
-			@JsonProperty("image_url")
+			@JsonProperty("img_url")
 			private String imageUrl;
 
 			@JsonProperty("template")
 			private String template;
 
-			@JsonProperty("first_frame_url ")
+			@JsonProperty("first_frame_url")
 			private String firstFrameUrl;
 
-			@JsonProperty("last_frame_url ")
+			@JsonProperty("last_frame_url")
 			private String lastFrameUrl;
 
 			public VideoInput(String prompt) {
@@ -295,8 +301,8 @@ public class DashScopeVideoApi {
 					return this;
 				}
 
-				public Builder template(String template) {
-					this.template = template;
+				public Builder template(VideoTemplate template) {
+					this.template = Objects.nonNull(template) ? template.getValue() : "";
 					return this;
 				}
 
@@ -346,7 +352,7 @@ public class DashScopeVideoApi {
 			 * of shorter propts is significantly improved, but it will increase
 			 * time-consuming.
 			 */
-			@JsonProperty("prompt_extend ")
+			@JsonProperty("prompt_extend")
 			private Boolean promptExtend;
 
 			public VideoParameters(String size, Integer duration, Long seed, String resolution, Boolean promptExtend) {
@@ -493,15 +499,26 @@ public class DashScopeVideoApi {
 	public enum VideoModel implements ModelDescription {
 
 		/**
-		 * Generate videos based on the first frame, the generation speed is faster, and
-		 * it takes only one-third of the plus model, and it has a higher
+		 * Text to Video, faster generation speed and balanced performance.
+		 */
+		WANX2_1_T2V_TURBO("wanx2.1-t2v-turbo"),
+
+		/**
+		 * Text to Video, The generated details are richer and the picture is more
+		 * textured.
+		 */
+		WANX2_1_T2V_PLUS("wanx2.1-t2v-plus"),
+
+		/**
+		 * Picture-generated video, based on the first frame. The generation speed is
+		 * faster, taking only one-third of the plus model, and it has a higher
 		 * cost-effectiveness.
 		 */
 		WANX2_1_I2V_TURBO("wanx2.1-i2v-turbo"),
 
 		/**
-		 * Generate videos based on the first frame, Generate more details and more
-		 * textured pictures.
+		 * Picture-generated video, The generated details are richer and the picture is
+		 * more textured.
 		 */
 		WANX2_1_I2V_PLUS("wanx2.1-i2v-plus"),
 
@@ -576,6 +593,12 @@ public class DashScopeVideoApi {
 			this.output = output;
 		}
 
+		@Override
+		public String toString() {
+			return "VideoGenerationResponse{" + "requestId='" + requestId + '\'' + ", output=" + output + ", usage="
+					+ usage + '}';
+		}
+
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public static class VideoUsage {
 
@@ -615,6 +638,12 @@ public class DashScopeVideoApi {
 				this.videoCount = videoCount;
 			}
 
+			@Override
+			public String toString() {
+				return "VideoUsage{" + "videoDuration=" + videoDuration + ", videoRatio='" + videoRatio + '\''
+						+ ", videoCount=" + videoCount + '}';
+			}
+
 		}
 
 		/**
@@ -641,10 +670,10 @@ public class DashScopeVideoApi {
 			@JsonProperty("video_url")
 			private String videoUrl;
 
-			@JsonProperty("orig_prompt ")
+			@JsonProperty("orig_prompt")
 			private String origPrompt;
 
-			@JsonProperty("actual_prompt ")
+			@JsonProperty("actual_prompt")
 			private String actualPrompt;
 
 			@JsonProperty("code")
@@ -734,6 +763,15 @@ public class DashScopeVideoApi {
 
 			public void setMessage(String message) {
 				this.message = message;
+			}
+
+			@Override
+			public String toString() {
+				return "VideoOutput{" + "taskId='" + taskId + '\'' + ", taskStatus='" + taskStatus + '\''
+						+ ", submitTimes='" + submitTimes + '\'' + ", endTime='" + endTime + '\'' + ", scheduledTime='"
+						+ scheduledTime + '\'' + ", videoUrl='" + videoUrl + '\'' + ", origPrompt='" + origPrompt + '\''
+						+ ", actualPrompt='" + actualPrompt + '\'' + ", code='" + code + '\'' + ", message='" + message
+						+ '\'' + '}';
 			}
 
 		}

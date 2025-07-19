@@ -31,7 +31,7 @@ public final class DashScopeApiConstants {
 
 	public static final String HEADER_ASYNC = "X-DashScope-Async";
 
-	public static final String ENABLED = "enabled";
+	public static final String ENABLED = "enable";
 
 	public static final String SOURCE_FLAG = "CloudSDK";
 

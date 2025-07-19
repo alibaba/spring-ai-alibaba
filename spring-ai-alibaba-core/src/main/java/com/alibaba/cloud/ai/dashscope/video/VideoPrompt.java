@@ -37,6 +37,10 @@ public class VideoPrompt implements ModelRequest<List<VideoMessage>> {
 		this(new VideoMessage(contents));
 	}
 
+	public VideoPrompt(VideoOptions options) {
+		this("", options);
+	}
+
 	public VideoPrompt(VideoMessage message) {
 
 		this(Collections.singletonList(message));

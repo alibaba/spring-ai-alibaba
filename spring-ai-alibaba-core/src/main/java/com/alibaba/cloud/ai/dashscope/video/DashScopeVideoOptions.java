@@ -32,12 +32,12 @@ public class DashScopeVideoOptions implements VideoOptions {
 	/**
 	 * Default video model.
 	 */
-	public static final String DEFAULT_MODEL = "text2video-synthesis";
+	public static final String DEFAULT_MODEL = DashScopeVideoApi.VideoModel.WANX2_1_T2V_TURBO.getValue();
 
 	@JsonProperty("model")
 	private String model;
 
-	@JsonProperty("image_url")
+	@JsonProperty("img_url")
 	private String imageUrl;
 
 	@JsonProperty("prompt")
@@ -58,7 +58,7 @@ public class DashScopeVideoOptions implements VideoOptions {
 	@JsonProperty("duration")
 	private Integer duration = 5;
 
-	@JsonProperty("prompt_extend ")
+	@JsonProperty("prompt_extend")
 	private Boolean promptExtend;
 
 	@JsonProperty("resolution")
@@ -74,16 +74,16 @@ public class DashScopeVideoOptions implements VideoOptions {
 	 * Reverse prompt words are used to describe content that you do not want to see in
 	 * the video screen, and can limit the video screen.
 	 */
-	@JsonProperty("negative_prompt ")
+	@JsonProperty("negative_prompt")
 	private String negativePrompt;
 
 	@JsonProperty("template")
 	private DashScopeVideoApi.VideoTemplate template;
 
-	@JsonProperty("first_frame_url ")
+	@JsonProperty("first_frame_url")
 	private String firstFrameUrl;
 
-	@JsonProperty("last_frame_url ")
+	@JsonProperty("last_frame_url")
 	private String lastFrameUrl;
 
 	public DashScopeVideoOptions(String imageUrl, Long seed, String prompt, String firstFrameUrl, String lastFrameUrl,
@@ -211,6 +211,16 @@ public class DashScopeVideoOptions implements VideoOptions {
 		return new Builder();
 	}
 
+	@Override
+	public String toString() {
+
+		return "DashScopeVideoOptions{" + "model='" + model + '\'' + ", imageUrl='" + imageUrl + '\'' + ", prompt='"
+				+ prompt + '\'' + ", size='" + size + '\'' + ", duration=" + duration + ", promptExtend=" + promptExtend
+				+ ", resolution='" + resolution + '\'' + ", seed=" + seed + ", negativePrompt='" + negativePrompt + '\''
+				+ ", template=" + template + ", firstFrameUrl='" + firstFrameUrl + '\'' + ", lastFrameUrl='"
+				+ lastFrameUrl + '\'' + '}';
+	}
+
 	/**
 	 * Builder for DashScopeVideoOptions.
 	 */
@@ -237,8 +247,6 @@ public class DashScopeVideoOptions implements VideoOptions {
 		private String firstFrameUrl;
 
 		private String lastFrameUrl;
-
-		private String prompt;
 
 		private DashScopeVideoApi.VideoTemplate template;
 
