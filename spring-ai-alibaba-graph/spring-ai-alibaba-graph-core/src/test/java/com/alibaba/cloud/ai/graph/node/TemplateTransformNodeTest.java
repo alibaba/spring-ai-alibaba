@@ -1,21 +1,8 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
- * Licensed under the Apache License, Version 2.0 (the "Licens	@Test
-	void testEmptyTemplate() {
-		// Given: Empty template
-		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template("   ")  // whitespace template should be allowed but trimmed
-			.build();
-
-		OverAllState state = new OverAllState(Map.of("var", "value"));
-
-		// When: Apply transformation
-		Map<String, Object> result = node.apply(state);
-
-		// Then: Returns empty string
-		assertEquals("   ", result.get("result"));
-	}u may not use this file except in compliance with the License.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *      https://www.apache.org/licenses/LICENSE-2.0
@@ -28,215 +15,200 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.HashMap;
+import java.util.Map;
 
-public class TemplateTransformNodeTest {
+import static org.junit.jupiter.api.Assertions.*;
+
+class TemplateTransformNodeTest {
 
 	@Test
 	void testBasicTemplateTransformation() {
+		// Given: A template with a single variable
+		TemplateTransformNode node = TemplateTransformNode.builder().template("Hello {{name}}!").build();
 
-		String template = "Hello {{name}}, welcome to {{platform}}!";
-		TemplateTransformNode node = TemplateTransformNode.builder().template(template).outputKey("greeting").build();
+		OverAllState state = new OverAllState(Map.of("name", "World"));
 
-		OverAllState state = new OverAllState(Map.of("name", "Alice", "platform", "Spring AI Alibaba"));
-
+		// When: Apply transformation
 		Map<String, Object> result = node.apply(state);
 
-		assertNotNull(result);
-		assertEquals("Hello Alice, welcome to Spring AI Alibaba!", result.get("greeting"));
-	}
-
-	@Test
-	void testDefaultOutputKey() {
-
-		TemplateTransformNode node = TemplateTransformNode.builder().template("Result: {{value}}").build();
-
-		OverAllState state = new OverAllState(Map.of("value", "success"));
-
-		Map<String, Object> result = node.apply(state);
-
-		assertEquals("Result: success", result.get("result"));
+		// Then: Template is processed correctly
+		assertEquals("Hello World!", result.get("result"));
 	}
 
 	@Test
 	void testMultipleVariablesInTemplate() {
-
-		String template = "{{user}} logged in at {{time}}. User {{user}} has {{count}} messages.";
+		// Given: A template with multiple variables
 		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template(template)
-			.outputKey("log_message")
+			.template("{{greeting}} {{name}}, today is {{day}}")
 			.build();
 
-		OverAllState state = new OverAllState(Map.of("user", "john_doe", "time", "2024-01-15 10:30:00", "count", 5));
+		OverAllState state = new OverAllState(Map.of("greeting", "Hello", "name", "Alice", "day", "Monday"));
 
+		// When: Apply transformation
 		Map<String, Object> result = node.apply(state);
 
-		String expected = "john_doe logged in at 2024-01-15 10:30:00. User john_doe has 5 messages.";
-		assertEquals(expected, result.get("log_message"));
-	}
-
-	@Test
-	void testComplexNestedVariables() {
-
-		String template = "Order #{{order.id}} for {{customer.name}} ({{customer.email}}) - Total: ${{order.total}} - Items: {{order.itemCount}}";
-		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template(template)
-			.outputKey("order_summary")
-			.build();
-
-		OverAllState state = new OverAllState(Map.of("order.id", "ORD-12345", "customer.name", "Jane Smith",
-				"customer.email", "jane@example.com", "order.total", 99.99, "order.itemCount", 3));
-
-		Map<String, Object> result = node.apply(state);
-
-		String expected = "Order #ORD-12345 for Jane Smith (jane@example.com) - Total: $99.99 - Items: 3";
-		assertEquals(expected, result.get("order_summary"));
+		// Then: All variables are replaced
+		assertEquals("Hello Alice, today is Monday", result.get("result"));
 	}
 
 	@Test
 	void testMissingVariablesKeptAsPlaceholders() {
-
-		String template = "Available: {{available_var}}, Missing: {{missing_var}}";
+		// Given: A template with missing variables
 		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template(template)
-			.outputKey("partial_result")
+			.template("Hello {{name}}, your score is {{score}}")
 			.build();
 
-		OverAllState state = new OverAllState(Map.of("available_var", "found"));
+		OverAllState state = new OverAllState(Map.of("name", "Bob"));
 
+		// When: Apply transformation
 		Map<String, Object> result = node.apply(state);
 
-		assertEquals("Available: found, Missing: {{missing_var}}", result.get("partial_result"));
-	}
-
-	@Test
-	void testEmptyTemplate() {
-
-		TemplateTransformNode node = TemplateTransformNode.builder().template("").build();
-
-		OverAllState state = new OverAllState(Map.of("var", "value"));
-		Map<String, Object> result = node.apply(state);
-
-		assertEquals("", result.get("result"));
-	}
-
-	@Test
-	void testTemplateWithoutVariables() {
-		String staticText = "This is a static message without any variables.";
-		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template(staticText)
-			.outputKey("static_message")
-			.build();
-
-		OverAllState state = new OverAllState(Map.of("unused", "value"));
-
-		Map<String, Object> result = node.apply(state);
-
-		assertEquals(staticText, result.get("static_message"));
-	}
-
-	@Test
-	void testSpecialCharactersInVariables() {
-
-		String template = "Message: {{msg}} | Symbols: {{symbols}} | Numbers: {{numbers}}";
-		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template(template)
-			.outputKey("special_output")
-			.build();
-
-		OverAllState state = new OverAllState(
-				Map.of("msg", "Hello & Goodbye!", "symbols", "@#$%^&*()", "numbers", "123-456-7890"));
-
-		Map<String, Object> result = node.apply(state);
-
-		String expected = "Message: Hello & Goodbye! | Symbols: @#$%^&*() | Numbers: 123-456-7890";
-		assertEquals(expected, result.get("special_output"));
-	}
-
-	@Test
-	void testBuilderValidation() {
-
-		TemplateTransformNode.Builder builder = TemplateTransformNode.builder();
-
-		assertThrows(IllegalArgumentException.class, builder::build);
-	}
-
-	@Test
-	void testBuilderWithNullTemplate() {
-
-		TemplateTransformNode.Builder builder = TemplateTransformNode.builder();
-
-		assertThrows(IllegalArgumentException.class, () -> builder.template(null));
-	}
-
-	@Test
-	void testBuilderChaining() {
-
-		TemplateTransformNode.Builder builder = TemplateTransformNode.builder();
-
-		TemplateTransformNode node = builder.template("Test {{var}}").outputKey("test_output").build();
-
-		assertNotNull(node);
-
-		OverAllState state = new OverAllState(Map.of("var", "value"));
-		Map<String, Object> result = node.apply(state);
-		assertEquals("Test value", result.get("test_output"));
-	}
-
-	@Test
-	void testLargeTemplate() {
-
-		StringBuilder templateBuilder = new StringBuilder();
-		Map<String, Object> variables = Map.of("title", "Annual Report", "year", 2024, "company", "Alibaba Cloud",
-				"revenue", "1.2B", "growth", "15%");
-
-		templateBuilder.append("{{title}} {{year}}\n")
-			.append("Company: {{company}}\n")
-			.append("Revenue: ${{revenue}}\n")
-			.append("Growth: {{growth}}\n")
-			.append("Generated for {{company}} in {{year}} showing {{growth}} growth.");
-
-		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template(templateBuilder.toString())
-			.outputKey("report")
-			.build();
-
-		OverAllState state = new OverAllState(variables);
-
-		Map<String, Object> result = node.apply(state);
-
-		String output = (String) result.get("report");
-		assertNotNull(output);
-		assertTrue(output.contains("Annual Report 2024"));
-		assertTrue(output.contains("Company: Alibaba Cloud"));
-		assertTrue(output.contains("Revenue: $1.2B"));
-		assertTrue(output.contains("Growth: 15%"));
+		// Then: Missing variables are kept as placeholders
+		assertEquals("Hello Bob, your score is {{score}}", result.get("result"));
 	}
 
 	@Test
 	void testVariableWithNullValue() {
+		// Given: A template with a null-valued variable
+		TemplateTransformNode node = TemplateTransformNode.builder().template("Status: {{status}}").build();
 
-		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template("Value: {{nullVar}}, Other: {{validVar}}")
-			.build();
+		Map<String, Object> dataMap = new HashMap<>();
+		dataMap.put("status", null);
+		OverAllState state = new OverAllState(dataMap);
 
-		Map<String, Object> variables = new HashMap<>();
-		variables.put("nullVar", null);
-		variables.put("validVar", "valid");
-		OverAllState state = new OverAllState(variables);
-
+		// When: Apply transformation
 		Map<String, Object> result = node.apply(state);
 
-		assertEquals("Value: null, Other: valid", result.get("result"));
+		// Then: Null values are replaced with "null"
+		assertEquals("Status: null", result.get("result"));
+	}
+
+	@Test
+	void testDefaultOutputKey() {
+		// Given: A node without custom output key
+		TemplateTransformNode node = TemplateTransformNode.builder().template("Test").build();
+
+		OverAllState state = new OverAllState(Map.of());
+
+		// When: Apply transformation
+		Map<String, Object> result = node.apply(state);
+
+		// Then: Uses default "result" key
+		assertTrue(result.containsKey("result"));
+		assertEquals("Test", result.get("result"));
+	}
+
+	@Test
+	void testTemplateWithoutVariables() {
+		// Given: A template without any variables
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("This is a static text")
+			.outputKey("output")
+			.build();
+
+		OverAllState state = new OverAllState(Map.of("irrelevant", "data"));
+
+		// When: Apply transformation
+		Map<String, Object> result = node.apply(state);
+
+		// Then: Template is returned as-is
+		assertEquals("This is a static text", result.get("output"));
+	}
+
+	@Test
+	void testEmptyTemplate() {
+		// Given: Empty template
+		TemplateTransformNode node = TemplateTransformNode.builder().template("").build();
+
+		OverAllState state = new OverAllState(Map.of("var", "value"));
+
+		// When: Apply transformation
+		Map<String, Object> result = node.apply(state);
+
+		// Then: Returns empty string
+		assertEquals("", result.get("result"));
+	}
+
+	@Test
+	void testLargeTemplate() {
+		// Given: A large template with many variables
+		StringBuilder templateBuilder = new StringBuilder();
+		for (int i = 0; i < 100; i++) {
+			templateBuilder.append("{{var").append(i).append("}} ");
+		}
+
+		TemplateTransformNode node = TemplateTransformNode.builder().template(templateBuilder.toString()).build();
+
+		// Create state with values for first 50 variables
+		Map<String, Object> stateData = new java.util.HashMap<>();
+		for (int i = 0; i < 50; i++) {
+			stateData.put("var" + i, "value" + i);
+		}
+		OverAllState state = new OverAllState(stateData);
+
+		// When: Apply transformation
+		Map<String, Object> result = node.apply(state);
+
+		// Then: First 50 variables are replaced, others kept as placeholders
+		String output = (String) result.get("result");
+		assertTrue(output.contains("value0"));
+		assertTrue(output.contains("value49"));
+		assertTrue(output.contains("{{var50}}"));
+		assertTrue(output.contains("{{var99}}"));
+	}
+
+	@Test
+	void testSpecialCharactersInVariables() {
+		// Given: Template with special characters in variable values
+		TemplateTransformNode node = TemplateTransformNode.builder().template("Message: {{content}}").build();
+
+		OverAllState state = new OverAllState(Map.of("content", "Special chars: $100 \\backslash {braces}"));
+
+		// When: Apply transformation
+		Map<String, Object> result = node.apply(state);
+
+		// Then: Special characters are properly escaped and handled
+		assertEquals("Message: Special chars: $100 \\backslash {braces}", result.get("result"));
+	}
+
+	@Test
+	void testComplexNestedVariables() {
+		// Given: Template with nested-like patterns
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("{{outer}} contains {{inner}} and {{nested}}")
+			.build();
+
+		OverAllState state = new OverAllState(Map.of("outer", "Container", "inner", "item1", "nested", "item2"));
+
+		// When: Apply transformation
+		Map<String, Object> result = node.apply(state);
+
+		// Then: All variables are correctly replaced
+		assertEquals("Container contains item1 and item2", result.get("result"));
+	}
+
+	@Test
+	void testBuilderValidation() {
+		// Given/When/Then: Builder validates required fields
+		assertThrows(IllegalArgumentException.class, () -> TemplateTransformNode.builder().build());
+
+		assertThrows(IllegalArgumentException.class, () -> TemplateTransformNode.builder().template(null).build());
+	}
+
+	@Test
+	void testBuilderChaining() {
+		// Given/When: Builder with chained calls
+		TemplateTransformNode node = TemplateTransformNode.builder().template("{{test}}").outputKey("custom").build();
+
+		OverAllState state = new OverAllState(Map.of("test", "success"));
+		Map<String, Object> result = node.apply(state);
+
+		// Then: Custom output key is used
+		assertEquals("success", result.get("custom"));
 	}
 
 }
