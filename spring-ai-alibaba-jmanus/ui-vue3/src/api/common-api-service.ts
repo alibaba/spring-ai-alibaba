@@ -69,4 +69,27 @@ export class CommonApiService {
     }
     return { success: true }
   }
+
+  // Submit user confirm plan
+  public static async submitConfirmPlan(planId: string, formData: any): Promise<any> {
+    const response = await fetch(`${this.BASE_URL}/confirm-plan/${planId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    })
+    if (!response.ok) {
+      let errorData
+      try {
+        errorData = await response.json()
+      } catch {
+        errorData = { message: `Failed to submit confirm plan: ${response.status}` }
+      }
+      throw new Error(errorData.message || `Failed to submit confirm plan: ${response.status}`)
+    }
+    const contentType = response.headers.get('content-type')
+    if (contentType && contentType.indexOf('application/json') !== -1) {
+      return await response.json()
+    }
+    return { success: true }
+  }
 }

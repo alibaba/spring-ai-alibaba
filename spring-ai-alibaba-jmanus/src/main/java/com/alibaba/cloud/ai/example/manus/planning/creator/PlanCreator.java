@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.example.manus.planning.creator;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
@@ -25,9 +24,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanConfirmData;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
-import com.alibaba.cloud.ai.example.manus.planning.service.PlanConfirmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
 import org.slf4j.Logger;
@@ -59,18 +56,14 @@ public class PlanCreator {
 
 	private final ManusProperties manusProperties;
 
-	private final PlanConfirmService planConfirmService;
-
 	public PlanCreator(List<DynamicAgentEntity> agents, ILlmService llmService, PlanningToolInterface planningTool,
-			PlanExecutionRecorder recorder, PromptService promptService, ManusProperties manusProperties,
-			PlanConfirmService planConfirmService) {
+			PlanExecutionRecorder recorder, PromptService promptService, ManusProperties manusProperties) {
 		this.agents = agents;
 		this.llmService = llmService;
 		this.planningTool = planningTool;
 		this.recorder = recorder;
 		this.promptService = promptService;
 		this.manusProperties = manusProperties;
-		this.planConfirmService = planConfirmService;
 	}
 
 	/**
@@ -149,8 +142,6 @@ public class PlanCreator {
 				currentPlan.setCurrentPlanId(planId);
 				currentPlan.setRootPlanId(planId);
 				currentPlan.setPlanningThinking(outputText);
-				// process handle plan confirm
-				handlePlanConfirm(currentPlan);
 			}
 			else {
 				throw new RuntimeException("Failed to create a valid execution plan after retries");
@@ -191,57 +182,6 @@ public class PlanCreator {
 	private String generatePlanPrompt(String request, String agentsInfo) {
 		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "request", request);
 		return promptService.renderPrompt(PromptEnum.PLANNING_PLAN_CREATION.getPromptName(), variables);
-	}
-
-	/**
-	 * Handle plan confirm
-	 * @param currentPlan current plan
-	 */
-	private void handlePlanConfirm(PlanInterface currentPlan) {
-		if (!manusProperties.getAutoAcceptPlan()) {
-			// Do not automatically accept the plan, need to manually confirm whether to
-			// use the currently generated plan
-			Boolean accepted = waitingForUserConfirmPlan(currentPlan.getCurrentPlanId());
-			currentPlan.setAccepted(accepted);
-		}
-		else {
-			currentPlan.setAccepted(true);
-		}
-	}
-
-	/**
-	 * Wait for user confirmation of the plan
-	 * @param planId current plan id
-	 */
-	private boolean waitingForUserConfirmPlan(String planId) {
-		log.info("Waiting for user confirm plan, planId:{}...", planId);
-		long startTime = System.currentTimeMillis();
-		long confirmPlanTimeout = manusProperties.getConfirmPlanTimeout() * 1000L;
-		PlanConfirmData planConfirmData = planConfirmService.getConfirmData(planId);
-		while (planConfirmData == null || planConfirmData.getAccepted() == null) {
-			long currentTime = System.currentTimeMillis();
-			if (currentTime - startTime > confirmPlanTimeout) {
-				log.warn("Timeout waiting for user confirm plan, planId:{}", planId);
-				planConfirmData = new PlanConfirmData(planId, true, "timeout", currentTime);
-				planConfirmService.storeConfirmData(planId, planConfirmData);
-				return true;
-			}
-
-			try {
-				TimeUnit.MILLISECONDS.sleep(500); // Check every 500ms
-				planConfirmData = planConfirmService.getConfirmData(planId);
-			}
-			catch (InterruptedException e) {
-				// System exception auto confirm plan
-				log.warn("Interrupted while waiting for user confirm plan, planId:{}", planId);
-				Thread.currentThread().interrupt();
-				planConfirmData = new PlanConfirmData(planId, true, "exception", currentTime);
-				planConfirmService.storeConfirmData(planId, planConfirmData);
-				return true;
-			}
-		}
-
-		return planConfirmData.getAccepted();
 	}
 
 }

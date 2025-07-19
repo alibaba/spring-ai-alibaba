@@ -22,15 +22,22 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanConfirmData;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
+import com.alibaba.cloud.ai.example.manus.planning.service.PlanConfirmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Basic implementation class responsible for executing plans
  */
 public class PlanExecutor extends AbstractPlanExecutor {
+
+	private static final Logger logger = LoggerFactory.getLogger(PlanExecutor.class);
 
 	/**
 	 * Constructor for PlanExecutor
@@ -40,8 +47,8 @@ public class PlanExecutor extends AbstractPlanExecutor {
 	 * @param llmService LLM service
 	 */
 	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService,
-			ILlmService llmService, ManusProperties manusProperties) {
-		super(agents, recorder, agentService, llmService, manusProperties);
+			ILlmService llmService, ManusProperties manusProperties, PlanConfirmService planConfirmService) {
+		super(agents, recorder, agentService, llmService, manusProperties, planConfirmService);
 	}
 
 	/**
@@ -57,9 +64,12 @@ public class PlanExecutor extends AbstractPlanExecutor {
 
 		try {
 			recorder.recordPlanExecutionStart(context);
+			// process handle plan confirm
+			handlePlanConfirm(plan);
+
 			// If the plan is accepted, continue executing the step, otherwise end the
 			// current task
-			if (plan.getAccepted()) {
+			if (PlanConfirmData.ConfirmState.ACCEPT.getState().equals(plan.getAccepted())) {
 				List<ExecutionStep> steps = plan.getAllSteps();
 				if (steps != null && !steps.isEmpty()) {
 					for (ExecutionStep step : steps) {
@@ -75,6 +85,66 @@ public class PlanExecutor extends AbstractPlanExecutor {
 		finally {
 			performCleanup(context, lastExecutor);
 		}
+	}
+
+	/**
+	 * Handle plan confirm
+	 * @param currentPlan current plan
+	 */
+	private void handlePlanConfirm(PlanInterface currentPlan) {
+		if (!manusProperties.getAutoAcceptPlan()) {
+			// Do not automatically accept the plan, need to manually confirm whether to
+			// use the currently generated plan
+			PlanConfirmData planConfirmData = new PlanConfirmData(currentPlan.getCurrentPlanId(),
+					PlanConfirmData.ConfirmState.AWAIT.getState(), null, 0);
+			planConfirmService.storeConfirmData(currentPlan.getCurrentPlanId(), planConfirmData);
+
+			String accepted = waitingForUserConfirmPlan(currentPlan.getCurrentPlanId());
+			currentPlan.setAccepted(accepted);
+		}
+		else {
+			currentPlan.setAccepted(PlanConfirmData.ConfirmState.ACCEPT.getState());
+		}
+	}
+
+	/**
+	 * Wait for user confirmation of the plan
+	 * @param planId current plan id
+	 */
+	private String waitingForUserConfirmPlan(String planId) {
+		logger.info("Waiting for user confirm plan, planId:{}...", planId);
+		long startTime = System.currentTimeMillis();
+		long confirmPlanTimeout = manusProperties.getConfirmPlanTimeout() * 1000L;
+		PlanConfirmData planConfirmData = planConfirmService.getConfirmData(planId);
+		while (planConfirmData == null || planConfirmData.getAccepted() == null
+				|| PlanConfirmData.ConfirmState.AWAIT.getState().equals(planConfirmData.getAccepted())) {
+			long currentTime = System.currentTimeMillis();
+			if (currentTime - startTime > confirmPlanTimeout) {
+				logger.warn("Timeout waiting for user confirm plan, planId:{}", planId);
+				String state = PlanConfirmData.ConfirmState.ACCEPT.getState();
+				String type = PlanConfirmData.ConfirmType.TIMEOUT.getType();
+				planConfirmData = new PlanConfirmData(planId, state, type, currentTime);
+				planConfirmService.storeConfirmData(planId, planConfirmData);
+				return state;
+			}
+
+			try {
+				TimeUnit.MILLISECONDS.sleep(500); // Check every 500ms
+				planConfirmData = planConfirmService.getConfirmData(planId);
+			}
+			catch (InterruptedException e) {
+				// System exception auto confirm plan
+				logger.warn("Interrupted while waiting for user confirm plan, planId:{}", planId);
+				Thread.currentThread().interrupt();
+				String state = PlanConfirmData.ConfirmState.ACCEPT.getState();
+				String type = PlanConfirmData.ConfirmType.TIMEOUT.getType();
+				planConfirmData = new PlanConfirmData(planId, state, type, currentTime);
+				planConfirmService.storeConfirmData(planId, planConfirmData);
+				return state;
+			}
+		}
+
+		return planConfirmData.getAccepted();
 	}
 
 }

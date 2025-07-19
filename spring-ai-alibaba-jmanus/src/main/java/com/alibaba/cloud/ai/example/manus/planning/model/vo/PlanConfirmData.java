@@ -29,12 +29,12 @@ public class PlanConfirmData implements Serializable {
 	private String planId;
 
 	/**
-	 * plan confirm or not
+	 * plan confirm result, see ConfirmState
 	 */
-	private Boolean accepted;
+	private String accepted;
 
 	/**
-	 * confirm type，user/timeout/exception
+	 * confirm type，see ConfirmType
 	 */
 	private String type;
 
@@ -43,7 +43,7 @@ public class PlanConfirmData implements Serializable {
 	 */
 	private long time;
 
-	public PlanConfirmData(String planId, Boolean accepted, String type, long time) {
+	public PlanConfirmData(String planId, String accepted, String type, long time) {
 		this.planId = planId;
 		this.accepted = accepted;
 		this.type = type;
@@ -51,15 +51,9 @@ public class PlanConfirmData implements Serializable {
 	}
 
 	public PlanConfirmData(Map<String, String> map) {
-		if (map == null || map.isEmpty()) {
-			throw new IllegalArgumentException("map is null or empty");
-		}
-		if (!map.containsKey("planId") || !map.containsKey("accepted")) {
-			throw new IllegalArgumentException("map is not valid");
-		}
 		this.planId = map.get("planId");
-		this.accepted = Boolean.valueOf(map.get("accepted"));
-		this.type = "user";
+		this.accepted = String.valueOf(map.get("accepted"));
+		this.type = ConfirmType.USER.getType();
 		this.time = System.currentTimeMillis();
 	}
 
@@ -71,11 +65,11 @@ public class PlanConfirmData implements Serializable {
 		this.planId = planId;
 	}
 
-	public Boolean getAccepted() {
+	public String getAccepted() {
 		return accepted;
 	}
 
-	public void setAccepted(Boolean accepted) {
+	public void setAccepted(String accepted) {
 		this.accepted = accepted;
 	}
 
@@ -93,6 +87,55 @@ public class PlanConfirmData implements Serializable {
 
 	public void setTime(long time) {
 		this.time = time;
+	}
+
+	public enum ConfirmType {
+
+		USER("user"),
+
+		TIMEOUT("timeout"),
+
+		EXCEPTION("exception");
+
+		private String type;
+
+		ConfirmType(String type) {
+			this.type = type;
+		}
+
+		public String getType() {
+			return type;
+		}
+
+	}
+
+	public enum ConfirmState {
+
+		ACCEPT("accept"),
+
+		REJECT("reject"),
+
+		AWAIT("await");
+
+		private String state;
+
+		ConfirmState(String state) {
+			this.state = state;
+		}
+
+		public String getState() {
+			return state;
+		}
+
+		public static ConfirmState values(String state) {
+			for (ConfirmState confirmState : ConfirmState.values()) {
+				if (confirmState.getState().equals(state)) {
+					return confirmState;
+				}
+			}
+			return null;
+		}
+
 	}
 
 }

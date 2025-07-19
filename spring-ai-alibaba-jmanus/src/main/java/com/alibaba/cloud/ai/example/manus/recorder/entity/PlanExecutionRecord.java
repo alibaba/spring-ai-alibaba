@@ -98,7 +98,7 @@ public class PlanExecutionRecord {
 	private String modelName;
 
 	// Whether the plan is accepted
-	private Boolean acceptedPlan;
+	private String acceptedPlan;
 
 	/**
 	 * Default constructor for Jackson and other frameworks.
@@ -325,11 +325,11 @@ public class PlanExecutionRecord {
 		this.modelName = modelName;
 	}
 
-	public Boolean getAcceptedPlan() {
+	public String getAcceptedPlan() {
 		return acceptedPlan;
 	}
 
-	public void setAcceptedPlan(Boolean acceptedPlan) {
+	public void setAcceptedPlan(String acceptedPlan) {
 		this.acceptedPlan = acceptedPlan;
 	}
 

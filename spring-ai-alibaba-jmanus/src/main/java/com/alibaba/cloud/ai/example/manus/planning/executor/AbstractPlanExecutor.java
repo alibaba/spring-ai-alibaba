@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.planning.service.PlanConfirmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 import java.util.ArrayList;
@@ -57,6 +58,8 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
 	protected final ManusProperties manusProperties;
 
+	protected final PlanConfirmService planConfirmService;
+
 	// Define static final strings for the keys used in executorParams
 	public static final String PLAN_STATUS_KEY = "planStatus";
 
@@ -69,12 +72,14 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	public static final String EXECUTION_ENV_STRING_KEY = "current_step_env_data";
 
 	public AbstractPlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
-			AgentService agentService, ILlmService llmService, ManusProperties manusProperties) {
+			AgentService agentService, ILlmService llmService, ManusProperties manusProperties,
+			PlanConfirmService planConfirmService) {
 		this.agents = agents;
 		this.recorder = recorder;
 		this.agentService = agentService;
 		this.llmService = llmService;
 		this.manusProperties = manusProperties;
+		this.planConfirmService = planConfirmService;
 	}
 
 	/**

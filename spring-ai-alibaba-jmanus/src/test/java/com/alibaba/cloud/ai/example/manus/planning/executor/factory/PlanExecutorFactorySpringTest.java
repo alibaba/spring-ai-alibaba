@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.service.PlanConfirmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 import java.util.List;
@@ -63,13 +64,16 @@ class PlanExecutorFactorySpringTest {
 	@Autowired
 	private ManusProperties manusProperties;
 
+	@Autowired
+	private PlanConfirmService planConfirmService;
+
 	private PlanExecutorFactory planExecutorFactory;
 
 	@BeforeEach
 	void setUp() {
 		log.info("Setting up PlanExecutorFactory test environment");
 		planExecutorFactory = new PlanExecutorFactory(dynamicAgentLoader, llmService, agentService, recorder,
-				manusProperties);
+				manusProperties, planConfirmService);
 
 		// Verify that required dependencies are properly injected
 		Assertions.assertNotNull(dynamicAgentLoader, "DynamicAgentLoader should be autowired");

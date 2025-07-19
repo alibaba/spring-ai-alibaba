@@ -193,6 +193,26 @@ export interface FormInput {
 }
 
 /**
+ * Maps to Java: com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanConfirmData
+ *
+ * User confirm plan data.
+ */
+export interface PlanConfirmData {
+
+  /** plan id */
+  planId?: string
+
+  /** plan confirm result */
+  accepted?: string
+
+  /** confirm type */
+  type?: string
+
+  /** operation time */
+  time?: number
+}
+
+/**
  * Maps to Java: com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord
  * 
  * Plan execution record class for tracking and recording detailed information about
@@ -203,7 +223,12 @@ export interface FormInput {
 export interface PlanExecutionRecord {
   /** Unique identifier for the record */
   id?: number
-  
+
+  /**
+   * accept plan result
+   */
+  acceptedPlan?: string;
+
   /** 
    * Unique identifier for the current plan 
    * Maps to Java field: currentPlanId

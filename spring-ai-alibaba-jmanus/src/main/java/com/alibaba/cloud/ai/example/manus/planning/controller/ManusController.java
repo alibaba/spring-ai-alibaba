@@ -141,6 +141,16 @@ public class ManusController {
 			planRecord.setUserInputWaitState(null); // Clear if not waiting
 		}
 
+		// Check if the plan is waiting to be received
+		PlanConfirmData planConfirmData = planConfirmService.getConfirmData(planId);
+		if (planConfirmData != null
+				&& PlanConfirmData.ConfirmState.AWAIT.getState().equals(planConfirmData.getAccepted())) {
+			planRecord.setAcceptedPlan(planConfirmData.getAccepted());
+		}
+		// } else {
+		// planRecord.setAcceptedPlan(null);
+		// }
+
 		try {
 			// Use Jackson ObjectMapper to convert object to JSON string
 			String jsonResponse = objectMapper.writeValueAsString(planRecord);
@@ -221,6 +231,12 @@ public class ManusController {
 		// Map<String, String>
 		try {
 			logger.info("Received user confirm for plan {}: {}", planId, formData);
+			if (formData == null || formData.isEmpty() || !formData.containsKey("planId")
+					|| !formData.containsKey("accepted")
+					|| PlanConfirmData.ConfirmState.values(formData.get("accepted")) == null) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "formData is null or valid", "planId", planId));
+			}
 			planConfirmService.storeConfirmData(planId, new PlanConfirmData(formData));
 			return ResponseEntity.ok(Map.of("message", "confirm submitted successfully", "planId", planId));
 		}
