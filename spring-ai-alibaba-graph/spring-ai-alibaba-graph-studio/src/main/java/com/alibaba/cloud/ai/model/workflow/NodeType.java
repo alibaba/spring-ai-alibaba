@@ -54,6 +54,8 @@ public enum NodeType {
 
 	MCP("mcp", "unsupported"),
 
+	TEMPLATE_TRANSFORM("template-transform", "template-transform"),
+
 	VARIABLE_AGGREGATOR("variable-aggregator", "variable-aggregator");
 
 	private String value;
