@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.node.*;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
+import com.alibaba.cloud.ai.tool.PythonExecutorTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -66,6 +67,9 @@ public class Nl2sqlConfiguration {
 
 	@Autowired
 	private DbConfig dbConfig;
+
+	@Autowired
+	private PythonExecutorTool pythonExecutorTool;
 
 	@Bean
 	public StateGraph nl2sqlGraph(ChatClient.Builder chatClientBuilder) throws GraphStateException {
