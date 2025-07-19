@@ -23,8 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.backoff.FixedBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -44,8 +42,6 @@ public class DashScopeVideoModel implements VideoModel {
 
 	private final static Logger logger = LoggerFactory.getLogger(DashScopeVideoModel.class);
 
-	private static final int MAX_RETRY_COUNT = 10;
-
 	private final DashScopeVideoApi dashScopeVideoApi;
 
 	private final DashScopeVideoOptions defaultOptions;
@@ -61,14 +57,6 @@ public class DashScopeVideoModel implements VideoModel {
 
 		this.dashScopeVideoApi = dashScopeVideoApi;
 		this.defaultOptions = defaultOptions;
-
-		SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(MAX_RETRY_COUNT);
-		FixedBackOffPolicy backOff = new FixedBackOffPolicy();
-		// Because the video generation takes a long time,
-		// change the retry time to 1 minute
-		backOff.setBackOffPeriod(60_000L);
-		retryTemplate.setRetryPolicy(retryPolicy);
-		retryTemplate.setBackOffPolicy(backOff);
 		this.retryTemplate = retryTemplate;
 	}
 

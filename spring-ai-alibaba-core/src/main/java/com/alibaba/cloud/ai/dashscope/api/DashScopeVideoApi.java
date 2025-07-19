@@ -100,8 +100,20 @@ public class DashScopeVideoApi {
 
 		logger.debug("Submitting video generation task with options: {}", request);
 
+		String baseUrl = "/api/v1/services/aigc";
+		String firstAndLAst = "/image2video/video-synthesis";
+		String normal = "/video-generation/video-synthesis";
+
+		// Use unused uri paths based on the head and tail frames
+		if (request.input.getFirstFrameUrl() != null || request.input.getLastFrameUrl() != null) {
+			baseUrl += firstAndLAst;
+		}
+		else {
+			baseUrl += normal;
+		}
+
 		return this.restClient.post()
-			.uri("/api/v1/services/aigc/video-generation/video-synthesis")
+			.uri(baseUrl)
 			.body(request)
 			.header(HEADER_ASYNC, ENABLED)
 			.retrieve()
