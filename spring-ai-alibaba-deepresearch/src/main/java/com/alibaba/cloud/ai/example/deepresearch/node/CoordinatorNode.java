@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.node.annotation.Node;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -23,10 +24,11 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,15 +41,16 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
  * @author yingzi
  * @since 2025/5/18 16:38
  */
-
-public class CoordinatorNode implements NodeAction {
+@Component
+@Node(name = "负责协调各个节点的执行和结果整合的节点", description = "负责协调各个节点的执行和结果整合的节点")
+public class CoordinatorNode extends AbstractNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(CoordinatorNode.class);
 
-	private final ChatClient coordinatorAgent;
+	// private final ChatClient coordinatorAgent;
 
-	public CoordinatorNode(ChatClient coordinatorAgent) {
-		this.coordinatorAgent = coordinatorAgent;
+	public CoordinatorNode(ObjectProvider<ChatClient.Builder> coordinatorAgent, ChatClient routerAgent) {
+		super(coordinatorAgent, routerAgent);
 	}
 
 	@Override
@@ -62,25 +65,26 @@ public class CoordinatorNode implements NodeAction {
 		logger.debug("Current Coordinator messages: {}", messages);
 
 		// 发起调用并获取完整响应
-		ChatResponse response = coordinatorAgent.prompt().messages(messages).call().chatResponse();
+		ChatResponse response = this.chatClient().prompt().messages(messages).call().chatResponse();
 
 		String nextStep = END;
 		Map<String, Object> updated = new HashMap<>();
-
-		// 获取 assistant 消息内容
-		assert response != null;
-		AssistantMessage assistantMessage = response.getResult().getOutput();
-		// 判断是否触发工具调用
-		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
-			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
-			nextStep = "rewrite_multi_query";
-		}
-		else {
-			logger.warn("❌ 未触发工具调用");
-			logger.debug("Coordinator response: {}", response.getResult());
-			updated.put("output", assistantMessage.getText());
-		}
-		updated.put("coordinator_next_node", nextStep);
+		//
+		// // 获取 assistant 消息内容
+		// assert response != null;
+		// AssistantMessage assistantMessage = response.getResult().getOutput();
+		// // 判断是否触发工具调用
+		// if (assistantMessage.getToolCalls() != null &&
+		// !assistantMessage.getToolCalls().isEmpty()) {
+		// logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
+		// nextStep = "rewrite_multi_query";
+		// }
+		// else {
+		// logger.warn("❌ 未触发工具调用");
+		// logger.debug("Coordinator response: {}", response.getResult());
+		// updated.put("output", assistantMessage.getText());
+		// }
+		updated.put("coordinator_next_node", nextNode(response));
 		return updated;
 	}
 
