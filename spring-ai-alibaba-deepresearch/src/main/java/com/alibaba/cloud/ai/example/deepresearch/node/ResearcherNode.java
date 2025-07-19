@@ -16,10 +16,15 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.tool.SearchFilterTool;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
+import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
-import com.alibaba.cloud.ai.example.deepresearch.tool.SearchFilterTool;
+import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
+import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentSelectionResult;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
@@ -62,14 +67,19 @@ public class ResearcherNode implements NodeAction {
 	// MCP工厂
 	private final McpProviderFactory mcpFactory;
 
+	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
+
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
-			McpProviderFactory mcpFactory, SearchFilterService searchFilterService) {
+			McpProviderFactory mcpFactory, SearchFilterService searchFilterService,
+			SmartAgentDispatcherService smartAgentDispatcher, SmartAgentProperties smartAgentProperties) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;
 		this.reflectionProcessor = reflectionProcessor;
 		this.mcpFactory = mcpFactory;
 		this.searchFilterService = searchFilterService;
+		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties,
+				smartAgentDispatcher, null, null);
 	}
 
 	@Override
@@ -116,8 +126,10 @@ public class ResearcherNode implements NodeAction {
 		// Get search tool
 		SearchEnum searchEnum = state.value("search_engine", SearchEnum.class).orElse(null);
 
+		ChatClient selectedAgent = selectSmartAgent(assignedStep, taskContent, state);
+
 		// Call agent
-		var requestSpec = researchAgent.prompt().messages(messages);
+		var requestSpec = selectedAgent.prompt().messages(messages);
 
 		// 使用MCP工厂创建MCP提供者
 		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null
@@ -192,6 +204,29 @@ public class ResearcherNode implements NodeAction {
 		}
 
 		return content.toString();
+	}
+
+	/**
+	 * 智能选择Agent 如果智能Agent功能开启，则根据问题类型选择专业化Agent 否则使用原有的researchAgent
+	 */
+	private ChatClient selectSmartAgent(Plan.Step step, String taskContent, OverAllState state) {
+		String questionContent = step.getTitle();
+		if (step.getDescription() != null) {
+			questionContent += " " + step.getDescription();
+		}
+
+		AgentSelectionResult selectionResult = smartAgentSelectionHelper.selectSmartAgent(questionContent, state,
+				researchAgent);
+
+		if (selectionResult.isSmartAgent()) {
+			logger.info("为研究任务选择智能Agent: {} -> {} (executorNodeId: {})", questionContent,
+					selectionResult.getAgentType(), executorNodeId);
+		}
+		else {
+			logger.debug("使用默认researchAgent: {} (executorNodeId: {})", selectionResult.getReason(), executorNodeId);
+		}
+
+		return selectionResult.getSelectedAgent();
 	}
 
 }
