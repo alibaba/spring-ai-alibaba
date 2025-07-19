@@ -72,7 +72,7 @@ const words: I18nType = {
     exitFullscreen: 'Exit Fullscreen',
     parameters: 'Parameters',
     thinking: 'Thinking',
-    input: 'Input'
+    input: 'Input',
   },
 
   // Configuration related
@@ -95,7 +95,7 @@ const words: I18nType = {
       boolean: 'Boolean',
       select: 'Select',
       textarea: 'Textarea',
-      checkbox: 'Checkbox'
+      checkbox: 'Checkbox',
     },
     range: 'Range',
     min: 'Minimum',
@@ -104,7 +104,8 @@ const words: I18nType = {
       basic: 'Basic Configuration',
       agent: 'Agent Configuration',
       model: 'Model Configuration',
-      mcp: 'Tools/MCP Configuration'
+      mcp: 'Tools/MCP Configuration',
+      prompt: 'Dynamic Prompt Configuration',
     },
     // Agent configuration page
     agentConfig: {
@@ -122,9 +123,8 @@ const words: I18nType = {
       description: 'Description',
       descriptionPlaceholder: 'Describe the function and purpose of this agent',
       nextStepPrompt: 'Agent Prompt (personality, requirements, and next step guidance)',
-      nextStepPromptPlaceholder: 'Set the agent\'s personality, requirements, and next step guidance...',
-      modelConfiguration: '模型配置',
-      modelConfigurationLabel: '选择模型',
+      nextStepPromptPlaceholder:
+        "Set the agent's personality, requirements, and next step guidance...",
       toolConfiguration: 'Tool Configuration',
       assignedTools: 'Assigned Tools',
       noAssignedTools: 'No assigned tools',
@@ -145,7 +145,7 @@ const words: I18nType = {
       exportFailed: 'Failed to export agent',
       loadDataFailed: 'Failed to load data',
       loadDetailsFailed: 'Failed to load agent details',
-      invalidFormat: 'Invalid agent configuration format: missing required fields'
+      invalidFormat: 'Invalid agent configuration format: missing required fields',
     },
     // Model configuration page
     modelConfig: {
@@ -184,7 +184,7 @@ const words: I18nType = {
       exportFailed: 'Failed to export model',
       loadDataFailed: 'Failed to load data',
       loadDetailsFailed: 'Failed to load model details',
-      invalidFormat: 'Model configuration format is invalid: missing required fields'
+      invalidFormat: 'Model configuration format is invalid: missing required fields',
     },
     // MCP configuration page
     mcpConfig: {
@@ -204,13 +204,16 @@ const words: I18nType = {
       instructionStep1RemoteDesc: 'Available at mcp.higress.ai/, offers SSE and STREAMING types, currently STREAM protocol is more complete',
       instructionStep2: 'Copy the JSON configuration to the input box above, select STUDIO for local, STREAMING or SSE for remote, then submit',
       instructionStep3: 'This will successfully register the MCP tools.',
-      instructionStep4: 'Then you need to create a new agent in Agent Configuration, and add the specific MCP tools you just added, which can greatly reduce conflicts and enhance the accuracy of tools being selected by agents',
+      instructionStep4:
+        'Then you need to create a new agent in Agent Configuration, and add the specific MCP tools you just added, which can greatly reduce conflicts and enhance the accuracy of tools being selected by agents',
       configRequired: 'Please enter MCP server configuration',
       invalidJson: 'Configuration JSON format is incorrect, please check syntax',
       addFailed: 'Failed to add MCP server, please try again',
       deleteFailed: 'Failed to delete MCP server, please try again',
-      studioExample: 'Please enter MCP server configuration JSON.\n\nExample:\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
-      sseExample: 'Please enter SSE MCP server configuration JSON.\n\nExample:\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}'
+      studioExample:
+        'Please enter MCP server configuration JSON.\n\nExample:\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
+      sseExample:
+        'Please enter SSE MCP server configuration JSON.\n\nExample:\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}',
     },
     // Basic configuration
     basicConfig: {
@@ -220,8 +223,38 @@ const words: I18nType = {
       loadConfigFailed: 'Failed to load configuration, please refresh and try again',
       saveFailed: 'Save failed, please try again',
       resetFailed: 'Reset failed, please try again',
-      importFailed: 'Import failed, please check file format'
-    }
+      importFailed: 'Import failed, please check file format',
+    },
+    promptConfig: {
+      title: 'Dynamic Prompt Configuration',
+      configuredprompts: 'Configured Prompts',
+      loadDetailsFailed: 'Failed to load prompt details',
+      promptCount: 'prompt(s)',
+      noPrompts: 'No prompts configured',
+      createNew: 'Create New Prompt',
+      promptName: 'Prompt Name',
+      placeholder: 'Please enter',
+      promptContent: 'Prompt Content',
+      messageType: 'Message Type',
+      type: 'Category Type',
+      builtIn: 'Built-in',
+      custom: 'Custom',
+      namespace: 'Namespace',
+      promptNamePlaceholder: 'Enter prompt name',
+      selectPromptHint: 'Please select a prompt to configure',
+      promptContentPlaceholder: 'Enter prompt content',
+      descriptionPlaceholder: 'Describe the function and purpose of this prompt',
+      description: 'Description',
+      requiredFields: 'Please fill in all required fields',
+      newPrompt: 'New Dynamic Prompt',
+      saveSuccess: 'Prompt saved successfully',
+      saveFailed: 'Failed to save prompt',
+      deleteSuccess: 'Prompt deleted successfully',
+      deleteFailed: 'Failed to delete prompt',
+      deleteConfirm: 'Delete Confirmation',
+      deleteConfirmText: 'Are you sure you want to delete',
+      deleteWarning: 'This action cannot be undone.',
+    },
   },
 
   // Agent configuration
@@ -238,7 +271,7 @@ const words: I18nType = {
     deleteWarning: 'This action cannot be undone.',
     namePlaceholder: 'Enter agent name',
     descriptionPlaceholder: 'Describe the function and purpose of this agent',
-    promptPlaceholder: 'Set the agent\'s personality, requirements, and next step guidance...',
+    promptPlaceholder: "Set the agent's personality, requirements, and next step guidance...",
     toolSelection: 'Tool Selection',
     availableTools: 'Available Tools',
     selectedTools: 'Selected Tools',
@@ -247,7 +280,7 @@ const words: I18nType = {
     saveSuccess: 'Agent saved successfully',
     saveFailed: 'Failed to save agent',
     deleteSuccess: 'Agent deleted successfully',
-    deleteFailed: 'Failed to delete agent'
+    deleteFailed: 'Failed to delete agent',
   },
   // Model Configuration
   model: {
@@ -265,7 +298,7 @@ const words: I18nType = {
     saveSuccess: 'Model saved successfully',
     saveFailed: 'Failed to save model',
     deleteSuccess: 'Model deleted successfully',
-    deleteFailed: 'Failed to delete model'
+    deleteFailed: 'Failed to delete model',
   },
   // Model configuration page
   modelConfig: {
@@ -298,36 +331,7 @@ const words: I18nType = {
     exportFailed: 'Failed to export model',
     loadDataFailed: 'Failed to load data',
     loadDetailsFailed: 'Failed to load model details',
-    invalidFormat: 'Model configuration format is invalid: missing required fields'
-  },
-  // Plan template configuration
-  planTemplate: {
-    title: 'Plan Template Configuration',
-    generator: 'Plan Generator',
-    execution: 'Plan Execution',
-    prompt: 'Generation Prompt',
-    promptPlaceholder: 'Describe the plan you want to generate...',
-    generating: 'Generating...',
-    generate: 'Generate Plan',
-    updatePlan: 'Update Plan',
-    executing: 'Executing...',
-    execute: 'Execute Plan',
-    executionParams: 'Execution Parameters',
-    executionParamsPlaceholder: 'Enter execution parameters (optional)...',
-    apiUrl: 'API Call URL',
-    clearParams: 'Clear Parameters',
-    versionControl: 'Version Control',
-    rollback: 'Rollback',
-    restore: 'Restore',
-    currentVersion: 'Current Version',
-    saveTemplate: 'Save Template',
-    loadTemplate: 'Load Template',
-    templateSaved: 'Template saved',
-    templateLoaded: 'Template loaded',
-    executionSuccess: 'Execution successful',
-    executionFailed: 'Execution failed',
-    generationSuccess: 'Generation successful',
-    generationFailed: 'Generation failed'
+    invalidFormat: 'Model configuration format is invalid: missing required fields',
   },
 
   // Chat component
@@ -342,11 +346,11 @@ const words: I18nType = {
       executing: 'Executing',
       completed: 'Completed',
       pending: 'Pending',
-      failed: 'Failed'
+      failed: 'Failed',
     },
     userInput: {
       message: 'Please enter the required information:',
-      submit: 'Submit'
+      submit: 'Submit',
     },
     thinking: 'Thinking...',
     thinkingAnalyzing: 'Analyzing task requirements...',
@@ -370,22 +374,22 @@ const words: I18nType = {
     authError: 'Access permission issue, please contact administrator or try later',
     formatError: 'Request format might be incorrect, could you please rephrase your request?',
     unknownError: 'Encountered some issues while processing your request, please try again later',
-    thinkingOutput: 'Thinking Output'
+    thinkingOutput: 'Thinking Output',
   },
 
   // Input component
   input: {
     placeholder: 'Send a message to JTaskPilot',
     send: 'Send',
-    planMode: 'Plan Mode',
+    planMode: 'PLAN-ACT Template Mode',
     waiting: 'Waiting for task completion...',
     maxLength: 'Max Length',
-    charactersRemaining: 'Characters Remaining'
+    charactersRemaining: 'Characters Remaining',
   },
 
   // Sidebar
   sidebar: {
-    title: 'Plan Templates',
+    title: 'PLAN-ACT Templates',
     templateList: 'Template List',
     configuration: 'Configuration',
     newPlan: 'New Plan',
@@ -398,17 +402,19 @@ const words: I18nType = {
     jsonTemplate: 'JSON Template',
     rollback: 'Rollback',
     restore: 'Restore',
-    jsonPlaceholder: 'Enter JSON plan template...',
+  jsonPlaceholder: 'Step 2: Here you can directly modify the execution plan generated in Step 1 to make it more accurately follow your intentions. Then you can click Execute Plan to run this plan with high certainty.',
     planGenerator: 'Plan Generator',
-    generatorPlaceholder: 'Describe the plan you want to generate...',
+    generatorPlaceholder: 'Step 1: Enter the task you want to accomplish here in natural language, as detailed as possible. Then click Generate Plan to create a precise, repeatable plan.',
     generating: 'Generating...',
     generatePlan: 'Generate Plan',
     updatePlan: 'Update Plan',
     executionController: 'Execution Controller',
     executionParams: 'Execution Parameters',
     executionParamsPlaceholder: 'Enter execution parameters...',
+    executionParamsHelp: 'When executing repeatedly, you can set some content in Step 2 as variables, then specify the specific values for those variables here. For example, set "Variable1" in the JSON, then set "Variable1=Alibaba" here to achieve function parameter-like effects.',
     clearParams: 'Clear Parameters',
-    apiUrl: 'API URL',
+    apiUrl: 'HTTP GET URL',
+    statusApiUrl: 'Status Query API',
     executing: 'Executing...',
     executePlan: 'Execute Plan',
     newTemplate: 'New Template',
@@ -429,7 +435,8 @@ const words: I18nType = {
     archive: 'Archive',
     unarchive: 'Unarchive',
     selectTemplateFailed: 'Failed to select plan template',
-    confirmDelete: 'Are you sure you want to delete plan template "{name}"? This action cannot be undone.',
+    confirmDelete:
+      'Are you sure you want to delete plan template "{name}"? This action cannot be undone.',
     templateDeleted: 'Plan template has been deleted.',
     deleteTemplateFailed: 'Failed to delete plan template',
     saveCompleted: 'Save completed: {message}\n\nCurrent version count: {versionCount}',
@@ -441,7 +448,11 @@ const words: I18nType = {
     updateSuccess: 'Plan updated successfully!',
     updateFailed: 'Failed to update plan',
     executeFailed: 'Failed to execute plan',
-    unknown: 'Unknown'
+    unknown: 'Unknown',
+    newTemplateName: 'New Execution Plan',
+    newTemplateDescription: 'Please use the plan generator to create a new plan template',
+    generatedTemplateDescription: 'Plan template created by generator',
+    defaultExecutionPlanTitle: 'Execution Plan',
   },
 
   // Modal
@@ -451,7 +462,7 @@ const words: I18nType = {
     confirm: 'Confirm',
     save: 'Save',
     delete: 'Delete',
-    edit: 'Edit'
+    edit: 'Edit',
   },
 
   // Editor
@@ -467,7 +478,7 @@ const words: I18nType = {
     toggleMinimap: 'Toggle Minimap',
     increaseFontSize: 'Increase Font Size',
     decreaseFontSize: 'Decrease Font Size',
-    resetFontSize: 'Reset Font Size'
+    resetFontSize: 'Reset Font Size',
   },
 
   // Language switching
@@ -475,7 +486,7 @@ const words: I18nType = {
     switch: 'Switch Language',
     current: 'Current Language',
     zh: '中文',
-    en: 'English'
+    en: 'English',
   },
 
   // Theme
@@ -483,7 +494,7 @@ const words: I18nType = {
     switch: 'Switch Theme',
     light: 'Light Theme',
     dark: 'Dark Theme',
-    auto: 'Follow System'
+    auto: 'Follow System',
   },
 
   // Error pages
@@ -495,7 +506,7 @@ const words: I18nType = {
     networkError: 'Network Error',
     networkErrorDescription: 'Network connection failed, please check your network settings',
     backToHome: 'Back to Home',
-    retry: 'Retry'
+    retry: 'Retry',
   },
 
   // Form validation
@@ -509,7 +520,7 @@ const words: I18nType = {
     min: 'Value cannot be less than {min}',
     max: 'Value cannot be greater than {max}',
     pattern: 'Invalid format',
-    confirmation: 'The two inputs do not match'
+    confirmation: 'The two inputs do not match',
   },
 
   // Time related
@@ -532,7 +543,7 @@ const words: I18nType = {
     nextMonth: 'Next Month',
     thisYear: 'This Year',
     lastYear: 'Last Year',
-    nextYear: 'Next Year'
+    nextYear: 'Next Year',
   },
 
   // Data statistics
@@ -549,32 +560,35 @@ const words: I18nType = {
     decline: 'Decline',
     noData: 'No data',
     loading: 'Loading data...',
-    error: 'Failed to load data'
+    error: 'Failed to load data',
   },
 
   // Home page
   home: {
     welcomeTitle: 'Welcome to JTaskPilot!',
-    welcomeSubtitle: 'Your Java AI intelligent assistant, helping you build and complete various tasks.',
+    welcomeSubtitle:
+      'Your Java AI intelligent assistant, helping you build and complete various tasks.',
     tagline: 'Java AI Agent',
     inputPlaceholder: 'Describe what you want to build or accomplish...',
     examples: {
       stockPrice: {
         title: 'Query Stock Price',
-        description: 'Get today\'s latest stock price for Alibaba (Agent can use browser tools)',
-        prompt: 'Use browser based on Baidu to query today\'s Alibaba stock price and return the latest stock price'
+        description: "Get today's latest stock price for Alibaba (Agent can use browser tools)",
+        prompt:
+          "Use browser based on Baidu to query today's Alibaba stock price and return the latest stock price",
       },
       novel: {
         title: 'Generate a Novella',
         description: 'Help me generate a novella (Agent can generate longer content)',
-        prompt: 'Please help me write a novel about robots replacing humans. 20,000 words. Use TEXT_FILE_AGENT, first generate an outline, then improve and enrich the entire outline content into a coherent novel, and finally smooth out the grammar globally'
+        prompt:
+          'Please help me write a novel about robots replacing humans. 20,000 words. Use TEXT_FILE_AGENT, first generate an outline, then improve and enrich the entire outline content into a coherent novel, and finally smooth out the grammar globally',
       },
       weather: {
         title: 'Query Weather',
-        description: 'Get today\'s weather in Beijing (Agent can use MCP tool services)',
-        prompt: 'Use browser, based on Baidu, to query today\'s weather in Beijing'
-      }
-    }
+        description: "Get today's weather in Beijing (Agent can use MCP tool services)",
+        prompt: "Use browser, based on Baidu, to query today's weather in Beijing",
+      },
+    },
   },
 
   // Right panel
@@ -603,46 +617,49 @@ const words: I18nType = {
     status: {
       completed: 'Completed',
       executing: 'Executing',
-      waiting: 'Waiting'
+      waiting: 'Waiting',
     },
     // Tab labels
     tabs: {
       details: 'Step Execution Details',
       chat: 'Chat',
-      code: 'Code'
+      code: 'Code',
     },
     // Sample chatBubbles data
     chatBubbles: {
       analyzeRequirements: {
         title: 'Analyze Requirements',
-        content: 'Breaking down your request into actionable steps: 1) Create user entity, 2) Implement user service, 3) Build REST endpoints, 4) Add validation and error handling.'
+        content:
+          'Breaking down your request into actionable steps: 1) Create user entity, 2) Implement user service, 3) Build REST endpoints, 4) Add validation and error handling.',
       },
       generateCode: {
         title: 'Generate Code',
-        content: 'Creating Spring Boot REST API with user management CRUD operations. Including proper HTTP status codes and error handling.'
+        content:
+          'Creating Spring Boot REST API with user management CRUD operations. Including proper HTTP status codes and error handling.',
       },
       codeGenerated: {
         title: 'Code Generated',
-        content: 'Successfully generated UserController with all CRUD operations. The code includes proper REST conventions, error handling, and follows Spring Boot best practices.'
-      }
+        content:
+          'Successfully generated UserController with all CRUD operations. The code includes proper REST conventions, error handling, and follows Spring Boot best practices.',
+      },
     },
     // Time display
     timeAgo: {
       justNow: 'Just now',
       minutesAgo: '{n} minutes ago',
       hoursAgo: '{n} hours ago',
-      daysAgo: '{n} days ago'
+      daysAgo: '{n} days ago',
     },
     // Default step title
-    defaultStepTitle: 'Step {number}'
+    defaultStepTitle: 'Step {number}',
   },
 
   // Direct page
   direct: {
     configuration: 'Configuration',
     panelResizeHint: 'Drag to resize panel, double-click to reset',
-    aboutExecutionDetails: 'About Integrated Execution Details'
-  }
+    aboutExecutionDetails: 'About Integrated Execution Details',
+  },
 }
 
 export default words

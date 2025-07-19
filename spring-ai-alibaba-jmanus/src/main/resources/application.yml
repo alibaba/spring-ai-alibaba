@@ -43,3 +43,6 @@ logging:
     name: ./logs/info.log
   level:
     root: INFO
+
+namespace:
+  value: default

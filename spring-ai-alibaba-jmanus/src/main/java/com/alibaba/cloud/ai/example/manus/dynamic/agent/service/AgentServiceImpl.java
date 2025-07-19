@@ -84,6 +84,14 @@ public class AgentServiceImpl implements AgentService {
 	}
 
 	@Override
+	public List<AgentConfig> getAllAgentsByNamespace(String namespace) {
+		return repository.findAllByNamespace(namespace)
+			.stream()
+			.map(this::mapToAgentConfig)
+			.collect(Collectors.toList());
+	}
+
+	@Override
 	public AgentConfig getAgentById(String id) {
 		DynamicAgentEntity entity = repository.findById(Long.parseLong(id))
 			.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
@@ -214,6 +222,9 @@ public class AgentServiceImpl implements AgentService {
 		if (model != null) {
 			entity.setModel(new DynamicModelEntity(model.getId()));
 		}
+
+		// 4. Set the user-selected namespace
+		entity.setNamespace(config.getNamespace());
 	}
 
 	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity, String agentName) {
