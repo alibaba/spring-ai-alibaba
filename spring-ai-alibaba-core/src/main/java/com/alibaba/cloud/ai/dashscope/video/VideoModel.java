@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.model;
+package com.alibaba.cloud.ai.dashscope.video;
 
-import org.springframework.ai.model.SpringAIModelProperties;
+import org.springframework.ai.model.Model;
 
 /**
- * @author YunKui Lu
- * @see org.springframework.ai.model.SpringAIModelProperties
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
 
-public final class SpringAIAlibabaModelProperties {
+public interface VideoModel extends Model<VideoPrompt, VideoResponse> {
 
-	private SpringAIAlibabaModelProperties() {
-		// Avoids instantiation
-	}
-
-	public static final String RERANK_MODEL = SpringAIModelProperties.MODEL_PREFIX + ".rerank";
-
-	public static final String VIDEO_MODEL = SpringAIModelProperties.MODEL_PREFIX + ".video";
+	@Override
+	VideoResponse call(VideoPrompt request);
 
 }
