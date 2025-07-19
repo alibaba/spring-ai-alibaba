@@ -18,10 +18,11 @@ export interface Namespace {
   id: string
   code: string
   name: string
+  description?:string;
 }
 
 export class NamespaceApiService {
-  private static readonly BASE_URL = '/api/namespace'
+  private static readonly BASE_URL = '/api/namespaces'
 
   /**
    * Handle HTTP response

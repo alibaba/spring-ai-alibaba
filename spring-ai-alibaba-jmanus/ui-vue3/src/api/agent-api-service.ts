@@ -24,6 +24,7 @@ export interface Agent {
   availableTools: string[]
   nextStepPrompt?: string,
   model?: Model | null
+  namespace?: string
 }
 
 export interface Tool {

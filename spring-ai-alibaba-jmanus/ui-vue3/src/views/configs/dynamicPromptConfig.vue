@@ -263,9 +263,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted ,watch} from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import { storeToRefs } from 'pinia'
 import Modal from '@/components/modal/index.vue'
 import { PromptApiService, type Prompt } from '@/api/prompt-api-service'
 import { useToast } from '@/plugins/useToast'
@@ -280,6 +281,7 @@ const { t } = useI18n()
 const { success, error } = useToast()
 
 const namespaceStore = usenameSpaceStore()
+const {namespace} = storeToRefs(namespaceStore)
 
 // Reactive data properties
 const loading = ref(false)
@@ -320,7 +322,7 @@ const newPrompt = reactive<Omit<Prompt, 'id'>>({ ...defaultPromptValues } as Omi
 const loadData = async () => {
   loading.value = true
   try {
-    const loadedPrompts = (await PromptApiService.getAllPrompts(namespaceStore.namespace)) as Prompt[]
+    const loadedPrompts = (await PromptApiService.getAllPrompts(namespace.value)) as Prompt[]
 
     if (loadedPrompts.length > 0) {
       await selectPrompt(loadedPrompts[0])
@@ -355,6 +357,7 @@ const handleAddPrompt = async () => {
   try {
     const promptData: Omit<Prompt, 'id'> = {
       ...newPrompt,
+      namespace: namespace.value,
       builtIn: false,
     }
     const createdPrompt = await PromptApiService.createPrompt(promptData)
@@ -472,6 +475,16 @@ const showDeleteConfirm = () => {
 onMounted(() => {
   loadData()
 })
+
+watch(
+  () => namespace.value,
+  (newNamespace, oldNamespace) => {
+    if (newNamespace !== oldNamespace) {
+      loadData()
+    }
+  }
+)
+
 </script>
 
 <style scoped>

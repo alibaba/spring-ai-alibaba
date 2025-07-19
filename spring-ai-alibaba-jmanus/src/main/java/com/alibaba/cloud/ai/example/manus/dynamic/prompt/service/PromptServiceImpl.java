@@ -56,7 +56,7 @@ public class PromptServiceImpl implements PromptService {
 	public List<PromptVO> getAllByNamespace(String namespace) {
 		List<PromptEntity> entities;
 		if ("default".equalsIgnoreCase(namespace)) {
-			entities = promptRepository.findAll();
+			entities = promptRepository.findByPromptNameWithDefault(namespace);
 		}
 		else {
 			entities = promptRepository.getAllByNamespace(namespace);

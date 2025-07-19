@@ -117,7 +117,7 @@ const words: I18nType = {
       general: '通用',
       agents: '多智能体',
       infiniteContext: '无限上下文',
-      filesystem: '文件系统'
+      filesystem: '文件系统',
     },
     // Agent配置页面
     agentConfig: {
@@ -237,37 +237,37 @@ const words: I18nType = {
       title: '基础配置',
       browserSettings: {
         headless: '是否使用无头浏览器模式',
-        requestTimeout: '浏览器请求超时时间(秒)'
+        requestTimeout: '浏览器请求超时时间(秒)',
       },
       general: {
         debugDetail: 'debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢',
-        baseDir: 'manus根目录'
+        baseDir: 'manus根目录',
       },
       interactionSettings: {
-        openBrowser: '启动时自动打开浏览器'
+        openBrowser: '启动时自动打开浏览器',
       },
       agentSettings: {
         maxSteps: '智能体执行最大步数',
         userInputTimeout: '用户输入表单等待超时时间(秒)',
         maxMemory: '能记住的最大消息数',
-        parallelToolCalls: '并行工具调用'
+        parallelToolCalls: '并行工具调用',
       },
       agents: {
-        forceOverrideFromYaml: '强制使用YAML配置文件覆盖同名Agent'
+        forceOverrideFromYaml: '强制使用YAML配置文件覆盖同名Agent',
       },
       infiniteContext: {
         enabled: '是否开启无限上下文',
         parallelThreads: '并行处理线程数',
-        taskContextSize: '触发无限上下文的字符数阈值(字符数)'
+        taskContextSize: '触发无限上下文的字符数阈值(字符数)',
       },
       fileSystem: {
-        allowExternalAccess: '是否允许文件操作超出工作目录'
+        allowExternalAccess: '是否允许文件操作超出工作目录',
       },
       systemSettings: {
         systemName: '系统名称',
         language: '语言',
         maxThreads: '最大线程数',
-        timeoutSeconds: '请求超时时间(秒)'
+        timeoutSeconds: '请求超时时间(秒)',
       },
       totalConfigs: '总配置数',
       modified: '已修改',
@@ -324,7 +324,11 @@ const words: I18nType = {
     },
     namespaceConfig: {
       title: '命名空间配置',
+      name: '命名空间名称',
+      code: '命名空间编码',
+      description: '命名空间描述',
       loadDetailsFailed: '加载namespace详情失败',
+      selectNameSpaceHint: '请选择一个命名空间进行配置',
       createNew: '新建命名空间',
       placeholder: '请输入',
       saveSuccess: '保存成功',
@@ -335,6 +339,10 @@ const words: I18nType = {
       deleteConfirmText: '确定要删除',
       deleteWarning: '此操作不可恢复。',
       configured: '已配置的命名空间',
+      namespace: {
+        selectNamespace: '请选择命名空间',
+        namespace: '命名空间',
+      },
     },
   },
 

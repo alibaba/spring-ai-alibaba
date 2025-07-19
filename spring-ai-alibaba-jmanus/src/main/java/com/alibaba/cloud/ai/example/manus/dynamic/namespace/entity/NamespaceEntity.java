@@ -37,7 +37,7 @@ public class NamespaceEntity {
 	@Column(nullable = false)
 	private String code;
 
-	@Column(nullable = false, length = 1024)
+	@Column(nullable = true, length = 1024)
 	private String description;
 
 	public NamespaceEntity() {
