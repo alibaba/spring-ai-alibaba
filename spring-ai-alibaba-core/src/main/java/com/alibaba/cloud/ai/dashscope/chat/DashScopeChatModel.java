@@ -298,7 +298,7 @@ public class DashScopeChatModel implements ChatModel {
 	}
 
 	private ChatResponse toChatResponse(ChatCompletion chatCompletion, ChatResponse previousChatResponse,
-										ChatCompletionRequest request, ConcurrentHashMap<String, String> roleMap) {
+			ChatCompletionRequest request, ConcurrentHashMap<String, String> roleMap) {
 
 		if (chatCompletion == null) {
 			logger.warn("Null chat completion returned");
