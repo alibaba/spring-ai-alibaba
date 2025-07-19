@@ -13,38 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.dashscope.video;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeVideoApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeVideoApi.VideoGenerationRequest;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeVideoApi.VideoGenerationResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
-import java.time.Duration;
 import java.util.Objects;
+
+import static com.alibaba.cloud.ai.dashscope.video.DashScopeVideoOptions.DEFAULT_MODEL;
 
 /**
  * DashScope Video Generation Model.
  *
  * @author dashscope
+ * @author yuluo
+ * @since 1.0.0.3
  */
-public class DashScopeVideoModel {
 
-	/**
-	 * Default video model.
-	 */
-	public static final String DEFAULT_MODEL = "text2video-synthesis";
+public class DashScopeVideoModel implements VideoModel {
 
-	/**
-	 * Default polling interval.
-	 */
-	public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(5);
-
-	/**
-	 * Default timeout.
-	 */
-	public static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(10);
+	private final static Logger logger = LoggerFactory.getLogger(DashScopeVideoModel.class);
 
 	private final DashScopeVideoApi dashScopeVideoApi;
 
@@ -54,6 +50,7 @@ public class DashScopeVideoModel {
 
 	public DashScopeVideoModel(DashScopeVideoApi dashScopeVideoApi, DashScopeVideoOptions defaultOptions,
 			RetryTemplate retryTemplate) {
+
 		Assert.notNull(dashScopeVideoApi, "DashScopeVideoApi must not be null");
 		Assert.notNull(defaultOptions, "DashScopeVideoOptions must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
@@ -63,147 +60,166 @@ public class DashScopeVideoModel {
 		this.retryTemplate = retryTemplate;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	/**
 	 * Generate video from text prompt.
 	 */
-	public VideoGenerationResponse generate(String prompt) {
-		return generate(prompt, null);
+	@Override
+	public VideoResponse call(VideoPrompt prompt) {
+
+		// Video Prompt use template gen, can null.
+		Assert.notNull(prompt, "Prompt must not be null");
+		Assert.notEmpty(prompt.getInstructions(), "Prompt instructions must not be empty");
+
+		System.out.println("Video generation task submitted with prompt: " + prompt.getOptions());
+
+		String taskId = submitGenTask(prompt);
+		if (Objects.isNull(taskId)) {
+			return new VideoResponse(null);
+		}
+
+		// todo: add observation
+		logger.warn("Video generation task submitted with taskId: {}", taskId);
+		return this.retryTemplate.execute(context -> {
+
+			var resp = getVideoTask(taskId);
+			if (Objects.nonNull(resp)) {
+
+				logger.debug(String.valueOf(resp));
+
+				String status = resp.getOutput().getTaskStatus();
+				switch (status) {
+					// status enum SUCCEEDED, FAILED, PENDING, RUNNING
+					case "SUCCEEDED" -> {
+						logger.info("Video generation task completed successfully: {}", taskId);
+						return toVideoResponse(resp);
+					}
+					case "FAILED" -> {
+						logger.error("Video generation task failed: {}", resp.getOutput());
+						return new VideoResponse(null);
+					}
+				}
+			}
+			throw new RuntimeException("Video generation still pending, retry ...");
+		});
 	}
 
 	/**
 	 * Generate video from text prompt with options.
 	 */
-	public VideoGenerationResponse generate(String prompt, VideoOptions runtimeOptions) {
-		Assert.hasText(prompt, "Prompt must not be empty");
+	public String submitGenTask(VideoPrompt prompt) {
 
-		DashScopeVideoOptions options = toVideoOptions(runtimeOptions);
+		DashScopeVideoApi.VideoGenerationRequest request = buildDashScopeVideoRequest(prompt);
 
-		VideoGenerationRequest request = new VideoGenerationRequest(options.getModel(),
-				new VideoGenerationRequest.VideoInput(prompt),
-				new VideoGenerationRequest.VideoParameters(options.getWidth(), options.getHeight(),
-						options.getDuration(), options.getFps(), options.getSeed(), options.getNumFrames()));
+		// send request to DashScope Video API
+		VideoGenerationResponse response = this.dashScopeVideoApi.submitVideoGenTask(request).getBody();
 
-		VideoGenerationResponse response = this.dashScopeVideoApi.submitTask(request).getBody();
-
-		if (response != null && response.getOutput() != null && response.getOutput().getTaskId() != null) {
-			return pollForCompletion(response.getOutput().getTaskId());
+		if (Objects.isNull(response) || Objects.isNull(response.getOutput().getTaskId())) {
+			logger.warn("Failed to submit video generation task: {}", response);
+			return null;
 		}
 
-		return response;
+		return response.getOutput().getTaskId();
+	}
+
+	private DashScopeVideoApi.VideoGenerationResponse getVideoTask(String taskId) {
+
+		ResponseEntity<VideoGenerationResponse> videoGenerationResponseResponseEntity = this.dashScopeVideoApi
+			.queryVideoGenTask(taskId);
+		if (videoGenerationResponseResponseEntity.getStatusCode().is2xxSuccessful()) {
+			return videoGenerationResponseResponseEntity.getBody();
+		}
+		else {
+			logger.warn("Failed to query video task: {}", videoGenerationResponseResponseEntity.getStatusCode());
+			return null;
+		}
+	}
+
+	private VideoResponse toVideoResponse(DashScopeVideoApi.VideoGenerationResponse asyncResp) {
+
+		// var output = asyncResp.getOutput();
+		// var usage = asyncResp.getUsage();
+		// var results = output.getVideoUrl();
+		// todo: add metadata
+
+		return new VideoResponse(asyncResp);
+	}
+
+	private DashScopeVideoApi.VideoGenerationRequest buildDashScopeVideoRequest(VideoPrompt prompt) {
+
+		DashScopeVideoOptions options = toVideoOptions(prompt.getOptions());
+		logger.debug("Submitting video generation task with options: {}", options);
+
+		return DashScopeVideoApi.VideoGenerationRequest.builder()
+			.model(options.getModel())
+			.input(DashScopeVideoApi.VideoGenerationRequest.VideoInput.builder()
+				.prompt(prompt.getInstructions().get(0).getText())
+				.negativePrompt(options.getNegativePrompt())
+				.imageUrl(options.getImageUrl())
+				.firstFrameUrl(options.getFirstFrameUrl())
+				.lastFrameUrl(options.getLastFrameUrl())
+				.template(options.getTemplate())
+				.build())
+			.parameters(DashScopeVideoApi.VideoGenerationRequest.VideoParameters.builder()
+				.duration(options.getDuration())
+				.size(options.getSize())
+				.seed(options.getSeed())
+				.promptExtend(options.getPrompt())
+				.build())
+			.build();
 	}
 
 	/**
-	 * Poll for task completion.
-	 */
-	private VideoGenerationResponse pollForCompletion(String taskId) {
-		long startTime = System.currentTimeMillis();
-		long timeout = DEFAULT_TIMEOUT.toMillis();
-
-		while (System.currentTimeMillis() - startTime < timeout) {
-			VideoGenerationResponse response = this.dashScopeVideoApi.queryTask(taskId).getBody();
-
-			if (response != null && response.getOutput() != null) {
-				String status = response.getOutput().getTaskStatus();
-
-				if ("SUCCEEDED".equals(status)) {
-					return response;
-				}
-				else if ("FAILED".equals(status)) {
-					throw new RuntimeException("Video generation failed: " + response.getMessage());
-				}
-				// PENDING, RUNNING - continue polling
-			}
-
-			try {
-				Thread.sleep(DEFAULT_POLLING_INTERVAL.toMillis());
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw new RuntimeException("Video generation interrupted", e);
-			}
-		}
-
-		throw new RuntimeException("Video generation timeout after " + DEFAULT_TIMEOUT);
-	}
-
-	/**
-	 * Merge Video options. Notice: Programmatically set options parameters take
-	 * precedence
+	 * Merge Video options. Notice: Programmatically(runtime) set options parameters take
+	 * precedence.
 	 */
 	private DashScopeVideoOptions toVideoOptions(VideoOptions runtimeOptions) {
 
-		// set default video model
-		var currentOptions = DashScopeVideoOptions.builder().withModel(DEFAULT_MODEL).build();
+		// set default image model
+		var currentOptions = DashScopeVideoOptions.builder().model(DEFAULT_MODEL).build();
 
 		if (Objects.nonNull(runtimeOptions)) {
-			// Copy runtime options to current options
-			if (runtimeOptions.getModel() != null) {
-				currentOptions.setModel(runtimeOptions.getModel());
-			}
-			if (runtimeOptions.getWidth() != null) {
-				currentOptions.setWidth(runtimeOptions.getWidth());
-			}
-			if (runtimeOptions.getHeight() != null) {
-				currentOptions.setHeight(runtimeOptions.getHeight());
-			}
-			if (runtimeOptions.getDuration() != null) {
-				currentOptions.setDuration(runtimeOptions.getDuration());
-			}
-			if (runtimeOptions.getFps() != null) {
-				currentOptions.setFps(runtimeOptions.getFps());
-			}
-			if (runtimeOptions.getSeed() != null) {
-				currentOptions.setSeed(runtimeOptions.getSeed());
-			}
-			if (runtimeOptions.getNumFrames() != null) {
-				currentOptions.setNumFrames(runtimeOptions.getNumFrames());
-			}
+			currentOptions = ModelOptionsUtils.copyToTarget(runtimeOptions, VideoOptions.class,
+					DashScopeVideoOptions.class);
 		}
 
-		// Merge with default options
-		if (this.defaultOptions.getModel() != null && currentOptions.getModel().equals(DEFAULT_MODEL)) {
-			currentOptions.setModel(this.defaultOptions.getModel());
-		}
-		if (this.defaultOptions.getWidth() != null && currentOptions.getWidth() == null) {
-			currentOptions.setWidth(this.defaultOptions.getWidth());
-		}
-		if (this.defaultOptions.getHeight() != null && currentOptions.getHeight() == null) {
-			currentOptions.setHeight(this.defaultOptions.getHeight());
-		}
-		if (this.defaultOptions.getDuration() != null && currentOptions.getDuration() == null) {
-			currentOptions.setDuration(this.defaultOptions.getDuration());
-		}
-		if (this.defaultOptions.getFps() != null && currentOptions.getFps() == null) {
-			currentOptions.setFps(this.defaultOptions.getFps());
-		}
-		if (this.defaultOptions.getSeed() != null && currentOptions.getSeed() == null) {
-			currentOptions.setSeed(this.defaultOptions.getSeed());
-		}
-		if (this.defaultOptions.getNumFrames() != null && currentOptions.getNumFrames() == null) {
-			currentOptions.setNumFrames(this.defaultOptions.getNumFrames());
-		}
+		currentOptions = ModelOptionsUtils.merge(currentOptions, this.defaultOptions, DashScopeVideoOptions.class);
 
 		return currentOptions;
 	}
 
-	/**
-	 * Video options interface.
-	 */
-	public interface VideoOptions {
+	public static final class Builder {
 
-		String getModel();
+		private DashScopeVideoApi videoApi;
 
-		Integer getWidth();
+		private DashScopeVideoOptions defaultOptions = DashScopeVideoOptions.builder().model(DEFAULT_MODEL).build();
 
-		Integer getHeight();
+		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
-		Integer getDuration();
+		private Builder() {
+		}
 
-		Integer getFps();
+		public Builder videoApi(DashScopeVideoApi videoApi) {
+			this.videoApi = videoApi;
+			return this;
+		}
 
-		Long getSeed();
+		public Builder defaultOptions(DashScopeVideoOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
 
-		Integer getNumFrames();
+		public Builder retryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
+		public DashScopeVideoModel build() {
+			return new DashScopeVideoModel(this.videoApi, this.defaultOptions, this.retryTemplate);
+		}
 
 	}
 
