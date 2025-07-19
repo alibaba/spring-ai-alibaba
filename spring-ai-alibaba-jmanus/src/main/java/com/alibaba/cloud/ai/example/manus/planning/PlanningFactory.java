@@ -44,7 +44,6 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
-// import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageTool;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceSharedStateManager;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;

@@ -117,6 +117,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		recordToUpdate.setStartTime(LocalDateTime.now());
 		recordToUpdate.setTitle(context.getPlan().getTitle());
 		recordToUpdate.setUserRequest(context.getUserRequest());
+
 		retrieveExecutionSteps(context, recordToUpdate);
 
 		// Save the correct plan (parent for sub-plan, self for root plan)
