@@ -24,7 +24,6 @@ import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageModel;
@@ -39,8 +38,6 @@ import org.springframework.ai.image.observation.ImageModelObservationDocumentati
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.backoff.FixedBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -63,8 +60,6 @@ public class DashScopeImageModel implements ImageModel {
 	 * The default model used for the image completion requests.
 	 */
 	private static final String DEFAULT_MODEL = "wanx-v1";
-
-	private static final int MAX_RETRY_COUNT = 10;
 
 	/**
 	 * Low-level access to the DashScope Image API.
@@ -122,11 +117,6 @@ public class DashScopeImageModel implements ImageModel {
 
 		this.dashScopeImageApi = dashScopeImageApi;
 		this.defaultOptions = options;
-		SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(MAX_RETRY_COUNT);
-		FixedBackOffPolicy backOff = new FixedBackOffPolicy();
-		backOff.setBackOffPeriod(15_000L);
-		retryTemplate.setRetryPolicy(retryPolicy);
-		retryTemplate.setBackOffPolicy(backOff);
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
 
