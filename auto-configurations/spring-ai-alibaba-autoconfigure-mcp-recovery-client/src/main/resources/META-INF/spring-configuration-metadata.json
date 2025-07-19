@@ -1,0 +1,41 @@
+{
+  "groups": [
+    {
+      "name": "spring.ai.alibaba.mcp.recovery",
+      "type": "com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties",
+      "description": "Configuration properties for MCP recovery client."
+    }
+  ],
+  "properties": [
+    {
+      "name": "spring.ai.alibaba.mcp.recovery.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable MCP Recovery Client",
+      "sourceType": "com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.recovery.delay",
+      "type": "java.time.Duration",
+      "description": "Delay between MCP recovery attempts.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties",
+      "defaultValue": "5s"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.recovery.ping",
+      "type": "java.time.Duration",
+      "description": "ping MCP Server.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties",
+      "defaultValue": "5s"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.recovery.stop",
+      "type": "java.time.Duration",
+      "description": "Duration after which MCP recovery attempts will stop.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties",
+      "defaultValue": "10s"
+    }
+  ],
+  "hints": []
+}
