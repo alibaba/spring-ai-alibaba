@@ -87,7 +87,7 @@ public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 					return result;
 				}, validationResultFlux, StreamResponseType.VALIDATION);
 
-		return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, generator);
+		return Map.of(SEMANTIC_CONSISTENCY_NODE_OUTPUT, generator);
 	}
 
 	/**
@@ -123,10 +123,10 @@ public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 	 */
 	private Map<String, Object> buildValidationResult(boolean passed, String validationResult, Integer currentStep) {
 		if (passed) {
-			return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, true, PLAN_CURRENT_STEP, currentStep + 1);
+			return Map.of(SEMANTIC_CONSISTENCY_NODE_OUTPUT, true, PLAN_CURRENT_STEP, currentStep + 1);
 		}
 		else {
-			return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, false, SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT,
+			return Map.of(SEMANTIC_CONSISTENCY_NODE_OUTPUT, false, SEMANTIC_CONSISTENCY_NODE_RECOMMEND_OUTPUT,
 					validationResult);
 		}
 	}

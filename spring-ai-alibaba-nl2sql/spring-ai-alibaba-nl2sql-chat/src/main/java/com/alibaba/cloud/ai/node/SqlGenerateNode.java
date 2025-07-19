@@ -154,14 +154,14 @@ public class SqlGenerateNode implements NodeAction {
 		SchemaDTO schemaDTO = StateUtils.getObjectValue(state, TABLE_RELATION_OUTPUT, SchemaDTO.class);
 
 		return regenerateSql(state, toolParameters.toJsonStr(), evidenceList, schemaDTO,
-				SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, toolParameters.getSqlQuery());
+				SEMANTIC_CONSISTENCY_NODE_RECOMMEND_OUTPUT, toolParameters.getSqlQuery());
 	}
 
 	/**
 	 * Check if semantic consistency validation failed
 	 */
 	private boolean isSemanticConsistencyFailed(OverAllState state) {
-		return StateUtils.getObjectValue(state, SEMANTIC_CONSISTENC_NODE_OUTPUT, Boolean.class, true) == false;
+		return StateUtils.getObjectValue(state, SEMANTIC_CONSISTENCY_NODE_OUTPUT, Boolean.class, true) == false;
 	}
 
 	/**
