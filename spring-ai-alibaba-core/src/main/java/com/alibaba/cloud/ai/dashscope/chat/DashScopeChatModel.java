@@ -78,6 +78,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -297,7 +298,7 @@ public class DashScopeChatModel implements ChatModel {
 	}
 
 	private ChatResponse toChatResponse(ChatCompletion chatCompletion, ChatResponse previousChatResponse,
-			ChatCompletionRequest request, ConcurrentHashMap<String, String> roleMap) {
+										ChatCompletionRequest request, ConcurrentHashMap<String, String> roleMap) {
 
 		if (chatCompletion == null) {
 			logger.warn("Null chat completion returned");
@@ -309,6 +310,9 @@ public class DashScopeChatModel implements ChatModel {
 			logger.warn("No choices returned");
 			return new ChatResponse(List.of());
 		}
+
+		// Dashscope searchInfos
+		DashScopeApi.SearchInfo searchInfo = chatCompletion.output().searchInfo();
 
 		ConcurrentHashMap<String, String> finalRoleMap = roleMap == null ? new ConcurrentHashMap<>() : roleMap;
 
@@ -323,7 +327,9 @@ public class DashScopeChatModel implements ChatModel {
 					"id", chatCompletion.requestId(),
 					"role", finalRoleMap.getOrDefault(chatCompletion.requestId(), ""),
 					"finishReason", finishReasonToMetadataValue(choice.finishReason()),
-					"reasoningContent", StringUtils.hasText(choice.message().reasoningContent()) ? choice.message().reasoningContent() : "");
+					"reasoningContent", StringUtils.hasText(choice.message().reasoningContent()) ? choice.message().reasoningContent() : "",
+					"search_info", Objects.isNull(searchInfo) ? "" : searchInfo
+			);
 			// @formatter:on
 			return buildGeneration(choice, metadata, request);
 		}).toList();
