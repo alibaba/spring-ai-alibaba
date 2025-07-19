@@ -475,7 +475,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	 * false
 	 */
 	private PlanExecutionRecord getOrCreateRootPlanExecutionRecord(String rootPlanId, boolean createIfNotExists) {
-		logger.info("Enter getOrCreateRootPlanExecutionRecord with rootPlanId: {}, createIfNotExists: {}", rootPlanId,
+		logger.debug("Enter getOrCreateRootPlanExecutionRecord with rootPlanId: {}, createIfNotExists: {}", rootPlanId,
 				createIfNotExists);
 
 		if (rootPlanId == null) {

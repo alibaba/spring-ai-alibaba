@@ -53,3 +53,5 @@ spring-ai-alibaba-jmanus/ui-vue3/pnpm-lock.yaml
 # checkstyle report files
 **/checkstyle-report.xml
 **/logs/*
+.specstory/.what-is-this.md
+.specstory/history/2025-07-15_03-46Z-以@browserusetool-java-有样本。结合@-database-下面所有有py脚本。在@-database-下生成databasetool-java.md

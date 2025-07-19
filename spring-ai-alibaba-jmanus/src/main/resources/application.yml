@@ -1,6 +1,8 @@
 server:
   port: 18080
 spring:
+  config:
+    import: classpath:application-database-tool.yml
   application:
     name: spring-ai-alibaba-openmanus
   profiles:
