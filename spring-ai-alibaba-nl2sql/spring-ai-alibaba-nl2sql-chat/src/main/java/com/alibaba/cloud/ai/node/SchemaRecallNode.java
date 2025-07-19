@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.constant.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
@@ -84,7 +85,7 @@ public class SchemaRecallNode implements NodeAction {
 					logger.info("Keyword-related column document details: {}", columnDocumentsByKeywords);
 					return Map.of(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, tableDocuments,
 							COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT, columnDocumentsByKeywords);
-				}, displayFlux);
+				}, displayFlux, StreamResponseType.SCHEMA_RECALL);
 
 		// Return the processing result
 		return Map.of(SCHEMA_RECALL_NODE_OUTPUT, generator);
