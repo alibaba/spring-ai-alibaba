@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.llm;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
@@ -32,12 +33,10 @@ public interface ILlmService {
 
 	/**
 	 * Get dynamic chat client
-	 * @param host host address
-	 * @param apiKey API key
-	 * @param modelName model name
+	 * @param model
 	 * @return ChatClient
 	 */
-	ChatClient getDynamicChatClient(String host, String apiKey, String modelName);
+	ChatClient getDynamicChatClient(DynamicModelEntity model);
 
 	/**
 	 * Get Agent memory
