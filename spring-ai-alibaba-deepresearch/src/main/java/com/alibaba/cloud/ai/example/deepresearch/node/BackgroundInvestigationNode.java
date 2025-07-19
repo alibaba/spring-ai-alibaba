@@ -41,19 +41,13 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
 
-	private final JinaCrawlerService jinaCrawlerService;
-
 	private final InfoCheckService infoCheckService;
 
-	private final SearchFilterService searchFilterService;
-
-	private SearchInfoService searchInfoService;
+	private final SearchInfoService searchInfoService;
 
 	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
 			SearchFilterService searchFilterService) {
-		this.jinaCrawlerService = jinaCrawlerService;
 		this.infoCheckService = infoCheckService;
-		this.searchFilterService = searchFilterService;
 		this.searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService);
 	}
 

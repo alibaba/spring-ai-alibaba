@@ -57,16 +57,12 @@ public class ResearcherNode implements NodeAction {
 
 	private final String nodeName;
 
-	private final SearchFilterService searchFilterService;
-
 	private final ReflectionProcessor reflectionProcessor;
 
 	// MCP工厂
 	private final McpProviderFactory mcpFactory;
 
-	private final JinaCrawlerService jinaCrawlerService;
-
-	private SearchInfoService searchInfoService;
+	private final SearchInfoService searchInfoService;
 
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
 			McpProviderFactory mcpFactory, SearchFilterService searchFilterService,
@@ -76,8 +72,6 @@ public class ResearcherNode implements NodeAction {
 		this.nodeName = "researcher_" + executorNodeId;
 		this.reflectionProcessor = reflectionProcessor;
 		this.mcpFactory = mcpFactory;
-		this.searchFilterService = searchFilterService;
-		this.jinaCrawlerService = jinaCrawlerService;
 		searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService);
 	}
 

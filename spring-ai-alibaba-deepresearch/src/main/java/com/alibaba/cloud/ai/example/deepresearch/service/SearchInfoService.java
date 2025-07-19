@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.deepresearch.service;
 
-import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
@@ -39,7 +38,7 @@ import java.util.stream.Collectors;
  */
 public class SearchInfoService {
 
-	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(SearchInfoService.class);
 
 	private final Integer MAX_RETRY_COUNT = 3;
 
@@ -54,7 +53,7 @@ public class SearchInfoService {
 		this.searchFilterService = searchFilterService;
 	}
 
-	public List<Map<String, String>> searchInfo(boolean enable_search_filter, SearchEnum searchEnum, String query)
+	public List<Map<String, String>> searchInfo(boolean enableSearchFilter, SearchEnum searchEnum, String query)
 			throws InterruptedException {
 
 		List<Map<String, String>> results = new ArrayList<>();
@@ -62,7 +61,7 @@ public class SearchInfoService {
 		// Retry logic
 		for (int i = 0; i < MAX_RETRY_COUNT; i++) {
 			try {
-				results = searchFilterService.queryAndFilter(enable_search_filter, searchEnum, query)
+				results = searchFilterService.queryAndFilter(enableSearchFilter, searchEnum, query)
 					.stream()
 					.map(info -> {
 						Map<String, String> result = new HashMap<>();
@@ -125,8 +124,7 @@ public class SearchInfoService {
 			return root.toString();
 		}
 		catch (MalformedURLException e) {
-			// 处理异常，例如打印日志或抛出运行时异常
-			e.printStackTrace();
+			logger.error("Invalid URL: {}", url, e);
 			return null;
 		}
 	}
