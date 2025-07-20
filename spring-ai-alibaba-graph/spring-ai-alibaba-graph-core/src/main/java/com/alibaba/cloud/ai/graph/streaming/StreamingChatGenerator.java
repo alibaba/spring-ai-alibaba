@@ -57,7 +57,7 @@ public interface StreamingChatGenerator {
 		/**
 		 * Sets the mapping function that converts a ChatResponse into a Map result.
 		 * @param mapResult a function to transform the final chat response into a result
-		 *                  map
+		 * map
 		 * @return the builder instance for method chaining
 		 */
 		public Builder mapResult(Function<ChatResponse, Map<String, Object>> mapResult) {
@@ -126,26 +126,24 @@ public interface StreamingChatGenerator {
 			};
 
 			var processedFlux = flux.doOnNext(mergeMessage)
-					.map(next -> new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState));
+				.map(next -> new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState));
 
-			return FlowGenerator.fromPublisher(FlowAdapters.toFlowPublisher(processedFlux),
-					() -> {
-						ChatResponse finalResult = result.get();
-						System.out.println("StreamingChatGenerator: mapResult called, finalResult: "
-								+ (finalResult != null ? "not null" : "null"));
-						if (finalResult == null) {
-							// 如果没有收到任何响应，返回空的结果
-							return Map.of();
-						}
-						return mapResult.apply(finalResult);
-					});
+			return FlowGenerator.fromPublisher(FlowAdapters.toFlowPublisher(processedFlux), () -> {
+				ChatResponse finalResult = result.get();
+				System.out.println("StreamingChatGenerator: mapResult called, finalResult: "
+						+ (finalResult != null ? "not null" : "null"));
+				if (finalResult == null) {
+					// 如果没有收到任何响应，返回空的结果
+					return Map.of();
+				}
+				return mapResult.apply(finalResult);
+			});
 		}
 
 	}
 
 	/**
 	 * Returns a new instance of the StreamingChatGenerator builder.
-	 * 
 	 * @return a new builder instance
 	 */
 	static Builder builder() {

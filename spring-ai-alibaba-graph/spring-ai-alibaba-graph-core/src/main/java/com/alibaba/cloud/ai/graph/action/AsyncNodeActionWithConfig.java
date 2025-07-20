@@ -36,16 +36,14 @@ public interface AsyncNodeActionWithConfig
 	static AsyncNodeActionWithConfig node_async(NodeActionWithConfig syncAction) {
 		return (state, config) -> {
 			Context context = Context.current();
-			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
-			try {
-				// context.wrap(() -> result.complete(syncAction.apply(state, config)));
-				result.complete(syncAction.apply(state, config));
-			}
-			catch (Exception e) {
-				// context.wrap(() -> result.completeExceptionally(e));
-				result.completeExceptionally(e);
-			}
-			return result;
+			return CompletableFuture.supplyAsync(context.wrapSupplier(() -> {
+				try {
+					return syncAction.apply(state, config);
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}), AsyncNodeAction.BOUNDED_ELASTIC_EXECUTOR);
 		};
 	}
 

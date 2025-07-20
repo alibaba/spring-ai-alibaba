@@ -26,16 +26,14 @@ public interface AsyncCommandAction extends BiFunction<OverAllState, RunnableCon
 	static AsyncCommandAction node_async(CommandAction syncAction) {
 		return (state, config) -> {
 			Context context = Context.current();
-			var result = new CompletableFuture<Command>();
-			try {
-				// context.wrap(() -> result.complete(syncAction.apply(state, config)));
-				result.complete(syncAction.apply(state, config));
-			}
-			catch (Exception e) {
-				// context.wrap(() -> result.completeExceptionally(e));
-				result.completeExceptionally(e);
-			}
-			return result;
+			return CompletableFuture.supplyAsync(context.wrapSupplier(() -> {
+				try {
+					return syncAction.apply(state, config);
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}), AsyncNodeAction.BOUNDED_ELASTIC_EXECUTOR);
 		};
 	}
 
