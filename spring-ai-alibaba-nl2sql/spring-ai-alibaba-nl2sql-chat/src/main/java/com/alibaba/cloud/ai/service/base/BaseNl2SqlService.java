@@ -35,8 +35,11 @@ import reactor.core.publisher.Flux;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -44,6 +47,7 @@ import static com.alibaba.cloud.ai.constant.Constant.INTENT_UNCLEAR;
 import static com.alibaba.cloud.ai.constant.Constant.SMALL_TALK_REJECT;
 import static com.alibaba.cloud.ai.prompt.PromptHelper.buildMixMacSqlDbPrompt;
 import static com.alibaba.cloud.ai.prompt.PromptHelper.buildMixSelectorPrompt;
+import static com.alibaba.cloud.ai.prompt.PromptConstant.getQuestionExpansionPromptTemplate;
 
 public class BaseNl2SqlService {
 
@@ -121,6 +125,36 @@ public class BaseNl2SqlService {
 		String semanticConsistencyPrompt = PromptHelper.buildSemanticConsistenPrompt(queryPrompt, sql);
 		logger.info("semanticConsistencyPrompt = {}", semanticConsistencyPrompt);
 		return aiService.streamCall(semanticConsistencyPrompt);
+	}
+
+	/**
+	 * 将问题扩展为多个不同表述的问题变体
+	 * @param query 原始问题
+	 * @return 包含原始问题和扩展问题的列表
+	 */
+	public List<String> expandQuestion(String query) {
+		try {
+			// 构建问题扩展提示词
+			Map<String, Object> params = new HashMap<>();
+			params.put("question", query);
+			String prompt = getQuestionExpansionPromptTemplate().render(params);
+			
+			// 调用LLM获取扩展问题
+			String content = aiService.call(prompt);
+			
+			// 解析JSON响应
+			List<String> expandedQuestions = new Gson().fromJson(content, new TypeToken<List<String>>() {}.getType());
+			
+			if (expandedQuestions == null || expandedQuestions.isEmpty()) {
+				return Collections.singletonList(query);
+			}
+
+			logger.info("问题扩展结果: {}", expandedQuestions);
+			return expandedQuestions;
+		} catch (Exception e) {
+			logger.warn("问题扩展失败，将使用原始问题: {}", e.getMessage());
+			return Collections.singletonList(query);
+		}
 	}
 
 	/**

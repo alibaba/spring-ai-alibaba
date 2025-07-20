@@ -73,6 +73,10 @@ public class PromptConstant {
 	public static PromptTemplate getPythonExecutorPromptTemplate() {
 		return new PromptTemplate(PromptLoader.loadPrompt("python-executor"));
 	}
+	
+	public static PromptTemplate getQuestionExpansionPromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("question-expansion"));
+	}
 
 	// 兼容性方法，保持向后兼容
 	@Deprecated
