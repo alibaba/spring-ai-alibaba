@@ -19,20 +19,25 @@ import org.springframework.ai.chat.messages.MessageType;
 
 public enum PromptEnum {
 
-	LLL_FINALIZE_SYSTEM("LLL_FINALIZE_SYSTEM", MessageType.SYSTEM, PromptType.LLM, true, "", "llm/finalize-system.txt"),
-	LLL_MANUS_SYSTEM("LLL_MANUS_SYSTEM", MessageType.SYSTEM, PromptType.LLM, true, "", "llm/manus-system.txt"),
-	LLL_PLANNING_SYSTEM("LLL_PLANNING_SYSTEM", MessageType.SYSTEM, PromptType.LLM, true, "", "llm/planning-system.txt"),
-
-	AGENT_CURRENT_STEP_ENV("AGENT_CURRENT_STEP_ENV", MessageType.USER, PromptType.AGENT, true, "",
-			"agent/current-step-env.txt"),
-	AGENT_STEP_EXECUTION("AGENT_STEP_EXECUTION", MessageType.USER, PromptType.AGENT, true, "",
-			"agent/step-execution.txt"),
-	PLANNING_PLAN_CREATION("PLANNING_PLAN_CREATION", MessageType.SYSTEM, PromptType.PLANNING, true, "",
+	// LLL_FINALIZE_SYSTEM("LLL_FINALIZE_SYSTEM", MessageType.SYSTEM, PromptType.LLM,
+	// true, "用来做最终总结的prompt，对应任务结束以后告知用户的那个动作", "llm/finalize-system.txt"),
+	// LLL_MANUS_SYSTEM("LLL_MANUS_SYSTEM", MessageType.SYSTEM, PromptType.LLM, true,
+	// "用来做开始的用户任务分解用的prompt", "llm/manus-system.txt"),
+	// LLL_PLANNING_SYSTEM("LLL_PLANNING_SYSTEM", MessageType.SYSTEM, PromptType.LLM,
+	// true, "", "llm/planning-system.txt"),
+	PLANNING_PLAN_CREATION("PLANNING_PLAN_CREATION", MessageType.SYSTEM, PromptType.PLANNING, true,
+			"构建执行计划的Prompt，如果分解任务做的不好，调这个 / Prompt for building execution plans, adjust this if task decomposition is not working well",
 			"planning/plan-creation.txt"),
-	PLANNING_PLAN_FINALIZER("PLANNING_PLAN_FINALIZER", MessageType.SYSTEM, PromptType.PLANNING, true, "",
-			"planning/plan-finalizer.txt"),
-	PLANNING_USER_REQUEST("PLANNING_USER_REQUEST", MessageType.USER, PromptType.PLANNING, true, "",
-			"planning/user-request.txt"),;
+	AGENT_CURRENT_STEP_ENV("AGENT_CURRENT_STEP_ENV", MessageType.USER, PromptType.AGENT, true,
+			"用来定义当前的环境信息，对应agent从过去调用的所有函数的结果，也就是当前的环境信息，因为要存到agent里面所以单独有一个项 / Defines current environment information, corresponding to results from all functions called by agent in the past, stored separately in agent",
+			"agent/current-step-env.txt"),
+	AGENT_STEP_EXECUTION("AGENT_STEP_EXECUTION", MessageType.USER, PromptType.AGENT, true,
+			"每个agent执行步骤时候都会给agent的上下文信息，大部分的变量不要调（因为都是预制的），可以调整一些对他的建议，一个重点的agent步骤执行prompt / Context information given to agent during each execution step, most variables are preset and shouldn't be changed, can adjust some suggestions, a key agent step execution prompt",
+			"agent/step-execution.txt"),
+
+	PLANNING_PLAN_FINALIZER("PLANNING_PLAN_FINALIZER", MessageType.USER, PromptType.PLANNING, true,
+			"用来做最终总结的prompt，对应任务结束以后告知用户的那个动作，已合并用户请求信息 / Prompt for final summary, corresponds to the action of informing users after task completion, merged with user request information",
+			"planning/plan-finalizer.txt"),;
 
 	private String promptName;
 

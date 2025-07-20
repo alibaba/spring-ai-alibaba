@@ -17,13 +17,17 @@ package com.alibaba.cloud.ai.example.manus.dynamic.prompt.repository;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.po.PromptEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 public interface PromptRepository extends JpaRepository<PromptEntity, Long> {
 
-	@Query(value = "select * from prompt where prompt_name = ?1", nativeQuery = true)
+	PromptEntity findByNamespaceAndPromptName(String namespace, String promptName);
+
 	PromptEntity findByPromptName(String promptName);
+
+	List<PromptEntity> getAllByNamespace(String namespace);
 
 }

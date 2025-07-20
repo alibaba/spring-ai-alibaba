@@ -16,20 +16,18 @@
 package com.alibaba.cloud.ai.dashscope.image.observation;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncReponse;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncResponse;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseOutput;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseResult;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageRequest;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
 import com.alibaba.cloud.ai.dashscope.observation.conventions.AiProvider;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
-import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.mockito.Mockito;
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImagePrompt;
@@ -38,10 +36,15 @@ import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
 import org.springframework.ai.observation.conventions.AiOperationType;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClient;
 
-import static org.mockito.ArgumentMatchers.any;
+import java.util.List;
+
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 
 /**
  * @author Polaris
@@ -56,8 +59,12 @@ class DashScopeImageModelObservationTests {
 
 	public DashScopeImageModelObservationTests() {
 		this.observationRegistry = TestObservationRegistry.create();
-		this.imageModel = new DashScopeImageModel(new DashScopeImageApi("sk" + "-7a74bd9492b24f6f835a03e01affe294"),
-				observationRegistry);
+		this.imageModel = new DashScopeImageModel(DashScopeImageApi.builder()
+			.apiKey("sk" + "-7a74bd9492b24f6f835a03e01affe294")
+			.restClientBuilder(RestClient.builder())
+			.baseUrl(DEFAULT_BASE_URL)
+			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+			.build(), observationRegistry);
 		DefaultImageModelObservationConvention defaultImageModelObservationConvention = new DefaultImageModelObservationConvention();
 		this.imageModel.setObservationConvention(defaultImageModelObservationConvention);
 	}
@@ -114,15 +121,15 @@ class DashScopeImageModelObservationTests {
 		DashScopeImageApi mockApi = Mockito.mock(DashScopeImageApi.class);
 
 		// mock
-		var fakeResult = new DashScopeImageAsyncReponseResult("https://example-image.url/image.png");
+		var fakeResult = new DashScopeImageAsyncResponseResult("https://example-image.url/image.png");
 
-		var output = new DashScopeImageAsyncReponseOutput("00001", "SUCCEEDED", List.of(fakeResult), null, "code",
+		var output = new DashScopeImageAsyncResponseOutput("00001", "SUCCEEDED", List.of(fakeResult), null, "code",
 				"msg");
 
-		var response = new DashScopeImageAsyncReponse("req-test", output, null);
+		var response = new DashScopeImageAsyncResponse("req-test", output, null);
 
 		Mockito.when(mockApi.submitImageGenTask(any(DashScopeImageRequest.class)))
-			.thenReturn(ResponseEntity.ok(new DashScopeImageAsyncReponse(output.taskId(), output, null)));
+			.thenReturn(ResponseEntity.ok(new DashScopeImageAsyncResponse(output.taskId(), output, null)));
 
 		Mockito.when(mockApi.getImageGenTaskResult(any(String.class))).thenReturn(ResponseEntity.ok(response));
 
