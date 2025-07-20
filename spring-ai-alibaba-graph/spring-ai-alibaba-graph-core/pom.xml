@@ -197,7 +197,7 @@
             <artifactId>mcp</artifactId>
             <version>${mcp.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api</artifactId>
