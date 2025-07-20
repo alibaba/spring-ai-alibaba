@@ -25,90 +25,87 @@ import java.util.List;
  */
 public class KeywordExtractionResult {
 
-    /**
-     * 问题变体
-     */
-    private final String question;
+	/**
+	 * 问题变体
+	 */
+	private final String question;
 
-    /**
-     * 提取的证据列表
-     */
-    private final List<String> evidences;
+	/**
+	 * 提取的证据列表
+	 */
+	private final List<String> evidences;
 
-    /**
-     * 提取的关键词列表
-     */
-    private final List<String> keywords;
+	/**
+	 * 提取的关键词列表
+	 */
+	private final List<String> keywords;
 
-    /**
-     * 提取是否成功
-     */
-    private final boolean successful;
+	/**
+	 * 提取是否成功
+	 */
+	private final boolean successful;
 
-    /**
-     * 构造函数 - 成功情况
-     * @param question 问题变体
-     * @param evidences 提取的证据列表
-     * @param keywords 提取的关键词列表
-     */
-    public KeywordExtractionResult(String question, List<String> evidences, List<String> keywords) {
-        this.question = question;
-        this.evidences = evidences;
-        this.keywords = keywords;
-        this.successful = true;
-    }
+	/**
+	 * 构造函数 - 成功情况
+	 * @param question 问题变体
+	 * @param evidences 提取的证据列表
+	 * @param keywords 提取的关键词列表
+	 */
+	public KeywordExtractionResult(String question, List<String> evidences, List<String> keywords) {
+		this.question = question;
+		this.evidences = evidences;
+		this.keywords = keywords;
+		this.successful = true;
+	}
 
-    /**
-     * 构造函数 - 失败情况
-     * @param question 问题变体
-     * @param successful 提取是否成功
-     */
-    public KeywordExtractionResult(String question, boolean successful) {
-        this.question = question;
-        this.evidences = List.of();
-        this.keywords = List.of();
-        this.successful = successful;
-    }
+	/**
+	 * 构造函数 - 失败情况
+	 * @param question 问题变体
+	 * @param successful 提取是否成功
+	 */
+	public KeywordExtractionResult(String question, boolean successful) {
+		this.question = question;
+		this.evidences = List.of();
+		this.keywords = List.of();
+		this.successful = successful;
+	}
 
-    /**
-     * 获取问题变体
-     * @return 问题变体
-     */
-    public String getQuestion() {
-        return question;
-    }
+	/**
+	 * 获取问题变体
+	 * @return 问题变体
+	 */
+	public String getQuestion() {
+		return question;
+	}
 
-    /**
-     * 获取提取的证据列表
-     * @return 证据列表
-     */
-    public List<String> getEvidences() {
-        return evidences;
-    }
+	/**
+	 * 获取提取的证据列表
+	 * @return 证据列表
+	 */
+	public List<String> getEvidences() {
+		return evidences;
+	}
 
-    /**
-     * 获取提取的关键词列表
-     * @return 关键词列表
-     */
-    public List<String> getKeywords() {
-        return keywords;
-    }
+	/**
+	 * 获取提取的关键词列表
+	 * @return 关键词列表
+	 */
+	public List<String> getKeywords() {
+		return keywords;
+	}
 
-    /**
-     * 提取是否成功
-     * @return 是否成功
-     */
-    public boolean isSuccessful() {
-        return successful;
-    }
+	/**
+	 * 提取是否成功
+	 * @return 是否成功
+	 */
+	public boolean isSuccessful() {
+		return successful;
+	}
 
-    @Override
-    public String toString() {
-        return "KeywordExtractionResult{" +
-                "question='" + question + '\'' +
-                ", evidences=" + evidences +
-                ", keywords=" + keywords +
-                ", successful=" + successful +
-                '}';
-    }
+	@Override
+	public String toString() {
+		return "KeywordExtractionResult{" + "question='" + question + '\'' + ", evidences=" + evidences + ", keywords="
+				+ keywords + ", successful=" + successful + '}';
+	}
+
 }

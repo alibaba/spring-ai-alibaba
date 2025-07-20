@@ -66,26 +66,27 @@ public class KeywordExtractNode implements NodeAction {
 	 */
 	private List<KeywordExtractionResult> processMultipleQuestions(List<String> questions) {
 		List<KeywordExtractionResult> results = new ArrayList<>();
-		
+
 		for (String question : questions) {
 			try {
 				// 提取证据和关键词
 				List<String> evidences = baseNl2SqlService.extractEvidences(question);
 				List<String> keywords = baseNl2SqlService.extractKeywords(question, evidences);
-				
+
 				// 记录成功结果
 				results.add(new KeywordExtractionResult(question, evidences, keywords));
 				logger.info("成功从问题变体提取关键词: 问题=\"{}\", 关键词={}", question, keywords);
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				// 记录失败结果
 				results.add(new KeywordExtractionResult(question, false));
 				logger.warn("从问题变体提取关键词失败: 问题=\"{}\", 错误={}", question, e.getMessage());
 			}
 		}
-		
+
 		return results;
 	}
-	
+
 	/**
 	 * 合并多个问题变体的关键词，去重并保持原始问题关键词优先
 	 * @param extractionResults 提取结果列表
@@ -96,24 +97,24 @@ public class KeywordExtractNode implements NodeAction {
 		if (extractionResults.isEmpty()) {
 			return List.of();
 		}
-		
+
 		// 使用LinkedHashSet保持插入顺序并去重
 		Set<String> mergedKeywords = new LinkedHashSet<>();
-		
+
 		// 首先添加原始问题的关键词（如果存在）
 		extractionResults.stream()
 			.filter(result -> result.isSuccessful() && result.getQuestion().equals(originalQuestion))
 			.findFirst()
 			.ifPresent(result -> mergedKeywords.addAll(result.getKeywords()));
-		
+
 		// 然后添加其他问题变体的关键词
 		extractionResults.stream()
 			.filter(result -> result.isSuccessful() && !result.getQuestion().equals(originalQuestion))
 			.forEach(result -> mergedKeywords.addAll(result.getKeywords()));
-		
+
 		return new ArrayList<>(mergedKeywords);
 	}
-	
+
 	/**
 	 * 合并多个问题变体的证据，去重
 	 * @param extractionResults 提取结果列表
@@ -121,11 +122,11 @@ public class KeywordExtractNode implements NodeAction {
 	 */
 	private List<String> mergeEvidences(List<KeywordExtractionResult> extractionResults) {
 		Set<String> mergedEvidences = new HashSet<>();
-		
+
 		extractionResults.stream()
 			.filter(KeywordExtractionResult::isSuccessful)
 			.forEach(result -> mergedEvidences.addAll(result.getEvidences()));
-		
+
 		return new ArrayList<>(mergedEvidences);
 	}
 
@@ -135,41 +136,46 @@ public class KeywordExtractNode implements NodeAction {
 
 		String input = StateUtils.getStringValue(state, QUERY_REWRITE_NODE_OUTPUT,
 				StateUtils.getStringValue(state, INPUT_KEY));
-				
+
 		try {
 			// 增强处理：扩展问题并提取关键词
 			logger.info("开始增强关键词提取处理...");
-			
+
 			// 扩展问题为多个变体
 			List<String> expandedQuestions = baseNl2SqlService.expandQuestion(input);
 			logger.info("问题扩展结果: {}", expandedQuestions);
-			
+
 			// 处理多个问题变体
 			List<KeywordExtractionResult> extractionResults = processMultipleQuestions(expandedQuestions);
-			
+
 			// 合并关键词和证据
 			List<String> mergedKeywords = mergeKeywords(extractionResults, input);
 			List<String> mergedEvidences = mergeEvidences(extractionResults);
-			
-			logger.info("[{}] 增强提取结果 - 证据: {}, 关键词: {}", this.getClass().getSimpleName(), mergedEvidences, mergedKeywords);
-			
+
+			logger.info("[{}] 增强提取结果 - 证据: {}, 关键词: {}", this.getClass().getSimpleName(), mergedEvidences,
+					mergedKeywords);
+
 			// 创建流式响应
-			Flux<ChatResponse> displayFlux = createEnhancedDisplayFlux(extractionResults, mergedKeywords, mergedEvidences);
-			
+			Flux<ChatResponse> displayFlux = createEnhancedDisplayFlux(extractionResults, mergedKeywords,
+					mergedEvidences);
+
 			// 使用业务逻辑执行器避免重复执行
-			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-					v -> Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, mergedKeywords, EVIDENCES, mergedEvidences, RESULT, mergedKeywords), 
-					displayFlux, StreamResponseType.KEYWORD_EXTRACT);
-			
+			var generator = StreamingChatGeneratorUtil
+				.createStreamingGeneratorWithMessages(
+						this.getClass(), state, v -> Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, mergedKeywords, EVIDENCES,
+								mergedEvidences, RESULT, mergedKeywords),
+						displayFlux, StreamResponseType.KEYWORD_EXTRACT);
+
 			return Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, generator);
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			// 增强处理失败，回退到原始处理逻辑
 			logger.warn("增强关键词提取失败，回退到原始处理方法: {}", e.getMessage());
 			return fallbackToOriginalProcessing(state, input);
 		}
 	}
-	
+
 	/**
 	 * 创建增强的流式响应
 	 * @param extractionResults 提取结果列表
@@ -177,24 +183,24 @@ public class KeywordExtractNode implements NodeAction {
 	 * @param mergedEvidences 合并后的证据
 	 * @return 流式响应
 	 */
-	private Flux<ChatResponse> createEnhancedDisplayFlux(List<KeywordExtractionResult> extractionResults, 
+	private Flux<ChatResponse> createEnhancedDisplayFlux(List<KeywordExtractionResult> extractionResults,
 			List<String> mergedKeywords, List<String> mergedEvidences) {
 		return Flux.create(emitter -> {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始增强关键词提取..."));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("正在扩展问题理解..."));
-			
+
 			// 显示每个问题变体的处理结果
 			for (KeywordExtractionResult result : extractionResults) {
 				if (result.isSuccessful()) {
-					emitter.next(ChatResponseUtil.createCustomStatusResponse(
-							"处理问题变体: \"" + result.getQuestion() + "\""));
-					emitter.next(ChatResponseUtil.createCustomStatusResponse(
-							"提取的证据: " + String.join(", ", result.getEvidences())));
-					emitter.next(ChatResponseUtil.createCustomStatusResponse(
-							"提取的关键词: " + String.join(", ", result.getKeywords())));
+					emitter
+						.next(ChatResponseUtil.createCustomStatusResponse("处理问题变体: \"" + result.getQuestion() + "\""));
+					emitter.next(ChatResponseUtil
+						.createCustomStatusResponse("提取的证据: " + String.join(", ", result.getEvidences())));
+					emitter.next(ChatResponseUtil
+						.createCustomStatusResponse("提取的关键词: " + String.join(", ", result.getKeywords())));
 				}
 			}
-			
+
 			// 显示合并结果
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("合并多个问题变体的结果..."));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("合并后的证据: " + String.join(", ", mergedEvidences)));
@@ -203,7 +209,7 @@ public class KeywordExtractNode implements NodeAction {
 			emitter.complete();
 		});
 	}
-	
+
 	/**
 	 * 回退到原始处理方法
 	 * @param state 状态

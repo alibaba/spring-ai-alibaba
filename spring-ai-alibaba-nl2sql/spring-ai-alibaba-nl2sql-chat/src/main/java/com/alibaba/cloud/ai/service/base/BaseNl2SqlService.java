@@ -138,20 +138,22 @@ public class BaseNl2SqlService {
 			Map<String, Object> params = new HashMap<>();
 			params.put("question", query);
 			String prompt = getQuestionExpansionPromptTemplate().render(params);
-			
+
 			// 调用LLM获取扩展问题
 			String content = aiService.call(prompt);
-			
+
 			// 解析JSON响应
-			List<String> expandedQuestions = new Gson().fromJson(content, new TypeToken<List<String>>() {}.getType());
-			
+			List<String> expandedQuestions = new Gson().fromJson(content, new TypeToken<List<String>>() {
+			}.getType());
+
 			if (expandedQuestions == null || expandedQuestions.isEmpty()) {
 				return Collections.singletonList(query);
 			}
 
 			logger.info("问题扩展结果: {}", expandedQuestions);
 			return expandedQuestions;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.warn("问题扩展失败，将使用原始问题: {}", e.getMessage());
 			return Collections.singletonList(query);
 		}
