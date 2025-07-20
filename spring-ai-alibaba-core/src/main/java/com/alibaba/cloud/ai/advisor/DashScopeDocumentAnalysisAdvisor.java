@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.advisor;
 
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -23,6 +24,8 @@ import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,11 +33,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * 使用 qwen-long 模型解析文档
@@ -44,12 +47,14 @@ import java.util.Map;
  *
  * 若无附件则视为普通对话，不上传文件和修改提示词
  *
+ * use qwen-long model to parse document use condition: model is qwen-long, add advisor to
+ * chain add param named resource, its value is Resource type, can be local file or URL if
+ * no attachment, treat as normal conversation, no need to upload file and modify prompt
+ *
  * @author HunterPorter
  * @author <a href="mailto:zongpeng_hzp@163.com">HunterPorter</a>
  */
 public class DashScopeDocumentAnalysisAdvisor implements BaseAdvisor {
-
-	public static final String BASE_UAL = "https://dashscope.aliyuncs.com/compatible-mode";
 
 	public static final String UPLOAD_RESPONSE = "upload_response";
 
@@ -62,19 +67,29 @@ public class DashScopeDocumentAnalysisAdvisor implements BaseAdvisor {
 
 	private final int order;
 
-	private final String apiKey;
-
 	WebClient webClient;
 
-	public DashScopeDocumentAnalysisAdvisor(String apiKey) {
+	public DashScopeDocumentAnalysisAdvisor(ApiKey apiKey) {
 		this(0, apiKey);
 	}
 
-	public DashScopeDocumentAnalysisAdvisor(int order, String apiKey) {
-		Assert.isTrue(StringUtils.hasText(apiKey), "Invalid api key");
+	public DashScopeDocumentAnalysisAdvisor(int order, ApiKey apiKey) {
+		Assert.notNull(apiKey, "Invalid api key");
 		this.order = order;
-		this.apiKey = apiKey;
-		this.webClient = WebClient.builder().baseUrl(BASE_UAL).build();
+
+		// Check API Key in headers.
+		Consumer<HttpHeaders> finalHeaders = h -> {
+			if (!(apiKey instanceof NoopApiKey)) {
+				h.setBearerAuth(apiKey.getValue());
+			}
+
+			h.setContentType(MediaType.MULTIPART_FORM_DATA);
+		};
+
+		this.webClient = WebClient.builder()
+			.baseUrl(DashScopeApiConstants.DEFAULT_BASE_URL)
+			.defaultHeaders(finalHeaders)
+			.build();
 	}
 
 	@Override
@@ -83,7 +98,7 @@ public class DashScopeDocumentAnalysisAdvisor implements BaseAdvisor {
 		Resource resource = (Resource) context.get(RESOURCE);
 		if (resource != null) {
 
-			ResponseEntity<UploadResponse> uploadResponse = upload(this.apiKey, resource);
+			ResponseEntity<UploadResponse> uploadResponse = upload(resource);
 			context.put(UPLOAD_RESPONSE, uploadResponse);
 
 			Assert.notNull(uploadResponse.getBody(), "upload response body is null");
@@ -112,16 +127,14 @@ public class DashScopeDocumentAnalysisAdvisor implements BaseAdvisor {
 			.build();
 	}
 
-	public ResponseEntity<UploadResponse> upload(String apiKey, Resource resource) {
+	public ResponseEntity<UploadResponse> upload(Resource resource) {
 
 		MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
 		formData.add("file", resource);
 		formData.add("purpose", "file-extract");
 
 		return this.webClient.post()
-			.uri("/v1/files")
-			.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-			.contentType(MediaType.MULTIPART_FORM_DATA)
+			.uri("/compatible-mode/v1/files")
 			.body(BodyInserters.fromMultipartData(formData))
 			.retrieve()
 			.toEntity(UploadResponse.class)

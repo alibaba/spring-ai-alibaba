@@ -25,14 +25,20 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
-import org.springframework.http.*;
+import org.springframework.http.ResponseEntity;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DashScopeDocumentAnalysisAdvisorTest {
 
@@ -40,18 +46,20 @@ class DashScopeDocumentAnalysisAdvisorTest {
 
 	@BeforeEach
 	void setUp() {
-		advisor = new DashScopeDocumentAnalysisAdvisor("test-api-key");
+		ApiKey apiKey = new SimpleApiKey("test-api-key");
+		advisor = new DashScopeDocumentAnalysisAdvisor(apiKey);
 	}
 
 	@Test
 	void constructor_withValidApiKey_initializesSuccessfully() {
-		DashScopeDocumentAnalysisAdvisor testAdvisor = new DashScopeDocumentAnalysisAdvisor("valid-api-key");
+		ApiKey apiKey = new SimpleApiKey("test-api-key");
+		DashScopeDocumentAnalysisAdvisor testAdvisor = new DashScopeDocumentAnalysisAdvisor(apiKey);
 		assertNotNull(testAdvisor);
 	}
 
 	@Test
 	void constructor_withEmptyApiKey_throwsException() {
-		assertThrows(IllegalArgumentException.class, () -> new DashScopeDocumentAnalysisAdvisor(""));
+		assertThrows(IllegalArgumentException.class, () -> new DashScopeDocumentAnalysisAdvisor(null));
 	}
 
 	@Test
@@ -95,12 +103,13 @@ class DashScopeDocumentAnalysisAdvisorTest {
 	@Tag("integration")
 	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void test_upload() {
-		DashScopeDocumentAnalysisAdvisor advisor = new DashScopeDocumentAnalysisAdvisor(
-				System.getenv("AI_DASHSCOPE_API_KEY"));
+
+		ApiKey apiKey = new SimpleApiKey(System.getenv("AI_DASHSCOPE_API_KEY"));
+		DashScopeDocumentAnalysisAdvisor advisor = new DashScopeDocumentAnalysisAdvisor(apiKey);
 
 		Resource testFile = new DefaultResourceLoader().getResource("classpath:/test-file.pdf");
-		ResponseEntity<DashScopeDocumentAnalysisAdvisor.UploadResponse> uploadResponse = advisor
-			.upload(System.getenv("AI_DASHSCOPE_API_KEY"), testFile);
+
+		ResponseEntity<DashScopeDocumentAnalysisAdvisor.UploadResponse> uploadResponse = advisor.upload(testFile);
 
 		assertThat(uploadResponse).isNotNull();
 		assertThat(uploadResponse.getBody()).isNotNull();
@@ -112,8 +121,8 @@ class DashScopeDocumentAnalysisAdvisorTest {
 	@Tag("integration")
 	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void test_before() {
-		DashScopeDocumentAnalysisAdvisor advisor = new DashScopeDocumentAnalysisAdvisor(
-				System.getenv("AI_DASHSCOPE_API_KEY"));
+		ApiKey apiKey = new SimpleApiKey(System.getenv("AI_DASHSCOPE_API_KEY"));
+		DashScopeDocumentAnalysisAdvisor advisor = new DashScopeDocumentAnalysisAdvisor(apiKey);
 
 		Resource testFile = new DefaultResourceLoader().getResource("classpath:/test-file.pdf");
 
