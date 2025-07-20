@@ -25,6 +25,8 @@ public interface AgentService {
 
 	List<AgentConfig> getAllAgents();
 
+	List<AgentConfig> getAllAgentsByNamespace(String namespace);
+
 	AgentConfig getAgentById(String id);
 
 	AgentConfig createAgent(AgentConfig agentConfig);

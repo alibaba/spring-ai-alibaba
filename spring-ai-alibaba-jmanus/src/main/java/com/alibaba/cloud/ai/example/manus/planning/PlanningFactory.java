@@ -21,13 +21,12 @@ package com.alibaba.cloud.ai.example.manus.planning;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpTool;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderService;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
@@ -58,9 +57,10 @@ import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.util.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,6 +73,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -85,7 +87,7 @@ import java.util.concurrent.TimeUnit;
  */
 
 @Service
-public class PlanningFactory {
+public class PlanningFactory implements IPlanningFactory {
 
 	private final ChromeDriverService chromeDriverService;
 
@@ -99,6 +101,8 @@ public class PlanningFactory {
 
 	private final UnifiedDirectoryManager unifiedDirectoryManager;
 
+	private final static Logger log = LoggerFactory.getLogger(PlanningFactory.class);
+
 	@Autowired
 	private AgentService agentService;
 
@@ -106,14 +110,14 @@ public class PlanningFactory {
 
 	@Autowired
 	@Lazy
-	private LlmService llmService;
+	private ILlmService llmService;
 
 	@Autowired
 	@Lazy
 	private ToolCallingManager toolCallingManager;
 
 	@Autowired
-	private DynamicAgentLoader dynamicAgentLoader;
+	private IDynamicAgentLoader dynamicAgentLoader;
 
 	@Autowired
 	private MapReduceSharedStateManager sharedStateManager;
@@ -185,7 +189,14 @@ public class PlanningFactory {
 			List<String> terminateColumns) {
 		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
 		List<ToolCallBiFunctionDef<?>> toolDefinitions = new ArrayList<>();
-
+		if (chromeDriverService == null) {
+			log.error("ChromeDriverService is null, skipping BrowserUseTool registration");
+			return toolCallbackMap;
+		}
+		if (innerStorageService == null) {
+			log.error("SmartContentSavingService is null, skipping BrowserUseTool registration");
+			return toolCallbackMap;
+		}
 		// Add all tool definitions
 		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService));
 		toolDefinitions.add(new TerminateTool(planId, terminateColumns));
@@ -221,6 +232,7 @@ public class PlanningFactory {
 				.build();
 			toolDefinition.setCurrentPlanId(planId);
 			toolDefinition.setRootPlanId(rootPlanId);
+			log.info("Registering tool: {}", toolDefinition.getName());
 			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
 					toolDefinition);
 			toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
@@ -255,7 +267,7 @@ public class PlanningFactory {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(name = "spring.ai.mcp.client.enabled", havingValue = "false")
 	public ToolCallbackProvider emptyToolCallbackProvider() {
-		return () -> new ToolCallback[0];
+		return () -> new HashMap<>();
 	}
 
 }

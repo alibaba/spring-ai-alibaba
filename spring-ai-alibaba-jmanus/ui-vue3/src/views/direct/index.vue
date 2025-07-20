@@ -48,9 +48,10 @@
 
         <!-- Input Area -->
         <InputArea
+          :key="$i18n.locale"
           ref="inputRef"
           :disabled="isLoading"
-          :placeholder="isLoading ? '等待任务完成...' : t('input.placeholder')"
+          :placeholder="isLoading ? t('input.waiting') : t('input.placeholder')"
           @send="handleSendMessage"
           @clear="handleInputClear"
           @focus="handleInputFocus"
@@ -87,13 +88,12 @@ import InputArea from '@/components/input/index.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { useTaskStore } from '@/stores/task'
-import { useSidebarStore } from '@/stores/sidebar'
+import { sidebarStore } from '@/stores/sidebar'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 
 const route = useRoute()
 const router = useRouter()
 const taskStore = useTaskStore()
-const sidebarStore = useSidebarStore()
 const { t } = useI18n()
 
 const prompt = ref<string>('')
@@ -104,8 +104,8 @@ const isExecutingPlan = ref(false)
 const isLoading = ref(false)
 const currentRootPlanId = ref<string | null>(null)
 
-// 面板宽度相关
-const leftPanelWidth = ref(50) // 左面板宽度百分比
+// Related to panel width
+const leftPanelWidth = ref(50) // Left panel width percentage
 const isResizing = ref(false)
 const startX = ref(0)
 const startLeftWidth = ref(0)
@@ -203,24 +203,24 @@ onMounted(() => {
 
   console.log('[Direct] Event callbacks registered to planExecutionManager')
 
-  // 初始化侧边栏数据
+  // Initialize sidebar data
   sidebarStore.loadPlanTemplateList()
 
-  // 检查 store 中是否有任务
+  // Check if there is a task in the store
   if (taskStore.hasUnprocessedTask() && taskStore.currentTask) {
     prompt.value = taskStore.currentTask.prompt
     console.log('[Direct] Setting prompt from store:', prompt.value)
-    // 标记任务为已处理，防止重复响应
+    // Mark the task as processed to prevent duplicate responses
     taskStore.markTaskAsProcessed()
     console.log('[Direct] Received task from store:', prompt.value)
   } else {
-    // 降级到 URL 参数（向后兼容）
+    // Degrade to URL parameters (backward compatibility)
     prompt.value = (route.query.prompt as string) || ''
     console.log('[Direct] Received task from URL:', prompt.value)
     console.log('[Direct] No unprocessed task in store')
   }
 
-  // 从 localStorage 恢复面板宽度
+  // Restore panel width from localStorage
   const savedWidth = localStorage.getItem('directPanelWidth')
   if (savedWidth) {
     leftPanelWidth.value = parseFloat(savedWidth)
@@ -229,7 +229,7 @@ onMounted(() => {
   console.log('[Direct] Final prompt value:', prompt.value)
 })
 
-// 监听 store 中的任务变化（仅处理未处理的任务）
+// Listen for changes in the store's task (only handle unprocessed tasks)
 watch(
   () => taskStore.currentTask,
   newTask => {
@@ -245,12 +245,12 @@ watch(
   { immediate: false }
 )
 
-// 监听 prompt 值的变化，仅用于日志记录
+// Listen for changes in prompt value, only for logging purposes
 watch(
   () => prompt.value,
   (newPrompt, oldPrompt) => {
     console.log('[Direct] prompt value changed from:', oldPrompt, 'to:', newPrompt)
-    // 不再手动调用 sendMessage，让 PlanExecutionComponent 通过 initialPrompt prop 自己处理
+    // No longer manually call sendMessage. Let the PlanExecutionComponent handle it through the initialPrompt prop.
   },
   { immediate: false }
 )
@@ -264,12 +264,12 @@ onUnmounted(() => {
   // Clean up plan execution manager resources
   planExecutionManager.cleanup()
 
-  // 移除事件监听器
+  // Remove event listeners
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mouseup', handleMouseUp)
 })
 
-// 面板大小调整相关方法
+// Methods related to panel size adjustment
 const startResize = (e: MouseEvent) => {
   isResizing.value = true
   startX.value = e.clientX
@@ -292,7 +292,7 @@ const handleMouseMove = (e: MouseEvent) => {
 
   let newWidth = startLeftWidth.value + deltaPercent
 
-  // 限制面板宽度在 20% 到 80% 之间
+  // Limit panel width between 20% and 80%
   newWidth = Math.max(20, Math.min(80, newWidth))
 
   leftPanelWidth.value = newWidth
@@ -305,7 +305,7 @@ const handleMouseUp = () => {
   document.body.style.cursor = ''
   document.body.style.userSelect = ''
 
-  // 保存到 localStorage
+  // Save to localStorage
   localStorage.setItem('directPanelWidth', leftPanelWidth.value.toString())
 }
 
@@ -340,7 +340,8 @@ const shouldProcessEventForCurrentPlan = (rootPlanId: string, allowSpecialIds: b
 const handleSendMessage = (message: string) => {
   console.log('[DirectView] Send message from input:', message)
 
-  // First call chat component's handleSendMessage to update UI
+  // In direct mode, only call chat component's handleSendMessage
+  // It will handle both UI update and API call via handleDirectMode
   if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
     console.log('[DirectView] Calling chatRef.handleSendMessage:', message)
     chatRef.value.handleSendMessage(message)
@@ -348,9 +349,8 @@ const handleSendMessage = (message: string) => {
     console.warn('[DirectView] chatRef.handleSendMessage method not available')
   }
 
-  // Then use planExecutionManager to handle user message send request
-  console.log('[DirectView] Delegating message to planExecutionManager:', message)
-  planExecutionManager.handleUserMessageSendRequested(message)
+  // Remove the duplicate API call - chat component's handleDirectMode will handle this
+  // planExecutionManager.handleUserMessageSendRequested(message) // Removed to prevent double API calls
 }
 
 const handleInputClear = () => {
@@ -405,7 +405,7 @@ const handleSubPlanStepSelected = (parentPlanId: string, subPlanId: string, step
 
 const handlePlanModeClicked = () => {
   console.log('[DirectView] Plan mode button clicked')
-  // 切换侧边栏显示状态
+  // Toggle sidebar display state
   sidebarStore.toggleSidebar()
   console.log('[DirectView] Sidebar toggled, isCollapsed:', sidebarStore.isCollapsed)
 }
@@ -425,7 +425,7 @@ const handlePlanExecutionRequested = async (payload: {
 }) => {
   console.log('[DirectView] Plan execution requested:', payload)
 
-  // 防止重复执行
+  // Prevent duplicate execution
   if (isExecutingPlan.value) {
     console.log('[DirectView] Plan execution already in progress, ignoring request')
     return
@@ -441,7 +441,7 @@ const handlePlanExecutionRequested = async (payload: {
     console.warn('[DirectView] chatRef.addMessage method not available')
   }
   try {
-    // 获取计划模板ID
+    // Get the plan template ID
     const planTemplateId = payload.planData.planTemplateId || payload.planData.planId
 
     if (!planTemplateId) {
@@ -468,7 +468,7 @@ const handlePlanExecutionRequested = async (payload: {
 
     console.log('[Direct] Plan execution API response:', response)
 
-    // 使用返回的 planId，启动计划执行流程，让管理器负责所有消息处理
+    // Use the returned planId to start the plan execution process and let the manager handle all message processing
     if (response.planId) {
       console.log('[Direct] Got planId from response:', response.planId, 'starting plan execution')
 
@@ -490,12 +490,12 @@ const handlePlanExecutionRequested = async (payload: {
     // Clear current root plan ID on error
     currentRootPlanId.value = null
 
-    // 获取chat组件的引用来显示错误
+    // Get chat component reference to display error
     if (chatRef.value && typeof chatRef.value.addMessage === 'function') {
       console.log('[Direct] Adding error messages to chat')
-      // 先添加用户消息
+      // First add user message
       chatRef.value.addMessage('user', payload.title)
-      // 再添加错误消息
+      // Then add error message
       chatRef.value.addMessage('assistant', `执行计划失败: ${error.message || '未知错误'}`, {
         thinking: undefined,
       })
@@ -526,12 +526,12 @@ const handlePlanExecutionRequested = async (payload: {
 
 .left-panel {
   position: relative;
-  border-right: none; /* 移除原来的边框，由分隔条提供 */
+  border-right: none; /* Remove the original border, which will be provided by the resizer */
   display: flex;
   flex-direction: column;
-  height: 100vh; /* 使用固定高度 */
-  overflow: hidden; /* 防止面板本身溢出 */
-  transition: width 0.1s ease; /* 平滑过渡 */
+  height: 100vh; /* Use fixed height */
+  overflow: hidden; /* Prevent panel itself overflow */
+  transition: width 0.1s ease; /* Smooth transition */
 }
 
 .panel-resizer {
@@ -580,8 +580,8 @@ const handlePlanExecutionRequested = async (payload: {
   align-items: center;
   gap: 16px;
   background: rgba(255, 255, 255, 0.02);
-  flex-shrink: 0; /* 确保头部不会被压缩 */
-  position: sticky; /* 固定在顶部 */
+  flex-shrink: 0; /* Ensure the header will not be compressed */
+  position: sticky; /* Fix the header at the top */
   top: 0;
   z-index: 100;
 
@@ -595,11 +595,11 @@ const handlePlanExecutionRequested = async (payload: {
 }
 
 .chat-content {
-  flex: 1; /* 占据剩余空间 */
+  flex: 1; /* Occupy remaining space */
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 允许收缩 */
-  overflow: hidden; /* 防止溢出 */
+  min-height: 0; /* Allow shrink */
+  overflow: hidden; /* Prevent overflow */
 }
 
 .header-actions {

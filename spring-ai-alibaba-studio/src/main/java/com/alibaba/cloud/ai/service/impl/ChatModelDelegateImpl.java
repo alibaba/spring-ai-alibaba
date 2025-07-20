@@ -39,7 +39,12 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.image.*;
+import org.springframework.ai.image.ImageMessage;
+import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImageOptionsBuilder;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -194,7 +199,9 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 			if (imageOptions != null) {
 				try {
 					log.info("set image options, {}", objectMapper.writeValueAsString(imageOptions));
-					var dashScopeImageApi = new DashScopeImageApi(key);
+
+					// todo: adapt new image api
+					var dashScopeImageApi = DashScopeImageApi.builder().apiKey(key).build();
 					dashScopeImageModel = new DashScopeImageModel(dashScopeImageApi, imageOptions);
 				}
 				catch (Exception e) {

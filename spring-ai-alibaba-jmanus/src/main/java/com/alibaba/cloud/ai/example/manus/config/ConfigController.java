@@ -33,7 +33,7 @@ import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
 public class ConfigController {
 
 	@Autowired
-	private ConfigService configService;
+	private IConfigService configService;
 
 	@GetMapping("/group/{groupName}")
 	public ResponseEntity<List<ConfigEntity>> getConfigsByGroup(@PathVariable("groupName") String groupName) {

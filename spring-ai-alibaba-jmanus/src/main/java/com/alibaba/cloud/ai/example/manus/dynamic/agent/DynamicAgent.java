@@ -15,19 +15,22 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
+import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
+import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,17 +51,14 @@ import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 
-import com.alibaba.cloud.ai.example.manus.agent.AgentState;
-import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
-import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class DynamicAgent extends ReActAgent {
 
@@ -105,7 +105,7 @@ public class DynamicAgent extends ReActAgent {
 		}
 	}
 
-	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+	public DynamicAgent(ILlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
 			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
 			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptService promptService,
@@ -307,7 +307,7 @@ public class DynamicAgent extends ReActAgent {
 					userInputService.removeFormInputTool(getCurrentPlanId());
 
 					// 记录成功完成的动作结果
-					recordActionResult(actToolInfoList, lastToolCallResult, "COMPLETED", null, false);
+					recordActionResult(actToolInfoList, lastToolCallResult, ExecutionStatus.FINISHED, null, false);
 
 					return new AgentExecResult(lastToolCallResult, AgentState.COMPLETED);
 				}
@@ -317,7 +317,7 @@ public class DynamicAgent extends ReActAgent {
 			}
 
 			// 记录成功的动作结果
-			recordActionResult(actToolInfoList, lastToolCallResult, "SUCCESS", null, false);
+			recordActionResult(actToolInfoList, lastToolCallResult, ExecutionStatus.RUNNING, null, false);
 
 			return new AgentExecResult(lastToolCallResult, AgentState.IN_PROGRESS);
 		}
@@ -334,7 +334,7 @@ public class DynamicAgent extends ReActAgent {
 				}
 			}
 
-			recordActionResult(actToolInfoList, null, "FAILED", e.getMessage(), false);
+			recordActionResult(actToolInfoList, null, ExecutionStatus.RUNNING, e.getMessage(), false);
 
 			userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error
@@ -399,7 +399,7 @@ public class DynamicAgent extends ReActAgent {
 				userInputService.removeFormInputTool(getCurrentPlanId());
 
 				// 记录输入超时的动作结果
-				recordActionResult(actToolInfoList, "Input timeout occurred", "TIMEOUT",
+				recordActionResult(actToolInfoList, "Input timeout occurred", ExecutionStatus.RUNNING,
 						"Input timeout occurred for FormInputTool", false);
 
 				return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS);
@@ -412,7 +412,7 @@ public class DynamicAgent extends ReActAgent {
 	 * Record action result with simplified parameters
 	 */
 	private void recordActionResult(List<ThinkActRecord.ActToolInfo> actToolInfoList, String actionResult,
-			String status, String errorMessage, boolean subPlanCreated) {
+			ExecutionStatus status, String errorMessage, boolean subPlanCreated) {
 
 		String toolName = null;
 		String toolParameters = null;

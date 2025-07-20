@@ -322,6 +322,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 						"com.alibaba.cloud.ai.graph.node.QuestionClassifierNode"),
 				Map.entry(NodeType.PARAMETER_PARSING.difyValue(),
 						"com.alibaba.cloud.ai.graph.node.ParameterParsingNode"),
+				Map.entry(NodeType.TEMPLATE_TRANSFORM.difyValue(),
+						"com.alibaba.cloud.ai.graph.node.TemplateTransformNode"),
 				Map.entry(NodeType.TOOL.difyValue(), "com.alibaba.cloud.ai.graph.node.ToolNode"),
 				Map.entry(NodeType.KNOWLEDGE_RETRIEVAL.difyValue(),
 						"com.alibaba.cloud.ai.graph.node.KnowledgeRetrievalNode"),
