@@ -66,7 +66,7 @@ public class RecursiveCharacterTextSplitter extends TextSplitter {
 
 		this.chunkSize = chunkSize;
 		this.separators = Objects.requireNonNullElse(separators,
-				new String[] { "\n\n", "\n", "。", "！", "？", ";", "，", " " });
+				new String[] { "\n\n", "\n", "。", "！", "？", "；", "，", " " });
 	}
 
 	@Override
