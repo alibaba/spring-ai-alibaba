@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.mcp.client;
 
+import com.alibaba.cloud.ai.mcp.client.component.CommonUtil;
 import com.alibaba.cloud.ai.mcp.client.component.McpAsyncClientWrapper;
 import com.alibaba.cloud.ai.mcp.client.component.McpReconnectTask;
 import com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties;
@@ -42,9 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.DelayQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -54,7 +52,7 @@ import java.util.concurrent.TimeUnit;
 
 public class McpAsyncRecovery {
 
-	private static final Logger logger = LoggerFactory.getLogger(McpSyncRecovery.class);
+	private static final Logger logger = LoggerFactory.getLogger(McpAsyncRecovery.class);
 
 	private final McpRecoveryProperties mcpRecoveryProperties;
 
@@ -68,9 +66,7 @@ public class McpAsyncRecovery {
 
 	private final WebClient.Builder webClientBuilderTemplate = WebClient.builder();
 
-	private final ScheduledExecutorService pingScheduler = Executors.newSingleThreadScheduledExecutor();
-
-	private final ExecutorService reconnectExecutor = Executors.newSingleThreadExecutor();
+	private final CommonUtil commonUtil;
 
 	private volatile boolean isRunning = true;
 
@@ -86,6 +82,8 @@ public class McpAsyncRecovery {
 		this.mcpSseClientProperties = mcpSseClientProperties;
 		this.commonProperties = mcpClientCommonProperties;
 		this.mcpAsyncClientConfigurer = mcpAsyncClientConfigurer;
+
+		this.commonUtil = new CommonUtil(mcpRecoveryProperties);
 	}
 
 	public void init() {
@@ -98,7 +96,7 @@ public class McpAsyncRecovery {
 	}
 
 	public void startReconnectTask() {
-		reconnectExecutor.submit(this::processReconnectQueue);
+		commonUtil.getReconnectExecutor().submit(this::processReconnectQueue);
 	}
 
 	private void processReconnectQueue() {
@@ -137,7 +135,7 @@ public class McpAsyncRecovery {
 			NamedClientMcpTransport namedTransport = new NamedClientMcpTransport(key, transport);
 
 			McpSchema.Implementation clientInfo = new McpSchema.Implementation(
-					this.connectedClientName(commonProperties.getName(), namedTransport.name()),
+					CommonUtil.connectedClientName(commonProperties.getName(), namedTransport.name()),
 					commonProperties.getVersion());
 			McpClient.AsyncSpec asyncSpec = McpClient.async(namedTransport.transport())
 				.clientInfo(clientInfo)
@@ -150,7 +148,7 @@ public class McpAsyncRecovery {
 					isRunning = false;
 				}).subscribe(result -> {
 					if (result != null) {
-						logger.info("Async client 初始化成功");
+						logger.info("Async client initialization successful");
 					}
 				});
 			}
@@ -170,8 +168,9 @@ public class McpAsyncRecovery {
 	}
 
 	public void startScheduledPolling() {
-		pingScheduler.scheduleAtFixedRate(this::checkMcpClients, mcpRecoveryProperties.getPing().getSeconds(),
-				mcpRecoveryProperties.getPing().getSeconds(), TimeUnit.SECONDS);
+		commonUtil.getPingScheduler()
+			.scheduleAtFixedRate(this::checkMcpClients, mcpRecoveryProperties.getPing().getSeconds(),
+					mcpRecoveryProperties.getPing().getSeconds(), TimeUnit.SECONDS);
 	}
 
 	private void checkMcpClients() {
@@ -206,26 +205,8 @@ public class McpAsyncRecovery {
 	}
 
 	public void stop() {
-		pingScheduler.shutdown();
-		logger.info("定时ping任务线程池已关闭");
-
-		// 关闭异步任务线程池
-		try {
-			reconnectExecutor.shutdown();
-			if (!reconnectExecutor.awaitTermination(mcpRecoveryProperties.getStop().getSeconds(), TimeUnit.SECONDS)) {
-				reconnectExecutor.shutdownNow();
-			}
-			logger.info("异步重连任务线程池已关闭");
-		}
-		catch (InterruptedException e) {
-			logger.error("关闭重连异步任务线程池时发生中断异常", e);
-			reconnectExecutor.shutdownNow();
-			Thread.currentThread().interrupt(); // 恢复中断状态
-		}
-	}
-
-	private String connectedClientName(String clientName, String serverConnectionName) {
-		return clientName + " - " + serverConnectionName;
+		isRunning = false;
+		commonUtil.stop();
 	}
 
 }

@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.mcp.client;
 
+import com.alibaba.cloud.ai.mcp.client.component.CommonUtil;
 import com.alibaba.cloud.ai.mcp.client.component.McpReconnectTask;
 import com.alibaba.cloud.ai.mcp.client.component.McpSyncClientWrapper;
 import com.alibaba.cloud.ai.mcp.client.config.McpRecoveryProperties;
@@ -44,9 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.DelayQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -70,9 +68,7 @@ public class McpSyncRecovery {
 
 	private final WebClient.Builder webClientBuilderTemplate = WebClient.builder();
 
-	private final ScheduledExecutorService pingScheduler = Executors.newSingleThreadScheduledExecutor();
-
-	private final ExecutorService reconnectExecutor = Executors.newSingleThreadExecutor();
+	private final CommonUtil commonUtil;
 
 	private volatile boolean isRunning = true;
 
@@ -87,6 +83,8 @@ public class McpSyncRecovery {
 		this.mcpSseClientProperties = mcpSseClientProperties;
 		this.commonProperties = mcpClientCommonProperties;
 		this.mcpSyncClientConfigurer = mcpSyncClientConfigurer;
+
+		this.commonUtil = new CommonUtil(mcpRecoveryProperties);
 	}
 
 	public void init() {
@@ -107,7 +105,7 @@ public class McpSyncRecovery {
 	}
 
 	public void startReconnectTask() {
-		reconnectExecutor.submit(this::processReconnectQueue);
+		commonUtil.getReconnectExecutor().submit(this::processReconnectQueue);
 	}
 
 	private void processReconnectQueue() {
@@ -146,7 +144,7 @@ public class McpSyncRecovery {
 			NamedClientMcpTransport namedTransport = new NamedClientMcpTransport(key, transport);
 
 			McpSchema.Implementation clientInfo = new McpSchema.Implementation(
-					this.connectedClientName(commonProperties.getName(), namedTransport.name()),
+					CommonUtil.connectedClientName(commonProperties.getName(), namedTransport.name()),
 					commonProperties.getVersion());
 			McpClient.SyncSpec syncSpec = McpClient.sync(namedTransport.transport())
 				.clientInfo(clientInfo)
@@ -154,17 +152,15 @@ public class McpSyncRecovery {
 			syncSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), syncSpec);
 			McpSyncClient syncClient = syncSpec.build();
 			if (commonProperties.isInitialized()) {
-				// 得到syncClient的delegate字段
-				Field delegateField = McpSyncClient.class.getDeclaredField("delegate");
-				delegateField.setAccessible(true);
-				McpAsyncClient mcpAsyncClient = (McpAsyncClient) delegateField.get(syncClient);
+				// Access the delegate field using a helper method
+				McpAsyncClient mcpAsyncClient = getAsyncClientFromSyncClient(syncClient);
 
 				mcpAsyncClient.initialize().doOnError(WebClientRequestException.class, ex -> {
 					logger.error("WebClientRequestException occurred during initialization: {}", ex.getMessage());
 					isRunning = false;
 				}).subscribe(result -> {
 					if (result != null) {
-						logger.info("Sync client 初始化成功");
+						logger.info("Sync client initialization successful");
 					}
 				});
 			}
@@ -184,8 +180,9 @@ public class McpSyncRecovery {
 	}
 
 	public void startScheduledPolling() {
-		pingScheduler.scheduleAtFixedRate(this::checkMcpClients, mcpRecoveryProperties.getPing().getSeconds(),
-				mcpRecoveryProperties.getPing().getSeconds(), TimeUnit.SECONDS);
+		commonUtil.getPingScheduler()
+			.scheduleAtFixedRate(this::checkMcpClients, mcpRecoveryProperties.getPing().getSeconds(),
+					mcpRecoveryProperties.getPing().getSeconds(), TimeUnit.SECONDS);
 	}
 
 	private void checkMcpClients() {
@@ -194,24 +191,31 @@ public class McpSyncRecovery {
 
 		mcpClientWrapperMap.forEach((serviceName, wrapperClient) -> {
 			McpSyncClient syncClient = wrapperClient.getClient();
-			Field delegateField = null;
-			try {
-				delegateField = McpSyncClient.class.getDeclaredField("delegate");
-				delegateField.setAccessible(true);
-				McpAsyncClient asyncClient = (McpAsyncClient) delegateField.get(syncClient);
-
-				asyncClient.ping().doOnError(WebClientResponseException.class, ex -> {
-					logger.error("Ping failed for {}", serviceName);
-					mcpClientWrapperMap.remove(serviceName);
-					reconnectTaskQueue.offer(new McpReconnectTask(serviceName,
-							mcpRecoveryProperties.getDelay().getSeconds(), TimeUnit.SECONDS));
-					logger.info("need reconnect: {}", serviceName);
-				}).subscribe();
-			}
-			catch (Exception e) {
-				logger.error("Ping failed for {}", serviceName, e);
-			}
+			// Access the delegate field using a helper method
+			McpAsyncClient mcpAsyncClient = getAsyncClientFromSyncClient(syncClient);
+			mcpAsyncClient.ping().doOnError(WebClientResponseException.class, ex -> {
+				logger.error("Ping failed for {}", serviceName);
+				mcpClientWrapperMap.remove(serviceName);
+				reconnectTaskQueue.offer(new McpReconnectTask(serviceName,
+						mcpRecoveryProperties.getDelay().getSeconds(), TimeUnit.SECONDS));
+				logger.info("need reconnect: {}", serviceName);
+			}).subscribe();
 		});
+	}
+
+	private McpAsyncClient getAsyncClientFromSyncClient(McpSyncClient syncClient) {
+		Field delegateField;
+		try {
+			delegateField = McpSyncClient.class.getDeclaredField("delegate");
+			delegateField.setAccessible(true);
+			McpAsyncClient asyncClient;
+			asyncClient = (McpAsyncClient) delegateField.get(syncClient);
+			return asyncClient;
+		}
+		catch (NoSuchFieldException | IllegalAccessException e) {
+			logger.error("Failed to access delegate field in McpSyncClient", e);
+			throw new RuntimeException(e);
+		}
 	}
 
 	private void checkAndRestartTask() {
@@ -231,26 +235,8 @@ public class McpSyncRecovery {
 	}
 
 	public void stop() {
-		pingScheduler.shutdown();
-		logger.info("定时ping任务线程池已关闭");
-
-		// 关闭异步任务线程池
-		try {
-			reconnectExecutor.shutdown();
-			if (!reconnectExecutor.awaitTermination(mcpRecoveryProperties.getStop().getSeconds(), TimeUnit.SECONDS)) {
-				reconnectExecutor.shutdownNow();
-			}
-			logger.info("异步重连任务线程池已关闭");
-		}
-		catch (InterruptedException e) {
-			logger.error("关闭重连异步任务线程池时发生中断异常", e);
-			reconnectExecutor.shutdownNow();
-			Thread.currentThread().interrupt(); // 恢复中断状态
-		}
-	}
-
-	private String connectedClientName(String clientName, String serverConnectionName) {
-		return clientName + " - " + serverConnectionName;
+		isRunning = false;
+		commonUtil.stop();
 	}
 
 }
