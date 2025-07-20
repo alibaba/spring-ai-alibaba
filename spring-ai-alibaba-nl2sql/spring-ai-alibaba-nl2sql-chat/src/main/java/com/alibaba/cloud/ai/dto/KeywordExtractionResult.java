@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.schema;
+package com.alibaba.cloud.ai.dto;
 
 import java.util.List;
 

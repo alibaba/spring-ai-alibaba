@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.dbconnector.MdTableGenerator;
 import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
-import com.alibaba.cloud.ai.schema.SchemaDTO;
+import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.LlmService;
 import com.alibaba.cloud.ai.util.DateTimeUtil;
 import com.alibaba.cloud.ai.util.MarkdownParser;
