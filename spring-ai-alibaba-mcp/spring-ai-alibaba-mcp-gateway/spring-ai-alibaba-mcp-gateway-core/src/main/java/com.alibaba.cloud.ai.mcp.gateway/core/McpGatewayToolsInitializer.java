@@ -13,28 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.mcp.gateway.nacos.properties;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+package com.alibaba.cloud.ai.mcp.gateway.core;
+
+import org.springframework.ai.tool.ToolCallback;
 
 import java.util.List;
 
-/**
- * @author aias00
- */
-@ConfigurationProperties(prefix = NacosMcpGatewayProperties.CONFIG_PREFIX)
-public class NacosMcpGatewayProperties {
+public interface McpGatewayToolsInitializer {
 
-	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.gateway.nacos";
-
-	private List<String> serviceNames;
-
-	public List<String> getServiceNames() {
-		return serviceNames;
-	}
-
-	public void setServiceNames(List<String> serviceNames) {
-		this.serviceNames = serviceNames;
-	}
+	List<ToolCallback> initializeTools();
 
 }

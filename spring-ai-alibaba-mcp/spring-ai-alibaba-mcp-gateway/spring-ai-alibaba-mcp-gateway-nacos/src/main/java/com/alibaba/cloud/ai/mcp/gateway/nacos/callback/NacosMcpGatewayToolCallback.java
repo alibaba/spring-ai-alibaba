@@ -22,7 +22,6 @@ import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.RequestTemplateParser;
 import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.ResponseTemplateParser;
 import com.alibaba.cloud.ai.mcp.gateway.core.utils.SpringBeanUtils;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
@@ -76,17 +75,19 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 		this.nacosMcpOperationService = SpringBeanUtils.getInstance().getBean(NacosMcpOperationService.class);
 
 		// 尝试获取配置属性
-		try {
-			NacosMcpGatewayProperties properties = SpringBeanUtils.getInstance()
-				.getBean(NacosMcpGatewayProperties.class);
-			if (properties != null) {
-				logger.info("Loaded gateway properties: maxConnections={}, connectionTimeout={}, readTimeout={}",
-						properties.getMaxConnections(), properties.getConnectionTimeout(), properties.getReadTimeout());
-			}
-		}
-		catch (Exception e) {
-			logger.debug("Failed to load gateway properties, using defaults", e);
-		}
+		// try {
+		// NacosMcpGatewayProperties properties = SpringBeanUtils.getInstance()
+		// .getBean(NacosMcpGatewayProperties.class);
+		// if (properties != null) {
+		// logger.info("Loaded gateway properties: maxConnections={},
+		// connectionTimeout={}, readTimeout={}",
+		// properties.getMaxConnections(), properties.getConnectionTimeout(),
+		// properties.getReadTimeout());
+		// }
+		// }
+		// catch (Exception e) {
+		// logger.debug("Failed to load gateway properties, using defaults", e);
+		// }
 	}
 
 	/**
@@ -434,16 +435,17 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	}
 
 	private java.time.Duration getTimeoutDuration() {
-		try {
-			NacosMcpGatewayProperties properties = SpringBeanUtils.getInstance()
-				.getBean(NacosMcpGatewayProperties.class);
-			if (properties != null) {
-				return java.time.Duration.ofSeconds(properties.getReadTimeout());
-			}
-		}
-		catch (Exception e) {
-			logger.debug("Failed to load gateway properties for timeout, using default 30 seconds", e);
-		}
+		// try {
+		// NacosMcpGatewayProperties properties = SpringBeanUtils.getInstance()
+		// .getBean(NacosMcpGatewayProperties.class);
+		// if (properties != null) {
+		// return java.time.Duration.ofSeconds(properties.getReadTimeout());
+		// }
+		// }
+		// catch (Exception e) {
+		// logger.debug("Failed to load gateway properties for timeout, using default 30
+		// seconds", e);
+		// }
 		return java.time.Duration.ofSeconds(30); // 默认超时时间
 	}
 

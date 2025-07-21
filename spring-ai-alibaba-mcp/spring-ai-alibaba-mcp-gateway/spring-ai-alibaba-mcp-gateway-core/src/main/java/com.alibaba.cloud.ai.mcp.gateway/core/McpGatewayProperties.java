@@ -13,28 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.mcp.gateway.nacos.properties;
+package com.alibaba.cloud.ai.mcp.gateway.core;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-
-import java.util.List;
 
 /**
  * @author aias00
  */
-@ConfigurationProperties(prefix = NacosMcpGatewayProperties.CONFIG_PREFIX)
-public class NacosMcpGatewayProperties {
+@ConfigurationProperties(prefix = McpGatewayProperties.CONFIG_PREFIX)
+public class McpGatewayProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.gateway.nacos";
+	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.gateway";
 
-	private List<String> serviceNames;
+	private Boolean enabled = true;
 
-	public List<String> getServiceNames() {
-		return serviceNames;
+	private String registry = "nacos";
+
+	public Boolean getEnabled() {
+		return enabled;
 	}
 
-	public void setServiceNames(List<String> serviceNames) {
-		this.serviceNames = serviceNames;
+	public void setEnabled(final Boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public String getRegistry() {
+		return registry;
+	}
+
+	public void setRegistry(final String registry) {
+		this.registry = registry;
 	}
 
 }

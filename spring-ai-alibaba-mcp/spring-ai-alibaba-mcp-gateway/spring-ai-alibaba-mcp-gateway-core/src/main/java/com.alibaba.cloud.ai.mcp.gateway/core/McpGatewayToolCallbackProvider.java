@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.mcp.gateway.nacos.provider;
+package com.alibaba.cloud.ai.mcp.gateway.core;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -22,11 +22,11 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 
-public class NacosMcpGatewayToolCallbackProvider implements ToolCallbackProvider {
+public class McpGatewayToolCallbackProvider implements ToolCallbackProvider {
 
 	private final ToolCallback[] toolCallbacks;
 
-	public NacosMcpGatewayToolCallbackProvider(ToolCallback[] toolCallbacks) {
+	public McpGatewayToolCallbackProvider(ToolCallback[] toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		this.toolCallbacks = toolCallbacks;
 	}
@@ -36,8 +36,8 @@ public class NacosMcpGatewayToolCallbackProvider implements ToolCallbackProvider
 		return this.toolCallbacks;
 	}
 
-	public static NacosMcpGatewayToolCallbackProvider.Builder builder() {
-		return new NacosMcpGatewayToolCallbackProvider.Builder();
+	public static McpGatewayToolCallbackProvider.Builder builder() {
+		return new McpGatewayToolCallbackProvider.Builder();
 	}
 
 	public static class Builder {
@@ -57,8 +57,8 @@ public class NacosMcpGatewayToolCallbackProvider implements ToolCallbackProvider
 			return this;
 		}
 
-		public NacosMcpGatewayToolCallbackProvider build() {
-			return new NacosMcpGatewayToolCallbackProvider(this.toolCallbacks);
+		public McpGatewayToolCallbackProvider build() {
+			return new McpGatewayToolCallbackProvider(this.toolCallbacks);
 		}
 
 	}

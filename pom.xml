@@ -155,6 +155,8 @@
         <!-- Nacos3 version -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-discovery</module>
+
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-gateway-core</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-gateway-nacos</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-recovery-client</module>

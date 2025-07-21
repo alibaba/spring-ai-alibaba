@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.mcp.gateway.nacos.tools;
 
+import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolsInitializer;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.callback.NacosMcpGatewayToolCallback;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
@@ -33,7 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class NacosMcpGatewayToolsInitializer {
+public class NacosMcpGatewayToolsInitializer implements McpGatewayToolsInitializer {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosMcpGatewayToolsInitializer.class);
 
@@ -47,6 +48,7 @@ public class NacosMcpGatewayToolsInitializer {
 		this.nacosMcpOperationService = nacosMcpOperationService;
 	}
 
+	@Override
 	public List<ToolCallback> initializeTools() {
 		List<String> serviceNames = nacosMcpGatewayProperties.getServiceNames();
 		if (serviceNames == null || serviceNames.isEmpty()) {
