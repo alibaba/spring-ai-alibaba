@@ -30,8 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * 文件合并工具，用于将单个文件合并到指定的目标文件夹中
- * 每次调用合并一个文件到目标文件夹
+ * 文件合并工具，用于将单个文件合并到指定的目标文件夹中 每次调用合并一个文件到目标文件夹
  */
 public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput> {
 
@@ -151,8 +150,8 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 	 */
 	@Override
 	public ToolExecuteResult run(FileMergeInput input) {
-		log.info("FileMergeTool input: action={}, fileName={}, targetFolder={}", input.getAction(),
-				input.getFileName(), input.getTargetFolder());
+		log.info("FileMergeTool input: action={}, fileName={}, targetFolder={}", input.getAction(), input.getFileName(),
+				input.getTargetFolder());
 		try {
 			return mergeFile(input.getFileName(), input.getTargetFolder());
 		}
@@ -184,7 +183,7 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 			String actualFileName = null;
 			Path sourceFile = null;
 			List<Path> files = Files.list(planDir).filter(Files::isRegularFile).toList();
-			
+
 			for (Path filePath : files) {
 				if (filePath.getFileName().toString().contains(fileName)) {
 					sourceFile = filePath;

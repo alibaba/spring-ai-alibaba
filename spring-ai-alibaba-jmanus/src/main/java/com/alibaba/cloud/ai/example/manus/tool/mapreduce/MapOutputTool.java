@@ -32,8 +32,8 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * Map output recording tool for MapReduce workflow
- * Responsible for recording Map stage processing results and task status management
+ * Map output recording tool for MapReduce workflow Responsible for recording Map stage
+ * processing results and task status management
  */
 public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput> implements TerminableTool {
 
@@ -120,6 +120,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 		public void setStatus(String status) {
 			this.status = status;
 		}
+
 	}
 
 	private static final String TOOL_NAME = "map_output_tool";
@@ -214,7 +215,6 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 		this.terminateColumns = terminateColumns;
 	}
 
-
 	/**
 	 * Get task directory list
 	 */
@@ -306,8 +306,8 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 			// Validate status values
 			if (!TASK_STATUS_COMPLETED.equals(status) && !TASK_STATUS_FAILED.equals(status)) {
-				return new ToolExecuteResult("Error: status must be either '" + TASK_STATUS_COMPLETED + "' or '"
-						+ TASK_STATUS_FAILED + "'");
+				return new ToolExecuteResult(
+						"Error: status must be either '" + TASK_STATUS_COMPLETED + "' or '" + TASK_STATUS_FAILED + "'");
 			}
 
 			// Convert structured data to content string
@@ -407,8 +407,8 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 			String result = String.format("Task %s status recorded: %s, output file: %s", taskId, status,
 					TASK_OUTPUT_FILE_NAME);
-            
-            String resultStr = result.toString();
+
+			String resultStr = result.toString();
 			if (sharedStateManager != null) {
 				sharedStateManager.setLastOperationResult(currentPlanId, resultStr);
 			}

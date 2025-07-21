@@ -243,17 +243,18 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 	 */
 	@Override
 	public ToolExecuteResult run(InnerStorageContentInput input) {
-		log.info("InnerStorageContentTool input: action={}, fileName={}, folderName={}, queryKey={}, columns={}", 
+		log.info("InnerStorageContentTool input: action={}, fileName={}, folderName={}, queryKey={}, columns={}",
 				input.getAction(), input.getFileName(), input.getFolderName(), input.getQueryKey(), input.getColumns());
 		try {
 			String action = input.getAction();
 			if (action == null) {
 				return new ToolExecuteResult("错误：action参数是必需的");
 			}
-			
+
 			return switch (action) {
 				case "get_content" -> getStoredContent(input.getFileName(), input.getQueryKey(), input.getColumns());
-				case "get_folder_content" -> getFolderContent(input.getFolderName(), input.getQueryKey(), input.getColumns());
+				case "get_folder_content" ->
+					getFolderContent(input.getFolderName(), input.getQueryKey(), input.getColumns());
 				default -> new ToolExecuteResult("错误：不支持的操作类型 '" + action + "'。支持的操作：get_content, get_folder_content");
 			};
 		}
@@ -279,14 +280,15 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 		try {
 			Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
 			Path targetFile = null;
-			
+
 			// 首先尝试精确的相对路径匹配
 			if (fileName.contains("/")) {
 				Path exactPath = planDir.resolve(fileName);
 				if (Files.exists(exactPath) && Files.isRegularFile(exactPath)) {
 					targetFile = exactPath;
 				}
-			} else {
+			}
+			else {
 				// 如果没有路径分隔符，则在根目录下精确匹配文件名
 				List<Path> files = Files.list(planDir).filter(Files::isRegularFile).toList();
 				for (Path filePath : files) {
@@ -296,14 +298,14 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 					}
 				}
 			}
-			
+
 			if (targetFile == null) {
 				return new ToolExecuteResult("未找到文件 '" + fileName + "'。请提供精确的文件名或相对路径。");
 			}
-			
+
 			String fileContent = Files.readString(targetFile);
 			String actualFileName = planDir.relativize(targetFile).toString();
-			
+
 			log.info("委托给 SummaryWorkflow 处理文件内容提取：文件={}, 查询关键词={}", actualFileName, queryKey);
 			Long thinkActRecordId = getCurrentThinkActRecordId();
 			String terminateColumnsString = String.join(",", columns);
@@ -339,22 +341,22 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 		try {
 			Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
 			Path targetFolder = planDir.resolve(folderName);
-			
+
 			if (!Files.exists(targetFolder)) {
 				return new ToolExecuteResult("文件夹 '" + folderName + "' 不存在。");
 			}
-			
+
 			if (!Files.isDirectory(targetFolder)) {
 				return new ToolExecuteResult("'" + folderName + "' 不是一个文件夹。");
 			}
-			
+
 			// 获取文件夹下的所有文件
 			List<Path> files = Files.list(targetFolder).filter(Files::isRegularFile).toList();
-			
+
 			if (files.isEmpty()) {
 				return new ToolExecuteResult("文件夹 '" + folderName + "' 中没有文件。");
 			}
-			
+
 			// 合并所有文件内容
 			StringBuilder combinedContent = new StringBuilder();
 			for (Path file : files) {
@@ -363,10 +365,9 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 				combinedContent.append(Files.readString(file));
 				combinedContent.append("\n\n");
 			}
-			
-			log.info("委托给 SummaryWorkflow 处理文件夹内容提取：文件夹={}, 文件数量={}, 查询关键词={}", 
-					folderName, files.size(), queryKey);
-			
+
+			log.info("委托给 SummaryWorkflow 处理文件夹内容提取：文件夹={}, 文件数量={}, 查询关键词={}", folderName, files.size(), queryKey);
+
 			Long thinkActRecordId = getCurrentThinkActRecordId();
 			String terminateColumnsString = String.join(",", columns);
 			String result = summaryWorkflow
@@ -374,7 +375,7 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 						terminateColumnsString)
 				.get();
 			return new ToolExecuteResult(result);
-			
+
 		}
 		catch (IOException e) {
 			log.error("获取文件夹内容失败", e);

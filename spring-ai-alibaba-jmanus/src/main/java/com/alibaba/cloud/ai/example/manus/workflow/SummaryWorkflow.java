@@ -122,15 +122,14 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 			logger.info("Building summary execution plan with provided planId: {}", parentPlanId);
 
 			// 生成计划JSON，使用传入的planId
-			String planJson = String.format(
-				SUMMARY_PLAN_TEMPLATE,
-				parentPlanId, // 计划ID
-				fileName, // dataPreparedSteps 文件名
-				terminateColumnsString, // dataPreparedSteps terminateColumns
-				queryKey, // mapSteps 查询关键词
-				terminateColumnsString, // mapSteps terminateColumns
-				terminateColumnsString, // reduceSteps terminateColumns
-				terminateColumnsString // postProcessSteps terminateColumns（会自动加上 , fileURL）
+			String planJson = String.format(SUMMARY_PLAN_TEMPLATE, parentPlanId, // 计划ID
+					fileName, // dataPreparedSteps 文件名
+					terminateColumnsString, // dataPreparedSteps terminateColumns
+					queryKey, // mapSteps 查询关键词
+					terminateColumnsString, // mapSteps terminateColumns
+					terminateColumnsString, // reduceSteps terminateColumns
+					terminateColumnsString // postProcessSteps terminateColumns（会自动加上 ,
+											// fileURL）
 			);
 
 			// 解析JSON为MapReduceExecutionPlan对象

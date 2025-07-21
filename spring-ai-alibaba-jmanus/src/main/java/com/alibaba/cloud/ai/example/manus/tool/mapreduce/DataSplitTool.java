@@ -34,8 +34,8 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * Data split tool for MapReduce workflow data preparation phase
- * Responsible for validating file existence and performing data split processing
+ * Data split tool for MapReduce workflow data preparation phase Responsible for
+ * validating file existence and performing data split processing
  */
 public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput> implements TerminableTool {
 
@@ -104,6 +104,7 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 		public void setTerminateColumns(List<String> terminateColumns) {
 			this.terminateColumns = terminateColumns;
 		}
+
 	}
 
 	private static final String TOOL_NAME = "data_split_tool";

@@ -30,8 +30,8 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * Reduce operation tool for MapReduce workflow
- * Supports get_lines, append, and replace operations for file manipulation in root plan directory
+ * Reduce operation tool for MapReduce workflow Supports get_lines, append, and replace
+ * operations for file manipulation in root plan directory
  */
 public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.ReduceOperationInput> {
 
@@ -125,6 +125,7 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 		public void setTargetText(String targetText) {
 			this.targetText = targetText;
 		}
+
 	}
 
 	private static final String TOOL_NAME = "reduce_operation_tool";
@@ -214,8 +215,8 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	// 共享状态管理器，用于管理多个Agent实例间的共享状态
 	private MapReduceSharedStateManager sharedStateManager;
 
-	public ReduceOperationTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
-			UnifiedDirectoryManager unifiedDirectoryManager) {
+	public ReduceOperationTool(String planId, ManusProperties manusProperties,
+			MapReduceSharedStateManager sharedStateManager, UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.currentPlanId = planId;
 		this.manusProperties = manusProperties;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
@@ -233,8 +234,8 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	public String getName() {
 		return TOOL_NAME;
 	}
-    
-	/** 
+
+	/**
 	 * Get task directory list
 	 */
 	public List<String> getSplitResults() {
@@ -304,7 +305,8 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 					}
 
 					ToolExecuteResult replaceResult = replaceInFile(REDUCE_FILE_NAME, sourceText, targetText);
-					// Mark operation as completed for termination capability after replace
+					// Mark operation as completed for termination capability after
+					// replace
 					yield replaceResult;
 				}
 				default -> new ToolExecuteResult("Unknown operation: " + action + ". Supported operations: "
@@ -445,7 +447,7 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 				result.append(String.format("%4d: %s\n", i + 1, lines.get(i)));
 			}
 
-            String resultStr = result.toString();
+			String resultStr = result.toString();
 			if (sharedStateManager != null) {
 				sharedStateManager.setLastOperationResult(currentPlanId, resultStr);
 			}
@@ -565,6 +567,5 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 
 	// ==================== TerminableTool interface implementation
 	// ====================
-
 
 }

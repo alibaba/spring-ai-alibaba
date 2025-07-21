@@ -31,8 +31,8 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * Finalize tool for MapReduce workflow
- * Supports copying the reduce output file to a new file with user-specified name
+ * Finalize tool for MapReduce workflow Supports copying the reduce output file to a new
+ * file with user-specified name
  */
 public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> implements TerminableTool {
 
@@ -78,6 +78,7 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 		public void setNewFileName(String newFileName) {
 			this.newFileName = newFileName;
 		}
+
 	}
 
 	private static final String TOOL_NAME = "mapreduce_finalize_tool";
@@ -93,8 +94,7 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 			- Creating a final output file with a meaningful name
 			- Preserving the original reduce output file
 			- Ensuring the final result is properly named and accessible
-			"""
-		.formatted(REDUCE_FILE_NAME);
+			""".formatted(REDUCE_FILE_NAME);
 
 	private static final String PARAMETERS_JSON = """
 			{
@@ -130,7 +130,7 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 		this.manusProperties = manusProperties;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
-        
+
 	}
 
 	/**
@@ -144,8 +144,8 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 	public String getName() {
 		return TOOL_NAME;
 	}
-    
-	/** 
+
+	/**
 	 * Get task directory list
 	 */
 	public List<String> getSplitResults() {
@@ -201,7 +201,8 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 					}
 					yield exportFile(newFileName);
 				}
-				default -> new ToolExecuteResult("Unknown operation: " + action + ". Supported operations: " + ACTION_EXPORT);
+				default ->
+					new ToolExecuteResult("Unknown operation: " + action + ". Supported operations: " + ACTION_EXPORT);
 			};
 
 			// Mark operation as completed for termination capability
@@ -265,7 +266,9 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 
 			if (truncated) {
 				result.append(String.format("... (total %d lines)\n", totalLines));
-				result.append(String.format("Note: Content has been truncated due to size limit. You can access the complete file content by reading the exported file directly: %s\n", newFileName));
+				result.append(String.format(
+						"Note: Content has been truncated due to size limit. You can access the complete file content by reading the exported file directly: %s\n",
+						newFileName));
 			}
 
 			return new ToolExecuteResult(result.toString());
@@ -327,7 +330,6 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 		}
 		return 20000; // Default 20000 characters
 	}
-
 
 	// ==================== TerminableTool interface implementation
 	// ====================

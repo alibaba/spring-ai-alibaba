@@ -199,14 +199,14 @@ public class PlanCreator {
 		// Escape characters that are special to StringTemplate
 		// Note: Order matters - escape backslash first to avoid double-escaping
 		return input.replace("\\", "\\\\")
-				.replace("$", "\\$")
-				.replace("<", "\\<")
-				.replace(">", "\\>")
-				.replace("{", "\\{")
-				.replace("}", "\\}")
-				.replace("[", "\\[")
-				.replace("]", "\\]")
-				.replace("\"", "\\\"");
+			.replace("$", "\\$")
+			.replace("<", "\\<")
+			.replace(">", "\\>")
+			.replace("{", "\\{")
+			.replace("}", "\\}")
+			.replace("[", "\\[")
+			.replace("]", "\\]")
+			.replace("\"", "\\\"");
 	}
 
 }
