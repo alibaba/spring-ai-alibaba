@@ -148,14 +148,6 @@ public class BaiduSearchService
 					else {
 						continue;
 					}
-
-					Element iconElement = div.selectFirst("img");
-					if (iconElement != null) {
-						iconUrl = iconElement.absUrl("src");
-					}
-					else {
-						iconUrl = "";
-					}
 				}
 				catch (Exception e) {
 					logger.error("Failed to parse search result: {}", e.getMessage());
