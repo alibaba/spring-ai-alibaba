@@ -27,31 +27,31 @@ JManus also provides HTTP service invocation capabilities, making it suitable fo
 
 ## 🎯 JManus Product Features
 
-### - 🤖 **Pure Java Manus Implementation**: 
+### 🤖 **Pure Java Manus Implementation**: 
 
 A pure Java multi-agent collaboration implementation that provides a complete set of HTTP call interfaces, suitable for secondary integration by Java developers.
 
 ![Image](https://github.com/user-attachments/assets/3d98c1c6-aabb-45a2-b192-7b687093a1ee)
 
-### - 🛠️ **Plan-Act Mode**: 
+### 🛠️ **Plan-Act Mode**: 
 
 Allows you to precisely control every execution detail, providing extremely high execution determinism.
 
 ![Image](https://github.com/user-attachments/assets/a689791f-adf5-44b6-9ea6-151f557a26d4)
 
-### - 🔗 **MCP Integration**:
+### 🔗 **MCP Integration**:
 
  Natively supports the Model Context Protocol (MCP) for seamless integration with external services and tools.
 
 ![Image](https://github.com/user-attachments/assets/2d3f833f-ba45-42b6-8e1b-f3e9cfd40212)
 
-### - 📜 **Web Interface for Agent Configuration**:
+### 📜 **Web Interface for Agent Configuration**:
 
  Easily configure agents through an intuitive web management interface without modifying code.
 
 ![Image](https://github.com/user-attachments/assets/bb25f778-f8c3-46da-9da3-6f7ea2f0917d)
 
-### - 🌊 **Infinite Context Handling**: 
+### 🌊 **Infinite Context Handling**: 
 
 Supports precise extraction of target information from massive content without relying on specific long-context models.
 
@@ -64,17 +64,106 @@ Get JManus up and running in under 5 minutes:
 
 ### Prerequisites
 
-- ☕ **Java 17+** (OpenJDK recommended)
 - 🌐 **DashScope API Key** (or alternative AI model provider)
+- 🐳 **Docker** (for containerized deployment) or ☕ **Java 17+** (for source code execution)
 
-### 1. Clone and Navigate
+### Method 1: Using Docker (Recommended)
+
+#### 🐳 Using Docker Hub Image
+
+```bash
+# Pull the latest develop image
+docker pull springaialibaba/jmanus:develop
+
+# Basic startup (temporary data storage)
+docker run -d \
+  --name jmanus \
+  -p 18080:18080 \
+  -e DASHSCOPE_API_KEY=your_api_key_here \
+  springaialibaba/jmanus:develop
+
+# Or start with data persistence (recommended)
+docker run -d \
+  --name jmanus \
+  -p 18080:18080 \
+  -e DASHSCOPE_API_KEY=your_api_key_here \
+  -v $(pwd)/h2-data:/app/extracted/h2-data \
+  -v $(pwd)/extensions:/app/extracted/extensions \
+  springaialibaba/jmanus:develop
+```
+
+#### 🇨🇳 Using Alibaba Cloud Image (China Acceleration)
+
+```bash
+# Pull Alibaba Cloud accelerated image
+docker pull sca-registry.cn-hangzhou.cr.aliyuncs.com/spring-ai-alibaba/jmanus:develop
+
+# Basic startup (temporary data storage)
+docker run -d \
+  --name jmanus \
+  -p 18080:18080 \
+  -e DASHSCOPE_API_KEY=your_api_key_here \
+  sca-registry.cn-hangzhou.cr.aliyuncs.com/spring-ai-alibaba/jmanus:develop
+
+# Or start with data persistence (recommended)
+docker run -d \
+  --name jmanus \
+  -p 18080:18080 \
+  -e DASHSCOPE_API_KEY=your_api_key_here \
+  -v $(pwd)/h2-data:/app/extracted/h2-data \
+  -v $(pwd)/extensions:/app/extracted/extensions \
+  sca-registry.cn-hangzhou.cr.aliyuncs.com/spring-ai-alibaba/jmanus:develop
+```
+
+#### 🔧 Advanced Docker Configuration
+
+If you need custom configuration or data persistence:
+
+```bash
+# Create data directories
+mkdir -p /path/to/jmanus/h2-data
+mkdir -p /path/to/jmanus/extensions
+
+# Start with custom configuration (recommended for data persistence)
+docker run -d \
+  --name jmanus \
+  -p 18080:18080 \
+  -e DASHSCOPE_API_KEY=your_api_key_here \
+  -v /path/to/jmanus/h2-data:/app/extracted/h2-data \
+  -v /path/to/jmanus/extensions:/app/extracted/extensions \
+  --restart unless-stopped \
+  springaialibaba/jmanus:develop
+```
+
+> 📁 **Data Storage Information**:
+> - **H2 Database**: `/app/extracted/h2-data` - Stores application database files
+> - **Runtime Data**: `/app/extracted/extensions` - Stores extensions and runtime configurations
+> - It's recommended to mount these two directories for data persistence to avoid data loss after container restarts
+
+> 💡 **Image Information**:
+> - **Docker Hub Image**: `springaialibaba/jmanus:develop` - Daily automated build and push
+> - **Alibaba Cloud Image**: `sca-registry.cn-hangzhou.cr.aliyuncs.com/spring-ai-alibaba/jmanus:develop` - Daily sync, faster access for China users
+> - Images support headless Playwright browser functionality
+> - Alibaba Cloud image may lag slightly behind Docker Hub version
+
+#### 🌐 Access Application
+
+After the container starts, navigate to `http://localhost:18080` in your browser to use JManus.
+
+🎉 **Congratulations!** Your multi-agent system has been quickly deployed via Docker.
+
+---
+
+### Method 2: Running from Source Code
+
+#### 1. Clone and Navigate
 
 ```bash
 git clone https://github.com/alibaba/spring-ai-alibaba.git
 cd spring-ai-alibaba/spring-ai-alibaba-jmanus
 ```
 
-### 2. Configure Your API Key
+#### 2. Configure Your API Key
 
 ```bash
 # Set your DashScope API key
@@ -85,12 +174,11 @@ export DASHSCOPE_API_KEY=your_api_key_here
 > 
 > **Using other providers?** Update the configuration in `src/main/resources/application.yml` to use your preferred AI model platform.
 
-
-### 3. Database Configuration (Optional)
+#### 3. Database Configuration (Optional)
 
 JManus supports both H2 (default)、MySQL and PostgreSQL databases. 
 
-#### How To Use MySQL/PostgreSQL
+**How To Use MySQL/PostgreSQL**
 
 1. **Configure Database Connection**:
    Update the database configuration and JPA database-platform in the application-mysql.yml/application-postgres.yml under 'src/main/resources/':
@@ -105,10 +193,10 @@ JManus supports both H2 (default)、MySQL and PostgreSQL databases.
        database-platform: org.hibernate.dialect.MySQLDialect/PostgreSQLDialect
    ```
 
-3. **Activate MySQL/PostgreSQL Profile**:
+2. **Activate MySQL/PostgreSQL Profile**:
    Update configuration in `src/main/resources/application.yml`:
 
-   ```bash
+   ```yaml
    spring:
      ...
      profiles:
@@ -117,7 +205,7 @@ JManus supports both H2 (default)、MySQL and PostgreSQL databases.
 
 > 💡 **Note**: The application will automatically create required tables on first startup using JPA's `ddl-auto: update` configuration.
 
-### 4. Launch the Application
+#### 4. Launch the Application
 
 **For Unix-like systems (macOS, Linux):**
 ```bash
@@ -129,7 +217,7 @@ JManus supports both H2 (default)、MySQL and PostgreSQL databases.
 ../mvnw.cmd spring-boot:run
 ```
 
-### 5. Access Your Multi-Agent Dashboard
+#### 5. Access Your Multi-Agent Dashboard
 
 Navigate to `http://localhost:18080` in your browser.
 
