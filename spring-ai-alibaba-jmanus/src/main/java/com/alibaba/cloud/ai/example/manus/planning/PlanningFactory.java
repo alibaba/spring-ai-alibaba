@@ -218,8 +218,8 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new DataSplitTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 		toolDefinitions.add(new MapOutputTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
 				terminateColumns));
-		toolDefinitions
-			.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,terminateColumns));
+		toolDefinitions.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager,
+				unifiedDirectoryManager, terminateColumns));
 		toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);

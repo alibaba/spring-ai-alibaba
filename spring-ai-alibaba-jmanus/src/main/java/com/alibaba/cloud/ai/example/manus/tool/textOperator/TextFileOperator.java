@@ -623,20 +623,20 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 		String planId = this.currentPlanId;
 		return String.format(
 				"""
-					Current Text File Operation State:
-					- working Directory:
-					%s
+						Current Text File Operation State:
+						- working Directory:
+						%s
 
-					- Operations are automatically handled (no manual file opening/closing required)
-					- All file operations (open, save) are performed automatically
-					- Supported file types: txt, md, html, css, java, py, js, ts, xml, json, yaml, properties, sh, bat, log, etc.
+						- Operations are automatically handled (no manual file opening/closing required)
+						- All file operations (open, save) are performed automatically
+						- Supported file types: txt, md, html, css, java, py, js, ts, xml, json, yaml, properties, sh, bat, log, etc.
 
-					- Last Operation Result:
-					%s
-					""",
+						- Last Operation Result:
+						%s
+						""",
 				unifiedDirectoryManager.getRootPlanDirectory(planId).toString(),
 				textFileService.getLastOperationResult(planId).isEmpty() ? "No operation performed yet"
-					: textFileService.getLastOperationResult(planId));
+						: textFileService.getLastOperationResult(planId));
 	}
 
 	@Override

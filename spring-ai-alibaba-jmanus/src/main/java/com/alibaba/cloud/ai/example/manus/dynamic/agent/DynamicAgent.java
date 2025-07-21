@@ -337,10 +337,11 @@ public class DynamicAgent extends ReActAgent {
 			errorMessage.append(e.getMessage());
 
 			String firstToolcall = actToolInfoList != null && !actToolInfoList.isEmpty()
-				? actToolInfoList.get(0).getParameters().toString() : "unknown";
+					? actToolInfoList.get(0).getParameters().toString() : "unknown";
 			errorMessage.append("  . llm return param :  ").append(firstToolcall);
 
-			recordActionResult(actToolInfoList, errorMessage.toString(), ExecutionStatus.RUNNING, errorMessage.toString(), false);
+			recordActionResult(actToolInfoList, errorMessage.toString(), ExecutionStatus.RUNNING,
+					errorMessage.toString(), false);
 
 			userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error
