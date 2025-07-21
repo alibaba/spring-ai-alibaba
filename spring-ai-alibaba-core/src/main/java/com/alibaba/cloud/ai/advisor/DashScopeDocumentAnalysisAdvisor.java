@@ -61,9 +61,7 @@ public class DashScopeDocumentAnalysisAdvisor implements BaseAdvisor {
 	public static final String RESOURCE = "resource";
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
-			fileid://{id}
-			{originSystemMessage}
-			""");
+			fileid://{id}""");
 
 	private final int order;
 
@@ -103,8 +101,7 @@ public class DashScopeDocumentAnalysisAdvisor implements BaseAdvisor {
 
 			Assert.notNull(uploadResponse.getBody(), "upload response body is null");
 
-			String augmentSystemMessage = DEFAULT_PROMPT_TEMPLATE.render(Map.of("id", uploadResponse.getBody().id,
-					"originSystemMessage", chatClientRequest.prompt().getSystemMessage().getText()));
+			String augmentSystemMessage = DEFAULT_PROMPT_TEMPLATE.render(Map.of("id", uploadResponse.getBody().id));
 			return chatClientRequest.mutate()
 				.prompt(chatClientRequest.prompt().augmentSystemMessage(augmentSystemMessage))
 				.build();
