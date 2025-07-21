@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.config;
 
 import com.alibaba.cloud.ai.service.executor.ContainerPoolExecutor;
 import com.alibaba.cloud.ai.tool.PythonExecutorTool;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +29,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @EnableConfigurationProperties(ContainerProperties.class)
+@ConditionalOnProperty(prefix = ContainerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class ContainerConfiguration {
 
 	@Bean
