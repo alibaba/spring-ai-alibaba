@@ -39,9 +39,9 @@ public class GetTableMetaAction extends AbstractDatabaseAction {
 	private static final Logger log = LoggerFactory.getLogger(GetTableMetaAction.class);
 
 	@Override
-	public ToolExecuteResult execute(DatabaseRequest requestVO, DataSourceService dataSourceService) {
-		String text = requestVO.getText();
-		String datasourceName = requestVO.getDatasourceName();
+	public ToolExecuteResult execute(DatabaseRequest request, DataSourceService dataSourceService) {
+		String text = request.getText();
+		String datasourceName = request.getDatasourceName();
 
 		List<TableMeta> tableMetaList = new ArrayList<>();
 		Map<String, TableMeta> tableMetaMap = new LinkedHashMap<>();

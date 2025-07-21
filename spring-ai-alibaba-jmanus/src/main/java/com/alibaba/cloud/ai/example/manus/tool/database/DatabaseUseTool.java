@@ -146,24 +146,24 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 	}
 
 	@Override
-	public ToolExecuteResult run(DatabaseRequest requestVO) {
-		String action = requestVO.getAction();
-		log.info("DatabaseUseTool requestVO: action={}", action);
+	public ToolExecuteResult run(DatabaseRequest request) {
+		String action = request.getAction();
+		log.info("DatabaseUseTool request: action={}", action);
 		try {
 			if (action == null) {
 				return new ToolExecuteResult("Action parameter is required");
 			}
 			switch (action) {
 				case "execute_sql":
-					return new ExecuteSqlAction().execute(requestVO, dataSourceService);
+					return new ExecuteSqlAction().execute(request, dataSourceService);
 				case "get_table_name":
-					return new GetTableNameAction().execute(requestVO, dataSourceService);
+					return new GetTableNameAction().execute(request, dataSourceService);
 				case "get_table_index":
-					return new GetTableIndexAction().execute(requestVO, dataSourceService);
+					return new GetTableIndexAction().execute(request, dataSourceService);
 				case "get_table_meta": {
 					// 先用text查，如果没查到再查全部
 					GetTableMetaAction metaAction = new GetTableMetaAction();
-					ToolExecuteResult result = metaAction.execute(requestVO, dataSourceService);
+					ToolExecuteResult result = metaAction.execute(request, dataSourceService);
 					if (result == null || result.getOutput() == null || result.getOutput().trim().isEmpty()
 							|| result.getOutput().equals("[]") || result.getOutput().contains("未找到符合条件的表")) {
 						DatabaseRequest allReq = new DatabaseRequest();
@@ -174,7 +174,7 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 					return result;
 				}
 				case "get_datasource_info":
-					return new GetDatasourceInfoAction().execute(requestVO, dataSourceService);
+					return new GetDatasourceInfoAction().execute(request, dataSourceService);
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
 			}

@@ -34,9 +34,9 @@ public class ExecuteSqlAction extends AbstractDatabaseAction {
 	private static final Logger log = LoggerFactory.getLogger(ExecuteSqlAction.class);
 
 	@Override
-	public ToolExecuteResult execute(DatabaseRequest requestVO, DataSourceService dataSourceService) {
-		String query = requestVO.getQuery();
-		String datasourceName = requestVO.getDatasourceName();
+	public ToolExecuteResult execute(DatabaseRequest request, DataSourceService dataSourceService) {
+		String query = request.getQuery();
+		String datasourceName = request.getDatasourceName();
 
 		if (query == null || query.trim().isEmpty()) {
 			log.warn("ExecuteSqlAction failed: missing query statement, datasourceName={}", datasourceName);

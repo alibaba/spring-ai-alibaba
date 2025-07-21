@@ -34,8 +34,8 @@ public class GetDatasourceInfoAction extends AbstractDatabaseAction {
 	private static final Logger log = LoggerFactory.getLogger(GetDatasourceInfoAction.class);
 
 	@Override
-	public ToolExecuteResult execute(DatabaseRequest requestVO, DataSourceService dataSourceService) {
-		String datasourceName = requestVO.getDatasourceName(); // Use datasourceName field
+	public ToolExecuteResult execute(DatabaseRequest request, DataSourceService dataSourceService) {
+		String datasourceName = request.getDatasourceName(); // Use datasourceName field
 
 		try {
 			Map<String, Object> result = new HashMap<>();

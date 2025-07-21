@@ -34,9 +34,9 @@ public class GetTableIndexAction extends AbstractDatabaseAction {
 	private static final Logger log = LoggerFactory.getLogger(GetTableIndexAction.class);
 
 	@Override
-	public ToolExecuteResult execute(DatabaseRequest requestVO, DataSourceService dataSourceService) {
-		String text = requestVO.getText();
-		String datasourceName = requestVO.getDatasourceName();
+	public ToolExecuteResult execute(DatabaseRequest request, DataSourceService dataSourceService) {
+		String text = request.getText();
+		String datasourceName = request.getDatasourceName();
 
 		if (text == null || text.trim().isEmpty()) {
 			log.warn("GetTableIndexAction failed: missing text parameter, datasourceName={}", datasourceName);
