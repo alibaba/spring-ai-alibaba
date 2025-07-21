@@ -8,7 +8,12 @@
  *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on		// Use UnifiedDirectoryManager to validate and get the absolute path
+		Path workingDirectory = unifiedDirectoryManager.getWorkingDirectory();
+		textFileService.validateAndGetAbsolutePath(workingDirectory.toString(), filePath);
+
+		// If file doesn't exist, create parent directory first
+		Path absolutePath = unifiedDirectoryManager.getRootPlanDirectory(filePath);S IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -412,11 +417,11 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 			}
 
 			// Use UnifiedDirectoryManager to validate and get the absolute path
-			Path workingDirectory = unifiedDirectoryManager.getWorkingDirectory();
-			textFileService.validateAndGetAbsolutePath(workingDirectory.toString(), filePath);
+			Path rootPlanDirectory = unifiedDirectoryManager.getRootPlanDirectory(planId);
+			textFileService.validateAndGetAbsolutePath(rootPlanDirectory.toString(), filePath);
 
 			// If file doesn't exist, create parent directory first
-			Path absolutePath = workingDirectory.resolve(filePath);
+			Path absolutePath = unifiedDirectoryManager.getRootPlanDirectory(planId).resolve(filePath);
 			if (!Files.exists(absolutePath)) {
 				try {
 					Files.createDirectories(absolutePath.getParent());
@@ -448,7 +453,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 				return openResult;
 			}
 
-			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
+			Path absolutePath = unifiedDirectoryManager.getRootPlanDirectory(planId).resolve(filePath);
 			String content = Files.readString(absolutePath);
 			String newContent = content.replace(sourceText, targetText);
 			Files.writeString(absolutePath, newContent);
@@ -489,7 +494,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 				return openResult;
 			}
 
-			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
+			Path absolutePath = unifiedDirectoryManager.getRootPlanDirectory(planId).resolve(filePath);
 			java.util.List<String> lines = Files.readAllLines(absolutePath);
 
 			if (lines.isEmpty()) {
@@ -540,7 +545,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 			}
 
 			// Read file content
-			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
+			Path absolutePath = unifiedDirectoryManager.getRootPlanDirectory(planId).resolve(filePath);
 			String content = Files.readString(absolutePath);
 
 			// Force flush to disk to ensure data consistency
@@ -575,7 +580,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 				return openResult;
 			}
 
-			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
+			Path absolutePath = unifiedDirectoryManager.getRootPlanDirectory(filePath);
 			Files.writeString(absolutePath, "\n" + content, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
 			// Automatically save file
@@ -600,7 +605,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 				return openResult;
 			}
 
-			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
+			Path absolutePath = unifiedDirectoryManager.getRootPlanDirectory(filePath);
 			String content = Files.readString(absolutePath);
 			int wordCount = content.isEmpty() ? 0 : content.split("\\s+").length;
 
@@ -618,20 +623,20 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 		String planId = this.currentPlanId;
 		return String.format(
 				"""
-						Current Text File Operation State:
-						- Working Directory:
-						%s
+					Current Text File Operation State:
+					- working Directory:
+					%s
 
-						- Operations are automatically handled (no manual file opening/closing required)
-						- All file operations (open, save) are performed automatically
-						- Supported file types: txt, md, html, css, java, py, js, ts, xml, json, yaml, properties, sh, bat, log, etc.
+					- Operations are automatically handled (no manual file opening/closing required)
+					- All file operations (open, save) are performed automatically
+					- Supported file types: txt, md, html, css, java, py, js, ts, xml, json, yaml, properties, sh, bat, log, etc.
 
-						- Last Operation Result:
-						%s
-						""",
-				unifiedDirectoryManager.getWorkingDirectoryPath(),
+					- Last Operation Result:
+					%s
+					""",
+				unifiedDirectoryManager.getRootPlanDirectory(planId).toString(),
 				textFileService.getLastOperationResult(planId).isEmpty() ? "No operation performed yet"
-						: textFileService.getLastOperationResult(planId));
+					: textFileService.getLastOperationResult(planId));
 	}
 
 	@Override

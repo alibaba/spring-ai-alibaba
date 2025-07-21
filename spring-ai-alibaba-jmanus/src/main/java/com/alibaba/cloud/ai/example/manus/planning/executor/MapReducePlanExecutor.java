@@ -369,8 +369,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	}
 
 	/**
-	 * 并行执行 Reduce 阶段，与Map阶段共享线程池
-	 * 支持批量处理Map任务输出，基于字符数控制每批次处理的任务数量
+	 * 并行执行 Reduce 阶段，与Map阶段共享线程池 支持批量处理Map任务输出，基于字符数控制每批次处理的任务数量
 	 */
 	private BaseAgent executeReducePhaseParallel(List<ExecutionStep> reduceSteps, ExecutionContext context,
 			BaseAgent lastExecutor) {
@@ -417,11 +416,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		// 并行执行各个批次
 		List<CompletableFuture<BaseAgent>> futures = new ArrayList<>();
-		
+
 		for (int batchIndex = 0; batchIndex < batches.size(); batchIndex++) {
 			final int batchCounter = batchIndex + 1;
 			final List<String> batchTaskDirectories = batches.get(batchIndex);
-			
+
 			logger.info("准备并行处理第 {} 批次，包含 {} 个任务", batchCounter, batchTaskDirectories.size());
 
 			// 为每个批次创建并行任务
@@ -431,7 +430,8 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 				// 为当前批次执行Reduce步骤
 				for (ExecutionStep step : reduceSteps) {
-					BaseAgent stepExecutor = executeReduceStepWithBatch(step, context, batchTaskDirectories, batchCounter);
+					BaseAgent stepExecutor = executeReduceStepWithBatch(step, context, batchTaskDirectories,
+							batchCounter);
 					if (stepExecutor != null) {
 						batchExecutor = stepExecutor;
 					}

@@ -31,10 +31,11 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * Reduce operation tool for MapReduce workflow 
- * Supports append operation for file manipulation in root plan directory
+ * Reduce operation tool for MapReduce workflow Supports append operation for file
+ * manipulation in root plan directory
  */
-public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.ReduceOperationInput> implements TerminableTool {
+public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.ReduceOperationInput>
+		implements TerminableTool {
 
 	private static final Logger log = LoggerFactory.getLogger(ReduceOperationTool.class);
 
@@ -85,15 +86,14 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	private static final String TOOL_DESCRIPTION = """
 			Reduce operation tool for MapReduce workflow file manipulation.
 			Supports append operation on fixed reduce output file: %s
-			
+
 			This tool is designed for Reduce stage operations that need to:
 			- Aggregate and merge data from multiple Map tasks
 			- Generate final consolidated output files
-			
+
 			**IMPORTANT**: append operation will trigger tool termination after execution.
 			Complete all content output in a single append call.
-			"""
-		.formatted(REDUCE_FILE_NAME);
+			""".formatted(REDUCE_FILE_NAME);
 
 	private static final String PARAMETERS_JSON = """
 			{
@@ -119,13 +119,15 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	private MapReduceSharedStateManager sharedStateManager;
 
 	// ==================== TerminableTool 相关字段 ====================
-	
+
 	// 线程安全锁，用于保护append操作和终止状态
 	private final ReentrantLock operationLock = new ReentrantLock();
-	
+
 	// 终止状态相关字段
 	private volatile boolean isTerminated = false;
+
 	private String lastTerminationMessage = "";
+
 	private String terminationTimestamp = "";
 
 	public ReduceOperationTool(String planId, ManusProperties manusProperties,
@@ -202,7 +204,8 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 					// Mark operation as completed for termination capability after append
 					yield appendResult;
 				}
-				default -> new ToolExecuteResult("Unknown operation: " + action + ". Supported operation: " + ACTION_APPEND);
+				default ->
+					new ToolExecuteResult("Unknown operation: " + action + ". Supported operation: " + ACTION_APPEND);
 			};
 
 			return result;
@@ -216,8 +219,8 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 
 	/**
 	 * Append content to file in root plan directory Similar to
-	 * InnerStorageTool.appendToFile() but operates on root plan directory
-	 * This method is thread-safe and will set termination status after execution
+	 * InnerStorageTool.appendToFile() but operates on root plan directory This method is
+	 * thread-safe and will set termination status after execution
 	 */
 	private ToolExecuteResult appendToFile(String fileName, String content) {
 		operationLock.lock();
@@ -338,17 +341,16 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	@Override
 	public String getCurrentToolStateString() {
 		StringBuilder sb = new StringBuilder();
-		
+
 		// 原有的共享状态信息
 		if (sharedStateManager != null && currentPlanId != null) {
 			sb.append(sharedStateManager.getCurrentToolStateString(currentPlanId));
 			sb.append("\n\n");
 		}
-		
+
 		// 简化的终止状态信息
-		sb.append(String.format("ReduceOperationTool: %s", 
-				isTerminated ? "🛑 Terminated" : "⚡ Active"));
-		
+		sb.append(String.format("ReduceOperationTool: %s", isTerminated ? "🛑 Terminated" : "⚡ Active"));
+
 		return sb.toString();
 	}
 
