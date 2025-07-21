@@ -222,7 +222,7 @@ public class PromptHelper {
 		Map<String, Object> params = new HashMap<>();
 		params.put("nl_req", nlReq);
 		params.put("sql", sql);
-		return PromptConstant.SEMANTIC_CONSISTENC_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.SEMANTIC_CONSISTENCY_PROMPT_TEMPLATE.render(params);
 	}
 
 	public static String buildReportGeneratorPrompt(String userRequirementsAndPlan, String analysisStepsAndData,

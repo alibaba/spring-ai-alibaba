@@ -94,7 +94,7 @@ public class PromptConstant {
 	public static final PromptTemplate EXTRACT_DATETIME_PROMPT_TEMPLATE = getExtractDatetimePromptTemplate();
 
 	@Deprecated
-	public static final PromptTemplate SEMANTIC_CONSISTENC_PROMPT_TEMPLATE = getSemanticConsistencyPromptTemplate();
+	public static final PromptTemplate SEMANTIC_CONSISTENCY_PROMPT_TEMPLATE = getSemanticConsistencyPromptTemplate();
 
 	@Deprecated
 	public static final PromptTemplate MIX_SQL_GENERATOR_SYSTEM_PROMPT_CHECK_TEMPLATE = getMixSqlGeneratorSystemCheckPromptTemplate();
