@@ -196,9 +196,9 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			executor = executeMapPhase(mapSteps, context, toolCallBackContext);
 		}
 
-		// 3. 串行执行 Reduce 阶段
+		// 3. 并行执行 Reduce 阶段（与Map阶段共享线程池）
 		if (CollectionUtil.isNotEmpty(mrNode.getReduceSteps())) {
-			executor = executeReducePhase(mrNode.getReduceSteps(), context, executor);
+			executor = executeReducePhaseParallel(mrNode.getReduceSteps(), context, executor);
 		}
 
 		// 4. 串行执行 Post Process 阶段（后处理阶段）
@@ -369,11 +369,12 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	}
 
 	/**
-	 * 串行执行 Reduce 阶段 支持批量处理Map任务输出，基于字符数控制每批次处理的任务数量
+	 * 并行执行 Reduce 阶段，与Map阶段共享线程池
+	 * 支持批量处理Map任务输出，基于字符数控制每批次处理的任务数量
 	 */
-	private BaseAgent executeReducePhase(List<ExecutionStep> reduceSteps, ExecutionContext context,
+	private BaseAgent executeReducePhaseParallel(List<ExecutionStep> reduceSteps, ExecutionContext context,
 			BaseAgent lastExecutor) {
-		logger.info("串行执行 Reduce 阶段，共 {} 个步骤", reduceSteps.size());
+		logger.info("并行执行 Reduce 阶段，共 {} 个步骤", reduceSteps.size());
 
 		// 记录Reduce阶段开始状态 - 为每个Reduce步骤记录开始状态
 		for (ExecutionStep step : reduceSteps) {
@@ -382,26 +383,26 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		BaseAgent executor = lastExecutor;
 
-		// 获取MapReduceTool实例以获取Map任务结果
-		ToolCallBackContext mapReduceToolContext = null;
+		// 获取ReduceOperationTool实例以获取Map任务结果
+		ToolCallBackContext reduceToolContext = null;
 		if (executor != null) {
-			mapReduceToolContext = executor.getToolCallBackContext("reduce_operation_tool");
+			reduceToolContext = executor.getToolCallBackContext("reduce_operation_tool");
 		}
 
-		if (mapReduceToolContext == null) {
-			logger.error("无法获取MapReduceTool上下文，Reduce阶段无法获取Map任务结果");
-			throw new RuntimeException("MapReduceTool上下文为空，无法执行Reduce阶段");
+		if (reduceToolContext == null) {
+			logger.error("无法获取ReduceOperationTool上下文，Reduce阶段无法获取Map任务结果");
+			throw new RuntimeException("ReduceOperationTool上下文为空，无法执行Reduce阶段");
 		}
 
-		ToolCallBiFunctionDef<?> mapReduceToolFunc = mapReduceToolContext.getFunctionInstance();
-		if (!(mapReduceToolFunc instanceof ReduceOperationTool)) {
+		ToolCallBiFunctionDef<?> reduceToolFunc = reduceToolContext.getFunctionInstance();
+		if (!(reduceToolFunc instanceof ReduceOperationTool)) {
 			logger.error("获取的工具不是ReduceOperationTool实例，无法执行Reduce阶段");
 			throw new RuntimeException("工具类型错误，无法执行Reduce阶段");
 		}
 
-		ReduceOperationTool mapReduceTool = (ReduceOperationTool) mapReduceToolFunc;
+		ReduceOperationTool reduceTool = (ReduceOperationTool) reduceToolFunc;
 
-		List<String> taskDirectories = mapReduceTool.getSplitResults();
+		List<String> taskDirectories = reduceTool.getSplitResults();
 		if (taskDirectories.isEmpty()) {
 			logger.warn("没有找到Map任务结果，Reduce阶段跳过");
 			return executor;
@@ -409,24 +410,51 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		// 配置每批次处理的字符数限制（可配置，主要受制于上下文长度限制）
 		int maxBatchCharacters = getMaxBatchCharacters(context);
-		logger.info("开始Reduce阶段处理，共 {} 个Map任务，每批次字符数限制 {} 字符", taskDirectories.size(), maxBatchCharacters);
+		logger.info("开始Reduce阶段并行处理，共 {} 个Map任务，每批次字符数限制 {} 字符", taskDirectories.size(), maxBatchCharacters);
 
 		// 基于字符数分批次处理Map任务结果
 		List<List<String>> batches = groupTasksByCharacterCount(taskDirectories, maxBatchCharacters);
 
-		int batchCounter = 1;
-		for (List<String> batchTaskDirectories : batches) {
-			logger.info("处理第 {} 批次，包含 {} 个任务", batchCounter, batchTaskDirectories.size());
+		// 并行执行各个批次
+		List<CompletableFuture<BaseAgent>> futures = new ArrayList<>();
+		
+		for (int batchIndex = 0; batchIndex < batches.size(); batchIndex++) {
+			final int batchCounter = batchIndex + 1;
+			final List<String> batchTaskDirectories = batches.get(batchIndex);
+			
+			logger.info("准备并行处理第 {} 批次，包含 {} 个任务", batchCounter, batchTaskDirectories.size());
 
-			// 为当前批次执行Reduce步骤
-			for (ExecutionStep step : reduceSteps) {
-				BaseAgent stepExecutor = executeReduceStepWithBatch(step, context, batchTaskDirectories, batchCounter);
-				if (stepExecutor != null) {
-					executor = stepExecutor;
+			// 为每个批次创建并行任务
+			CompletableFuture<BaseAgent> future = CompletableFuture.supplyAsync(() -> {
+				BaseAgent batchExecutor = null;
+				logger.info("开始处理Reduce批次 {}", batchCounter);
+
+				// 为当前批次执行Reduce步骤
+				for (ExecutionStep step : reduceSteps) {
+					BaseAgent stepExecutor = executeReduceStepWithBatch(step, context, batchTaskDirectories, batchCounter);
+					if (stepExecutor != null) {
+						batchExecutor = stepExecutor;
+					}
+				}
+
+				logger.info("完成处理Reduce批次 {}", batchCounter);
+				return batchExecutor;
+			}, executorService);
+
+			futures.add(future);
+		}
+
+		// 等待所有 Reduce 批次完成
+		for (CompletableFuture<BaseAgent> future : futures) {
+			try {
+				BaseAgent batchExecutor = future.get();
+				if (batchExecutor != null) {
+					executor = batchExecutor;
 				}
 			}
-
-			batchCounter++;
+			catch (Exception e) {
+				logger.error("Reduce 阶段批次执行失败", e);
+			}
 		}
 
 		// 记录Reduce阶段完成状态 - 为每个Reduce步骤记录完成状态
@@ -434,7 +462,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			recorder.recordStepEnd(step, context);
 		}
 
-		logger.info("Reduce 阶段执行完成，共处理 {} 个批次", batches.size());
+		logger.info("Reduce 阶段并行执行完成，共处理 {} 个批次", batches.size());
 		return executor;
 	}
 
