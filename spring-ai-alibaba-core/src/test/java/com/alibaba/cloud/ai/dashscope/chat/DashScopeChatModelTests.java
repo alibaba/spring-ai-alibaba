@@ -151,14 +151,14 @@ class DashScopeChatModelTests {
 		Flux<ChatResponse> responseFlux = chatModel.stream(prompt);
 
 		// Verify results
-		StepVerifier.create(responseFlux).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("I'm ");
-		}).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("doing ");
-		}).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("well!");
-			assertThat(response.getMetadata().getUsage()).isNotNull();
-		}).verifyComplete();
+		StepVerifier.create(responseFlux)
+			.assertNext(response -> assertThat(response.getResult().getOutput().getText()).isEqualTo("I'm "))
+			.assertNext(response -> assertThat(response.getResult().getOutput().getText()).isEqualTo("doing "))
+			.assertNext(response -> {
+				assertThat(response.getResult().getOutput().getText()).isEqualTo("well!");
+				assertThat(response.getMetadata().getUsage()).isNotNull();
+			})
+			.verifyComplete();
 	}
 
 	@Test

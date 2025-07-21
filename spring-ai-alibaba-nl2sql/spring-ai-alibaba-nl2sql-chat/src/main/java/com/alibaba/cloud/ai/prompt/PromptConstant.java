@@ -70,6 +70,10 @@ public class PromptConstant {
 		return new PromptTemplate(PromptLoader.loadPrompt("sql-error-fixer"));
 	}
 
+	public static PromptTemplate getPythonExecutorPromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("python-executor"));
+	}
+
 	// 兼容性方法，保持向后兼容
 	@Deprecated
 	public static final PromptTemplate INIT_REWRITE_PROMPT_TEMPLATE = getInitRewritePromptTemplate();
@@ -90,7 +94,7 @@ public class PromptConstant {
 	public static final PromptTemplate EXTRACT_DATETIME_PROMPT_TEMPLATE = getExtractDatetimePromptTemplate();
 
 	@Deprecated
-	public static final PromptTemplate SEMANTIC_CONSISTENC_PROMPT_TEMPLATE = getSemanticConsistencyPromptTemplate();
+	public static final PromptTemplate SEMANTIC_CONSISTENCY_PROMPT_TEMPLATE = getSemanticConsistencyPromptTemplate();
 
 	@Deprecated
 	public static final PromptTemplate MIX_SQL_GENERATOR_SYSTEM_PROMPT_CHECK_TEMPLATE = getMixSqlGeneratorSystemCheckPromptTemplate();

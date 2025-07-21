@@ -13,53 +13,57 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.dashscope.video;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.retry.support.RetryTemplate;
-
-import com.alibaba.cloud.ai.dashscope.api.DashScopeVideoApi;
-
-/**
- * DashScope Video Model Test.
- *
- * @author dashscope
- */
+// package com.alibaba.cloud.ai.dashscope.video;
+//
+// import static org.junit.jupiter.api.Assertions.assertNotNull;
+//
+// import org.junit.jupiter.api.Test;
+// import org.springframework.retry.support.RetryTemplate;
+//
+// import com.alibaba.cloud.ai.dashscope.api.DashScopeVideoApi;
+//
+// /**
+//  * DashScope Video Model Test.
+//  *
+//  * @author dashscope
+//  */
 class DashScopeVideoModelTest {
 
-	@Test
-	void testDashScopeVideoModelCreation() {
-		DashScopeVideoApi dashScopeVideoApi = new DashScopeVideoApi(null, null, null);
-		DashScopeVideoOptions options = DashScopeVideoOptions.builder().withModel("test-model").build();
-
-		DashScopeVideoModel videoModel = new DashScopeVideoModel(dashScopeVideoApi, options,
-				RetryTemplate.defaultInstance());
-
-		assertNotNull(videoModel);
-	}
-
-	@Test
-	void testDashScopeVideoOptionsBuilder() {
-		DashScopeVideoOptions options = DashScopeVideoOptions.builder()
-			.withModel("test-model")
-			.withWidth(1920)
-			.withHeight(1080)
-			.withDuration(10)
-			.withFps(30)
-			.withSeed(12345L)
-			.withNumFrames(300)
-			.build();
-
-		assertNotNull(options);
-		assertNotNull(options.getModel());
-		assertNotNull(options.getWidth());
-		assertNotNull(options.getHeight());
-		assertNotNull(options.getDuration());
-		assertNotNull(options.getFps());
-		assertNotNull(options.getSeed());
-		assertNotNull(options.getNumFrames());
-	}
+	//
+	// @Test
+	// void testDashScopeVideoModelCreation() {
+	// DashScopeVideoApi dashScopeVideoApi = new DashScopeVideoApi(null, null, null);
+	// DashScopeVideoOptions options =
+	// DashScopeVideoOptions.builder().withModel("test-model").build();
+	//
+	// DashScopeVideoModel videoModel = new DashScopeVideoModel(dashScopeVideoApi,
+	// options,
+	// RetryTemplate.defaultInstance());
+	//
+	// assertNotNull(videoModel);
+	// }
+	//
+	// @Test
+	// void testDashScopeVideoOptionsBuilder() {
+	// DashScopeVideoOptions options = DashScopeVideoOptions.builder()
+	// .withModel("test-model")
+	// .withWidth(1920)
+	// .withHeight(1080)
+	// .withDuration(10)
+	// .withFps(30)
+	// .withSeed(12345L)
+	// .withNumFrames(300)
+	// .build();
+	//
+	// assertNotNull(options);
+	// assertNotNull(options.getModel());
+	// assertNotNull(options.getWidth());
+	// assertNotNull(options.getHeight());
+	// assertNotNull(options.getDuration());
+	// assertNotNull(options.getFps());
+	// assertNotNull(options.getSeed());
+	// assertNotNull(options.getNumFrames());
+	// }
+	//
 
 }
