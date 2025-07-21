@@ -59,7 +59,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	@Autowired
 	public SimpleVectorStoreService(EmbeddingModel embeddingModel, Gson gson, DbAccessor dbAccessor,
 			DbConfig dbConfig) {
-		log.info("Initializing SimpleVectorStoreService with EmbeddingModel: {}", embeddingModel.getClass().getSimpleName());
+		log.info("Initializing SimpleVectorStoreService with EmbeddingModel: {}",
+				embeddingModel.getClass().getSimpleName());
 		this.gson = gson;
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
@@ -79,11 +80,10 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	 * @throws Exception 如果发生错误
 	 */
 	public Boolean schema(SchemaInitRequest schemaInitRequest) throws Exception {
-		log.info("Starting schema initialization for database: {}, schema: {}, tables: {}", 
-				schemaInitRequest.getDbConfig().getUrl(), 
-				schemaInitRequest.getDbConfig().getSchema(),
+		log.info("Starting schema initialization for database: {}, schema: {}, tables: {}",
+				schemaInitRequest.getDbConfig().getUrl(), schemaInitRequest.getDbConfig().getSchema(),
 				schemaInitRequest.getTables());
-		
+
 		DbConfig dbConfig = schemaInitRequest.getDbConfig();
 		DbQueryParameter dqp = DbQueryParameter.from(dbConfig)
 			.setSchema(dbConfig.getSchema())
@@ -103,7 +103,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		log.debug("Fetching tables from database");
 		List<TableInfoBO> tableInfoBOS = dbAccessor.fetchTables(dbConfig, dqp);
 		log.info("Found {} tables to process", tableInfoBOS.size());
-		
+
 		for (TableInfoBO tableInfoBO : tableInfoBOS) {
 			log.debug("Processing table: {}", tableInfoBO.getName());
 			processTable(tableInfoBO, dqp, dbConfig, foreignKeyMap);
@@ -132,7 +132,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		log.info("Adding {} table documents to vector store", tableDocuments.size());
 		vectorStore.add(tableDocuments);
 
-		log.info("Schema initialization completed successfully. Total documents added: {}", 
+		log.info("Schema initialization completed successfully. Total documents added: {}",
 				columnDocuments.size() + tableDocuments.size());
 		return true;
 	}
@@ -168,9 +168,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	public Document convertToDocument(TableInfoBO tableInfoBO, ColumnInfoBO columnInfoBO) {
-		log.debug("Converting column to document: table={}, column={}", 
-				tableInfoBO.getName(), columnInfoBO.getName());
-		
+		log.debug("Converting column to document: table={}, column={}", tableInfoBO.getName(), columnInfoBO.getName());
+
 		String text = Optional.ofNullable(columnInfoBO.getDescription()).orElse(columnInfoBO.getName());
 		String id = tableInfoBO.getName() + "." + columnInfoBO.getName();
 		Map<String, Object> metadata = new HashMap<>();
@@ -193,7 +192,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 	public Document convertTableToDocument(TableInfoBO tableInfoBO) {
 		log.debug("Converting table to document: {}", tableInfoBO.getName());
-		
+
 		String text = Optional.ofNullable(tableInfoBO.getDescription()).orElse(tableInfoBO.getName());
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("schema", Optional.ofNullable(tableInfoBO.getSchema()).orElse(""));
@@ -225,9 +224,9 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	 * @return 是否删除成功
 	 */
 	public Boolean deleteDocuments(DeleteRequest deleteRequest) throws Exception {
-		log.info("Starting delete operation with request: id={}, vectorType={}", 
-				deleteRequest.getId(), deleteRequest.getVectorType());
-		
+		log.info("Starting delete operation with request: id={}, vectorType={}", deleteRequest.getId(),
+				deleteRequest.getVectorType());
+
 		try {
 			if (deleteRequest.getId() != null && !deleteRequest.getId().isEmpty()) {
 				log.debug("Deleting documents by ID: {}", deleteRequest.getId());
@@ -244,11 +243,12 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 						.filterExpression(expression)
 						.build());
 				if (documents != null && !documents.isEmpty()) {
-					log.info("Found {} documents to delete with vectorType: {}", 
-							documents.size(), deleteRequest.getVectorType());
+					log.info("Found {} documents to delete with vectorType: {}", documents.size(),
+							deleteRequest.getVectorType());
 					vectorStore.delete(documents.stream().map(Document::getId).toList());
 					log.info("Successfully deleted {} documents", documents.size());
-				} else {
+				}
+				else {
 					log.info("No documents found to delete with vectorType: {}", deleteRequest.getVectorType());
 				}
 			}
@@ -269,11 +269,9 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	 */
 	@Override
 	public List<Document> searchWithVectorType(SearchRequest searchRequestDTO) {
-		log.debug("Searching with vectorType: {}, query: {}, topK: {}", 
-				searchRequestDTO.getVectorType(), 
-				searchRequestDTO.getQuery(), 
-				searchRequestDTO.getTopK());
-		
+		log.debug("Searching with vectorType: {}, query: {}, topK: {}", searchRequestDTO.getVectorType(),
+				searchRequestDTO.getQuery(), searchRequestDTO.getTopK());
+
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		Filter.Expression expression = b.eq("vectorType", searchRequestDTO.getVectorType()).build();
 
@@ -282,13 +280,13 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			.topK(searchRequestDTO.getTopK())
 			.filterExpression(expression)
 			.build());
-		
+
 		if (results == null) {
 			results = new ArrayList<>();
 		}
-		
-		log.info("Search completed. Found {} documents for vectorType: {}", 
-				results.size(), searchRequestDTO.getVectorType());
+
+		log.info("Search completed. Found {} documents for vectorType: {}", results.size(),
+				searchRequestDTO.getVectorType());
 		return results;
 	}
 
@@ -297,11 +295,9 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	 */
 	@Override
 	public List<Document> searchWithFilter(SearchRequest searchRequestDTO) {
-		log.debug("Searching with custom filter: vectorType={}, query={}, topK={}", 
-				searchRequestDTO.getVectorType(), 
-				searchRequestDTO.getQuery(), 
-				searchRequestDTO.getTopK());
-		
+		log.debug("Searching with custom filter: vectorType={}, query={}, topK={}", searchRequestDTO.getVectorType(),
+				searchRequestDTO.getQuery(), searchRequestDTO.getTopK());
+
 		// 这里需要根据实际情况解析 filterFormatted 字段，转换为 FilterExpressionBuilder 的表达式
 		// 简化实现，仅作示例
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
@@ -312,38 +308,36 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			.topK(searchRequestDTO.getTopK())
 			.filterExpression(expression)
 			.build());
-		
+
 		if (results == null) {
 			results = new ArrayList<>();
 		}
-		
+
 		log.info("Search with filter completed. Found {} documents", results.size());
 		return results;
 	}
 
 	@Override
 	public List<Document> searchTableByNameAndVectorType(SearchRequest searchRequestDTO) {
-		log.debug("Searching table by name and vectorType: name={}, vectorType={}, topK={}", 
-				searchRequestDTO.getName(), 
-				searchRequestDTO.getVectorType(), 
-				searchRequestDTO.getTopK());
-		
+		log.debug("Searching table by name and vectorType: name={}, vectorType={}, topK={}", searchRequestDTO.getName(),
+				searchRequestDTO.getVectorType(), searchRequestDTO.getTopK());
+
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		Filter.Expression expression = b
 			.and(b.eq("vectorType", searchRequestDTO.getVectorType()), b.eq("id", searchRequestDTO.getName()))
 			.build();
-		
+
 		List<Document> results = vectorStore.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
 			.topK(searchRequestDTO.getTopK())
 			.filterExpression(expression)
 			.build());
-		
+
 		if (results == null) {
 			results = new ArrayList<>();
 		}
-		
-		log.info("Search by name completed. Found {} documents for name: {}", 
-				results.size(), searchRequestDTO.getName());
+
+		log.info("Search by name completed. Found {} documents for name: {}", results.size(),
+				searchRequestDTO.getName());
 		return results;
 	}
 
