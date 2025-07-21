@@ -18,9 +18,9 @@
     <CustomSelect
       v-model="namespace"
       :options="db"
-      dropdown-title="命名空间"
+      :dropdown-title="t('config.promptConfig.namespace')"
       @change="handleNamespaceChange"
-      placeholder="请选择命名空间"
+      :placeholder="t('config.promptConfig.selectNamespace')"
       direction="right"
       :dropStyles="{
         minWidth: '180px',
@@ -32,9 +32,9 @@
 <script setup lang="ts">
 import CustomSelect from '@/components/select/index.vue'
 import { usenameSpaceStore } from '@/stores/namespace'
-// import { useI18n } from 'vue-i18n'
+import { useI18n } from 'vue-i18n'
 
-// const { t } = useI18n()
+const { t } = useI18n()
 
 const {namespace,setNamespace,db} = usenameSpaceStore()
 
