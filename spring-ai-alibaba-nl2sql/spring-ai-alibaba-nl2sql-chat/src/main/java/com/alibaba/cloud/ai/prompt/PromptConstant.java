@@ -70,6 +70,10 @@ public class PromptConstant {
 		return new PromptTemplate(PromptLoader.loadPrompt("sql-error-fixer"));
 	}
 
+	public static PromptTemplate getPythonExecutorPromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("python-executor"));
+	}
+
 	// 兼容性方法，保持向后兼容
 	@Deprecated
 	public static final PromptTemplate INIT_REWRITE_PROMPT_TEMPLATE = getInitRewritePromptTemplate();
