@@ -1,0 +1,166 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.alibaba.cloud.ai.graph.node;
+
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 迭代节点，将JSON数组的所有元素进行相同的操作，并将结果保存到JSON数组中保存。输入输出的JSON数组均以JSON字符串表示。
+ * 节点使用方法：IterationNode.Start -> SubStateGraphNode -> IterationNode.End
+ *
+ * @author vlsmb
+ * @since 2025/7/19
+ */
+public class IterationNode {
+
+	private static final Logger log = LoggerFactory.getLogger(IterationNode.class);
+
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+	/**
+	 * 迭代的起始节点，从JSON数组中读取一个元素，传递给下一个节点
+	 *
+	 * @param <ElementInput> 输入元素的类型
+	 */
+	public static class Start<ElementInput> implements NodeAction {
+
+		/**
+		 * 输入JSON数组的key，元素类型应为JSON字符串，策略应为更新策略
+		 */
+		private final String inputArrayJsonKey;
+
+		/**
+		 * 保存需要迭代的对象的Key，元素类型应为List，策略应为更新策略
+		 */
+		private final String inputArrayKey;
+
+		/**
+		 * 输出第一个元素的key，类型为JSON字符串
+		 */
+		private final String outputItemKey;
+
+		/**
+		 * 输出是否需要迭代的key，类型为Boolean
+		 */
+		private final String outputStartIterationKey;
+
+		public Start(String inputArrayJsonKey, String inputArrayKey, String outputItemKey,
+				String outputStartIterationKey) {
+			this.inputArrayJsonKey = inputArrayJsonKey;
+			this.inputArrayKey = inputArrayKey;
+			this.outputItemKey = outputItemKey;
+			this.outputStartIterationKey = outputStartIterationKey;
+		}
+
+		@Override
+		public Map<String, Object> apply(OverAllState state) throws Exception {
+			try {
+				// 第一次迭代初始化，将JSON字符串转化为List
+				List<ElementInput> inputs = null;
+				if (state.value(this.inputArrayKey, List.class).orElse(null) == null) {
+					inputs = OBJECT_MAPPER.readValue(state.value(this.inputArrayJsonKey, String.class).orElse("[]"),
+							new TypeReference<List<ElementInput>>() {
+							});
+				}
+				// 获取输入的第一个元素
+				List<ElementInput> items = inputs == null
+						? (List<ElementInput>) state.value(this.inputArrayKey, List.class).orElseThrow() : inputs;
+				if (items.isEmpty()) {
+					return Map.of(this.outputItemKey, "null", this.outputStartIterationKey, false);
+				}
+				// 删除第一个元素，并放回state
+				List<ElementInput> newItems = new ArrayList<ElementInput>(items);
+				newItems.remove(0);
+				return Map.of(this.outputItemKey, items.get(0), this.outputStartIterationKey, true, this.inputArrayKey,
+						newItems);
+			}
+			catch (Exception e) {
+				log.error("Iteration Start node error: {}", e.getMessage(), e);
+				throw new RuntimeException(e);
+			}
+		}
+
+	}
+
+	/**
+	 * 迭代的终止节点，接收迭代过程处理的结果，并判断是否需要跳回起始节点
+	 *
+	 * @param <ElementInput> 输入元素的类型
+	 * @param <ElementOutput> 输出元素的类型
+	 */
+	public static class End<ElementInput, ElementOutput> implements NodeAction {
+
+		/**
+		 * 输入JSON数组的key，元素类型应为JSON字符串，策略应为更新策略
+		 */
+		private final String inputArrayKey;
+
+		/**
+		 * 输入子图节点处理的结果key
+		 */
+		private final String inputResultKey;
+
+		/**
+		 * 输出整个迭代节点处理的JSON结果数组，应为替换策略
+		 */
+		private final String outputArrayKey;
+
+		/**
+		 * 输出是否需要继续迭代的Boolean值
+		 */
+		private final String outputContinueIterationKey;
+
+		public End(String inputArrayKey, String inputResultKey, String outputArrayKey,
+				String outputContinueIterationKey) {
+			this.inputArrayKey = inputArrayKey;
+			this.inputResultKey = inputResultKey;
+			this.outputArrayKey = outputArrayKey;
+			this.outputContinueIterationKey = outputContinueIterationKey;
+		}
+
+		@Override
+		public Map<String, Object> apply(OverAllState state) throws Exception {
+			try {
+				List<ElementInput> items = (List<ElementInput>) state.value(this.inputArrayKey, List.class)
+					.orElseThrow();
+				ElementOutput result = (ElementOutput) state.value(this.inputResultKey).orElseThrow();
+				List<ElementOutput> outputList = new ArrayList<>(
+						OBJECT_MAPPER.readValue(state.value(this.outputArrayKey, String.class).orElse("[]"),
+								new TypeReference<List<ElementOutput>>() {
+								}));
+				// 将子图节点的处理结果加入到最终结果数组中
+				outputList.add(result);
+				return Map.of(this.outputArrayKey, OBJECT_MAPPER.writeValueAsString(outputList),
+						this.outputContinueIterationKey, !items.isEmpty());
+			}
+			catch (Exception e) {
+				log.error("Iteration End node error: {}", e.getMessage(), e);
+				throw new RuntimeException(e);
+			}
+		}
+
+	}
+
+}
