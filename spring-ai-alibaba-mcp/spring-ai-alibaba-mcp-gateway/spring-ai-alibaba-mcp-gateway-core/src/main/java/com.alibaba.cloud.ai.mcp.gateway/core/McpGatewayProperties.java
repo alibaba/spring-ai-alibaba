@@ -13,24 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.mcp.gateway.core;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 /**
- * MCP Gateway 工具管理抽象接口 定义了工具的添加、删除、查询等核心功能
+ * @author aias00
  */
-public interface McpGatewayToolManager {
+@ConfigurationProperties(prefix = McpGatewayProperties.CONFIG_PREFIX)
+public class McpGatewayProperties {
 
-	/**
-	 * 添加工具
-	 * @param toolDefinition 工具定义
-	 */
-	void addTool(McpGatewayToolDefinition toolDefinition);
+	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.gateway";
 
-	/**
-	 * 删除工具
-	 * @param toolName 工具名称
-	 */
-	void removeTool(String toolName);
+	private Boolean enabled = true;
+
+	private String registry = "nacos";
+
+	public Boolean getEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(final Boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public String getRegistry() {
+		return registry;
+	}
+
+	public void setRegistry(final String registry) {
+		this.registry = registry;
+	}
 
 }

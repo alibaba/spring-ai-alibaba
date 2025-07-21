@@ -16,21 +16,12 @@
 
 package com.alibaba.cloud.ai.mcp.gateway.core;
 
-/**
- * MCP Gateway 工具管理抽象接口 定义了工具的添加、删除、查询等核心功能
- */
-public interface McpGatewayToolManager {
+import org.springframework.ai.tool.ToolCallback;
 
-	/**
-	 * 添加工具
-	 * @param toolDefinition 工具定义
-	 */
-	void addTool(McpGatewayToolDefinition toolDefinition);
+import java.util.List;
 
-	/**
-	 * 删除工具
-	 * @param toolName 工具名称
-	 */
-	void removeTool(String toolName);
+public interface McpGatewayToolsInitializer {
+
+	List<ToolCallback> initializeTools();
 
 }

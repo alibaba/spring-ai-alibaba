@@ -16,13 +16,14 @@
 
 package com.alibaba.cloud.ai.mcp.gateway.nacos.provider;
 
-import com.alibaba.cloud.ai.mcp.gateway.nacos.callback.DynamicNacosToolCallback;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
+import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolDefinition;
+import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolManager;
+import com.alibaba.cloud.ai.mcp.gateway.nacos.callback.NacosMcpGatewayToolCallback;
 import io.modelcontextprotocol.server.McpSyncServer;
 import org.springframework.ai.mcp.McpToolUtils;
 import org.springframework.ai.tool.ToolCallback;
 
-public class NacosMcpSyncGatewayToolsProvider implements NacosMcpGatewayToolsProvider {
+public class NacosMcpSyncGatewayToolsProvider implements McpGatewayToolManager {
 
 	private final McpSyncServer mcpSyncServer;
 
@@ -31,14 +32,14 @@ public class NacosMcpSyncGatewayToolsProvider implements NacosMcpGatewayToolsPro
 	}
 
 	@Override
-	public void addTool(final NacosMcpGatewayToolDefinition toolDefinition) {
+	public void addTool(final McpGatewayToolDefinition toolDefinition) {
 		try {
 			removeTool(toolDefinition.name());
 		}
 		catch (Exception e) {
 			// Ignore exception
 		}
-		ToolCallback toolCallback = new DynamicNacosToolCallback(toolDefinition);
+		ToolCallback toolCallback = new NacosMcpGatewayToolCallback(toolDefinition);
 		mcpSyncServer.addTool(McpToolUtils.toSyncToolSpecification(toolCallback));
 	}
 

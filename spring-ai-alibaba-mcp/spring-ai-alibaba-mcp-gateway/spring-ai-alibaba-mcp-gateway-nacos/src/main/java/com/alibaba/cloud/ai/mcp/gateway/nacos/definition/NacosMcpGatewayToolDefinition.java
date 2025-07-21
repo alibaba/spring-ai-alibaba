@@ -16,29 +16,19 @@
 
 package com.alibaba.cloud.ai.mcp.gateway.nacos.definition;
 
+import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolDefinition;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
 import com.alibaba.nacos.api.ai.model.mcp.McpToolMeta;
 import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.util.Assert;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class NacosMcpGatewayToolDefinition implements ToolDefinition {
-
-	private String name;
-
-	private String description;
-
-	private String version;
-
-	private String protocol;
+public class NacosMcpGatewayToolDefinition extends McpGatewayToolDefinition {
 
 	private McpServerRemoteServiceConfig remoteServerConfig;
-
-	private Boolean enabled;
 
 	private Object inputSchema;
 
