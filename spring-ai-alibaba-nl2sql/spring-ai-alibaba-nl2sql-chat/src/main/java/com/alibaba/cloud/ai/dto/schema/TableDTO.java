@@ -13,31 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.schema;
+package com.alibaba.cloud.ai.dto.schema;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-public class ColumnDTO {
+public class TableDTO {
 
 	private String name;
 
 	private String description;
 
-	private int enumeration;
+	private List<ColumnDTO> column = new ArrayList<ColumnDTO>();
 
-	private String range;
-
-	private String type;
-
-	private List<String> samples;
-
-	private List<String> data;
-
-	private Map<String, String> mapping;
+	private List<String> primaryKeys;
 
 	public String getName() {
 		return name;
@@ -55,52 +47,20 @@ public class ColumnDTO {
 		this.description = description;
 	}
 
-	public int getEnumeration() {
-		return enumeration;
+	public List<ColumnDTO> getColumn() {
+		return column;
 	}
 
-	public void setEnumeration(int enumeration) {
-		this.enumeration = enumeration;
+	public void setColumn(List<ColumnDTO> column) {
+		this.column = column;
 	}
 
-	public String getRange() {
-		return range;
+	public List<String> getPrimaryKeys() {
+		return primaryKeys;
 	}
 
-	public void setRange(String range) {
-		this.range = range;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
-	}
-
-	public List<String> getSamples() {
-		return samples;
-	}
-
-	public void setSamples(List<String> samples) {
-		this.samples = samples;
-	}
-
-	public List<String> getData() {
-		return data;
-	}
-
-	public void setData(List<String> data) {
-		this.data = data;
-	}
-
-	public Map<String, String> getMapping() {
-		return mapping;
-	}
-
-	public void setMapping(Map<String, String> mapping) {
-		this.mapping = mapping;
+	public void setPrimaryKeys(List<String> primaryKeys) {
+		this.primaryKeys = primaryKeys;
 	}
 
 	@Override
