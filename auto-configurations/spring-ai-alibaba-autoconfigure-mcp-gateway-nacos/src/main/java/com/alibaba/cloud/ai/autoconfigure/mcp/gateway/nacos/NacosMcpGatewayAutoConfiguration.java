@@ -16,13 +16,13 @@
 
 package com.alibaba.cloud.ai.autoconfigure.mcp.gateway.nacos;
 
+import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolManager;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.provider.NacosMcpAsyncGatewayToolsProvider;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.provider.NacosMcpGatewayToolCallbackProvider;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.provider.NacosMcpGatewayToolsProvider;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.provider.NacosMcpSyncGatewayToolsProvider;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.tools.NacosMcpGatewayToolsInitializer;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.utils.SpringBeanUtils;
+import com.alibaba.cloud.ai.mcp.gateway.core.utils.SpringBeanUtils;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.watcher.NacosMcpGatewayToolsWatcher;
 import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
@@ -62,7 +62,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author aias00
  */
-@EnableConfigurationProperties({ NacosMcpProperties.class, NacosMcpGatewayProperties.class, McpServerProperties.class })
+@EnableConfigurationProperties({ NacosMcpGatewayProperties.class, NacosMcpProperties.class, McpServerProperties.class })
 @AutoConfiguration(after = { McpServerAutoConfiguration.class })
 @ConditionalOnProperty(prefix = NacosMcpGatewayProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
@@ -71,22 +71,7 @@ public class NacosMcpGatewayAutoConfiguration implements ApplicationContextAware
 	private static final Logger log = LoggerFactory.getLogger(NacosMcpGatewayAutoConfiguration.class);
 
 	@Resource
-	private NacosMcpProperties nacosMcpProperties;
-
-	@Resource
 	private NacosMcpGatewayProperties nacosMcpGatewayProperties;
-
-	@Bean
-	@ConditionalOnMissingBean(NacosMcpOperationService.class)
-	public NacosMcpOperationService nacosMcpOperationService() {
-		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
-		try {
-			return new NacosMcpOperationService(nacosProperties);
-		}
-		catch (NacosException e) {
-			throw new RuntimeException(e);
-		}
-	}
 
 	@Override
 	public void setApplicationContext(@NonNull final ApplicationContext applicationContext) throws BeansException {
@@ -99,30 +84,41 @@ public class NacosMcpGatewayAutoConfiguration implements ApplicationContextAware
 	}
 
 	@Bean
+	@ConditionalOnMissingBean(NacosMcpOperationService.class)
+	public NacosMcpOperationService nacosMcpOperationService(NacosMcpProperties nacosMcpProperties) {
+		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
+		try {
+			return new NacosMcpOperationService(nacosProperties);
+		}
+		catch (NacosException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Bean
 	public NacosMcpGatewayToolsInitializer nacosMcpGatewayToolsInitializer(
 			NacosMcpOperationService nacosMcpOperationService) {
 		return new NacosMcpGatewayToolsInitializer(nacosMcpOperationService, nacosMcpGatewayProperties);
 	}
 
 	@Bean(destroyMethod = "stop")
-	public NacosMcpGatewayToolsWatcher nacosInstanceWatcher(
-			final NacosMcpGatewayToolsProvider nacosMcpGatewayToolsProvider,
-			final NacosMcpOperationService nacosMcpOperationService) {
-		return new NacosMcpGatewayToolsWatcher(nacosMcpGatewayProperties, nacosMcpOperationService,
-				nacosMcpGatewayToolsProvider);
+	public NacosMcpGatewayToolsWatcher nacosInstanceWatcher(final McpGatewayToolManager mcpGatewayToolManager,
+			NacosMcpOperationService nacosMcpOperationService) {
+		return new NacosMcpGatewayToolsWatcher(mcpGatewayToolManager, nacosMcpOperationService,
+				nacosMcpGatewayProperties);
 	}
 
 	@Bean
 	@ConditionalOnBean(McpAsyncServer.class)
-	@ConditionalOnMissingBean(NacosMcpGatewayToolsProvider.class)
-	public NacosMcpGatewayToolsProvider nacosMcpGatewayAsyncToolsProvider(final McpAsyncServer mcpAsyncServer) {
+	@ConditionalOnMissingBean(McpGatewayToolManager.class)
+	public McpGatewayToolManager nacosMcpGatewayAsyncToolsProvider(final McpAsyncServer mcpAsyncServer) {
 		return new NacosMcpAsyncGatewayToolsProvider(mcpAsyncServer);
 	}
 
 	@Bean
 	@ConditionalOnBean(McpSyncServer.class)
-	@ConditionalOnMissingBean(NacosMcpGatewayToolsProvider.class)
-	public NacosMcpGatewayToolsProvider nacosMcpGatewaySyncToolsProvider(final McpSyncServer mcpSyncServer) {
+	@ConditionalOnMissingBean(McpGatewayToolManager.class)
+	public McpGatewayToolManager nacosMcpGatewaySyncToolsProvider(final McpSyncServer mcpSyncServer) {
 		return new NacosMcpSyncGatewayToolsProvider(mcpSyncServer);
 	}
 

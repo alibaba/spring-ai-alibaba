@@ -9,7 +9,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-mcp-nacos-common</artifactId>
+    <artifactId>spring-ai-alibaba-mcp-common</artifactId>
     <version>${revision}</version>
     <name>Spring AI Alibaba MCP Nacos Common</name>
     <description>Nacos3 MCP for Spring AI Alibaba</description>

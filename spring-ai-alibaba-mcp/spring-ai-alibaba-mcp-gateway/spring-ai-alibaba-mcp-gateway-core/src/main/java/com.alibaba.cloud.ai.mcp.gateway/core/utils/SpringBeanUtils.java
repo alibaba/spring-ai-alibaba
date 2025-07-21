@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.mcp.gateway.nacos.utils;
+package com.alibaba.cloud.ai.mcp.gateway.core.utils;
 
-import com.alibaba.nacos.common.utils.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;

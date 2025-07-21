@@ -46,7 +46,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-mcp-nacos-common</artifactId>
+            <artifactId>spring-ai-alibaba-mcp-common</artifactId>
             <version>${revision}</version>
         </dependency>
 

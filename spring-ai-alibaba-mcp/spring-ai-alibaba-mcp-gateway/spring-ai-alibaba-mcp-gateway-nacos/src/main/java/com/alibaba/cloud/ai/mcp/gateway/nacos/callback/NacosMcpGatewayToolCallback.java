@@ -16,12 +16,13 @@
 
 package com.alibaba.cloud.ai.mcp.gateway.nacos.callback;
 
+import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolDefinition;
+import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.RequestTemplateInfo;
+import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.RequestTemplateParser;
+import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.ResponseTemplateParser;
+import com.alibaba.cloud.ai.mcp.gateway.core.utils.SpringBeanUtils;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.jsontemplate.RequestTemplateInfo;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.jsontemplate.RequestTemplateParser;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.jsontemplate.ResponseTemplateParser;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.utils.SpringBeanUtils;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
@@ -50,9 +51,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class DynamicNacosToolCallback implements ToolCallback {
+public class NacosMcpGatewayToolCallback implements ToolCallback {
 
-	private static final Logger logger = LoggerFactory.getLogger(DynamicNacosToolCallback.class);
+	private static final Logger logger = LoggerFactory.getLogger(NacosMcpGatewayToolCallback.class);
 
 	private final NacosMcpGatewayToolDefinition toolDefinition;
 
@@ -69,9 +70,9 @@ public class DynamicNacosToolCallback implements ToolCallback {
 		objectMapper.setSerializationInclusion(Include.NON_NULL);
 	}
 
-	public DynamicNacosToolCallback(final NacosMcpGatewayToolDefinition toolDefinition) {
+	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition) {
 		this.webClientBuilder = SpringBeanUtils.getInstance().getBean(WebClient.Builder.class);
-		this.toolDefinition = toolDefinition;
+		this.toolDefinition = (NacosMcpGatewayToolDefinition) toolDefinition;
 		this.nacosMcpOperationService = SpringBeanUtils.getInstance().getBean(NacosMcpOperationService.class);
 
 		// 尝试获取配置属性

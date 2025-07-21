@@ -45,13 +45,13 @@ import java.util.regex.Pattern;
 @ConfigurationProperties(prefix = NacosMcpProperties.CONFIG_PREFIX)
 public class NacosMcpProperties {
 
+	private static final Logger log = LoggerFactory.getLogger(NacosMcpProperties.class);
+
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos";
 
 	public static final String DEFAULT_ADDRESS = "127.0.0.1:8848";
 
 	private static final Pattern PATTERN = Pattern.compile("-(\\w)");
-
-	private static final Logger log = LoggerFactory.getLogger(NacosMcpProperties.class);
 
 	String namespace;
 
