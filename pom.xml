@@ -157,7 +157,7 @@
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-discovery</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-gateway-nacos</module>
 
-      <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-recovery-client</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-recovery-client</module>
 
         <!-- Spring AI Alibaba Nacos Prompt Template -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
