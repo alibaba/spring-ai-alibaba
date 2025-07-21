@@ -17,24 +17,24 @@
   <div class="config-panel">
     <div class="config-header">
       <div class="header-left">
-        <h2>{{ t('config.basicConfig.title') }}</h2>
+        <h2>{{ $t('config.basicConfig.title') }}</h2>
         <div class="config-stats">
           <span class="stat-item">
-            <span class="stat-label">总配置项:</span>
+            <span class="stat-label">{{ $t('config.basicConfig.totalConfigs') }}:</span>
             <span class="stat-value">{{ configStats.total }}</span>
           </span>
           <span class="stat-item" v-if="configStats.modified > 0">
-            <span class="stat-label">已修改:</span>
+            <span class="stat-label">{{ $t('config.basicConfig.modified') }}:</span>
             <span class="stat-value modified">{{ configStats.modified }}</span>
           </span>
         </div>
       </div>
       <div class="header-right">
         <div class="import-export-actions">
-          <button @click="exportConfigs" class="action-btn" title="导出配置">
+          <button @click="exportConfigs" class="action-btn" :title="$t('config.basicConfig.exportConfigs')">
             📤
           </button>
-          <label class="action-btn" title="导入配置">
+          <label class="action-btn" :title="$t('config.basicConfig.importConfigs')">
             📥
             <input 
               type="file" 
@@ -56,13 +56,13 @@
       </div>
     </div>
 
-    <!-- 加载状态 -->
+    <!-- Loading Status -->
     <div v-if="initialLoading" class="loading-container">
       <div class="loading-spinner"></div>
       <p>{{ $t('config.loading') }}</p>
     </div>
 
-    <!-- 配置组 -->
+    <!-- Configuration Groups -->
     <div v-else-if="filteredConfigGroups.length > 0" class="config-groups">
       <div 
         v-for="group in filteredConfigGroups" 
@@ -86,7 +86,7 @@
           <div class="group-divider"></div>
         </div>
         
-        <!-- 子组 -->
+        <!-- Sub-groups -->
         <div class="sub-groups">
           <div 
             v-for="subGroup in group.subGroups" 
@@ -99,7 +99,7 @@
             >
               <div class="sub-group-info">
                 <span class="sub-group-icon">📁</span>
-                <h4 class="sub-group-title">{{ subGroup.displayName }}</h4>
+                <h4 class="sub-group-title">{{ $t(subGroup.displayName) }}</h4>
                 <span class="item-count">({{ subGroup.items.length }})</span>
               </div>
               <span 
@@ -122,13 +122,13 @@
                   'modified': originalConfigValues.get(item.id) !== item.configValue 
                 }"
               >
-                <!-- 布尔类型配置项 (CHECKBOX/BOOLEAN) -->
+                <!-- Boolean Type Configuration Items (CHECKBOX/BOOLEAN) -->
                 <template v-if="item.inputType === 'BOOLEAN' || item.inputType === 'CHECKBOX'">
                   <div class="config-item-content vertical-layout">
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge boolean">{{ item.inputType === 'CHECKBOX' ? $t('config.types.checkbox') : $t('config.types.boolean') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -136,7 +136,7 @@
                       </div>
                     </div>
                     <div class="config-control">
-                      <!-- 如果有定义 options，显示为选择框 -->
+                      <!-- If options are defined, display as a select box -->
                       <template v-if="item.options && item.options.length > 0">
                         <select 
                           class="config-input select-input"
@@ -152,7 +152,7 @@
                           </option>
                         </select>
                       </template>
-                      <!-- 否则显示为开关 -->
+                      <!-- Otherwise, display as a switch -->
                       <template v-else>
                         <Switch 
                           :enabled="getBooleanValue(item.configValue)"
@@ -164,13 +164,13 @@
                   </div>
                 </template>
 
-                <!-- 选择类型配置项 -->
+                <!-- Select Type Configuration Items -->
                 <template v-else-if="item.inputType === 'SELECT'">
                   <div class="config-item-content vertical-layout">
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge select">{{ $t('config.types.select') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -195,13 +195,13 @@
                   </div>
                 </template>
 
-                <!-- 多行文本类型配置项 -->
+                <!-- Textarea Type Configuration Items -->
                 <template v-else-if="item.inputType === 'TEXTAREA'">
                   <div class="config-item-content vertical-layout">
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge textarea">{{ $t('config.types.textarea') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -220,13 +220,13 @@
                   </div>
                 </template>
 
-                <!-- 数值类型配置项 -->
+                <!-- Number Type Configuration Items -->
                 <template v-else-if="item.inputType === 'NUMBER'">
                   <div class="config-item-content vertical-layout">
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge number">{{ $t('config.types.number') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -252,13 +252,13 @@
                   </div>
                 </template>
 
-                <!-- 字符串类型配置项 (STRING/TEXT) -->
+                <!-- String Type Configuration Items (STRING/TEXT) -->
                 <template v-else>
                   <div class="config-item-content vertical-layout">
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge string">{{ item.inputType === 'TEXT' ? $t('config.types.text') : $t('config.types.string') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -283,12 +283,12 @@
       </div>
     </div>
 
-    <!-- 空状态 -->
+    <!-- Empty State -->
     <div v-else class="empty-state">
       <p>{{ $t('config.notFound') }}</p>
     </div>
 
-    <!-- 消息提示 -->
+    <!-- Message Prompt -->
     <transition name="message-fade">
       <div v-if="message.show" :class="['message-toast', message.type]">
         {{ message.text }}
@@ -313,74 +313,89 @@ interface ExtendedConfigItem extends ConfigItem {
   max?: number
 }
 
-// 定义配置子组接口
+// Define the configuration subgroup interface
 interface ConfigSubGroup {
   name: string
   displayName: string
   items: ExtendedConfigItem[]
 }
 
-// 定义配置组接口
+// Define the configuration group interface
 interface ConfigGroup {
   name: string
   displayName: string
   subGroups: ConfigSubGroup[]
 }
 
-// 响应式数据
+// Reactive data
 const initialLoading = ref(true)
 const loading = ref(false)
 const configGroups = ref<ConfigGroup[]>([])
 const originalConfigValues = ref<Map<number, string>>(new Map())
 
-// 子组折叠状态
+// Subgroup collapse state
 const collapsedSubGroups = ref<Set<string>>(new Set())
 
-// 消息提示
+// Message Prompt
 const message = reactive({
   show: false,
   text: '',
   type: 'success' as 'success' | 'error'
 })
 
-// 搜索过滤状态
+// Search filter state
 const searchQuery = ref('')
 
 
 
-// 配置项显示名称映射
+// Configuration item display name mapping
 const CONFIG_DISPLAY_NAMES: Record<string, string> = {
-  // 智能体设置
-  'maxSteps': '智能体执行最大步数',
-  'resetAllAgents': '重置所有agent',
-  'maxMemory': "能记住的最大消息数",
+  // Browser Settings
+  'headless': ('config.basicConfig.browserSettings.headless'), // "是否使用无头浏览器模式"
+  'requestTimeout': ('config.basicConfig.browserSettings.requestTimeout'), // "浏览器请求超时时间(秒)"
+
+  // General Settings
+  'debugDetail': ('config.basicConfig.general.debugDetail'), // "debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢"
+  'baseDir': ('config.basicConfig.general.baseDir'), // "manus根目录"
+
+  // Interaction Settings
+  'openBrowser': ('config.basicConfig.interactionSettings.openBrowser'), // "启动时自动打开浏览器"
+
+  // Agent Settings
+  'maxSteps': ('config.basicConfig.agentSettings.maxSteps'), // "智能体执行最大步数"
+  'userInputTimeout': ('config.basicConfig.agentSettings.userInputTimeout'), // "用户输入表单等待超时时间(秒)"
+  'maxMemory': ('config.basicConfig.agentSettings.maxMemory'), // "能记住的最大消息数"
+  'parallelToolCalls': ('config.basicConfig.agentSettings.parallelToolCalls'), // "并行工具调用"
   
-  // 浏览器设置
-  'headlessBrowser': '是否使用无头浏览器模式',
-  'browserTimeout': t('config.basicConfig.browserTimeout'),
-  'browserDebug': '浏览器debug模式',
-  
-  // 交互设置
-  'autoOpenBrowser': '启动时自动打开浏览器',
-  'consoleInteractive': '启用控制台交互模式',
-  
-  // 系统设置
-  'systemName': '系统名称',
-  'language': '默认语言',
-  'maxThreads': '最大线程数',
-  'timeoutSeconds': t('config.basicConfig.requestTimeout')
+  // Agents
+  'forceOverrideFromYaml': ('config.basicConfig.agents.forceOverrideFromYaml'), // ""强制使用YAML配置文件覆盖同名Agent""
+
+  // Infinite Context
+  'enabled': ('config.basicConfig.infiniteContext.enabled'), // "是否开启无限上下文"
+  'parallelThreads': ('config.basicConfig.infiniteContext.parallelThreads'), // "并行处理线程数"
+  'taskContextSize': ('config.basicConfig.infiniteContext.taskContextSize'), // "触发无限上下文的字符数阈值(字符数)"
+
+  // File System
+  'allowExternalAccess': ('config.basicConfig.fileSystem.allowExternalAccess'), // "是否允许文件操作超出工作目录"
+
+  // System Settings (not used)
+  // 'systemName': t('config.basicConfig.systemSettings.systemName'),
+  // 'language': t('config.basicConfig.systemSettings.language'),
+  // 'maxThreads': t('config.basicConfig.systemSettings.maxThreads'),
+  // 'timeoutSeconds': t('config.basicConfig.systemSettings.requestTimeout')
 }
 
-// 组显示名称映射
+// Biggest Group display name mapping, 
+// The four configuration groups 'browser', 'interaction', 'system', and 'performance' have no corresponding backend responses and have been temporarily removed.
 const GROUP_DISPLAY_NAMES: Record<string, string> = {
-  'manus': '智能体设置',
-  'browser': '浏览器设置', 
-  'interaction': '交互设置',
-  'system': '系统设置',
-  'performance': '性能设置'
+  'manus': ('config.basicConfig.groupDisplayNames.manus'), // "Manus"
+  // 'browser': t('config.basicConfig.groupDisplayNames.browser'), 
+  // 'interaction': t('config.basicConfig.groupDisplayNames.interaction'),
+  // 'system': t('config.basicConfig.groupDisplayNames.system'),
+  // 'performance': t('config.basicConfig.groupDisplayNames.performance')
 }
 
-// 组图标映射
+// Group icon mapping
 const GROUP_ICONS: Record<string, string> = {
   'manus': '🤖',
   'browser': '🌐',
@@ -389,17 +404,18 @@ const GROUP_ICONS: Record<string, string> = {
   'performance': '⚡'
 }
 
-// 子组显示名称映射
+// Sub-group display name mapping
 const SUB_GROUP_DISPLAY_NAMES: Record<string, string> = {
-  'agent': '智能体设置',
-  'browser': '浏览器设置',
-  'interaction': '交互设置',
-  'system': '系统设置',
-  'performance': '性能设置',
-  'general': '常规设置'
+  'agent': ('config.subGroupDisplayNames.agent'), // "智能体"
+  'browser': ('config.subGroupDisplayNames.browser'), // "浏览器"
+  'interaction': ('config.subGroupDisplayNames.interaction'), // "交互"
+  'agents': ('config.subGroupDisplayNames.agents'), // "多智能体"
+  'infiniteContext': ('config.subGroupDisplayNames.infiniteContext'), // "无限上下文"
+  'general': ('config.subGroupDisplayNames.general'), // "通用"
+  'filesystem': ('config.subGroupDisplayNames.filesystem'), // "文件系统"
 }
 
-// 计算属性：是否有修改
+// Computed property: Whether there are changes
 const hasChanges = computed(() => {
   return configGroups.value.some(group => 
     group.subGroups.some(subGroup =>
@@ -410,17 +426,17 @@ const hasChanges = computed(() => {
   )
 })
 
-// 工具函数：获取布尔值
+// Utility function: Get boolean value
 const getBooleanValue = (value: string): boolean => {
   return value === 'true'
 }
 
-// 工具函数：获取数值
+// Utility function: Get numeric value
 const getNumberValue = (value: string): number => {
   return parseFloat(value) || 0
 }
 
-// 工具函数：获取配置项的最小值
+// Utility function: Get the minimum value of the configuration item
 const getConfigMin = (configKey: string): number => {
   const minValues: Record<string, number> = {
     'maxSteps': 1,
@@ -432,7 +448,7 @@ const getConfigMin = (configKey: string): number => {
   return minValues[configKey] || 1
 }
 
-// 工具函数：获取配置项的最大值  
+// Utility function: Get the maximum value of the configuration item
 const getConfigMax = (configKey: string): number => {
   const maxValues: Record<string, number> = {
     'maxSteps': 100,
@@ -444,28 +460,28 @@ const getConfigMax = (configKey: string): number => {
   return maxValues[configKey] || 10000
 }
 
-// 工具函数：获取选项值
+// Utility function: Get the option value
 const getOptionValue = (option: string | { value: string; label: string }): string => {
   return typeof option === 'string' ? option : option.value
 }
 
-// 工具函数：获取选项标签
+// Utility function: Get the option label
 const getOptionLabel = (option: string | { value: string; label: string }): string => {
   return typeof option === 'string' ? option : option.label
 }
 
-// 工具函数：处理布尔值更新（支持选项映射）
+// Utility function: Handle boolean value updates (supports option mapping)
 const handleBooleanUpdate = (item: ExtendedConfigItem, newValue: string | boolean): string => {
-  // 如果是直接的布尔值（来自开关）
+  // If it's a direct boolean value (from a switch)
   if (typeof newValue === 'boolean') {
     return newValue.toString()
   }
   
-  // 如果是字符串（来自选择框）
+  // If it's a string (from a select box)
   if (typeof newValue === 'string') {
-    // 处理可能的选项映射（例如 "是" -> "true", "否" -> "false"）
+    // Handle possible option mappings (e.g., "是" -> "true", "否" -> "false")
     if (item.options && item.options.length > 0) {
-      // 查找匹配的选项
+      // Find the matching option
       const matchedOption = item.options.find(option => 
         (typeof option === 'string' ? option : option.label) === newValue ||
         (typeof option === 'string' ? option : option.value) === newValue
@@ -477,15 +493,15 @@ const handleBooleanUpdate = (item: ExtendedConfigItem, newValue: string | boolea
     return newValue
   }
   
-  // fallback 处理
+  // Fallback handling
   return String(newValue)
 }
 
-// 更新配置值
+// Update configuration value
 const updateConfigValue = (item: ExtendedConfigItem, value: any, autoSave: boolean = false) => {
   let stringValue: string
   
-  // 根据输入类型处理值
+  // Handle the value according to the input type
   if (item.inputType === 'BOOLEAN' || item.inputType === 'CHECKBOX') {
     stringValue = handleBooleanUpdate(item, value)
   } else {
@@ -496,14 +512,14 @@ const updateConfigValue = (item: ExtendedConfigItem, value: any, autoSave: boole
     item.configValue = stringValue
     item._modified = true
     
-    // 如果是非文本输入类型（如switch、select），自动保存
+    // If it's a non-text input type (e.g., switch, select), save automatically
     if (autoSave || item.inputType === 'BOOLEAN' || item.inputType === 'CHECKBOX' || item.inputType === 'SELECT') {
       debouncedSave()
     }
   }
 }
 
-// 防抖保存
+// Debounce save
 let saveTimeout: number | null = null
 const debouncedSave = () => {
   if (saveTimeout) {
@@ -514,7 +530,7 @@ const debouncedSave = () => {
   }, 500)
 }
 
-// 显示消息
+// Show message
 const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
   message.text = text
   message.type = type
@@ -525,20 +541,21 @@ const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
   }, 3000)
 }
 
-// 加载所有配置组
+// Load all configuration groups
 const loadAllConfigs = async () => {
   try {
     initialLoading.value = true
     
-    // 定义已知的配置组（避免依赖后端的 getAllGroups 接口）
-    const knownGroups = ['manus', 'browser', 'interaction', 'system', 'performance']
+    // Define known configuration groups (avoid relying on the backend's getAllGroups interface)
+    // The four configuration groups 'browser', 'interaction', 'system', and 'performance' have no corresponding backend responses and have been temporarily removed.
+    const knownGroups = ['manus']
     
-    // 加载每个组的配置
+    // Load each group's configuration
     const groupPromises = knownGroups.map(async (groupName: string) => {
       try {
         const items = await AdminApiService.getConfigsByGroup(groupName)
-        
-        // 如果该组没有配置项，跳过
+        console.log('加载配置组:', groupName, items)
+        // If there are no configuration items in this group, skip it
         if (items.length === 0) {
           return null
         }
@@ -546,17 +563,17 @@ const loadAllConfigs = async () => {
         // Set display name for each configuration item (prioritize description)
         const processedItems: ExtendedConfigItem[] = items.map(item => ({
           ...item,
-          displayName: item.description ?? (CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey),
+          displayName: (CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey),
           min: getConfigMin(item.configKey),
           max: getConfigMax(item.configKey)
         }))
         
-        // 缓存原始值
+        // Cache original values
         processedItems.forEach(item => {
           originalConfigValues.value.set(item.id, item.configValue)
         })
         
-        // 按子组分组
+        // Group by subgroup
         const subGroupsMap = new Map<string, ExtendedConfigItem[]>()
         
         processedItems.forEach(item => {
@@ -567,16 +584,16 @@ const loadAllConfigs = async () => {
           subGroupsMap.get(subGroupName)!.push(item)
         })
         
-        // 转换为子组数组
+        // Convert to sub-group array
         const subGroups: ConfigSubGroup[] = Array.from(subGroupsMap.entries()).map(([name, items]) => ({
           name,
-          displayName: SUB_GROUP_DISPLAY_NAMES[name] || name,
+          displayName: (SUB_GROUP_DISPLAY_NAMES[name] || name),
           items
         }))
         
         return {
           name: groupName,
-          displayName: GROUP_DISPLAY_NAMES[groupName] || groupName,
+          displayName: (GROUP_DISPLAY_NAMES[groupName] || groupName),
           subGroups
         }
       } catch (error) {
@@ -587,7 +604,7 @@ const loadAllConfigs = async () => {
     
     const results = await Promise.all(groupPromises)
     
-    // 过滤掉空的配置组
+    // Filter out empty configuration groups
     configGroups.value = results.filter(group => group !== null) as ConfigGroup[]
     
     console.log('配置加载完成:', configGroups.value)
@@ -599,14 +616,14 @@ const loadAllConfigs = async () => {
   }
 }
 
-// 保存所有配置
+// Save all configurations
 const saveAllConfigs = async () => {
   if (loading.value || !hasChanges.value) return
   
   try {
     loading.value = true
     
-    // 收集所有修改的配置项
+    // Collect all modified configuration items
     const allModifiedConfigs: ConfigItem[] = []
     
     configGroups.value.forEach(group => {
@@ -621,11 +638,11 @@ const saveAllConfigs = async () => {
       return
     }
     
-    // 批量保存
+    // Batch save
     const result = await AdminApiService.batchUpdateConfigs(allModifiedConfigs)
     
     if (result.success) {
-      // 更新原始值缓存
+      // Update the cache of original values
       allModifiedConfigs.forEach(item => {
         originalConfigValues.value.set(item.id, item.configValue)
         item._modified = false
@@ -643,7 +660,7 @@ const saveAllConfigs = async () => {
   }
 }
 
-// 重置组配置
+// Reset group configurations
 const resetGroupConfigs = async (groupName: string) => {
   const confirmed = confirm(`确定要重置 "${GROUP_DISPLAY_NAMES[groupName] || groupName}" 组的所有配置吗？`)
   if (!confirmed) return
@@ -651,15 +668,15 @@ const resetGroupConfigs = async (groupName: string) => {
   try {
     loading.value = true
     
-    // 找到目标组
+    // Find the target group
     const targetGroup = configGroups.value.find(g => g.name === groupName)
     if (!targetGroup) return
     
-    // 收集该组的所有配置项
+    // Collect all configuration items in this group
     const groupConfigs: ConfigItem[] = []
     targetGroup.subGroups.forEach(subGroup => {
       subGroup.items.forEach(item => {
-        // 这里应该调用API获取默认值，现在先简单处理
+        // We should call the API to get the default value here. For now, let's handle it simply.
         const defaultValue = getDefaultValueForKey(item.configKey)
         if (defaultValue !== item.configValue) {
           groupConfigs.push({
@@ -675,11 +692,11 @@ const resetGroupConfigs = async (groupName: string) => {
       return
     }
     
-    // 批量更新
+    // Batch update
     const result = await AdminApiService.batchUpdateConfigs(groupConfigs)
     
     if (result.success) {
-      // 重新加载配置
+      // Reload configurations
       await loadAllConfigs()
       showMessage(`成功重置 ${groupConfigs.length} 项配置`)
     } else {
@@ -693,9 +710,9 @@ const resetGroupConfigs = async (groupName: string) => {
   }
 }
 
-// 获取配置项的默认值
+// Get the default value of the configuration item
 const getDefaultValueForKey = (configKey: string): string => {
-  // 这里应该有一个默认值映射表，现在先返回基本默认值
+  // There should be a default value mapping table here. For now, return the basic default values.
   const defaults: Record<string, string> = {
     'systemName': 'JTaskPilot',
     'language': 'zh-CN',
@@ -704,13 +721,13 @@ const getDefaultValueForKey = (configKey: string): string => {
     'autoOpenBrowser': 'false',
     'headlessBrowser': 'true',
     'maxMemory': '1000'
-    // 可以根据需要添加更多默认值
+    // More default values can be added as needed
   }
   
   return defaults[configKey] || ''
 }
 
-// 子组折叠切换
+// Toggle subgroup collapse
 const toggleSubGroup = (groupName: string, subGroupName: string) => {
   const key = `${groupName}-${subGroupName}`
   if (collapsedSubGroups.value.has(key)) {
@@ -720,12 +737,12 @@ const toggleSubGroup = (groupName: string, subGroupName: string) => {
   }
 }
 
-// 检查子组是否折叠
+// Check if the subgroup is collapsed
 const isSubGroupCollapsed = (groupName: string, subGroupName: string): boolean => {
   return collapsedSubGroups.value.has(`${groupName}-${subGroupName}`)
 }
 
-// 计算配置统计
+// Calculate configuration statistics
 const configStats = computed(() => {
   const total = configGroups.value.reduce((sum, group) => 
     sum + group.subGroups.reduce((subSum, subGroup) => 
@@ -739,7 +756,7 @@ const configStats = computed(() => {
   return { total, modified }
 })
 
-// 过滤配置组
+// Filter configuration groups
 const filteredConfigGroups = computed(() => {
   if (!searchQuery.value.trim()) {
     return configGroups.value
@@ -762,7 +779,7 @@ const filteredConfigGroups = computed(() => {
 
 
 
-// 导出配置
+// Export configurations
 const exportConfigs = () => {
   try {
     const exportData = {
@@ -793,7 +810,7 @@ const exportConfigs = () => {
   }
 }
 
-// 导入配置
+// Import configurations
 const importConfigs = (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -814,7 +831,7 @@ const importConfigs = (event: Event) => {
       
       loading.value = true
       
-      // 准备要更新的配置项
+      // Prepare the configuration items to be updated
       const configsToUpdate: ConfigItem[] = []
       
       configGroups.value.forEach(group => {
@@ -835,7 +852,7 @@ const importConfigs = (event: Event) => {
         return
       }
       
-      // 批量更新
+      // Batch update
       const result = await AdminApiService.batchUpdateConfigs(configsToUpdate)
       
       if (result.success) {
@@ -849,7 +866,7 @@ const importConfigs = (event: Event) => {
       showMessage(t('config.basicConfig.importFailed'), 'error')
     } finally {
       loading.value = false
-      // 清空输入框
+      // Clear the input box
       input.value = ''
     }
   }
@@ -857,7 +874,7 @@ const importConfigs = (event: Event) => {
   reader.readAsText(file)
 }
 
-// 组件挂载时加载配置
+// Load configurations when the component is mounted
 onMounted(() => {
   loadAllConfigs()
 })
@@ -982,7 +999,7 @@ onMounted(() => {
   gap: 16px;
 }
 
-/* 垂直布局样式 */
+/* Vertical layout styles */
 .config-item-content.vertical-layout {
   flex-direction: column;
   align-items: stretch;
@@ -1019,7 +1036,7 @@ onMounted(() => {
   gap: 8px;
 }
 
-/* 垂直布局中的标签样式 */
+/* Label style in vertical layout */
 .vertical-layout .config-label {
   margin-bottom: 0;
   font-size: 14px;
@@ -1041,7 +1058,7 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-/* 垂直布局中的配置键样式 */
+/* Configuration key style in vertical layout */
 .vertical-layout .config-key {
   margin-bottom: 0;
   display: inline-block;
@@ -1107,13 +1124,13 @@ onMounted(() => {
   min-width: 160px;
 }
 
-/* 垂直布局中的输入控件样式调整 */
+/* Adjust the style of input controls in vertical layout */
 .vertical-layout .config-control {
   min-width: auto;
   max-width: 400px; /* 限制最大宽度，避免输入框过宽 */
 }
 
-/* 输入框样式增强 */
+/* Enhance the input box style */
 .config-input {
   width: 100%;
   background: rgba(255, 255, 255, 0.05);
@@ -1194,7 +1211,7 @@ onMounted(() => {
   }
 }
 
-/* 子组样式 */
+/* Subgroup style */
 .sub-group {
   margin-bottom: 24px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1258,7 +1275,7 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* 头部样式增强 */
+/* Enhance the header style */
 .header-left,
 .header-right {
   display: flex;
@@ -1353,7 +1370,7 @@ onMounted(() => {
   color: #667eea;
 }
 
-/* 组操作样式 */
+/* Group operation style */
 .group-info {
   display: flex;
   align-items: center;
@@ -1387,7 +1404,7 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-/* 导入/导出动作样式 */
+/* Import/Export action style */
 .import-export-actions {
   display: flex;
   gap: 8px;

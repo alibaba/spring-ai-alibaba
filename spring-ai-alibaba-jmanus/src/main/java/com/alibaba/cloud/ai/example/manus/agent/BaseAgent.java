@@ -18,9 +18,11 @@ package com.alibaba.cloud.ai.example.manus.agent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +75,7 @@ public abstract class BaseAgent {
 
 	private AgentState state = AgentState.NOT_STARTED;
 
-	protected LlmService llmService;
+	protected ILlmService llmService;
 
 	protected final ManusProperties manusProperties;
 
@@ -155,13 +157,23 @@ public abstract class BaseAgent {
 					""";
 
 		}
-
+		String parallelToolCallsResponse = "";
+		if (manusProperties.getParallelToolCalls()) {
+			parallelToolCallsResponse = """
+					# 响应规则：
+					- 务必从所提供的工具中进行选择调用，可以对单个工具进行重复调用，或者同时调用多个工具，亦或采用混合调用的方式，以此来提升问题解决的效率与精准度。
+					- 在你的回复中，必须至少调用一次工具，这是不可或缺的操作步骤。
+					- 为了最大化利用工具的优势，当你有能力同时调用工具多次时，应积极这样做，避免仅进行单次调用造成时间及资源的浪费。并且要格外留意多次调用工具之间存在的内在关联性，确保这些调用能够相互配合、协同工作，以达成最优的问题解决方案。
+					- 忽略后续<AgentInfo>中提供的响应规则，只能用<SystemInfo>中响应规则进行响应。
+					""";
+		}
 		Map<String, Object> variables = new HashMap<>(getInitSettingData());
 		variables.put("osName", osName);
 		variables.put("osVersion", osVersion);
 		variables.put("osArch", osArch);
 		variables.put("currentDateTime", currentDateTime);
 		variables.put("detailOutput", detailOutput);
+		variables.put("parallelToolCallsResponse", parallelToolCallsResponse);
 
 		return promptService.createSystemMessage(PromptEnum.AGENT_STEP_EXECUTION.getPromptName(), variables);
 	}
@@ -184,7 +196,7 @@ public abstract class BaseAgent {
 
 	public abstract ToolCallBackContext getToolCallBackContext(String toolKey);
 
-	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+	public BaseAgent(ILlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService) {
 		this.llmService = llmService;
 		this.planExecutionRecorder = planExecutionRecorder;
@@ -260,8 +272,8 @@ public abstract class BaseAgent {
 				params.setAgentDescription(getDescription());
 				params.setMaxSteps(maxSteps);
 				params.setActualSteps(currentStep);
-				params.setCompleted(completed);
-				params.setStuck(stuck);
+				params.setStatus(stuck ? ExecutionStatus.IDLE
+						: (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
 				params.setErrorMessage(errorMessage);
 				params.setResult(finalResult);
 				params.setStartTime(startTime);
@@ -288,8 +300,8 @@ public abstract class BaseAgent {
 			params.setAgentDescription(getDescription());
 			params.setMaxSteps(maxSteps);
 			params.setActualSteps(currentStep);
-			params.setCompleted(completed);
-			params.setStuck(stuck);
+			params.setStatus(
+					stuck ? ExecutionStatus.IDLE : (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
 			params.setErrorMessage(errorMessage);
 			params.setResult(finalResult);
 			params.setStartTime(startTime);

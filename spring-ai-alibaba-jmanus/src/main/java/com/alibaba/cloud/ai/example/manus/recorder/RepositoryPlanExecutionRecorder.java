@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder;
 
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -22,7 +23,7 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecordEntity;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.repository.PlanExecutionRecordRepository;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder.PlanExecutionParams;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +136,21 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			int currentStepIndex = step.getStepIndex();
 			recordToUpdate.setCurrentStepIndex(currentStepIndex);
 			retrieveExecutionSteps(context, recordToUpdate);
-
+			List<AgentExecutionRecord> agentExecutionSequence = recordToUpdate.getAgentExecutionSequence();
+			AgentExecutionRecord agentExecutionRecord;
+			if (agentExecutionSequence.size() > currentStepIndex) {
+				agentExecutionRecord = agentExecutionSequence.get(currentStepIndex);
+			}
+			else {
+				// create and add new AgentExecutionRecord
+				agentExecutionRecord = new AgentExecutionRecord(recordToUpdate.getCurrentPlanId(), null, null);
+				// 补齐到 currentStepIndex
+				while (agentExecutionSequence.size() < currentStepIndex) {
+					agentExecutionSequence.add(new AgentExecutionRecord());
+				}
+				agentExecutionSequence.add(agentExecutionRecord);
+			}
+			agentExecutionRecord.setStatus(ExecutionStatus.RUNNING);
 			// Save the correct plan (parent for sub-plan, self for root plan)
 			if (rootPlan != null) {
 				savePlanExecutionRecords(rootPlan);
@@ -155,7 +170,10 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			int currentStepIndex = step.getStepIndex();
 			recordToUpdate.setCurrentStepIndex(currentStepIndex);
 			retrieveExecutionSteps(context, recordToUpdate);
-
+			AgentExecutionRecord agentExecutionRecord = recordToUpdate.getAgentExecutionSequence()
+				.get(currentStepIndex);
+			agentExecutionRecord.setStatus(
+					step.getStatus() == AgentState.COMPLETED ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING);
 			// Save the correct plan (parent for sub-plan, self for root plan)
 			if (rootPlan != null) {
 				savePlanExecutionRecords(rootPlan);
@@ -170,7 +188,8 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	private PlanExecutionRecord getRecordToUpdate(ExecutionContext context, PlanExecutionRecord rootRecord) {
 		Long thinkActRecordId = context.getThinkActRecordId();
 
-		// For sub-plan execution, we want to save to parent plan, so return the root plan
+		// For sub-plan execution, we want to save to parent plan, so return the root
+		// plan
 		// record
 		if (thinkActRecordId != null) {
 			// This is a sub-plan execution - save data to parent plan
@@ -207,13 +226,11 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 				params.getAgentDescription());
 		agentRecord.setMaxSteps(params.getMaxSteps());
 		agentRecord.setCurrentStep(params.getActualSteps());
-		agentRecord.setCompleted(params.isCompleted());
-		agentRecord.setStuck(params.isStuck());
 		agentRecord.setErrorMessage(params.getErrorMessage());
 		agentRecord.setResult(params.getResult());
 		agentRecord.setStartTime(params.getStartTime());
 		agentRecord.setEndTime(params.getEndTime());
-		agentRecord.setStatus(params.isCompleted() ? "COMPLETED" : (params.isStuck() ? "STUCK" : "FAILED"));
+		agentRecord.setStatus(params.getStatus());
 
 		PlanExecutionRecord planRecord = null;
 		PlanExecutionRecord rootPlan = getOrCreateRootPlanExecutionRecord(params.getRootPlanId(), true);
@@ -303,7 +320,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			thinkActRecord.setActionNeeded(true);
 			thinkActRecord.setToolName(params.getToolName());
 			thinkActRecord.setToolParameters(params.getToolParameters());
-			thinkActRecord.setStatus("SUCCESS");
+			thinkActRecord.setStatus(ExecutionStatus.RUNNING);
 		}
 
 		if (params.getErrorMessage() != null) {
@@ -378,6 +395,11 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			// Record error if any
 			if (params.getErrorMessage() != null) {
 				thinkActRecord.recordError(params.getErrorMessage());
+			}
+
+			// Set actToolInfoList if available
+			if (params.getActToolInfoList() != null) {
+				thinkActRecord.setActToolInfoList(params.getActToolInfoList());
 			}
 
 			// Set think-act execution to update the record

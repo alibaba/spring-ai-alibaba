@@ -72,7 +72,8 @@ const words: I18nType = {
     exitFullscreen: '退出全屏',
     parameters: '参数',
     thinking: '思考',
-    input: '输入'
+    input: '输入',
+    actions: '操作',
   },
 
   // 配置相关
@@ -95,7 +96,7 @@ const words: I18nType = {
       boolean: '布尔值',
       select: '选择',
       textarea: '多行',
-      checkbox: '复选框'
+      checkbox: '复选框',
     },
     range: '范围',
     min: '最小值',
@@ -104,7 +105,19 @@ const words: I18nType = {
       basic: '基础配置',
       agent: 'Agent配置',
       model: 'Model配置',
-      mcp: 'Tools/MCP配置'
+      mcp: 'Tools/MCP配置',
+      prompt: '动态Prompt配置',
+    },
+    subGroupDisplayNames: {
+      agent: 'Agent',
+      browser: '浏览器',
+      interaction: '交互',
+      system: '系统',
+      performance: '性能',
+      general: '通用',
+      agents: '多智能体',
+      infiniteContext: '无限上下文',
+      filesystem: '文件系统'
     },
     // Agent配置页面
     agentConfig: {
@@ -145,7 +158,7 @@ const words: I18nType = {
       exportFailed: '导出Agent失败',
       loadDataFailed: '加载数据失败',
       loadDetailsFailed: '加载Agent详情失败',
-      invalidFormat: 'Agent配置格式不正确：缺少必要字段'
+      invalidFormat: 'Agent配置格式不正确：缺少必要字段',
     },
     // Model配置页面
     modelConfig: {
@@ -184,7 +197,7 @@ const words: I18nType = {
       exportFailed: '导出Model失败',
       loadDataFailed: '加载数据失败',
       loadDetailsFailed: '加载Model详情失败',
-      invalidFormat: 'Model配置格式不正确：缺少必要字段'
+      invalidFormat: 'Model配置格式不正确：缺少必要字段',
     },
     // MCP配置页面
     mcpConfig: {
@@ -199,29 +212,130 @@ const words: I18nType = {
       instructions: '使用说明：',
       instructionStep1: '找到你要用的mcp server的配置json：',
       instructionStep1Local: '本地(STDIO)',
-      instructionStep1LocalDesc: '可以在 mcp.so 上找到，需要你有Node.js环境并理解你要配置的json里面的每一个项，做对应调整比如配置ak',
-      instructionStep1Remote: '远程服务(SSE)',
-      instructionStep1RemoteDesc: 'mcp.higress.ai/ 上可以找到，有SSE和STREAMING两种，目前SSE协议更完备一些',
+      instructionStep1LocalDesc: '本地mcp server，目前市面上主流的是这个',
+      instructionStep1Remote: '远程服务(SSE/STREAMING)',
+      instructionStep1RemoteDesc:
+        'mcp.higress.ai/ 上可以找到，有SSE和STREAMING两种，目前STREAM协议更完备一些',
       instructionStep2: '将json配置复制到上面的输入框，本地选STUDIO，远程选STREAMING或SSE，提交',
       instructionStep3: '这样mcp tools就注册成功了。',
-      instructionStep4: '然后需要在Agent配置里面，新建一个agent，然后增加指定你刚才添加的mcp tools，这样可以极大减少冲突，增强tools被agent选择的准确性',
+      instructionStep4:
+        '然后需要在Agent配置里面，新建一个agent，然后增加指定你刚才添加的mcp tools，这样可以极大减少冲突，增强tools被agent选择的准确性',
       configRequired: '请输入MCP服务器配置',
       invalidJson: '配置JSON格式不正确，请检查语法',
       addFailed: '添加MCP服务器失败，请重试',
       deleteFailed: '删除MCP服务器失败，请重试',
-      studioExample: '请输入MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
-      sseExample: '请输入SSE MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}'
+      deleteConfirm: '确定要删除这个MCP服务器配置吗？此操作不可恢复。',
+      addSuccess: '添加MCP服务器成功',
+      deleteSuccess: '删除MCP服务器成功',
+      studioExample:
+        '请输入MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
+      sseExample:
+        '请输入SSE MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}',
     },
     // 基础配置
     basicConfig: {
       title: '基础配置',
+      browserSettings: {
+        headless: '是否使用无头浏览器模式',
+        requestTimeout: '浏览器请求超时时间(秒)'
+      },
+      general: {
+        debugDetail: 'debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢',
+        baseDir: 'manus根目录'
+      },
+      interactionSettings: {
+        openBrowser: '启动时自动打开浏览器'
+      },
+      agentSettings: {
+        maxSteps: '智能体执行最大步数',
+        userInputTimeout: '用户输入表单等待超时时间(秒)',
+        maxMemory: '能记住的最大消息数',
+        parallelToolCalls: '并行工具调用'
+      },
+      agents: {
+        forceOverrideFromYaml: '强制使用YAML配置文件覆盖同名Agent'
+      },
+      infiniteContext: {
+        enabled: '是否开启无限上下文',
+        parallelThreads: '并行处理线程数',
+        taskContextSize: '触发无限上下文的字符数阈值(字符数)'
+      },
+      fileSystem: {
+        allowExternalAccess: '是否允许文件操作超出工作目录'
+      },
+      systemSettings: {
+        systemName: '系统名称',
+        language: '语言',
+        maxThreads: '最大线程数',
+        timeoutSeconds: '请求超时时间(秒)'
+      },
+      totalConfigs: '总配置数',
+      modified: '已修改',
+      exportConfigs: '导出配置',
+      importConfigs: '导入配置',
+      search: '搜索',
+      loading: '加载中',
+      notFound: '未找到配置项',
+      resetGroupConfirm: '重置该组所有配置为默认值',
+      reset: '重置',
       requestTimeout: '请求超时时间(秒)',
       browserTimeout: '浏览器请求超时时间(秒)',
       loadConfigFailed: '加载配置失败，请刷新重试',
       saveFailed: '保存失败，请重试',
       resetFailed: '重置失败，请重试',
-      importFailed: '导入失败，请检查文件格式'
-    }
+      importFailed: '导入失败，请检查文件格式',
+      groupDisplayNames: {
+        manus: 'Manus',
+        browser: '浏览器',
+        interaction: '交互',
+        system: '系统',
+        performance: '性能',
+      },
+    },
+    promptConfig: {
+      title: '动态Prompt配置',
+      configuredprompts: '已配置的Prompt',
+      loadDetailsFailed: '加载Prompt详情失败',
+      promptCount: '个',
+      noPrompts: '没有配置的Prompt',
+      createNew: '新建Prompt',
+      promptName: 'Prompt名称',
+      placeholder: '请输入',
+      promptContent: '内容',
+      messageType: '消息类型',
+      type: '领域类型',
+      builtIn: '内置',
+      custom: '自定义',
+      namespace: '命名空间',
+      promptNamePlaceholder: '输入Prompt名称',
+      selectPromptHint: '请选择一个prompt进行配置',
+      promptContentPlaceholder: '请输入Prompt内容',
+      descriptionPlaceholder: '输入Prompt功能和用途',
+      description: '描述',
+      requiredFields: '请填写必要的字段',
+      newPrompt: '新建动态Prompt',
+      saveSuccess: 'Prompt保存成功',
+      saveFailed: 'Prompt保存失败',
+      deleteSuccess: 'Prompt删除成功',
+      deleteFailed: 'Prompt删除失败',
+      deleteConfirm: '删除确认',
+      deleteConfirmText: '确定要删除',
+      deleteWarning: '此操作不可恢复。',
+    },
+    namespaceConfig: {
+      title: '命名空间配置',
+      loadDetailsFailed: '加载namespace详情失败',
+      createNew: '新建命名空间',
+      placeholder: '请输入',
+      saveSuccess: '保存成功',
+      saveFailed: '保存失败',
+      deleteSuccess: '删除成功',
+      deleteFailed: '删除失败',
+      deleteConfirm: '删除确认',
+      deleteConfirmText: '确定要删除',
+      deleteWarning: '此操作不可恢复。',
+      configured: '已配置的命名空间',
+    },
   },
 
   // Agent 配置
@@ -247,12 +361,13 @@ const words: I18nType = {
     saveSuccess: 'Agent保存成功',
     saveFailed: 'Agent保存失败',
     deleteSuccess: 'Agent删除成功',
-    deleteFailed: 'Agent删除失败'
+    deleteFailed: 'Agent删除失败',
   },
 
   // Model 配置
   model: {
     title: 'Model 配置',
+    switch: '切换模型',
     name: 'Model名称',
     description: '描述',
     addModel: '新建Model',
@@ -266,7 +381,7 @@ const words: I18nType = {
     saveSuccess: 'Model保存成功',
     saveFailed: 'Model保存失败',
     deleteSuccess: 'Model删除成功',
-    deleteFailed: 'Model删除失败'
+    deleteFailed: 'Model删除失败',
   },
 
   // 计划模板配置
@@ -296,7 +411,7 @@ const words: I18nType = {
     executionSuccess: '执行成功',
     executionFailed: '执行失败',
     generationSuccess: '生成成功',
-    generationFailed: '生成失败'
+    generationFailed: '生成失败',
   },
 
   // 聊天组件
@@ -311,11 +426,11 @@ const words: I18nType = {
       executing: '执行中',
       completed: '已完成',
       pending: '待执行',
-      failed: '失败'
+      failed: '失败',
     },
     userInput: {
       message: '请输入所需信息:',
-      submit: '提交'
+      submit: '提交',
     },
     thinking: '正在思考...',
     thinkingAnalyzing: '正在分析任务需求...',
@@ -339,22 +454,22 @@ const words: I18nType = {
     authError: '访问权限出现了问题，请联系管理员或稍后再试',
     formatError: '请求格式可能有些问题，能否请您重新表述一下您的需求？',
     unknownError: '处理您的请求时遇到了一些问题，请稍后再试',
-    thinkingOutput: '思考输出'
+    thinkingOutput: '思考输出',
   },
 
   // 输入组件
   input: {
     placeholder: '向 JTaskPilot 发送消息',
     send: '发送',
-    planMode: '计划模式',
+    planMode: 'PLAN-ACT计划模式',
     waiting: '等待任务完成...',
     maxLength: '最大长度',
-    charactersRemaining: '剩余字符'
+    charactersRemaining: '剩余字符',
   },
 
   // 侧边栏
   sidebar: {
-    title: '计划模板',
+    title: 'PLAN-ACT 计划模板',
     templateList: '模板列表',
     configuration: '配置',
     newPlan: '新建计划',
@@ -367,17 +482,22 @@ const words: I18nType = {
     jsonTemplate: 'JSON 模板',
     rollback: '回滚',
     restore: '恢复',
-    jsonPlaceholder: '输入 JSON 计划模板...',
+    jsonPlaceholder:
+      'step2 ： 你可以在这里直接修改在step1中生产出的执行计划，让他更精准的按照你的希望执行。然后你可以点击执行计划，高确定性的执行这个计划',
     planGenerator: '计划生成器',
-    generatorPlaceholder: '描述您想要生成的计划...',
+    generatorPlaceholder:
+      'step1 : 在这里用自然语言输入你希望完成的任务，尽可能详细，然后点击生成计划，就可以生产一个可重复执行的精确计划',
     generating: '生成中...',
     generatePlan: '生成计划',
     updatePlan: '更新计划',
     executionController: '执行控制器',
     executionParams: '执行参数',
     executionParamsPlaceholder: '输入执行参数...',
+    executionParamsHelp:
+      '在重复执行时，你可以将step2里面的一些内容设置为变量，然后在这里指定该变量的具体值。例如json里面设置 变量1 ，然后在这里则设置 变量1=阿里巴巴 。 就可以实现类似函数的参数的效果。',
     clearParams: '清空参数',
-    apiUrl: 'API URL',
+    apiUrl: 'HTTP GET URL',
+    statusApiUrl: '状态查询 API',
     executing: '执行中...',
     executePlan: '执行计划',
     newTemplate: '新建模板',
@@ -410,7 +530,11 @@ const words: I18nType = {
     updateSuccess: '计划更新成功！',
     updateFailed: '更新计划失败',
     executeFailed: '执行计划失败',
-    unknown: '未知'
+    unknown: '未知',
+    newTemplateName: '新建的执行计划',
+    newTemplateDescription: '请使用计划生成器创建新的计划模板',
+    generatedTemplateDescription: '通过生成器创建的计划模板',
+    defaultExecutionPlanTitle: '执行计划',
   },
 
   // 模态框
@@ -420,7 +544,7 @@ const words: I18nType = {
     confirm: '确认',
     save: '保存',
     delete: '删除',
-    edit: '编辑'
+    edit: '编辑',
   },
 
   // 编辑器
@@ -436,7 +560,7 @@ const words: I18nType = {
     toggleMinimap: '切换迷你地图',
     increaseFontSize: '增大字体',
     decreaseFontSize: '减小字体',
-    resetFontSize: '重置字体大小'
+    resetFontSize: '重置字体大小',
   },
 
   // 语言切换
@@ -444,7 +568,7 @@ const words: I18nType = {
     switch: '切换语言',
     current: '当前语言',
     zh: '中文',
-    en: 'English'
+    en: 'English',
   },
 
   // 主题
@@ -452,7 +576,7 @@ const words: I18nType = {
     switch: '切换主题',
     light: '浅色主题',
     dark: '深色主题',
-    auto: '跟随系统'
+    auto: '跟随系统',
   },
 
   // 错误页面
@@ -464,7 +588,7 @@ const words: I18nType = {
     networkError: '网络错误',
     networkErrorDescription: '网络连接失败，请检查您的网络设置',
     backToHome: '返回首页',
-    retry: '重试'
+    retry: '重试',
   },
 
   // 表单验证
@@ -478,7 +602,7 @@ const words: I18nType = {
     min: '值不能小于 {min}',
     max: '值不能大于 {max}',
     pattern: '格式不正确',
-    confirmation: '两次输入不一致'
+    confirmation: '两次输入不一致',
   },
 
   // 时间相关
@@ -501,7 +625,7 @@ const words: I18nType = {
     nextMonth: '下月',
     thisYear: '今年',
     lastYear: '去年',
-    nextYear: '明年'
+    nextYear: '明年',
   },
 
   // 数据统计
@@ -518,7 +642,7 @@ const words: I18nType = {
     decline: '下降',
     noData: '暂无数据',
     loading: '数据加载中...',
-    error: '数据加载失败'
+    error: '数据加载失败',
   },
 
   // 首页
@@ -531,19 +655,20 @@ const words: I18nType = {
       stockPrice: {
         title: '查询股价',
         description: '获取今天阿里巴巴的最新股价（Agent可以使用浏览器工具）',
-        prompt: '用浏览器基于百度，查询今天阿里巴巴的股价，并返回最新股价'
+        prompt: '用浏览器基于百度，查询今天阿里巴巴的股价，并返回最新股价',
       },
       novel: {
         title: '生成一个中篇小说',
         description: '帮我生成一个中篇小说（Agent可以生成更长的内容）',
-        prompt: '请帮我写一个关于机器人取代人类的小说。20000字。 使用TEXT_FILE_AGENT ，先生成提纲，然后，完善和丰满整个提纲的内容为一篇通顺的小说，最后再全局通顺一下语法'
+        prompt:
+          '请帮我写一个关于机器人取代人类的小说。20000字。 使用TEXT_FILE_AGENT ，先生成提纲，然后，完善和丰满整个提纲的内容为一篇通顺的小说，最后再全局通顺一下语法',
       },
       weather: {
         title: '查询天气',
         description: '获取北京今天的天气情况（Agent可以使用MCP工具服务）',
-        prompt: '用浏览器，基于百度，查询北京今天的天气'
-      }
-    }
+        prompt: '用浏览器，基于百度，查询北京今天的天气',
+      },
+    },
   },
 
   // 右侧面板
@@ -568,50 +693,57 @@ const words: I18nType = {
     toolParameters: '工具参数',
     noStepDetails: '暂无详细步骤信息',
     scrollToBottom: '滚动到底部',
+    stepInfo: '步骤信息',
+    stepName: '步骤名称',
+    noExecutionInfo: '该步骤暂无详细执行信息',
+    subPlan: '子执行计划',
     // 步骤状态
     status: {
       completed: '已完成',
       executing: '执行中',
-      waiting: '等待执行'
+      waiting: '等待执行',
     },
     // Tab 标签
     tabs: {
       details: '步骤执行详情',
       chat: 'Chat',
-      code: 'Code'
+      code: 'Code',
     },
     // 示例 chatBubbles 数据
     chatBubbles: {
       analyzeRequirements: {
         title: '分析需求',
-        content: '将您的请求分解为可操作的步骤：1) 创建用户实体，2) 实现用户服务，3) 构建 REST 端点，4) 添加验证和错误处理。'
+        content:
+          '将您的请求分解为可操作的步骤：1) 创建用户实体，2) 实现用户服务，3) 构建 REST 端点，4) 添加验证和错误处理。',
       },
       generateCode: {
         title: '生成代码',
-        content: '创建具有用户管理 CRUD 操作的 Spring Boot REST API。包括正确的 HTTP 状态代码和错误处理。'
+        content:
+          '创建具有用户管理 CRUD 操作的 Spring Boot REST API。包括正确的 HTTP 状态代码和错误处理。',
       },
       codeGenerated: {
         title: '代码已生成',
-        content: '成功生成具有所有 CRUD 操作的 UserController。代码包含正确的 REST 约定、错误处理，并遵循 Spring Boot 最佳实践。'
-      }
+        content:
+          '成功生成具有所有 CRUD 操作的 UserController。代码包含正确的 REST 约定、错误处理，并遵循 Spring Boot 最佳实践。',
+      },
     },
     // 时间显示
     timeAgo: {
       justNow: '刚刚',
       minutesAgo: '{n} 分钟前',
       hoursAgo: '{n} 小时前',
-      daysAgo: '{n} 天前'
+      daysAgo: '{n} 天前',
     },
     // 默认步骤标题
-    defaultStepTitle: '步骤 {number}'
+    defaultStepTitle: '步骤 {number}',
   },
 
   // 直接页面
   direct: {
     configuration: '配置',
     panelResizeHint: '拖拽调整面板大小，双击重置',
-    aboutExecutionDetails: '关于集成执行详情'
-  }
+    aboutExecutionDetails: '关于集成执行详情',
+  },
 }
 
 export default words

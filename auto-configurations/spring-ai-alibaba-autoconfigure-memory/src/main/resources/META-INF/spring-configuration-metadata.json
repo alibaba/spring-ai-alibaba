@@ -161,6 +161,46 @@
       "defaultValue": 2000
     },
     {
+      "name": "spring.ai.memory.mongodb.host",
+      "type": "java.lang.String",
+      "description": "MongoDB server host.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MongoDBChatMemoryProperties",
+      "defaultValue": "127.0.0.1"
+    },
+    {
+      "name": "spring.ai.memory.mongodb.port",
+      "type": "java.lang.Integer",
+      "description": "MongoDB server port.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MongoDBChatMemoryProperties",
+      "defaultValue": 27017
+    },
+    {
+      "name": "spring.ai.memory.mongodb.userName",
+      "type": "java.lang.String",
+      "description": "userName for authentication.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MongoDBChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.memory.mongodb.password",
+      "type": "java.lang.String",
+      "description": "Password for authentication.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MongoDBChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.memory.mongodb.authDatabaseName",
+      "type": "java.lang.String",
+      "description": "authDatabaseName for authentication.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MongoDBChatMemoryProperties",
+      "defaultValue": "admin"
+    },
+    {
+      "name": "spring.ai.memory.mongodb.databaseName",
+      "type": "java.lang.String",
+      "description": "MongoDB databaseName",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MongoDBChatMemoryProperties",
+      "defaultValue": "spring_ai"
+    },
+    {
       "name": "spring.ai.memory.sqlite.enabled",
       "type": "java.lang.Boolean",
       "description": "Enable SQLite chat memory repository.",

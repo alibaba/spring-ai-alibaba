@@ -21,6 +21,9 @@ import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData.PromptTemplate;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -38,30 +41,52 @@ public class LLMNodeSection implements NodeSection {
 	@Override
 	public String render(Node node, String varName) {
 		LLMNodeData d = (LLMNodeData) node.getData();
+		List<String> promptList = new ArrayList<>();
+
+		List<PromptTemplate> promptTemplates = null;
+		if (d.getPromptTemplate() != null) {
+			promptTemplates = d.getPromptTemplate();
+			for (PromptTemplate promptTemplate : promptTemplates) {
+				if (promptTemplate.getRole() != null && promptTemplate.getText() != null) {
+					promptList.add(transformPlaceholders(promptTemplate.getText()));
+				}
+			}
+		}
+
+		if (d.getSystemPromptTemplate() != null) {
+			promptList.add(transformPlaceholders(d.getSystemPromptTemplate()));
+		}
+		if (d.getUserPromptTemplate() != null) {
+			promptList.add(transformPlaceholders(d.getUserPromptTemplate()));
+		}
+
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(String.format("// —— LlmNode [%s] ——%n", id));
 		sb.append(String.format("LlmNode %s = LlmNode.builder()%n", varName));
 
-		List<PromptTemplate> promptTemplates = d.getPromptTemplate();
 		for (PromptTemplate promptTemplate : promptTemplates) {
 			if (promptTemplate.getRole() != null && promptTemplate.getText() != null) {
 				if (promptTemplate.getRole().equals("system")) {
-					sb.append(String.format(".systemPromptTemplate(\"%s\")%n", escape(promptTemplate.getText())));
+					sb.append(String.format(".systemPromptTemplate(\"%s\")%n",
+							escape(transformPlaceholders(promptTemplate.getText()))));
 				}
 				else if (promptTemplate.getRole().equals("user")) {
-					sb.append(String.format(".userPromptTemplate(\"%s\")%n", escape(promptTemplate.getText())));
+					sb.append(String.format(".userPromptTemplate(\"%s\")%n",
+							escape(transformPlaceholders(promptTemplate.getText()))));
 				}
 			}
 		}
 
 		if (d.getSystemPromptTemplate() != null) {
-			sb.append(String.format(".systemPromptTemplate(\"%s\")%n", escape(d.getSystemPromptTemplate())));
+			sb.append(String.format(".systemPromptTemplate(\"%s\")%n",
+					escape(transformPlaceholders(d.getSystemPromptTemplate()))));
 		}
 
 		if (d.getUserPromptTemplate() != null) {
-			sb.append(String.format(".userPromptTemplate(\"%s\")%n", escape(d.getUserPromptTemplate())));
+			sb.append(String.format(".userPromptTemplate(\"%s\")%n",
+					escape(transformPlaceholders(d.getUserPromptTemplate()))));
 		}
 
 		if (d.getSystemPromptTemplateKey() != null) {
@@ -72,12 +97,15 @@ public class LLMNodeSection implements NodeSection {
 			sb.append(String.format(".userPromptTemplateKey(\"%s\")%n", escape(d.getUserPromptTemplateKey())));
 		}
 
-		Map<String, Object> params = d.getParams();
-		if (params != null && !params.isEmpty()) {
-			String joined = params.entrySet()
+		List<String> params = extractKeysFromList(promptList);
+		if (!params.isEmpty()) {
+			Map<String, String> paramMap = params.stream().collect(Collectors.toMap(k -> k, k -> ""));
+
+			String joined = paramMap.entrySet()
 				.stream()
-				.map(e -> String.format("\"%s\", \"%s\"", escape(e.getKey()), escape(String.valueOf(e.getValue()))))
+				.map(e -> String.format("\"%s\", \"%s\"", escape(e.getKey()), "null"))
 				.collect(Collectors.joining(", "));
+
 			sb.append(String.format(".params(Map.of(%s))%n", joined));
 		}
 
@@ -128,6 +156,37 @@ public class LLMNodeSection implements NodeSection {
 		sb.append(".build();\n");
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
 
+		return sb.toString();
+	}
+
+	// Extract variable
+	private static List<String> extractKeysFromList(List<String> inputList) {
+		List<String> result = new ArrayList<>();
+		Pattern pattern = Pattern.compile("\\{(\\w+)}");
+
+		for (String input : inputList) {
+			Matcher matcher = pattern.matcher(input);
+			while (matcher.find()) {
+				result.add(matcher.group(1));
+			}
+		}
+		return result;
+	}
+
+	// Format prompt
+	private static String transformPlaceholders(String input) {
+		if (input == null)
+			return null;
+
+		Pattern pattern = Pattern.compile("\\{\\{#.*?\\.(.*?)#}}");
+		Matcher matcher = pattern.matcher(input);
+
+		StringBuffer sb = new StringBuffer();
+		while (matcher.find()) {
+			String key = matcher.group(1);
+			matcher.appendReplacement(sb, "{" + key + "}");
+		}
+		matcher.appendTail(sb);
 		return sb.toString();
 	}
 

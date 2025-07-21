@@ -5,6 +5,11 @@ spring:
     name: spring-ai-alibaba-openmanus
   profiles:
     active: h2
+  main:
+    allow-circular-references: true
+    lazy-initialization: false
+  aop:
+    proxy-target-class: true
   ai:
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
@@ -15,6 +20,18 @@ spring:
     mcp:
       client:
         enabled: false
+  # Hikari Configuration
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: Spring-AI-Alibaba-JManus-${spring.profiles.active}-Pool
+      connection-test-query: SELECT 1
+      validation-timeout: 5000
+      leak-detection-threshold: 60000
   # JPA Configuration
   jpa:
     hibernate:
@@ -29,3 +46,6 @@ logging:
     name: ./logs/info.log
   level:
     root: INFO
+
+namespace:
+  value: default

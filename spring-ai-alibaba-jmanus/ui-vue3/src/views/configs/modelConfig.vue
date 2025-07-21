@@ -14,23 +14,24 @@
  * limitations under the License.
 -->
 <template>
-  <div class="config-panel">
-    <div class="panel-header">
+  <ConfigPanel>
+    <template #title>
       <h2>{{ t('config.modelConfig.title') }}</h2>
-      <div class="panel-actions">
-        <button class="action-btn" @click="handleImport">
-          <Icon icon="carbon:upload" />
-          {{ t('config.modelConfig.import') }}
-        </button>
-        <button class="action-btn" @click="handleExport" :disabled="!selectedModel">
-          <Icon icon="carbon:download" />
-          {{ t('config.modelConfig.export') }}
-        </button>
-      </div>
-    </div>
+    </template>
+
+    <template #actions>
+      <button class="action-btn" @click="handleImport">
+        <Icon icon="carbon:upload" />
+        {{ t('config.modelConfig.import') }}
+      </button>
+      <button class="action-btn" @click="handleExport" :disabled="!selectedModel">
+        <Icon icon="carbon:download" />
+        {{ t('config.modelConfig.export') }}
+      </button>
+    </template>
 
     <div class="model-layout">
-      <!-- Model列表 -->
+      <!-- Model list -->
       <div class="model-list">
         <div class="list-header">
           <h3>{{ t('config.modelConfig.configuredModels') }}</h3>
@@ -39,11 +40,11 @@
 
         <div class="models-container" v-if="!loading">
           <div
-              v-for="model in models"
-              :key="model.id"
-              class="model-card"
-              :class="{ active: selectedModel?.id === model.id }"
-              @click="selectModel(model)"
+            v-for="model in models"
+            :key="model.id"
+            class="model-card"
+            :class="{ active: selectedModel?.id === model.id }"
+            @click="selectModel(model)"
           >
             <div class="model-card-header">
               <span class="model-name">{{ model.modelName }}</span>
@@ -54,7 +55,7 @@
               <span class="model-tag">
                 {{ model.type }}
               </span>
-          </div>
+            </div>
           </div>
         </div>
 
@@ -74,7 +75,7 @@
         </button>
       </div>
 
-      <!-- Model详情 -->
+      <!-- Model details -->
       <div class="model-detail" v-if="selectedModel">
         <div class="detail-header">
           <h3>{{ selectedModel.modelName }}</h3>
@@ -93,154 +94,159 @@
         <div class="form-item">
           <label>{{ t('config.modelConfig.type') }} <span class="required">*</span></label>
           <CustomSelect
-              v-model="selectedModel.type"
-              :options="modelTypes.map(type => ({ id: type, name: type }))"
-              :placeholder="t('config.modelConfig.typePlaceholder')"
-              :dropdown-title="t('config.modelConfig.typePlaceholder')"
-              icon="carbon:types"
+            v-model="selectedModel.type"
+            :options="modelTypes.map(type => ({ id: type, name: type }))"
+            :placeholder="t('config.modelConfig.typePlaceholder')"
+            :dropdown-title="t('config.modelConfig.typePlaceholder')"
+            icon="carbon:types"
           />
         </div>
 
         <div class="form-item">
           <label>{{ t('config.modelConfig.baseUrl') }} <span class="required">*</span></label>
           <input
-              type="text"
-              v-model="selectedModel.baseUrl"
-              :placeholder="t('config.modelConfig.baseUrlPlaceholder')"
-              required
+            type="text"
+            v-model="selectedModel.baseUrl"
+            :placeholder="t('config.modelConfig.baseUrlPlaceholder')"
+            required
           />
         </div>
 
         <div class="form-item">
           <label>{{ t('config.modelConfig.apiKey') }} <span class="required">*</span></label>
           <input
-              type="text"
-              v-model="selectedModel.apiKey"
-              :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
-              required
+            type="text"
+            v-model="selectedModel.apiKey"
+            :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
+            required
           />
         </div>
 
         <div class="form-item">
           <label>{{ t('config.modelConfig.modelName') }} <span class="required">*</span></label>
           <input
-              type="text"
-              v-model="selectedModel.modelName"
-              :placeholder="t('config.modelConfig.modelNamePlaceholder')"
-              required
+            type="text"
+            v-model="selectedModel.modelName"
+            :placeholder="t('config.modelConfig.modelNamePlaceholder')"
+            required
           />
         </div>
 
         <div class="form-item">
           <label>{{ t('config.modelConfig.description') }} <span class="required">*</span></label>
           <textarea
-              v-model="selectedModel.modelDescription"
-              rows="3"
-              :placeholder="t('config.modelConfig.descriptionPlaceholder')"
-              required
+            v-model="selectedModel.modelDescription"
+            rows="3"
+            :placeholder="t('config.modelConfig.descriptionPlaceholder')"
+            required
           ></textarea>
         </div>
-
       </div>
 
-      <!-- 空状态 -->
+      <!-- Empty state -->
       <div v-else class="no-selection">
         <Icon icon="carbon:bot" class="placeholder-icon" />
         <p>{{ t('config.modelConfig.selectModelHint') }}</p>
       </div>
     </div>
 
-    <!-- 新建Model弹窗 -->
+    <!-- New Model modal -->
     <Modal v-model="showModal" :title="t('config.modelConfig.newModel')" @confirm="handleAddModel">
       <div class="modal-form">
         <div class="form-item">
           <label>{{ t('config.modelConfig.type') }} <span class="required">*</span></label>
           <CustomSelect
-              v-model="newModel.type"
-              :options="modelTypes.map(type => ({ id: type, name: type }))"
-              :placeholder="t('config.modelConfig.typePlaceholder')"
-              :dropdown-title="t('config.modelConfig.typePlaceholder')"
-              icon="carbon:types"
+            v-model="newModel.type"
+            :options="modelTypes.map(type => ({ id: type, name: type }))"
+            :placeholder="t('config.modelConfig.typePlaceholder')"
+            :dropdown-title="t('config.modelConfig.typePlaceholder')"
+            icon="carbon:types"
           />
         </div>
         <div class="form-item">
           <label>{{ t('config.modelConfig.baseUrl') }} <span class="required">*</span></label>
           <input
-              type="text"
-              v-model="newModel.baseUrl"
-              :placeholder="t('config.modelConfig.baseUrlPlaceholder')"
-              required
+            type="text"
+            v-model="newModel.baseUrl"
+            :placeholder="t('config.modelConfig.baseUrlPlaceholder')"
+            required
           />
         </div>
         <div class="form-item">
           <label>{{ t('config.modelConfig.apiKey') }} <span class="required">*</span></label>
           <input
-              type="text"
-              v-model="newModel.apiKey"
-              :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
-              required
+            type="text"
+            v-model="newModel.apiKey"
+            :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
+            required
           />
         </div>
         <div class="form-item">
           <label>{{ t('config.modelConfig.modelName') }} <span class="required">*</span></label>
           <input
-              type="text"
-              v-model="newModel.modelName"
-              :placeholder="t('config.modelConfig.modelNamePlaceholder')"
-              required
+            type="text"
+            v-model="newModel.modelName"
+            :placeholder="t('config.modelConfig.modelNamePlaceholder')"
+            required
           />
         </div>
         <div class="form-item">
           <label>{{ t('config.modelConfig.description') }} <span class="required">*</span></label>
           <textarea
-              v-model="newModel.modelDescription"
-              rows="3"
-              :placeholder="t('config.modelConfig.descriptionPlaceholder')"
-              required
+            v-model="newModel.modelDescription"
+            rows="3"
+            :placeholder="t('config.modelConfig.descriptionPlaceholder')"
+            required
           ></textarea>
         </div>
       </div>
     </Modal>
 
-    <!-- 删除确认弹窗 -->
-    <Modal v-model="showDeleteModal" title="删除确认">
+    <!-- Delete confirmation modal -->
+    <Modal v-model="showDeleteModal" title="Delete confirmation">
       <div class="delete-confirm">
         <Icon icon="carbon:warning" class="warning-icon" />
-        <p>{{ t('config.modelConfig.deleteConfirmText') }} <strong>{{ selectedModel?.modelName }}</strong> {{ t('common.confirm') }}？</p>
+        <p>
+          {{ t('config.modelConfig.deleteConfirmText') }}
+          <strong>{{ selectedModel?.modelName }}</strong> {{ t('common.confirm') }}？
+        </p>
         <p class="warning-text">{{ t('config.modelConfig.deleteWarning') }}</p>
       </div>
       <template #footer>
-        <button class="cancel-btn" @click="showDeleteModal = false">{{ t('common.cancel') }}</button>
+        <button class="cancel-btn" @click="showDeleteModal = false">
+          {{ t('common.cancel') }}
+        </button>
         <button class="confirm-btn danger" @click="handleDelete">{{ t('common.delete') }}</button>
       </template>
     </Modal>
 
-    <!-- 错误提示 -->
+    <!-- Error toast -->
     <div v-if="error" class="error-toast" @click="error = ''">
       <Icon icon="carbon:error" />
       {{ error }}
     </div>
 
-    <!-- 成功提示 -->
+    <!-- Success toast -->
     <div v-if="success" class="success-toast" @click="success = ''">
       <Icon icon="carbon:checkmark" />
       {{ success }}
     </div>
-  </div>
+  </ConfigPanel>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import ConfigPanel from './components/configPanel.vue'
 import Modal from '@/components/modal/index.vue'
 import CustomSelect from '@/components/select/index.vue'
 import { ModelApiService, type Model } from '@/api/model-api-service'
 
-// 国际化
+// Internationalization
 const { t } = useI18n()
 
-// 响应式数据
+// Reactive data
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
@@ -250,43 +256,47 @@ const selectedModel = ref<Model | null>(null)
 const showModal = ref(false)
 const showDeleteModal = ref(false)
 
-// 新建Model表单数据
+// New Model form data
 const newModel = reactive<Omit<Model, 'id'>>({
-  baseUrl:  '',
-  apiKey:  '',
-  modelName:  '',
-  modelDescription:  '',
-  type:  '',
+  baseUrl: '',
+  apiKey: '',
+  modelName: '',
+  modelDescription: '',
+  type: '',
 })
 
-// 消息提示
+// Message toast
 const showMessage = (msg: string, type: 'success' | 'error') => {
   if (type === 'success') {
     success.value = msg
-    setTimeout(() => { success.value = '' }, 3000)
+    setTimeout(() => {
+      success.value = ''
+    }, 3000)
   } else {
     error.value = msg
-    setTimeout(() => { error.value = '' }, 5000)
+    setTimeout(() => {
+      error.value = ''
+    }, 5000)
   }
 }
 
-// 加载数据
+// Load data
 const loadData = async () => {
   loading.value = true
   try {
-    // 并行加载Model列表和可用工具
+    // Load the Model list and available types in parallel
     const [loadedModels, loadedTypes] = await Promise.all([
       ModelApiService.getAllModels(),
-      ModelApiService.getAllTypes()
+      ModelApiService.getAllTypes(),
     ])
     const normalizedModels = loadedModels.map(model => ({
-      ...model
+      ...model,
     }))
 
     models.splice(0, models.length, ...normalizedModels)
-    modelTypes.splice(0, models.length, ...loadedTypes)
+    modelTypes.splice(0, modelTypes.length, ...loadedTypes)
 
-    // 选中第一个Model
+    // Select the first Model
     if (normalizedModels.length > 0) {
       await selectModel(normalizedModels[0])
     }
@@ -298,25 +308,25 @@ const loadData = async () => {
   }
 }
 
-// 选择Model
+// Select Model
 const selectModel = async (model: Model) => {
   try {
-    // 加载详细信息
+    // Load the detailed information
     const detailedModel = await ModelApiService.getModelById(model.id)
     selectedModel.value = {
-      ...detailedModel
+      ...detailedModel,
     }
   } catch (err: any) {
     console.error('加载Model详情失败:', err)
     showMessage(t('config.modelConfig.loadDetailsFailed') + ': ' + err.message, 'error')
-    // 使用基本信息作为后备
+    // Use basic information as a fallback
     selectedModel.value = {
-      ...model
+      ...model,
     }
   }
 }
 
-// 显示新建Model弹窗
+// Show the new Model modal
 const showAddModelModal = () => {
   newModel.baseUrl = ''
   newModel.apiKey = ''
@@ -326,7 +336,7 @@ const showAddModelModal = () => {
   showModal.value = true
 }
 
-// 创建新Model
+// Create new Model
 const handleAddModel = async () => {
   if (!newModel.modelName.trim() || !newModel.modelDescription.trim()) {
     showMessage(t('config.modelConfig.requiredFields'), 'error')
@@ -339,7 +349,7 @@ const handleAddModel = async () => {
       apiKey: newModel.apiKey.trim(),
       modelName: newModel.modelName.trim(),
       modelDescription: newModel.modelDescription.trim(),
-      type: newModel.type.trim()
+      type: newModel.type.trim(),
     }
 
     const createdModel = await ModelApiService.createModel(modelData)
@@ -352,7 +362,7 @@ const handleAddModel = async () => {
   }
 }
 
-// 保存Model
+// Save Model
 const handleSave = async () => {
   if (!selectedModel.value) return
 
@@ -362,9 +372,12 @@ const handleSave = async () => {
   }
 
   try {
-    const savedModel = await ModelApiService.updateModel(selectedModel.value.id, selectedModel.value)
+    const savedModel = await ModelApiService.updateModel(
+      selectedModel.value.id,
+      selectedModel.value
+    )
 
-    // 更新本地列表中的数据
+    // Update the data in the local list
     const index = models.findIndex(a => a.id === savedModel.id)
     if (index !== -1) {
       models[index] = savedModel
@@ -377,25 +390,25 @@ const handleSave = async () => {
   }
 }
 
-// 显示删除确认
+// Show the delete confirmation modal
 const showDeleteConfirm = () => {
   showDeleteModal.value = true
 }
 
-// 删除Model
+// Delete Model
 const handleDelete = async () => {
   if (!selectedModel.value) return
 
   try {
     await ModelApiService.deleteModel(selectedModel.value.id)
 
-    // 从列表中移除
+    // Remove from the local list
     const index = models.findIndex(a => a.id === selectedModel.value!.id)
     if (index !== -1) {
       models.splice(index, 1)
     }
 
-    // 选择其他Model或清除选中状态
+    // Select the next Model or clear the selection
     selectedModel.value = models.length > 0 ? models[0] : null
     showDeleteModal.value = false
     showMessage(t('config.modelConfig.deleteSuccess'), 'success')
@@ -404,24 +417,24 @@ const handleDelete = async () => {
   }
 }
 
-// 导入Model
+// Import Model
 const handleImport = () => {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.json'
-  input.onchange = (event) => {
+  input.onchange = event => {
     const file = (event.target as HTMLInputElement).files?.[0]
     if (file) {
       const reader = new FileReader()
-      reader.onload = async (e) => {
+      reader.onload = async e => {
         try {
           const modelData = JSON.parse(e.target?.result as string)
-          // 基本验证
+          // Basic verification
           if (!modelData.modelName || !modelData.modelDescription) {
             throw new Error(t('config.modelConfig.invalidFormat'))
           }
 
-          // 移除id字段，让后端分配新的id
+          // Remove the id field and let the backend assign a new id
           const { id: _id, ...importData } = modelData
           const savedModel = await ModelApiService.createModel(importData)
           models.push(savedModel)
@@ -437,7 +450,7 @@ const handleImport = () => {
   input.click()
 }
 
-// 导出Model
+// Export Model
 const handleExport = () => {
   if (!selectedModel.value) return
 
@@ -456,34 +469,13 @@ const handleExport = () => {
   }
 }
 
-// 组件挂载时加载数据
+// Load data when the component is mounted
 onMounted(() => {
   loadData()
 })
 </script>
 
 <style scoped>
-.config-panel {
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.panel-actions {
-  display: flex;
-  gap: 12px;
-}
-
 .model-layout {
   display: flex;
   gap: 30px;
@@ -535,8 +527,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-state {
@@ -775,7 +771,8 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.confirm-btn, .cancel-btn {
+.confirm-btn,
+.cancel-btn {
   padding: 10px 20px;
   border-radius: 6px;
   cursor: pointer;
@@ -818,7 +815,8 @@ onMounted(() => {
 }
 
 /* 提示消息 */
-.error-toast, .success-toast {
+.error-toast,
+.success-toast {
   position: fixed;
   top: 20px;
   right: 20px;
@@ -853,5 +851,4 @@ onMounted(() => {
     opacity: 1;
   }
 }
-
 </style>

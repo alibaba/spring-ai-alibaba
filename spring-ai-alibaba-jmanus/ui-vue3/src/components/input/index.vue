@@ -61,7 +61,6 @@ interface Emits {
   (e: 'send', message: string): void
   (e: 'clear'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
-  (e: 'message-sent', message: string): void
   (e: 'plan-mode-clicked'): void
 }
 
@@ -77,7 +76,7 @@ const currentInput = ref('')
 const defaultPlaceholder = computed(() => props.placeholder || t('input.placeholder'))
 const currentPlaceholder = ref(defaultPlaceholder.value)
 
-// 计算属性来确保 disabled 是 boolean 类型
+// Computed property to ensure 'disabled' is a boolean type
 const isDisabled = computed(() => Boolean(props.disabled))
 
 const adjustInputHeight = () => {
@@ -101,23 +100,20 @@ const handleSend = () => {
 
   const query = currentInput.value.trim()
   
-  // 使用 Vue 的 emit 发送消息
+  // Use Vue's emit to send a message
   emit('send', query)
   
-  // 清空输入
+  // Clear the input
   clearInput()
-  
-  // 发送消息已发送事件
-  emit('message-sent', query)
 }
 
 const handlePlanModeClick = () => {
-  // 触发计划模式切换事件
+  // Trigger the plan mode toggle event
   emit('plan-mode-clicked')
 }
 
 /**
- * 清空输入框
+ * Clear the input box
  */
 const clearInput = () => {
   currentInput.value = ''
@@ -126,9 +122,9 @@ const clearInput = () => {
 }
 
 /**
- * 更新输入区域的状态（启用/禁用）
- * @param {boolean} enabled - 是否启用输入
- * @param {string} [placeholder] - 启用时的占位文本
+ * Update the state of the input area (enable/disable)
+ * @param {boolean} enabled - Whether to enable input
+ * @param {string} [placeholder] - Placeholder text when enabled
  */
 const updateState = (enabled: boolean, placeholder?: string) => {
   if (placeholder) {
@@ -139,14 +135,14 @@ const updateState = (enabled: boolean, placeholder?: string) => {
 
 
 /**
- * 获取当前输入框的值
- * @returns {string} 当前输入框的文本值 (已去除首尾空格)
+ * Get the current value of the input box
+ * @returns {string} The text value of the current input box (trimmed)
  */
 const getQuery = () => {
   return currentInput.value.trim()
 }
 
-// 暴露方法给父组件使用
+// Expose methods to the parent component
 defineExpose({
   clearInput,
   updateState,
@@ -155,11 +151,11 @@ defineExpose({
 })
 
 onMounted(() => {
-  // 组件挂载后的初始化逻辑
+  // Initialization logic after component mounting
 })
 
 onUnmounted(() => {
-  // 组件卸载前的清理逻辑
+  // Cleanup logic before component unmounting
 })
 </script>
 
@@ -169,12 +165,12 @@ onUnmounted(() => {
   padding: 20px 24px;
   border-top: 1px solid #1a1a1a;
   background: rgba(255, 255, 255, 0.02);
-  /* 确保输入区域始终在底部 */
-  flex-shrink: 0; /* 不会被压缩 */
-  position: sticky; /* 固定在底部 */
+  /* Ensure the input area is always at the bottom */
+  flex-shrink: 0; /* Won't be compressed */
+  position: sticky; /* Fixed at the bottom */
   bottom: 0;
   z-index: 100;
-  /* 添加轻微的阴影以区分消息区域 */
+  /* Add a slight shadow to distinguish the message area */
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(20px);
 }

@@ -15,12 +15,8 @@
 -->
 <template>
   <div class="custom-select">
-    <button
-        class="select-btn"
-        @click="toggleDropdown"
-        :title="placeholder"
-    >
-      <Icon :icon="props.icon || 'carbon:select-01'" width="18"/>
+    <button class="select-btn" @click="toggleDropdown" :title="placeholder">
+      <Icon :icon="props.icon || 'carbon:select-01'" width="18" />
       <span v-if="selectedOption" class="current-option">
         <span class="option-name">{{ selectedOption.name }}</span>
       </span>
@@ -28,35 +24,35 @@
         {{ placeholder }}
       </span>
       <Icon
-          :icon="showDropdown ? 'carbon:chevron-up' : 'carbon:chevron-down'"
-          width="14"
-          class="chevron"
+        :icon="showDropdown ? 'carbon:chevron-up' : 'carbon:chevron-down'"
+        width="14"
+        class="chevron"
       />
     </button>
 
     <transition name="slideDown">
-      <div v-show="showDropdown" class="select-dropdown" @click.stop>
+      <div
+        v-show="showDropdown"
+        class="select-dropdown"
+        :style="{ ...dropStyles, ...(props.direction === 'right' ? { right: 0 } : { left: 0 }) }"
+        @click.stop
+      >
         <div class="dropdown-header">
           <span>{{ dropdownTitle }}</span>
           <button class="close-btn" @click="showDropdown = false">
-            <Icon icon="carbon:close" width="16"/>
+            <Icon icon="carbon:close" width="16" />
           </button>
         </div>
         <div class="select-options">
           <button
-              v-for="option in options"
-              :key="option.id"
-              class="select-option"
-              :class="{ active: isSelected(option) }"
-              @click="selectOption(option)"
+            v-for="option in options"
+            :key="option.id"
+            class="select-option"
+            :class="{ active: isSelected(option) }"
+            @click="selectOption(option)"
           >
             <span class="option-name">{{ option.name }}</span>
-            <Icon
-                v-if="isSelected(option)"
-                icon="carbon:checkmark"
-                width="16"
-                class="check-icon"
-            />
+            <Icon v-if="isSelected(option)" icon="carbon:checkmark" width="16" class="check-icon" />
           </button>
         </div>
       </div>
@@ -67,42 +63,44 @@
   </div>
 </template>
 <script setup lang="ts">
-import {ref, computed} from 'vue'
-import {Icon} from '@iconify/vue'
+import { ref, computed } from 'vue'
+import { Icon } from '@iconify/vue'
 
-// 定义 props
+// Define props
 const props = defineProps<{
   modelValue?: string | null
   options: Array<{ id: string; name: string }>
   placeholder: string
   dropdownTitle?: string
   icon?: string
+  direction?: 'left' | 'right'
+  dropStyles?: Record<string, string>
 }>()
 
-// 定义 emit
+// Define emit
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string | null): void
 }>()
 
-// 控制下拉框显示隐藏
+// Control the display and hiding of the dropdown
 const showDropdown = ref(false)
 
-// 当前选中的选项对象
+// Current selected option object
 const selectedOption = computed(() => {
   return props.options.find(opt => opt.id === props.modelValue)
 })
 
-// 判断是否已选中该选项
+// Check if the option is selected
 const isSelected = (option: { id: string }) => {
   return option.id === props.modelValue
 }
 
-// 切换下拉框
+// Toggle the dropdown
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
 }
 
-// 选择某个选项时触发
+// Triggered when an option is selected
 const selectOption = (option: { id: string }) => {
   emit('update:modelValue', option.id)
   showDropdown.value = false
@@ -158,14 +156,16 @@ const selectOption = (option: { id: string }) => {
 .select-dropdown {
   position: absolute;
   top: 100%;
-  left: 0;
+  /* left: 0; */
   z-index: 9999;
   margin-top: 4px;
   background: linear-gradient(135deg, rgba(40, 40, 50, 0.95), rgba(30, 30, 40, 0.95));
   backdrop-filter: blur(16px);
   border: 1px solid rgba(102, 126, 234, 0.3);
   border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(102, 126, 234, 0.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(102, 126, 234, 0.2);
   min-width: 300px;
 }
 

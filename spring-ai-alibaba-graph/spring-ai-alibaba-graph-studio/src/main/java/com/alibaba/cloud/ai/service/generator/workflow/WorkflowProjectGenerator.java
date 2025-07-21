@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Edge;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.CodeNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.KnowledgeRetrievalNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.StartNodeData;
@@ -76,6 +77,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private final String HAS_RETRIEVER = "hasRetriever";
 
+	private final String HAS_CODE = "hasCode";
+
 	private final DSLAdapter dslAdapter;
 
 	private final TemplateRenderer templateRenderer;
@@ -108,6 +111,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			.map(Node::getData)
 			.anyMatch(nd -> nd instanceof KnowledgeRetrievalNodeData);
 
+		boolean hasCode = nodes.stream().map(Node::getData).anyMatch(nd -> nd instanceof CodeNodeData);
+
 		String stateSectionStr = renderStateSections(workflow.getWorkflowVars());
 		String nodeSectionStr = renderNodeSections(nodes, varNames);
 		String edgeSectionStr = renderEdgeSections(workflow.getGraph().getEdges(), nodes, varNames);
@@ -115,7 +120,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		Map<String, Object> graphBuilderModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
 				GRAPH_BUILDER_STATE_SECTION, stateSectionStr, GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
 				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr, HAS_RETRIEVER, hasRetriever, GRAPH_BUILDER_IMPORT_SECTION,
-				renderImportSection(workflow));
+				renderImportSection(workflow), HAS_CODE, hasCode);
 		Map<String, Object> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
 				GRAPH_BUILDER_START_INPUTS_SECTION, renderStartInputSection(workflow));
 		renderAndWriteTemplates(List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
@@ -317,6 +322,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 						"com.alibaba.cloud.ai.graph.node.QuestionClassifierNode"),
 				Map.entry(NodeType.PARAMETER_PARSING.difyValue(),
 						"com.alibaba.cloud.ai.graph.node.ParameterParsingNode"),
+				Map.entry(NodeType.TEMPLATE_TRANSFORM.difyValue(),
+						"com.alibaba.cloud.ai.graph.node.TemplateTransformNode"),
 				Map.entry(NodeType.TOOL.difyValue(), "com.alibaba.cloud.ai.graph.node.ToolNode"),
 				Map.entry(NodeType.KNOWLEDGE_RETRIEVAL.difyValue(),
 						"com.alibaba.cloud.ai.graph.node.KnowledgeRetrievalNode"),

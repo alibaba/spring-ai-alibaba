@@ -15,10 +15,13 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder;
 
+import java.util.List;
+
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
 
 /**
  * Plan execution recorder interface that defines methods for recording and retrieving
@@ -46,15 +49,14 @@ public interface PlanExecutionRecorder {
 	 * @param step Execution step
 	 * @param context Execution context
 	 */
-	void recordStepEnd(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep step,
-			com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
+	void recordStepEnd(ExecutionStep step, ExecutionContext context);
 
 	/**
 	 * Record the start of plan execution.
 	 * @param context Execution context containing user request and execution process
 	 * information
 	 */
-	void recordPlanExecutionStart(com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext context);
+	void recordPlanExecutionStart(ExecutionContext context);
 
 	/**
 	 * Record think-act execution
@@ -191,10 +193,13 @@ public interface PlanExecutionRecorder {
 		String actionResult;
 
 		/** Execution status */
-		String status;
+		ExecutionStatus status;
 
 		/** Whether a sub-plan was created */
 		boolean subPlanCreated;
+
+		/** Action tool information list */
+		List<ThinkActRecord.ActToolInfo> actToolInfoList;
 
 		/** Execution summary */
 		String summary;
@@ -204,12 +209,6 @@ public interface PlanExecutionRecorder {
 
 		/** Actual steps executed */
 		int actualSteps;
-
-		/** Whether execution completed successfully */
-		boolean completed;
-
-		/** Whether agent got stuck */
-		boolean stuck;
 
 		/** Final execution result */
 		String result;
@@ -234,22 +233,6 @@ public interface PlanExecutionRecorder {
 
 		public void setActualSteps(int actualSteps) {
 			this.actualSteps = actualSteps;
-		}
-
-		public boolean isCompleted() {
-			return completed;
-		}
-
-		public void setCompleted(boolean completed) {
-			this.completed = completed;
-		}
-
-		public boolean isStuck() {
-			return stuck;
-		}
-
-		public void setStuck(boolean stuck) {
-			this.stuck = stuck;
 		}
 
 		public String getResult() {
@@ -396,11 +379,11 @@ public interface PlanExecutionRecorder {
 			this.actionResult = actionResult;
 		}
 
-		public String getStatus() {
+		public ExecutionStatus getStatus() {
 			return status;
 		}
 
-		public void setStatus(String status) {
+		public void setStatus(ExecutionStatus status) {
 			this.status = status;
 		}
 
@@ -418,6 +401,15 @@ public interface PlanExecutionRecorder {
 
 		public void setSummary(String summary) {
 			this.summary = summary;
+		}
+
+		public List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord.ActToolInfo> getActToolInfoList() {
+			return actToolInfoList;
+		}
+
+		public void setActToolInfoList(
+				List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord.ActToolInfo> actToolInfoList) {
+			this.actToolInfoList = actToolInfoList;
 		}
 
 	}

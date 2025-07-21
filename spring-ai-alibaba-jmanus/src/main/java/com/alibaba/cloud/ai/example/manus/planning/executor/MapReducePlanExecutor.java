@@ -24,7 +24,7 @@ import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
@@ -90,7 +90,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	private final ExecutorService executorService;
 
 	public MapReducePlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
-			AgentService agentService, LlmService llmService, ManusProperties manusProperties) {
+			AgentService agentService, ILlmService llmService, ManusProperties manusProperties) {
 		super(agents, recorder, agentService, llmService, manusProperties);
 
 		// Get thread pool size from configuration

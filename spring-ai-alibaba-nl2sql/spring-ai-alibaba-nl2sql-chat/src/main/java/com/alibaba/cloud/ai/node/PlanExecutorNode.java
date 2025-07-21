@@ -37,7 +37,7 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 
 	private static final Logger logger = LoggerFactory.getLogger(PlanExecutorNode.class);
 
-	// 支持的节点类型
+	// Supported node types
 	private static final Set<String> SUPPORTED_NODES = Set.of(SQL_EXECUTE_NODE, PYTHON_EXECUTE_NODE,
 			REPORT_GENERATOR_NODE);
 
@@ -49,13 +49,13 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 		Integer currentStep = getCurrentStepNumber(state);
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
 
-		// 检查计划是否已完成
+		// Check if the plan is completed
 		if (currentStep > executionPlan.size()) {
-			logger.info("计划已完成，当前步骤: {}, 总步骤: {}", currentStep, executionPlan.size());
+			logger.info("Plan completed, current step: {}, total steps: {}", currentStep, executionPlan.size());
 			return Map.of(PLAN_CURRENT_STEP, 1, PLAN_NEXT_NODE, REPORT_GENERATOR_NODE);
 		}
 
-		// 获取当前步骤并确定下一个节点
+		// Get current step and determine next node
 		ExecutionStep executionStep = executionPlan.get(currentStep - 1);
 		String toolToUse = executionStep.getToolToUse();
 
@@ -63,15 +63,16 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 	}
 
 	/**
-	 * 确定下一个要执行的节点
+	 * Determine the next node to execute
 	 */
 	private Map<String, Object> determineNextNode(String toolToUse) {
 		if (SUPPORTED_NODES.contains(toolToUse)) {
-			logger.info("确定下一个执行节点: {}", toolToUse);
+			logger.info("Determined next execution node: {}", toolToUse);
 			return Map.of(PLAN_NEXT_NODE, toolToUse);
 		}
 		else {
-			throw new IllegalArgumentException("不支持的节点类型: " + toolToUse + ", 支持的节点类型: " + SUPPORTED_NODES);
+			throw new IllegalArgumentException(
+					"Unsupported node type: " + toolToUse + ", supported node types: " + SUPPORTED_NODES);
 		}
 	}
 
