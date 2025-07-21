@@ -28,7 +28,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 import static com.alibaba.cloud.ai.dbconnector.AbstractDBConnectionPool.clearDataSourceCache;
 
-// formatter: off
+// @formatter:off
 @SpringBootApplication(scanBasePackages = { "com.alibaba.cloud.ai" })
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, Client.class, AnalyticDbVectorStore.class })
@@ -49,3 +49,4 @@ public class Application {
 	}
 
 }
+// @formatter:on

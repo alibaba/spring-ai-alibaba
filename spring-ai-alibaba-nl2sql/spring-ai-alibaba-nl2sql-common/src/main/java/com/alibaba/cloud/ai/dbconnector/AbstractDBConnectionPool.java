@@ -145,18 +145,13 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 
 	public DataSource createdDataSource(String url, String username, String password) throws Exception {
 
-		DruidDataSource dataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(Map.of(
-				DruidDataSourceFactory.PROP_DRIVERCLASSNAME, getDriver(),
-				DruidDataSourceFactory.PROP_URL, url,
-				DruidDataSourceFactory.PROP_USERNAME, username,
-				DruidDataSourceFactory.PROP_PASSWORD, password,
-				DruidDataSourceFactory.PROP_INITIALSIZE, "1",
-				DruidDataSourceFactory.PROP_MINIDLE, "1",
-				DruidDataSourceFactory.PROP_MAXACTIVE, "3",
-				DruidDataSourceFactory.PROP_MAXWAIT, "6000",
-				DruidDataSourceFactory.PROP_TIMEBETWEENEVICTIONRUNSMILLIS, "60000",
-				DruidDataSourceFactory.PROP_FILTERS, "wall,stat"
-		));
+		DruidDataSource dataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(
+				Map.of(DruidDataSourceFactory.PROP_DRIVERCLASSNAME, getDriver(), DruidDataSourceFactory.PROP_URL, url,
+						DruidDataSourceFactory.PROP_USERNAME, username, DruidDataSourceFactory.PROP_PASSWORD, password,
+						DruidDataSourceFactory.PROP_INITIALSIZE, "1", DruidDataSourceFactory.PROP_MINIDLE, "1",
+						DruidDataSourceFactory.PROP_MAXACTIVE, "3", DruidDataSourceFactory.PROP_MAXWAIT, "6000",
+						DruidDataSourceFactory.PROP_TIMEBETWEENEVICTIONRUNSMILLIS, "60000",
+						DruidDataSourceFactory.PROP_FILTERS, "wall,stat"));
 		dataSource.setBreakAfterAcquireFailure(Boolean.TRUE);
 		dataSource.setConnectionErrorRetryAttempts(2);
 
