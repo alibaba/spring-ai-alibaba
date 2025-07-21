@@ -33,7 +33,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
  * Reduce operation tool for MapReduce workflow
  * Supports get_lines, append, and replace operations for file manipulation in root plan directory
  */
-public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.ReduceOperationInput> implements TerminableTool {
+public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.ReduceOperationInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(ReduceOperationTool.class);
 
@@ -214,9 +214,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	// 共享状态管理器，用于管理多个Agent实例间的共享状态
 	private MapReduceSharedStateManager sharedStateManager;
 
-	// Track if any operation has completed, allowing termination
-	private volatile boolean operationCompleted = false;
-
 	public ReduceOperationTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
 			UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.currentPlanId = planId;
@@ -296,7 +293,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 					String content = input.getContent();
 					ToolExecuteResult appendResult = appendToFile(REDUCE_FILE_NAME, content);
 					// Mark operation as completed for termination capability after append
-					this.operationCompleted = true;
 					yield appendResult;
 				}
 				case ACTION_REPLACE -> {
@@ -309,7 +305,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 
 					ToolExecuteResult replaceResult = replaceInFile(REDUCE_FILE_NAME, sourceText, targetText);
 					// Mark operation as completed for termination capability after replace
-					this.operationCompleted = true;
 					yield replaceResult;
 				}
 				default -> new ToolExecuteResult("Unknown operation: " + action + ". Supported operations: "
@@ -571,12 +566,5 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	// ==================== TerminableTool interface implementation
 	// ====================
 
-	@Override
-	public boolean canTerminate() {
-		// ReduceOperationTool can be terminated only after append or replace operations
-		// get_lines operations do not trigger termination, allowing multiple reads
-		// This ensures LLM completes all output in a single append/replace call
-		return operationCompleted;
-	}
 
 }
