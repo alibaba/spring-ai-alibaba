@@ -14,25 +14,24 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.mcp.client;
+package com.alibaba.cloud.ai.mcp.discovery.client.builder;
 
-import com.alibaba.cloud.ai.mcp.discovery.client.builder.WebFluxSseClientTransportBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.context.annotation.Bean;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * @author Sunrisea
  * @since 2025/7/4 11:16
  */
-@AutoConfiguration(before = { NacosMcpClientAutoConfiguration.class })
-@ConditionalOnClass(WebFluxSseClientTransport.class)
-public class NacosMcpTransportBuilderAutoConfiguration {
+public class WebFluxSseClientTransportBuilder {
 
-	@Bean
-	public WebFluxSseClientTransportBuilder webFluxSseClientTransportBuilder() {
-		return new WebFluxSseClientTransportBuilder();
+	public WebFluxSseClientTransport build(WebClient.Builder webClientBuilder, ObjectMapper objectMapper,
+			String sseEndpoint) {
+		return WebFluxSseClientTransport.builder(webClientBuilder)
+			.sseEndpoint(sseEndpoint)
+			.objectMapper(objectMapper)
+			.build();
 	}
 
 }

@@ -16,9 +16,9 @@
 
 package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 
+import com.alibaba.cloud.ai.mcp.discovery.client.transport.LoadbalancedMcpAsyncClient;
+import com.alibaba.cloud.ai.mcp.discovery.client.transport.LoadbalancedMcpSyncClient;
 import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
-import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpAsyncClient;
-import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpSyncClient;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration;
