@@ -773,6 +773,50 @@ const words: I18nType = {
     panelResizeHint: 'Drag to resize panel, double-click to reset',
     aboutExecutionDetails: 'About Integrated Execution Details',
   },
+
+  // Cron Task
+  cronTask: {
+    title: 'Cron Task Management',
+    noTasks: 'No cron tasks',
+    taskName: 'Task Name',
+    taskNamePlaceholder: 'Please enter task name',
+    cronExpression: 'Cron Expression',
+    cronExpressionPlaceholder: 'e.g: 0 0 12 * * ?',
+    cronExpressionHelp: 'Format: second minute hour day month week year',
+    taskDescription: 'Task Description',
+    taskDescriptionPlaceholder: 'Please enter task description',
+    taskStatus: 'Task Status',
+    taskDetail: 'Task Detail',
+    executeOnce: 'Execute Once',
+    viewDetail: 'View Detail',
+    edit: 'Edit',
+    disable: 'Disable',
+    enable: 'Enable',
+    operations: 'Operations',
+    deleteConfirmMessage: 'Are you sure you want to delete task "{taskName}"? This action cannot be undone.',
+    deleteConfirm: 'Confirm Delete',
+    delete: 'Delete',
+    nextExecution: 'Next Execution Time',
+    createTime: 'Create Time',
+    updateTime: 'Update Time',
+    active: 'Active',
+    inactive: 'Inactive',
+    inactiveTasks: 'Inactive Tasks',
+    activeTasks: 'Active Tasks',
+    totalTasks: 'Total Tasks',
+    // Cron expression formatting
+    cronFormat: {
+      weekDays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      weekly: 'Weekly',
+      weekdays: 'Weekdays',
+      daily: 'Daily',
+      oclock: ':00',
+      weekdayMorning: 'Weekdays at 9:00 AM',
+      dailyNoon: 'Daily at noon',
+      dailyMidnight: 'Daily at midnight',
+      mondayEvening: 'Monday at 6:00 PM',
+    }
+  },
 }
 
 export default words
