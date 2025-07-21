@@ -403,10 +403,10 @@ const getRelativeTimeString = (date: Date): string => {
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMinutes < 1) return '刚刚'
-  if (diffMinutes < 60) return `${diffMinutes}分钟前`
-  if (diffHours < 24) return `${diffHours}小时前`
-  if (diffDays < 30) return `${diffDays}天前`
+  if (diffMinutes < 1) return t('time.now')
+  if (diffMinutes < 60) return t('time.minuteAgo', { count: diffMinutes })
+  if (diffHours < 24) return t('time.hourAgo', { count: diffHours })
+  if (diffDays < 30) return t('time.dayAgo', { count: diffDays })
 
   return date.toLocaleDateString('zh-CN')
 }

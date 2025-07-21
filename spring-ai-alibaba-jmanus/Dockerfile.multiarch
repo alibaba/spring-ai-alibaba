@@ -12,8 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Use Alibaba Dragonwell 17 Ubuntu base image
-FROM dragonwell-registry.cn-hangzhou.cr.aliyuncs.com/dragonwell/dragonwell:17-ubuntu
+# Multi-stage build for better layer caching and smaller final image
+ARG BUILD_VERSION=3.0.0-SNAPSHOT
+# Runtime stage - use multi-arch base image
+FROM eclipse-temurin:17-jdk-noble
+
+# Add build arguments for platform detection
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
 
 # Set working directory
 WORKDIR /app
@@ -54,7 +62,7 @@ RUN apt-get update && \
     libxrandr2 \
     libgbm1 \
     libxss1 \
-    libasound2 \
+    libasound2t64 \
     libatspi2.0-0 \
     libgtk-3-0 \
     libgdk-pixbuf2.0-0 \
@@ -80,10 +88,10 @@ RUN apt-get update && \
 # Install Playwright CLI globally (for debugging purposes)
 RUN npm install -g playwright
 
-# Copy JAR file first to install browsers using Java Playwright
+# Copy JAR file from builder stage
 COPY target/spring-ai-alibaba-jmanus-3.0.0-SNAPSHOT.jar app.jar
 
-# Install Playwright browsers using Java CLI to ensure compatibility
+# Install Playwright browsers using Java Playwright
 RUN java -jar app.jar playwright-init
 
 # Extract JAR file for faster startup
@@ -116,6 +124,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 ENV DOCKER_ENV=true
 
 # Set JVM options for better performance in container
+# Adjust memory settings based on architecture
 ENV JAVA_OPTS="-Xmx2g -Xms1g -XX:+UseG1GC -XX:+UseContainerSupport"
 
 # Expose port
@@ -124,6 +133,8 @@ EXPOSE 18080
 # Create startup script
 RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'echo "Starting JManus with Playwright in headless mode..."' >> /app/start.sh && \
+    echo 'echo "Platform: $TARGETPLATFORM"' >> /app/start.sh && \
+    echo 'echo "Architecture: $TARGETARCH"' >> /app/start.sh && \
     echo 'echo "Java version: $(java -version 2>&1 | head -1)"' >> /app/start.sh && \
     echo 'echo "Playwright version: $(playwright --version)"' >> /app/start.sh && \
     echo 'echo "Available browsers:"' >> /app/start.sh && \
@@ -137,6 +148,14 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'cd /app/extracted' >> /app/start.sh && \
     echo 'exec java $JAVA_OPTS -cp /app/extracted/BOOT-INF/classes:/app/extracted/BOOT-INF/lib/*:. com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication --spring.profiles.active=h2,docker' >> /app/start.sh && \
     chmod +x /app/start.sh
+
+# Add labels for better image management
+LABEL org.opencontainers.image.title="JManus"
+LABEL org.opencontainers.image.description="Spring AI Alibaba JManus - Web Automation Platform"
+LABEL org.opencontainers.image.vendor="Alibaba Cloud"
+LABEL org.opencontainers.image.version="${BUILD_VERSION}"
+LABEL org.opencontainers.image.url="https://github.com/alibaba/spring-ai-alibaba"
+LABEL org.opencontainers.image.source="https://github.com/alibaba/spring-ai-alibaba"
 
 # Set entrypoint
 ENTRYPOINT ["/app/start.sh"]

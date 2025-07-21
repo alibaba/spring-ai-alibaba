@@ -14,28 +14,20 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.dispatcher;
+package com.alibaba.cloud.ai.example.manus.tool.database.action;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.EdgeAction;
-import com.alibaba.cloud.ai.util.StateUtils;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.database.DataSourceService;
+import com.alibaba.cloud.ai.example.manus.tool.database.DatabaseRequest;
 
-import static com.alibaba.cloud.ai.constant.Constant.*;
+public abstract class AbstractDatabaseAction {
 
-/**
- * @author zhangshenghang
- */
-public class SQLExecutorDispatcher implements EdgeAction {
-
-	@Override
-	public String apply(OverAllState state) {
-		boolean present = StateUtils.hasValue(state, SQL_EXECUTE_NODE_EXCEPTION_OUTPUT);
-		if (present) {
-			return SQL_GENERATE_NODE;
-		}
-		else {
-			return SEMANTIC_CONSISTENCY_NODE;
-		}
-	}
+	/**
+	 * 执行数据库操作
+	 * @param request 请求参数
+	 * @param dataSourceService 数据源服务
+	 * @return 执行结果
+	 */
+	public abstract ToolExecuteResult execute(DatabaseRequest request, DataSourceService dataSourceService);
 
 }
