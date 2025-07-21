@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 
-import com.alibaba.cloud.ai.mcp.nacos.client.builder.WebFluxSseClientTransportBuilder;
+import com.alibaba.cloud.ai.mcp.discovery.client.builder.WebFluxSseClientTransportBuilder;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

@@ -23,7 +23,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
+            <artifactId>spring-ai-alibaba-mcp-discovery</artifactId>
             <version>${revision}</version>
         </dependency>
 

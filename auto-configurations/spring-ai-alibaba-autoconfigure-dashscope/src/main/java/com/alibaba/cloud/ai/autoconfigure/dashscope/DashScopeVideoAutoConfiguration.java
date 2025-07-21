@@ -17,58 +17,63 @@ package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeVideoApi;
 import com.alibaba.cloud.ai.dashscope.video.DashScopeVideoModel;
-import com.alibaba.cloud.ai.dashscope.video.DashScopeVideoOptions;
-
+import com.alibaba.cloud.ai.model.SpringAIAlibabaModelProperties;
+import com.alibaba.cloud.ai.model.SpringAIAlibabaModels;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
+
+import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUtils.resolveConnectionProperties;
 
 /**
  * DashScope Video Generation Auto Configuration.
  *
  * @author dashscope
+ * @author yuluo
+ * @since 1.0.0.3
  */
-@Configuration(proxyBeanMethods = false)
-@ConditionalOnClass({ DashScopeVideoApi.class, DashScopeVideoModel.class })
-@EnableConfigurationProperties(DashScopeVideoProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.dashscope.video", name = "enabled", havingValue = "true",
+
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
+@ConditionalOnDashScopeEnabled
+@ConditionalOnClass({ DashScopeVideoApi.class })
+@ConditionalOnProperty(name = SpringAIAlibabaModelProperties.VIDEO_MODEL, havingValue = SpringAIAlibabaModels.DASHSCOPE,
 		matchIfMissing = true)
+@EnableConfigurationProperties({ DashScopeConnectionProperties.class, DashScopeVideoProperties.class })
+@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class, })
 public class DashScopeVideoAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public DashScopeVideoApi dashScopeVideoApi(RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+	public DashScopeVideoModel dashScopeVideoModel(DashScopeConnectionProperties commonProperties,
+			DashScopeVideoProperties videoProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
-		return new DashScopeVideoApi(restClientBuilder.build(), webClientBuilder.build(), responseErrorHandler);
-	}
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, videoProperties, "image");
 
-	@Bean
-	@ConditionalOnMissingBean
-	public DashScopeVideoOptions dashScopeVideoOptions(DashScopeVideoProperties properties) {
-		return DashScopeVideoOptions.builder()
-			.withModel(properties.getModel())
-			.withWidth(properties.getWidth())
-			.withHeight(properties.getHeight())
-			.withDuration(properties.getDuration())
-			.withFps(properties.getFps())
-			.withSeed(properties.getSeed())
-			.withNumFrames(properties.getNumFrames())
+		var videoApi = DashScopeVideoApi.builder()
+			.apiKey(resolved.apiKey())
+			.baseUrl(resolved.baseUrl())
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable())
+			.responseErrorHandler(responseErrorHandler)
 			.build();
-	}
 
-	@Bean
-	@ConditionalOnMissingBean
-	public DashScopeVideoModel dashScopeVideoModel(DashScopeVideoApi dashScopeVideoApi,
-			DashScopeVideoOptions dashScopeVideoOptions, RetryTemplate retryTemplate) {
-		return new DashScopeVideoModel(dashScopeVideoApi, dashScopeVideoOptions, retryTemplate);
+		// todo: add observation
+
+		return DashScopeVideoModel.builder()
+			.videoApi(videoApi)
+			.defaultOptions(videoProperties.getOptions())
+			.retryTemplate(retryTemplate)
+			.build();
 	}
 
 }

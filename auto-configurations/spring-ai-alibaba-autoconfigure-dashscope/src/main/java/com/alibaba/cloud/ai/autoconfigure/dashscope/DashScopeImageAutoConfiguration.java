@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.model.SpringAIAlibabaModels;
@@ -47,7 +46,7 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class })
-@ConditionalOnClass(DashScopeApi.class)
+@ConditionalOnClass(DashScopeImageApi.class)
 @ConditionalOnDashScopeEnabled
 @ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIAlibabaModels.DASHSCOPE,
 		matchIfMissing = true)

@@ -10,71 +10,19 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-mcp-gateway</artifactId>
-    <version>${revision}</version>
+    <version>1.0.0.3-SNAPSHOT</version>
+    <packaging>pom</packaging>
     <name>Spring AI Alibaba MCP Gateway</name>
-    <description>Nacos3 MCP Gateway for Spring AI Alibaba</description>
+    <description>MCP Gateway for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <modules>
+        <module>spring-ai-alibaba-mcp-gateway-core</module>
+        <module>spring-ai-alibaba-mcp-gateway-nacos</module>
+    </modules>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
-        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <developerConnection>git@github.com/alibaba/spring-ai-alibaba.git</developerConnection>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-mcp-server</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-mcp-nacos-common</artifactId>
-            <version>${revision}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.projectreactor.netty</groupId>
-            <artifactId>reactor-netty-http</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.jayway.jsonpath</groupId>
-            <artifactId>json-path</artifactId>
-            <version>${json-path.version}</version>
-        </dependency>
-
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
 
 </project>
