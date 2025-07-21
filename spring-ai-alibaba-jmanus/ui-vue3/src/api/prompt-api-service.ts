@@ -16,13 +16,13 @@
 
 export interface Prompt {
   id: string
-  builtIn:boolean
-  type:string;
+  builtIn: boolean
+  type: string
   promptName: string
-  messageType:string
+  messageType: string
   promptDescription: string
-  promptContent:string
-  namespace?:string
+  promptContent: string
+  namespace?: string
 }
 
 export class PromptApiService {
@@ -46,9 +46,9 @@ export class PromptApiService {
   /**
    * Get all Prompt list
    */
-  static async getAllPrompts(): Promise<Prompt[]>{
+  static async getAllPrompts(namespace: string): Promise<Prompt[]> {
     try {
-      const response = await fetch(this.BASE_URL)
+      const response = await fetch(`${this.BASE_URL}/namespace/${namespace}`)
       const result = await this.handleResponse(response)
       return await result.json()
     } catch (error) {
@@ -79,9 +79,9 @@ export class PromptApiService {
       const response = await fetch(this.BASE_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(promptConfig)
+        body: JSON.stringify(promptConfig),
       })
       const result = await this.handleResponse(response)
       return await result.json()
@@ -90,7 +90,7 @@ export class PromptApiService {
       throw error
     }
   }
-    /**
+  /**
    * Update Prompt configuration
    */
   static async updatePrompt(id: string, PromptConfig: Prompt): Promise<Prompt> {
@@ -98,9 +98,9 @@ export class PromptApiService {
       const response = await fetch(`${this.BASE_URL}/${id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(PromptConfig)
+        body: JSON.stringify(PromptConfig),
       })
       const result = await this.handleResponse(response)
       return await result.json()
@@ -110,14 +110,13 @@ export class PromptApiService {
     }
   }
 
-
-   /**
+  /**
    * Delete Prompt
    */
   static async deletePrompt(id: string): Promise<void> {
     try {
       const response = await fetch(`${this.BASE_URL}/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
       if (response.status === 400) {
         throw new Error('Cannot delete default Prompt')
@@ -129,4 +128,3 @@ export class PromptApiService {
     }
   }
 }
-

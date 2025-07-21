@@ -627,8 +627,11 @@ const handleSendMessage = (message: string) => {
 // Get agent execution status based on index
 const getAgentExecutionStatus = (message: Message, index: number): string => {
   const agentExecutionSequence = message.planExecution?.agentExecutionSequence ?? []
+  // 使用安全的索引检查来避免越界访问
+  if (index < 0 || index >= agentExecutionSequence.length) {
+    return 'IDLE'
+  }
   const agentExecution = agentExecutionSequence[index]
-  // 直接返回 AgentExecutionRecord 的状态，无需判断 agentExecution 是否存在
   return agentExecution.status ?? 'IDLE'
 }
 

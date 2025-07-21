@@ -7,6 +7,11 @@ spring:
     name: spring-ai-alibaba-openmanus
   profiles:
     active: h2
+  main:
+    allow-circular-references: true
+    lazy-initialization: false
+  aop:
+    proxy-target-class: true
   ai:
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode

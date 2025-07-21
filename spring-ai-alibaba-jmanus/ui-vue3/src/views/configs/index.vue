@@ -19,11 +19,16 @@
     <div class="config-header">
       <!-- <h1>Configuration Center</h1> -->
       <div class="header-actions">
-        <button class="action-btn" @click="$router.push('/')">
-          <Icon icon="carbon:arrow-left" />
-          {{ $t('backHome') }}
-        </button>
-        <LanguageSwitcher />
+        <div class="header-actions-left">
+          <button class="action-btn" @click="$router.push('/')">
+            <Icon icon="carbon:arrow-left" />
+            {{ $t('backHome') }}
+          </button>
+          <LanguageSwitcher />
+        </div>
+        <div class="header-actions-right">
+          <NamespaceSwitch />
+        </div>
       </div>
     </div>
 
@@ -31,25 +36,23 @@
     <div class="config-content">
       <!-- Left navigation -->
       <nav class="config-nav">
-        <div
-          v-for="(item, index) in categories"
-          :key="index"
-          class="nav-item"
-          :class="{ active: activeCategory === item.key }"
-          @click="handleNavClick(item.key)"
-        >
-          <Icon :icon="item.icon" width="20" />
-          <span>{{ item.label }}</span>
-        </div>
+        <template v-for="(item, index) in categories">
+          <div
+            v-if="!item.disabled"
+            :key="index"
+            class="nav-item"
+            :class="{ active: activeCategory === item.key }"
+            @click="handleNavClick(item.key)"
+          >
+            <Icon :icon="item.icon" width="20" />
+            <span>{{ item.label }}</span>
+          </div>
+        </template>
       </nav>
 
       <!-- Right configuration details -->
       <div class="config-details">
-        <BasicConfig v-if="activeCategory === 'basic'" />
-        <AgentConfig v-if="activeCategory === 'agent'" />
-        <ModelConfig v-if="activeCategory === 'model'" />
-        <McpConfig v-if="activeCategory === 'mcp'" />
-        <dynamicPromptConfig v-if="activeCategory === 'prompt'" />
+        <component :is="activeComponent" />
       </div>
     </div>
   </div>
@@ -64,8 +67,20 @@ import BasicConfig from './basicConfig.vue'
 import AgentConfig from './agentConfig.vue'
 import ModelConfig from './modelConfig.vue'
 import McpConfig from './mcpConfig.vue'
-import dynamicPromptConfig from './dynamicPromptConfig.vue'
+import DynamicPromptConfig from './dynamicPromptConfig.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
+import NamespaceConfig from './namespaceConfig.vue'
+import NamespaceSwitch from './components/namespaceSwitch.vue'
+
+interface CategoryMap {
+  [key: string]: any
+  basic: typeof BasicConfig
+  agent: typeof AgentConfig
+  model: typeof ModelConfig
+  mcp: typeof McpConfig
+  prompt: typeof DynamicPromptConfig
+  namespace: typeof NamespaceConfig
+}
 
 const { t } = useI18n()
 
@@ -73,12 +88,28 @@ const route = useRoute()
 const router = useRouter()
 
 const activeCategory = ref(route.params.category || 'basic')
+
+const categoryMap: CategoryMap = {
+  basic: BasicConfig,
+  agent: AgentConfig,
+  model: ModelConfig,
+  mcp: McpConfig,
+  prompt: DynamicPromptConfig,
+  namespace: NamespaceConfig,
+}
+
+const activeComponent = computed(() => {
+  const categoryKey = activeCategory.value as string
+  return categoryMap[categoryKey] || BasicConfig
+})
+
 const categories = computed(() => [
   { key: 'basic', label: t('config.categories.basic'), icon: 'carbon:settings' },
   { key: 'agent', label: t('config.categories.agent'), icon: 'carbon:bot' },
   { key: 'model', label: t('config.categories.model'), icon: 'carbon:build-image' },
   { key: 'mcp', label: t('config.categories.mcp'), icon: 'carbon:tool-box' },
   { key: 'prompt', label: t('config.categories.prompt'), icon: 'carbon:repo-artifact' },
+  { key: 'namespace', disabled: true, icon: 'carbon:repo-artifact' },
 ])
 const handleNavClick = (categoryKey: string) => {
   activeCategory.value = categoryKey
@@ -111,8 +142,14 @@ const handleNavClick = (categoryKey: string) => {
 
 .header-actions {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  width: 100%;
+}
+.header-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .config-header h1 {
@@ -157,7 +194,7 @@ const handleNavClick = (categoryKey: string) => {
 
 .config-details {
   flex: 1;
-  padding: 30px;
+  padding: 24px 30px;
   overflow-y: auto;
 }
 
