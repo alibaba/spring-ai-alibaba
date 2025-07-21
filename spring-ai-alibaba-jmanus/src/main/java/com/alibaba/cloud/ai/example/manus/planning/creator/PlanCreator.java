@@ -146,7 +146,6 @@ public class PlanCreator {
 			else {
 				throw new RuntimeException("Failed to create a valid execution plan after retries");
 			}
-
 			context.setPlan(currentPlan);
 
 		}

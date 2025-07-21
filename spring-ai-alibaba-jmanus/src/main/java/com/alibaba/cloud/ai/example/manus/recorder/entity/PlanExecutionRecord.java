@@ -97,6 +97,9 @@ public class PlanExecutionRecord {
 	// Actual calling model
 	private String modelName;
 
+	// Whether the plan is accepted
+	private String acceptedPlan;
+
 	/**
 	 * Default constructor for Jackson and other frameworks.
 	 */
@@ -320,6 +323,14 @@ public class PlanExecutionRecord {
 
 	public void setModelName(String modelName) {
 		this.modelName = modelName;
+	}
+
+	public String getAcceptedPlan() {
+		return acceptedPlan;
+	}
+
+	public void setAcceptedPlan(String acceptedPlan) {
+		this.acceptedPlan = acceptedPlan;
 	}
 
 	/**

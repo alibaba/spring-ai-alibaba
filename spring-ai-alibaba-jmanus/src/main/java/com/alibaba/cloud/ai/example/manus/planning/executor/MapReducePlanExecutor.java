@@ -34,6 +34,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceE
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceNode;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.SequentialNode;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.planning.service.PlanConfirmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
@@ -90,8 +91,9 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	private final ExecutorService executorService;
 
 	public MapReducePlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
-			AgentService agentService, ILlmService llmService, ManusProperties manusProperties) {
-		super(agents, recorder, agentService, llmService, manusProperties);
+			AgentService agentService, ILlmService llmService, ManusProperties manusProperties,
+			PlanConfirmService planConfirmService) {
+		super(agents, recorder, agentService, llmService, manusProperties, planConfirmService);
 
 		// Get thread pool size from configuration
 		int threadPoolSize = getMapTaskThreadPoolSize();

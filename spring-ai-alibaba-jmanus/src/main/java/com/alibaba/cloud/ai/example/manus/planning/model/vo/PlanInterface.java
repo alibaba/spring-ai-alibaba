@@ -167,6 +167,18 @@ public interface PlanInterface {
 	public String getPlanId();
 
 	/**
+	 * 获取当前计划是否被用户接受
+	 * @return see ConfirmState
+	 */
+	String getAccepted();
+
+	/**
+	 * 设置当前计划是否被用户接受
+	 * @param accepted see ConfirmState
+	 */
+	void setAccepted(String accepted);
+
+	/**
 	 * 更新所有步骤的索引，从0开始递增。 Update the indices of all steps, starting from 0.
 	 */
 	default void updateStepIndices() {

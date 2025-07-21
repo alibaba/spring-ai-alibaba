@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanConfirmData;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import org.slf4j.Logger;
@@ -66,6 +67,13 @@ public class PlanFinalizer {
 	public void generateSummary(ExecutionContext context) {
 		if (context == null || context.getPlan() == null) {
 			throw new IllegalArgumentException("ExecutionContext or its plan cannot be null");
+		}
+		// If the plan is not accepted, end the current task
+		if (PlanConfirmData.ConfirmState.REJECT.getState().equals(context.getPlan().getAccepted())) {
+			String summary = "The current plan is not accepted, the task is over, please ask again.";
+			context.setResultSummary(summary);
+			recordPlanCompletion(context, summary);
+			return;
 		}
 		if (!context.isNeedSummary()) {
 			log.info("No need to generate summary, use code generate summary instead");
