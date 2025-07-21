@@ -25,21 +25,7 @@ import java.util.List;
 @ConfigurationProperties(prefix = NacosMcpGatewayProperties.CONFIG_PREFIX)
 public class NacosMcpGatewayProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos.gateway";
-
-	private int maxConnections = 500;
-
-	private int acquireTimeout = 3000;
-
-	private int connectionTimeout = 3000;
-
-	private int readTimeout = 5000;
-
-	private int writeTimeout = 5000;
-
-	private int maxIdleTime = 20;
-
-	private int maxLifeTime = 60;
+	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.gateway.nacos";
 
 	private List<String> serviceNames;
 
@@ -49,62 +35,6 @@ public class NacosMcpGatewayProperties {
 
 	public void setServiceNames(List<String> serviceNames) {
 		this.serviceNames = serviceNames;
-	}
-
-	public int getMaxConnections() {
-		return maxConnections;
-	}
-
-	public void setMaxConnections(final int maxConnections) {
-		this.maxConnections = maxConnections;
-	}
-
-	public int getAcquireTimeout() {
-		return acquireTimeout;
-	}
-
-	public void setAcquireTimeout(final int acquireTimeout) {
-		this.acquireTimeout = acquireTimeout;
-	}
-
-	public int getConnectionTimeout() {
-		return connectionTimeout;
-	}
-
-	public void setConnectionTimeout(final int connectionTimeout) {
-		this.connectionTimeout = connectionTimeout;
-	}
-
-	public int getReadTimeout() {
-		return readTimeout;
-	}
-
-	public void setReadTimeout(final int readTimeout) {
-		this.readTimeout = readTimeout;
-	}
-
-	public int getWriteTimeout() {
-		return writeTimeout;
-	}
-
-	public void setWriteTimeout(final int writeTimeout) {
-		this.writeTimeout = writeTimeout;
-	}
-
-	public int getMaxIdleTime() {
-		return maxIdleTime;
-	}
-
-	public void setMaxIdleTime(final int maxIdleTime) {
-		this.maxIdleTime = maxIdleTime;
-	}
-
-	public int getMaxLifeTime() {
-		return maxLifeTime;
-	}
-
-	public void setMaxLifeTime(final int maxLifeTime) {
-		this.maxLifeTime = maxLifeTime;
 	}
 
 }

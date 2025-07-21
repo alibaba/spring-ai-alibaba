@@ -20,7 +20,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 
 /**
  * 提示词常量类，动态加载提示词文件
- * 
+ *
  * @author zhangshenghang
  */
 public class PromptConstant {
@@ -72,6 +72,10 @@ public class PromptConstant {
 
 	public static PromptTemplate getPythonExecutorPromptTemplate() {
 		return new PromptTemplate(PromptLoader.loadPrompt("python-executor"));
+	}
+
+	public static PromptTemplate getQuestionExpansionPromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("question-expansion"));
 	}
 
 	// 兼容性方法，保持向后兼容

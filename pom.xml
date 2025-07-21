@@ -155,6 +155,8 @@
         <!-- Nacos3 version -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-discovery</module>
+
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-gateway-core</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-gateway-nacos</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-recovery-client</module>
@@ -251,6 +253,8 @@
         <commons-collections.version>3.2.2</commons-collections.version>
 
         <commons-io.version>2.14.0</commons-io.version>
+
+        <commons-lang3.version>3.9</commons-lang3.version>
 
         <webdrivermanager.version>6.1.0</webdrivermanager.version>
 
