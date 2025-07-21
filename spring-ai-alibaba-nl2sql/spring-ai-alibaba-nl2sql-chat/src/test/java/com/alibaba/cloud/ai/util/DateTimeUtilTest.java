@@ -37,7 +37,7 @@ class DateTimeUtilTest {
 	void testBuildDateTimeComment() {
 		List<String> expressions = Arrays.asList("今天", "昨天", "明天", "本月", "上月");
 		String result = DateTimeUtil.buildDateTimeComment(expressions);
-		
+
 		assertNotNull(result);
 		assertTrue(result.contains("今天是"));
 		assertTrue(result.contains("需要计算的时间是："));
@@ -47,7 +47,7 @@ class DateTimeUtilTest {
 	void testBuildDateExpressions() {
 		List<String> expressions = Arrays.asList("今天", "昨天", "明天");
 		List<String> result = DateTimeUtil.buildDateExpressions(expressions, testDate);
-		
+
 		assertNotNull(result);
 		assertEquals(3, result.size());
 		assertTrue(result.get(0).contains("今天="));
@@ -59,7 +59,7 @@ class DateTimeUtilTest {
 	void testSpecificYearMonthDayPattern() {
 		List<String> expressions = Arrays.asList("2024年05月15日");
 		List<String> result = DateTimeUtil.buildDateExpressions(expressions, testDate);
-		
+
 		assertEquals(1, result.size());
 		assertEquals("2024年05月15日=2024年05月15日", result.get(0));
 	}
@@ -68,7 +68,7 @@ class DateTimeUtilTest {
 	void testGeneralYearMonthDayPattern() {
 		List<String> expressions = Arrays.asList("今年05月01日", "去年05月01日");
 		List<String> result = DateTimeUtil.buildDateExpressions(expressions, testDate);
-		
+
 		assertEquals(2, result.size());
 		assertTrue(result.get(0).contains("今年05月01日=2024年05月01日"));
 		assertTrue(result.get(1).contains("去年05月01日=2023年05月01日"));
@@ -78,10 +78,10 @@ class DateTimeUtilTest {
 	void testGetYearEx() {
 		String todayYear = DateTimeUtil.getYearEx(testDate, "今年", true);
 		assertEquals("2024年", todayYear);
-		
+
 		String lastYear = DateTimeUtil.getYearEx(testDate, "去年", true);
 		assertEquals("2023年", lastYear);
-		
+
 		String nextYear = DateTimeUtil.getYearEx(testDate, "明年", true);
 		assertEquals("2025年", nextYear);
 	}
@@ -90,10 +90,10 @@ class DateTimeUtilTest {
 	void testGetMonthEx() {
 		String thisMonth = DateTimeUtil.getMonthEx(testDate, "本月");
 		assertEquals("2024年05月", thisMonth);
-		
+
 		String lastMonth = DateTimeUtil.getMonthEx(testDate, "上月");
 		assertEquals("2024年04月", lastMonth);
-		
+
 		String nextMonth = DateTimeUtil.getMonthEx(testDate, "下月");
 		assertEquals("2024年06月", nextMonth);
 	}
@@ -102,10 +102,10 @@ class DateTimeUtilTest {
 	void testGetDayEx() {
 		String today = DateTimeUtil.getDayEx(testDate, "今天");
 		assertEquals("2024年05月15日", today);
-		
+
 		String yesterday = DateTimeUtil.getDayEx(testDate, "昨天");
 		assertEquals("2024年05月14日", yesterday);
-		
+
 		String tomorrow = DateTimeUtil.getDayEx(testDate, "明天");
 		assertEquals("2024年05月16日", tomorrow);
 	}
@@ -115,10 +115,10 @@ class DateTimeUtilTest {
 		// 2024年5月15日是周三，所以本周第一天应该是5月13日（周一）
 		String monday = DateTimeUtil.getWeekDayEx(testDate, 1);
 		assertEquals("2024年05月13日", monday);
-		
+
 		String wednesday = DateTimeUtil.getWeekDayEx(testDate, 3);
 		assertEquals("2024年05月15日", wednesday);
-		
+
 		String sunday = DateTimeUtil.getWeekDayEx(testDate, 7);
 		assertEquals("2024年05月19日", sunday);
 	}
@@ -127,10 +127,10 @@ class DateTimeUtilTest {
 	void testGetGeneralWeekDayEx() {
 		String thisWeekMonday = DateTimeUtil.getGeneralWeekDayEx(testDate, "本周", 1);
 		assertEquals("2024年05月13日", thisWeekMonday);
-		
+
 		String lastWeekMonday = DateTimeUtil.getGeneralWeekDayEx(testDate, "上周", 1);
 		assertEquals("2024年05月06日", lastWeekMonday);
-		
+
 		String nextWeekMonday = DateTimeUtil.getGeneralWeekDayEx(testDate, "下周", 1);
 		assertEquals("2024年05月20日", nextWeekMonday);
 	}
@@ -139,7 +139,7 @@ class DateTimeUtilTest {
 	void testGetWeekEx() {
 		String thisWeek = DateTimeUtil.getWeekEx(testDate, "本周");
 		assertEquals("2024年05月13日至2024年05月19日", thisWeek);
-		
+
 		String lastWeek = DateTimeUtil.getWeekEx(testDate, "上周");
 		assertEquals("2024年05月06日至2024年05月12日", lastWeek);
 	}
@@ -148,7 +148,7 @@ class DateTimeUtilTest {
 	void testGetQuarterEx() {
 		String thisQuarter = DateTimeUtil.getQuarterEx(testDate, "本季度");
 		assertEquals("2024年第2季度", thisQuarter);
-		
+
 		String lastQuarter = DateTimeUtil.getQuarterEx(testDate, "上季度");
 		assertEquals("2024年第1季度", lastQuarter);
 	}
@@ -157,7 +157,7 @@ class DateTimeUtilTest {
 	void testGetRecentNDay() {
 		String recent7Days = DateTimeUtil.getRecentNDay(testDate, 7);
 		assertEquals("2024年05月08日至2024年05月15日", recent7Days);
-		
+
 		String recent30Days = DateTimeUtil.getRecentNDay(testDate, 30);
 		assertEquals("2024年04月15日至2024年05月15日", recent30Days);
 	}
@@ -190,7 +190,7 @@ class DateTimeUtilTest {
 	void testGetMonthLastDayEx() {
 		String thisMonthLastDay = DateTimeUtil.getMonthLastDayEx(testDate, "本月");
 		assertEquals("2024年05月31日", thisMonthLastDay);
-		
+
 		String lastMonthLastDay = DateTimeUtil.getMonthLastDayEx(testDate, "上月");
 		assertEquals("2024年04月30日", lastMonthLastDay);
 	}
@@ -199,7 +199,7 @@ class DateTimeUtilTest {
 	void testGetSpecificYearHalfYearEx() {
 		String firstHalf = DateTimeUtil.getSpecificYearHalfYearEx(testDate, 2024, "上");
 		assertEquals("2024年01月01日至2024年06月30日", firstHalf);
-		
+
 		String secondHalf = DateTimeUtil.getSpecificYearHalfYearEx(testDate, 2024, "下");
 		assertEquals("2024年07月01日至2024年12月31日", secondHalf);
 	}
@@ -208,33 +208,21 @@ class DateTimeUtilTest {
 	void testGetGeneralYearHalfYearEx() {
 		String thisYearFirstHalf = DateTimeUtil.getGeneralYearHalfYearEx(testDate, "今年", "上");
 		assertEquals("2024年01月01日至2024年06月30日", thisYearFirstHalf);
-		
+
 		String lastYearSecondHalf = DateTimeUtil.getGeneralYearHalfYearEx(testDate, "去年", "下");
 		assertEquals("2023年07月01日至2023年12月31日", lastYearSecondHalf);
 	}
 
 	@Test
 	void testComplexExpressions() {
-		List<String> expressions = Arrays.asList(
-			"2023年02月最后一周", 
-			"2024年05月01日", 
-			"今年04月22日", 
-			"本月22日", 
-			"上月今天", 
-			"今天", 
-			"本周第5天",
-			"本季度",
-			"近1周",
-			"近2个完整月",
-			"不包含今天的近10天",
-			"今年上半年"
-		);
-		
+		List<String> expressions = Arrays.asList("2023年02月最后一周", "2024年05月01日", "今年04月22日", "本月22日", "上月今天", "今天",
+				"本周第5天", "本季度", "近1周", "近2个完整月", "不包含今天的近10天", "今年上半年");
+
 		List<String> result = DateTimeUtil.buildDateExpressions(expressions, testDate);
-		
+
 		assertNotNull(result);
 		assertEquals(expressions.size(), result.size());
-		
+
 		// 验证每个表达式都有对应的转换结果
 		for (int i = 0; i < expressions.size(); i++) {
 			String expression = expressions.get(i);
@@ -249,15 +237,16 @@ class DateTimeUtilTest {
 		LocalDate yearEnd = LocalDate.of(2023, 12, 31);
 		String nextYear = DateTimeUtil.getYearEx(yearEnd, "明年", true);
 		assertEquals("2024年", nextYear);
-		
+
 		// 测试月初边界情况
 		LocalDate monthStart = LocalDate.of(2024, 1, 1);
 		String lastMonth = DateTimeUtil.getMonthEx(monthStart, "上月");
 		assertEquals("2023年12月", lastMonth);
-		
+
 		// 测试闰年情况
 		LocalDate leapYear = LocalDate.of(2024, 2, 29);
 		String today = DateTimeUtil.getDayEx(leapYear, "今天");
 		assertEquals("2024年02月29日", today);
 	}
+
 }
