@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.mapreduce;
 
+import java.io.File;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -64,37 +65,17 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	/**
 	 * Task status: completed
 	 */
-	private static final String TASK_STATUS_COMPLETED = "completed";
-
-	/**
-	 * Task status: failed
-	 */
-	private static final String TASK_STATUS_FAILED = "failed";
-
 	/**
 	 * Internal input class for defining Map output tool input parameters
 	 */
 	public static class MapOutputInput {
 
-		@com.fasterxml.jackson.annotation.JsonProperty("terminate_columns")
-		private List<String> terminateColumns;
-
 		private List<List<Object>> data;
 
-		@com.fasterxml.jackson.annotation.JsonProperty("task_id")
-		private String taskId;
-
-		private String status;
+		@com.fasterxml.jackson.annotation.JsonProperty("has_value")
+		private boolean hasValue;
 
 		public MapOutputInput() {
-		}
-
-		public List<String> getTerminateColumns() {
-			return terminateColumns;
-		}
-
-		public void setTerminateColumns(List<String> terminateColumns) {
-			this.terminateColumns = terminateColumns;
 		}
 
 		public List<List<Object>> getData() {
@@ -105,91 +86,85 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 			this.data = data;
 		}
 
-		public String getTaskId() {
-			return taskId;
+		public boolean isHasValue() {
+			return hasValue;
 		}
 
-		public void setTaskId(String taskId) {
-			this.taskId = taskId;
-		}
-
-		public String getStatus() {
-			return status;
-		}
-
-		public void setStatus(String status) {
-			this.status = status;
+		public void setHasValue(boolean hasValue) {
+			this.hasValue = hasValue;
 		}
 
 	}
 
 	private static final String TOOL_NAME = "map_output_tool";
 
-	private static final String TOOL_DESCRIPTION = """
+	private static String getToolDescription(List<String> terminateColumns) {
+		String baseDescription = """
 			Map output recording tool for MapReduce workflow.
-			Accepts content after Map stage processing completion, automatically generates filename and creates output file.
-			Records task status and manages structured data output.
-
-			Key features:
-			- Accept structured Map processing results
-			- Automatic output file creation with proper naming
-			- Task status tracking and management
-			- Support for both completed and failed task statuses
+			接受 Map 阶段处理完成后的内容，自动生成文件名并创建输出文件。
+			记录任务状态并管理结构化数据输出。
+			
+			**重要参数说明：**
+			- has_value: 布尔值，表示是否有有效数据
+			  - 如果没有找到任何有效数据，设置为 false
+			  - 如果有数据需要输出，设置为 true
+			- data: 当 has_value 为 true 时必须提供数据
 			""";
+		
+		if (terminateColumns != null && !terminateColumns.isEmpty()) {
+			String columnsFormat = String.join(", ", terminateColumns);
+			baseDescription += String.format("""
+				
+				**数据格式要求（当 has_value=true 时）：**
+				您必须按照以下固定格式提供数据，每行数据包含：[%s]
+				
+				示例格式：
+				[
+				  ["%s示例1", "%s示例1"],
+				  ["%s示例2", "%s示例2"]
+				]
+				""", 
+				columnsFormat,
+				terminateColumns.get(0), terminateColumns.size() > 1 ? terminateColumns.get(1) : "数据",
+				terminateColumns.get(0), terminateColumns.size() > 1 ? terminateColumns.get(1) : "数据");
+		}
+		
+		return baseDescription;
+	}
 
 	/**
-	 * Generate parameters JSON with dynamic terminate columns support
-	 * @param terminateColumns the columns for structured output
+	 * Generate parameters JSON for MapOutputTool with predefined columns format
+	 * @param terminateColumns the columns specification (e.g., "url,说明")
 	 * @return JSON string for parameters schema
 	 */
 	private static String generateParametersJson(List<String> terminateColumns) {
-		// If terminateColumns is null or empty, use "content" as default column
-		List<String> effectiveColumns = (terminateColumns == null || terminateColumns.isEmpty()) ? List.of("content")
-				: terminateColumns;
-
-		// Generate default columns array as JSON string
-		StringBuilder defaultColumnsBuilder = new StringBuilder();
-		defaultColumnsBuilder.append("[");
-		for (int i = 0; i < effectiveColumns.size(); i++) {
-			defaultColumnsBuilder.append("\"").append(effectiveColumns.get(i)).append("\"");
-			if (i < effectiveColumns.size() - 1) {
-				defaultColumnsBuilder.append(", ");
-			}
+		// Generate columns description from terminateColumns
+		String columnsDesc = "数据行列表";
+		if (terminateColumns != null && !terminateColumns.isEmpty()) {
+			columnsDesc = "数据行列表，每行按照以下格式：[" + String.join(", ", terminateColumns) + "]";
 		}
-		defaultColumnsBuilder.append("]");
 
 		return """
 				{
 				    "type": "object",
 				    "properties": {
-				        "terminate_columns": {
-				            "type": "array",
-				            "items": {"type": "string"},
-				            "description": "Column names for the structured output data",
-				            "default": %s
+				        "has_value": {
+				            "type": "boolean",
+				            "description": "是否有有效数据。如果没有找到任何有效数据设置为false，有数据时设置为true"
 				        },
 				        "data": {
 				            "type": "array",
 				            "items": {
 				                "type": "array",
-				                "items": {}
+				                "items": {"type": "string"}
 				            },
-				            "description": "Data rows corresponding to the columns"
-				        },
-				        "task_id": {
-				            "type": "string",
-				            "description": "任务ID，用于状态跟踪"
-				        },
-				        "status": {
-				            "type": "string",
-				            "enum": ["completed", "failed"],
-				            "description": "任务状态"
+				            "description": "%s（仅当has_value为true时需要提供）"
 				        }
 				    },
-				    "required": ["terminate_columns", "data", "task_id", "status"],
+				    "required": ["has_value"],
 				    "additionalProperties": false
 				}
-				""".formatted(defaultColumnsBuilder.toString());
+				""".formatted(columnsDesc);
 	}
 
 	private UnifiedDirectoryManager unifiedDirectoryManager;
@@ -239,7 +214,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 	@Override
 	public String getDescription() {
-		return TOOL_DESCRIPTION;
+		return getToolDescription(terminateColumns);
 	}
 
 	@Override
@@ -264,7 +239,8 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 	public static OpenAiApi.FunctionTool getToolDefinition(List<String> terminateColumns) {
 		String parameters = generateParametersJson(terminateColumns);
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(TOOL_DESCRIPTION, TOOL_NAME,
+		String description = getToolDescription(terminateColumns);
+		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, TOOL_NAME,
 				parameters);
 		return new OpenAiApi.FunctionTool(function);
 	}
@@ -274,45 +250,30 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	 */
 	@Override
 	public ToolExecuteResult run(MapOutputInput input) {
-		log.info("MapOutputTool input: taskId={}, status={}", input.getTaskId(), input.getStatus());
+		log.info("MapOutputTool input: hasValue={}", input.isHasValue());
 		try {
 			List<List<Object>> data = input.getData();
-			String taskId = input.getTaskId();
-			String status = input.getStatus();
+			boolean hasValue = input.isHasValue();
 
-			// Use class-level terminateColumns if specified, otherwise use input
-			// parameter
-			List<String> effectiveTerminateColumns = null;
-			if (this.terminateColumns != null && !this.terminateColumns.isEmpty()) {
-				// Use class-level terminate columns directly
-				effectiveTerminateColumns = new ArrayList<>(this.terminateColumns);
-			}
-			else if (input.getTerminateColumns() != null && !input.getTerminateColumns().isEmpty()) {
-				effectiveTerminateColumns = input.getTerminateColumns();
-			}
-
+			// Use class-level terminateColumns
+			List<String> effectiveTerminateColumns = this.terminateColumns;
 			if (effectiveTerminateColumns == null || effectiveTerminateColumns.isEmpty()) {
-				return new ToolExecuteResult("Error: terminate_columns parameter is required");
-			}
-			if (data == null || data.isEmpty()) {
-				return new ToolExecuteResult("Error: data parameter is required");
-			}
-			if (taskId == null) {
-				return new ToolExecuteResult("Error: task_id parameter is required");
-			}
-			if (status == null) {
-				return new ToolExecuteResult("Error: status parameter is required");
+				return new ToolExecuteResult("Error: terminate columns not configured for this tool");
 			}
 
-			// Validate status values
-			if (!TASK_STATUS_COMPLETED.equals(status) && !TASK_STATUS_FAILED.equals(status)) {
-				return new ToolExecuteResult(
-						"Error: status must be either '" + TASK_STATUS_COMPLETED + "' or '" + TASK_STATUS_FAILED + "'");
+			// Check hasValue logic
+			if (hasValue) {
+				// When hasValue is true, data must be provided
+				if (data == null || data.isEmpty()) {
+					return new ToolExecuteResult("Error: data parameter is required when has_value is true");
+				}
+				// Convert structured data to content string
+				String content = formatStructuredData(effectiveTerminateColumns, data);
+				return recordMapTaskOutput(content);
+			} else {
+				// When hasValue is false, create empty output
+				return recordMapTaskOutput("");
 			}
-
-			// Convert structured data to content string
-			String content = formatStructuredData(effectiveTerminateColumns, data);
-			return recordMapTaskOutput(content, taskId, status);
 
 		}
 		catch (Exception e) {
@@ -339,9 +300,10 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	}
 
 	/**
-	 * Record Map task output result and status
+	 * Record Map task output result with completed status by default
+	 * Task ID is obtained from the current execution context
 	 */
-	private ToolExecuteResult recordMapTaskOutput(String content, String taskId, String status) {
+	private ToolExecuteResult recordMapTaskOutput(String content) {
 		try {
 			// Get timeout configuration for this operation
 			Integer timeout = getMapReduceTimeout();
@@ -351,6 +313,14 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 			if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
 				return new ToolExecuteResult("Error: currentPlanId not set, cannot record task status");
 			}
+
+			// Get current taskId by finding the most recent task directory without output.md
+			String taskId = findCurrentTaskId();
+			
+			if (taskId == null || taskId.trim().isEmpty()) {
+				return new ToolExecuteResult("Error: No current task ID available for recording output");
+			}
+
 			// Locate task directory - use hierarchical structure:
 			// inner_storage/{rootPlanId}/{currentPlanId}/tasks/{taskId}
 			Path rootPlanDir = getPlanDirectory(rootPlanId);
@@ -384,7 +354,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 			// Update status information
 			taskStatus.outputFilePath = outputFilePath;
-			taskStatus.status = status;
+			taskStatus.status = "completed";
 			taskStatus.timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
 			// Store in shared state manager
@@ -405,7 +375,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 			// Mark that map output has been recorded, allowing termination
 			this.mapOutputRecorded = true;
 
-			String result = String.format("Task %s status recorded: %s, output file: %s", taskId, status,
+			String result = String.format("Task %s status recorded: %s, output file: %s", taskId, "completed",
 					TASK_OUTPUT_FILE_NAME);
 
 			String resultStr = result.toString();
@@ -446,6 +416,72 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	@Override
 	public ToolExecuteResult apply(MapOutputInput input, ToolContext toolContext) {
 		return run(input);
+	}
+
+	/**
+	 * Find the current task ID by looking for task directories without output.md file
+	 * This helps identify which task is currently being processed
+	 */
+	private String findCurrentTaskId() {
+		try {
+			// Get task directories path
+			Path rootPlanDir = getPlanDirectory(rootPlanId);
+			Path currentPlanDir = rootPlanDir.resolve(currentPlanId);
+			Path tasksDir = currentPlanDir.resolve(TASKS_DIRECTORY_NAME);
+			
+			if (!Files.exists(tasksDir)) {
+				log.warn("Tasks directory does not exist: {}", tasksDir);
+				return null;
+			}
+			
+			// Get all task directories using traditional File operations
+			File tasksDirFile = tasksDir.toFile();
+			File[] taskFiles = tasksDirFile.listFiles();
+			if (taskFiles == null || taskFiles.length == 0) {
+				log.warn("No task directories found in: {}", tasksDir);
+				return null;
+			}
+			
+			// Find incomplete tasks (without output.md)
+			List<String> incompleteTaskIds = new ArrayList<>();
+			List<String> allTaskIds = new ArrayList<>();
+			
+			for (File taskFile : taskFiles) {
+				if (taskFile.isDirectory()) {
+					String taskId = taskFile.getName();
+					allTaskIds.add(taskId);
+					
+					// Check if output.md exists
+					File outputFile = new File(taskFile, TASK_OUTPUT_FILE_NAME);
+					if (!outputFile.exists()) {
+						incompleteTaskIds.add(taskId);
+					}
+				}
+			}
+			
+			// If we have incomplete tasks, return the earliest one (sorted)
+			if (!incompleteTaskIds.isEmpty()) {
+				Collections.sort(incompleteTaskIds);
+				String incompleteTaskId = incompleteTaskIds.get(0);
+				log.debug("Found incomplete task: {}", incompleteTaskId);
+				return incompleteTaskId;
+			}
+			
+			// If no incomplete tasks found, get the latest task (reverse sorted)
+			if (!allTaskIds.isEmpty()) {
+				Collections.sort(allTaskIds, Collections.reverseOrder());
+				String latestTaskId = allTaskIds.get(0);
+				log.debug("No incomplete tasks found, using latest task: {}", latestTaskId);
+				return latestTaskId;
+			}
+			
+			log.warn("No task directories found");
+			return null;
+			
+		} catch (Exception e) {
+			log.error("Error finding current task ID", e);
+			return null;
+		}
 	}
 
 	/**
