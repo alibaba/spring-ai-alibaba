@@ -1,8 +1,5 @@
 /*
- * Copyright 2025 the oriimport com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
-import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
-import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder; author or authors.
+ * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +16,36 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder; author
 
 package com.alibaba.cloud.ai.example.manus.planning;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.util.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.metadata.ToolMetadata;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpTool;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
@@ -43,43 +68,17 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
-// import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageTool;
+import com.alibaba.cloud.ai.example.manus.tool.database.DataSourceService;
+import com.alibaba.cloud.ai.example.manus.tool.database.DatabaseUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceSharedStateManager;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
-import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
-import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.util.Timeout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author yuluo
@@ -100,6 +99,8 @@ public class PlanningFactory implements IPlanningFactory {
 	private final SmartContentSavingService innerStorageService;
 
 	private final UnifiedDirectoryManager unifiedDirectoryManager;
+
+	private final DataSourceService dataSourceService;
 
 	private final static Logger log = LoggerFactory.getLogger(PlanningFactory.class);
 
@@ -135,7 +136,8 @@ public class PlanningFactory implements IPlanningFactory {
 
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
-			SmartContentSavingService innerStorageService, UnifiedDirectoryManager unifiedDirectoryManager) {
+			SmartContentSavingService innerStorageService, UnifiedDirectoryManager unifiedDirectoryManager,
+			DataSourceService dataSourceService) {
 		this.chromeDriverService = chromeDriverService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
@@ -143,6 +145,7 @@ public class PlanningFactory implements IPlanningFactory {
 		this.mcpService = mcpService;
 		this.innerStorageService = innerStorageService;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
+		this.dataSourceService = dataSourceService;
 	}
 
 	// Use the enhanced PlanningCoordinator with dynamic executor selection
@@ -199,6 +202,7 @@ public class PlanningFactory implements IPlanningFactory {
 		}
 		// Add all tool definitions
 		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService));
+		toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService));
 		toolDefinitions.add(new TerminateTool(planId, terminateColumns));
 		toolDefinitions.add(new Bash(unifiedDirectoryManager));
 		toolDefinitions.add(new DocLoaderTool());
@@ -267,7 +271,7 @@ public class PlanningFactory implements IPlanningFactory {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(name = "spring.ai.mcp.client.enabled", havingValue = "false")
 	public ToolCallbackProvider emptyToolCallbackProvider() {
-		return () -> new HashMap<>();
+		return () -> new HashMap<String, PlanningFactory.ToolCallBackContext>();
 	}
 
 }
