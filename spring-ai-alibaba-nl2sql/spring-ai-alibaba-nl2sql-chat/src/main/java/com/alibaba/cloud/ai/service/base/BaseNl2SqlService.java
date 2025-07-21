@@ -65,11 +65,10 @@ public class BaseNl2SqlService {
 
 	public BaseNl2SqlService(BaseVectorStoreService vectorStoreService, BaseSchemaService schemaService,
 			LlmService aiService, DbAccessor dbAccessor, DbConfig dbConfig) {
-		logger.info("Initializing BaseNl2SqlService with components: vectorStoreService={}, schemaService={}, aiService={}, dbAccessor={}, dbConfig={}",
-				vectorStoreService.getClass().getSimpleName(), 
-				schemaService.getClass().getSimpleName(),
-				aiService.getClass().getSimpleName(),
-				dbAccessor.getClass().getSimpleName(),
+		logger.info(
+				"Initializing BaseNl2SqlService with components: vectorStoreService={}, schemaService={}, aiService={}, dbAccessor={}, dbConfig={}",
+				vectorStoreService.getClass().getSimpleName(), schemaService.getClass().getSimpleName(),
+				aiService.getClass().getSimpleName(), dbAccessor.getClass().getSimpleName(),
 				dbConfig != null ? dbConfig.getClass().getSimpleName() : "null");
 		this.vectorStoreService = vectorStoreService;
 		this.schemaService = schemaService;
@@ -141,7 +140,7 @@ public class BaseNl2SqlService {
 			ResultSetBO resultSet = dbAccessor.executeSqlAndReturnObject(dbConfig, param);
 			logger.debug("SQL executed successfully, generating table format");
 			String result = MdTableGenerator.generateTable(resultSet);
-			logger.info("SQL execution completed successfully, result rows: {}", 
+			logger.info("SQL execution completed successfully, result rows: {}",
 					resultSet.getData() != null ? resultSet.getData().size() : 0);
 			return result;
 		}
@@ -236,7 +235,7 @@ public class BaseNl2SqlService {
 		SchemaDTO schemaDTO = schemaService.mixRag(query, keywords);
 		logger.debug("Retrieved schema with {} tables", schemaDTO.getTable() != null ? schemaDTO.getTable().size() : 0);
 		SchemaDTO result = fineSelect(schemaDTO, query, evidenceList);
-		logger.debug("Fine selection completed, final schema has {} tables", 
+		logger.debug("Fine selection completed, final schema has {} tables",
 				result.getTable() != null ? result.getTable().size() : 0);
 		return result;
 	}
@@ -253,7 +252,7 @@ public class BaseNl2SqlService {
 	public String generateSql(List<String> evidenceList, String query, SchemaDTO schemaDTO, String sql,
 			String exceptionMessage) throws Exception {
 		logger.info("Generating SQL for query: {}, hasExistingSql: {}", query, sql != null && !sql.isEmpty());
-		
+
 		// TODO 时间处理暂时未应用
 		String dateTimeExtractPrompt = PromptHelper.buildDateTimeExtractPrompt(query);
 		logger.debug("Extracting datetime expressions");
@@ -288,7 +287,7 @@ public class BaseNl2SqlService {
 			newSql = aiService.callWithSystemPrompt(prompts.get(0), prompts.get(1));
 			logger.info("New SQL generation completed");
 		}
-		
+
 		String result = MarkdownParser.extractRawText(newSql).trim();
 		logger.info("Final generated SQL: {}", result);
 		return result;
@@ -337,12 +336,12 @@ public class BaseNl2SqlService {
 		logger.debug("Calling LLM for schema fine selection");
 		String content = aiService.call(prompt);
 		Set<String> selectedTables = new HashSet<>();
-		
+
 		if (sqlGenerateSchemaMissingAdvice != null) {
 			logger.debug("Adding tables from schema missing advice");
 			selectedTables.addAll(this.fineSelect(schemaDTO, sqlGenerateSchemaMissingAdvice));
 		}
-		
+
 		if (content != null && !content.trim().isEmpty()) {
 			String jsonContent = MarkdownParser.extractText(content);
 			List<String> tableList;
@@ -362,8 +361,8 @@ public class BaseNl2SqlService {
 				int originalTableCount = schemaDTO.getTable() != null ? schemaDTO.getTable().size() : 0;
 				schemaDTO.getTable().removeIf(table -> !selectedTables.contains(table.getName().toLowerCase()));
 				int finalTableCount = schemaDTO.getTable() != null ? schemaDTO.getTable().size() : 0;
-				logger.debug("Fine selection completed: {} -> {} tables, selected tables: {}", 
-						originalTableCount, finalTableCount, selectedTables);
+				logger.debug("Fine selection completed: {} -> {} tables, selected tables: {}", originalTableCount,
+						finalTableCount, selectedTables);
 			}
 		}
 		return schemaDTO;
