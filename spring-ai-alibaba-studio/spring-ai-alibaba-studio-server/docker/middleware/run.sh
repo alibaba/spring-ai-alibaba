@@ -33,7 +33,7 @@ done
 if [ "$INSTALL_NACOS" = "true" ]; then
     echo "Installing middlewares (including Nacos)..."
     # Run docker compose
-    docker-compose up --profile nacos -d
+    docker compose up --profile nacos -d
 
     # Check docker compose results
     if [ $? -ne 0 ]; then
@@ -43,7 +43,7 @@ if [ "$INSTALL_NACOS" = "true" ]; then
 else
     echo "Installing middlewares (skipping Nacos)..."
     # start docker compose
-    docker-compose up -d
+    docker compose up -d
     # check docker compose results
     if [ $? -ne 0 ]; then
         echo "Failed to start Docker Compose. Exiting..."
