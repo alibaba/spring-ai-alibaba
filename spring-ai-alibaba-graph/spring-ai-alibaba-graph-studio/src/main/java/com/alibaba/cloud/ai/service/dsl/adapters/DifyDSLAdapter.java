@@ -212,6 +212,9 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			}
 			String nodeId = (String) nodeMap.get("id");
 			nodeDataMap.put("id", nodeId);
+			// 记录父节点ID
+			String parentId = (String) nodeMap.getOrDefault("parentId", null);
+			nodeDataMap.put("parentId", parentId);
 			// determine the type of dify node is supported yet
 			NodeType nodeType = NodeType.fromDifyValue(difyNodeType)
 				.orElseThrow(() -> new NotImplementedException("unsupported node type " + difyNodeType));
@@ -227,6 +230,10 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			NodeDataConverter<NodeData> converter = (NodeDataConverter<NodeData>) getNodeDataConverter(nodeType);
 
 			NodeData data = converter.parseMapData(nodeDataMap, DSLDialectType.DIFY);
+			// 记录节点所在位置信息（如迭代节点内部）
+			Boolean isInIteration = (Boolean) nodeDataMap.getOrDefault("isInIteration", false);
+			data.setContainId(parentId);
+			data.setContainType(isInIteration ? NodeData.ContainType.ITERATION : NodeData.ContainType.NORMAL);
 
 			// Generate a readable varName and inject it into NodeData
 			int count = counters.merge(nodeType, 1, Integer::sum);

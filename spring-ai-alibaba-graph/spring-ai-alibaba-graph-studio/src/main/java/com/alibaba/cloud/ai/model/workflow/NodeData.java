@@ -27,6 +27,16 @@ import java.util.List;
 public class NodeData {
 
 	/**
+	 * 每个节点所在的位置
+	 */
+	public enum ContainType {
+
+		NORMAL, // 正常位置（外层）
+		ITERATION // 迭代节点内部位置
+
+	}
+
+	/**
 	 * The inputs of the node is the output reference of the previous node
 	 */
 	protected List<VariableSelector> inputs;
@@ -37,6 +47,16 @@ public class NodeData {
 	protected List<Variable> outputs;
 
 	protected String varName;
+
+	/**
+	 * 记录当前节点所在的位置
+	 */
+	protected ContainType containType = ContainType.NORMAL;
+
+	/**
+	 * 记录当前节点所在位置的ID（节点在最外层时为null）
+	 */
+	protected String containId = null;
 
 	public NodeData() {
 
@@ -71,6 +91,22 @@ public class NodeData {
 
 	public void setVarName(String varName) {
 		this.varName = varName;
+	}
+
+	public ContainType getContainType() {
+		return containType;
+	}
+
+	public void setContainType(ContainType containType) {
+		this.containType = containType;
+	}
+
+	public String getContainId() {
+		return containId;
+	}
+
+	public void setContainId(String containId) {
+		this.containId = containId;
 	}
 
 	public static String defaultOutputKey(String nodeId) {
