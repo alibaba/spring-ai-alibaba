@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Create .env file with complete configuration
+cat > .env << EOF
+# User ID and Group ID for containers
+UID=$(id -u)
+GID=$(id -g)
+
+# Timezone
+TZ=Asia/Shanghai
+
+# Default values
+MIDDLEWARE_HOME=.
+EOF
+
+echo "Created .env file with UID=$(id -u) and GID=$(id -g)"
+
 # check params
 INSTALL_HIGRESS=false
 INSTALL_NACOS=false
@@ -43,5 +58,3 @@ if [ "$INSTALL_HIGRESS" = "true" ]; then
 else
     echo "Skipping Higress installation."
 fi
-
-

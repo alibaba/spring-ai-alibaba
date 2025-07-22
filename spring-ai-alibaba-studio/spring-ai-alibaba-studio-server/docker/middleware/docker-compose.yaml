@@ -3,7 +3,9 @@ services:
     container_name: mysql
     restart: always
     image: mysql:8.0.35
+    user: "${UID}:${GID}"
     env_file:
+      - ./.env
       - ./mysql.env
     volumes:
       - ${MIDDLEWARE_HOME:-.}/mysql/data:/var/lib/mysql
@@ -22,6 +24,9 @@ services:
     restart: always
     image: redis:7.2.5
     container_name: redis
+    user: "${UID}:${GID}"
+    env_file:
+      - ./.env
     ports:
       - "6379:6379"
     volumes:
@@ -33,10 +38,12 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
     container_name: elasticsearch
+    user: "${UID}:${GID}"
     restart: always
     volumes:
       - ${MIDDLEWARE_HOME:-.}/elasticsearch/data:/usr/share/elasticsearch/data
     env_file:
+      - ./.env
       - ./elasticsearch.env
     ports:
       - "9200:9200"
@@ -47,7 +54,10 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.17.2
     container_name: kibana
+    user: "${UID}:${GID}"
     restart: always
+    env_file:
+      - ./.env
     volumes:
       - ${MIDDLEWARE_HOME:-.}/kibana/data:/usr/share/kibana/data
     ports:
@@ -66,7 +76,10 @@ services:
   rmq_namesrv:
     image: apache/rocketmq:5.3.2
     container_name: rmq_namesrv
+    user: "${UID}:${GID}"
     restart: always
+    env_file:
+      - ./.env
     environment:
       - NAMESRV_ADDR=rmq_namesrv:9876
       - HEAP_OPTS=-Xms128M -Xmx256M -Xmn128M
@@ -83,7 +96,10 @@ services:
   rmq_broker:
     image: apache/rocketmq:5.3.2
     container_name: rmq_broker
+    user: "${UID}:${GID}"
     restart: always
+    env_file:
+      - ./.env
     environment:
       - NAMESRV_ADDR=rmq_namesrv:9876
       - HEAP_OPTS=-Xms256M -Xmx512M -Xmn256M -XX:MaxDirectMemorySize=128M
@@ -106,7 +122,10 @@ services:
   rmq_proxy:
     image: apache/rocketmq:5.3.2
     container_name: rmq_proxy
+    user: "${UID}:${GID}"
     restart: always
+    env_file:
+      - ./.env
     volumes:
       - ${MIDDLEWARE_HOME:-.}/conf/rocketmq:/home/rocketmq/conf
     environment:
@@ -124,8 +143,11 @@ services:
   nacos:
     image: nacos/nacos-server:latest
     container_name: nacos-standalone-derby
+    user: "${UID}:${GID}"
     profiles:
       - nacos
+    env_file:
+      - ./.env
     environment:
       - MODE=standalone
       - NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123456789
@@ -143,7 +165,10 @@ services:
   init-topic:
     image: apache/rocketmq:5.3.2
     container_name: rmq-init-topic
+    user: "${UID}:${GID}"
     restart: "no"
+    env_file:
+      - ./.env
     depends_on:
       rmq_namesrv:
         condition: service_healthy
