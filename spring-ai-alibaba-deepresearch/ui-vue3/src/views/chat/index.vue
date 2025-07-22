@@ -106,19 +106,7 @@
           </sender>
         </div>
       </Flex>
-      <Flex class="aux" v-if="current.deepResearchDetail" style="width: 60%" vertical>
-        <a-card style="height: 100%">
-          <template #title>
-            <Flex justify="space-between">
-              研究细节
-              <Button type="text" @click="current.deepResearchDetail = false">
-                <CloseOutlined />
-              </Button>
-            </Flex>
-          </template>
-          细节
-        </a-card>
-      </Flex>
+      <Report :visible="current.deepResearchDetail" :convId="convId" @close="current.deepResearchDetail = false" />
     </Flex>
   </div>
 </template>
@@ -153,6 +141,7 @@ import {
 import { computed, h, onMounted, reactive, ref, watch } from 'vue'
 import MD from '@/components/md/index.vue'
 import Gap from '@/components/toolkit/Gap.vue'
+import Report from '@/components/report/index.vue'
 import { XStreamBody } from '@/utils/stream'
 import { ScrollController } from '@/utils/scroll'
 import { useAuthStore } from '@/store/AuthStore'
@@ -160,6 +149,7 @@ import { useMessageStore } from '@/store/MessageStore'
 import { useConversationStore } from '@/store/ConversationStore'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfigStore } from '@/store/ConfigStore'
+
 
 const router = useRouter()
 const route = useRoute()
@@ -219,7 +209,7 @@ const [agent] = useXAgent({
 
     switch (current.aiType) {
       case 'normal': {
-        const xStreamBody = new XStreamBody('/chat/stream', {
+        const xStreamBody = new XStreamBody('/deep-research/chat/stream', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -497,6 +487,8 @@ function parseFooter(status: MessageStatus, isCurrent: boolean): any {
 const bubbleList = computed(() => {
   const len = messages.value.length
   messageStore.history[convId] = messages.value
+  // TODO 当状态是loading的时候，是每个chunk，然后succes，把之前所有的chunk 全部返回
+  console.log('messages.value', messages.value)
   return messages.value.map(({ id, message, status }, idx) => ({
     key: id,
     role: status === 'local' ? 'local' : 'ai',
@@ -531,11 +523,7 @@ watch(
     box-sizing: border-box;
   }
 
-  .aux {
-    padding-top: 20px;
-    height: 100%;
-    padding-bottom: 38px;
-  }
+
 
   .chat {
     padding-top: 20px;
@@ -628,7 +616,6 @@ watch(
     }
   }
 
-  .aux {
-  }
+
 }
 </style>
