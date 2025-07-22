@@ -17,24 +17,24 @@
   <div class="config-panel">
     <div class="config-header">
       <div class="header-left">
-        <h2>{{ t('config.basicConfig.title') }}</h2>
+        <h2>{{ $t('config.basicConfig.title') }}</h2>
         <div class="config-stats">
           <span class="stat-item">
-            <span class="stat-label">总配置项:</span>
+            <span class="stat-label">{{ $t('config.basicConfig.totalConfigs') }}:</span>
             <span class="stat-value">{{ configStats.total }}</span>
           </span>
           <span class="stat-item" v-if="configStats.modified > 0">
-            <span class="stat-label">已修改:</span>
+            <span class="stat-label">{{ $t('config.basicConfig.modified') }}:</span>
             <span class="stat-value modified">{{ configStats.modified }}</span>
           </span>
         </div>
       </div>
       <div class="header-right">
         <div class="import-export-actions">
-          <button @click="exportConfigs" class="action-btn" title="导出配置">
+          <button @click="exportConfigs" class="action-btn" :title="$t('config.basicConfig.exportConfigs')">
             📤
           </button>
-          <label class="action-btn" title="导入配置">
+          <label class="action-btn" :title="$t('config.basicConfig.importConfigs')">
             📥
             <input 
               type="file" 
@@ -99,7 +99,7 @@
             >
               <div class="sub-group-info">
                 <span class="sub-group-icon">📁</span>
-                <h4 class="sub-group-title">{{ subGroup.displayName }}</h4>
+                <h4 class="sub-group-title">{{ $t(subGroup.displayName) }}</h4>
                 <span class="item-count">({{ subGroup.items.length }})</span>
               </div>
               <span 
@@ -128,7 +128,7 @@
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge boolean">{{ item.inputType === 'CHECKBOX' ? $t('config.types.checkbox') : $t('config.types.boolean') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -170,7 +170,7 @@
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge select">{{ $t('config.types.select') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -201,7 +201,7 @@
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge textarea">{{ $t('config.types.textarea') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -226,7 +226,7 @@
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge number">{{ $t('config.types.number') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -258,7 +258,7 @@
                     <div class="config-item-info">
                       <div class="config-item-header">
                         <label class="config-label">
-                          {{ item.description || item.displayName }}
+                          {{ $t(item.displayName) || item.description }}
                           <span class="type-badge string">{{ item.inputType === 'TEXT' ? $t('config.types.text') : $t('config.types.string') }}</span>
                           <span v-if="originalConfigValues.get(item.id) !== item.configValue" class="modified-badge">{{ $t('config.modified') }}</span>
                         </label>
@@ -350,35 +350,49 @@ const searchQuery = ref('')
 
 // Configuration item display name mapping
 const CONFIG_DISPLAY_NAMES: Record<string, string> = {
-  // Agent Settings
-  'maxSteps': '智能体执行最大步数',
-  'resetAllAgents': '重置所有agent',
-  'maxMemory': "能记住的最大消息数",
-  'parallelToolCalls':'并行工具调用',
-  
   // Browser Settings
-  'headlessBrowser': '是否使用无头浏览器模式',
-  'browserTimeout': t('config.basicConfig.browserTimeout'),
-  'browserDebug': '浏览器debug模式',
-  
+  'headless': ('config.basicConfig.browserSettings.headless'), 
+  'requestTimeout': ('config.basicConfig.browserSettings.requestTimeout'), 
+
+  // General Settings
+  'debugDetail': ('config.basicConfig.general.debugDetail'), 
+  'baseDir': ('config.basicConfig.general.baseDir'), 
+
   // Interaction Settings
-  'autoOpenBrowser': '启动时自动打开浏览器',
-  'consoleInteractive': '启用控制台交互模式',
+  'openBrowser': ('config.basicConfig.interactionSettings.openBrowser'), 
+
+  // Agent Settings
+  'maxSteps': ('config.basicConfig.agentSettings.maxSteps'), 
+  'userInputTimeout': ('config.basicConfig.agentSettings.userInputTimeout'), 
+  'maxMemory': ('config.basicConfig.agentSettings.maxMemory'), 
+  'parallelToolCalls': ('config.basicConfig.agentSettings.parallelToolCalls'), 
   
-  // System Settings
-  'systemName': '系统名称',
-  'language': '默认语言',
-  'maxThreads': '最大线程数',
-  'timeoutSeconds': t('config.basicConfig.requestTimeout')
+  // Agents
+  'forceOverrideFromYaml': ('config.basicConfig.agents.forceOverrideFromYaml'), 
+
+  // Infinite Context
+  'enabled': ('config.basicConfig.infiniteContext.enabled'), 
+  'parallelThreads': ('config.basicConfig.infiniteContext.parallelThreads'), 
+  'taskContextSize': ('config.basicConfig.infiniteContext.taskContextSize'), 
+
+  // File System
+  'allowExternalAccess': ('config.basicConfig.fileSystem.allowExternalAccess'), 
+
+  // System Settings (not used)
+  // 'systemName': t('config.basicConfig.systemSettings.systemName'),
+  // 'language': t('config.basicConfig.systemSettings.language'),
+  // 'maxThreads': t('config.basicConfig.systemSettings.maxThreads'),
+  // 'timeoutSeconds': t('config.basicConfig.systemSettings.requestTimeout')
 }
 
-// Group display name mapping
+// Biggest Group display name mapping, 
+// The four configuration groups 'browser', 'interaction', 'system', and 'performance' have no corresponding backend responses and have been temporarily removed.
 const GROUP_DISPLAY_NAMES: Record<string, string> = {
-  'manus': '智能体设置',
-  'browser': '浏览器设置', 
-  'interaction': '交互设置',
-  'system': '系统设置',
-  'performance': '性能设置'
+  'manus': ('config.basicConfig.groupDisplayNames.manus'), // "Manus"
+  // 'browser': t('config.basicConfig.groupDisplayNames.browser'), 
+  // 'interaction': t('config.basicConfig.groupDisplayNames.interaction'),
+  // 'system': t('config.basicConfig.groupDisplayNames.system'),
+  // 'performance': t('config.basicConfig.groupDisplayNames.performance')
 }
 
 // Group icon mapping
@@ -392,12 +406,13 @@ const GROUP_ICONS: Record<string, string> = {
 
 // Sub-group display name mapping
 const SUB_GROUP_DISPLAY_NAMES: Record<string, string> = {
-  'agent': '智能体设置',
-  'browser': '浏览器设置',
-  'interaction': '交互设置',
-  'system': '系统设置',
-  'performance': '性能设置',
-  'general': '常规设置'
+  'agent': ('config.subGroupDisplayNames.agent'), 
+  'browser': ('config.subGroupDisplayNames.browser'), 
+  'interaction': ('config.subGroupDisplayNames.interaction'), 
+  'agents': ('config.subGroupDisplayNames.agents'), 
+  'infiniteContext': ('config.subGroupDisplayNames.infiniteContext'), 
+  'general': ('config.subGroupDisplayNames.general'), 
+  'filesystem': ('config.subGroupDisplayNames.filesystem'), 
 }
 
 // Computed property: Whether there are changes
@@ -532,13 +547,13 @@ const loadAllConfigs = async () => {
     initialLoading.value = true
     
     // Define known configuration groups (avoid relying on the backend's getAllGroups interface)
-    const knownGroups = ['manus', 'browser', 'interaction', 'system', 'performance']
+    // The four configuration groups 'browser', 'interaction', 'system', and 'performance' have no corresponding backend responses and have been temporarily removed.
+    const knownGroups = ['manus']
     
     // Load each group's configuration
     const groupPromises = knownGroups.map(async (groupName: string) => {
       try {
         const items = await AdminApiService.getConfigsByGroup(groupName)
-        
         // If there are no configuration items in this group, skip it
         if (items.length === 0) {
           return null
@@ -547,7 +562,7 @@ const loadAllConfigs = async () => {
         // Set display name for each configuration item (prioritize description)
         const processedItems: ExtendedConfigItem[] = items.map(item => ({
           ...item,
-          displayName: item.description ?? (CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey),
+          displayName: (CONFIG_DISPLAY_NAMES[item.configKey] || item.configKey),
           min: getConfigMin(item.configKey),
           max: getConfigMax(item.configKey)
         }))
@@ -571,13 +586,13 @@ const loadAllConfigs = async () => {
         // Convert to sub-group array
         const subGroups: ConfigSubGroup[] = Array.from(subGroupsMap.entries()).map(([name, items]) => ({
           name,
-          displayName: SUB_GROUP_DISPLAY_NAMES[name] || name,
+          displayName: (SUB_GROUP_DISPLAY_NAMES[name] || name),
           items
         }))
         
         return {
           name: groupName,
-          displayName: GROUP_DISPLAY_NAMES[groupName] || groupName,
+          displayName: (GROUP_DISPLAY_NAMES[groupName] || groupName),
           subGroups
         }
       } catch (error) {
@@ -591,9 +606,9 @@ const loadAllConfigs = async () => {
     // Filter out empty configuration groups
     configGroups.value = results.filter(group => group !== null) as ConfigGroup[]
     
-    console.log('配置加载完成:', configGroups.value)
+    console.log(t('config.basicConfig.loadConfigSuccess'), configGroups.value)
   } catch (error) {
-    console.error('加载配置失败:', error)
+    console.error(t('config.basicConfig.loadConfigFailed'), error)
     showMessage(t('config.basicConfig.loadConfigFailed'), 'error')
   } finally {
     initialLoading.value = false
@@ -618,7 +633,7 @@ const saveAllConfigs = async () => {
     })
     
     if (allModifiedConfigs.length === 0) {
-      showMessage('没有需要保存的修改')
+      showMessage(t('config.basicConfig.noModified'))
       return
     }
     
@@ -632,12 +647,12 @@ const saveAllConfigs = async () => {
         item._modified = false
       })
       
-      showMessage('配置保存成功')
+      showMessage(t('config.basicConfig.saveSuccess'))
     } else {
-      showMessage(result.message || '保存失败', 'error')
+      showMessage(result.message || t('config.basicConfig.saveFailed'), 'error')
     }
   } catch (error) {
-    console.error('保存配置失败:', error)
+    console.error(t('config.basicConfig.saveFailed'), error)
     showMessage(t('config.basicConfig.saveFailed'), 'error')
   } finally {
     loading.value = false
@@ -646,7 +661,7 @@ const saveAllConfigs = async () => {
 
 // Reset group configurations
 const resetGroupConfigs = async (groupName: string) => {
-  const confirmed = confirm(`确定要重置 "${GROUP_DISPLAY_NAMES[groupName] || groupName}" 组的所有配置吗？`)
+  const confirmed = confirm(t('config.basicConfig.resetGroupConfirm', GROUP_DISPLAY_NAMES[groupName] || groupName))
   if (!confirmed) return
   
   try {
@@ -672,7 +687,7 @@ const resetGroupConfigs = async (groupName: string) => {
     })
     
     if (groupConfigs.length === 0) {
-      showMessage('该组配置已是默认值')
+      showMessage(t('config.basicConfig.isDefault'))
       return
     }
     
@@ -682,12 +697,12 @@ const resetGroupConfigs = async (groupName: string) => {
     if (result.success) {
       // Reload configurations
       await loadAllConfigs()
-      showMessage(`成功重置 ${groupConfigs.length} 项配置`)
+      showMessage(t('config.basicConfig.resetSuccess', groupConfigs.length))
     } else {
-      showMessage(result.message || '重置失败', 'error')
+      showMessage(result.message || t('config.basicConfig.resetFailed'), 'error')
     }
   } catch (error) {
-    console.error('重置组配置失败:', error)
+    console.error(t('config.basicConfig.resetFailed'), error)
     showMessage(t('config.basicConfig.resetFailed'), 'error')
   } finally {
     loading.value = false
@@ -787,10 +802,10 @@ const exportConfigs = () => {
     link.download = `config-export-${new Date().toISOString().split('T')[0]}.json`
     link.click()
     
-    showMessage('配置导出成功')
+    showMessage(t('config.basicConfig.exportSuccess'))
   } catch (error) {
-    console.error('导出配置失败:', error)
-    showMessage('导出失败', 'error')
+    console.error(t('config.basicConfig.exportFailed'), error)
+    showMessage(t('config.basicConfig.exportFailed'), 'error')
   }
 }
 
@@ -807,10 +822,10 @@ const importConfigs = (event: Event) => {
       const importData = JSON.parse(e.target?.result as string)
       
       if (!importData.configs) {
-        throw new Error('无效的配置文件格式')
+        throw new Error(t('config.basicConfig.invalidFormat'))
       }
       
-      const confirmed = confirm(`确定要导入配置吗？这将覆盖当前配置。`)
+      const confirmed = confirm(t('config.importConfirm'))
       if (!confirmed) return
       
       loading.value = true
@@ -832,7 +847,7 @@ const importConfigs = (event: Event) => {
       })
       
       if (configsToUpdate.length === 0) {
-        showMessage('没有找到可导入的配置项')
+        showMessage(t('config.basicConfig.notFound'))
         return
       }
       
@@ -841,12 +856,12 @@ const importConfigs = (event: Event) => {
       
       if (result.success) {
         await loadAllConfigs()
-        showMessage(`成功导入 ${configsToUpdate.length} 项配置`)
+        showMessage(t('config.basicConfig.importSuccess'))
       } else {
-        showMessage(result.message || '导入失败', 'error')
+        showMessage(result.message || t('config.basicConfig.importFailed'), 'error')
       }
     } catch (error) {
-      console.error('导入配置失败:', error)
+      console.error(t('config.basicConfig.importFailed'), error)
       showMessage(t('config.basicConfig.importFailed'), 'error')
     } finally {
       loading.value = false

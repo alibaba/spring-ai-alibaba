@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * MapReduce工具共享状态管理器 用于管理不同Agent实例之间的共享状态信息，确保MapReduce流程的一致性
  */
 @Component
-public class MapReduceSharedStateManager {
+public class MapReduceSharedStateManager implements IMapReduceSharedStateManager {
 
 	private static final Logger log = LoggerFactory.getLogger(MapReduceSharedStateManager.class);
 
@@ -294,20 +294,18 @@ public class MapReduceSharedStateManager {
 	public String getCurrentToolStateString(String planId) {
 		PlanState planState = getPlanState(planId);
 		if (planState == null) {
-			return "MapReduceTool 当前状态:\n- Plan ID: " + planId + " (状态不存在)\n";
+			return "reduce_operation_tool 当前状态:\n- Plan ID: " + planId + " (状态不存在)\n";
 		}
 
 		StringBuilder sb = new StringBuilder();
-		sb.append("MapReduceTool 当前状态:\n");
+		sb.append("reduce_operation_tool 当前状态:\n");
 		sb.append("- Plan ID: ").append(planId).append("\n");
 		sb.append("- 最后处理文件: ")
 			.append(planState.getLastProcessedFile().isEmpty() ? "无" : planState.getLastProcessedFile())
 			.append("\n");
-		sb.append("- 最后操作结果: ").append(planState.getLastOperationResult().isEmpty() ? "无" : "已完成").append("\n");
-		sb.append("- 任务目录数: ").append(planState.getSplitResults().size()).append("\n");
-		sb.append("- Map任务状态数: ").append(planState.getMapTaskStatuses().size()).append("\n");
-		sb.append("- 下一个任务计数器: ").append(planState.getTaskCounter().get()).append("\n");
-
+		sb.append("- 最后操作结果: ")
+			.append(planState.getLastOperationResult().isEmpty() ? "无" : "已完成: " + planState.getLastOperationResult())
+			.append("\n");
 		return sb.toString();
 	}
 

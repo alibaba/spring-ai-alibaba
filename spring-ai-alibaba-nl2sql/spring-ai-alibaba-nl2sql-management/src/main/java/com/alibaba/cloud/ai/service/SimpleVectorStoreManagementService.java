@@ -61,7 +61,9 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 
 		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
 		DashScopeEmbeddingModel dashScopeEmbeddingModel = new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED,
-				DashScopeEmbeddingOptions.builder().withModel("text-embedding-v2").build());
+				DashScopeEmbeddingOptions.builder()
+					.withModel(DashScopeApi.EmbeddingModel.EMBEDDING_V4.getValue())
+					.build());
 		this.vectorStore = SimpleVectorStore.builder(dashScopeEmbeddingModel).build();
 	}
 

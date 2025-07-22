@@ -44,7 +44,7 @@
       <!-- List Tab Content -->
       <div v-if="sidebarStore.currentTab === 'list'" class="tab-content">
         <div class="new-task-section">
-          <button class="new-task-btn" @click="handleNewTaskButtonClick">
+          <button class="new-task-btn" @click="sidebarStore.createNewTemplate()">
             <Icon icon="carbon:add" width="16" />
             {{ $t('sidebar.newPlan') }}
             <span class="shortcut">⌘ K</span>
@@ -81,7 +81,7 @@
               'sidebar-content-list-item-active':
                 template.id === sidebarStore.currentPlanTemplateId,
             }"
-            @click="handlePlanTemplateClick(template)"
+            @click="sidebarStore.selectTemplate(template)"
           >
             <div class="task-icon">
               <Icon icon="carbon:document" width="20" />
@@ -99,7 +99,7 @@
               <button
                 class="delete-task-btn"
                 :title="$t('sidebar.deleteTemplate')"
-                @click.stop="handleDeletePlanTemplate(template)"
+                @click.stop="sidebarStore.deleteTemplate(template)"
               >
                 <Icon icon="carbon:close" width="16" />
               </button>
@@ -122,46 +122,7 @@
             </button>
           </div>
 
-          <!-- Section 1: JSON Editor -->
-          <div class="config-section">
-            <div class="section-header">
-              <Icon icon="carbon:code" width="16" />
-              <span>{{ $t('sidebar.jsonTemplate') }}</span>
-              <div class="section-actions">
-                <button
-                  class="btn btn-sm"
-                  @click="sidebarStore.rollbackVersion"
-                  :disabled="!sidebarStore.canRollback"
-                  :title="$t('sidebar.rollback')"
-                >
-                  <Icon icon="carbon:undo" width="14" />
-                </button>
-                <button
-                  class="btn btn-sm"
-                  @click="sidebarStore.restoreVersion"
-                  :disabled="!sidebarStore.canRestore"
-                  :title="$t('sidebar.restore')"
-                >
-                  <Icon icon="carbon:redo" width="14" />
-                </button>
-                <button
-                  class="btn btn-primary btn-sm"
-                  @click="handleSaveTemplate"
-                  :disabled="sidebarStore.isGenerating || sidebarStore.isExecuting"
-                >
-                  <Icon icon="carbon:save" width="14" />
-                </button>
-              </div>
-            </div>
-            <textarea
-              v-model="sidebarStore.jsonContent"
-              class="json-editor"
-              :placeholder="$t('sidebar.jsonPlaceholder')"
-              rows="8"
-            ></textarea>
-          </div>
-
-          <!-- Section 2: Plan Generator -->
+          <!-- Section 1: Plan Generator -->
           <div class="config-section">
             <div class="section-header">
               <Icon icon="carbon:generate" width="16" />
@@ -203,15 +164,57 @@
             </div>
           </div>
 
-          <!-- Section 3: Execution Controller -->
+          <!-- Section 2: JSON Editor -->
           <div class="config-section">
             <div class="section-header">
-              <Icon icon="carbon:play" width="16" />
-              <span>{{ $t('sidebar.executionController') }}</span>
+              <Icon icon="carbon:code" width="16" />
+              <span>{{ $t('sidebar.jsonTemplate') }}</span>
+              <div class="section-actions">
+                <button
+                  class="btn btn-sm"
+                  @click="sidebarStore.rollbackVersion"
+                  :disabled="!sidebarStore.canRollback"
+                  :title="$t('sidebar.rollback')"
+                >
+                  <Icon icon="carbon:undo" width="14" />
+                </button>
+                <button
+                  class="btn btn-sm"
+                  @click="sidebarStore.restoreVersion"
+                  :disabled="!sidebarStore.canRestore"
+                  :title="$t('sidebar.restore')"
+                >
+                  <Icon icon="carbon:redo" width="14" />
+                </button>
+                <button
+                  class="btn btn-primary btn-sm"
+                  @click="handleSaveTemplate"
+                  :disabled="sidebarStore.isGenerating || sidebarStore.isExecuting"
+                >
+                  <Icon icon="carbon:save" width="14" />
+                </button>
+              </div>
             </div>
+            <textarea
+              v-model="formattedJsonContent"
+              class="json-editor"
+              :placeholder="$t('sidebar.jsonPlaceholder')"
+              rows="12"
+            ></textarea>
+          </div>
+
+          <!-- Section 3: Execution Controller -->
+          <div class="config-section">
+              <div class="section-header">
+                <Icon icon="carbon:play" width="16" />
+                <span>{{ $t('sidebar.executionController') }}</span>
+              </div>
             <div class="execution-content">
               <div class="params-input-group">
                 <label>{{ $t('sidebar.executionParams') }}</label>
+                <div class="params-help-text">
+                  {{ $t('sidebar.executionParamsHelp') }}
+                </div>
                 <div class="params-input-container">
                   <input
                     v-model="sidebarStore.executionParams"
@@ -230,6 +233,10 @@
               <div class="api-url-display">
                 <span class="api-url-label">{{ $t('sidebar.apiUrl') }}:</span>
                 <code class="api-url">{{ sidebarStore.computedApiUrl }}</code>
+              </div>
+              <div class="api-url-display">
+                <span class="api-url-label">{{ $t('sidebar.statusApiUrl') }}:</span>
+                <code class="api-url">/api/executor/details/{planId}</code>
               </div>
               <button
                 class="btn btn-primary execute-btn"
@@ -252,49 +259,78 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import { useSidebarStore } from '@/stores/sidebar'
-import type { PlanTemplate } from '@/types/plan-template'
+import { sidebarStore } from '@/stores/sidebar'
 
 const { t } = useI18n()
 
+// Fields to hide in JSON editor
+const hiddenFields = ['currentPlanId', 'userRequest', 'rootPlanId']
+
+// Computed property for formatted JSON content
+const formattedJsonContent = computed({
+  get() {
+    try {
+      if (!sidebarStore.jsonContent) return ''
+      
+      const parsed = JSON.parse(sidebarStore.jsonContent)
+      
+      // Remove hidden fields for display
+      const filtered = { ...parsed }
+      hiddenFields.forEach(field => {
+        delete filtered[field]
+      })
+      
+      // Return formatted JSON
+      return JSON.stringify(filtered, null, 2)
+    } catch {
+      // If parsing fails, return original content
+      return sidebarStore.jsonContent
+    }
+  },
+  set(value: string) {
+    try {
+      if (!value.trim()) {
+        sidebarStore.jsonContent = ''
+        return
+      }
+      
+      const parsed = JSON.parse(value)
+      
+      // Get original data to preserve hidden fields
+      let originalData: any = {}
+      try {
+        originalData = JSON.parse(sidebarStore.jsonContent || '{}')
+      } catch {
+        // If original is not valid JSON, start fresh
+      }
+      
+      // Merge user input with preserved hidden fields
+      const merged: any = { ...parsed }
+      hiddenFields.forEach(field => {
+        if (originalData[field] !== undefined) {
+          merged[field] = originalData[field]
+        }
+      })
+      
+      sidebarStore.jsonContent = JSON.stringify(merged)
+    } catch {
+      // If parsing fails, store as-is
+      sidebarStore.jsonContent = value
+    }
+  }
+})
+
 // Use pinia store
-const sidebarStore = useSidebarStore()
+// 使用 TS 对象实现的 sidebarStore
+// 直接使用 sidebarStore 实例，无需 pinia
 
 // Emits - Keep some events for communication with external components
 const emit = defineEmits<{
   planExecutionRequested: [payload: { title: string; planData: any; params?: string | undefined }]
 }>()
-
-// Methods
-const handleNewTaskButtonClick = () => {
-  sidebarStore.createNewTemplate()
-  console.log('[PlanTemplateSidebar] 创建新的空白计划模板，切换到配置标签页')
-}
-
-const handlePlanTemplateClick = async (template: PlanTemplate) => {
-  try {
-    await sidebarStore.selectTemplate(template)
-    console.log(`[PlanTemplateSidebar] 选择了计划模板: ${template.id}`)
-  } catch (error: any) {
-    console.error('选择计划模板失败:', error)
-    alert(t('sidebar.selectTemplateFailed') + ': ' + error.message)
-  }
-}
-
-const handleDeletePlanTemplate = async (template: PlanTemplate) => {
-  if (confirm(t('sidebar.confirmDelete', { name: template.title ?? t('sidebar.unnamedPlan') }))) {
-    try {
-      await sidebarStore.deleteTemplate(template)
-      alert(t('sidebar.templateDeleted'))
-    } catch (error: any) {
-      console.error('删除计划模板失败:', error)
-      alert(t('sidebar.deleteTemplateFailed') + ': ' + error.message)
-    }
-  }
-}
 
 const handleSaveTemplate = async () => {
   try {
@@ -367,10 +403,10 @@ const getRelativeTimeString = (date: Date): string => {
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMinutes < 1) return '刚刚'
-  if (diffMinutes < 60) return `${diffMinutes}分钟前`
-  if (diffHours < 24) return `${diffHours}小时前`
-  if (diffDays < 30) return `${diffDays}天前`
+  if (diffMinutes < 1) return t('time.now')
+  if (diffMinutes < 60) return t('time.minuteAgo', { count: diffMinutes })
+  if (diffHours < 24) return t('time.hourAgo', { count: diffHours })
+  if (diffDays < 30) return t('time.dayAgo', { count: diffDays })
 
   return date.toLocaleDateString('zh-CN')
 }
@@ -596,6 +632,17 @@ defineExpose({
           }
         }
 
+        .json-editor {
+          min-height: 200px;
+          font-size: 11px;
+          line-height: 1.5;
+          white-space: pre;
+          overflow-wrap: normal;
+          word-break: normal;
+          tab-size: 2;
+          font-variant-ligatures: none;
+        }
+
         .generator-content {
           display: flex;
           flex-direction: column;
@@ -651,6 +698,17 @@ defineExpose({
                   color: #ff6b6b;
                 }
               }
+            }
+
+            .params-help-text {
+              margin-bottom: 6px;
+              font-size: 11px;
+              color: rgba(255, 255, 255, 0.6);
+              line-height: 1.4;
+              padding: 6px 8px;
+              background: rgba(102, 126, 234, 0.1);
+              border: 1px solid rgba(102, 126, 234, 0.2);
+              border-radius: 4px;
             }
           }
 

@@ -14,29 +14,32 @@
  * limitations under the License.
 -->
 <template>
-  <div class="config-panel">
-    <div class="panel-header">
+  <ConfigPanel>
+    <template #title>
       <h2>{{ t('config.agentConfig.title') }}</h2>
-      <div class="panel-actions">
-        <button class="action-btn" @click="handleImport">
-          <Icon icon="carbon:upload" />
-          {{ t('config.agentConfig.import') }}
-        </button>
-        <button class="action-btn" @click="handleExport" :disabled="!selectedAgent">
-          <Icon icon="carbon:download" />
-          {{ t('config.agentConfig.export') }}
-        </button>
-      </div>
-    </div>
+    </template>
+
+    <template #actions>
+      <button class="action-btn" @click="handleImport">
+        <Icon icon="carbon:upload" />
+        {{ t('config.agentConfig.import') }}
+      </button>
+      <button class="action-btn" @click="handleExport" :disabled="!selectedAgent">
+        <Icon icon="carbon:download" />
+        {{ t('config.agentConfig.export') }}
+      </button>
+    </template>
 
     <div class="agent-layout">
       <!-- Agent List -->
       <div class="agent-list">
         <div class="list-header">
           <h3>{{ t('config.agentConfig.configuredAgents') }}</h3>
-          <span class="agent-count">({{ agents.length }}{{ t('config.agentConfig.agentCount') }})</span>
+          <span class="agent-count"
+            >({{ agents.length }}{{ t('config.agentConfig.agentCount') }})</span
+          >
         </div>
-        
+
         <div class="agents-container" v-if="!loading">
           <div
             v-for="agent in agents"
@@ -103,24 +106,24 @@
 
         <div class="form-item">
           <label>{{ t('config.agentConfig.agentName') }} <span class="required">*</span></label>
-          <input 
-            type="text" 
-            v-model="selectedAgent.name" 
+          <input
+            type="text"
+            v-model="selectedAgent.name"
             :placeholder="t('config.agentConfig.agentNamePlaceholder')"
             required
           />
         </div>
-        
+
         <div class="form-item">
           <label>{{ t('config.agentConfig.description') }} <span class="required">*</span></label>
-          <textarea 
-            v-model="selectedAgent.description" 
+          <textarea
+            v-model="selectedAgent.description"
             rows="3"
             :placeholder="t('config.agentConfig.descriptionPlaceholder')"
             required
           ></textarea>
         </div>
-        
+
         <div class="form-item">
           <label>{{ t('config.agentConfig.nextStepPrompt') }}</label>
           <textarea
@@ -136,11 +139,7 @@
           <h4>{{ t('config.agentConfig.modelConfiguration') }}</h4>
           <div class="form-item">
             <div class="model-chooser">
-              <button
-                  class="model-btn"
-                  @click="toggleDropdown"
-                  :title="$t('model.switch')"
-              >
+              <button class="model-btn" @click="toggleDropdown" :title="$t('model.switch')">
                 <Icon icon="carbon:build-run" width="18" />
                 <span v-if="chooseModel" class="current-model">
                   <span class="model-type">{{ chooseModel.type }}</span>
@@ -148,9 +147,15 @@
                   <span class="model-name">{{ chooseModel.modelName }}</span>
                 </span>
                 <span v-else class="current-model">
-                  <span class="current-model">{{ t('config.agentConfig.modelConfigurationLabel') }}</span>
+                  <span class="current-model">{{
+                    t('config.agentConfig.modelConfigurationLabel')
+                  }}</span>
                 </span>
-                <Icon :icon="showDropdown ? 'carbon:chevron-up' : 'carbon:chevron-down'" width="14" class="chevron" />
+                <Icon
+                  :icon="showDropdown ? 'carbon:chevron-up' : 'carbon:chevron-down'"
+                  width="14"
+                  class="chevron"
+                />
               </button>
 
               <div v-if="showDropdown" class="model-dropdown" @click.stop>
@@ -162,30 +167,26 @@
                 </div>
                 <div class="model-options">
                   <button
-                      v-for="option in modelOptions"
-                      :key="option.id"
-                      class="model-option"
-                      :class="{ active: chooseModel?.id === option.id }"
-                      @click="selectModel(option)"
+                    v-for="option in modelOptions"
+                    :key="option.id"
+                    class="model-option"
+                    :class="{ active: chooseModel?.id === option.id }"
+                    @click="selectModel(option)"
                   >
                     <span class="model-type">{{ option.type }}</span>
                     <span class="model-name">{{ option.modelName }}</span>
                     <Icon
-                        v-if="chooseModel?.id === option.id"
-                        icon="carbon:checkmark"
-                        width="16"
-                        class="check-icon"
+                      v-if="chooseModel?.id === option.id"
+                      icon="carbon:checkmark"
+                      width="16"
+                      class="check-icon"
                     />
                   </button>
                 </div>
               </div>
 
               <!-- Backdrop -->
-              <div
-                  v-if="showDropdown"
-                  class="backdrop"
-                  @click="showDropdown = false"
-              ></div>
+              <div v-if="showDropdown" class="backdrop" @click="showDropdown = false"></div>
             </div>
           </div>
         </div>
@@ -193,25 +194,37 @@
         <!-- Tool Allocation Area -->
         <div class="tools-section">
           <h4>{{ t('config.agentConfig.toolConfiguration') }}</h4>
-          
+
           <!-- Assigned Tools -->
           <div class="assigned-tools">
             <div class="section-header">
-              <span>{{ t('config.agentConfig.assignedTools') }} ({{ (selectedAgent.availableTools || []).length }})</span>
-              <button class="action-btn small" @click="showToolSelectionModal" v-if="availableTools.length > 0">
+              <span
+                >{{ t('config.agentConfig.assignedTools') }} ({{
+                  (selectedAgent.availableTools || []).length
+                }})</span
+              >
+              <button
+                class="action-btn small"
+                @click="showToolSelectionModal"
+                v-if="availableTools.length > 0"
+              >
                 <Icon icon="carbon:add" />
                 {{ t('config.agentConfig.addRemoveTools') }}
               </button>
             </div>
-            
+
             <div class="tools-grid">
-              <div v-for="toolId in (selectedAgent.availableTools || [])" :key="toolId" class="tool-item assigned">
+              <div
+                v-for="toolId in selectedAgent.availableTools || []"
+                :key="toolId"
+                class="tool-item assigned"
+              >
                 <div class="tool-info">
                   <span class="tool-name">{{ getToolDisplayName(toolId) }}</span>
                   <span class="tool-desc">{{ getToolDescription(toolId) }}</span>
                 </div>
               </div>
-              
+
               <div v-if="selectedAgent.availableTools.length === 0" class="no-tools">
                 <Icon icon="carbon:tool-box" />
                 <span>{{ t('config.agentConfig.noAssignedTools') }}</span>
@@ -220,7 +233,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Empty State -->
       <div v-else class="no-selection">
         <Icon icon="carbon:bot" class="placeholder-icon" />
@@ -233,11 +246,11 @@
       <div class="modal-form">
         <div class="form-item">
           <label>{{ t('config.agentConfig.agentName') }} <span class="required">*</span></label>
-          <input 
-            type="text" 
-            v-model="newAgent.name" 
+          <input
+            type="text"
+            v-model="newAgent.name"
             :placeholder="t('config.agentConfig.agentNamePlaceholder')"
-            required 
+            required
           />
         </div>
         <div class="form-item">
@@ -273,11 +286,16 @@
     <Modal v-model="showDeleteModal" :title="t('config.agentConfig.deleteConfirm')">
       <div class="delete-confirm">
         <Icon icon="carbon:warning" class="warning-icon" />
-        <p>{{ t('config.agentConfig.deleteConfirmText') }} <strong>{{ selectedAgent?.name }}</strong> {{ t('common.confirm') }}？</p>
+        <p>
+          {{ t('config.agentConfig.deleteConfirmText') }}
+          <strong>{{ selectedAgent?.name }}</strong> {{ t('common.confirm') }}？
+        </p>
         <p class="warning-text">{{ t('config.agentConfig.deleteWarning') }}</p>
       </div>
       <template #footer>
-        <button class="cancel-btn" @click="showDeleteModal = false">{{ t('common.cancel') }}</button>
+        <button class="cancel-btn" @click="showDeleteModal = false">
+          {{ t('common.cancel') }}
+        </button>
         <button class="confirm-btn danger" @click="handleDelete">{{ t('common.delete') }}</button>
       </template>
     </Modal>
@@ -293,20 +311,24 @@
       <Icon icon="carbon:checkmark" />
       {{ success }}
     </div>
-  </div>
+  </ConfigPanel>
 </template>
 
 <script setup lang="ts">
-import {ref, reactive, onMounted} from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import ConfigPanel from './components/configPanel.vue'
 import Modal from '@/components/modal/index.vue'
 import ToolSelectionModal from '@/components/tool-selection-modal/index.vue'
 import { AgentApiService, type Agent, type Tool } from '@/api/agent-api-service'
-import {type Model, ModelApiService} from "@/api/model-api-service";
+import { type Model, ModelApiService } from '@/api/model-api-service'
+import { usenameSpaceStore } from '@/stores/namespace'
 
 // Internationalization
 const { t } = useI18n()
+
+const namespaceStore = usenameSpaceStore()
 
 // Reactive data
 const loading = ref(false)
@@ -323,6 +345,7 @@ const chooseModel = ref<Model | null>(null)
 const modelOptions = reactive<Model[]>([])
 
 
+
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
 }
@@ -332,12 +355,11 @@ const selectModel = (option: Model) => {
   showDropdown.value = false
 }
 
-
 // New Agent form data
 const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
   name: '',
   description: '',
-  nextStepPrompt: ''
+  nextStepPrompt: '',
 })
 
 // Computed property - removed unused unassignedTools since it's not used in the template
@@ -358,10 +380,14 @@ const getToolDescription = (toolId: string): string => {
 const showMessage = (msg: string, type: 'success' | 'error') => {
   if (type === 'success') {
     success.value = msg
-    setTimeout(() => { success.value = '' }, 3000)
+    setTimeout(() => {
+      success.value = ''
+    }, 3000)
   } else {
     error.value = msg
-    setTimeout(() => { error.value = '' }, 5000)
+    setTimeout(() => {
+      error.value = ''
+    }, 5000)
   }
 }
 
@@ -371,18 +397,18 @@ const loadData = async () => {
   try {
     // Load the Agent list and available tools in parallel
     const [loadedAgents, loadedTools, loadedModels] = await Promise.all([
-      AgentApiService.getAllAgents(),
+      AgentApiService.getAllAgents(namespaceStore.namespace),
       AgentApiService.getAvailableTools(),
-      ModelApiService.getAllModels()
+      ModelApiService.getAllModels(),
     ])
-    
-// Ensure each agent has an availableTools array
+
+    // Ensure each agent has an availableTools array
     const normalizedAgents = loadedAgents.map(agent => ({
       ...agent,
       availableTools: agent.availableTools,
-      ...loadedModels
+      ...loadedModels,
     }))
-    
+
     agents.splice(0, agents.length, ...normalizedAgents)
     availableTools.splice(0, availableTools.length, ...loadedTools)
     modelOptions.splice(0, modelOptions.length, ...loadedModels)
@@ -394,7 +420,7 @@ const loadData = async () => {
   } catch (err: any) {
     console.error('加载数据失败:', err)
     showMessage(t('config.agentConfig.loadDataFailed') + ': ' + err.message, 'error')
-    
+
     // Provide demo data as a fallback
     const demoTools = [
       {
@@ -402,99 +428,101 @@ const loadData = async () => {
         name: '网络搜索',
         description: '在互联网上搜索信息',
         enabled: true,
-        serviceGroup: '搜索服务'
+        serviceGroup: '搜索服务',
       },
       {
         key: 'search-local',
         name: '本地搜索',
         description: '在本地文件中搜索内容',
         enabled: true,
-        serviceGroup: '搜索服务'
+        serviceGroup: '搜索服务',
       },
       {
         key: 'file-read',
         name: '读取文件',
         description: '读取本地或远程文件内容',
         enabled: true,
-        serviceGroup: '文件服务'
+        serviceGroup: '文件服务',
       },
       {
         key: 'file-write',
         name: '写入文件',
         description: '创建或修改文件内容',
         enabled: true,
-        serviceGroup: '文件服务'
+        serviceGroup: '文件服务',
       },
       {
         key: 'file-delete',
         name: '删除文件',
         description: '删除指定的文件',
         enabled: false,
-        serviceGroup: '文件服务'
+        serviceGroup: '文件服务',
       },
       {
         key: 'calculator',
         name: '计算器',
         description: '执行数学计算',
         enabled: true,
-        serviceGroup: '计算服务'
+        serviceGroup: '计算服务',
       },
       {
         key: 'code-execute',
         name: '代码执行',
         description: '执行Python或JavaScript代码',
         enabled: true,
-        serviceGroup: '计算服务'
+        serviceGroup: '计算服务',
       },
       {
         key: 'weather',
         name: '天气查询',
         description: '获取指定地区的天气信息',
         enabled: true,
-        serviceGroup: '信息服务'
+        serviceGroup: '信息服务',
       },
       {
         key: 'currency',
         name: '汇率查询',
         description: '查询货币汇率信息',
         enabled: true,
-        serviceGroup: '信息服务'
+        serviceGroup: '信息服务',
       },
       {
         key: 'email',
         name: '发送邮件',
         description: '发送电子邮件',
         enabled: false,
-        serviceGroup: '通信服务'
+        serviceGroup: '通信服务',
       },
       {
         key: 'sms',
         name: '发送短信',
         description: '发送短信消息',
         enabled: false,
-        serviceGroup: '通信服务'
-      }
+        serviceGroup: '通信服务',
+      },
     ]
-    
+
     const demoAgents = [
       {
         id: 'demo-1',
         name: '通用助手',
         description: '一个能够处理各种任务的智能助手',
-        nextStepPrompt: 'You are a helpful assistant that can answer questions and help with various tasks. What would you like me to help you with next?',
-        availableTools: ['search-web', 'calculator', 'weather']
+        nextStepPrompt:
+          'You are a helpful assistant that can answer questions and help with various tasks. What would you like me to help you with next?',
+        availableTools: ['search-web', 'calculator', 'weather'],
       },
       {
         id: 'demo-2',
         name: '数据分析师',
         description: '专门用于数据分析和可视化的Agent',
-        nextStepPrompt: 'You are a data analyst assistant specialized in analyzing data and creating visualizations. Please provide the data you would like me to analyze.',
-        availableTools: ['file-read', 'file-write', 'calculator', 'code-execute']
-      }
+        nextStepPrompt:
+          'You are a data analyst assistant specialized in analyzing data and creating visualizations. Please provide the data you would like me to analyze.',
+        availableTools: ['file-read', 'file-write', 'calculator', 'code-execute'],
+      },
     ]
     availableTools.splice(0, availableTools.length, ...demoTools)
     agents.splice(0, agents.length, ...demoAgents)
-    
+
     if (demoAgents.length > 0) {
       selectedAgent.value = demoAgents[0]
     }
@@ -511,7 +539,7 @@ const selectAgent = async (agent: Agent) => {
     // Agent interface guarantees availableTools is an array
     selectedAgent.value = {
       ...detailedAgent,
-      availableTools: detailedAgent.availableTools
+      availableTools: detailedAgent.availableTools,
     }
     chooseModel.value = detailedAgent.model ?? null
   } catch (err: any) {
@@ -520,7 +548,7 @@ const selectAgent = async (agent: Agent) => {
     // Use basic information as a fallback
     selectedAgent.value = {
       ...agent,
-      availableTools: agent.availableTools
+      availableTools: agent.availableTools,
     }
   }
 }
@@ -543,8 +571,9 @@ const handleAddAgent = async () => {
   try {
     const agentData: Omit<Agent, 'id'> = {
       name: newAgent.name.trim(),
-      description: newAgent.description.trim(),        nextStepPrompt: newAgent.nextStepPrompt?.trim() ?? '',
-      availableTools: []
+      description: newAgent.description.trim(),
+      nextStepPrompt: newAgent.nextStepPrompt?.trim() ?? '',
+      availableTools: [],
     }
 
     const createdAgent = await AgentApiService.createAgent(agentData)
@@ -571,8 +600,6 @@ const handleToolSelectionConfirm = (selectedToolIds: string[]) => {
 
 // Removed unused addTool function since it's not used anywhere in the code
 
-
-
 // Save Agent
 const handleSave = async () => {
   if (!selectedAgent.value) return
@@ -584,14 +611,17 @@ const handleSave = async () => {
 
   try {
     selectedAgent.value.model = chooseModel.value
-    const savedAgent = await AgentApiService.updateAgent(selectedAgent.value.id, selectedAgent.value)
-    
+    const savedAgent = await AgentApiService.updateAgent(
+      selectedAgent.value.id,
+      selectedAgent.value
+    )
+
     // Update the data in the local list
     const index = agents.findIndex(a => a.id === savedAgent.id)
     if (index !== -1) {
       agents[index] = savedAgent
     }
-    
+
     selectedAgent.value = savedAgent
     selectedAgent.value.model = chooseModel.value
     showMessage(t('config.agentConfig.saveSuccess'), 'success')
@@ -611,7 +641,7 @@ const handleDelete = async () => {
 
   try {
     await AgentApiService.deleteAgent(selectedAgent.value.id)
-    
+
     // Remove from the list
     const index = agents.findIndex(a => a.id === selectedAgent.value!.id)
     if (index !== -1) {
@@ -632,18 +662,18 @@ const handleImport = () => {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.json'
-  input.onchange = (event) => {
+  input.onchange = event => {
     const file = (event.target as HTMLInputElement).files?.[0]
     if (file) {
       const reader = new FileReader()
-      reader.onload = async (e) => {
+      reader.onload = async e => {
         try {
           const agentData = JSON.parse(e.target?.result as string)
           // Basic validation
           if (!agentData.name || !agentData.description) {
             throw new Error(t('config.agentConfig.invalidFormat'))
           }
-          
+
           // Remove the id field and let the backend assign a new id
           const { id: _id, ...importData } = agentData
           const savedAgent = await AgentApiService.createAgent(importData)
@@ -686,36 +716,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.config-panel {
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.panel-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.panel-actions {
-  display: flex;
-  gap: 12px;
-}
-
 .agent-layout {
   display: flex;
   gap: 30px;
@@ -767,8 +767,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-state {
@@ -796,7 +800,7 @@ onMounted(() => {
   margin-bottom: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.2);
@@ -884,7 +888,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 14px;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.3);
@@ -941,7 +945,7 @@ onMounted(() => {
 
 .form-item {
   margin-bottom: 20px;
-  
+
   label {
     display: block;
     margin-bottom: 8px;
@@ -959,18 +963,18 @@ onMounted(() => {
     color: #fff;
     font-size: 14px;
     transition: all 0.3s ease;
-    
+
     &:focus {
       border-color: #667eea;
       outline: none;
       background: rgba(255, 255, 255, 0.08);
     }
-    
+
     &::placeholder {
       color: rgba(255, 255, 255, 0.4);
     }
   }
-  
+
   textarea {
     resize: vertical;
     min-height: 80px;
@@ -1003,7 +1007,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-  
+
   span {
     font-weight: 500;
     color: rgba(255, 255, 255, 0.8);
@@ -1025,7 +1029,7 @@ onMounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   transition: all 0.3s ease;
-  
+
   &.assigned {
     border-color: rgba(102, 126, 234, 0.3);
     background: rgba(102, 126, 234, 0.1);
@@ -1034,13 +1038,13 @@ onMounted(() => {
 
 .tool-info {
   flex: 1;
-  
+
   .tool-name {
     display: block;
     font-weight: 500;
     margin-bottom: 4px;
   }
-  
+
   .tool-desc {
     font-size: 12px;
     color: rgba(255, 255, 255, 0.6);
@@ -1075,32 +1079,32 @@ onMounted(() => {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
   }
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  
+
   &.primary {
     background: rgba(102, 126, 234, 0.2);
     border-color: rgba(102, 126, 234, 0.3);
     color: #a8b3ff;
-    
+
     &:hover:not(:disabled) {
       background: rgba(102, 126, 234, 0.3);
     }
   }
-  
+
   &.danger {
     background: rgba(234, 102, 102, 0.1);
     border-color: rgba(234, 102, 102, 0.2);
     color: #ff8a8a;
-    
+
     &:hover:not(:disabled) {
       background: rgba(234, 102, 102, 0.2);
     }
   }
-  
+
   &.small {
     padding: 6px 12px;
     font-size: 12px;
@@ -1117,12 +1121,12 @@ onMounted(() => {
 .delete-confirm {
   text-align: center;
   padding: 20px 0;
-  
+
   p {
     color: rgba(255, 255, 255, 0.8);
     margin: 8px 0;
   }
-  
+
   .warning-text {
     color: rgba(255, 255, 255, 0.6);
     font-size: 14px;
@@ -1135,17 +1139,18 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.confirm-btn, .cancel-btn {
+.confirm-btn,
+.cancel-btn {
   padding: 10px 20px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
-  
+
   &.danger {
     background: rgba(234, 102, 102, 0.2);
     border: 1px solid rgba(234, 102, 102, 0.3);
     color: #ff8a8a;
-    
+
     &:hover {
       background: rgba(234, 102, 102, 0.3);
     }
@@ -1156,14 +1161,15 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.1);
   }
 }
 
 /* 提示消息 */
-.error-toast, .success-toast {
+.error-toast,
+.success-toast {
   position: fixed;
   top: 20px;
   right: 20px;
@@ -1255,7 +1261,9 @@ onMounted(() => {
   backdrop-filter: blur(16px);
   border: 1px solid rgba(102, 126, 234, 0.3);
   border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(102, 126, 234, 0.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(102, 126, 234, 0.2);
   min-width: 300px;
   animation: slideDown 0.2s ease;
 }

@@ -7,7 +7,7 @@
     <groupId>com.alibaba.cloud.ai</groupId>
     <name>Spring AI Alibaba JManus</name>
     <artifactId>spring-ai-alibaba-jmanus</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0.1-SNAPSHOT</version>
 
     <!-- The required dependencies are maintained separately by the JManus module -->
     <properties>
@@ -33,6 +33,8 @@
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
+
+
     </properties>
 
     <dependencyManagement>
@@ -64,6 +66,12 @@
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>2.0.29</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -72,6 +80,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Spring Native support -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context-indexer</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -217,6 +232,7 @@
     </dependencies>
 
     <build>
+        <finalName>jmanus</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -304,7 +320,9 @@
                 <configuration>
                     <fork>true</fork>
                     <addResources>false</addResources>
-                    <executable>true</executable>
+                    <executable>false</executable>
+                    <layout>ZIP</layout>
+                    <mainClass>com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>

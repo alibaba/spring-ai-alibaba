@@ -54,10 +54,14 @@ public class PromptServiceImpl implements PromptService {
 
 	@Override
 	public List<PromptVO> getAllByNamespace(String namespace) {
-		return promptRepository.getAllByNamespace(namespace)
-			.stream()
-			.map(this::mapToPromptVO)
-			.collect(Collectors.toList());
+		List<PromptEntity> entities;
+		if ("default".equalsIgnoreCase(namespace)) {
+			entities = promptRepository.findAll();
+		}
+		else {
+			entities = promptRepository.getAllByNamespace(namespace);
+		}
+		return entities.stream().map(this::mapToPromptVO).collect(Collectors.toList());
 	}
 
 	@Override
@@ -197,6 +201,7 @@ public class PromptServiceImpl implements PromptService {
 			throw new IllegalArgumentException("Prompt not found: " + promptName);
 		}
 
+		log.info(promptName + " prompt content: {}", promptEntity.getPromptContent());
 		PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
 		return template.render(variables != null ? variables : Map.of());
 	}

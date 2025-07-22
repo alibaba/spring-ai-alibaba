@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
  * @date 2025/7/8
  */
 @Service
-public class ModelDataInitialization {
+public class ModelDataInitialization implements IModelDataInitialization {
 
 	@Value("${spring.ai.openai.base-url}")
 	private String baseUrl;
