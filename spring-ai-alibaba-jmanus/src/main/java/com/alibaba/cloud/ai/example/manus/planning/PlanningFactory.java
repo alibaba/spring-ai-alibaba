@@ -228,7 +228,8 @@ public class PlanningFactory implements IPlanningFactory {
 			ToolCallback[] tCallbacks = toolCallback.getAsyncMcpToolCallbackProvider().getToolCallbacks();
 			for (ToolCallback tCallback : tCallbacks) {
 				// The serviceGroup is the name of the tool
-				toolDefinitions.add(new McpTool(tCallback, serviceGroup, planId, new McpStateHolderService()));
+				toolDefinitions.add(
+						new McpTool(tCallback, serviceGroup, planId, new McpStateHolderService(), innerStorageService));
 			}
 		}
 
