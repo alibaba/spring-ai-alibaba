@@ -71,12 +71,20 @@ public class IterationNodeTest {
 		CompiledGraph graph = new StateGraph("main", mainFactory)
 			.addNode("generate_array", node_async((OverAllState state) -> Map.of("input_json_array", input)))
 			.addNode("iteration_start",
-					node_async(new IterationNode.Start<InputType>("input_json_array", "input_array", "iterator_item",
-							"output_start")))
+					node_async(IterationNode.<InputType>start()
+						.inputArrayJsonKey("input_json_array")
+						.inputArrayKey("input_array")
+						.outputItemKey("iterator_item")
+						.outputStartIterationKey("output_start")
+						.build()))
 			.addNode("iteration", subGraph)
 			.addNode("iteration_end",
-					node_async(new IterationNode.End<InputType, OutputType>("input_array", "iterator_item_result",
-							"result", "output_continue")))
+					node_async(IterationNode.<InputType, OutputType>end()
+						.inputArrayKey("input_array")
+						.inputResultKey("iterator_item_result")
+						.outputArrayKey("result")
+						.outputContinueIterationKey("output_continue")
+						.build()))
 			.addEdge(StateGraph.START, "generate_array")
 			.addEdge("generate_array", "iteration_start")
 			.addConditionalEdges("iteration_start",
@@ -112,7 +120,7 @@ public class IterationNodeTest {
 		String res = this.<String, Integer>runGraph("[\"a\", \"aa\", \"aaa\", \"aaaa\", \"aaaaa\"]",
 				(OverAllState state) -> {
 					int len = state.value("iterator_item", String.class).orElseThrow().length();
-					return Map.of("iterator_item_result", String.valueOf(len));
+					return Map.of("iterator_item_result", len);
 				});
 		log.info("result: {}", res);
 		Assertions.assertEquals(OBJECT_MAPPER.readValue(res, new TypeReference<List<Integer>>() {

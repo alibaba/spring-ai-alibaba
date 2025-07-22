@@ -102,6 +102,49 @@ public class IterationNode {
 			}
 		}
 
+		public static class Builder<ElementInput> {
+
+			private String inputArrayJsonKey;
+
+			private String inputArrayKey;
+
+			private String outputItemKey;
+
+			private String outputStartIterationKey;
+
+			public Start<ElementInput> build() {
+				return new Start<>(inputArrayJsonKey, inputArrayKey, outputItemKey, outputStartIterationKey);
+			}
+
+			private Builder() {
+				this.inputArrayJsonKey = null;
+				this.inputArrayKey = null;
+				this.outputItemKey = null;
+				this.outputStartIterationKey = null;
+			}
+
+			public Builder<ElementInput> inputArrayJsonKey(String inputArrayJsonKey) {
+				this.inputArrayJsonKey = inputArrayJsonKey;
+				return this;
+			}
+
+			public Builder<ElementInput> inputArrayKey(String inputArrayKey) {
+				this.inputArrayKey = inputArrayKey;
+				return this;
+			}
+
+			public Builder<ElementInput> outputItemKey(String outputItemKey) {
+				this.outputItemKey = outputItemKey;
+				return this;
+			}
+
+			public Builder<ElementInput> outputStartIterationKey(String outputStartIterationKey) {
+				this.outputStartIterationKey = outputStartIterationKey;
+				return this;
+			}
+
+		}
+
 	}
 
 	/**
@@ -161,6 +204,57 @@ public class IterationNode {
 			}
 		}
 
+		public static class Builder<ElementInput, ElementOutput> {
+
+			private String inputArrayKey;
+
+			private String inputResultKey;
+
+			private String outputArrayKey;
+
+			private String outputContinueIterationKey;
+
+			private Builder() {
+				this.inputArrayKey = null;
+				this.inputResultKey = null;
+				this.outputArrayKey = null;
+				this.outputContinueIterationKey = null;
+			}
+
+			public End<ElementInput, ElementOutput> build() {
+				return new End<>(inputArrayKey, inputResultKey, outputArrayKey, outputContinueIterationKey);
+			}
+
+			public Builder<ElementInput, ElementOutput> inputArrayKey(String inputArrayKey) {
+				this.inputArrayKey = inputArrayKey;
+				return this;
+			}
+
+			public Builder<ElementInput, ElementOutput> inputResultKey(String inputResultKey) {
+				this.inputResultKey = inputResultKey;
+				return this;
+			}
+
+			public Builder<ElementInput, ElementOutput> outputArrayKey(String outputArrayKey) {
+				this.outputArrayKey = outputArrayKey;
+				return this;
+			}
+
+			public Builder<ElementInput, ElementOutput> outputContinueIterationKey(String outputContinueIterationKey) {
+				this.outputContinueIterationKey = outputContinueIterationKey;
+				return this;
+			}
+
+		}
+
+	}
+
+	public static <ElementInput> Start.Builder<ElementInput> start() {
+		return new Start.Builder<ElementInput>();
+	}
+
+	public static <ElementInput, ElementOutput> End.Builder<ElementInput, ElementInput> end() {
+		return new End.Builder<ElementInput, ElementInput>();
 	}
 
 }
