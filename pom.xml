@@ -154,7 +154,7 @@
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-server</module>
         <!-- Nacos3 version -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-discovery</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-register</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-gateway-core</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-gateway-nacos</module>
@@ -175,7 +175,7 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-client</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-server</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-discovery</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-register</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-gateway-nacos</module>
 
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>

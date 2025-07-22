@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.mcp.discovery.registry;
+package com.alibaba.cloud.ai.mcp.register;
 
 import com.alibaba.nacos.api.utils.StringUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -25,10 +25,10 @@ import org.springframework.core.env.Environment;
 /**
  * @author Sunrisea
  */
-@ConfigurationProperties(prefix = NacosMcpRegistryProperties.CONFIG_PREFIX)
-public class NacosMcpRegistryProperties {
+@ConfigurationProperties(prefix = NacosMcpRegisterProperties.CONFIG_PREFIX)
+public class NacosMcpRegisterProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos.registry";
+	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos.register";
 
 	String serviceGroup;
 

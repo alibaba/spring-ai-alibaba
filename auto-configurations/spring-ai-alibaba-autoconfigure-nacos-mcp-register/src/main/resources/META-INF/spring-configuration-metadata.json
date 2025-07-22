@@ -7,9 +7,9 @@
       "description": "Configuration properties for Nacos MCP integration."
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.registry",
-      "type": "com.alibaba.cloud.ai.mcp.discovery.registry.NacosMcpRegistryProperties",
-      "sourceType": "com.alibaba.cloud.ai.mcp.discovery.registry.NacosMcpRegistryProperties",
+      "name": "spring.ai.alibaba.mcp.nacos.register",
+      "type": "com.alibaba.cloud.ai.mcp.register.NacosMcpRegisterProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.register.NacosMcpRegisterProperties",
       "description": "Configuration properties for Nacos MCP server registration."
     }
   ],
@@ -64,31 +64,31 @@
       "defaultValue": ""
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.registry.enabled",
+      "name": "spring.ai.alibaba.mcp.nacos.register.enabled",
       "type": "java.lang.Boolean",
       "description": "Whether to register MCP server service to Nacos.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.discovery.registry.NacosMcpRegistryProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.register.NacosMcpRegisterProperties",
       "defaultValue": false
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.registry.service-name",
+      "name": "spring.ai.alibaba.mcp.nacos.register.service-name",
       "type": "java.lang.String",
       "description": "Service name for MCP server service.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.discovery.registry.NacosMcpRegistryProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.register.NacosMcpRegisterProperties",
       "defaultValue": "mcp-server"
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.registry.service-group",
+      "name": "spring.ai.alibaba.mcp.nacos.register.service-group",
       "type": "java.lang.String",
       "description": "Group for MCP server service.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.discovery.registry.NacosMcpRegistryProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.register.NacosMcpRegisterProperties",
       "defaultValue": "DEFAULT_GROUP"
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.registry.sse-export-context-path",
+      "name": "spring.ai.alibaba.mcp.nacos.register.sse-export-context-path",
       "type": "java.lang.String",
       "description": "Base context path for SSE MCP server.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.discovery.registry.NacosMcpRegistryProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.register.NacosMcpRegisterProperties",
       "defaultValue": "/mcp"
     },
     {

@@ -8,10 +8,10 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-autoconfigure-nacos-mcp-discovery</artifactId>
+    <artifactId>spring-ai-alibaba-autoconfigure-nacos-mcp-register</artifactId>
 
-    <name>Spring AI Alibaba Nacos Mcp Discovery Autoconfiguration</name>
-    <description>Spring AI Alibaba Nacos Mcp Discovery Autoconfiguration</description>
+    <name>Spring AI Alibaba Nacos Mcp Register Autoconfiguration</name>
+    <description>Spring AI Alibaba Nacos Mcp Register Autoconfiguration</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
@@ -23,7 +23,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-mcp-discovery</artifactId>
+            <artifactId>spring-ai-alibaba-mcp-register</artifactId>
             <version>${revision}</version>
         </dependency>
 

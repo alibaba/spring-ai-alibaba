@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.mcp.discovery.registry;
+package com.alibaba.cloud.ai.mcp.register;
 
 import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
-import com.alibaba.cloud.ai.mcp.discovery.registry.utils.JsonSchemaUtils;
+import com.alibaba.cloud.ai.mcp.register.utils.JsonSchemaUtils;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.ai.constant.AiConstants;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointSpec;
@@ -63,7 +63,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private String type;
 
-	private NacosMcpRegistryProperties nacosMcpRegistryProperties;
+	private NacosMcpRegisterProperties nacosMcpRegistryProperties;
 
 	private NacosMcpProperties nacosMcpProperties;
 
@@ -86,7 +86,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 	private boolean success = false;
 
 	public NacosMcpRegister(NacosMcpOperationService nacosMcpOperationService, McpAsyncServer mcpAsyncServer,
-			NacosMcpProperties nacosMcpProperties, NacosMcpRegistryProperties nacosMcpRegistryProperties,
+			NacosMcpProperties nacosMcpProperties, NacosMcpRegisterProperties nacosMcpRegistryProperties,
 			McpServerProperties mcpServerProperties, String type) {
 		this.mcpAsyncServer = mcpAsyncServer;
 		log.info("Mcp server type: {}", type);

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.mcp.discovery;
+package com.alibaba.cloud.ai.autoconfigure.mcp.register;
 
 import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
-import com.alibaba.cloud.ai.mcp.discovery.registry.NacosMcpRegister;
-import com.alibaba.cloud.ai.mcp.discovery.registry.NacosMcpRegistryProperties;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
+import com.alibaba.cloud.ai.mcp.register.NacosMcpRegister;
+import com.alibaba.cloud.ai.mcp.register.NacosMcpRegisterProperties;
 import com.alibaba.nacos.api.ai.constant.AiConstants;
 import com.alibaba.nacos.api.exception.NacosException;
 import io.modelcontextprotocol.server.McpAsyncServer;
@@ -40,12 +40,12 @@ import java.util.Properties;
 /**
  * @author Sunrisea
  */
-@EnableConfigurationProperties({ NacosMcpRegistryProperties.class, NacosMcpProperties.class,
+@EnableConfigurationProperties({ NacosMcpRegisterProperties.class, NacosMcpProperties.class,
 		McpServerProperties.class })
 @AutoConfiguration(after = McpServerAutoConfiguration.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-public class NacosMcpRegistryAutoConfiguration {
+public class NacosMcpRegisterAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(NacosMcpOperationService.class)
@@ -61,11 +61,11 @@ public class NacosMcpRegistryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnBean(McpSyncServer.class)
-	@ConditionalOnProperty(prefix = NacosMcpRegistryProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(prefix = NacosMcpRegisterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = false)
 	public NacosMcpRegister nacosMcpRegisterSync(NacosMcpOperationService nacosMcpOperationService,
 			McpSyncServer mcpSyncServer, NacosMcpProperties nacosMcpProperties,
-			NacosMcpRegistryProperties nacosMcpRegistryProperties, McpServerProperties mcpServerProperties,
+			NacosMcpRegisterProperties nacosMcpRegistryProperties, McpServerProperties mcpServerProperties,
 			McpServerTransportProvider mcpServerTransport) {
 		McpAsyncServer mcpAsyncServer = mcpSyncServer.getAsyncServer();
 		return getNacosMcpRegister(nacosMcpOperationService, mcpAsyncServer, nacosMcpProperties,
@@ -74,11 +74,11 @@ public class NacosMcpRegistryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnBean(McpAsyncServer.class)
-	@ConditionalOnProperty(prefix = NacosMcpRegistryProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(prefix = NacosMcpRegisterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = false)
 	public NacosMcpRegister nacosMcpRegisterAsync(NacosMcpOperationService nacosMcpOperationService,
 			McpAsyncServer mcpAsyncServer, NacosMcpProperties nacosMcpProperties,
-			NacosMcpRegistryProperties nacosMcpRegistryProperties, McpServerProperties mcpServerProperties,
+			NacosMcpRegisterProperties nacosMcpRegistryProperties, McpServerProperties mcpServerProperties,
 			McpServerTransportProvider mcpServerTransport) {
 		return getNacosMcpRegister(nacosMcpOperationService, mcpAsyncServer, nacosMcpProperties,
 				nacosMcpRegistryProperties, mcpServerProperties, mcpServerTransport);
@@ -86,7 +86,7 @@ public class NacosMcpRegistryAutoConfiguration {
 
 	private NacosMcpRegister getNacosMcpRegister(NacosMcpOperationService nacosMcpOperationService,
 			McpAsyncServer mcpAsyncServer, NacosMcpProperties nacosMcpProperties,
-			NacosMcpRegistryProperties nacosMcpRegistryProperties, McpServerProperties mcpServerProperties,
+			NacosMcpRegisterProperties nacosMcpRegistryProperties, McpServerProperties mcpServerProperties,
 			McpServerTransportProvider mcpServerTransport) {
 		if (mcpServerTransport instanceof StdioServerTransportProvider) {
 			return new NacosMcpRegister(nacosMcpOperationService, mcpAsyncServer, nacosMcpProperties,
