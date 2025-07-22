@@ -1,6 +1,8 @@
 server:
   port: 18080
 spring:
+  config:
+    import: classpath:application-database-tool.yml
   application:
     name: spring-ai-alibaba-openmanus
   profiles:
@@ -16,7 +18,7 @@ spring:
       api-key: ${DASHSCOPE_API_KEY}
       chat:
         options:
-          model: qwen-plus
+          model: deepseek-v3
     mcp:
       client:
         enabled: false

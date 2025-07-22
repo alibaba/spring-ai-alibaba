@@ -34,10 +34,7 @@
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
 
-        <!-- GraalVM Native Properties -->
-        <native-maven-plugin.version>0.10.3</native-maven-plugin.version>
-        <graalvm.version>21.0.3</graalvm.version>
-        <native.maven.plugin.version>0.10.3</native.maven.plugin.version>
+
     </properties>
 
     <dependencyManagement>
@@ -329,7 +326,9 @@
                 <configuration>
                     <fork>true</fork>
                     <addResources>false</addResources>
-                    <executable>true</executable>
+                    <executable>false</executable>
+                    <layout>ZIP</layout>
+                    <mainClass>com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>
@@ -387,84 +386,5 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>native</id>
-            <properties>
-                <skipTests>true</skipTests>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-maven-plugin</artifactId>
-                        <version>${spring-boot.version}</version>
-                        <configuration>
-                            <fork>true</fork>
-                            <addResources>false</addResources>
-                            <executable>true</executable>
-                            <mainClass>com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication</mainClass>
-                            <image>
-                                <builder>paketobuildpacks/builder-jammy-base:latest</builder>
-                                <env>
-                                    <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
-                                </env>
-                            </image>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>process-aot</id>
-                                <goals>
-                                    <goal>process-aot</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.graalvm.buildtools</groupId>
-                        <artifactId>native-maven-plugin</artifactId>
-                        <version>${native-maven-plugin.version}</version>
-                        <configuration>
-                            <classesDirectory>${project.build.outputDirectory}</classesDirectory>
-                            <metadataRepository>
-                                <enabled>true</enabled>
-                            </metadataRepository>
-                            <requiredVersion>${graalvm.version}</requiredVersion>
-                            <buildArgs>
-                                <buildArg>--no-fallback</buildArg>
-                                <buildArg>--install-exit-handlers</buildArg>
-                                <buildArg>--enable-url-protocols=http,https</buildArg>
-                                <buildArg>--enable-monitoring=heapdump</buildArg>
-                                <buildArg>--report-unsupported-elements-at-runtime</buildArg>
-                                <buildArg>--allow-incomplete-classpath</buildArg>
-                                <buildArg>-H:+ReportExceptionStackTraces</buildArg>
-                                <buildArg>-H:+AddAllCharsets</buildArg>
-                                <buildArg>-H:IncludeResources=.*\.properties</buildArg>
-                                <buildArg>-H:IncludeResources=.*\.yml</buildArg>
-                                <buildArg>-H:IncludeResources=.*\.yaml</buildArg>
-                                <buildArg>-H:IncludeResources=.*\.xml</buildArg>
-                                <buildArg>-H:IncludeResources=.*\.json</buildArg>
-                                <buildArg>-H:IncludeResources=prompts/.*</buildArg>
-                                <buildArg>-H:IncludeResources=static/.*</buildArg>
-                                <buildArg>-H:IncludeResources=driver/.*</buildArg>
-                                <buildArg>-H:IncludeResources=templates/.*</buildArg>
-                                <buildArg>--initialize-at-build-time=org.slf4j.LoggerFactory,org.slf4j.impl.StaticLoggerBinder</buildArg>
-                                <buildArg>--initialize-at-run-time=io.netty</buildArg>
-                            </buildArgs>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>add-reachability-metadata</id>
-                                <goals>
-                                    <goal>add-reachability-metadata</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
 </project>

@@ -196,10 +196,10 @@
               </div>
             </div>
             <textarea
-              v-model="sidebarStore.jsonContent"
+              v-model="formattedJsonContent"
               class="json-editor"
               :placeholder="$t('sidebar.jsonPlaceholder')"
-              rows="8"
+              rows="12"
             ></textarea>
           </div>
 
@@ -259,12 +259,69 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { sidebarStore } from '@/stores/sidebar'
 
 const { t } = useI18n()
+
+// Fields to hide in JSON editor
+const hiddenFields = ['currentPlanId', 'userRequest', 'rootPlanId']
+
+// Computed property for formatted JSON content
+const formattedJsonContent = computed({
+  get() {
+    try {
+      if (!sidebarStore.jsonContent) return ''
+      
+      const parsed = JSON.parse(sidebarStore.jsonContent)
+      
+      // Remove hidden fields for display
+      const filtered = { ...parsed }
+      hiddenFields.forEach(field => {
+        delete filtered[field]
+      })
+      
+      // Return formatted JSON
+      return JSON.stringify(filtered, null, 2)
+    } catch {
+      // If parsing fails, return original content
+      return sidebarStore.jsonContent
+    }
+  },
+  set(value: string) {
+    try {
+      if (!value.trim()) {
+        sidebarStore.jsonContent = ''
+        return
+      }
+      
+      const parsed = JSON.parse(value)
+      
+      // Get original data to preserve hidden fields
+      let originalData: any = {}
+      try {
+        originalData = JSON.parse(sidebarStore.jsonContent || '{}')
+      } catch {
+        // If original is not valid JSON, start fresh
+      }
+      
+      // Merge user input with preserved hidden fields
+      const merged: any = { ...parsed }
+      hiddenFields.forEach(field => {
+        if (originalData[field] !== undefined) {
+          merged[field] = originalData[field]
+        }
+      })
+      
+      sidebarStore.jsonContent = JSON.stringify(merged)
+    } catch {
+      // If parsing fails, store as-is
+      sidebarStore.jsonContent = value
+    }
+  }
+})
 
 // Use pinia store
 // 使用 TS 对象实现的 sidebarStore
@@ -346,10 +403,10 @@ const getRelativeTimeString = (date: Date): string => {
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMinutes < 1) return '刚刚'
-  if (diffMinutes < 60) return `${diffMinutes}分钟前`
-  if (diffHours < 24) return `${diffHours}小时前`
-  if (diffDays < 30) return `${diffDays}天前`
+  if (diffMinutes < 1) return t('time.now')
+  if (diffMinutes < 60) return t('time.minuteAgo', { count: diffMinutes })
+  if (diffHours < 24) return t('time.hourAgo', { count: diffHours })
+  if (diffDays < 30) return t('time.dayAgo', { count: diffDays })
 
   return date.toLocaleDateString('zh-CN')
 }
@@ -573,6 +630,17 @@ defineExpose({
           &::placeholder {
             color: rgba(255, 255, 255, 0.4);
           }
+        }
+
+        .json-editor {
+          min-height: 200px;
+          font-size: 11px;
+          line-height: 1.5;
+          white-space: pre;
+          overflow-wrap: normal;
+          word-break: normal;
+          tab-size: 2;
+          font-variant-ligatures: none;
         }
 
         .generator-content {
