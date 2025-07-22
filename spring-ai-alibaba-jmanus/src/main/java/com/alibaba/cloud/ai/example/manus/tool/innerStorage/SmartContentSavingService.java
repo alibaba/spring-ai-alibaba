@@ -183,7 +183,7 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 		summary.append("  - 总行数: ").append(lines.length).append("\n\n");
 
 		summary.append("在后续的调用中，必需要使用 inner_storage_content_tool 工具的 getContent 来获取相关信息,\n");
-		summary.append("该方法可以从内容中总结出需要的关键信息。\n\n");
+		summary.append("该方法可以从内容中总结出需要的关键信息。或者使用 file_merge_tool 工具，来将文件聚拢到一个文件夹里，以便后续使用\n\n");
 		return summary.toString();
 	}
 

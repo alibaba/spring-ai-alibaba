@@ -18,7 +18,7 @@ spring:
       api-key: ${DASHSCOPE_API_KEY}
       chat:
         options:
-          model: qwen-plus
+          model: deepseek-v3
     mcp:
       client:
         enabled: false

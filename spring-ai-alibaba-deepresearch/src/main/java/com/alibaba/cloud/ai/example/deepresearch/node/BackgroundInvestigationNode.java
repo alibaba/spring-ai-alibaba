@@ -16,8 +16,13 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
+import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -52,11 +57,16 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final SearchFilterService searchFilterService;
 
+	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
+
 	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
-			SearchFilterService searchFilterService) {
+			SearchFilterService searchFilterService, QuestionClassifierService questionClassifierService,
+			SearchPlatformSelectionService platformSelectionService, SmartAgentProperties smartAgentProperties) {
 		this.jinaCrawlerService = jinaCrawlerService;
 		this.infoCheckService = infoCheckService;
 		this.searchFilterService = searchFilterService;
+		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties, null,
+				questionClassifierService, platformSelectionService);
 	}
 
 	@Override
@@ -66,7 +76,8 @@ public class BackgroundInvestigationNode implements NodeAction {
 		assert queries != null && !queries.isEmpty();
 		List<List<Map<String, String>>> resultsList = new ArrayList<>();
 		for (String query : queries) {
-			SearchEnum searchEnum = state.value("search_engine", SearchEnum.class).orElseThrow();
+			// 如果mutiAgent功能开启且配置了专用搜索平台，则使用智能搜索引擎选择,否则使用默认的通用搜索引擎
+			SearchEnum searchEnum = getSearchEnum(state, query);
 			List<Map<String, String>> results = new ArrayList<>();
 
 			// Retry logic
@@ -131,6 +142,16 @@ public class BackgroundInvestigationNode implements NodeAction {
 		}
 
 		return resultMap;
+	}
+
+	/**
+	 * 获取智能选择的搜索引擎
+	 * @param state 全局状态
+	 * @param query 查询内容
+	 * @return 搜索引擎枚举
+	 */
+	private SearchEnum getSearchEnum(OverAllState state, String query) {
+		return smartAgentSelectionHelper.intelligentSearchEngineSelection(state, query);
 	}
 
 }
