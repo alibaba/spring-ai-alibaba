@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Configuration;
  * @since 1.0.0-M1
  */
 @Configuration
-@MapperScan("com.alibaba.cloud.ai.core.base.mapper")
+@MapperScan("com.alibaba.cloud.ai.studio.core.base.mapper")
 public class MybatisPlusConfig {
 
 	/**
