@@ -13,25 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
+package com.alibaba.cloud.ai.example.manus.dynamic.model.exception;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
-import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ValidationResult;
+/**
+ * 频率限制异常
+ */
+public class RateLimitException extends RuntimeException {
+    public RateLimitException(String message) {
+        super(message);
+    }
 
-import java.util.List;
-
-public interface ModelService {
-
-	List<ModelConfig> getAllModels();
-
-	ModelConfig getModelById(String id);
-
-	ModelConfig createModel(ModelConfig modelConfig);
-
-	ModelConfig updateModel(ModelConfig modelConfig);
-
-	void deleteModel(String id);
-
-	ValidationResult validateConfig(String baseUrl, String apiKey);
-
-}
+    public RateLimitException(String message, Throwable cause) {
+        super(message, cause);
+    }
+} 

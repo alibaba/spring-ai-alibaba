@@ -198,6 +198,14 @@ const words: I18nType = {
       loadDataFailed: '加载数据失败',
       loadDetailsFailed: '加载Model详情失败',
       invalidFormat: 'Model配置格式不正确：缺少必要字段',
+      validateConfig: '验证配置',
+      validationSuccess: '验证成功',
+      validationFailed: '验证失败',
+      pleaseEnterBaseUrlAndApiKey: '请输入Base URL和API Key',
+      selectModel: '选择模型',
+      availableModels: '可用模型',
+      searchModels: '搜索模型...',
+      getModelsCount: '获取到 {count} 个可用模型',
     },
     // MCP配置页面
     mcpConfig: {

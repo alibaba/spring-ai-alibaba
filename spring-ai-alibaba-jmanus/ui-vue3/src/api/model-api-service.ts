@@ -30,6 +30,17 @@ export interface ApiResponse<T> {
     message?: string
 }
 
+export interface ValidationRequest {
+    baseUrl: string
+    apiKey: string
+}
+
+export interface ValidationResult {
+    valid: boolean
+    message?: string
+    availableModels?: Model[]
+}
+
 /**
  * Model API service class
  * Responsible for interacting with backend ModelController
@@ -152,6 +163,25 @@ export class ModelApiService {
         }
     }
 
+    /**
+     * Validate model configuration
+     */
+    static async validateConfig(request: ValidationRequest): Promise<ValidationResult> {
+        try {
+            const response = await fetch(`${this.BASE_URL}/validate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(request)
+            })
+            const result = await this.handleResponse(response)
+            return await result.json()
+        } catch (error) {
+            console.error('Failed to validate model configuration:', error)
+            throw error
+        }
+    }
 }
 
 /**

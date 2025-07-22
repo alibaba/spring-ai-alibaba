@@ -198,6 +198,14 @@ const words: I18nType = {
       loadDataFailed: 'Failed to load data',
       loadDetailsFailed: 'Failed to load model details',
       invalidFormat: 'Model configuration format is invalid: missing required fields',
+      validateConfig: 'Validate Config',
+      validationSuccess: 'Validation successful',
+      validationFailed: 'Validation failed',
+      pleaseEnterBaseUrlAndApiKey: 'Please enter Base URL and API Key',
+      selectModel: 'Select Model',
+      availableModels: 'Available Models',
+      searchModels: 'Search models...',
+      getModelsCount: 'Found {count} available models',
     },
     // MCP configuration page
     mcpConfig: {
