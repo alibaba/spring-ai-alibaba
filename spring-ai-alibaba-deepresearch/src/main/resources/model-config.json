@@ -1,12 +1,12 @@
 {
   "models": [
-    {"name": "research","modelName": "qwen-max-2025-01-25"},
-    {"name": "coder","modelName": "qwen-plus-2025-04-28"},
-    {"name": "coordinator","modelName": "qwen-max-0919"},
-    {"name": "planner","modelName": "qwen-turbo-2025-04-28"},
-    {"name": "reporter","modelName": "qwen-max-2025-01-25"},
-    {"name": "interaction","modelName": "qwen-max-2025-01-25"},
-    {"name": "infoCheck","modelName": "qwen-turbo-2025-04-28"},
-    {"name": "reflection","modelName": "qwen-max-2025-01-25"}
+    {"agentName": "researchAgent", "modelName": "qwen-max-2025-01-25"},
+    {"agentName": "coderAgent", "modelName": "qwen-plus-2025-04-28"},
+    {"agentName": "coordinatorAgent", "modelName": "qwen-max-0919"},
+    {"agentName": "plannerAgent", "modelName": "qwen-turbo-2025-04-28"},
+    {"agentName": "reporterAgent", "modelName": "qwen-max-2025-01-25"},
+    {"agentName": "interactionAgent", "modelName": "qwen-max-2025-01-25"},
+    {"agentName": "infoCheckAgent", "modelName": "qwen-turbo-2025-04-28"},
+    {"agentName": "reflectionAgent", "modelName": "qwen-max-2025-01-25"}
   ]
 }

@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentManager;
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
@@ -68,6 +69,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
+import org.springframework.context.annotation.DependsOn;
 
 /**
  * @author yingzi
@@ -76,55 +78,63 @@ import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 @Configuration
 @EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class,
 		McpAssignNodeProperties.class, RagProperties.class, ReflectionProperties.class })
+@DependsOn("agentsConfiguration")
 public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
-	@Autowired
-	private ChatClient coderAgent;
+	private final ChatClient coderAgent;
+	private final ChatClient researchAgent;
+	private final ChatClient reporterAgent;
+	private final ChatClient coordinatorAgent;
+	private final ChatClient plannerAgent;
+	private final ChatClient reflectionAgent;
+	private final ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
+	private final DeepResearchProperties deepResearchProperties;
+	private final ReflectionProperties reflectionProperties;
+	private final JinaCrawlerService jinaCrawlerService;
+	private final RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
+	private final ReportService reportService;
+	private final McpProviderFactory mcpProviderFactory;
+	private final InfoCheckService infoCheckService;
+	private final SearchFilterService searchFilterService;
+	private final AgentManager agentManager;
 
-	@Autowired
-	private ChatClient researchAgent;
-
-	@Autowired
-	private ChatClient reporterAgent;
-
-	@Autowired
-	private ChatClient coordinatorAgent;
-
-	@Autowired
-	private ChatClient plannerAgent;
-
-	@Autowired
-	private ChatClient reflectionAgent;
-
-	@Qualifier("chatClientBuilder")
-	@Autowired
-	private ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
-
-	@Autowired
-	private DeepResearchProperties deepResearchProperties;
-
-	@Autowired
-	private ReflectionProperties reflectionProperties;
-
-	@Autowired(required = false)
-	private JinaCrawlerService jinaCrawlerService;
-
-	@Autowired(required = false)
-	private RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
-
-	@Autowired
-	private ReportService reportService;
-
-	@Autowired(required = false)
-	private McpProviderFactory mcpProviderFactory;
-
-	@Autowired
-	private InfoCheckService infoCheckService;
-
-	@Autowired
-	private SearchFilterService searchFilterService;
+	public DeepResearchConfiguration(
+			ChatClient coderAgent,
+			ChatClient researchAgent,
+			ChatClient reporterAgent,
+			ChatClient coordinatorAgent,
+			ChatClient plannerAgent,
+			ChatClient reflectionAgent,
+			@Qualifier("chatClientBuilder") ChatClient.Builder rewriteAndMultiQueryAgentBuilder,
+			DeepResearchProperties deepResearchProperties,
+			ReflectionProperties reflectionProperties,
+			@Autowired(required = false) JinaCrawlerService jinaCrawlerService,
+			@Autowired(required = false) RetrievalAugmentationAdvisor retrievalAugmentationAdvisor,
+			ReportService reportService,
+			@Autowired(required = false) McpProviderFactory mcpProviderFactory,
+			InfoCheckService infoCheckService,
+			SearchFilterService searchFilterService,
+			AgentManager agentManager
+	) {
+		this.coderAgent = coderAgent;
+		this.researchAgent = researchAgent;
+		this.reporterAgent = reporterAgent;
+		this.coordinatorAgent = coordinatorAgent;
+		this.plannerAgent = plannerAgent;
+		this.reflectionAgent = reflectionAgent;
+		this.rewriteAndMultiQueryAgentBuilder = rewriteAndMultiQueryAgentBuilder;
+		this.deepResearchProperties = deepResearchProperties;
+		this.reflectionProperties = reflectionProperties;
+		this.jinaCrawlerService = jinaCrawlerService;
+		this.retrievalAugmentationAdvisor = retrievalAugmentationAdvisor;
+		this.reportService = reportService;
+		this.mcpProviderFactory = mcpProviderFactory;
+		this.infoCheckService = infoCheckService;
+		this.searchFilterService = searchFilterService;
+		this.agentManager = agentManager;
+	}
 
 	@Bean
 	public ReflectionProcessor reflectionProcessor() {
@@ -183,7 +193,7 @@ public class DeepResearchConfiguration {
 
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
-			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
+			.addNode("coordinator", node_async(new CoordinatorNode(agentManager)))
 			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
 			.addNode("background_investigator",
 					node_async(

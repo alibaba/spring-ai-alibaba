@@ -70,7 +70,7 @@ public class ModelParamRepositoryImpl implements ModelParamRepository {
 	}
 
 	// fixme: To read external data in the future, this object needs to be redesigned
-	public record AgentModel(String name, String modelName) {
+	public record AgentModel(String agentName, String modelName) {
 	}
 
 }
