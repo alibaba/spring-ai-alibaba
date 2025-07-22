@@ -24,7 +24,6 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatche
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.RewriteAndMultiQueryDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
-
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
@@ -37,16 +36,14 @@ import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.RewriteAndMultiQueryNode;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
-import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
-
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -200,7 +197,7 @@ public class DeepResearchConfiguration {
 			.addNode("background_investigator",
 					node_async(
 							new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService, searchFilterService,
-                                    questionClassifierService, searchPlatformSelectionService, smartAgentProperties)))
+									questionClassifierService, searchPlatformSelectionService, smartAgentProperties)))
 			.addNode("planner", node_async((new PlannerNode(agentFactory))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))

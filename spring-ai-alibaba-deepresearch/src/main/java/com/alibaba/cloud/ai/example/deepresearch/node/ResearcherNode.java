@@ -67,14 +67,14 @@ public class ResearcherNode implements NodeAction {
 	// MCP工厂
 	private final McpProviderFactory mcpFactory;
 
-    private final AgentFactory agentFactory;
+	private final AgentFactory agentFactory;
 
 	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
 
 	public ResearcherNode(AgentFactory agentFactory, String executorNodeId, ReflectionProcessor reflectionProcessor,
 			McpProviderFactory mcpFactory, SearchFilterService searchFilterService,
 			SmartAgentDispatcherService smartAgentDispatcher, SmartAgentProperties smartAgentProperties) {
-        this.agentFactory = agentFactory;
+		this.agentFactory = agentFactory;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;
 		this.reflectionProcessor = reflectionProcessor;
@@ -217,6 +217,7 @@ public class ResearcherNode implements NodeAction {
 			questionContent += " " + step.getDescription();
 		}
 
+		ChatClient researchAgent = agentFactory.getAgentByName(AgentEnum.RESEARCH_AGENT.getAgentName());
 		AgentSelectionResult selectionResult = smartAgentSelectionHelper.selectSmartAgent(questionContent, state,
 				researchAgent);
 

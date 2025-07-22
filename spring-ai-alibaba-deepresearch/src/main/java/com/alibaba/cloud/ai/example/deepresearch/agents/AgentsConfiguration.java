@@ -30,7 +30,6 @@ import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
@@ -195,14 +194,14 @@ public class AgentsConfiguration {
 		return new ToolCallback[0];
 	}
 
-    /**
-     * 提取MutiAgent配置
-     */
-    private ChatClient.Builder configureAgentBuilder(ChatClient.Builder builder, String agentName,
-                                                     AgentType agentType) {
-        return builder.defaultSystem(AgentPromptTemplateUtil.buildCompletePrompt(agentType))
-                .defaultToolCallbacks(getMcpToolCallbacks(agentName));
-    }
+	/**
+	 * 提取MutiAgent配置
+	 */
+	private ChatClient.Builder configureAgentBuilder(ChatClient.Builder builder, String agentName,
+			AgentType agentType) {
+		return builder.defaultSystem(AgentPromptTemplateUtil.buildCompletePrompt(agentType))
+			.defaultToolCallbacks(getMcpToolCallbacks(agentName));
+	}
 
 	private ChatClient buildAgent(ChatClient.Builder builder, Resource prompt, ToolCallback[] callbacks,
 			Object... tools) {
