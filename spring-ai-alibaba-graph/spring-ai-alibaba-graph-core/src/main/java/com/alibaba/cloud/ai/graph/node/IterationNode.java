@@ -293,6 +293,14 @@ public class IterationNode {
 		 */
 		private StateGraph subGraph;
 
+		// 迭代节点临时变量名称
+
+		private String tempArrayKey = "input_array";
+
+		private String tempStartFlagKey = "output_start";
+
+		private String tempEndFlagKey = "output_continue";
+
 		public Converter<ElementInput, ElementOutput> inputArrayJsonKey(String inputArrayJsonKey) {
 			this.inputArrayJsonKey = inputArrayJsonKey;
 			return this;
@@ -318,51 +326,68 @@ public class IterationNode {
 			return this;
 		}
 
+		public Converter<ElementInput, ElementOutput> tempArrayKey(String tempArrayKey) {
+			this.tempArrayKey = tempArrayKey;
+			return this;
+		}
+
+		public Converter<ElementInput, ElementOutput> tempStartFlagKey(String tempStartFlagKey) {
+			this.tempStartFlagKey = tempStartFlagKey;
+			return this;
+		}
+
+		public Converter<ElementInput, ElementOutput> tempEndFlagKey(String tempEndFlagKey) {
+			this.tempEndFlagKey = tempEndFlagKey;
+			return this;
+		}
+
 		/**
-		 * 创建一个完整的迭代图（IterationNode.Start -> SubStateGraphNode ->
-		 * IterationNode.End），可供其他图嵌套使用。
+		 * 创建一个完整的迭代图（IterationNode.Start -> SubStateGraphNode -> IterationNode.End ->
+		 * TempClear（清理迭代中临时变量的值）-> END），可供其他图嵌套使用。
 		 */
 		public StateGraph convertToStateGraph() throws Exception {
 			if (!StringUtils.hasText(this.inputArrayJsonKey) || !StringUtils.hasText(this.outputArrayJsonKey)
 					|| !StringUtils.hasText(this.iteratorItemKey) || !StringUtils.hasText(this.iteratorResultKey)
-					|| this.subGraph == null) {
+					|| this.subGraph == null || !StringUtils.hasText(this.tempArrayKey)
+					|| !StringUtils.hasText(this.tempStartFlagKey) || !StringUtils.hasText(this.tempEndFlagKey)) {
 				throw new IllegalArgumentException("There are some empty fields");
 			}
 			KeyStrategyFactory strategyFactory = () -> {
 				Map<String, KeyStrategy> map = new HashMap<>();
-				map.put("input_array", new ReplaceStrategy());
+				map.put(this.tempArrayKey, new ReplaceStrategy());
 				map.put(this.inputArrayJsonKey, new ReplaceStrategy());
 				map.put(this.iteratorItemKey, new ReplaceStrategy());
-				map.put("output_start", new ReplaceStrategy());
+				map.put(this.tempStartFlagKey, new ReplaceStrategy());
 				map.put(this.iteratorResultKey, new ReplaceStrategy());
 				map.put(this.outputArrayJsonKey, new ReplaceStrategy());
-				map.put("output_continue", new ReplaceStrategy());
+				map.put(this.tempEndFlagKey, new ReplaceStrategy());
 				return map;
 			};
 			return new StateGraph("iteration_node", strategyFactory)
 				.addNode("iteration_start",
 						node_async(IterationNode.<ElementInput>start()
 							.inputArrayJsonKey(this.inputArrayJsonKey)
-							.inputArrayKey("input_array")
+							.inputArrayKey(this.tempArrayKey)
 							.outputItemKey(this.iteratorItemKey)
-							.outputStartIterationKey("output_start")
+							.outputStartIterationKey(this.tempStartFlagKey)
 							.build()))
 				.addNode("iteration", subGraph)
 				.addNode("iteration_end",
 						node_async(IterationNode.<ElementInput, ElementOutput>end()
-							.inputArrayKey("input_array")
+							.inputArrayKey(this.tempArrayKey)
 							.inputResultKey(this.iteratorResultKey)
 							.outputArrayKey(this.outputArrayJsonKey)
-							.outputContinueIterationKey("output_continue")
+							.outputContinueIterationKey(this.tempEndFlagKey)
 							.build()))
 				.addEdge(StateGraph.START, "iteration_start")
 				.addConditionalEdges("iteration_start",
-						edge_async((OverAllState state) -> state.value("output_start", Boolean.class).orElse(false)
-								? "true" : "false"),
+						edge_async(
+								(OverAllState state) -> state.value(this.tempStartFlagKey, Boolean.class).orElse(false)
+										? "true" : "false"),
 						Map.of("true", "iteration", "false", StateGraph.END))
 				.addEdge("iteration", "iteration_end")
 				.addConditionalEdges("iteration_end",
-						edge_async((OverAllState state) -> state.value("output_continue", Boolean.class).orElse(false)
+						edge_async((OverAllState state) -> state.value(this.tempEndFlagKey, Boolean.class).orElse(false)
 								? "true" : "false"),
 						Map.of("true", "iteration_start", "false", StateGraph.END));
 		}

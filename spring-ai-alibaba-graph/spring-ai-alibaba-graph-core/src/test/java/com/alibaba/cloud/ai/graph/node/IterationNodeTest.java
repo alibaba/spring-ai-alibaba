@@ -68,7 +68,8 @@ public class IterationNodeTest {
 		};
 		CompiledGraph graph = new StateGraph("main", mainFactory)
 			.addNode("generate_array", node_async((OverAllState state) -> Map.of("input_json_array", input)))
-				.addNode("iteration_node", IterationNode.converter()
+			.addNode("iteration_node",
+					IterationNode.converter()
 						.inputArrayJsonKey("input_json_array")
 						.outputArrayJsonKey("result")
 						.iteratorItemKey("iterator_item")
@@ -76,8 +77,8 @@ public class IterationNodeTest {
 						.subGraph(subGraph)
 						.convertToStateGraph())
 			.addEdge(StateGraph.START, "generate_array")
-				.addEdge("generate_array", "iteration_node")
-				.addEdge("iteration_node", StateGraph.END)
+			.addEdge("generate_array", "iteration_node")
+			.addEdge("iteration_node", StateGraph.END)
 			.compile();
 		OverAllState state = graph.invoke(Map.of()).orElseThrow();
 		return state.value("result").orElseThrow().toString();
@@ -99,11 +100,10 @@ public class IterationNodeTest {
 	@Test
 	@DisplayName("Test String Iteration")
 	public void testString() throws Exception {
-		String res = this.runGraph("[\"a\", \"aa\", \"aaa\", \"aaaa\", \"aaaaa\"]",
-				(OverAllState state) -> {
-					int len = state.value("iterator_item", String.class).orElseThrow().length();
-					return Map.of("iterator_item_result", len);
-				});
+		String res = this.runGraph("[\"a\", \"aa\", \"aaa\", \"aaaa\", \"aaaaa\"]", (OverAllState state) -> {
+			int len = state.value("iterator_item", String.class).orElseThrow().length();
+			return Map.of("iterator_item_result", len);
+		});
 		log.info("result: {}", res);
 		Assertions.assertEquals(OBJECT_MAPPER.readValue(res, new TypeReference<List<Integer>>() {
 		}), List.of(1, 2, 3, 4, 5));
@@ -123,6 +123,99 @@ public class IterationNodeTest {
 		log.info("result: {}", res);
 		Assertions.assertEquals(OBJECT_MAPPER.readValue(res, new TypeReference<List<String>>() {
 		}), List.of("a", "b"));
+	}
+
+	@Test
+	@DisplayName("Test two IterationNodes")
+	public void testTwoIterationNodes() throws Exception {
+		// 配置子图：START -> iterator -> END
+		KeyStrategyFactory subFactory1 = () -> {
+			Map<String, KeyStrategy> map = new HashMap<>();
+			map.put("iterator_item", new ReplaceStrategy());
+			map.put("iterator_item_result", new ReplaceStrategy());
+			return map;
+		};
+		StateGraph subGraph1 = new StateGraph("iteration_graph", subFactory1)
+			.addNode("iterator", node_async((OverAllState state) -> {
+				int x = state.value("iterator_item", Integer.class).orElseThrow();
+				int y = x * x;
+				return Map.of("iterator_item_result", Integer.toString(y));
+			}))
+			.addEdge(StateGraph.START, "iterator")
+			.addEdge("iterator", StateGraph.END);
+
+		KeyStrategyFactory subFactory2 = () -> {
+			Map<String, KeyStrategy> map = new HashMap<>();
+			map.put("iterator_item", new ReplaceStrategy());
+			map.put("iterator_item_result", new ReplaceStrategy());
+			return map;
+		};
+		StateGraph subGraph2 = new StateGraph("iteration_graph", subFactory2)
+			.addNode("iterator", node_async((OverAllState state) -> {
+				int len = state.value("iterator_item", String.class).orElseThrow().length();
+				return Map.of("iterator_item_result", len);
+			}))
+			.addEdge(StateGraph.START, "iterator")
+			.addEdge("iterator", StateGraph.END);
+
+		// 配置主图：START -> generate -> IterationNode1 -> IterationNode2 -> END
+		KeyStrategyFactory mainFactory = () -> {
+			Map<String, KeyStrategy> map = new HashMap<>();
+			map.put("input_array", new ReplaceStrategy());
+			map.put("input_json_array1", new ReplaceStrategy());
+			map.put("input_json_array2", new ReplaceStrategy());
+			map.put("iterator_item", new ReplaceStrategy());
+			map.put("output_start", new ReplaceStrategy());
+			map.put("iterator_item_result", new ReplaceStrategy());
+			map.put("result1", new ReplaceStrategy());
+			map.put("result2", new ReplaceStrategy());
+			map.put("output_continue", new ReplaceStrategy());
+			map.put("test_temp_array1", new ReplaceStrategy());
+			map.put("test_temp_start1", new ReplaceStrategy());
+			map.put("test_temp_end1", new ReplaceStrategy());
+			map.put("test_temp_array2", new ReplaceStrategy());
+			map.put("test_temp_start2", new ReplaceStrategy());
+			map.put("test_temp_end2", new ReplaceStrategy());
+			return map;
+		};
+		CompiledGraph graph = new StateGraph("main", mainFactory)
+			.addNode("generate_array", node_async((OverAllState state) -> Map.of("input_json_array1", "[1, 4, 10]")))
+			.addNode("iteration_node1",
+					IterationNode.converter()
+						.inputArrayJsonKey("input_json_array1")
+						.outputArrayJsonKey("result1")
+						.iteratorItemKey("iterator_item")
+						.iteratorResultKey("iterator_item_result")
+						.tempArrayKey("test_temp_array1")
+						.tempStartFlagKey("test_temp_start1")
+						.tempEndFlagKey("test_temp_end1")
+						.subGraph(subGraph1)
+						.convertToStateGraph())
+			.addNode("pass", node_async((OverAllState state) -> {
+				return Map.of("input_json_array2", state.value("result1", String.class).orElse("[]"));
+			}))
+			.addNode("iteration_node2",
+					IterationNode.converter()
+						.inputArrayJsonKey("input_json_array2")
+						.outputArrayJsonKey("result2")
+						.iteratorItemKey("iterator_item")
+						.iteratorResultKey("iterator_item_result")
+						.tempArrayKey("test_temp_array2")
+						.tempStartFlagKey("test_temp_start2")
+						.tempEndFlagKey("test_temp_end2")
+						.subGraph(subGraph2)
+						.convertToStateGraph())
+			.addEdge(StateGraph.START, "generate_array")
+			.addEdge("generate_array", "iteration_node1")
+			.addEdge("iteration_node1", "pass")
+			.addEdge("pass", "iteration_node2")
+			.addEdge("iteration_node2", StateGraph.END)
+			.compile();
+		OverAllState state = graph.invoke(Map.of()).orElseThrow();
+		String res = state.value("result2").orElseThrow().toString();
+		log.info("result: {}", res);
+		Assertions.assertEquals(OBJECT_MAPPER.readValue(res, new TypeReference<List<Integer>>() {
+		}), List.of(1, 2, 3));
 	}
 
 }
