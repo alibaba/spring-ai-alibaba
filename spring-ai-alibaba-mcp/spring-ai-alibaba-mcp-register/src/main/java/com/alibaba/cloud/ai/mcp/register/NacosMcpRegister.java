@@ -381,10 +381,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			return false;
 		}
 		if (this.serverCapabilities.tools() != null) {
-			boolean checkToolsResult = checkToolsCompatible(serverDetailInfo);
-			if (!checkToolsResult) {
-				return checkToolsResult;
-			}
+			return checkToolsCompatible(serverDetailInfo);
 		}
 		return true;
 	}
@@ -398,10 +395,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				&& !StringUtils.equals(serviceRef.getGroupName(), this.nacosMcpRegistryProperties.getServiceGroup())) {
 			return false;
 		}
-		if (!StringUtils.equals(serviceRef.getNamespaceId(), this.nacosMcpProperties.getnamespace())) {
-			return false;
-		}
-		return true;
+		return StringUtils.equals(serviceRef.getNamespaceId(), this.nacosMcpProperties.getNamespace());
 	}
 
 	private String getRegisterServiceName() {
