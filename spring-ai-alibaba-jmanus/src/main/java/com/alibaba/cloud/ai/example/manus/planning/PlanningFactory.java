@@ -66,16 +66,18 @@ import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.bash.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
-import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.database.DataSourceService;
 import com.alibaba.cloud.ai.example.manus.tool.database.DatabaseUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.FileMergeTool;
+import com.alibaba.cloud.ai.example.manus.tool.mapreduce.DataSplitTool;
+import com.alibaba.cloud.ai.example.manus.tool.mapreduce.FinalizeTool;
+import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapOutputTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceSharedStateManager;
-import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceTool;
-import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
+import com.alibaba.cloud.ai.example.manus.tool.mapreduce.ReduceOperationTool;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
@@ -209,11 +211,16 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, unifiedDirectoryManager));
 		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
 		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
-		toolDefinitions.add(new GoogleSearch());
-		toolDefinitions.add(new PythonExecute());
+		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
+		// toolDefinitions.add(new GoogleSearch());
+		// toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool());
-		toolDefinitions.add(new MapReduceTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
+		toolDefinitions.add(new DataSplitTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
+		toolDefinitions.add(new MapOutputTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
 				terminateColumns));
+		toolDefinitions.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager,
+				unifiedDirectoryManager, terminateColumns));
+		toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
@@ -221,7 +228,8 @@ public class PlanningFactory implements IPlanningFactory {
 			ToolCallback[] tCallbacks = toolCallback.getAsyncMcpToolCallbackProvider().getToolCallbacks();
 			for (ToolCallback tCallback : tCallbacks) {
 				// The serviceGroup is the name of the tool
-				toolDefinitions.add(new McpTool(tCallback, serviceGroup, planId, new McpStateHolderService()));
+				toolDefinitions.add(
+						new McpTool(tCallback, serviceGroup, planId, new McpStateHolderService(), innerStorageService));
 			}
 		}
 

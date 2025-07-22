@@ -2,7 +2,6 @@
 agentName: DEFAULT_AGENT
 agentDescription: 一个多功能默认代理，可以使用文件操作和shell命令处理各种用户请求。非常适合可能涉及文件操作、系统操作或文本处理的通用任务。
 availableToolKeys:
-  - bash
   - text_file_operator
   - terminate
 

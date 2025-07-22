@@ -16,7 +16,8 @@
 
 package com.alibaba.cloud.ai.mcp.gateway.nacos.tools;
 
-import com.alibaba.cloud.ai.mcp.gateway.nacos.callback.DynamicNacosToolCallback;
+import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolsInitializer;
+import com.alibaba.cloud.ai.mcp.gateway.nacos.callback.NacosMcpGatewayToolCallback;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
@@ -25,8 +26,6 @@ import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
 import com.alibaba.nacos.api.ai.model.mcp.McpTool;
 import com.alibaba.nacos.api.ai.model.mcp.McpToolMeta;
 import com.alibaba.nacos.api.ai.model.mcp.McpToolSpecification;
-import com.alibaba.nacos.api.utils.StringUtils;
-import com.alibaba.nacos.common.utils.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
@@ -35,52 +34,51 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class NacosMcpGatewayToolsInitializer {
+public class NacosMcpGatewayToolsInitializer implements McpGatewayToolsInitializer {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosMcpGatewayToolsInitializer.class);
 
-	private final NacosMcpOperationService nacosMcpOperationService;
-
 	private final NacosMcpGatewayProperties nacosMcpGatewayProperties;
+
+	private final NacosMcpOperationService nacosMcpOperationService;
 
 	public NacosMcpGatewayToolsInitializer(NacosMcpOperationService nacosMcpOperationService,
 			NacosMcpGatewayProperties nacosMcpGatewayProperties) {
-		this.nacosMcpOperationService = nacosMcpOperationService;
 		this.nacosMcpGatewayProperties = nacosMcpGatewayProperties;
+		this.nacosMcpOperationService = nacosMcpOperationService;
 	}
 
+	@Override
 	public List<ToolCallback> initializeTools() {
 		List<String> serviceNames = nacosMcpGatewayProperties.getServiceNames();
-		if (CollectionUtils.isEmpty(serviceNames)) {
+		if (serviceNames == null || serviceNames.isEmpty()) {
 			logger.warn("No service names configured, no tools will be initialized");
 			return new ArrayList<>();
 		}
 		List<ToolCallback> allTools = new ArrayList<>();
 		for (String serviceName : serviceNames) {
 			try {
-				McpServerDetailInfo mcpServerDetailInfo = nacosMcpOperationService.getServerDetail(serviceName);
-				if (mcpServerDetailInfo == null) {
+				McpServerDetailInfo serviceDetail = nacosMcpOperationService.getServerDetail(serviceName);
+				if (serviceDetail == null) {
 					logger.warn("No service detail info found for service: {}", serviceName);
 					continue;
 				}
-				boolean isProtocolSupported = StringUtils.equals(mcpServerDetailInfo.getProtocol(), "http")
-						|| StringUtils.equals(mcpServerDetailInfo.getProtocol(), "https");
-				if (!isProtocolSupported) {
-					logger.warn("Protocol {} is not supported, no tools will be initialized for service: {}",
-							mcpServerDetailInfo.getProtocol(), serviceName);
+				String protocol = serviceDetail.getProtocol();
+				if (!"http".equalsIgnoreCase(protocol) && !"https".equalsIgnoreCase(protocol)) {
+					logger.warn("Protocol {} is not supported, no tools will be initialized for service: {}", protocol,
+							serviceName);
 					continue;
 				}
-				List<ToolCallback> tools = parseToolsFromMcpServerDetailInfo(mcpServerDetailInfo);
-				if (CollectionUtils.isNotEmpty(tools)) {
+				List<ToolCallback> tools = parseToolsFromMcpServerDetailInfo(serviceDetail);
+				if (tools != null && !tools.isEmpty()) {
 					allTools.addAll(tools);
 				}
-
 			}
 			catch (Exception e) {
 				logger.error("Failed to initialize tools for service: {}", serviceName, e);
 			}
 		}
-		logger.info("Initial dynamic tools loading completed from nacos - Found {} tools", allTools.size());
+		logger.info("Initial dynamic tools loading completed - Found {} tools", allTools.size());
 		return allTools;
 	}
 
@@ -114,7 +112,7 @@ public class NacosMcpGatewayToolsInitializer {
 						.remoteServerConfig(mcpServerRemoteServiceConfig)
 						.toolsMeta(metaInfo)
 						.build();
-					toolCallbacks.add(new DynamicNacosToolCallback(toolDefinition));
+					toolCallbacks.add(new NacosMcpGatewayToolCallback(toolDefinition));
 				}
 			}
 			return toolCallbacks;
