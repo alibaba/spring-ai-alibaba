@@ -38,12 +38,11 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
     container_name: elasticsearch
-    user: "${UID}:${GID}"
+    user: "1000:1000"
     restart: always
     volumes:
       - ${MIDDLEWARE_HOME:-.}/elasticsearch/data:/usr/share/elasticsearch/data
     env_file:
-      - ./.env
       - ./elasticsearch.env
     ports:
       - "9200:9200"
@@ -54,10 +53,8 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.17.2
     container_name: kibana
-    user: "${UID}:${GID}"
+    user: "1000:1000"
     restart: always
-    env_file:
-      - ./.env
     volumes:
       - ${MIDDLEWARE_HOME:-.}/kibana/data:/usr/share/kibana/data
     ports:
