@@ -54,8 +54,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -81,7 +81,7 @@ public class DeepResearchConfiguration {
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
 	@Autowired
-	private ChatClient coderAgent;
+	private ObjectProvider<ChatClient.Builder> coderAgent;
 
 	@Autowired
 	private ChatClient researchAgent;
@@ -90,7 +90,7 @@ public class DeepResearchConfiguration {
 	private ChatClient reporterAgent;
 
 	@Autowired
-	private ChatClient coordinatorAgent;
+	private ObjectProvider<ChatClient.Builder> coordinatorAgent;
 
 	@Autowired
 	private ChatClient plannerAgent;
@@ -98,9 +98,9 @@ public class DeepResearchConfiguration {
 	@Autowired
 	private ChatClient reflectionAgent;
 
-	@Qualifier("chatClientBuilder")
+	// @Qualifier("chatClientBuilder")
 	@Autowired
-	private ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
+	private ChatClient.Builder researchChatClientBuilder;
 
 	@Autowired
 	private DeepResearchProperties deepResearchProperties;
@@ -122,6 +122,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private InfoCheckService infoCheckService;
+
+	@Autowired
+	private ChatClient routerAgent;
 
 	@Autowired
 	private SearchFilterService searchFilterService;
@@ -183,8 +186,8 @@ public class DeepResearchConfiguration {
 
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
-			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
-			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
+			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent, routerAgent)))
+			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(researchChatClientBuilder)))
 			.addNode("background_investigator",
 					node_async(
 							new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService, searchFilterService)))
@@ -246,8 +249,8 @@ public class DeepResearchConfiguration {
 		ReflectionProcessor reflectionProcessor = reflectionProcessor();
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
 			String nodeId = "coder_" + i;
-			stateGraph.addNode(nodeId,
-					node_async(new CoderNode(coderAgent, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
+			stateGraph.addNode(nodeId, node_async(new CoderNode(coderAgent, String.valueOf(i), reflectionProcessor,
+					mcpProviderFactory, routerAgent)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
