@@ -77,7 +77,7 @@ public class AESCryptUtils {
 	 * Test method for encryption.
 	 */
 	public static void main(String[] args) {
-		String encrypted = encrypt("sk-fa51faa7e09a419f9738c9319e19d1b1");
+		String encrypted = encrypt("sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 		System.out.println(encrypted);
 	}
 
