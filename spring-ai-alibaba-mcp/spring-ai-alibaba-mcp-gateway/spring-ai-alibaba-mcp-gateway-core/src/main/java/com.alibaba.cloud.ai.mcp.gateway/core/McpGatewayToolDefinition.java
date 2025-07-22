@@ -16,40 +16,37 @@
 
 package com.alibaba.cloud.ai.mcp.gateway.core;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.springframework.ai.tool.definition.ToolDefinition;
+
 /**
  * MCP Gateway 工具定义抽象类
  */
-public abstract class McpGatewayToolDefinition {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public abstract class McpGatewayToolDefinition implements ToolDefinition {
 
-	private String name;
+	protected String name;
 
-	private String description;
+	protected String description;
 
-	private String version;
+	protected String version;
 
-	private String protocol;
+	protected String protocol;
 
-	private McpServiceDetail.McpServiceRef serviceRef;
+	protected Boolean enabled;
 
-	private Boolean enabled;
-
-	private Object inputSchema;
-
-	private McpServiceDetail.McpToolMeta toolMeta;
+	protected Object inputSchema;
 
 	public McpGatewayToolDefinition() {
 	}
 
 	public McpGatewayToolDefinition(String name, String description, Object inputSchema, String version,
-			String protocol, McpServiceDetail.McpServiceRef serviceRef, McpServiceDetail.McpToolMeta toolMeta,
-			Boolean enabled) {
+			String protocol, Boolean enabled) {
 		this.name = name;
 		this.description = description;
 		this.inputSchema = inputSchema;
 		this.version = version;
 		this.protocol = protocol;
-		this.serviceRef = serviceRef;
-		this.toolMeta = toolMeta;
 		this.enabled = enabled;
 	}
 
@@ -85,14 +82,6 @@ public abstract class McpGatewayToolDefinition {
 		this.protocol = protocol;
 	}
 
-	public McpServiceDetail.McpServiceRef getServiceRef() {
-		return serviceRef;
-	}
-
-	public void setServiceRef(McpServiceDetail.McpServiceRef serviceRef) {
-		this.serviceRef = serviceRef;
-	}
-
 	public Boolean getEnabled() {
 		return enabled;
 	}
@@ -108,25 +97,5 @@ public abstract class McpGatewayToolDefinition {
 	public void setInputSchema(Object inputSchema) {
 		this.inputSchema = inputSchema;
 	}
-
-	public McpServiceDetail.McpToolMeta getToolMeta() {
-		return toolMeta;
-	}
-
-	public void setToolMeta(McpServiceDetail.McpToolMeta toolMeta) {
-		this.toolMeta = toolMeta;
-	}
-
-	/**
-	 * 获取输入模式字符串
-	 * @return 输入模式字符串
-	 */
-	public abstract String getInputSchemaString();
-
-	/**
-	 * 获取远程服务配置
-	 * @return 远程服务配置
-	 */
-	public abstract Object getRemoteServerConfig();
 
 }

@@ -19,8 +19,8 @@ import java.sql.Connection;
 
 public interface DBConnectionPool {
 
-	public ErrorCodeEnum testConnection(DbConfig config);
+	ErrorCodeEnum ping(DbConfig config);
 
-	public Connection getConnection(DbConfig config);
+	Connection getConnection(DbConfig config);
 
 }

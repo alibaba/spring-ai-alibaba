@@ -191,21 +191,6 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 			            "properties": {
 			                "action": {
 			                    "type": "string",
-			                    "const": "scroll"
-			                },
-			                "scroll_amount": {
-			                    "type": "integer",
-			                    "description": "Pixels to scroll (positive for down, negative for up)"
-			                }
-			            },
-			            "required": ["action", "scroll_amount"],
-			            "additionalProperties": false
-			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
 			                    "const": "switch_tab"
 			                },
 			                "tab_id": {
@@ -301,10 +286,9 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 			- 'input_text'：在元素中输入文本
 			- 'key_enter'：按回车键
 			- 'screenshot'：捕获屏幕截图
-			- 'get_html'：获取当前页面的HTML内容(不支持url参数)
-			- 'get_text'：获取当前页面文本内容(不支持url参数)
+			- 'get_html'：获取当前页面的HTML内容
+			- 'get_text'：获取当前页面文本内容
 			- 'execute_js'：执行JavaScript代码
-			- 'scroll'：滚动页面
 			- 'switch_tab'：切换到特定标签页
 			- 'new_tab'：打开新标签页
 			- 'close_tab'：关闭当前标签页

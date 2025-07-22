@@ -17,11 +17,11 @@
 package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.schema.ExecutionStep;
-import com.alibaba.cloud.ai.schema.Plan;
-import com.alibaba.cloud.ai.schema.SchemaDTO;
+import com.alibaba.cloud.ai.model.execution.ExecutionStep;
+import com.alibaba.cloud.ai.model.execution.Plan;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
@@ -154,14 +154,14 @@ public class SqlGenerateNode implements NodeAction {
 		SchemaDTO schemaDTO = StateUtils.getObjectValue(state, TABLE_RELATION_OUTPUT, SchemaDTO.class);
 
 		return regenerateSql(state, toolParameters.toJsonStr(), evidenceList, schemaDTO,
-				SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, toolParameters.getSqlQuery());
+				SEMANTIC_CONSISTENCY_NODE_RECOMMEND_OUTPUT, toolParameters.getSqlQuery());
 	}
 
 	/**
 	 * Check if semantic consistency validation failed
 	 */
 	private boolean isSemanticConsistencyFailed(OverAllState state) {
-		return StateUtils.getObjectValue(state, SEMANTIC_CONSISTENC_NODE_OUTPUT, Boolean.class, true) == false;
+		return StateUtils.getObjectValue(state, SEMANTIC_CONSISTENCY_NODE_OUTPUT, Boolean.class, true) == false;
 	}
 
 	/**
