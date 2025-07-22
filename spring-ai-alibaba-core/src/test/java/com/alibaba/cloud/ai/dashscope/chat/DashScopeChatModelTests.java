@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -494,8 +494,8 @@ class DashScopeChatModelTests {
 				null, null, List.of(nullNameToolCall), null);
 		Choice nullNameChoice = new Choice(ChatCompletionFinishReason.TOOL_CALLS, nullNameToolMessage);
 
-		// Add non-null TokenUsage with zero values
-		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
+		// Add non-null TokenUsage with correct parameters
+		TokenUsage usage = new TokenUsage(5, 10, 15, null, null, null, null, null, null, null);
 
 		ChatCompletionOutput nullNameOutput = new ChatCompletionOutput("", List.of(nullNameChoice));
 		ChatCompletion nullNameCompletion = new ChatCompletion("test-id", nullNameOutput, usage);
