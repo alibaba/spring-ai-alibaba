@@ -16,8 +16,6 @@ import java.util.Map;
 @Service
 public class ModelConfigService {
     private static final String CONFIG_PATH = "model-config.json";
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private File configFile;
     private final ModelParamRepository modelParamRepository;
     private final AgentManager agentManager;
 
@@ -32,7 +30,6 @@ public class ModelConfigService {
         if (resource == null) {
             throw new IOException("model-config.json not found in resources");
         }
-        configFile = new File(resource.getFile());
     }
 
     public List<ModelParamRepositoryImpl.AgentModel> getModelConfigs() throws IOException {
@@ -40,9 +37,7 @@ public class ModelConfigService {
     }
 
     public void updateModelConfigs(List<ModelParamRepositoryImpl.AgentModel> models) throws IOException {
-        Map<String, Object> map = new HashMap<>();
-        map.put("models", models);
-        objectMapper.writerWithDefaultPrettyPrinter().writeValue(configFile, map);
+        // todo: 这里可以增加修改配置文件的逻辑
         agentManager.batchUpdateAgents(models);
     }
 } 

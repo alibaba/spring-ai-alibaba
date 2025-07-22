@@ -30,7 +30,7 @@ public class AgentConfigController {
     /**
      * 获取所有模型配置
      */
-    @GetMapping("getModelConfigs")
+    @GetMapping("/getModelConfigs")
     public ResponseEntity<List<ModelParamRepositoryImpl.AgentModel>> getModelConfigs() {
         try {
             return ResponseEntity.ok(modelConfigService.getModelConfigs());
@@ -42,7 +42,7 @@ public class AgentConfigController {
     /**
      * 批量更新模型配置
      */
-    @PostMapping("updateModelConfigs")
+    @PostMapping("/updateModelConfigs")
     public ResponseEntity<Void> updateModelConfigs(@RequestBody List<ModelParamRepositoryImpl.AgentModel> models) {
         try {
             modelConfigService.updateModelConfigs(models);
