@@ -148,4 +148,5 @@ public class ChatController {
 			.doOnCancel(() -> logger.info("Client disconnected from stream"))
 			.doOnError(e -> logger.error("Error occurred during streaming", e));
 	}
+
 }

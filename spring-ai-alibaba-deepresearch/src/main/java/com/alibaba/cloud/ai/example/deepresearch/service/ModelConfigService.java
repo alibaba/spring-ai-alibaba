@@ -27,29 +27,33 @@ import java.util.List;
 
 @Service
 public class ModelConfigService {
-    private static final String CONFIG_PATH = "model-config.json";
-    private final ModelParamRepository modelParamRepository;
-    private final AgentFactory AgentFactory;
 
-    public ModelConfigService(ModelParamRepository modelParamRepository, AgentFactory AgentFactory) {
-        this.modelParamRepository = modelParamRepository;
-        this.AgentFactory = AgentFactory;
-    }
+	private static final String CONFIG_PATH = "model-config.json";
 
-    @PostConstruct
-    private void init() throws IOException {
-        URL resource = getClass().getClassLoader().getResource(CONFIG_PATH);
-        if (resource == null) {
-            throw new IOException("model-config.json not found in resources");
-        }
-    }
+	private final ModelParamRepository modelParamRepository;
 
-    public List<ModelParamRepositoryImpl.AgentModel> getModelConfigs() throws IOException {
-        return modelParamRepository.loadModels();
-    }
+	private final AgentFactory AgentFactory;
 
-    public void updateModelConfigs(List<ModelParamRepositoryImpl.AgentModel> models) throws IOException {
-        // todo: 这里可以增加修改配置文件的逻辑
-        AgentFactory.batchUpdateAgents(models);
-    }
+	public ModelConfigService(ModelParamRepository modelParamRepository, AgentFactory AgentFactory) {
+		this.modelParamRepository = modelParamRepository;
+		this.AgentFactory = AgentFactory;
+	}
+
+	@PostConstruct
+	private void init() throws IOException {
+		URL resource = getClass().getClassLoader().getResource(CONFIG_PATH);
+		if (resource == null) {
+			throw new IOException("model-config.json not found in resources");
+		}
+	}
+
+	public List<ModelParamRepositoryImpl.AgentModel> getModelConfigs() throws IOException {
+		return modelParamRepository.loadModels();
+	}
+
+	public void updateModelConfigs(List<ModelParamRepositoryImpl.AgentModel> models) throws IOException {
+		// todo: 这里可以增加修改配置文件的逻辑
+		AgentFactory.batchUpdateAgents(models);
+	}
+
 }

@@ -82,28 +82,32 @@ public class DeepResearchConfiguration {
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
 	private final ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
+
 	private final DeepResearchProperties deepResearchProperties;
+
 	private final ReflectionProperties reflectionProperties;
+
 	private final JinaCrawlerService jinaCrawlerService;
+
 	private final RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
+
 	private final ReportService reportService;
+
 	private final McpProviderFactory mcpProviderFactory;
+
 	private final InfoCheckService infoCheckService;
+
 	private final SearchFilterService searchFilterService;
+
 	private final AgentFactory agentFactory;
 
 	public DeepResearchConfiguration(
 			@Qualifier("chatClientBuilder") ChatClient.Builder rewriteAndMultiQueryAgentBuilder,
-			DeepResearchProperties deepResearchProperties,
-			ReflectionProperties reflectionProperties,
+			DeepResearchProperties deepResearchProperties, ReflectionProperties reflectionProperties,
 			@Autowired(required = false) JinaCrawlerService jinaCrawlerService,
 			@Autowired(required = false) RetrievalAugmentationAdvisor retrievalAugmentationAdvisor,
-			ReportService reportService,
-			@Autowired(required = false) McpProviderFactory mcpProviderFactory,
-			InfoCheckService infoCheckService,
-			SearchFilterService searchFilterService,
-			AgentFactory agentFactory
-	) {
+			ReportService reportService, @Autowired(required = false) McpProviderFactory mcpProviderFactory,
+			InfoCheckService infoCheckService, SearchFilterService searchFilterService, AgentFactory agentFactory) {
 		this.rewriteAndMultiQueryAgentBuilder = rewriteAndMultiQueryAgentBuilder;
 		this.deepResearchProperties = deepResearchProperties;
 		this.reflectionProperties = reflectionProperties;
@@ -236,8 +240,8 @@ public class DeepResearchConfiguration {
 		ReflectionProcessor reflectionProcessor = reflectionProcessor();
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
 			String nodeId = "coder_" + i;
-			stateGraph.addNode(nodeId,
-					node_async(new CoderNode(agentFactory, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
+			stateGraph.addNode(nodeId, node_async(
+					new CoderNode(agentFactory, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}

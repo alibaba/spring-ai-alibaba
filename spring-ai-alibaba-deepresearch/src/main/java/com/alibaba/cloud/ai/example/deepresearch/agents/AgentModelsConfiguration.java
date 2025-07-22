@@ -27,27 +27,29 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AgentModelsConfiguration {
 
-    private final DashScopeConnectionProperties commonProperties;
-    private final ToolCallingManager toolCallingManager;
+	private final DashScopeConnectionProperties commonProperties;
 
-    public AgentModelsConfiguration(DashScopeConnectionProperties dashScopeConnectionProperties,
-                                   ToolCallingManager toolCallingManager) {
-        this.toolCallingManager = toolCallingManager;
-        this.commonProperties = dashScopeConnectionProperties;
-    }
+	private final ToolCallingManager toolCallingManager;
 
-    /**
-     * 动态构建 ChatClient，供 AgentsConfiguration 等调用
-     */
-    public ChatClient builderChatClient(String modelName) {
-        DashScopeChatModel chatModel = DashScopeChatModel.builder()
-                .dashScopeApi(DashScopeApi.builder().apiKey(commonProperties.getApiKey()).build())
-                .toolCallingManager(toolCallingManager)
-                .defaultOptions(DashScopeChatOptions.builder()
-                        .withModel(modelName)
-                        .withTemperature(DashScopeChatModel.DEFAULT_TEMPERATURE)
-                        .build())
-                .build();
-        return ChatClient.builder(chatModel).build();
-    }
+	public AgentModelsConfiguration(DashScopeConnectionProperties dashScopeConnectionProperties,
+			ToolCallingManager toolCallingManager) {
+		this.toolCallingManager = toolCallingManager;
+		this.commonProperties = dashScopeConnectionProperties;
+	}
+
+	/**
+	 * 动态构建 ChatClient，供 AgentsConfiguration 等调用
+	 */
+	public ChatClient builderChatClient(String modelName) {
+		DashScopeChatModel chatModel = DashScopeChatModel.builder()
+			.dashScopeApi(DashScopeApi.builder().apiKey(commonProperties.getApiKey()).build())
+			.toolCallingManager(toolCallingManager)
+			.defaultOptions(DashScopeChatOptions.builder()
+				.withModel(modelName)
+				.withTemperature(DashScopeChatModel.DEFAULT_TEMPERATURE)
+				.build())
+			.build();
+		return ChatClient.builder(chatModel).build();
+	}
+
 }

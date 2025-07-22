@@ -37,50 +37,52 @@ import java.util.Map;
 @RequestMapping("/agent-config")
 public class AgentConfigController {
 
-    private final ModelConfigService modelConfigService;
-    private final AgentFactory AgentFactory;
+	private final ModelConfigService modelConfigService;
 
-    private static final Logger logger = LoggerFactory.getLogger(AgentConfigController.class);
+	private final AgentFactory AgentFactory;
 
-    public AgentConfigController(ModelConfigService modelConfigService, AgentFactory AgentFactory) {
-        this.modelConfigService = modelConfigService;
-        this.AgentFactory = AgentFactory;
-    }
+	private static final Logger logger = LoggerFactory.getLogger(AgentConfigController.class);
 
-    /**
-     * 获取所有模型配置
-     */
-    @GetMapping("/getModelConfigs")
-    public ResponseEntity<List<ModelParamRepositoryImpl.AgentModel>> getModelConfigs() {
-        try {
-            return ResponseEntity.ok(modelConfigService.getModelConfigs());
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
+	public AgentConfigController(ModelConfigService modelConfigService, AgentFactory AgentFactory) {
+		this.modelConfigService = modelConfigService;
+		this.AgentFactory = AgentFactory;
+	}
 
-    /**
-     * 批量更新模型配置
-     */
-    @PostMapping("/updateModelConfigs")
-    public ResponseEntity<Void> updateModelConfigs(@RequestBody List<ModelParamRepositoryImpl.AgentModel> models) {
-        try {
-            modelConfigService.updateModelConfigs(models);
-            return ResponseEntity.ok().build();
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
+	/**
+	 * 获取所有模型配置
+	 */
+	@GetMapping("/getModelConfigs")
+	public ResponseEntity<List<ModelParamRepositoryImpl.AgentModel>> getModelConfigs() {
+		try {
+			return ResponseEntity.ok(modelConfigService.getModelConfigs());
+		}
+		catch (IOException e) {
+			return ResponseEntity.internalServerError().build();
+		}
+	}
 
-    /**
-     * 调用指定Agent模型
-     */
-    @PostMapping(value = "/agent/call", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String call(@RequestBody Map<String, Object> message) {
-        logger.info("Received chat request: {}", message);
-        ChatClient chatClient = AgentFactory.getAgentByName((String) message.get("agentName"));
-        return chatClient.prompt((String) message.get("message"))
-                .call()
-                .content();
-    }
+	/**
+	 * 批量更新模型配置
+	 */
+	@PostMapping("/updateModelConfigs")
+	public ResponseEntity<Void> updateModelConfigs(@RequestBody List<ModelParamRepositoryImpl.AgentModel> models) {
+		try {
+			modelConfigService.updateModelConfigs(models);
+			return ResponseEntity.ok().build();
+		}
+		catch (IOException e) {
+			return ResponseEntity.internalServerError().build();
+		}
+	}
+
+	/**
+	 * 调用指定Agent模型
+	 */
+	@PostMapping(value = "/agent/call", produces = MediaType.APPLICATION_JSON_VALUE)
+	public String call(@RequestBody Map<String, Object> message) {
+		logger.info("Received chat request: {}", message);
+		ChatClient chatClient = AgentFactory.getAgentByName((String) message.get("agentName"));
+		return chatClient.prompt((String) message.get("message")).call().content();
+	}
+
 }
