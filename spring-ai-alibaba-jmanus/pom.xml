@@ -232,6 +232,7 @@
     </dependencies>
 
     <build>
+        <finalName>jmanus</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
