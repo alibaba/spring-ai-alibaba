@@ -35,8 +35,8 @@ public class SqlValidateDispatcher implements EdgeAction {
 		Boolean validate = (Boolean) state.value(SQL_VALIDATE_NODE_OUTPUT).orElseThrow();
 		logger.info("SQL语法校验是否通过: {}", validate);
 		if (validate) {
-			logger.info("[SqlValidateDispatcher] SQL语法校验通过，跳转到节点: {}", SEMANTIC_CONSISTENC_NODE);
-			return SEMANTIC_CONSISTENC_NODE;
+			logger.info("[SqlValidateDispatcher] SQL语法校验通过，跳转到节点: {}", SEMANTIC_CONSISTENCY_NODE);
+			return SEMANTIC_CONSISTENCY_NODE;
 		}
 		else {
 			logger.info("[SqlValidateDispatcher] SQL语法校验未通过，跳转到节点: {}", SQL_GENERATE_NODE);

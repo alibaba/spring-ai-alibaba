@@ -15,118 +15,34 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
+import com.alibaba.cloud.ai.dashscope.video.DashScopeVideoOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+
+import static com.alibaba.cloud.ai.dashscope.api.DashScopeVideoApi.DEFAULT_VIDEO_MODEL;
 
 /**
  * DashScope Video Generation Properties.
  *
  * @author dashscope
+ * @author yuluo
+ * @since 1.0.0.3
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.dashscope.video")
-public class DashScopeVideoProperties {
 
-	/**
-	 * Enable DashScope video generation.
-	 */
-	private boolean enabled = true;
+@ConfigurationProperties(prefix = DashScopeVideoProperties.CONFIG_PREFIX)
+public class DashScopeVideoProperties extends DashScopeParentProperties {
 
-	/**
-	 * Video model name.
-	 */
-	private String model = "text2video-synthesis";
+	public static final String CONFIG_PREFIX = "spring.ai.dashscope.video";
 
-	/**
-	 * Video width.
-	 */
-	private Integer width;
+	@NestedConfigurationProperty
+	private DashScopeVideoOptions options = DashScopeVideoOptions.builder().model(DEFAULT_VIDEO_MODEL).build();
 
-	/**
-	 * Video height.
-	 */
-	private Integer height;
-
-	/**
-	 * Video duration in seconds.
-	 */
-	private Integer duration;
-
-	/**
-	 * Video frames per second.
-	 */
-	private Integer fps;
-
-	/**
-	 * Random seed for video generation.
-	 */
-	private Long seed;
-
-	/**
-	 * Number of frames.
-	 */
-	private Integer numFrames;
-
-	public boolean isEnabled() {
-		return this.enabled;
+	public DashScopeVideoOptions getOptions() {
+		return this.options;
 	}
 
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
-	}
-
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public Integer getWidth() {
-		return this.width;
-	}
-
-	public void setWidth(Integer width) {
-		this.width = width;
-	}
-
-	public Integer getHeight() {
-		return this.height;
-	}
-
-	public void setHeight(Integer height) {
-		this.height = height;
-	}
-
-	public Integer getDuration() {
-		return this.duration;
-	}
-
-	public void setDuration(Integer duration) {
-		this.duration = duration;
-	}
-
-	public Integer getFps() {
-		return this.fps;
-	}
-
-	public void setFps(Integer fps) {
-		this.fps = fps;
-	}
-
-	public Long getSeed() {
-		return this.seed;
-	}
-
-	public void setSeed(Long seed) {
-		this.seed = seed;
-	}
-
-	public Integer getNumFrames() {
-		return this.numFrames;
-	}
-
-	public void setNumFrames(Integer numFrames) {
-		this.numFrames = numFrames;
+	public void setOptions(DashScopeVideoOptions options) {
+		this.options = options;
 	}
 
 }

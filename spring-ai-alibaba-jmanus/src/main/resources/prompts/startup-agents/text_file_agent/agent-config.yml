@@ -4,6 +4,7 @@ agentDescription: 一个文本文件处理代理，可以创建、读取、写�
 availableToolKeys:
   - text_file_operator
   - terminate
+  - inner_storage_content_tool
 
 # 下一步提示配置
 nextStepPrompt: |

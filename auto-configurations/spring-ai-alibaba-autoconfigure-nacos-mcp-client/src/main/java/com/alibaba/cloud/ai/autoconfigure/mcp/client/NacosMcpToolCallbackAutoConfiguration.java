@@ -16,10 +16,10 @@
 
 package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 
-import com.alibaba.cloud.ai.mcp.nacos.client.tool.LoadbalancedAsyncMcpToolCallbackProvider;
-import com.alibaba.cloud.ai.mcp.nacos.client.tool.LoadbalancedSyncMcpToolCallbackProvider;
-import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpAsyncClient;
-import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpSyncClient;
+import com.alibaba.cloud.ai.mcp.discovery.client.tool.LoadbalancedAsyncMcpToolCallbackProvider;
+import com.alibaba.cloud.ai.mcp.discovery.client.tool.LoadbalancedSyncMcpToolCallbackProvider;
+import com.alibaba.cloud.ai.mcp.discovery.client.transport.LoadbalancedMcpAsyncClient;
+import com.alibaba.cloud.ai.mcp.discovery.client.transport.LoadbalancedMcpSyncClient;
 import org.springframework.ai.mcp.client.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.tool.ToolCallbackProvider;
