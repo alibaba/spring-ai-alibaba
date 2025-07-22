@@ -492,13 +492,12 @@ class DashScopeChatModelTests {
 
 		ChatCompletionMessage nullNameToolMessage = new ChatCompletionMessage("", ChatCompletionMessage.Role.ASSISTANT,
 				null, null, List.of(nullNameToolCall), null);
-		Choice nullNameChoice = new Choice(ChatCompletionFinishReason.TOOL_CALLS, nullNameToolMessage);
+		Choice nullNameChoice = new Choice(ChatCompletionFinishReason.TOOL_CALLS, nullNameToolMessage, null);
 
-		// Add non-null TokenUsage with correct parameters
-		TokenUsage usage = new TokenUsage(5, 10, 15, null, null, null, null, null, null, null);
-		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
+		// Add non-null TokenUsage with correct parameters - 9 parameters total
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
 
-		ChatCompletionOutput nullNameOutput = new ChatCompletionOutput("", List.of(nullNameChoice));
+		ChatCompletionOutput nullNameOutput = new ChatCompletionOutput("", List.of(nullNameChoice), null);
 		ChatCompletion nullNameCompletion = new ChatCompletion("test-id", nullNameOutput, usage);
 
 		when(dashScopeApi.chatCompletionEntity(any(), any())).thenReturn(ResponseEntity.ok(nullNameCompletion));
