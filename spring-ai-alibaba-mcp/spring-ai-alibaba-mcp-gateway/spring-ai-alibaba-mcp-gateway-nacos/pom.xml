@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-mcp-gateway-nacos</artifactId>
-
+    <name>Spring AI Alibaba MCP Gateway Nacos</name>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
