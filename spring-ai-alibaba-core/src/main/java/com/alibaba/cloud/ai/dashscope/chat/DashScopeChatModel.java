@@ -346,9 +346,17 @@ public class DashScopeChatModel implements ChatModel {
 	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata,
 			ChatCompletionRequest request) {
 		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
-				: choice.message()
-					.toolCalls()
-					.stream()
+				: choice.message().toolCalls().stream().filter(toolCall -> {
+					if (toolCall.function() == null) {
+						logger.warn("Filtering out toolCall with null function: {}", toolCall);
+						return false;
+					}
+					if (toolCall.function().name() == null) {
+						logger.warn("Filtering out toolCall with null function name: {}", toolCall);
+						return false;
+					}
+					return true;
+				})
 					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();

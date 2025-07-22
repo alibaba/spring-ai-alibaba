@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ChatCompletionFunction;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ToolCall;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequest;
@@ -44,6 +46,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -462,5 +465,54 @@ class DashScopeChatModelTests {
 	// Object reasoningContent = response.getMetadata().get("reasoning_content");
 	// assertThat(reasoningContent).isNotNull();
 	// }
+
+	@Test
+	void testNullToolNameHandling() {
+		// Test that null tool names are filtered out and don't cause NPE
+		ToolCallback weatherCallback = mock(ToolCallback.class);
+		when(weatherCallback.getToolDefinition()).thenReturn(DefaultToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather information")
+			.inputSchema(EMPTY_INPUT_SCHEMA)
+			.build());
+
+		DashScopeChatOptions options = DashScopeChatOptions.builder()
+			.withModel("qwen-turbo")
+			.withToolCallbacks(List.of(weatherCallback))
+			.build();
+
+		DashScopeChatModel toolChatModel = DashScopeChatModel.builder()
+			.dashScopeApi(dashScopeApi)
+			.defaultOptions(options)
+			.build();
+
+		// Create tool call with null function name
+		ChatCompletionFunction nullNameFunction = new ChatCompletionFunction(null, "{\"location\": \"Beijing\"}");
+		ToolCall nullNameToolCall = new ToolCall("tool-call-id", "function", nullNameFunction);
+
+		ChatCompletionMessage nullNameToolMessage = new ChatCompletionMessage("", ChatCompletionMessage.Role.ASSISTANT,
+				null, null, List.of(nullNameToolCall), null);
+		Choice nullNameChoice = new Choice(ChatCompletionFinishReason.TOOL_CALLS, nullNameToolMessage);
+
+		// Add non-null TokenUsage with zero values
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
+
+		ChatCompletionOutput nullNameOutput = new ChatCompletionOutput("", List.of(nullNameChoice));
+		ChatCompletion nullNameCompletion = new ChatCompletion("test-id", nullNameOutput, usage);
+
+		when(dashScopeApi.chatCompletionEntity(any(), any())).thenReturn(ResponseEntity.ok(nullNameCompletion));
+
+		// Test tool call with null name - should not throw NPE
+		Message message = new UserMessage("What's the weather like?");
+		Prompt prompt = new Prompt(List.of(message), options);
+
+		// This should not throw NPE anymore
+		assertThatCode(() -> {
+			ChatResponse response = toolChatModel.call(prompt);
+			assertThat(response).isNotNull();
+			// Tool calls with null names should be filtered out
+			assertThat(response.getResults().get(0).getOutput().getToolCalls()).isEmpty();
+		}).doesNotThrowAnyException();
+	}
 
 }
