@@ -39,13 +39,13 @@ public class AgentConfigController {
 
 	private final ModelConfigService modelConfigService;
 
-	private final AgentFactory AgentFactory;
+	private final AgentFactory agentFactory;
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentConfigController.class);
 
-	public AgentConfigController(ModelConfigService modelConfigService, AgentFactory AgentFactory) {
+	public AgentConfigController(ModelConfigService modelConfigService, AgentFactory agentFactory) {
 		this.modelConfigService = modelConfigService;
-		this.AgentFactory = AgentFactory;
+		this.agentFactory = agentFactory;
 	}
 
 	/**
@@ -81,7 +81,7 @@ public class AgentConfigController {
 	@PostMapping(value = "/agent/call", produces = MediaType.APPLICATION_JSON_VALUE)
 	public String call(@RequestBody Map<String, Object> message) {
 		logger.info("Received chat request: {}", message);
-		ChatClient chatClient = AgentFactory.getAgentByName((String) message.get("agentName"));
+		ChatClient chatClient = agentFactory.getAgentByName((String) message.get("agentName"));
 		return chatClient.prompt((String) message.get("message")).call().content();
 	}
 
