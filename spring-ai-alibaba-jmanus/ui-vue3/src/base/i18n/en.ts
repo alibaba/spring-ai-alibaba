@@ -692,6 +692,7 @@ const words: I18nType = {
       'Your Java AI intelligent assistant, helping you build and complete various tasks.',
     tagline: 'Java AI Agent',
     inputPlaceholder: 'Describe what you want to build or accomplish...',
+    directButton: 'Plan-Act Workbench',
     examples: {
       stockPrice: {
         title: 'Query Stock Price',
@@ -709,6 +710,11 @@ const words: I18nType = {
         title: 'Query Weather',
         description: "Get today's weather in Beijing (Agent can use MCP tool services)",
         prompt: "Use browser, based on Baidu, to query today's weather in Beijing",
+      },
+      queryplan: {
+        title: 'Query Person Info',
+        description: 'Query Shenxun Ali\'s all info and optimize termination structure column',
+        prompt: 'Use browser, based on Baidu, to query person info',
       },
     },
   },
