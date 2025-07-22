@@ -15,16 +15,25 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * 迭代节点，将JSON数组的所有元素进行相同的操作，并将结果保存到JSON数组中保存。输入输出的JSON数组均以JSON字符串表示。
@@ -57,7 +66,7 @@ public class IterationNode {
 		private final String inputArrayKey;
 
 		/**
-		 * 输出第一个元素的key，类型为JSON字符串
+		 * 迭代过程中元素的key
 		 */
 		private final String outputItemKey;
 
@@ -168,18 +177,18 @@ public class IterationNode {
 		/**
 		 * 输出整个迭代节点处理的JSON结果数组，应为替换策略
 		 */
-		private final String outputArrayKey;
+		private final String outputArrayJsonKey;
 
 		/**
 		 * 输出是否需要继续迭代的Boolean值
 		 */
 		private final String outputContinueIterationKey;
 
-		public End(String inputArrayKey, String inputResultKey, String outputArrayKey,
+		public End(String inputArrayKey, String inputResultKey, String outputArrayJsonKey,
 				String outputContinueIterationKey) {
 			this.inputArrayKey = inputArrayKey;
 			this.inputResultKey = inputResultKey;
-			this.outputArrayKey = outputArrayKey;
+			this.outputArrayJsonKey = outputArrayJsonKey;
 			this.outputContinueIterationKey = outputContinueIterationKey;
 		}
 
@@ -190,12 +199,12 @@ public class IterationNode {
 					.orElseThrow();
 				ElementOutput result = (ElementOutput) state.value(this.inputResultKey).orElseThrow();
 				List<ElementOutput> outputList = new ArrayList<>(
-						OBJECT_MAPPER.readValue(state.value(this.outputArrayKey, String.class).orElse("[]"),
+						OBJECT_MAPPER.readValue(state.value(this.outputArrayJsonKey, String.class).orElse("[]"),
 								new TypeReference<List<ElementOutput>>() {
 								}));
 				// 将子图节点的处理结果加入到最终结果数组中
 				outputList.add(result);
-				return Map.of(this.outputArrayKey, OBJECT_MAPPER.writeValueAsString(outputList),
+				return Map.of(this.outputArrayJsonKey, OBJECT_MAPPER.writeValueAsString(outputList),
 						this.outputContinueIterationKey, !items.isEmpty());
 			}
 			catch (Exception e) {
@@ -255,6 +264,113 @@ public class IterationNode {
 
 	public static <ElementInput, ElementOutput> End.Builder<ElementInput, ElementInput> end() {
 		return new End.Builder<ElementInput, ElementInput>();
+	}
+
+	public static class Converter<ElementInput, ElementOutput> {
+
+		/**
+		 * 输入JSON数组的key，元素类型应为JSON字符串，策略应为更新策略
+		 */
+		private String inputArrayJsonKey;
+
+		/**
+		 * 输出整个迭代节点处理的JSON结果数组，应为替换策略
+		 */
+		private String outputArrayJsonKey;
+
+		/**
+		 * 迭代子图当前迭代元素的key
+		 */
+		private String iteratorItemKey;
+
+		/**
+		 * 迭代子图处理结果的Key
+		 */
+		private String iteratorResultKey;
+
+		/**
+		 * 单元素操作子图
+		 */
+		private StateGraph subGraph;
+
+		public Converter<ElementInput, ElementOutput> inputArrayJsonKey(String inputArrayJsonKey) {
+			this.inputArrayJsonKey = inputArrayJsonKey;
+			return this;
+		}
+
+		public Converter<ElementInput, ElementOutput> outputArrayJsonKey(String outputArrayJsonKey) {
+			this.outputArrayJsonKey = outputArrayJsonKey;
+			return this;
+		}
+
+		public Converter<ElementInput, ElementOutput> iteratorItemKey(String iteratorItemKey) {
+			this.iteratorItemKey = iteratorItemKey;
+			return this;
+		}
+
+		public Converter<ElementInput, ElementOutput> iteratorResultKey(String iteratorResultKey) {
+			this.iteratorResultKey = iteratorResultKey;
+			return this;
+		}
+
+		public Converter<ElementInput, ElementOutput> subGraph(StateGraph subGraph) {
+			this.subGraph = subGraph;
+			return this;
+		}
+
+		/**
+		 * 创建一个完整的迭代图（IterationNode.Start -> SubStateGraphNode ->
+		 * IterationNode.End），可供其他图嵌套使用。
+		 */
+		public StateGraph convertToStateGraph() throws Exception {
+			if (!StringUtils.hasText(this.inputArrayJsonKey) || !StringUtils.hasText(this.outputArrayJsonKey)
+					|| !StringUtils.hasText(this.iteratorItemKey) || !StringUtils.hasText(this.iteratorResultKey)
+					|| this.subGraph == null) {
+				throw new IllegalArgumentException("There are some empty fields");
+			}
+			KeyStrategyFactory strategyFactory = () -> {
+				Map<String, KeyStrategy> map = new HashMap<>();
+				map.put("input_array", new ReplaceStrategy());
+				map.put(this.inputArrayJsonKey, new ReplaceStrategy());
+				map.put(this.iteratorItemKey, new ReplaceStrategy());
+				map.put("output_start", new ReplaceStrategy());
+				map.put(this.iteratorResultKey, new ReplaceStrategy());
+				map.put(this.outputArrayJsonKey, new ReplaceStrategy());
+				map.put("output_continue", new ReplaceStrategy());
+				return map;
+			};
+			return new StateGraph("iteration_node", strategyFactory)
+				.addNode("iteration_start",
+						node_async(IterationNode.<ElementInput>start()
+							.inputArrayJsonKey(this.inputArrayJsonKey)
+							.inputArrayKey("input_array")
+							.outputItemKey(this.iteratorItemKey)
+							.outputStartIterationKey("output_start")
+							.build()))
+				.addNode("iteration", subGraph)
+				.addNode("iteration_end",
+						node_async(IterationNode.<ElementInput, ElementOutput>end()
+							.inputArrayKey("input_array")
+							.inputResultKey(this.iteratorResultKey)
+							.outputArrayKey(this.outputArrayJsonKey)
+							.outputContinueIterationKey("output_continue")
+							.build()))
+				.addEdge(StateGraph.START, "iteration_start")
+				.addConditionalEdges("iteration_start",
+						edge_async((OverAllState state) -> state.value("output_start", Boolean.class).orElse(false)
+								? "true" : "false"),
+						Map.of("true", "iteration", "false", StateGraph.END))
+				.addEdge("iteration", "iteration_end")
+				.addConditionalEdges("iteration_end",
+						edge_async((OverAllState state) -> state.value("output_continue", Boolean.class).orElse(false)
+								? "true" : "false"),
+						Map.of("true", "iteration_start", "false", StateGraph.END));
+		}
+
+	}
+
+	public static <ElementInput, ElementOutput> Converter<ElementInput, ElementOutput> converter() {
+		return new Converter<ElementInput, ElementOutput>();
 	}
 
 }

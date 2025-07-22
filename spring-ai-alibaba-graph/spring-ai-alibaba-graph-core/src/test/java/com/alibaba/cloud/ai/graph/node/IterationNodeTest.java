@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class IterationNodeTest {
@@ -43,7 +42,7 @@ public class IterationNodeTest {
 
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-	private <InputType, OutputType> String runGraph(String input, NodeAction action) throws Exception {
+	private String runGraph(String input, NodeAction action) throws Exception {
 		// 配置子图：START -> iterator -> END
 		KeyStrategyFactory subFactory = () -> {
 			Map<String, KeyStrategy> map = new HashMap<>();
@@ -55,8 +54,7 @@ public class IterationNodeTest {
 			.addEdge(StateGraph.START, "iterator")
 			.addEdge("iterator", StateGraph.END);
 
-		// 配置主图：START -> generate -> IterationNode.Start -> subGraph -> IterationNode.End
-		// -> END
+		// 配置主图：START -> generate -> IterationNodeGraph -> END
 		KeyStrategyFactory mainFactory = () -> {
 			Map<String, KeyStrategy> map = new HashMap<>();
 			map.put("input_array", new ReplaceStrategy());
@@ -70,32 +68,16 @@ public class IterationNodeTest {
 		};
 		CompiledGraph graph = new StateGraph("main", mainFactory)
 			.addNode("generate_array", node_async((OverAllState state) -> Map.of("input_json_array", input)))
-			.addNode("iteration_start",
-					node_async(IterationNode.<InputType>start()
+				.addNode("iteration_node", IterationNode.converter()
 						.inputArrayJsonKey("input_json_array")
-						.inputArrayKey("input_array")
-						.outputItemKey("iterator_item")
-						.outputStartIterationKey("output_start")
-						.build()))
-			.addNode("iteration", subGraph)
-			.addNode("iteration_end",
-					node_async(IterationNode.<InputType, OutputType>end()
-						.inputArrayKey("input_array")
-						.inputResultKey("iterator_item_result")
-						.outputArrayKey("result")
-						.outputContinueIterationKey("output_continue")
-						.build()))
+						.outputArrayJsonKey("result")
+						.iteratorItemKey("iterator_item")
+						.iteratorResultKey("iterator_item_result")
+						.subGraph(subGraph)
+						.convertToStateGraph())
 			.addEdge(StateGraph.START, "generate_array")
-			.addEdge("generate_array", "iteration_start")
-			.addConditionalEdges("iteration_start",
-					edge_async((OverAllState state) -> state.value("output_start", Boolean.class).orElse(false) ? "true"
-							: "false"),
-					Map.of("true", "iteration", "false", StateGraph.END))
-			.addEdge("iteration", "iteration_end")
-			.addConditionalEdges("iteration_end",
-					edge_async((OverAllState state) -> state.value("output_continue", Boolean.class).orElse(false)
-							? "true" : "false"),
-					Map.of("true", "iteration_start", "false", StateGraph.END))
+				.addEdge("generate_array", "iteration_node")
+				.addEdge("iteration_node", StateGraph.END)
 			.compile();
 		OverAllState state = graph.invoke(Map.of()).orElseThrow();
 		return state.value("result").orElseThrow().toString();
@@ -104,7 +86,7 @@ public class IterationNodeTest {
 	@Test
 	@DisplayName("Test Integer Iteration")
 	public void testInteger() throws Exception {
-		String res = this.<Integer, String>runGraph("[1, 2, 3, 4, 5]", (OverAllState state) -> {
+		String res = this.runGraph("[1, 2, 3, 4, 5]", (OverAllState state) -> {
 			int x = state.value("iterator_item", Integer.class).orElseThrow();
 			int y = x * x;
 			return Map.of("iterator_item_result", Integer.toString(y));
@@ -117,7 +99,7 @@ public class IterationNodeTest {
 	@Test
 	@DisplayName("Test String Iteration")
 	public void testString() throws Exception {
-		String res = this.<String, Integer>runGraph("[\"a\", \"aa\", \"aaa\", \"aaaa\", \"aaaaa\"]",
+		String res = this.runGraph("[\"a\", \"aa\", \"aaa\", \"aaaa\", \"aaaaa\"]",
 				(OverAllState state) -> {
 					int len = state.value("iterator_item", String.class).orElseThrow().length();
 					return Map.of("iterator_item_result", len);
@@ -132,7 +114,7 @@ public class IterationNodeTest {
 	public void testPOJO() throws Exception {
 		record Person(String name, int age) {
 		}
-		String res = this.<Person, String>runGraph("[{\"name\": \"a\", \"age\": 1}, {\"name\": \"b\", \"age\": 2}]",
+		String res = this.runGraph("[{\"name\": \"a\", \"age\": 1}, {\"name\": \"b\", \"age\": 2}]",
 				(OverAllState state) -> {
 					Person p = OBJECT_MAPPER.readValue(
 							OBJECT_MAPPER.writeValueAsString(state.value("iterator_item").orElseThrow()), Person.class);
