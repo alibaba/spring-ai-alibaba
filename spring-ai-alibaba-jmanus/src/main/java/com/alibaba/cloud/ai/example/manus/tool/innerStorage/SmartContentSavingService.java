@@ -166,36 +166,35 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 	 */
 	private String generateSmartSummary(String content, String storageFileName, String callingMethod) {
 		// 构建调用方法信息
-		String methodInfo = (callingMethod != null && !callingMethod.trim().isEmpty()) 
-			? "成功调用了" + callingMethod + "函数，\n\n" 
-			: "";
-		
+		String methodInfo = (callingMethod != null && !callingMethod.trim().isEmpty())
+				? "成功调用了" + callingMethod + "函数，\n\n" : "";
+
 		return String.format("""
-			%s但函数返回的内容过长，所以自动存储到了文件里
+				%s但函数返回的内容过长，所以自动存储到了文件里
 
-			## 你可以自由的使用后续的两个操作来达成用户的期望（不需要按照顺序，而是按照用户期望）
+				## 你可以自由的使用后续的两个操作来达成用户的期望（不需要按照顺序，而是按照用户期望）
 
-			### 操作1 ： 使用 inner_storage_content_tool 工具获取具体内容
-			```json
-			{
-			  "action": "get_content",
-			  "file_name": "%s",
-			  "query_key": "你要查询的关键词或问题，查询要具体，不要丢掉任何一个用户请求中的需求"
-			}
-			```
+				### 操作1 ： 使用 inner_storage_content_tool 工具获取具体内容
+				```json
+				{
+				  "action": "get_content",
+				  "file_name": "%s",
+				  "query_key": "你要查询的关键词或问题，查询要具体，不要丢掉任何一个用户请求中的需求"
+				}
+				```
 
-			### 操作2 ： 使用 file_merge_tool 工具将文件聚合（或者复制）到指定文件夹
-			```json
-			{
-			  "action": "merge_file",
-			  "file_name": "%s",
-			  "target_folder": "merged_data"
-			}
-			```
+				### 操作2 ： 使用 file_merge_tool 工具将文件聚合（或者复制）到指定文件夹
+				```json
+				{
+				  "action": "merge_file",
+				  "file_name": "%s",
+				  "target_folder": "merged_data"
+				}
+				```
 
-			请根据具体需求选择合适的工具和参数进行后续操作。
+				请根据具体需求选择合适的工具和参数进行后续操作。
 
-			""", methodInfo, storageFileName, storageFileName);
+				""", methodInfo, storageFileName, storageFileName);
 	}
 
 	/**

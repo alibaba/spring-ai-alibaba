@@ -112,12 +112,14 @@ public class TextFileService implements ApplicationRunner, ITextFileService {
 		// 使用 UnifiedDirectoryManager 进行路径验证和获取
 		try {
 			Path resolvedPath = unifiedDirectoryManager.getSpecifiedDirectory(filePath);
-			
+
 			// 检查文件大小（如果文件存在）
-			if (Files.exists(resolvedPath) && Files.size(resolvedPath) > 10 * 1024 * 1024) { // 10MB 限制
+			if (Files.exists(resolvedPath) && Files.size(resolvedPath) > 10 * 1024 * 1024) { // 10MB
+																								// 限制
 				throw new IOException("File is too large (>10MB). For safety reasons, please use a smaller file.");
 			}
-		} catch (SecurityException e) {
+		}
+		catch (SecurityException e) {
 			throw new IOException("Access denied: " + e.getMessage());
 		}
 	}
@@ -162,21 +164,21 @@ public class TextFileService implements ApplicationRunner, ITextFileService {
 		if (filePath == null || filePath.trim().isEmpty()) {
 			throw new IllegalArgumentException("filePath cannot be null or empty");
 		}
-		
+
 		// 获取根计划目录
 		Path rootPlanDir = unifiedDirectoryManager.getRootPlanDirectory(planId);
-		
+
 		// 确保目录存在
 		unifiedDirectoryManager.ensureDirectoryExists(rootPlanDir);
-		
+
 		// 解析文件路径
 		Path absolutePath = rootPlanDir.resolve(filePath).normalize();
-		
+
 		// 验证路径是否在允许的范围内
 		if (!unifiedDirectoryManager.isPathAllowed(absolutePath)) {
 			throw new IOException("Access denied: File path is outside allowed scope");
 		}
-		
+
 		return absolutePath;
 	}
 
@@ -189,12 +191,13 @@ public class TextFileService implements ApplicationRunner, ITextFileService {
 	 */
 	public Path validateFilePath(String planId, String filePath) throws IOException {
 		Path absolutePath = getAbsolutePath(planId, filePath);
-		
+
 		// 检查文件大小（如果文件存在）
-		if (Files.exists(absolutePath) && Files.size(absolutePath) > 10 * 1024 * 1024) { // 10MB 限制
+		if (Files.exists(absolutePath) && Files.size(absolutePath) > 10 * 1024 * 1024) { // 10MB
+																							// 限制
 			throw new IOException("File is too large (>10MB). For safety reasons, please use a smaller file.");
 		}
-		
+
 		return absolutePath;
 	}
 
@@ -216,12 +219,13 @@ public class TextFileService implements ApplicationRunner, ITextFileService {
 			try {
 				// 清理文件状态
 				fileStates.remove(planId);
-				
+
 				// 如果需要，也可以清理目录（谨慎使用）
 				// unifiedDirectoryManager.cleanupRootPlanDirectory(planId);
-				
+
 				log.info("Cleaned up resources for plan: {}", planId);
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.error("Error cleaning up plan directory: {}", planId, e);
 			}
 		}

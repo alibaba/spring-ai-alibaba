@@ -624,21 +624,18 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 							- Last Operation Result:
 							%s
 							""",
-					workingDir.toString(),
-					textFileService.getLastOperationResult(planId).isEmpty() ? "No operation performed yet"
-							: textFileService.getLastOperationResult(planId));
-		} catch (Exception e) {
-			return String.format(
-					"""
-							Current Text File Operation State:
-							- Error getting working directory: %s
+					workingDir.toString(), textFileService.getLastOperationResult(planId).isEmpty()
+							? "No operation performed yet" : textFileService.getLastOperationResult(planId));
+		}
+		catch (Exception e) {
+			return String.format("""
+					Current Text File Operation State:
+					- Error getting working directory: %s
 
-							- Last Operation Result:
-							%s
-							""",
-					e.getMessage(),
-					textFileService.getLastOperationResult(planId).isEmpty() ? "No operation performed yet"
-							: textFileService.getLastOperationResult(planId));
+					- Last Operation Result:
+					%s
+					""", e.getMessage(), textFileService.getLastOperationResult(planId).isEmpty()
+					? "No operation performed yet" : textFileService.getLastOperationResult(planId));
 		}
 	}
 
