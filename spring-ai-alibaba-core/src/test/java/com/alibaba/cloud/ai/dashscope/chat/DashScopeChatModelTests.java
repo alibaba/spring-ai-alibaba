@@ -496,6 +496,7 @@ class DashScopeChatModelTests {
 
 		// Add non-null TokenUsage with correct parameters
 		TokenUsage usage = new TokenUsage(5, 10, 15, null, null, null, null, null, null, null);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null, null);
 
 		ChatCompletionOutput nullNameOutput = new ChatCompletionOutput("", List.of(nullNameChoice));
 		ChatCompletion nullNameCompletion = new ChatCompletion("test-id", nullNameOutput, usage);
