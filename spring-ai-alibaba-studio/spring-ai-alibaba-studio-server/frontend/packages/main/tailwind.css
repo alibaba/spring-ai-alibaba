@@ -1,0 +1,29 @@
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .full-center, .loading-center {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .flex-justify-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .disabled-icon-btn {
+    color: e('var(--@{ant-prefix}-color-text-disabled)');
+    cursor: not-allowed;
+  }
+}

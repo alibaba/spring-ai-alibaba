@@ -1,0 +1,57 @@
+@import '../../index.less';
+
+.spark-flow-var-tree-select-node-title {
+  font-size: 12px;
+}
+
+.spark-flow-var-tree-select-node-item {
+  cursor: pointer;
+  transition: 0.4s ease-out;
+
+  &:hover {
+    background: e('var(--@{ant-prefix}-color-fill-tertiary)');
+  }
+}
+
+.spark-var-tree-item {
+  color: e('var(--@{ant-prefix}-color-text)');
+  min-width: 192px;
+  padding: 0 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  gap: 8px;
+  transition: 0.4s ease-out;
+
+  &:hover {
+    background: e('var(--@{ant-prefix}-color-fill-tertiary)');
+  }
+}
+
+.spark-flow-expand-var-tree-item {
+  &:not(&-hidden)::after {
+    content: '';
+    height: calc(100% - 54px);
+    bottom: 20px;
+    left: 6px;
+    width: 1px;
+    background: e('var(--@{ant-prefix}-color-border-secondary)');
+    position: absolute;
+  }
+}
+
+.spark-flow-inputs-expand-btn {
+  position: absolute;
+  top: 8px;
+  left: -2px;
+  transition: transform 0.3s ease-in-out;
+}
+
+&.spark-flow-expand-var-tree-item-hidden {
+  .spark-flow-inputs-expand-btn {
+    transform: rotate(180deg);
+  }
+}
+
+.spark-flow-var-tree-select-popover {
+  min-width: 100%;
+}
