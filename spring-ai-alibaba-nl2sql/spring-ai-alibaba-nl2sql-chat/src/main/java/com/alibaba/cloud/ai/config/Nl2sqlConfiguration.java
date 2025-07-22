@@ -68,7 +68,7 @@ public class Nl2sqlConfiguration {
 	@Autowired
 	private DbConfig dbConfig;
 
-	@Autowired
+	@Autowired(required = false)
 	private PythonExecutorTool pythonExecutorTool;
 
 	@Bean
