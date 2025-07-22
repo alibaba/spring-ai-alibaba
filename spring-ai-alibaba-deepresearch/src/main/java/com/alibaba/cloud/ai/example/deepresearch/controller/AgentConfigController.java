@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
-import com.alibaba.cloud.ai.example.deepresearch.agents.AgentManager;
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentFactory;
 import com.alibaba.cloud.ai.example.deepresearch.repository.ModelParamRepositoryImpl;
 import com.alibaba.cloud.ai.example.deepresearch.service.ModelConfigService;
 import org.slf4j.Logger;
@@ -38,13 +38,13 @@ import java.util.Map;
 public class AgentConfigController {
 
     private final ModelConfigService modelConfigService;
-    private final AgentManager agentManager;
+    private final AgentFactory AgentFactory;
 
     private static final Logger logger = LoggerFactory.getLogger(AgentConfigController.class);
 
-    public AgentConfigController(ModelConfigService modelConfigService, AgentManager agentManager) {
+    public AgentConfigController(ModelConfigService modelConfigService, AgentFactory AgentFactory) {
         this.modelConfigService = modelConfigService;
-        this.agentManager = agentManager;
+        this.AgentFactory = AgentFactory;
     }
 
     /**
@@ -78,7 +78,7 @@ public class AgentConfigController {
     @PostMapping(value = "/agent/call", produces = MediaType.APPLICATION_JSON_VALUE)
     public String call(@RequestBody Map<String, Object> message) {
         logger.info("Received chat request: {}", message);
-        ChatClient chatClient = agentManager.getAgentByName((String) message.get("agentName"));
+        ChatClient chatClient = AgentFactory.getAgentByName((String) message.get("agentName"));
         return chatClient.prompt((String) message.get("message"))
                 .call()
                 .content();

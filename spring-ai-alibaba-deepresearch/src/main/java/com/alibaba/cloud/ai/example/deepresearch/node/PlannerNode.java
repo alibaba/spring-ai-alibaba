@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.agents.AgentEnum;
-import com.alibaba.cloud.ai.example.deepresearch.agents.AgentManager;
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentFactory;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -47,12 +47,12 @@ public class PlannerNode implements NodeAction {
 
 	private final BeanOutputConverter<Plan> converter;
 
-	private final AgentManager agentManager;
+	private final AgentFactory agentFactory;
 
-	public PlannerNode(AgentManager agentManager) {
+	public PlannerNode(AgentFactory agentFactory) {
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
 		});
-		this.agentManager = agentManager;
+		this.agentFactory = agentFactory;
 	}
 
 	@Override
@@ -83,7 +83,7 @@ public class PlannerNode implements NodeAction {
 
 		logger.debug("messages: {}", messages);
 		// 2. 规划任务
-		ChatClient plannerAgent = agentManager.getAgentByName(AgentEnum.PLANNER_AGENT.getAgentName());
+		ChatClient plannerAgent = agentFactory.getAgentByName(AgentEnum.PLANNER_AGENT.getAgentName());
 		var streamResult = plannerAgent.prompt(converter.getFormat()).messages(messages).stream().chatResponse();
 
 		var generator = StreamingChatGenerator.builder()

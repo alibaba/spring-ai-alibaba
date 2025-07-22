@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.agents.AgentEnum;
-import com.alibaba.cloud.ai.example.deepresearch.agents.AgentManager;
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentFactory;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
@@ -62,11 +62,11 @@ public class ResearcherNode implements NodeAction {
 	// MCP工厂
 	private final McpProviderFactory mcpFactory;
 
-	private final AgentManager agentManager;
+	private final AgentFactory agentFactory;
 
-	public ResearcherNode(AgentManager agentManager, String executorNodeId, ReflectionProcessor reflectionProcessor,
+	public ResearcherNode(AgentFactory agentFactory, String executorNodeId, ReflectionProcessor reflectionProcessor,
 			McpProviderFactory mcpFactory, SearchFilterService searchFilterService) {
-		this.agentManager = agentManager;
+		this.agentFactory = agentFactory;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;
 		this.reflectionProcessor = reflectionProcessor;
@@ -119,7 +119,7 @@ public class ResearcherNode implements NodeAction {
 		SearchEnum searchEnum = state.value("search_engine", SearchEnum.class).orElse(null);
 
 		// Call agent
-		ChatClient researchAgent = agentManager.getAgentByName(AgentEnum.RESEARCH_AGENT.getAgentName());
+		ChatClient researchAgent = agentFactory.getAgentByName(AgentEnum.RESEARCH_AGENT.getAgentName());
 		var requestSpec = researchAgent.prompt().messages(messages);
 
 		// 使用MCP工厂创建MCP提供者

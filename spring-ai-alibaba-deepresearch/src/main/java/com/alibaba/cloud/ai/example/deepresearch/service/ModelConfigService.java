@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.deepresearch.service;
 
-import com.alibaba.cloud.ai.example.deepresearch.agents.AgentManager;
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentFactory;
 import com.alibaba.cloud.ai.example.deepresearch.repository.ModelParamRepository;
 import com.alibaba.cloud.ai.example.deepresearch.repository.ModelParamRepositoryImpl;
 import jakarta.annotation.PostConstruct;
@@ -29,11 +29,11 @@ import java.util.List;
 public class ModelConfigService {
     private static final String CONFIG_PATH = "model-config.json";
     private final ModelParamRepository modelParamRepository;
-    private final AgentManager agentManager;
+    private final AgentFactory AgentFactory;
 
-    public ModelConfigService(ModelParamRepository modelParamRepository, AgentManager agentManager) {
+    public ModelConfigService(ModelParamRepository modelParamRepository, AgentFactory AgentFactory) {
         this.modelParamRepository = modelParamRepository;
-        this.agentManager = agentManager;
+        this.AgentFactory = AgentFactory;
     }
 
     @PostConstruct
@@ -50,6 +50,6 @@ public class ModelConfigService {
 
     public void updateModelConfigs(List<ModelParamRepositoryImpl.AgentModel> models) throws IOException {
         // todo: 这里可以增加修改配置文件的逻辑
-        agentManager.batchUpdateAgents(models);
+        AgentFactory.batchUpdateAgents(models);
     }
 }

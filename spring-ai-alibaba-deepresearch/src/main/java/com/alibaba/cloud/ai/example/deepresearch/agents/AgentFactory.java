@@ -22,19 +22,20 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.List;
 
 /**
- * AgentManager 负责动态获取和更新 ChatClient 实例。
+ * AgentFactory 负责动态获取和更新 ChatClient 实例。
  * 支持优先从 agentClientMap 获取，找不到则从 Spring 容器查找。
  */
 @Component
 @DependsOn({"agentsConfiguration", "agentModelsConfiguration"})
-public class AgentManager {
-    private static final Logger logger = LoggerFactory.getLogger(AgentManager.class);
+public class AgentFactory {
+    private static final Logger logger = LoggerFactory.getLogger(AgentFactory.class);
     private final Map<String, ChatClient> agentClientMap;
     private final ApplicationContext context;
     private final AgentsConfiguration agentsConfiguration;
@@ -42,8 +43,7 @@ public class AgentManager {
     /**
      * 构造器注入，保证 agentClientMap 为线程安全实现。
      */
-    public AgentManager(Map<String, ChatClient> agentClientMap,
-                        AgentModelsConfiguration agentModelsConfiguration,
+    public AgentFactory(Map<String, ChatClient> agentClientMap,
                         ApplicationContext context, AgentsConfiguration agentsConfiguration) {
         if (agentClientMap instanceof ConcurrentHashMap) {
             this.agentClientMap = agentClientMap;
