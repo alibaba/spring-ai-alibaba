@@ -137,7 +137,7 @@
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-nacos-mcp-client</artifactId>
+                <artifactId>spring-ai-alibaba-starter-nacos-mcp-discovery</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
