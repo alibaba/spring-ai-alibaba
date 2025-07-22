@@ -126,7 +126,8 @@ public class ModelServiceImpl implements ModelService {
 				agentRepository.saveAll(allByModel);
 			}
 			repository.deleteById(Long.parseLong(id));
-		} else {
+		}
+		else {
 			throw new UnsupportedOperationException("Not supported yet.");
 		}
 	}

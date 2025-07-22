@@ -148,8 +148,7 @@ public class DynamicModelEntity {
 	}
 
 	/**
-	 * Obscures the string, keeping the first 4 and last 4 characters visible,
-	 * replacing
+	 * Obscures the string, keeping the first 4 and last 4 characters visible, replacing
 	 * the rest with asterisks (*)
 	 */
 	private String maskValue(String value) {
