@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.schema.ExecutionStep;
+import com.alibaba.cloud.ai.model.execution.ExecutionStep;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StepResultUtils;

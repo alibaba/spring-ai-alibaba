@@ -59,22 +59,26 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 			      "type": "mapreduce",
 			      "dataPreparedSteps": [
 			        {
-			          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] 使用map_reduce_tool，对 %s 进行内容分割"
+			          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] 使用map_reduce_tool，对 %s 进行内容分割",
+			          "terminateColumns": "%s"
 			        }
 			      ],
 			      "mapSteps": [
 			        {
-			          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] 分析文件，找到与 %s 相关的关键信息，信息要全面，包含所有数据，事实和观点等，全面的信息，不要遗漏"
+			          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] 分析文件，找到与 %s 相关的关键信息，信息要全面，包含所有数据，事实和观点等，全面的信息，不要遗漏",
+			          "terminateColumns": "%s"
 			        }
 			      ],
 			      "reduceSteps": [
 			        {
-			          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] 合并该分片的信息到文件中，在保持信息完整性的前提下，合并所有内容，同时也要去掉未找到内容的那些结果"
+			          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] 合并该分片的信息到文件中，在保持信息完整性的前提下，合并所有内容，同时也要去掉未找到内容的那些结果",
+			          "terminateColumns": "%s"
 			        }
 			      ],
 				  "postProcessSteps": [
 					{
-					  "stepRequirement": "[MAPREDUCE_FIN_AGENT] 当导出完成后，读取导出的结果后，完整输出所有导出的内容"
+					  "stepRequirement": "[MAPREDUCE_FIN_AGENT] 当导出完成后，读取导出的结果后，完整输出所有导出的内容",
+					  "terminateColumns": "file_path"
 					}
 				  ]
 
@@ -118,24 +122,19 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 			logger.info("Building summary execution plan with provided planId: {}", parentPlanId);
 
 			// 生成计划JSON，使用传入的planId
-			String planJson = String.format(SUMMARY_PLAN_TEMPLATE, parentPlanId, fileName, queryKey);
+			String planJson = String.format(SUMMARY_PLAN_TEMPLATE, parentPlanId, // 计划ID
+					fileName, // dataPreparedSteps 文件名
+					terminateColumnsString, // dataPreparedSteps terminateColumns
+					queryKey, // mapSteps 查询关键词
+					terminateColumnsString, // mapSteps terminateColumns
+					terminateColumnsString, // reduceSteps terminateColumns
+					terminateColumnsString // postProcessSteps terminateColumns（会自动加上 ,
+											// fileURL）
+			);
 
 			// 解析JSON为MapReduceExecutionPlan对象
 			MapReduceExecutionPlan plan = objectMapper.readValue(planJson, MapReduceExecutionPlan.class);
-			plan.getMapReduceNodes().forEach(node -> node.getMapSteps().forEach(step -> {
-				// 设置终止工具的列信息
-				step.setTerminateColumns(terminateColumnsString);
-			}));
-
-			plan.getMapReduceNodes().forEach(node -> node.getReduceSteps().forEach(step -> {
-				// 设置终止工具的列信息
-				step.setTerminateColumns(terminateColumnsString);
-			}));
-
-			plan.getMapReduceNodes().forEach(node -> node.getPostProcessSteps().forEach(step -> {
-				// 设置终止工具的列信息
-				step.setTerminateColumns(terminateColumnsString + ", fileURL");
-			}));
+			// terminateColumns 直接在 JSON 模板中配置，无需在此处设置
 
 			return plan;
 

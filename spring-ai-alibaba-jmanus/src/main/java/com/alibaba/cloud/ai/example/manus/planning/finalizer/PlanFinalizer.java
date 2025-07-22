@@ -15,9 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.finalizer;
 
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
@@ -32,6 +29,9 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 

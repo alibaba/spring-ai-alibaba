@@ -15,9 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.creator;
 
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
@@ -34,6 +31,9 @@ import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
@@ -181,8 +181,32 @@ public class PlanCreator {
 	 * @return formatted prompt string
 	 */
 	private String generatePlanPrompt(String request, String agentsInfo) {
-		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "request", request);
+		// Escape special characters in request to prevent StringTemplate parsing errors
+		String escapedRequest = escapeForStringTemplate(request);
+		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "request", escapedRequest);
 		return promptService.renderPrompt(PromptEnum.PLANNING_PLAN_CREATION.getPromptName(), variables);
+	}
+
+	/**
+	 * Escape special characters for StringTemplate engine
+	 * @param input input string
+	 * @return escaped string
+	 */
+	private String escapeForStringTemplate(String input) {
+		if (input == null) {
+			return null;
+		}
+		// Escape characters that are special to StringTemplate
+		// Note: Order matters - escape backslash first to avoid double-escaping
+		return input.replace("\\", "\\\\")
+			.replace("$", "\\$")
+			.replace("<", "\\<")
+			.replace(">", "\\>")
+			.replace("{", "\\{")
+			.replace("}", "\\}")
+			.replace("[", "\\[")
+			.replace("]", "\\]")
+			.replace("\"", "\\\"");
 	}
 
 }

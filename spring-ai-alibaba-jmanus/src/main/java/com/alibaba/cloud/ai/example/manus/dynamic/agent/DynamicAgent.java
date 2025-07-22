@@ -15,19 +15,22 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
+import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
+import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,18 +51,14 @@ import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 
-import com.alibaba.cloud.ai.example.manus.agent.AgentState;
-import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
-import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
-import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class DynamicAgent extends ReActAgent {
 
@@ -333,8 +332,15 @@ public class DynamicAgent extends ReActAgent {
 					actToolInfoList = createActToolInfoList(toolCalls);
 				}
 			}
+			StringBuilder errorMessage = new StringBuilder("Error executing tools: ");
+			errorMessage.append(e.getMessage());
 
-			recordActionResult(actToolInfoList, null, ExecutionStatus.RUNNING, e.getMessage(), false);
+			String firstToolcall = actToolInfoList != null && !actToolInfoList.isEmpty()
+					? actToolInfoList.get(0).getParameters().toString() : "unknown";
+			errorMessage.append("  . llm return param :  ").append(firstToolcall);
+
+			recordActionResult(actToolInfoList, errorMessage.toString(), ExecutionStatus.RUNNING,
+					errorMessage.toString(), false);
 
 			userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error
