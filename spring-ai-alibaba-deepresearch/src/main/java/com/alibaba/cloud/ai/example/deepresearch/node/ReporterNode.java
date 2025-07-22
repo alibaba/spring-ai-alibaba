@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentEnum;
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentManager;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
@@ -46,15 +48,15 @@ public class ReporterNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(ReporterNode.class);
 
-	private final ChatClient reporterAgent;
-
 	private final ReportService reportService;
 
 	private static final String RESEARCH_FORMAT = "# Research Requirements\n\n## Task\n\n{0}\n\n## Description\n\n{1}";
 
-	public ReporterNode(ChatClient reporterAgent, ReportService reportService) {
-		this.reporterAgent = reporterAgent;
+	private final AgentManager agentManager;
+
+	public ReporterNode(AgentManager agentManager, ReportService reportService) {
 		this.reportService = reportService;
+		this.agentManager = agentManager;
 	}
 
 	@Override
@@ -92,6 +94,7 @@ public class ReporterNode implements NodeAction {
 
 		logger.debug("reporter node messages: {}", messages);
 
+		ChatClient reporterAgent = agentManager.getAgentByName(AgentEnum.REPORTER_AGENT.getAgentName());
 		var streamResult = reporterAgent.prompt().messages(messages).stream().chatResponse();
 
 		var generator = StreamingChatGenerator.builder()

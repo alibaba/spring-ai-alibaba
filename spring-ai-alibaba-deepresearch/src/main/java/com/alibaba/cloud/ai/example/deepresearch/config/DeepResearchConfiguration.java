@@ -24,7 +24,6 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatche
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.RewriteAndMultiQueryDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
-
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
@@ -37,10 +36,10 @@ import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.RewriteAndMultiQueryNode;
-import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
-
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
+import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
+import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
@@ -60,6 +59,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -68,8 +68,6 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
-import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
-import org.springframework.context.annotation.DependsOn;
 
 /**
  * @author yingzi
@@ -83,12 +81,6 @@ public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
-	private final ChatClient coderAgent;
-	private final ChatClient researchAgent;
-	private final ChatClient reporterAgent;
-	private final ChatClient coordinatorAgent;
-	private final ChatClient plannerAgent;
-	private final ChatClient reflectionAgent;
 	private final ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
 	private final DeepResearchProperties deepResearchProperties;
 	private final ReflectionProperties reflectionProperties;
@@ -101,12 +93,6 @@ public class DeepResearchConfiguration {
 	private final AgentManager agentManager;
 
 	public DeepResearchConfiguration(
-			ChatClient coderAgent,
-			ChatClient researchAgent,
-			ChatClient reporterAgent,
-			ChatClient coordinatorAgent,
-			ChatClient plannerAgent,
-			ChatClient reflectionAgent,
 			@Qualifier("chatClientBuilder") ChatClient.Builder rewriteAndMultiQueryAgentBuilder,
 			DeepResearchProperties deepResearchProperties,
 			ReflectionProperties reflectionProperties,
@@ -118,12 +104,6 @@ public class DeepResearchConfiguration {
 			SearchFilterService searchFilterService,
 			AgentManager agentManager
 	) {
-		this.coderAgent = coderAgent;
-		this.researchAgent = researchAgent;
-		this.reporterAgent = reporterAgent;
-		this.coordinatorAgent = coordinatorAgent;
-		this.plannerAgent = plannerAgent;
-		this.reflectionAgent = reflectionAgent;
 		this.rewriteAndMultiQueryAgentBuilder = rewriteAndMultiQueryAgentBuilder;
 		this.deepResearchProperties = deepResearchProperties;
 		this.reflectionProperties = reflectionProperties;
@@ -142,7 +122,7 @@ public class DeepResearchConfiguration {
 			return null; // Return null if reflection mechanism is not enabled
 		}
 		// Use dedicated reflection agent
-		return new ReflectionProcessor(reflectionAgent, reflectionProperties.getMaxAttempts());
+		return new ReflectionProcessor(agentManager, reflectionProperties.getMaxAttempts());
 	}
 
 	@Bean
@@ -198,12 +178,12 @@ public class DeepResearchConfiguration {
 			.addNode("background_investigator",
 					node_async(
 							new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService, searchFilterService)))
-			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
+			.addNode("planner", node_async((new PlannerNode(agentManager))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-			.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportService))))
+			.addNode("reporter", node_async((new ReporterNode(agentManager, reportService))))
 			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
 
 		// 添加并行节点块
@@ -246,7 +226,7 @@ public class DeepResearchConfiguration {
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount()
 			.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 			String nodeId = "researcher_" + i;
-			stateGraph.addNode(nodeId, node_async(new ResearcherNode(researchAgent, String.valueOf(i),
+			stateGraph.addNode(nodeId, node_async(new ResearcherNode(agentManager, String.valueOf(i),
 					reflectionProcessor, mcpProviderFactory, searchFilterService)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
@@ -257,7 +237,7 @@ public class DeepResearchConfiguration {
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
 			String nodeId = "coder_" + i;
 			stateGraph.addNode(nodeId,
-					node_async(new CoderNode(coderAgent, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
+					node_async(new CoderNode(agentManager, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}

@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentEnum;
 import com.alibaba.cloud.ai.example.deepresearch.agents.AgentManager;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
@@ -63,7 +64,7 @@ public class CoordinatorNode implements NodeAction {
 		logger.debug("Current Coordinator messages: {}", messages);
 
 		// 发起调用并获取完整响应
-		ChatClient coordinatorAgent = agentManager.getAgentByName("coordinatorAgent");
+		ChatClient coordinatorAgent = agentManager.getAgentByName(AgentEnum.COORDINATOR_AGENT.getAgentName());
 		ChatResponse response = coordinatorAgent.prompt().messages(messages).call().chatResponse();
 
 		String nextStep = END;
