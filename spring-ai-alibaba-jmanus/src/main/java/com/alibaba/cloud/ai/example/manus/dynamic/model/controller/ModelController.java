@@ -55,7 +55,7 @@ public class ModelController {
         try {
             return ResponseEntity.ok(modelService.updateModel(modelConfig));
         } catch (UnsupportedOperationException e) {
-			return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+			return ResponseEntity.status(499).build();
         }
     }
 
@@ -67,7 +67,7 @@ public class ModelController {
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().build();
 		} catch (UnsupportedOperationException e) {
-			return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+			return ResponseEntity.status(499).build();
 		}
 	}
 

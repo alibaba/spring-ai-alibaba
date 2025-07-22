@@ -280,13 +280,10 @@ const selectedHeadersJson = computed({
     return JSON.stringify(selectedModel.value.headers, null, 2)
   },
   set(val) {
-    try {
       if (!selectedModel.value) return
       // 空值处理
       selectedModel.value.headers = val.trim() ? JSON.parse(val) : null
-    } catch (e: any) {
     }
-  }
 })
 
 const newHeadersJson = computed({
@@ -294,11 +291,8 @@ const newHeadersJson = computed({
     return newModel.headers ? JSON.stringify(newModel.headers, null, 2) : ''
   },
   set(val) {
-    try {
       newModel.headers = val.trim() ? JSON.parse(val) : null
-    } catch (e: any) {
     }
-  }
 })
 
 // New Model form data
