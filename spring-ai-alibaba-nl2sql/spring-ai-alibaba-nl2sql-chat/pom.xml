@@ -149,6 +149,12 @@
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-store-analyticdb</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+        </dependency>
     </dependencies>
     <repositories>
         <repository>
