@@ -17,11 +17,17 @@
 // Define interface types
 export interface Model {
     id: string
+    headers: Headers | null
     baseUrl: string
     apiKey: string
     modelName: string
     modelDescription: string
     type: string
+}
+
+export interface Headers {
+    key: string
+    value: string
 }
 
 export interface ApiResponse<T> {
@@ -126,6 +132,9 @@ export class ModelApiService {
                 },
                 body: JSON.stringify(modelConfig)
             })
+            if (response.status === 499) {
+                throw new Error('Request rejected, please modify the model configuration in the configuration file')
+            }
             const result = await this.handleResponse(response)
             return await result.json()
         } catch (error) {
@@ -144,6 +153,9 @@ export class ModelApiService {
             })
             if (response.status === 400) {
                 throw new Error('Cannot delete default Model')
+            }
+            if (response.status === 499) {
+                throw new Error('Request rejected, please modify the model configuration in the configuration file')
             }
             await this.handleResponse(response)
         } catch (error) {

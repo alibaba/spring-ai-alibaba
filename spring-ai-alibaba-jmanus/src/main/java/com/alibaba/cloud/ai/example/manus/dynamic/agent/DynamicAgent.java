@@ -190,8 +190,7 @@ public class DynamicAgent extends ReActAgent {
 				chatClient = llmService.getAgentChatClient();
 			}
 			else {
-				chatClient = llmService.getDynamicChatClient(model.getBaseUrl(), model.getApiKey(),
-						model.getModelName());
+				chatClient = llmService.getDynamicChatClient(model);
 			}
 			// Use streaming response handler for better user experience and content
 			// merging

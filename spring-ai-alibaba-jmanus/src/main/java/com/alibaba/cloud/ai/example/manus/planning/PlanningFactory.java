@@ -44,6 +44,7 @@ import org.springframework.web.client.RestClient;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.cron.service.CronService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
@@ -71,8 +72,9 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.database.DataSourceService;
 import com.alibaba.cloud.ai.example.manus.tool.database.DatabaseUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
-import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool;
+import com.alibaba.cloud.ai.example.manus.tool.cron.CronTool;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.FileMergeTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.DataSplitTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.FinalizeTool;
@@ -139,6 +141,9 @@ public class PlanningFactory implements IPlanningFactory {
 
 	@Autowired
 	private StreamingResponseHandler streamingResponseHandler;
+
+	@Autowired
+	private CronService cronService;
 
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
@@ -226,6 +231,7 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager,
 				unifiedDirectoryManager, terminateColumns));
 		toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
+		toolDefinitions.add(new CronTool(cronService));
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
