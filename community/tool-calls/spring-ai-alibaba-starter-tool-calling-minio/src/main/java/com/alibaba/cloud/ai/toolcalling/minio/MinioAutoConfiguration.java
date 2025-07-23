@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
- * 2025/7/23 auth: dahua desc:
+ * 2025/7/23 auth: dahua
  */
 @Configuration
 @ConditionalOnClass(MinioAutoConfiguration.class)

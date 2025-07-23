@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 2025/7/23 auth: dahua desc:
+ * 2025/7/23 auth: dahua
  */
 @ConfigurationProperties(prefix = MinioConstants.CONFIG_PREFIX)
 public class MinioProperties extends CommonToolCallProperties {

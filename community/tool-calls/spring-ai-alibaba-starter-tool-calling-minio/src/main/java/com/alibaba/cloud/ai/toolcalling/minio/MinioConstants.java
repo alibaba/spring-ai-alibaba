@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.toolcalling.minio;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 
 /**
- * 2025/7/23 auth: dahua desc:
+ * 2025/7/23 auth: dahua
  */
 public final class MinioConstants {
 
