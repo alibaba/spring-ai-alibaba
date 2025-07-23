@@ -40,9 +40,7 @@ void init() {
     String accessKeySecret = System.getenv("tablestore_access_key_secret");
     SyncClient client = new SyncClient(endPoint, accessKeyId, accessKeySecret, instanceName);
     // 初始化 TablestoreChatMemoryRepository
-    TablestoreChatMemoryRepository chatMemoryRepository = TablestoreChatMemoryRepository.builder()
-            .client(client)
-            .build();
+    TablestoreChatMemoryRepository chatMemoryRepository = new TablestoreChatMemoryRepository(client);
 }
 
 ```
@@ -58,11 +56,9 @@ void init() {
     String accessKeyId = System.getenv("tablestore_access_key_id");
     String accessKeySecret = System.getenv("tablestore_access_key_secret");
     SyncClient client = new SyncClient(endPoint, accessKeyId, accessKeySecret, instanceName);
-    // 初始化 TablestoreChatMemoryRepository
-    TablestoreChatMemoryRepository chatMemoryRepository = TablestoreChatMemoryRepository.builder()
-            .client(client)
-            .store(xxx) // 初始化参考 https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/java/examples/src/main/java/com/aliyun/openservices/tablestore/agent/memory/MemoryStoreInitExample.java
-            .build();
+    // 通过 store 初始化 TablestoreChatMemoryRepository. 
+    MemoryStoreImpl store = xxx; // store 初始化参考 https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/java/examples/src/main/java/com/aliyun/openservices/tablestore/agent/memory/MemoryStoreInitExample.java
+    TablestoreChatMemoryRepository chatMemoryRepository = new TablestoreChatMemoryRepository(store);
 }
 
 // 底层依赖的 MemoryStore 使用可参考 https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory

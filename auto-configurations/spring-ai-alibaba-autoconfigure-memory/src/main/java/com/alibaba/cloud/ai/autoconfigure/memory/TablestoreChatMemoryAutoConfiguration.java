@@ -26,6 +26,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
+import java.util.Collections;
+
 /**
  * Auto-configuration for Tablestore chat memory repository.
  */
@@ -49,13 +51,14 @@ public class TablestoreChatMemoryAutoConfiguration {
 	TablestoreChatMemoryRepository tablestoreChatMemoryRepository(SyncClient syncClient,
 			TablestoreChatMemoryProperties properties) {
 		logger.info("Configuring Tablestore chat memory repository");
-		return TablestoreChatMemoryRepository.builder()
-			.client(syncClient)
-			.sessionTableName(properties.getSessionTableName())
-			.sessionSecondaryIndexName(properties.getSessionSecondaryIndexName())
-			.messageTableName(properties.getMessageTableName())
-			.messageSecondaryIndexName(properties.getMessageSecondaryIndexName())
-			.build();
+		return new TablestoreChatMemoryRepository(
+				syncClient,
+				properties.getSessionTableName(),
+				properties.getSessionSecondaryIndexName(),
+				Collections.emptyList(),
+				properties.getMessageTableName(),
+				properties.getMessageSecondaryIndexName()
+		);
 	}
 
 }

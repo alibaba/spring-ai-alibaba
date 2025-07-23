@@ -20,8 +20,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.NullSerializer;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -38,8 +39,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-@Slf4j
 public class MessageUtils {
+
+	private static final Logger log = LoggerFactory.getLogger(MessageUtils.class);
 
 	private static final ObjectMapper MAPPER;
 

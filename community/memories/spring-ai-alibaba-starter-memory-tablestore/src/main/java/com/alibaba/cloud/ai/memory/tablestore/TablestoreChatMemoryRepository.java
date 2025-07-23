@@ -21,10 +21,6 @@ import com.aliyun.openservices.tablestore.agent.memory.MemoryStoreImpl;
 import com.aliyun.openservices.tablestore.agent.model.MetaType;
 import com.aliyun.openservices.tablestore.agent.model.Session;
 import com.aliyun.openservices.tablestore.agent.util.Pair;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.Message;
 
@@ -36,37 +32,40 @@ import java.util.List;
 /**
  * Tablestore implementation of ChatMemoryRepository
  */
-@Slf4j
-@Getter
-@Builder
 public class TablestoreChatMemoryRepository implements ChatMemoryRepository {
 
-	@NonNull
-	private final SyncClient client;
+	private SyncClient client;
 
-	@Builder.Default
-	@NonNull
 	private String sessionTableName = "session";
 
-	@Builder.Default
-	@NonNull
 	private String sessionSecondaryIndexName = "session_secondary_index";
 
-	@Builder.Default
-	@NonNull
 	private List<Pair<String, MetaType>> sessionSecondaryIndexMeta = Collections.emptyList();
 
-	@Builder.Default
-	@NonNull
 	private String messageTableName = "message";
 
-	@Builder.Default
-	@NonNull
 	private String messageSecondaryIndexName = "message_secondary_index";
 
 	private MemoryStoreImpl store;
 
-	public MemoryStoreImpl getStore() {
+	public TablestoreChatMemoryRepository(MemoryStoreImpl store) {
+		this.store = store;
+	}
+
+	public TablestoreChatMemoryRepository(SyncClient client, String sessionTableName, String sessionSecondaryIndexName, List<Pair<String, MetaType>> sessionSecondaryIndexMeta, String messageTableName, String messageSecondaryIndexName) {
+		this.client = client;
+		this.sessionTableName = sessionTableName;
+		this.sessionSecondaryIndexName = sessionSecondaryIndexName;
+		this.sessionSecondaryIndexMeta = sessionSecondaryIndexMeta;
+		this.messageTableName = messageTableName;
+		this.messageSecondaryIndexName = messageSecondaryIndexName;
+	}
+
+	public TablestoreChatMemoryRepository(SyncClient client) {
+		this.client = client;
+	}
+
+    public MemoryStoreImpl getStore() {
 		if (store == null) {
 			synchronized (TablestoreChatMemoryRepository.class) {
 				if (store == null) {
@@ -129,6 +128,30 @@ public class TablestoreChatMemoryRepository implements ChatMemoryRepository {
 	public void deleteByConversationId(String conversationId) {
 		String md5UserId = MessageUtils.getMD5UserId(conversationId);
 		getStore().deleteSessionAndMessages(md5UserId, conversationId);
+	}
+
+	public SyncClient getClient() {
+		return client;
+	}
+
+	public String getSessionTableName() {
+		return sessionTableName;
+	}
+
+	public String getSessionSecondaryIndexName() {
+		return sessionSecondaryIndexName;
+	}
+
+	public List<Pair<String, MetaType>> getSessionSecondaryIndexMeta() {
+		return sessionSecondaryIndexMeta;
+	}
+
+	public String getMessageTableName() {
+		return messageTableName;
+	}
+
+	public String getMessageSecondaryIndexName() {
+		return messageSecondaryIndexName;
 	}
 
 }

@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.vectorstore.tablestore;
 import com.aliyun.openservices.tablestore.agent.knowledge.KnowledgeStoreImpl;
 import com.aliyun.openservices.tablestore.agent.model.DocumentHit;
 import com.aliyun.openservices.tablestore.agent.model.Response;
-import lombok.Getter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -40,7 +39,6 @@ import java.util.Set;
 /**
  * Tablestore Vector Store.
  */
-@Getter
 public class TablestoreVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	private final KnowledgeStoreImpl knowledgeStore;
@@ -150,4 +148,11 @@ public class TablestoreVectorStore extends AbstractObservationVectorStore implem
 
 	}
 
+	public KnowledgeStoreImpl getKnowledgeStore() {
+		return knowledgeStore;
+	}
+
+	public boolean isInitializeTable() {
+		return initializeTable;
+	}
 }

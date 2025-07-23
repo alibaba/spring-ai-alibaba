@@ -15,10 +15,11 @@
  */
 package com.alibaba.cloud.ai.memory.tablestore;
 
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -36,14 +37,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration test using Testcontainers to automatically manage Redis test environment
  */
-@Slf4j
 class TablestoreChatMemoryRepositoryTest {
+
+	private static final Logger log = LoggerFactory.getLogger(TablestoreChatMemoryRepositoryTest.class);
 
 	private static TablestoreChatMemoryRepository chatMemoryRepository;
 
 	@BeforeAll
 	static void beforeAllSetUp() {
-		chatMemoryRepository = TablestoreChatMemoryRepository.builder().client(EnvUtil.getClient()).store(null).build();
+		chatMemoryRepository = new TablestoreChatMemoryRepository(EnvUtil.getClient());
 	}
 
 	@BeforeEach

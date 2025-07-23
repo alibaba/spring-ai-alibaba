@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.vectorstore.tablestore;
 
 import dev.langchain4j.model.embedding.onnx.allminilml6v2q.AllMiniLmL6V2QuantizedEmbeddingModel;
-import lombok.NoArgsConstructor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -26,7 +25,6 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import java.util.ArrayList;
 import java.util.List;
 
-@NoArgsConstructor
 public class TestEmbedding implements EmbeddingModel {
 
 	private final AllMiniLmL6V2QuantizedEmbeddingModel embeddingModel = new AllMiniLmL6V2QuantizedEmbeddingModel();
