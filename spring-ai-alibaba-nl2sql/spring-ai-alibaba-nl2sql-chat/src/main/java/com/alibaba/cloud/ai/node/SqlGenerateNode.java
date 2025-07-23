@@ -413,34 +413,6 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-	 * 生成缓存键
-	 */
-	private String generateCacheKey(List<String> evidenceList, String input, SchemaDTO schemaDTO,
-			String exceptionMessage) {
-		return "sql_gen_" + String.valueOf(java.util.Objects.hash(evidenceList, input, schemaDTO, exceptionMessage));
-	}
-
-	/**
-	 * 缓存条目
-	 */
-	private static class CacheEntry {
-
-		final String sql;
-
-		final long timestamp;
-
-		CacheEntry(String sql, long timestamp) {
-			this.sql = sql;
-			this.timestamp = timestamp;
-		}
-
-		boolean isExpired() {
-			return System.currentTimeMillis() - timestamp > 30 * 60 * 1000; // 30分钟过期
-		}
-
-	}
-
-	/**
 	 * SQL质量评分
 	 */
 	private static class SqlQualityScore {
