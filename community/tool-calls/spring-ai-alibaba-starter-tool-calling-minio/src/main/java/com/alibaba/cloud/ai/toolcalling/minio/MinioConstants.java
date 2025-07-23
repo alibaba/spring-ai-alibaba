@@ -33,7 +33,9 @@ public final class MinioConstants {
 	public static final String TOOL_NAME_CHECK_EXISTS = "minio-checkExists";
 
 	public static final String ENDPOINT = "MINIO-ENDPOINT";
+
 	public static final String ACCESS_KEY = "MINIO-ACCESS-KEY";
+
 	public static final String SECRET_KEY = "MINIO-SECRET-KEY";
 
 }
