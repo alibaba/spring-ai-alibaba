@@ -759,6 +759,34 @@ const words: I18nType = {
     panelResizeHint: '拖拽调整面板大小，双击重置',
     aboutExecutionDetails: '关于集成执行详情',
   },
+
+  // 定时任务
+  cronTask: {
+    title: '定时任务管理',
+    noTasks: '暂无定时任务',
+    taskName: '任务名称',
+    taskNamePlaceholder: '请输入任务名称',
+    cronExpression: 'Cron表达式',
+    cronExpressionPlaceholder: '例如: 0 0 12 * * ?',
+    cronExpressionHelp: '格式: 秒 分 时 日 月 周 年',
+    taskDescription: '任务描述',
+    taskDescriptionPlaceholder: '请输入任务描述',
+    taskStatus: '任务状态',
+    taskDetail: '任务详情',
+    executeOnce: '执行一次',
+    edit: '编辑',
+    operations: '操作',
+    enable: '启用',
+    disable: '禁用',
+    delete: '删除',
+    deleteConfirm: '确认删除',
+    deleteConfirmMessage: '确定要删除任务 "{taskName}" 吗？此操作不可撤销。',
+    nextExecution: '下次执行时间',
+    createTime: '创建时间',
+    updateTime: '更新时间',
+    active: '启用',
+    inactive: '禁用',
+  },
 }
 
 export default words
