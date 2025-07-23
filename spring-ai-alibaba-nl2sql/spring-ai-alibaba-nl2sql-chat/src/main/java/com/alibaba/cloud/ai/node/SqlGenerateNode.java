@@ -17,11 +17,11 @@
 package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.schema.ExecutionStep;
-import com.alibaba.cloud.ai.schema.Plan;
-import com.alibaba.cloud.ai.schema.SchemaDTO;
+import com.alibaba.cloud.ai.model.execution.ExecutionStep;
+import com.alibaba.cloud.ai.model.execution.Plan;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;

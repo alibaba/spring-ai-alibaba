@@ -34,11 +34,6 @@ public class SemanticModelController {
 	@Autowired
 	private SemanticModelService semanticModelService;
 
-	@GetMapping("/page")
-	public String page() {
-		return "semantic-model";
-	}
-
 	@GetMapping
 	@ResponseBody
 	public ResponseEntity<List<SemanticModel>> list(@RequestParam(required = false) String datasetId,

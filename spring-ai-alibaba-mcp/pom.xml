@@ -17,7 +17,8 @@
     <modules>
         <module>spring-ai-alibaba-mcp-nacos2</module>
         <module>spring-ai-alibaba-mcp-discovery</module>
-        <module>spring-ai-alibaba-mcp-nacos-common</module>
+        <module>spring-ai-alibaba-mcp-register</module>
+        <module>spring-ai-alibaba-mcp-common</module>
         <module>spring-ai-alibaba-mcp-gateway</module>
         <module>spring-ai-alibaba-mcp-recovery</module>
     </modules>
