@@ -25,6 +25,10 @@ spring:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
       api-key:
       model: qwen-max
+    alibaba:
+      nl2sql:
+        container:
+          enabled: false
 chatBi:
   dbConfig:
     url:
