@@ -29,19 +29,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class EmptyNodeSection implements NodeSection {
 
-    @Override
-    public boolean support(NodeType nodeType) {
-        return nodeType.equals(NodeType.DIFY_ITERATION_START);
-    }
+	@Override
+	public boolean support(NodeType nodeType) {
+		return nodeType.equals(NodeType.DIFY_ITERATION_START);
+	}
 
-    @Override
-    public String render(Node node, String varName) {
-        EmptyNodeData data = (EmptyNodeData) node.getData();
-        StringBuilder sb = new StringBuilder();
-        String id = data.getId();
-        sb.append("stateGraph.addNode(\"")
-                .append(id)
-                .append("\", node_async((OverAllState state) -> Map.of())));\n");
-        return sb.toString();
-    }
+	@Override
+	public String render(Node node, String varName) {
+		EmptyNodeData data = (EmptyNodeData) node.getData();
+		StringBuilder sb = new StringBuilder();
+		String id = data.getId();
+		sb.append("stateGraph.addNode(\"").append(id).append("\", node_async((OverAllState state) -> Map.of())));\n");
+		return sb.toString();
+	}
+
 }

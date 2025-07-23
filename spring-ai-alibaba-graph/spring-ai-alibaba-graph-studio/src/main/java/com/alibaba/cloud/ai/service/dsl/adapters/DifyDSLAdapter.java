@@ -47,6 +47,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -191,6 +192,19 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			List<Map<String, Object>> edgeMaps = (List<Map<String, Object>>) data.get("edges");
 			edges = constructEdges(edgeMaps);
 		}
+
+		// 记录所有的迭代节点，用来修改边。迭代节点作为边的终止点时直接使用节点ID，作为边的起始点时使用ID_out
+		Set<String> iteration = nodes.stream()
+			.filter(n -> n.getType().contains("iteration"))
+			.map(Node::getId)
+			.collect(Collectors.toSet());
+
+		for (Edge edge : edges) {
+			if (iteration.contains(edge.getSource())) {
+				edge.setSource(edge.getSource().concat("_out"));
+			}
+		}
+
 		graph.setNodes(nodes);
 		graph.setEdges(edges);
 		return graph;
@@ -247,15 +261,15 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		}
 
 		Map<String, String> idToOutputKey = nodes.stream()
-				.filter(n -> !(n.getData() instanceof EmptyNodeData || n.getData() instanceof IterationNodeData))
-				.collect(Collectors.toMap(Node::getId, n -> {
-			try {
-				return ((VariableAggregatorNodeData) n.getData()).getOutputKey();
-			}
-			catch (ClassCastException e) {
-				return n.getData().getOutputs().get(0).getName();
-			}
-		}));
+			.filter(n -> !(n.getData() instanceof EmptyNodeData || n.getData() instanceof IterationNodeData))
+			.collect(Collectors.toMap(Node::getId, n -> {
+				try {
+					return ((VariableAggregatorNodeData) n.getData()).getOutputKey();
+				}
+				catch (ClassCastException e) {
+					return n.getData().getOutputs().get(0).getName();
+				}
+			}));
 
 		// Replace all variable paths in all aggregation nodes.
 		for (Node node : nodes) {

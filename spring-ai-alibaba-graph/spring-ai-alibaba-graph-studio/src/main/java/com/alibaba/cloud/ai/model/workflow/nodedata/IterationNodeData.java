@@ -161,7 +161,8 @@ public class IterationNodeData extends NodeData {
 		}
 
 		public IterationNodeData build() {
-			return new IterationNodeData(id, inputType, outputType, inputSelector, outputSelector, startNodeId, endNodeId);
+			return new IterationNodeData(id, inputType, outputType, inputSelector, outputSelector, startNodeId,
+					endNodeId);
 		}
 
 	}
