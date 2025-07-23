@@ -63,7 +63,8 @@ public class PlannerNode implements NodeAction {
 			userPrompt = String.format(
 					"The previous plan you generated failed validation with the following error: %s\n\nHere is the faulty plan:\n%s\n\nPlease correct the plan and provide a new, valid one to answer the original question: %s",
 					validationError, previousPlan, input);
-		} else {
+		}
+		else {
 			userPrompt = input;
 		}
 

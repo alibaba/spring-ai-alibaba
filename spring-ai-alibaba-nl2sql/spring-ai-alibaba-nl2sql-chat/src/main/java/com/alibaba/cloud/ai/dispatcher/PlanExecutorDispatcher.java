@@ -32,28 +32,34 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
  */
 public class PlanExecutorDispatcher implements EdgeAction {
 
-    private static final Logger logger = LoggerFactory.getLogger(PlanExecutorDispatcher.class);
-    private static final int MAX_REPAIR_ATTEMPTS = 2;
+	private static final Logger logger = LoggerFactory.getLogger(PlanExecutorDispatcher.class);
 
-    @Override
-    public String apply(OverAllState state) {
-        boolean validationPassed = StateUtils.getObjectValue(state, PLAN_VALIDATION_STATUS, Boolean.class, false);
+	private static final int MAX_REPAIR_ATTEMPTS = 2;
 
-        if (validationPassed) {
-            logger.info("Plan validation passed. Proceeding to next step.");
-            return state.value(PLAN_NEXT_NODE, END);
-        } else {
-            // Plan validation failed, check repair count and decide whether to retry or end.
-            int repairCount = StateUtils.getObjectValue(state, PLAN_REPAIR_COUNT, Integer.class, 0);
+	@Override
+	public String apply(OverAllState state) {
+		boolean validationPassed = StateUtils.getObjectValue(state, PLAN_VALIDATION_STATUS, Boolean.class, false);
 
-            if (repairCount > MAX_REPAIR_ATTEMPTS) {
-                logger.error("Plan repair attempts exceeded the limit of {}. Terminating execution.", MAX_REPAIR_ATTEMPTS);
-                // The node is responsible for setting the final error message.
-                return END;
-            }
+		if (validationPassed) {
+			logger.info("Plan validation passed. Proceeding to next step.");
+			return state.value(PLAN_NEXT_NODE, END);
+		}
+		else {
+			// Plan validation failed, check repair count and decide whether to retry or
+			// end.
+			int repairCount = StateUtils.getObjectValue(state, PLAN_REPAIR_COUNT, Integer.class, 0);
 
-            logger.warn("Plan validation failed. Routing back to PlannerNode for repair. Attempt count from state: {}.", repairCount);
-            return PLANNER_NODE;
-        }
-    }
+			if (repairCount > MAX_REPAIR_ATTEMPTS) {
+				logger.error("Plan repair attempts exceeded the limit of {}. Terminating execution.",
+						MAX_REPAIR_ATTEMPTS);
+				// The node is responsible for setting the final error message.
+				return END;
+			}
+
+			logger.warn("Plan validation failed. Routing back to PlannerNode for repair. Attempt count from state: {}.",
+					repairCount);
+			return PLANNER_NODE;
+		}
+	}
+
 }

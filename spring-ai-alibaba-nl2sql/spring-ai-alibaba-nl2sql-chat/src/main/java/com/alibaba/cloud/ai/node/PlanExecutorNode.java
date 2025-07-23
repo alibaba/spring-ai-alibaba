@@ -47,9 +47,9 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 	private final BeanOutputConverter<Plan> converter;
 
 	public PlanExecutorNode() {
-		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<>() {});
+		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<>() {
+		});
 	}
-
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
@@ -61,25 +61,30 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 			Plan plan = converter.convert(plannerOutput);
 
 			if (plan == null || plan.getExecutionPlan() == null || plan.getExecutionPlan().isEmpty()) {
-				return buildValidationResult(state, false, "Validation failed: The generated plan is empty or has no execution steps.");
+				return buildValidationResult(state, false,
+						"Validation failed: The generated plan is empty or has no execution steps.");
 			}
 
 			for (ExecutionStep step : plan.getExecutionPlan()) {
 				if (step.getToolToUse() == null || !SUPPORTED_NODES.contains(step.getToolToUse())) {
-					return buildValidationResult(state, false, "Validation failed: Plan contains an invalid tool name: '" + step.getToolToUse() + "' in step " + step.getStep());
+					return buildValidationResult(state, false,
+							"Validation failed: Plan contains an invalid tool name: '" + step.getToolToUse()
+									+ "' in step " + step.getStep());
 				}
 				if (step.getToolParameters() == null) {
-					return buildValidationResult(state, false, "Validation failed: Tool parameters are missing for step " + step.getStep());
+					return buildValidationResult(state, false,
+							"Validation failed: Tool parameters are missing for step " + step.getStep());
 				}
 			}
 
 			logger.info("Plan validation successful.");
 
-		} catch (Exception e) {
-			logger.error("Plan validation failed due to a parsing error.", e);
-			return buildValidationResult(state, false, "Validation failed: The plan is not a valid JSON structure. Error: " + e.getMessage());
 		}
-
+		catch (Exception e) {
+			logger.error("Plan validation failed due to a parsing error.", e);
+			return buildValidationResult(state, false,
+					"Validation failed: The plan is not a valid JSON structure. Error: " + e.getMessage());
+		}
 
 		// 2. Execute the Plan if validation passes
 		Plan plan = getPlan(state);
@@ -108,7 +113,8 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 			return Map.of(PLAN_NEXT_NODE, toolToUse, PLAN_VALIDATION_STATUS, true);
 		}
 		else {
-			// This case should ideally not be reached if validation is done correctly before.
+			// This case should ideally not be reached if validation is done correctly
+			// before.
 			return Map.of(PLAN_VALIDATION_STATUS, false, PLAN_VALIDATION_ERROR, "Unsupported node type: " + toolToUse);
 		}
 	}
@@ -116,14 +122,12 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 	private Map<String, Object> buildValidationResult(OverAllState state, boolean isValid, String errorMessage) {
 		if (isValid) {
 			return Map.of(PLAN_VALIDATION_STATUS, true);
-		} else {
+		}
+		else {
 			// When validation fails, increment the repair count here.
 			int repairCount = StateUtils.getObjectValue(state, PLAN_REPAIR_COUNT, Integer.class, 0);
-			return Map.of(
-					PLAN_VALIDATION_STATUS, false,
-					PLAN_VALIDATION_ERROR, errorMessage,
-					PLAN_REPAIR_COUNT, repairCount + 1
-			);
+			return Map.of(PLAN_VALIDATION_STATUS, false, PLAN_VALIDATION_ERROR, errorMessage, PLAN_REPAIR_COUNT,
+					repairCount + 1);
 		}
 	}
 
