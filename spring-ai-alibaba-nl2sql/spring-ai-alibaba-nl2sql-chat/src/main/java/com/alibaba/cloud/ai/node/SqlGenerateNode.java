@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.model.execution.ExecutionStep;
 import com.alibaba.cloud.ai.model.execution.Plan;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
+import com.alibaba.cloud.ai.util.MarkdownParser;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
@@ -253,34 +254,12 @@ public class SqlGenerateNode implements NodeAction {
 
 			String response = chatClient.prompt().user(prompt.toString()).call().content();
 
-			return extractSqlFromResponse(response);
+			return MarkdownParser.extractRawText(response).trim();
 		}
 		catch (Exception e) {
 			logger.error("使用ChatClient优化SQL失败: {}", e.getMessage());
 			return previousSql;
 		}
-	}
-
-	/**
-	 * 从AI响应中提取SQL
-	 */
-	private String extractSqlFromResponse(String response) {
-		if (response == null)
-			return null;
-
-		String sql = response.trim();
-		// 移除代码块标记
-		if (sql.startsWith("```sql")) {
-			sql = sql.substring(6);
-		}
-		else if (sql.startsWith("```")) {
-			sql = sql.substring(3);
-		}
-		if (sql.endsWith("```")) {
-			sql = sql.substring(0, sql.length() - 3);
-		}
-
-		return sql.trim();
 	}
 
 	/**
