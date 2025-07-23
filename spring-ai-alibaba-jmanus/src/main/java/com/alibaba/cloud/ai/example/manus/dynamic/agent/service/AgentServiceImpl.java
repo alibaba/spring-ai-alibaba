@@ -91,12 +91,7 @@ public class AgentServiceImpl implements AgentService {
 			namespace = "default";
 			log.info("Namespace not specified, using default namespace: {}", namespace);
 		}
-		if ("default".equalsIgnoreCase(namespace)) {
-			entities = repository.findByNamespaceWithDefault(namespace);
-		}
-		else {
-			entities = repository.findAllByNamespace(namespace);
-		}
+		entities = repository.findAllByNamespace(namespace);
 		return entities.stream().map(this::mapToAgentConfig).collect(Collectors.toList());
 	}
 
