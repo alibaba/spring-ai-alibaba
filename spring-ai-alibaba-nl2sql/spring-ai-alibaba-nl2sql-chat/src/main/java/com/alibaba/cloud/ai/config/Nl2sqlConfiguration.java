@@ -103,6 +103,9 @@ public class Nl2sqlConfiguration {
 			// PlanExecutorNode
 			keyStrategyHashMap.put(PLAN_CURRENT_STEP, new ReplaceStrategy());
 			keyStrategyHashMap.put(PLAN_NEXT_NODE, new ReplaceStrategy());
+			keyStrategyHashMap.put(PLAN_VALIDATION_STATUS, new ReplaceStrategy());
+			keyStrategyHashMap.put(PLAN_VALIDATION_ERROR, new ReplaceStrategy());
+			keyStrategyHashMap.put(PLAN_REPAIR_COUNT, new ReplaceStrategy());
 			// SQL Execute 节点输出
 			keyStrategyHashMap.put(SQL_EXECUTE_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, new ReplaceStrategy());
@@ -132,11 +135,21 @@ public class Nl2sqlConfiguration {
 			.addEdge(KEYWORD_EXTRACT_NODE, SCHEMA_RECALL_NODE)
 			.addEdge(SCHEMA_RECALL_NODE, TABLE_RELATION_NODE)
 			.addEdge(TABLE_RELATION_NODE, PLANNER_NODE)
+			// The edge from PlannerNode now goes to PlanExecutorNode for validation and execution
 			.addEdge(PLANNER_NODE, PLAN_EXECUTOR_NODE)
 			.addEdge(PYTHON_EXECUTE_NODE, PLAN_EXECUTOR_NODE)
+			// The dispatcher at PlanExecutorNode will decide the next step
 			.addConditionalEdges(PLAN_EXECUTOR_NODE, edge_async(new PlanExecutorDispatcher()),
-					Map.of(SQL_EXECUTE_NODE, SQL_EXECUTE_NODE, PYTHON_EXECUTE_NODE, PYTHON_EXECUTE_NODE,
-							REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE))
+					Map.of(
+							// If validation fails, go back to PlannerNode to repair
+							PLANNER_NODE, PLANNER_NODE,
+							// If validation passes, proceed to the correct execution node
+							SQL_EXECUTE_NODE, SQL_EXECUTE_NODE,
+							PYTHON_EXECUTE_NODE, PYTHON_EXECUTE_NODE,
+							REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE,
+							// If max repair attempts are reached, end the process
+							END, END
+					))
 			.addEdge(REPORT_GENERATOR_NODE, END)
 			.addConditionalEdges(SQL_EXECUTE_NODE, edge_async(new SQLExecutorDispatcher()),
 					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, SEMANTIC_CONSISTENCY_NODE, SEMANTIC_CONSISTENCY_NODE))

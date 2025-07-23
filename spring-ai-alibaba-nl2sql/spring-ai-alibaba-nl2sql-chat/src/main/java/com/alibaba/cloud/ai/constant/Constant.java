@@ -71,6 +71,13 @@ public class Constant {
 	// Plan下一个需要进入的节点
 	public static final String PLAN_NEXT_NODE = "PLAN_NEXT_NODE";
 
+	// Plan validation
+	public static final String PLAN_VALIDATION_STATUS = "PLAN_VALIDATION_STATUS";
+
+	public static final String PLAN_VALIDATION_ERROR = "PLAN_VALIDATION_ERROR";
+
+	public static final String PLAN_REPAIR_COUNT = "PLAN_REPAIR_COUNT";
+
 	// 节点KEY
 	public static final String PLANNER_NODE = "PLANNER_NODE";
 
