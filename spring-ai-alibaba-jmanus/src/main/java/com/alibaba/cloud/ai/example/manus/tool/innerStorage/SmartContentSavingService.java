@@ -165,26 +165,36 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 	 * 生成智能摘要
 	 */
 	private String generateSmartSummary(String content, String storageFileName, String callingMethod) {
-		StringBuilder summary = new StringBuilder();
+		// 构建调用方法信息
+		String methodInfo = (callingMethod != null && !callingMethod.trim().isEmpty())
+				? "成功调用了" + callingMethod + "函数，\n\n" : "";
 
-		// 如果提供了调用方法，添加成功调用信息
-		if (callingMethod != null && !callingMethod.trim().isEmpty()) {
-			summary.append("成功调用了").append(callingMethod).append("函数，\n\n");
-		}
+		return String.format("""
+				%s但函数返回的内容过长，所以自动存储到了文件里
 
-		summary.append("但函数返回的内容过长，所以自动存储到了文件里");
-		summary.append("\n\n");
-		summary.append("存储文件的名: ").append(storageFileName).append("\n\n");
+				## 你可以自由的使用后续的两个操作来达成用户的期望（不需要按照顺序，而是按照用户期望）
 
-		// 添加内容统计
-		String[] lines = content.split("\n");
-		summary.append("内容统计:\n");
-		summary.append("  - 总字符数: ").append(content.length()).append("\n");
-		summary.append("  - 总行数: ").append(lines.length).append("\n\n");
+				### 操作1 ： 使用 inner_storage_content_tool 工具获取具体内容
+				```json
+				{
+				  "action": "get_content",
+				  "file_name": "%s",
+				  "query_key": "你要查询的关键词或问题，查询要具体，不要丢掉任何一个用户请求中的需求"
+				}
+				```
 
-		summary.append("在后续的调用中，必需要使用 inner_storage_content_tool 工具的 getContent 来获取相关信息,\n");
-		summary.append("该方法可以从内容中总结出需要的关键信息。\n\n");
-		return summary.toString();
+				### 操作2 ： 使用 file_merge_tool 工具将文件聚合（或者复制）到指定文件夹
+				```json
+				{
+				  "action": "merge_file",
+				  "file_name": "%s",
+				  "target_folder": "merged_data"
+				}
+				```
+
+				请根据具体需求选择合适的工具和参数进行后续操作。
+
+				""", methodInfo, storageFileName, storageFileName);
 	}
 
 	/**

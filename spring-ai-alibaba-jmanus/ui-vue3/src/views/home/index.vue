@@ -45,6 +45,7 @@
           <div class="welcome-section">
             <h2 class="welcome-title">{{ $t('home.welcomeTitle') }}</h2>
             <p class="welcome-subtitle">{{ $t('home.welcomeSubtitle') }}</p>
+            <button class="direct-button" @click="goToDirectPage">{{ $t('home.directButton') }}</button>
           </div>
 
           <!-- Input section -->
@@ -63,16 +64,16 @@
               </button>
             </div>
           </div>
-
-          <!-- Example prompts -->
+          <!-- All examples and plans -->
           <div class="examples-section">
             <div class="examples-grid">
-              <BlurCard
-                v-for="example in examples"
-                :key="example.title"
-                :content="example"
-                @clickCard="selectExample"
-              />
+              <div v-for="item in allCards" :key="item.title" class="card-with-type">
+                <BlurCard
+                  :content="item"
+                  @clickCard="handleCardClick(item)"
+                />
+                <span class="card-type">{{ item.type }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -97,26 +98,35 @@ const textareaRef = ref<HTMLTextAreaElement>()
 
 const { t } = useI18n()
 
+const goToDirectPage = () => {
+  const chatId = Date.now().toString()
+  router.push({
+    name: 'direct',
+    params: { id: chatId },
+  }).then(() => {
+    console.log('[Home] jump to direct page' + t('common.success'))
+  }).catch((error) => {
+    console.error('[Home] jump to direct page' + t('common.error'), error)
+  })
+}
+
 const examples = computed(() => [
-  {
-    title: t('home.examples.stockPrice.title'),
-    description: t('home.examples.stockPrice.description'),
-    icon: 'carbon:chart-line-data',
-    prompt: t('home.examples.stockPrice.prompt'),
-  },
-  {
-    title: t('home.examples.novel.title'),
-    description: t('home.examples.novel.description'),
-    icon: 'carbon:book',
-    prompt: t('home.examples.novel.prompt'),
-  },
-  {
-    title: t('home.examples.weather.title'),
-    description: t('home.examples.weather.description'),
-    icon: 'carbon:partly-cloudy',
-    prompt: t('home.examples.weather.prompt'),
-  },
+  { title: t('home.examples.stockPrice.title'), type: 'message', description: t('home.examples.stockPrice.description'), icon: 'carbon:chart-line-data', prompt: t('home.examples.stockPrice.prompt') },
+  { title: t('home.examples.novel.title'), type: 'message', description: t('home.examples.novel.description'), icon: 'carbon:book', prompt: t('home.examples.novel.prompt') },
+  { title: t('home.examples.weather.title'), type: 'message', description: t('home.examples.weather.description'), icon: 'carbon:partly-cloudy', prompt: t('home.examples.weather.prompt') }
 ])
+const plans = computed(() => [
+  { title: t('home.examples.queryplan.title'), type: 'plan', description: t('home.examples.queryplan.description'), icon: 'carbon:plan', prompt: t('home.examples.queryplan.prompt'), planJson: { planType: 'simple', title: '查询沈询 阿里的所有信息并优化终止结构列', steps: [{ stepRequirement: '[BROWSER_AGENT] 通过 百度 查询 沈询 阿里 ， 获取第一页的html 百度数据，合并聚拢 到 html_data 的目录里', terminateColumns: '存放的目录路径' }, { stepRequirement: '[BROWSER_AGENT] 从 html_data 目录中找到所有的有效关于沈询 阿里 的网页链接，输出到 link.md里面', terminateColumns: 'url地址，说明' }], planId: 'planTemplate-1749200517403' } }
+])
+const allCards = computed(() => [...examples.value, ...plans.value])
+
+const handleCardClick = (item: any) => {
+  if (item.type === 'message') {
+    selectExample(item)
+  } else if (item.type === 'plan') {
+    selectPlan(item)
+  }
+}
 
 onMounted(() => {
   console.log('[Home] onMounted called')
@@ -127,6 +137,26 @@ onMounted(() => {
   taskStore.markHomeVisited()
   console.log('[Home] Home visited marked')
 })
+
+import { sidebarStore } from '@/stores/sidebar'
+
+const saveJsonPlanToTemplate = async (jsonPlan: any) => {
+  try {
+    sidebarStore.createNewTemplate();
+    sidebarStore.jsonContent = JSON.stringify(jsonPlan);
+    const saveResult = await sidebarStore.saveTemplate();
+    if (saveResult?.duplicate) {
+      console.log('[Sidebar] ' + t('sidebar.saveCompleted', { message: saveResult.message, versionCount: saveResult.versionCount }));
+    } else if (saveResult?.saved) {
+      console.log('[Sidebar] ' + t('sidebar.saveSuccess', { message: saveResult.message, versionCount: saveResult.versionCount }));
+    } else if (saveResult?.message) {
+      console.log('[Sidebar] ' + t('sidebar.saveStatus', { message: saveResult.message }));
+    }
+  } catch (error: any) {
+    console.error('[Sidebar] Failed to save the plan to the template library:', error);
+    alert(error.message || t('sidebar.saveFailed'));
+  }
+}
 
 const adjustTextareaHeight = () => {
   nextTick(() => {
@@ -195,6 +225,64 @@ const selectExample = (example: any) => {
     console.error('[Home] Navigation error (from example):', error)
   })
 }
+
+const selectPlan = async (plan: any) => {
+  console.log('[Home] selectPlan called with plan:', plan)
+  
+  try {
+    // 1. First, save the plan to the template library
+    await saveJsonPlanToTemplate(plan.planJson)
+    console.log('[Home] Plan saved to templates')
+    
+    // 2. Navigate to the direct page
+    const chatId = Date.now().toString()
+    await router.push({
+      name: 'direct',
+      params: { id: chatId },
+    })
+    
+    // 3. Navigate to the direct page after loading
+    nextTick(async () => {
+      // Ensure the page is fully loaded
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Toggle the sidebar
+      if (sidebarStore.isCollapsed) {
+        await sidebarStore.toggleSidebar()
+        console.log('[Sidebar] Sidebar toggled')
+      } else {
+        console.log('[Sidebar] Sidebar is already open')
+      }
+      
+      // Load the template list
+      await sidebarStore.loadPlanTemplateList()
+      console.log('[Sidebar] Template list loaded')
+      
+      // Find and select the template 
+      const template = sidebarStore.planTemplateList.find(t => t.id === plan.planJson.planId)
+      if (!template) {
+        console.error('[Sidebar] Template not found')
+        return
+      }
+      
+      await sidebarStore.selectTemplate(template)
+      console.log('[Sidebar] Template selected:', template.title)
+      
+      // Call the execute logic directly
+      const executeBtn = document.querySelector('.execute-btn') as HTMLButtonElement
+      if (!executeBtn.disabled) {
+        console.log('[Sidebar] Triggering execute button click')
+        executeBtn.click()
+      } else {
+        console.error('[Sidebar] Execute button not found or disabled')
+      }
+    })
+  } catch (error) {
+    console.error('[Home] Error in selectPlan:', error)
+  }
+}
+
+
 </script>
 
 <style lang="less" scoped>
@@ -202,6 +290,7 @@ const selectExample = (example: any) => {
   width: 100%;
   height: 100vh;
   position: relative;
+  overflow-y: auto;
 }
 
 .welcome-container {
@@ -423,11 +512,43 @@ const selectExample = (example: any) => {
 }
 
 .examples-section {
+  margin-bottom: 48px;
+
   .examples-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
     gap: 16px;
+    
+    .card-with-type {
+      width: 100%;
+      min-width: 300px; 
+
+      &:hover {
+        .card-type {
+          transform: translateY(-1px); 
+          box-shadow: 0 8px 25px rgba(130, 151, 246, 0.4); 
+        }
+      }
+
+    }
   }
+}
+
+.card-with-type {
+  position: relative;
+}
+
+.card-type {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 1;
 }
 
 // .example-card {
@@ -520,5 +641,22 @@ const selectExample = (example: any) => {
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+}
+
+.direct-button {
+  margin-top: 20px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.direct-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 </style>

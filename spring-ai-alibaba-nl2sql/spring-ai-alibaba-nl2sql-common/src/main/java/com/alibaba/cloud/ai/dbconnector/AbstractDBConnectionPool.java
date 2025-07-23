@@ -22,8 +22,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.sql.*;
-import java.util.HashMap;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,7 +55,7 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 	 */
 	public abstract ErrorCodeEnum errorMapping(String sqlState);
 
-	public ErrorCodeEnum testConnection(DbConfig config) {
+	public ErrorCodeEnum ping(DbConfig config) {
 		String jdbcUrl = config.getUrl();
 		try (Connection connection = DriverManager.getConnection(jdbcUrl, config.getUsername(), config.getPassword());
 				Statement stmt = connection.createStatement();) {
@@ -79,7 +82,14 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 	}
 
 	public Connection getConnection(DbConfig config) {
+
+		// Test the connection before returning it
+		ErrorCodeEnum pingResult = this.ping(config);
+		if (pingResult != ErrorCodeEnum.SUCCESS) {
+			throw new RuntimeException("Database connection test failed: " + pingResult);
+		}
 		String jdbcUrl = config.getUrl();
+
 		try {
 			// Generate cache key based on connection parameters
 			String cacheKey = generateCacheKey(jdbcUrl, config.getUsername(), config.getPassword());
@@ -134,20 +144,17 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 	}
 
 	public DataSource createdDataSource(String url, String username, String password) throws Exception {
-		Map map = new HashMap<>();
-		map.put(DruidDataSourceFactory.PROP_DRIVERCLASSNAME, getDriver());
-		map.put(DruidDataSourceFactory.PROP_URL, url);
-		map.put(DruidDataSourceFactory.PROP_USERNAME, username);
-		map.put(DruidDataSourceFactory.PROP_PASSWORD, password);
-		map.put(DruidDataSourceFactory.PROP_INITIALSIZE, "1");
-		map.put(DruidDataSourceFactory.PROP_MINIDLE, "1");
-		map.put(DruidDataSourceFactory.PROP_MAXACTIVE, "3");
-		map.put(DruidDataSourceFactory.PROP_MAXWAIT, "6000");
-		map.put(DruidDataSourceFactory.PROP_TIMEBETWEENEVICTIONRUNSMILLIS, "60000");
-		map.put(DruidDataSourceFactory.PROP_FILTERS, "wall,stat");
-		DruidDataSource dataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(map);
-		dataSource.setBreakAfterAcquireFailure(true);
+
+		DruidDataSource dataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(
+				Map.of(DruidDataSourceFactory.PROP_DRIVERCLASSNAME, getDriver(), DruidDataSourceFactory.PROP_URL, url,
+						DruidDataSourceFactory.PROP_USERNAME, username, DruidDataSourceFactory.PROP_PASSWORD, password,
+						DruidDataSourceFactory.PROP_INITIALSIZE, "1", DruidDataSourceFactory.PROP_MINIDLE, "1",
+						DruidDataSourceFactory.PROP_MAXACTIVE, "3", DruidDataSourceFactory.PROP_MAXWAIT, "6000",
+						DruidDataSourceFactory.PROP_TIMEBETWEENEVICTIONRUNSMILLIS, "60000",
+						DruidDataSourceFactory.PROP_FILTERS, "wall,stat"));
+		dataSource.setBreakAfterAcquireFailure(Boolean.TRUE);
 		dataSource.setConnectionErrorRetryAttempts(2);
+
 		return dataSource;
 	}
 

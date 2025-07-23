@@ -16,9 +16,10 @@
 
 package com.alibaba.cloud.ai.mcp.gateway.nacos.watcher;
 
+import com.alibaba.cloud.ai.mcp.gateway.core.AbstractMcpGatewayToolsWatcher;
+import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolManager;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.provider.NacosMcpGatewayToolsProvider;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
@@ -38,78 +39,33 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
-public class NacosMcpGatewayToolsWatcher {
+public class NacosMcpGatewayToolsWatcher extends AbstractMcpGatewayToolsWatcher {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosMcpGatewayToolsWatcher.class);
-
-	private static final long POLLING_INTERVAL = 30L;
-
-	private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
 	private final NacosMcpGatewayProperties nacosMcpGatewayProperties;
 
 	private final NacosMcpOperationService nacosMcpOperationService;
 
-	private final NacosMcpGatewayToolsProvider nacosMcpGatewayToolsProvider;
-
 	private final Map<String, McpServerDetailInfo> serviceDetailInfoCache = new ConcurrentHashMap<>();
 
-	public NacosMcpGatewayToolsWatcher(final NacosMcpGatewayProperties nacosMcpGatewayProperties,
-			final NacosMcpOperationService nacosMcpOperationService,
-			final NacosMcpGatewayToolsProvider nacosMcpGatewayToolsProvider) {
-		// 验证参数
+	public NacosMcpGatewayToolsWatcher(final McpGatewayToolManager mcpGatewayToolManager,
+			NacosMcpOperationService nacosMcpOperationService,
+			final NacosMcpGatewayProperties nacosMcpGatewayProperties) {
+		super(mcpGatewayToolManager);
 		if (nacosMcpGatewayProperties == null) {
 			throw new IllegalArgumentException("NacosMcpGatewayProperties cannot be null");
 		}
-		if (nacosMcpOperationService == null) {
-			throw new IllegalArgumentException("NacosMcpOperationService cannot be null");
-		}
-		if (nacosMcpGatewayToolsProvider == null) {
-			throw new IllegalArgumentException("NacosMcpGatewayToolsProvider cannot be null");
-		}
-
-		this.nacosMcpGatewayProperties = nacosMcpGatewayProperties;
 		this.nacosMcpOperationService = nacosMcpOperationService;
-		this.nacosMcpGatewayToolsProvider = nacosMcpGatewayToolsProvider;
-
-		// 启动定时任务
-		this.startScheduledPolling();
+		this.nacosMcpGatewayProperties = nacosMcpGatewayProperties;
 	}
 
-	private void startScheduledPolling() {
-		scheduler.scheduleAtFixedRate(this::watch, POLLING_INTERVAL, POLLING_INTERVAL, TimeUnit.SECONDS);
-		logger.info("Started scheduled service polling with interval: {} seconds", POLLING_INTERVAL);
-	}
-
+	@Override
 	public void stop() {
-		if (scheduler != null && !scheduler.isShutdown()) {
-			scheduler.shutdown();
-			try {
-				if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
-					scheduler.shutdownNow();
-					if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
-						logger.error("Scheduler did not terminate");
-					}
-				}
-			}
-			catch (InterruptedException e) {
-				scheduler.shutdownNow();
-				Thread.currentThread().interrupt();
-				logger.error("Interrupted while waiting for scheduler to terminate", e);
-			}
-		}
-
+		super.stop();
 		// 清理缓存
 		serviceDetailInfoCache.clear();
-		logger.info("Stopped scheduled service polling and cleared cache");
-	}
-
-	private void watch() {
-		handleChange();
 	}
 
 	private void cleanupStaleServices(Set<String> currentServices) {
@@ -130,18 +86,20 @@ public class NacosMcpGatewayToolsWatcher {
 					String toolName = tool.getName();
 					try {
 						logger.info("Removing tool: {} for stale service: {}", toolName, staleService);
-						nacosMcpGatewayToolsProvider.removeTool(staleServerDetail.getName() + "_tools_" + toolName);
+						toolManager.removeTool(staleServerDetail.getName() + "_tools_" + toolName);
 					}
 					catch (Exception e) {
 						logger.error("Failed to remove tool: {} for service: {}", toolName, staleService, e);
 					}
+					toolManager.removeTool(staleServerDetail.getName() + "_tools_" + tool.getName());
 				}
 			}
 			serviceDetailInfoCache.remove(staleService);
 		}
 	}
 
-	private void handleChange() {
+	@Override
+	public void handleChange() {
 		List<String> serviceNames = nacosMcpGatewayProperties.getServiceNames();
 		if (CollectionUtils.isEmpty(serviceNames)) {
 			logger.warn("No service names configured, no tools will be watched");
@@ -274,48 +232,23 @@ public class NacosMcpGatewayToolsWatcher {
 				logger.warn("No service detail info found for service: {},do not update", mcpName);
 				return;
 			}
-
-			// 验证必要字段
-			if (mcpServerDetail.getToolSpec() == null || mcpServerDetail.getRemoteServerConfig() == null) {
-				logger.warn("Service {} missing required configuration, skipping update", mcpName);
-				return;
-			}
-
-			// 原子性更新缓存
-			McpServerDetailInfo oldMcpServerDetail = serviceDetailInfoCache.put(mcpName, mcpServerDetail);
+			McpServerDetailInfo oldMcpServerDetail = serviceDetailInfoCache.get(mcpName);
+			serviceDetailInfoCache.put(mcpName, mcpServerDetail);
 			Set<String> needToDeleteTools = new HashSet<>();
 			Set<String> needToUpdateTools = new HashSet<>();
 			compareToolsChange(oldMcpServerDetail, mcpServerDetail, needToDeleteTools, needToUpdateTools);
 
-			logger.info("Nacos mcp service info (name {}): {}", mcpName, mcpServerDetail);
+			logger.info("Nacos mcp service info (name {}): {}", mcpName, JacksonUtils.toJson(mcpServerDetail));
 			McpToolSpecification toolSpec = mcpServerDetail.getToolSpec();
 			McpServerRemoteServiceConfig remoteServerConfig = mcpServerDetail.getRemoteServerConfig();
 			String protocol = mcpServerDetail.getProtocol();
 
-			// 先删除需要删除的工具
-			if (!needToDeleteTools.isEmpty()) {
-				for (String toolName : needToDeleteTools) {
-					try {
-						nacosMcpGatewayToolsProvider.removeTool(mcpServerDetail.getName() + "_tools_" + toolName);
-						logger.info("Removed tool: {} for service: {}", toolName, mcpName);
-					}
-					catch (Exception e) {
-						logger.error("Failed to remove tool: {} for service: {}", toolName, mcpName, e);
-					}
-				}
-			}
-
-			// 再添加需要更新的工具
 			if (!needToUpdateTools.isEmpty()) {
 				List<McpTool> tools = toolSpec.getTools();
 				Map<String, McpToolMeta> toolsMeta = toolSpec.getToolsMeta();
-				if (tools == null || toolsMeta == null) {
-					logger.warn("Service {} has null tools or toolsMeta, skipping update", mcpName);
-					return;
-				}
 				for (McpTool tool : tools) {
 					if (!needToUpdateTools.contains(tool.getName())) {
-						continue; // 跳过不需要更新的工具
+						return;
 					}
 					String toolName = tool.getName();
 					String toolDescription = tool.getDescription();
@@ -329,13 +262,12 @@ public class NacosMcpGatewayToolsWatcher {
 						.remoteServerConfig(remoteServerConfig)
 						.toolsMeta(metaInfo)
 						.build();
-					try {
-						nacosMcpGatewayToolsProvider.addTool(toolDefinition);
-						logger.info("Added/Updated tool: {} for service: {}", toolName, mcpName);
-					}
-					catch (Exception e) {
-						logger.error("Failed to add/update tool: {} for service: {}", toolName, mcpName, e);
-					}
+					toolManager.addTool(toolDefinition);
+				}
+			}
+			if (!needToDeleteTools.isEmpty()) {
+				for (String toolName : needToDeleteTools) {
+					toolManager.removeTool(mcpServerDetail.getName() + "_tools_" + toolName);
 				}
 			}
 		}

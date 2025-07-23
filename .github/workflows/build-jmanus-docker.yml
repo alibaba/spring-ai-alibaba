@@ -1,0 +1,128 @@
+# Copyright 2024-2026 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Build JManus Docker Images
+
+on:
+  schedule:
+    - cron: "0 0,8,16 * * *"
+  workflow_dispatch:
+    inputs:
+      build_version:
+        description: 'Build version (optional, defaults to SNAPSHOT)'
+        required: false
+        default: '3.0.1-SNAPSHOT'
+        type: string
+
+env:
+  BUILD_VERSION: ${{ github.event.inputs.build_version || '3.0.1-SNAPSHOT' }}
+
+jobs:
+  build-and-push:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'spring-ai-alibaba-jmanus/ui-vue3/package.json'
+
+      - name: Build UI
+        run: |
+          chmod +x build-ui.sh
+          npm install -g pnpm
+          ./build-ui.sh
+        working-directory: spring-ai-alibaba-jmanus
+
+      - name: Build Maven project
+        run: |
+          mvn clean package -DskipTests -Drevision=${{ env.BUILD_VERSION }}
+        working-directory: spring-ai-alibaba-jmanus
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: 'docker.io'
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_SHORT_SHA_LENGTH: 12
+        with:
+          images: 'docker.io/springaialibaba/jmanus'
+          tags: |
+            type=sha,format=long
+            type=raw,value=${{ env.BUILD_VERSION }}
+            type=raw,value=develop
+          labels: |
+            org.opencontainers.image.title=JManus
+            org.opencontainers.image.description=Spring AI Alibaba JManus - Web Automation Platform
+            org.opencontainers.image.vendor=Alibaba Cloud
+            org.opencontainers.image.version=${{ env.BUILD_VERSION }}
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v5
+        with:
+          context: spring-ai-alibaba-jmanus
+          file: spring-ai-alibaba-jmanus/Dockerfile.multiarch
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_VERSION=${{ env.BUILD_VERSION }}
+
+      - name: Generate image digest
+        run: |
+          echo "### Docker Images Built Successfully! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Supported Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Usage:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "docker run -p 18080:18080 springaialibaba/jmanus:${{ env.BUILD_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
