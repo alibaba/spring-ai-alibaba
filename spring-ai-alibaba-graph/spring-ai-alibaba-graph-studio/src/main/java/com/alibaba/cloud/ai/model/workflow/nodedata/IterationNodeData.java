@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.model.workflow.nodedata;
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 
