@@ -55,7 +55,7 @@ public class KeywordExtractNode implements NodeAction {
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
-	public KeywordExtractNode( BaseNl2SqlService baseNl2SqlService) {
+	public KeywordExtractNode(BaseNl2SqlService baseNl2SqlService) {
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
 

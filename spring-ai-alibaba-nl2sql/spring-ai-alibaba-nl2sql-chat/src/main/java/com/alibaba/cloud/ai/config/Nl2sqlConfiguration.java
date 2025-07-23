@@ -113,18 +113,16 @@ public class Nl2sqlConfiguration {
 
 		StateGraph stateGraph = new StateGraph(NL2SQL_GRAPH_NAME, keyStrategyFactory)
 			.addNode(QUERY_REWRITE_NODE, node_async(new QueryRewriteNode(nl2SqlService)))
-			.addNode(KEYWORD_EXTRACT_NODE, node_async(new KeywordExtractNode( nl2SqlService)))
-			.addNode(SCHEMA_RECALL_NODE, node_async(new SchemaRecallNode( schemaService)))
-			.addNode(TABLE_RELATION_NODE,
-					node_async(new TableRelationNode(schemaService, nl2SqlService)))
-			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode( nl2SqlService)))
+			.addNode(KEYWORD_EXTRACT_NODE, node_async(new KeywordExtractNode(nl2SqlService)))
+			.addNode(SCHEMA_RECALL_NODE, node_async(new SchemaRecallNode(schemaService)))
+			.addNode(TABLE_RELATION_NODE, node_async(new TableRelationNode(schemaService, nl2SqlService)))
+			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(nl2SqlService)))
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
 			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(dbAccessor, dbConfig)))
 			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(chatClientBuilder)))
 			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
-			.addNode(SEMANTIC_CONSISTENCY_NODE,
-					node_async(new SemanticConsistencyNode( nl2SqlService)));
+			.addNode(SEMANTIC_CONSISTENCY_NODE, node_async(new SemanticConsistencyNode(nl2SqlService)));
 
 		stateGraph.addEdge(START, QUERY_REWRITE_NODE)
 			.addConditionalEdges(QUERY_REWRITE_NODE, edge_async(new QueryRewriteDispatcher()),

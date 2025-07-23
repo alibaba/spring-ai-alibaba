@@ -52,8 +52,7 @@ public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
-	public SemanticConsistencyNode( BaseNl2SqlService baseNl2SqlService
-			) {
+	public SemanticConsistencyNode(BaseNl2SqlService baseNl2SqlService) {
 		super();
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
