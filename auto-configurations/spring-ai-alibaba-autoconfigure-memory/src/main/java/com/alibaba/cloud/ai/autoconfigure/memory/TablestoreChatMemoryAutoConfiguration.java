@@ -51,14 +51,9 @@ public class TablestoreChatMemoryAutoConfiguration {
 	TablestoreChatMemoryRepository tablestoreChatMemoryRepository(SyncClient syncClient,
 			TablestoreChatMemoryProperties properties) {
 		logger.info("Configuring Tablestore chat memory repository");
-		return new TablestoreChatMemoryRepository(
-				syncClient,
-				properties.getSessionTableName(),
-				properties.getSessionSecondaryIndexName(),
-				Collections.emptyList(),
-				properties.getMessageTableName(),
-				properties.getMessageSecondaryIndexName()
-		);
+		return new TablestoreChatMemoryRepository(syncClient, properties.getSessionTableName(),
+				properties.getSessionSecondaryIndexName(), Collections.emptyList(), properties.getMessageTableName(),
+				properties.getMessageSecondaryIndexName());
 	}
 
 }
