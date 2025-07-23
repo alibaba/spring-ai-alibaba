@@ -76,7 +76,7 @@ public class DbAccessor {
 		return (List<ForeignKeyInfoBO>) accessDb(dbConfig, "showForeignKeys", param);
 	}
 
-	// TODO 咱未实际使用：根据样例数据来优化NL2SQL
+	// TODO 暂未实际使用：根据样例数据来优化NL2SQL
 	public List<String> sampleColumn(DbConfig dbConfig, DbQueryParameter param) throws Exception {
 		return (List<String>) accessDb(dbConfig, "sampleColumn", param);
 	}

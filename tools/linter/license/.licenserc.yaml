@@ -48,6 +48,7 @@ header:
     - '.github/ISSUE_TEMPLATE'
     - '.github/PULL_REQUEST_TEMPLATE'
     - '**/.gitignore'
+    - '**/.dockerignore'
     - '.mvn'
     - 'docker/.env'
     - 'licenses'

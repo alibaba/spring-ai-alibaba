@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderService;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.ISmartContentSavingService;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.tool.ToolCallback;
@@ -32,12 +34,15 @@ public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 
 	private McpStateHolderService mcpStateHolderService;
 
+	private ISmartContentSavingService smartContentSavingService;
+
 	public McpTool(ToolCallback toolCallback, String serviceNameString, String planId,
-			McpStateHolderService mcpStateHolderService) {
+			McpStateHolderService mcpStateHolderService, ISmartContentSavingService smartContentSavingService) {
 		this.toolCallback = toolCallback;
 		this.serviceNameString = serviceNameString;
 		this.currentPlanId = planId;
 		this.mcpStateHolderService = mcpStateHolderService;
+		this.smartContentSavingService = smartContentSavingService;
 	}
 
 	@Override
@@ -85,6 +90,10 @@ public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 		if (result == null) {
 			result = "";
 		}
+
+		SmartContentSavingService.SmartProcessResult smartProcessResult = smartContentSavingService
+			.processContent(currentPlanId, result, getName());
+		result = smartProcessResult.getSummary();
 		// Here we can store the result to McpStateHolderService
 		McpState mcpState = mcpStateHolderService.getMcpState(currentPlanId);
 		if (mcpState == null) {

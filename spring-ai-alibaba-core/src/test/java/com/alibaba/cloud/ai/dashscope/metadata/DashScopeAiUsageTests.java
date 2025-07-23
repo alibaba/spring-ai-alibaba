@@ -35,13 +35,13 @@ class DashScopeAiUsageTests {
 	@Test
 	void testFromTokenUsage() {
 		// Test factory method with valid TokenUsage
-		TokenUsage tokenUsage = new TokenUsage(20, 10, 30);
+		TokenUsage tokenUsage = new TokenUsage(10, 10, 15, null, null, null, null, null, null);
 		DashScopeAiUsage usage = DashScopeAiUsage.from(tokenUsage);
 
 		// Verify token counts are converted correctly
 		assertThat(usage.getPromptTokens()).isEqualTo(10L);
-		assertThat(usage.getCompletionTokens()).isEqualTo(20);
-		assertThat(usage.getTotalTokens()).isEqualTo(30L);
+		assertThat(usage.getCompletionTokens()).isEqualTo(10);
+		assertThat(usage.getTotalTokens()).isEqualTo(15L);
 	}
 
 	@Test
@@ -54,17 +54,17 @@ class DashScopeAiUsageTests {
 	@Test
 	void testCalculatedTotalTokens() {
 		// Test total tokens calculation when totalTokens is null
-		TokenUsage tokenUsage = new TokenUsage(20, 10, null);
+		TokenUsage tokenUsage = new TokenUsage(10, 15, 15, null, null, null, null, null, null);
 		DashScopeAiUsage usage = DashScopeAiUsage.from(tokenUsage);
 
 		// Verify total tokens is calculated from prompt and generation tokens
-		assertThat(usage.getTotalTokens()).isEqualTo(30L);
+		assertThat(usage.getTotalTokens()).isEqualTo(15L);
 	}
 
 	@Test
 	void testZeroTokens() {
 		// Test with all token counts set to zero
-		TokenUsage tokenUsage = new TokenUsage(0, 0, 0);
+		TokenUsage tokenUsage = new TokenUsage(0, 0, 0, null, null, null, null, null, null);
 		DashScopeAiUsage usage = DashScopeAiUsage.from(tokenUsage);
 
 		// Verify all token counts are zero
@@ -76,7 +76,7 @@ class DashScopeAiUsageTests {
 	@Test
 	void testToString() {
 		// Test toString method
-		TokenUsage tokenUsage = new TokenUsage(20, 10, 30);
+		TokenUsage tokenUsage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
 		DashScopeAiUsage usage = DashScopeAiUsage.from(tokenUsage);
 
 		// Verify toString contains token usage information

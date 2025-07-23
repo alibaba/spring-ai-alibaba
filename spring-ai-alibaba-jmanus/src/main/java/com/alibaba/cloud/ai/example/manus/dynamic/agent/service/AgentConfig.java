@@ -37,6 +37,8 @@ public class AgentConfig {
 
 	private ModelConfig model;
 
+	private String namespace;
+
 	// Getters and Setters
 	public String getId() {
 		return id;
@@ -100,6 +102,14 @@ public class AgentConfig {
 
 	public void setModel(ModelConfig model) {
 		this.model = model;
+	}
+
+	public String getNamespace() {
+		return namespace;
+	}
+
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
 	}
 
 }

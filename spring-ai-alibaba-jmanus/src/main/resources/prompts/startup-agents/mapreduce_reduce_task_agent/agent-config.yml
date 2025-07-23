@@ -2,7 +2,7 @@
 agentName: MAPREDUCE_REDUCE_TASK_AGENT
 agentDescription: 一个Reduce任务执行代理，负责处理MapReduce流程中的Reduce阶段任务。代理会自动接收多个Map任务的输出结果，执行数据汇总、合并或聚合操作，并生成最终的处理结果。
 availableToolKeys:
-  - map_reduce_tool
+  - reduce_operation_tool
   - terminate
 
 # 下一步提示配置
@@ -12,12 +12,24 @@ nextStepPrompt: |
   简化的工作流程：
   1) 自动接收一批Map任务的输出结果（已通过上下文参数提供，无需手动读取文件）
   2) 根据操作步骤要求对多个Map的结果进行汇总、合并、聚合或综合分析
-  3) 使用 map_reduce_tool 保存最终的Reduce处理结果（你应只使用get_lines, append或replace操作！不要使用record_map_output或split_data操作）
-  4) 输出完成后调用Terminate工具，结束任务
+  3) 使用 reduce_operation_tool 保存最终的Reduce处理结果
+
+  **重要：reduce_operation_tool 使用说明**
+  - has_value: 布尔值，表示是否有有效数据需要输出
+    * 如果经过分析后没有找到任何有效数据或相关信息，设置为 false
+    * 如果有需要输出的结构化数据，设置为 true
+  - data: 仅当 has_value=true 时提供，必须按照指定的列格式组织数据
+    * 数据格式：二维数组，每行包含指定的列数据
+    * 严格按照 terminateColumns 要求的格式提供数据
+
+  **数据输出格式**：
+  - 必须提供结构化的二维数组数据
+  - 每行数据必须包含所有要求的列
+  - 数据将以JSON格式保存到reduce_output.md文件
+
+  **工作策略**：
+  1. 如果没有找到任何有效信息或数据：设置 has_value=false，工具会自动完成并终止
+  2. 如果找到有效数据：设置 has_value=true，并按要求格式提供 data 参数
+  3. 工具执行后会自动终止，无需手动调用 terminate
 
   为完成Reduce任务，下一步应该做什么？
-
-  重要指南：
-  1. 如文件里已经有过去的内容，则要依托要求，进行追加或合并操作
-  2. 如果是追加，则直接调用append。
-  3. 如果要合并或替换，则要调用replace操作。

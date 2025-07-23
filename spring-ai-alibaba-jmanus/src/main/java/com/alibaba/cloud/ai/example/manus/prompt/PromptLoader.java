@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Prompt loader that loads prompt template files from resources/prompts directory
  */
 @Component
-public class PromptLoader {
+public class PromptLoader implements IPromptLoader {
 
 	private static final Logger log = LoggerFactory.getLogger(PromptLoader.class);
 

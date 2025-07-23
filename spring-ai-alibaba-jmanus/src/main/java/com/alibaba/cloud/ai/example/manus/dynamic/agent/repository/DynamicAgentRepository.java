@@ -26,7 +26,11 @@ import java.util.List;
 @Repository
 public interface DynamicAgentRepository extends JpaRepository<DynamicAgentEntity, Long> {
 
+	DynamicAgentEntity findByNamespaceAndAgentName(String namespace, String agentName);
+
 	DynamicAgentEntity findByAgentName(String agentName);
+
+	List<DynamicAgentEntity> findAllByNamespace(String namespace);
 
 	List<DynamicAgentEntity> findAllByModel(DynamicModelEntity model);
 

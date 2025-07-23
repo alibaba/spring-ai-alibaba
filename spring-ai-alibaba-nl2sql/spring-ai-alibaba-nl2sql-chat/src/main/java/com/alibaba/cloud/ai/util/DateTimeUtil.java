@@ -24,7 +24,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -509,7 +508,7 @@ public class DateTimeUtil {
 
 	public static String getYearEx(LocalDate now, String yearEx, boolean applyDomainLogic) {
 		String comment = "";
-		int year = 0, month = 0, quarter = 0;
+		int year = 0;
 		if (yearEx.equals("今年")) {
 			year = now.getYear();
 		}
@@ -1114,23 +1113,6 @@ public class DateTimeUtil {
 			year = now.getYear() + 2;
 		}
 		return getSpecificYearHalfYearEx(now, year, halfYearEx);
-	}
-
-	public static void main(String[] args) {
-		List<String> expressions = Arrays.asList("2023年02月最后一周", "2024年05月01日", "今年04月22日", "去年04月22日", "前年04月22日",
-				"明年04月22日", "后年04月22日", "本月22日", "上月22日", "上上月22日", "下月22日", "上月今天", "上上月今天", "今天", "明天", "后天", "昨天",
-				"前天", "本周第5天", "2023年06月", "2024年05月", "今年03月", "去年03月", "前年03月", "明年03月", "后年03月", "本月", "上月", "上上月",
-				"下月", "去年本月", "2024年", "2023年", "今年", "去年", "前年", "明年", "后年", "2023年第3季度", "今年第1季度", "去年第3季度", "前年第3季度",
-				"明年第3季度", "后年第3季度", "本季度", "上季度", "下季度", "去年本季度", "本周星期3", "本周星期1", "上周星期1", "下周星期7", "近1周", "近1个完整周",
-				"本月最后一周", "本月最后一天", "近2个完整月", "不包含今天的近10天", "今年02月最后一天", "2024年02月最后一周", "今年上半年");
-
-		// JSONObject domainObject = new JSONObject();
-		// domainObject.put("currentYearTemplate",
-		// "${year}年，${year}年是当前年，查询年度数据时，如果使用月表，取${year}年${month}月的数据，如果使用季度表，取${year}年第${quarter}季度的数据");
-		// domainObject.put("pastYearTemplate",
-		// "${year}年，${year}是历史年，查询年度数据时，如果使用月表，取${year}年12月的数据，如果使用季度表，取${year}年第4季度的数据");
-
-		System.out.println(DateTimeUtil.buildDateTimeComment(expressions));
 	}
 
 }

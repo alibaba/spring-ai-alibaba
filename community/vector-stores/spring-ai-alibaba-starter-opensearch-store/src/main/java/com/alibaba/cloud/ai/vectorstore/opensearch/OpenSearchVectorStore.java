@@ -338,7 +338,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 */
 		@Override
 		public OpenSearchVectorStore build() {
-			return OpenSearchVectorStore.builder(this.openSearchApi, this.embeddingModel).build();
+			return new OpenSearchVectorStore(this);
 		}
 
 	}

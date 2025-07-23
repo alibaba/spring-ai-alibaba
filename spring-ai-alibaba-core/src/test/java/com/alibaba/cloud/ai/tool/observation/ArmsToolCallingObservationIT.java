@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.tool.observation;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.alibaba.cloud.ai.tool.MockWeatherService;
 import com.alibaba.cloud.ai.tool.MockWeatherService.Request;
 import com.alibaba.cloud.ai.tool.MockWeatherService.Response;
@@ -25,12 +23,6 @@ import com.alibaba.cloud.ai.tool.observation.ArmsToolCallingObservationDocumenta
 import com.alibaba.cloud.ai.tool.observation.ArmsToolCallingObservationDocumentation.LowCardinalityKeyNames;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -58,6 +50,15 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import reactor.core.publisher.Flux;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for DashScope Chat functionality. These tests will only run if

@@ -15,34 +15,55 @@
  */
 package com.alibaba.cloud.ai.util;
 
-import org.commonmark.node.Node;
-import org.commonmark.parser.Parser;
-import org.commonmark.renderer.text.TextContentRenderer;
-
 public class MarkdownParser {
 
 	public static String extractText(String markdownCode) {
 		String code = extractRawText(markdownCode);
-		return NewLineParser.format(code);
+		// 正确处理各种换行符类型：\r\n, \n, \r，但保持与NewLineParser.format()的兼容性
+		return code.replaceAll("\r\n", " ").replaceAll("\n", " ").replaceAll("\r", " ");
 	}
 
 	public static String extractRawText(String markdownCode) {
-		String startDelimiter = "```";
+		// Find the start of a code block (3 or more backticks)
+		int startIndex = -1;
+		int delimiterLength = 0;
 
-		int startIndex = markdownCode.indexOf(startDelimiter);
-		int endIndex = markdownCode.indexOf(startDelimiter, startIndex + startDelimiter.length());
-		if (startIndex != -1 && endIndex != -1) {
-			markdownCode = markdownCode.substring(startIndex, endIndex + startDelimiter.length());
-		}
-		else {
-			return markdownCode;
+		for (int i = 0; i <= markdownCode.length() - 3; i++) {
+			if (markdownCode.substring(i, i + 3).equals("```")) {
+				startIndex = i;
+				delimiterLength = 3;
+				// Count additional backticks
+				while (i + delimiterLength < markdownCode.length() && markdownCode.charAt(i + delimiterLength) == '`') {
+					delimiterLength++;
+				}
+				break;
+			}
 		}
 
-		Parser parser = Parser.builder().build();
-		Node document = parser.parse(markdownCode);
-		TextContentRenderer txr = TextContentRenderer.builder().build();
-		String code = txr.render(document);
-		return code;
+		if (startIndex == -1) {
+			return markdownCode; // No code block found
+		}
+
+		// Skip the opening delimiter and optional language specification
+		int contentStart = startIndex + delimiterLength;
+		while (contentStart < markdownCode.length() && markdownCode.charAt(contentStart) != '\n') {
+			contentStart++;
+		}
+		if (contentStart < markdownCode.length() && markdownCode.charAt(contentStart) == '\n') {
+			contentStart++; // Skip the newline after language spec
+		}
+
+		// Find the closing delimiter
+		String closingDelimiter = "`".repeat(delimiterLength);
+		int endIndex = markdownCode.indexOf(closingDelimiter, contentStart);
+
+		if (endIndex == -1) {
+			// No closing delimiter found, return from content start to end
+			return markdownCode.substring(contentStart);
+		}
+
+		// Extract just the content between delimiters
+		return markdownCode.substring(contentStart, endIndex);
 	}
 
 }

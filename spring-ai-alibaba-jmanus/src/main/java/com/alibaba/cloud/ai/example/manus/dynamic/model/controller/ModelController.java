@@ -52,7 +52,12 @@ public class ModelController {
 	@PutMapping("/{id}")
 	public ResponseEntity<ModelConfig> updateModel(@PathVariable("id") Long id, @RequestBody ModelConfig modelConfig) {
 		modelConfig.setId(id);
-		return ResponseEntity.ok(modelService.updateModel(modelConfig));
+		try {
+			return ResponseEntity.ok(modelService.updateModel(modelConfig));
+		}
+		catch (UnsupportedOperationException e) {
+			return ResponseEntity.status(499).build();
+		}
 	}
 
 	@DeleteMapping("/{id}")
@@ -63,6 +68,9 @@ public class ModelController {
 		}
 		catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().build();
+		}
+		catch (UnsupportedOperationException e) {
+			return ResponseEntity.status(499).build();
 		}
 	}
 

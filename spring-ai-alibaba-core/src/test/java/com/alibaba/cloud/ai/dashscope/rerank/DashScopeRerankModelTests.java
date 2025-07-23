@@ -142,7 +142,7 @@ class DashScopeRerankModelTests {
 		RerankResponseOutputResult result1 = new RerankResponseOutputResult(0, 0.9, new HashMap<>());
 		RerankResponseOutputResult result2 = new RerankResponseOutputResult(1, 0.7, new HashMap<>());
 		RerankResponseOutput output = new RerankResponseOutput(Arrays.asList(result1, result2));
-		TokenUsage usage = new TokenUsage(10, 20, 30);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
 		RerankResponse apiResponse = new RerankResponse(output, usage, "test-request-id");
 
 		when(dashScopeApi.rerankEntity(any())).thenReturn(ResponseEntity.ok(apiResponse));
@@ -201,7 +201,8 @@ class DashScopeRerankModelTests {
 		// Mock API response
 		RerankResponseOutputResult result = new RerankResponseOutputResult(0, TEST_SCORE, new HashMap<>());
 		RerankResponseOutput output = new RerankResponseOutput(Collections.singletonList(result));
-		RerankResponse apiResponse = new RerankResponse(output, new TokenUsage(10, 20, 30), "test-request-id");
+		RerankResponse apiResponse = new RerankResponse(output,
+				new TokenUsage(10, 5, 15, null, null, null, null, null, null), "test-request-id");
 
 		when(dashScopeApi.rerankEntity(any())).thenReturn(ResponseEntity.ok(apiResponse));
 

@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 export interface I18nType {
-  [key: string]: string | I18nType
+  [key: string]: string | string[] | I18nType
 }

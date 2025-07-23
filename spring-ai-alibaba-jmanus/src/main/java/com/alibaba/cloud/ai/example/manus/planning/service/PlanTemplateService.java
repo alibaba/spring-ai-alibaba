@@ -37,7 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Plan template service class that provides business logic related to plan templates
  */
 @Service
-public class PlanTemplateService {
+public class PlanTemplateService implements IPlanTemplateService {
 
 	private static final Logger logger = LoggerFactory.getLogger(PlanTemplateService.class);
 

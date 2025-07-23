@@ -23,7 +23,6 @@ import java.util.Map;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
-import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -120,17 +119,13 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 
 	}
 
-	private final UnifiedDirectoryManager unifiedDirectoryManager;
-
 	private final TextFileService textFileService;
 
 	private final SmartContentSavingService innerStorageService;
 
-	public TextFileOperator(TextFileService textFileService, SmartContentSavingService innerStorageService,
-			UnifiedDirectoryManager unifiedDirectoryManager) {
+	public TextFileOperator(TextFileService textFileService, SmartContentSavingService innerStorageService) {
 		this.textFileService = textFileService;
 		this.innerStorageService = innerStorageService;
-		this.unifiedDirectoryManager = unifiedDirectoryManager;
 	}
 
 	private final String PARAMETERS = """
@@ -411,12 +406,10 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 				return new ToolExecuteResult("Unsupported file type. Only text-based files are supported.");
 			}
 
-			// Use UnifiedDirectoryManager to validate and get the absolute path
-			Path workingDirectory = unifiedDirectoryManager.getWorkingDirectory();
-			textFileService.validateAndGetAbsolutePath(workingDirectory.toString(), filePath);
+			// Use TextFileService to validate and get the absolute path
+			Path absolutePath = textFileService.validateFilePath(planId, filePath);
 
 			// If file doesn't exist, create parent directory first
-			Path absolutePath = workingDirectory.resolve(filePath);
 			if (!Files.exists(absolutePath)) {
 				try {
 					Files.createDirectories(absolutePath.getParent());
@@ -448,7 +441,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 				return openResult;
 			}
 
-			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
+			Path absolutePath = textFileService.validateFilePath(planId, filePath);
 			String content = Files.readString(absolutePath);
 			String newContent = content.replace(sourceText, targetText);
 			Files.writeString(absolutePath, newContent);
@@ -489,7 +482,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 				return openResult;
 			}
 
-			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
+			Path absolutePath = textFileService.validateFilePath(planId, filePath);
 			java.util.List<String> lines = Files.readAllLines(absolutePath);
 
 			if (lines.isEmpty()) {
@@ -540,7 +533,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 			}
 
 			// Read file content
-			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
+			Path absolutePath = textFileService.validateFilePath(planId, filePath);
 			String content = Files.readString(absolutePath);
 
 			// Force flush to disk to ensure data consistency
@@ -575,7 +568,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 				return openResult;
 			}
 
-			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
+			Path absolutePath = textFileService.validateFilePath(planId, filePath);
 			Files.writeString(absolutePath, "\n" + content, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
 			// Automatically save file
@@ -600,7 +593,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 				return openResult;
 			}
 
-			Path absolutePath = unifiedDirectoryManager.getWorkingDirectory().resolve(filePath);
+			Path absolutePath = textFileService.validateFilePath(planId, filePath);
 			String content = Files.readString(absolutePath);
 			int wordCount = content.isEmpty() ? 0 : content.split("\\s+").length;
 
@@ -616,22 +609,34 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 	@Override
 	public String getCurrentToolStateString() {
 		String planId = this.currentPlanId;
-		return String.format(
-				"""
-						Current Text File Operation State:
-						- Working Directory:
-						%s
+		try {
+			Path workingDir = textFileService.getAbsolutePath(planId, "");
+			return String.format(
+					"""
+							Current Text File Operation State:
+							- working Directory:
+							%s
 
-						- Operations are automatically handled (no manual file opening/closing required)
-						- All file operations (open, save) are performed automatically
-						- Supported file types: txt, md, html, css, java, py, js, ts, xml, json, yaml, properties, sh, bat, log, etc.
+							- Operations are automatically handled (no manual file opening/closing required)
+							- All file operations (open, save) are performed automatically
+							- Supported file types: txt, md, html, css, java, py, js, ts, xml, json, yaml, properties, sh, bat, log, etc.
 
-						- Last Operation Result:
-						%s
-						""",
-				unifiedDirectoryManager.getWorkingDirectoryPath(),
-				textFileService.getLastOperationResult(planId).isEmpty() ? "No operation performed yet"
-						: textFileService.getLastOperationResult(planId));
+							- Last Operation Result:
+							%s
+							""",
+					workingDir.toString(), textFileService.getLastOperationResult(planId).isEmpty()
+							? "No operation performed yet" : textFileService.getLastOperationResult(planId));
+		}
+		catch (Exception e) {
+			return String.format("""
+					Current Text File Operation State:
+					- Error getting working directory: %s
+
+					- Last Operation Result:
+					%s
+					""", e.getMessage(), textFileService.getLastOperationResult(planId).isEmpty()
+					? "No operation performed yet" : textFileService.getLastOperationResult(planId));
+		}
 	}
 
 	@Override
@@ -658,7 +663,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 	public void cleanup(String planId) {
 		if (planId != null) {
 			log.info("Cleaning up text file resources for plan: {}", planId);
-			textFileService.closeFileForPlan(planId);
+			textFileService.cleanupPlanDirectory(planId);
 		}
 	}
 

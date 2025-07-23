@@ -62,7 +62,7 @@ management:
         include: "*"
   endpoint:
     health:
-      # 应用健康状态检查，携带详细新学年
+      # 应用健康状态检查，携带详细信息
       show-details: always
   tracing:
     sampling:

@@ -9,31 +9,49 @@
 
 [English](./README.md) | 🌍 **中文**
 
-**一个全面实现了 OpenManus 的多 Agent 框架，具备无限上下文能力**
+📚 开发者文档: [Quick Start (EN)](./README-dev-en.md) | [开发者快速入门 (中文)](./README-dev.md)
 
-*赋能各种用户，轻松构建复杂的多 Agent 系统，释放前所未有的生产力*
 
 [关于](#-关于) • [快速开始](#-快速开始) • [如何贡献](#-如何贡献)
 
 </div>
 
-![image](https://github.com/user-attachments/assets/07feeb29-c410-4f56-89bf-532210bc1b63)
 
----
+## ✨ JManus 简介
 
-## 🎯 关于
+JManus 是 Manus 的一个Java实现，目前已经在阿里巴巴集团内的很多应用都有使用，主要用于处理需要有一定确定性要求的探索性任务，比如，快速从海量数据中找到数据并转换成数据库内的一行数据，或者分析日志并给出告警等。
 
-JManus 是 [OpenManus](https://github.com/FoundationAgents/OpenManus) 模型的一个健壮、生产就绪的实现，构建在坚实的 Spring AI 基础之上。它使开发者能够以最少的配置创建复杂的 AI Agent 生态系统，同时确保企业级的可靠性和可伸缩性。
+JManus也提供了http的服务调用能力，适合被集成到既有的项目中。具体可以见开发者快速入门
 
-JManus 采用成熟的 Plan-Act 架构模式，支持**自定义 Agent**，并能智能地将**复杂任务分解**为由多个专业 Agent 协作完成的子任务。这种创新方法通过策略性的多 Agent 协同，实现了**无限的上下文处理**，超越了单模型上下文窗口的限制。
 
-### 为什么选择 JManus？
+## 🎯 JManus的产品特性
 
-- 🤖 **原生多 Agent 架构**：内置协作框架，支持用户自定义的 Agent 能力和专业角色。
-- 🌊 **无限上下文处理**：通过智能的多 Agent 协作，克服单模型上下文限制，实现无限内容处理。
-- 🎯 **卓越的 Plan-Act 模式**：完整实现 Plan-Act 范式，具有智能规划和执行分离的特点。
-- 🔗 **MCP 集成**：原生支持模型上下文协议（Model Context Protocol），实现与外部服务和工具的无缝集成。
-- 📜 **网页界面配置 Agent**：通过直观的网页管理界面轻松配置 agent，无需修改代码。
+### 🤖 **纯Java的Manus实现**：
+
+纯粹的Java多智能体协作实现，提供了完整的http调用接口，适合Java开发者做二次集成。
+![Image](https://github.com/user-attachments/assets/893c7fc1-5e6e-4ec9-8389-182f14d86b18)
+
+### 🌊 **无限上下文处理**：
+
+支持从巨量内容中精准抓取目标信息，不依赖特定的长上下文模型。
+![Image](https://github.com/user-attachments/assets/a0245658-fbb7-41dc-989f-86574592f188)
+
+### 🛠️ **Plan-Act 模式**：
+
+精确控制每一步执行细节，提供极高的执行确定性
+![Image](https://github.com/user-attachments/assets/d9cbf980-9d56-4b58-b165-6840b6c9411b)
+
+### 🔗 **MCP 集成**：
+
+原生支持模型上下文协议（Model Context Protocol），实现与外部服务和工具的无缝集成。
+![Image](https://github.com/user-attachments/assets/31d915a9-04dc-45b2-9635-488cc06ba468)
+
+### 📜 **网页界面配置 Agent**：
+
+通过直观的网页管理界面轻松配置 agent，无需修改代码。
+![Image](https://github.com/user-attachments/assets/5afdfe2e-0e98-4100-bff1-b7aaf413850b)
+
+
 
 ## 🚀 快速开始
 
@@ -41,17 +59,106 @@ JManus 采用成熟的 Plan-Act 架构模式，支持**自定义 Agent**，并�
 
 ### 先决条件
 
-- ☕ **Java 17+** (推荐 OpenJDK)
 - 🌐 **DashScope API 密钥** (或替代的 AI 模型提供商)
+- 🐳 **Docker** (用于容器化部署) 或 ☕ **Java 17+** (用于源码运行)
 
-### 1. 克隆并导航
+### 方式一：使用 Docker (推荐)
+
+#### 🐳 使用 Docker Hub 镜像
+
+```bash
+# 拉取最新的 develop 镜像
+docker pull springaialibaba/jmanus:develop
+
+# 基础启动（临时数据存储）
+docker run -d \
+  --name jmanus \
+  -p 18080:18080 \
+  -e DASHSCOPE_API_KEY=your_api_key_here \
+  springaialibaba/jmanus:develop
+
+# 或者启动并持久化数据（推荐）
+docker run -d \
+  --name jmanus \
+  -p 18080:18080 \
+  -e DASHSCOPE_API_KEY=your_api_key_here \
+  -v $(pwd)/h2-data:/app/extracted/h2-data \
+  -v $(pwd)/extensions:/app/extracted/extensions \
+  springaialibaba/jmanus:develop
+```
+
+#### 🇨🇳 使用阿里云镜像（中国加速）
+
+```bash
+# 拉取阿里云加速镜像
+docker pull sca-registry.cn-hangzhou.cr.aliyuncs.com/spring-ai-alibaba/jmanus:develop
+
+# 基础启动（临时数据存储）
+docker run -d \
+  --name jmanus \
+  -p 18080:18080 \
+  -e DASHSCOPE_API_KEY=your_api_key_here \
+  sca-registry.cn-hangzhou.cr.aliyuncs.com/spring-ai-alibaba/jmanus:develop
+
+# 或者启动并持久化数据（推荐）
+docker run -d \
+  --name jmanus \
+  -p 18080:18080 \
+  -e DASHSCOPE_API_KEY=your_api_key_here \
+  -v $(pwd)/h2-data:/app/extracted/h2-data \
+  -v $(pwd)/extensions:/app/extracted/extensions \
+  sca-registry.cn-hangzhou.cr.aliyuncs.com/spring-ai-alibaba/jmanus:develop
+```
+
+#### 🔧 高级 Docker 配置
+
+如果您需要自定义配置或持久化数据：
+
+```bash
+# 创建数据目录
+mkdir -p /path/to/jmanus/h2-data
+mkdir -p /path/to/jmanus/extensions
+
+# 使用自定义配置启动（推荐数据持久化）
+docker run -d \
+  --name jmanus \
+  -p 18080:18080 \
+  -e DASHSCOPE_API_KEY=your_api_key_here \
+  -v /path/to/jmanus/h2-data:/app/extracted/h2-data \
+  -v /path/to/jmanus/extensions:/app/extracted/extensions \
+  --restart unless-stopped \
+  springaialibaba/jmanus:develop
+```
+
+> 📁 **数据存储说明**:
+> - **H2 数据库**: `/app/extracted/h2-data` - 存储应用的数据库文件
+> - **运行时数据**: `/app/extracted/extensions` - 存储扩展和运行时配置
+> - 建议挂载这两个目录以实现数据持久化，避免容器重启后数据丢失
+
+> 💡 **镜像说明**:
+> - **Docker Hub 镜像**: `springaialibaba/jmanus:develop` - 每日自动构建推送
+> - **阿里云镜像**: `sca-registry.cn-hangzhou.cr.aliyuncs.com/spring-ai-alibaba/jmanus:develop` - 每日同步，中国用户访问更快
+> - 镜像支持 headless Playwright 浏览器功能
+> - 阿里云镜像可能会稍微落后于 Docker Hub 版本
+
+#### 🌐 访问应用
+
+容器启动后，在浏览器中访问 `http://localhost:18080` 即可使用 JManus。
+
+🎉 **恭喜!** 您的多 Agent 系统现已通过 Docker 快速部署完成。
+
+---
+
+### 方式二：从源码运行
+
+#### 1. 克隆并导航
 
 ```bash
 git clone https://github.com/alibaba/spring-ai-alibaba.git
 cd spring-ai-alibaba/spring-ai-alibaba-jmanus
 ```
 
-### 2. 配置您的 API 密钥
+#### 2. 配置您的 API 密钥
 
 ```bash
 # 设置您的 DashScope API 密钥
@@ -62,11 +169,11 @@ export DASHSCOPE_API_KEY=your_api_key_here
 >
 > **使用其他提供商?** 在 `src/main/resources/application.yml` 中更新配置，以使用您偏好的 AI 模型平台。
 
-### 3. 数据库配置（可选）
+#### 3. 数据库配置（可选）
 
 JManus 支持 H2（默认）、MySQL以及PostgreSQL数据库。
 
-#### 如何使用 MySQL/PostgreSQL
+**如何使用 MySQL/PostgreSQL**
 
 1. **配置数据库连接**：
    在 `src/main/resources/`下的application-mysql.yml/application-postgres.yml中更新数据库配置和jpa方言：
@@ -93,7 +200,7 @@ JManus 支持 H2（默认）、MySQL以及PostgreSQL数据库。
 
 > 💡 **注意**：应用程序将在首次启动时自动创建所需的表，使用 JPA 的 `ddl-auto: update` 配置。
 
-### 4. 启动应用程序
+#### 4. 启动应用程序
 
 **对于类 Unix 系统 (macOS, Linux):**
 ```bash
@@ -105,11 +212,18 @@ JManus 支持 H2（默认）、MySQL以及PostgreSQL数据库。
 ../mvnw.cmd spring-boot:run
 ```
 
-### 5. 访问您的多 Agent 仪表盘
+#### 5. 访问您的多 Agent 仪表盘
 
 在您的浏览器中访问 `http://localhost:18080`。
 
 🎉 **恭喜!** 您的多 Agent 系统现已上线并准备就绪。
+
+
+## 稳定版本的Release
+
+如果你想要之前的稳定版本，可以在这里找到：
+[稳定release版](https://github.com/rainerWJY/Java-Open-Manus/releases)
+
 
 ## 🤝 如何贡献
 

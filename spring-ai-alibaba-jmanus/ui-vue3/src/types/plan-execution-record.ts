@@ -74,9 +74,31 @@ export interface ThinkActRecord {
   
   /** Tool parameters used for action (serialized, if applicable) */
   toolParameters?: string
+
+  /** Tool call information */
+  actToolInfoList?: ActToolInfo[]
   
   /** Sub-plan execution record for tool calls that create new execution plans */
   subPlanExecutionRecord?: PlanExecutionRecord
+}
+
+/**
+ * Maps to Java: com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord.ActToolInfo
+ */
+export interface ActToolInfo {
+
+  /** Name of the tool */
+  name?: string
+
+  /** Description of the tool */
+  parameters?: string
+
+  /** Result of tool call */
+  result?: string
+
+  /** ID of the tool */
+  id?: string
+
 }
 
 /**
@@ -113,11 +135,6 @@ export interface AgentExecutionRecord {
   /** Execution status (IDLE, RUNNING, FINISHED) */
   status?: string
   
-  /** Whether execution is completed */
-  isCompleted?: boolean
-  
-  /** Whether stuck */
-  isStuck?: boolean
   
   /** Record list of think-act steps, existing as sub-steps */
   thinkActSteps?: ThinkActRecord[]

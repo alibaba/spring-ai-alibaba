@@ -1,0 +1,161 @@
+# Copyright 2025 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Multi-stage build for better layer caching and smaller final image
+ARG BUILD_VERSION=3.0.1-SNAPSHOT
+# Runtime stage - use multi-arch base image
+FROM eclipse-temurin:17-jdk-noble
+
+# Add build arguments for platform detection
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
+# Set working directory
+WORKDIR /app
+
+# Update package index and install basic dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    software-properties-common \
+    wget \
+    unzip \
+    xvfb \
+    x11vnc \
+    fluxbox \
+    fonts-liberation \
+    fonts-dejavu-core \
+    fonts-noto-cjk \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 18.x (recommended for Playwright)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install system dependencies for Playwright browsers
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libnss3 \
+    libnspr4 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libxss1 \
+    libasound2t64 \
+    libatspi2.0-0 \
+    libgtk-3-0 \
+    libgdk-pixbuf2.0-0 \
+    libxshmfence1 \
+    libatomic1 \
+    libxslt1.1 \
+    libwoff1 \
+    libevent-2.1-7 \
+    libopus0 \
+    libwebpdemux2 \
+    libharfbuzz-icu0 \
+    libwebpmux3 \
+    libenchant-2-2 \
+    libsecret-1-0 \
+    libhyphen0 \
+    libegl1 \
+    libgudev-1.0-0 \
+    libevdev2 \
+    libgles2 \
+    libx264-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Playwright CLI globally (for debugging purposes)
+RUN npm install -g playwright
+
+# Copy JAR file from builder stage
+COPY target/jmanus.jar app.jar
+
+# Install Playwright browsers using Java Playwright
+RUN java -jar app.jar playwright-init
+
+# Extract JAR file for faster startup
+RUN mkdir -p /app/extracted && \
+    cd /app/extracted && \
+    jar -xf /app/app.jar && \
+    rm /app/app.jar
+
+# Verify browser installation and set permissions
+RUN ls -la /root/.cache/ms-playwright/ && \
+    find /root/.cache/ms-playwright -name "chrome*" -type f -exec chmod +x {} \; 2>/dev/null && \
+    find /root/.cache/ms-playwright -name "headless_shell*" -type f -exec chmod +x {} \; 2>/dev/null
+
+# Verify installations
+RUN java -version && \
+    node --version && \
+    npm --version && \
+    playwright --version
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/h2-data /app/playwright
+
+# Copy application configuration files
+COPY src/main/resources/application*.yml /app/extracted/BOOT-INF/classes/
+COPY src/main/resources/application-docker.yml /app/extracted/BOOT-INF/classes/
+
+# Set environment variables for headless mode and Playwright browser path
+ENV DISPLAY=:99
+ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
+ENV DOCKER_ENV=true
+
+# Set JVM options for better performance in container
+# Adjust memory settings based on architecture
+ENV JAVA_OPTS="-Xmx2g -Xms1g -XX:+UseG1GC -XX:+UseContainerSupport"
+
+# Expose port
+EXPOSE 18080
+
+# Create startup script
+RUN echo '#!/bin/bash' > /app/start.sh && \
+    echo 'echo "Starting JManus with Playwright in headless mode..."' >> /app/start.sh && \
+    echo 'echo "Platform: $TARGETPLATFORM"' >> /app/start.sh && \
+    echo 'echo "Architecture: $TARGETARCH"' >> /app/start.sh && \
+    echo 'echo "Java version: $(java -version 2>&1 | head -1)"' >> /app/start.sh && \
+    echo 'echo "Playwright version: $(playwright --version)"' >> /app/start.sh && \
+    echo 'echo "Available browsers:"' >> /app/start.sh && \
+    echo 'ls -la /root/.cache/ms-playwright/' >> /app/start.sh && \
+    echo 'echo "Checking Chromium installation:"' >> /app/start.sh && \
+    echo 'find /root/.cache/ms-playwright -name "chrome*" -type f 2>/dev/null | head -5' >> /app/start.sh && \
+    echo 'echo "Setting Playwright environment variables..."' >> /app/start.sh && \
+    echo 'export PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright' >> /app/start.sh && \
+    echo 'export DOCKER_ENV=true' >> /app/start.sh && \
+    echo 'echo "Starting application with docker profile..."' >> /app/start.sh && \
+    echo 'cd /app/extracted' >> /app/start.sh && \
+    echo 'exec java $JAVA_OPTS -cp /app/extracted/BOOT-INF/classes:/app/extracted/BOOT-INF/lib/*:. com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication --spring.profiles.active=h2,docker' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Add labels for better image management
+LABEL org.opencontainers.image.title="JManus"
+LABEL org.opencontainers.image.description="Spring AI Alibaba JManus - Web Automation Platform"
+LABEL org.opencontainers.image.vendor="Alibaba Cloud"
+LABEL org.opencontainers.image.version="${BUILD_VERSION}"
+LABEL org.opencontainers.image.url="https://github.com/alibaba/spring-ai-alibaba"
+LABEL org.opencontainers.image.source="https://github.com/alibaba/spring-ai-alibaba"
+
+# Set entrypoint
+ENTRYPOINT ["/app/start.sh"]

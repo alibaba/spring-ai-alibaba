@@ -25,7 +25,7 @@
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-kuaidi100</artifactId>
     <name>Spring AI Alibaba Starter Tool Calling Kuaidi100</name>
-    <description>Sina News tool for Spring AI Alibaba</description>
+    <description>Kuaidi100 tool for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>

@@ -1,0 +1,27 @@
+{
+  "groups": [
+    {
+      "name": "spring.ai.alibaba.mcp.gateway",
+      "type": "com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayProperties",
+      "description": "Configuration properties for MCP gateway service discovery."
+    }
+  ],
+  "properties": [
+    {
+      "name": "spring.ai.alibaba.mcp.gateway.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable or disable the MCP gateway service discovery.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.gateway.registry",
+      "type": "java.lang.String",
+      "description": "Which registry center gateway discovery of MCP server info from .",
+      "sourceType": "com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayProperties",
+      "defaultValue": "nacos"
+    }
+  ],
+  "hints": []
+}

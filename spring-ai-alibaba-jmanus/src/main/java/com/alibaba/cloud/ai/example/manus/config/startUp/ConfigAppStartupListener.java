@@ -27,7 +27,7 @@ import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
-import com.alibaba.cloud.ai.example.manus.config.ConfigService;
+import com.alibaba.cloud.ai.example.manus.config.IConfigService;
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentScanner;
 
@@ -37,7 +37,7 @@ public class ConfigAppStartupListener implements ApplicationListener<Application
 	private static final Logger log = LoggerFactory.getLogger(ConfigAppStartupListener.class);
 
 	@Autowired
-	private ConfigService configService;
+	private IConfigService configService;
 
 	@Autowired
 	private DynamicAgentScanner dynamicAgentScanner;

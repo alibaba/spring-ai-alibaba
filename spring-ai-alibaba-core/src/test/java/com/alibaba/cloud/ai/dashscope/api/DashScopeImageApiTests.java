@@ -15,16 +15,17 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.mock;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.web.client.RestClient;
 
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.web.client.RestClient;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 
 /**
  * Tests for DashScopeImageApi class functionality
@@ -46,27 +47,54 @@ class DashScopeImageApiTests {
 		mockRestClient = mock(RestClient.class);
 
 		// Initialize DashScopeImageApi with test API key
-		imageApi = new DashScopeImageApi("test-api-key");
+		imageApi = DashScopeImageApi.builder()
+			.apiKey("test-api-key")
+			.workSpaceId(null)
+			.restClientBuilder(RestClient.builder())
+			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+			.build();
+
 	}
 
 	@Test
 	void testConstructorWithApiKey() {
+
 		// Test constructor with only API key
-		DashScopeImageApi api = new DashScopeImageApi("test-api-key");
+		DashScopeImageApi api = DashScopeImageApi.builder()
+			.apiKey("test-api-key")
+			.workSpaceId(null)
+			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+			.restClientBuilder(RestClient.builder())
+			.build();
 		assertNotNull(api, "DashScopeImageApi should be created with API key");
 	}
 
 	@Test
 	void testConstructorWithApiKeyAndWorkspaceId() {
+
 		// Test constructor with API key and workspace ID
-		DashScopeImageApi api = new DashScopeImageApi("test-api-key", "test-workspace-id");
+		DashScopeImageApi api = DashScopeImageApi.builder()
+			.apiKey("test-api-key")
+			.workSpaceId("test-workspace-id")
+			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+			.restClientBuilder(RestClient.builder())
+			.build();
+
 		assertNotNull(api, "DashScopeImageApi should be created with API key and workspace ID");
 	}
 
 	@Test
 	void testConstructorWithApiKeyWorkspaceIdAndBaseUrl() {
+
 		// Test constructor with API key, workspace ID, and base URL
-		DashScopeImageApi api = new DashScopeImageApi("test-api-key", "test-workspace-id", "https://test-base-url.com");
+		DashScopeImageApi api = DashScopeImageApi.builder()
+			.apiKey("test-api-key")
+			.workSpaceId("test-workspace-id")
+			.baseUrl("/api/v1/services/aigc/")
+			.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+			.restClientBuilder(RestClient.builder())
+			.build();
+
 		assertNotNull(api, "DashScopeImageApi should be created with API key, workspace ID, and base URL");
 	}
 
@@ -109,22 +137,22 @@ class DashScopeImageApiTests {
 	@Test
 	void testImageResponseClasses() {
 		// Test creating image response objects
-		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult result = new DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult(
+		DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseResult result = new DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseResult(
 				"https://example.com/image.png");
 
-		List<DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult> results = Collections
+		List<DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseResult> results = Collections
 			.singletonList(result);
 
-		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseTaskMetrics metrics = new DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseTaskMetrics(
+		DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseTaskMetrics metrics = new DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseTaskMetrics(
 				1, 1, 0);
 
-		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput output = new DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput(
+		DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseOutput output = new DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseOutput(
 				"task-id", "completed", results, metrics, "200", "success");
 
-		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseUsage usage = new DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseUsage(
+		DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseUsage usage = new DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseUsage(
 				1);
 
-		DashScopeImageApi.DashScopeImageAsyncReponse response = new DashScopeImageApi.DashScopeImageAsyncReponse(
+		DashScopeImageApi.DashScopeImageAsyncResponse response = new DashScopeImageApi.DashScopeImageAsyncResponse(
 				"request-id", output, usage);
 
 		// Verify response properties

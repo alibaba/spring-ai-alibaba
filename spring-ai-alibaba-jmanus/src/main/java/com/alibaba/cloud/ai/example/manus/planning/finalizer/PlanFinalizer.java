@@ -15,13 +15,11 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.finalizer;
 
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -32,6 +30,10 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import reactor.core.publisher.Flux;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
@@ -40,7 +42,7 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
  */
 public class PlanFinalizer {
 
-	private final LlmService llmService;
+	private final ILlmService llmService;
 
 	private static final Logger log = LoggerFactory.getLogger(PlanFinalizer.class);
 
@@ -50,12 +52,15 @@ public class PlanFinalizer {
 
 	private final ManusProperties manusProperties;
 
-	public PlanFinalizer(LlmService llmService, PlanExecutionRecorder recorder, PromptService promptService,
-			ManusProperties manusProperties) {
+	private final StreamingResponseHandler streamingResponseHandler;
+
+	public PlanFinalizer(ILlmService llmService, PlanExecutionRecorder recorder, PromptService promptService,
+			ManusProperties manusProperties, StreamingResponseHandler streamingResponseHandler) {
 		this.llmService = llmService;
 		this.recorder = recorder;
 		this.promptService = promptService;
 		this.manusProperties = manusProperties;
+		this.streamingResponseHandler = streamingResponseHandler;
 	}
 
 	/**
@@ -79,13 +84,11 @@ public class PlanFinalizer {
 		try {
 			String userRequest = context.getUserRequest();
 
-			Message systemMessage = promptService.createSystemMessage(
-					PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(), Map.of("executionDetail", executionDetail));
+			Message combinedMessage = promptService.createUserMessage(
+					PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(),
+					Map.of("executionDetail", executionDetail, "userRequest", userRequest));
 
-			Message userMessage = promptService.createUserMessage(PromptEnum.PLANNING_USER_REQUEST.getPromptName(),
-					Map.of("userRequest", userRequest));
-
-			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
+			Prompt prompt = new Prompt(List.of(combinedMessage));
 
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 			if (context.isUseMemory()) {
@@ -94,9 +97,10 @@ public class PlanFinalizer {
 					.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
 					.build());
 			}
-			ChatResponse response = requestSpec.call().chatResponse();
 
-			String summary = response.getResult().getOutput().getText();
+			// Use streaming response handler for summary generation
+			Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
+			String summary = streamingResponseHandler.processStreamingTextResponse(responseFlux, "Summary generation");
 			context.setResultSummary(summary);
 
 			recordPlanCompletion(context, summary);

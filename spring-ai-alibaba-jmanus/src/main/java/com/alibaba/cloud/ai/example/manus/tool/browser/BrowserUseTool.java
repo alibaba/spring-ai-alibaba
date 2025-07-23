@@ -191,21 +191,6 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 			            "properties": {
 			                "action": {
 			                    "type": "string",
-			                    "const": "scroll"
-			                },
-			                "scroll_amount": {
-			                    "type": "integer",
-			                    "description": "Pixels to scroll (positive for down, negative for up)"
-			                }
-			            },
-			            "required": ["action", "scroll_amount"],
-			            "additionalProperties": false
-			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
 			                    "const": "switch_tab"
 			                },
 			                "tab_id": {
@@ -296,15 +281,14 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 	private final String description = """
 			与网页浏览器交互，执行各种操作，如导航、元素交互、内容提取和标签页管理。搜索类优先考虑此工具。
 			支持的操作包括：
-			- 'navigate'：访问特定URL，默认使用https://baidu.com
+			- 'navigate'：访问特定URL
 			- 'click'：按索引点击元素
-			- 'input_text'：在元素中输入文本，对于百度(Baidu)，输入框的索引是
+			- 'input_text'：在元素中输入文本
 			- 'key_enter'：按回车键
 			- 'screenshot'：捕获屏幕截图
-			- 'get_html'：获取当前页面的HTML内容(不支持url参数)
-			- 'get_text'：获取当前页面文本内容(不支持url参数)
+			- 'get_html'：获取当前页面的HTML内容
+			- 'get_text'：获取当前页面文本内容
 			- 'execute_js'：执行JavaScript代码
-			- 'scroll'：滚动页面
 			- 'switch_tab'：切换到特定标签页
 			- 'new_tab'：打开新标签页
 			- 'close_tab'：关闭当前标签页
@@ -561,7 +545,7 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 	}
 
 	public ManusProperties getManusProperties() {
-		return this.chromeDriverService.getManusProperties();
+		return (ManusProperties) this.chromeDriverService.getManusProperties();
 	}
 
 }

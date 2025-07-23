@@ -1,0 +1,19 @@
+# Docker Environment Configuration
+# This configuration file is specifically for Docker container environment, enabling headless browser mode
+
+manus:
+  browser:
+    headless: true
+    requestTimeout: 180
+  openBrowserAuto: false
+
+# Other Docker environment optimizations
+spring:
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false  # Disable SQL formatting in container environment for better performance
+
+logging:
+  level:
+    root: INFO

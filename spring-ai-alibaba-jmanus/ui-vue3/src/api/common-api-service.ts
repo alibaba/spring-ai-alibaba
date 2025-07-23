@@ -32,13 +32,13 @@ export class CommonApiService {
       if (!response.ok) throw new Error(`Failed to get detailed information: ${response.status}`)
       const rawText = await response.text()
       const data = JSON.parse(rawText)
-      
+
       // Type validation - ensure the response contains required currentPlanId
       if (data && typeof data === 'object' && !data.currentPlanId) {
         // If currentPlanId is missing from response, add it from the parameter
         data.currentPlanId = planId
       }
-      
+
       return data
     } catch (error: any) {
       // Log error but don't throw exception
@@ -52,7 +52,7 @@ export class CommonApiService {
     const response = await fetch(`${this.BASE_URL}/submit-input/${planId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
+      body: JSON.stringify(formData),
     })
     if (!response.ok) {
       let errorData
@@ -68,5 +68,31 @@ export class CommonApiService {
       return await response.json()
     }
     return { success: true }
+  }
+
+  /**
+   * Get all Prompt list
+   */
+  static async getAllPrompts(): Promise<any[]> {
+    try {
+      const response = await fetch(this.BASE_URL)
+      const result = await this.handleResponse(response)
+      return await result.json()
+    } catch (error) {
+      console.error('Failed to get Prompt list:', error)
+      throw error
+    }
+  }
+
+  private static async handleResponse(response: Response) {
+    if (!response.ok) {
+      try {
+        const errorData = await response.json()
+        throw new Error(errorData.message || `API request failed: ${response.status}`)
+      } catch {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`)
+      }
+    }
+    return response
   }
 }

@@ -32,7 +32,7 @@ public class SemanticConsistenceDispatcher implements EdgeAction {
 
 	@Override
 	public String apply(OverAllState state) {
-		Boolean validate = (Boolean) state.value(SEMANTIC_CONSISTENC_NODE_OUTPUT).orElseThrow();
+		Boolean validate = (Boolean) state.value(SEMANTIC_CONSISTENCY_NODE_OUTPUT).orElseThrow();
 		logger.info("语义一致性校验结果: {}，跳转节点配置", validate);
 		if (validate) {
 			logger.info("语义一致性校验通过，跳转到结束节点。");

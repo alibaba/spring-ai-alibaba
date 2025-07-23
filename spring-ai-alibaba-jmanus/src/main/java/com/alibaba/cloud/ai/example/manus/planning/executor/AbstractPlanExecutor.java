@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -53,7 +53,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
 	protected final AgentService agentService;
 
-	protected LlmService llmService;
+	protected ILlmService llmService;
 
 	protected final ManusProperties manusProperties;
 
@@ -69,7 +69,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	public static final String EXECUTION_ENV_STRING_KEY = "current_step_env_data";
 
 	public AbstractPlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
-			AgentService agentService, LlmService llmService, ManusProperties manusProperties) {
+			AgentService agentService, ILlmService llmService, ManusProperties manusProperties) {
 		this.agents = agents;
 		this.recorder = recorder;
 		this.agentService = agentService;

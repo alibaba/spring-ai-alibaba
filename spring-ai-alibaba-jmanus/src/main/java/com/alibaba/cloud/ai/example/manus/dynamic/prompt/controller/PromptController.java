@@ -37,6 +37,11 @@ public class PromptController {
 		return ResponseEntity.ok(promptService.getAll());
 	}
 
+	@GetMapping("/namespace/{namespace}")
+	public ResponseEntity<List<PromptVO>> getAllByNamespace(@PathVariable("namespace") String namespace) {
+		return ResponseEntity.ok(promptService.getAllByNamespace(namespace));
+	}
+
 	@GetMapping("/{id}")
 	public ResponseEntity<PromptVO> getById(@PathVariable("id") Long id) {
 		return ResponseEntity.ok(promptService.getById(id));

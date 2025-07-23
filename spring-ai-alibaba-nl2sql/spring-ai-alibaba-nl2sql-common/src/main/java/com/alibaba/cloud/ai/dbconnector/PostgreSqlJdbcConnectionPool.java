@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 import static com.alibaba.cloud.ai.dbconnector.ErrorCodeEnum.*;
 
-@Service("postgrSqlJdbcConnectionPool")
+@Service("postgreSqlJdbcConnectionPool")
 public class PostgreSqlJdbcConnectionPool extends AbstractDBConnectionPool {
 
 	@Override

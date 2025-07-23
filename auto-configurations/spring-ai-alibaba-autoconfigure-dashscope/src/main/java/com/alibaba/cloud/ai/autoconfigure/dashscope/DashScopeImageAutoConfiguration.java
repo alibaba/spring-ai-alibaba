@@ -16,12 +16,10 @@
 
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.model.SpringAIAlibabaModels;
 import io.micrometer.observation.ObservationRegistry;
-
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
@@ -38,7 +36,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUtils.resolveConnectionProperties;
 
@@ -49,7 +46,7 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class })
-@ConditionalOnClass(DashScopeApi.class)
+@ConditionalOnClass(DashScopeImageApi.class)
 @ConditionalOnDashScopeEnabled
 @ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIAlibabaModels.DASHSCOPE,
 		matchIfMissing = true)
@@ -62,15 +59,19 @@ public class DashScopeImageAutoConfiguration {
 	@ConditionalOnMissingBean
 	public DashScopeImageModel dashScopeImageModel(DashScopeConnectionProperties commonProperties,
 			DashScopeImageProperties imageProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, imageProperties, "image");
 
-		var dashScopeImageApi = new DashScopeImageApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
+		var dashScopeImageApi = DashScopeImageApi.builder()
+			.apiKey(resolved.apiKey())
+			.baseUrl(resolved.baseUrl())
+			.workSpaceId(resolved.workspaceId())
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable())
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 
 		DashScopeImageModel dashScopeImageModel = new DashScopeImageModel(dashScopeImageApi,
 				imageProperties.getOptions(), retryTemplate,

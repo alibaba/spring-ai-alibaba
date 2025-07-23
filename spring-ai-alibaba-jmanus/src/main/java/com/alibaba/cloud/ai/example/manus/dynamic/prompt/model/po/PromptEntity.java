@@ -18,15 +18,15 @@ package com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.po;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "prompt",
-		uniqueConstraints = { @UniqueConstraint(columnNames = "prompt_name", name = "unique_prompt_name") })
+@Table(name = "prompt", uniqueConstraints = {
+		@UniqueConstraint(columnNames = { "namespace", "prompt_name" }, name = "unique_namespace_prompt_name") })
 public class PromptEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "prompt_name", nullable = false, unique = true)
+	@Column(name = "prompt_name", nullable = false)
 	private String promptName;
 
 	@Column(nullable = true)

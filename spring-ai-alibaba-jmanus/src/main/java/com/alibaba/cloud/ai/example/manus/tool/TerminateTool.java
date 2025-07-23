@@ -46,66 +46,12 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 	}
 
 	private static String getDescriptions(List<String> columns) {
-		// If columns is null or empty, use "message" as default column
-		List<String> effectiveColumns = (columns == null || columns.isEmpty()) ? List.of("message") : columns;
-
-		// Generate columns example as JSON string
-		StringBuilder columnsExample = new StringBuilder();
-		columnsExample.append("[");
-		for (int i = 0; i < effectiveColumns.size(); i++) {
-			columnsExample.append("\"").append(effectiveColumns.get(i)).append("\"");
-			if (i < effectiveColumns.size() - 1) {
-				columnsExample.append(", ");
-			}
-		}
-		columnsExample.append("]");
-
-		// Generate data example
-		StringBuilder dataExample = new StringBuilder();
-		dataExample.append("[\n");
-		for (int i = 0; i < 2; i++) { // Show 2 example rows
-			dataExample.append("      [");
-			for (int j = 0; j < effectiveColumns.size(); j++) {
-				dataExample.append("\"example").append(i + 1).append("_").append(effectiveColumns.get(j)).append("\"");
-				if (j < effectiveColumns.size() - 1) {
-					dataExample.append(", ");
-				}
-			}
-			dataExample.append("]");
-			if (i < 1) {
-				dataExample.append(",");
-			}
-			dataExample.append("\n");
-		}
-		dataExample.append("    ]");
-
-		String template = """
-				Terminate the current execution step with structured data.
-				The data should be provided in a format with columns and corresponding data rows:
-				{
-				  "columns": %s,
-				  "data": %s
-				}
-				""";
-
-		return String.format(template, columnsExample.toString(), dataExample.toString());
+		// Simple description to avoid generating overly long content
+		return "Terminate the current execution step with structured data. "
+				+ "Provide data in JSON format with 'columns' array and 'data' array containing rows of values.";
 	}
 
 	private static String generateParametersJson(List<String> columns) {
-		// If columns is null or empty, use "message" as default column
-		List<String> effectiveColumns = (columns == null || columns.isEmpty()) ? List.of("message") : columns;
-
-		// Generate default columns array as JSON string
-		StringBuilder defaultColumnsBuilder = new StringBuilder();
-		defaultColumnsBuilder.append("[");
-		for (int i = 0; i < effectiveColumns.size(); i++) {
-			defaultColumnsBuilder.append("\"").append(effectiveColumns.get(i)).append("\"");
-			if (i < effectiveColumns.size() - 1) {
-				defaultColumnsBuilder.append(", ");
-			}
-		}
-		defaultColumnsBuilder.append("]");
-
 		String template = """
 				{
 				  "type": "object",
@@ -113,23 +59,22 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 				    "columns": {
 				      "type": "array",
 				      "items": {"type": "string"},
-				      "description": "Column names for the data",
-				      "default": %s
+				      "description": "Column names"
 				    },
 				    "data": {
 				      "type": "array",
 				      "items": {
 				        "type": "array",
-				        "items": {}
+				        "items": {"type": "string"}
 				      },
-				      "description": "Data rows corresponding to the columns"
+				      "description": "Data rows"
 				    }
 				  },
 				  "required": ["columns", "data"]
 				}
 				""";
 
-		return String.format(template, defaultColumnsBuilder.toString());
+		return template;
 	}
 
 	@Override

@@ -21,22 +21,21 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Service;
 
-import com.alibaba.cloud.ai.example.manus.config.ConfigService;
+import com.alibaba.cloud.ai.example.manus.config.IConfigService;
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentDefinition;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent.StartupAgentConfigLoader;
 
-import jakarta.annotation.PostConstruct;
-
 @Service
-public class DynamicAgentScanner {
+public class DynamicAgentScanner implements IDynamicAgentScanner {
 
 	private static final Logger log = LoggerFactory.getLogger(DynamicAgentScanner.class);
 
@@ -45,17 +44,19 @@ public class DynamicAgentScanner {
 	private final String basePackage = "com.alibaba.cloud.ai.example.manus";
 
 	@Autowired
-	private ConfigService configService;
+	private IConfigService configService;
 
 	@Autowired
 	private StartupAgentConfigLoader startupAgentConfigLoader;
+
+	@Value("${namespace.value}")
+	private String namespace;
 
 	@Autowired
 	public DynamicAgentScanner(DynamicAgentRepository repository) {
 		this.repository = repository;
 	}
 
-	@PostConstruct
 	public void scanAndSaveAgents() {
 		// Check configuration for YAML-based agent override behavior
 		ConfigEntity overrideConfig = configService.getConfig("manus.agents.forceOverrideFromYaml")
@@ -219,6 +220,7 @@ public class DynamicAgentScanner {
 
 		// Update all fields (force override if exists)
 		entity.setAgentName(agentConfig.getAgentName());
+		entity.setNamespace(namespace);
 		entity.setAgentDescription(agentConfig.getAgentDescription());
 		entity.setNextStepPrompt(agentConfig.getNextStepPrompt());
 		entity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());

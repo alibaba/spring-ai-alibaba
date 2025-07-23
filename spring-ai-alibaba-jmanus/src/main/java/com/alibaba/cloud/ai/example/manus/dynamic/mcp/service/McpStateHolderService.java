@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpState;
 
 @Service
-public class McpStateHolderService {
+public class McpStateHolderService implements IMcpStateHolderService {
 
 	private Map<String, McpState> mcpStateMap = new ConcurrentHashMap<>();
 

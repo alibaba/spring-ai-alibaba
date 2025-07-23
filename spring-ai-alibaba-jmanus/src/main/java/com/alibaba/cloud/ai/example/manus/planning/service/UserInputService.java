@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
-public class UserInputService {
+public class UserInputService implements IUserInputService {
 
 	private final ConcurrentHashMap<String, FormInputTool> formInputToolMap = new ConcurrentHashMap<>();
 
