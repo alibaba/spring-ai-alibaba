@@ -208,7 +208,7 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new TerminateTool(planId, terminateColumns));
 		toolDefinitions.add(new Bash(unifiedDirectoryManager));
 		toolDefinitions.add(new DocLoaderTool());
-		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, unifiedDirectoryManager));
+		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService));
 		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
 		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
 		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
