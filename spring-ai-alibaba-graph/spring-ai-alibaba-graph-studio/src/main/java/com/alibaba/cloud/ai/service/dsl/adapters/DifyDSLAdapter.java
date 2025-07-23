@@ -250,6 +250,12 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			// Generate a readable varName and inject it into NodeData
 			int count = counters.merge(nodeType, 1, Integer::sum);
 			String varName = converter.generateVarName(count);
+
+			// 迭代的起始节点使用他的ID作为varName
+			if(nodeType.equals(NodeType.DIFY_ITERATION_START)) {
+				varName = nodeId;
+			}
+
 			data.setVarName(varName);
 
 			// Post-processing: Overwrite the default outputKey and refresh the outputs

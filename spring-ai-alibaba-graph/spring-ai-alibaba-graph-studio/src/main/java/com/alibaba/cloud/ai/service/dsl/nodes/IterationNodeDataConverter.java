@@ -75,6 +75,9 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 					.outputSelector(new VariableSelector("", outputSelector.get(0), outputSelector.get(1)))
 					.startNodeId(startNodeId)
 					.endNodeId(endNodeId)
+					// TODO 计算正确的inputKey
+					.inputKey(id + "_input")
+					.outputKey(id + "_output")
 					.build();
 			}
 
@@ -120,7 +123,11 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 
 	@Override
 	public Stream<Variable> extractWorkflowVars(IterationNodeData nodeData) {
-		return super.extractWorkflowVars(nodeData);
+		return Stream.of(nodeData.getOutput(), new Variable(nodeData.getInnerArrayKey(), "string"),
+				new Variable(nodeData.getInnerStartFlagKey(), "string"),
+				new Variable(nodeData.getInnerEndFlagKey(), "string"),
+				new Variable(nodeData.getInnerItemKey(), nodeData.getInputType()),
+				new Variable(nodeData.getInnerItemResultKey(), nodeData.getOutputType()));
 	}
 
 }
