@@ -52,6 +52,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderService;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
@@ -136,6 +137,9 @@ public class PlanningFactory implements IPlanningFactory {
 	@Autowired
 	private PromptService promptService;
 
+	@Autowired
+	private StreamingResponseHandler streamingResponseHandler;
+
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
 			SmartContentSavingService innerStorageService, UnifiedDirectoryManager unifiedDirectoryManager,
@@ -159,9 +163,10 @@ public class PlanningFactory implements IPlanningFactory {
 		PlanningToolInterface planningTool = new PlanningTool();
 
 		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
-				manusProperties);
+				manusProperties, streamingResponseHandler);
 
-		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties);
+		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties,
+				streamingResponseHandler);
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
 				planFinalizer);

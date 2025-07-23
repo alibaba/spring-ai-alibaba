@@ -106,6 +106,7 @@ public class BaiduSearchService
 				String title = "";
 				String abstractText = "";
 				String sourceUrl = div.attr("mu");
+				String iconUrl = "";
 
 				try {
 					if (div.hasClass("xpath-log") || div.hasClass("result-op")) {
@@ -153,7 +154,8 @@ public class BaiduSearchService
 					continue;
 				}
 
-				listData.add(new SearchResult(title, abstractText, sourceUrl));
+				listData.add(new SearchResult(title, abstractText, sourceUrl, iconUrl));
+
 			}
 
 			return listData;
@@ -187,12 +189,13 @@ public class BaiduSearchService
 		public SearchService.SearchResult getSearchResult() {
 			return new SearchService.SearchResult(this.results()
 				.stream()
-				.map(item -> new SearchService.SearchContent(item.title(), item.abstractText(), item.sourceUrl()))
+				.map(item -> new SearchService.SearchContent(item.title(), item.abstractText(), item.sourceUrl(),
+						item.icon()))
 				.toList());
 		}
 	}
 
-	public record SearchResult(String title, String abstractText, String sourceUrl) {
+	public record SearchResult(String title, String abstractText, String sourceUrl, String icon) {
 
 	}
 
