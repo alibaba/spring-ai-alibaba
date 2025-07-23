@@ -24,11 +24,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = MinioConstants.CONFIG_PREFIX)
 public class MinioProperties extends CommonToolCallProperties {
 
-	private String endpoint;
+	private String endpoint = MinioConstants.ENDPOINT;
 
-	private String accessKey;
+	private String accessKey = MinioConstants.ACCESS_KEY;
 
-	private String secretKey;
+	private String secretKey = MinioConstants.SECRET_KEY;
 
 	public String getEndpoint() {
 		return endpoint;

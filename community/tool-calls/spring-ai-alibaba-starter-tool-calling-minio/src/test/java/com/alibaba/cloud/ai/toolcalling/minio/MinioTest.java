@@ -17,8 +17,10 @@
 package com.alibaba.cloud.ai.toolcalling.minio;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +50,9 @@ class MinioTest {
 
 	@Test
 	@DisplayName("Tool-Calling Test Upload Object")
+	@EnabledIfEnvironmentVariable(named = MinioConstants.ENDPOINT, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@EnabledIfEnvironmentVariable(named = MinioConstants.ACCESS_KEY, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@EnabledIfEnvironmentVariable(named = MinioConstants.SECRET_KEY, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	void testMinioObjectUpload() {
 		Boolean apply = minioUploadObjectService
 			.apply(new MinioUploadObjectService.Request("bucket-test", "minio", "minio.txt"));
@@ -56,6 +61,9 @@ class MinioTest {
 
 	@Test
 	@DisplayName("Tool-Calling Test Download Object")
+	@EnabledIfEnvironmentVariable(named = MinioConstants.ENDPOINT, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@EnabledIfEnvironmentVariable(named = MinioConstants.ACCESS_KEY, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@EnabledIfEnvironmentVariable(named = MinioConstants.SECRET_KEY, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	void testMinioObjectDownload() {
 		Boolean apply = minioDownloadObjectService
 			.apply(new MinioDownloadObjectService.Request("bucket-test", "minio", "minio-copy.txt"));
@@ -64,6 +72,9 @@ class MinioTest {
 
 	@Test
 	@DisplayName("Tool-Calling Test Delete Object")
+	@EnabledIfEnvironmentVariable(named = MinioConstants.ENDPOINT, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@EnabledIfEnvironmentVariable(named = MinioConstants.ACCESS_KEY, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@EnabledIfEnvironmentVariable(named = MinioConstants.SECRET_KEY, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	void testMinioObjectDelete() {
 		Boolean apply = minioDeleteObjectService.apply(new MinioDeleteObjectService.Request("bucket-test", "minio"));
 		logger.info("delete result: {}", apply);
@@ -71,6 +82,9 @@ class MinioTest {
 
 	@Test
 	@DisplayName("Tool-Calling Test Check Object Exists")
+	@EnabledIfEnvironmentVariable(named = MinioConstants.ENDPOINT, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@EnabledIfEnvironmentVariable(named = MinioConstants.ACCESS_KEY, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
+	@EnabledIfEnvironmentVariable(named = MinioConstants.SECRET_KEY, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	void testMinioObjectCheckExists() {
 		Boolean apply = minioCheckObjectExistsService
 			.apply(new MinioCheckObjectExistsService.Request("bucket-test", "minio"));
