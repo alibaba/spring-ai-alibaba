@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.service;
 
-import com.alibaba.cloud.ai.dto.Knowledge;
-import com.alibaba.cloud.ai.dto.schema.KnowledgeDTO;
+import com.alibaba.cloud.ai.entity.BusinessKnowledge;
+import com.alibaba.cloud.ai.entity.BusinessKnowledgeDTO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -31,10 +31,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class KnowledgeService {
+public class BusinessKnowledgePersistenceService {
 
 	private static final String FIELD_ADD = """
-				INSERT INTO profession_knowledge (
+				INSERT INTO business_knowledge (
 					business_term,
 					description,
 			        	synonyms,
@@ -46,7 +46,7 @@ public class KnowledgeService {
 			""";
 
 	private static final String FIELD_UPDATE = """
-				UPDATE profession_knowledge
+				UPDATE business_knowledge
 				SET
 					business_term = ?,
 					description = ?,
@@ -58,7 +58,7 @@ public class KnowledgeService {
 			""";
 
 	private static final String FIELD_GET_DATASET_IDS = """
-			SELECT data_set_id FROM profession_knowledge
+			SELECT data_set_id FROM business_knowledge
 			""";
 
 	private static final String FIELD_GET_BY_DATASET_IDS = """
@@ -71,11 +71,11 @@ public class KnowledgeService {
 				data_set_id,
 			      	created_time,
 			       	updated_time
-			FROM profession_knowledge WHERE data_set_id = ?
+			FROM business_knowledge WHERE data_set_id = ?
 			""";
 
 	private static final String FIELD_CLEAR = """
-			DELETE FROM profession_knowledge WHERE id = ?
+			DELETE FROM business_knowledge WHERE id = ?
 			""";
 
 	// 模糊搜素
@@ -89,34 +89,34 @@ public class KnowledgeService {
 				data_set_id,
 			      	created_time,
 			       	updated_time
-			FROM profession_knowledge WHERE business_term LIKE ? OR description LIKE ? OR synonyms LIKE ?
+			FROM business_knowledge WHERE business_term LIKE ? OR description LIKE ? OR synonyms LIKE ?
 			""";
 
 	private final JdbcTemplate jdbcTemplate;
 
-	public KnowledgeService(JdbcTemplate jdbcTemplate) {
+	public BusinessKnowledgePersistenceService(JdbcTemplate jdbcTemplate) {
 		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
 	// 新增智能体字段
-	public void addKnowledge(KnowledgeDTO knowledgeDTO) {
-		Knowledge knowledge = new Knowledge();
+	public void addKnowledge(BusinessKnowledgeDTO knowledgeDTO) {
+		BusinessKnowledge knowledge = new BusinessKnowledge();
 		BeanUtils.copyProperties(knowledgeDTO, knowledge);
-		knowledge.setCreatedTime(Timestamp.valueOf(LocalDateTime.now()));
-		knowledge.setUpdatedTime(Timestamp.valueOf(LocalDateTime.now()));
+		knowledge.setCreateTime(LocalDateTime.now());
+		knowledge.setUpdateTime(LocalDateTime.now());
 		jdbcTemplate.update(FIELD_ADD, knowledge.getBusinessTerm(), knowledge.getDescription(), knowledge.getSynonyms(),
-				knowledge.getIsRecall(), knowledge.getDataSetId(), knowledge.getCreatedTime(),
-				knowledge.getUpdatedTime());
+				knowledge.getDefaultRecall(), knowledge.getDatasetId(), knowledge.getCreateTime(),
+				knowledge.getUpdateTime());
 	}
 
 	// 批量新增智能体字段
-	public void addKnowledgeList(List<KnowledgeDTO> knowledgeDTOList) {
-		List<Knowledge> knowledgeList = knowledgeDTOList.stream().map(knowledgeDTO -> {
-			Knowledge knowledge = new Knowledge();
+	public void addKnowledgeList(List<BusinessKnowledgeDTO> knowledgeDTOList) {
+		List<BusinessKnowledge> knowledgeList = knowledgeDTOList.stream().map(knowledgeDTO -> {
+			BusinessKnowledge knowledge = new BusinessKnowledge();
 			BeanUtils.copyProperties(knowledgeDTO, knowledge);
-			knowledge.setCreatedTime(Timestamp.valueOf(LocalDateTime.now()));
-			knowledge.setUpdatedTime(Timestamp.valueOf(LocalDateTime.now()));
+			knowledge.setCreateTime(LocalDateTime.now());
+			knowledge.setUpdateTime(LocalDateTime.now());
 			return knowledge;
 		}).collect(Collectors.toList());
 		jdbcTemplate.batchUpdate(FIELD_ADD, new AddBatchPreparedStatement(knowledgeList));
@@ -128,22 +128,30 @@ public class KnowledgeService {
 	}
 
 	// 根据data_set_id获取智能体字段
-	public List<Knowledge> getFieldByDataSetId(String dataSetId) {
+	public List<BusinessKnowledge> getFieldByDataSetId(String dataSetId) {
 		return this.jdbcTemplate.query(FIELD_GET_BY_DATASET_IDS, new Object[] { dataSetId }, (rs, rowNum) -> {
-			return new Knowledge(rs.getObject("id", Integer.class), rs.getString("business_term"),
-					rs.getString("description"), rs.getString("synonyms"), rs.getObject("is_recall", Integer.class),
-					rs.getString("data_set_id"), rs.getTimestamp("created_time"), rs.getTimestamp("updated_time"));
+			return new BusinessKnowledge(rs.getObject("id", Long.class), // id
+					rs.getString("business_term"), // businessTerm
+					rs.getString("description"), // description
+					rs.getString("synonyms"), // synonyms
+					rs.getObject("is_recall", boolean.class), // defaultRecall (convert to
+																// Boolean)
+					rs.getString("data_set_id"), // datasetId
+					rs.getTimestamp("created_time").toLocalDateTime(), // createTime
+					rs.getTimestamp("updated_time").toLocalDateTime() // updateTime
+			);
 		});
 	}
 
 	// 搜索
-	public List<Knowledge> searchFields(String keyword) {
+	public List<BusinessKnowledge> searchFields(String keyword) {
 		return jdbcTemplate.query(FIELD_SEARCH,
 				new Object[] { "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" }, (rs, rowNum) -> {
-					return new Knowledge(rs.getObject("id", Integer.class), rs.getString("business_term"),
+					return new BusinessKnowledge(rs.getObject("id", Long.class), rs.getString("business_term"),
 							rs.getString("description"), rs.getString("synonyms"),
-							rs.getObject("is_recall", Integer.class), rs.getString("data_set_id"),
-							rs.getTimestamp("created_time"), rs.getTimestamp("updated_time"));
+							rs.getObject("is_recall", boolean.class), rs.getString("data_set_id"),
+							rs.getTimestamp("created_time").toLocalDateTime(),
+							rs.getTimestamp("updated_time").toLocalDateTime());
 				});
 	}
 
@@ -153,13 +161,14 @@ public class KnowledgeService {
 	}
 
 	// 更新智能体字段
-	public void updateField(KnowledgeDTO knowledgeDTO, int id) {
+	public void updateField(BusinessKnowledgeDTO knowledgeDTO, int id) {
 		jdbcTemplate.update(FIELD_UPDATE, knowledgeDTO.getBusinessTerm(), knowledgeDTO.getDescription(),
-				knowledgeDTO.getSynonyms(), knowledgeDTO.getIsRecall(), knowledgeDTO.getDataSetId(),
+				knowledgeDTO.getSynonyms(), knowledgeDTO.getDefaultRecall(), knowledgeDTO.getDatasetId(),
 				Timestamp.valueOf(LocalDateTime.now()), id);
 	}
 
-	private record AddBatchPreparedStatement(List<Knowledge> knowledgeDTOList) implements BatchPreparedStatementSetter {
+	private record AddBatchPreparedStatement(
+			List<BusinessKnowledge> knowledgeDTOList) implements BatchPreparedStatementSetter {
 
 		@Override
 		public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -167,10 +176,10 @@ public class KnowledgeService {
 			ps.setString(1, field.getBusinessTerm()); // field_name
 			ps.setString(2, field.getDescription()); // field_description
 			ps.setString(3, field.getSynonyms()); // synonyms
-			ps.setObject(4, field.getIsRecall()); // is_recall
-			ps.setObject(5, field.getDataSetId()); // data_set_id
-			ps.setTimestamp(6, field.getCreatedTime()); // created_time
-			ps.setTimestamp(7, field.getUpdatedTime()); // updated_time
+			ps.setObject(4, field.getDefaultRecall()); // is_recall
+			ps.setObject(5, field.getDatasetId()); // data_set_id
+			ps.setTimestamp(6, Timestamp.valueOf(field.getCreateTime())); // created_time
+			ps.setTimestamp(7, Timestamp.valueOf(field.getUpdateTime())); // updated_time
 		}
 
 		@Override

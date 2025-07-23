@@ -15,9 +15,9 @@
  */
 package com.alibaba.cloud.ai.controller;
 
-import com.alibaba.cloud.ai.dto.AgentField;
-import com.alibaba.cloud.ai.dto.schema.AgentFieldDTO;
-import com.alibaba.cloud.ai.service.AgentFieldService;
+import com.alibaba.cloud.ai.entity.SemanticModel;
+import com.alibaba.cloud.ai.entity.SemanticModelDTO;
+import com.alibaba.cloud.ai.service.SemanticModelPersistenceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,73 +26,73 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/fields")
-public class AgentFieldController {
+public class SemanticModelPersistenceController {
 
-	private final AgentFieldService agentFieldService;
+	private final SemanticModelPersistenceService semanticModelPersistenceService;
 
-	public AgentFieldController(AgentFieldService agentFieldService) {
-		this.agentFieldService = agentFieldService;
+	public SemanticModelPersistenceController(SemanticModelPersistenceService semanticModelPersistenceService) {
+		this.semanticModelPersistenceService = semanticModelPersistenceService;
 	}
 
 	// 新增
 	@PostMapping("/add")
-	public ResponseEntity<Void> addField(@RequestBody AgentFieldDTO agentField) {
-		agentFieldService.addField(agentField);
+	public ResponseEntity<Void> addField(@RequestBody SemanticModelDTO semanticModelDTO) {
+		semanticModelPersistenceService.addField(semanticModelDTO);
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
 
 	@PostMapping("/addList")
-	public ResponseEntity<Void> addFields(@RequestBody List<AgentFieldDTO> agentFields) {
-		agentFieldService.addFields(agentFields);
+	public ResponseEntity<Void> addFields(@RequestBody List<SemanticModelDTO> semanticModelDTOS) {
+		semanticModelPersistenceService.addFields(semanticModelDTOS);
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
 
 	// 启用
 	@PutMapping("/enable")
 	public ResponseEntity<Void> enableFields(@RequestBody List<Integer> ids) {
-		agentFieldService.enableFields(ids);
+		semanticModelPersistenceService.enableFields(ids);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
 	// 禁用
 	@PutMapping("/disable")
-	public ResponseEntity<Void> disableFields(@RequestBody List<Integer> ids) {
-		agentFieldService.disableFields(ids);
+	public ResponseEntity<Void> disableFields(@RequestBody List<Long> ids) {
+		semanticModelPersistenceService.disableFields(ids);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
 	// 获取数据集id列表
 	@GetMapping("/datasetIds")
 	public ResponseEntity<List<String>> getDataSetIds() {
-		List<String> datasetIds = agentFieldService.getDataSetIds();
+		List<String> datasetIds = semanticModelPersistenceService.getDataSetIds();
 		return new ResponseEntity<>(datasetIds, HttpStatus.OK);
 	}
 
 	// 根据datasetId获取数据
 	@GetMapping("/dataset/{datasetId}")
-	public ResponseEntity<List<AgentField>> getDataSetById(@PathVariable String datasetId) {
-		List<AgentField> fields = agentFieldService.getFieldByDataSetId(datasetId);
+	public ResponseEntity<List<SemanticModel>> getDataSetById(@PathVariable String datasetId) {
+		List<SemanticModel> fields = semanticModelPersistenceService.getFieldByDataSetId(datasetId);
 		return new ResponseEntity<>(fields, HttpStatus.OK);
 	}
 
 	// 搜索
 	@GetMapping("/search")
-	public ResponseEntity<List<AgentField>> searchFields(@RequestParam String content) {
-		List<AgentField> fields = agentFieldService.searchFields(content);
+	public ResponseEntity<List<SemanticModel>> searchFields(@RequestParam String content) {
+		List<SemanticModel> fields = semanticModelPersistenceService.searchFields(content);
 		return new ResponseEntity<>(fields, HttpStatus.OK);
 	}
 
 	// 根据id删除
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteFieldById(@PathVariable int id) {
-		agentFieldService.deleteFieldById(id);
+	public ResponseEntity<Void> deleteFieldById(@PathVariable long id) {
+		semanticModelPersistenceService.deleteFieldById(id);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
 	// 编辑更新
 	@PutMapping("/{id}")
-	public ResponseEntity<Void> updateField(@PathVariable int id, @RequestBody AgentFieldDTO agentField) {
-		agentFieldService.updateField(agentField, id);
+	public ResponseEntity<Void> updateField(@PathVariable int id, @RequestBody SemanticModelDTO semanticModelDTO) {
+		semanticModelPersistenceService.updateField(semanticModelDTO, id);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 

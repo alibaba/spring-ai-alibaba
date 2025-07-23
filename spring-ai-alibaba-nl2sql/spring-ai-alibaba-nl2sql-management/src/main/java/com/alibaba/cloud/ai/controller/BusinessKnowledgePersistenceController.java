@@ -15,9 +15,9 @@
  */
 package com.alibaba.cloud.ai.controller;
 
-import com.alibaba.cloud.ai.dto.Knowledge;
-import com.alibaba.cloud.ai.dto.schema.KnowledgeDTO;
-import com.alibaba.cloud.ai.service.KnowledgeService;
+import com.alibaba.cloud.ai.entity.BusinessKnowledge;
+import com.alibaba.cloud.ai.entity.BusinessKnowledgeDTO;
+import com.alibaba.cloud.ai.service.BusinessKnowledgePersistenceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,59 +34,60 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/knowledge")
-public class knowledgeController {
+public class BusinessKnowledgePersistenceController {
 
-	private final KnowledgeService knowledgeService;
+	private final BusinessKnowledgePersistenceService businessKnowledgePersistenceService;
 
-	public knowledgeController(KnowledgeService knowledgeService) {
-		this.knowledgeService = knowledgeService;
+	public BusinessKnowledgePersistenceController(
+			BusinessKnowledgePersistenceService businessKnowledgePersistenceService) {
+		this.businessKnowledgePersistenceService = businessKnowledgePersistenceService;
 	}
 
 	// 新增
 	@PostMapping("/add")
-	public ResponseEntity<Void> addField(@RequestBody KnowledgeDTO knowledgeDTO) {
-		knowledgeService.addKnowledge(knowledgeDTO);
+	public ResponseEntity<Void> addField(@RequestBody BusinessKnowledgeDTO knowledgeDTO) {
+		businessKnowledgePersistenceService.addKnowledge(knowledgeDTO);
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
 
 	@PostMapping("/addList")
-	public ResponseEntity<Void> addFields(@RequestBody List<KnowledgeDTO> knowledgeDTOs) {
-		knowledgeService.addKnowledgeList(knowledgeDTOs);
+	public ResponseEntity<Void> addFields(@RequestBody List<BusinessKnowledgeDTO> knowledgeDTOs) {
+		businessKnowledgePersistenceService.addKnowledgeList(knowledgeDTOs);
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
 
 	// 获取数据集id列表
 	@GetMapping("/datasetIds")
 	public ResponseEntity<List<String>> getDataSetIds() {
-		List<String> datasetIds = knowledgeService.getDataSetIds();
+		List<String> datasetIds = businessKnowledgePersistenceService.getDataSetIds();
 		return new ResponseEntity<>(datasetIds, HttpStatus.OK);
 	}
 
 	// 根据datasetId获取数据
 	@GetMapping("/dataset/{datasetId}")
-	public ResponseEntity<List<Knowledge>> getDataSetById(@PathVariable String datasetId) {
-		List<Knowledge> knowledge = knowledgeService.getFieldByDataSetId(datasetId);
+	public ResponseEntity<List<BusinessKnowledge>> getDataSetById(@PathVariable String datasetId) {
+		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.getFieldByDataSetId(datasetId);
 		return new ResponseEntity<>(knowledge, HttpStatus.OK);
 	}
 
 	// 搜索
 	@GetMapping("/search")
-	public ResponseEntity<List<Knowledge>> searchFields(@RequestParam String content) {
-		List<Knowledge> knowledge = knowledgeService.searchFields(content);
+	public ResponseEntity<List<BusinessKnowledge>> searchFields(@RequestParam String content) {
+		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.searchFields(content);
 		return new ResponseEntity<>(knowledge, HttpStatus.OK);
 	}
 
 	// 根据id删除
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> deleteFieldById(@PathVariable int id) {
-		knowledgeService.deleteFieldById(id);
+		businessKnowledgePersistenceService.deleteFieldById(id);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
 	// 编辑更新
 	@PutMapping("/{id}")
-	public ResponseEntity<Void> updateField(@PathVariable int id, @RequestBody KnowledgeDTO knowledgeDTO) {
-		knowledgeService.updateField(knowledgeDTO, id);
+	public ResponseEntity<Void> updateField(@PathVariable int id, @RequestBody BusinessKnowledgeDTO knowledgeDTO) {
+		businessKnowledgePersistenceService.updateField(knowledgeDTO, id);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 

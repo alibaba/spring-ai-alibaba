@@ -13,22 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.dto.schema;
+package com.alibaba.cloud.ai.entity;
 
-public class KnowledgeDTO {
+/**
+ * 业务知识管理实体类
+ */
+public class BusinessKnowledgeDTO {
 
-	private String businessTerm;
+	private String businessTerm; // 业务名词
 
-	private String description;
+	private String description; // 说明
 
-	private String synonyms;
+	private String synonyms; // 同义词，逗号分隔
 
-	private Integer isRecall;
+	private Boolean defaultRecall; // 默认召回
 
-	private String dataSetId;
+	private String datasetId; // 关联的数据集ID
 
-	public KnowledgeDTO() {
+	public BusinessKnowledgeDTO() {
 	}
+
+	public BusinessKnowledgeDTO(String businessTerm, String description, String synonyms, Boolean defaultRecall,
+			String datasetId) {
+		this.businessTerm = businessTerm;
+		this.description = description;
+		this.synonyms = synonyms;
+		this.defaultRecall = defaultRecall;
+		this.datasetId = datasetId;
+	}
+
+	// Getters and Setters
 
 	public String getBusinessTerm() {
 		return businessTerm;
@@ -54,27 +68,20 @@ public class KnowledgeDTO {
 		this.synonyms = synonyms;
 	}
 
-	public Integer getIsRecall() {
-		return isRecall;
+	public Boolean getDefaultRecall() {
+		return defaultRecall;
 	}
 
-	public void setIsRecall(Integer isRecall) {
-		this.isRecall = isRecall;
+	public void setDefaultRecall(Boolean defaultRecall) {
+		this.defaultRecall = defaultRecall;
 	}
 
-	public String getDataSetId() {
-		return dataSetId;
+	public String getDatasetId() {
+		return datasetId;
 	}
 
-	public void setDataSetId(String dataSetId) {
-		this.dataSetId = dataSetId;
-	}
-
-	@Override
-	public String toString() {
-		return "Knowledge{" + ", businessTerm='" + businessTerm + '\'' + ", description='" + description + '\''
-				+ ", synonyms='" + synonyms + '\'' + ", isRecall=" + isRecall + ", dataSetId='" + dataSetId + '\''
-				+ '}';
+	public void setDatasetId(String datasetId) {
+		this.datasetId = datasetId;
 	}
 
 }
