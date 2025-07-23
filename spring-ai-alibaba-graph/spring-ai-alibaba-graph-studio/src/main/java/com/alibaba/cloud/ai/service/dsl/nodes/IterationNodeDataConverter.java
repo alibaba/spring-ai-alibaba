@@ -63,10 +63,12 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 				List<String> inputSelector = (List<String>) data.get("iterator_selector");
 				List<String> outputSelector = (List<String>) data.get("output_selector");
 				String startNodeId = (String) data.get("start_node_id");
+				String id =  (String) data.get("id");
 				// 规定输出结果的节点为最后一个节点
 				String endNodeId = outputSelector.get(0);
 				// 返回
 				return IterationNodeData.builder()
+						.id(id)
 					.inputType(inputType)
 					.outputType(outputType)
 					.inputSelector(new VariableSelector("", inputSelector.get(0), inputSelector.get(1)))

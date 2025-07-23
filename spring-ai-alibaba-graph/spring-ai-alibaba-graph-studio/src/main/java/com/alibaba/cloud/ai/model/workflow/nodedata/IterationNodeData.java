@@ -27,6 +27,8 @@ import java.util.List;
  */
 public class IterationNodeData extends NodeData {
 
+	private String id;
+
 	private String inputType;
 
 	private String outputType;
@@ -39,19 +41,24 @@ public class IterationNodeData extends NodeData {
 
 	private String endNodeId;
 
-	public IterationNodeData() {
-		super(List.of(), List.of());
-	}
-
-	public IterationNodeData(String inputType, String outputType, VariableSelector inputSelector,
+	public IterationNodeData(String id, String inputType, String outputType, VariableSelector inputSelector,
 			VariableSelector outputSelector, String startNodeId, String endNodeId) {
 		super(List.of(), List.of());
+		this.id = id;
 		this.inputType = inputType;
 		this.outputType = outputType;
 		this.inputSelector = inputSelector;
 		this.outputSelector = outputSelector;
 		this.startNodeId = startNodeId;
 		this.endNodeId = endNodeId;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
 	}
 
 	public String getInputType() {
@@ -104,6 +111,8 @@ public class IterationNodeData extends NodeData {
 
 	public static class Builder {
 
+		private String id;
+
 		private String inputType;
 
 		private String outputType;
@@ -115,6 +124,11 @@ public class IterationNodeData extends NodeData {
 		private String startNodeId;
 
 		private String endNodeId;
+
+		public Builder id(String id) {
+			this.id = id;
+			return this;
+		}
 
 		public Builder inputType(String inputType) {
 			this.inputType = inputType;
@@ -147,7 +161,7 @@ public class IterationNodeData extends NodeData {
 		}
 
 		public IterationNodeData build() {
-			return new IterationNodeData(inputType, outputType, inputSelector, outputSelector, startNodeId, endNodeId);
+			return new IterationNodeData(id, inputType, outputType, inputSelector, outputSelector, startNodeId, endNodeId);
 		}
 
 	}

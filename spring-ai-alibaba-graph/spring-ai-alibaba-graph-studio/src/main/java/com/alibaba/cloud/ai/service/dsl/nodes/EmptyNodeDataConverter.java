@@ -26,7 +26,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -46,7 +45,8 @@ public class EmptyNodeDataConverter extends AbstractNodeDataConverter<EmptyNodeD
 
 			@Override
 			public EmptyNodeData parse(Map<String, Object> data) throws JsonProcessingException {
-				return new EmptyNodeData();
+				String id = (String) data.get("id");
+				return new EmptyNodeData(id);
 			}
 
 			@Override

@@ -328,7 +328,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				Map.entry(NodeType.KNOWLEDGE_RETRIEVAL.difyValue(),
 						"com.alibaba.cloud.ai.graph.node.KnowledgeRetrievalNode"),
 				Map.entry(NodeType.VARIABLE_AGGREGATOR.difyValue(),
-						"com.alibaba.cloud.ai.graph.node.VariableAggregatorNode"));
+						"com.alibaba.cloud.ai.graph.node.VariableAggregatorNode"),
+				Map.entry(NodeType.ITERATION.difyValue(), "com.alibaba.cloud.ai.graph.node.IterationNode"));
 
 		Set<String> uniqueTypes = workflow.getGraph()
 			.getNodes()

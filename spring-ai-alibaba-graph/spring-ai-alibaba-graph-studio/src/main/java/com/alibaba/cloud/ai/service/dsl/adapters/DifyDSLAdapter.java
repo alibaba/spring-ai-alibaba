@@ -26,6 +26,8 @@ import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.workflow.nodedata.CodeNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.EmptyNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
@@ -230,10 +232,6 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			NodeDataConverter<NodeData> converter = (NodeDataConverter<NodeData>) getNodeDataConverter(nodeType);
 
 			NodeData data = converter.parseMapData(nodeDataMap, DSLDialectType.DIFY);
-			// 记录节点所在位置信息（如迭代节点内部）
-			Boolean isInIteration = (Boolean) nodeDataMap.getOrDefault("isInIteration", false);
-			data.setContainId(parentId);
-			data.setContainType(isInIteration ? NodeData.ContainType.ITERATION : NodeData.ContainType.NORMAL);
 
 			// Generate a readable varName and inject it into NodeData
 			int count = counters.merge(nodeType, 1, Integer::sum);
@@ -248,7 +246,9 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			nodes.add(node);
 		}
 
-		Map<String, String> idToOutputKey = nodes.stream().collect(Collectors.toMap(Node::getId, n -> {
+		Map<String, String> idToOutputKey = nodes.stream()
+				.filter(n -> !(n.getData() instanceof EmptyNodeData || n.getData() instanceof IterationNodeData))
+				.collect(Collectors.toMap(Node::getId, n -> {
 			try {
 				return ((VariableAggregatorNodeData) n.getData()).getOutputKey();
 			}
