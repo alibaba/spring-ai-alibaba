@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.example.deepresearch.tool.SearchFilterTool;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
@@ -74,7 +73,8 @@ public class ResearcherNode implements NodeAction {
 
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
 			McpProviderFactory mcpFactory, SearchFilterService searchFilterService,
-			SmartAgentDispatcherService smartAgentDispatcher, SmartAgentProperties smartAgentProperties) {
+			SmartAgentDispatcherService smartAgentDispatcher, SmartAgentProperties smartAgentProperties,
+			JinaCrawlerService jinaCrawlerService) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;

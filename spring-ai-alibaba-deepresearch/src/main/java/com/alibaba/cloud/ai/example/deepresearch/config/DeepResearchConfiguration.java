@@ -254,7 +254,8 @@ public class DeepResearchConfiguration {
 			String nodeId = "researcher_" + i;
 			stateGraph.addNode(nodeId,
 					node_async(new ResearcherNode(researchAgent, String.valueOf(i), reflectionProcessor,
-							mcpProviderFactory, searchFilterService, smartAgentDispatcher, smartAgentProperties)));
+							mcpProviderFactory, searchFilterService, smartAgentDispatcher, smartAgentProperties,
+							jinaCrawlerService)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
