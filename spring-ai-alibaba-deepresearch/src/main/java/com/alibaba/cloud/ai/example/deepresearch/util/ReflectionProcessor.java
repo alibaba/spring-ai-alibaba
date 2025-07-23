@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.util;
 
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentEnum;
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentFactory;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.ReflectionResult;
 import org.slf4j.Logger;
@@ -35,14 +37,14 @@ public class ReflectionProcessor {
 
 	private static final Logger logger = LoggerFactory.getLogger(ReflectionProcessor.class);
 
-	private final ChatClient reflectionAgent;
-
 	private final int maxReflectionAttempts;
 
 	private final BeanOutputConverter<ReflectionResult> converter;
 
-	public ReflectionProcessor(ChatClient reflectionAgent, int maxReflectionAttempts) {
-		this.reflectionAgent = reflectionAgent;
+	private final AgentFactory AgentFactory;
+
+	public ReflectionProcessor(AgentFactory AgentFactory, int maxReflectionAttempts) {
+		this.AgentFactory = AgentFactory;
 		this.maxReflectionAttempts = maxReflectionAttempts;
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<ReflectionResult>() {
 		});
@@ -115,6 +117,7 @@ public class ReflectionProcessor {
 		String evaluationPrompt = buildEvaluationPrompt(step, nodeType);
 
 		try {
+			ChatClient reflectionAgent = AgentFactory.getAgentByName(AgentEnum.REFLECTION_AGENT.getAgentName());
 			var response = reflectionAgent.prompt(converter.getFormat()).user(evaluationPrompt).call().chatResponse();
 
 			String responseText = response.getResult().getOutput().getText().trim();

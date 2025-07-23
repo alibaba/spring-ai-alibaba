@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentEnum;
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentFactory;
 import com.alibaba.cloud.ai.example.deepresearch.tool.SearchFilterTool;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
@@ -54,8 +56,6 @@ public class ResearcherNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(ResearcherNode.class);
 
-	private final ChatClient researchAgent;
-
 	private final String executorNodeId;
 
 	private final String nodeName;
@@ -67,12 +67,14 @@ public class ResearcherNode implements NodeAction {
 	// MCP工厂
 	private final McpProviderFactory mcpFactory;
 
+	private final AgentFactory agentFactory;
+
 	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
 
-	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
+	public ResearcherNode(AgentFactory agentFactory, String executorNodeId, ReflectionProcessor reflectionProcessor,
 			McpProviderFactory mcpFactory, SearchFilterService searchFilterService,
 			SmartAgentDispatcherService smartAgentDispatcher, SmartAgentProperties smartAgentProperties) {
-		this.researchAgent = researchAgent;
+		this.agentFactory = agentFactory;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;
 		this.reflectionProcessor = reflectionProcessor;
@@ -215,6 +217,7 @@ public class ResearcherNode implements NodeAction {
 			questionContent += " " + step.getDescription();
 		}
 
+		ChatClient researchAgent = agentFactory.getAgentByName(AgentEnum.RESEARCH_AGENT.getAgentName());
 		AgentSelectionResult selectionResult = smartAgentSelectionHelper.selectSmartAgent(questionContent, state,
 				researchAgent);
 

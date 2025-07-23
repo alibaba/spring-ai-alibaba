@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentEnum;
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentFactory;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -44,10 +46,10 @@ public class CoordinatorNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(CoordinatorNode.class);
 
-	private final ChatClient coordinatorAgent;
+	private final AgentFactory agentFactory;
 
-	public CoordinatorNode(ChatClient coordinatorAgent) {
-		this.coordinatorAgent = coordinatorAgent;
+	public CoordinatorNode(AgentFactory agentFactory) {
+		this.agentFactory = agentFactory;
 	}
 
 	@Override
@@ -62,6 +64,7 @@ public class CoordinatorNode implements NodeAction {
 		logger.debug("Current Coordinator messages: {}", messages);
 
 		// 发起调用并获取完整响应
+		ChatClient coordinatorAgent = agentFactory.getAgentByName(AgentEnum.COORDINATOR_AGENT.getAgentName());
 		ChatResponse response = coordinatorAgent.prompt().messages(messages).call().chatResponse();
 
 		String nextStep = END;

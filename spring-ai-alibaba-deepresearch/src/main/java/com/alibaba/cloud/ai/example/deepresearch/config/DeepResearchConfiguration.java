@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
+import com.alibaba.cloud.ai.example.deepresearch.agents.AgentFactory;
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
@@ -23,7 +24,6 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatche
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.RewriteAndMultiQueryDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
-
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
@@ -36,14 +36,14 @@ import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.RewriteAndMultiQueryNode;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
-import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
-
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
+import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
+import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -62,6 +62,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -70,7 +71,6 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
-import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 
 /**
  * @author yingzi
@@ -79,55 +79,49 @@ import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 @Configuration
 @EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class,
 		McpAssignNodeProperties.class, RagProperties.class, ReflectionProperties.class })
+@DependsOn("agentsConfiguration")
 public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
-	@Autowired
-	private ChatClient coderAgent;
+	private final ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
 
-	@Autowired
-	private ChatClient researchAgent;
+	private final DeepResearchProperties deepResearchProperties;
 
-	@Autowired
-	private ChatClient reporterAgent;
+	private final ReflectionProperties reflectionProperties;
 
-	@Autowired
-	private ChatClient coordinatorAgent;
+	private final JinaCrawlerService jinaCrawlerService;
 
-	@Autowired
-	private ChatClient plannerAgent;
+	private final RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
 
-	@Autowired
-	private ChatClient reflectionAgent;
+	private final ReportService reportService;
 
-	@Qualifier("chatClientBuilder")
-	@Autowired
-	private ChatClient.Builder rewriteAndMultiQueryAgentBuilder;
+	private final McpProviderFactory mcpProviderFactory;
 
-	@Autowired
-	private DeepResearchProperties deepResearchProperties;
+	private final InfoCheckService infoCheckService;
 
-	@Autowired
-	private ReflectionProperties reflectionProperties;
+	private final SearchFilterService searchFilterService;
 
-	@Autowired(required = false)
-	private JinaCrawlerService jinaCrawlerService;
+	private final AgentFactory agentFactory;
 
-	@Autowired(required = false)
-	private RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
-
-	@Autowired
-	private ReportService reportService;
-
-	@Autowired(required = false)
-	private McpProviderFactory mcpProviderFactory;
-
-	@Autowired
-	private InfoCheckService infoCheckService;
-
-	@Autowired
-	private SearchFilterService searchFilterService;
+	public DeepResearchConfiguration(
+			@Qualifier("chatClientBuilder") ChatClient.Builder rewriteAndMultiQueryAgentBuilder,
+			DeepResearchProperties deepResearchProperties, ReflectionProperties reflectionProperties,
+			@Autowired(required = false) JinaCrawlerService jinaCrawlerService,
+			@Autowired(required = false) RetrievalAugmentationAdvisor retrievalAugmentationAdvisor,
+			ReportService reportService, @Autowired(required = false) McpProviderFactory mcpProviderFactory,
+			InfoCheckService infoCheckService, SearchFilterService searchFilterService, AgentFactory agentFactory) {
+		this.rewriteAndMultiQueryAgentBuilder = rewriteAndMultiQueryAgentBuilder;
+		this.deepResearchProperties = deepResearchProperties;
+		this.reflectionProperties = reflectionProperties;
+		this.jinaCrawlerService = jinaCrawlerService;
+		this.retrievalAugmentationAdvisor = retrievalAugmentationAdvisor;
+		this.reportService = reportService;
+		this.mcpProviderFactory = mcpProviderFactory;
+		this.infoCheckService = infoCheckService;
+		this.searchFilterService = searchFilterService;
+		this.agentFactory = agentFactory;
+	}
 
 	@Autowired(required = false)
 	private QuestionClassifierService questionClassifierService;
@@ -147,7 +141,7 @@ public class DeepResearchConfiguration {
 			return null; // Return null if reflection mechanism is not enabled
 		}
 		// Use dedicated reflection agent
-		return new ReflectionProcessor(reflectionAgent, reflectionProperties.getMaxAttempts());
+		return new ReflectionProcessor(agentFactory, reflectionProperties.getMaxAttempts());
 	}
 
 	@Bean
@@ -198,18 +192,18 @@ public class DeepResearchConfiguration {
 
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
-			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
+			.addNode("coordinator", node_async(new CoordinatorNode(agentFactory)))
 			.addNode("rewrite_multi_query", node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryAgentBuilder)))
 			.addNode("background_investigator",
 					node_async(
 							new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService, searchFilterService,
 									questionClassifierService, searchPlatformSelectionService, smartAgentProperties)))
-			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
+			.addNode("planner", node_async((new PlannerNode(agentFactory))))
 			.addNode("information", node_async((new InformationNode())))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-			.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportService))))
+			.addNode("reporter", node_async((new ReporterNode(agentFactory, reportService))))
 			.addNode("rag_node", node_async(new RagNode(retrievalAugmentationAdvisor, researchAgent)));
 
 		// 添加并行节点块
@@ -253,7 +247,7 @@ public class DeepResearchConfiguration {
 			.get(ParallelEnum.RESEARCHER.getValue()); i++) {
 			String nodeId = "researcher_" + i;
 			stateGraph.addNode(nodeId,
-					node_async(new ResearcherNode(researchAgent, String.valueOf(i), reflectionProcessor,
+					node_async(new ResearcherNode(agentFactory, String.valueOf(i), reflectionProcessor,
 							mcpProviderFactory, searchFilterService, smartAgentDispatcher, smartAgentProperties)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
@@ -263,8 +257,8 @@ public class DeepResearchConfiguration {
 		ReflectionProcessor reflectionProcessor = reflectionProcessor();
 		for (int i = 0; i < deepResearchProperties.getParallelNodeCount().get(ParallelEnum.CODER.getValue()); i++) {
 			String nodeId = "coder_" + i;
-			stateGraph.addNode(nodeId,
-					node_async(new CoderNode(coderAgent, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
+			stateGraph.addNode(nodeId, node_async(
+					new CoderNode(agentFactory, String.valueOf(i), reflectionProcessor, mcpProviderFactory)));
 			stateGraph.addEdge("parallel_executor", nodeId).addEdge(nodeId, "research_team");
 		}
 	}
