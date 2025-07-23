@@ -55,7 +55,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 	private final DbAccessor dbAccessor;
 
-	public SqlExecuteNode(ChatClient.Builder chatClientBuilder, DbAccessor dbAccessor, DbConfig dbConfig) {
+	public SqlExecuteNode(DbAccessor dbAccessor, DbConfig dbConfig) {
 		super();
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;

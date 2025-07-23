@@ -55,7 +55,7 @@ public class TableRelationNode implements NodeAction {
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
-	public TableRelationNode(ChatClient.Builder chatClientBuilder, BaseSchemaService baseSchemaService,
+	public TableRelationNode( BaseSchemaService baseSchemaService,
 			BaseNl2SqlService baseNl2SqlService) {
 		this.baseSchemaService = baseSchemaService;
 		this.baseNl2SqlService = baseNl2SqlService;

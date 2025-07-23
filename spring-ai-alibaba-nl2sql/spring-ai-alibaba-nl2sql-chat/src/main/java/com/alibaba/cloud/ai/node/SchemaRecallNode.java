@@ -51,7 +51,7 @@ public class SchemaRecallNode implements NodeAction {
 
 	private final BaseSchemaService baseSchemaService;
 
-	public SchemaRecallNode(ChatClient.Builder chatClientBuilder, BaseSchemaService baseSchemaService) {
+	public SchemaRecallNode( BaseSchemaService baseSchemaService) {
 		this.baseSchemaService = baseSchemaService;
 	}
 

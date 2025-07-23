@@ -57,19 +57,14 @@ public class SqlGenerateNode implements NodeAction {
 
 	private static final int MAX_RETRY_COUNT = 3;
 
-	private final ChatClient chatClient;
-
-	private final DbConfig dbConfig;
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
 	private final BeanOutputConverter<Plan> converter;
 
-	public SqlGenerateNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
-			DbConfig dbConfig) {
-		this.chatClient = chatClientBuilder.build();
+	public SqlGenerateNode( BaseNl2SqlService baseNl2SqlService
+			) {
 		this.baseNl2SqlService = baseNl2SqlService;
-		this.dbConfig = dbConfig;
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
 		});
 	}
