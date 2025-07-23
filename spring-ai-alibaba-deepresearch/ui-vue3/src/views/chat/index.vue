@@ -255,16 +255,16 @@ const [agent] = useXAgent({
           break
         }
 
-        const xStreamBody = new XStreamBody('/chat/resume', {
+        const xStreamBody = new XStreamBody('/deep-research/chat/resume', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
           },
           body: {
-            ...configStore.chatConfig,
-            query: message,
-            feed_back: false, 
+            feed_back_content: message,
+            feed_back: true, 
+            thread_id: convId
           },
         })
 
@@ -448,7 +448,7 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
               footer: (
                 <Flex style="margin-left: auto" gap="middle">
                   <Button type="primary">修改方案</Button>
-                  <Button type="primary">开始研究</Button>
+                  <Button type="primary" onClick={startDeepResearch}>开始研究</Button>
                 </Flex>
               ),
               extra: '',

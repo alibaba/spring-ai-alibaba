@@ -28,7 +28,7 @@ import { CloseOutlined, LoadingOutlined, CheckCircleOutlined } from '@ant-design
 import { parseJsonTextStrict } from '@/utils/jsonParser';
 import { useMessageStore } from '@/store/MessageStore'
 import { computed,cloneVNode,h } from 'vue'
-import { ThoughtChain, type ThoughtChainProps } from 'ant-design-x-vue';
+import { ThoughtChain, type ThoughtChainProps, type ThoughtChainItem } from 'ant-design-x-vue';
 import MD from '@/components/md/index.vue'
 
 const messageStore = useMessageStore()
@@ -52,41 +52,33 @@ const arrayTemp: ThoughtChainProps['items'] = []
 let isLoading = false
 // 从messageStore 拿出消息，然后进行解析并且渲染
 const items = computed(() => {
-  if (props.convId && messageStore.history[props.convId]) {
-    // 思维链显示的列表
-    const array: ThoughtChainProps['items'] = []
-    // 过滤出非人类的消息
+  // 思维链显示的列表
+  const array: ThoughtChainProps['items'] = []
+  if(!props.convId || !messageStore.history[props.convId]){
+    return array
+  }
+  // 过滤出非人类的消息
     const messages = messageStore.history[props.convId].filter(item => item.status != 'local')
+    // 遍历messages 用于渲染思维链
     messages.forEach(msg => {
-      // 先加载一个Loading
-      if(!isLoading) {
-          isLoading = true
-          arrayTemp.push({
-              title: 'AI 思考中',
-              description: '',
-              icon: h(LoadingOutlined),
-              status: 'pending',
-          })
-      }
       // 单个chunk
       if(msg.status === 'loading' && msg.message != 'Waiting...') { 
            const node = JSON.parse(JSON.parse(msg.message))
-           console.log('chunk-node', node)
-           // llm_stream 节点跳过
            if(!node.node){
+              // TODO llm_stream 节点应该渲染loading 节点
               return
            }
            const item = processNode(node)
            arrayTemp.push(item)
            
       }
-      // 完整的text
+      //  完整的text， 历史记录的渲染
       if(msg.status === 'success') {
           isLoading = false
           const jsonArray = parseJsonTextStrict(msg.message)
           jsonArray.forEach(node => {
-            // llm_stream 节点跳过
             if(!node.node) {
+              // TODO llm_stream 节点应该渲染loading 节点
               return
             }
             // 处理节点渲染
@@ -96,22 +88,12 @@ const items = computed(() => {
             }
           })
       }
-
-      if(!isLoading) {
-          // 如果不是loading状态，移除arrayTemp中的第一个loading节点
-          if(arrayTemp.length > 0 && arrayTemp[0].status === 'pending') {
-              arrayTemp.shift()
-          }
-      }
     })
-
     array.push(...arrayTemp)
     return array
-    
-  }
 })
 
-const processNode = (node: any) => {
+const processNode = (node: any): ThoughtChainItem | undefined => {
     let title = ''
     let description = ''
     let content = null
@@ -136,6 +118,7 @@ const processNode = (node: any) => {
           content = cloneVNode(h(Text, {}, () => {
             return queries.map((query, index) => `${index + 1}. ${query}`).join('\n')
           }))
+          
         }
         break
         
@@ -161,10 +144,10 @@ const processNode = (node: any) => {
         break
         
       default:
-        // 没有匹配到则返回空
+        console.log('default', node)
         return
     }
-    const item: any = {
+    const item: ThoughtChainItem = {
         title,
         description,
         icon: h(CheckCircleOutlined),
