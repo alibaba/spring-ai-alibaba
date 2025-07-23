@@ -75,7 +75,6 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 					.outputSelector(new VariableSelector("", outputSelector.get(0), outputSelector.get(1)))
 					.startNodeId(startNodeId)
 					.endNodeId(endNodeId)
-					// TODO 计算正确的inputKey
 					.inputKey(id + "_input")
 					.outputKey(id + "_output")
 					.build();

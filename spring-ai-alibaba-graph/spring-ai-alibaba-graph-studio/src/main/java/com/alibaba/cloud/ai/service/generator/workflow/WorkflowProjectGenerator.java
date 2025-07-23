@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.model.workflow.Edge;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.CodeNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.KnowledgeRetrievalNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.StartNodeData;
@@ -167,7 +168,13 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			NodeType nodeType = NodeType.fromValue(node.getType()).orElseThrow();
 			for (NodeSection section : nodeNodeSections) {
 				if (section.support(nodeType)) {
-					sb.append(section.render(node, varName));
+					String res = section.render(node, varName);
+					if (nodeType.equals(NodeType.ITERATION)) {
+						// 迭代节点render未知终止节点名称
+						res = String.format(res,
+								varNames.getOrDefault(((IterationNodeData) node.getData()).getEndNodeId(), "unknown"));
+					}
+					sb.append(res);
 					break;
 				}
 			}
@@ -200,6 +207,11 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			// Skip if already rendered as conditional
 			if (edge.getSourceHandle() != null && !"source".equals(edge.getSourceHandle())) {
 				continue;
+			}
+
+			// 迭代节点作为边的终止点时直接使用节点ID，作为边的起始点时使用ID_out
+			if (sourceType != null && sourceType.equalsIgnoreCase("iteration")) {
+				srcVar += "_out";
 			}
 
 			String key = srcVar + "->" + tgtVar;

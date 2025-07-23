@@ -121,6 +121,12 @@ public class IterationNodeSection implements NodeSection {
 			.append(varName)
 			.append("_out")
 			.append("\", AsyncNodeAction.node_async((OverAllState state) -> Map.of()))\n")
+			.append("// Dify End to Graph End Edge \n")
+			// 结束节点的变量名在此方法中未知，先使用占位符替代
+			.append(".addEdge(\"%s\", \"")
+			.append(varName)
+			.append("_end")
+			.append("\")\n")
 			.append("// Start Conditional Edge \n")
 			.append(".addConditionalEdges(\"")
 			.append(varName)

@@ -193,18 +193,6 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			edges = constructEdges(edgeMaps);
 		}
 
-		// 记录所有的迭代节点，用来修改边。迭代节点作为边的终止点时直接使用节点ID，作为边的起始点时使用ID_out
-		Set<String> iteration = nodes.stream()
-			.filter(n -> n.getType().contains("iteration"))
-			.map(Node::getId)
-			.collect(Collectors.toSet());
-
-		for (Edge edge : edges) {
-			if (iteration.contains(edge.getSource())) {
-				edge.setSource(edge.getSource().concat("_out"));
-			}
-		}
-
 		graph.setNodes(nodes);
 		graph.setEdges(edges);
 		return graph;
@@ -252,7 +240,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			String varName = converter.generateVarName(count);
 
 			// 迭代的起始节点使用他的ID作为varName
-			if(nodeType.equals(NodeType.DIFY_ITERATION_START)) {
+			if (nodeType.equals(NodeType.DIFY_ITERATION_START)) {
 				varName = nodeId;
 			}
 
