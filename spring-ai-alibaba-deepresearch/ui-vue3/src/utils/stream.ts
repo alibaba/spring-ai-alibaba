@@ -67,7 +67,7 @@ export class XStreamBody {
       }
       this.lines.value = [...this.lines.value, newChunk]
       if (updateHandle) {
-        updateHandle(JSON.stringify(chunk.data))
+        updateHandle(chunk.data)
       }
     }
   }

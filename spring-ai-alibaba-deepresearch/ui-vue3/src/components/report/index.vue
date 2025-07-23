@@ -23,11 +23,11 @@
 </template>
 
 <script setup lang="ts">
-import { Flex, Button,Typography  } from 'ant-design-vue'
+import { Flex, Button } from 'ant-design-vue'
 import { CloseOutlined, LoadingOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
 import { parseJsonTextStrict } from '@/utils/jsonParser';
 import { useMessageStore } from '@/store/MessageStore'
-import { computed,cloneVNode,h } from 'vue'
+import { computed, h } from 'vue'
 import { ThoughtChain, type ThoughtChainProps, type ThoughtChainItem } from 'ant-design-x-vue';
 import MD from '@/components/md/index.vue'
 
@@ -47,7 +47,6 @@ const props = withDefaults(defineProps<Props>(), {
   convId: ''
 })
 
-const { Paragraph, Text } = Typography;
 const arrayTemp: ThoughtChainProps['items'] = []
 let isLoading = false
 // 从messageStore 拿出消息，然后进行解析并且渲染
@@ -62,18 +61,24 @@ const items = computed(() => {
     // 遍历messages 用于渲染思维链
     messages.forEach(msg => {
       // 单个chunk
+      // xchat组件的第一个chunk是 Waiting... 所以需要跳过
       if(msg.status === 'loading' && msg.message != 'Waiting...') { 
-           const node = JSON.parse(JSON.parse(msg.message))
+           isLoading = true
+           const node = JSON.parse(msg.message)
            if(!node.node){
               // TODO llm_stream 节点应该渲染loading 节点
               return
            }
            const item = processNode(node)
-           arrayTemp.push(item)
+           if(item) {
+              arrayTemp.push(item)
+           }
+           
            
       }
       //  完整的text， 历史记录的渲染
-      if(msg.status === 'success') {
+      //  当stream完成，xchat还会返回一次success，为避免思维链重复渲染，如果是loading状态，则不在重复增加节点
+      if(msg.status === 'success' && !isLoading) {
           isLoading = false
           const jsonArray = parseJsonTextStrict(msg.message)
           jsonArray.forEach(node => {
@@ -93,7 +98,7 @@ const items = computed(() => {
     return array
 })
 
-const processNode = (node: any): ThoughtChainItem | undefined => {
+const processNode = (node: any): ThoughtChainItem => {
     let title = ''
     let description = ''
     let content = null
@@ -115,10 +120,8 @@ const processNode = (node: any): ThoughtChainItem | undefined => {
         description = '优化查询以获得更好的搜索结果'
         if(node.data?.optimize_queries && Array.isArray(node.data.optimize_queries)) {
           const queries = node.data.optimize_queries
-          content = cloneVNode(h(Text, {}, () => {
-            return queries.map((query, index) => `${index + 1}. ${query}`).join('\n')
-          }))
-          
+          const markdownContent = queries.map((query, index) => `${index + 1}. ${query}`).join('\n')
+          content = h(MD, { content: markdownContent })
         }
         break
         
@@ -127,19 +130,34 @@ const processNode = (node: any): ThoughtChainItem | undefined => {
         description = '正在收集和分析背景信息'
         if(node.data?.background_investigation_results && Array.isArray(node.data.background_investigation_results)) {
           const results = node.data.background_investigation_results
-          content = cloneVNode(h(Text, {}, () => {
-            return results.map((result, index) => `${index + 1}. ${result}`).join('\n')
-          }))
+          const markdownContent = results.map((result, index) => `${index + 1}. ${result}`).join('\n')
+          content = h(MD, { content: markdownContent })
         }
         break
         
-      case 'planner':
-        title = '【规划制定】生成执行计划'
-        description = '制定详细的执行计划'
-        if(node.data?.planner_content) {
-          content = cloneVNode(h(Text, {}, () => {
-            return node.data.planner_content
-          }))
+      case 'information':
+        title = node.data?.current_plan?.title || '【信息收集】'
+        description = node.data?.current_plan?.thought || '正在收集相关信息'
+        break
+        
+      case 'human_feedback':
+        title = node.data?.current_plan?.title || '【人工反馈】'
+        description = node.data?.current_plan?.thought || '等待人工反馈'
+        break
+        
+      case '__PARALLEL__(parallel_executor)':
+        title = node.data?.current_plan?.title || '【并行执行】'
+        description = node.data?.current_plan?.thought || '正在并行执行任务'
+        if(node.data?.current_plan?.steps?.[0]?.executionRes) {
+          content = h(MD, { content: node.data.current_plan.steps[0].executionRes })
+        }
+        break
+        
+      case 'reporter':
+        title = '【报告生成】生成最终报告'
+        description = '正在整理和生成最终研究报告'
+        if(node.data?.final_report) {
+          content = h(MD, { content: node.data.final_report })
         }
         break
         
@@ -155,7 +173,7 @@ const processNode = (node: any): ThoughtChainItem | undefined => {
     }
     
     if(content) {
-      item.content = cloneVNode(content)
+      item.content = content
     }
     return item
 }
