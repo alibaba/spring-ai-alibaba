@@ -21,14 +21,18 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author vlsmb
  * @since 2025/7/12
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.nl2sql.container")
+@ConfigurationProperties(prefix = ContainerProperties.CONFIG_PREFIX)
 public class ContainerProperties {
+
+	public static final String CONFIG_PREFIX = "spring.ai.alibaba.nl2sql.container";
 
 	public enum ContainerImpl {
 
 		DOCKER, CONTAINERD, KATA;
 
 	}
+
+	Boolean enabled = true;
 
 	/**
 	 * 指定容器池的实现类
@@ -114,6 +118,14 @@ public class ContainerProperties {
 	 * 容器网络模式
 	 */
 	String networkMode = "bridge";
+
+	public Boolean getEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(Boolean enabled) {
+		this.enabled = enabled;
+	}
 
 	public ContainerImpl getContainerImpl() {
 		return containerImpl;
