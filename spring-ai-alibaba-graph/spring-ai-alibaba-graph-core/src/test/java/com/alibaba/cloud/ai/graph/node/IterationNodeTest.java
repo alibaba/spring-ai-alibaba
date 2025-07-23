@@ -126,6 +126,14 @@ public class IterationNodeTest {
 	}
 
 	@Test
+	@DisplayName("Test Empty Iteration")
+	public void testEmpty() throws Exception {
+		String res = this.runGraph("[]", (OverAllState state) -> Map.of());
+		log.info("result: {}", res);
+		Assertions.assertEquals(OBJECT_MAPPER.readValue(res, List.class), List.of());
+	}
+
+	@Test
 	@DisplayName("Test two IterationNodes")
 	public void testTwoIterationNodes() throws Exception {
 		// 配置子图：START -> iterator -> END

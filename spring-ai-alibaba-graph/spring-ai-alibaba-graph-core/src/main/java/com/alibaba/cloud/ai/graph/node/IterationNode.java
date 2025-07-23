@@ -97,7 +97,7 @@ public class IterationNode {
 				List<ElementInput> items = inputs == null
 						? (List<ElementInput>) state.value(this.inputArrayKey, List.class).orElseThrow() : inputs;
 				if (items.isEmpty()) {
-					return Map.of(this.outputItemKey, "null", this.outputStartIterationKey, false);
+					return Map.of(this.outputStartIterationKey, false);
 				}
 				// 删除第一个元素，并放回state
 				List<ElementInput> newItems = new ArrayList<ElementInput>(items);
@@ -184,17 +184,24 @@ public class IterationNode {
 		 */
 		private final String outputContinueIterationKey;
 
+		private final String outputStartIterationKey;
+
 		public End(String inputArrayKey, String inputResultKey, String outputArrayJsonKey,
-				String outputContinueIterationKey) {
+				String outputContinueIterationKey, String outputStartIterationKey) {
 			this.inputArrayKey = inputArrayKey;
 			this.inputResultKey = inputResultKey;
 			this.outputArrayJsonKey = outputArrayJsonKey;
 			this.outputContinueIterationKey = outputContinueIterationKey;
+			this.outputStartIterationKey = outputStartIterationKey;
 		}
 
 		@Override
 		public Map<String, Object> apply(OverAllState state) throws Exception {
 			try {
+				// 判断是不是空迭代节点（即outputStartIterationKey为false）
+				if (!state.value(this.outputStartIterationKey, Boolean.class).orElse(false)) {
+					return Map.of(this.outputContinueIterationKey, false, this.outputArrayJsonKey, "[]");
+				}
 				List<ElementInput> items = (List<ElementInput>) state.value(this.inputArrayKey, List.class)
 					.orElseThrow();
 				ElementOutput result = (ElementOutput) state.value(this.inputResultKey).orElseThrow();
@@ -223,15 +230,19 @@ public class IterationNode {
 
 			private String outputContinueIterationKey;
 
+			private String outputStartIterationKey;
+
 			private Builder() {
 				this.inputArrayKey = null;
 				this.inputResultKey = null;
 				this.outputArrayKey = null;
 				this.outputContinueIterationKey = null;
+				this.outputStartIterationKey = null;
 			}
 
 			public End<ElementInput, ElementOutput> build() {
-				return new End<>(inputArrayKey, inputResultKey, outputArrayKey, outputContinueIterationKey);
+				return new End<>(inputArrayKey, inputResultKey, outputArrayKey, outputContinueIterationKey,
+						outputStartIterationKey);
 			}
 
 			public Builder<ElementInput, ElementOutput> inputArrayKey(String inputArrayKey) {
@@ -251,6 +262,11 @@ public class IterationNode {
 
 			public Builder<ElementInput, ElementOutput> outputContinueIterationKey(String outputContinueIterationKey) {
 				this.outputContinueIterationKey = outputContinueIterationKey;
+				return this;
+			}
+
+			public Builder<ElementInput, ElementOutput> outputStartIterationKey(String outputStartIterationKey) {
+				this.outputStartIterationKey = outputStartIterationKey;
 				return this;
 			}
 
@@ -378,13 +394,14 @@ public class IterationNode {
 							.inputResultKey(this.iteratorResultKey)
 							.outputArrayKey(this.outputArrayJsonKey)
 							.outputContinueIterationKey(this.tempEndFlagKey)
+							.outputStartIterationKey(this.tempStartFlagKey)
 							.build()))
 				.addEdge(StateGraph.START, "iteration_start")
 				.addConditionalEdges("iteration_start",
 						edge_async(
 								(OverAllState state) -> state.value(this.tempStartFlagKey, Boolean.class).orElse(false)
 										? "true" : "false"),
-						Map.of("true", "iteration", "false", StateGraph.END))
+						Map.of("true", "iteration", "false", "iteration_end"))
 				.addEdge("iteration", "iteration_end")
 				.addConditionalEdges("iteration_end",
 						edge_async((OverAllState state) -> state.value(this.tempEndFlagKey, Boolean.class).orElse(false)
