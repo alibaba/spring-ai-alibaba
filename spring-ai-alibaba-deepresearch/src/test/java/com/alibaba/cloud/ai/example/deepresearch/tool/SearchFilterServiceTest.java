@@ -61,12 +61,12 @@ public class SearchFilterServiceTest {
 	private static final Logger log = LoggerFactory.getLogger(SearchFilterServiceTest.class);
 
 	private final SearchService.SearchResult searchResult = new SearchService.SearchResult(
-			List.of(new SearchService.SearchContent("2", "2", "http://2.example.com/test"),
-					new SearchService.SearchContent("1", "1", "https://1.example.com/test"),
-					new SearchService.SearchContent("3", "3", "3.example.com/test"),
-					new SearchService.SearchContent("5", "5", "https://5.example.com/test"),
-					new SearchService.SearchContent("4", "4", "http://4.example.com/test"),
-					new SearchService.SearchContent("unknown", "unknown", "http://unknown.example.com")));
+			List.of(new SearchService.SearchContent("2", "2", "http://2.example.com/test", null),
+					new SearchService.SearchContent("1", "1", "https://1.example.com/test", null),
+					new SearchService.SearchContent("3", "3", "3.example.com/test", null),
+					new SearchService.SearchContent("5", "5", "https://5.example.com/test", null),
+					new SearchService.SearchContent("4", "4", "http://4.example.com/test", null),
+					new SearchService.SearchContent("unknown", "unknown", "http://unknown.example.com", null)));
 
 	@BeforeEach
 	public void setUp() {

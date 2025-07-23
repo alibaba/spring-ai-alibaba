@@ -115,13 +115,15 @@ public class TavilySearchService
 			@JsonProperty(value = "include_domains",
 					defaultValue = "[]") @JsonPropertyDescription("A list of domains to specifically include in the search results.") List<String> includeDomains,
 			@JsonProperty(value = "exclude_domains",
-					defaultValue = "[]") @JsonPropertyDescription("A list of domains to specifically exclude from the search results.") List<String> excludeDomains)
+					defaultValue = "[]") @JsonPropertyDescription("A list of domains to specifically exclude from the search results.") List<String> excludeDomains,
+			@JsonProperty(value = "include_favicon",
+					defaultValue = "true") @JsonPropertyDescription("the icon of search results.") boolean includeIcon)
 			implements
 				Serializable,
 				SearchService.Request {
 
 		public static Request simpleQuery(String query) {
-			return new Request(query, null, null, null, null, null, null, null, null, null, null, null, null);
+			return new Request(query, null, null, null, null, null, null, null, null, null, null, null, null, true);
 		}
 
 		@Override
@@ -142,7 +144,7 @@ public class TavilySearchService
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ResultInfo(@JsonProperty("title") String title, @JsonProperty("url") String url,
 				@JsonProperty("content") String content, @JsonProperty("score") String score,
-				@JsonProperty("raw_content") String raw_content) {
+				@JsonProperty("raw_content") String raw_content, @JsonProperty("favicon") String icon) {
 		}
 
 		public static Response errorResponse(String query, String errorMsg) {
@@ -153,7 +155,7 @@ public class TavilySearchService
 		public SearchResult getSearchResult() {
 			return new SearchResult(this.results()
 				.stream()
-				.map(item -> new SearchService.SearchContent(item.title(), item.content(), item.url()))
+				.map(item -> new SearchService.SearchContent(item.title(), item.content(), item.url(), item.icon()))
 				.toList());
 		}
 	}
