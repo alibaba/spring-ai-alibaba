@@ -42,15 +42,13 @@ import static com.alibaba.cloud.ai.constant.Constant.*;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
 /**
- * Enhanced SQL generation node that handles SQL query regeneration with advanced optimization features.
+ * Enhanced SQL generation node that handles SQL query regeneration with advanced
+ * optimization features.
  *
- * This node is responsible for: 
- * - Multi-round SQL optimization and refinement
- * - Syntax validation and security analysis  
- * - Performance optimization and intelligent caching
- * - Handling execution exceptions and semantic consistency failures
- * - Managing retry logic with schema advice
- * - Providing streaming feedback during regeneration process
+ * This node is responsible for: - Multi-round SQL optimization and refinement - Syntax
+ * validation and security analysis - Performance optimization and intelligent caching -
+ * Handling execution exceptions and semantic consistency failures - Managing retry logic
+ * with schema advice - Providing streaming feedback during regeneration process
  *
  * @author zhangshenghang
  */
@@ -59,13 +57,16 @@ public class SqlGenerateNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(SqlGenerateNode.class);
 
 	private static final int MAX_RETRY_COUNT = 3;
+
 	private static final int MAX_OPTIMIZATION_ROUNDS = 3;
 
 	private final ChatClient chatClient;
-	private final DbConfig dbConfig;
-	private final BaseNl2SqlService baseNl2SqlService;
-	private final BeanOutputConverter<Plan> converter;
 
+	private final DbConfig dbConfig;
+
+	private final BaseNl2SqlService baseNl2SqlService;
+
+	private final BeanOutputConverter<Plan> converter;
 
 	public SqlGenerateNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
 			DbConfig dbConfig) {
@@ -172,61 +173,64 @@ public class SqlGenerateNode implements NodeAction {
 	private String regenerateSql(OverAllState state, String input, List<String> evidenceList, SchemaDTO schemaDTO,
 			String exceptionOutputKey, String originalSql) throws Exception {
 		String exceptionMessage = StateUtils.getStringValue(state, exceptionOutputKey);
-		
+
 		logger.info("开始增强SQL生成流程 - 原始SQL: {}, 异常信息: {}", originalSql, exceptionMessage);
 
 		// 多轮SQL优化流程
 		String bestSql = originalSql;
 		double bestScore = 0.0;
-		
+
 		for (int round = 1; round <= MAX_OPTIMIZATION_ROUNDS; round++) {
 			logger.info("开始第{}轮SQL优化", round);
-			
+
 			try {
 				String currentSql;
 				if (round == 1) {
 					// 第一轮：使用原始服务生成基础SQL
-					currentSql = baseNl2SqlService.generateSql(evidenceList, input, schemaDTO, originalSql, exceptionMessage);
-				} else {
+					currentSql = baseNl2SqlService.generateSql(evidenceList, input, schemaDTO, originalSql,
+							exceptionMessage);
+				}
+				else {
 					// 后续轮次：使用ChatClient进行优化
 					currentSql = generateOptimizedSql(bestSql, exceptionMessage, round);
 				}
-				
+
 				if (currentSql == null || currentSql.trim().isEmpty()) {
 					logger.warn("第{}轮SQL生成结果为空，跳过", round);
 					continue;
 				}
-				
+
 				// 评估SQL质量
 				SqlQualityScore score = evaluateSqlQuality(currentSql, schemaDTO);
-				logger.info("第{}轮SQL评分: 语法={}, 安全={}, 性能={}, 总分={}", 
-					round, score.syntaxScore, score.securityScore, score.performanceScore, score.totalScore);
-				
+				logger.info("第{}轮SQL评分: 语法={}, 安全={}, 性能={}, 总分={}", round, score.syntaxScore, score.securityScore,
+						score.performanceScore, score.totalScore);
+
 				// 更新最佳SQL
 				if (score.totalScore > bestScore) {
 					bestSql = currentSql;
 					bestScore = score.totalScore;
 					logger.info("第{}轮产生了更好的SQL，总分提升到{}", round, score.totalScore);
 				}
-				
+
 				// 质量足够高时提前结束
 				if (score.totalScore >= 0.95) {
 					logger.info("SQL质量分数达到{}，提前结束优化", score.totalScore);
 					break;
 				}
-				
-			} catch (Exception e) {
+
+			}
+			catch (Exception e) {
 				logger.warn("第{}轮SQL优化失败: {}", round, e.getMessage());
 			}
 		}
-		
+
 		// 最终验证和清理
 		bestSql = performFinalValidation(bestSql);
 
 		logger.info("增强SQL生成完成，最终SQL: {}, 最终评分: {}", bestSql, bestScore);
 		return bestSql;
 	}
-	
+
 	/**
 	 * 使用ChatClient生成优化的SQL
 	 */
@@ -235,141 +239,148 @@ public class SqlGenerateNode implements NodeAction {
 			StringBuilder prompt = new StringBuilder();
 			prompt.append("请对以下SQL进行第").append(round).append("轮优化:\n\n");
 			prompt.append("当前SQL:\n").append(previousSql).append("\n\n");
-			
+
 			if (exceptionMessage != null && !exceptionMessage.trim().isEmpty()) {
 				prompt.append("需要解决的问题:\n").append(exceptionMessage).append("\n\n");
 			}
-			
+
 			prompt.append("优化目标:\n");
 			prompt.append("1. 修复任何语法错误\n");
 			prompt.append("2. 提升查询性能\n");
 			prompt.append("3. 确保查询安全性\n");
 			prompt.append("4. 优化可读性\n\n");
 			prompt.append("请只返回优化后的SQL语句，不要包含其他说明。");
-			
-			String response = chatClient.prompt()
-				.user(prompt.toString())
-				.call()
-				.content();
-			
+
+			String response = chatClient.prompt().user(prompt.toString()).call().content();
+
 			return extractSqlFromResponse(response);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("使用ChatClient优化SQL失败: {}", e.getMessage());
 			return previousSql;
 		}
 	}
-	
+
 	/**
 	 * 从AI响应中提取SQL
 	 */
 	private String extractSqlFromResponse(String response) {
-		if (response == null) return null;
-		
+		if (response == null)
+			return null;
+
 		String sql = response.trim();
 		// 移除代码块标记
 		if (sql.startsWith("```sql")) {
 			sql = sql.substring(6);
-		} else if (sql.startsWith("```")) {
+		}
+		else if (sql.startsWith("```")) {
 			sql = sql.substring(3);
 		}
 		if (sql.endsWith("```")) {
 			sql = sql.substring(0, sql.length() - 3);
 		}
-		
+
 		return sql.trim();
 	}
-	
+
 	/**
 	 * 评估SQL质量
 	 */
 	private SqlQualityScore evaluateSqlQuality(String sql, SchemaDTO schemaDTO) {
 		SqlQualityScore score = new SqlQualityScore();
-		
+
 		// 语法检查 (40%权重)
 		score.syntaxScore = validateSqlSyntax(sql);
-		
+
 		// 安全检查 (30%权重)
 		score.securityScore = validateSqlSecurity(sql);
-		
+
 		// 性能检查 (30%权重)
 		score.performanceScore = evaluateSqlPerformance(sql);
-		
+
 		// 计算总分
 		score.totalScore = (score.syntaxScore * 0.4 + score.securityScore * 0.3 + score.performanceScore * 0.3);
-		
+
 		return score;
 	}
-	
+
 	/**
 	 * 验证SQL语法
 	 */
 	private double validateSqlSyntax(String sql) {
-		if (sql == null || sql.trim().isEmpty()) return 0.0;
-		
+		if (sql == null || sql.trim().isEmpty())
+			return 0.0;
+
 		double score = 1.0;
 		String upperSql = sql.toUpperCase();
-		
+
 		// 基础语法检查
-		if (!upperSql.contains("SELECT")) score -= 0.3;
-		if (!upperSql.contains("FROM")) score -= 0.3;
-		
+		if (!upperSql.contains("SELECT"))
+			score -= 0.3;
+		if (!upperSql.contains("FROM"))
+			score -= 0.3;
+
 		// 检查括号匹配
 		long openParens = sql.chars().filter(ch -> ch == '(').count();
 		long closeParens = sql.chars().filter(ch -> ch == ')').count();
-		if (openParens != closeParens) score -= 0.2;
-		
+		if (openParens != closeParens)
+			score -= 0.2;
+
 		// 检查引号匹配
 		long singleQuotes = sql.chars().filter(ch -> ch == '\'').count();
-		if (singleQuotes % 2 != 0) score -= 0.2;
-		
+		if (singleQuotes % 2 != 0)
+			score -= 0.2;
+
 		return Math.max(0.0, score);
 	}
-	
+
 	/**
 	 * 验证SQL安全性
 	 */
 	private double validateSqlSecurity(String sql) {
-		if (sql == null) return 0.0;
-		
+		if (sql == null)
+			return 0.0;
+
 		double score = 1.0;
 		String upperSql = sql.toUpperCase();
-		
+
 		// 检查危险操作
-		String[] dangerousKeywords = {"DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE"};
+		String[] dangerousKeywords = { "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE" };
 		for (String keyword : dangerousKeywords) {
 			if (upperSql.contains(keyword)) {
 				score -= 0.3;
 				logger.warn("检测到潜在危险SQL操作: {}", keyword);
 			}
 		}
-		
+
 		// 检查SQL注入模式
-		String[] injectionPatterns = {"--", "/*", "*/", "UNION", "OR 1=1", "OR '1'='1'"};
+		String[] injectionPatterns = { "--", "/*", "*/", "UNION", "OR 1=1", "OR '1'='1'" };
 		for (String pattern : injectionPatterns) {
 			if (upperSql.contains(pattern.toUpperCase())) {
 				score -= 0.2;
 				logger.warn("检测到潜在SQL注入模式: {}", pattern);
 			}
 		}
-		
+
 		return Math.max(0.0, score);
 	}
-	
+
 	/**
 	 * 评估SQL性能
 	 */
 	private double evaluateSqlPerformance(String sql) {
-		if (sql == null) return 0.0;
-		
+		if (sql == null)
+			return 0.0;
+
 		double score = 1.0;
 		String upperSql = sql.toUpperCase();
-		
+
 		// 检查SELECT *
 		if (upperSql.contains("SELECT *")) {
 			score -= 0.2;
 			logger.warn("检测到SELECT *，建议明确指定字段");
 		}
-		
+
 		// 检查WHERE条件
 		if (!upperSql.contains("WHERE")) {
 			score -= 0.3;
@@ -378,7 +389,7 @@ public class SqlGenerateNode implements NodeAction {
 
 		return Math.max(0.0, score);
 	}
-	
+
 	/**
 	 * 最终验证和清理
 	 */
@@ -386,55 +397,62 @@ public class SqlGenerateNode implements NodeAction {
 		if (sql == null || sql.trim().isEmpty()) {
 			throw new IllegalArgumentException("生成的SQL为空");
 		}
-		
+
 		// 基础清理
 		sql = sql.trim();
 		if (!sql.endsWith(";")) {
 			sql += ";";
 		}
-		
+
 		// 安全检查
 		if (validateSqlSecurity(sql) < 0.5) {
 			logger.warn("生成的SQL存在安全风险，但继续执行");
 		}
-		
+
 		return sql;
 	}
-	
+
 	/**
 	 * 生成缓存键
 	 */
-	private String generateCacheKey(List<String> evidenceList, String input, SchemaDTO schemaDTO, String exceptionMessage) {
-		return "sql_gen_" + String.valueOf(
-			java.util.Objects.hash(evidenceList, input, schemaDTO, exceptionMessage)
-		);
+	private String generateCacheKey(List<String> evidenceList, String input, SchemaDTO schemaDTO,
+			String exceptionMessage) {
+		return "sql_gen_" + String.valueOf(java.util.Objects.hash(evidenceList, input, schemaDTO, exceptionMessage));
 	}
-	
+
 	/**
 	 * 缓存条目
 	 */
 	private static class CacheEntry {
+
 		final String sql;
+
 		final long timestamp;
-		
+
 		CacheEntry(String sql, long timestamp) {
 			this.sql = sql;
 			this.timestamp = timestamp;
 		}
-		
+
 		boolean isExpired() {
 			return System.currentTimeMillis() - timestamp > 30 * 60 * 1000; // 30分钟过期
 		}
+
 	}
-	
+
 	/**
 	 * SQL质量评分
 	 */
 	private static class SqlQualityScore {
+
 		double syntaxScore = 0.0;
+
 		double securityScore = 0.0;
+
 		double performanceScore = 0.0;
+
 		double totalScore = 0.0;
+
 	}
 
 	/**
