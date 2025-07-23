@@ -5,3 +5,4 @@ spring:
         container:
           container-impl: docker
           code-timeout: 1s
+          enabled: true

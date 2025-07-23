@@ -57,7 +57,7 @@ public interface SearchService {
 
 	}
 
-	record SearchContent(String title, String content, String url) {
+	record SearchContent(String title, String content, String url, String icon) {
 
 	}
 
