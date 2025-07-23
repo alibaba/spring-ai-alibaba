@@ -17,13 +17,26 @@ package com.alibaba.cloud.ai.example.manus.llm;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
+import org.springframework.ai.chat.metadata.PromptMetadata;
+import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,24 +56,10 @@ public class StreamingResponseHandler {
 	 */
 	public static class StreamingResult {
 
-		private final String mergedText;
-
-		private final List<ToolCall> mergedToolCalls;
-
 		private final ChatResponse lastResponse;
 
-		public StreamingResult(String mergedText, List<ToolCall> mergedToolCalls, ChatResponse lastResponse) {
-			this.mergedText = mergedText;
-			this.mergedToolCalls = mergedToolCalls;
+		public StreamingResult(ChatResponse lastResponse) {
 			this.lastResponse = lastResponse;
-		}
-
-		public String getMergedText() {
-			return mergedText;
-		}
-
-		public List<ToolCall> getMergedToolCalls() {
-			return mergedToolCalls;
 		}
 
 		public ChatResponse getLastResponse() {
@@ -72,9 +71,9 @@ public class StreamingResponseHandler {
 		 * last response
 		 */
 		public List<ToolCall> getEffectiveToolCalls() {
-			return mergedToolCalls.isEmpty() && lastResponse != null && lastResponse.getResult() != null
+			return lastResponse != null && lastResponse.getResult() != null
 					&& lastResponse.getResult().getOutput() != null
-							? lastResponse.getResult().getOutput().getToolCalls() : mergedToolCalls;
+							? lastResponse.getResult().getOutput().getToolCalls() : null;
 		}
 
 		/**
@@ -82,9 +81,9 @@ public class StreamingResponseHandler {
 		 * last response
 		 */
 		public String getEffectiveText() {
-			return mergedText.isEmpty() && lastResponse != null && lastResponse.getResult() != null
+			return lastResponse != null && lastResponse.getResult() != null
 					&& lastResponse.getResult().getOutput() != null ? lastResponse.getResult().getOutput().getText()
-							: mergedText;
+							: null;
 		}
 
 	}
@@ -97,29 +96,81 @@ public class StreamingResponseHandler {
 	 * @return StreamingResult containing merged content and the last response
 	 */
 	public StreamingResult processStreamingResponse(Flux<ChatResponse> responseFlux, String contextName) {
-		StringBuilder responseTextBuilder = new StringBuilder();
-		List<ToolCall> allToolCalls = new ArrayList<>();
-		AtomicInteger responseCount = new AtomicInteger(0);
-		AtomicReference<String> currentText = new AtomicReference<>("");
-		AtomicReference<Integer> currentToolCallCount = new AtomicReference<>(0);
-
 		AtomicReference<Long> lastLogTime = new AtomicReference<>(System.currentTimeMillis());
 
-		ChatResponse lastResponse = responseFlux.doOnNext(chatResponse -> {
-			responseCount.incrementAndGet();
+		// Assistant Message
+		AtomicReference<StringBuilder> messageTextContentRef = new AtomicReference<>(new StringBuilder());
+		AtomicReference<List<ToolCall>> messageToolCallRef = new AtomicReference<>(
+				Collections.synchronizedList(new ArrayList<>()));
+		AtomicReference<Map<String, Object>> messageMetadataMapRef = new AtomicReference<>();
 
-			if (chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
-				// Merge text content
-				if (chatResponse.getResult().getOutput().getText() != null) {
-					responseTextBuilder.append(chatResponse.getResult().getOutput().getText());
-					currentText.set(responseTextBuilder.toString());
+		// ChatGeneration Metadata
+		AtomicReference<ChatGenerationMetadata> generationMetadataRef = new AtomicReference<>(
+				ChatGenerationMetadata.NULL);
+
+		// Usage
+		AtomicReference<Integer> metadataUsagePromptTokensRef = new AtomicReference<Integer>(0);
+		AtomicReference<Integer> metadataUsageGenerationTokensRef = new AtomicReference<Integer>(0);
+		AtomicReference<Integer> metadataUsageTotalTokensRef = new AtomicReference<Integer>(0);
+
+		AtomicReference<PromptMetadata> metadataPromptMetadataRef = new AtomicReference<>(PromptMetadata.empty());
+		AtomicReference<RateLimit> metadataRateLimitRef = new AtomicReference<>(new EmptyRateLimit());
+
+		AtomicReference<String> metadataIdRef = new AtomicReference<>("");
+		AtomicReference<String> metadataModelRef = new AtomicReference<>("");
+		AtomicReference<ChatResponse> finalChatResponseRef = new AtomicReference<>(null);
+
+		AtomicInteger responseCounter = new AtomicInteger(0);
+		long startTime = System.currentTimeMillis();
+
+		responseFlux.doOnSubscribe(subscription -> {
+			messageTextContentRef.set(new StringBuilder());
+			messageMetadataMapRef.set(new HashMap<>());
+			metadataIdRef.set("");
+			metadataModelRef.set("");
+			metadataUsagePromptTokensRef.set(0);
+			metadataUsageGenerationTokensRef.set(0);
+			metadataUsageTotalTokensRef.set(0);
+			metadataPromptMetadataRef.set(PromptMetadata.empty());
+			metadataRateLimitRef.set(new EmptyRateLimit());
+
+		}).doOnNext(chatResponse -> {
+			responseCounter.incrementAndGet();
+
+			if (chatResponse.getResult() != null) {
+				if (chatResponse.getResult().getMetadata() != null
+						&& chatResponse.getResult().getMetadata() != ChatGenerationMetadata.NULL) {
+					generationMetadataRef.set(chatResponse.getResult().getMetadata());
 				}
-
-				// Merge tool calls
-				if (chatResponse.getResult().getOutput().getToolCalls() != null
-						&& !chatResponse.getResult().getOutput().getToolCalls().isEmpty()) {
-					allToolCalls.addAll(chatResponse.getResult().getOutput().getToolCalls());
-					currentToolCallCount.set(allToolCalls.size());
+				if (chatResponse.getResult().getOutput().getText() != null) {
+					messageTextContentRef.get().append(chatResponse.getResult().getOutput().getText());
+				}
+				messageToolCallRef.get().addAll(chatResponse.getResult().getOutput().getToolCalls());
+				messageMetadataMapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());
+			}
+			if (chatResponse.getMetadata() != null) {
+				if (chatResponse.getMetadata().getUsage() != null) {
+					Usage usage = chatResponse.getMetadata().getUsage();
+					metadataUsagePromptTokensRef.set(
+							usage.getPromptTokens() > 0 ? usage.getPromptTokens() : metadataUsagePromptTokensRef.get());
+					metadataUsageGenerationTokensRef.set(usage.getCompletionTokens() > 0 ? usage.getCompletionTokens()
+							: metadataUsageGenerationTokensRef.get());
+					metadataUsageTotalTokensRef
+						.set(usage.getTotalTokens() > 0 ? usage.getTotalTokens() : metadataUsageTotalTokensRef.get());
+				}
+				if (chatResponse.getMetadata().getPromptMetadata() != null
+						&& chatResponse.getMetadata().getPromptMetadata().iterator().hasNext()) {
+					metadataPromptMetadataRef.set(chatResponse.getMetadata().getPromptMetadata());
+				}
+				if (chatResponse.getMetadata().getRateLimit() != null
+						&& !(metadataRateLimitRef.get() instanceof EmptyRateLimit)) {
+					metadataRateLimitRef.set(chatResponse.getMetadata().getRateLimit());
+				}
+				if (StringUtils.hasText(chatResponse.getMetadata().getId())) {
+					metadataIdRef.set(chatResponse.getMetadata().getId());
+				}
+				if (StringUtils.hasText(chatResponse.getMetadata().getModel())) {
+					metadataModelRef.set(chatResponse.getMetadata().getModel());
 				}
 			}
 
@@ -127,17 +178,44 @@ public class StreamingResponseHandler {
 			long currentTime = System.currentTimeMillis();
 			long timeSinceLastLog = currentTime - lastLogTime.get();
 			if (timeSinceLastLog >= 10000) { // 10 seconds = 10000 milliseconds
-				logProgress(contextName, currentText.get(), currentToolCallCount.get(), responseCount.get());
+				logProgress(contextName, messageTextContentRef.get().toString(), messageToolCallRef.get().size(),
+						responseCounter.get(), startTime);
 				lastLogTime.set(currentTime);
 			}
 		}).doOnComplete(() -> {
-			// Log final result when streaming completes
-			logCompletion(contextName, currentText.get(), currentToolCallCount.get(), responseCount.get());
-		}).doOnError(error -> {
-			log.error("Error during streaming response processing for {}: {}", contextName, error.getMessage());
-		}).blockLast();
 
-		return new StreamingResult(responseTextBuilder.toString(), allToolCalls, lastResponse);
+			var usage = new MessageAggregator.DefaultUsage(metadataUsagePromptTokensRef.get(),
+					metadataUsageGenerationTokensRef.get(), metadataUsageTotalTokensRef.get());
+
+			var chatResponseMetadata = ChatResponseMetadata.builder()
+				.id(metadataIdRef.get())
+				.model(metadataModelRef.get())
+				.rateLimit(metadataRateLimitRef.get())
+				.usage(usage)
+				.promptMetadata(metadataPromptMetadataRef.get())
+				.build();
+
+			finalChatResponseRef.set(new ChatResponse(
+					List.of(new Generation(new AssistantMessage(messageTextContentRef.get().toString(),
+							messageMetadataMapRef.get(), messageToolCallRef.get()), generationMetadataRef.get())),
+					chatResponseMetadata));
+			logCompletion(contextName, messageTextContentRef.get().toString(), messageToolCallRef.get().size(),
+					responseCounter.get(), startTime);
+
+			messageTextContentRef.set(new StringBuilder());
+			messageToolCallRef.set(Collections.synchronizedList(new ArrayList<>()));
+			messageMetadataMapRef.set(new HashMap<>());
+			metadataIdRef.set("");
+			metadataModelRef.set("");
+			metadataUsagePromptTokensRef.set(0);
+			metadataUsageGenerationTokensRef.set(0);
+			metadataUsageTotalTokensRef.set(0);
+			metadataPromptMetadataRef.set(PromptMetadata.empty());
+			metadataRateLimitRef.set(new EmptyRateLimit());
+
+		}).doOnError(e -> log.error("Aggregation Error", e)).blockLast();
+
+		return new StreamingResult(finalChatResponseRef.get());
 	}
 
 	/**
@@ -151,21 +229,23 @@ public class StreamingResponseHandler {
 		return result.getEffectiveText();
 	}
 
-	private void logProgress(String contextName, String currentText, int toolCallCount, int responseCount) {
+	private void logProgress(String contextName, String currentText, int toolCallCount, int responseCount,
+			long startTime) {
 		int textLength = currentText != null ? currentText.length() : 0;
 		String preview = getTextPreview(currentText, 100); // Show first 100 chars
 
-		log.info("🔄 {} - Progress: {} responses received, {} characters, {} tool calls. Preview: '{}'", contextName,
-				responseCount, textLength, toolCallCount, preview);
+		log.info("🔄 {} - Progress[{}ms]: {} responses received, {} characters, {} tool calls. Preview: '{}'",
+				contextName, System.currentTimeMillis() - startTime, responseCount, textLength, toolCallCount, preview);
 	}
 
-	private void logCompletion(String contextName, String finalText, int toolCallCount, int responseCount) {
+	private void logCompletion(String contextName, String finalText, int toolCallCount, int responseCount,
+			long startTime) {
 		int textLength = finalText != null ? finalText.length() : 0;
 		String preview = getTextPreview(finalText, 200); // Show first 200 chars for
-															// completion
+		// completion
 
-		log.info("✅ {} - Completed: {} responses processed, {} characters, {} tool calls. Preview: '{}'", contextName,
-				responseCount, textLength, toolCallCount, preview);
+		log.info("✅ {} - Completed[{}ms]: {} responses processed, {} characters, {} tool calls. Preview: '{}'",
+				contextName, System.currentTimeMillis() - startTime, responseCount, textLength, toolCallCount, preview);
 	}
 
 	private String getTextPreview(String text, int maxLength) {
