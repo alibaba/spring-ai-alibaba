@@ -80,7 +80,7 @@ public class ResearcherNode implements NodeAction {
 		this.nodeName = "researcher_" + executorNodeId;
 		this.reflectionProcessor = reflectionProcessor;
 		this.mcpFactory = mcpFactory;
-		searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService);
+		this.searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService);
 		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties,
 				smartAgentDispatcher, null, null);
 	}
