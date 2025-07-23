@@ -155,4 +155,5 @@ public class TablestoreVectorStore extends AbstractObservationVectorStore implem
 	public boolean isInitializeTable() {
 		return initializeTable;
 	}
+
 }

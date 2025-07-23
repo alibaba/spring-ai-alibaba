@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 package com.alibaba.cloud.ai.memory.tablestore;
+
 import com.alicloud.openservices.tablestore.SyncClient;
 import org.junit.jupiter.api.Assumptions;
 

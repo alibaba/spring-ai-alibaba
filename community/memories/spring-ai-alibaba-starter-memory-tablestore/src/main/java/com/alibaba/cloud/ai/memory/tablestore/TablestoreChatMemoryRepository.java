@@ -52,7 +52,9 @@ public class TablestoreChatMemoryRepository implements ChatMemoryRepository {
 		this.store = store;
 	}
 
-	public TablestoreChatMemoryRepository(SyncClient client, String sessionTableName, String sessionSecondaryIndexName, List<Pair<String, MetaType>> sessionSecondaryIndexMeta, String messageTableName, String messageSecondaryIndexName) {
+	public TablestoreChatMemoryRepository(SyncClient client, String sessionTableName, String sessionSecondaryIndexName,
+			List<Pair<String, MetaType>> sessionSecondaryIndexMeta, String messageTableName,
+			String messageSecondaryIndexName) {
 		this.client = client;
 		this.sessionTableName = sessionTableName;
 		this.sessionSecondaryIndexName = sessionSecondaryIndexName;
@@ -65,7 +67,7 @@ public class TablestoreChatMemoryRepository implements ChatMemoryRepository {
 		this.client = client;
 	}
 
-    public MemoryStoreImpl getStore() {
+	public MemoryStoreImpl getStore() {
 		if (store == null) {
 			synchronized (TablestoreChatMemoryRepository.class) {
 				if (store == null) {
