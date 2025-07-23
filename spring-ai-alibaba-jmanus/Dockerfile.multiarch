@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Multi-stage build for better layer caching and smaller final image
-ARG BUILD_VERSION=3.0.0-SNAPSHOT
+ARG BUILD_VERSION=3.0.1-SNAPSHOT
 # Runtime stage - use multi-arch base image
 FROM eclipse-temurin:17-jdk-noble
 
@@ -89,7 +89,7 @@ RUN apt-get update && \
 RUN npm install -g playwright
 
 # Copy JAR file from builder stage
-COPY target/spring-ai-alibaba-jmanus-3.0.0-SNAPSHOT.jar app.jar
+COPY target/jmanus.jar app.jar
 
 # Install Playwright browsers using Java Playwright
 RUN java -jar app.jar playwright-init

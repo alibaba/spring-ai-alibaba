@@ -53,7 +53,7 @@ public class NacosMcpProperties {
 
 	private static final Pattern PATTERN = Pattern.compile("-(\\w)");
 
-	String namespace;
+	String namespace = "public";
 
 	String serverAddr;
 
@@ -73,7 +73,7 @@ public class NacosMcpProperties {
 	@JsonIgnore
 	private Environment environment;
 
-	public String getnamespace() {
+	public String getNamespace() {
 		return namespace;
 	}
 
