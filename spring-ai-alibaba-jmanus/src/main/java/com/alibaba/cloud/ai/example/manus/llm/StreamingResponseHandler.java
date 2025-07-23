@@ -200,7 +200,7 @@ public class StreamingResponseHandler {
 							messageMetadataMapRef.get(), messageToolCallRef.get()), generationMetadataRef.get())),
 					chatResponseMetadata));
 			logCompletion(contextName, messageTextContentRef.get().toString(), messageToolCallRef.get().size(),
-					responseCounter.get(), startTime);
+					responseCounter.get(), startTime, usage);
 
 			messageTextContentRef.set(new StringBuilder());
 			messageToolCallRef.set(Collections.synchronizedList(new ArrayList<>()));
@@ -239,13 +239,16 @@ public class StreamingResponseHandler {
 	}
 
 	private void logCompletion(String contextName, String finalText, int toolCallCount, int responseCount,
-			long startTime) {
+			long startTime, Usage usage) {
 		int textLength = finalText != null ? finalText.length() : 0;
 		String preview = getTextPreview(finalText, 200); // Show first 200 chars for
 		// completion
 
-		log.info("✅ {} - Completed[{}ms]: {} responses processed, {} characters, {} tool calls. Preview: '{}'",
-				contextName, System.currentTimeMillis() - startTime, responseCount, textLength, toolCallCount, preview);
+		log.info(
+				"✅ {} - Completed[{}ms]: {} responses processed, {} characters, {} tool calls, {} prompt tokens, "
+						+ "{} completion tokens, {} total tokens. Preview: '{}'",
+				contextName, System.currentTimeMillis() - startTime, responseCount, textLength, toolCallCount,
+				usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens(), preview);
 	}
 
 	private String getTextPreview(String text, int maxLength) {
