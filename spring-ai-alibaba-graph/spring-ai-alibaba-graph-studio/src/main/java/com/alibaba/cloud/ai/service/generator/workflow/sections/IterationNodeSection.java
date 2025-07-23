@@ -41,8 +41,8 @@ public class IterationNodeSection implements NodeSection {
 		StringBuilder sb = new StringBuilder();
 
 		// 获取输入输出的泛型
-		String inputType = "Map";
-		String outputType = "Map";
+		String inputType = "Map<String, Object>";
+		String outputType = "Map<String, Object>";
 		if (data.getInputType().equalsIgnoreCase("string")) {
 			inputType = "String";
 		}
@@ -68,18 +68,18 @@ public class IterationNodeSection implements NodeSection {
 			.append(inputType)
 			.append(">start()\n")
 			.append(".inputArrayJsonKey(")
-			.append("?")
+			.append("\"?\"")
 			.append(")\n")
-			.append("inputArrayKey(")
-			.append("?")
+			.append(".inputArrayKey(")
+			.append("\"?\"")
 			.append(")\n")
-			.append("outputItemKey(")
-			.append("?")
+			.append(".outputItemKey(")
+			.append("\"?\"")
 			.append(")\n")
 			.append(".outputStartIterationKey(")
-			.append("?")
+			.append("\"?\"")
 			.append(")\n")
-			.append(".build())\n")
+			.append(".build()))\n")
 			.append("// IterationNode.End \n")
 			.append(".addNode(\"")
 			.append(id)
@@ -91,30 +91,30 @@ public class IterationNodeSection implements NodeSection {
 			.append(outputType)
 			.append(">end()\n")
 			.append(".inputArrayKey(")
-			.append("?")
+			.append("\"?\"")
 			.append(")\n")
 			.append(".inputResultKey(")
-			.append("?")
+			.append("\"?\"")
 			.append(")\n")
 			.append(".outputArrayKey(")
-			.append("?")
+			.append("\"?\"")
 			.append(")\n")
 			.append(".outputContinueIterationKey(")
-			.append("?")
+			.append("\"?\"")
 			.append(")\n")
-			.append(".build())\n")
+			.append(".build()))\n")
 			.append("// IterationNode.OutNode \n")
 			.append(".addNode(\"")
 			.append(id)
 			.append("_out")
-			.append("\", AsyncNodeAction.node_async((OverAllState state) -> Map.of())\n")
+			.append("\", AsyncNodeAction.node_async((OverAllState state) -> Map.of()))\n")
 			.append("// Start Conditional Edge \n")
 			.append(".addConditionalEdges(\"")
 			.append(id)
 			.append("\", \n")
-			.append("AsyncNodeAction.edge_async(\n")
+			.append("AsyncEdgeAction.edge_async(\n")
 			.append("(OverAllState state) -> state.value(")
-			.append("?start_flag")
+			.append("\"?st_flag\"")
 			.append(", Boolean.class).orElse(false) ? \"true\" : \"false\"),\n")
 			.append("Map.of(\"true\", \"iteration\", \"false\", \"")
 			.append(id)
@@ -125,17 +125,16 @@ public class IterationNodeSection implements NodeSection {
 			.append(id)
 			.append("_end")
 			.append("\", \n")
-			.append("AsyncNodeAction.edge_async(\n")
+			.append("AsyncEdgeAction.edge_async(\n")
 			.append("(OverAllState state) -> state.value(")
-			.append("?end_flag")
+			.append("\"?end_flag\"")
 			.append(", Boolean.class).orElse(false) ? \"true\" : \"false\"),\n")
 			.append("Map.of(\"true\", \"")
 			.append(id)
 			.append("\", \"false\", \"")
 			.append(id)
 			.append("_end")
-			.append("\"))")
-			.append(");\n\n");
+			.append("\"));\n\n");
 		return sb.toString();
 	}
 
