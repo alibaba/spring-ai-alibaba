@@ -129,20 +129,21 @@ public class AgentFieldService {
 		BeanUtils.copyProperties(agentFieldDTO, agentField);
 		agentField.setCreatedTime(Timestamp.valueOf(LocalDateTime.now()));
 		agentField.setUpdatedTime(Timestamp.valueOf(LocalDateTime.now()));
-		jdbcTemplate.update(FIELD_ADD, agentField.getFieldName(), agentField.getSynonyms(), agentField.getOriginName(), agentField.getFieldDescription(), agentField.getOriginDescription(), agentField.getType(), agentField.getIsRecall(), agentField.getStatus(), agentField.getDataSetId(), agentField.getCreatedTime(), agentField.getUpdatedTime());
+		jdbcTemplate.update(FIELD_ADD, agentField.getFieldName(), agentField.getSynonyms(), agentField.getOriginName(),
+				agentField.getFieldDescription(), agentField.getOriginDescription(), agentField.getType(),
+				agentField.getIsRecall(), agentField.getStatus(), agentField.getDataSetId(),
+				agentField.getCreatedTime(), agentField.getUpdatedTime());
 	}
 
 	// 批量新增智能体字段
 	public void addFields(List<AgentFieldDTO> agentFieldDTOS) {
-		List<AgentField> agentFields = agentFieldDTOS.stream().map(
-				agentFieldDTO ->{
-					AgentField agentField = new AgentField();
-					BeanUtils.copyProperties(agentFieldDTO, agentField);
-					agentField.setCreatedTime(Timestamp.valueOf(LocalDateTime.now()));
-					agentField.setUpdatedTime(Timestamp.valueOf(LocalDateTime.now()));
-					return agentField;
-				}
-		).collect(Collectors.toList());
+		List<AgentField> agentFields = agentFieldDTOS.stream().map(agentFieldDTO -> {
+			AgentField agentField = new AgentField();
+			BeanUtils.copyProperties(agentFieldDTO, agentField);
+			agentField.setCreatedTime(Timestamp.valueOf(LocalDateTime.now()));
+			agentField.setUpdatedTime(Timestamp.valueOf(LocalDateTime.now()));
+			return agentField;
+		}).collect(Collectors.toList());
 		jdbcTemplate.batchUpdate(FIELD_ADD, new AddBatchPreparedStatement(agentFields));
 	}
 
@@ -176,14 +177,16 @@ public class AgentFieldService {
 
 	// 搜索
 	public List<AgentField> searchFields(String keyword) {
-		assert keyword!=null;
-		return jdbcTemplate.query(FIELD_SEARCH, new Object[] { "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" }, (rs, rowNum) -> {
-			return new AgentField(rs.getObject("id", Integer.class), rs.getString("field_name"),
-					rs.getString("synonyms"), rs.getString("origin_name"), rs.getString("description"),
-					rs.getString("origin_description"), rs.getString("type"), rs.getObject("is_recall", Integer.class),
-					rs.getObject("status", Integer.class), rs.getString("data_set_id"), rs.getTimestamp("created_time"),
-					rs.getTimestamp("updated_time"));
-		});
+		assert keyword != null;
+		return jdbcTemplate.query(FIELD_SEARCH,
+				new Object[] { "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" }, (rs, rowNum) -> {
+					return new AgentField(rs.getObject("id", Integer.class), rs.getString("field_name"),
+							rs.getString("synonyms"), rs.getString("origin_name"), rs.getString("description"),
+							rs.getString("origin_description"), rs.getString("type"),
+							rs.getObject("is_recall", Integer.class), rs.getObject("status", Integer.class),
+							rs.getString("data_set_id"), rs.getTimestamp("created_time"),
+							rs.getTimestamp("updated_time"));
+				});
 	}
 
 	// 根据id删除智能体字段

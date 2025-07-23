@@ -105,7 +105,9 @@ public class KnowledgeService {
 		BeanUtils.copyProperties(knowledgeDTO, knowledge);
 		knowledge.setCreatedTime(Timestamp.valueOf(LocalDateTime.now()));
 		knowledge.setUpdatedTime(Timestamp.valueOf(LocalDateTime.now()));
-		jdbcTemplate.update(FIELD_ADD, knowledge.getBusinessTerm(), knowledge.getDescription(), knowledge.getSynonyms(), knowledge.getIsRecall(), knowledge.getDataSetId(), knowledge.getCreatedTime(), knowledge.getUpdatedTime());
+		jdbcTemplate.update(FIELD_ADD, knowledge.getBusinessTerm(), knowledge.getDescription(), knowledge.getSynonyms(),
+				knowledge.getIsRecall(), knowledge.getDataSetId(), knowledge.getCreatedTime(),
+				knowledge.getUpdatedTime());
 	}
 
 	// 批量新增智能体字段
@@ -136,11 +138,13 @@ public class KnowledgeService {
 
 	// 搜索
 	public List<Knowledge> searchFields(String keyword) {
-		return jdbcTemplate.query(FIELD_SEARCH, new Object[] { "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" }, (rs, rowNum) -> {
-			return new Knowledge(rs.getObject("id", Integer.class), rs.getString("business_term"),
-					rs.getString("description"), rs.getString("synonyms"), rs.getObject("is_recall", Integer.class),
-					rs.getString("data_set_id"), rs.getTimestamp("created_time"), rs.getTimestamp("updated_time"));
-		});
+		return jdbcTemplate.query(FIELD_SEARCH,
+				new Object[] { "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" }, (rs, rowNum) -> {
+					return new Knowledge(rs.getObject("id", Integer.class), rs.getString("business_term"),
+							rs.getString("description"), rs.getString("synonyms"),
+							rs.getObject("is_recall", Integer.class), rs.getString("data_set_id"),
+							rs.getTimestamp("created_time"), rs.getTimestamp("updated_time"));
+				});
 	}
 
 	// 根据id删除智能体字段
@@ -155,8 +159,7 @@ public class KnowledgeService {
 				Timestamp.valueOf(LocalDateTime.now()), id);
 	}
 
-	private record AddBatchPreparedStatement(
-			List<Knowledge> knowledgeDTOList) implements BatchPreparedStatementSetter {
+	private record AddBatchPreparedStatement(List<Knowledge> knowledgeDTOList) implements BatchPreparedStatementSetter {
 
 		@Override
 		public void setValues(PreparedStatement ps, int i) throws SQLException {
