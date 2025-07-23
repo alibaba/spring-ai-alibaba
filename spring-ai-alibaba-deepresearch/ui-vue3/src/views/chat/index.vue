@@ -71,6 +71,17 @@
                     </a-button>
                   </a-upload>
 
+                  <a-button 
+                    size="small" 
+                    style="border-radius: 15px; margin-right: 8px" 
+                    type="text"
+                    @click="deepResearch"
+                    :style="{ color: current.deepResearchDetail ? token.colorPrimary : '' }"
+                  >
+                    <BgColorsOutlined />
+                    Report
+                  </a-button>
+
                   <a-switch
                     un-checked-children="Deep Research"
                     checked-children="Deep Research"
@@ -107,6 +118,7 @@
         </div>
       </Flex>
       <Report :visible="current.deepResearchDetail" :convId="convId" @close="current.deepResearchDetail = false" />
+      
     </Flex>
   </div>
 </template>
@@ -218,6 +230,7 @@ const [agent] = useXAgent({
           body: {
             ...configStore.chatConfig,
             query: message,
+            thread_id: convId
           },
         })
 
@@ -488,7 +501,6 @@ const bubbleList = computed(() => {
   const len = messages.value.length
   messageStore.history[convId] = messages.value
   // TODO 当状态是loading的时候，是每个chunk，然后succes，把之前所有的chunk 全部返回
-  console.log('messages.value', messages.value)
   return messages.value.map(({ id, message, status }, idx) => ({
     key: id,
     role: status === 'local' ? 'local' : 'ai',
