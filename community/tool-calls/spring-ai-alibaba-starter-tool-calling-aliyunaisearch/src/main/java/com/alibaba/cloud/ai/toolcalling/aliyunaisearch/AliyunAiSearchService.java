@@ -124,7 +124,7 @@ public class AliyunAiSearchService
 		public SearchService.SearchResult getSearchResult() {
 			return new SearchService.SearchResult(this.results()
 				.stream()
-				.map(item -> new SearchService.SearchContent(item.title(), item.content(), item.link()))
+				.map(item -> new SearchService.SearchContent(item.title(), item.content(), item.link(), null))
 				.toList());
 		}
 

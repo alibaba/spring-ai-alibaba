@@ -21,11 +21,11 @@ on:
       build_version:
         description: 'Build version (optional, defaults to SNAPSHOT)'
         required: false
-        default: '3.0.0-SNAPSHOT'
+        default: '3.0.1-SNAPSHOT'
         type: string
 
 env:
-  BUILD_VERSION: ${{ github.event.inputs.build_version || '3.0.0-SNAPSHOT' }}
+  BUILD_VERSION: ${{ github.event.inputs.build_version || '3.0.1-SNAPSHOT' }}
 
 jobs:
   build-and-push:

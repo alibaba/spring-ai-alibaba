@@ -660,6 +660,7 @@ const words: I18nType = {
     welcomeSubtitle: '您的 Java AI 智能助手，帮助您构建和完成各种任务。',
     tagline: 'Java AI 智能体',
     inputPlaceholder: '描述您想构建或完成的内容...',
+    directButton: 'Plan-Act 工作台',
     examples: {
       stockPrice: {
         title: '查询股价',
@@ -676,6 +677,11 @@ const words: I18nType = {
         title: '查询天气',
         description: '获取北京今天的天气情况（Agent可以使用MCP工具服务）',
         prompt: '用浏览器，基于百度，查询北京今天的天气',
+      },
+      queryplan: {
+        title: '查询一个人的信息',
+        description: '查询沈询 阿里的所有信息并优化终止结构列',
+        prompt: '用浏览器，基于百度，查询计划',
       },
     },
   },
