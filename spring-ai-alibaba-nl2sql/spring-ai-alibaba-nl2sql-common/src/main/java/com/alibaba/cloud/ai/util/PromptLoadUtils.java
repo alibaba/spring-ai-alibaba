@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.Utils;
+package com.alibaba.cloud.ai.util;
 
 import com.alibaba.cloud.ai.entity.PromptTemplate;
 
@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 提示词加载工具类 提供提示词模板相关的通用工具方法
+ * 提示词加载工具类
  */
 public class PromptLoadUtils {
 
@@ -147,21 +147,16 @@ public class PromptLoadUtils {
 				4. **Generate the Plan**: Output the strategy as a structured JSON object.
 
 				# OUTPUT FORMAT (MUST be a valid JSON object)
-				```json
-				{
-				  "thought_process": "A brief, narrative summary of your analysis strategy.",
-				  "execution_plan": [
-				    {
-				      "step": 1,
-				      "tool_to_use": "tool_name",
-				      "tool_parameters": {
-				        "param1": "value1",
-				        "description": "A human-readable description of what this specific tool call does."
-				      }
-				    }
-				  ]
-				}
-				```
+				Expected JSON structure:
+				- thought_process: A brief narrative summary of your analysis strategy
+				- execution_plan: Array of steps with tool_to_use and tool_parameters
+
+				USER QUESTION: {user_question}
+
+				DATABASE SCHEMA:
+				{schema}
+
+				Please generate a valid JSON plan following the expected structure above.
 				""";
 	}
 

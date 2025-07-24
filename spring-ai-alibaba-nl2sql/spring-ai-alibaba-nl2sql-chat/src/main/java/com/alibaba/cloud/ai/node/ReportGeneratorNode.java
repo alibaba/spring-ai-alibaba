@@ -16,18 +16,20 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.util.PromptLoadUtils;
 import com.alibaba.cloud.ai.constant.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
 import com.alibaba.cloud.ai.model.execution.Plan;
-import com.alibaba.cloud.ai.prompt.PromptHelper;
+import com.alibaba.cloud.ai.service.PromptTemplateService;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
 import reactor.core.publisher.Flux;
@@ -56,10 +58,13 @@ public class ReportGeneratorNode implements NodeAction {
 
 	private final BeanOutputConverter<Plan> converter;
 
-	public ReportGeneratorNode(ChatClient.Builder chatClientBuilder) {
+	private final PromptTemplateService promptTemplateService;
+
+	public ReportGeneratorNode(ChatClient.Builder chatClientBuilder, PromptTemplateService promptTemplateService) {
 		this.chatClient = chatClientBuilder.build();
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
 		});
+		this.promptTemplateService = promptTemplateService;
 	}
 
 	@Override
@@ -128,11 +133,55 @@ public class ReportGeneratorNode implements NodeAction {
 		// Build analysis steps and data results description
 		String analysisStepsAndData = buildAnalysisStepsAndData(plan, executionResults);
 
-		// Use PromptHelper to build report generation prompt
-		String reportPrompt = PromptHelper.buildReportGeneratorPrompt(userRequirementsAndPlan, analysisStepsAndData,
-				summaryAndRecommendations);
+		// Get dynamic template content - prioritize user-configured template
+		String templateContent = getReportGeneratorTemplate();
+
+		// Build report generation prompt using dynamic template
+		String reportPrompt = buildReportGeneratorPromptWithTemplate(templateContent, userRequirementsAndPlan,
+				analysisStepsAndData, summaryAndRecommendations);
 
 		return chatClient.prompt().user(reportPrompt).stream().chatResponse();
+	}
+
+	/**
+	 * Get report generator template content, prioritizing user-configured template
+	 */
+	private String getReportGeneratorTemplate() {
+		// Try to get user-configured template first
+		String userTemplate = promptTemplateService.getEnabledTemplateContent("report-generator");
+		if (userTemplate != null && !userTemplate.trim().isEmpty()) {
+			logger.info("Using user-configured report generator template");
+			// Validate the user template by trying to create a PromptTemplate instance
+			try {
+				Map<String, Object> testParams = new HashMap<>();
+				testParams.put("user_requirements_and_plan", "test");
+				testParams.put("analysis_steps_and_data", "test");
+				testParams.put("summary_and_recommendations", "test");
+				PromptTemplate testTemplate = new PromptTemplate(userTemplate);
+				testTemplate.render(testParams); // This will throw if template is invalid
+				return userTemplate;
+			} catch (Exception e) {
+				logger.warn("User-configured report generator template is invalid, falling back to default template. Error: {}", e.getMessage());
+			}
+		}
+
+		// Fallback to default template
+		logger.info("Using default report generator template");
+		return PromptLoadUtils.getDefaultReportGeneratorContent();
+	}
+
+	/**
+	 * Build report generation prompt using the provided template
+	 */
+	private String buildReportGeneratorPromptWithTemplate(String templateContent, String userRequirementsAndPlan,
+			String analysisStepsAndData, String summaryAndRecommendations) {
+		Map<String, Object> params = new HashMap<>();
+		params.put("user_requirements_and_plan", userRequirementsAndPlan);
+		params.put("analysis_steps_and_data", analysisStepsAndData);
+		params.put("summary_and_recommendations", summaryAndRecommendations);
+
+		PromptTemplate template = new PromptTemplate(templateContent);
+		return template.render(params);
 	}
 
 	/**

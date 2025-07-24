@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.service;
 
-import com.alibaba.cloud.ai.Utils.PromptLoadUtils;
 import com.alibaba.cloud.ai.entity.PromptTemplate;
+import com.alibaba.cloud.ai.util.PromptLoadUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

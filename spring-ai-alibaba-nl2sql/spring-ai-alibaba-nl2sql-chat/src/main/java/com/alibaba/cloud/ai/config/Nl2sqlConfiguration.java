@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.node.*;
+import com.alibaba.cloud.ai.service.PromptTemplateService;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.tool.PythonExecutorTool;
@@ -70,6 +71,9 @@ public class Nl2sqlConfiguration {
 
 	@Autowired(required = false)
 	private PythonExecutorTool pythonExecutorTool;
+
+	@Autowired
+	private PromptTemplateService promptTemplateService;
 
 	@Bean
 	public StateGraph nl2sqlGraph(ChatClient.Builder chatClientBuilder) throws GraphStateException {
@@ -118,11 +122,12 @@ public class Nl2sqlConfiguration {
 			.addNode(TABLE_RELATION_NODE,
 					node_async(new TableRelationNode(chatClientBuilder, schemaService, nl2SqlService)))
 			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder, nl2SqlService, dbConfig)))
-			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
+			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder, this.promptTemplateService)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
 			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(chatClientBuilder, dbAccessor, dbConfig)))
 			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(chatClientBuilder)))
-			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
+			.addNode(REPORT_GENERATOR_NODE,
+					node_async(new ReportGeneratorNode(chatClientBuilder, this.promptTemplateService)))
 			.addNode(SEMANTIC_CONSISTENCY_NODE,
 					node_async(new SemanticConsistencyNode(chatClientBuilder, nl2SqlService, dbConfig)));
 
