@@ -115,7 +115,7 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 	public List<Document> retrieve(Query query, co.elastic.clients.elasticsearch._types.query_dsl.Query filter) {
 		String text = query.text();
 		try {
-			return search(text, true, filter);
+			return search(text, false, filter);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to execute hybrid search", ex);

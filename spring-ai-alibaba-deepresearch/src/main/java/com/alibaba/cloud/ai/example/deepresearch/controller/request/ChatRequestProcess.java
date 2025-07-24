@@ -36,7 +36,7 @@ public class ChatRequestProcess {
 	public static ChatRequest getDefaultChatRequest(ChatRequest chatRequest, SearchBeanUtil searchBeanUtil) {
 		if (chatRequest == null) {
 			return new ChatRequest("__default__", 1, 3, true, null, true, Collections.emptyMap(), "草莓蛋糕怎么做呀。",
-					searchBeanUtil.getFirstAvailableSearch().orElse(null), true, 3);
+					searchBeanUtil.getFirstAvailableSearch().orElse(null), true, 3, false);
 		}
 		else {
 			return new ChatRequest(StringUtils.hasText(chatRequest.threadId()) ? chatRequest.threadId() : "__default__",
@@ -50,7 +50,8 @@ public class ChatRequestProcess {
 					chatRequest.searchEngine() == null ? searchBeanUtil.getFirstAvailableSearch().orElse(null)
 							: chatRequest.searchEngine(),
 					chatRequest.enableSearchFilter() != null ? chatRequest.enableSearchFilter() : true,
-					chatRequest.optimizeQueryNum() == null ? 3 : chatRequest.optimizeQueryNum());
+					chatRequest.optimizeQueryNum() == null ? 3 : chatRequest.optimizeQueryNum(),
+					chatRequest.isUploadFile() != null && chatRequest.isUploadFile());
 		}
 	}
 

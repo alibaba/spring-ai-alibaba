@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.rag.kb;
 
+import com.alibaba.cloud.ai.example.deepresearch.rag.kb.model.KbSearchResult;
+
 import java.util.List;
 import java.util.Map;
 
@@ -45,89 +47,5 @@ public interface ProfessionalKbApiClient {
 	 * @return 是否可用
 	 */
 	boolean isAvailable();
-
-	/**
-	 * 知识库搜索结果
-	 */
-	class KbSearchResult {
-
-		private String id;
-
-		private String title;
-
-		private String content;
-
-		private String url;
-
-		private Double score;
-
-		private Map<String, Object> metadata;
-
-		public KbSearchResult() {
-		}
-
-		public KbSearchResult(String title, String content) {
-			this.title = title;
-			this.content = content;
-		}
-
-		public KbSearchResult(String id, String title, String content, String url, Double score) {
-			this.id = id;
-			this.title = title;
-			this.content = content;
-			this.url = url;
-			this.score = score;
-		}
-
-		// Getters and Setters
-		public String getId() {
-			return id;
-		}
-
-		public void setId(String id) {
-			this.id = id;
-		}
-
-		public String getTitle() {
-			return title;
-		}
-
-		public void setTitle(String title) {
-			this.title = title;
-		}
-
-		public String getContent() {
-			return content;
-		}
-
-		public void setContent(String content) {
-			this.content = content;
-		}
-
-		public String getUrl() {
-			return url;
-		}
-
-		public void setUrl(String url) {
-			this.url = url;
-		}
-
-		public Double getScore() {
-			return score;
-		}
-
-		public void setScore(Double score) {
-			this.score = score;
-		}
-
-		public Map<String, Object> getMetadata() {
-			return metadata;
-		}
-
-		public void setMetadata(Map<String, Object> metadata) {
-			this.metadata = metadata;
-		}
-
-	}
 
 }

@@ -34,6 +34,8 @@ import org.springframework.ai.rag.preretrieval.query.transformation.TranslationQ
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -49,6 +51,7 @@ import java.util.stream.Stream;
  * @author hupei
  */
 @Component
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.deepresearch.rag", name = "enabled", havingValue = "true")
 public class DefaultHybridRagProcessor implements HybridRagProcessor {
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultHybridRagProcessor.class);
@@ -67,8 +70,9 @@ public class DefaultHybridRagProcessor implements HybridRagProcessor {
 
 	private final RagProperties ragProperties;
 
-	public DefaultHybridRagProcessor(VectorStore vectorStore, RestClient restClient, EmbeddingModel embeddingModel,
-			ChatClient.Builder chatClientBuilder, RagProperties ragProperties, RrfFusionStrategy rrfFusionStrategy) {
+	public DefaultHybridRagProcessor(@Qualifier("ragVectorStore") VectorStore vectorStore, RestClient restClient,
+			EmbeddingModel embeddingModel, ChatClient.Builder chatClientBuilder, RagProperties ragProperties,
+			RrfFusionStrategy rrfFusionStrategy) {
 		this.vectorStore = vectorStore;
 		this.ragProperties = ragProperties;
 		this.rrfFusionStrategy = rrfFusionStrategy;

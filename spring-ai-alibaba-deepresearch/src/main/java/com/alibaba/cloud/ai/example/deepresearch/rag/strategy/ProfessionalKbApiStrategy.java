@@ -19,10 +19,12 @@ import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.rag.core.HybridRagProcessor;
 import com.alibaba.cloud.ai.example.deepresearch.rag.kb.ProfessionalKbApiClient;
 import com.alibaba.cloud.ai.example.deepresearch.rag.kb.ProfessionalKbApiClientFactory;
+import com.alibaba.cloud.ai.example.deepresearch.rag.kb.model.KbSearchResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -40,6 +42,7 @@ import java.util.stream.Collectors;
  * @author hupei
  */
 @Component
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.deepresearch.rag", name = "enabled", havingValue = "true")
 public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 
 	private static final Logger logger = LoggerFactory.getLogger(ProfessionalKbApiStrategy.class);
@@ -148,7 +151,7 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 			}
 
 			// 调用API进行搜索
-			List<ProfessionalKbApiClient.KbSearchResult> searchResults = client.search(query, searchOptions);
+			List<KbSearchResult> searchResults = client.search(query, searchOptions);
 
 			// 转换为Document格式
 			return convertToDocuments(searchResults, kbId, kbConfig);
@@ -175,16 +178,16 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 	/**
 	 * 将API搜索结果转换为Document格式，保持与VectorStoreDataIngestionService元数据逻辑一致
 	 */
-	private List<Document> convertToDocuments(List<ProfessionalKbApiClient.KbSearchResult> searchResults, String kbId,
+	private List<Document> convertToDocuments(List<KbSearchResult> searchResults, String kbId,
 			RagProperties.ProfessionalKnowledgeBases.KnowledgeBase kbConfig) {
 		return searchResults.stream().map(result -> {
 			// 构建文档内容
 			StringBuilder contentBuilder = new StringBuilder();
-			if (result.getTitle() != null && !result.getTitle().trim().isEmpty()) {
-				contentBuilder.append("Title: ").append(result.getTitle()).append("\n\n");
+			if (result.title() != null && !result.title().trim().isEmpty()) {
+				contentBuilder.append("Title: ").append(result.title()).append("\n\n");
 			}
-			if (result.getContent() != null) {
-				contentBuilder.append(result.getContent());
+			if (result.content() != null) {
+				contentBuilder.append(result.content());
 			}
 
 			// 构建元数据，与VectorStoreDataIngestionService的逻辑保持一致
@@ -197,22 +200,22 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 				metadata.put("kb_description", kbConfig.getDescription());
 			}
 
-			metadata.put("original_filename", result.getTitle());
-			metadata.put("source_url", result.getUrl());
-			metadata.put("title", result.getTitle());
+			metadata.put("original_filename", result.title());
+			metadata.put("source_url", result.url());
+			metadata.put("title", result.title());
 			metadata.put("api_provider", apiClients.get(kbId).getProvider());
 
 			// 添加搜索相关的元数据
-			if (result.getScore() != null) {
-				metadata.put("search_score", result.getScore());
+			if (result.score() != null) {
+				metadata.put("search_score", result.score());
 			}
 
 			// 包含原始元数据
-			if (result.getMetadata() != null) {
-				metadata.putAll(result.getMetadata());
+			if (result.metadata() != null) {
+				metadata.putAll(result.metadata());
 			}
 
-			return new Document(result.getId(), contentBuilder.toString(), metadata);
+			return new Document(result.id(), contentBuilder.toString(), metadata);
 		}).collect(Collectors.toList());
 	}
 

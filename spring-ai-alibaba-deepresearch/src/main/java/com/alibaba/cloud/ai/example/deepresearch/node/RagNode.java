@@ -48,7 +48,7 @@ public class RagNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(RagNode.class);
 
-	private final ChatClient chatClient;
+	private final ChatClient ragAgent;
 
 	private final List<RetrievalStrategy> retrievalStrategies;
 
@@ -59,19 +59,19 @@ public class RagNode implements NodeAction {
 	/**
 	 * 支持传统的策略模式构造函数（向后兼容）
 	 */
-	public RagNode(List<RetrievalStrategy> retrievalStrategies, FusionStrategy fusionStrategy, ChatClient chatClient) {
+	public RagNode(List<RetrievalStrategy> retrievalStrategies, FusionStrategy fusionStrategy, ChatClient ragAgent) {
 		this.retrievalStrategies = retrievalStrategies;
 		this.fusionStrategy = fusionStrategy;
-		this.chatClient = chatClient;
+		this.ragAgent = ragAgent;
 		this.hybridRagProcessor = null;
 	}
 
 	/**
 	 * 新的统一RAG处理器构造函数
 	 */
-	public RagNode(HybridRagProcessor hybridRagProcessor, ChatClient chatClient) {
+	public RagNode(HybridRagProcessor hybridRagProcessor, ChatClient ragAgent) {
 		this.hybridRagProcessor = hybridRagProcessor;
-		this.chatClient = chatClient;
+		this.ragAgent = ragAgent;
 		this.retrievalStrategies = null;
 		this.fusionStrategy = null;
 	}
@@ -111,12 +111,12 @@ public class RagNode implements NodeAction {
 		}
 
 		// 生成响应
-		Flux<ChatResponse> streamResult = chatClient.prompt()
+		Flux<ChatResponse> streamResult = ragAgent.prompt()
 			.messages(new UserMessage(contextBuilder.toString()))
 			.user(queryText)
 			.stream()
 			.chatResponse()
-			.timeout(Duration.ofSeconds(60))
+			.timeout(Duration.ofSeconds(180))
 			.retry(2);
 
 		logger.info("RAG node produced a result.");

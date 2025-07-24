@@ -23,6 +23,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,7 +52,8 @@ public class VectorStoreDataIngestionService {
 
 	private final RagProperties ragProperties;
 
-	public VectorStoreDataIngestionService(VectorStore vectorStore, RagProperties ragProperties) {
+	public VectorStoreDataIngestionService(@Qualifier("ragVectorStore") VectorStore vectorStore,
+			RagProperties ragProperties) {
 		this.vectorStore = vectorStore;
 		this.ragProperties = ragProperties;
 

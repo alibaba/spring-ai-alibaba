@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.deepresearch.rag.strategy;
 import com.alibaba.cloud.ai.example.deepresearch.rag.core.HybridRagProcessor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.deepresearch.rag", name = "enabled", havingValue = "true")
 public class UserFileRetrievalStrategy implements RetrievalStrategy {
 
 	private final HybridRagProcessor hybridRagProcessor;

@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.deepresearch.rag.kb.impl;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.rag.kb.ProfessionalKbApiClient;
+import com.alibaba.cloud.ai.example.deepresearch.rag.kb.model.KbSearchResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -120,16 +121,17 @@ public class DashScopeKbApiClient implements ProfessionalKbApiClient {
 				List<Map<String, Object>> nodes = (List<Map<String, Object>>) output.get("nodes");
 				if (nodes != null) {
 					for (Map<String, Object> node : nodes) {
-						KbSearchResult result = new KbSearchResult();
-						result.setId((String) node.get("id"));
-						result.setTitle((String) node.get("title"));
-						result.setContent((String) node.get("content"));
-						result.setUrl((String) node.get("url"));
+						// 解析各个字段
+						String id = (String) node.get("id");
+						String title = (String) node.get("title");
+						String content = (String) node.get("content");
+						String url = (String) node.get("url");
 
 						// 解析score
+						Double score = null;
 						Object scoreObj = node.get("score");
 						if (scoreObj instanceof Number) {
-							result.setScore(((Number) scoreObj).doubleValue());
+							score = ((Number) scoreObj).doubleValue();
 						}
 
 						// 添加额外的元数据
@@ -139,8 +141,9 @@ public class DashScopeKbApiClient implements ProfessionalKbApiClient {
 						if (node.containsKey("metadata")) {
 							metadata.putAll((Map<String, Object>) node.get("metadata"));
 						}
-						result.setMetadata(metadata);
 
+						// 使用record的构造函数创建实例
+						KbSearchResult result = new KbSearchResult(id, title, content, url, score, metadata);
 						results.add(result);
 					}
 				}

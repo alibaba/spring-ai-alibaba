@@ -58,6 +58,9 @@ public class AgentsConfiguration {
 	@Value("classpath:prompts/reporter.md")
 	private Resource reporterPrompt;
 
+	@Value("classpath:prompts/rag.md")
+	private Resource ragPrompt;
+
 	@Autowired
 	private ApplicationContext context;
 
@@ -217,6 +220,11 @@ public class AgentsConfiguration {
 	public ChatClient dataAnalysisAgent(ChatClient.Builder dataAnalysisChatClientBuilder) {
 		return configureAgentBuilder(dataAnalysisChatClientBuilder, "dataAnalysisAgent", AgentType.DATA_ANALYSIS)
 			.build();
+	}
+
+	@Bean
+	public ChatClient ragAgent(ChatClient.Builder reflectionChatClientBuilder) {
+		return reflectionChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(ragPrompt)).build();
 	}
 
 }

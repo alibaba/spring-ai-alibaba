@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.deepresearch.rag.kb.impl;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
 import com.alibaba.cloud.ai.example.deepresearch.rag.kb.ProfessionalKbApiClient;
+import com.alibaba.cloud.ai.example.deepresearch.rag.kb.model.KbSearchResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -111,17 +112,14 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 			List<Map<String, Object>> items = extractItemsFromResponse(responseBody);
 
 			for (Map<String, Object> item : items) {
-				KbSearchResult result = new KbSearchResult();
-
 				// 尝试多种字段名称映射
-				result.setId(getStringValue(item, "id", "doc_id", "document_id"));
-				result.setTitle(getStringValue(item, "title", "name", "heading"));
-				result.setContent(getStringValue(item, "content", "text", "body", "description"));
-				result.setUrl(getStringValue(item, "url", "link", "source_url"));
+				String id = getStringValue(item, "id", "doc_id", "document_id");
+				String title = getStringValue(item, "title", "name", "heading");
+				String content = getStringValue(item, "content", "text", "body", "description");
+				String url = getStringValue(item, "url", "link", "source_url");
 
 				// 解析score
 				Double score = getDoubleValue(item, "score", "relevance", "confidence");
-				result.setScore(score);
 
 				// 添加元数据
 				Map<String, Object> metadata = new HashMap<>();
@@ -131,11 +129,13 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 
 				// 包含原始数据作为元数据
 				metadata.put("original_data", item);
-				result.setMetadata(metadata);
 
+				// 使用record构造函数创建实例
+				KbSearchResult result = new KbSearchResult(id, title, content, url, score, metadata);
 				results.add(result);
 			}
 		}
+
 		catch (Exception e) {
 			logger.error("Error parsing custom API response", e);
 		}

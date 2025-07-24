@@ -21,8 +21,12 @@ import com.alibaba.cloud.ai.example.deepresearch.rag.kb.impl.CustomKbApiClient;
 import com.alibaba.cloud.ai.example.deepresearch.rag.kb.impl.DashScopeKbApiClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 专业知识库API客户端工厂 根据配置创建相应的API客户端
@@ -30,6 +34,7 @@ import org.springframework.web.client.RestClient;
  * @author hupei
  */
 @Component
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.deepresearch.rag", name = "enabled", havingValue = "true")
 public class ProfessionalKbApiClientFactory {
 
 	private static final Logger logger = LoggerFactory.getLogger(ProfessionalKbApiClientFactory.class);
@@ -90,8 +95,8 @@ public class ProfessionalKbApiClientFactory {
 	 * @param knowledgeBases 知识库配置列表
 	 * @return 知识库ID到API客户端的映射
 	 */
-	public java.util.Map<String, ProfessionalKbApiClient> createClients(
-			java.util.List<RagProperties.ProfessionalKnowledgeBases.KnowledgeBase> knowledgeBases) {
+	public Map<String, ProfessionalKbApiClient> createClients(
+			List<RagProperties.ProfessionalKnowledgeBases.KnowledgeBase> knowledgeBases) {
 
 		java.util.Map<String, ProfessionalKbApiClient> clients = new java.util.HashMap<>();
 
