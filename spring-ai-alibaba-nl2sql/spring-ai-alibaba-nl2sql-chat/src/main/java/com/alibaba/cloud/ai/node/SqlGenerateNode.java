@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.node;
 
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
