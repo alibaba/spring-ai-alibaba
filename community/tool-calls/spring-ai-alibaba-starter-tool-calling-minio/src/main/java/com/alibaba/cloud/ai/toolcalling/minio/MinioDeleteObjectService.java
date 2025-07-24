@@ -44,7 +44,8 @@ public class MinioDeleteObjectService implements Function<MinioDeleteObjectServi
 					RemoveObjectArgs.builder().bucket(request.bucketName()).object(request.objectName()).build());
 		}
 		catch (Exception e) {
-			logger.error("Delete file from minio exception {}", e);
+			logger.error("Delete file from Minio failed. BucketName: {}, ObjectName: {}. Error: {}",
+					request.bucketName(), request.objectName(), e.getMessage(), e);
 			return false;
 		}
 		return true;
@@ -52,7 +53,7 @@ public class MinioDeleteObjectService implements Function<MinioDeleteObjectServi
 
 	@JsonClassDescription("delete object from minio api")
 	public record Request(@JsonPropertyDescription("Minio bucketName") String bucketName,
-			@JsonPropertyDescription("Upload objectName") String objectName) {
+			@JsonPropertyDescription("Object name to delete") String objectName) {
 	}
 
 }

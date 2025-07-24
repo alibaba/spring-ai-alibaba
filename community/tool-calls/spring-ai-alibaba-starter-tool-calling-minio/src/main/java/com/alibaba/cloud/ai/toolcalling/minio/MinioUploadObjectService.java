@@ -53,7 +53,8 @@ public class MinioUploadObjectService implements Function<MinioUploadObjectServi
 				.build());
 		}
 		catch (Exception e) {
-			logger.error("Upload file to minio exception {}", e);
+			logger.error("Upload file to minio failed. BucketName: {}, ObjectName: {}. Error: {}", request.bucketName(),
+					request.objectName(), e.getMessage(), e);
 			return false;
 		}
 		return true;

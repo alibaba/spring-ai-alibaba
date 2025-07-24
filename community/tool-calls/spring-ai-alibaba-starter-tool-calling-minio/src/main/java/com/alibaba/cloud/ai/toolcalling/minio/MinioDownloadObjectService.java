@@ -47,16 +47,17 @@ public class MinioDownloadObjectService implements Function<MinioDownloadObjectS
 				.build());
 		}
 		catch (Exception e) {
-			logger.error("Download file from minio exception {}", e);
+			logger.error("Download file from minio failed. BucketName: {}, ObjectName: {}, DownloadPath: {}. Error: {}",
+					request.bucketName(), request.objectName(), request.downloadPath(), e.getMessage(), e);
 			return false;
 		}
 		return true;
 	}
 
-	@JsonClassDescription("download object to minio api")
+	@JsonClassDescription("download object from minio api")
 	public record Request(@JsonPropertyDescription("Minio bucketName") String bucketName,
-			@JsonPropertyDescription("Upload objectName") String objectName,
-			@JsonPropertyDescription("Upload downloadPath") String downloadPath) {
+			@JsonPropertyDescription("Object name to download") String objectName,
+			@JsonPropertyDescription("Path to save the downloaded object") String downloadPath) {
 	}
 
 }

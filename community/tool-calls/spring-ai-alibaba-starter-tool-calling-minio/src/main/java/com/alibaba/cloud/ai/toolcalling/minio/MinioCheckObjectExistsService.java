@@ -48,7 +48,8 @@ public class MinioCheckObjectExistsService implements Function<MinioCheckObjectE
 			return false;
 		}
 		catch (Exception e) {
-			logger.debug("Check file exists from minio exception {}", e);
+			logger.debug("Check file exists from minio failed. BucketName: {}, ObjectName: {}. Error: {}",
+					request.bucketName(), request.objectName(), e.getMessage(), e);
 			return false;
 		}
 		return true;
@@ -56,7 +57,7 @@ public class MinioCheckObjectExistsService implements Function<MinioCheckObjectE
 
 	@JsonClassDescription("check object exists from minio api")
 	public record Request(@JsonPropertyDescription("Minio bucketName") String bucketName,
-			@JsonPropertyDescription("Upload objectName") String objectName) {
+			@JsonPropertyDescription("Object name to check") String objectName) {
 	}
 
 }
