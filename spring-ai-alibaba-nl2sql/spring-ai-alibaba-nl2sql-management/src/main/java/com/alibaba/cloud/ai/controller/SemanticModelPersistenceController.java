@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.controller;
 import com.alibaba.cloud.ai.entity.SemanticModel;
 import com.alibaba.cloud.ai.entity.SemanticModelDTO;
 import com.alibaba.cloud.ai.service.SemanticModelPersistenceService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,62 +37,62 @@ public class SemanticModelPersistenceController {
 	@PostMapping("/add")
 	public ResponseEntity<Void> addField(@RequestBody SemanticModelDTO semanticModelDTO) {
 		semanticModelPersistenceService.addField(semanticModelDTO);
-		return new ResponseEntity<>(HttpStatus.CREATED);
+		return ResponseEntity.ok().build();
 	}
 
 	@PostMapping("/addList")
 	public ResponseEntity<Void> addFields(@RequestBody List<SemanticModelDTO> semanticModelDTOS) {
 		semanticModelPersistenceService.addFields(semanticModelDTOS);
-		return new ResponseEntity<>(HttpStatus.CREATED);
+		return ResponseEntity.ok().build();
 	}
 
 	// 启用
 	@PutMapping("/enable")
-	public ResponseEntity<Void> enableFields(@RequestBody List<Integer> ids) {
+	public ResponseEntity<Void> enableFields(@RequestBody List<Long> ids) {
 		semanticModelPersistenceService.enableFields(ids);
-		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+		return ResponseEntity.ok().build();
 	}
 
 	// 禁用
 	@PutMapping("/disable")
 	public ResponseEntity<Void> disableFields(@RequestBody List<Long> ids) {
 		semanticModelPersistenceService.disableFields(ids);
-		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+		return ResponseEntity.ok().build();
 	}
 
 	// 获取数据集id列表
 	@GetMapping("/datasetIds")
 	public ResponseEntity<List<String>> getDataSetIds() {
 		List<String> datasetIds = semanticModelPersistenceService.getDataSetIds();
-		return new ResponseEntity<>(datasetIds, HttpStatus.OK);
+		return ResponseEntity.ok(datasetIds);
 	}
 
 	// 根据datasetId获取数据
 	@GetMapping("/dataset/{datasetId}")
 	public ResponseEntity<List<SemanticModel>> getDataSetById(@PathVariable String datasetId) {
 		List<SemanticModel> fields = semanticModelPersistenceService.getFieldByDataSetId(datasetId);
-		return new ResponseEntity<>(fields, HttpStatus.OK);
+		return ResponseEntity.ok(fields);
 	}
 
 	// 搜索
 	@GetMapping("/search")
 	public ResponseEntity<List<SemanticModel>> searchFields(@RequestParam String content) {
 		List<SemanticModel> fields = semanticModelPersistenceService.searchFields(content);
-		return new ResponseEntity<>(fields, HttpStatus.OK);
+		return ResponseEntity.ok(fields);
 	}
 
 	// 根据id删除
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> deleteFieldById(@PathVariable long id) {
 		semanticModelPersistenceService.deleteFieldById(id);
-		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+		return ResponseEntity.ok().build();
 	}
 
 	// 编辑更新
 	@PutMapping("/{id}")
-	public ResponseEntity<Void> updateField(@PathVariable int id, @RequestBody SemanticModelDTO semanticModelDTO) {
+	public ResponseEntity<Void> updateField(@PathVariable long id, @RequestBody SemanticModelDTO semanticModelDTO) {
 		semanticModelPersistenceService.updateField(semanticModelDTO, id);
-		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+		return ResponseEntity.ok().build();
 	}
 
 }

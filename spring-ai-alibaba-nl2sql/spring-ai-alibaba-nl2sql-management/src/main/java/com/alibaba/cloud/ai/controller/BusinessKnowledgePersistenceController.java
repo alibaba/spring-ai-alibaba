@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.controller;
 import com.alibaba.cloud.ai.entity.BusinessKnowledge;
 import com.alibaba.cloud.ai.entity.BusinessKnowledgeDTO;
 import com.alibaba.cloud.ai.service.BusinessKnowledgePersistenceService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,48 +46,48 @@ public class BusinessKnowledgePersistenceController {
 	@PostMapping("/add")
 	public ResponseEntity<Void> addField(@RequestBody BusinessKnowledgeDTO knowledgeDTO) {
 		businessKnowledgePersistenceService.addKnowledge(knowledgeDTO);
-		return new ResponseEntity<>(HttpStatus.CREATED);
+		return ResponseEntity.ok().build();
 	}
 
 	@PostMapping("/addList")
 	public ResponseEntity<Void> addFields(@RequestBody List<BusinessKnowledgeDTO> knowledgeDTOs) {
 		businessKnowledgePersistenceService.addKnowledgeList(knowledgeDTOs);
-		return new ResponseEntity<>(HttpStatus.CREATED);
+		return ResponseEntity.ok().build();
 	}
 
 	// 获取数据集id列表
 	@GetMapping("/datasetIds")
 	public ResponseEntity<List<String>> getDataSetIds() {
 		List<String> datasetIds = businessKnowledgePersistenceService.getDataSetIds();
-		return new ResponseEntity<>(datasetIds, HttpStatus.OK);
+		return ResponseEntity.ok(datasetIds);
 	}
 
 	// 根据datasetId获取数据
 	@GetMapping("/dataset/{datasetId}")
 	public ResponseEntity<List<BusinessKnowledge>> getDataSetById(@PathVariable String datasetId) {
 		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.getFieldByDataSetId(datasetId);
-		return new ResponseEntity<>(knowledge, HttpStatus.OK);
+		return ResponseEntity.ok(knowledge);
 	}
 
 	// 搜索
 	@GetMapping("/search")
 	public ResponseEntity<List<BusinessKnowledge>> searchFields(@RequestParam String content) {
 		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.searchFields(content);
-		return new ResponseEntity<>(knowledge, HttpStatus.OK);
+		return ResponseEntity.ok(knowledge);
 	}
 
 	// 根据id删除
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteFieldById(@PathVariable int id) {
+	public ResponseEntity<Void> deleteFieldById(@PathVariable long id) {
 		businessKnowledgePersistenceService.deleteFieldById(id);
-		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+		return ResponseEntity.ok().build();
 	}
 
 	// 编辑更新
 	@PutMapping("/{id}")
-	public ResponseEntity<Void> updateField(@PathVariable int id, @RequestBody BusinessKnowledgeDTO knowledgeDTO) {
+	public ResponseEntity<Void> updateField(@PathVariable long id, @RequestBody BusinessKnowledgeDTO knowledgeDTO) {
 		businessKnowledgePersistenceService.updateField(knowledgeDTO, id);
-		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+		return ResponseEntity.ok().build();
 	}
 
 }

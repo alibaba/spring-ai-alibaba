@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -145,6 +146,7 @@ public class BusinessKnowledgePersistenceService {
 
 	// 搜索
 	public List<BusinessKnowledge> searchFields(String keyword) {
+		Objects.requireNonNull(keyword, "searchKeyword cannot be null");
 		return jdbcTemplate.query(FIELD_SEARCH,
 				new Object[] { "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" }, (rs, rowNum) -> {
 					return new BusinessKnowledge(rs.getObject("id", Long.class), rs.getString("business_term"),
@@ -156,12 +158,12 @@ public class BusinessKnowledgePersistenceService {
 	}
 
 	// 根据id删除智能体字段
-	public void deleteFieldById(int id) {
+	public void deleteFieldById(long id) {
 		jdbcTemplate.update(FIELD_CLEAR, id);
 	}
 
 	// 更新智能体字段
-	public void updateField(BusinessKnowledgeDTO knowledgeDTO, int id) {
+	public void updateField(BusinessKnowledgeDTO knowledgeDTO, long id) {
 		jdbcTemplate.update(FIELD_UPDATE, knowledgeDTO.getBusinessTerm(), knowledgeDTO.getDescription(),
 				knowledgeDTO.getSynonyms(), knowledgeDTO.getDefaultRecall(), knowledgeDTO.getDatasetId(),
 				Timestamp.valueOf(LocalDateTime.now()), id);

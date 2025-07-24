@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -98,7 +99,7 @@ public class SemanticModelPersistenceService {
 			DELETE FROM semantic_model WHERE id = ?
 			""";
 
-	// 模糊搜素
+	// 模糊搜索
 	private static final String FIELD_SEARCH = """
 			   		SELECT
 				id,
@@ -149,15 +150,33 @@ public class SemanticModelPersistenceService {
 	}
 
 	// 批量启用
-	public void enableFields(List<Integer> ids) {
-		for (int id : ids)
-			jdbcTemplate.update(FIELD_ENABLE, id);
+	public void enableFields(List<Long> ids) {
+		jdbcTemplate.batchUpdate(FIELD_ENABLE, new BatchPreparedStatementSetter() {
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException {
+				ps.setLong(1, ids.get(i));
+			}
+
+			@Override
+			public int getBatchSize() {
+				return 0;
+			}
+		});
 	}
 
 	// 批量禁用
 	public void disableFields(List<Long> ids) {
-		for (long id : ids)
-			jdbcTemplate.update(FIELD_DISABLE, id);
+		jdbcTemplate.batchUpdate(FIELD_DISABLE, new BatchPreparedStatementSetter() {
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException {
+				ps.setLong(1, ids.get(i));
+			}
+
+			@Override
+			public int getBatchSize() {
+				return 0;
+			}
+		});
 	}
 
 	// 获取数据集列表
@@ -179,7 +198,7 @@ public class SemanticModelPersistenceService {
 
 	// 搜索
 	public List<SemanticModel> searchFields(String keyword) {
-		assert keyword != null;
+		Objects.requireNonNull(keyword, "searchKeyword cannot be null");
 		return jdbcTemplate.query(FIELD_SEARCH,
 				new Object[] { "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" }, (rs, rowNum) -> {
 					return new SemanticModel(rs.getObject("id", Long.class), rs.getString("data_set_id"),
@@ -192,12 +211,12 @@ public class SemanticModelPersistenceService {
 	}
 
 	// 根据id删除智能体字段
-	public void deleteFieldById(Long id) {
+	public void deleteFieldById(long id) {
 		jdbcTemplate.update(FIELD_CLEAR, id);
 	}
 
 	// 更新智能体字段
-	public void updateField(SemanticModelDTO semanticModelDTO, int id) {
+	public void updateField(SemanticModelDTO semanticModelDTO, long id) {
 		jdbcTemplate.update(FIELD_UPDATE, semanticModelDTO.getAgentFieldName(), semanticModelDTO.getFieldSynonyms(),
 				semanticModelDTO.getOriginalFieldName(), semanticModelDTO.getFieldDescription(),
 				semanticModelDTO.getOriginalDescription(), semanticModelDTO.getFieldType(),
