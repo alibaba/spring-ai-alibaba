@@ -42,9 +42,9 @@ import com.alibaba.cloud.ai.studio.core.workflow.WorkflowContext;
 import com.alibaba.cloud.ai.studio.core.utils.common.VariableUtils;
 import com.alibaba.cloud.ai.studio.core.workflow.WorkflowInnerService;
 import com.alibaba.cloud.ai.studio.core.workflow.processor.AbstractExecuteProcessor;
-import com.alibaba.nacos.shaded.com.google.common.collect.Maps;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -55,7 +55,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.content.Media;
 import org.springframework.core.io.FileUrlResource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -292,7 +292,7 @@ public class LLMExecuteProcessor extends AbstractExecuteProcessor {
 					if (media == null) {
 						return new UserMessage(userPrompt);
 					}
-					return new UserMessage(userPrompt, media);
+					return UserMessage.builder().text(userPrompt).media(media).build();
 				}
 				else if (value instanceof List) {
 					List<Media> medias = ((List<?>) value).stream()
@@ -302,7 +302,7 @@ public class LLMExecuteProcessor extends AbstractExecuteProcessor {
 					if (CollectionUtils.isEmpty(medias)) {
 						return new UserMessage(userPrompt);
 					}
-					return new UserMessage(userPrompt, medias);
+					return UserMessage.builder().text(userPrompt).media(medias).build();
 				}
 				else {
 					throw new BizException(ErrorCode.WORKFLOW_CONFIG_INVALID
@@ -338,7 +338,7 @@ public class LLMExecuteProcessor extends AbstractExecuteProcessor {
 				}
 				else {
 					MediaType mediaType = fileManager.getMediaTypeFromUrl(url);
-					return new Media(MimeType.valueOf(mediaType.toString()), new URL(url));
+					return Media.builder().mimeType(MimeType.valueOf(mediaType.toString())).data(new URL(url)).build();
 				}
 			}
 			catch (Exception e) {

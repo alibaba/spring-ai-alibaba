@@ -64,14 +64,14 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.model.Media;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ByteArrayResource;
@@ -90,8 +90,7 @@ import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.studio.core.rag.RagConstants.FILE_SEARCH_CALL;
 import static com.alibaba.cloud.ai.studio.core.rag.RagConstants.FILE_SEARCH_RESULT;
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
  * Basic agent executor implementation that handles agent interactions and tool
@@ -269,13 +268,15 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 		// Add chat memory advisor
 		ChatClient.Builder chatClientBuilder = chatClient.mutate();
 		if (context.isMemoryEnabled()) {
-			MessageChatMemoryAdvisor advisor = new MessageChatMemoryAdvisor(chatMemory);
+			MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 			int dialogRound = config.getMemory().getDialogRound();
 			chatClientBuilder.defaultAdvisors(advisor);
 			String conversationId = String.format("%s_%s", context.getAppId(), request.getConversationId());
-			chatClientBuilder
-				.defaultAdvisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId)
-					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, dialogRound));
+			// chatClientBuilder
+			// .defaultAdvisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID,
+			// conversationId)
+			// .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, dialogRound));
+			chatClientBuilder.defaultAdvisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, conversationId));
 		}
 
 		// Add document retriever
@@ -292,7 +293,7 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 		}
 
 		// Add tool callbacks
-		FunctionCallback[] toolCallbacks = toolCallbackProvider.getToolCallbacks();
+		ToolCallback[] toolCallbacks = toolCallbackProvider.getToolCallbacks();
 		if (!ArrayUtils.isEmpty(toolCallbacks)) {
 			chatOptions.setToolCallbacks(Arrays.stream(toolCallbacks).toList());
 		}
@@ -422,7 +423,7 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 						if (StringUtils.isNotBlank(item.getUrl())) {
 							String contentType = FileUtils.getContentType(item.getUrl());
 							MediaType mediaType = MediaType.parseMediaType(contentType);
-							media.add(new Media(mediaType, new URL(item.getUrl())));
+							media.add(Media.builder().mimeType(mediaType).data(new URL(item.getUrl())).build());
 						}
 						else if (StringUtils.isNotBlank(item.getPath())) {
 							String contentType = FileUtils.getContentType(item.getPath());
@@ -453,7 +454,7 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 			throw new RuntimeException(e);
 		}
 
-		return new UserMessage(text, media);
+		return UserMessage.builder().text(text).media(media).build();
 	}
 
 	/**
@@ -710,12 +711,12 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 	 */
 	private Map<String, AgentToolCallback> getAgentToolCallback(ToolCallbackProvider toolCallbackProvider) {
 		Map<String, AgentToolCallback> agentToolCallbackMap = new HashMap<>();
-		FunctionCallback[] toolCallbacks = toolCallbackProvider.getToolCallbacks();
+		ToolCallback[] toolCallbacks = toolCallbackProvider.getToolCallbacks();
 		if (ArrayUtils.isEmpty(toolCallbacks)) {
 			return agentToolCallbackMap;
 		}
 
-		for (FunctionCallback toolCallback : toolCallbacks) {
+		for (ToolCallback toolCallback : toolCallbacks) {
 			if (toolCallback instanceof AgentToolCallback agentToolCallback) {
 				agentToolCallbackMap.put(agentToolCallback.getToolDefinition().name(), agentToolCallback);
 			}

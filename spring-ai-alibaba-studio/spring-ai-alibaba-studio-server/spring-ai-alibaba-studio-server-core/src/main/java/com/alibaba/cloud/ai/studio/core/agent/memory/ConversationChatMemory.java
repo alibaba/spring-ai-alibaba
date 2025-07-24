@@ -80,10 +80,13 @@ public class ConversationChatMemory implements ChatMemory {
 	 * @return List of messages, empty if no history exists
 	 */
 	@Override
-	public List<Message> get(String conversationId, int lastN) {
+	public List<Message> get(String conversationId) {
 		String key = getConversationMemoryCacheKey(conversationId);
 		Deque<Message> all = redisManager.get(key);
-		return all != null ? all.stream().skip(Math.max(0, all.size() - lastN)).toList() : List.of();
+		// FIXME, return only topN messages
+		return all != null ? all.stream().toList() : List.of();
+		// return all != null ? all.stream().skip(Math.max(0, all.size() -
+		// lastN)).toList() : List.of();
 	}
 
 	/**

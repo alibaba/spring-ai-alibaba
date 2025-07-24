@@ -33,11 +33,11 @@ import com.alibaba.cloud.ai.studio.core.base.mapper.ReferMapper;
 import com.alibaba.cloud.ai.studio.core.workflow.WorkflowConfig;
 import com.alibaba.cloud.ai.studio.core.workflow.processor.impl.AppComponentExecuteProcessor;
 import com.alibaba.cloud.ai.studio.core.workflow.processor.impl.ParallelExecuteProcessor;
-import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -147,7 +147,7 @@ public class ReferServiceImpl extends ServiceImpl<ReferMapper, ReferEntity> impl
 		if (app.getType() == AppType.BASIC) {
 			AgentConfig agentConfig = JsonUtils.fromJson(app.getPubConfigStr(), AgentConfig.class);
 			List<String> agentComponents = agentConfig.getAgentComponents();
-			if (CollectionUtils.isNotEmpty(agentComponents)) {
+			if (!CollectionUtils.isEmpty(agentComponents)) {
 				for (String agentComponent : agentComponents) {
 					ReferEntity refer = new ReferEntity();
 					refer.setMainCode(app.getAppId());
@@ -161,7 +161,7 @@ public class ReferServiceImpl extends ServiceImpl<ReferMapper, ReferEntity> impl
 				}
 			}
 			List<String> flowComponents = agentConfig.getWorkflowComponents();
-			if (CollectionUtils.isNotEmpty(flowComponents)) {
+			if (!CollectionUtils.isEmpty(flowComponents)) {
 				for (String flowComponent : flowComponents) {
 					ReferEntity refer = new ReferEntity();
 					refer.setMainCode(app.getAppId());
@@ -192,7 +192,7 @@ public class ReferServiceImpl extends ServiceImpl<ReferMapper, ReferEntity> impl
 		List<ReferEntity> refers = new ArrayList<>();
 		if (workflowConfig != null) {
 			List<Node> nodes = workflowConfig.getNodes();
-			if (CollectionUtils.isNotEmpty(nodes)) {
+			if (!CollectionUtils.isEmpty(nodes)) {
 				for (Node node : nodes) {
 					if (node.getType().equals(NodeTypeEnum.ITERATOR.getCode())
 							|| node.getType().equals(NodeTypeEnum.PARALLEL.getCode())) {

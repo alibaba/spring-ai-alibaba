@@ -28,7 +28,6 @@ import com.alibaba.cloud.ai.studio.core.workflow.WorkflowContext;
 import com.alibaba.cloud.ai.studio.core.utils.common.VariableUtils;
 import com.alibaba.cloud.ai.studio.core.workflow.WorkflowInnerService;
 import com.alibaba.cloud.ai.studio.core.workflow.processor.AbstractExecuteProcessor;
-import com.alibaba.nacos.common.utils.CollectionUtils;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +36,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;

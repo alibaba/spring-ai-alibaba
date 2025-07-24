@@ -29,14 +29,14 @@ import com.alibaba.cloud.ai.studio.core.context.RequestContextHolder;
 import com.alibaba.cloud.ai.studio.core.base.entity.AppComponentEntity;
 import com.alibaba.cloud.ai.studio.core.base.mapper.AppComponentMapper;
 import com.alibaba.cloud.ai.studio.core.utils.common.IdGenerator;
-import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import groovy.util.logging.Slf4j;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -117,7 +117,7 @@ public class AppComponentServiceImpl extends ServiceImpl<AppComponentMapper, App
 		RequestContext context = RequestContextHolder.getRequestContext();
 		LambdaQueryWrapper<AppComponentEntity> queryWrapper = new LambdaQueryWrapper<>();
 		queryWrapper.eq(AppComponentEntity::getWorkspaceId, context.getWorkspaceId());
-		if (CollectionUtils.isNotEmpty(codes)) {
+		if (!CollectionUtils.isEmpty(codes)) {
 			queryWrapper.in(AppComponentEntity::getCode, codes);
 		}
 		queryWrapper.eq(AppComponentEntity::getStatus, AppComponentStatusEnum.Published.getCode());

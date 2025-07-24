@@ -41,9 +41,10 @@ import com.alibaba.cloud.ai.studio.core.base.manager.AppComponentManager;
 import com.alibaba.cloud.ai.studio.core.workflow.WorkflowConfig;
 import com.alibaba.cloud.ai.studio.core.workflow.processor.impl.EndExecuteProcessor;
 import com.alibaba.cloud.ai.studio.admin.annotation.ApiModelAttribute;
-import com.alibaba.nacos.common.utils.CollectionUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.lang3.StringUtils;
+
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

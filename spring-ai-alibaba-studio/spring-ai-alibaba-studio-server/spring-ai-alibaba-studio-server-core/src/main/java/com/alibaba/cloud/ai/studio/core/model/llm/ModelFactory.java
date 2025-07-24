@@ -24,7 +24,6 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.rag.postretrieval.ranking.DocumentRanker;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -86,12 +85,12 @@ public class ModelFactory {
 	 * @param searchOptions The search configuration options
 	 * @return DocumentRanker instance
 	 */
-	public DocumentRanker getDocumentRanker(FileSearchOptions searchOptions) {
+	public DashscopeReranker getDocumentRanker(FileSearchOptions searchOptions) {
 		ModelCredential credential = getModelCredential(searchOptions.getRerankProvider(),
 				searchOptions.getRerankModel());
 
 		return DashscopeReranker.builder()
-			.dashscopeApi(new DashScopeApi(credential.getApiKey()))
+			.dashscopeApi(DashScopeApi.builder().apiKey(credential.getApiKey()).build())
 			.options(DashScopeRerankerOptions.builder()
 				.returnDocuments(false)
 				.topN(searchOptions.getTopK())

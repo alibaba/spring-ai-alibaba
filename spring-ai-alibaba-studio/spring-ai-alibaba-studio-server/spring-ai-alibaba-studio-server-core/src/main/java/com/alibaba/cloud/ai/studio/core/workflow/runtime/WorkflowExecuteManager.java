@@ -210,7 +210,9 @@ public class WorkflowExecuteManager {
 		if (historySwitch) {
 			String conversationId = String.format(APPCODE_CONVERSATION_ID_TEMPLATE, context.getAppId(),
 					context.getConversationId());
-			List<Message> messages = conversationChatMemory.get(conversationId, historyMaxRound);
+			// FIXME, use 'historyMaxRound' to find the top K messages only
+			List<Message> messages = conversationChatMemory.get(conversationId);
+
 			List<Message> historyList = (List<Message>) context.getSysMap().get(SYS_HISTORY_LIST_KEY);
 			if (CollectionUtils.isEmpty(historyList)) {
 				context.getSysMap().put(SYS_HISTORY_LIST_KEY, messages);

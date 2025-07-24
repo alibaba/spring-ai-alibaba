@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.studio.core.rag.retriever;
 
+import com.alibaba.cloud.ai.studio.core.model.reranker.dashscope.DashscopeReranker;
 import com.alibaba.cloud.ai.studio.runtime.exception.BizException;
 import com.alibaba.cloud.ai.studio.runtime.enums.ErrorCode;
 import com.alibaba.cloud.ai.studio.runtime.domain.app.FileSearchOptions;
@@ -28,7 +29,6 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
-import org.springframework.ai.rag.postretrieval.ranking.DocumentRanker;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.SearchType;
@@ -166,8 +166,8 @@ public class KnowledgeBaseDocumentRetriever implements DocumentRetriever {
 	 */
 	private List<Document> rerankDocuments(FileSearchOptions searchOptions, Query query, List<Document> documents) {
 		long start = System.currentTimeMillis();
-		DocumentRanker documentRanker = modelFactory.getDocumentRanker(searchOptions);
-		List<Document> results = documentRanker.rank(query, documents);
+		DashscopeReranker documentRanker = modelFactory.getDocumentRanker(searchOptions);
+		List<Document> results = documentRanker.process(query, documents);
 
 		LogUtils.monitor("DocumentRetriever", "rerank", start, SUCCESS, query.text(), results.size());
 		return results;

@@ -64,9 +64,6 @@
         <logback.version>1.5.8</logback.version>
         <protobuf-java.version>3.19.6</protobuf-java.version>
 
-        <spring-ai.version>1.0.0-M6</spring-ai.version>
-        <spring-ai-alibaba.version>1.0.0-M6.1</spring-ai-alibaba.version>
-
         <druid.version>1.2.20</druid.version>
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
         <redisson.version>3.27.2</redisson.version>
@@ -169,7 +166,7 @@
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-core</artifactId>
-                <version>${spring-ai-alibaba.version}</version>
+                <version>${project.parent.version}</version>
             </dependency>
 
             <!-- redis -->

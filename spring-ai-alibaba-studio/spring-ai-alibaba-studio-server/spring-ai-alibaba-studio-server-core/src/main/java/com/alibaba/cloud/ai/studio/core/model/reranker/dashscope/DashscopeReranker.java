@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
-import org.springframework.ai.rag.postretrieval.ranking.DocumentRanker;
+import org.springframework.ai.rag.postretrieval.document.DocumentPostProcessor;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -36,7 +36,7 @@ import java.util.List;
  * @since 1.0.0-M1
  */
 
-public class DashscopeReranker implements DocumentRanker {
+public class DashscopeReranker implements DocumentPostProcessor {
 
 	/** Low-level access to the DashScope API */
 	private final DashScopeApi dashscopeApi;
@@ -85,7 +85,7 @@ public class DashscopeReranker implements DocumentRanker {
 	 */
 	@NotNull
 	@Override
-	public List<Document> rank(@NotNull Query query, @NotNull List<Document> documents) {
+	public List<Document> process(@NotNull Query query, @NotNull List<Document> documents) {
 		if (CollectionUtils.isEmpty(documents)) {
 			return documents;
 		}

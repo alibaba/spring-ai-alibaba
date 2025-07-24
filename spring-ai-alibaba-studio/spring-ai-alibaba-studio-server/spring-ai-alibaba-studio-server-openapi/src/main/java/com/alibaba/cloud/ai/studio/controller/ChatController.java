@@ -22,8 +22,6 @@ import com.alibaba.cloud.ai.studio.runtime.domain.workflow.debug.TaskRunResponse
 import com.alibaba.cloud.ai.studio.runtime.domain.workflow.debug.TaskStopRequest;
 import com.alibaba.cloud.ai.studio.runtime.domain.workflow.debug.WorkflowRequest;
 import com.alibaba.cloud.ai.studio.runtime.domain.workflow.debug.WorkflowResponse;
-import com.alibaba.nacos.common.utils.CollectionUtils;
-import com.alibaba.nacos.shaded.com.google.common.collect.Lists;
 import com.alibaba.cloud.ai.studio.runtime.domain.Error;
 import com.alibaba.cloud.ai.studio.runtime.domain.RequestContext;
 import com.alibaba.cloud.ai.studio.runtime.domain.Result;
@@ -43,6 +41,7 @@ import com.alibaba.cloud.ai.studio.core.base.manager.RedisManager;
 import com.alibaba.cloud.ai.studio.core.workflow.WorkflowContext;
 import com.alibaba.cloud.ai.studio.core.context.RequestContextHolder;
 import com.alibaba.cloud.ai.studio.core.utils.LogUtils;
+import com.google.common.collect.Lists;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
@@ -51,6 +50,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.alibaba.cloud.ai.studio.core.base.constants.CacheConstants.WORKFLOW_TASK_CONTEXT_PREFIX;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
