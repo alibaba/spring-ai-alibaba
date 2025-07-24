@@ -15,14 +15,10 @@
  */
 package com.alibaba.cloud.ai.entity;
 
-import java.time.LocalDateTime;
-
 /**
  * 业务知识管理实体类
  */
-public class BusinessKnowledge {
-
-	private Long id;
+public class BusinessKnowledgeDTO {
 
 	private String businessTerm; // 业务名词
 
@@ -34,44 +30,19 @@ public class BusinessKnowledge {
 
 	private String datasetId; // 关联的数据集ID
 
-	private LocalDateTime createTime;
-
-	private LocalDateTime updateTime;
-
-	public BusinessKnowledge() {
+	public BusinessKnowledgeDTO() {
 	}
 
-	public BusinessKnowledge(String businessTerm, String description, String synonyms, Boolean defaultRecall,
+	public BusinessKnowledgeDTO(String businessTerm, String description, String synonyms, Boolean defaultRecall,
 			String datasetId) {
 		this.businessTerm = businessTerm;
 		this.description = description;
 		this.synonyms = synonyms;
 		this.defaultRecall = defaultRecall;
 		this.datasetId = datasetId;
-		this.createTime = LocalDateTime.now();
-		this.updateTime = LocalDateTime.now();
-	}
-
-	public BusinessKnowledge(Long id, String businessTerm, String description, String synonyms, Boolean defaultRecall,
-			String datasetId, LocalDateTime createTime, LocalDateTime updateTime) {
-		this.id = id;
-		this.businessTerm = businessTerm;
-		this.description = description;
-		this.synonyms = synonyms;
-		this.defaultRecall = defaultRecall;
-		this.datasetId = datasetId;
-		this.createTime = createTime;
-		this.updateTime = updateTime;
 	}
 
 	// Getters and Setters
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
 
 	public String getBusinessTerm() {
 		return businessTerm;
@@ -111,22 +82,6 @@ public class BusinessKnowledge {
 
 	public void setDatasetId(String datasetId) {
 		this.datasetId = datasetId;
-	}
-
-	public LocalDateTime getCreateTime() {
-		return createTime;
-	}
-
-	public void setCreateTime(LocalDateTime createTime) {
-		this.createTime = createTime;
-	}
-
-	public LocalDateTime getUpdateTime() {
-		return updateTime;
-	}
-
-	public void setUpdateTime(LocalDateTime updateTime) {
-		this.updateTime = updateTime;
 	}
 
 }

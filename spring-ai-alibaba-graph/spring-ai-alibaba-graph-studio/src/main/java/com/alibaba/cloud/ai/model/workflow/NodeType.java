@@ -60,7 +60,9 @@ public enum NodeType {
 
 	ITERATION("iteration", "iteration"),
 
-	DIFY_ITERATION_START("__empty__", "iteration-start");
+	DIFY_ITERATION_START("__empty__", "iteration-start"),
+
+	ASSIGNER("assigner", "assigner");
 
 	private String value;
 

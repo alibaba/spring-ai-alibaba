@@ -15,14 +15,10 @@
  */
 package com.alibaba.cloud.ai.entity;
 
-import java.time.LocalDateTime;
-
 /**
  * 语义模型配置实体类
  */
-public class SemanticModel {
-
-	private Long id;
+public class SemanticModelDTO {
 
 	private String datasetId; // 数据集ID
 
@@ -42,14 +38,10 @@ public class SemanticModel {
 
 	private String originalDescription; // 原始字段描述
 
-	private LocalDateTime createTime;
-
-	private LocalDateTime updateTime;
-
-	public SemanticModel() {
+	public SemanticModelDTO() {
 	}
 
-	public SemanticModel(String datasetId, String originalFieldName, String agentFieldName, String fieldSynonyms,
+	public SemanticModelDTO(String datasetId, String originalFieldName, String agentFieldName, String fieldSynonyms,
 			String fieldDescription, Boolean defaultRecall, Boolean enabled, String fieldType,
 			String originalDescription) {
 		this.datasetId = datasetId;
@@ -61,36 +53,9 @@ public class SemanticModel {
 		this.enabled = enabled;
 		this.fieldType = fieldType;
 		this.originalDescription = originalDescription;
-		this.createTime = LocalDateTime.now();
-		this.updateTime = LocalDateTime.now();
-	}
-
-	public SemanticModel(Long id, String datasetId, String originalFieldName, String agentFieldName,
-			String fieldSynonyms, String fieldDescription, Boolean defaultRecall, Boolean enabled, String fieldType,
-			String originalDescription, LocalDateTime createTime, LocalDateTime updateTime) {
-		this.id = id;
-		this.datasetId = datasetId;
-		this.originalFieldName = originalFieldName;
-		this.agentFieldName = agentFieldName;
-		this.fieldSynonyms = fieldSynonyms;
-		this.fieldDescription = fieldDescription;
-		this.defaultRecall = defaultRecall;
-		this.enabled = enabled;
-		this.fieldType = fieldType;
-		this.originalDescription = originalDescription;
-		this.createTime = createTime;
-		this.updateTime = updateTime;
 	}
 
 	// Getters and Setters
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
 	public String getDatasetId() {
 		return datasetId;
 	}
@@ -161,22 +126,6 @@ public class SemanticModel {
 
 	public void setOriginalDescription(String originalDescription) {
 		this.originalDescription = originalDescription;
-	}
-
-	public LocalDateTime getCreateTime() {
-		return createTime;
-	}
-
-	public void setCreateTime(LocalDateTime createTime) {
-		this.createTime = createTime;
-	}
-
-	public LocalDateTime getUpdateTime() {
-		return updateTime;
-	}
-
-	public void setUpdateTime(LocalDateTime updateTime) {
-		this.updateTime = updateTime;
 	}
 
 }
