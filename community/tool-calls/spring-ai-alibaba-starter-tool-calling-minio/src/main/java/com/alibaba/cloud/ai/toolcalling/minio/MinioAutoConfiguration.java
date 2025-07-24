@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.toolcalling.minio;
 
 import io.minio.MinioClient;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -28,13 +28,17 @@ import org.springframework.context.annotation.Description;
  * 2025/7/23 auth: dahua
  */
 @Configuration
+@ConditionalOnClass(MinioClient.class)
 @ConditionalOnProperty(prefix = MinioConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @EnableConfigurationProperties(MinioProperties.class)
 public class MinioAutoConfiguration {
 
-	@Autowired
-	private MinioProperties minioProperties;
+	private final MinioProperties minioProperties;
+
+	public MinioAutoConfiguration(MinioProperties minioProperties) {
+		this.minioProperties = minioProperties;
+	}
 
 	@Bean(name = MinioConstants.TOOL_NAME_UPLOAD)
 	@ConditionalOnMissingBean
