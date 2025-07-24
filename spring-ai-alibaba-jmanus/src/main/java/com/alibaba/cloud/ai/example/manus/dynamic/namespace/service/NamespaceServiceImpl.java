@@ -109,6 +109,7 @@ public class NamespaceServiceImpl implements NamespaceService {
 		entity.setName(config.getName());
 		entity.setCode(config.getCode());
 		entity.setDescription(config.getDescription());
+		entity.setHost(config.getHost());
 	}
 
 }

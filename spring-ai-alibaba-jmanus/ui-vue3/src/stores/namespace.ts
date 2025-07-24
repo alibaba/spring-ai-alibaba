@@ -23,7 +23,7 @@ export const usenameSpaceStore = defineStore('namespace', () => {
     namespace.value = value
   }
 
-  const namespaces = ref<Array<{ name: string; id: string }>>([])
+  const namespaces = ref<Array<{ name: string; id: string ;host?: string}>>([])
   function setNamespaces(datasource: Array<{ name: string; id: string }>) {
     namespaces.value = datasource
   }

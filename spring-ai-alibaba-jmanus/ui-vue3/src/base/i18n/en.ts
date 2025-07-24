@@ -106,6 +106,7 @@ const words: I18nType = {
       model: 'Model Configuration',
       mcp: 'Tools/MCP Configuration',
       prompt: 'Dynamic Prompt Configuration',
+      namespace: 'Namespace Configuration',
     },
     subGroupDisplayNames: {
       agent: 'Agent',
@@ -337,6 +338,7 @@ const words: I18nType = {
       title: 'Namespace Configuration',
       name: 'Namespace Name',
       code: 'Namespace Code',
+      host: 'Host',
       description: 'Namespace Description',
       loadDetailsFailed: 'Failed to load namespace details',
       selectNameSpaceHint: 'Please select a namespace to configure',

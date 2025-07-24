@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed ,watch} from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
@@ -109,12 +109,17 @@ const categories = computed(() => [
   { key: 'model', label: t('config.categories.model'), icon: 'carbon:build-image' },
   { key: 'mcp', label: t('config.categories.mcp'), icon: 'carbon:tool-box' },
   { key: 'prompt', label: t('config.categories.prompt'), icon: 'carbon:repo-artifact' },
-  { key: 'namespace', disabled: true, icon: 'carbon:repo-artifact' },
+  {
+    key: 'namespace',
+    label: t('config.categories.namespace'),
+    disabled: false,
+    icon: 'carbon:repo-artifact',
+  },
 ])
 
 watch(
   () => route.params.category,
-  (newCategory) => {
+  newCategory => {
     if (newCategory) {
       activeCategory.value = newCategory as string
     }

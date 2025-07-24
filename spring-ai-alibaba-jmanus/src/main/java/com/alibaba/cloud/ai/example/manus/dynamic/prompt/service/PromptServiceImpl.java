@@ -80,7 +80,6 @@ public class PromptServiceImpl implements PromptService {
 		if (Boolean.TRUE.equals(promptVO.getBuiltIn())) {
 			throw new IllegalArgumentException("Cannot create built-in prompt");
 		}
-
 		PromptEntity prompt = promptRepository.findByNamespaceAndPromptName(promptVO.getNamespace(),
 				promptVO.getPromptName());
 		if (prompt != null) {
@@ -196,6 +195,7 @@ public class PromptServiceImpl implements PromptService {
 	 */
 	@Override
 	public String renderPrompt(String promptName, Map<String, Object> variables) {
+		log.info("Current namespace: {}", namespace); // 添加这行来打印 namespace
 		PromptEntity promptEntity = promptRepository.findByNamespaceAndPromptName(namespace, promptName);
 		if (promptEntity == null) {
 			throw new IllegalArgumentException("Prompt not found: " + promptName);
@@ -218,4 +218,32 @@ public class PromptServiceImpl implements PromptService {
 		return entity;
 	}
 
+
+	public void reinitializePrompts() {
+		log.info("Starting prompt namespace correction");
+
+		List<PromptEntity> allPrompts = promptRepository.findAll();
+		log.info("Found {} prompts in total", allPrompts.size());
+
+		int updatedCount = 0;
+		int validCount = 0;
+
+		for (PromptEntity prompt : allPrompts) {
+			if (prompt.getNamespace() == null || prompt.getNamespace().trim().isEmpty()) {
+				log.info("Updating prompt '{}' (ID: {}) namespace from '{}' to 'default'",
+						prompt.getPromptName(), prompt.getId(), prompt.getNamespace());
+
+				prompt.setNamespace("default");
+				promptRepository.save(prompt);
+				updatedCount++;
+			} else {
+				validCount++;
+				log.debug("Prompt '{}' (ID: {}) already has valid namespace: {}",
+						prompt.getPromptName(), prompt.getId(), prompt.getNamespace());
+			}
+		}
+
+		log.info("Prompt namespace correction completed. Summary: {} prompts updated, {} prompts already valid.",
+				updatedCount, validCount);
+	}
 }

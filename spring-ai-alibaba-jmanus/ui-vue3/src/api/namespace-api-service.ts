@@ -19,6 +19,7 @@ export interface Namespace {
   code: string
   name: string
   description?:string;
+  host?: string;
 }
 
 export class NamespaceApiService {

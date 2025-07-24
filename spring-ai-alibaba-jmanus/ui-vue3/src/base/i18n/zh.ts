@@ -107,6 +107,7 @@ const words: I18nType = {
       model: 'Model配置',
       mcp: 'Tools/MCP配置',
       prompt: '动态Prompt配置',
+      namespace: '命名空间配置',
     },
     subGroupDisplayNames: {
       agent: 'Agent',
@@ -337,6 +338,7 @@ const words: I18nType = {
       title: '命名空间配置',
       name: '命名空间名称',
       code: '命名空间编码',
+      host:"域名",
       description: '命名空间描述',
       loadDetailsFailed: '加载namespace详情失败',
       selectNameSpaceHint: '请选择一个命名空间进行配置',
@@ -350,6 +352,7 @@ const words: I18nType = {
       deleteConfirmText: '确定要删除',
       deleteWarning: '此操作不可恢复。',
       configured: '已配置的命名空间',
+
       namespace: {
         selectNamespace: '请选择命名空间',
         namespace: '命名空间',

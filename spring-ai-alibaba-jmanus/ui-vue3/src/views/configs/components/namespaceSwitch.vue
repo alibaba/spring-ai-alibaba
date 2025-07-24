@@ -44,8 +44,8 @@ import { storeToRefs } from 'pinia'
 import { usenameSpaceStore } from '@/stores/namespace'
 import { Icon } from '@iconify/vue'
 import { useRoute, useRouter } from 'vue-router'
+import { notEmpty } from '@/utils'
 import { NamespaceApiService, type Namespace } from '@/api/namespace-api-service'
-
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -57,19 +57,61 @@ const namespaceStore = usenameSpaceStore()
 const { namespace, namespaces } = storeToRefs(namespaceStore)
 const { setCurrentNs, setNamespaces } = namespaceStore
 
-const handleNamespaceChange = (value: string) => {
-  setCurrentNs(value)
-}
+const handleNamespaceChange = (value: string, option: { host?: string }) => {
+  if (notEmpty(option.host)) {
+    const host = option.host as string
+    const normalizedHost = host.endsWith('/') ? host.slice(0, -1) : host
 
+    const newUrl = new URL(normalizedHost)
+    // If it's a complete URL with index.html, use it directly
+
+    if (newUrl.pathname.includes('index.html')) {
+      window.open(newUrl.toString(), '_blank')
+      return
+    }
+
+    try {
+      const currentUrl = new URL(window.location.href)
+      const newUrl = new URL(
+        currentUrl.pathname + currentUrl.search + currentUrl.hash,
+        normalizedHost
+      )
+      window.open(newUrl.toString(), '_blank' + '?namespace=' + value)
+    } catch (e) {
+      console.error('Failed to construct new URL:', e)
+      const currentPath = window.location.pathname + window.location.search
+      // Fallback to original behavior if URL construction fails
+      const newUrl = normalizedHost + currentPath
+      window.open(newUrl, '_blank' + '?namespace=' + value)
+    }
+  } else {
+    setCurrentNs(value)
+  }
+}
 const getAllNamespaces = async () => {
   const loadedNamespaces = (await NamespaceApiService.getAllNamespaces()) as Namespace[]
-  const defaultNamespaceCode = loadedNamespaces[0]?.code || ''
+
+   // Check if the current URL's host is contained in the host of each item in loadedNamespaces, 
+  // if so, select this as the defaultNamespaceCode
+  const currentHost = window.location.host
+  let defaultNamespaceCode = ''
+
+  const matchedNamespace = loadedNamespaces.find(
+    namespace => namespace.host && namespace.host.includes(currentHost)
+  )
+
+  if (matchedNamespace) {
+    defaultNamespaceCode = matchedNamespace.code
+  } else {
+    defaultNamespaceCode = loadedNamespaces[0]?.code || ''
+  }
 
   setCurrentNs(defaultNamespaceCode)
   setNamespaces(
     loadedNamespaces.map(namespace => ({
       id: namespace.code,
       name: namespace.name,
+      host: namespace.host,
     }))
   )
 }
@@ -81,7 +123,7 @@ const handleChangeNamespace = () => {
       category: 'namespace',
     },
     query: {
-      "namespace": namespace.value,
+      namespace: namespace.value,
     },
   })
 }

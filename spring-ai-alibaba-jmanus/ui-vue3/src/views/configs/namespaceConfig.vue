@@ -105,6 +105,16 @@
         </div>
 
         <div class="form-item">
+          <label>{{ t('config.namespaceConfig.host') }}</label>
+          <input
+            type="text"
+            v-model="selectedNamespace.host"
+            :placeholder="t('config.namespaceConfig.placeholder')"
+            required
+          />
+        </div>
+
+        <div class="form-item">
           <label>{{ t('config.namespaceConfig.description') }}</label>
           <input
             type="text"
@@ -143,6 +153,16 @@
           <input
             type="text"
             v-model="newNamespace.code"
+            :placeholder="t('config.namespaceConfig.placeholder')"
+            required
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.namespaceConfig.host') }}</label>
+          <input
+            type="text"
+            v-model="newNamespace.host"
             :placeholder="t('config.namespaceConfig.placeholder')"
             required
           />
@@ -245,6 +265,8 @@ const selectNamespace = async (namespace: Namespace) => {
 const handleAddNamespace = async () => {
   if (!validateNamespace(newNamespace)) return
 
+  if (!validateHost(newNamespace.host)) return
+
   try {
     const namespaceData: Omit<Namespace, 'id'> = {
       description: '',
@@ -271,6 +293,8 @@ const handleSave = async () => {
   if (!selectedNamespace.value) return
 
   if (!validateNamespace(selectedNamespace.value)) return
+
+  if (!validateHost(selectedNamespace.value.host)) return
 
   try {
     const savedNamespace = await NamespaceApiService.updateNamespace(
@@ -377,6 +401,19 @@ function validateNamespaceFieldsUnique(
   }
 
   return true
+}
+
+const validateHost = (host: NameSpaceField): boolean => {
+  if (!host) return true
+  const urlRegex = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
+
+  const isUrl = urlRegex.test(host)
+
+  if (!isUrl) {
+    error(`Please enter a valid URL format`)
+  }
+
+  return isUrl
 }
 
 const showAddNamespaceModal = () => {
