@@ -39,7 +39,6 @@ public class NamespaceConfig {
 		this.id = id;
 	}
 
-
 	public String getHost() {
 		return host;
 	}

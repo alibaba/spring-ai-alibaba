@@ -218,7 +218,6 @@ public class PromptServiceImpl implements PromptService {
 		return entity;
 	}
 
-
 	public void reinitializePrompts() {
 		log.info("Starting prompt namespace correction");
 
@@ -230,20 +229,22 @@ public class PromptServiceImpl implements PromptService {
 
 		for (PromptEntity prompt : allPrompts) {
 			if (prompt.getNamespace() == null || prompt.getNamespace().trim().isEmpty()) {
-				log.info("Updating prompt '{}' (ID: {}) namespace from '{}' to 'default'",
-						prompt.getPromptName(), prompt.getId(), prompt.getNamespace());
+				log.info("Updating prompt '{}' (ID: {}) namespace from '{}' to 'default'", prompt.getPromptName(),
+						prompt.getId(), prompt.getNamespace());
 
 				prompt.setNamespace("default");
 				promptRepository.save(prompt);
 				updatedCount++;
-			} else {
+			}
+			else {
 				validCount++;
-				log.debug("Prompt '{}' (ID: {}) already has valid namespace: {}",
-						prompt.getPromptName(), prompt.getId(), prompt.getNamespace());
+				log.debug("Prompt '{}' (ID: {}) already has valid namespace: {}", prompt.getPromptName(),
+						prompt.getId(), prompt.getNamespace());
 			}
 		}
 
 		log.info("Prompt namespace correction completed. Summary: {} prompts updated, {} prompts already valid.",
 				updatedCount, validCount);
 	}
+
 }
