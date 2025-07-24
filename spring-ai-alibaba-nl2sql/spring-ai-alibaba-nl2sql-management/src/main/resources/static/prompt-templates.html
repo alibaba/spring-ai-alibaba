@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提示词模板管理</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #1890ff;
+            --secondary-color: #52c41a;
+            --background-color: #f5f8fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #e8e8e8;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .header {
+            background-color: var(--card-bg);
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+        }
+
+        .title {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 0.8rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .nav-link {
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            color: var(--text-color);
+            border-radius: var(--radius);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .nav-link:hover {
+            background-color: #f0f5ff;
+            color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 0.5rem;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #096dd9;
+        }
+
+        .btn-secondary {
+            background-color: #f5f5f5;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #e6f7ff;
+            border-color: var(--primary-color);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .template-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1rem;
+        }
+
+        .template-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1rem;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .template-item:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow);
+        }
+
+        .template-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .template-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+        }
+
+        .template-type {
+            padding: 0.2rem 0.5rem;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .template-description {
+            color: #666;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .template-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .template-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.8rem;
+            border-radius: 4px;
+        }
+
+        .status-badge {
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-enabled {
+            background-color: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+
+        .status-disabled {
+            background-color: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 1rem;
+        }
+
+        .modal-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+            outline: none;
+        }
+
+        .form-textarea {
+            min-height: 300px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background-color: white;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .preview-container {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-top: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .preview-content {
+            white-space: pre-wrap;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close-btn:hover {
+            color: var(--text-color);
+        }
+
+        .loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 0.75rem;
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background-color: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+
+        .alert-error {
+            background-color: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+
+        .template-content-preview {
+            max-height: 150px;
+            overflow: hidden;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            background-color: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            position: relative;
+        }
+
+        .template-content-preview::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: linear-gradient(transparent, #f8f9fa);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="title">
+                <i class="bi bi-file-text"></i> 提示词模板管理
+            </div>
+            <div class="subtitle">自定义和管理AI提示词模板，优化NL2SQL效果和报告输出结构</div>
+            <div class="nav-links">
+                <a href="/nl2sql.html" class="nav-link">
+                    <i class="bi bi-house"></i> 首页
+                </a>
+                <a href="/business-knowledge.html" class="nav-link">
+                    <i class="bi bi-book"></i> 业务知识管理
+                </a>
+                <a href="/semantic-model.html" class="nav-link">
+                    <i class="bi bi-diagram-3"></i> 语义模型配置
+                </a>
+                <a href="/prompt-templates.html" class="nav-link active">
+                    <i class="bi bi-file-text"></i> 提示词管理
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="toolbar">
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="搜索模板名称或描述...">
+                <select id="typeFilter" class="form-select" style="max-width: 150px;">
+                    <option value="">所有类型</option>
+                    <option value="report">报告模板</option>
+                    <option value="system">系统模板</option>
+                    <option value="user">用户模板</option>
+                </select>
+            </div>
+            <div>
+                <button id="createBtn" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> 新建模板
+                </button>
+                <button id="refreshBtn" class="btn btn-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> 刷新
+                </button>
+            </div>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>模板列表</h3>
+                <div>
+                    <span id="templateCount">0</span> 个模板
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="templateList" class="template-list">
+                    <!-- 模板列表将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑模板模态框 -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">编辑模板</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="templateForm">
+                    <input type="hidden" id="templateId">
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="templateName">模板名称 *</label>
+                        <input type="text" id="templateName" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="templateType">模板类型 *</label>
+                        <select id="templateType" class="form-select" required>
+                            <option value="">请选择类型</option>
+                            <option value="report">报告模板</option>
+                            <option value="system">系统模板</option>
+                            <option value="user">用户模板</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="description">模板描述</label>
+                        <input type="text" id="description" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="templateContent">模板内容 *</label>
+                        <textarea id="templateContent" class="form-input form-textarea" required 
+                                  placeholder="请输入提示词模板内容，可以使用 {变量名} 格式定义参数"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="enabled">
+                            <label for="enabled">启用此模板</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="isDefault">
+                            <label for="isDefault">设为默认模板</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="button" id="previewBtn" class="btn btn-secondary">
+                            <i class="bi bi-eye"></i> 预览效果
+                        </button>
+                    </div>
+
+                    <div id="previewContainer" class="preview-container" style="display: none;">
+                        <h4>预览效果：</h4>
+                        <div id="previewContent" class="preview-content"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button type="button" id="saveBtn" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let templates = [];
+        let currentTemplate = null;
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTemplates();
+            bindEvents();
+        });
+
+        function bindEvents() {
+            document.getElementById('searchInput').addEventListener('input', filterTemplates);
+            document.getElementById('typeFilter').addEventListener('change', filterTemplates);
+            document.getElementById('createBtn').addEventListener('click', createTemplate);
+            document.getElementById('refreshBtn').addEventListener('click', loadTemplates);
+            document.getElementById('saveBtn').addEventListener('click', saveTemplate);
+            document.getElementById('previewBtn').addEventListener('click', previewTemplate);
+        }
+
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/api/prompt-templates');
+                if (response.ok) {
+                    templates = await response.json();
+                    renderTemplates(templates);
+                    updateTemplateCount(templates.length);
+                } else {
+                    showAlert('加载模板失败', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading templates:', error);
+                showAlert('加载模板失败: ' + error.message, 'error');
+            }
+        }
+
+        function renderTemplates(templateList) {
+            const container = document.getElementById('templateList');
+            
+            if (templateList.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #999;">
+                        <i class="bi bi-file-text" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <p>暂无模板，点击"新建模板"创建第一个模板</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = templateList.map(template => `
+                <div class="template-item" onclick="editTemplate(${template.id})">
+                    <div class="template-header">
+                        <div class="template-name">${template.templateName}</div>
+                        <div class="template-type">${getTypeDisplayName(template.templateType)}</div>
+                    </div>
+                    <div class="template-description">${template.description || '无描述'}</div>
+                    <div class="template-content-preview">${template.templateContent}</div>
+                    <div class="template-meta">
+                        <div>
+                            <span class="status-badge ${template.enabled ? 'status-enabled' : 'status-disabled'}">
+                                ${template.enabled ? '已启用' : '已禁用'}
+                            </span>
+                            ${template.isDefault ? '<span class="status-badge status-enabled">默认</span>' : ''}
+                        </div>
+                        <div>
+                            版本: ${template.version || '1.0'} | 
+                            更新: ${formatDate(template.updateTime)}
+                        </div>
+                    </div>
+                    <div class="template-actions" onclick="event.stopPropagation()">
+                        <button class="btn btn-small btn-primary" onclick="editTemplate(${template.id})">
+                            <i class="bi bi-pencil"></i> 编辑
+                        </button>
+                        <button class="btn btn-small btn-secondary" onclick="toggleTemplate(${template.id})">
+                            <i class="bi bi-power"></i> ${template.enabled ? '禁用' : '启用'}
+                        </button>
+                        <button class="btn btn-small btn-secondary" onclick="deleteTemplate(${template.id})" 
+                                style="color: #ff4d4f;">
+                            <i class="bi bi-trash"></i> 删除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getTypeDisplayName(type) {
+            const typeMap = {
+                'report': '报告模板',
+                'system': '系统模板',
+                'user': '用户模板'
+            };
+            return typeMap[type] || type;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+        }
+
+        function filterTemplates() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value;
+            
+            const filtered = templates.filter(template => {
+                const matchesSearch = !searchTerm || 
+                    template.templateName.toLowerCase().includes(searchTerm) ||
+                    (template.description && template.description.toLowerCase().includes(searchTerm));
+                const matchesType = !typeFilter || template.templateType === typeFilter;
+                return matchesSearch && matchesType;
+            });
+            
+            renderTemplates(filtered);
+            updateTemplateCount(filtered.length);
+        }
+
+        function updateTemplateCount(count) {
+            document.getElementById('templateCount').textContent = count;
+        }
+
+        function createTemplate() {
+            currentTemplate = null;
+            document.getElementById('modalTitle').textContent = '新建模板';
+            document.getElementById('templateForm').reset();
+            document.getElementById('templateId').value = '';
+            document.getElementById('enabled').checked = true;
+            document.getElementById('previewContainer').style.display = 'none';
+            openModal();
+        }
+
+        function editTemplate(id) {
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+
+            currentTemplate = template;
+            document.getElementById('modalTitle').textContent = '编辑模板';
+            document.getElementById('templateId').value = template.id;
+            document.getElementById('templateName').value = template.templateName;
+            document.getElementById('templateType').value = template.templateType;
+            document.getElementById('description').value = template.description || '';
+            document.getElementById('templateContent').value = template.templateContent;
+            document.getElementById('enabled').checked = template.enabled;
+            document.getElementById('isDefault').checked = template.isDefault;
+            document.getElementById('previewContainer').style.display = 'none';
+            openModal();
+        }
+
+        async function saveTemplate() {
+            const form = document.getElementById('templateForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const templateData = {
+                templateName: document.getElementById('templateName').value,
+                templateType: document.getElementById('templateType').value,
+                description: document.getElementById('description').value,
+                templateContent: document.getElementById('templateContent').value,
+                enabled: document.getElementById('enabled').checked,
+                isDefault: document.getElementById('isDefault').checked
+            };
+
+            const saveBtn = document.getElementById('saveBtn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<div class="loading"><div class="spinner"></div> 保存中...</div>';
+            saveBtn.disabled = true;
+
+            try {
+                const templateId = document.getElementById('templateId').value;
+                const url = templateId ? `/api/prompt-templates/${templateId}` : '/api/prompt-templates';
+                const method = templateId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(templateData)
+                });
+
+                if (response.ok) {
+                    showAlert(templateId ? '模板更新成功' : '模板创建成功', 'success');
+                    closeModal();
+                    loadTemplates();
+                } else {
+                    const error = await response.text();
+                    showAlert('保存失败: ' + error, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving template:', error);
+                showAlert('保存失败: ' + error.message, 'error');
+            } finally {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            }
+        }
+
+        async function deleteTemplate(id) {
+            if (!confirm('确定要删除这个模板吗？此操作不可恢复。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/prompt-templates/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showAlert('模板删除成功', 'success');
+                    loadTemplates();
+                } else {
+                    showAlert('删除失败', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting template:', error);
+                showAlert('删除失败: ' + error.message, 'error');
+            }
+        }
+
+        async function toggleTemplate(id) {
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+
+            const updatedTemplate = { ...template, enabled: !template.enabled };
+
+            try {
+                const response = await fetch(`/api/prompt-templates/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedTemplate)
+                });
+
+                if (response.ok) {
+                    showAlert(`模板已${updatedTemplate.enabled ? '启用' : '禁用'}`, 'success');
+                    loadTemplates();
+                } else {
+                    showAlert('操作失败', 'error');
+                }
+            } catch (error) {
+                console.error('Error toggling template:', error);
+                showAlert('操作失败: ' + error.message, 'error');
+            }
+        }
+
+        async function previewTemplate() {
+            const content = document.getElementById('templateContent').value;
+            if (!content.trim()) {
+                showAlert('请先输入模板内容', 'error');
+                return;
+            }
+
+            const previewBtn = document.getElementById('previewBtn');
+            const originalText = previewBtn.innerHTML;
+            previewBtn.innerHTML = '<div class="loading"><div class="spinner"></div> 生成预览...</div>';
+            previewBtn.disabled = true;
+
+            try {
+                // 简单的参数替换预览
+                const sampleParams = {
+                    'user_requirements_and_plan': '用户需求：分析销售数据\n执行计划：1. 查询销售表 2. 统计分析 3. 生成报告',
+                    'analysis_steps_and_data': '步骤1：执行SQL查询\n步骤2：数据处理和分析\n步骤3：结果汇总',
+                    'summary_and_recommendations': '总结：销售额增长20%\n建议：继续推广热门产品'
+                };
+
+                const response = await fetch('/api/prompt-templates/preview', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        templateContent: content,
+                        parameters: sampleParams
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('previewContent').textContent = result.preview;
+                    document.getElementById('previewContainer').style.display = 'block';
+                } else {
+                    showAlert('预览生成失败', 'error');
+                }
+            } catch (error) {
+                console.error('Error previewing template:', error);
+                showAlert('预览生成失败: ' + error.message, 'error');
+            } finally {
+                previewBtn.innerHTML = originalText;
+                previewBtn.disabled = false;
+            }
+        }
+
+        function openModal() {
+            document.getElementById('editModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            
+            alertContainer.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // 点击模态框外部关闭
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // ESC键关闭模态框
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+
+</html> 
