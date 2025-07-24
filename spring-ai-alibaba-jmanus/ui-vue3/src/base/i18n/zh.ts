@@ -175,6 +175,8 @@ const words: I18nType = {
       typePlaceholder: '选择模型类型',
       baseUrl: 'Base Url',
       baseUrlPlaceholder: '输入 Base Url',
+      headers: '请求头信息',
+      headersPlaceholder: '输入 Headers 需满足JSON对象格式',
       apiKey: 'API密钥',
       apiKeyPlaceholder: '输入API密钥',
       modelName: '模型名称',
@@ -668,6 +670,7 @@ const words: I18nType = {
     welcomeSubtitle: '您的 Java AI 智能助手，帮助您构建和完成各种任务。',
     tagline: 'Java AI 智能体',
     inputPlaceholder: '描述您想构建或完成的内容...',
+    directButton: 'Plan-Act 工作台',
     examples: {
       stockPrice: {
         title: '查询股价',
@@ -684,6 +687,11 @@ const words: I18nType = {
         title: '查询天气',
         description: '获取北京今天的天气情况（Agent可以使用MCP工具服务）',
         prompt: '用浏览器，基于百度，查询北京今天的天气',
+      },
+      queryplan: {
+        title: '查询一个人的信息',
+        description: '查询沈询 阿里的所有信息并优化终止结构列',
+        prompt: '用浏览器，基于百度，查询计划',
       },
     },
   },
@@ -760,6 +768,34 @@ const words: I18nType = {
     configuration: '配置',
     panelResizeHint: '拖拽调整面板大小，双击重置',
     aboutExecutionDetails: '关于集成执行详情',
+  },
+
+  // 定时任务
+  cronTask: {
+    title: '定时任务管理',
+    noTasks: '暂无定时任务',
+    taskName: '任务名称',
+    taskNamePlaceholder: '请输入任务名称',
+    cronExpression: 'Cron表达式',
+    cronExpressionPlaceholder: '例如: 0 0 12 * * ?',
+    cronExpressionHelp: '格式: 秒 分 时 日 月 周 年',
+    taskDescription: '任务描述',
+    taskDescriptionPlaceholder: '请输入任务描述',
+    taskStatus: '任务状态',
+    taskDetail: '任务详情',
+    executeOnce: '执行一次',
+    edit: '编辑',
+    operations: '操作',
+    enable: '启用',
+    disable: '禁用',
+    delete: '删除',
+    deleteConfirm: '确认删除',
+    deleteConfirmMessage: '确定要删除任务 "{taskName}" 吗？此操作不可撤销。',
+    nextExecution: '下次执行时间',
+    createTime: '创建时间',
+    updateTime: '更新时间',
+    active: '启用',
+    inactive: '禁用',
   },
 }
 

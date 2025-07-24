@@ -52,6 +52,18 @@ public class BusinessKnowledge {
 		this.updateTime = LocalDateTime.now();
 	}
 
+	public BusinessKnowledge(Long id, String businessTerm, String description, String synonyms, Boolean defaultRecall,
+			String datasetId, LocalDateTime createTime, LocalDateTime updateTime) {
+		this.id = id;
+		this.businessTerm = businessTerm;
+		this.description = description;
+		this.synonyms = synonyms;
+		this.defaultRecall = defaultRecall;
+		this.datasetId = datasetId;
+		this.createTime = createTime;
+		this.updateTime = updateTime;
+	}
+
 	// Getters and Setters
 	public Long getId() {
 		return id;

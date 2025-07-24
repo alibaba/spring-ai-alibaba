@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-com.alibaba.cloud.ai.autoconfigure.mcp.discovery.NacosMcpRegistryAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.client.NacosMcpAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.client.NacosMcpClientAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.client.NacosMcpToolCallbackAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.client.NacosMcpTransportBuilderAutoConfiguration
 
 

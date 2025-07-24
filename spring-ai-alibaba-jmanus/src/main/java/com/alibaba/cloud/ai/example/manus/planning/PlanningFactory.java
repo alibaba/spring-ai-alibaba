@@ -44,6 +44,7 @@ import org.springframework.web.client.RestClient;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.cron.service.CronService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
@@ -52,6 +53,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderService;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
@@ -70,8 +72,9 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.database.DataSourceService;
 import com.alibaba.cloud.ai.example.manus.tool.database.DatabaseUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
-import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool;
+import com.alibaba.cloud.ai.example.manus.tool.cron.CronTool;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.InnerStorageContentTool;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.FileMergeTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.DataSplitTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.FinalizeTool;
@@ -136,6 +139,12 @@ public class PlanningFactory implements IPlanningFactory {
 	@Autowired
 	private PromptService promptService;
 
+	@Autowired
+	private StreamingResponseHandler streamingResponseHandler;
+
+	@Autowired
+	private CronService cronService;
+
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
 			SmartContentSavingService innerStorageService, UnifiedDirectoryManager unifiedDirectoryManager,
@@ -159,9 +168,10 @@ public class PlanningFactory implements IPlanningFactory {
 		PlanningToolInterface planningTool = new PlanningTool();
 
 		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
-				manusProperties);
+				manusProperties, streamingResponseHandler);
 
-		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties);
+		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties,
+				streamingResponseHandler);
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
 				planFinalizer);
@@ -208,7 +218,7 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new TerminateTool(planId, terminateColumns));
 		toolDefinitions.add(new Bash(unifiedDirectoryManager));
 		toolDefinitions.add(new DocLoaderTool());
-		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, unifiedDirectoryManager));
+		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService));
 		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
 		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
 		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
@@ -221,6 +231,7 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager,
 				unifiedDirectoryManager, terminateColumns));
 		toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
+		toolDefinitions.add(new CronTool(cronService));
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
@@ -228,7 +239,8 @@ public class PlanningFactory implements IPlanningFactory {
 			ToolCallback[] tCallbacks = toolCallback.getAsyncMcpToolCallbackProvider().getToolCallbacks();
 			for (ToolCallback tCallback : tCallbacks) {
 				// The serviceGroup is the name of the tool
-				toolDefinitions.add(new McpTool(tCallback, serviceGroup, planId, new McpStateHolderService()));
+				toolDefinitions.add(
+						new McpTool(tCallback, serviceGroup, planId, new McpStateHolderService(), innerStorageService));
 			}
 		}
 

@@ -68,7 +68,7 @@ public class Nl2sqlConfiguration {
 	@Autowired
 	private DbConfig dbConfig;
 
-	@Autowired
+	@Autowired(required = false)
 	private PythonExecutorTool pythonExecutorTool;
 
 	@Bean
@@ -118,7 +118,6 @@ public class Nl2sqlConfiguration {
 			.addNode(TABLE_RELATION_NODE,
 					node_async(new TableRelationNode(chatClientBuilder, schemaService, nl2SqlService)))
 			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder, nl2SqlService, dbConfig)))
-			.addNode(SQL_VALIDATE_NODE, node_async(new SqlValidateNode(chatClientBuilder, dbAccessor, dbConfig)))
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
 			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(chatClientBuilder, dbAccessor, dbConfig)))
@@ -143,10 +142,6 @@ public class Nl2sqlConfiguration {
 					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, SEMANTIC_CONSISTENCY_NODE, SEMANTIC_CONSISTENCY_NODE))
 			.addConditionalEdges(SQL_GENERATE_NODE, edge_async(new SqlGenerateDispatcher()),
 					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END, SQL_EXECUTE_NODE, SQL_EXECUTE_NODE))
-			// .addConditionalEdges(SQL_VALIDATE_NODE, edge_async(new
-			// SqlValidateDispatcher()),
-			// Map.of(SEMANTIC_CONSISTENCY_NODE, SEMANTIC_CONSISTENCY_NODE,
-			// SQL_GENERATE_NODE, SQL_GENERATE_NODE))
 			.addConditionalEdges(SEMANTIC_CONSISTENCY_NODE, edge_async(new SemanticConsistenceDispatcher()),
 					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, PLAN_EXECUTOR_NODE, PLAN_EXECUTOR_NODE));
 

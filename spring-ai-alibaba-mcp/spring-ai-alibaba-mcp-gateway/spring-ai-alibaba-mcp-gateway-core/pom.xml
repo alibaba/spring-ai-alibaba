@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-mcp-gateway-core</artifactId>
-
+    <name>Spring AI Alibaba MCP Gateway Core</name>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
