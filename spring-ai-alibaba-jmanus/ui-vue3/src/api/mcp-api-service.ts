@@ -66,7 +66,9 @@ export class McpApiService {
       })
       
       if (!response.ok) {
-        throw new Error(`Failed to add MCP server: ${response.status}`)
+        // 读取响应体中的详细错误信息
+        const errorText = await response.text()
+        throw new Error(`Failed to add MCP server: ${response.status} - ${errorText}`)
       }
       
       return { success: true, message: 'Successfully added MCP server' }

@@ -21,45 +21,49 @@ import java.util.List;
  * 验证结果数据传输对象
  */
 public class ValidationResult {
-    private boolean valid;
-    private String message;
-    private List<AvailableModel> availableModels;
 
-    public ValidationResult() {
-    }
+	private boolean valid;
 
-    public ValidationResult(boolean valid, String message) {
-        this.valid = valid;
-        this.message = message;
-    }
+	private String message;
 
-    public ValidationResult(boolean valid, String message, List<AvailableModel> availableModels) {
-        this.valid = valid;
-        this.message = message;
-        this.availableModels = availableModels;
-    }
+	private List<AvailableModel> availableModels;
 
-    public boolean isValid() {
-        return valid;
-    }
+	public ValidationResult() {
+	}
 
-    public void setValid(boolean valid) {
-        this.valid = valid;
-    }
+	public ValidationResult(boolean valid, String message) {
+		this.valid = valid;
+		this.message = message;
+	}
 
-    public String getMessage() {
-        return message;
-    }
+	public ValidationResult(boolean valid, String message, List<AvailableModel> availableModels) {
+		this.valid = valid;
+		this.message = message;
+		this.availableModels = availableModels;
+	}
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
+	public boolean isValid() {
+		return valid;
+	}
 
-    public List<AvailableModel> getAvailableModels() {
-        return availableModels;
-    }
+	public void setValid(boolean valid) {
+		this.valid = valid;
+	}
 
-    public void setAvailableModels(List<AvailableModel> availableModels) {
-        this.availableModels = availableModels;
-    }
-} 
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
+	}
+
+	public List<AvailableModel> getAvailableModels() {
+		return availableModels;
+	}
+
+	public void setAvailableModels(List<AvailableModel> availableModels) {
+		this.availableModels = availableModels;
+	}
+
+}

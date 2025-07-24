@@ -235,6 +235,18 @@ const words: I18nType = {
       deleteConfirm: '确定要删除这个MCP服务器配置吗？此操作不可恢复。',
       addSuccess: '添加MCP服务器成功',
       deleteSuccess: '删除MCP服务器成功',
+      formatJson: '格式化',
+      jsonStatusEmpty: '请输入JSON配置',
+      jsonStatusValid: 'JSON格式正确',
+      jsonStatusInvalid: 'JSON格式错误',
+      missingMcpServers: '❌ 缺少mcpServers属性 - 请确保JSON包含mcpServers对象',
+      invalidServerConfig: '❌ 服务器配置无效: {serverId} - 服务器配置必须是对象',
+      invalidArgs: '❌ args字段必须是数组: {serverId} - 请将args改为数组格式',
+      invalidEnv: '❌ env字段必须是对象: {serverId} - 请将env改为对象格式',
+      invalidArgsType: '❌ args数组元素必须是字符串: {serverId}, 索引: {index} - 请确保所有参数都是字符串',
+      invalidEnvType: '❌ env对象值必须是字符串: {serverId}, 键: {key} - 环境变量值必须是字符串',
+      missingUrl: '❌ 缺少url字段: {serverId} - 没有command时必须有url',
+      invalidUrl: '❌ url格式无效: {serverId} - 请检查URL格式是否正确',
       studioExample:
         '请输入MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
       sseExample:

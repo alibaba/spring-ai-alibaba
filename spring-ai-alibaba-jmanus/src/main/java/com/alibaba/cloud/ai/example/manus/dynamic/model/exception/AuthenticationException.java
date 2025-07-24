@@ -19,11 +19,13 @@ package com.alibaba.cloud.ai.example.manus.dynamic.model.exception;
  * 认证异常
  */
 public class AuthenticationException extends RuntimeException {
-    public AuthenticationException(String message) {
-        super(message);
-    }
 
-    public AuthenticationException(String message, Throwable cause) {
-        super(message, cause);
-    }
-} 
+	public AuthenticationException(String message) {
+		super(message);
+	}
+
+	public AuthenticationException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+}

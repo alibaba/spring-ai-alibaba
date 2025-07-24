@@ -78,7 +78,8 @@ public class ModelController {
 		try {
 			ValidationResult result = modelService.validateConfig(request.getBaseUrl(), request.getApiKey());
 			return ResponseEntity.ok(result);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			ValidationResult errorResult = new ValidationResult();
 			errorResult.setValid(false);
 			errorResult.setMessage("验证失败: " + e.getMessage());

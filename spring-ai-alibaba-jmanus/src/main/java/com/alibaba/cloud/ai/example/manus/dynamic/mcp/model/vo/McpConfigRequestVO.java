@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigType;
+import java.util.Map;
+
 /**
  * MCP configuration request value object, used to receive configuration information
  * passed from the front end
@@ -31,6 +34,11 @@ public class McpConfigRequestVO {
 	 */
 	private String configJson;
 
+	/**
+	 * Connection types determined by protocol validation
+	 */
+	private Map<String, McpConfigType> connectionTypes;
+
 	public String getConnectionType() {
 		return connectionType;
 	}
@@ -45,6 +53,14 @@ public class McpConfigRequestVO {
 
 	public void setConfigJson(String configJson) {
 		this.configJson = configJson;
+	}
+
+	public Map<String, McpConfigType> getConnectionTypes() {
+		return connectionTypes;
+	}
+
+	public void setConnectionTypes(Map<String, McpConfigType> connectionTypes) {
+		this.connectionTypes = connectionTypes;
 	}
 
 }

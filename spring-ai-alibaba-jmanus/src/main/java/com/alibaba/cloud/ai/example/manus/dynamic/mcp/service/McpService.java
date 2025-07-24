@@ -38,6 +38,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerConfig;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServersConfig;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.repository.McpConfigRepository;
+
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.transport.StreamableHttpClientTransport;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -361,7 +362,10 @@ public class McpService implements IMcpService {
 	}
 
 	public void addMcpServer(McpConfigRequestVO mcpConfig) throws IOException {
-		insertOrUpdateMcpRepo(mcpConfig);
+		// 通过mcpConfig.getConfigJSON()的解析JSON。遍历mcpServerConfig.getMcpServers()，
+		// 如果有command则connectionType为stdio.
+		// 如果没有command只有url，则通过URL来判断是SSE还是StreamableHTTP。最终把connectionType改为对应的值。
+		insertOrUpdateMcpRepoWithAutoDetection(mcpConfig);
 		toolCallbackMapCache.invalidateAll();
 	}
 
@@ -440,6 +444,62 @@ public class McpService implements IMcpService {
 		}
 		return entityList;
 
+	}
+
+	/**
+	 * 使用预校验的连接类型插入或更新MCP配置
+	 * @param mcpConfigVO MCP配置请求（包含预校验的连接类型）
+	 * @return 配置实体列表
+	 * @throws IOException IO异常
+	 */
+	public List<McpConfigEntity> insertOrUpdateMcpRepoWithAutoDetection(McpConfigRequestVO mcpConfigVO)
+			throws IOException {
+		List<McpConfigEntity> entityList = new ArrayList<>();
+
+		// 获取预校验的连接类型
+		Map<String, McpConfigType> connectionTypes = mcpConfigVO.getConnectionTypes();
+		if (connectionTypes == null || connectionTypes.isEmpty()) {
+			throw new IOException("No connection types provided for validation");
+		}
+
+		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigVO.getConfigJson())) {
+			McpServersConfig mcpServerConfig = jsonParser.readValueAs(McpServersConfig.class);
+
+			// 遍历每个MCP服务器配置
+			for (Map.Entry<String, McpServerConfig> entry : mcpServerConfig.getMcpServers().entrySet()) {
+				String serverName = entry.getKey();
+				McpServerConfig serverConfig = entry.getValue();
+
+				// 获取预校验的连接类型
+				McpConfigType validatedType = connectionTypes.get(serverName);
+				if (validatedType == null) {
+					throw new IOException("No connection type found for server: " + serverName);
+				}
+
+				logger.info("Using validated connection type for server '{}': {}", serverName, validatedType);
+
+				// 使用ServerConfig的toJson方法将配置转换为JSON字符串
+				String configJson = serverConfig.toJson();
+
+				// 查找对应的MCP配置实体
+				McpConfigEntity mcpConfigEntity = mcpConfigRepository.findByMcpServerName(serverName);
+				if (mcpConfigEntity == null) {
+					mcpConfigEntity = new McpConfigEntity();
+					mcpConfigEntity.setConnectionConfig(configJson);
+					mcpConfigEntity.setMcpServerName(serverName);
+					mcpConfigEntity.setConnectionType(validatedType);
+				}
+				else {
+					mcpConfigEntity.setConnectionConfig(configJson);
+					mcpConfigEntity.setConnectionType(validatedType);
+				}
+				McpConfigEntity entity = mcpConfigRepository.save(mcpConfigEntity);
+				entityList.add(entity);
+				logger.info("MCP server '{}' has been saved to database with validated type: {}", serverName,
+						validatedType);
+			}
+		}
+		return entityList;
 	}
 
 	public void removeMcpServer(long id) {

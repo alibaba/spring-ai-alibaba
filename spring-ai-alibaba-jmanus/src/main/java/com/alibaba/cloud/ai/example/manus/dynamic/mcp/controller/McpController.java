@@ -16,9 +16,13 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.controller;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigType;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigRequestVO;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigVO;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServersConfig;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.DecisionConnectionType;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -34,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/mcp")
@@ -92,6 +97,35 @@ public class McpController {
 		}
 		catch (Exception e) {
 			logger.warn("Error checking JSON format, proceeding with original format", e);
+		}
+
+		// 协议校验逻辑
+		try {
+			// 解析JSON配置
+			McpServersConfig mcpServerConfig;
+			try (JsonParser jsonParser = new ObjectMapper().createParser(configJson)) {
+				mcpServerConfig = jsonParser.readValueAs(McpServersConfig.class);
+			}
+
+			// 使用DecisionConnectionType进行协议校验
+			Map<String, McpConfigType> connectionTypes = DecisionConnectionType
+				.decideConnectionTypes(mcpServerConfig.getMcpServers());
+
+			// 记录校验结果
+			for (Map.Entry<String, McpConfigType> entry : connectionTypes.entrySet()) {
+				String serverName = entry.getKey();
+				McpConfigType detectedType = entry.getValue();
+				logger.info("Protocol validation for server '{}': {}", serverName, detectedType);
+			}
+
+			// 将校验结果存储到requestVO中，供Service层使用
+			requestVO.setConnectionTypes(connectionTypes);
+
+		}
+		catch (Exception e) {
+			String errorMessage = "Protocol validation failed: " + e.getMessage();
+			logger.error(errorMessage, e);
+			return ResponseEntity.badRequest().body(errorMessage);
 		}
 
 		mcpService.addMcpServer(requestVO);

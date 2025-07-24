@@ -19,40 +19,44 @@ package com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo;
  * 可用模型数据传输对象
  */
 public class AvailableModel {
-    private String modelName;
-    private String displayName;
-    private String description;
 
-    public AvailableModel() {
-    }
+	private String modelName;
 
-    public AvailableModel(String modelName, String displayName, String description) {
-        this.modelName = modelName;
-        this.displayName = displayName;
-        this.description = description;
-    }
+	private String displayName;
 
-    public String getModelName() {
-        return modelName;
-    }
+	private String description;
 
-    public void setModelName(String modelName) {
-        this.modelName = modelName;
-    }
+	public AvailableModel() {
+	}
 
-    public String getDisplayName() {
-        return displayName;
-    }
+	public AvailableModel(String modelName, String displayName, String description) {
+		this.modelName = modelName;
+		this.displayName = displayName;
+		this.description = description;
+	}
 
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
+	public String getModelName() {
+		return modelName;
+	}
 
-    public String getDescription() {
-        return description;
-    }
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
+	}
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
-} 
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	public void setDisplayName(String displayName) {
+		this.displayName = displayName;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+}

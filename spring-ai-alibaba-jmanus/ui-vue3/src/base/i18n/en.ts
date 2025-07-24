@@ -234,6 +234,18 @@ const words: I18nType = {
       invalidJson: 'Configuration JSON format is incorrect, please check syntax',
       addFailed: 'Failed to add MCP server, please try again',
       deleteFailed: 'Failed to delete MCP server, please try again',
+      formatJson: 'Format',
+      jsonStatusEmpty: 'Please enter JSON configuration',
+      jsonStatusValid: 'JSON format is valid',
+      jsonStatusInvalid: 'JSON format is invalid',
+      missingMcpServers: '❌ Missing mcpServers property - Please ensure JSON contains mcpServers object',
+      invalidServerConfig: '❌ Invalid server configuration: {serverId} - Server config must be an object',
+      invalidArgs: '❌ args field must be an array: {serverId} - Please change args to array format',
+      invalidEnv: '❌ env field must be an object: {serverId} - Please change env to object format',
+      invalidArgsType: '❌ args array elements must be strings: {serverId}, index: {index} - Please ensure all arguments are strings',
+      invalidEnvType: '❌ env object values must be strings: {serverId}, key: {key} - Environment variable values must be strings',
+      missingUrl: '❌ Missing url field: {serverId} - Must have url when no command is present',
+      invalidUrl: '❌ Invalid url format: {serverId} - Please check if URL format is correct',
       studioExample:
         'Please enter MCP server configuration JSON.\n\nExample:\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
       sseExample:

@@ -19,30 +19,33 @@ package com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo;
  * 验证请求数据传输对象
  */
 public class ValidationRequest {
-    private String baseUrl;
-    private String apiKey;
 
-    public ValidationRequest() {
-    }
+	private String baseUrl;
 
-    public ValidationRequest(String baseUrl, String apiKey) {
-        this.baseUrl = baseUrl;
-        this.apiKey = apiKey;
-    }
+	private String apiKey;
 
-    public String getBaseUrl() {
-        return baseUrl;
-    }
+	public ValidationRequest() {
+	}
 
-    public void setBaseUrl(String baseUrl) {
-        this.baseUrl = baseUrl;
-    }
+	public ValidationRequest(String baseUrl, String apiKey) {
+		this.baseUrl = baseUrl;
+		this.apiKey = apiKey;
+	}
 
-    public String getApiKey() {
-        return apiKey;
-    }
+	public String getBaseUrl() {
+		return baseUrl;
+	}
 
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
-} 
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
+	}
+
+	public String getApiKey() {
+		return apiKey;
+	}
+
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
+	}
+
+}
