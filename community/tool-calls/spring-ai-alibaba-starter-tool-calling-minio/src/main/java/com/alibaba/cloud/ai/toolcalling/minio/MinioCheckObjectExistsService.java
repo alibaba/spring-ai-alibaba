@@ -22,7 +22,6 @@ import io.minio.StatObjectArgs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.function.Function;
 
 /**
