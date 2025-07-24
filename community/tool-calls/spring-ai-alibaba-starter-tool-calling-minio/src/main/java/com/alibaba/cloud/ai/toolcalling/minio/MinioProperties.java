@@ -24,11 +24,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = MinioConstants.CONFIG_PREFIX)
 public class MinioProperties extends CommonToolCallProperties {
 
-	private String endpoint = System.getenv(MinioConstants.ENDPOINT);
+	private String endpoint = "http://127.0.0.1:9000";
 
-	private String accessKey = System.getenv(MinioConstants.ACCESS_KEY);
+	private String accessKey = "default";
 
-	private String secretKey = System.getenv(MinioConstants.SECRET_KEY);
+	private String secretKey = "default";
 
 	public String getEndpoint() {
 		return endpoint;
