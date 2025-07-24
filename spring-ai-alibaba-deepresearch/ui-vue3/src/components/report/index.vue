@@ -68,39 +68,10 @@ const items = computed(() => {
       if(msg.status === 'loading' && msg.message != 'Waiting...') { 
            isLoading = true
            const node = JSON.parse(msg.message)
-           let item: ThoughtChainItem | undefined
-           // 检查是否为llm_stream类型的节点
            if(node.node) {
-              // 当开始普通节点时，也要完成之前的流式节点
-              finalizePreviousStreamNodes('')
-              item = processJsonNode(node)
-           }
-           // llm_stream 形式的节点，需要流式渲染
-           if(node['researcher_llm_stream_0']){
-              // 当开始新的流式节点时，将之前的流式节点状态更新为完成
-              finalizePreviousStreamNodes('researcher_llm_stream_0')
-              item = processLlmStreamNode(node, 'researcher_llm_stream_0')
-           }
-           if(node['reporter_llm_stream']){
-              // 当开始新的流式节点时，将之前的流式节点状态更新为完成
-              finalizePreviousStreamNodes('reporter_llm_stream')
-              item = processLlmStreamNode(node, 'reporter_llm_stream')
-           }
-           // 这个是非标准节点，加入缓存，但是不进行渲染
-           if(node['planner_llm_stream']){
-              processLlmStreamNode(node, 'planner_llm_stream')
-           }
-           // information 节点标识等待人类反馈，需要移除最后一个pending节点
-           if(node.node === 'information'){
-              finalizePreviousStreamNodes('')
-              return
-           }
-           if(item) {
-              // 检查是否已经存在相同的item（针对llm_stream节点）
-              const existingIndex = arrayTemp.findIndex(existingItem => existingItem === item)
-              if(existingIndex === -1) {
-                arrayTemp.push(item)
-              }
+              processJsonNodeLogic(node)
+           }else{
+             processLlmStreamNodeLogic(node)
            }
       }
       //  完整的text， 历史记录的渲染
@@ -109,34 +80,83 @@ const items = computed(() => {
           isLoading = false
           const jsonArray = parseJsonTextStrict(msg.message)
           jsonArray.forEach(node => {
-            if(!node.node) {
-              return
-            }
-            let item = processJsonNode(node)
-            if(item) {
-              arrayTemp.push(item)
+            if(node.node) {
+              processJsonNode(node)
             }
           })
       }
     })
-    // 检查是否需要添加pending节点（当没有流式节点正在进行时）
-    const hasActiveStreamNode = Array.from(llmStreamCache.values()).some(cached => cached.item.status === 'pending')
-    if (!hasActiveStreamNode && arrayTemp.length > 0) {
-      // 创建一个pending状态的节点表示正在请求后端内容
-      const pendingItem: ThoughtChainItem = {
-        title: '【处理中】正在请求后端内容',
-        description: '正在向后端发送请求并等待响应',
-        icon: h(LoadingOutlined),
-        status: 'pending',
-        type: 'pending' // 扩展字段
-      }
-      arrayTemp.push(pendingItem)
-    }
+    
     array.push(...arrayTemp)
     return array
 })
 
-// 完成之前的流式节点和pending节点，避免多个节点同时处于pending状态
+// 处理json节点
+const processJsonNodeLogic = (node: any) => {
+    // 普通节点：完成之前的流式节点，然后处理当前节点
+    finalizePreviousStreamNodes('')
+    processJsonNode(node)
+    // 普通节点处理完后，添加pending节点
+    appendPendingNode()
+
+    // information 说明等待用户反馈
+    if(node.node === 'information' || node.node === '__END__'){
+      removeLastPendingNode()
+    }
+}
+
+// 处理llm_stream节点
+const processLlmStreamNodeLogic = (node: any) => {
+  let item: ThoughtChainItem | undefined
+  // llm_stream 形式的节点，需要流式渲染
+  if(node['researcher_llm_stream_0']){
+    // 流式节点：移除pending节点，完成之前的流式节点
+    removeLastPendingNode()
+    finalizePreviousStreamNodes('researcher_llm_stream_0')
+    item = processLlmStreamNode(node, 'researcher_llm_stream_0')
+  }
+  if(node['reporter_llm_stream']){
+    // 流式节点：移除pending节点，完成之前的流式节点
+    removeLastPendingNode()
+    finalizePreviousStreamNodes('reporter_llm_stream')
+    item = processLlmStreamNode(node, 'reporter_llm_stream')
+  }
+  // 这个是非标准节点，加入缓存，但是不进行渲染
+  if(node['planner_llm_stream']){
+    processLlmStreamNode(node, 'planner_llm_stream')
+  }
+  if(item) {
+    // 检查是否已经存在相同的item（针对llm_stream节点）
+    const existingIndex = arrayTemp.findIndex(existingItem => existingItem === item)
+    if(existingIndex === -1) {
+      arrayTemp.push(item)
+    }
+  }
+}
+
+// 移除所有pending状态的节点
+const removeLastPendingNode = () => {
+  for (let i = arrayTemp.length - 1; i >= 0; i--) {
+    if (arrayTemp[i].status === 'pending' && arrayTemp[i].title === '【处理中】正在请求后端内容') {
+      arrayTemp.splice(i, 1)
+    }
+  }
+}
+const appendPendingNode = () => {
+  // 检查是否已存在pending节点
+  removeLastPendingNode()
+  
+  // 如果不存在pending节点，创建一个新的
+  const pendingItem: ThoughtChainItem = {
+      title: '【处理中】正在请求后端内容',
+      description: '正在向后端发送请求并等待响应',
+      icon: h(LoadingOutlined),
+      status: 'pending'
+    }
+    arrayTemp.push(pendingItem)
+}
+
+// 完成之前的流式节点，避免多个节点同时处于pending状态
 const finalizePreviousStreamNodes = (currentKey: string) => {
   // 完成缓存中的流式节点
   llmStreamCache.forEach((cached, key) => {
@@ -146,13 +166,6 @@ const finalizePreviousStreamNodes = (currentKey: string) => {
       cached.item.description = 'AI分析内容生成完成'
     }
   })
-
-  // 移除所有添加的pending节点
-  for (let i = arrayTemp.length - 1; i >= 0; i--) {
-    if (arrayTemp[i].status === 'pending' && arrayTemp[i].type === 'pending') {
-      arrayTemp.splice(i, 1)
-    }
-  }
 }
 
 const processLlmStreamNode = (node: any, key: string): ThoughtChainItem => {
@@ -189,7 +202,7 @@ const processLlmStreamNode = (node: any, key: string): ThoughtChainItem => {
   }
 }
 
-const processJsonNode = (node: any): ThoughtChainItem => {
+const processJsonNode = (node: any) => {
     let title = ''
     let description = ''
     let content = null
@@ -261,7 +274,7 @@ const processJsonNode = (node: any): ThoughtChainItem => {
     if(content) {
       item.content = content
     }
-    return item
+    arrayTemp.push(item)
 }
 
 // 监听convId变化，清理缓存
