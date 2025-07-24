@@ -32,15 +32,15 @@ class DashscopeRerankerTest {
 		List<Document> expectedRerankedDocs = List.of(document);
 
 		// Mock behavior
-		when(dashscopeReranker.rank(query, documents)).thenReturn(expectedRerankedDocs);
+		when(dashscopeReranker.process(query, documents)).thenReturn(expectedRerankedDocs);
 
 		// Execute
-		List<Document> result = dashscopeReranker.rank(query, documents);
+		List<Document> result = dashscopeReranker.process(query, documents);
 
 		// Verify
 		assertNotNull(result);
 		assertEquals(expectedRerankedDocs, result);
-		verify(dashscopeReranker, times(1)).rank(query, documents);
+		verify(dashscopeReranker, times(1)).process(query, documents);
 	}
 
 	@Test
@@ -49,13 +49,13 @@ class DashscopeRerankerTest {
 		List<Document> documents = List.of(Document.builder().build());
 
 		// Execute and verify
-		assertThrows(IllegalArgumentException.class, () -> dashscopeReranker.rank(null, documents));
+		assertThrows(IllegalArgumentException.class, () -> dashscopeReranker.process(null, documents));
 	}
 
 	@Test
 	void testRerankWithNullDocuments() {
 		// Execute and verify
-		assertThrows(IllegalArgumentException.class, () -> dashscopeReranker.rank(Query.builder().build(), null));
+		assertThrows(IllegalArgumentException.class, () -> dashscopeReranker.process(Query.builder().build(), null));
 	}
 
 	@Test
@@ -65,7 +65,7 @@ class DashscopeRerankerTest {
 		List<Document> emptyDocs = List.of();
 
 		// Execute
-		List<Document> result = dashscopeReranker.rank(query, emptyDocs);
+		List<Document> result = dashscopeReranker.process(query, emptyDocs);
 
 		// Verify
 		assertNotNull(result);
