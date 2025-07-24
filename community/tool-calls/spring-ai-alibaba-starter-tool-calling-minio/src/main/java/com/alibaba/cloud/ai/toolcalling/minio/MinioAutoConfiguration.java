@@ -29,7 +29,6 @@ import org.springframework.context.annotation.Description;
  * 2025/7/23 auth: dahua
  */
 @Configuration
-@ConditionalOnClass(MinioAutoConfiguration.class)
 @ConditionalOnProperty(prefix = MinioConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @EnableConfigurationProperties(MinioProperties.class)

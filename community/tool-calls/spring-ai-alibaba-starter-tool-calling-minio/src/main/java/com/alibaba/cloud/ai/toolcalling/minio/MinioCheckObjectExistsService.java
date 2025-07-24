@@ -44,9 +44,6 @@ public class MinioCheckObjectExistsService implements Function<MinioCheckObjectE
 			minioClient
 				.statObject(StatObjectArgs.builder().bucket(request.bucketName()).object(request.objectName()).build());
 		}
-		catch (NoSuchAlgorithmException e) {
-			return false;
-		}
 		catch (Exception e) {
 			logger.debug("Check file exists from minio failed. BucketName: {}, ObjectName: {}. Error: {}",
 					request.bucketName(), request.objectName(), e.getMessage(), e);
