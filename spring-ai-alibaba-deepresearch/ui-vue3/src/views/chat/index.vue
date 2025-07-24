@@ -137,6 +137,7 @@ import {
   BgColorsOutlined,
   DotChartOutlined,
   ShareAltOutlined,
+  LoadingOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue'
 import {
@@ -161,7 +162,7 @@ import { useMessageStore } from '@/store/MessageStore'
 import { useConversationStore } from '@/store/ConversationStore'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfigStore } from '@/store/ConfigStore'
-
+import { parseJsonTextStrict } from '@/utils/jsonParser';
 
 const router = useRouter()
 const route = useRoute()
@@ -386,6 +387,24 @@ function deepResearch() {
 
 function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any {
   switch (status) {
+    case 'loading': 
+      const items: ThoughtChainProps['items'] = [
+        {
+          title: '正在思考中',
+          description: 'AI 正在思考中',
+          icon: h(LoadingOutlined),
+          status: 'pending'
+        }
+      ]
+      return (
+            <>
+              请稍后，AI 正在思考中...
+              <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
+                <h2>{{ msg }}</h2>
+                <ThoughtChain items={items} />
+              </Card>
+            </>
+          )
     case 'success':
       if (!isCurrent) {
         // todo 历史数据渲染
@@ -395,49 +414,37 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
         if (current.aiType === 'startDS') {
           const { Paragraph, Text } = Typography
 
-          const customizationProps = (
-            title: any,
-            description: string,
-            para: string | null,
-            footer?: any
-          ): ThoughtChainItem => {
-            return {
-              title,
-              description,
-              icon: <CheckCircleOutlined />,
-              extra: '',
-              footer,
-              content: para ? (
-                <Typography>
-                  <Paragraph>
-                    <MD content={para} />
-                  </Paragraph>
-                </Typography>
-              ) : (
-                ''
-              ),
-            }
+          const jsonArray = parseJsonTextStrict(msg)
+          if(jsonArray.filter((item) => item.node === 'information').length === 0) {
+            return <MD content={msg} />
           }
-
+          const informationNode= jsonArray.filter((item) => item.node === 'information')[0]
           const items: ThoughtChainProps['items'] = [
             {
               status: 'error',
-              title: '研究网站',
+              title: '查询重写',
               icon: <IeOutlined />,
               extra: '',
               content: (
                 <Typography>
                   <Paragraph>
-                    <MD content="(1) xxx" />
+                    <MD content={informationNode.data?.optimize_queries} />
                   </Paragraph>
                 </Typography>
               ),
             },
             {
-              status: 'pending',
-              title: '分析结果',
+              status: 'success',
+              title: '研究计划',
               icon: <DotChartOutlined />,
               extra: '',
+              content: (
+                <Typography>
+                  <Paragraph>
+                    <MD content={informationNode.data?.current_plan.thought} />
+                  </Paragraph>
+                </Typography>
+              )
             },
 
             {
@@ -476,7 +483,7 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
         }
       }
     default:
-      return msg
+      return ''
   }
 }
 
