@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.node.*;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
+import com.alibaba.cloud.ai.tool.PythonExecutorTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -67,6 +68,9 @@ public class Nl2sqlConfiguration {
 	@Autowired
 	private DbConfig dbConfig;
 
+	@Autowired(required = false)
+	private PythonExecutorTool pythonExecutorTool;
+
 	@Bean
 	public StateGraph nl2sqlGraph(ChatClient.Builder chatClientBuilder) throws GraphStateException {
 
@@ -92,8 +96,8 @@ public class Nl2sqlConfiguration {
 			keyStrategyHashMap.put(SQL_GENERATE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(SQL_GENERATE_COUNT, new ReplaceStrategy());
 			// Semantic consistence节点输出
-			keyStrategyHashMap.put(SEMANTIC_CONSISTENC_NODE_OUTPUT, new ReplaceStrategy());
-			keyStrategyHashMap.put(SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT, new ReplaceStrategy());
+			keyStrategyHashMap.put(SEMANTIC_CONSISTENCY_NODE_OUTPUT, new ReplaceStrategy());
+			keyStrategyHashMap.put(SEMANTIC_CONSISTENCY_NODE_RECOMMEND_OUTPUT, new ReplaceStrategy());
 			// Planner 节点输出
 			keyStrategyHashMap.put(PLANNER_NODE_OUTPUT, new ReplaceStrategy());
 			// PlanExecutorNode
@@ -114,13 +118,12 @@ public class Nl2sqlConfiguration {
 			.addNode(TABLE_RELATION_NODE,
 					node_async(new TableRelationNode(chatClientBuilder, schemaService, nl2SqlService)))
 			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder, nl2SqlService, dbConfig)))
-			.addNode(SQL_VALIDATE_NODE, node_async(new SqlValidateNode(chatClientBuilder, dbAccessor, dbConfig)))
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
 			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(chatClientBuilder, dbAccessor, dbConfig)))
 			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(chatClientBuilder)))
 			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
-			.addNode(SEMANTIC_CONSISTENC_NODE,
+			.addNode(SEMANTIC_CONSISTENCY_NODE,
 					node_async(new SemanticConsistencyNode(chatClientBuilder, nl2SqlService, dbConfig)));
 
 		stateGraph.addEdge(START, QUERY_REWRITE_NODE)
@@ -136,14 +139,10 @@ public class Nl2sqlConfiguration {
 							REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE))
 			.addEdge(REPORT_GENERATOR_NODE, END)
 			.addConditionalEdges(SQL_EXECUTE_NODE, edge_async(new SQLExecutorDispatcher()),
-					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, SEMANTIC_CONSISTENC_NODE, SEMANTIC_CONSISTENC_NODE))
+					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, SEMANTIC_CONSISTENCY_NODE, SEMANTIC_CONSISTENCY_NODE))
 			.addConditionalEdges(SQL_GENERATE_NODE, edge_async(new SqlGenerateDispatcher()),
 					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END, SQL_EXECUTE_NODE, SQL_EXECUTE_NODE))
-			// .addConditionalEdges(SQL_VALIDATE_NODE, edge_async(new
-			// SqlValidateDispatcher()),
-			// Map.of(SEMANTIC_CONSISTENC_NODE, SEMANTIC_CONSISTENC_NODE,
-			// SQL_GENERATE_NODE, SQL_GENERATE_NODE))
-			.addConditionalEdges(SEMANTIC_CONSISTENC_NODE, edge_async(new SemanticConsistenceDispatcher()),
+			.addConditionalEdges(SEMANTIC_CONSISTENCY_NODE, edge_async(new SemanticConsistenceDispatcher()),
 					Map.of(SQL_GENERATE_NODE, SQL_GENERATE_NODE, PLAN_EXECUTOR_NODE, PLAN_EXECUTOR_NODE));
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,

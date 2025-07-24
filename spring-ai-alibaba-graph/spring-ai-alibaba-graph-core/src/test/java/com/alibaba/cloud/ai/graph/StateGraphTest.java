@@ -427,8 +427,21 @@ public class StateGraphTest {
 
 		var result = app.stream(Map.of()).stream().peek(System.out::println).reduce((a, b) -> b).map(NodeOutput::state);
 		assertTrue(result.isPresent());
-		assertIterableEquals(List.of("A", "A1", "A2", "A3", "B", "C"),
-				(List<String>) result.get().value("messages").get());
+		List<String> messages = (List<String>) result.get().value("messages").get();
+		log.info("messages: {}", messages);
+
+		// 验证所有节点都被执行，但不关心并行节点的顺序
+		assertEquals("A", messages.get(0)); // A 应该是第一个
+		assertEquals("B", messages.get(messages.size() - 2)); // B 应该是倒数第二个
+		assertEquals("C", messages.get(messages.size() - 1)); // C 应该是最后一个
+
+		// 验证并行节点 A1, A2, A3 都在结果中
+		assertTrue(messages.contains("A1"), "A1 should be in the result");
+		assertTrue(messages.contains("A2"), "A2 should be in the result");
+		assertTrue(messages.contains("A3"), "A3 should be in the result");
+
+		// 验证总长度正确
+		assertEquals(6, messages.size(), "Should have 6 messages: A, A1, A2, A3, B, C");
 
 		workflow = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
 			.addNode("A1", makeNode("A1"))
@@ -450,7 +463,19 @@ public class StateGraphTest {
 		result = app.stream(Map.of()).stream().peek(System.out::println).reduce((a, b) -> b).map(NodeOutput::state);
 
 		assertTrue(result.isPresent());
-		assertIterableEquals(List.of("A1", "A2", "A3", "B", "C"), (List<String>) result.get().value("messages").get());
+		List<String> messages2 = (List<String>) result.get().value("messages").get();
+
+		// 验证所有节点都被执行，但不关心并行节点的顺序
+		assertEquals("B", messages2.get(messages2.size() - 2)); // B 应该是倒数第二个
+		assertEquals("C", messages2.get(messages2.size() - 1)); // C 应该是最后一个
+
+		// 验证并行节点 A1, A2, A3 都在结果中
+		assertTrue(messages2.contains("A1"), "A1 should be in the result");
+		assertTrue(messages2.contains("A2"), "A2 should be in the result");
+		assertTrue(messages2.contains("A3"), "A3 should be in the result");
+
+		// 验证总长度正确
+		assertEquals(5, messages2.size(), "Should have 5 messages: A1, A2, A3, B, C");
 
 	}
 

@@ -99,7 +99,7 @@ public class LLMNodeSection implements NodeSection {
 
 		List<String> params = extractKeysFromList(promptList);
 		if (!params.isEmpty()) {
-			Map<String, String> paramMap = params.stream().collect(Collectors.toMap(k -> k, k -> ""));
+			Map<String, String> paramMap = params.stream().distinct().collect(Collectors.toMap(k -> k, k -> ""));
 
 			String joined = paramMap.entrySet()
 				.stream()

@@ -32,6 +32,9 @@
             <button class="config-button" @click="handleConfig" :title="$t('direct.configuration')">
               <Icon icon="carbon:settings-adjust" width="20" />
             </button>
+            <button class="cron-task-btn" @click="showCronTaskModal = true" :title="$t('cronTask.title')">
+              <Icon icon="carbon:alarm" width="20" />
+            </button>
           </div>
         </div>
 
@@ -73,6 +76,9 @@
       <!-- Right Panel - Preview -->
       <RightPanel ref="rightPanelRef" :style="{ width: 100 - leftPanelWidth + '%' }" />
     </div>
+
+    <!-- Cron Task Modal -->
+    <CronTaskModal v-model="showCronTaskModal" />
   </div>
 </template>
 
@@ -86,6 +92,7 @@ import RightPanel from '@/components/right-panel/index.vue'
 import ChatContainer from '@/components/chat/index.vue'
 import InputArea from '@/components/input/index.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
+import CronTaskModal from '@/components/cron-task-modal/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { useTaskStore } from '@/stores/task'
 import { sidebarStore } from '@/stores/sidebar'
@@ -103,6 +110,7 @@ const inputRef = ref()
 const isExecutingPlan = ref(false)
 const isLoading = ref(false)
 const currentRootPlanId = ref<string | null>(null)
+const showCronTaskModal = ref(false)
 
 // Related to panel width
 const leftPanelWidth = ref(50) // Left panel width percentage
@@ -628,6 +636,25 @@ const handlePlanExecutionRequested = async (payload: {
 }
 
 .config-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.cron-task-btn {
   display: flex;
   align-items: center;
   justify-content: center;

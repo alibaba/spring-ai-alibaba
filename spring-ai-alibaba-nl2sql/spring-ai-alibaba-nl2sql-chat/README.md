@@ -658,7 +658,7 @@ JOIN
 2025-06-18T23:35:17.584+08:00  INFO 8496 --- [nio-8080-exec-1] com.alibaba.druid.pool.DruidDataSource   : {dataSource-38} inited
 2025-06-18T23:35:17.601+08:00  INFO 8496 --- [nio-8080-exec-1] c.alibaba.cloud.ai.node.SqlValidateNode  : [SqlValidateNode] SQL语法验证通过
 2025-06-18T23:35:17.601+08:00  INFO 8496 --- [nio-8080-exec-1] c.a.c.a.d.SqlValidateDispatcher          : SQL语法校验是否通过: true
-2025-06-18T23:35:17.601+08:00  INFO 8496 --- [nio-8080-exec-1] c.a.c.a.d.SqlValidateDispatcher          : [SqlValidateDispatcher] SQL语法校验通过，跳转到节点: SEMANTIC_CONSISTENC_NODE
+2025-06-18T23:35:17.601+08:00  INFO 8496 --- [nio-8080-exec-1] c.a.c.a.d.SqlValidateDispatcher          : [SqlValidateDispatcher] SQL语法校验通过，跳转到节点: SEMANTIC_CONSISTENCY_NODE
 2025-06-18T23:35:17.604+08:00  INFO 8496 --- [nio-8080-exec-1] c.a.c.ai.node.SemanticConsistencNode     : 进入 SemanticConsistencNode 节点
 2025-06-18T23:35:18.267+08:00  INFO 8496 --- [nio-8080-exec-1] c.a.c.ai.node.SemanticConsistencNode     : 语义一致性校验结果详情: 通过
 2025-06-18T23:35:18.267+08:00  INFO 8496 --- [nio-8080-exec-1] c.a.c.ai.node.SemanticConsistencNode     : 语义一致性校验结果: true
