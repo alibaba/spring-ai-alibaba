@@ -117,7 +117,11 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 
 	@Override
 	public void postProcess(IterationNodeData nodeData, String varName) {
-		super.postProcess(nodeData, varName);
+		nodeData.setOutputKey(varName + "_output");
+		nodeData.setInputKey(varName + "_input");
+		Variable output = new Variable(nodeData.getOutputKey(), nodeData.getOutputType());
+		nodeData.setOutputs(List.of(output));
+		nodeData.setOutput(output);
 	}
 
 	@Override

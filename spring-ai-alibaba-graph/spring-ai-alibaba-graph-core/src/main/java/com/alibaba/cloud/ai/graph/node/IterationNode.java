@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -375,7 +376,7 @@ public class IterationNode {
 		 * 创建一个完整的迭代图（IterationNode.Start -> SubStateGraphNode -> IterationNode.End ->
 		 * TempClear（清理迭代中临时变量的值）-> END），作为子图，可供其他图嵌套使用。
 		 */
-		public StateGraph convertToStateGraph() throws Exception {
+		public StateGraph convertToStateGraph() throws GraphStateException {
 			if (!StringUtils.hasText(this.inputArrayJsonKey) || !StringUtils.hasText(this.outputArrayJsonKey)
 					|| !StringUtils.hasText(this.iteratorItemKey) || !StringUtils.hasText(this.iteratorResultKey)
 					|| this.subGraph == null) {
@@ -438,7 +439,7 @@ public class IterationNode {
 		 * @param iterationOutName 迭代节点的出边名称
 		 */
 		public void appendToStateGraph(StateGraph stateGraph, String iterationName, String iterationOutName)
-				throws Exception {
+				throws GraphStateException {
 			if (!StringUtils.hasText(this.inputArrayJsonKey) || !StringUtils.hasText(this.outputArrayJsonKey)
 					|| !StringUtils.hasText(this.iteratorItemKey) || !StringUtils.hasText(this.iteratorResultKey)
 					|| !StringUtils.hasText(this.tempArrayKey) || !StringUtils.hasText(this.subGraphStartNodeName)

@@ -39,9 +39,10 @@ public class EmptyNodeSection implements NodeSection {
 		EmptyNodeData data = (EmptyNodeData) node.getData();
 		StringBuilder sb = new StringBuilder();
 		String id = data.getId();
+		sb.append("// —— Empty Node [").append(id).append("] ——\n");
 		sb.append("stateGraph.addNode(\"")
-			.append(id)
-			.append("\", AsyncNodeAction.node_async((OverAllState state) -> Map.of()));\n");
+			.append(varName)
+			.append("\", AsyncNodeAction.node_async((OverAllState state) -> Map.of()));\n\n");
 		return sb.toString();
 	}
 

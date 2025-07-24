@@ -46,6 +46,10 @@ public class IterationNodeData extends NodeData {
 
 	private String inputKey;
 
+	private String startNodeName;
+
+	private String endNodeName;
+
 	// 内部临时变量名
 	private String innerArrayKey;
 
@@ -204,6 +208,22 @@ public class IterationNodeData extends NodeData {
 
 	public void setOutput(Variable output) {
 		this.output = output;
+	}
+
+	public String getStartNodeName() {
+		return startNodeName;
+	}
+
+	public void setStartNodeName(String startNodeName) {
+		this.startNodeName = startNodeName;
+	}
+
+	public String getEndNodeName() {
+		return endNodeName;
+	}
+
+	public void setEndNodeName(String endNodeName) {
+		this.endNodeName = endNodeName;
 	}
 
 	public static class Builder {
