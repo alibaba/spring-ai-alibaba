@@ -15,7 +15,6 @@
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
     <modules>
-        <module>spring-ai-alibaba-mcp-nacos2</module>
         <module>spring-ai-alibaba-mcp-discovery</module>
         <module>spring-ai-alibaba-mcp-register</module>
         <module>spring-ai-alibaba-mcp-common</module>
@@ -23,6 +22,7 @@
         <module>spring-ai-alibaba-mcp-recovery</module>
         <module>spring-ai-alibaba-mcp-router</module>
     </modules>
+
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
         <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
