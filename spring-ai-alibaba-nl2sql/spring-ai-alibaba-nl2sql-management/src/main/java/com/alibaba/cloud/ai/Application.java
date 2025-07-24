@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai;
 
-import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStore;
-import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStoreProperties;
+import com.alibaba.cloud.ai.vectorstore.analyticdb.AnalyticDbVectorStore;
+import com.alibaba.cloud.ai.vectorstore.analyticdb.AnalyticDbVectorStoreProperties;
 import com.aliyun.gpdb20160503.Client;
 import jakarta.annotation.PreDestroy;
 import org.springframework.ai.embedding.EmbeddingModel;
