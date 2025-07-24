@@ -16,7 +16,9 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefix;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
@@ -159,11 +161,18 @@ public class ResearcherNode implements NodeAction {
 		var streamResult = requestSpec.messages(messages).stream().chatResponse();
 
 		Plan.Step finalAssignedStep = assignedStep;
-		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId,
-				"researcher_llm_stream_" + executorNodeId);
+
+		String prefix = StreamNodePrefix.RESEARCHER_LLM_STREAM.getPrefix() + "_";
+		String stepTitleKey = prefix + executorNodeId + "_step_title";
+		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
+		Map<String, Object> inputMap = new HashMap<>();
+		inputMap.put(stepTitleKey, "[并行节点" + executorNodeId + "]" + finalAssignedStep.getTitle());
+		state.input(inputMap);
+
+		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, prefix + executorNodeId);
 
 		var generator = StreamingChatGenerator.builder()
-			.startingNode("researcher_llm_stream_" + executorNodeId)
+			.startingNode(prefix + executorNodeId)
 			.startingState(state)
 			.mapResult(response -> {
 				// Set appropriate completion status using ReflectionUtil

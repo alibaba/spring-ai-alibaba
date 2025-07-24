@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefix;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
@@ -23,6 +24,7 @@ import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,11 +115,18 @@ public class CoderNode implements NodeAction {
 
 		var streamResult = requestSpec.stream().chatResponse();
 		Plan.Step finalAssignedStep = assignedStep;
-		logger.info("CoderNode {} starting streaming with key: {}", executorNodeId,
-				"coder_llm_stream_" + executorNodeId);
+
+		String prefix = StreamNodePrefix.CODER_LLM_STREAM.getPrefix() + "_";
+		String stepTitleKey = prefix + executorNodeId + "_step_title";
+		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
+		Map<String, Object> inputMap = new HashMap<>();
+		inputMap.put(stepTitleKey, "[并行节点" + executorNodeId + "]" + finalAssignedStep.getTitle());
+		state.input(inputMap);
+
+		logger.info("CoderNode {} starting streaming with key: {}", executorNodeId, prefix + executorNodeId);
 
 		var generator = StreamingChatGenerator.builder()
-			.startingNode("coder_llm_stream_" + executorNodeId)
+			.startingNode(prefix + executorNodeId)
 			.startingState(state)
 			.mapResult(response -> {
 				// Set appropriate completion status using ReflectionUtil

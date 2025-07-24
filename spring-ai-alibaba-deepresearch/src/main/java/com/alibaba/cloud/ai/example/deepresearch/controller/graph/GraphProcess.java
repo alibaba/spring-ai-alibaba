@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller.graph;
 
+import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefix;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
@@ -73,7 +74,10 @@ public class GraphProcess {
 					String nodeName = output.node();
 					String content;
 					if (output instanceof StreamingOutput streamingOutput) {
-						content = JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk()));
+						String stepTitle = (String) output.state().value(nodeName + "_step_title").orElse("");
+						boolean visiable = StreamNodePrefix.matches(nodeName);
+						content = JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk(), "step_title", stepTitle,
+								"visiable", visiable));
 						logger.info("Streaming output from node {}: {}", nodeName, streamingOutput.chunk());
 					}
 					else {
