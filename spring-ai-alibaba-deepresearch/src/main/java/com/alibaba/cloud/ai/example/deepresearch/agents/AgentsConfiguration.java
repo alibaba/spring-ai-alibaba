@@ -171,6 +171,11 @@ public class AgentsConfiguration {
 	}
 
 	@Bean
+	public ChatClient rewriteAndMultiQueryAgent(ChatClient.Builder rewriteAndMultiQueryChatClientBuilder) {
+		return rewriteAndMultiQueryChatClientBuilder.build();
+	}
+
+	@Bean
 	public ChatClient infoCheckAgent(ChatClient.Builder infoCheckChatClientBuilder) {
 		return infoCheckChatClientBuilder.build();
 	}

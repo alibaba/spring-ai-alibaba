@@ -16,7 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.tool.SearchFilterTool;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
+import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
@@ -44,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @author sixiyida
@@ -60,24 +62,25 @@ public class ResearcherNode implements NodeAction {
 
 	private final String nodeName;
 
-	private final SearchFilterService searchFilterService;
-
 	private final ReflectionProcessor reflectionProcessor;
 
 	// MCP工厂
 	private final McpProviderFactory mcpFactory;
 
+	private final SearchInfoService searchInfoService;
+
 	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
 
 	public ResearcherNode(ChatClient researchAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
 			McpProviderFactory mcpFactory, SearchFilterService searchFilterService,
-			SmartAgentDispatcherService smartAgentDispatcher, SmartAgentProperties smartAgentProperties) {
+			SmartAgentDispatcherService smartAgentDispatcher, SmartAgentProperties smartAgentProperties,
+			JinaCrawlerService jinaCrawlerService) {
 		this.researchAgent = researchAgent;
 		this.executorNodeId = executorNodeId;
 		this.nodeName = "researcher_" + executorNodeId;
 		this.reflectionProcessor = reflectionProcessor;
 		this.mcpFactory = mcpFactory;
-		this.searchFilterService = searchFilterService;
+		this.searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService);
 		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties,
 				smartAgentDispatcher, null, null);
 	}
@@ -112,6 +115,7 @@ public class ResearcherNode implements NodeAction {
 		List<Message> messages = new ArrayList<>();
 
 		// Build task message with reflection history
+		String originTaskContent = buildTaskMessage(assignedStep);
 		String taskContent = buildTaskMessageWithReflectionHistory(assignedStep);
 		Message taskMessage = new UserMessage(taskContent);
 		messages.add(taskMessage);
@@ -129,7 +133,7 @@ public class ResearcherNode implements NodeAction {
 		ChatClient selectedAgent = selectSmartAgent(assignedStep, taskContent, state);
 
 		// Call agent
-		var requestSpec = selectedAgent.prompt().messages(messages);
+		var requestSpec = researchAgent.prompt();
 
 		// 使用MCP工厂创建MCP提供者
 		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null
@@ -138,11 +142,21 @@ public class ResearcherNode implements NodeAction {
 			requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
 		}
 
-		if (searchEnum != null) {
-			requestSpec = requestSpec.tools(
-					new SearchFilterTool(searchFilterService, searchEnum, state.value("enable_search_filter", true)));
+		List<Map<String, String>> siteInformation = new ArrayList<>();
+		Object obj = state.value("site_information").get();
+		if (obj instanceof List<?>) {
+			siteInformation = (List<Map<String, String>>) obj;
 		}
-		var streamResult = requestSpec.stream().chatResponse();
+		List<Map<String, String>> searchResults = searchInfoService
+			.searchInfo(state.value("enable_search_filter", true), searchEnum, originTaskContent);
+		siteInformation.addAll(searchResults);
+		updated.put("site_information", siteInformation);
+
+		messages.add(new UserMessage("以下是搜索结果：\n\n" + searchResults.stream().map(r -> {
+			return String.format("标题: %s\n权重: %s\n内容: %s\n", r.get("title"), r.get("weight"), r.get("content"));
+		}).collect(Collectors.joining("\n\n"))));
+
+		var streamResult = requestSpec.messages(messages).stream().chatResponse();
 
 		Plan.Step finalAssignedStep = assignedStep;
 		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId,
@@ -179,6 +193,24 @@ public class ResearcherNode implements NodeAction {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Build task message
+	 */
+	private String buildTaskMessage(Plan.Step step) {
+		StringBuilder content = new StringBuilder();
+
+		// Basic task information
+		content.append("# Current Task\n\n")
+			.append("## Title\n\n")
+			.append(step.getTitle())
+			.append("\n\n")
+			.append("## Description\n\n")
+			.append(step.getDescription())
+			.append("\n\n");
+
+		return content.toString();
 	}
 
 	/**

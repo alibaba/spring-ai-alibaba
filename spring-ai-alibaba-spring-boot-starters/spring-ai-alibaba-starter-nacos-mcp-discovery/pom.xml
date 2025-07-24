@@ -26,7 +26,7 @@
 
     <artifactId>spring-ai-alibaba-starter-nacos-mcp-discovery</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI Alibaba Starter Nacos Mcp Discovery</name>
+    <name>Spring AI Alibaba Starter Nacos Mcp Client</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
@@ -44,8 +44,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-mcp-server</artifactId>
-            <optional>true</optional>
+            <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
         </dependency>
 
         <dependency>
