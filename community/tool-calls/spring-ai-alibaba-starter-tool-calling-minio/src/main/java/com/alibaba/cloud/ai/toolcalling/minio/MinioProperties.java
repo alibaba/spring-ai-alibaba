@@ -26,7 +26,7 @@ public class MinioProperties extends CommonToolCallProperties {
 
 	private String endpoint = MinioConstants.ENDPOINT;
 
-	private String accessKey = MinioConstants.ACCESS_KEY;
+	private String accessKey = System.getenv("MINIO_ACCESS_KEY");
 
 	private String secretKey = MinioConstants.SECRET_KEY;
 
