@@ -307,15 +307,19 @@ public class IterationNode {
 		/**
 		 * 单元素操作子图
 		 */
-		private StateGraph subGraph;
+		private StateGraph subGraph = null;
+
+		private String subGraphStartNodeName = null;
+
+		private String subGraphEndNodeName = null;
 
 		// 迭代节点临时变量名称
 
-		private String tempArrayKey = "input_array";
+		private String tempArrayKey;
 
-		private String tempStartFlagKey = "output_start";
+		private String tempStartFlagKey;
 
-		private String tempEndFlagKey = "output_continue";
+		private String tempEndFlagKey;
 
 		public Converter<ElementInput, ElementOutput> inputArrayJsonKey(String inputArrayJsonKey) {
 			this.inputArrayJsonKey = inputArrayJsonKey;
@@ -342,6 +346,16 @@ public class IterationNode {
 			return this;
 		}
 
+		public Converter<ElementInput, ElementOutput> subGraphStartNodeName(String subGraphStartNodeName) {
+			this.subGraphStartNodeName = subGraphStartNodeName;
+			return this;
+		}
+
+		public Converter<ElementInput, ElementOutput> subGraphEndNodeName(String subGraphEndNodeName) {
+			this.subGraphEndNodeName = subGraphEndNodeName;
+			return this;
+		}
+
 		public Converter<ElementInput, ElementOutput> tempArrayKey(String tempArrayKey) {
 			this.tempArrayKey = tempArrayKey;
 			return this;
@@ -359,14 +373,22 @@ public class IterationNode {
 
 		/**
 		 * 创建一个完整的迭代图（IterationNode.Start -> SubStateGraphNode -> IterationNode.End ->
-		 * TempClear（清理迭代中临时变量的值）-> END），可供其他图嵌套使用。
+		 * TempClear（清理迭代中临时变量的值）-> END），作为子图，可供其他图嵌套使用。
 		 */
 		public StateGraph convertToStateGraph() throws Exception {
 			if (!StringUtils.hasText(this.inputArrayJsonKey) || !StringUtils.hasText(this.outputArrayJsonKey)
 					|| !StringUtils.hasText(this.iteratorItemKey) || !StringUtils.hasText(this.iteratorResultKey)
-					|| this.subGraph == null || !StringUtils.hasText(this.tempArrayKey)
-					|| !StringUtils.hasText(this.tempStartFlagKey) || !StringUtils.hasText(this.tempEndFlagKey)) {
+					|| this.subGraph == null) {
 				throw new IllegalArgumentException("There are some empty fields");
+			}
+			if (!StringUtils.hasText(this.tempArrayKey)) {
+				this.tempArrayKey = "input_array";
+			}
+			if (!StringUtils.hasText(this.tempStartFlagKey)) {
+				this.tempStartFlagKey = "output_start";
+			}
+			if (!StringUtils.hasText(this.tempEndFlagKey)) {
+				this.tempEndFlagKey = "output_continue";
 			}
 			KeyStrategyFactory strategyFactory = () -> {
 				Map<String, KeyStrategy> map = new HashMap<>();
@@ -407,6 +429,52 @@ public class IterationNode {
 						edge_async((OverAllState state) -> state.value(this.tempEndFlagKey, Boolean.class).orElse(false)
 								? "true" : "false"),
 						Map.of("true", "iteration_start", "false", StateGraph.END));
+		}
+
+		/**
+		 * 将迭代的Start和End节点直接加在已有的StateGraph上，只提供处理单个元素子图的开始和终止节点名称即可
+		 * @param stateGraph 原有的stateGraph
+		 * @param iterationName 迭代节点的名称
+		 * @param iterationOutName 迭代节点的出边名称
+		 */
+		public void appendToStateGraph(StateGraph stateGraph, String iterationName, String iterationOutName)
+				throws Exception {
+			if (!StringUtils.hasText(this.inputArrayJsonKey) || !StringUtils.hasText(this.outputArrayJsonKey)
+					|| !StringUtils.hasText(this.iteratorItemKey) || !StringUtils.hasText(this.iteratorResultKey)
+					|| !StringUtils.hasText(this.tempArrayKey) || !StringUtils.hasText(this.subGraphStartNodeName)
+					|| !StringUtils.hasText(this.subGraphEndNodeName) || !StringUtils.hasText(this.tempStartFlagKey)
+					|| !StringUtils.hasText(this.tempEndFlagKey) || stateGraph == null
+					|| !StringUtils.hasText(iterationName) || !StringUtils.hasText(iterationOutName)) {
+				throw new IllegalArgumentException("There are some empty fields");
+			}
+			// 注册临时变量的替换策略
+			stateGraph
+				.addNode(iterationName,
+						node_async(IterationNode.<ElementInput>start()
+							.inputArrayJsonKey(this.inputArrayJsonKey)
+							.inputArrayKey(this.tempArrayKey)
+							.outputItemKey(this.iteratorItemKey)
+							.outputStartIterationKey(this.tempStartFlagKey)
+							.build()))
+				.addNode(iterationName + "iteration_end",
+						node_async(IterationNode.<ElementInput, ElementOutput>end()
+							.inputArrayKey(this.tempArrayKey)
+							.inputResultKey(this.iteratorResultKey)
+							.outputArrayKey(this.outputArrayJsonKey)
+							.outputContinueIterationKey(this.tempEndFlagKey)
+							.outputStartIterationKey(this.tempStartFlagKey)
+							.build()))
+				.addNode(iterationOutName, node_async((OverAllState state) -> Map.of()))
+				.addConditionalEdges(iterationName,
+						edge_async(
+								(OverAllState state) -> state.value(this.tempStartFlagKey, Boolean.class).orElse(false)
+										? "true" : "false"),
+						Map.of("true", this.subGraphStartNodeName, "false", iterationName + "iteration_end"))
+				.addEdge(this.subGraphEndNodeName, iterationName + "iteration_end")
+				.addConditionalEdges(iterationName + "iteration_end",
+						edge_async((OverAllState state) -> state.value(this.tempEndFlagKey, Boolean.class).orElse(false)
+								? "true" : "false"),
+						Map.of("true", iterationName, "false", iterationOutName));
 		}
 
 	}

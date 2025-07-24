@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -224,6 +225,46 @@ public class IterationNodeTest {
 		log.info("result: {}", res);
 		Assertions.assertEquals(OBJECT_MAPPER.readValue(res, new TypeReference<List<Integer>>() {
 		}), List.of(1, 2, 3));
+	}
+
+	@Test
+	@DisplayName("Test Converter.appendToStateGraph Method")
+	public void testIterationAttach() throws Exception {
+		StateGraph stateGraph = new StateGraph("graph",
+				() -> Map.of("input_json_array", new ReplaceStrategy(), "item", new ReplaceStrategy(), "item_result",
+						new ReplaceStrategy(), "result", new ReplaceStrategy(), "tv1", new ReplaceStrategy(), "tv2",
+						new ReplaceStrategy(), "tv3", new ReplaceStrategy()))
+			.addNode("generate", node_async((OverAllState state) -> Map.of("input_json_array", "[1, 2, 3, 4, 5]")))
+			.addNode("apply", node_async((OverAllState state) -> {
+				int x = state.value("item", Integer.class).orElseThrow();
+				return Map.of("item_result", x * x * x);
+			}));
+		// 构造迭代节点
+		IterationNode.<Integer, Integer>converter()
+			.subGraphStartNodeName("apply")
+			.subGraphEndNodeName("apply")
+			.tempArrayKey("tv1")
+			.tempStartFlagKey("tv2")
+			.tempEndFlagKey("tv3")
+			.iteratorItemKey("item")
+			.iteratorResultKey("item_result")
+			.inputArrayJsonKey("input_json_array")
+			.outputArrayJsonKey("result")
+			.appendToStateGraph(stateGraph, "iteration", "iteration_out");
+		stateGraph.addNode("print", node_async((OverAllState state) -> {
+			System.out.println(state.value("result", String.class).orElseThrow());
+			return Map.of();
+		}))
+			.addEdge(StateGraph.START, "generate")
+			.addEdge("generate", "iteration")
+			.addEdge("iteration_out", "print")
+			.addEdge("print", StateGraph.END);
+		CompiledGraph compiledGraph = stateGraph.compile();
+		log.info(compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML, "workflow").content());
+		String res = compiledGraph.invoke(Map.of()).orElseThrow().value("result", String.class).orElseThrow();
+		log.info("result: {}", res);
+		Assertions.assertEquals(OBJECT_MAPPER.readValue(res, new TypeReference<List<Integer>>() {
+		}), List.of(1, 8, 27, 64, 125));
 	}
 
 }
