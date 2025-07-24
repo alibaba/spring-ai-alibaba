@@ -27,7 +27,6 @@ import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.workflow.nodedata.CodeNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.EmptyNodeData;
-import com.alibaba.cloud.ai.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
@@ -215,9 +214,6 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			}
 			String nodeId = (String) nodeMap.get("id");
 			nodeDataMap.put("id", nodeId);
-			// 记录父节点ID
-			String parentId = (String) nodeMap.getOrDefault("parentId", null);
-			nodeDataMap.put("parentId", parentId);
 			// determine the type of dify node is supported yet
 			NodeType nodeType = NodeType.fromDifyValue(difyNodeType)
 				.orElseThrow(() -> new NotImplementedException("unsupported node type " + difyNodeType));
@@ -254,7 +250,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		}
 
 		Map<String, String> idToOutputKey = nodes.stream()
-			.filter(n -> !(n.getData() instanceof EmptyNodeData || n.getData() instanceof IterationNodeData))
+			.filter(n -> !(n.getData() instanceof EmptyNodeData))
 			.collect(Collectors.toMap(Node::getId, n -> {
 				try {
 					return ((VariableAggregatorNodeData) n.getData()).getOutputKey();
