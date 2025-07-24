@@ -71,6 +71,17 @@
                     </a-button>
                   </a-upload>
 
+                  <a-button 
+                    size="small" 
+                    style="border-radius: 15px; margin-right: 8px" 
+                    type="text"
+                    @click="deepResearch"
+                    :style="{ color: current.deepResearchDetail ? token.colorPrimary : '' }"
+                  >
+                    <BgColorsOutlined />
+                    Report
+                  </a-button>
+
                   <a-switch
                     un-checked-children="Deep Research"
                     checked-children="Deep Research"
@@ -106,19 +117,8 @@
           </sender>
         </div>
       </Flex>
-      <Flex class="aux" v-if="current.deepResearchDetail" style="width: 60%" vertical>
-        <a-card style="height: 100%">
-          <template #title>
-            <Flex justify="space-between">
-              研究细节
-              <Button type="text" @click="current.deepResearchDetail = false">
-                <CloseOutlined />
-              </Button>
-            </Flex>
-          </template>
-          细节
-        </a-card>
-      </Flex>
+      <Report :visible="current.deepResearchDetail" :convId="convId" @close="current.deepResearchDetail = false" />
+      
     </Flex>
   </div>
 </template>
@@ -137,6 +137,7 @@ import {
   BgColorsOutlined,
   DotChartOutlined,
   ShareAltOutlined,
+  LoadingOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue'
 import {
@@ -153,6 +154,7 @@ import {
 import { computed, h, onMounted, reactive, ref, watch } from 'vue'
 import MD from '@/components/md/index.vue'
 import Gap from '@/components/toolkit/Gap.vue'
+import Report from '@/components/report/index.vue'
 import { XStreamBody } from '@/utils/stream'
 import { ScrollController } from '@/utils/scroll'
 import { useAuthStore } from '@/store/AuthStore'
@@ -160,6 +162,7 @@ import { useMessageStore } from '@/store/MessageStore'
 import { useConversationStore } from '@/store/ConversationStore'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfigStore } from '@/store/ConfigStore'
+import { parseJsonTextStrict } from '@/utils/jsonParser';
 
 const router = useRouter()
 const route = useRoute()
@@ -219,7 +222,7 @@ const [agent] = useXAgent({
 
     switch (current.aiType) {
       case 'normal': {
-        const xStreamBody = new XStreamBody('/chat/stream', {
+        const xStreamBody = new XStreamBody('/deep-research/chat/stream', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -228,6 +231,7 @@ const [agent] = useXAgent({
           body: {
             ...configStore.chatConfig,
             query: message,
+            thread_id: convId
           },
         })
 
@@ -252,16 +256,16 @@ const [agent] = useXAgent({
           break
         }
 
-        const xStreamBody = new XStreamBody('/chat/resume', {
+        const xStreamBody = new XStreamBody('/deep-research/chat/resume', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
           },
           body: {
-            ...configStore.chatConfig,
-            query: message,
-            feed_back: false, 
+            feed_back_content: message,
+            feed_back: true, 
+            thread_id: convId
           },
         })
 
@@ -383,6 +387,24 @@ function deepResearch() {
 
 function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any {
   switch (status) {
+    case 'loading': 
+      const items: ThoughtChainProps['items'] = [
+        {
+          title: '正在思考中',
+          description: 'AI 正在思考中',
+          icon: h(LoadingOutlined),
+          status: 'pending'
+        }
+      ]
+      return (
+            <>
+              请稍后，AI 正在思考中...
+              <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
+                <h2>{{ msg }}</h2>
+                <ThoughtChain items={items} />
+              </Card>
+            </>
+          )
     case 'success':
       if (!isCurrent) {
         // todo 历史数据渲染
@@ -392,49 +414,37 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
         if (current.aiType === 'startDS') {
           const { Paragraph, Text } = Typography
 
-          const customizationProps = (
-            title: any,
-            description: string,
-            para: string | null,
-            footer?: any
-          ): ThoughtChainItem => {
-            return {
-              title,
-              description,
-              icon: <CheckCircleOutlined />,
-              extra: '',
-              footer,
-              content: para ? (
-                <Typography>
-                  <Paragraph>
-                    <MD content={para} />
-                  </Paragraph>
-                </Typography>
-              ) : (
-                ''
-              ),
-            }
+          const jsonArray = parseJsonTextStrict(msg)
+          if(jsonArray.filter((item) => item.node === 'information').length === 0) {
+            return <MD content={msg} />
           }
-
+          const informationNode= jsonArray.filter((item) => item.node === 'information')[0]
           const items: ThoughtChainProps['items'] = [
             {
               status: 'error',
-              title: '研究网站',
+              title: '查询重写',
               icon: <IeOutlined />,
               extra: '',
               content: (
                 <Typography>
                   <Paragraph>
-                    <MD content="(1) xxx" />
+                    <MD content={informationNode.data?.optimize_queries} />
                   </Paragraph>
                 </Typography>
               ),
             },
             {
-              status: 'pending',
-              title: '分析结果',
+              status: 'success',
+              title: '研究计划',
               icon: <DotChartOutlined />,
               extra: '',
+              content: (
+                <Typography>
+                  <Paragraph>
+                    <MD content={informationNode.data?.current_plan.thought} />
+                  </Paragraph>
+                </Typography>
+              )
             },
 
             {
@@ -445,7 +455,7 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
               footer: (
                 <Flex style="margin-left: auto" gap="middle">
                   <Button type="primary">修改方案</Button>
-                  <Button type="primary">开始研究</Button>
+                  <Button type="primary" onClick={startDeepResearch}>开始研究</Button>
                 </Flex>
               ),
               extra: '',
@@ -473,7 +483,7 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
         }
       }
     default:
-      return msg
+      return ''
   }
 }
 
@@ -497,6 +507,7 @@ function parseFooter(status: MessageStatus, isCurrent: boolean): any {
 const bubbleList = computed(() => {
   const len = messages.value.length
   messageStore.history[convId] = messages.value
+  // TODO 当状态是loading的时候，是每个chunk，然后succes，把之前所有的chunk 全部返回
   return messages.value.map(({ id, message, status }, idx) => ({
     key: id,
     role: status === 'local' ? 'local' : 'ai',
@@ -531,11 +542,7 @@ watch(
     box-sizing: border-box;
   }
 
-  .aux {
-    padding-top: 20px;
-    height: 100%;
-    padding-bottom: 38px;
-  }
+
 
   .chat {
     padding-top: 20px;
@@ -628,7 +635,6 @@ watch(
     }
   }
 
-  .aux {
-  }
+
 }
 </style>
