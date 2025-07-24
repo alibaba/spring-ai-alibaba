@@ -55,7 +55,7 @@ Allows you to precisely control every execution detail, providing extremely high
 
 Supports precise extraction of target information from massive content without relying on specific long-context models.
 
-![Image](https://github.com/user-attachments/assets/dad0ee9b-aeb7-4596-b905-fb07e27cc93c)
+![Image](https://github.com/user-attachments/assets/f23e5f27-91e1-4262-83d9-5bfbe5d644d5)
 
 
 ## 🚀 Quick Start
