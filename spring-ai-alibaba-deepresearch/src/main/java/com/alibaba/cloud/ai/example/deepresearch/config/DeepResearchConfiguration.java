@@ -242,7 +242,7 @@ public class DeepResearchConfiguration {
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-			.addNode("reporter", node_async((new ReporterNode(reporterAgent, reportService))))
+			.addNode("reporter", node_async(new ReporterNode(reporterAgent, reportService)))
 			.addNode("temp", node_async(new PassThroughNode()));
 
 		// 添加并行节点块

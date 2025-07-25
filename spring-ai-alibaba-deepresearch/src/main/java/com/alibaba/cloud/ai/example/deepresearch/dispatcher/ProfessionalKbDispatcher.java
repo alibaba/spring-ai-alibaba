@@ -23,7 +23,7 @@ public class ProfessionalKbDispatcher implements EdgeAction {
 	@Override
 	public String apply(OverAllState state) {
 		Boolean need = state.value("use_professional_kb", false);
-		return Boolean.TRUE.equals(need) ? "professional_kb_rag" : "research_team";
+		return Boolean.TRUE.equals(need) ? "professional_kb_rag" : "information";
 	}
 
 }
