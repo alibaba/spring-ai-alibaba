@@ -59,31 +59,26 @@ public class KeywordExtractNode implements NodeAction {
 	}
 
 	/**
-	 * 处理多个问题变体，提取关键词并合并结果
+	 * 处理多个问题变体，提取关键词并合并结果 使用并行流处理提高多问题处理效率
 	 * @param questions 问题变体列表
 	 * @return 提取结果列表
 	 */
 	private List<KeywordExtractionResult> processMultipleQuestions(List<String> questions) {
-		List<KeywordExtractionResult> results = new ArrayList<>();
-
-		for (String question : questions) {
+		return questions.parallelStream().map(question -> {
 			try {
-				// 提取证据和关键词
+
 				List<String> evidences = baseNl2SqlService.extractEvidences(question);
 				List<String> keywords = baseNl2SqlService.extractKeywords(question, evidences);
 
-				// 记录成功结果
-				results.add(new KeywordExtractionResult(question, evidences, keywords));
 				logger.info("成功从问题变体提取关键词: 问题=\"{}\", 关键词={}", question, keywords);
+				return new KeywordExtractionResult(question, evidences, keywords);
 			}
 			catch (Exception e) {
-				// 记录失败结果
-				results.add(new KeywordExtractionResult(question, false));
-				logger.warn("从问题变体提取关键词失败: 问题=\"{}\", 错误={}", question, e.getMessage());
-			}
-		}
 
-		return results;
+				logger.warn("从问题变体提取关键词失败: 问题=\"{}\", 错误={}", question, e.getMessage());
+				return new KeywordExtractionResult(question, false);
+			}
+		}).collect(java.util.stream.Collectors.toList());
 	}
 
 	/**
@@ -97,16 +92,13 @@ public class KeywordExtractNode implements NodeAction {
 			return List.of();
 		}
 
-		// 使用LinkedHashSet保持插入顺序并去重
 		Set<String> mergedKeywords = new LinkedHashSet<>();
 
-		// 首先添加原始问题的关键词（如果存在）
 		extractionResults.stream()
 			.filter(result -> result.isSuccessful() && result.getQuestion().equals(originalQuestion))
 			.findFirst()
 			.ifPresent(result -> mergedKeywords.addAll(result.getKeywords()));
 
-		// 然后添加其他问题变体的关键词
 		extractionResults.stream()
 			.filter(result -> result.isSuccessful() && !result.getQuestion().equals(originalQuestion))
 			.forEach(result -> mergedKeywords.addAll(result.getKeywords()));
@@ -137,28 +129,22 @@ public class KeywordExtractNode implements NodeAction {
 				StateUtils.getStringValue(state, INPUT_KEY));
 
 		try {
-			// 增强处理：扩展问题并提取关键词
 			logger.info("开始增强关键词提取处理...");
 
-			// 扩展问题为多个变体
 			List<String> expandedQuestions = baseNl2SqlService.expandQuestion(input);
 			logger.info("问题扩展结果: {}", expandedQuestions);
 
-			// 处理多个问题变体
 			List<KeywordExtractionResult> extractionResults = processMultipleQuestions(expandedQuestions);
 
-			// 合并关键词和证据
 			List<String> mergedKeywords = mergeKeywords(extractionResults, input);
 			List<String> mergedEvidences = mergeEvidences(extractionResults);
 
 			logger.info("[{}] 增强提取结果 - 证据: {}, 关键词: {}", this.getClass().getSimpleName(), mergedEvidences,
 					mergedKeywords);
 
-			// 创建流式响应
 			Flux<ChatResponse> displayFlux = createEnhancedDisplayFlux(extractionResults, mergedKeywords,
 					mergedEvidences);
 
-			// 使用业务逻辑执行器避免重复执行
 			var generator = StreamingChatGeneratorUtil
 				.createStreamingGeneratorWithMessages(
 						this.getClass(), state, v -> Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, mergedKeywords, EVIDENCES,
@@ -169,7 +155,7 @@ public class KeywordExtractNode implements NodeAction {
 
 		}
 		catch (Exception e) {
-			// 增强处理失败，回退到原始处理逻辑
+
 			logger.warn("增强关键词提取失败，回退到原始处理方法: {}", e.getMessage());
 			return fallbackToOriginalProcessing(state, input);
 		}
@@ -188,7 +174,6 @@ public class KeywordExtractNode implements NodeAction {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始增强关键词提取..."));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("正在扩展问题理解..."));
 
-			// 显示每个问题变体的处理结果
 			for (KeywordExtractionResult result : extractionResults) {
 				if (result.isSuccessful()) {
 					emitter
@@ -200,7 +185,6 @@ public class KeywordExtractNode implements NodeAction {
 				}
 			}
 
-			// 显示合并结果
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("合并多个问题变体的结果..."));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("合并后的证据: " + String.join(", ", mergedEvidences)));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("合并后的关键词: " + String.join(", ", mergedKeywords)));
@@ -217,7 +201,7 @@ public class KeywordExtractNode implements NodeAction {
 	 * @throws Exception 处理异常
 	 */
 	private Map<String, Object> fallbackToOriginalProcessing(OverAllState state, String input) throws Exception {
-		// 执行原始业务逻辑 - 直接提取证据和关键词
+
 		List<String> evidences = baseNl2SqlService.extractEvidences(input);
 		List<String> keywords = baseNl2SqlService.extractKeywords(input, evidences);
 
@@ -233,7 +217,6 @@ public class KeywordExtractNode implements NodeAction {
 			emitter.complete();
 		});
 
-		// 使用业务逻辑执行器避免重复执行
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
 				v -> Map.of(KEYWORD_EXTRACT_NODE_OUTPUT, keywords, EVIDENCES, evidences, RESULT, keywords), displayFlux,
 				StreamResponseType.KEYWORD_EXTRACT);
