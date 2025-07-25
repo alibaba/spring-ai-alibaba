@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Function;
 
 /**
- * 2025/7/23 22:15 auth: dahua
+ * auth: dahua
  */
 public class MinioDownloadObjectService implements Function<MinioDownloadObjectService.Request, Boolean> {
 
