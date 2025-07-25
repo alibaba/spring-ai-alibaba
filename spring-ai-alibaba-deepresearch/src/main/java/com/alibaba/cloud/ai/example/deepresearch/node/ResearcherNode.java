@@ -147,6 +147,7 @@ public class ResearcherNode implements NodeAction {
 		if (obj instanceof List<?>) {
 			siteInformation = (List<Map<String, String>>) obj;
 		}
+
 		List<Map<String, String>> searchResults = searchInfoService
 			.searchInfo(state.value("enable_search_filter", true), searchEnum, originTaskContent);
 		siteInformation.addAll(searchResults);
