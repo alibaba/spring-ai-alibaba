@@ -304,7 +304,7 @@ const copyCronTime = async (cronTime: string) => {
     await navigator.clipboard.writeText(cronTime)
     toast.success('成功复制cron表达式')
   } catch (e) {
-    toast.error('复制失败')
+    toast.error(`复制失败: ${e instanceof Error ? e.message : String(e)}`)
   }
 }
 
