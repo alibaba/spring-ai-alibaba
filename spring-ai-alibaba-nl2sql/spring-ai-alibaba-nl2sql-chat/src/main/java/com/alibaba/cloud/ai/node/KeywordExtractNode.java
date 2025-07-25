@@ -26,7 +26,6 @@ import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import reactor.core.publisher.Flux;
 
@@ -55,7 +54,7 @@ public class KeywordExtractNode implements NodeAction {
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
-	public KeywordExtractNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService) {
+	public KeywordExtractNode(BaseNl2SqlService baseNl2SqlService) {
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
 
