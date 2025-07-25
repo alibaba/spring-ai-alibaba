@@ -1,0 +1,22 @@
+# 开发环境配置
+server:
+  port: 18080
+
+spring:
+  # 开发环境日志级别
+  logging:
+    level:
+      com.alibaba.cloud.ai.mcp.router: DEBUG
+      com.alibaba.cloud.ai.mcp.nacos: DEBUG
+      org.springframework.ai: DEBUG
+      root: INFO
+
+# 开发环境 MCP Router 配置
+mcp:
+  router:
+    debug: true
+    search:
+      default-limit: 20
+      min-score: 0.1 # 开发环境降低阈值
+    discovery:
+      refresh-interval: 10000 # 开发环境缩短刷新间隔
