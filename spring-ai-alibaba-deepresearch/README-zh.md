@@ -147,7 +147,6 @@ Langfuse 配置
 5. 将凭据编码为 Base64：
    ```bash
    echo -n "public_key:secret_key" | base64
-   ```
    ```Windows PowerShell
    [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("public_key:secret_key"))
    ```
