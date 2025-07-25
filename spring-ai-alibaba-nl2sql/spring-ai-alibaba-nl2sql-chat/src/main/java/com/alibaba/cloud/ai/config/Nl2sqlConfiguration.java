@@ -119,7 +119,7 @@ public class Nl2sqlConfiguration {
 			.addNode(KEYWORD_EXTRACT_NODE, node_async(new KeywordExtractNode(nl2SqlService)))
 			.addNode(SCHEMA_RECALL_NODE, node_async(new SchemaRecallNode(schemaService)))
 			.addNode(TABLE_RELATION_NODE, node_async(new TableRelationNode(schemaService, nl2SqlService)))
-			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(nl2SqlService)))
+			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder, nl2SqlService)))
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
 			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(dbAccessor, dbConfig)))
