@@ -51,3 +51,9 @@ logging:
 
 namespace:
   value: default
+
+agent:
+  # Initialize save agent on startup
+  init: true
+  # Serialize: fastjson | jackson
+  serialize: jackson
