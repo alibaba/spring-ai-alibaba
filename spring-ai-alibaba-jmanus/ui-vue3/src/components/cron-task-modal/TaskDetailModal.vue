@@ -146,7 +146,7 @@ const handleOverlayClick = (e: MouseEvent) => {
 }
 
 const handleSave = async () => {
-  if (!formData.value.cronName?.trim() || !formData.value.cronTime?.trim()) {
+  if (!formData.value.cronName.trim() || !formData.value.cronTime.trim()) {
     return
   }
 
@@ -157,7 +157,7 @@ const handleSave = async () => {
       ...(props.task?.id !== undefined && { id: props.task.id }),
       cronName: formData.value.cronName.trim(),
       cronTime: formData.value.cronTime.trim(),
-      planDesc: formData.value.planDesc?.trim() || '',
+      planDesc: formData.value.planDesc.trim() || '',
       status: formData.value.status
     }
     emit('save', taskToSave)
@@ -179,7 +179,7 @@ watch(
         cronName: newTask.cronName || '',
         cronTime: newTask.cronTime || '',
         planDesc: newTask.planDesc || '',
-        status: newTask.status ?? 1,
+        status: newTask.status || 1,
       }
     }
   },

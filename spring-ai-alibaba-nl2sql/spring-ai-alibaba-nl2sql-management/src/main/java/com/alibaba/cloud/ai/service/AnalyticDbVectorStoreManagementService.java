@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.service;
 
-import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStoreProperties;
 import com.alibaba.cloud.ai.config.ConditionalOnADBEnabled;
 import com.alibaba.cloud.ai.dbconnector.DbAccessor;
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
@@ -27,6 +26,7 @@ import com.alibaba.cloud.ai.request.DeleteRequest;
 import com.alibaba.cloud.ai.request.EvidenceRequest;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.request.SearchRequest;
+import com.alibaba.cloud.ai.vectorstore.analyticdb.AnalyticDbVectorStoreProperties;
 import com.aliyun.gpdb20160503.Client;
 import com.aliyun.gpdb20160503.models.DeleteCollectionDataRequest;
 import com.aliyun.gpdb20160503.models.DeleteCollectionDataResponse;
