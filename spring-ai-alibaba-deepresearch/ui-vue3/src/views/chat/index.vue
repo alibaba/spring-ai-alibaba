@@ -160,6 +160,7 @@ import { useMessageStore } from '@/store/MessageStore'
 import { useConversationStore } from '@/store/ConversationStore'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfigStore } from '@/store/ConfigStore'
+import QueryList from './QueryList.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -205,6 +206,7 @@ if (!current) {
     messageStore.currentState[convId] = current
   }
 }
+
 const [agent] = useXAgent({
   request: async ({ message }, { onSuccess, onUpdate, onError }) => {
     senderLoading.value = true
@@ -216,122 +218,41 @@ const [agent] = useXAgent({
     }
 
     let content = ''
+    let requestBody: any = {}
+    let isAcceptPlan = false
 
+    if (message === 'ModifyPlan') {
+      current.aiType = 'onDS'
+      isAcceptPlan = false
+    } else isAcceptPlan = true
+
+    requestBody = {
+      ...configStore.chatConfig,
+      query: message,
+    }
+
+    let url = ''
     switch (current.aiType) {
       case 'normal': {
-        const xStreamBody = new XStreamBody('/chat/stream', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-          },
-          body: {
-            ...configStore.chatConfig,
-            query: message,
-          },
-        })
-
-        try {
-          await xStreamBody.readStream((chunk: any) => {
-            onUpdate(chunk)
-          })
-        } catch (e: any) {
-          console.error(e.statusText)
-          onError(e.statusText)
-        }
-
-        content = xStreamBody.content()
+        url = '/chat/stream'
         break
       }
-
       case 'startDS': {
+        url = '/chat/resume'
+        requestBody.feed_back = false
         current.deepResearchDetail = true
-
-        if (current.autoAccepted) {
-          content = 'startDS阶段，已自动接受，跳过调用'
-          break
-        }
-
-        const xStreamBody = new XStreamBody('/chat/resume', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-          },
-          body: {
-            ...configStore.chatConfig,
-            query: message,
-            feed_back: false, 
-          },
-        })
-
-        try {
-          await xStreamBody.readStream((chunk: any) => {
-            onUpdate(chunk)
-          })
-        } catch (e: any) {
-          console.error(e.statusText)
-          onError(e.statusText)
-        }
-
-        content = xStreamBody.content()
         break
       }
-
       case 'onDS': {
-        const xStreamBody = new XStreamBody('/chat/resume', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-          },
-          body: {
-            ...configStore.chatConfig,
-            query: message,
-            feed_back: false,
-          },
-        })
-
-        try {
-          await xStreamBody.readStream((chunk: any) => {
-            onUpdate(chunk)
-          })
-        } catch (e: any) {
-          console.error(e.statusText)
-          onError(e.statusText)
-        }
-
-        content = xStreamBody.content()
+        url = '/chat/resume'
+        requestBody.feed_back = isAcceptPlan
         break
       }
-
       case 'endDS': {
-        const xStreamBody = new XStreamBody('/chat/resume', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-          },
-          body: {
-            ...configStore.chatConfig,
-            query: message,
-            feed_back: true,
-          },
-        })
-
-        try {
-          await xStreamBody.readStream((chunk: any) => {
-            onUpdate(chunk)
-          })
-        } catch (e: any) {
-          console.error(e.statusText)
-          onError(e.statusText)
-        }
-
-        content = xStreamBody.content()
+        url = '/chat/resume'
+        requestBody.feed_back = true // endDS 反馈
         break
       }
-
       default: {
         onError(new Error(`未知的 aiType: ${current.aiType}`))
         senderLoading.value = false
@@ -339,9 +260,25 @@ const [agent] = useXAgent({
       }
     }
 
-    if (current.deepResearch) {
-      messageStore.nextAIType()
+    const xStreamBody = new XStreamBody(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      },
+      body: requestBody,
+    })
+
+    try {
+      await xStreamBody.readStream((chunk: any) => {
+        onUpdate(chunk)
+      })
+    } catch (e: any) {
+      console.error('请求错误:', e)
+      onError(e instanceof Error ? e : new Error(e?.statusText || '未知错误'))
     }
+
+    content = xStreamBody.content()
 
     onSuccess(content)
     senderLoading.value = false
@@ -362,6 +299,13 @@ if (convId) {
 const content = ref('')
 const senderLoading = ref(false)
 
+if (convId) {
+  const his_messages = messageStore.history[convId]
+  if (his_messages) {
+    messages.value = [...his_messages]
+  }
+}
+
 const submitHandle = (nextContent: any) => {
   current.aiType = 'normal'
   onRequest(nextContent)
@@ -381,39 +325,42 @@ function deepResearch() {
   current.deepResearchDetail = !current.deepResearchDetail
 }
 
+function renderAsMarkdown(msg: any) {
+  if (typeof msg === 'string') return <MD content={msg} />
+  try {
+    return <MD content={JSON.stringify(msg, null, 2)} />
+  } catch {
+    return <MD content="⚠️ 无法解析的内容" />
+  }
+}
+
 function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any {
   switch (status) {
     case 'success':
       if (!isCurrent) {
-        // todo 历史数据渲染
         return <MD content={msg} />
       }
+
       if (current.deepResearch) {
         if (current.aiType === 'startDS') {
           const { Paragraph, Text } = Typography
-
-          const customizationProps = (
-            title: any,
-            description: string,
-            para: string | null,
-            footer?: any
-          ): ThoughtChainItem => {
-            return {
-              title,
-              description,
-              icon: <CheckCircleOutlined />,
-              extra: '',
-              footer,
-              content: para ? (
-                <Typography>
-                  <Paragraph>
-                    <MD content={para} />
-                  </Paragraph>
-                </Typography>
-              ) : (
-                ''
-              ),
+          let optimizeQueries: string[] = []
+          try {
+            const parsed = typeof msg === 'string' ? JSON.parse(msg) : msg
+            if (parsed?.node === '__START__') {
+              optimizeQueries = parsed.data?.optimize_queries || []
             }
+            console.log(optimizeQueries)
+          } catch (err) {
+            console.error('解析 START 节点失败', err, msg)
+          }
+
+          const handleStartResearch = () => {
+            messageStore.nextAIType()
+            onRequest('Start')
+          }
+          const handleModifyPlan = () => {
+            onRequest('ModifyPlan')
           }
 
           const items: ThoughtChainProps['items'] = [
@@ -425,7 +372,7 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
               content: (
                 <Typography>
                   <Paragraph>
-                    <MD content="(1) xxx" />
+                    <QueryList queries={optimizeQueries} />
                   </Paragraph>
                 </Typography>
               ),
@@ -436,16 +383,19 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
               icon: <DotChartOutlined />,
               extra: '',
             },
-
             {
               status: 'success',
               title: '研究报告',
               icon: <BgColorsOutlined />,
               description: <i>只需要几分钟就可以准备好</i>,
               footer: (
-                <Flex style="margin-left: auto" gap="middle">
-                  <Button type="primary">修改方案</Button>
-                  <Button type="primary">开始研究</Button>
+                <Flex style={{ marginLeft: 'auto' }} gap="middle">
+                  <Button type="primary" onClick={handleModifyPlan}>
+                    修改方案
+                  </Button>
+                  <Button type="primary" onClick={handleStartResearch}>
+                    开始研究
+                  </Button>
                 </Flex>
               ),
               extra: '',
@@ -456,12 +406,12 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
             <>
               这是该主题的研究方案。如果你需要进行更新，请告诉我。
               <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
-                <h2>{{ msg }}</h2>
                 <ThoughtChain items={items} />
               </Card>
             </>
           )
         }
+
         if (current.aiType === 'onDS') {
           return (
             <div>
@@ -472,8 +422,24 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
           )
         }
       }
+
+      if (current.aiType === 'endDS') {
+        return (
+          <div>
+            <Button type="primary" onClick={deepResearch}>
+              查看最终研究细节
+            </Button>
+            <Card title="深度研究报告" style={{ marginTop: '16px' }}>
+              <MD content={msg} />
+            </Card>
+          </div>
+        )
+      }
+
+      return <MD content={typeof msg === 'string' ? msg : JSON.stringify(msg, null, 2)} />
+
     default:
-      return msg
+      return renderAsMarkdown(msg)
   }
 }
 

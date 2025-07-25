@@ -48,6 +48,7 @@
     "@tsconfig/node18": "^18.2.2",
     "@types/jsdom": "^21.1.6",
     "@types/lodash": "^4.14.202",
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^18.19.3",
     "@types/nprogress": "^0.2.3",
     "@vitejs/plugin-vue": "^4.5.2",
