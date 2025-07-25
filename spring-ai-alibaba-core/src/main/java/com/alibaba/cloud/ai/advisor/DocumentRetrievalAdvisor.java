@@ -31,13 +31,6 @@ import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.util.Assert;
 
-/**
- * Title Document retrieval advisor.<br>
- * Description Document retrieval advisor.<br>
- *
- * @author yuanci.ytb
- * @since 1.0.0-M2
- */
 public class DocumentRetrievalAdvisor implements BaseAdvisor {
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
@@ -79,8 +72,56 @@ public class DocumentRetrievalAdvisor implements BaseAdvisor {
 		this.order = order;
 	}
 
-	@Override
+	public DocumentRetrievalAdvisor(List<DocumentRetriever> retrievers) {
+		this(retrievers, DEFAULT_PROMPT_TEMPLATE, DEFAULT_ORDER);
+	}
 
+	public DocumentRetrievalAdvisor(List<DocumentRetriever> retrievers, PromptTemplate promptTemplate) {
+		this(retrievers, promptTemplate, DEFAULT_ORDER);
+	}
+
+	public DocumentRetrievalAdvisor(List<DocumentRetriever> retrievers, PromptTemplate promptTemplate, int order) {
+		Assert.notEmpty(retrievers, "The retrievers list must not be null or empty!");
+		Assert.notNull(promptTemplate, "The promptTemplate must not be null!");
+
+		// Create a composite retriever for multiple vector stores
+		this.retriever = new CompositeDocumentRetriever(retrievers);
+		this.promptTemplate = promptTemplate;
+		this.order = order;
+	}
+
+	/**
+	 * Constructor for multiple vector stores with custom merge strategy
+	 * @param retrievers List of document retrievers for multi-vector store support
+	 * @param mergeStrategy Strategy for merging results from multiple retrievers
+	 * @param maxResultsPerRetriever Maximum results per retriever
+	 */
+	public DocumentRetrievalAdvisor(List<DocumentRetriever> retrievers,
+			CompositeDocumentRetriever.ResultMergeStrategy mergeStrategy, int maxResultsPerRetriever) {
+		this(retrievers, mergeStrategy, maxResultsPerRetriever, DEFAULT_PROMPT_TEMPLATE, DEFAULT_ORDER);
+	}
+
+	/**
+	 * Constructor for multiple vector stores with full customization
+	 * @param retrievers List of document retrievers for multi-vector store support
+	 * @param mergeStrategy Strategy for merging results from multiple retrievers
+	 * @param maxResultsPerRetriever Maximum results per retriever
+	 * @param promptTemplate Custom prompt template
+	 * @param order Advisor execution order
+	 */
+	public DocumentRetrievalAdvisor(List<DocumentRetriever> retrievers,
+			CompositeDocumentRetriever.ResultMergeStrategy mergeStrategy, int maxResultsPerRetriever,
+			PromptTemplate promptTemplate, int order) {
+		Assert.notEmpty(retrievers, "The retrievers list must not be null or empty!");
+		Assert.notNull(promptTemplate, "The promptTemplate must not be null!");
+
+		// Create a composite retriever for multiple vector stores with custom settings
+		this.retriever = new CompositeDocumentRetriever(retrievers, maxResultsPerRetriever, mergeStrategy);
+		this.promptTemplate = promptTemplate;
+		this.order = order;
+	}
+
+	@Override
 	public int getOrder() {
 		return this.order;
 	}
@@ -121,7 +162,6 @@ public class DocumentRetrievalAdvisor implements BaseAdvisor {
 			.build();
 	}
 
-	
 	public static class CompositeDocumentRetriever implements DocumentRetriever {
 
 		private final List<DocumentRetriever> retrievers;
@@ -130,14 +170,12 @@ public class DocumentRetrievalAdvisor implements BaseAdvisor {
 
 		private final ResultMergeStrategy mergeStrategy;
 
-		
 		public enum ResultMergeStrategy {
 
-			
 			SIMPLE_MERGE,
-			
+
 			SCORE_BASED,
-			
+
 			ROUND_ROBIN
 
 		}
@@ -170,12 +208,10 @@ public class DocumentRetrievalAdvisor implements BaseAdvisor {
 
 			List<Document> allDocuments = new ArrayList<>();
 
-			
 			for (DocumentRetriever retriever : retrievers) {
 				try {
 					List<Document> documents = retriever.retrieve(query);
 					if (documents != null && !documents.isEmpty()) {
-						
 						List<Document> limitedDocuments = documents.stream()
 							.limit(maxResultsPerRetriever)
 							.collect(Collectors.toList());
@@ -183,16 +219,13 @@ public class DocumentRetrievalAdvisor implements BaseAdvisor {
 					}
 				}
 				catch (Exception e) {
-					
 					System.err.println("Error retrieving from one of the retrievers: " + e.getMessage());
 				}
 			}
 
-			
 			return mergeResults(allDocuments);
 		}
 
-		
 		private List<Document> roundRobinRetrieve(Query query) {
 			List<List<Document>> allResults = new ArrayList<>();
 
@@ -200,7 +233,7 @@ public class DocumentRetrievalAdvisor implements BaseAdvisor {
 				try {
 					List<Document> documents = retriever.retrieve(query);
 					if (documents != null && !documents.isEmpty()) {
-						
+
 						List<Document> limitedDocuments = documents.stream()
 							.limit(maxResultsPerRetriever)
 							.collect(Collectors.toList());
@@ -211,13 +244,11 @@ public class DocumentRetrievalAdvisor implements BaseAdvisor {
 					}
 				}
 				catch (Exception e) {
-					
 					System.err.println("Error retrieving from one of the retrievers: " + e.getMessage());
 					allResults.add(new ArrayList<>());
 				}
 			}
 
-		
 			List<Document> result = new ArrayList<>();
 			int maxSize = allResults.stream().mapToInt(List::size).max().orElse(0);
 
@@ -244,22 +275,20 @@ public class DocumentRetrievalAdvisor implements BaseAdvisor {
 					return documents.stream().sorted((d1, d2) -> {
 						Double score1 = d1.getScore();
 						Double score2 = d2.getScore();
-						
+
 						if (score1 == null)
 							score1 = 0.0;
 						if (score2 == null)
 							score2 = 0.0;
-						return Double.compare(score2, score1); 
+						return Double.compare(score2, score1);
 					}).collect(Collectors.toList());
 				case ROUND_ROBIN:
-					
 					return documents;
 				default:
 					return documents;
 			}
 		}
 
-		
 		public static class Builder {
 
 			private List<DocumentRetriever> retrievers = new ArrayList<>();
