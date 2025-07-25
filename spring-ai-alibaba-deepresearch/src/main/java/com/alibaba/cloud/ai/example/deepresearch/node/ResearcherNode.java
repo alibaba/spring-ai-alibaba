@@ -143,10 +143,11 @@ public class ResearcherNode implements NodeAction {
 		}
 
 		List<Map<String, String>> siteInformation = new ArrayList<>();
-		Object obj = state.value("site_information").get();
+		Object obj = state.value("site_information", new ArrayList<Map<String, String>>());
 		if (obj instanceof List<?>) {
 			siteInformation = (List<Map<String, String>>) obj;
 		}
+
 		List<Map<String, String>> searchResults = searchInfoService
 			.searchInfo(state.value("enable_search_filter", true), searchEnum, originTaskContent);
 		siteInformation.addAll(searchResults);
