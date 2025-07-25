@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.prompt.PromptConstant;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
+import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,28 +53,29 @@ public class PlannerNode implements NodeAction {
 		String input = (String) state.value(INPUT_KEY).orElseThrow();
 		SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
 		String schemaStr = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
-		Map<String, Object> params = Map.of("user_question", input, "schema", schemaStr);
+
+		// Check if this is a repair attempt
+		String validationError = StateUtils.getStringValue(state, PLAN_VALIDATION_ERROR, null);
+		String userPrompt;
+		if (validationError != null) {
+			logger.warn("This is a plan repair attempt. Previous error: {}", validationError);
+			String previousPlan = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT, "");
+			userPrompt = String.format(
+					"The previous plan you generated failed validation with the following error: %s\n\nHere is the faulty plan:\n%s\n\nPlease correct the plan and provide a new, valid one to answer the original question: %s",
+					validationError, previousPlan, input);
+		}
+		else {
+			userPrompt = input;
+		}
+
+		Map<String, Object> params = Map.of("user_question", userPrompt, "schema", schemaStr);
 		String plannerPrompt = PromptConstant.getPlannerPromptTemplate().render(params);
 		Flux<ChatResponse> chatResponseFlux = chatClient.prompt().user(plannerPrompt).stream().chatResponse();
 
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
 				v -> Map.of(PLANNER_NODE_OUTPUT, v), chatResponseFlux, StreamResponseType.PLAN_GENERATION);
 
-		// var generator = StreamingChatGenerator.builder()
-		// .startingNode(PLANNER_NODE)
-		// .startingState(state)
-		// .mapResult(response -> {
-		// logger.info("{} node output content: {}", this.getClass().getSimpleName(),
-		// response.getResult().getOutput().getText());
-		// return Map.of(PLANNER_NODE_OUTPUT,
-		// Objects.requireNonNull(response.getResult().getOutput().getText()));
-		// })
-		// .build(chatResponseFlux.map(response ->
-		// ChatResponseUtil.createCustomStatusResponse(response.getResult().getOutput().getText(),
-		// StreamResponseType.PLAN_GENERATION)));
-
-		Map<String, Object> updated = Map.of(PLANNER_NODE_OUTPUT, generator);
-		return updated;
+		return Map.of(PLANNER_NODE_OUTPUT, generator);
 	}
 
 }

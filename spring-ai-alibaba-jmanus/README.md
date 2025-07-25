@@ -55,7 +55,7 @@ Allows you to precisely control every execution detail, providing extremely high
 
 Supports precise extraction of target information from massive content without relying on specific long-context models.
 
-![Image](https://github.com/user-attachments/assets/a0245658-fbb7-41dc-989f-86574592f188)
+![Image](https://github.com/user-attachments/assets/f23e5f27-91e1-4262-83d9-5bfbe5d644d5)
 
 
 ## 🚀 Quick Start
@@ -223,9 +223,12 @@ Navigate to `http://localhost:18080` in your browser.
 
 🎉 **Congratulations!** Your multi-agent system is now live and ready for action.
 
+### 🔒 Security Notice
+
+> 💡 **AI Application Security**: As with any AI-powered application in production environments, we recommend implementing appropriate authentication and access controls. For JManus specifically, this includes securing access to model chat interfaces, MCP service configuration, built-in tool management, and system parameter adjustment features to prevent misuse and unauthorized access.
 
 
-## stable Release
+## Stable Release
 
 you can find stable release from here:
 [release](https://github.com/rainerWJY/Java-Open-Manus/releases)
