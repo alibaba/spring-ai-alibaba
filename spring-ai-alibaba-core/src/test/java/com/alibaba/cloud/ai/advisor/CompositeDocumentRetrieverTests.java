@@ -511,19 +511,16 @@ class CompositeDocumentRetrieverTests {
 
 	@Test
 	void testDocumentRetrievalAdvisorWithMultipleVectorStores() {
-		
+
 		DocumentRetriever retriever1 = mock(DocumentRetriever.class);
 		DocumentRetriever retriever2 = mock(DocumentRetriever.class);
 
-	
 		when(retriever1.retrieve(any(Query.class))).thenReturn(List.of(createDocumentWithScore("1", "文档1", 0.9)));
 		when(retriever2.retrieve(any(Query.class))).thenReturn(List.of(createDocumentWithScore("2", "文档2", 0.8)));
 
-		
 		List<DocumentRetriever> retrievers = Arrays.asList(retriever1, retriever2);
 		DocumentRetrievalAdvisor advisor = new DocumentRetrievalAdvisor(retrievers);
 
-	
 		assertThat(advisor).isNotNull();
 		assertThat(advisor.getOrder()).isEqualTo(0);
 
@@ -532,7 +529,7 @@ class CompositeDocumentRetrieverTests {
 
 	@Test
 	void testMultipleVectorStoresWithDefaults() {
-		
+
 		DocumentRetriever techRetriever = mock(DocumentRetriever.class);
 		DocumentRetriever policyRetriever = mock(DocumentRetriever.class);
 		DocumentRetriever productRetriever = mock(DocumentRetriever.class);
@@ -544,11 +541,9 @@ class CompositeDocumentRetrieverTests {
 		when(productRetriever.retrieve(any(Query.class)))
 			.thenReturn(List.of(createDocumentWithScore("product", "产品文档：云原生方案", 0.85)));
 
-		
 		List<DocumentRetriever> retrievers = Arrays.asList(techRetriever, policyRetriever, productRetriever);
 		DocumentRetrievalAdvisor advisor = new DocumentRetrievalAdvisor(retrievers);
 
-		
 		assertThat(advisor).isNotNull();
 		assertThat(advisor.getOrder()).isEqualTo(0);
 
@@ -557,11 +552,10 @@ class CompositeDocumentRetrieverTests {
 
 	@Test
 	void testMultipleVectorStoresWithCustomStrategy() {
-	
+
 		DocumentRetriever retriever1 = mock(DocumentRetriever.class);
 		DocumentRetriever retriever2 = mock(DocumentRetriever.class);
 
-		
 		when(retriever1.retrieve(any(Query.class))).thenReturn(List.of(createDocumentWithScore("1", "文档1", 0.9)));
 		when(retriever2.retrieve(any(Query.class))).thenReturn(List.of(createDocumentWithScore("2", "文档2", 0.8)));
 
@@ -569,17 +563,15 @@ class CompositeDocumentRetrieverTests {
 		DocumentRetrievalAdvisor advisor = new DocumentRetrievalAdvisor(retrievers,
 				CompositeDocumentRetriever.ResultMergeStrategy.SCORE_BASED, 5);
 
-		
 		assertThat(advisor).isNotNull();
 		assertThat(advisor.getOrder()).isEqualTo(0);
 
 		System.out.println("✅ 多向量库自定义策略功能验证成功");
 	}
 
-	
 	@Test
 	void testUserChoiceBetweenSingleAndMultiple() {
-	
+
 		DocumentRetriever singleRetriever = mock(DocumentRetriever.class);
 		DocumentRetriever multiRetriever1 = mock(DocumentRetriever.class);
 		DocumentRetriever multiRetriever2 = mock(DocumentRetriever.class);
@@ -591,36 +583,31 @@ class CompositeDocumentRetrieverTests {
 		when(multiRetriever2.retrieve(any(Query.class)))
 			.thenReturn(List.of(createDocumentWithScore("multi2", "多库结果2", 0.7)));
 
-		
 		boolean needMultipleVectorStores = true;
 
 		DocumentRetrievalAdvisor advisor;
 		if (needMultipleVectorStores) {
-		
+
 			advisor = new DocumentRetrievalAdvisor(Arrays.asList(multiRetriever1, multiRetriever2));
 			System.out.println("📚 选择了多向量库调用方式");
 		}
 		else {
-		
+
 			advisor = new DocumentRetrievalAdvisor(singleRetriever);
 			System.out.println("📖 选择了单向量库调用方式");
 		}
 
-	
 		assertThat(advisor).isNotNull();
 		System.out.println("✅ 用户选择功能验证成功：支持在单向量库和多向量库之间灵活选择");
 	}
 
-	
 	@Test
 	void testBusinessScenarioIntegration() {
 		System.out.println("=== 业务场景集成测试 ===");
 
-		
 		String department = "技术部门";
 		String queryComplexity = "复杂查询";
 
-		
 		DocumentRetriever techKB = mock(DocumentRetriever.class);
 		DocumentRetriever policyKB = mock(DocumentRetriever.class);
 		DocumentRetriever productKB = mock(DocumentRetriever.class);
@@ -631,74 +618,67 @@ class CompositeDocumentRetrieverTests {
 		when(productKB.retrieve(any(Query.class)))
 			.thenReturn(List.of(createDocumentWithScore("product", "产品知识库文档", 0.92)));
 
-		
 		DocumentRetrievalAdvisor advisor = createAdvisorForDepartment(department, queryComplexity, techKB, policyKB,
 				productKB);
 
-		
 		assertThat(advisor).isNotNull();
 		System.out.println("部门: " + department + ", 查询类型: " + queryComplexity);
 		System.out.println("✅ 业务场景集成验证成功");
 	}
 
-	
 	private DocumentRetrievalAdvisor createAdvisorForDepartment(String department, String queryComplexity,
 			DocumentRetriever techKB, DocumentRetriever policyKB, DocumentRetriever productKB) {
 
 		if ("技术部门".equals(department)) {
 			if ("简单查询".equals(queryComplexity)) {
-				
+
 				return new DocumentRetrievalAdvisor(techKB);
 			}
 			else {
-			
+
 				return new DocumentRetrievalAdvisor(Arrays.asList(techKB, productKB),
 						CompositeDocumentRetriever.ResultMergeStrategy.SCORE_BASED, 10);
 			}
 		}
 		else if ("管理部门".equals(department)) {
 			if ("简单查询".equals(queryComplexity)) {
-			
+
 				return new DocumentRetrievalAdvisor(policyKB);
 			}
 			else {
-			
+
 				return new DocumentRetrievalAdvisor(Arrays.asList(policyKB, productKB),
 						CompositeDocumentRetriever.ResultMergeStrategy.SIMPLE_MERGE, 8);
 			}
 		}
 		else {
-		
+
 			if ("复杂查询".equals(queryComplexity)) {
-			
+
 				return new DocumentRetrievalAdvisor(Arrays.asList(techKB, policyKB, productKB));
 			}
 			else {
-			
+
 				return new DocumentRetrievalAdvisor(techKB);
 			}
 		}
 	}
 
-	
 	@Test
 	void testCompatibilityWithExistingCode() {
-		
+
 		DocumentRetriever existingRetriever = mock(DocumentRetriever.class);
 		when(existingRetriever.retrieve(any(Query.class)))
 			.thenReturn(List.of(createDocumentWithScore("existing", "现有功能文档", 0.9)));
 
-		
 		DocumentRetrievalAdvisor advisor1 = new DocumentRetrievalAdvisor(existingRetriever);
 
-		
 		org.springframework.ai.chat.prompt.PromptTemplate customTemplate = new org.springframework.ai.chat.prompt.PromptTemplate(
 				"Custom prompt: {query}");
 
 		DocumentRetrievalAdvisor advisor2 = new DocumentRetrievalAdvisor(existingRetriever, customTemplate);
 		DocumentRetrievalAdvisor advisor3 = new DocumentRetrievalAdvisor(existingRetriever, customTemplate, 1);
 
-		
 		assertThat(advisor1).isNotNull();
 		assertThat(advisor2).isNotNull();
 		assertThat(advisor3).isNotNull();
