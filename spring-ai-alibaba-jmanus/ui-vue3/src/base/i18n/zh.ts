@@ -333,6 +333,10 @@ const words: I18nType = {
       deleteConfirm: '删除确认',
       deleteConfirmText: '确定要删除',
       deleteWarning: '此操作不可恢复。',
+      exportSuccess: '配置导出成功',
+      exportFailed: '导出配置失败',
+      importSuccess: '配置导入成功',
+      importFailed: '导入配置失败',
     },
     namespaceConfig: {
       title: '命名空间配置',

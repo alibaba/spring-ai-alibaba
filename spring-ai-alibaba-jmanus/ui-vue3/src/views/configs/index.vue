@@ -113,7 +113,7 @@ const categories = computed(() => [
     key: 'namespace',
     label: t('config.categories.namespace'),
     disabled: false,
-    icon: 'carbon:repo-artifact',
+    icon: 'carbon:batch-job',
   },
 ])
 

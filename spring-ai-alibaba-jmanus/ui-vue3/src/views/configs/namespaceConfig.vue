@@ -345,6 +345,7 @@ const updateNamespace = async () => {
     namespaces.map(each => ({
       id: each.code,
       name: each.name,
+      host: each.host,
     }))
   )
 }

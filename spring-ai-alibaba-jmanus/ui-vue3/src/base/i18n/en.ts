@@ -333,6 +333,10 @@ const words: I18nType = {
       deleteConfirm: 'Delete Confirmation',
       deleteConfirmText: 'Are you sure you want to delete',
       deleteWarning: 'This action cannot be undone.',
+      exportSuccess: 'Configuration exported successfully',
+      exportFailed: 'Failed to export configuration',
+      importSuccess: 'Configuration imported successfully',
+      importFailed: 'Failed to import configuration',
     },
     namespaceConfig: {
       title: 'Namespace Configuration',
@@ -726,7 +730,7 @@ const words: I18nType = {
       },
       queryplan: {
         title: 'Query Person Info',
-        description: 'Query Shenxun Ali\'s all info and optimize termination structure column',
+        description: "Query Shenxun Ali's all info and optimize termination structure column",
         prompt: 'Use browser, based on Baidu, to query person info',
       },
     },
@@ -822,7 +826,8 @@ const words: I18nType = {
     disable: 'Disable',
     delete: 'Delete',
     deleteConfirm: 'Confirm Delete',
-    deleteConfirmMessage: 'Are you sure you want to delete task "{taskName}"? This action cannot be undone.',
+    deleteConfirmMessage:
+      'Are you sure you want to delete task "{taskName}"? This action cannot be undone.',
     nextExecution: 'Next Execution Time',
     createTime: 'Create Time',
     updateTime: 'Update Time',

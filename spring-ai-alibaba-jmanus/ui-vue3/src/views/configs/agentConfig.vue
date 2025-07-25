@@ -719,6 +719,8 @@ watch(
   () => namespace.value,
   (newNamespace, oldNamespace) => {
     if (newNamespace !== oldNamespace) {
+      agents.splice(0)
+      selectedAgent.value = null
       loadData()
     }
   }

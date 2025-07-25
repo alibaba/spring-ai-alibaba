@@ -97,7 +97,7 @@ const getAllNamespaces = async () => {
   let defaultNamespaceCode = ''
 
   const matchedNamespace = loadedNamespaces.find(
-    namespace => namespace.host && namespace.host.includes(currentHost)
+    namespace => namespace.host?.includes(currentHost)
   )
 
   if (matchedNamespace) {
