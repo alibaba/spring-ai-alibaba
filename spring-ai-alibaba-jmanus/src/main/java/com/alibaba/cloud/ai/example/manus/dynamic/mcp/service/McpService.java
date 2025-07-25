@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.service;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -390,6 +391,16 @@ public class McpService implements IMcpService {
 					if (config.getUrl() == null || config.getUrl().isEmpty()) {
 						throw new IllegalArgumentException(
 								"Missing required 'url' field in server configuration for " + name);
+					}
+					try {
+						new java.net.URL(config.getUrl());
+					}
+					catch (MalformedURLException e) {
+						throw new IllegalArgumentException("Invalid URL format: " + config.getUrl());
+					}
+					if (!config.getUrl().endsWith("/sse")) {
+						throw new IllegalArgumentException(
+								"URL path must end with /sse, current url: " + config.getUrl());
 					}
 					if (config.getCommand() != null && !config.getCommand().isEmpty()) {
 						throw new IllegalArgumentException(
