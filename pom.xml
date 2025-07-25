@@ -149,9 +149,6 @@
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
 
         <!-- Spring AI Alibaba MCP -->
-        <!-- Nacos2 version -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-client</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-server</module>
         <!-- Nacos3 version -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-discovery</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-register</module>
