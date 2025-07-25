@@ -524,7 +524,7 @@ class CompositeDocumentRetrieverTests {
 		assertThat(advisor).isNotNull();
 		assertThat(advisor.getOrder()).isEqualTo(0);
 
-		System.out.println("✅ 多向量库DocumentRetrievalAdvisor验证成功");
+		System.out.println("多向量库DocumentRetrievalAdvisor验证成功");
 	}
 
 	@Test
@@ -547,7 +547,7 @@ class CompositeDocumentRetrieverTests {
 		assertThat(advisor).isNotNull();
 		assertThat(advisor.getOrder()).isEqualTo(0);
 
-		System.out.println("✅ 多向量库默认设置功能验证成功");
+		System.out.println("多向量库默认设置功能验证成功");
 	}
 
 	@Test
@@ -566,7 +566,7 @@ class CompositeDocumentRetrieverTests {
 		assertThat(advisor).isNotNull();
 		assertThat(advisor.getOrder()).isEqualTo(0);
 
-		System.out.println("✅ 多向量库自定义策略功能验证成功");
+		System.out.println("多向量库自定义策略功能验证成功");
 	}
 
 	@Test
@@ -589,16 +589,16 @@ class CompositeDocumentRetrieverTests {
 		if (needMultipleVectorStores) {
 
 			advisor = new DocumentRetrievalAdvisor(Arrays.asList(multiRetriever1, multiRetriever2));
-			System.out.println("📚 选择了多向量库调用方式");
+			System.out.println("选择了多向量库调用方式");
 		}
 		else {
 
 			advisor = new DocumentRetrievalAdvisor(singleRetriever);
-			System.out.println("📖 选择了单向量库调用方式");
+			System.out.println("选择了单向量库调用方式");
 		}
 
 		assertThat(advisor).isNotNull();
-		System.out.println("✅ 用户选择功能验证成功：支持在单向量库和多向量库之间灵活选择");
+		System.out.println("用户选择功能验证成功：支持在单向量库和多向量库之间灵活选择");
 	}
 
 	@Test
@@ -623,7 +623,7 @@ class CompositeDocumentRetrieverTests {
 
 		assertThat(advisor).isNotNull();
 		System.out.println("部门: " + department + ", 查询类型: " + queryComplexity);
-		System.out.println("✅ 业务场景集成验证成功");
+		System.out.println("业务场景集成验证成功");
 	}
 
 	private DocumentRetrievalAdvisor createAdvisorForDepartment(String department, String queryComplexity,
@@ -684,7 +684,7 @@ class CompositeDocumentRetrieverTests {
 		assertThat(advisor3).isNotNull();
 		assertThat(advisor3.getOrder()).isEqualTo(1);
 
-		System.out.println("✅ 与现有代码兼容性验证成功：所有现有功能保持不变");
+		System.out.println("与现有代码兼容性验证成功：所有现有功能保持不变");
 	}
 
 }
