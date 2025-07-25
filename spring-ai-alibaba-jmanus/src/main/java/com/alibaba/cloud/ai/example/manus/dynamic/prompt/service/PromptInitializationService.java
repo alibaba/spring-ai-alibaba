@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.prompt.service;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.po.PromptEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.repository.PromptRepository;
 import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import org.slf4j.Logger;
