@@ -66,7 +66,8 @@ export class McpApiService {
       })
       
       if (!response.ok) {
-        throw new Error(`Failed to add MCP server: ${response.status}`)
+        const errorMessage = await new Response(response.body).text();
+        throw new Error(`Failed to add MCP server: ${errorMessage}`)
       }
       
       return { success: true, message: 'Successfully added MCP server' }

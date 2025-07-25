@@ -93,8 +93,12 @@ public class McpController {
 		catch (Exception e) {
 			logger.warn("Error checking JSON format, proceeding with original format", e);
 		}
-
-		mcpService.addMcpServer(requestVO);
+		try {
+			mcpService.addMcpServer(requestVO);
+		}
+		catch (Exception e) {
+			return ResponseEntity.internalServerError().body(e.getMessage());
+		}
 		return ResponseEntity.ok("success");
 	}
 
