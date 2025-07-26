@@ -24,7 +24,7 @@ import type {
 import axios from 'axios'
 
 const service: AxiosInstance = axios.create({
-  baseURL: '/api/v1',
+  baseURL: '',
   timeout: 30 * 1000,
 })
 const request: AxiosInterceptorManager<InternalAxiosRequestConfig> = service.interceptors.request
