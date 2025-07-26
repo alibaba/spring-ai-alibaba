@@ -16,8 +16,8 @@
 
 package com.alibaba.cloud.ai.config;
 
-import com.alibaba.cloud.ai.dbconnector.DbAccessor;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.connector.DbAccessor;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.dispatcher.*;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;

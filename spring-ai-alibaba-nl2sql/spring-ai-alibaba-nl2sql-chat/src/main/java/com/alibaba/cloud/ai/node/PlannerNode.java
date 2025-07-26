@@ -16,12 +16,12 @@
 
 package com.alibaba.cloud.ai.node;
 
-import com.alibaba.cloud.ai.constant.StreamResponseType;
+import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
+import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.prompt.PromptConstant;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
-import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
@@ -32,7 +32,10 @@ import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
-import static com.alibaba.cloud.ai.constant.Constant.*;
+import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
+import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_ERROR;
+import static com.alibaba.cloud.ai.constant.Constant.TABLE_RELATION_OUTPUT;
 
 /**
  * @author zhangshenghang

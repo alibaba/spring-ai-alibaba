@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.node;
 
-import com.alibaba.cloud.ai.constant.StreamResponseType;
+import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
@@ -36,7 +36,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.alibaba.cloud.ai.constant.Constant.*;
+import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
+import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
+import static com.alibaba.cloud.ai.constant.Constant.RESULT;
+import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE_OUTPUT;
 
 /**
  * Report generation node that creates comprehensive analysis reports based on execution

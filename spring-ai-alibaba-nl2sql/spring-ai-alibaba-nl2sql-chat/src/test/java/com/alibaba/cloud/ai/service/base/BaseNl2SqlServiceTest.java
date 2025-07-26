@@ -15,10 +15,10 @@
  */
 package com.alibaba.cloud.ai.service.base;
 
-import com.alibaba.cloud.ai.dbconnector.DbAccessor;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
-import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
-import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
+import com.alibaba.cloud.ai.connector.DbAccessor;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
+import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
+import com.alibaba.cloud.ai.connector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.dto.schema.ColumnDTO;
 import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.dto.schema.TableDTO;
