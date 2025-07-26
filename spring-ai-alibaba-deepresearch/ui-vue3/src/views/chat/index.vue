@@ -156,6 +156,7 @@ import MD from '@/components/md/index.vue'
 import Gap from '@/components/toolkit/Gap.vue'
 import Report from '@/components/report/index.vue'
 import { XStreamBody } from '@/utils/stream'
+import request from '@/utils/request'
 import { ScrollController } from '@/utils/scroll'
 import { useAuthStore } from '@/store/AuthStore'
 import { useMessageStore } from '@/store/MessageStore'
@@ -378,13 +379,26 @@ const submitHandle = (nextContent: any) => {
   }
 }
 
+// 开始研究
 function startDeepResearch() {
   messageStore.nextAIType()
   onRequest('开始研究')
 }
 
+// 下载报告
 function downDeepResearch(){
-  // TODO 下载报告
+  request({
+    url: '/deep-research/api/reports/export',
+    method: 'POST',
+    data: {
+      thread_id: convId,
+      format: 'pdf'
+    }
+  }).then(response => {
+    if(response.status === 'success') {
+      window.open('/deep-research/' + response.report_information.download_url, '_blank')
+    }
+  })
 }
 
 function deepResearch() {
@@ -516,13 +530,15 @@ function buildOnDSThoughtChain() : any {
 }
 
 function buildEndDSThoughtChain(jsonArray: any[]): any {
-  if(jsonArray.length === 0){
-      return
+  if(tempJsonArray.length === 0 && jsonArray.length === 0){
+    return
   }
+  const curJsonArray = tempJsonArray.length > 0 ? tempJsonArray : jsonArray
   const { Paragraph, Text } = Typography
   const items: ThoughtChainProps['items'] = []
+  let collapsible = { }
   // 获取背景调查节点
-  const backgroundInvestigatorNode = jsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
+  const backgroundInvestigatorNode = curJsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
   if(backgroundInvestigatorNode && backgroundInvestigatorNode.siteInformation){
       const results = backgroundInvestigatorNode.siteInformation
       const markdownContent = results.map((result, index) => {
@@ -543,6 +559,7 @@ function buildEndDSThoughtChain(jsonArray: any[]): any {
           ),
       }
       items.push(item)
+      collapsible = { expandedKeys: ['backgroundInvestigator'] }
   }
   const endItem: ThoughtChainItem = {
       status: 'success',
@@ -560,7 +577,7 @@ function buildEndDSThoughtChain(jsonArray: any[]): any {
       这是该主题的研究方案已完成，可以点击下载报告
       <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
         {/* <h2>{{ msg }}</h2> */}
-        <ThoughtChain items={items} collapsible={{ expandedKeys: ['backgroundInvestigator'] }} />
+        <ThoughtChain items={items} collapsible={collapsible} />
       </Card>
     </>
   )
