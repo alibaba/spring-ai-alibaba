@@ -195,6 +195,7 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("mcp_settings", new ReplaceStrategy());
 			keyStrategyHashMap.put("optimize_query_num", new ReplaceStrategy());
 			keyStrategyHashMap.put("user_upload_file", new ReplaceStrategy());
+			keyStrategyHashMap.put("session_id", new ReplaceStrategy());
 
 			keyStrategyHashMap.put("feed_back", new ReplaceStrategy());
 			keyStrategyHashMap.put("feed_back_content", new ReplaceStrategy());

@@ -66,6 +66,8 @@ public class ChatRequestProcess {
 		objectMap.put("search_engine", chatRequest.searchEngine());
 		objectMap.put("enable_search_filter", chatRequest.enableSearchFilter());
 		objectMap.put("optimize_query_num", chatRequest.optimizeQueryNum());
+		objectMap.put("session_id", chatRequest.threadId());
+		objectMap.put("user_upload_file", chatRequest.isUploadFile() != null && chatRequest.isUploadFile());
 	}
 
 }

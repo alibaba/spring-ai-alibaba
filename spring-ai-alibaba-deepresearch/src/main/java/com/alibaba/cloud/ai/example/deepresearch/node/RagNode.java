@@ -87,7 +87,7 @@ public class RagNode implements NodeAction {
 		state.value("user_id", String.class).ifPresent(v -> options.put("user_id", v));
 		options.put("query", queryText); // 添加查询文本供后处理使用
 
-		List<Document> documents;
+		List<Document> documents = new ArrayList<>();
 
 		// 使用统一的RAG处理器或传统的策略模式
 		if (hybridRagProcessor != null) {
@@ -95,7 +95,7 @@ public class RagNode implements NodeAction {
 			Query query = new Query(queryText);
 			documents = hybridRagProcessor.process(query, options);
 		}
-		else {
+		else if (retrievalStrategies != null && fusionStrategy != null) {
 			// 传统策略模式（向后兼容）
 			List<List<Document>> allResults = new ArrayList<>();
 			for (RetrievalStrategy strategy : retrievalStrategies) {
