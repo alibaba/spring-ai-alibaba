@@ -527,35 +527,35 @@ public class DashScopeChatModel implements ChatModel {
 
 		List<MediaContent> contentList = new ArrayList<>();
 		if (format == MessageFormat.VIDEO) {
-			MediaContent mediaContent = new MediaContent(message.getText());
-			contentList.add(mediaContent);
-
 			List<String> mediaList = message.getMedia()
 				.stream()
 				.map(media -> this.fromMediaData(media.getMimeType(), media.getData()))
 				.toList();
 
 			contentList.add(new MediaContent("video", null, null, mediaList));
-		}
-		else if (format == MessageFormat.AUDIO) {
+
 			MediaContent mediaContent = new MediaContent(message.getText());
 			contentList.add(mediaContent);
-
+		}
+		else if (format == MessageFormat.AUDIO) {
 			contentList.addAll(message.getMedia()
 				.stream()
 				.map(media -> new MediaContent("audio", null, null, null,
 						this.fromMediaData(media.getMimeType(), media.getData())))
 				.toList());
-		}
-		else {
+
 			MediaContent mediaContent = new MediaContent(message.getText());
 			contentList.add(mediaContent);
-
+		}
+		else {
 			contentList.addAll(message.getMedia()
 				.stream()
 				.map(media -> new MediaContent("image", null, this.fromMediaData(media.getMimeType(), media.getData()),
 						null))
 				.toList());
+
+			MediaContent mediaContent = new MediaContent(message.getText());
+			contentList.add(mediaContent);
 		}
 
 		return contentList;
