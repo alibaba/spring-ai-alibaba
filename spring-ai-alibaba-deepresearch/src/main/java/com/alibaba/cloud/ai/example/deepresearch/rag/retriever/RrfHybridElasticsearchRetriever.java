@@ -82,10 +82,7 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 	 */
 	private final float knnBoost;
 
-	/**
-	 * JSON object mapper for parsing Elasticsearch responses
-	 */
-	private final ObjectMapper mapper = new ObjectMapper();
+	private final boolean hasHybrid;
 
 	public RrfHybridElasticsearchRetriever(RestClient restClient, EmbeddingModel embeddingModel, String indexName,
 			RagProperties.Elasticsearch.Hybrid hybrid) {
@@ -97,6 +94,7 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 		this.rrfK = hybrid.getRrfRankConstant();
 		this.bm25Boost = hybrid.getBm25Boost();
 		this.knnBoost = hybrid.getKnnBoost();
+		this.hasHybrid = hybrid.isEnabled();
 	}
 
 	@NotNull
@@ -104,7 +102,23 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 	public List<Document> retrieve(Query query) {
 		String text = query.text();
 		try {
-			return search(text, true);
+			return search(text, hasHybrid, null);
+		}
+		catch (IOException ex) {
+			throw new RuntimeException("Failed to execute hybrid search", ex);
+		}
+	}
+
+	/**
+	 * 允许传入一个 ES filter query
+	 * @param query 用户查询
+	 * @param filter ES filter query，用于限定搜索范围
+	 * @return 文档列表
+	 */
+	public List<Document> retrieve(Query query, co.elastic.clients.elasticsearch._types.query_dsl.Query filter) {
+		String text = query.text();
+		try {
+			return search(text, hasHybrid, filter);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to execute hybrid search", ex);
@@ -117,10 +131,12 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 	 * @param hasHybrid whether to enable hybrid search (based on query statement and rank
 	 * query)
 	 */
-	public List<Document> search(String text, boolean hasHybrid) throws IOException {
+	public List<Document> search(String text, boolean hasHybrid,
+			co.elastic.clients.elasticsearch._types.query_dsl.Query filter) throws IOException {
 		float[] vector = embeddingModel.embed(text);
 		SearchResponse<Document> response = elasticsearchClient.search(sr -> {
 			Builder knnBuilder = sr.index(indexName)
+				.postFilter(filter)
 				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vector))
 					.similarity(0.0f)
 					.k(windowSize)
@@ -138,7 +154,7 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 
 	private Document toDocument(Hit<Document> hit) {
 		Document document = hit.source();
-		Document.Builder documentBuilder = document.mutate();
+		Document.Builder documentBuilder = document != null ? document.mutate() : new Document.Builder();
 		Double score = hit.score();
 		if (score != null) {
 			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - (2 * score) - 1);

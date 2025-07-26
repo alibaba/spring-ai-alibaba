@@ -16,12 +16,14 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,13 +91,24 @@ public class ReporterNode implements NodeAction {
 			logger.info("researcherTeam_content: {}", content);
 			messages.add(new UserMessage(content));
 		}
+		// 1.5 添加专业知识库决策节点返回的信息
+		if (state.value("use_professional_kb", false) && StringUtils.hasText(StateUtil.getRagContent(state))) {
+			messages.add(new UserMessage(StateUtil.getRagContent(state)));
+		}
 
 		logger.debug("reporter node messages: {}", messages);
+
+		String prefix = StreamNodePrefixEnum.REPORTER_LLM_STREAM.getPrefix();
+		String stepTitleKey = prefix + "_step_title";
+		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
+		Map<String, Object> inputMap = new HashMap<>();
+		inputMap.put(stepTitleKey, "[报告生成]");
+		state.input(inputMap);
 
 		var streamResult = reporterAgent.prompt().messages(messages).stream().chatResponse();
 
 		var generator = StreamingChatGenerator.builder()
-			.startingNode("reporter_llm_stream")
+			.startingNode(prefix)
 			.startingState(state)
 			.mapResult(response -> {
 				String finalReport = Objects.requireNonNull(response.getResult().getOutput().getText());

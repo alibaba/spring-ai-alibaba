@@ -53,7 +53,7 @@ public class ResearchTeamNode implements NodeAction {
 		}
 
 		logger.info("research_team node is running.");
-		String nextStep = "reporter";
+		String nextStep = "professional_kb_decision";
 		Map<String, Object> updated = new HashMap<>();
 
 		Plan curPlan = StateUtil.getPlan(state);
