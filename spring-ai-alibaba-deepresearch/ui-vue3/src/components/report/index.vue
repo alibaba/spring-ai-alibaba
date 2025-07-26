@@ -86,7 +86,7 @@ const items = computed(() => {
           })
       }
     })
-    
+
     array.push(...arrayTemp)
     return array
 })
@@ -145,7 +145,7 @@ const removeLastPendingNode = () => {
 const appendPendingNode = () => {
   // 检查是否已存在pending节点
   removeLastPendingNode()
-  
+
   // 如果不存在pending节点，创建一个新的
   const pendingItem: ThoughtChainItem = {
       title: '【处理中】正在请求后端内容',
@@ -251,6 +251,7 @@ const processJsonNode = (node: any) => {
           content = h(MD, { content: node.data.current_plan.steps[0].executionRes })
         }
         break
+
 
       case 'reporter':
         title = node.node + '-' + '【报告生成】生成最终报告'

@@ -16,7 +16,7 @@ export function parseJsonText(text: string): any[] {
 
   const result: any[] = [];
   const trimmedText = text.trim();
-  
+
   if (!trimmedText) {
     return result;
   }
@@ -57,28 +57,28 @@ export function parseJsonTextStrict(text: string): any[] {
 
   const result: any[] = [];
   const trimmedText = text.trim();
-  
+
   if (!trimmedText) {
     return result;
   }
 
   let currentIndex = 0;
-  
+
   while (currentIndex < trimmedText.length) {
     // 跳过空白字符
     while (currentIndex < trimmedText.length && /\s/.test(trimmedText[currentIndex])) {
       currentIndex++;
     }
-    
+
     if (currentIndex >= trimmedText.length) {
       break;
     }
-    
+
     // 查找JSON对象的开始
     if (trimmedText[currentIndex] === '{') {
       const startIndex = currentIndex;
       const jsonEndIndex = findJsonObjectEnd(trimmedText, currentIndex);
-      
+
       if (jsonEndIndex !== -1) {
         const jsonStr = trimmedText.substring(startIndex, jsonEndIndex + 1);
         try {
@@ -111,28 +111,28 @@ function findJsonObjectEnd(text: string, startIndex: number): number {
   let braceCount = 0;
   let inString = false;
   let escapeNext = false;
-  
+
   for (let i = startIndex; i < text.length; i++) {
     const char = text[i];
-    
+
     if (escapeNext) {
       // 如果前一个字符是转义符，跳过当前字符
       escapeNext = false;
       continue;
     }
-    
+
     if (char === '\\' && inString) {
       // 遇到转义符
       escapeNext = true;
       continue;
     }
-    
+
     if (char === '"' && !escapeNext) {
       // 遇到引号，切换字符串状态
       inString = !inString;
       continue;
     }
-    
+
     if (!inString) {
       if (char === '{') {
         braceCount++;
@@ -144,7 +144,7 @@ function findJsonObjectEnd(text: string, startIndex: number): number {
       }
     }
   }
-  
+
   return -1; // 没有找到完整的JSON对象
 }
 

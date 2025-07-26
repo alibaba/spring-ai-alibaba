@@ -387,7 +387,7 @@ function deepResearch() {
 
 function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any {
   switch (status) {
-    case 'loading': 
+    case 'loading':
       const items: ThoughtChainProps['items'] = [
         {
           title: '正在思考中',
