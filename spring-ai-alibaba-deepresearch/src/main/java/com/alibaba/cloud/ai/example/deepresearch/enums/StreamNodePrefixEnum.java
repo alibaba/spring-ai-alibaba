@@ -28,16 +28,16 @@ public enum StreamNodePrefixEnum {
 	private final String prefix;
 
 	/** 是否需要前端展示 */
-	private final boolean visiable;
+	private final boolean visible;
 
 	/**
 	 * 构造方法。
 	 * @param prefix 节点前缀字符串
-	 * @param visiable 是否可见
+	 * @param visible 是否可见
 	 */
-	StreamNodePrefixEnum(String prefix, boolean visiable) {
+	StreamNodePrefixEnum(String prefix, boolean visible) {
 		this.prefix = prefix;
-		this.visiable = visiable;
+		this.visible = visible;
 	}
 
 	/**
@@ -50,10 +50,10 @@ public enum StreamNodePrefixEnum {
 
 	/**
 	 * 获取是否可见。
-	 * @return visiable
+	 * @return visible
 	 */
-	public boolean isVisiable() {
-		return visiable;
+	public boolean isVisible() {
+		return visible;
 	}
 
 	/**
@@ -68,16 +68,6 @@ public enum StreamNodePrefixEnum {
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * 根据节点名获取visiable属性，未匹配返回空字符串
-	 * @param nodeName 节点名
-	 * @return visiable属性或空字符串
-	 */
-	public static Object getVisiableByNodeName(String nodeName) {
-		StreamNodePrefixEnum p = match(nodeName);
-		return p != null ? p.isVisiable() : "";
 	}
 
 }

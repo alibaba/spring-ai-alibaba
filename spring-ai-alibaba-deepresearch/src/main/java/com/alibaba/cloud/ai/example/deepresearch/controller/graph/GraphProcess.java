@@ -113,8 +113,8 @@ public class GraphProcess {
 			return "";
 		}
 		String stepTitle = (String) output.state().value(nodeName + "_step_title").orElse("");
-		return JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk(), "step_title", stepTitle, "visiable",
-				prefixEnum.isVisiable()));
+		return JSON.toJSONString(
+				Map.of(nodeName, streamingOutput.chunk(), "step_title", stepTitle, "visible", prefixEnum.isVisible()));
 	}
 
 	private record NodeResponse(String nodeName, String displayTitle, Object content, Object siteInformation) {
