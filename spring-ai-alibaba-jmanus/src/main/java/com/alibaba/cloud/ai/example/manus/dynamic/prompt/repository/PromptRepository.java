@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.prompt.repository;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.po.PromptEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -29,5 +30,8 @@ public interface PromptRepository extends JpaRepository<PromptEntity, Long> {
 	PromptEntity findByPromptName(String promptName);
 
 	List<PromptEntity> getAllByNamespace(String namespace);
+
+	@Query("SELECT e FROM PromptEntity e WHERE e.namespace = :namespace OR e.namespace IS NULL OR e.namespace = ''")
+	List<PromptEntity> findByPromptNameWithDefault(String namespace);
 
 }
