@@ -51,6 +51,7 @@ import java.util.Map;
  * @author yingzi
  * @since 2025/5/17 19:27
  */
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/chat")
 public class ChatController {
