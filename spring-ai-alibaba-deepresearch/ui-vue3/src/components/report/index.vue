@@ -65,7 +65,7 @@ const items = computed(() => {
     messages.forEach(msg => {
       // 单个chunk
       // xchat组件的第一个chunk是 Waiting... 所以需要跳过
-      if(msg.status === 'loading' && msg.message != 'Waiting...') { 
+      if(msg.status === 'loading' && msg.message != 'Waiting...') {
            isLoading = true
            const node = JSON.parse(msg.message)
            let item: ThoughtChainItem | undefined
@@ -178,13 +178,13 @@ const processLlmStreamNode = (node: any, key: string): ThoughtChainItem => {
       status: 'pending',
       content: h(MD, { content: initialContent })
     }
-    
+
     // 缓存该节点
     llmStreamCache.set(key, {
       item,
       content: initialContent
     })
-    
+
     return item
   }
 }
@@ -193,19 +193,19 @@ const processJsonNode = (node: any): ThoughtChainItem => {
     let title = ''
     let description = ''
     let content = null
-    
+
     // 根据不同节点类型处理
     switch(node.node) {
       case '__START__':
         title = node.node + '-' + '【开始】任务启动'
         description = '开始处理用户请求'
         break
-        
+
       case 'coordinator':
         title = node.node + '-' +'【意图识别】分析用户需求'
         description = '正在识别和理解用户的意图'
         break
-        
+
       case 'rewrite_multi_query':
         title = node.node + '-' +'【查询优化】重写查询语句'
         description = '优化查询以获得更好的搜索结果'
@@ -215,7 +215,7 @@ const processJsonNode = (node: any): ThoughtChainItem => {
           content = h(MD, { content: markdownContent })
         }
         break
-        
+
       case node.node + '-' +'background_investigator':
         title = '【背景调研】收集相关信息'
         description = '正在收集和分析背景信息'
@@ -225,12 +225,12 @@ const processJsonNode = (node: any): ThoughtChainItem => {
           content = h(MD, { content: markdownContent })
         }
         break
-        
+
       case 'human_feedback':
         title = node.node + '-' + (node.data?.current_plan?.title || '【人工反馈】')
         description = node.data?.current_plan?.thought || '等待人工反馈'
         break
-        
+
       case '__PARALLEL__(parallel_executor)':
         title = node.node + '-' + (node.data?.current_plan?.title || '【并行执行】')
         description = node.data?.current_plan?.thought || '正在并行执行任务'
@@ -238,7 +238,7 @@ const processJsonNode = (node: any): ThoughtChainItem => {
           content = h(MD, { content: node.data.current_plan.steps[0].executionRes })
         }
         break
-        
+
       case 'reporter':
         title = node.node + '-' + '【报告生成】生成最终报告'
         description = '正在整理和生成最终研究报告'
@@ -246,7 +246,7 @@ const processJsonNode = (node: any): ThoughtChainItem => {
           content = h(MD, { content: node.data.final_report })
         }
         break
-        
+
       default:
         console.log('default', node)
         return
@@ -257,7 +257,7 @@ const processJsonNode = (node: any): ThoughtChainItem => {
         icon: h(CheckCircleOutlined),
         status: 'success',
     }
-    
+
     if(content) {
       item.content = content
     }
@@ -303,19 +303,19 @@ const formatTime = (timestamp: number) => {
   padding: 12px;
   border-radius: 8px;
   background-color: #f8f9fa;
-  
+
   .message-role {
     font-weight: bold;
     color: #1890ff;
     margin-bottom: 8px;
     font-size: 14px;
   }
-  
+
   .message-content {
     margin-bottom: 8px;
     line-height: 1.6;
   }
-  
+
   .message-time {
     font-size: 12px;
     color: #999;

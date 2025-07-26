@@ -71,9 +71,9 @@
                     </a-button>
                   </a-upload>
 
-                  <a-button 
-                    size="small" 
-                    style="border-radius: 15px; margin-right: 8px" 
+                  <a-button
+                    size="small"
+                    style="border-radius: 15px; margin-right: 8px"
                     type="text"
                     @click="deepResearch"
                     :style="{ color: current.deepResearchDetail ? token.colorPrimary : '' }"
@@ -118,7 +118,7 @@
         </div>
       </Flex>
       <Report :visible="current.deepResearchDetail" :convId="convId" @close="current.deepResearchDetail = false" />
-      
+
     </Flex>
   </div>
 </template>
@@ -263,7 +263,7 @@ const [agent] = useXAgent({
           },
           body: {
             feed_back_content: message,
-            feed_back: true, 
+            feed_back: true,
             thread_id: convId
           },
         })
