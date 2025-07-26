@@ -16,7 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller.graph;
 
-import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefix;
+import com.alibaba.cloud.ai.example.deepresearch.enums.NodeNameEnum;
+import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
@@ -27,13 +28,16 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.codec.ServerSentEvent;
 import reactor.core.publisher.Sinks;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,6 +50,8 @@ import java.util.concurrent.Executors;
 public class GraphProcess {
 
 	private static final Logger logger = LoggerFactory.getLogger(GraphProcess.class);
+
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -65,6 +71,52 @@ public class GraphProcess {
 		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state, runnableConfig);
 		processStream(resultFuture, sink);
 	}
+	
+	private String buildLLMNodeContent(String nodeName, StreamingOutput streamingOutput, NodeOutput output) {
+		StreamNodePrefixEnum prefixEnum = StreamNodePrefixEnum.match(nodeName);
+		if (prefixEnum == null) {
+			return "";
+		}
+		String stepTitle = (String) output.state().value(nodeName + "_step_title").orElse("");
+		return JSON.toJSONString(Map.of(
+			nodeName, streamingOutput.chunk(),
+			"step_title", stepTitle,
+			"visiable", prefixEnum.isVisiable()
+		));
+	}
+
+	private record NodeResponse(String nodeName, String displayTitle, Object content, Object siteInformation) {}
+
+	private String buildNormalNodeContent(String nodeName, NodeOutput output) {
+		NodeNameEnum nodeEnum = NodeNameEnum.fromNodeName(nodeName);
+		if (nodeEnum == null) {
+			return "";
+		}
+		Object content;
+		content = switch (nodeEnum) {
+			case START -> output.state().data().get("query");
+			case REWRITE_MULTI_QUERY, HUMAN_FEEDBACK, END -> output.state().data();
+			case BACKGROUND_INVESTIGATOR -> output.state().data().get("optimize_queries");
+			case PLANNER -> output.state().data().get("planner_content");
+            case RESEARCH_TEAM -> {
+				String researchTeamContent = (String) output.state().data().get("research_team_content");
+				yield org.apache.commons.lang3.StringUtils.equals(researchTeamContent, NodeNameEnum.REPORTER.nodeName());
+			}
+			case REPORTER -> output.state().data().get("final_report");
+            default -> "";
+		};
+		Object site_information = output.state().value("site_information").orElse("");
+		String displayTitle = nodeEnum.displayTitle();
+		if (StringUtils.isEmpty(displayTitle) || (Objects.equals(content, "") && Objects.equals(site_information, ""))) {
+			return "";
+		}
+		NodeResponse response = new NodeResponse(nodeName, displayTitle, content, site_information);
+		try {
+			return OBJECT_MAPPER.writeValueAsString(response);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException("Failed to serialize NodeResponse", e);
+		}
+	}
 
 	public void processStream(AsyncGenerator<NodeOutput> generator, Sinks.Many<ServerSentEvent<String>> sink) {
 		executor.submit(() -> {
@@ -74,19 +126,14 @@ public class GraphProcess {
 					String nodeName = output.node();
 					String content;
 					if (output instanceof StreamingOutput streamingOutput) {
-						String stepTitle = (String) output.state().value(nodeName + "_step_title").orElse("");
-						boolean visiable = StreamNodePrefix.matches(nodeName);
-						content = JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk(), "step_title", stepTitle,
-								"visiable", visiable));
+						content = buildLLMNodeContent(nodeName, streamingOutput, output);
 						logger.info("Streaming output from node {}: {}", nodeName, streamingOutput.chunk());
+					} else {
+						content = buildNormalNodeContent(nodeName, output);
 					}
-					else {
-						JSONObject nodeOutput = new JSONObject();
-						nodeOutput.put("data", output.state().data());
-						nodeOutput.put("node", nodeName);
-						content = JSON.toJSONString(nodeOutput);
+					if (StringUtils.isNotEmpty(content)) {
+						sink.tryEmitNext(ServerSentEvent.builder(content).build());
 					}
-					sink.tryEmitNext(ServerSentEvent.builder(content).build());
 				}
 				catch (Exception e) {
 					logger.error("Error processing output", e);

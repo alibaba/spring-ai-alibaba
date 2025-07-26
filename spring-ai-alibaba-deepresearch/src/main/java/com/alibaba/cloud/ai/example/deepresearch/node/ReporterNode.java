@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefix;
+import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
@@ -94,7 +94,7 @@ public class ReporterNode implements NodeAction {
 
 		logger.debug("reporter node messages: {}", messages);
 
-		String prefix = StreamNodePrefix.REPORTER_LLM_STREAM.getPrefix();
+		String prefix = StreamNodePrefixEnum.REPORTER_LLM_STREAM.getPrefix();
 		String stepTitleKey = prefix + "_step_title";
 		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
 		Map<String, Object> inputMap = new HashMap<>();

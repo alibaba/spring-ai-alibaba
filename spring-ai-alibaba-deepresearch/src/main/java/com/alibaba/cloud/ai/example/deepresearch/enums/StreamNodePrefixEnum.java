@@ -19,20 +19,25 @@ package com.alibaba.cloud.ai.example.deepresearch.enums;
 /**
  * 流式节点前缀枚举。 用于标识流式输出节点的类型前缀，给前端用于展示
  */
-public enum StreamNodePrefix {
+public enum StreamNodePrefixEnum {
 
-	RESEARCHER_LLM_STREAM("researcher_llm_stream"), CODER_LLM_STREAM("coder_llm_stream"),
-	REPORTER_LLM_STREAM("reporter_llm_stream");
+	PLANNER_LLM_STREAM("planner_llm_stream", false),
+	RESEARCHER_LLM_STREAM("researcher_llm_stream", true),
+	CODER_LLM_STREAM("coder_llm_stream", true),
+	REPORTER_LLM_STREAM("reporter_llm_stream", true);
 
 	/** 节点前缀字符串 */
 	private final String prefix;
+	private final boolean visiable;
 
 	/**
 	 * 构造方法。
 	 * @param prefix 节点前缀字符串
+	 * @param visiable 是否可见
 	 */
-	StreamNodePrefix(String prefix) {
+	StreamNodePrefixEnum(String prefix, boolean visiable) {
 		this.prefix = prefix;
+		this.visiable = visiable;
 	}
 
 	/**
@@ -44,17 +49,35 @@ public enum StreamNodePrefix {
 	}
 
 	/**
+	 * 获取是否可见。
+	 * @return visiable
+	 */
+	public boolean isVisiable() {
+		return visiable;
+	}
+
+	/**
 	 * 判断给定节点名是否以任一枚举前缀开头。
 	 * @param nodeName 节点名
-	 * @return true-匹配，false-不匹配
+	 * @return 匹配到的枚举实例，未匹配返回null
 	 */
-	public static boolean matches(String nodeName) {
-		for (StreamNodePrefix p : values()) {
+	public static StreamNodePrefixEnum match(String nodeName) {
+		for (StreamNodePrefixEnum p : values()) {
 			if (nodeName != null && nodeName.startsWith(p.prefix)) {
-				return true;
+				return p;
 			}
 		}
-		return false;
+		return null;
+	}
+
+	/**
+	 * 根据节点名获取visiable属性，未匹配返回空字符串
+	 * @param nodeName 节点名
+	 * @return visiable属性或空字符串
+	 */
+	public static Object getVisiableByNodeName(String nodeName) {
+		StreamNodePrefixEnum p = match(nodeName);
+		return p != null ? p.isVisiable() : "";
 	}
 
 }

@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefix;
+import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
@@ -162,7 +162,7 @@ public class ResearcherNode implements NodeAction {
 
 		Plan.Step finalAssignedStep = assignedStep;
 
-		String prefix = StreamNodePrefix.RESEARCHER_LLM_STREAM.getPrefix() + "_";
+		String prefix = StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix() + "_";
 		String stepTitleKey = prefix + executorNodeId + "_step_title";
 		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
 		Map<String, Object> inputMap = new HashMap<>();

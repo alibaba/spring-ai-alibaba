@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefix;
+import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
@@ -116,7 +116,7 @@ public class CoderNode implements NodeAction {
 		var streamResult = requestSpec.stream().chatResponse();
 		Plan.Step finalAssignedStep = assignedStep;
 
-		String prefix = StreamNodePrefix.CODER_LLM_STREAM.getPrefix() + "_";
+		String prefix = StreamNodePrefixEnum.CODER_LLM_STREAM.getPrefix() + "_";
 		String stepTitleKey = prefix + executorNodeId + "_step_title";
 		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
 		Map<String, Object> inputMap = new HashMap<>();
