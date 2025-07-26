@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.enums;
 
 /**
- * StateGraph 节点枚举，统一管理所有流程节点名称。
+ * StateGraph 节点枚举，统一管理所有流程节点名称，和给前端渲染的节点title。
  */
 public enum NodeNameEnum {
 
