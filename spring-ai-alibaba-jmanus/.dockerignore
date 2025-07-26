@@ -43,18 +43,17 @@ playwright/
 .gitignore
 
 # Docker
-Dockerfile
 .dockerignore
 docker-compose.yml
 
 # Documentation
 README*.md
-DOCKER.md
+DOCKER_BUILD.md
 *.md
 
-# Scripts
-*.sh
+# Scripts (keep build-ui.sh as it's needed)
 *.bat
+script/
 
 # Environment files
 .env
@@ -62,3 +61,8 @@ DOCKER.md
 
 # Test files
 src/test/
+
+# UI build artifacts (will be rebuilt in container)
+ui-vue3/node_modules/
+ui-vue3/dist/
+dist/

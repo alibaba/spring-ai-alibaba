@@ -78,6 +78,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -310,6 +311,9 @@ public class DashScopeChatModel implements ChatModel {
 			return new ChatResponse(List.of());
 		}
 
+		// Dashscope searchInfos
+		DashScopeApi.SearchInfo searchInfo = chatCompletion.output().searchInfo();
+
 		ConcurrentHashMap<String, String> finalRoleMap = roleMap == null ? new ConcurrentHashMap<>() : roleMap;
 
 		List<Generation> generations = choices.stream().map(choice -> {
@@ -323,7 +327,9 @@ public class DashScopeChatModel implements ChatModel {
 					"id", chatCompletion.requestId(),
 					"role", finalRoleMap.getOrDefault(chatCompletion.requestId(), ""),
 					"finishReason", finishReasonToMetadataValue(choice.finishReason()),
-					"reasoningContent", StringUtils.hasText(choice.message().reasoningContent()) ? choice.message().reasoningContent() : "");
+					"reasoningContent", StringUtils.hasText(choice.message().reasoningContent()) ? choice.message().reasoningContent() : "",
+					"search_info", Objects.isNull(searchInfo) ? "" : searchInfo
+			);
 			// @formatter:on
 			return buildGeneration(choice, metadata, request);
 		}).toList();
@@ -346,9 +352,17 @@ public class DashScopeChatModel implements ChatModel {
 	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata,
 			ChatCompletionRequest request) {
 		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
-				: choice.message()
-					.toolCalls()
-					.stream()
+				: choice.message().toolCalls().stream().filter(toolCall -> {
+					if (toolCall.function() == null) {
+						logger.warn("Filtering out toolCall with null function: {}", toolCall);
+						return false;
+					}
+					if (toolCall.function().name() == null) {
+						logger.warn("Filtering out toolCall with null function name: {}", toolCall);
+						return false;
+					}
+					return true;
+				})
 					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();

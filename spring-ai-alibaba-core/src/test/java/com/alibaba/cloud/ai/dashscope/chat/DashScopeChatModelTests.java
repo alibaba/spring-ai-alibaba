@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ChatCompletionFunction;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ToolCall;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequest;
@@ -44,6 +46,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -151,14 +154,14 @@ class DashScopeChatModelTests {
 		Flux<ChatResponse> responseFlux = chatModel.stream(prompt);
 
 		// Verify results
-		StepVerifier.create(responseFlux).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("I'm ");
-		}).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("doing ");
-		}).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("well!");
-			assertThat(response.getMetadata().getUsage()).isNotNull();
-		}).verifyComplete();
+		StepVerifier.create(responseFlux)
+			.assertNext(response -> assertThat(response.getResult().getOutput().getText()).isEqualTo("I'm "))
+			.assertNext(response -> assertThat(response.getResult().getOutput().getText()).isEqualTo("doing "))
+			.assertNext(response -> {
+				assertThat(response.getResult().getOutput().getText()).isEqualTo("well!");
+				assertThat(response.getMetadata().getUsage()).isNotNull();
+			})
+			.verifyComplete();
 	}
 
 	@Test
@@ -462,5 +465,54 @@ class DashScopeChatModelTests {
 	// Object reasoningContent = response.getMetadata().get("reasoning_content");
 	// assertThat(reasoningContent).isNotNull();
 	// }
+
+	@Test
+	void testNullToolNameHandling() {
+		// Test that null tool names are filtered out and don't cause NPE
+		ToolCallback weatherCallback = mock(ToolCallback.class);
+		when(weatherCallback.getToolDefinition()).thenReturn(DefaultToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather information")
+			.inputSchema(EMPTY_INPUT_SCHEMA)
+			.build());
+
+		DashScopeChatOptions options = DashScopeChatOptions.builder()
+			.withModel("qwen-turbo")
+			.withToolCallbacks(List.of(weatherCallback))
+			.build();
+
+		DashScopeChatModel toolChatModel = DashScopeChatModel.builder()
+			.dashScopeApi(dashScopeApi)
+			.defaultOptions(options)
+			.build();
+
+		// Create tool call with null function name
+		ChatCompletionFunction nullNameFunction = new ChatCompletionFunction(null, "{\"location\": \"Beijing\"}");
+		ToolCall nullNameToolCall = new ToolCall("tool-call-id", "function", nullNameFunction);
+
+		ChatCompletionMessage nullNameToolMessage = new ChatCompletionMessage("", ChatCompletionMessage.Role.ASSISTANT,
+				null, null, List.of(nullNameToolCall), null);
+		Choice nullNameChoice = new Choice(ChatCompletionFinishReason.TOOL_CALLS, nullNameToolMessage, null);
+
+		// Add non-null TokenUsage with correct parameters - 9 parameters total
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
+
+		ChatCompletionOutput nullNameOutput = new ChatCompletionOutput("", List.of(nullNameChoice), null);
+		ChatCompletion nullNameCompletion = new ChatCompletion("test-id", nullNameOutput, usage);
+
+		when(dashScopeApi.chatCompletionEntity(any(), any())).thenReturn(ResponseEntity.ok(nullNameCompletion));
+
+		// Test tool call with null name - should not throw NPE
+		Message message = new UserMessage("What's the weather like?");
+		Prompt prompt = new Prompt(List.of(message), options);
+
+		// This should not throw NPE anymore
+		assertThatCode(() -> {
+			ChatResponse response = toolChatModel.call(prompt);
+			assertThat(response).isNotNull();
+			// Tool calls with null names should be filtered out
+			assertThat(response.getResults().get(0).getOutput().getToolCalls()).isEmpty();
+		}).doesNotThrowAnyException();
+	}
 
 }

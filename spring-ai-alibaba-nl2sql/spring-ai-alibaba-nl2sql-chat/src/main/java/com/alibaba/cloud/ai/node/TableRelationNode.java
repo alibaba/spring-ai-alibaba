@@ -16,9 +16,10 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.constant.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.schema.SchemaDTO;
+import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
@@ -26,7 +27,6 @@ import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import reactor.core.publisher.Flux;
@@ -54,8 +54,7 @@ public class TableRelationNode implements NodeAction {
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
-	public TableRelationNode(ChatClient.Builder chatClientBuilder, BaseSchemaService baseSchemaService,
-			BaseNl2SqlService baseNl2SqlService) {
+	public TableRelationNode(BaseSchemaService baseSchemaService, BaseNl2SqlService baseNl2SqlService) {
 		this.baseSchemaService = baseSchemaService;
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
@@ -81,6 +80,7 @@ public class TableRelationNode implements NodeAction {
 		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始构建初始Schema..."));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("初始Schema构建完成."));
+
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始处理Schema选择..."));
 			emitter.next(ChatResponseUtil.createCustomStatusResponse("Schema选择处理完成."));
 			emitter.complete();
@@ -89,7 +89,7 @@ public class TableRelationNode implements NodeAction {
 		// Use utility class to create generator, directly return business logic computed
 		// result
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-				v -> Map.of(TABLE_RELATION_OUTPUT, result), displayFlux);
+				v -> Map.of(TABLE_RELATION_OUTPUT, result), displayFlux, StreamResponseType.SCHEMA_DEEP_RECALL);
 
 		return Map.of(TABLE_RELATION_OUTPUT, generator);
 	}

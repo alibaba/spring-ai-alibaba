@@ -15,36 +15,49 @@
  */
 package com.alibaba.cloud.ai.service;
 
-import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStoreProperties;
-import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
-import com.alibaba.cloud.ai.request.*;
-import com.aliyun.gpdb20160503.Client;
-import com.aliyun.gpdb20160503.models.*;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
+import com.alibaba.cloud.ai.config.ConditionalOnADBEnabled;
 import com.alibaba.cloud.ai.dbconnector.DbAccessor;
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.dbconnector.bo.ColumnInfoBO;
+import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.dbconnector.bo.ForeignKeyInfoBO;
 import com.alibaba.cloud.ai.dbconnector.bo.TableInfoBO;
+import com.alibaba.cloud.ai.request.DeleteRequest;
+import com.alibaba.cloud.ai.request.EvidenceRequest;
+import com.alibaba.cloud.ai.request.SchemaInitRequest;
+import com.alibaba.cloud.ai.request.SearchRequest;
+import com.alibaba.cloud.ai.vectorstore.analyticdb.AnalyticDbVectorStoreProperties;
+import com.aliyun.gpdb20160503.Client;
+import com.aliyun.gpdb20160503.models.DeleteCollectionDataRequest;
+import com.aliyun.gpdb20160503.models.DeleteCollectionDataResponse;
+import com.aliyun.gpdb20160503.models.QueryCollectionDataRequest;
+import com.aliyun.gpdb20160503.models.QueryCollectionDataResponse;
+import com.aliyun.gpdb20160503.models.QueryCollectionDataResponseBody;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * 核心向量数据库操作服务，提供向量写入、查询、删除、Schema 初始化等功能。
  */
+
 @Service
-@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnADBEnabled
 public class AnalyticDbVectorStoreManagementService implements VectorStoreManagementService {
 
 	private static final String CONTENT_FIELD_NAME = "content";

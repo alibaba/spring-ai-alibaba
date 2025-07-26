@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
@@ -50,12 +51,15 @@ public class DynamicAgentLoader implements IDynamicAgentLoader {
 
 	private final PromptService promptService;
 
+	private final StreamingResponseHandler streamingResponseHandler;
+
 	@Value("${namespace.value}")
 	private String namespace;
 
 	public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy ILlmService llmService,
 			PlanExecutionRecorder recorder, ManusProperties properties, @Lazy ToolCallingManager toolCallingManager,
-			UserInputService userInputService, PromptService promptService) {
+			UserInputService userInputService, PromptService promptService,
+			StreamingResponseHandler streamingResponseHandler) {
 		this.repository = repository;
 		this.llmService = llmService;
 		this.recorder = recorder;
@@ -63,6 +67,7 @@ public class DynamicAgentLoader implements IDynamicAgentLoader {
 		this.toolCallingManager = toolCallingManager;
 		this.userInputService = userInputService;
 		this.promptService = promptService;
+		this.streamingResponseHandler = streamingResponseHandler;
 	}
 
 	public DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting) {
@@ -73,7 +78,7 @@ public class DynamicAgentLoader implements IDynamicAgentLoader {
 
 		return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(),
 				entity.getNextStepPrompt(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting,
-				userInputService, promptService, entity.getModel());
+				userInputService, promptService, entity.getModel(), streamingResponseHandler);
 	}
 
 	public List<DynamicAgentEntity> getAllAgents() {

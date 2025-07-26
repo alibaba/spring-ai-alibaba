@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.util;
 
+import com.alibaba.cloud.ai.constant.StreamResponseType;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -33,7 +34,22 @@ public class ChatResponseUtil {
 	 * @return ChatResponse 状态响应对象
 	 */
 	public static ChatResponse createCustomStatusResponse(String statusMessage) {
-		AssistantMessage assistantMessage = new AssistantMessage(statusMessage + "\n");
+		return createCustomStatusResponse(statusMessage, StreamResponseType.STATUS);
+	}
+
+	/**
+	 * 创建自定义状态响应
+	 * @param statusMessage 状态消息
+	 * @return ChatResponse 状态响应对象
+	 */
+	public static ChatResponse createCustomStatusResponse(String statusMessage, StreamResponseType type) {
+		AssistantMessage assistantMessage = new AssistantMessage(JsonUtils.toJson(type, statusMessage + "\n"));
+		Generation generation = new Generation(assistantMessage);
+		return new ChatResponse(List.of(generation));
+	}
+
+	public static ChatResponse createStatusResponse(String statusMessage, StreamResponseType type) {
+		AssistantMessage assistantMessage = new AssistantMessage(JsonUtils.toJson(type, statusMessage));
 		Generation generation = new Generation(assistantMessage);
 		return new ChatResponse(List.of(generation));
 	}

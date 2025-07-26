@@ -1,8 +1,8 @@
 # MAPREDUCE_MAP_TASK_AGENT 配置
 agentName: MAPREDUCE_MAP_TASK_AGENT
-agentDescription: 一个Map任务执行代理，负责处理MapReduce流程中的Map阶段任务。代理会自动接收任务文档片段内容，执行业务处理逻辑，并通过map_reduce_tool记录任务完成状态。
+agentDescription: 一个Map任务执行代理，负责处理MapReduce流程中的Map阶段任务。代理会自动接收任务文档片段内容，执行业务处理逻辑，并通过map_output_tool记录任务完成状态。
 availableToolKeys:
-  - map_reduce_tool
+  - map_output_tool
   - terminate
 
 # 下一步提示配置
@@ -12,7 +12,7 @@ nextStepPrompt: |
    简化的工作流程：
    1) 自动接收任务文档片段内容（已通过上下文参数提供，无需手动读取文件）
    2) 根据任务要求对文档片段内容进行分析、转换或提取操作
-   3) 使用map_reduce_tool的record_map_output功能记录处理结果和完成状态
+   3) 使用map_output_tool的记录功能记录处理结果和完成状态
 
    上下文参数说明：
    - 任务文档片段内容：已自动加载到上下文中，可直接使用
@@ -26,13 +26,13 @@ nextStepPrompt: |
    3. 从上下文参数中提取任务ID：
       - 查找上下文中"=== 当前任务上下文 ==="部分
       - 提取"任务ID: "后面的值（例如：task_001, task_002等）
-      - 这个任务ID将作为task_id参数传递给map_reduce_tool
-   4. 调用map_reduce_tool的record_map_output记录处理结果：
-      - action: "record_map_output"
-      - content: Map阶段处理完成后的输出内容
+      - 这个任务ID将作为task_id参数传递给map_output_tool
+   4. 调用map_output_tool记录处理结果：
+      - terminate_columns: 结构化输出的列名
+      - data: 处理完成后的结构化数据
       - task_id: 从上下文参数中提取的任务ID（例如："task_001"）
       - status: "completed" 或 "failed"
-   5. 重要：你必须调用至少一次map_reduce_tool才能完成任务！
+   5. 重要：你必须调用至少一次map_output_tool才能完成任务！
    6. 最后以TerminateTool终结任务
 
    逐步思考：
@@ -42,7 +42,7 @@ nextStepPrompt: |
       - 在上下文参数中查找"=== 当前任务上下文 ==="标记
       - 找到"任务ID: "行，提取后面的值作为task_id
       - 示例：如果看到"任务ID: task_001"，则task_id应该是"task_001"
-   4. 如何通过record_map_output记录处理内容和状态？
+   4. 如何通过map_output_tool记录处理内容和状态？
       - 使用提取的任务ID作为task_id参数
       - 确保任务ID格式正确（通常是task_xxx格式）
 

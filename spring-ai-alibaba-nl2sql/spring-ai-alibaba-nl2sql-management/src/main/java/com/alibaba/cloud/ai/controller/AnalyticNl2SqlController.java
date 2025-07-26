@@ -16,16 +16,15 @@
 
 package com.alibaba.cloud.ai.controller;
 
+import com.alibaba.cloud.ai.config.ConditionalOnADBEnabled;
 import com.alibaba.cloud.ai.service.analytic.AnalyticNl2SqlService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
-		matchIfMissing = false)
+@ConditionalOnADBEnabled
 public class AnalyticNl2SqlController {
 
 	@Autowired

@@ -16,11 +16,12 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.constant.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.model.execution.ExecutionStep;
+import com.alibaba.cloud.ai.model.execution.Plan;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
-import com.alibaba.cloud.ai.schema.ExecutionStep;
-import com.alibaba.cloud.ai.schema.Plan;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
@@ -94,7 +95,7 @@ public class ReportGeneratorNode implements NodeAction {
 					result.put(PLAN_CURRENT_STEP, null);
 					result.put(PLANNER_NODE_OUTPUT, null);
 					return result;
-				}, reportGenerationFlux);
+				}, reportGenerationFlux, StreamResponseType.OUTPUT_REPORT);
 
 		return Map.of(RESULT, generator);
 	}

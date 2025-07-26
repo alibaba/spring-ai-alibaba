@@ -45,7 +45,8 @@ public class InfoCheckService {
 	@Value("classpath:prompts/backgroundInfoCheck.md")
 	private Resource backgroundInfoCheckTemplate;
 
-	public String backgroundInfoCheck(List<Map<String, String>> results, String query) throws JsonProcessingException {
+	public String backgroundInfoCheck(List<Map<String, String>> results, String query)
+			throws JsonProcessingException, InterruptedException {
 
 		List<String> correctedPost = new ArrayList<>();
 		// load template & replace the placeholder
@@ -64,9 +65,12 @@ public class InfoCheckService {
 			boolean isIrrelevant = true;
 			isIrrelevant = jsonNode.get("is_irrelevant").asBoolean();
 			if (!isSensitive && !isIrrelevant) {
-				String post = "title:\n" + result.get("title") + "\n" + "content:\n" + result.get("content") + "\n";
+				String post = "title:\n" + result.get("title") + "\n" + "url:\n" + result.get("url") + "\n"
+						+ "content:\n" + result.get("content") + "\n";
+
 				correctedPost.add(post);
 			}
+			Thread.sleep(100);
 		}
 		logger.info("过滤结果: {}条", correctedPost.size());
 		return String.join("\n", correctedPost);

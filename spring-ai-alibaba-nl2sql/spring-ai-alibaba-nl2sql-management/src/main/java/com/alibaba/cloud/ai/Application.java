@@ -15,9 +15,10 @@
  */
 package com.alibaba.cloud.ai;
 
-import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStore;
-import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStoreProperties;
+import com.alibaba.cloud.ai.vectorstore.analyticdb.AnalyticDbVectorStore;
+import com.alibaba.cloud.ai.vectorstore.analyticdb.AnalyticDbVectorStoreProperties;
 import com.aliyun.gpdb20160503.Client;
+import jakarta.annotation.PreDestroy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -25,16 +26,27 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
+import static com.alibaba.cloud.ai.dbconnector.AbstractDBConnectionPool.clearDataSourceCache;
+
+// @formatter:off
 @SpringBootApplication(scanBasePackages = { "com.alibaba.cloud.ai" })
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, Client.class, AnalyticDbVectorStore.class })
-// @EnableConfigurationProperties({ AnalyticDbVectorStoreProperties.class,
-// PythonCoderProperties.class })
-@EnableConfigurationProperties({ AnalyticDbVectorStoreProperties.class })
+@EnableConfigurationProperties({
+		AnalyticDbVectorStoreProperties.class,
+		// PythonCoderProperties.class
+})
 public class Application {
 
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}
 
+	@PreDestroy
+	public void destroy() {
+
+		clearDataSourceCache();
+	}
+
 }
+// @formatter:on

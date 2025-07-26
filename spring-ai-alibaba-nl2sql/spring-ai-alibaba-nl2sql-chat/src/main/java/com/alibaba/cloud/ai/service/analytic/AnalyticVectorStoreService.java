@@ -15,11 +15,12 @@
  */
 package com.alibaba.cloud.ai.service.analytic;
 
-import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStoreProperties;
 import com.alibaba.cloud.ai.request.SearchRequest;
 import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
+import com.alibaba.cloud.ai.vectorstore.analyticdb.AnalyticDbVectorStoreProperties;
 import com.aliyun.gpdb20160503.Client;
-import com.aliyun.gpdb20160503.models.*;
+import com.aliyun.gpdb20160503.models.QueryCollectionDataRequest;
+import com.aliyun.gpdb20160503.models.QueryCollectionDataResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.document.Document;
@@ -29,7 +30,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",

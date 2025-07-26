@@ -1,35 +1,60 @@
 server:
-  port: 8062 # 服务器端口配置
+  port: 8062
 spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/nl2sql?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:sql/schema.sql
+      data-locations: classpath:sql/data.sql
+      continue-on-error: true
+      separator: ;
+      encoding: utf-8
+
   ai:
-    dashscope:
-      api-key:
     mcp:
       server:
-        name: xiyan-server # MCP服务器名称
-        version: 0.0.1 # 服务器版本号
+        name: xiyan-server    # MCP服务器名称
+        version: 0.0.1           # 服务器版本号
     vectorstore:
       analytic:
-        collectName:
+        enabled: false
+        collectName: chatBi
         regionId:
         dbInstanceId:
         managerAccount:
         managerAccountPassword:
-        namespace:
-        namespacePassword:
+        namespace: chat
+        namespacePassword: chat
         defaultTopK: 6
         defaultSimilarityThreshold: 0.75
         accessKeyId:
         accessKeySecret:
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
-      api-key:
+      api-key: ${AI_DASHSCOPE_API_KEY}
       model: qwen-max
+      embedding:
+        model: text-embedding-v4
 chatBi:
   dbConfig:
-    url:
-    username:
-    password:
+    url: jdbc:mysql://127.0.0.1:3306/nl2sql?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
     schema:
     connection-type: jdbc
     dialect-type: mysql

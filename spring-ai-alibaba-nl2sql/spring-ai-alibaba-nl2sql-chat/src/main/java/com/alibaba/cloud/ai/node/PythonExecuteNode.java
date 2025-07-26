@@ -16,8 +16,9 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.constant.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.schema.ExecutionStep;
+import com.alibaba.cloud.ai.model.execution.ExecutionStep;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StepResultUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
@@ -97,7 +98,7 @@ public class PythonExecuteNode extends AbstractPlanBasedNode {
 							aiResponse);
 					logNodeOutput("analysis_result", aiResponse);
 					return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult, PLAN_CURRENT_STEP, currentStep + 1);
-				}, pythonExecutionFlux);
+				}, pythonExecutionFlux, StreamResponseType.PYTHON_ANALYSIS);
 
 		return Map.of(PYTHON_EXECUTE_NODE_OUTPUT, generator);
 	}

@@ -22,6 +22,7 @@ import org.springframework.ai.model.SpringAIModelProperties;
  * @author YunKui Lu
  * @see org.springframework.ai.model.SpringAIModelProperties
  */
+
 public final class SpringAIAlibabaModelProperties {
 
 	private SpringAIAlibabaModelProperties() {
@@ -29,5 +30,7 @@ public final class SpringAIAlibabaModelProperties {
 	}
 
 	public static final String RERANK_MODEL = SpringAIModelProperties.MODEL_PREFIX + ".rerank";
+
+	public static final String VIDEO_MODEL = SpringAIModelProperties.MODEL_PREFIX + ".video";
 
 }

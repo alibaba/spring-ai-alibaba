@@ -1161,11 +1161,11 @@ public class DashScopeApi {
 			@JsonProperty("enable_thinking") Boolean enableThinking,
 			@JsonProperty("search_options") SearchOptions searchOptions,
 			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
-			@JsonProperty("thinking_budget ") Integer thinkingBudget,
-			@JsonProperty("vl_enable_image_hw_output ") Boolean vlEnableImageHwOutput,
-			@JsonProperty("ocr_options ")  OCRConfig ocrOptions,
-			@JsonProperty("logprobs ") Boolean logprobs,
-			@JsonProperty("top_logprobs ") Integer topLogprobs,
+			@JsonProperty("thinking_budget") Integer thinkingBudget,
+			@JsonProperty("vl_enable_image_hw_output") Boolean vlEnableImageHwOutput,
+			@JsonProperty("ocr_options")  OCRConfig ocrOptions,
+			@JsonProperty("logprobs") Boolean logprobs,
+			@JsonProperty("top_logprobs") Integer topLogprobs,
 			@JsonProperty("translation_options") TranslationOptions translationOptions
 	) {
 
@@ -1481,7 +1481,7 @@ public class DashScopeApi {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record Choice(@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 				@JsonProperty("message") ChatCompletionMessage message,
-				@JsonProperty("logprobs ") ChatCompletionLogprobs logprobs) {
+				@JsonProperty("logprobs") ChatCompletionLogprobs logprobs) {
 		}
 	}
 
@@ -1521,16 +1521,16 @@ public class DashScopeApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record TokenUsage(@JsonProperty("output_tokens") Integer outputTokens,
 			@JsonProperty("input_tokens") Integer inputTokens, @JsonProperty("total_tokens") Integer totalTokens,
-			@JsonProperty("image_tokens") Integer imageTokens, @JsonProperty("video_tokens ") Integer videoTokens,
-			@JsonProperty("audio_tokens ") Integer audioTokens,
+			@JsonProperty("image_tokens") Integer imageTokens, @JsonProperty("video_tokens") Integer videoTokens,
+			@JsonProperty("audio_tokens") Integer audioTokens,
 			@JsonProperty("input_tokens_details") InputTokenDetailed inputTokensDetails,
 			@JsonProperty("output_tokens_details") OutputTokenDetailed outputTokensDetails,
 			@JsonProperty("prompt_tokens_details") PromptTokenDetailed promptTokenDetailed) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record InputTokenDetailed(@JsonProperty("text_tokens ") Integer text,
-			@JsonProperty("image_tokens ") Integer image, @JsonProperty("image_tokens ") Integer audio) {
+	public record InputTokenDetailed(@JsonProperty("text_tokens") Integer text,
+			@JsonProperty("image_tokens") Integer image, @JsonProperty("audio_tokens") Integer audio) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1540,7 +1540,7 @@ public class DashScopeApi {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record PromptTokenDetailed(@JsonProperty("cached_tokens ") Integer cachedTokens) {
+	public record PromptTokenDetailed(@JsonProperty("cached_tokens") Integer cachedTokens) {
 	}
 	// format: on
 

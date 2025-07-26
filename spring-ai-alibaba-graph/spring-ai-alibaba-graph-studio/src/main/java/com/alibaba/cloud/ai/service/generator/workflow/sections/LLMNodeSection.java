@@ -42,6 +42,7 @@ public class LLMNodeSection implements NodeSection {
 	public String render(Node node, String varName) {
 		LLMNodeData d = (LLMNodeData) node.getData();
 		List<String> promptList = new ArrayList<>();
+
 		List<PromptTemplate> promptTemplates = null;
 		if (d.getPromptTemplate() != null) {
 			promptTemplates = d.getPromptTemplate();
@@ -98,7 +99,7 @@ public class LLMNodeSection implements NodeSection {
 
 		List<String> params = extractKeysFromList(promptList);
 		if (!params.isEmpty()) {
-			Map<String, String> paramMap = params.stream().collect(Collectors.toMap(k -> k, k -> ""));
+			Map<String, String> paramMap = params.stream().distinct().collect(Collectors.toMap(k -> k, k -> ""));
 
 			String joined = paramMap.entrySet()
 				.stream()
@@ -158,6 +159,7 @@ public class LLMNodeSection implements NodeSection {
 		return sb.toString();
 	}
 
+	// Extract variable
 	private static List<String> extractKeysFromList(List<String> inputList) {
 		List<String> result = new ArrayList<>();
 		Pattern pattern = Pattern.compile("\\{(\\w+)}");
@@ -171,6 +173,7 @@ public class LLMNodeSection implements NodeSection {
 		return result;
 	}
 
+	// Format prompt
 	private static String transformPlaceholders(String input) {
 		if (input == null)
 			return null;
@@ -181,7 +184,7 @@ public class LLMNodeSection implements NodeSection {
 		StringBuffer sb = new StringBuffer();
 		while (matcher.find()) {
 			String key = matcher.group(1);
-			matcher.appendReplacement(sb, "{" + key);
+			matcher.appendReplacement(sb, "{" + key + "}");
 		}
 		matcher.appendTail(sb);
 		return sb.toString();

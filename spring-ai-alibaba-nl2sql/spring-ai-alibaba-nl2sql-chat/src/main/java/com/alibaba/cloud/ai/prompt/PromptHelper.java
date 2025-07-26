@@ -17,9 +17,9 @@ package com.alibaba.cloud.ai.prompt;
 
 import com.alibaba.cloud.ai.dbconnector.BizDataSourceTypeEnum;
 import com.alibaba.cloud.ai.dbconnector.DbConfig;
-import com.alibaba.cloud.ai.schema.ColumnDTO;
-import com.alibaba.cloud.ai.schema.SchemaDTO;
-import com.alibaba.cloud.ai.schema.TableDTO;
+import com.alibaba.cloud.ai.dto.schema.ColumnDTO;
+import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
+import com.alibaba.cloud.ai.dto.schema.TableDTO;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -222,7 +222,7 @@ public class PromptHelper {
 		Map<String, Object> params = new HashMap<>();
 		params.put("nl_req", nlReq);
 		params.put("sql", sql);
-		return PromptConstant.SEMANTIC_CONSISTENC_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.SEMANTIC_CONSISTENCY_PROMPT_TEMPLATE.render(params);
 	}
 
 	public static String buildReportGeneratorPrompt(String userRequirementsAndPlan, String analysisStepsAndData,

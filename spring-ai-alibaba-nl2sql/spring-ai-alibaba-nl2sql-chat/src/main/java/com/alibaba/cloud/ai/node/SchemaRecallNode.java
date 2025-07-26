@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.constant.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
@@ -24,7 +25,6 @@ import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import reactor.core.publisher.Flux;
@@ -50,7 +50,7 @@ public class SchemaRecallNode implements NodeAction {
 
 	private final BaseSchemaService baseSchemaService;
 
-	public SchemaRecallNode(ChatClient.Builder chatClientBuilder, BaseSchemaService baseSchemaService) {
+	public SchemaRecallNode(BaseSchemaService baseSchemaService) {
 		this.baseSchemaService = baseSchemaService;
 	}
 
@@ -84,7 +84,7 @@ public class SchemaRecallNode implements NodeAction {
 					logger.info("Keyword-related column document details: {}", columnDocumentsByKeywords);
 					return Map.of(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, tableDocuments,
 							COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT, columnDocumentsByKeywords);
-				}, displayFlux);
+				}, displayFlux, StreamResponseType.SCHEMA_RECALL);
 
 		// Return the processing result
 		return Map.of(SCHEMA_RECALL_NODE_OUTPUT, generator);

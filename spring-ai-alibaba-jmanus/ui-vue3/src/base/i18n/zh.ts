@@ -73,7 +73,7 @@ const words: I18nType = {
     parameters: '参数',
     thinking: '思考',
     input: '输入',
-    actions: '操作'
+    actions: '操作',
   },
 
   // 配置相关
@@ -175,6 +175,8 @@ const words: I18nType = {
       typePlaceholder: '选择模型类型',
       baseUrl: 'Base Url',
       baseUrlPlaceholder: '输入 Base Url',
+      headers: '请求头信息',
+      headersPlaceholder: '输入 Headers 需满足JSON对象格式',
       apiKey: 'API密钥',
       apiKeyPlaceholder: '输入API密钥',
       modelName: '模型名称',
@@ -197,7 +199,7 @@ const words: I18nType = {
       exportFailed: '导出Model失败',
       loadDataFailed: '加载数据失败',
       loadDetailsFailed: '加载Model详情失败',
-      invalidFormat: 'Model配置格式不正确：缺少必要字段'
+      invalidFormat: 'Model配置格式不正确：缺少必要字段',
     },
     // MCP配置页面
     mcpConfig: {
@@ -214,7 +216,8 @@ const words: I18nType = {
       instructionStep1Local: '本地(STDIO)',
       instructionStep1LocalDesc: '本地mcp server，目前市面上主流的是这个',
       instructionStep1Remote: '远程服务(SSE/STREAMING)',
-      instructionStep1RemoteDesc: 'mcp.higress.ai/ 上可以找到，有SSE和STREAMING两种，目前STREAM协议更完备一些',
+      instructionStep1RemoteDesc:
+        'mcp.higress.ai/ 上可以找到，有SSE和STREAMING两种，目前STREAM协议更完备一些',
       instructionStep2: '将json配置复制到上面的输入框，本地选STUDIO，远程选STREAMING或SSE，提交',
       instructionStep3: '这样mcp tools就注册成功了。',
       instructionStep4:
@@ -226,8 +229,10 @@ const words: I18nType = {
       deleteConfirm: '确定要删除这个MCP服务器配置吗？此操作不可恢复。',
       addSuccess: '添加MCP服务器成功',
       deleteSuccess: '删除MCP服务器成功',
-      studioExample: '请输入MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
-      sseExample: '请输入SSE MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}'
+      studioExample:
+        '请输入MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": [\n        "-y",\n        "@modelcontextprotocol/server-github"\n      ],\n      "env": {\n        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"\n      }\n    }\n  }\n}',
+      sseExample:
+        '请输入SSE MCP服务器配置JSON。\n\n例如：\n{\n  "mcpServers": {\n    "remote-server": {\n      "url": "https://example.com/mcp",\n      "headers": {\n        "Authorization": "Bearer <YOUR_TOKEN>"\n      }\n    }\n  }\n}',
     },
     // 基础配置
     basicConfig: {
@@ -272,8 +277,17 @@ const words: I18nType = {
       importConfigs: '导入配置',
       search: '搜索',
       loading: '加载中',
+      saveSuccess: '配置保存成功',
+      exportSuccess: '配置导出成功',
+      exportFailed: '导出配置失败',
+      invalidFormat: '配置文件格式不正确',
+      loadConfigSuccess: '配置加载成功',
+      resetSuccess: '配置重置成功',
+      importSuccess: '配置导入成功',
       notFound: '未找到配置项',
+      noModified: '没有需要保存的修改',
       resetGroupConfirm: '重置该组所有配置为默认值',
+      isDefault: '该组配置已是默认值',
       reset: '重置',
       requestTimeout: '请求超时时间(秒)',
       browserTimeout: '浏览器请求超时时间(秒)',
@@ -302,7 +316,7 @@ const words: I18nType = {
       messageType: '消息类型',
       type: '领域类型',
       builtIn: '内置',
-      custom:"自定义",
+      custom: '自定义',
       namespace: '命名空间',
       promptNamePlaceholder: '输入Prompt名称',
       selectPromptHint: '请选择一个prompt进行配置',
@@ -318,6 +332,20 @@ const words: I18nType = {
       deleteConfirm: '删除确认',
       deleteConfirmText: '确定要删除',
       deleteWarning: '此操作不可恢复。',
+    },
+    namespaceConfig: {
+      title: '命名空间配置',
+      loadDetailsFailed: '加载namespace详情失败',
+      createNew: '新建命名空间',
+      placeholder: '请输入',
+      saveSuccess: '保存成功',
+      saveFailed: '保存失败',
+      deleteSuccess: '删除成功',
+      deleteFailed: '删除失败',
+      deleteConfirm: '删除确认',
+      deleteConfirmText: '确定要删除',
+      deleteWarning: '此操作不可恢复。',
+      configured: '已配置的命名空间',
     },
   },
 
@@ -364,8 +392,39 @@ const words: I18nType = {
     saveSuccess: 'Model保存成功',
     saveFailed: 'Model保存失败',
     deleteSuccess: 'Model删除成功',
-    deleteFailed: 'Model删除失败'
+    deleteFailed: 'Model删除失败',
   },
+
+  // 计划模板配置
+  planTemplate: {
+    title: '计划模板配置',
+    generator: '计划生成器',
+    execution: '计划执行',
+    prompt: '生成提示',
+    promptPlaceholder: '描述您想要生成的计划...',
+    generating: '生成中...',
+    generate: '生成计划',
+    updatePlan: '更新计划',
+    executing: '执行中...',
+    execute: '执行计划',
+    executionParams: '执行参数',
+    executionParamsPlaceholder: '输入执行参数（可选）...',
+    apiUrl: 'API 调用地址',
+    clearParams: '清空参数',
+    versionControl: '版本控制',
+    rollback: '回滚',
+    restore: '恢复',
+    currentVersion: '当前版本',
+    saveTemplate: '保存模板',
+    loadTemplate: '加载模板',
+    templateSaved: '模板已保存',
+    templateLoaded: '模板已加载',
+    executionSuccess: '执行成功',
+    executionFailed: '执行失败',
+    generationSuccess: '生成成功',
+    generationFailed: '生成失败',
+  },
+
   // 聊天组件
   chat: {
     botName: 'TaskPilot:',
@@ -434,16 +493,19 @@ const words: I18nType = {
     jsonTemplate: 'JSON 模板',
     rollback: '回滚',
     restore: '恢复',
-    jsonPlaceholder: 'step2 ： 你可以在这里直接修改在step1中生产出的执行计划，让他更精准的按照你的希望执行。然后你可以点击执行计划，高确定性的执行这个计划',
+    jsonPlaceholder:
+      'step2 ： 你可以在这里直接修改在step1中生产出的执行计划，让他更精准的按照你的希望执行。然后你可以点击执行计划，高确定性的执行这个计划',
     planGenerator: '计划生成器',
-    generatorPlaceholder: 'step1 : 在这里用自然语言输入你希望完成的任务，尽可能详细，然后点击生成计划，就可以生产一个可重复执行的精确计划',
+    generatorPlaceholder:
+      'step1 : 在这里用自然语言输入你希望完成的任务，尽可能详细，然后点击生成计划，就可以生产一个可重复执行的精确计划',
     generating: '生成中...',
     generatePlan: '生成计划',
     updatePlan: '更新计划',
     executionController: '执行控制器',
     executionParams: '执行参数',
     executionParamsPlaceholder: '输入执行参数...',
-    executionParamsHelp: '在重复执行时，你可以将step2里面的一些内容设置为变量，然后在这里指定该变量的具体值。例如json里面设置 变量1 ，然后在这里则设置 变量1=阿里巴巴 。 就可以实现类似函数的参数的效果。',
+    executionParamsHelp:
+      '在重复执行时，你可以将step2里面的一些内容设置为变量，然后在这里指定该变量的具体值。例如json里面设置 变量1 ，然后在这里则设置 变量1=阿里巴巴 。 就可以实现类似函数的参数的效果。',
     clearParams: '清空参数',
     apiUrl: 'HTTP GET URL',
     statusApiUrl: '状态查询 API',
@@ -600,6 +662,7 @@ const words: I18nType = {
     welcomeSubtitle: '您的 Java AI 智能助手，帮助您构建和完成各种任务。',
     tagline: 'Java AI 智能体',
     inputPlaceholder: '描述您想构建或完成的内容...',
+    directButton: 'Plan-Act 工作台',
     examples: {
       stockPrice: {
         title: '查询股价',
@@ -616,6 +679,11 @@ const words: I18nType = {
         title: '查询天气',
         description: '获取北京今天的天气情况（Agent可以使用MCP工具服务）',
         prompt: '用浏览器，基于百度，查询北京今天的天气',
+      },
+      queryplan: {
+        title: '查询一个人的信息',
+        description: '查询沈询 阿里的所有信息并优化终止结构列',
+        prompt: '用浏览器，基于百度，查询计划',
       },
     },
   },
@@ -692,6 +760,34 @@ const words: I18nType = {
     configuration: '配置',
     panelResizeHint: '拖拽调整面板大小，双击重置',
     aboutExecutionDetails: '关于集成执行详情',
+  },
+
+  // 定时任务
+  cronTask: {
+    title: '定时任务管理',
+    noTasks: '暂无定时任务',
+    taskName: '任务名称',
+    taskNamePlaceholder: '请输入任务名称',
+    cronExpression: 'Cron表达式',
+    cronExpressionPlaceholder: '例如: 0 0 12 * * ?',
+    cronExpressionHelp: '格式: 秒 分 时 日 月 周 年',
+    taskDescription: '任务描述',
+    taskDescriptionPlaceholder: '请输入任务描述',
+    taskStatus: '任务状态',
+    taskDetail: '任务详情',
+    executeOnce: '执行一次',
+    edit: '编辑',
+    operations: '操作',
+    enable: '启用',
+    disable: '禁用',
+    delete: '删除',
+    deleteConfirm: '确认删除',
+    deleteConfirmMessage: '确定要删除任务 "{taskName}" 吗？此操作不可撤销。',
+    nextExecution: '下次执行时间',
+    createTime: '创建时间',
+    updateTime: '更新时间',
+    active: '启用',
+    inactive: '禁用',
   },
 }
 

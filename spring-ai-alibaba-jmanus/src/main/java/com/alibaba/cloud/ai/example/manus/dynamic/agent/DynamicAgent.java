@@ -15,19 +15,23 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
+import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
+import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,19 +51,16 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import reactor.core.publisher.Flux;
 
-import com.alibaba.cloud.ai.example.manus.agent.AgentState;
-import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
-import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
-import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class DynamicAgent extends ReActAgent {
 
@@ -79,6 +80,8 @@ public class DynamicAgent extends ReActAgent {
 
 	private ChatResponse response;
 
+	private StreamingResponseHandler.StreamingResult streamResult;
+
 	private Prompt userPrompt;
 
 	// 存储当前创建的ThinkActRecord ID，用于后续的action记录
@@ -89,6 +92,8 @@ public class DynamicAgent extends ReActAgent {
 	private final UserInputService userInputService;
 
 	private final DynamicModelEntity model;
+
+	private final StreamingResponseHandler streamingResponseHandler;
 
 	public void clearUp(String planId) {
 		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
@@ -110,7 +115,7 @@ public class DynamicAgent extends ReActAgent {
 			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
 			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
 			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptService promptService,
-			DynamicModelEntity model) {
+			DynamicModelEntity model, StreamingResponseHandler streamingResponseHandler) {
 		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptService);
 		this.agentName = name;
 		this.agentDescription = description;
@@ -119,6 +124,7 @@ public class DynamicAgent extends ReActAgent {
 		this.toolCallingManager = toolCallingManager;
 		this.userInputService = userInputService;
 		this.model = model;
+		this.streamingResponseHandler = streamingResponseHandler;
 	}
 
 	@Override
@@ -184,14 +190,23 @@ public class DynamicAgent extends ReActAgent {
 				chatClient = llmService.getAgentChatClient();
 			}
 			else {
-				chatClient = llmService.getDynamicChatClient(model.getBaseUrl(), model.getApiKey(),
-						model.getModelName());
+				chatClient = llmService.getDynamicChatClient(model);
 			}
-			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
+			// Use streaming response handler for better user experience and content
+			// merging
+			Flux<ChatResponse> responseFlux = chatClient.prompt(userPrompt)
+				.toolCallbacks(callbacks)
+				.stream()
+				.chatResponse();
+			streamResult = streamingResponseHandler.processStreamingResponse(responseFlux,
+					"Agent " + getName() + " thinking");
+
+			response = streamResult.getLastResponse();
 			String modelName = response.getMetadata().getModel();
 
-			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
-			String responseByLLm = response.getResult().getOutput().getText();
+			// Use merged content from streaming handler
+			List<ToolCall> toolCalls = streamResult.getEffectiveToolCalls();
+			String responseByLLm = streamResult.getEffectiveText();
 
 			log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
 			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
@@ -262,7 +277,7 @@ public class DynamicAgent extends ReActAgent {
 		List<ThinkActRecord.ActToolInfo> actToolInfoList = null;
 
 		try {
-			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
+			List<ToolCall> toolCalls = streamResult.getEffectiveToolCalls();
 
 			// 创建 ActToolInfo 列表
 			actToolInfoList = createActToolInfoList(toolCalls);
@@ -327,15 +342,19 @@ public class DynamicAgent extends ReActAgent {
 			log.info("Exception occurred", e);
 
 			// 记录失败的动作结果
-			if (actToolInfoList == null && response != null && response.getResult() != null
-					&& response.getResult().getOutput() != null) {
-				List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
-				if (!toolCalls.isEmpty()) {
-					actToolInfoList = createActToolInfoList(toolCalls);
-				}
+			List<ToolCall> toolCalls = streamResult.getEffectiveToolCalls();
+			if (toolCalls != null && !toolCalls.isEmpty()) {
+				actToolInfoList = createActToolInfoList(toolCalls);
 			}
+			StringBuilder errorMessage = new StringBuilder("Error executing tools: ");
+			errorMessage.append(e.getMessage());
 
-			recordActionResult(actToolInfoList, null, ExecutionStatus.RUNNING, e.getMessage(), false);
+			String firstToolcall = actToolInfoList != null && !actToolInfoList.isEmpty()
+					? actToolInfoList.get(0).getParameters().toString() : "unknown";
+			errorMessage.append("  . llm return param :  ").append(firstToolcall);
+
+			recordActionResult(actToolInfoList, errorMessage.toString(), ExecutionStatus.RUNNING,
+					errorMessage.toString(), false);
 
 			userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error

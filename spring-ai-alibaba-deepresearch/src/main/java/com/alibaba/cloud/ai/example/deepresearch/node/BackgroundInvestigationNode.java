@@ -16,12 +16,17 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
+import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
@@ -31,7 +36,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author yingzi
@@ -42,73 +46,40 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
 
-	private final Integer MAX_RETRY_COUNT = 3;
-
-	private final Long RETRY_DELAY_MS = 500L;
-
-	private final JinaCrawlerService jinaCrawlerService;
-
 	private final InfoCheckService infoCheckService;
 
-	private final SearchFilterService searchFilterService;
+	private final SearchInfoService searchInfoService;
+
+	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
 
 	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
-			SearchFilterService searchFilterService) {
-		this.jinaCrawlerService = jinaCrawlerService;
+			SearchFilterService searchFilterService, QuestionClassifierService questionClassifierService,
+			SearchPlatformSelectionService platformSelectionService, SmartAgentProperties smartAgentProperties) {
+		this.searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService);
 		this.infoCheckService = infoCheckService;
-		this.searchFilterService = searchFilterService;
+		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties, null,
+				questionClassifierService, platformSelectionService);
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("background investigation node is running.");
+
+		Map<String, Object> resultMap = new HashMap<>();
+		List<List<Map<String, String>>> resultsList = new ArrayList<>();
 		List<String> queries = StateUtil.getOptimizeQueries(state);
 		assert queries != null && !queries.isEmpty();
-		List<List<Map<String, String>>> resultsList = new ArrayList<>();
+
 		for (String query : queries) {
-			SearchEnum searchEnum = state.value("search_engine", SearchEnum.class).orElseThrow();
+			// 如果mutiAgent功能开启且配置了专用搜索平台，则使用智能搜索引擎选择,否则使用默认的通用搜索引擎
+			SearchEnum searchEnum = getSearchEnum(state, query);
 			List<Map<String, String>> results = new ArrayList<>();
 
-			// Retry logic
-			for (int i = 0; i < MAX_RETRY_COUNT; i++) {
-				try {
-					results = searchFilterService
-						.queryAndFilter(state.value("enable_search_filter", true), searchEnum, query)
-						.stream()
-						.map(info -> {
-							Map<String, String> result = new HashMap<>();
-							result.put("title", info.content().title());
-							result.put("weight", String.valueOf(info.weight()));
-							if (jinaCrawlerService == null || !CommonToolCallUtils.isValidUrl(info.content().url())) {
-								result.put("content", info.content().content());
-							}
-							else {
-								try {
-									logger.info("Get detail info of a url using Jina Crawler...");
-									result.put("content",
-											jinaCrawlerService
-												.apply(new JinaCrawlerService.Request(info.content().url()))
-												.content());
-								}
-								catch (Exception e) {
-									logger.error("Jina Crawler Service Error", e);
-									result.put("content", info.content().content());
-								}
-							}
-							return result;
-						})
-						.collect(Collectors.toList());
-					break;
-				}
-				catch (Exception e) {
-					logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
-					Thread.sleep(RETRY_DELAY_MS);
-				}
-			}
+			results = searchInfoService.searchInfo(state.value("enable_search_filter", true), searchEnum, query);
+			resultMap.put("site_information", results);
 			resultsList.add(results);
 		}
 
-		Map<String, Object> resultMap = new HashMap<>();
 		if (!resultsList.isEmpty()) {
 			List<String> backgroundResults = new ArrayList<>();
 			assert resultsList.size() != queries.size();
@@ -123,7 +94,7 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 				backgroundResults.add(prompt);
 			}
-			logger.info("✅ 搜索结果: {} 条", backgroundResults.size());
+			logger.info("✅ 搜索结果: {} 组", backgroundResults.size());
 			resultMap.put("background_investigation_results", backgroundResults);
 		}
 		else {
@@ -131,6 +102,16 @@ public class BackgroundInvestigationNode implements NodeAction {
 		}
 
 		return resultMap;
+	}
+
+	/**
+	 * 获取智能选择的搜索引擎
+	 * @param state 全局状态
+	 * @param query 查询内容
+	 * @return 搜索引擎枚举
+	 */
+	private SearchEnum getSearchEnum(OverAllState state, String query) {
+		return smartAgentSelectionHelper.intelligentSearchEngineSelection(state, query);
 	}
 
 }

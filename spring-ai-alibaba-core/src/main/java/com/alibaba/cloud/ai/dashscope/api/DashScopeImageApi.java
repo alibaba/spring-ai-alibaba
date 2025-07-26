@@ -79,7 +79,7 @@ public class DashScopeImageApi {
 			.build();
 	}
 
-	public ResponseEntity<DashScopeImageAsyncReponse> submitImageGenTask(DashScopeImageRequest request) {
+	public ResponseEntity<DashScopeImageAsyncResponse> submitImageGenTask(DashScopeImageRequest request) {
 
 		String baseUrl = "/api/v1/services/aigc/";
 		String model = request.model();
@@ -96,14 +96,14 @@ public class DashScopeImageApi {
 			.header(HEADER_ASYNC, ENABLED)
 			.body(request)
 			.retrieve()
-			.toEntity(DashScopeImageAsyncReponse.class);
+			.toEntity(DashScopeImageAsyncResponse.class);
 	}
 
-	public ResponseEntity<DashScopeImageAsyncReponse> getImageGenTaskResult(String taskId) {
+	public ResponseEntity<DashScopeImageAsyncResponse> getImageGenTaskResult(String taskId) {
 		return this.restClient.get()
 			.uri("/api/v1/tasks/{task_id}", taskId)
 			.retrieve()
-			.toEntity(DashScopeImageAsyncReponse.class);
+			.toEntity(DashScopeImageAsyncResponse.class);
 	}
 
 	public enum ImageModel {
@@ -183,29 +183,29 @@ public class DashScopeImageApi {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record DashScopeImageAsyncReponse(@JsonProperty("request_id") String requestId,
-			@JsonProperty("output") DashScopeImageAsyncReponseOutput output,
-			@JsonProperty("usage") DashScopeImageAsyncReponseUsage usage) {
+	public record DashScopeImageAsyncResponse(@JsonProperty("request_id") String requestId,
+			@JsonProperty("output") DashScopeImageAsyncResponseOutput output,
+			@JsonProperty("usage") DashScopeImageAsyncResponseUsage usage) {
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record DashScopeImageAsyncReponseOutput(@JsonProperty("task_id") String taskId,
+		public record DashScopeImageAsyncResponseOutput(@JsonProperty("task_id") String taskId,
 				@JsonProperty("task_status") String taskStatus,
-				@JsonProperty("results") List<DashScopeImageAsyncReponseResult> results,
-				@JsonProperty("task_metrics") DashScopeImageAsyncReponseTaskMetrics taskMetrics,
+				@JsonProperty("results") List<DashScopeImageAsyncResponseResult> results,
+				@JsonProperty("task_metrics") DashScopeImageAsyncResponseTaskMetrics taskMetrics,
 				@JsonProperty("code") String code, @JsonProperty("message") String message) {
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record DashScopeImageAsyncReponseTaskMetrics(@JsonProperty("TOTAL") Integer total,
+		public record DashScopeImageAsyncResponseTaskMetrics(@JsonProperty("TOTAL") Integer total,
 				@JsonProperty("SUCCEEDED") Integer SUCCEEDED, @JsonProperty("FAILED") Integer FAILED) {
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record DashScopeImageAsyncReponseUsage(@JsonProperty("image_count") Integer imageCount) {
+		public record DashScopeImageAsyncResponseUsage(@JsonProperty("image_count") Integer imageCount) {
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record DashScopeImageAsyncReponseResult(@JsonProperty("url") String url) {
+		public record DashScopeImageAsyncResponseResult(@JsonProperty("url") String url) {
 		}
 	}
 	// format: on
