@@ -130,7 +130,6 @@ public class GraphProcess {
 		content = switch (nodeEnum) {
 			case START -> output.state().data().get("query");
 			case REWRITE_MULTI_QUERY, HUMAN_FEEDBACK, END -> output.state().data();
-			case BACKGROUND_INVESTIGATOR -> output.state().data().get("optimize_queries");
 			case PLANNER -> output.state().data().get("planner_content");
 			case RESEARCH_TEAM -> {
 				String researchTeamContent = (String) output.state().data().get("research_team_content");

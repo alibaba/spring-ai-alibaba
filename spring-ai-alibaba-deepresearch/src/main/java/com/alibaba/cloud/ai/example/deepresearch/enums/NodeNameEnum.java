@@ -29,6 +29,9 @@ public enum NodeNameEnum {
 
 	private final String nodeName;
 
+	/**
+	 * 前端渲染的标题
+	 */
 	private final String displayTitle;
 
 	NodeNameEnum(String nodeName, String displayTitle) {
