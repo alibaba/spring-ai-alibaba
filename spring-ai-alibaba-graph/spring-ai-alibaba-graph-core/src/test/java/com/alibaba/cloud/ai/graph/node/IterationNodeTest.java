@@ -65,6 +65,7 @@ public class IterationNodeTest {
 			map.put("iterator_item_result", new ReplaceStrategy());
 			map.put("result", new ReplaceStrategy());
 			map.put("output_continue", new ReplaceStrategy());
+			map.put("iteration_index", new ReplaceStrategy());
 			return map;
 		};
 		CompiledGraph graph = new StateGraph("main", mainFactory)
@@ -72,6 +73,7 @@ public class IterationNodeTest {
 			.addNode("iteration_node",
 					IterationNode.converter()
 						.inputArrayJsonKey("input_json_array")
+						.tempIndexKey("iteration_index")
 						.outputArrayJsonKey("result")
 						.iteratorItemKey("iterator_item")
 						.iteratorResultKey("iterator_item_result")
@@ -185,6 +187,8 @@ public class IterationNodeTest {
 			map.put("test_temp_array2", new ReplaceStrategy());
 			map.put("test_temp_start2", new ReplaceStrategy());
 			map.put("test_temp_end2", new ReplaceStrategy());
+			map.put("iteration_index1", new ReplaceStrategy());
+			map.put("iteration_index2", new ReplaceStrategy());
 			return map;
 		};
 		CompiledGraph graph = new StateGraph("main", mainFactory)
@@ -192,6 +196,7 @@ public class IterationNodeTest {
 			.addNode("iteration_node1",
 					IterationNode.converter()
 						.inputArrayJsonKey("input_json_array1")
+						.tempIndexKey("iteration_index1")
 						.outputArrayJsonKey("result1")
 						.iteratorItemKey("iterator_item")
 						.iteratorResultKey("iterator_item_result")
@@ -206,6 +211,7 @@ public class IterationNodeTest {
 			.addNode("iteration_node2",
 					IterationNode.converter()
 						.inputArrayJsonKey("input_json_array2")
+						.tempIndexKey("iteration_index2")
 						.outputArrayJsonKey("result2")
 						.iteratorItemKey("iterator_item")
 						.iteratorResultKey("iterator_item_result")
@@ -233,7 +239,7 @@ public class IterationNodeTest {
 		StateGraph stateGraph = new StateGraph("graph",
 				() -> Map.of("input_json_array", new ReplaceStrategy(), "item", new ReplaceStrategy(), "item_result",
 						new ReplaceStrategy(), "result", new ReplaceStrategy(), "tv1", new ReplaceStrategy(), "tv2",
-						new ReplaceStrategy(), "tv3", new ReplaceStrategy()))
+						new ReplaceStrategy(), "tv3", new ReplaceStrategy(), "tv4", new ReplaceStrategy()))
 			.addNode("generate", node_async((OverAllState state) -> Map.of("input_json_array", "[1, 2, 3, 4, 5]")))
 			.addNode("apply", node_async((OverAllState state) -> {
 				int x = state.value("item", Integer.class).orElseThrow();
@@ -246,6 +252,7 @@ public class IterationNodeTest {
 			.tempArrayKey("tv1")
 			.tempStartFlagKey("tv2")
 			.tempEndFlagKey("tv3")
+			.tempIndexKey("tv4")
 			.iteratorItemKey("item")
 			.iteratorResultKey("item_result")
 			.inputArrayJsonKey("input_json_array")

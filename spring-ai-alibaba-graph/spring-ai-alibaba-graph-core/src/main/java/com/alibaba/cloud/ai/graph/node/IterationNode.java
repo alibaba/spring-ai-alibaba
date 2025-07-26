@@ -67,6 +67,11 @@ public class IterationNode {
 		private final String inputArrayKey;
 
 		/**
+		 * 保存仍需处理的索引的Key，类型为List，策略为更新策略
+		 */
+		private final String taskIndexListKey;
+
+		/**
 		 * 迭代过程中元素的key
 		 */
 		private final String outputItemKey;
@@ -76,10 +81,11 @@ public class IterationNode {
 		 */
 		private final String outputStartIterationKey;
 
-		public Start(String inputArrayJsonKey, String inputArrayKey, String outputItemKey,
+		public Start(String inputArrayJsonKey, String inputArrayKey, String taskIndexListKey, String outputItemKey,
 				String outputStartIterationKey) {
 			this.inputArrayJsonKey = inputArrayJsonKey;
 			this.inputArrayKey = inputArrayKey;
+			this.taskIndexListKey = taskIndexListKey;
 			this.outputItemKey = outputItemKey;
 			this.outputStartIterationKey = outputStartIterationKey;
 		}
@@ -87,24 +93,46 @@ public class IterationNode {
 		@Override
 		public Map<String, Object> apply(OverAllState state) throws Exception {
 			try {
+				List<ElementInput> list;
+				List<Integer> indexes;
 				// 第一次迭代初始化，将JSON字符串转化为List
-				List<ElementInput> inputs = null;
 				if (state.value(this.inputArrayKey, List.class).orElse(null) == null) {
-					inputs = OBJECT_MAPPER.readValue(state.value(this.inputArrayJsonKey, String.class).orElse("[]"),
-							new TypeReference<List<ElementInput>>() {
-							});
+					Object inputs = state.value(this.inputArrayJsonKey).orElse(null);
+					if (inputs == null) {
+						return Map.of(this.outputStartIterationKey, false);
+					}
+					// 用户的输入可以为List，或者JSON字符串
+
+					if (inputs instanceof List) {
+						list = List.copyOf((List<ElementInput>) inputs);
+					}
+					else {
+						list = List
+							.copyOf(OBJECT_MAPPER.readValue(inputs.toString(), new TypeReference<List<ElementInput>>() {
+							}));
+					}
+					if (list.isEmpty()) {
+						return Map.of(this.outputStartIterationKey, false);
+					}
+					indexes = new ArrayList<>();
+					for (int i = 0; i < list.size(); i++) {
+						indexes.add(i);
+					}
 				}
-				// 获取输入的第一个元素
-				List<ElementInput> items = inputs == null
-						? (List<ElementInput>) state.value(this.inputArrayKey, List.class).orElseThrow() : inputs;
-				if (items.isEmpty()) {
+				else {
+					// 从state里读取list和indexes
+					list = (List<ElementInput>) state.value(this.inputArrayKey).orElseThrow();
+					indexes = (List<Integer>) state.value(this.taskIndexListKey).orElseThrow();
+				}
+
+				if (indexes.isEmpty()) {
 					return Map.of(this.outputStartIterationKey, false);
 				}
-				// 删除第一个元素，并放回state
-				List<ElementInput> newItems = new ArrayList<ElementInput>(items);
-				newItems.remove(0);
-				return Map.of(this.outputItemKey, items.get(0), this.outputStartIterationKey, true, this.inputArrayKey,
-						newItems);
+				// 获取要处理的第一个元素
+				int index = indexes.get(0);
+				indexes.remove(0);
+				return Map.of(this.outputItemKey, list.get(index), this.outputStartIterationKey, true,
+						this.taskIndexListKey, indexes, this.inputArrayKey, list);
 			}
 			catch (Exception e) {
 				log.error("Iteration Start node error: {}", e.getMessage(), e);
@@ -122,8 +150,11 @@ public class IterationNode {
 
 			private String outputStartIterationKey;
 
+			private String taskIndexListKey;
+
 			public Start<ElementInput> build() {
-				return new Start<>(inputArrayJsonKey, inputArrayKey, outputItemKey, outputStartIterationKey);
+				return new Start<>(inputArrayJsonKey, inputArrayKey, taskIndexListKey, outputItemKey,
+						outputStartIterationKey);
 			}
 
 			private Builder() {
@@ -131,6 +162,7 @@ public class IterationNode {
 				this.inputArrayKey = null;
 				this.outputItemKey = null;
 				this.outputStartIterationKey = null;
+				this.taskIndexListKey = null;
 			}
 
 			public Builder<ElementInput> inputArrayJsonKey(String inputArrayJsonKey) {
@@ -153,6 +185,11 @@ public class IterationNode {
 				return this;
 			}
 
+			public Builder<ElementInput> taskIndexListKey(String taskIndexListKey) {
+				this.taskIndexListKey = taskIndexListKey;
+				return this;
+			}
+
 		}
 
 	}
@@ -166,9 +203,9 @@ public class IterationNode {
 	public static class End<ElementInput, ElementOutput> implements NodeAction {
 
 		/**
-		 * 输入JSON数组的key，元素类型应为JSON字符串，策略应为更新策略
+		 * 当前还剩余的元素索引List的Key
 		 */
-		private final String inputArrayKey;
+		private final String taskIndexSetKey;
 
 		/**
 		 * 输入子图节点处理的结果key
@@ -187,9 +224,9 @@ public class IterationNode {
 
 		private final String outputStartIterationKey;
 
-		public End(String inputArrayKey, String inputResultKey, String outputArrayJsonKey,
+		public End(String taskIndexSetKey, String inputResultKey, String outputArrayJsonKey,
 				String outputContinueIterationKey, String outputStartIterationKey) {
-			this.inputArrayKey = inputArrayKey;
+			this.taskIndexSetKey = taskIndexSetKey;
 			this.inputResultKey = inputResultKey;
 			this.outputArrayJsonKey = outputArrayJsonKey;
 			this.outputContinueIterationKey = outputContinueIterationKey;
@@ -199,21 +236,21 @@ public class IterationNode {
 		@Override
 		public Map<String, Object> apply(OverAllState state) throws Exception {
 			try {
-				// 判断是不是空迭代节点（即outputStartIterationKey为false）
-				if (!state.value(this.outputStartIterationKey, Boolean.class).orElse(false)) {
-					return Map.of(this.outputContinueIterationKey, false, this.outputArrayJsonKey, "[]");
-				}
-				List<ElementInput> items = (List<ElementInput>) state.value(this.inputArrayKey, List.class)
-					.orElseThrow();
-				ElementOutput result = (ElementOutput) state.value(this.inputResultKey).orElseThrow();
 				List<ElementOutput> outputList = new ArrayList<>(
 						OBJECT_MAPPER.readValue(state.value(this.outputArrayJsonKey, String.class).orElse("[]"),
 								new TypeReference<List<ElementOutput>>() {
 								}));
+				// 判断是不是空迭代节点（即outputStartIterationKey为false）
+				if (!state.value(this.outputStartIterationKey, Boolean.class).orElse(false)) {
+					return Map.of(this.outputContinueIterationKey, false, this.outputArrayJsonKey,
+							OBJECT_MAPPER.writeValueAsString(outputList));
+				}
+				List<Integer> indexes = (List<Integer>) state.value(this.taskIndexSetKey, List.class).orElseThrow();
+				ElementOutput result = (ElementOutput) state.value(this.inputResultKey).orElseThrow();
 				// 将子图节点的处理结果加入到最终结果数组中
 				outputList.add(result);
 				return Map.of(this.outputArrayJsonKey, OBJECT_MAPPER.writeValueAsString(outputList),
-						this.outputContinueIterationKey, !items.isEmpty());
+						this.outputContinueIterationKey, !indexes.isEmpty());
 			}
 			catch (Exception e) {
 				log.error("Iteration End node error: {}", e.getMessage(), e);
@@ -223,7 +260,7 @@ public class IterationNode {
 
 		public static class Builder<ElementInput, ElementOutput> {
 
-			private String inputArrayKey;
+			private String taskIndexListKey;
 
 			private String inputResultKey;
 
@@ -234,7 +271,7 @@ public class IterationNode {
 			private String outputStartIterationKey;
 
 			private Builder() {
-				this.inputArrayKey = null;
+				this.taskIndexListKey = null;
 				this.inputResultKey = null;
 				this.outputArrayKey = null;
 				this.outputContinueIterationKey = null;
@@ -242,12 +279,12 @@ public class IterationNode {
 			}
 
 			public End<ElementInput, ElementOutput> build() {
-				return new End<>(inputArrayKey, inputResultKey, outputArrayKey, outputContinueIterationKey,
+				return new End<>(taskIndexListKey, inputResultKey, outputArrayKey, outputContinueIterationKey,
 						outputStartIterationKey);
 			}
 
-			public Builder<ElementInput, ElementOutput> inputArrayKey(String inputArrayKey) {
-				this.inputArrayKey = inputArrayKey;
+			public Builder<ElementInput, ElementOutput> taskIndexListKey(String taskIndexListKey) {
+				this.taskIndexListKey = taskIndexListKey;
 				return this;
 			}
 
@@ -318,6 +355,8 @@ public class IterationNode {
 
 		private String tempArrayKey;
 
+		private String tempIndexKey;
+
 		private String tempStartFlagKey;
 
 		private String tempEndFlagKey;
@@ -362,6 +401,11 @@ public class IterationNode {
 			return this;
 		}
 
+		public Converter<ElementInput, ElementOutput> tempIndexKey(String tempIndexKey) {
+			this.tempIndexKey = tempIndexKey;
+			return this;
+		}
+
 		public Converter<ElementInput, ElementOutput> tempStartFlagKey(String tempStartFlagKey) {
 			this.tempStartFlagKey = tempStartFlagKey;
 			return this;
@@ -391,6 +435,9 @@ public class IterationNode {
 			if (!StringUtils.hasText(this.tempEndFlagKey)) {
 				this.tempEndFlagKey = "output_continue";
 			}
+			if (!StringUtils.hasText(this.tempIndexKey)) {
+				this.tempIndexKey = "iteration_index";
+			}
 			KeyStrategyFactory strategyFactory = () -> {
 				Map<String, KeyStrategy> map = new HashMap<>();
 				map.put(this.tempArrayKey, new ReplaceStrategy());
@@ -400,6 +447,7 @@ public class IterationNode {
 				map.put(this.iteratorResultKey, new ReplaceStrategy());
 				map.put(this.outputArrayJsonKey, new ReplaceStrategy());
 				map.put(this.tempEndFlagKey, new ReplaceStrategy());
+				map.put(this.tempIndexKey, new ReplaceStrategy());
 				return map;
 			};
 			return new StateGraph("iteration_node", strategyFactory)
@@ -407,13 +455,14 @@ public class IterationNode {
 						node_async(IterationNode.<ElementInput>start()
 							.inputArrayJsonKey(this.inputArrayJsonKey)
 							.inputArrayKey(this.tempArrayKey)
+							.taskIndexListKey(this.tempIndexKey)
 							.outputItemKey(this.iteratorItemKey)
 							.outputStartIterationKey(this.tempStartFlagKey)
 							.build()))
 				.addNode("iteration", subGraph)
 				.addNode("iteration_end",
 						node_async(IterationNode.<ElementInput, ElementOutput>end()
-							.inputArrayKey(this.tempArrayKey)
+							.taskIndexListKey(this.tempIndexKey)
 							.inputResultKey(this.iteratorResultKey)
 							.outputArrayKey(this.outputArrayJsonKey)
 							.outputContinueIterationKey(this.tempEndFlagKey)
@@ -445,7 +494,8 @@ public class IterationNode {
 					|| !StringUtils.hasText(this.tempArrayKey) || !StringUtils.hasText(this.subGraphStartNodeName)
 					|| !StringUtils.hasText(this.subGraphEndNodeName) || !StringUtils.hasText(this.tempStartFlagKey)
 					|| !StringUtils.hasText(this.tempEndFlagKey) || stateGraph == null
-					|| !StringUtils.hasText(iterationName) || !StringUtils.hasText(iterationOutName)) {
+					|| !StringUtils.hasText(this.tempIndexKey) || !StringUtils.hasText(iterationName)
+					|| !StringUtils.hasText(iterationOutName)) {
 				throw new IllegalArgumentException("There are some empty fields");
 			}
 			// 注册临时变量的替换策略
@@ -453,13 +503,14 @@ public class IterationNode {
 				.addNode(iterationName,
 						node_async(IterationNode.<ElementInput>start()
 							.inputArrayJsonKey(this.inputArrayJsonKey)
+							.taskIndexListKey(this.tempIndexKey)
 							.inputArrayKey(this.tempArrayKey)
 							.outputItemKey(this.iteratorItemKey)
 							.outputStartIterationKey(this.tempStartFlagKey)
 							.build()))
 				.addNode(iterationName + "iteration_end",
 						node_async(IterationNode.<ElementInput, ElementOutput>end()
-							.inputArrayKey(this.tempArrayKey)
+							.taskIndexListKey(this.tempArrayKey)
 							.inputResultKey(this.iteratorResultKey)
 							.outputArrayKey(this.outputArrayJsonKey)
 							.outputContinueIterationKey(this.tempEndFlagKey)
