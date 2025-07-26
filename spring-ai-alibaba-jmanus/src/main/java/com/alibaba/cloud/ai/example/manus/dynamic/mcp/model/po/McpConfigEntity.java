@@ -42,6 +42,10 @@ public class McpConfigEntity {
 	@Column(nullable = false, length = 4000)
 	private String connectionConfig;
 
+	@Column(nullable = false, columnDefinition = "VARCHAR(10) DEFAULT 'ENABLE'")
+	@Enumerated(EnumType.STRING)
+	private McpConfigStatus status = McpConfigStatus.ENABLE; // 默认为启用状态
+
 	// Getters and Setters
 	public Long getId() {
 		return id;
@@ -78,10 +82,19 @@ public class McpConfigEntity {
 		return this;
 	}
 
+	public McpConfigStatus getStatus() {
+		return status;
+	}
+
+	public McpConfigEntity setStatus(McpConfigStatus status) {
+		this.status = status;
+		return this;
+	}
+
 	@Override
 	public String toString() {
 		return "McpConfigEntity{" + "id=" + id + ", mcpServerName='" + mcpServerName + '\'' + ", connectionType="
-				+ connectionType + ", connectionConfig='" + connectionConfig + '\'' + '}';
+				+ connectionType + ", connectionConfig='" + connectionConfig + '\'' + ", status=" + status + '}';
 	}
 
 }

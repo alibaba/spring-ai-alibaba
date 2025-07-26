@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.schema;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
 
 public class ExecutionStep {
 
@@ -32,7 +31,6 @@ public class ExecutionStep {
 	@JsonProperty("tool_parameters")
 	private ToolParameters toolParameters;
 
-	@Data
 	public static class ToolParameters {
 
 		private String description;
@@ -48,6 +46,47 @@ public class ExecutionStep {
 
 		@JsonProperty("input_data_description")
 		private String inputDataDescription;
+
+		// Getters and Setters
+		public String getDescription() {
+			return description;
+		}
+
+		public void setDescription(String description) {
+			this.description = description;
+		}
+
+		public String getSummaryAndRecommendations() {
+			return summaryAndRecommendations;
+		}
+
+		public void setSummaryAndRecommendations(String summaryAndRecommendations) {
+			this.summaryAndRecommendations = summaryAndRecommendations;
+		}
+
+		public String getSqlQuery() {
+			return sqlQuery;
+		}
+
+		public void setSqlQuery(String sqlQuery) {
+			this.sqlQuery = sqlQuery;
+		}
+
+		public String getInstruction() {
+			return instruction;
+		}
+
+		public void setInstruction(String instruction) {
+			this.instruction = instruction;
+		}
+
+		public String getInputDataDescription() {
+			return inputDataDescription;
+		}
+
+		public void setInputDataDescription(String inputDataDescription) {
+			this.inputDataDescription = inputDataDescription;
+		}
 
 		public String toJsonStr() {
 			ObjectMapper objectMapper = new ObjectMapper();

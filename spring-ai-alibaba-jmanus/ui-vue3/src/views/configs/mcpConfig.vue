@@ -20,14 +20,19 @@
     </template>
 
     <template #actions>
-      <button class="action-btn" @click="handleImport">
-        <Icon icon="carbon:upload" />
-        {{ t('config.mcpConfig.import') }}
-      </button>
-      <button class="action-btn" @click="handleExport" :disabled="!selectedServer">
-        <Icon icon="carbon:download" />
-        {{ t('config.mcpConfig.export') }}
-      </button>
+      <!-- 全局操作按钮 -->
+      <div class="global-actions">
+        <div class="json-actions">
+          <button class="action-btn" @click="startJsonImport">
+            <Icon icon="carbon:arrow-up" />
+            {{ t('config.mcpConfig.importAll') }}
+          </button>
+          <button class="action-btn" @click="exportAllConfigs">
+            <Icon icon="carbon:arrow-down" />
+            {{ t('config.mcpConfig.exportAll') }}
+          </button>
+        </div>
+      </div>
     </template>
 
     <div class="mcp-layout">
@@ -35,7 +40,7 @@
       <div class="server-list">
         <div class="list-header">
           <h3>{{ t('config.mcpConfig.serverList') }}</h3>
-          <span class="server-count">({{ mcpServers.length }})</span>
+          <span class="server-count">({{ servers.length }})</span>
         </div>
 
         <div class="search-box">
@@ -58,15 +63,39 @@
           >
             <div class="server-card-header">
               <span class="server-name">{{ server.mcpServerName }}</span>
-              <Icon icon="carbon:chevron-right" />
+              <div class="server-status-toggle" @click.stop="toggleServerStatus(server)">
+                <div 
+                  class="status-toggle" 
+                  :class="{ 'enabled': server.status === 'ENABLE' }"
+                >
+                  <div class="toggle-thumb"></div>
+                  <span class="toggle-label">{{ server.status === 'ENABLE' ? t('config.mcpConfig.enabled') : t('config.mcpConfig.disabled') }}</span>
+                </div>
+              </div>
             </div>
             <div class="server-connection-type">
+              <Icon :icon="getConnectionTypeIcon(server.connectionType)" class="connection-type-icon" />
               <span class="connection-type-badge" :class="server.connectionType.toLowerCase()">
                 {{ server.connectionType }}
               </span>
             </div>
-            <div class="server-config-preview">
-              <pre class="config-preview" v-html="formatJsonForDisplay(server.connectionConfig)"></pre>
+            <div class="server-config-summary">
+              <div class="config-item" v-if="getServerConfigValue(server, 'command')">
+                <span class="config-label">{{ t('config.mcpConfig.command') }}:</span>
+                <span class="config-value">{{ getServerConfigValue(server, 'command') }}</span>
+              </div>
+              <div class="config-item" v-if="getServerConfigValue(server, 'url')">
+                <span class="config-label">{{ t('config.mcpConfig.url') }}:</span>
+                <span class="config-value">{{ getServerConfigValue(server, 'url') }}</span>
+              </div>
+              <div class="config-item" v-if="getServerConfigValue(server, 'args')">
+                <span class="config-label">{{ t('config.mcpConfig.args') }}:</span>
+                <span class="config-value">{{ getServerConfigValue(server, 'args') }}</span>
+              </div>
+              <div class="config-item" v-if="getServerConfigValue(server, 'env')">
+                <span class="config-label">{{ t('config.mcpConfig.env') }}:</span>
+                <span class="config-value">{{ getServerConfigValue(server, 'env') }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -81,66 +110,84 @@
           <p>{{ searchQuery ? t('config.notFound') : t('config.mcpConfig.noServers') }}</p>
         </div>
 
-        <button class="add-btn" @click="showAddServerModal">
-          <Icon icon="carbon:add" />
-          {{ t('config.mcpConfig.addMcpServer') }}
-        </button>
+        <!-- 新增配置按钮 -->
+        <div class="add-config-button-container">
+          <button class="add-btn" @click="startAddConfig">
+            <Icon icon="carbon:add" />
+            {{ t('config.mcpConfig.newMcpConfig') }}
+          </button>
+        </div>
       </div>
 
-      <!-- Server details -->
+      <!-- MCP Server Detail (Edit Mode) -->
       <div class="server-detail" v-if="selectedServer">
         <div class="detail-header">
           <h3>{{ selectedServer.mcpServerName }}</h3>
           <div class="detail-actions">
-            <button class="action-btn primary" @click="handleSave">
+            <button class="action-btn primary" @click="handleSave" :disabled="loading">
               <Icon icon="carbon:save" />
-              {{ t('common.save') }}
+              {{ t('config.mcpConfig.save') }}
             </button>
-            <button class="action-btn danger" @click="showDeleteConfirm">
+            <button class="action-btn danger" @click="handleDelete" :disabled="loading">
               <Icon icon="carbon:trash-can" />
-              {{ t('common.delete') }}
+              {{ t('config.mcpConfig.delete') }}
             </button>
           </div>
         </div>
-
-        <div class="form-item">
-          <label>{{ t('config.mcpConfig.connectionType') }} <span class="required">*</span></label>
-          <CustomSelect
-            v-model="selectedServer.connectionType"
-            :options="connectionTypes.map(type => ({ id: type, name: type }))"
-            :placeholder="t('config.mcpConfig.connectionTypePlaceholder')"
-            :dropdown-title="t('config.mcpConfig.connectionTypePlaceholder')"
-            icon="carbon:connection"
+        <div class="detail-content">
+          <McpConfigForm
+            :form-data="configForm"
+            :is-edit-mode="true"
+            @connection-type-change="handleConnectionTypeChange"
           />
         </div>
+      </div>
 
-        <div class="form-item">
-          <label>{{ t('config.mcpConfig.configJsonLabel') }} <span class="required">*</span></label>
-          <div class="json-editor-container">
-            <div class="json-editor-header">
-              <span class="json-status" :class="{ 'valid': isJsonValid, 'invalid': !isJsonValid && selectedServer.connectionConfig.trim() }">
-                {{ getJsonStatusText() }}
-              </span>
-              <button 
-                v-if="selectedServer.connectionConfig.trim()" 
-                @click="formatJson" 
-                class="format-btn"
-                :disabled="!isJsonValid"
-              >
-                <Icon icon="carbon:settings" />
-                {{ t('config.mcpConfig.formatJson') }}
-              </button>
-            </div>
-            <div class="json-editor-wrapper">
-              <MonacoEditor
-                  v-model="selectedServer.connectionConfig"
-                  :placeholder="t('config.mcpConfig.configJsonPlaceholder')"
-                  @change="validateJson"
-                  class="json-editor"
-                  language="json"
-              />
-            </div>
+      <!-- 新增配置表单面板 -->
+      <div v-else-if="showAddForm" class="server-detail">
+        <div class="detail-header">
+          <h3>{{ t('config.mcpConfig.newMcpConfig') }}</h3>
+          <div class="detail-actions">
+            <button class="action-btn primary" @click="handleSave" :disabled="loading">
+              <Icon icon="carbon:save" />
+              {{ t('config.mcpConfig.save') }}
+            </button>
+            <button class="action-btn" @click="resetNewConfig">
+              <Icon icon="carbon:reset" />
+              {{ t('config.mcpConfig.reset') }}
+            </button>
           </div>
+        </div>
+        <div class="detail-content">
+          <McpConfigForm
+            :form-data="configForm"
+            :is-edit-mode="false"
+            @update:form-data="(data: any) => Object.assign(configForm, data)"
+            @connection-type-change="handleConnectionTypeChange"
+          />
+        </div>
+      </div>
+
+                  <!-- JSON导入表单面板 -->
+            <div v-else-if="showJsonImport" class="server-detail">
+              <div class="detail-header">
+                <h3>{{ t('config.mcpConfig.importAll') }}</h3>
+                <div class="detail-actions">
+                  <button class="action-btn primary" @click="handleJsonImport" :disabled="loading">
+                    <Icon icon="carbon:save" />
+                    {{ t('config.mcpConfig.import') }}
+                  </button>
+                  <button class="action-btn" @click="cancelJsonImport">
+                    <Icon icon="carbon:close" />
+                    {{ t('config.mcpConfig.cancel') }}
+                  </button>
+                </div>
+              </div>
+        <div class="detail-content">
+          <JsonImportPanel
+            v-model="jsonEditorContent"
+            @validation-change="handleJsonValidationChange"
+          />
         </div>
       </div>
 
@@ -151,56 +198,41 @@
       </div>
     </div>
 
-    <!-- New Server modal -->
-    <Modal v-model="showModal" :title="t('config.mcpConfig.newServer')" @confirm="handleAddServer">
-      <div class="modal-form">
-        <div class="form-item">
-          <label>{{ t('config.mcpConfig.connectionType') }} <span class="required">*</span></label>
-          <CustomSelect
-            v-model="newServer.connectionType"
-            :options="connectionTypes.map(type => ({ id: type, name: type }))"
-            :placeholder="t('config.mcpConfig.connectionTypePlaceholder')"
-            :dropdown-title="t('config.mcpConfig.connectionTypePlaceholder')"
-            icon="carbon:connection"
-          />
+    <!-- JSON Editor Modal -->
+    <Modal v-model="showJsonModal" :title="t('config.mcpConfig.jsonEditor')" @confirm="handleJsonSave">
+      <div class="json-editor-container">
+        <div class="json-editor-header">
+          <span class="json-status" :class="{ 'valid': isJsonValid, 'invalid': !isJsonValid && jsonEditorContent.trim() }">
+            {{ getJsonStatusText() }}
+          </span>
+          <button 
+            v-if="jsonEditorContent.trim()" 
+            @click="formatJson" 
+            class="format-btn"
+            :disabled="!isJsonValid"
+          >
+            <Icon icon="carbon:settings" />
+            {{ t('config.mcpConfig.formatJson') }}
+          </button>
         </div>
-        <div class="form-item">
-          <label>{{ t('config.mcpConfig.configJsonLabel') }} <span class="required">*</span></label>
-          <div class="json-editor-container">
-            <div class="json-editor-header">
-              <span class="json-status" :class="{ 'valid': isJsonValid, 'invalid': !isJsonValid && newServer.configJson.trim() }">
-                {{ getJsonStatusText() }}
-              </span>
-              <button 
-                v-if="newServer.configJson.trim()" 
-                @click="formatJson" 
-                class="format-btn"
-                :disabled="!isJsonValid"
-              >
-                <Icon icon="carbon:settings" />
-                {{ t('config.mcpConfig.formatJson') }}
-              </button>
-            </div>
-            <div class="json-editor-wrapper">
-              <MonacoEditor
-                  v-model="newServer.configJson"
-                  :placeholder="t('config.mcpConfig.configJsonPlaceholder')"
-                  @change="validateJson"
-                  class="json-editor"
-                  language="json"
-              />
-            </div>
-          </div>
+        <div class="json-editor-wrapper">
+          <MonacoEditor
+              v-model="jsonEditorContent"
+              :placeholder="t('config.mcpConfig.configJsonPlaceholder')"
+              @change="validateJson"
+              class="json-editor"
+              language="json"
+          />
         </div>
       </div>
     </Modal>
 
     <!-- Delete confirmation modal -->
-    <Modal v-model="showDeleteModal" :title="t('config.mcpConfig.deleteConfirmTitle')" @confirm="handleDeleteServer">
+    <Modal v-model="showDeleteModal" :title="t('config.mcpConfig.confirmDelete')" @confirm="handleDeleteServer">
       <div class="delete-confirm">
         <Icon icon="carbon:warning" class="warning-icon" />
         <p>{{ t('config.mcpConfig.deleteConfirmMessage') }}</p>
-        <p class="warning-text">{{ t('config.mcpConfig.deleteWarning') }}</p>
+        <p class="warning-text">{{ t('config.mcpConfig.deleteWarningText') }}</p>
       </div>
     </Modal>
 
@@ -214,136 +246,166 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { McpApiService, type McpServer, type McpServerRequest } from '@/api/mcp-api-service'
+import { McpApiService, type McpServer } from '@/api/mcp-api-service'
 import MonacoEditor from '@/components/MonacoEditor.vue'
 import ConfigPanel from './components/configPanel.vue'
-import CustomSelect from '@/components/select/index.vue'
 import Modal from '@/components/modal/index.vue'
 import { Icon } from '@iconify/vue'
+import McpConfigForm from './components/McpConfigForm.vue' // 引入新的表单组件
+import JsonImportPanel from './components/JsonImportPanel.vue'
+import { useMcpConfigForm } from '@/composables/useMcpConfigForm'
+import { useMessage } from '@/composables/useMessage'
+import { useRequest } from '@/composables/useRequest'
+import type { McpServerSaveRequest, JsonValidationResult } from '@/types/mcp'
+
+// 扩展McpServer接口以包含UI字段
+interface ExtendedMcpServer extends McpServer {
+  args?: string // 前端显示为JSON字符串
+  env?: string // 前端显示为JSON字符串
+  url?: string
+  command?: string
+}
 
 // Internationalization
 const { t } = useI18n()
 
-// Reactive data
-const loading = ref(false)
-const mcpServers = ref<McpServer[]>([])
-const searchQuery = ref('')
+// 使用组合式函数
+const { configForm, resetForm, populateFormFromServer, validateForm, handleConnectionTypeChange } = useMcpConfigForm()
+const { message, showMessage } = useMessage()
+const { loading } = useRequest()
 
-// Selected MCP Server
+// 响应式数据
+const servers = ref<McpServer[]>([])
 const selectedServer = ref<McpServer | null>(null)
-
-// Show modals
-const showModal = ref(false)
 const showDeleteModal = ref(false)
-
-// Add MCP Server Form
-const newServer = reactive<McpServerRequest & { configJson: string }>({
-  connectionType: 'STUDIO',
-  configJson: ''
-})
-
-// Connection types for select options
-const connectionTypes = ['STUDIO', 'SSE', 'STREAMING']
-
-// JSON validation and formatting
+const showAddForm = ref(false)
+const showJsonImport = ref(false)
+const showJsonModal = ref(false)
+const jsonEditorContent = ref('')
 const isJsonValid = ref(true)
 const validationErrors = ref<string[]>([])
+const searchQuery = ref('')
 
-// Message Toast
-const message = reactive({
-  show: false,
-  text: '',
-  type: 'success' as 'success' | 'error' | 'info'
-})
+// JSON Editor Modal
+const isJsonModalForEdit = ref(false) // true for edit, false for new
 
-// Computed property: Whether it can be submitted
-const canSubmit = computed(() => {
-  return newServer.configJson.trim().length > 0
-})
+
 
 // Computed property: Filtered MCP servers
 const filteredMcpServers = computed(() => {
   if (!searchQuery.value.trim()) {
-    return mcpServers.value
+    return servers.value
   }
 
   const query = searchQuery.value.toLowerCase()
-  return mcpServers.value.filter(server =>
+  return servers.value.filter((server: McpServer) =>
       server.mcpServerName.toLowerCase().includes(query) ||
       server.connectionType.toLowerCase().includes(query) ||
       server.connectionConfig.toLowerCase().includes(query)
   )
 })
 
+// 获取服务器配置值的辅助函数
+const getServerConfigValue = (server: McpServer, field: 'command' | 'url' | 'args' | 'env'): string => {
+  try {
+    const config = JSON.parse(server.connectionConfig)
+    switch (field) {
+      case 'command':
+        return config.command || ''
+      case 'url':
+        return config.url || ''
+      case 'args':
+        if (config.args && Array.isArray(config.args)) {
+          return config.args.join('\n')
+        }
+        return ''
+      case 'env':
+        if (config.env && typeof config.env === 'object' && !Array.isArray(config.env)) {
+          return Object.entries(config.env)
+            .map(([key, value]) => `${key}:${value}`)
+            .join('\n')
+        }
+        return ''
+      default:
+        return ''
+    }
+  } catch (error) {
+    // 如果解析失败，尝试使用字段化数据
+    const extendedServer = server as ExtendedMcpServer
+    switch (field) {
+      case 'command':
+        return extendedServer.command || ''
+      case 'url':
+        return extendedServer.url || ''
+      case 'args':
+        return extendedServer.args || ''
+      case 'env':
+        return extendedServer.env || ''
+      default:
+        return ''
+    }
+  }
+}
+
+
+
 // Select a server
 const selectServer = (server: McpServer) => {
   selectedServer.value = { ...server }
+  showAddForm.value = false // 隐藏新增表单
+  showJsonImport.value = false // 隐藏JSON导入表单
 }
 
-// Show add server modal
-const showAddServerModal = () => {
-  selectedServer.value = null // Clear selected server
-  newServer.connectionType = 'STUDIO'
-  newServer.configJson = ''
-  isJsonValid.value = true
-  validationErrors.value = []
-  showModal.value = true
-}
 
-// Handle add server from modal
-const handleAddServer = async () => {
-  if (!canSubmit.value) {
-    showMessage(t('config.mcpConfig.configRequired'), 'error')
+
+// 处理JSON保存
+const handleJsonSave = () => {
+  if (!jsonEditorContent.value.trim()) {
+    showMessage(t('config.mcpConfig.jsonConfigEmpty'), 'error')
     return
   }
 
-  // Validate JSON format
-  let parsedConfig
   try {
-    parsedConfig = JSON.parse(newServer.configJson)
-  } catch {
-    showMessage(t('config.mcpConfig.invalidJson'), 'error')
-    return
+    const parsed = JSON.parse(jsonEditorContent.value)
+    
+    if (isJsonModalForEdit.value && selectedServer.value) {
+              // 编辑模式：更新选中的服务器
+        selectedServer.value.connectionConfig = JSON.stringify(parsed, null, 2)
+    } else {
+      // 新建模式：创建新服务器
+      handleAddServerFromJson(parsed)
+    }
+    
+    showJsonModal.value = false
+    showMessage(t('config.mcpConfig.jsonConfigSaved'), 'success')
+  } catch (error) {
+    showMessage(t('config.mcpConfig.jsonFormatError'), 'error')
   }
+}
 
+// 从JSON创建新服务器
+const handleAddServerFromJson = async (serverData: any) => {
   try {
     loading.value = true
-
-    // 统一处理配置中的url字段
-    const normalizedConfig = normalizeMcpConfig(parsedConfig)
+    const result = await McpApiService.importMcpServers(serverData)
     
-    const requestData: McpServerRequest = {
-      connectionType: newServer.connectionType,
-      configJson: JSON.stringify(normalizedConfig)
-    }
-
-    const result = await McpApiService.addMcpServer(requestData)
-
     if (result.success) {
       showMessage(t('config.mcpConfig.addSuccess'))
-      resetForm()
-      showModal.value = false
-      await loadMcpServers() // Reload the list
+      await loadMcpServers()
     } else {
-      // 显示详细的错误信息
       showMessage(result.message, 'error')
     }
   } catch (error) {
     console.error('添加MCP服务器失败:', error)
-    // 如果是网络错误或其他异常，显示错误信息
-    const errorMessage = error instanceof Error ? error.message : t('config.mcpConfig.addFailed')
-    showMessage(errorMessage, 'error')
+    showMessage(t('config.mcpConfig.addFailed'), 'error')
   } finally {
     loading.value = false
   }
 }
 
-// Show delete confirmation modal
-const showDeleteConfirm = () => {
-  showDeleteModal.value = true
-}
+
 
 // Handle delete server
 const handleDeleteServer = async () => {
@@ -371,69 +433,103 @@ const handleDeleteServer = async () => {
   }
 }
 
-// Handle save server
+// 处理保存
 const handleSave = async () => {
-  if (!selectedServer.value?.id) {
-    showMessage(t('config.mcpConfig.noServerSelected'), 'error')
-    return
-  }
-
-  // Validate JSON format
-  let parsedConfig
-  try {
-    parsedConfig = JSON.parse(selectedServer.value.connectionConfig)
-  } catch {
-    showMessage(t('config.mcpConfig.invalidJson'), 'error')
+  // 使用表单验证
+  const validation = validateForm()
+  if (!validation.isValid) {
+    showMessage(validation.errors[0], 'error')
     return
   }
 
   try {
-    loading.value = true
-
-    // 统一处理配置中的url字段
-    const normalizedConfig = normalizeMcpConfig(parsedConfig)
-    
-    const requestData: McpServerRequest = {
-      connectionType: selectedServer.value.connectionType,
-      configJson: JSON.stringify(normalizedConfig)
+    // 构建请求数据
+    const requestData: McpServerSaveRequest = {
+      connectionType: configForm.connectionType,
+      mcpServerName: configForm.mcpServerName,
+      status: configForm.status
     }
 
-    // 由于没有updateMcpServer方法，我们使用删除后重新添加的方式
-    const deleteResult = await McpApiService.removeMcpServer(selectedServer.value.id)
-    if (deleteResult.success) {
-      const addResult = await McpApiService.addMcpServer(requestData)
-      if (addResult.success) {
-        showMessage(t('config.mcpConfig.updateSuccess'))
-        await loadMcpServers() // Reload the list
-      } else {
-        showMessage(addResult.message || t('config.mcpConfig.updateFailed'), 'error')
+    if (configForm.connectionType === 'STUDIO') {
+      requestData.command = configForm.command
+      if (configForm.args?.trim()) {
+        try {
+          // 将多行字符串转换为数组
+          const argsArray = configForm.args.split('\n').filter(arg => arg.trim())
+          // 校验每个元素都是字符串
+          if (!argsArray.every(arg => typeof arg === 'string')) {
+            showMessage(t('config.mcpConfig.argsStringError'), 'error')
+            return
+          }
+          requestData.args = argsArray
+        } catch {
+          showMessage(t('config.mcpConfig.argsFormatError'), 'error')
+          return
+        }
+      }
+      if (configForm.env?.trim()) {
+        try {
+          // 将多行key:value转换为对象
+          const envLines = configForm.env.split('\n').filter(line => line.trim())
+          const envObj: Record<string, string> = {}
+          
+          for (const line of envLines) {
+            const colonIndex = line.indexOf(':')
+            if (colonIndex > 0) {
+              const key = line.substring(0, colonIndex).trim()
+              const value = line.substring(colonIndex + 1).trim()
+              if (key && value) {
+                envObj[key] = value
+              }
+            }
+          }
+          
+          // 校验每个value都是字符串
+          if (!Object.values(envObj).every(value => typeof value === 'string')) {
+            showMessage(t('config.mcpConfig.envStringError'), 'error')
+            return
+          }
+          
+          requestData.env = envObj
+        } catch {
+          showMessage(t('config.mcpConfig.envFormatError'), 'error')
+          return
+        }
       }
     } else {
-      showMessage(deleteResult.message || t('config.mcpConfig.updateFailed'), 'error')
+      requestData.url = configForm.url
+    }
+
+    // 如果是编辑模式，添加ID
+    if (selectedServer.value?.id) {
+      requestData.id = selectedServer.value.id
+    }
+
+    // 使用统一的保存方法
+    const result = await McpApiService.saveMcpServer(requestData)
+
+    if (result.success) {
+      showMessage(selectedServer.value?.id ? t('config.mcpConfig.updateSuccess') : t('config.mcpConfig.addSuccess'), 'success')
+      await loadMcpServers()
+      if (!selectedServer.value?.id) {
+        // 新增成功后重置表单
+        resetForm()
+        showAddForm.value = false
+      }
+    } else {
+      showMessage(result.message || t('config.mcpConfig.operationFailed'), 'error')
     }
   } catch (error) {
-    console.error('更新MCP服务器失败:', error)
-    showMessage(t('config.mcpConfig.updateFailed'), 'error')
-  } finally {
-    loading.value = false
+    console.error('保存失败:', error)
+    showMessage(t('config.mcpConfig.saveFailed'), 'error')
   }
 }
 
-// Handle import
-const handleImport = () => {
-  // Implement import logic
-  showMessage(t('config.mcpConfig.importFeatureComingSoon'), 'info')
-}
 
-// Handle export
-const handleExport = () => {
-  // Implement export logic
-  showMessage(t('config.mcpConfig.exportFeatureComingSoon'), 'info')
-}
 
 // JSON validation
 const validateJson = () => {
-  const jsonText = selectedServer.value?.connectionConfig || newServer.configJson
+  const jsonText = jsonEditorContent.value
   if (!jsonText) {
     isJsonValid.value = true
     validationErrors.value = []
@@ -451,11 +547,7 @@ const validateJson = () => {
       
       // 只有当统一化后的JSON与原始JSON不同时才更新
       if (normalizedJson !== jsonText) {
-        if (selectedServer.value) {
-          selectedServer.value.connectionConfig = normalizedJson
-        } else {
-          newServer.configJson = normalizedJson
-        }
+        jsonEditorContent.value = normalizedJson
       }
       
       isJsonValid.value = true
@@ -475,15 +567,15 @@ const validateJson = () => {
     if (error instanceof SyntaxError) {
       const message = error.message
       if (message.includes('Unexpected token')) {
-        errorMessage = '❌ JSON语法错误 - 请检查括号、逗号、引号等符号是否正确'
+        errorMessage = t('config.mcpConfig.jsonSyntaxError')
       } else if (message.includes('Unexpected end')) {
-        errorMessage = '❌ JSON不完整 - 请检查是否缺少结束括号或引号'
+        errorMessage = t('config.mcpConfig.jsonIncomplete')
       } else if (message.includes('Unexpected number')) {
-        errorMessage = '❌ JSON数字格式错误 - 请检查数字格式'
+        errorMessage = t('config.mcpConfig.jsonNumberError')
       } else if (message.includes('Unexpected string')) {
-        errorMessage = '❌ JSON字符串格式错误 - 请检查引号是否配对'
+        errorMessage = t('config.mcpConfig.jsonStringError')
       } else {
-        errorMessage = `❌ JSON语法错误: ${message}`
+        errorMessage = t('config.mcpConfig.jsonSyntaxErrorWithMessage', { message })
       }
     }
     
@@ -499,7 +591,7 @@ const validateMcpConfig = (config: any): { isValid: boolean; errors?: string[] }
   // Check if config has mcpServers property
   if (!config.mcpServers || typeof config.mcpServers !== 'object') {
     errors.push(t('config.mcpConfig.missingMcpServers'))
-    errors.push('💡 正确格式示例: {"mcpServers": {"server-id": {"name": "服务器名称", "url": "服务器地址"}}}')
+    errors.push(t('config.mcpConfig.correctFormatExample'))
     return { isValid: false, errors }
   }
 
@@ -560,8 +652,8 @@ const validateMcpConfig = (config: any): { isValid: boolean; errors?: string[] }
       const hasBaseUrl = server.baseUrl && typeof server.baseUrl === 'string'
       
       if (!hasUrl && !hasBaseUrl) {
-        errors.push(`缺少url字段: ${serverId} - 没有command时必须有url或baseUrl`)
-        errors.push('💡 需要提供 url 或 baseUrl 字段')
+        errors.push(t('config.mcpConfig.missingUrlField', { serverId }))
+        errors.push(t('config.mcpConfig.urlFieldTip'))
       } else {
         // 2. 校验url或baseUrl格式
         const urlToValidate = hasUrl ? server.url : server.baseUrl
@@ -590,16 +682,11 @@ const validateMcpConfig = (config: any): { isValid: boolean; errors?: string[] }
 // JSON formatting
 const formatJson = () => {
   try {
-    const jsonText = selectedServer.value?.connectionConfig || newServer.configJson
+    const jsonText = jsonEditorContent.value
     const parsed = JSON.parse(jsonText)
     const formatted = JSON.stringify(parsed, null, 2)
     
-    if (selectedServer.value) {
-      selectedServer.value.connectionConfig = formatted
-    } else {
-      newServer.configJson = formatted
-    }
-    
+    jsonEditorContent.value = formatted
     validateJson()
   } catch (error) {
     showMessage(t('config.mcpConfig.invalidJson'), 'error')
@@ -630,7 +717,7 @@ const normalizeMcpConfig = (config: any): any => {
         delete normalizedServer.baseUrl
       } else if (!hasUrl && !hasBaseUrl) {
         // 如果既没有url也没有baseUrl，保持原样（让校验函数处理错误）
-        console.warn(`Server ${serverId} has no command but also no url or baseUrl`)
+        console.warn(t('config.mcpConfig.serverConfigWarning', { serverId }))
       }
     }
 
@@ -640,43 +727,9 @@ const normalizeMcpConfig = (config: any): any => {
   return normalizedConfig
 }
 
-// Format JSON for display with syntax highlighting
-const formatJsonForDisplay = (jsonString: string): string => {
-  if (!jsonString) return ''
-  try {
-    const parsed = JSON.parse(jsonString)
-    const formatted = JSON.stringify(parsed, null, 2)
-    return highlightJson(formatted)
-  } catch (e) {
-    return highlightJson(jsonString) // 即使解析失败也尝试高亮显示
-  }
-}
-
-// Simple JSON syntax highlighting
-const highlightJson = (json: string): string => {
-  // 先处理数字
-  let highlighted = json.replace(/\b(\d+\.?\d*)\b/g, '<span class="json-number">$1</span>')
-  
-  // 处理布尔值和null
-  highlighted = highlighted.replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
-  highlighted = highlighted.replace(/\bnull\b/g, '<span class="json-null">null</span>')
-  
-  // 处理字符串值（但不包括键名）
-  highlighted = highlighted.replace(/"([^"]*)"/g, (match, content) => {
-    // 如果这个字符串后面跟着冒号，说明是键名
-    if (match.endsWith('":')) {
-      return `<span class="json-key">"${content}"</span>:`
-    }
-    // 否则是字符串值
-    return `<span class="json-string">"${content}"</span>`
-  })
-  
-  return highlighted
-}
-
 // Get JSON status text
 const getJsonStatusText = (): string => {
-  const jsonText = selectedServer.value?.connectionConfig || newServer.configJson
+  const jsonText = jsonEditorContent.value
   if (!jsonText) {
     return t('config.mcpConfig.jsonStatusEmpty')
   }
@@ -692,22 +745,13 @@ const getJsonStatusText = (): string => {
   }
 }
 
-// Show message toast
-const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'success') => {
-  message.text = text
-  message.type = type
-  message.show = true
 
-  setTimeout(() => {
-    message.show = false
-  }, 3000)
-}
 
 // Load MCP servers list
 const loadMcpServers = async () => {
   try {
     loading.value = true
-    mcpServers.value = await McpApiService.getAllMcpServers()
+    servers.value = await McpApiService.getAllMcpServers()
   } catch (error) {
     console.error('加载MCP服务器列表失败:', error)
     showMessage(t('config.basicConfig.loadConfigFailed'), 'error')
@@ -716,18 +760,186 @@ const loadMcpServers = async () => {
   }
 }
 
-// Reset form
-const resetForm = () => {
-  newServer.connectionType = 'STUDIO'
-  newServer.configJson = ''
+
+
+
+
+// 切换服务器状态
+const toggleServerStatus = async (server: McpServer) => {
+  try {
+    loading.value = true
+    let result: any
+    
+    // 根据当前状态决定要执行的操作
+    // 如果当前是启用状态，点击后要禁用
+    // 如果当前是禁用状态，点击后要启用
+    if (server.status === 'ENABLE') {
+      // 当前是启用状态，点击后要禁用
+      result = await McpApiService.disableMcpServer(server.id)
+    } else {
+      // 当前是禁用状态，点击后要启用
+      result = await McpApiService.enableMcpServer(server.id)
+    }
+    
+    if (result.success) {
+      // 更新本地状态
+      server.status = server.status === 'ENABLE' ? 'DISABLE' : 'ENABLE'
+      showMessage(result.message || t('config.mcpConfig.statusToggleSuccess'))
+    } else {
+      showMessage(result.message || t('config.mcpConfig.statusToggleFailed'), 'error')
+    }
+  } catch (error) {
+    console.error('状态切换失败:', error)
+    showMessage(t('config.mcpConfig.statusToggleFailed'), 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 开始新增配置
+const startAddConfig = () => {
+  selectedServer.value = null
+  showAddForm.value = true
+  showJsonImport.value = false
+  resetNewConfig()
+}
+
+// 重置新增配置
+const resetNewConfig = () => {
+  resetForm()
+}
+
+// 开始JSON导入
+const startJsonImport = () => {
+  showJsonImport.value = true
+  selectedServer.value = null
+  showAddForm.value = false
+  jsonEditorContent.value = ''
   isJsonValid.value = true
   validationErrors.value = []
 }
+
+// 取消JSON导入
+const cancelJsonImport = () => {
+  showJsonImport.value = false
+  selectedServer.value = null
+  showAddForm.value = false
+  jsonEditorContent.value = ''
+  isJsonValid.value = true
+  validationErrors.value = []
+}
+
+// 监听selectedServer变化，填充configForm
+watch(selectedServer, (newServer) => {
+  if (newServer) {
+    populateFormFromServer(newServer)
+  }
+}, { immediate: true })
 
 // Load data when the component is mounted
 onMounted(() => {
   loadMcpServers()
 })
+
+// Handle delete server
+const handleDelete = () => {
+  if (!selectedServer.value) {
+    showMessage(t('config.mcpConfig.noServerSelected'), 'error')
+    return
+  }
+  showDeleteModal.value = true
+}
+
+// 导出所有配置
+const exportAllConfigs = async () => {
+  try {
+    loading.value = true
+    const servers = await McpApiService.getAllMcpServers()
+    
+    // 构建导出数据
+    const exportData: { mcpServers: Record<string, any> } = {
+      mcpServers: {}
+    }
+    
+    servers.forEach(server => {
+      try {
+        const config = JSON.parse(server.connectionConfig)
+        exportData.mcpServers[server.mcpServerName] = config
+      } catch (error) {
+        console.error(`解析服务器配置失败: ${server.mcpServerName}`, error)
+      }
+    })
+    
+    // 创建并下载文件
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'mcp_servers.json'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    showMessage(t('config.mcpConfig.exportSuccess'))
+  } catch (error) {
+    console.error('导出MCP服务器失败:', error)
+    showMessage(t('config.mcpConfig.exportFailed'), 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 处理JSON校验结果变化
+const handleJsonValidationChange = (result: JsonValidationResult) => {
+  isJsonValid.value = result.isValid
+  validationErrors.value = result.errors || []
+}
+
+// 处理JSON导入
+const handleJsonImport = async () => {
+  if (!jsonEditorContent.value.trim()) {
+    showMessage(t('config.mcpConfig.jsonConfigEmpty'), 'error')
+    return
+  }
+
+  try {
+    const parsed = JSON.parse(jsonEditorContent.value)
+    const validationResult = validateMcpConfig(parsed)
+
+    if (validationResult.isValid) {
+      loading.value = true
+      const result = await McpApiService.importMcpServers(parsed)
+      if (result.success) {
+        showMessage(t('config.mcpConfig.importSuccess'))
+        await loadMcpServers()
+      } else {
+        showMessage(result.message || t('config.mcpConfig.importFailed'), 'error')
+      }
+    } else {
+      showMessage(validationResult.errors?.join('\n') || t('config.mcpConfig.importInvalidJson'), 'error')
+    }
+  } catch (error) {
+    showMessage(t('config.mcpConfig.importFailed'), 'error')
+  } finally {
+    loading.value = false
+    showJsonImport.value = false
+  }
+}
+
+// 获取连接类型图标
+const getConnectionTypeIcon = (type: string) => {
+  switch (type) {
+    case 'STUDIO':
+      return 'carbon:plug'
+    case 'SSE':
+      return 'carbon:plug'
+    case 'STREAMING':
+      return 'carbon:plug'
+    default:
+      return 'carbon:plug'
+  }
+}
 </script>
 
 <style scoped>
@@ -781,6 +993,7 @@ onMounted(() => {
 
 .search-box {
   position: relative;
+  margin-bottom: 20px;
 }
 
 .search-input {
@@ -789,7 +1002,7 @@ onMounted(() => {
   border-radius: 4px;
   padding: 6px 12px 6px 32px;
   color: rgba(255, 255, 255, 0.9);
-  width: 220px;
+  width: 100%;
   font-size: 14px;
   transition: all 0.3s;
 }
@@ -798,7 +1011,7 @@ onMounted(() => {
   outline: none;
   border-color: rgba(102, 126, 234, 0.5);
   background: rgba(255, 255, 255, 0.08);
-  width: 260px;
+  width: 100%;
 }
 
 .search-input::placeholder {
@@ -840,34 +1053,32 @@ onMounted(() => {
 
 .mcp-layout {
   display: flex;
-  gap: 24px;
+  gap: 30px;
+  flex: 1;
+  min-height: 0;
 }
 
 .server-list {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 320px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
 }
 
 .list-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .list-header h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
 }
 
 .server-count {
+  color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
   color: rgba(255, 255, 255, 0.6);
 }
@@ -909,32 +1120,49 @@ onMounted(() => {
 }
 
 .servers-container {
-  flex-grow: 1;
+  flex: 1;
   overflow-y: auto;
-  padding-right: 10px; /* Add some padding for scrollbar */
-  max-height: calc(100vh - 300px); /* 设置最大高度，确保可以滚动 */
+  margin-bottom: 16px;
+}
+
+.servers-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.servers-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.servers-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.servers-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .server-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 12px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
 .server-card:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .server-card.active {
-  border: 1px solid #667eea;
+  border-color: #667eea;
   background: rgba(102, 126, 234, 0.1);
 }
 
@@ -948,6 +1176,7 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  gap: 10px;
 }
 
 .server-name {
@@ -960,6 +1189,14 @@ onMounted(() => {
 .server-connection-type {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.connection-type-icon {
+  font-size: 14px;
+  opacity: 0.8;
 }
 
 .connection-type-badge {
@@ -989,6 +1226,33 @@ onMounted(() => {
 .connection-type-badge.streaming {
   background: rgba(156, 39, 176, 0.2);
   color: #ce93d8;
+}
+
+.server-config-summary {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.config-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.config-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  min-width: 50px;
+  margin-right: 8px;
+}
+
+.config-value {
+  color: rgba(255, 255, 255, 0.8);
+  word-break: break-all;
+  flex: 1;
 }
 
 .server-config-preview {
@@ -1062,55 +1326,99 @@ onMounted(() => {
   opacity: 0.5;
 }
 
+.add-config-button-container {
+  margin-top: 0;
+}
+
 .add-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 6px;
-  color: white;
-  padding: 10px 20px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   width: 100%;
-  justify-content: center;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.primary {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.3);
+    color: #a8b3ff;
+
+    &:hover:not(:disabled) {
+      background: rgba(102, 126, 234, 0.3);
+    }
+  }
+
+  &.danger {
+    background: rgba(234, 102, 102, 0.1);
+    border-color: rgba(234, 102, 102, 0.2);
+    color: #ff8a8a;
+
+    &:hover:not(:disabled) {
+      background: rgba(234, 102, 102, 0.2);
+    }
+  }
+
+  &.small {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
 }
 
-.add-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+.form-row {
+  display: flex;
+  gap: 20px;
 }
 
-.add-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
+.form-row .form-item {
+  flex: 1;
 }
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+
 
 .server-detail {
   flex: 1;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
   padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
 }
 
 .detail-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .detail-header h3 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 20px;
 }
 
 .detail-actions {
@@ -1118,51 +1426,83 @@ onMounted(() => {
   gap: 12px;
 }
 
+.detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.detail-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.detail-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.detail-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 .action-btn {
-  background: rgba(244, 67, 54, 0.1);
-  border: 1px solid rgba(244, 67, 54, 0.3);
-  border-radius: 4px;
-  color: #ef5350;
-  padding: 6px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.3s;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.primary {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.3);
+    color: #a8b3ff;
+
+    &:hover:not(:disabled) {
+      background: rgba(102, 126, 234, 0.3);
+    }
+  }
+
+  &.danger {
+    background: rgba(234, 102, 102, 0.1);
+    border-color: rgba(234, 102, 102, 0.2);
+    color: #ff8a8a;
+
+    &:hover:not(:disabled) {
+      background: rgba(234, 102, 102, 0.2);
+    }
+  }
+
+  &.small {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
 }
 
-.action-btn:hover:not(:disabled) {
-  background: rgba(244, 67, 54, 0.2);
-  border-color: rgba(244, 67, 54, 0.5);
-}
 
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.action-btn.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  color: white;
-}
-
-.action-btn.primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.action-btn.danger {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #ef5350;
-}
-
-.action-btn.danger:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.5);
-}
 
 .form-item {
   margin-bottom: 20px;
@@ -1245,7 +1585,7 @@ onMounted(() => {
 .json-editor-wrapper {
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  border-radius: 4px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.05);
   min-height: 300px;
@@ -1260,7 +1600,7 @@ onMounted(() => {
   width: 100%;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 12px;
   color: rgba(255, 255, 255, 0.9);
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
@@ -1277,6 +1617,27 @@ onMounted(() => {
 }
 
 .config-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.config-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.config-input:focus {
+  outline: none;
+  border-color: rgba(102, 126, 234, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.config-input::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
 
@@ -1305,8 +1666,12 @@ onMounted(() => {
   border-radius: 8px;
   color: white;
   font-weight: 500;
-  z-index: 1000;
+  z-index: 9999; /* 提高z-index确保在最上层 */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-width: 400px; /* 限制最大宽度 */
+  word-wrap: break-word; /* 允许文字换行 */
+  white-space: pre-line; /* 保持换行符 */
+  line-height: 1.4;
 }
 
 .message-toast.success {
@@ -1351,6 +1716,106 @@ onMounted(() => {
   }
 }
 
+/* 宽模态框样式 */
+.wide-modal {
+  width: 80vw !important;
+  max-width: 1200px !important;
+}
+
+/* 表单行布局 */
+.form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.form-row .form-item {
+  flex: 1;
+}
+
+/* 窄输入框样式 */
+.narrow-input {
+  width: 70%;
+}
+
+.narrow-input .config-input,
+.narrow-input .config-textarea {
+  width: 100%;
+}
+
+/* 状态切换组件样式 */
+.status-toggle-container {
+  display: flex;
+  align-items: center;
+}
+
+.status-toggle {
+  position: relative;
+  width: 60px;
+  height: 30px;
+  background: #6b7280;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+}
+
+.status-toggle.enabled {
+  background: #10b981;
+}
+
+.toggle-thumb {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.status-toggle.enabled .toggle-thumb {
+  left: 33px;
+}
+
+.toggle-label {
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  user-select: none;
+}
+
+/* 服务器卡片中的状态切换样式 */
+.server-status-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.server-card-header .status-toggle {
+  width: 50px;
+  height: 24px;
+}
+
+.server-card-header .toggle-thumb {
+  width: 18px;
+  height: 18px;
+  top: 3px;
+  left: 3px;
+}
+
+.server-card-header .status-toggle.enabled .toggle-thumb {
+  left: 29px;
+}
+
+.server-card-header .toggle-label {
+  font-size: 10px;
+}
+
 @media (max-width: 768px) {
   .mcp-header {
     flex-direction: column;
@@ -1387,5 +1852,122 @@ onMounted(() => {
   .mcp-form-actions button {
     width: 100%;
   }
+
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .narrow-input {
+    width: 100%;
+  }
+
+  /* 新增配置表单响应式样式 */
+  .server-detail {
+    padding: 16px;
+  }
+
+  .detail-header {
+    margin-bottom: 16px;
+  }
+
+  .detail-content {
+    gap: 16px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-actions .action-btn {
+    width: 100%;
+  }
 }
+
+/* JSON导入相关样式 */
+.json-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.json-import-form {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.json-import-form .form-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.json-import-form .form-item label {
+  margin-bottom: 8px;
+}
+
+.json-import-form .monaco-editor {
+  flex: 1;
+  min-height: 600px;
+  border: none;
+  border-radius: 0;
+}
+
+.validation-errors {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.error-item {
+  color: #ff4444;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.error-item:last-child {
+  margin-bottom: 0;
+}
+
+/* TabPanel相关样式 */
+.json-tab-panel {
+  margin-top: 8px;
+}
+
+/* 配置示例相关样式 */
+.example-json {
+  margin: 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.example-json code {
+  color: rgba(255, 255, 255, 0.9);
+  background: none;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* JSON语法高亮 */
+.example-json .string { color: #a78bfa; }
+.example-json .number { color: #fbbf24; }
+.example-json .boolean { color: #f87171; }
+.example-json .null { color: rgba(255, 255, 255, 0.6); }
+.example-json .key { color: #34d399; }
 </style>

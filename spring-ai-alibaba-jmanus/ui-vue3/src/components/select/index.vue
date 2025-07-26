@@ -18,6 +18,7 @@
     <button class="select-btn" @click="toggleDropdown" :title="placeholder">
       <Icon :icon="props.icon || 'carbon:select-01'" width="18" />
       <span v-if="selectedOption" class="current-option">
+        <Icon v-if="selectedOption.icon" :icon="selectedOption.icon" width="16" class="option-icon" />
         <span class="option-name">{{ selectedOption.name }}</span>
       </span>
       <span v-else class="current-option">
@@ -51,6 +52,7 @@
             :class="{ active: isSelected(option) }"
             @click="selectOption(option)"
           >
+            <Icon v-if="option.icon" :icon="option.icon" width="16" class="option-icon" />
             <span class="option-name">{{ option.name }}</span>
             <Icon v-if="isSelected(option)" icon="carbon:checkmark" width="16" class="check-icon" />
           </button>
@@ -69,7 +71,7 @@ import { Icon } from '@iconify/vue'
 // Define props
 const props = defineProps<{
   modelValue?: string | null
-  options: Array<{ id: string; name: string }>
+  options: Array<{ id: string; name: string; icon?: string }>
   placeholder: string
   dropdownTitle?: string
   icon?: string
@@ -145,6 +147,14 @@ const selectOption = (option: { id: string }) => {
   min-width: 40px;
   text-align: left;
   text-shadow: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.current-option .option-icon {
+  color: inherit;
+  opacity: 0.8;
 }
 
 .chevron {
@@ -238,6 +248,11 @@ const selectOption = (option: { id: string }) => {
   flex: 1;
   font-size: 14px;
   font-weight: 500;
+}
+
+.option-icon {
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 8px;
 }
 
 .check-icon {

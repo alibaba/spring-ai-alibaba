@@ -23,13 +23,29 @@
 export interface McpServer {
   id: number
   mcpServerName: string
-  connectionType: 'STUDIO' | 'SSE'
+  connectionType: 'STUDIO' | 'SSE' | 'STREAMING'
   connectionConfig: string
+  status: 'ENABLE' | 'DISABLE'
 }
 
 export interface McpServerRequest {
-  connectionType: 'STUDIO' | 'SSE'
+  connectionType: 'STUDIO' | 'SSE' | 'STREAMING'
   configJson: string
+}
+
+export interface McpServerFieldRequest {
+  connectionType: 'STUDIO' | 'SSE' | 'STREAMING'
+  mcpServerName: string
+  command?: string | undefined
+  url?: string | undefined
+  args?: string[] | undefined
+  env?: Record<string, string> | undefined
+  status: 'ENABLE' | 'DISABLE'
+}
+
+// 合并新增和更新的请求接口
+export interface McpServerSaveRequest extends McpServerFieldRequest {
+  id?: number // 可选，有id则为更新，无id则为新增
 }
 
 export interface ApiResponse<T = any> {
@@ -82,6 +98,78 @@ export class McpApiService {
   }
 
   /**
+   * Import MCP server configurations from JSON
+   */
+  public static async importMcpServers(jsonData: any): Promise<ApiResponse> {
+    try {
+      const response = await fetch(`${this.BASE_URL}/batch-import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          configJson: JSON.stringify(jsonData),
+          overwrite: false
+        })
+      })
+      
+      if (!response.ok) {
+        // 读取响应体中的详细错误信息
+        const errorText = await response.text()
+        throw new Error(`Failed to import MCP servers: ${response.status} - ${errorText}`)
+      }
+      
+      return { success: true, message: 'Successfully imported MCP servers' }
+    } catch (error) {
+      console.error('Failed to import MCP servers:', error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to import, please retry'
+      }
+    }
+  }
+
+
+
+  /**
+   * Save MCP server configuration (add or update based on whether id is provided)
+   */
+  public static async saveMcpServer(mcpConfig: McpServerSaveRequest): Promise<ApiResponse> {
+    try {
+      const response = await fetch(`${this.BASE_URL}/server`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(mcpConfig)
+      })
+      
+      if (!response.ok) {
+        // 读取响应体中的详细错误信息
+        const errorText = await response.text()
+        const action = mcpConfig.id !== undefined ? 'update' : 'add'
+        throw new Error(`Failed to ${action} MCP server: ${response.status} - ${errorText}`)
+      }
+      
+      const action = mcpConfig.id !== undefined ? 'updated' : 'added'
+      return { success: true, message: `Successfully ${action} MCP server` }
+    } catch (error) {
+      console.error('Failed to save MCP server:', error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to save, please retry'
+      }
+    }
+  }
+
+  /**
+   * Update MCP server configuration using field-based data (deprecated, use saveMcpServer instead)
+   */
+  public static async updateMcpServer(id: number, mcpConfig: McpServerFieldRequest): Promise<ApiResponse> {
+    return this.saveMcpServer({ ...mcpConfig, id })
+  }
+
+  /**
    * Delete MCP server configuration
    */
   public static async removeMcpServer(id: number): Promise<ApiResponse> {
@@ -96,6 +184,50 @@ export class McpApiService {
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to delete, please retry'
+      }
+    }
+  }
+
+  /**
+   * Enable MCP server configuration
+   */
+  public static async enableMcpServer(id: number): Promise<ApiResponse> {
+    try {
+      const response = await fetch(`${this.BASE_URL}/enable/${id}`, {
+        method: 'POST'
+      })
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to enable MCP server: ${response.status} - ${errorText}`)
+      }
+      return { success: true, message: 'Successfully enabled MCP server' }
+    } catch (error) {
+      console.error(`Failed to enable MCP server[${id}]:`, error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to enable, please retry'
+      }
+    }
+  }
+
+  /**
+   * Disable MCP server configuration
+   */
+  public static async disableMcpServer(id: number): Promise<ApiResponse> {
+    try {
+      const response = await fetch(`${this.BASE_URL}/disable/${id}`, {
+        method: 'POST'
+      })
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to disable MCP server: ${response.status} - ${errorText}`)
+      }
+      return { success: true, message: 'Successfully disabled MCP server' }
+    } catch (error) {
+      console.error(`Failed to disable MCP server[${id}]:`, error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to disable, please retry'
       }
     }
   }

@@ -33,6 +33,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigType;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigStatus;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigRequestVO;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerConfig;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServersConfig;
@@ -100,6 +101,12 @@ public class McpService implements IMcpService {
 			String serverName = mcpConfigEntity.getMcpServerName();
 
 			try {
+				// 检查status，只处理ENABLE状态的配置
+				if (mcpConfigEntity.getStatus() == null || mcpConfigEntity.getStatus() != McpConfigStatus.ENABLE) {
+					logger.info("Skipping disabled MCP server: {}", serverName);
+					continue;
+				}
+
 				// Validate basic configuration
 				if (mcpConfigEntity.getConnectionType() == null) {
 					logger.error("Connection type is required for server: {}", serverName);
@@ -369,6 +376,65 @@ public class McpService implements IMcpService {
 		toolCallbackMapCache.invalidateAll();
 	}
 
+	/**
+	 * 更新MCP服务器配置
+	 * @param id MCP服务器ID
+	 * @param mcpConfig 更新配置
+	 * @throws IOException IO异常
+	 */
+	public void updateMcpServer(Long id, McpConfigRequestVO mcpConfig) throws IOException {
+		// 根据ID查找现有配置
+		Optional<McpConfigEntity> existingEntity = mcpConfigRepository.findById(id);
+		if (existingEntity.isEmpty()) {
+			throw new IllegalArgumentException("MCP server not found with id: " + id);
+		}
+
+		McpConfigEntity entity = existingEntity.get();
+		String originalServerName = entity.getMcpServerName();
+
+		// 解析配置JSON
+		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfig.getConfigJson())) {
+			McpServersConfig mcpServerConfig = jsonParser.readValueAs(McpServersConfig.class);
+
+			// 查找对应的服务器配置 - 使用原始服务器名称
+			McpServerConfig serverConfig = mcpServerConfig.getMcpServers().get(originalServerName);
+			if (serverConfig == null) {
+				// 如果找不到原始名称，尝试使用配置中的第一个服务器
+				Map<String, McpServerConfig> servers = mcpServerConfig.getMcpServers();
+				if (servers.isEmpty()) {
+					throw new IOException("No server configuration found");
+				}
+				serverConfig = servers.values().iterator().next();
+				logger.warn("Using first available server configuration for update, original name: {}",
+						originalServerName);
+			}
+
+			// 直接使用serverConfig的getConnectionType方法获取连接类型
+			McpConfigType connectionType = serverConfig.getConnectionType();
+			logger.info("Updating MCP server '{}' with connection type: {}", originalServerName, connectionType);
+
+			// 使用ServerConfig的toJson方法将配置转换为JSON字符串
+			String configJson = serverConfig.toJson();
+
+			// 更新实体 - 保持原有的服务器名称
+			entity.setConnectionConfig(configJson);
+			entity.setConnectionType(connectionType);
+			// 更新status，如果serverConfig中有status则使用，否则保持原值
+			if (serverConfig.getStatus() != null) {
+				entity.setStatus(serverConfig.getStatus());
+			}
+			// 不更新服务器名称，保持原有名称
+
+			// 保存到数据库
+			mcpConfigRepository.save(entity);
+			logger.info("MCP server '{}' has been updated in database with connection type: {}", originalServerName,
+					connectionType);
+
+			// 清除缓存
+			toolCallbackMapCache.invalidateAll();
+		}
+	}
+
 	public List<McpConfigEntity> insertOrUpdateMcpRepo(McpConfigRequestVO mcpConfigVO) throws IOException {
 		List<McpConfigEntity> entityList = new ArrayList<>();
 		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigVO.getConfigJson())) {
@@ -456,12 +522,6 @@ public class McpService implements IMcpService {
 			throws IOException {
 		List<McpConfigEntity> entityList = new ArrayList<>();
 
-		// 获取预校验的连接类型
-		Map<String, McpConfigType> connectionTypes = mcpConfigVO.getConnectionTypes();
-		if (connectionTypes == null || connectionTypes.isEmpty()) {
-			throw new IOException("No connection types provided for validation");
-		}
-
 		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigVO.getConfigJson())) {
 			McpServersConfig mcpServerConfig = jsonParser.readValueAs(McpServersConfig.class);
 
@@ -470,13 +530,9 @@ public class McpService implements IMcpService {
 				String serverName = entry.getKey();
 				McpServerConfig serverConfig = entry.getValue();
 
-				// 获取预校验的连接类型
-				McpConfigType validatedType = connectionTypes.get(serverName);
-				if (validatedType == null) {
-					throw new IOException("No connection type found for server: " + serverName);
-				}
-
-				logger.info("Using validated connection type for server '{}': {}", serverName, validatedType);
+				// 直接使用serverConfig的getConnectionType方法获取连接类型
+				McpConfigType connectionType = serverConfig.getConnectionType();
+				logger.info("Using connection type for server '{}': {}", serverName, connectionType);
 
 				// 使用ServerConfig的toJson方法将配置转换为JSON字符串
 				String configJson = serverConfig.toJson();
@@ -487,16 +543,27 @@ public class McpService implements IMcpService {
 					mcpConfigEntity = new McpConfigEntity();
 					mcpConfigEntity.setConnectionConfig(configJson);
 					mcpConfigEntity.setMcpServerName(serverName);
-					mcpConfigEntity.setConnectionType(validatedType);
+					mcpConfigEntity.setConnectionType(connectionType);
+					// 设置status，如果serverConfig中有status则使用，否则使用默认值
+					if (serverConfig.getStatus() != null) {
+						mcpConfigEntity.setStatus(serverConfig.getStatus());
+					}
+					else {
+						mcpConfigEntity.setStatus(McpConfigStatus.ENABLE);
+					}
 				}
 				else {
 					mcpConfigEntity.setConnectionConfig(configJson);
-					mcpConfigEntity.setConnectionType(validatedType);
+					mcpConfigEntity.setConnectionType(connectionType);
+					// 更新status，如果serverConfig中有status则使用，否则保持原值
+					if (serverConfig.getStatus() != null) {
+						mcpConfigEntity.setStatus(serverConfig.getStatus());
+					}
 				}
 				McpConfigEntity entity = mcpConfigRepository.save(mcpConfigEntity);
 				entityList.add(entity);
-				logger.info("MCP server '{}' has been saved to database with validated type: {}", serverName,
-						validatedType);
+				logger.info("MCP server '{}' has been saved to database with connection type: {}", serverName,
+						connectionType);
 			}
 		}
 		return entityList;
@@ -525,6 +592,15 @@ public class McpService implements IMcpService {
 		return mcpConfigRepository.findAll();
 	}
 
+	/**
+	 * 根据ID查找MCP配置
+	 * @param id MCP配置ID
+	 * @return 可选的MCP配置实体
+	 */
+	public Optional<McpConfigEntity> findById(Long id) {
+		return mcpConfigRepository.findById(id);
+	}
+
 	public List<McpServiceEntity> getFunctionCallbacks(String planId) {
 		try {
 			return new ArrayList<>(
@@ -538,6 +614,76 @@ public class McpService implements IMcpService {
 
 	public void close(String planId) {
 		toolCallbackMapCache.invalidate(Optional.ofNullable(planId).orElse("DEFAULT"));
+	}
+
+	/**
+	 * Enable MCP Server
+	 * @param id MCP Server ID
+	 * @return true if enabled successfully, false otherwise
+	 */
+	public boolean enableMcpServer(Long id) {
+		Optional<McpConfigEntity> optionalEntity = mcpConfigRepository.findById(id);
+		if (optionalEntity.isEmpty()) {
+			throw new IllegalArgumentException("MCP server not found with id: " + id);
+		}
+
+		McpConfigEntity entity = optionalEntity.get();
+		if (entity.getStatus() == McpConfigStatus.ENABLE) {
+			logger.info("MCP server {} is already enabled", entity.getMcpServerName());
+			return true;
+		}
+
+		// 尝试连接服务器以验证是否可以启用
+		try {
+			// 这里可以添加连接测试逻辑
+			// 暂时简单地将状态设置为ENABLE
+			entity.setStatus(McpConfigStatus.ENABLE);
+			mcpConfigRepository.save(entity);
+
+			// 清除缓存以重新加载服务
+			toolCallbackMapCache.invalidateAll();
+
+			logger.info("MCP server {} enabled successfully", entity.getMcpServerName());
+			return true;
+		}
+		catch (Exception e) {
+			logger.error("Failed to enable MCP server {}: {}", entity.getMcpServerName(), e.getMessage(), e);
+			return false;
+		}
+	}
+
+	/**
+	 * Disable MCP Server
+	 * @param id MCP Server ID
+	 * @return true if disabled successfully, false otherwise
+	 */
+	public boolean disableMcpServer(Long id) {
+		Optional<McpConfigEntity> optionalEntity = mcpConfigRepository.findById(id);
+		if (optionalEntity.isEmpty()) {
+			throw new IllegalArgumentException("MCP server not found with id: " + id);
+		}
+
+		McpConfigEntity entity = optionalEntity.get();
+		if (entity.getStatus() == McpConfigStatus.DISABLE) {
+			logger.info("MCP server {} is already disabled", entity.getMcpServerName());
+			return true;
+		}
+
+		try {
+			// 将状态设置为DISABLE
+			entity.setStatus(McpConfigStatus.DISABLE);
+			mcpConfigRepository.save(entity);
+
+			// 清除缓存以重新加载服务
+			toolCallbackMapCache.invalidateAll();
+
+			logger.info("MCP server {} disabled successfully", entity.getMcpServerName());
+			return true;
+		}
+		catch (Exception e) {
+			logger.error("Failed to disable MCP server {}: {}", entity.getMcpServerName(), e.getMessage(), e);
+			return false;
+		}
 	}
 
 }

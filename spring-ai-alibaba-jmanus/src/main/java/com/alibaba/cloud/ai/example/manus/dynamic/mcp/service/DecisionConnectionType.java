@@ -28,10 +28,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerConfig;
 /**
  * DecisionConnectionType - 基于配置判断连接类型
  *
- * 判断逻辑：
- * 1. 如果有command字段 → STUDIO
- * 2. 如果URL后缀是sse → SSE
- * 3. 其他情况 → STREAMING
+ * 判断逻辑： 1. 如果有command字段 → STUDIO 2. 如果URL后缀是sse → SSE 3. 其他情况 → STREAMING
  */
 @Component
 public class DecisionConnectionType {
