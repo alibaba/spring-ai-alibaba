@@ -94,6 +94,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tushare</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-ollamasearchmodel</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-minio</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-memcached</module>
 
         <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
