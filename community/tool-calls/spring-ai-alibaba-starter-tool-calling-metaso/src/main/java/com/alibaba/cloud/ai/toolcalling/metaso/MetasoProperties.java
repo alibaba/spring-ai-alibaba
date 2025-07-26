@@ -20,8 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
 
 /**
- * Docs: https://metaso.cn/search-api/playground
- * api-key is required
+ * Docs: https://metaso.cn/search-api/playground api-key is required
  *
  * @author HunterPorter
  * @author <a href="mailto:zongpeng_hzp@163.com">HunterPorter</a>
