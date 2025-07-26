@@ -40,14 +40,9 @@ public class WikipediaAutoConfiguration {
 	@Description("Search Wikipedia for information using keywords.")
 	public WikipediaService searchWikipedia(WikipediaProperties properties, JsonParseTool jsonParseTool) {
 
-		return new WikipediaService(
-			WebClientTool.builder(jsonParseTool, properties)
-				.httpHeadersConsumer(headers -> {
-					headers.add("User-Agent", "Spring AI Alibaba Wikipedia Tool/1.0");
-				})
-				.build(), 
-			jsonParseTool, 
-			properties);
+		return new WikipediaService(WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(headers -> {
+			headers.add("User-Agent", "Spring AI Alibaba Wikipedia Tool/1.0");
+		}).build(), jsonParseTool, properties);
 	}
 
-} 
+}

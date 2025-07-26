@@ -23,4 +23,4 @@ public final class WikipediaConstants {
 
 	public static final String TOOL_NAME = "searchWikipedia";
 
-} 
+}

@@ -67,4 +67,4 @@ public class WikipediaProperties extends CommonToolCallProperties {
 		this.excerptLength = excerptLength;
 	}
 
-} 
+}

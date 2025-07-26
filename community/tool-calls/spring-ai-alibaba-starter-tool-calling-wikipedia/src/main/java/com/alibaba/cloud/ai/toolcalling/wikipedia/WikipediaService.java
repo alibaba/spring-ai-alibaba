@@ -61,7 +61,7 @@ public class WikipediaService implements Function<WikipediaService.Request, Wiki
 
 		try {
 			logger.info("Searching Wikipedia for: {}", request.query());
-			
+
 			// Search for pages
 			String path = "w/api.php";
 			MultiValueMap<String, String> searchParams = CommonToolCallUtils.<String, String>multiValueMapBuilder()
@@ -74,10 +74,11 @@ public class WikipediaService implements Function<WikipediaService.Request, Wiki
 				.build();
 
 			String searchJsonResponse = webClientTool.get(path, searchParams).block();
-			Map<String, Object> searchResult = jsonParseTool.jsonToObject(searchJsonResponse, new TypeReference<>() {});
-			
+			Map<String, Object> searchResult = jsonParseTool.jsonToObject(searchJsonResponse, new TypeReference<>() {
+			});
+
 			List<WikiPage> pages = parseSearchResults(searchResult);
-			
+
 			if (pages.isEmpty()) {
 				return new Response("未找到相关的Wikipedia页面", new ArrayList<>());
 			}
@@ -99,7 +100,7 @@ public class WikipediaService implements Function<WikipediaService.Request, Wiki
 
 	private List<WikiPage> parseSearchResults(Map<String, Object> searchResult) {
 		List<WikiPage> pages = new ArrayList<>();
-		
+
 		try {
 			Map<String, Object> query = (Map<String, Object>) searchResult.get("query");
 			if (query != null) {
@@ -111,12 +112,12 @@ public class WikipediaService implements Function<WikipediaService.Request, Wiki
 						Integer pageId = (Integer) result.get("pageid");
 						Integer size = (Integer) result.get("size");
 						String timestamp = (String) result.get("timestamp");
-						
+
 						// Clean HTML tags from snippet
 						if (snippet != null) {
 							snippet = snippet.replaceAll("<[^>]*>", "");
 						}
-						
+
 						pages.add(new WikiPage(title, snippet, null, pageId, size, timestamp));
 					}
 				}
@@ -125,7 +126,7 @@ public class WikipediaService implements Function<WikipediaService.Request, Wiki
 		catch (Exception e) {
 			logger.error("Error parsing search results: {}", e.getMessage());
 		}
-		
+
 		return pages;
 	}
 
@@ -144,12 +145,14 @@ public class WikipediaService implements Function<WikipediaService.Request, Wiki
 					.build();
 
 				String contentJsonResponse = webClientTool.get(path, contentParams).block();
-				Map<String, Object> contentResult = jsonParseTool.jsonToObject(contentJsonResponse, new TypeReference<>() {});
-				
+				Map<String, Object> contentResult = jsonParseTool.jsonToObject(contentJsonResponse,
+						new TypeReference<>() {
+						});
+
 				String content = extractPageContent(contentResult, page.pageId());
 				if (content != null) {
-					pages.set(pages.indexOf(page), 
-						new WikiPage(page.title(), page.snippet(), content, page.pageId(), page.size(), page.timestamp()));
+					pages.set(pages.indexOf(page), new WikiPage(page.title(), page.snippet(), content, page.pageId(),
+							page.size(), page.timestamp()));
 				}
 			}
 			catch (Exception e) {
@@ -179,28 +182,25 @@ public class WikipediaService implements Function<WikipediaService.Request, Wiki
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("Wikipedia搜索请求")
-	public record Request(
-		@JsonProperty(required = true) @JsonPropertyDescription("搜索查询关键词") String query,
-		@JsonProperty(defaultValue = "5") @JsonPropertyDescription("返回结果数量限制，默认5") int limit,
-		@JsonProperty(defaultValue = "false") @JsonPropertyDescription("是否包含页面详细内容，默认false") boolean includeContent
-	) {}
+	public record Request(@JsonProperty(required = true) @JsonPropertyDescription("搜索查询关键词") String query,
+			@JsonProperty(defaultValue = "5") @JsonPropertyDescription("返回结果数量限制，默认5") int limit, @JsonProperty(
+					defaultValue = "false") @JsonPropertyDescription("是否包含页面详细内容，默认false") boolean includeContent) {
+	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("Wikipedia搜索响应")
-	public record Response(
-		@JsonProperty @JsonPropertyDescription("搜索结果摘要") String summary,
-		@JsonProperty @JsonPropertyDescription("搜索到的页面列表") List<WikiPage> pages
-	) {}
+	public record Response(@JsonProperty @JsonPropertyDescription("搜索结果摘要") String summary,
+			@JsonProperty @JsonPropertyDescription("搜索到的页面列表") List<WikiPage> pages) {
+	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("Wikipedia页面信息")
-	public record WikiPage(
-		@JsonProperty @JsonPropertyDescription("页面标题") String title,
-		@JsonProperty @JsonPropertyDescription("页面摘要片段") String snippet,
-		@JsonProperty @JsonPropertyDescription("页面详细内容（如果请求）") String content,
-		@JsonProperty @JsonPropertyDescription("页面ID") Integer pageId,
-		@JsonProperty @JsonPropertyDescription("页面大小（字节）") Integer size,
-		@JsonProperty @JsonPropertyDescription("最后修改时间") String timestamp
-	) {}
+	public record WikiPage(@JsonProperty @JsonPropertyDescription("页面标题") String title,
+			@JsonProperty @JsonPropertyDescription("页面摘要片段") String snippet,
+			@JsonProperty @JsonPropertyDescription("页面详细内容（如果请求）") String content,
+			@JsonProperty @JsonPropertyDescription("页面ID") Integer pageId,
+			@JsonProperty @JsonPropertyDescription("页面大小（字节）") Integer size,
+			@JsonProperty @JsonPropertyDescription("最后修改时间") String timestamp) {
+	}
 
-} 
+}

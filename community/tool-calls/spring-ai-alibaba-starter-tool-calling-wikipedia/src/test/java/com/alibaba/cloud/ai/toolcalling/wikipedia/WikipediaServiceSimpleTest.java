@@ -39,7 +39,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Wikipedia服务简单测试类（AI测试）
- * 
+ *
  * @author AI Assistant
  */
 @ExtendWith(MockitoExtension.class)
@@ -75,7 +75,7 @@ class WikipediaServiceSimpleTest {
 		assertEquals("错误：搜索查询不能为空", response.summary());
 		assertNotNull(response.pages());
 		assertTrue(response.pages().isEmpty());
-		
+
 		// 验证没有调用网络请求
 		verify(webClientTool, never()).get(anyString(), any(MultiValueMap.class));
 	}
@@ -90,7 +90,7 @@ class WikipediaServiceSimpleTest {
 		assertEquals("错误：搜索查询不能为空", response.summary());
 		assertNotNull(response.pages());
 		assertTrue(response.pages().isEmpty());
-		
+
 		// 验证没有调用网络请求
 		verify(webClientTool, never()).get(anyString(), any(MultiValueMap.class));
 	}
@@ -99,29 +99,27 @@ class WikipediaServiceSimpleTest {
 	void testApply_normalSearch_success() throws JsonProcessingException {
 		// Given
 		WikipediaService.Request request = new WikipediaService.Request("人工智能", 5, false);
-		
+
 		String mockSearchResponse = """
-			{
-				"query": {
-					"search": [
-						{
-							"title": "人工智能",
-							"snippet": "人工智能是计算机科学的一个分支",
-							"pageid": 12345,
-							"size": 50000,
-							"timestamp": "2024-01-01T00:00:00Z"
-						}
-					]
+				{
+					"query": {
+						"search": [
+							{
+								"title": "人工智能",
+								"snippet": "人工智能是计算机科学的一个分支",
+								"pageid": 12345,
+								"size": 50000,
+								"timestamp": "2024-01-01T00:00:00Z"
+							}
+						]
+					}
 				}
-			}
-			""";
-		
+				""";
+
 		Map<String, Object> mockSearchResult = createMockSearchResultMap();
-		
-		when(webClientTool.get(eq("w/api.php"), any(MultiValueMap.class)))
-			.thenReturn(Mono.just(mockSearchResponse));
-		when(jsonParseTool.jsonToObject(eq(mockSearchResponse), any(TypeReference.class)))
-			.thenReturn(mockSearchResult);
+
+		when(webClientTool.get(eq("w/api.php"), any(MultiValueMap.class))).thenReturn(Mono.just(mockSearchResponse));
+		when(jsonParseTool.jsonToObject(eq(mockSearchResponse), any(TypeReference.class))).thenReturn(mockSearchResult);
 
 		// When
 		WikipediaService.Response response = wikipediaService.apply(request);
@@ -131,7 +129,7 @@ class WikipediaServiceSimpleTest {
 		assertEquals("找到 1 个相关页面", response.summary());
 		assertNotNull(response.pages());
 		assertEquals(1, response.pages().size());
-		
+
 		WikipediaService.WikiPage firstPage = response.pages().get(0);
 		assertEquals("人工智能", firstPage.title());
 		assertEquals("人工智能是计算机科学的一个分支", firstPage.snippet());
@@ -139,7 +137,7 @@ class WikipediaServiceSimpleTest {
 		assertEquals(12345, firstPage.pageId());
 		assertEquals(50000, firstPage.size());
 		assertEquals("2024-01-01T00:00:00Z", firstPage.timestamp());
-		
+
 		verify(webClientTool, times(1)).get(eq("w/api.php"), any(MultiValueMap.class));
 		verify(jsonParseTool, times(1)).jsonToObject(eq(mockSearchResponse), any(TypeReference.class));
 	}
@@ -147,17 +145,18 @@ class WikipediaServiceSimpleTest {
 	private Map<String, Object> createMockSearchResultMap() {
 		Map<String, Object> result = new HashMap<>();
 		Map<String, Object> query = new HashMap<>();
-		
+
 		Map<String, Object> page1 = new HashMap<>();
 		page1.put("title", "人工智能");
 		page1.put("snippet", "人工智能是计算机科学的一个分支");
 		page1.put("pageid", 12345);
 		page1.put("size", 50000);
 		page1.put("timestamp", "2024-01-01T00:00:00Z");
-		
+
 		query.put("search", List.of(page1));
 		result.put("query", query);
-		
+
 		return result;
 	}
-} 
+
+}
