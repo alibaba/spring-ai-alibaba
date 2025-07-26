@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.toolcalling.wikipedia;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -36,7 +37,7 @@ import java.util.function.Function;
 /**
  * @author Makoto
  */
-public class WikipediaService implements Function<WikipediaService.Request, WikipediaService.Response> {
+public class WikipediaService implements SearchService, Function<WikipediaService.Request, WikipediaService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(WikipediaService.class);
 
@@ -53,10 +54,15 @@ public class WikipediaService implements Function<WikipediaService.Request, Wiki
 	}
 
 	@Override
+	public SearchService.Response query(String query) {
+		return this.apply(new Request(query, properties.getLimit(), false));
+	}
+
+	@Override
 	public Response apply(Request request) {
 		if (request == null || !StringUtils.hasText(request.query())) {
 			logger.error("Invalid request: query is required.");
-			return new Response("错误：搜索查询不能为空", new ArrayList<>());
+			return new Response("错误：搜索查询不能为空", new ArrayList<>(), properties.getLanguage());
 		}
 
 		try {
@@ -80,7 +86,7 @@ public class WikipediaService implements Function<WikipediaService.Request, Wiki
 			List<WikiPage> pages = parseSearchResults(searchResult);
 
 			if (pages.isEmpty()) {
-				return new Response("未找到相关的Wikipedia页面", new ArrayList<>());
+				return new Response("未找到相关的Wikipedia页面", new ArrayList<>(), properties.getLanguage());
 			}
 
 			// Get content for the top results
@@ -89,12 +95,12 @@ public class WikipediaService implements Function<WikipediaService.Request, Wiki
 			}
 
 			String summary = String.format("找到 %d 个相关页面", pages.size());
-			return new Response(summary, pages);
+			return new Response(summary, pages, properties.getLanguage());
 
 		}
 		catch (Exception e) {
 			logger.error("Failed to search Wikipedia: {}", e.getMessage(), e);
-			return new Response("搜索Wikipedia时发生错误: " + e.getMessage(), new ArrayList<>());
+			return new Response("搜索Wikipedia时发生错误: " + e.getMessage(), new ArrayList<>(), properties.getLanguage());
 		}
 	}
 
@@ -183,14 +189,44 @@ public class WikipediaService implements Function<WikipediaService.Request, Wiki
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("Wikipedia搜索请求")
 	public record Request(@JsonProperty(required = true) @JsonPropertyDescription("搜索查询关键词") String query,
-			@JsonProperty(defaultValue = "5") @JsonPropertyDescription("返回结果数量限制，默认5") int limit, @JsonProperty(
-					defaultValue = "false") @JsonPropertyDescription("是否包含页面详细内容，默认false") boolean includeContent) {
+			@JsonProperty(defaultValue = "5") @JsonPropertyDescription("返回结果数量限制，默认5") int limit,
+			@JsonProperty(defaultValue = "false") @JsonPropertyDescription("是否包含页面详细内容，默认false") boolean includeContent)
+			implements
+				SearchService.Request {
+
+		@Override
+		public String getQuery() {
+			return this.query();
+		}
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("Wikipedia搜索响应")
 	public record Response(@JsonProperty @JsonPropertyDescription("搜索结果摘要") String summary,
-			@JsonProperty @JsonPropertyDescription("搜索到的页面列表") List<WikiPage> pages) {
+			@JsonProperty @JsonPropertyDescription("搜索到的页面列表") List<WikiPage> pages,
+			String language) implements SearchService.Response {
+
+		@Override
+		public SearchService.SearchResult getSearchResult() {
+			return new SearchService.SearchResult(this.pages()
+				.stream()
+				.map(page -> new SearchService.SearchContent(page.title(),
+						// 使用content（如果有）或者snippet作为内容
+						page.content() != null ? page.content() : page.snippet(),
+						// Wikipedia页面URL - 构建基于页面ID的URL更可靠
+						buildWikipediaUrl(page.title()), null // Wikipedia没有特定图标
+				))
+				.toList());
+		}
+
+		private String buildWikipediaUrl(String title) {
+			if (title == null) {
+				return "https://" + (language != null ? language : "zh") + ".wikipedia.org/";
+			}
+			// URL编码处理特殊字符
+			String encodedTitle = title.replace(" ", "_").replace("(", "%28").replace(")", "%29");
+			return "https://" + (language != null ? language : "zh") + ".wikipedia.org/wiki/" + encodedTitle;
+		}
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
