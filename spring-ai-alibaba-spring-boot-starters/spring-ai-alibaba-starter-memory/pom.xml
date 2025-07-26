@@ -60,6 +60,12 @@
             <version>${revision}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-memory-tablestore</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <!--        <dependency>-->
         <!--            <groupId>co.elastic.clients</groupId>-->
         <!--            <artifactId>elasticsearch-java</artifactId>-->
