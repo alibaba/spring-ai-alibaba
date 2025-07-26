@@ -30,10 +30,15 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 public class ParallelNode extends Node {
 
 	public static final String PARALLEL_PREFIX = "__PARALLEL__";
+
+	public static String formatNodeId( String nodeId ) {
+		return format( "%s(%s)", PARALLEL_PREFIX, requireNonNull(nodeId, "nodeId cannot be null!"));
+	}
 
 	record AsyncParallelNodeAction(List<AsyncNodeActionWithConfig> actions,
 			Map<String, KeyStrategy> channels) implements AsyncNodeActionWithConfig {
@@ -53,9 +58,7 @@ public class ParallelNode extends Node {
 						KeyStrategy strategy = channels.get(key);
 						if (strategy != null) {
 							// 使用原子操作来确保线程安全
-							partialMergedStates.compute(key, (k, existingValue) -> {
-								return strategy.apply(existingValue, value);
-							});
+							partialMergedStates.compute(key, (k, existingValue) -> strategy.apply(existingValue, value));
 						}
 						else {
 							// 如果没有配置KeyStrategy，使用默认的替换策略

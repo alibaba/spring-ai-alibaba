@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
 import org.junit.jupiter.api.NamedExecutable;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -209,7 +210,7 @@ public class StateGraphTest {
 		var agent = AsyncNodeActionWithConfig.node_async((state, config) -> {
 
 			// Verify that the metadata "configData" is present in the configuration
-			assertTrue(config.getMetadata("configData").isPresent());
+			assertTrue(config.metadata("configData").isPresent());
 
 			log.info("agent_1\n{}", state);
 			return Map.of("prop1", "test");
@@ -841,4 +842,41 @@ public class StateGraphTest {
 		assertEquals(List.of("go to command node", "node1", "node2"), state.value("messages", List.class).get());
 	}
 
+
+
+
+	@Test
+	void testCommandNode() throws Exception {
+
+
+		AsyncCommandAction commandAction = (state, config) ->
+				completedFuture( new Command("C2",
+						Map.of( "messages", "B",
+								"next_node", "C2")) );
+
+
+		var graph = new StateGraph()
+				.addNode("A", makeNode("A"))
+				.addNode("B", commandAction, EdgeMappings.builder()
+						.toEND()
+						.to("C1")
+						.to("C2")
+						.build())
+				.addNode("C1", makeNode("C1"))
+				.addNode("C2", makeNode("C2"))
+				.addEdge(START, "A")
+				.addEdge("A", "B")
+				.addEdge( "C1", END )
+				.addEdge( "C2", END )
+				.compile();
+
+		var steps = graph.stream(Map.of()).stream()
+				.peek(System.out::println)
+				.toList();
+
+		assertEquals(5, steps.size());
+		assertEquals( "B", steps.get(2).node());
+		assertEquals( "C2", steps.get(2).state().value("next_node").orElse(null));
+
+	}
 }
