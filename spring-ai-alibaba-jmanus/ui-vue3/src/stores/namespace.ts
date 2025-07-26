@@ -19,14 +19,14 @@ import { defineStore } from 'pinia'
 
 export const usenameSpaceStore = defineStore('namespace', () => {
   const namespace = ref<string>('default')
-  function setNamespace(value: string) {
+  function setCurrentNs(value: string) {
     namespace.value = value
   }
 
-  const db = ref<Array<{ name: string; id: string }>>([{ name: 'Default', id: 'default' }])
-  function setDb(datasource: Array<{ name: string; id: string }>) {
-    db.value = datasource
+  const namespaces = ref<Array<{ name: string; id: string ;host?: string}>>([])
+  function setNamespaces(datasource: Array<{ name: string; id: string }>) {
+    namespaces.value = datasource
   }
 
-  return { namespace, db, setNamespace, setDb }
+  return { namespace, namespaces, setCurrentNs, setNamespaces }
 })

@@ -70,6 +70,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-dingtalk</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-sensitivefilter</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-amap</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-googlescholar</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-weather</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-larksuite</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-microsofttranslate</module>
@@ -92,6 +93,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tencentmap</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tushare</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-ollamasearchmodel</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-minio</module>
 
         <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
@@ -149,9 +151,6 @@
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
 
         <!-- Spring AI Alibaba MCP -->
-        <!-- Nacos2 version -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-client</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-server</module>
         <!-- Nacos3 version -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-discovery</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-register</module>
@@ -172,8 +171,6 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-prompt</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-client</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-server</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-discovery</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-register</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-gateway-nacos</module>

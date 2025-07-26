@@ -315,9 +315,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted ,watch} from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import { storeToRefs } from 'pinia'
 import ConfigPanel from './components/configPanel.vue'
 import Modal from '@/components/modal/index.vue'
 import ToolSelectionModal from '@/components/tool-selection-modal/index.vue'
@@ -329,6 +330,7 @@ import { usenameSpaceStore } from '@/stores/namespace'
 const { t } = useI18n()
 
 const namespaceStore = usenameSpaceStore()
+const { namespace} = storeToRefs(namespaceStore)
 
 // Reactive data
 const loading = ref(false)
@@ -343,8 +345,6 @@ const showToolModal = ref(false)
 const showDropdown = ref(false)
 const chooseModel = ref<Model | null>(null)
 const modelOptions = reactive<Model[]>([])
-
-
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
@@ -397,7 +397,7 @@ const loadData = async () => {
   try {
     // Load the Agent list and available tools in parallel
     const [loadedAgents, loadedTools, loadedModels] = await Promise.all([
-      AgentApiService.getAllAgents(namespaceStore.namespace),
+      AgentApiService.getAllAgents(namespace.value),
       AgentApiService.getAvailableTools(),
       ModelApiService.getAllModels(),
     ])
@@ -574,6 +574,7 @@ const handleAddAgent = async () => {
       description: newAgent.description.trim(),
       nextStepPrompt: newAgent.nextStepPrompt?.trim() ?? '',
       availableTools: [],
+      namespace: namespace.value
     }
 
     const createdAgent = await AgentApiService.createAgent(agentData)
@@ -713,6 +714,17 @@ const handleExport = () => {
 onMounted(() => {
   loadData()
 })
+
+watch(
+  () => namespace.value,
+  (newNamespace, oldNamespace) => {
+    if (newNamespace !== oldNamespace) {
+      agents.splice(0)
+      selectedAgent.value = null
+      loadData()
+    }
+  }
+)
 </script>
 
 <style scoped>

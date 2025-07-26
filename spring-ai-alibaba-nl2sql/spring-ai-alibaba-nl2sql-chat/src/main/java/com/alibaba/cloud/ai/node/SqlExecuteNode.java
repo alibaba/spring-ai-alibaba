@@ -29,7 +29,6 @@ import com.alibaba.cloud.ai.util.StepResultUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import reactor.core.publisher.Flux;
 
@@ -55,7 +54,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 	private final DbAccessor dbAccessor;
 
-	public SqlExecuteNode(ChatClient.Builder chatClientBuilder, DbAccessor dbAccessor, DbConfig dbConfig) {
+	public SqlExecuteNode(DbAccessor dbAccessor, DbConfig dbConfig) {
 		super();
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
