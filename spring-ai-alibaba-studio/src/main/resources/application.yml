@@ -3,7 +3,7 @@ spring:
     name: spring-ai-alibaba-studio
   ai:
     dashscope:
-      api-key: ${AI_DASHSCOPE_API_KEY}
+      api-key: sk-fe3978a15ee242b4b4ae399c7096f392
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

@@ -6,7 +6,7 @@ spring:
   application:
     name: spring-ai-alibaba-openmanus
   profiles:
-    active: h2
+    active: mysql
   main:
     allow-circular-references: true
     lazy-initialization: false
