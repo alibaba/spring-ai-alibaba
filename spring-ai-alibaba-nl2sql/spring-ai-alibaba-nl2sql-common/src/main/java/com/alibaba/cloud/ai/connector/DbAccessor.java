@@ -42,10 +42,8 @@ public class DbAccessor {
 
 	private final DdlFactory ddlFactory;
 
-	public DbAccessor(
-			MysqlJdbcConnectionPool mysqlJdbcConnectionPool,
-			PostgreSqlJdbcConnectionPool postgreSqlJdbcConnectionPool,
-			DdlFactory ddlFactory) {
+	public DbAccessor(MysqlJdbcConnectionPool mysqlJdbcConnectionPool,
+			PostgreSqlJdbcConnectionPool postgreSqlJdbcConnectionPool, DdlFactory ddlFactory) {
 
 		this.ddlFactory = ddlFactory;
 		this.mysqlJdbcConnectionPool = mysqlJdbcConnectionPool;

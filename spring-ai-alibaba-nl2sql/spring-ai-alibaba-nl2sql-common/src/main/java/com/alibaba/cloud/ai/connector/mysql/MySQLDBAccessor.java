@@ -30,19 +30,18 @@ import org.springframework.stereotype.Service;
 @Service
 public class MySQLDBAccessor extends AbstractAccessor {
 
-    private final static String ACCESSOR_TYPE = "MySQL_Accessor";
+	private final static String ACCESSOR_TYPE = "MySQL_Accessor";
 
-    protected MySQLDBAccessor(
-            DdlFactory ddlFactory,
-            @Qualifier("mysqlJdbcConnectionPool") DBConnectionPool dbConnectionPool
-    ) {
+	protected MySQLDBAccessor(DdlFactory ddlFactory,
+			@Qualifier("mysqlJdbcConnectionPool") DBConnectionPool dbConnectionPool) {
 
-        super(ddlFactory, dbConnectionPool);
-    }
+		super(ddlFactory, dbConnectionPool);
+	}
 
-    @Override
-    protected String getDbAccessorType() {
+	@Override
+	protected String getDbAccessorType() {
 
-        return ACCESSOR_TYPE;
-    }
+		return ACCESSOR_TYPE;
+	}
+
 }

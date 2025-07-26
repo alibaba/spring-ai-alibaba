@@ -149,7 +149,6 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 	 * useful for resource cleanup in special scenarios.
 	 */
 
-
 	public DataSource createdDataSource(String url, String username, String password) throws Exception {
 
 		DruidDataSource dataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(

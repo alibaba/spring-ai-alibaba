@@ -28,14 +28,15 @@ import com.alibaba.cloud.ai.connector.config.DbConfig;
 
 public interface Accessor {
 
-    /**
-     * Access the database and execute the specified method with the given parameters.
-     * @param dbConfig database configuration
-     * @param method method name
-     * @param param query parameters
-     * @return result object, which can be a list of database information, schema information, table information, etc.
-     * @throws Exception if an error occurs during database access
-     */
-    <T> T accessDb(DbConfig dbConfig, String method, DbQueryParameter param) throws Exception;
+	/**
+	 * Access the database and execute the specified method with the given parameters.
+	 * @param dbConfig database configuration
+	 * @param method method name
+	 * @param param query parameters
+	 * @return result object, which can be a list of database information, schema
+	 * information, table information, etc.
+	 * @throws Exception if an error occurs during database access
+	 */
+	<T> T accessDb(DbConfig dbConfig, String method, DbQueryParameter param) throws Exception;
 
 }

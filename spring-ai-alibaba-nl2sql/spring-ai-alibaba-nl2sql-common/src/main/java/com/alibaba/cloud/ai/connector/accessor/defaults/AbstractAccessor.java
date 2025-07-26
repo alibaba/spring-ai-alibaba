@@ -42,92 +42,94 @@ import java.util.List;
 
 public abstract class AbstractAccessor implements Accessor {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractAccessor.class);
+	private static final Logger logger = LoggerFactory.getLogger(AbstractAccessor.class);
 
-    private final DdlFactory ddlFactory;
+	private final DdlFactory ddlFactory;
 
-    private final DBConnectionPool dbConnectionPool;
+	private final DBConnectionPool dbConnectionPool;
 
-    protected AbstractAccessor(DdlFactory ddlFactory, DBConnectionPool dbConnectionPool) {
-        this.dbConnectionPool = dbConnectionPool;
-        this.ddlFactory = ddlFactory;
-    }
+	protected AbstractAccessor(DdlFactory ddlFactory, DBConnectionPool dbConnectionPool) {
+		this.dbConnectionPool = dbConnectionPool;
+		this.ddlFactory = ddlFactory;
+	}
 
-    protected abstract String getDbAccessorType();
+	protected abstract String getDbAccessorType();
 
-    public <T> T accessDb(DbConfig dbConfig, String method, DbQueryParameter param) throws Exception {
+	public <T> T accessDb(DbConfig dbConfig, String method, DbQueryParameter param) throws Exception {
 
-        try (Connection connection = getConnection(dbConfig)) {
+		try (Connection connection = getConnection(dbConfig)) {
 
-            AbstractJdbcDdl ddlExecutor = (AbstractJdbcDdl) ddlFactory.getDdlExecutor(dbConfig);
+			AbstractJdbcDdl ddlExecutor = (AbstractJdbcDdl) ddlFactory.getDdlExecutor(dbConfig);
 
-            switch (method) {
-                case "showDatabases":
-                    return (T) ddlExecutor.showDatabases(connection);
-                case "showSchemas":
-                    return (T) ddlExecutor.showSchemas(connection);
-                case "showTables":
-                    return (T) ddlExecutor.showTables(connection, param.getSchema(), param.getTablePattern());
-                case "fetchTables":
-                    return (T) ddlExecutor.fetchTables(connection, param.getSchema(), param.getTables());
-                case "showColumns":
-                    return (T) ddlExecutor.showColumns(connection, param.getSchema(), param.getTable());
-                case "showForeignKeys":
-                    return (T) ddlExecutor.showForeignKeys(connection, param.getSchema(), param.getTables());
-                case "sampleColumn":
-                    return (T) ddlExecutor.sampleColumn(connection, param.getSchema(), param.getTable(), param.getColumn());
-                case "scanTable":
-                    return (T) ddlExecutor.scanTable(connection, param.getSchema(), param.getTable());
-                case "executeSqlAndReturnObject":
-                    return (T) SqlExecutor.executeSqlAndReturnObject(connection, param.getSchema(), param.getSql());
-                default:
-                    throw new UnsupportedOperationException("Unknown method: " + method);
-            }
-        } catch (Exception e) {
+			switch (method) {
+				case "showDatabases":
+					return (T) ddlExecutor.showDatabases(connection);
+				case "showSchemas":
+					return (T) ddlExecutor.showSchemas(connection);
+				case "showTables":
+					return (T) ddlExecutor.showTables(connection, param.getSchema(), param.getTablePattern());
+				case "fetchTables":
+					return (T) ddlExecutor.fetchTables(connection, param.getSchema(), param.getTables());
+				case "showColumns":
+					return (T) ddlExecutor.showColumns(connection, param.getSchema(), param.getTable());
+				case "showForeignKeys":
+					return (T) ddlExecutor.showForeignKeys(connection, param.getSchema(), param.getTables());
+				case "sampleColumn":
+					return (T) ddlExecutor.sampleColumn(connection, param.getSchema(), param.getTable(),
+							param.getColumn());
+				case "scanTable":
+					return (T) ddlExecutor.scanTable(connection, param.getSchema(), param.getTable());
+				case "executeSqlAndReturnObject":
+					return (T) SqlExecutor.executeSqlAndReturnObject(connection, param.getSchema(), param.getSql());
+				default:
+					throw new UnsupportedOperationException("Unknown method: " + method);
+			}
+		}
+		catch (Exception e) {
 
-            logger.error("Error accessing database with method: {}", method, e);
-            throw e;
-        }
-    }
+			logger.error("Error accessing database with method: {}", method, e);
+			throw e;
+		}
+	}
 
-    public List<DatabaseInfoBO> showDatabases(DbConfig dbConfig) throws Exception {
-        return accessDb(dbConfig, "showDatabases", null);
-    }
+	public List<DatabaseInfoBO> showDatabases(DbConfig dbConfig) throws Exception {
+		return accessDb(dbConfig, "showDatabases", null);
+	}
 
-    public List<SchemaInfoBO> showSchemas(DbConfig dbConfig) throws Exception {
-        return accessDb(dbConfig, "showSchemas", null);
-    }
+	public List<SchemaInfoBO> showSchemas(DbConfig dbConfig) throws Exception {
+		return accessDb(dbConfig, "showSchemas", null);
+	}
 
-    public List<TableInfoBO> showTables(DbConfig dbConfig, DbQueryParameter param) throws Exception {
-        return accessDb(dbConfig, "showTables", param);
-    }
+	public List<TableInfoBO> showTables(DbConfig dbConfig, DbQueryParameter param) throws Exception {
+		return accessDb(dbConfig, "showTables", param);
+	}
 
-    public List<TableInfoBO> fetchTables(DbConfig dbConfig, DbQueryParameter param) throws Exception {
-        return accessDb(dbConfig, "fetchTables", param);
-    }
+	public List<TableInfoBO> fetchTables(DbConfig dbConfig, DbQueryParameter param) throws Exception {
+		return accessDb(dbConfig, "fetchTables", param);
+	}
 
-    public List<ColumnInfoBO> showColumns(DbConfig dbConfig, DbQueryParameter param) throws Exception {
-        return accessDb(dbConfig, "showColumns", param);
-    }
+	public List<ColumnInfoBO> showColumns(DbConfig dbConfig, DbQueryParameter param) throws Exception {
+		return accessDb(dbConfig, "showColumns", param);
+	}
 
-    public List<ForeignKeyInfoBO> showForeignKeys(DbConfig dbConfig, DbQueryParameter param) throws Exception {
-        return accessDb(dbConfig, "showForeignKeys", param);
-    }
+	public List<ForeignKeyInfoBO> showForeignKeys(DbConfig dbConfig, DbQueryParameter param) throws Exception {
+		return accessDb(dbConfig, "showForeignKeys", param);
+	}
 
-    public List<String> sampleColumn(DbConfig dbConfig, DbQueryParameter param) throws Exception {
-        return accessDb(dbConfig, "sampleColumn", param);
-    }
+	public List<String> sampleColumn(DbConfig dbConfig, DbQueryParameter param) throws Exception {
+		return accessDb(dbConfig, "sampleColumn", param);
+	}
 
-    public ResultSetBO scanTable(DbConfig dbConfig, DbQueryParameter param) throws Exception {
-        return accessDb(dbConfig, "scanTable", param);
-    }
+	public ResultSetBO scanTable(DbConfig dbConfig, DbQueryParameter param) throws Exception {
+		return accessDb(dbConfig, "scanTable", param);
+	}
 
-    public ResultSetBO executeSqlAndReturnObject(DbConfig dbConfig, DbQueryParameter param) throws Exception {
-        return accessDb(dbConfig, "executeSqlAndReturnObject", param);
-    }
+	public ResultSetBO executeSqlAndReturnObject(DbConfig dbConfig, DbQueryParameter param) throws Exception {
+		return accessDb(dbConfig, "executeSqlAndReturnObject", param);
+	}
 
-    public Connection getConnection(DbConfig config) {
-        return this.dbConnectionPool.getConnection(config);
-    }
+	public Connection getConnection(DbConfig config) {
+		return this.dbConnectionPool.getConnection(config);
+	}
 
 }

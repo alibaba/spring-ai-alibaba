@@ -21,7 +21,8 @@ import com.alibaba.cloud.ai.enums.ErrorCodeEnum;
 import java.sql.Connection;
 
 /**
- * DataAgent data connection pool, used to maintain the data source connection information required by DataAgent
+ * DataAgent data connection pool, used to maintain the data source connection information
+ * required by DataAgent
  */
 
 public interface DBConnectionPool extends AutoCloseable {

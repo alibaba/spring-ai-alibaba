@@ -30,20 +30,18 @@ import org.springframework.stereotype.Service;
 @Service
 public class PostgreDBAccessor extends AbstractAccessor {
 
-    private final static String ACCESSOR_TYPE = "PostgreSQL_Accessor";
+	private final static String ACCESSOR_TYPE = "PostgreSQL_Accessor";
 
-    protected PostgreDBAccessor(
-            DdlFactory ddlFactory,
-            @Qualifier("postgreSqlJdbcConnectionPool") DBConnectionPool dbConnectionPool
-    ) {
+	protected PostgreDBAccessor(DdlFactory ddlFactory,
+			@Qualifier("postgreSqlJdbcConnectionPool") DBConnectionPool dbConnectionPool) {
 
-        super(ddlFactory, dbConnectionPool);
-    }
+		super(ddlFactory, dbConnectionPool);
+	}
 
-    @Override
-    public String getDbAccessorType() {
+	@Override
+	public String getDbAccessorType() {
 
-        return ACCESSOR_TYPE;
-    }
+		return ACCESSOR_TYPE;
+	}
 
 }
