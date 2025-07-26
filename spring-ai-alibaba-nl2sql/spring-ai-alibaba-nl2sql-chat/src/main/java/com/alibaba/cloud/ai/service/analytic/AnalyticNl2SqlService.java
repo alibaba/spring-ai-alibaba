@@ -32,8 +32,8 @@ public class AnalyticNl2SqlService extends BaseNl2SqlService {
 
 	@Autowired
 	public AnalyticNl2SqlService(@Qualifier("analyticVectorStoreService") BaseVectorStoreService vectorStoreService,
-								 @Qualifier("analyticSchemaService") BaseSchemaService schemaService, LlmService aiService,
-								 @Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig) {
+			@Qualifier("analyticSchemaService") BaseSchemaService schemaService, LlmService aiService,
+			@Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig) {
 		super(vectorStoreService, schemaService, aiService, dbAccessor, dbConfig);
 	}
 

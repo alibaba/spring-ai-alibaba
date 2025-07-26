@@ -36,7 +36,7 @@ import org.springframework.context.annotation.Configuration;
  * @author zhangshenghang
  */
 
-@Configuration(proxyBeanMethods=false)
+@Configuration(proxyBeanMethods = false)
 public class BaseDefaultConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(Nl2sqlConfiguration.class);
@@ -45,10 +45,7 @@ public class BaseDefaultConfiguration {
 
 	private final DbConfig dbConfig;
 
-	private BaseDefaultConfiguration(
-			@Qualifier("mysqlAccessor") Accessor accessor,
-			DbConfig dbConfig
-	) {
+	private BaseDefaultConfiguration(@Qualifier("mysqlAccessor") Accessor accessor, DbConfig dbConfig) {
 		this.dbAccessor = accessor;
 		this.dbConfig = dbConfig;
 	}

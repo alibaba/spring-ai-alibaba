@@ -64,12 +64,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	private final EmbeddingModel embeddingModel;
 
 	@Autowired
-	public SimpleVectorStoreService(
-			EmbeddingModel embeddingModel,
-			Gson gson,
-			@Qualifier("mysqlAccessor") Accessor dbAccessor,
-			DbConfig dbConfig
-	) {
+	public SimpleVectorStoreService(EmbeddingModel embeddingModel, Gson gson,
+			@Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig) {
 		log.info("Initializing SimpleVectorStoreService with EmbeddingModel: {}",
 				embeddingModel.getClass().getSimpleName());
 		this.gson = gson;
