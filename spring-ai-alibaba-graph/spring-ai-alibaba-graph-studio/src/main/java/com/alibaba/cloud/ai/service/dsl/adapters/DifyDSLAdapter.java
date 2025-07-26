@@ -26,6 +26,8 @@ import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.workflow.nodedata.CodeNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.EmptyNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
@@ -189,6 +191,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			List<Map<String, Object>> edgeMaps = (List<Map<String, Object>>) data.get("edges");
 			edges = constructEdges(edgeMaps);
 		}
+
 		graph.setNodes(nodes);
 		graph.setEdges(edges);
 		return graph;
@@ -231,6 +234,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			// Generate a readable varName and inject it into NodeData
 			int count = counters.merge(nodeType, 1, Integer::sum);
 			String varName = converter.generateVarName(count);
+
 			data.setVarName(varName);
 
 			// Post-processing: Overwrite the default outputKey and refresh the outputs
@@ -241,14 +245,27 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			nodes.add(node);
 		}
 
-		Map<String, String> idToOutputKey = nodes.stream().collect(Collectors.toMap(Node::getId, n -> {
-			try {
-				return ((VariableAggregatorNodeData) n.getData()).getOutputKey();
+		// 等待所有的节点都生成了变量名后，补充迭代节点的起始名称
+		Map<String, String> varNames = nodes.stream()
+			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
+		for (Node node : nodes) {
+			if (node.getData() instanceof IterationNodeData iterationNodeData) {
+				iterationNodeData
+					.setStartNodeName(varNames.getOrDefault(iterationNodeData.getStartNodeId(), "unknown"));
+				iterationNodeData.setEndNodeName(varNames.getOrDefault(iterationNodeData.getEndNodeId(), "unknown"));
 			}
-			catch (ClassCastException e) {
-				return n.getData().getOutputs().get(0).getName();
-			}
-		}));
+		}
+
+		Map<String, String> idToOutputKey = nodes.stream()
+			.filter(n -> !(n.getData() instanceof EmptyNodeData))
+			.collect(Collectors.toMap(Node::getId, n -> {
+				try {
+					return ((VariableAggregatorNodeData) n.getData()).getOutputKey();
+				}
+				catch (ClassCastException e) {
+					return n.getData().getOutputs().get(0).getName();
+				}
+			}));
 
 		// Replace all variable paths in all aggregation nodes.
 		for (Node node : nodes) {
