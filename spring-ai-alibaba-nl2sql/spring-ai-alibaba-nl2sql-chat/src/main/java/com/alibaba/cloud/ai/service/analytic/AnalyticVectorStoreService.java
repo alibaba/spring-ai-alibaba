@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.service.analytic;
 
+import com.alibaba.cloud.ai.annotation.ConditionalOnADBEnabled;
 import com.alibaba.cloud.ai.request.SearchRequest;
 import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
 import com.alibaba.cloud.ai.vectorstore.analyticdb.AnalyticDbVectorStoreProperties;
@@ -27,7 +28,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -35,9 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
-		matchIfMissing = true)
 @Service
+@ConditionalOnADBEnabled
 public class AnalyticVectorStoreService extends BaseVectorStoreService {
 
 	private static final String CONTENT_FIELD_NAME = "content";

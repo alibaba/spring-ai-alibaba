@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.node;
 
-import com.alibaba.cloud.ai.constant.StreamResponseType;
+import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
 import com.alibaba.cloud.ai.util.StateUtils;
@@ -31,7 +31,9 @@ import reactor.core.publisher.Flux;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.alibaba.cloud.ai.constant.Constant.*;
+import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
+import static com.alibaba.cloud.ai.constant.Constant.PYTHON_EXECUTE_NODE_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE_OUTPUT;
 
 /**
  * Python execution simulation node - currently simulates execution, needs integration

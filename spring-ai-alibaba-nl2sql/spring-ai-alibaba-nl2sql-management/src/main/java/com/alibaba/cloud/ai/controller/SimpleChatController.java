@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.controller;
 
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.service.simple.SimpleNl2SqlService;
 import com.alibaba.cloud.ai.service.simple.SimpleVectorStoreService;

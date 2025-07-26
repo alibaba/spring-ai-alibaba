@@ -15,26 +15,25 @@
  */
 package com.alibaba.cloud.ai.service.analytic;
 
-import com.alibaba.cloud.ai.dbconnector.DbAccessor;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.annotation.ConditionalOnADBEnabled;
+import com.alibaba.cloud.ai.connector.accessor.Accessor;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.service.LlmService;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
-		matchIfMissing = true)
 @Service
+@ConditionalOnADBEnabled
 public class AnalyticNl2SqlService extends BaseNl2SqlService {
 
 	@Autowired
 	public AnalyticNl2SqlService(@Qualifier("analyticVectorStoreService") BaseVectorStoreService vectorStoreService,
 			@Qualifier("analyticSchemaService") BaseSchemaService schemaService, LlmService aiService,
-			DbAccessor dbAccessor, DbConfig dbConfig) {
+			@Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig) {
 		super(vectorStoreService, schemaService, aiService, dbAccessor, dbConfig);
 	}
 

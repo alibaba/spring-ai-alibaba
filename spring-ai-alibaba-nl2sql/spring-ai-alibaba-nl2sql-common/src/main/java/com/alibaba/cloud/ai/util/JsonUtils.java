@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.util;
 
-import com.alibaba.cloud.ai.constant.StreamResponseType;
+import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.google.gson.Gson;
 
 import java.util.Map;

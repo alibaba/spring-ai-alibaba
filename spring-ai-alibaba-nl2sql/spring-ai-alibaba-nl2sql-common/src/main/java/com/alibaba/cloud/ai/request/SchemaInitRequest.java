@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.request;
 
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 
 import java.io.Serializable;
 import java.util.List;

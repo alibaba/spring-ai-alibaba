@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.controller;
 
-import com.alibaba.cloud.ai.config.ConditionalOnADBEnabled;
+import com.alibaba.cloud.ai.annotation.ConditionalOnADBEnabled;
 import com.alibaba.cloud.ai.service.analytic.AnalyticNl2SqlService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;

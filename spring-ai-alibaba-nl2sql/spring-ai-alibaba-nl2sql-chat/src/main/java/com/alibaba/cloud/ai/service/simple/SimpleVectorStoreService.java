@@ -15,12 +15,12 @@
  */
 package com.alibaba.cloud.ai.service.simple;
 
-import com.alibaba.cloud.ai.dbconnector.DbAccessor;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
-import com.alibaba.cloud.ai.dbconnector.bo.ColumnInfoBO;
-import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
-import com.alibaba.cloud.ai.dbconnector.bo.ForeignKeyInfoBO;
-import com.alibaba.cloud.ai.dbconnector.bo.TableInfoBO;
+import com.alibaba.cloud.ai.connector.accessor.Accessor;
+import com.alibaba.cloud.ai.connector.bo.ColumnInfoBO;
+import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
+import com.alibaba.cloud.ai.connector.bo.ForeignKeyInfoBO;
+import com.alibaba.cloud.ai.connector.bo.TableInfoBO;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.request.DeleteRequest;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.request.SearchRequest;
@@ -34,10 +34,17 @@ import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,15 +57,15 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 	private final Gson gson;
 
-	private final DbAccessor dbAccessor;
+	private final Accessor dbAccessor;
 
 	private final DbConfig dbConfig;
 
 	private final EmbeddingModel embeddingModel;
 
 	@Autowired
-	public SimpleVectorStoreService(EmbeddingModel embeddingModel, Gson gson, DbAccessor dbAccessor,
-			DbConfig dbConfig) {
+	public SimpleVectorStoreService(EmbeddingModel embeddingModel, Gson gson,
+			@Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig) {
 		log.info("Initializing SimpleVectorStoreService with EmbeddingModel: {}",
 				embeddingModel.getClass().getSimpleName());
 		this.gson = gson;

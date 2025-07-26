@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.prompt;
 
-import com.alibaba.cloud.ai.dbconnector.BizDataSourceTypeEnum;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.enums.BizDataSourceTypeEnum;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.dto.schema.ColumnDTO;
 import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.dto.schema.TableDTO;
