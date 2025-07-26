@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://your-mysql-host:3306/openmanus_db?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8
+    url: jdbc:mysql://117.72.36.179:3306/openmanus_db?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: your_mysql_username
-    password: your_mysql_password
+    username: root
+    password: lifl1234
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
