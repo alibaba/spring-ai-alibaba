@@ -130,6 +130,7 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 				new Variable(nodeData.getInnerStartFlagKey(), "string"),
 				new Variable(nodeData.getInnerEndFlagKey(), "string"),
 				new Variable(nodeData.getInnerItemKey(), nodeData.getInputType()),
+				new Variable(nodeData.getInnerIndexKey(), "number"),
 				new Variable(nodeData.getInnerItemResultKey(), nodeData.getOutputType()));
 	}
 

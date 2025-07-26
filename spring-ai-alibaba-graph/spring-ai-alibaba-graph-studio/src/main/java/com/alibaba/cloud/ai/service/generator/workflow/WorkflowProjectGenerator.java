@@ -168,14 +168,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			NodeType nodeType = NodeType.fromValue(node.getType()).orElseThrow();
 			for (NodeSection section : nodeNodeSections) {
 				if (section.support(nodeType)) {
-					if (nodeType.equals(NodeType.ITERATION)
-							&& node.getData() instanceof IterationNodeData iterationNodeData) {
-						// 迭代节点render未知起始和终止节点的名称
-						iterationNodeData
-							.setStartNodeName(varNames.getOrDefault(iterationNodeData.getStartNodeId(), "unknown"));
-						iterationNodeData
-							.setEndNodeName(varNames.getOrDefault(iterationNodeData.getEndNodeId(), "unknown"));
-					}
 					sb.append(section.render(node, varName));
 					break;
 				}

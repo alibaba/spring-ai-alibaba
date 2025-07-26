@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.workflow.nodedata.CodeNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.EmptyNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
@@ -242,6 +243,17 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			node.setData(data);
 			node.setType(nodeType.value());
 			nodes.add(node);
+		}
+
+		// 等待所有的节点都生成了变量名后，补充迭代节点的起始名称
+		Map<String, String> varNames = nodes.stream()
+			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
+		for (Node node : nodes) {
+			if (node.getData() instanceof IterationNodeData iterationNodeData) {
+				iterationNodeData
+					.setStartNodeName(varNames.getOrDefault(iterationNodeData.getStartNodeId(), "unknown"));
+				iterationNodeData.setEndNodeName(varNames.getOrDefault(iterationNodeData.getEndNodeId(), "unknown"));
+			}
 		}
 
 		Map<String, String> idToOutputKey = nodes.stream()

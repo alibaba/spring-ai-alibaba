@@ -320,6 +320,12 @@ public class IterationNode {
 		return new End.Builder<ElementInput, ElementInput>();
 	}
 
+	/**
+	 * 将迭代节点包装为StateGraph，或者将迭代节点以及条件边添加到已有的StateGraph上
+	 *
+	 * @param <ElementInput> 迭代元素输入类型
+	 * @param <ElementOutput> 迭代元素输出类型
+	 */
 	public static class Converter<ElementInput, ElementOutput> {
 
 		/**

@@ -61,6 +61,8 @@ public class IterationNodeData extends NodeData {
 
 	private String innerItemResultKey;
 
+	private String innerIndexKey;
+
 	private Variable output;
 
 	public IterationNodeData(String id, String inputType, String outputType, VariableSelector inputSelector,
@@ -88,6 +90,7 @@ public class IterationNodeData extends NodeData {
 		this.innerEndFlagKey = this.varName + "_end_flag";
 		this.innerItemKey = this.varName + "_item";
 		this.innerItemResultKey = this.varName + "_item_result";
+		this.innerIndexKey = this.varName + "_index";
 	}
 
 	public String getId() {
@@ -200,6 +203,14 @@ public class IterationNodeData extends NodeData {
 
 	public void setInnerItemResultKey(String innerItemResultKey) {
 		this.innerItemResultKey = innerItemResultKey;
+	}
+
+	public String getInnerIndexKey() {
+		return innerIndexKey;
+	}
+
+	public void setInnerIndexKey(String innerIndexKey) {
+		this.innerIndexKey = innerIndexKey;
 	}
 
 	public Variable getOutput() {
