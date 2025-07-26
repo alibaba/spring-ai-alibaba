@@ -55,7 +55,7 @@ const llmStreamCache = new Map<string, { item: ThoughtChainItem, content: string
 // 从messageStore 拿出消息，然后进行解析并且渲染
 const items = computed(() => {
     // 思维链显示的列表
-    
+
     const array: ThoughtChainProps['items'] = []
     if(!props.convId || !messageStore.history[props.convId]){
       return array
@@ -87,7 +87,7 @@ const items = computed(() => {
               processLlmStreamNodeLogic(node)
             }
           })
-          
+
       }
     })
 
@@ -111,14 +111,14 @@ const processJsonNodeLogic = (node: any) => {
 
 // 处理llm_stream节点
 const processLlmStreamNodeLogic = (node: any) => {
-  if(!node.visiable) {
+  if(!node.visible) {
     return
   }
   let item: ThoughtChainItem | undefined
   // llm_stream 形式的节点，需要流式渲染
   // 动态遍历node对象的key，只要包含'llm_stream'就执行相应处理
   const llmStreamKeys = Object.keys(node).filter(key => key.includes('llm_stream'))
-  
+
   for (const key of llmStreamKeys) {
     // 流式节点：移除pending节点，完成之前的流式节点
     removeLastPendingNode()
@@ -238,7 +238,7 @@ const processJsonNode = (node: any) => {
         }
         break
 
-      case 'planner': 
+      case 'planner':
         title = node.displayTitle
         description = '准备规划研究内容'
         break
@@ -256,7 +256,7 @@ const processJsonNode = (node: any) => {
           content = h(MD, { content: node.content })
         }
         break
-      
+
       case '__END__':
         title = node.displayTitle
         description = '研究完成'
