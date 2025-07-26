@@ -221,7 +221,8 @@ const [agent] = useXAgent({
     let content = ''
 
     switch (current.aiType) {
-      case 'normal': {
+      case 'normal':
+      case 'startDS': {
         const xStreamBody = new XStreamBody('/deep-research/chat/stream', {
           method: 'POST',
           headers: {
@@ -248,7 +249,7 @@ const [agent] = useXAgent({
         break
       }
 
-      case 'startDS': {
+      case 'onDS': {
         current.deepResearchDetail = true
 
         if (current.autoAccepted) {
@@ -343,10 +344,7 @@ const [agent] = useXAgent({
       }
     }
 
-    if (current.deepResearch) {
-      messageStore.nextAIType()
-    }
-
+    // 最后会返回本次stream的所有内容
     onSuccess(content)
     senderLoading.value = false
   },
@@ -368,6 +366,10 @@ const senderLoading = ref(false)
 
 const submitHandle = (nextContent: any) => {
   current.aiType = 'normal'
+  // 如果是深度研究，需要切换到下一个aiType
+  if (current.deepResearch) {
+      messageStore.nextAIType()
+  }
   onRequest(nextContent)
   content.value = ''
   if (!convId) {
@@ -377,109 +379,233 @@ const submitHandle = (nextContent: any) => {
 }
 
 function startDeepResearch() {
-  // messageStore.startDeepResearch()
+  messageStore.nextAIType()
   onRequest('开始研究')
+}
+
+function downDeepResearch(){
+  // TODO 下载报告
 }
 
 function deepResearch() {
   current.deepResearchDetail = !current.deepResearchDetail
 }
 
-function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any {
-  switch (status) {
-    case 'loading':
-      const items: ThoughtChainProps['items'] = [
+function buildPendingNodeThoughtChain() : any {
+    const items: ThoughtChainProps['items'] = [
         {
-          title: '正在思考中',
-          description: 'AI 正在思考中',
+          title: '请稍后...',
           icon: h(LoadingOutlined),
           status: 'pending'
         }
       ]
-      return (
-            <>
-              请稍后，AI 正在思考中...
-              <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
-                <h2>{{ msg }}</h2>
-                <ThoughtChain items={items} />
-              </Card>
-            </>
-          )
-    case 'success':
-      if (!isCurrent) {
-        // todo 历史数据渲染
-        return <MD content={msg} />
+    return (
+          <>
+            <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
+              {/* <h2>{{ msg }}</h2> */}
+              <ThoughtChain items={items} />
+            </Card>
+          </>
+        )
+}
+
+let tempJsonArray = []
+function buildStartDSThoughtChain(jsonArray: any[]) : any {
+    // 重置数组
+    if(tempJsonArray.length > 0) {
+      tempJsonArray = []
+    }
+    const { Paragraph, Text } = Typography
+    // 获取背景调查节点
+    const backgroundInvestigatorNode = jsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
+    const results = backgroundInvestigatorNode.siteInformation
+    const markdownContent = results.map((result, index) => {
+        return `${index + 1}. [${result.title}](${result.url})\n\n`
+    }).join('\n')
+    const items: ThoughtChainProps['items'] = [
+      {
+        status: 'error',
+        title: '研究网站',
+        icon: <IeOutlined />,
+        key: 'backgroundInvestigator',
+        extra: '',
+        content: (
+          <Typography>
+            <Paragraph>
+              <MD content={markdownContent} />
+            </Paragraph>
+          </Typography>
+        ),
+      },
+      {
+        status: 'success',
+        title: '分析结果',
+        icon: <DotChartOutlined />,
+        extra: '',
+      },
+
+      {
+        status: 'success',
+        title: '生成报告',
+        icon: <BgColorsOutlined />,
+        description: <i>只需要几分钟就可以准备好</i>,
+        footer: (
+          <Flex style="margin-left: auto" gap="middle">
+            <Button type="primary">修改方案</Button>
+            <Button type="primary" onClick={startDeepResearch}>开始研究</Button>
+          </Flex>
+        ),
+        extra: '',
+      },
+    ]
+    tempJsonArray = jsonArray
+    return (
+      <>
+        这是该主题的研究方案。如果你需要进行更新，请告诉我。
+        <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
+          {/* <h2>{{ msg }}</h2> */}
+          <ThoughtChain items={items} collapsible={{ expandedKeys: ['backgroundInvestigator'] }} />
+        </Card>
+      </>
+    )
+}
+
+function buildOnDSThoughtChain() : any {
+    if(tempJsonArray.length === 0){
+      return
+    }
+    const { Paragraph, Text } = Typography
+    // 获取背景调查节点
+    const backgroundInvestigatorNode = tempJsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
+    const results = backgroundInvestigatorNode.siteInformation
+    const markdownContent = results.map((result, index) => {
+        return `${index + 1}. [${result.title}](${result.url})\n\n`
+    }).join('\n')
+    const items: ThoughtChainProps['items'] = [
+      {
+        status: 'error',
+        title: '研究网站',
+        icon: <IeOutlined />,
+        key: 'backgroundInvestigator',
+        extra: '',
+        content: (
+          <Typography>
+            <Paragraph>
+              <MD content={markdownContent} />
+            </Paragraph>
+          </Typography>
+        ),
+      },
+      {
+        status: 'pending',
+        title: '正在分析结果',
+        icon: <LoadingOutlined />,
+        extra: '',
       }
-      if (current.deepResearch) {
-        if (current.aiType === 'startDS') {
-          const { Paragraph, Text } = Typography
+    ]
 
-          const jsonArray = parseJsonTextStrict(msg)
-          if(jsonArray.filter((item) => item.node === 'information').length === 0) {
-            return <MD content={msg} />
-          }
-          const informationNode= jsonArray.filter((item) => item.node === 'information')[0]
-          const items: ThoughtChainProps['items'] = [
-            {
-              status: 'error',
-              title: '查询重写',
-              icon: <IeOutlined />,
-              extra: '',
-              content: (
-                <Typography>
-                  <Paragraph>
-                    <MD content={informationNode.data?.optimize_queries} />
-                  </Paragraph>
-                </Typography>
-              ),
-            },
-            {
-              status: 'success',
-              title: '研究计划',
-              icon: <DotChartOutlined />,
-              extra: '',
-              content: (
-                <Typography>
-                  <Paragraph>
-                    <MD content={informationNode.data?.current_plan.thought} />
-                  </Paragraph>
-                </Typography>
-              )
-            },
+    return (
+      <>
+        这是该主题的研究方案。正在分析结果中...
+        <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
+          {/* <h2>{{ msg }}</h2> */}
+          <ThoughtChain items={items} collapsible={{ expandedKeys: ['backgroundInvestigator'] }} />
+        </Card>
+      </>
+    )
+}
 
-            {
-              status: 'success',
-              title: '研究报告',
-              icon: <BgColorsOutlined />,
-              description: <i>只需要几分钟就可以准备好</i>,
-              footer: (
-                <Flex style="margin-left: auto" gap="middle">
-                  <Button type="primary">修改方案</Button>
-                  <Button type="primary" onClick={startDeepResearch}>开始研究</Button>
-                </Flex>
-              ),
-              extra: '',
-            },
-          ]
-
-          return (
-            <>
-              这是该主题的研究方案。如果你需要进行更新，请告诉我。
-              <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
-                <h2>{{ msg }}</h2>
-                <ThoughtChain items={items} />
-              </Card>
-            </>
-          )
+function buildEndDSThoughtChain(jsonArray: any[]): any {
+  if(jsonArray.length === 0){
+      return
+  }
+  const { Paragraph, Text } = Typography
+  const items: ThoughtChainProps['items'] = []
+  // 获取背景调查节点
+  const backgroundInvestigatorNode = jsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
+  if(backgroundInvestigatorNode && backgroundInvestigatorNode.siteInformation){
+      const results = backgroundInvestigatorNode.siteInformation
+      const markdownContent = results.map((result, index) => {
+          return `${index + 1}. [${result.title}](${result.url})\n\n`
+      }).join('\n')
+      const item: ThoughtChainItem = {
+          status: 'error',
+          title: '研究网站',
+          icon: <IeOutlined />,
+          key: 'backgroundInvestigator',
+          extra: '',
+          content: (
+            <Typography>
+              <Paragraph>
+                <MD content={markdownContent} />
+              </Paragraph>
+            </Typography>
+          ),
+      }
+      items.push(item)
+  }
+  const endItem: ThoughtChainItem = {
+      status: 'success',
+      title: '完成分析结果',
+      icon: <CheckCircleOutlined />,
+      footer: (
+          <Flex style="margin-left: auto" gap="middle">
+            <Button type="primary" onClick={downDeepResearch}>下载报告</Button>
+          </Flex>
+        ),
+    }
+  items.push(endItem)
+  return (
+    <>
+      这是该主题的研究方案已完成，可以点击下载报告
+      <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
+        {/* <h2>{{ msg }}</h2> */}
+        <ThoughtChain items={items} collapsible={{ expandedKeys: ['backgroundInvestigator'] }} />
+      </Card>
+    </>
+  )
+}
+// 解析消息记录 
+// status === local 表示人类  loading表示stream流正在返回  success表示steram完成返回
+// msg  当status === loading的时候，返回stream流的chunk  当status === success的时候，返回所有chunk的拼接字符串
+// isCurrent  true表示当前消息是最新的，false表示历史消息
+function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any {
+  switch (status) {
+    // 人类信息
+    case 'local':
+      return msg
+    case 'loading':
+      if(current.deepResearch){
+        // 准备开始研究
+        if(current.aiType === 'startDS') {
+          return buildPendingNodeThoughtChain()
         }
+        // 正在研究中
+        if(current.aiType === 'onDS') {
+          return  buildOnDSThoughtChain()
+        }
+      }
+      return buildPendingNodeThoughtChain()
+    case 'success':
+      // 解析完整数据
+      const jsonArray = parseJsonTextStrict(msg)
+      // 历史数据渲染
+      if (current.deepResearch && !isCurrent) {
+        // 研究网站、分析结果、生成报告
+        return <MD content={ '进行下一步处理' } />
+      }
+      
+      if (current.deepResearch && isCurrent) {
+        if (current.aiType === 'startDS') {
+          // 如果不包含背景调查，则提示用户重新输入
+          if(jsonArray.filter((item) => item.nodeName === 'background_investigator').length === 0) {
+            return <MD content={'未进行背景调查，请重新输入话题进行研究'} />
+          }
+          return buildStartDSThoughtChain(jsonArray)
+        }
+        // 研究完成，TODO 这里应该流转未endDS状态
         if (current.aiType === 'onDS') {
-          return (
-            <div>
-              <Button type="primary" onClick={deepResearch}>
-                正在研究
-              </Button>
-            </div>
-          )
+          return buildEndDSThoughtChain(jsonArray)
         }
       }
     default:
