@@ -71,52 +71,6 @@ public class GraphProcess {
 		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state, runnableConfig);
 		processStream(resultFuture, sink);
 	}
-	
-	private String buildLLMNodeContent(String nodeName, StreamingOutput streamingOutput, NodeOutput output) {
-		StreamNodePrefixEnum prefixEnum = StreamNodePrefixEnum.match(nodeName);
-		if (prefixEnum == null) {
-			return "";
-		}
-		String stepTitle = (String) output.state().value(nodeName + "_step_title").orElse("");
-		return JSON.toJSONString(Map.of(
-			nodeName, streamingOutput.chunk(),
-			"step_title", stepTitle,
-			"visiable", prefixEnum.isVisiable()
-		));
-	}
-
-	private record NodeResponse(String nodeName, String displayTitle, Object content, Object siteInformation) {}
-
-	private String buildNormalNodeContent(String nodeName, NodeOutput output) {
-		NodeNameEnum nodeEnum = NodeNameEnum.fromNodeName(nodeName);
-		if (nodeEnum == null) {
-			return "";
-		}
-		Object content;
-		content = switch (nodeEnum) {
-			case START -> output.state().data().get("query");
-			case REWRITE_MULTI_QUERY, HUMAN_FEEDBACK, END -> output.state().data();
-			case BACKGROUND_INVESTIGATOR -> output.state().data().get("optimize_queries");
-			case PLANNER -> output.state().data().get("planner_content");
-            case RESEARCH_TEAM -> {
-				String researchTeamContent = (String) output.state().data().get("research_team_content");
-				yield org.apache.commons.lang3.StringUtils.equals(researchTeamContent, NodeNameEnum.REPORTER.nodeName());
-			}
-			case REPORTER -> output.state().data().get("final_report");
-            default -> "";
-		};
-		Object site_information = output.state().value("site_information").orElse("");
-		String displayTitle = nodeEnum.displayTitle();
-		if (StringUtils.isEmpty(displayTitle) || (Objects.equals(content, "") && Objects.equals(site_information, ""))) {
-			return "";
-		}
-		NodeResponse response = new NodeResponse(nodeName, displayTitle, content, site_information);
-		try {
-			return OBJECT_MAPPER.writeValueAsString(response);
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException("Failed to serialize NodeResponse", e);
-		}
-	}
 
 	public void processStream(AsyncGenerator<NodeOutput> generator, Sinks.Many<ServerSentEvent<String>> sink) {
 		executor.submit(() -> {
@@ -126,9 +80,11 @@ public class GraphProcess {
 					String nodeName = output.node();
 					String content;
 					if (output instanceof StreamingOutput streamingOutput) {
+						logger.debug("Streaming output from node {}: {}", nodeName, streamingOutput.chunk());
 						content = buildLLMNodeContent(nodeName, streamingOutput, output);
-						logger.info("Streaming output from node {}: {}", nodeName, streamingOutput.chunk());
-					} else {
+					}
+					else {
+						logger.debug("Normal output from node {}: {}", nodeName, output.state().value("messages"));
 						content = buildNormalNodeContent(nodeName, output);
 					}
 					if (StringUtils.isNotEmpty(content)) {
@@ -140,6 +96,7 @@ public class GraphProcess {
 					throw new CompletionException(e);
 				}
 			}).thenAccept(v -> {
+				logger.info("Stream processing completed.");
 				// 正常完成
 				sink.tryEmitComplete();
 			}).exceptionally(e -> {
@@ -148,6 +105,53 @@ public class GraphProcess {
 				return null;
 			});
 		});
+	}
+
+	private String buildLLMNodeContent(String nodeName, StreamingOutput streamingOutput, NodeOutput output) {
+		StreamNodePrefixEnum prefixEnum = StreamNodePrefixEnum.match(nodeName);
+		if (prefixEnum == null) {
+			return "";
+		}
+		String stepTitle = (String) output.state().value(nodeName + "_step_title").orElse("");
+		return JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk(), "step_title", stepTitle, "visiable",
+				prefixEnum.isVisiable()));
+	}
+
+	private record NodeResponse(String nodeName, String displayTitle, Object content, Object siteInformation) {
+	}
+
+	private String buildNormalNodeContent(String nodeName, NodeOutput output) {
+		NodeNameEnum nodeEnum = NodeNameEnum.fromNodeName(nodeName);
+		if (nodeEnum == null) {
+			return "";
+		}
+		Object content;
+		// 不同节点给前端的内容不一样
+		content = switch (nodeEnum) {
+			case START -> output.state().data().get("query");
+			case REWRITE_MULTI_QUERY, HUMAN_FEEDBACK, END -> output.state().data();
+			case BACKGROUND_INVESTIGATOR -> output.state().data().get("optimize_queries");
+			case PLANNER -> output.state().data().get("planner_content");
+			case RESEARCH_TEAM -> {
+				String researchTeamContent = (String) output.state().data().get("research_team_content");
+				yield StringUtils.equals(researchTeamContent, NodeNameEnum.REPORTER.nodeName());
+			}
+			case REPORTER -> output.state().data().get("final_report");
+			default -> "";
+		};
+		Object site_information = output.state().value("site_information").orElse("");
+		String displayTitle = nodeEnum.displayTitle();
+		if (StringUtils.isEmpty(displayTitle)
+				|| (Objects.equals(content, "") && Objects.equals(site_information, ""))) {
+			return "";
+		}
+		NodeResponse response = new NodeResponse(nodeName, displayTitle, content, site_information);
+		try {
+			return OBJECT_MAPPER.writeValueAsString(response);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException("Failed to serialize NodeResponse", e);
+		}
 	}
 
 }

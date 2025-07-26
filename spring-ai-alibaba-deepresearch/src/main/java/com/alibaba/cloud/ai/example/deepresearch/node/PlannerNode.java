@@ -84,7 +84,7 @@ public class PlannerNode implements NodeAction {
 
 		logger.debug("messages: {}", messages);
 		// 2. 规划任务
-		String prefix = StreamNodePrefixEnum.REPORTER_LLM_STREAM.getPrefix();
+		String prefix = StreamNodePrefixEnum.PLANNER_LLM_STREAM.getPrefix();
 		String stepTitleKey = prefix + "_step_title";
 		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
 		Map<String, Object> inputMap = new HashMap<>();
@@ -94,7 +94,7 @@ public class PlannerNode implements NodeAction {
 		var streamResult = plannerAgent.prompt(converter.getFormat()).messages(messages).stream().chatResponse();
 
 		var generator = StreamingChatGenerator.builder()
-			.startingNode("planner_llm_stream")
+			.startingNode(prefix)
 			.startingState(state)
 			.mapResult(response -> Map.of("planner_content",
 					Objects.requireNonNull(response.getResult().getOutput().getText())))
