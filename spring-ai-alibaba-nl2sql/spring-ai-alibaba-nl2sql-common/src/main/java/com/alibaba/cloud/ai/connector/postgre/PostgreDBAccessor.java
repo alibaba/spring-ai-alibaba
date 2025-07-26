@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
 
-@Service
+@Service("postgreAccessor")
 public class PostgreDBAccessor extends AbstractAccessor {
 
 	private final static String ACCESSOR_TYPE = "PostgreSQL_Accessor";

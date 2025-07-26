@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.service.analytic;
 
 import com.alibaba.cloud.ai.annotation.ConditionalOnADBEnabled;
-import com.alibaba.cloud.ai.connector.DbAccessor;
+import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.service.LlmService;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
@@ -32,8 +32,8 @@ public class AnalyticNl2SqlService extends BaseNl2SqlService {
 
 	@Autowired
 	public AnalyticNl2SqlService(@Qualifier("analyticVectorStoreService") BaseVectorStoreService vectorStoreService,
-			@Qualifier("analyticSchemaService") BaseSchemaService schemaService, LlmService aiService,
-			DbAccessor dbAccessor, DbConfig dbConfig) {
+								 @Qualifier("analyticSchemaService") BaseSchemaService schemaService, LlmService aiService,
+								 @Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig) {
 		super(vectorStoreService, schemaService, aiService, dbAccessor, dbConfig);
 	}
 

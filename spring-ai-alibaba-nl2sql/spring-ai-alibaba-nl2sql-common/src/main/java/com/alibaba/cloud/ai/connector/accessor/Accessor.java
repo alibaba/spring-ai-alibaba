@@ -16,8 +16,16 @@
 
 package com.alibaba.cloud.ai.connector.accessor;
 
+import com.alibaba.cloud.ai.connector.bo.ColumnInfoBO;
+import com.alibaba.cloud.ai.connector.bo.DatabaseInfoBO;
 import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
+import com.alibaba.cloud.ai.connector.bo.ForeignKeyInfoBO;
+import com.alibaba.cloud.ai.connector.bo.ResultSetBO;
+import com.alibaba.cloud.ai.connector.bo.SchemaInfoBO;
+import com.alibaba.cloud.ai.connector.bo.TableInfoBO;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
+
+import java.util.List;
 
 /**
  * Data access interface definition.
@@ -38,5 +46,23 @@ public interface Accessor {
 	 * @throws Exception if an error occurs during database access
 	 */
 	<T> T accessDb(DbConfig dbConfig, String method, DbQueryParameter param) throws Exception;
+
+	List<DatabaseInfoBO> showDatabases(DbConfig dbConfig) throws Exception;
+
+	List<SchemaInfoBO> showSchemas(DbConfig dbConfig) throws Exception;
+
+	List<TableInfoBO> showTables(DbConfig dbConfig, DbQueryParameter param) throws Exception;
+
+	List<TableInfoBO> fetchTables(DbConfig dbConfig, DbQueryParameter param) throws Exception;
+
+	List<ColumnInfoBO> showColumns(DbConfig dbConfig, DbQueryParameter param) throws Exception;
+
+	List<ForeignKeyInfoBO> showForeignKeys(DbConfig dbConfig, DbQueryParameter param) throws Exception;
+
+	List<String> sampleColumn(DbConfig dbConfig, DbQueryParameter param) throws Exception;
+
+	ResultSetBO scanTable(DbConfig dbConfig, DbQueryParameter param) throws Exception;
+
+	ResultSetBO executeSqlAndReturnObject(DbConfig dbConfig, DbQueryParameter param) throws Exception;
 
 }

@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.annotation.ConditionalOnADBEnabled;
-import com.alibaba.cloud.ai.connector.DbAccessor;
+import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.connector.bo.ColumnInfoBO;
 import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.connector.bo.ForeignKeyInfoBO;
@@ -72,7 +72,8 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 	private VectorStore vectorStore;
 
 	@Autowired
-	private DbAccessor dbAccessor;
+	@Qualifier("mysqlAccessor")
+	private Accessor dbAccessor;
 
 	@Autowired
 	private AnalyticDbVectorStoreProperties analyticDbVectorStoreProperties;

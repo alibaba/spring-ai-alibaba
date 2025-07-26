@@ -88,6 +88,7 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 	public Connection getConnection(DbConfig config) {
 
 		// Test the connection before returning it
+		log.info("Testing database connection.... db config: {}", config);
 		ErrorCodeEnum pingResult = this.ping(config);
 		if (pingResult != ErrorCodeEnum.SUCCESS) {
 			throw new RuntimeException("Database connection test failed: " + pingResult);

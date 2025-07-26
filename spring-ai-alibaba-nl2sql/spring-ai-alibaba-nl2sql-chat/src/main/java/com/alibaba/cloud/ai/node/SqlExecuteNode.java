@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.node;
 
-import com.alibaba.cloud.ai.connector.DbAccessor;
+import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.connector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
@@ -53,9 +53,9 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 	private final DbConfig dbConfig;
 
-	private final DbAccessor dbAccessor;
+	private final Accessor dbAccessor;
 
-	public SqlExecuteNode(DbAccessor dbAccessor, DbConfig dbConfig) {
+	public SqlExecuteNode(Accessor dbAccessor, DbConfig dbConfig) {
 		super();
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;

@@ -50,11 +50,18 @@ spring:
       model: qwen-max
       embedding:
         model: text-embedding-v4
+
+    # 关闭 container 的初始化
+    alibaba:
+      nl2sql:
+        container:
+          enabled: false
+
 chatBi:
   dbConfig:
     url: jdbc:mysql://127.0.0.1:3306/nl2sql?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     username: root
-    password: root
+    password: '082916'
     schema:
     connection-type: jdbc
     dialect-type: mysql

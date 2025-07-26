@@ -15,10 +15,10 @@
  */
 package com.alibaba.cloud.ai.service;
 
+import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions;
-import com.alibaba.cloud.ai.connector.DbAccessor;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.connector.bo.ColumnInfoBO;
 import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
@@ -35,6 +35,7 @@ import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -48,13 +49,13 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 
 	private final Gson gson;
 
-	private final DbAccessor dbAccessor;
+	private final Accessor dbAccessor;
 
 	private final DbConfig dbConfig;
 
 	@Autowired
 	public SimpleVectorStoreManagementService(@Value("${spring.ai.dashscope.api-key:default_api_key}") String apiKey,
-			Gson gson, DbAccessor dbAccessor, DbConfig dbConfig) {
+											  Gson gson, @Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig) {
 		this.gson = gson;
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;

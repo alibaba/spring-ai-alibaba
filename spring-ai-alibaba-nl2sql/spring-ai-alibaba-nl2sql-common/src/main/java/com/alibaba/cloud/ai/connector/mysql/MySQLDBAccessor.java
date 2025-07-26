@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
 
-@Service
+@Service("mysqlAccessor")
 public class MySQLDBAccessor extends AbstractAccessor {
 
 	private final static String ACCESSOR_TYPE = "MySQL_Accessor";
@@ -39,7 +39,7 @@ public class MySQLDBAccessor extends AbstractAccessor {
 	}
 
 	@Override
-	protected String getDbAccessorType() {
+	public String getDbAccessorType() {
 
 		return ACCESSOR_TYPE;
 	}
