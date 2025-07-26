@@ -1,0 +1,58 @@
+/*
+ * Copyright 2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.alibaba.cloud.ai.example.deepresearch.rag.strategy;
+
+import com.alibaba.cloud.ai.example.deepresearch.rag.SourceTypeEnum;
+import com.alibaba.cloud.ai.example.deepresearch.rag.core.HybridRagProcessor;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.rag.Query;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Component
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.deepresearch.rag", name = "enabled", havingValue = "true")
+public class ProfessionalKbEsStrategy implements RetrievalStrategy {
+
+	private final HybridRagProcessor hybridRagProcessor;
+
+	public ProfessionalKbEsStrategy(HybridRagProcessor hybridRagProcessor) {
+		this.hybridRagProcessor = hybridRagProcessor;
+	}
+
+	@Override
+	public String getStrategyName() {
+		return "professionalKbEs";
+	}
+
+	@Override
+	public List<Document> retrieve(String query, Map<String, Object> options) {
+		// 构建专业知识库检索的上下文选项，与VectorStoreDataIngestionService的元数据逻辑一致
+		Map<String, Object> ragOptions = new HashMap<>(options);
+		ragOptions.put("source_type", SourceTypeEnum.PROFESSIONAL_KB_ES.getValue());
+		// 专业知识库使用固定的session_id标识
+		ragOptions.put("session_id", "professional_kb_es");
+
+		// 使用统一的RAG处理器执行完整的处理流程，包含ES混合查询
+		Query ragQuery = new Query(query);
+		return hybridRagProcessor.process(ragQuery, ragOptions);
+	}
+
+}

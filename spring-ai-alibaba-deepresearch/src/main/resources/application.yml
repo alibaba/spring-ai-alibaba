@@ -2,8 +2,8 @@ server:
   port: 8080
 spring:
   profiles:
-    # LangFuse和可观测配置
-    include: observability
+    # LangFuse和可观测配置以及专业知识库配置
+    include: observability, kb
   application:
     name: spring-ai-alibaba-deepresearch
   # Redis 配置

@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -80,6 +81,11 @@ public class PlannerNode implements NodeAction {
 		String feedBackContent = state.value("feed_back_content", "").toString();
 		if (StringUtils.hasText(feedBackContent)) {
 			messages.add(new UserMessage(feedBackContent));
+		}
+		// 1.5 添加用户上传的RAG查询结果
+		String ragContent = StateUtil.getRagContent(state);
+		if (StringUtils.hasText(ragContent)) {
+			messages.add(new UserMessage(ragContent));
 		}
 
 		logger.debug("messages: {}", messages);
