@@ -34,6 +34,7 @@
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
 
         <opentelemetry.spring.boot.starter.version>2.9.0</opentelemetry.spring.boot.starter.version>
+        <commons-io.version>2.18.0</commons-io.version>
     </properties>
 
 
@@ -200,6 +201,11 @@
                 <version>${spring-ai-alibaba.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

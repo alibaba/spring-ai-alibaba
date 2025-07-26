@@ -73,5 +73,10 @@ public record ChatRequest(
 		/**
 		 * 优化查询条数，默认为3
 		 */
-		@JsonProperty(value = "optimize_query_num", defaultValue = "3") Integer optimizeQueryNum) {
+		@JsonProperty(value = "optimize_query_num", defaultValue = "3") Integer optimizeQueryNum,
+
+		/**
+		 * 用户是否上传文件，默认为false
+		 */
+		@JsonProperty(value = "user_upload_file", defaultValue = "false") Boolean isUploadFile) {
 }

@@ -104,6 +104,10 @@ public class StateUtil {
 		return state.value("auto_accepted_plan", true);
 	}
 
+	public static String getRagContent(OverAllState state) {
+		return state.value("rag_content", "");
+	}
+
 	/**
 	 * 获取MCP设置
 	 */
