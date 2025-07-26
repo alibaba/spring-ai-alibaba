@@ -37,8 +37,11 @@ public class NamespaceEntity {
 	@Column(nullable = false)
 	private String code;
 
-	@Column(nullable = false, length = 1024)
+	@Column(nullable = true, length = 1024)
 	private String description;
+
+	@Column
+	private String host;
 
 	public NamespaceEntity() {
 	}
@@ -80,11 +83,20 @@ public class NamespaceEntity {
 		this.description = description;
 	}
 
+	public String getHost() {
+		return host;
+	}
+
+	public void setHost(String host) {
+		this.host = host;
+	}
+
 	public NamespaceConfig mapToNamespaceConfig() {
 		NamespaceConfig config = new NamespaceConfig();
 		config.setId(this.getId());
 		config.setName(this.getName());
 		config.setCode(this.getCode());
+		config.setHost(this.getHost());
 		config.setDescription(this.getDescription());
 		return config;
 	}

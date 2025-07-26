@@ -1,0 +1,69 @@
+server:
+  port: 18080
+
+spring:
+  application:
+    name: mcp-router
+
+  # Spring AI 配置
+  ai:
+    # DashScope 配置（可选）
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:your-dashscope-api-key}
+
+    # OpenAI 配置（可选）
+    openai:
+      api-key: ${OPENAI_API_KEY:your-openai-api-key}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+
+    # 向量存储配置
+    vectorstore:
+      simple:
+        enabled: true
+    mcp:
+      server:
+        name: mcp-router
+        version: 0.0.1
+        type: ASYNC  # Recommended for reactive applications
+        # 配置 sse 的根路径，默认值为 /sse
+        # 下面的最终路径为 ip:port/sse/mcp
+        sse-endpoint: /sse
+        sse-message-endpoint: /mcp
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
+    alibaba:
+      mcp:
+        nacos:
+          serverAddr: localhost:8848
+          namespace: public
+          username: nacos
+          password:
+
+# 日志配置
+logging:
+  level:
+    com.alibaba.cloud.ai.mcp.router: DEBUG
+    com.alibaba.cloud.ai.mcp.nacos: DEBUG
+    org.springframework.ai: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# MCP Router 特定配置
+mcp:
+  router:
+    # 向量搜索配置
+    search:
+      default-limit: 10
+      min-score: 0.2
+
+    # 服务发现配置
+    discovery:
+      refresh-interval: 30000 # 30秒
+      cache-enabled: true
+      service-names: echo-server
+
+    # 调试模式
+    debug: true

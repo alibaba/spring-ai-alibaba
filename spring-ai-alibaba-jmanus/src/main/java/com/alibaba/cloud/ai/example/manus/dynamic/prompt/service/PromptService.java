@@ -43,4 +43,6 @@ public interface PromptService {
 
 	String renderPrompt(String promptName, Map<String, Object> variables);
 
+	void reinitializePrompts();
+
 }

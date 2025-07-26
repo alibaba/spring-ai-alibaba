@@ -65,6 +65,23 @@ public class SemanticModel {
 		this.updateTime = LocalDateTime.now();
 	}
 
+	public SemanticModel(Long id, String datasetId, String originalFieldName, String agentFieldName,
+			String fieldSynonyms, String fieldDescription, Boolean defaultRecall, Boolean enabled, String fieldType,
+			String originalDescription, LocalDateTime createTime, LocalDateTime updateTime) {
+		this.id = id;
+		this.datasetId = datasetId;
+		this.originalFieldName = originalFieldName;
+		this.agentFieldName = agentFieldName;
+		this.fieldSynonyms = fieldSynonyms;
+		this.fieldDescription = fieldDescription;
+		this.defaultRecall = defaultRecall;
+		this.enabled = enabled;
+		this.fieldType = fieldType;
+		this.originalDescription = originalDescription;
+		this.createTime = createTime;
+		this.updateTime = updateTime;
+	}
+
 	// Getters and Setters
 	public Long getId() {
 		return id;
