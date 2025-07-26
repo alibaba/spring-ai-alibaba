@@ -32,7 +32,6 @@ import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.InformationNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ParallelExecutorNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.PassThroughNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ProfessionalKbDecisionNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.RagNode;
@@ -78,6 +77,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
 
 /**
@@ -109,7 +109,7 @@ public class DeepResearchConfiguration {
 	@Autowired
 	private ChatClient reflectionAgent;
 
-	@Autowired
+	@Autowired(required = false)
 	private ChatClient ragAgent;
 
 	@Autowired
@@ -242,8 +242,7 @@ public class DeepResearchConfiguration {
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-			.addNode("reporter", node_async(new ReporterNode(reporterAgent, reportService)))
-			.addNode("temp", node_async(new PassThroughNode()));
+			.addNode("reporter", node_async(new ReporterNode(reporterAgent, reportService)));
 
 		// 添加并行节点块
 		configureParallelNodes(stateGraph);
@@ -251,23 +250,24 @@ public class DeepResearchConfiguration {
 		stateGraph.addEdge(START, "coordinator")
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
 					Map.of("rewrite_multi_query", "rewrite_multi_query", END, END))
-			.addConditionalEdges("rewrite_multi_query", edge_async(new UserFileRagDispatcher()),
-					Map.of("user_file_rag", "user_file_rag", "temp", "temp"))
-			.addEdge("user_file_rag", "temp")
-			.addConditionalEdges("temp", edge_async(new RewriteAndMultiQueryDispatcher()),
-					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
-			.addEdge("background_investigator", "planner")
-			.addEdge("planner", "professional_kb_decision")
-			.addConditionalEdges("professional_kb_decision", edge_async(new ProfessionalKbDispatcher()),
-					Map.of("professional_kb_rag", "professional_kb_rag", "information", "information", END, END))
-			.addEdge("professional_kb_rag", "information")
+			.addConditionalEdges("rewrite_multi_query", edge_async(new RewriteAndMultiQueryDispatcher()),
+					Map.of("background_investigator", "background_investigator", "user_file_rag", "user_file_rag",
+							"planner", "planner", END, END))
+			.addConditionalEdges("background_investigator", edge_async(new UserFileRagDispatcher()),
+					Map.of("user_file_rag", "user_file_rag", "planner", "planner", END, END))
+			.addEdge("user_file_rag", "planner")
+			.addEdge("planner", "information")
 			.addConditionalEdges("information", edge_async(new InformationDispatcher()),
 					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",
 							"research_team", "research_team", END, END))
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
 					Map.of("planner", "planner", "research_team", "research_team", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
-					Map.of("reporter", "reporter", "parallel_executor", "parallel_executor", END, END))
+					Map.of("professional_kb_decision", "professional_kb_decision", "parallel_executor",
+							"parallel_executor", END, END))
+			.addConditionalEdges("professional_kb_decision", edge_async(new ProfessionalKbDispatcher()),
+					Map.of("professional_kb_rag", "professional_kb_rag", "reporter", "reporter", END, END))
+			.addEdge("professional_kb_rag", "reporter")
 			.addEdge("reporter", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,

@@ -23,7 +23,7 @@ public class UserFileRagDispatcher implements EdgeAction {
 	@Override
 	public String apply(OverAllState state) {
 		Boolean enabled = state.value("user_upload_file", false);
-		return Boolean.TRUE.equals(enabled) ? "user_file_rag" : "temp";
+		return Boolean.TRUE.equals(enabled) ? "user_file_rag" : "planner";
 	}
 
 }

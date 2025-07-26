@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.deepresearch.rag.strategy;
 
+import com.alibaba.cloud.ai.example.deepresearch.rag.SourceTypeEnum;
 import com.alibaba.cloud.ai.example.deepresearch.rag.core.HybridRagProcessor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
@@ -50,7 +51,7 @@ public class UserFileRetrievalStrategy implements RetrievalStrategy {
 
 		// 构建用户文件检索的上下文选项，与VectorStoreDataIngestionService的元数据逻辑一致
 		Map<String, Object> ragOptions = new HashMap<>(options);
-		ragOptions.put("source_type", "user_upload");
+		ragOptions.put("source_type", SourceTypeEnum.USER_UPLOAD.getValue());
 		ragOptions.put("session_id", sessionId);
 
 		// 使用统一的RAG处理器执行完整的处理流程

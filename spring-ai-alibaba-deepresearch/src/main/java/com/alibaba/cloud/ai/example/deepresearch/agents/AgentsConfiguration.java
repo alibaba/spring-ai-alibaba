@@ -223,8 +223,8 @@ public class AgentsConfiguration {
 	}
 
 	@Bean
-	public ChatClient ragAgent(ChatClient.Builder reflectionChatClientBuilder) {
-		return reflectionChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(ragPrompt)).build();
+	public ChatClient ragAgent(ChatClient.Builder ragChatClientBuilder) {
+		return ragChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(ragPrompt)).build();
 	}
 
 }

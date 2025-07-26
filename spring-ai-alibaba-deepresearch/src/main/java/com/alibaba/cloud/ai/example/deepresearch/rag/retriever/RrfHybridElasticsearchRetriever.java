@@ -82,6 +82,8 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 	 */
 	private final float knnBoost;
 
+	private final boolean hasHybrid;
+
 	public RrfHybridElasticsearchRetriever(RestClient restClient, EmbeddingModel embeddingModel, String indexName,
 			RagProperties.Elasticsearch.Hybrid hybrid) {
 		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
@@ -92,6 +94,7 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 		this.rrfK = hybrid.getRrfRankConstant();
 		this.bm25Boost = hybrid.getBm25Boost();
 		this.knnBoost = hybrid.getKnnBoost();
+		this.hasHybrid = hybrid.isEnabled();
 	}
 
 	@NotNull
@@ -99,7 +102,7 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 	public List<Document> retrieve(Query query) {
 		String text = query.text();
 		try {
-			return search(text, true, null);
+			return search(text, hasHybrid, null);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to execute hybrid search", ex);
@@ -115,7 +118,7 @@ public class RrfHybridElasticsearchRetriever implements DocumentRetriever {
 	public List<Document> retrieve(Query query, co.elastic.clients.elasticsearch._types.query_dsl.Query filter) {
 		String text = query.text();
 		try {
-			return search(text, false, filter);
+			return search(text, hasHybrid, filter);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to execute hybrid search", ex);

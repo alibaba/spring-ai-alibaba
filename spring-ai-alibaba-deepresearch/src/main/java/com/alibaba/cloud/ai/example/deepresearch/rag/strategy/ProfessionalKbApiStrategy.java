@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.rag.strategy;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
+import com.alibaba.cloud.ai.example.deepresearch.rag.SourceTypeEnum;
 import com.alibaba.cloud.ai.example.deepresearch.rag.core.HybridRagProcessor;
 import com.alibaba.cloud.ai.example.deepresearch.rag.kb.ProfessionalKbApiClient;
 import com.alibaba.cloud.ai.example.deepresearch.rag.kb.ProfessionalKbApiClientFactory;
@@ -192,7 +193,7 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 
 			// 构建元数据，与VectorStoreDataIngestionService的逻辑保持一致
 			Map<String, Object> metadata = new HashMap<>();
-			metadata.put("source_type", "professional_kb_api");
+			metadata.put("source_type", SourceTypeEnum.PROFESSIONAL_KB_API.getValue());
 			metadata.put("kb_id", kbId);
 
 			if (kbConfig != null) {

@@ -67,7 +67,7 @@ public class RrfFusionStrategy implements FusionStrategy, DocumentPostProcessor 
 			return results.get(0); // 如果只有一个结果列表，无需融合
 		}
 
-		return fuseInternal(results, Integer.MAX_VALUE, 0.0);
+		return fuseInternal(results, defaultTopK, defaultThreshold);
 	}
 
 	@Override

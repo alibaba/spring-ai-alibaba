@@ -14,23 +14,36 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.node;
-
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
-
-import java.util.Map;
+package com.alibaba.cloud.ai.example.deepresearch.rag;
 
 /**
- * A NodeAction that simply passes through the state data without any processing.
- *
- * @author hupei
+ * 数据源类型枚举 对应数据来源标识符：user_upload、professional_kb_es、professional_kb_api
  */
-public class PassThroughNode implements NodeAction {
+public enum SourceTypeEnum {
 
-	@Override
-	public Map<String, Object> apply(OverAllState state) {
-		return state.data(); // 无任何处理
+	/**
+	 * 用户上传文件
+	 */
+	USER_UPLOAD("user_upload"),
+
+	/**
+	 * 专业知识库 - Elasticsearch存储
+	 */
+	PROFESSIONAL_KB_ES("professional_kb_es"),
+
+	/**
+	 * 专业知识库 - API接口
+	 */
+	PROFESSIONAL_KB_API("professional_kb_api");
+
+	private final String value;
+
+	SourceTypeEnum(String value) {
+		this.value = value;
+	}
+
+	public String getValue() {
+		return value;
 	}
 
 }

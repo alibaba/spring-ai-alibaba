@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.rag.strategy;
 
+import com.alibaba.cloud.ai.example.deepresearch.rag.SourceTypeEnum;
 import com.alibaba.cloud.ai.example.deepresearch.rag.core.HybridRagProcessor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
@@ -45,7 +46,7 @@ public class ProfessionalKbEsStrategy implements RetrievalStrategy {
 	public List<Document> retrieve(String query, Map<String, Object> options) {
 		// 构建专业知识库检索的上下文选项，与VectorStoreDataIngestionService的元数据逻辑一致
 		Map<String, Object> ragOptions = new HashMap<>(options);
-		ragOptions.put("source_type", "professional_kb_es");
+		ragOptions.put("source_type", SourceTypeEnum.PROFESSIONAL_KB_ES.getValue());
 		// 专业知识库使用固定的session_id标识
 		ragOptions.put("session_id", "professional_kb_es");
 

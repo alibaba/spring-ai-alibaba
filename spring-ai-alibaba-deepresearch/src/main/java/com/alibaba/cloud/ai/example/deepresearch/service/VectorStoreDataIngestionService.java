@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.service;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
+import com.alibaba.cloud.ai.example.deepresearch.rag.SourceTypeEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -150,29 +151,10 @@ public class VectorStoreDataIngestionService {
 
 				// 3. 元数据富化
 				AtomicInteger chunkCounter = new AtomicInteger(0);
-				List<Document> enrichedChunks = chunks.stream().map(chunk -> {
-					Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
-
-					// 核心元数据
-					metadata.put("source_type", "user_upload");
-					metadata.put("session_id", sessionId);
-					if (userId != null && !userId.isBlank()) {
-						metadata.put("user_id", userId);
-					}
-
-					// 文档元数据
-					metadata.put("original_filename", file.getOriginalFilename());
-					metadata.put("upload_timestamp", uploadTimestamp);
-					metadata.put("chunk_id", chunkCounter.getAndIncrement());
-					metadata.put("file_size", file.getSize());
-					metadata.put("content_type", file.getContentType());
-
-					// 添加搜索用的标题字段
-					String title = extractTitle(chunk.getText(), file.getOriginalFilename());
-					metadata.put("title", title);
-
-					return new Document(chunk.getId(), chunk.getText(), metadata);
-				}).collect(Collectors.toList());
+				List<Document> enrichedChunks = chunks.stream()
+					.map(chunk -> enrichUserUploadMetadata(chunk, file.getOriginalFilename(), sessionId, userId,
+							uploadTimestamp, chunkCounter.getAndIncrement(), file.getSize(), file.getContentType()))
+					.collect(Collectors.toList());
 
 				// 4. 存储
 				vectorStore.add(enrichedChunks);
@@ -227,27 +209,10 @@ public class VectorStoreDataIngestionService {
 
 				// 3. 元数据富化
 				AtomicInteger chunkCounter = new AtomicInteger(0);
-				List<Document> enrichedChunks = chunks.stream().map(chunk -> {
-					Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
-
-					// 核心元数据
-					metadata.put("source_type", "user_upload");
-					metadata.put("session_id", sessionId);
-					if (userId != null && !userId.isBlank()) {
-						metadata.put("user_id", userId);
-					}
-
-					// 文档元数据
-					metadata.put("original_filename", resource.getFilename());
-					metadata.put("upload_timestamp", uploadTimestamp);
-					metadata.put("chunk_id", chunkCounter.getAndIncrement());
-
-					// 添加搜索用的标题字段
-					String title = extractTitle(chunk.getText(), resource.getFilename());
-					metadata.put("title", title);
-
-					return new Document(chunk.getId(), chunk.getText(), metadata);
-				}).collect(Collectors.toList());
+				List<Document> enrichedChunks = chunks.stream()
+					.map(chunk -> enrichUserResourceUploadMetadata(chunk, resource.getFilename(), sessionId, userId,
+							uploadTimestamp, chunkCounter.getAndIncrement()))
+					.collect(Collectors.toList());
 
 				// 4. 存储
 				vectorStore.add(enrichedChunks);
@@ -305,36 +270,11 @@ public class VectorStoreDataIngestionService {
 
 				// 3. 元数据富化，与ProfessionalKbEsStrategy保持一致
 				AtomicInteger chunkCounter = new AtomicInteger(0);
-				List<Document> enrichedChunks = chunks.stream().map(chunk -> {
-					Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
-
-					// 核心元数据，与ProfessionalKbEsStrategy一致
-					metadata.put("source_type", "professional_kb_es");
-					metadata.put("session_id", "professional_kb_es");
-
-					// 专业知识库特有元数据
-					metadata.put("kb_id", kbId);
-					metadata.put("kb_name", kbName);
-					metadata.put("kb_description", kbDescription);
-
-					// 文档元数据
-					metadata.put("original_filename", file.getOriginalFilename());
-					metadata.put("upload_timestamp", uploadTimestamp);
-					metadata.put("chunk_id", chunkCounter.getAndIncrement());
-					metadata.put("file_size", file.getSize());
-					metadata.put("content_type", file.getContentType());
-
-					// 可选分类
-					if (category != null && !category.isBlank()) {
-						metadata.put("category", category);
-					}
-
-					// 添加搜索用的标题字段
-					String title = extractTitle(chunk.getText(), file.getOriginalFilename());
-					metadata.put("title", title);
-
-					return new Document(chunk.getId(), chunk.getText(), metadata);
-				}).collect(Collectors.toList());
+				List<Document> enrichedChunks = chunks.stream()
+					.map(chunk -> enrichProfessionalKbEsMetadata(chunk, file.getOriginalFilename(), kbId, kbName,
+							kbDescription, category, uploadTimestamp, chunkCounter.getAndIncrement(), file.getSize(),
+							file.getContentType()))
+					.collect(Collectors.toList());
 
 				// 4. 存储到ES
 				vectorStore.add(enrichedChunks);
@@ -392,7 +332,7 @@ public class VectorStoreDataIngestionService {
 		for (Resource resource : resources) {
 			try {
 				if (!resource.exists() || resource.contentLength() == 0) {
-					logger.warn("Skipping empty or non-existent resource: {}", resource.getFilename());
+					logger.info("Skipping empty or non-existent resource: {}", resource.getFilename());
 					continue;
 				}
 
@@ -405,34 +345,10 @@ public class VectorStoreDataIngestionService {
 
 				// 3. 元数据富化，与ProfessionalKbEsStrategy保持一致
 				AtomicInteger chunkCounter = new AtomicInteger(0);
-				List<Document> enrichedChunks = chunks.stream().map(chunk -> {
-					Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
-
-					// 核心元数据，与ProfessionalKbEsStrategy一致
-					metadata.put("source_type", "professional_kb_es");
-					metadata.put("session_id", "professional_kb_es");
-
-					// 专业知识库特有元数据
-					metadata.put("kb_id", kbId);
-					metadata.put("kb_name", kbName);
-					metadata.put("kb_description", kbDescription);
-
-					// 文档元数据
-					metadata.put("original_filename", resource.getFilename());
-					metadata.put("upload_timestamp", uploadTimestamp);
-					metadata.put("chunk_id", chunkCounter.getAndIncrement());
-
-					// 可选分类
-					if (category != null && !category.isBlank()) {
-						metadata.put("category", category);
-					}
-
-					// 添加搜索用的标题字段
-					String title = extractTitle(chunk.getText(), resource.getFilename());
-					metadata.put("title", title);
-
-					return new Document(chunk.getId(), chunk.getText(), metadata);
-				}).collect(Collectors.toList());
+				List<Document> enrichedChunks = chunks.stream()
+					.map(chunk -> enrichProfessionalKbEsResourceMetadata(chunk, resource.getFilename(), kbId, kbName,
+							kbDescription, category, uploadTimestamp, chunkCounter.getAndIncrement()))
+					.collect(Collectors.toList());
 
 				// 4. 存储到ES
 				vectorStore.add(enrichedChunks);
@@ -473,14 +389,114 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 删除指定知识库的所有文档
-	 * @param kbId 知识库ID
+	 * 为用户上传的MultipartFile丰富元数据
 	 */
-	public void deleteByKbId(String kbId) {
-		logger.info("Deleting all documents for knowledge base: {}", kbId);
-		// 注意：VectorStore接口可能不支持按条件删除，这里提供接口设计
-		// 实际实现需要根据具体的VectorStore实现来调整
-		logger.warn("Delete by kbId not implemented yet. Manual deletion required for kbId: {}", kbId);
+	private Document enrichUserUploadMetadata(Document chunk, String originalFilename, String sessionId, String userId,
+			String uploadTimestamp, int chunkId, long fileSize, String contentType) {
+		Map<String, Object> metadata = createBaseMetadata(chunk, originalFilename, uploadTimestamp, chunkId);
+
+		// 用户上传文件特有元数据
+		metadata.put("file_size", fileSize);
+		metadata.put("content_type", contentType);
+
+		// 核心元数据
+		metadata.put("source_type", SourceTypeEnum.USER_UPLOAD.getValue());
+
+		if (userId != null && !userId.isBlank()) {
+			metadata.put("user_id", userId);
+		}
+
+		metadata.put("session_id", sessionId);
+		return new Document(chunk.getId(), chunk.getText(), metadata);
+	}
+
+	/**
+	 * 为用户上传的Resource丰富元数据
+	 */
+	private Document enrichUserResourceUploadMetadata(Document chunk, String originalFilename, String sessionId,
+			String userId, String uploadTimestamp, int chunkId) {
+		Map<String, Object> metadata = createBaseMetadata(chunk, originalFilename, uploadTimestamp, chunkId);
+
+		// 核心元数据
+		metadata.put("source_type", SourceTypeEnum.USER_UPLOAD.getValue());
+		metadata.put("session_id", sessionId);
+		if (userId != null && !userId.isBlank()) {
+			metadata.put("user_id", userId);
+		}
+
+		return new Document(chunk.getId(), chunk.getText(), metadata);
+	}
+
+	/**
+	 * 为专业知识库ES的MultipartFile丰富元数据
+	 */
+	private Document enrichProfessionalKbEsMetadata(Document chunk, String originalFilename, String kbId, String kbName,
+			String kbDescription, String category, String uploadTimestamp, int chunkId, long fileSize,
+			String contentType) {
+		Map<String, Object> metadata = createBaseMetadata(chunk, originalFilename, uploadTimestamp, chunkId);
+
+		// 核心元数据，与ProfessionalKbEsStrategy一致
+		metadata.put("source_type", SourceTypeEnum.PROFESSIONAL_KB_ES.getValue());
+		metadata.put("session_id", "professional_kb_es");
+
+		// 专业知识库文件特有元数据
+		metadata.put("file_size", fileSize);
+		metadata.put("content_type", contentType);
+
+		// 可选分类
+		if (category != null && !category.isBlank()) {
+			metadata.put("category", category);
+		}
+
+		// 专业知识库特有元数据
+		metadata.put("kb_id", kbId);
+		metadata.put("kb_name", kbName);
+		metadata.put("kb_description", kbDescription);
+
+		return new Document(chunk.getId(), chunk.getText(), metadata);
+	}
+
+	/**
+	 * 为专业知识库ES的Resource丰富元数据
+	 */
+	private Document enrichProfessionalKbEsResourceMetadata(Document chunk, String originalFilename, String kbId,
+			String kbName, String kbDescription, String category, String uploadTimestamp, int chunkId) {
+		Map<String, Object> metadata = createBaseMetadata(chunk, originalFilename, uploadTimestamp, chunkId);
+
+		// 核心元数据，与ProfessionalKbEsStrategy一致
+		metadata.put("source_type", SourceTypeEnum.PROFESSIONAL_KB_ES.getValue());
+		metadata.put("session_id", "professional_kb_es");
+
+		// 专业知识库特有元数据
+		metadata.put("kb_id", kbId);
+		metadata.put("kb_name", kbName);
+		metadata.put("kb_description", kbDescription);
+
+		// 可选分类
+		if (category != null && !category.isBlank()) {
+			metadata.put("category", category);
+		}
+
+		return new Document(chunk.getId(), chunk.getText(), metadata);
+	}
+
+	/**
+	 * 创建基础元数据
+	 */
+	private Map<String, Object> createBaseMetadata(Document chunk, String originalFilename, String uploadTimestamp,
+			int chunkId) {
+		Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
+
+		// 文档元数据
+		metadata.put("original_filename", originalFilename);
+		metadata.put("upload_timestamp", uploadTimestamp);
+		metadata.put("chunk_id", chunkId);
+
+		// 添加搜索用的标题字段
+		String title = extractTitle(chunk.getText(), originalFilename);
+		metadata.put("title", title);
+
+		return metadata;
 	}
 
 }
