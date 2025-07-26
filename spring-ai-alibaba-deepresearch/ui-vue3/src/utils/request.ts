@@ -34,7 +34,6 @@ const service: AxiosInstance = axios.create({
 })
 const request: AxiosInterceptorManager<InternalAxiosRequestConfig> = service.interceptors.request
 const response: AxiosInterceptorManager<AxiosResponse> = service.interceptors.response
-const [messageApi, contextHolder] = message.useMessage();
 request.use(
   config => {
     config.data = JSON.stringify(config.data)
@@ -56,7 +55,7 @@ response.use(
     ) {
       return Promise.resolve(response.data)
     }
-    messageApi.error(response.message)
+    message.error(response.data.message)
     return Promise.reject(response.data)
   },
   error => {
