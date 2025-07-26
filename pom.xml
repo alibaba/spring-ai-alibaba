@@ -206,6 +206,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
 
         <!-- Spring version -->
         <spring-ai.version>1.0.0</spring-ai.version>
@@ -432,12 +434,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
-                <configuration>
-                    <release>${java.version}</release>
-                    <compilerArgs>
-                        <compilerArg>-parameters</compilerArg>
-                    </compilerArgs>
-                </configuration>
                 <executions>
                     <!-- Replacing default-compile as it is treated specially by Maven -->
                     <execution>
