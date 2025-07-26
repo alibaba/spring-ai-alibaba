@@ -95,6 +95,12 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	@Autowired
 	private ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate;
 
+	@Autowired
+	private OpenAiChatProperties openAiChatProperties;
+
+	@Autowired
+	private OpenAiEmbeddingProperties openAiEmbeddingProperties;
+
 	public LlmService(ChatModel chatModel) {
 		this.chatModel = chatModel;
 	}
@@ -272,8 +278,8 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			.baseUrl(dynamicModelEntity.getBaseUrl())
 			.apiKey(new SimpleApiKey(dynamicModelEntity.getApiKey()))
 			.headers(multiValueMap)
-			.completionsPath(OpenAiChatProperties.DEFAULT_COMPLETIONS_PATH)
-			.embeddingsPath(OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH)
+			.completionsPath(openAiChatProperties.getCompletionsPath())
+			.embeddingsPath(openAiEmbeddingProperties.getEmbeddingsPath())
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
 			.responseErrorHandler(responseErrorHandler)
