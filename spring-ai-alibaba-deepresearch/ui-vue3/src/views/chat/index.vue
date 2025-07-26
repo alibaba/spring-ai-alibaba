@@ -177,11 +177,11 @@ const username = useAuthStore().token
 const roles: BubbleListProps['roles'] = {
   ai: {
     placement: 'start',
-    avatar: {
-      icon: <GlobalOutlined />,
-      shape: 'square',
-      style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
-    },
+    // avatar: {
+    //   icon: <GlobalOutlined />,
+    //   shape: 'square',
+    //   style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
+    // },
     style: {
       maxWidth: '100%',
     },
@@ -190,10 +190,10 @@ const roles: BubbleListProps['roles'] = {
   local: {
     placement: 'end',
     shape: 'corner',
-    avatar: {
-      icon: <UserOutlined />,
-      style: {},
-    },
+    // avatar: {
+    //   icon: <UserOutlined />,
+    //   style: {},
+    // },
     rootClassName: 'local',
   },
 }
@@ -209,56 +209,9 @@ if (!current) {
     messageStore.currentState[convId] = current
   }
 }
-const [agent] = useXAgent({
-  request: async ({ message }, { onSuccess, onUpdate, onError }) => {
-    senderLoading.value = true
 
-    if (!current.deepResearch) {
-      senderLoading.value = false
-      onSuccess(`暂未实现: ${message}`)
-      return
-    }
-
-    let content = ''
-
-    switch (current.aiType) {
-      case 'normal':
-      case 'startDS': {
-        const xStreamBody = new XStreamBody('/deep-research/chat/stream', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-          },
-          body: {
-            ...configStore.chatConfig,
-            query: message,
-            thread_id: convId
-          },
-        })
-
-        try {
-          await xStreamBody.readStream((chunk: any) => {
-            onUpdate(chunk)
-          })
-        } catch (e: any) {
-          console.error(e.statusText)
-          onError(e.statusText)
-        }
-
-        content = xStreamBody.content()
-        break
-      }
-
-      case 'onDS': {
-        current.deepResearchDetail = true
-
-        if (current.autoAccepted) {
-          content = 'startDS阶段，已自动接受，跳过调用'
-          break
-        }
-
-        const xStreamBody = new XStreamBody('/deep-research/chat/resume', {
+const sendResumeStream  =  async(message: string | undefined, onUpdate: (content: any) => void, onError: (error: any) => void): Promise<string> => {
+    const xStreamBody = new XStreamBody('/deep-research/chat/resume', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -280,7 +233,56 @@ const [agent] = useXAgent({
           onError(e.statusText)
         }
 
-        content = xStreamBody.content()
+     return xStreamBody.content()
+}
+
+const sendChatStream = async (message: string | undefined, onUpdate: (content: any) => void, onError: (error: any) => void): Promise<string> => {
+  const xStreamBody = new XStreamBody('/deep-research/chat/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: {
+            ...configStore.chatConfig,
+            query: message,
+            thread_id: convId
+          },
+        })
+
+        try {
+          await xStreamBody.readStream((chunk: any) => {
+            onUpdate(chunk)
+          })
+        } catch (e: any) {
+          console.error(e.statusText)
+          onError(e.statusText)
+        }
+  return xStreamBody.content()
+}
+
+const [agent] = useXAgent({
+  request: async ({ message }, { onSuccess, onUpdate, onError }) => {
+    senderLoading.value = true
+
+    if (!current.deepResearch) {
+      senderLoading.value = false
+      onSuccess(`暂未实现: ${message}`)
+      return
+    }
+
+    let content = ''
+
+    switch (current.aiType) {
+      case 'normal':
+      case 'startDS': {
+        content = await sendChatStream(message, onUpdate, onError)
+        break
+      }
+
+      case 'onDS': {
+        current.deepResearchDetail = true
+        content = await (configStore.chatConfig.auto_accepted_plan ? sendChatStream(message, onUpdate, onError) : sendResumeStream(message, onUpdate, onError))
         break
       }
 
@@ -370,6 +372,10 @@ const submitHandle = (nextContent: any) => {
   // 如果是深度研究，需要切换到下一个aiType
   if (current.deepResearch) {
       messageStore.nextAIType()
+  }
+  // 自动接受，需要再转为下一个状态
+  if(configStore.chatConfig.auto_accepted_plan){
+    messageStore.nextAIType()
   }
   onRequest(nextContent)
   content.value = ''
@@ -595,6 +601,9 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
       if(current.deepResearch){
         // 准备开始研究
         if(current.aiType === 'startDS') {
+          return buildPendingNodeThoughtChain()
+        }
+        if(current.aiType === 'onDS' && configStore.chatConfig.auto_accepted_plan) {
           return buildPendingNodeThoughtChain()
         }
         // 正在研究中
