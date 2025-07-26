@@ -420,8 +420,8 @@ async function htmlDeepResearch(){
     htmlModalVisible.value = true
     htmlLoading.value = true
     htmlChunks.value = []
-    
-    
+
+
     if(messageStore.htmlReport[convId]){
       htmlChunks.value = messageStore.htmlReport[convId]
       htmlLoading.value = false
@@ -453,7 +453,7 @@ async function htmlDeepResearch(){
     if(success) {
         messageStore.htmlReport[convId] = htmlChunks.value
     }
-    
+
 }
 
 // 关闭HTML模态框
@@ -661,7 +661,7 @@ function buildEndDSThoughtChain(jsonArray: any[]): any {
     </>
   )
 }
-// 解析消息记录 
+// 解析消息记录
 // status === local 表示人类  loading表示stream流正在返回  success表示steram完成返回
 // msg  当status === loading的时候，返回stream流的chunk  当status === success的时候，返回所有chunk的拼接字符串
 // isCurrent  true表示当前消息是最新的，false表示历史消息
@@ -693,7 +693,7 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
         // 研究网站、分析结果、生成报告
         return <MD content={ '进行下一步处理' } />
       }
-      
+
       if (current.deepResearch && isCurrent) {
         if (current.aiType === 'startDS') {
           // 如果不包含背景调查，则提示用户重新输入
