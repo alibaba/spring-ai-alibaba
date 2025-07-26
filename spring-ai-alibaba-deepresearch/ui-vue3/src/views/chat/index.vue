@@ -211,7 +211,7 @@ if (!current) {
 }
 
 const sendResumeStream  =  async(message: string | undefined, onUpdate: (content: any) => void, onError: (error: any) => void): Promise<string> => {
-    const xStreamBody = new XStreamBody('/deep-research/chat/resume', {
+    const xStreamBody = new XStreamBody('/chat/resume', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -237,7 +237,7 @@ const sendResumeStream  =  async(message: string | undefined, onUpdate: (content
 }
 
 const sendChatStream = async (message: string | undefined, onUpdate: (content: any) => void, onError: (error: any) => void): Promise<string> => {
-  const xStreamBody = new XStreamBody('/deep-research/chat/stream', {
+  const xStreamBody = new XStreamBody('/chat/stream', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -391,10 +391,29 @@ function startDeepResearch() {
   onRequest('开始研究')
 }
 
+// 展示HTML报告
+async function htmlDeepResearch(){
+    console.log('后端接口未实现')
+    // const xStreamBody = new XStreamBody('/api/reports/build-html?threadId=' + convId, {
+    //     method: 'GET',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       Accept: 'text/event-stream',
+    //     }})
+
+    // try {
+    //     await xStreamBody.readStream((chunk: any) => {
+    //     console.log(chunk)
+    // })
+    // } catch (e: any) {
+    //     console.error(e.statusText)
+    // }
+}
+
 // 下载报告
 function downDeepResearch(){
   request({
-    url: '/deep-research/api/reports/export',
+    url: '/api/reports/export',
     method: 'POST',
     data: {
       thread_id: convId,
@@ -402,7 +421,7 @@ function downDeepResearch(){
     }
   }).then(response => {
     if(response.status === 'success') {
-      window.open('/deep-research/' + response.report_information.download_url, '_blank')
+      window.open(import.meta.env.VITE_BASE_URL + response.report_information.download_url, '_blank')
     }
   })
 }
@@ -574,6 +593,7 @@ function buildEndDSThoughtChain(jsonArray: any[]): any {
       footer: (
           <Flex style="margin-left: auto" gap="middle">
             <Button type="primary" onClick={downDeepResearch}>下载报告</Button>
+            <Button type="primary" onClick={htmlDeepResearch}>在线报告</Button>
           </Flex>
         ),
     }
