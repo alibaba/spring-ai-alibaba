@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.toolcalling.metaso;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 
-public class MetasoConstants {
+public final class MetasoConstants {
 
 	public static final String CONFIG_PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".metaso";
 

@@ -24,7 +24,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-metaso</artifactId>
-    <name>Spring AI Alibaba Starter Tool Calling Aliyun AI Search</name>
+    <name>Spring AI Alibaba Starter Tool Calling Metaso AI Search</name>
     <description>Metaso AI Search tool for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
