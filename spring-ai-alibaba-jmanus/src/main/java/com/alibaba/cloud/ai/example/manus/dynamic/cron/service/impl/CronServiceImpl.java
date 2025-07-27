@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.cron.service.impl;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.entity.CronEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.repository.CronRepository;
+import com.alibaba.cloud.ai.example.manus.dynamic.cron.scheduler.DynamicCronTaskScheduler;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.service.CronService;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.vo.CronConfig;
 import org.slf4j.Logger;
@@ -36,9 +37,12 @@ public class CronServiceImpl implements CronService {
 
 	private final CronRepository repository;
 
+	private final DynamicCronTaskScheduler taskScheduler;
+
 	@Autowired
-	public CronServiceImpl(CronRepository repository) {
+	public CronServiceImpl(CronRepository repository, DynamicCronTaskScheduler taskScheduler) {
 		this.repository = repository;
+		this.taskScheduler = taskScheduler;
 	}
 
 	@Override
@@ -81,6 +85,9 @@ public class CronServiceImpl implements CronService {
 			.orElseThrow(() -> new IllegalArgumentException("Cron task not found: " + config.getId()));
 		convertEntityFromConfig(entity, config);
 		entity = repository.save(entity);
+
+		// 移除旧任务，等待调度器重新加载
+		taskScheduler.removeTask(entity.getId());
 		return entity.mapToCronConfig();
 	}
 
@@ -90,6 +97,11 @@ public class CronServiceImpl implements CronService {
 			.orElseThrow(() -> new IllegalArgumentException("Cron task not found: " + id));
 		entity.setStatus(status);
 		repository.save(entity);
+	}
+
+	@Override
+	public void executeCronTask(String id) {
+		taskScheduler.executeTaskById(Long.parseLong(id));
 	}
 
 	@Override
@@ -110,6 +122,8 @@ public class CronServiceImpl implements CronService {
 		if (config.getStatus() != null) {
 			entity.setStatus(config.getStatus());
 		}
+		// 无论planTemplateId是否为空都进行更新
+		entity.setPlanTemplateId(config.getPlanTemplateId());
 	}
 
 	private void validateCronExpression(String cronExpression) {
