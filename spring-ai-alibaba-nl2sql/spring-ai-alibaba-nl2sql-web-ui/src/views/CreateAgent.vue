@@ -5,14 +5,8 @@
       <div class="nav-items">
         <span class="nav-item">数据智能体</span>
         <span class="nav-item active">智能体</span>
-        <span class="nav-item">数据准备</span>
-        <span class="nav-item">项目中心</span>
-        <span class="nav-item">营销智能体</span>
       </div>
       <div class="nav-right">
-        <select class="project-select">
-          <option>验收测试项目1</option>
-        </select>
         <div class="user-menu">
           <i class="bi bi-question-circle"></i>
           <i class="bi bi-person-circle"></i>
@@ -397,8 +391,7 @@ export default {
 }
 
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
   padding: 0 24px;
 }
 
