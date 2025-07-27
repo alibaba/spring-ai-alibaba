@@ -160,37 +160,40 @@ public class ResearcherNode implements NodeAction {
 				return String.format("标题: %s\n权重: %s\n内容: %s\n", r.get("title"), r.get("weight"), r.get("content"));
 			}).collect(Collectors.joining("\n\n"))));
 
-			var streamResult = requestSpec.messages(messages).stream().chatResponse()
+			var streamResult = requestSpec.messages(messages)
+				.stream()
+				.chatResponse()
 				.doOnError(error -> StateUtil.handleStepError(assignedStep, nodeName, error, logger));
 
-		String prefix = StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix() + "_";
-		String stepTitleKey = prefix + executorNodeId + "_step_title";
-		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
-		Map<String, Object> inputMap = new HashMap<>();
-		inputMap.put(stepTitleKey, "[并行节点" + executorNodeId + "]" + assignedStep.getTitle());
-		state.input(inputMap);
+			String prefix = StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix() + "_";
+			String stepTitleKey = prefix + executorNodeId + "_step_title";
+			state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
+			Map<String, Object> inputMap = new HashMap<>();
+			inputMap.put(stepTitleKey, "[并行节点" + executorNodeId + "]" + assignedStep.getTitle());
+			state.input(inputMap);
 
-		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, prefix + executorNodeId);
+			logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, prefix + executorNodeId);
 
-		var generator = StreamingChatGenerator.builder()
-			.startingNode(prefix + executorNodeId)
-			.startingState(state)
-			.mapResult(response -> {
-				// Only handle successful responses - errors are handled in doOnError
-				String researchContent = response.getResult().getOutput().getText();
-				assignedStep
-					.setExecutionStatus(ReflectionUtil.getCompletionStatus(reflectionProcessor != null, nodeName));
-				assignedStep.setExecutionRes(Objects.requireNonNull(researchContent));
-				logger.info("{} completed, content: {}", nodeName, researchContent);
+			var generator = StreamingChatGenerator.builder()
+				.startingNode(prefix + executorNodeId)
+				.startingState(state)
+				.mapResult(response -> {
+					// Only handle successful responses - errors are handled in doOnError
+					String researchContent = response.getResult().getOutput().getText();
+					assignedStep
+						.setExecutionStatus(ReflectionUtil.getCompletionStatus(reflectionProcessor != null, nodeName));
+					assignedStep.setExecutionRes(Objects.requireNonNull(researchContent));
+					logger.info("{} completed, content: {}", nodeName, researchContent);
 
-				updated.put("researcher_content_" + executorNodeId, researchContent);
-				return updated;
-			})
-			.build(streamResult);
+					updated.put("researcher_content_" + executorNodeId, researchContent);
+					return updated;
+				})
+				.build(streamResult);
 
 			updated.put("researcher_content_" + executorNodeId, generator);
 			return updated;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			// Handle any exception that occurs before or during stream setup
 			StateUtil.handleStepError(assignedStep, nodeName, e, logger);
 			return updated;

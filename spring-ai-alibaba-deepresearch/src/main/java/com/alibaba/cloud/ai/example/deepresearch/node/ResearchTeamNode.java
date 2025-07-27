@@ -36,22 +36,8 @@ public class ResearchTeamNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(ResearchTeamNode.class);
 
-	private static final long TIME_SLEEP = 10000;
-
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		// 智能等待：根据是否有反思任务调整等待时间
-		if (state.value("research_team_next_node").isPresent()) {
-			Plan curPlan = StateUtil.getPlan(state);
-			if (hasActiveReflectionTasks(curPlan)) {
-				Thread.sleep(5000);
-				logger.debug("decline waiting time for reflection tasks");
-			}
-			else {
-				Thread.sleep(TIME_SLEEP);
-			}
-		}
-
 		logger.info("research_team node is running.");
 		String nextStep = "professional_kb_decision";
 		Map<String, Object> updated = new HashMap<>();
@@ -76,21 +62,6 @@ public class ResearchTeamNode implements NodeAction {
 			.allMatch(step -> step.getExecutionStatus() != null
 					&& (step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX)
 							|| step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_ERROR_PREFIX)));
-	}
-
-	/**
-	 * 检查是否有活跃的反思任务
-	 */
-	private boolean hasActiveReflectionTasks(Plan plan) {
-		if (CollectionUtils.isEmpty(plan.getSteps())) {
-			return false;
-		}
-
-		return plan.getSteps()
-			.stream()
-			.anyMatch(step -> step.getExecutionStatus() != null
-					&& (step.getExecutionStatus().contains("waiting_reflecting")
-							|| step.getExecutionStatus().contains("waiting_processing")));
 	}
 
 }
