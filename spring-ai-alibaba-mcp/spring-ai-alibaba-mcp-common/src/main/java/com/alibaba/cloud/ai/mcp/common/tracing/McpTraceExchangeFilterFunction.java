@@ -24,7 +24,6 @@ import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Method;
 
-
 @Component
 public class McpTraceExchangeFilterFunction implements ExchangeFilterFunction {
 
@@ -42,19 +41,19 @@ public class McpTraceExchangeFilterFunction implements ExchangeFilterFunction {
 		}
 
 		try {
-			
+
 			Object span = getCurrentSpan();
 			if (span != null) {
 				String traceId = getTraceId(span);
 				String spanId = getSpanId(span);
 
 				if (traceId != null && spanId != null) {
-					
+
 					ClientRequest enrichedRequest = ClientRequest.from(request)
 						.header("X-Trace-Id", traceId)
 						.header("X-Span-Id", spanId)
 						.header("X-Request-ID", traceId)
-						
+
 						.header("traceparent", buildTraceparent(traceId, spanId))
 						.build();
 					return next.exchange(enrichedRequest);
@@ -63,12 +62,11 @@ public class McpTraceExchangeFilterFunction implements ExchangeFilterFunction {
 			return next.exchange(request);
 		}
 		catch (Exception e) {
-			
+
 			return next.exchange(request);
 		}
 	}
 
-	
 	private Object getCurrentSpan() {
 		if (tracer == null) {
 			return null;
@@ -82,7 +80,6 @@ public class McpTraceExchangeFilterFunction implements ExchangeFilterFunction {
 		}
 	}
 
-	
 	private String getTraceId(Object span) {
 		try {
 			Method contextMethod = span.getClass().getMethod("context");
@@ -95,7 +92,6 @@ public class McpTraceExchangeFilterFunction implements ExchangeFilterFunction {
 		}
 	}
 
-	
 	private String getSpanId(Object span) {
 		try {
 			Method contextMethod = span.getClass().getMethod("context");
@@ -108,7 +104,6 @@ public class McpTraceExchangeFilterFunction implements ExchangeFilterFunction {
 		}
 	}
 
-	
 	private String buildTraceparent(String traceId, String spanId) {
 		return String.format("00-%s-%s-01", traceId, spanId);
 	}

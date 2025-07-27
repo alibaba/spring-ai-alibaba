@@ -85,17 +85,17 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 	public StreamableHttpClientTransport(WebClient.Builder webClientBuilder, ObjectMapper objectMapper,
 			String streamEndpoint, ExchangeFilterFunction traceFilter) {
 		if (traceFilter != null) {
-			this.webClient = webClientBuilder
-				.filter(traceFilter)
+			this.webClient = webClientBuilder.filter(traceFilter)
 				.defaultHeader("Accept", "application/json, text/event-stream")
 				.build();
-		} else {
+		}
+		else {
 			this.webClient = webClientBuilder.defaultHeader("Accept", "application/json, text/event-stream").build();
 		}
 		this.objectMapper = objectMapper;
 		this.fullUrl = streamEndpoint;
-		logger.info("=== StreamableHttpClientTransport initialized with fullUrl: {} and tracing: {} ===", 
-			this.fullUrl, traceFilter != null);
+		logger.info("=== StreamableHttpClientTransport initialized with fullUrl: {} and tracing: {} ===", this.fullUrl,
+				traceFilter != null);
 	}
 
 	/**
@@ -107,8 +107,7 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 		this(webClientBuilder, objectMapper, "/stream");
 	}
 
-	
-	public StreamableHttpClientTransport(WebClient.Builder webClientBuilder, ObjectMapper objectMapper, 
+	public StreamableHttpClientTransport(WebClient.Builder webClientBuilder, ObjectMapper objectMapper,
 			ExchangeFilterFunction traceFilter) {
 		this(webClientBuilder, objectMapper, "/stream", traceFilter);
 	}

@@ -358,7 +358,6 @@ public class LoadbalancedMcpAsyncClient {
 		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
 
-		
 		WebFluxSseClientTransport transport;
 		if (traceFilter != null) {
 			transport = webFluxSseClientTransportBuilder.build(webClientBuilder, objectMapper, exportPath, traceFilter);
