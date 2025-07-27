@@ -48,6 +48,10 @@ const routes = [
   },
   // 智能体相关路由
   {
+    path: '/agent',
+    redirect: '/agents'  // 重定向到智能体列表
+  },
+  {
     path: '/agents',
     name: 'AgentList',
     component: AgentList

@@ -636,7 +636,7 @@ export default {
     }
     
     const goBack = () => {
-      router.push('/agent')
+      router.push('/agents')
     }
     
     const loadAgentDetail = async () => {
