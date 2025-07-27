@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.toolcalling.nationalstatistics;
 
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -30,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 
@@ -40,7 +40,7 @@ import java.util.function.Function;
  * @author makoto
  */
 public class NationalStatisticsService
-		implements Function<NationalStatisticsService.Request, NationalStatisticsService.Response> {
+		implements SearchService, Function<NationalStatisticsService.Request, NationalStatisticsService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(NationalStatisticsService.class);
 
@@ -58,10 +58,15 @@ public class NationalStatisticsService
 	}
 
 	@Override
+	public SearchService.Response query(String query) {
+		return this.apply(new Request("zxfb", query, 10));
+	}
+
+	@Override
 	public Response apply(Request request) {
 		if (request == null || !StringUtils.hasText(request.dataType())) {
 			logger.error("Invalid request: dataType is required.");
-			return new Response("error", "数据类型不能为空", null, LocalDateTime.now().toString());
+			return Response.errorResponse("", "数据类型不能为空");
 		}
 
 		try {
@@ -80,7 +85,7 @@ public class NationalStatisticsService
 		}
 		catch (Exception e) {
 			logger.error("Failed to fetch national statistics data: {}", e.getMessage(), e);
-			return new Response("error", "获取统计数据失败: " + e.getMessage(), null, LocalDateTime.now().toString());
+			return Response.errorResponse(request.dataType(), "获取统计数据失败: " + e.getMessage());
 		}
 	}
 
@@ -104,7 +109,7 @@ public class NationalStatisticsService
 
 		}
 		catch (Exception e) {
-			logger.error("Error fetching statistics data: {}", e.getMessage(), e);
+			logger.error("Error fetching statistics data from URL for dataType {}: {}", dataType, e.getMessage(), e);
 		}
 
 		return items;
@@ -143,11 +148,15 @@ public class NationalStatisticsService
 
 		try {
 			// 查找统计数据列表
-			Elements dataElements = doc.select("ul.center_list_contlist li, .news_list li, .list_item");
+			Elements dataElements = doc.select("ul.center_list_contlist li");
 
 			if (dataElements.isEmpty()) {
 				// 尝试其他可能的选择器
-				dataElements = doc.select("a[href*=tjsj], a[href*=data]");
+				dataElements = doc.select(".news_list li, .list_item, .cont_list li");
+			}
+
+			if (dataElements.isEmpty()) {
+				dataElements = doc.select("li:has(a[href*=tjsj]), li:has(a[href*=html])");
 			}
 
 			int count = 0;
@@ -156,7 +165,7 @@ public class NationalStatisticsService
 					break;
 
 				StatisticsItem item = parseStatisticsItem(element);
-				if (item != null && (keyword == null || item.title().contains(keyword))) {
+				if (item != null && isValidItem(item, keyword)) {
 					items.add(item);
 					count++;
 				}
@@ -168,6 +177,23 @@ public class NationalStatisticsService
 		}
 
 		return items;
+	}
+
+	/**
+	 * 验证统计项目是否有效
+	 */
+	private boolean isValidItem(StatisticsItem item, String keyword) {
+		if (!StringUtils.hasText(item.title())) {
+			return false;
+		}
+
+		if (keyword == null || keyword.trim().isEmpty()) {
+			return true;
+		}
+
+		String lowerKeyword = keyword.toLowerCase();
+		return item.title().toLowerCase().contains(lowerKeyword)
+				|| (item.summary() != null && item.summary().toLowerCase().contains(lowerKeyword));
 	}
 
 	/**
@@ -185,14 +211,25 @@ public class NationalStatisticsService
 			if (linkElement != null) {
 				title = linkElement.text().trim();
 				url = linkElement.attr("href");
-				if (url.startsWith("/")) {
+				if (StringUtils.hasText(url) && url.startsWith("/")) {
 					url = NationalStatisticsConstants.BASE_URL + url;
 				}
 			}
 
-			// 查找发布日期
+			// 查找发布日期 - 尝试多种选择器
 			Element dateElement = element.select(".date, .time, span[class*=date], span[class*=time]").first();
-			if (dateElement != null) {
+			if (dateElement == null) {
+				// 尝试查找包含日期模式的文本
+				Elements spans = element.select("span");
+				for (Element span : spans) {
+					String text = span.text().trim();
+					if (text.matches("\\d{4}-\\d{2}-\\d{2}") || text.matches("\\d{4}/\\d{2}/\\d{2}")) {
+						publishDate = text;
+						break;
+					}
+				}
+			}
+			else {
 				publishDate = dateElement.text().trim();
 			}
 
@@ -208,7 +245,7 @@ public class NationalStatisticsService
 
 		}
 		catch (Exception e) {
-			logger.error("Error parsing statistics item: {}", e.getMessage(), e);
+			logger.debug("Error parsing statistics item: {}", e.getMessage());
 		}
 
 		return null;
@@ -222,16 +259,41 @@ public class NationalStatisticsService
 			@JsonProperty(required = false,
 					value = "keyword") @JsonPropertyDescription("搜索关键词，用于过滤统计数据") String keyword,
 
-			@JsonProperty(required = false, value = "limit") @JsonPropertyDescription("返回结果数量限制，默认10条") int limit) {
+			@JsonProperty(required = false, value = "limit") @JsonPropertyDescription("返回结果数量限制，默认10条") int limit)
+			implements
+				SearchService.Request {
 		public Request {
 			if (limit <= 0) {
 				limit = 10;
 			}
 		}
+
+		@Override
+		public String getQuery() {
+			return keyword != null ? keyword : "";
+		}
 	}
 
 	@JsonClassDescription("National Statistics Service API response")
-	public record Response(String status, String message, List<StatisticsItem> data, String timestamp) {
+	public record Response(String status, String message, List<StatisticsItem> data,
+			String timestamp) implements SearchService.Response {
+
+		public static Response errorResponse(String dataType, String errorMsg) {
+			return new Response("error", errorMsg, null, LocalDateTime.now().toString());
+		}
+
+		@Override
+		public SearchResult getSearchResult() {
+			if (data == null || data.isEmpty()) {
+				return new SearchResult(List.of());
+			}
+
+			return new SearchResult(data.stream()
+				.map(item -> new SearchService.SearchContent(item.title(),
+						item.summary() != null ? item.summary() : item.title(), item.url(), null // 国家统计局没有特定的图标
+				))
+				.toList());
+		}
 	}
 
 	@JsonClassDescription("Statistics item")
