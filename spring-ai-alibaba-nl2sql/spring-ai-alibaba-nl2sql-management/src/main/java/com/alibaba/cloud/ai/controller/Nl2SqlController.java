@@ -41,8 +41,8 @@ public class Nl2SqlController {
 		this.nl2SqlService = nl2SqlService;
 	}
 
-	@GetMapping("/query")
-	public String query(@RequestParam("query") String query) {
+	@GetMapping("/nl2sql")
+	public String nl2sql(@RequestParam("query") String query) {
 		try {
 			return this.nl2SqlService.apply(query);
 		}
