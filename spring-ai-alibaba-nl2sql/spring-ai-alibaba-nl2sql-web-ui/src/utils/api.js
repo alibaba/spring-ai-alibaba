@@ -23,12 +23,21 @@ async function request(url, options = {}) {
   try {
     const response = await fetch(`${API_BASE_URL}${url}`, config)
     
+    // 获取响应数据
+    const result = await response.json()
+    
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      // 创建一个类似axios的错误对象结构
+      const error = new Error(`HTTP ${response.status}: ${response.statusText}`)
+      error.response = {
+        status: response.status,
+        statusText: response.statusText,
+        data: result
+      }
+      throw error
     }
 
     // 直接返回数据，不需要检查success字段
-    const result = await response.json()
     return result
   } catch (error) {
     console.error('API 请求失败:', error)
@@ -227,6 +236,66 @@ export const agentKnowledgeApi = {
   }
 }
 
+/**
+ * 数据源 API
+ */
+export const datasourceApi = {
+  // 获取所有数据源列表
+  getList(params = {}) {
+    return get('/datasource', params)
+  },
+
+  // 根据ID获取数据源详情
+  getDetail(id) {
+    return get(`/datasource/${id}`)
+  },
+
+  // 创建数据源
+  create(data) {
+    return post('/datasource', data)
+  },
+
+  // 更新数据源
+  update(id, data) {
+    return put(`/datasource/${id}`, data)
+  },
+
+  // 删除数据源
+  delete(id) {
+    return del(`/datasource/${id}`)
+  },
+
+  // 测试数据源连接
+  testConnection(id) {
+    return post(`/datasource/${id}/test`)
+  },
+
+  // 获取数据源统计信息
+  getStatistics() {
+    return get('/datasource/stats')
+  },
+
+  // 获取智能体关联的数据源列表
+  getAgentDatasources(agentId) {
+    return get(`/datasource/agent/${agentId}`)
+  },
+
+  // 为智能体添加数据源
+  addToAgent(agentId, datasourceId) {
+    return post(`/datasource/agent/${agentId}`, { datasourceId })
+  },
+
+  // 移除智能体的数据源关联
+  removeFromAgent(agentId, datasourceId) {
+    return del(`/datasource/agent/${agentId}/${datasourceId}`)
+  },
+
+  // 启用/禁用智能体的数据源
+  toggleDatasource(agentId, datasourceId, isActive) {
+    return put(`/datasource/agent/${agentId}/${datasourceId}/toggle`, { isActive })
+  }
+}
+
 export default {
   get,
   post,
@@ -235,5 +304,6 @@ export default {
   agentApi,
   businessKnowledgeApi,
   semanticModelApi,
-  agentKnowledgeApi
+  agentKnowledgeApi,
+  datasourceApi
 }
