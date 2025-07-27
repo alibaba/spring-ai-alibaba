@@ -167,7 +167,7 @@ const selectOption = (option: { id: string }) => {
   position: absolute;
   top: 100%;
   /* left: 0; */
-  z-index: 9999;
+  z-index: 99999;
   margin-top: 4px;
   background: linear-gradient(135deg, rgba(40, 40, 50, 0.95), rgba(30, 30, 40, 0.95));
   backdrop-filter: blur(16px);
@@ -271,7 +271,7 @@ const selectOption = (option: { id: string }) => {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 9998;
+  z-index: 99998;
   background: transparent;
 }
 
