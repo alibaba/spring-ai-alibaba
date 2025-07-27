@@ -86,4 +86,6 @@ header:
     - '**/spring-ai-alibaba-graph/spring-ai-alibaba-graph-example/**'
     - 'spring-ai-alibaba-graph/spring-ai-alibaba-graph-example/.mvn/wrapper/maven-wrapper.properties'
     - '**/spring-ai-alibaba-deepresearch/ui-vue3/**'
+    - '**/spring-ai-alibaba-jmanus/ui-vue3/**'
+    - '.cursorindexingignore'
   comment: never
