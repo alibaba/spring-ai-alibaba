@@ -10,13 +10,16 @@ import BusinessKnowledgeSimple from './views/BusinessKnowledgeSimple.vue'
 import SemanticModel from './views/SemanticModel.vue'
 import SemanticModelSimple from './views/SemanticModelSimple.vue'
 import TestPage from './views/TestPage.vue'
+import AgentList from './views/AgentList.vue'
+import AgentDetail from './views/AgentDetail.vue'
+import CreateAgent from './views/CreateAgent.vue'
 
 // 创建路由
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component: Home  // 恢复使用完整版本
+    component: AgentList  // 默认显示智能体列表
   },
   {
     path: '/home-full',
@@ -42,6 +45,22 @@ const routes = [
     path: '/semantic-model',
     name: 'SemanticModel',
     component: SemanticModel
+  },
+  // 智能体相关路由
+  {
+    path: '/agents',
+    name: 'AgentList',
+    component: AgentList
+  },
+  {
+    path: '/agent/create',
+    name: 'CreateAgent',
+    component: CreateAgent
+  },
+  {
+    path: '/agent/:id',
+    name: 'AgentDetail',
+    component: AgentDetail
   },
   // 简化版本的测试路由
   {

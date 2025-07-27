@@ -36,3 +36,23 @@ CREATE TABLE IF NOT EXISTS semantic_model (
   INDEX idx_status (status),
   INDEX idx_is_recall (is_recall)
 ) ENGINE = InnoDB COMMENT = '语义模型表';
+
+-- 智能体表
+CREATE TABLE IF NOT EXISTS agent (
+  id INT NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL COMMENT '智能体名称',
+  description TEXT COMMENT '智能体描述',
+  avatar VARCHAR(500) COMMENT '头像URL',
+  status VARCHAR(50) DEFAULT 'draft' COMMENT '状态：draft-待发布，published-已发布，offline-已下线',
+  prompt TEXT COMMENT '自定义Prompt配置',
+  category VARCHAR(100) COMMENT '分类',
+  admin_id BIGINT COMMENT '管理员ID',
+  tags TEXT COMMENT '标签，逗号分隔',
+  create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  INDEX idx_name (name),
+  INDEX idx_status (status),
+  INDEX idx_category (category),
+  INDEX idx_admin_id (admin_id)
+) ENGINE = InnoDB COMMENT = '智能体表';

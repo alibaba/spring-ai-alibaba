@@ -29,6 +29,7 @@ import java.util.List;
  */
 @Controller
 @RequestMapping("/api/semantic-model")
+@CrossOrigin(origins = "*")
 public class SemanticModelController {
 
 	@Autowired
