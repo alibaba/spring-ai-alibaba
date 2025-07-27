@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * 单个MCP服务器操作请求VO（表单方式） 用于新增和更新单个MCP服务器配置
  */
-public class McpServerFormRequestVO {
+public class McpServerRequestVO {
 
 	/**
 	 * 服务器ID，用于区分新增/更新操作 null表示新增，非null表示更新
@@ -145,25 +146,107 @@ public class McpServerFormRequestVO {
 	 * @return true表示有效，false表示无效
 	 */
 	public boolean isValid() {
+		return validateWithDetails().isEmpty();
+	}
+
+	/**
+	 * 验证请求数据并返回详细错误信息
+	 * @return 错误信息列表，空列表表示验证通过
+	 */
+	public List<String> validateWithDetails() {
+		List<String> errors = new ArrayList<>();
+
 		// 基本字段验证
 		if (mcpServerName == null || mcpServerName.trim().isEmpty()) {
-			return false;
+			errors.add("MCP名称不能为空");
 		}
+
 		if (connectionType == null || connectionType.trim().isEmpty()) {
-			return false;
+			errors.add("连接类型不能为空");
 		}
 
 		// 根据连接类型验证必需字段
-		switch (connectionType.toUpperCase()) {
-			case "STUDIO":
-				return command != null && !command.trim().isEmpty();
-			case "SSE":
-			case "STREAMING":
-				return url != null && !url.trim().isEmpty();
-			default:
-				return false;
+		if (connectionType != null) {
+			String connectionTypeUpper = connectionType.toUpperCase();
+			switch (connectionTypeUpper) {
+				case "STUDIO":
+					if (command == null || command.trim().isEmpty()) {
+						errors.add("STUDIO类型必须提供命令(command)");
+					}
+					break;
+				case "SSE":
+					if (url == null || url.trim().isEmpty()) {
+						errors.add("SSE类型必须提供URL");
+					}
+					else if (!isValidUrlFormat(url)) {
+						errors.add("SSE类型的URL格式无效: " + url);
+					}
+					else if (!isSSEUrl(url)) {
+						errors.add("SSE类型的URL路径必须包含'sse'，当前URL: " + url);
+					}
+					break;
+				case "STREAMING":
+					if (url == null || url.trim().isEmpty()) {
+						errors.add("STREAMING类型必须提供URL");
+					}
+					else if (!isValidUrlFormat(url)) {
+						errors.add("STREAMING类型的URL格式无效: " + url);
+					}
+					else if (isSSEUrl(url)) {
+						errors.add("STREAMING类型的URL路径不能包含'sse'，当前URL: " + url);
+					}
+					break;
+				default:
+					errors.add("不支持的连接类型: " + connectionTypeUpper);
+					break;
+			}
 		}
 
+		return errors;
+	}
+
+	/**
+	 * 验证URL格式是否有效
+	 * @param url 服务器URL
+	 * @return 是否为有效URL格式
+	 */
+	private boolean isValidUrlFormat(String url) {
+		if (url == null || url.trim().isEmpty()) {
+			return false;
+		}
+
+		try {
+			new java.net.URL(url.trim());
+			return true;
+		}
+		catch (java.net.MalformedURLException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * 判断URL是否为SSE连接（与McpServerConfig保持一致）
+	 * @param url 服务器URL
+	 * @return 是否为SSE URL
+	 */
+	private boolean isSSEUrl(String url) {
+		if (url == null || url.isEmpty()) {
+			return false;
+		}
+
+		try {
+			java.net.URL parsedUrl = new java.net.URL(url);
+			String path = parsedUrl.getPath();
+
+			// 检查路径是否包含sse
+			boolean pathContainsSse = path != null && path.toLowerCase().contains("sse");
+
+			return pathContainsSse;
+		}
+		catch (java.net.MalformedURLException e) {
+			// 如果URL格式无效，返回false
+			return false;
+		}
 	}
 
 	/**

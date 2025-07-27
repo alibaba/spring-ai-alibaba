@@ -16,10 +16,10 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.controller;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigRequestVO;
+
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigVO;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerFormRequestVO;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerBatchImportRequestVO;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerRequestVO;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServersRequestVO;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -63,8 +63,7 @@ public class McpController {
 	 * @param requestVO 批量导入请求VO
 	 */
 	@PostMapping("/batch-import")
-	public ResponseEntity<String> batchImportMcpServers(@RequestBody McpServerBatchImportRequestVO requestVO)
-			throws IOException {
+	public ResponseEntity<String> batchImportMcpServers(@RequestBody McpServersRequestVO requestVO) throws IOException {
 		// 验证请求数据
 		if (!requestVO.isValid()) {
 			return ResponseEntity.badRequest().body("Invalid JSON format");
@@ -74,11 +73,8 @@ public class McpController {
 		String configJson = requestVO.getNormalizedConfigJson();
 		logger.info("Batch importing {} MCP servers", requestVO.getServerCount());
 
-		// 转换为旧的请求格式以兼容现有Service
-		McpConfigRequestVO legacyRequestVO = new McpConfigRequestVO();
-		legacyRequestVO.setConfigJson(configJson);
-
-		mcpService.addMcpServer(legacyRequestVO);
+		// 直接使用新的推荐方法
+		mcpService.saveMcpServers(configJson);
 		return ResponseEntity.ok("Successfully imported " + requestVO.getServerCount() + " MCP servers");
 	}
 
@@ -87,36 +83,35 @@ public class McpController {
 	 * @param requestVO 单个MCP服务器请求VO
 	 */
 	@PostMapping("/server")
-	public ResponseEntity<String> saveMcpServer(@RequestBody McpServerFormRequestVO requestVO) throws IOException {
-		// 验证请求数据
-		if (!requestVO.isValid()) {
-			return ResponseEntity.badRequest().body("Invalid request data");
-		}
-
-		// 构建完整的JSON配置
-		String configJson = requestVO.buildFullConfigJson();
+	public ResponseEntity<String> saveMcpServer(@RequestBody McpServerRequestVO requestVO) throws IOException {
 		logger.info("Processing {} operation for server: {}", requestVO.isUpdate() ? "update" : "add",
 				requestVO.getMcpServerName());
 
-		// 转换为旧的请求格式以兼容现有Service
-		McpConfigRequestVO legacyRequestVO = new McpConfigRequestVO();
-		legacyRequestVO.setConfigJson(configJson);
-
 		try {
-			if (requestVO.isUpdate()) {
-				// 更新操作
-				mcpService.updateMcpServer(requestVO.getId(), legacyRequestVO);
-				return ResponseEntity.ok("MCP server updated successfully");
-			}
-			else {
-				// 新增操作
-				mcpService.addMcpServer(legacyRequestVO);
-				return ResponseEntity.ok("MCP server added successfully");
-			}
+			// 直接使用新的推荐方法
+			mcpService.saveMcpServer(requestVO);
+			return ResponseEntity.ok("MCP server " + (requestVO.isUpdate() ? "updated" : "added") + " successfully");
 		}
 		catch (IllegalArgumentException e) {
-			logger.error("MCP server not found with id: {}", requestVO.getId(), e);
-			return ResponseEntity.notFound().build();
+			// 检查是否是重复名称错误
+			if (e.getMessage().contains("already exists")) {
+				logger.warn("MCP server with name '{}' already exists", requestVO.getMcpServerName());
+				return ResponseEntity.badRequest()
+					.body("MCP server with name '" + requestVO.getMcpServerName() + "' already exists");
+			}
+			// 检查是否是未找到错误
+			if (e.getMessage().contains("not found")) {
+				logger.error("MCP server not found with id: {}", requestVO.getId(), e);
+				return ResponseEntity.notFound().build();
+			}
+			// 检查是否是验证错误
+			if (e.getMessage().contains("MCP服务器配置验证失败")) {
+				logger.warn("Validation failed for MCP server '{}': {}", requestVO.getMcpServerName(), e.getMessage());
+				return ResponseEntity.badRequest().body(e.getMessage());
+			}
+			// 其他参数错误
+			logger.error("Invalid argument for MCP server operation: {}", e.getMessage(), e);
+			return ResponseEntity.badRequest().body("Invalid argument: " + e.getMessage());
 		}
 		catch (Exception e) {
 			String errorMessage = "Failed to " + (requestVO.isUpdate() ? "update" : "add") + " MCP server: "

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * 批量MCP服务器导入请求VO（JSON方式） 用于批量导入MCP服务器配置
  */
-public class McpServerBatchImportRequestVO {
+public class McpServersRequestVO {
 
 	/**
 	 * 完整的JSON配置 格式：{"mcpServers": {"server-name": {"command": "...", "args": [...],

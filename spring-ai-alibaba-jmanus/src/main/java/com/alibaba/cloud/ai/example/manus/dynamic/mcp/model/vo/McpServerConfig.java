@@ -109,7 +109,7 @@ public class McpServerConfig {
 	}
 
 	/**
-	 * 判断URL后缀是否为sse
+	 * 判断URL是否为SSE连接
 	 * @param url 服务器URL
 	 * @return 是否为SSE URL
 	 */
@@ -118,9 +118,19 @@ public class McpServerConfig {
 			return false;
 		}
 
-		// 检查URL是否以sse结尾
-		String lowerUrl = url.toLowerCase();
-		return lowerUrl.endsWith("/sse") || lowerUrl.endsWith("sse");
+		try {
+			java.net.URL parsedUrl = new java.net.URL(url);
+			String path = parsedUrl.getPath();
+
+			// 检查路径是否包含sse
+			boolean pathContainsSse = path != null && path.toLowerCase().contains("sse");
+
+			return pathContainsSse;
+		}
+		catch (java.net.MalformedURLException e) {
+			// 如果URL格式无效，返回false
+			return false;
+		}
 	}
 
 	/**
