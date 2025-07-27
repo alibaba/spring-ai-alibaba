@@ -116,17 +116,32 @@ public class CoderNode implements NodeAction {
 		var streamResult = requestSpec.stream().chatResponse();
 		Plan.Step finalAssignedStep = assignedStep;
 
-		String prefix = StreamNodePrefixEnum.CODER_LLM_STREAM.getPrefix() + "_";
-		String stepTitleKey = prefix + executorNodeId + "_step_title";
+		boolean isReflectionNode = finalAssignedStep.getReflectionHistory() != null
+				&& !finalAssignedStep.getReflectionHistory().isEmpty();
+		String prefix = StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix();
+		String nodeNum = prefix + "_" + executorNodeId;
+		String nodeName;
+		String stepTitleKey;
+		String stepTitleValue;
+		if (isReflectionNode) {
+			nodeName = nodeNum + "_reflection";
+			stepTitleKey = nodeName + "_step_title";
+			stepTitleValue = "[反思][并行节点_Coder_" + executorNodeId + "]" + finalAssignedStep.getTitle();
+		}
+		else {
+			nodeName = nodeNum;
+			stepTitleKey = nodeName + "_step_title";
+			stepTitleValue = "[并行节点_Coder_" + executorNodeId + "]" + finalAssignedStep.getTitle();
+		}
 		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
 		Map<String, Object> inputMap = new HashMap<>();
-		inputMap.put(stepTitleKey, "[并行节点" + executorNodeId + "]" + finalAssignedStep.getTitle());
+		inputMap.put(stepTitleKey, stepTitleValue);
 		state.input(inputMap);
 
 		logger.info("CoderNode {} starting streaming with key: {}", executorNodeId, prefix + executorNodeId);
 
 		var generator = StreamingChatGenerator.builder()
-			.startingNode(prefix + executorNodeId)
+			.startingNode(nodeName)
 			.startingState(state)
 			.mapResult(response -> {
 				// Set appropriate completion status using ReflectionUtil

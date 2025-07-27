@@ -16,25 +16,25 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
-import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
+import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
-import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
-import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentSelectionResult;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
-import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
+import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
+import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
+import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -162,18 +162,32 @@ public class ResearcherNode implements NodeAction {
 		var streamResult = requestSpec.messages(messages).stream().chatResponse();
 
 		Plan.Step finalAssignedStep = assignedStep;
-
-		String prefix = StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix() + "_";
-		String stepTitleKey = prefix + executorNodeId + "_step_title";
+		boolean isReflectionNode = finalAssignedStep.getReflectionHistory() != null
+				&& !finalAssignedStep.getReflectionHistory().isEmpty();
+		String prefix = StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix();
+		String nodeNum = prefix + "_" + executorNodeId;
+		String nodeName;
+		String stepTitleKey;
+		String stepTitleValue;
+		if (isReflectionNode) {
+			nodeName = nodeNum + "_reflection";
+			stepTitleKey = nodeName + "_step_title";
+			stepTitleValue = "[反思][并行节点_Researcher_" + executorNodeId + "]" + finalAssignedStep.getTitle();
+		}
+		else {
+			nodeName = nodeNum;
+			stepTitleKey = nodeName + "_step_title";
+			stepTitleValue = "[并行节点_Researcher_" + executorNodeId + "]" + finalAssignedStep.getTitle();
+		}
 		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
 		Map<String, Object> inputMap = new HashMap<>();
-		inputMap.put(stepTitleKey, "[并行节点" + executorNodeId + "]" + finalAssignedStep.getTitle());
+		inputMap.put(stepTitleKey, stepTitleValue);
 		state.input(inputMap);
 
-		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, prefix + executorNodeId);
+		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, nodeName);
 
 		var generator = StreamingChatGenerator.builder()
-			.startingNode(prefix + executorNodeId)
+			.startingNode(nodeName)
 			.startingState(state)
 			.mapResult(response -> {
 				// Set appropriate completion status using ReflectionUtil
