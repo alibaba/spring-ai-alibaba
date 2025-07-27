@@ -7,10 +7,6 @@
         <span class="nav-item active">智能体</span>
       </div>
       <div class="nav-right">
-        <div class="user-menu">
-          <i class="bi bi-question-circle"></i>
-          <i class="bi bi-person-circle"></i>
-        </div>
       </div>
     </div>
 
@@ -375,13 +371,6 @@ export default {
   border-radius: 4px;
   padding: 4px 8px;
   background: white;
-}
-
-.user-menu {
-  display: flex;
-  gap: 12px;
-  font-size: 18px;
-  color: #8c8c8c;
 }
 
 .page-header {

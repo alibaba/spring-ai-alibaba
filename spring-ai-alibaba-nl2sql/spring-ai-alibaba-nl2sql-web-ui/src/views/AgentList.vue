@@ -7,10 +7,6 @@
         <span class="nav-item active">智能体</span>
       </div>
       <div class="nav-right">
-        <div class="user-menu">
-          <i class="bi bi-question-circle"></i>
-          <i class="bi bi-person-circle"></i>
-        </div>
       </div>
     </div>
 
@@ -43,10 +39,6 @@
             <i class="bi bi-search"></i>
             <input type="text" v-model="searchKeyword" placeholder="请输入智能体名称、ID" @input="searchAgents">
           </div>
-          <button class="copy-demo-btn">
-            <i class="bi bi-files"></i>
-            复制DEMO智能体
-          </button>
         </div>
         <button class="create-agent-btn" @click="createNewAgent">
           <i class="bi bi-plus"></i>
@@ -63,7 +55,9 @@
           @click="enterAgent(agent.id)"
         >
           <div class="agent-avatar">
-            <img :src="agent.avatar || '/default-avatar.png'" :alt="agent.name">
+            <div class="avatar-icon" :style="{ backgroundColor: getRandomColor(agent.id) }">
+              <i :class="getRandomIcon(agent.id)"></i>
+            </div>
           </div>
           <div class="agent-info">
             <h3 class="agent-name">{{ agent.name }}</h3>
@@ -367,6 +361,43 @@ export default {
       return date.toLocaleDateString()
     }
 
+    // 生成随机颜色和图标的方法
+    const getRandomColor = (id) => {
+      const colors = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+        '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+        '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
+      ]
+      // 将ID转换为数字哈希值
+      let hash = 0
+      const str = String(id)
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash)
+        hash = hash & hash // 转换为32位整数
+      }
+      const index = Math.abs(hash) % colors.length
+      return colors[index]
+    }
+    
+    const getRandomIcon = (id) => {
+      const icons = [
+        'bi bi-robot', 'bi bi-cpu', 'bi bi-gear', 'bi bi-lightbulb',
+        'bi bi-graph-up', 'bi bi-pie-chart', 'bi bi-bar-chart',
+        'bi bi-diagram-3', 'bi bi-puzzle', 'bi bi-lightning',
+        'bi bi-star', 'bi bi-heart', 'bi bi-trophy', 'bi bi-gem',
+        'bi bi-brain'
+      ]
+      // 将ID转换为数字哈希值
+      let hash = 0
+      const str = String(id)
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash)
+        hash = hash & hash // 转换为32位整数
+      }
+      const index = Math.abs(hash) % icons.length
+      return icons[index]
+    }
+
     // 生命周期
     onMounted(() => {
       loadAgents()
@@ -389,7 +420,9 @@ export default {
       createAgent,
       closeCreateModal,
       getStatusText,
-      formatTime
+      formatTime,
+      getRandomColor,
+      getRandomIcon
     }
   }
 }
@@ -441,22 +474,6 @@ export default {
   border-radius: 4px;
   background: white;
   cursor: pointer;
-}
-
-.user-menu {
-  display: flex;
-  gap: 12px;
-  font-size: 18px;
-  color: #666;
-}
-
-.user-menu i {
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.user-menu i:hover {
-  color: #1890ff;
 }
 
 .agent-container {
@@ -535,23 +552,6 @@ export default {
   font-size: 14px;
 }
 
-.copy-demo-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: white;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.copy-demo-btn:hover {
-  border-color: #1890ff;
-  color: #1890ff;
-}
-
 .create-agent-btn {
   display: flex;
   align-items: center;
@@ -594,15 +594,19 @@ export default {
 .agent-avatar {
   width: 60px;
   height: 60px;
-  border-radius: 50%;
-  overflow: hidden;
   margin-bottom: 16px;
 }
 
-.agent-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.avatar-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
 }
 
 .agent-name {

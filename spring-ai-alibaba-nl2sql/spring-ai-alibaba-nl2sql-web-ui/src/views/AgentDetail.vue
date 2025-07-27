@@ -7,10 +7,6 @@
         <span class="nav-item active">智能体</span>
       </div>
       <div class="nav-right">
-        <div class="user-menu">
-          <i class="bi bi-question-circle"></i>
-          <i class="bi bi-person-circle"></i>
-        </div>
       </div>
     </div>
 
@@ -23,20 +19,18 @@
           </button>
           <div class="agent-info">
             <div class="agent-avatar">
-              <img :src="agent.avatar || '/default-avatar.png'" :alt="agent.name">
+              <div class="avatar-icon" :style="{ backgroundColor: getRandomColor(agent.id) }">
+                <i :class="getRandomIcon(agent.id)"></i>
+              </div>
             </div>
             <div class="agent-meta">
               <h1 class="agent-name">{{ agent.name }}</h1>
               <p class="agent-description">{{ agent.description }}</p>
               <div class="agent-tags">
-                <span class="tag">{{ agent.id }}</span>
-                <span class="tag">飞书表单验证提示 已</span>
+                <span class="tag">ID: {{ agent.id }}</span>
+                <span class="tag status-tag" :class="agent.status">{{ getStatusText(agent.status) }}</span>
               </div>
             </div>
-          </div>
-          <div class="header-actions">
-            <button class="btn btn-outline">前往智能体</button>
-            <button class="btn btn-primary">下载</button>
           </div>
         </div>
       </div>
@@ -59,13 +53,9 @@
 
               <div class="nav-section">
                 <div class="nav-section-title">数据源配置</div>
-                <a href="#" class="nav-link" :class="{ active: activeTab === 'business-knowledge' }" @click="setActiveTab('business-knowledge')">
+                <a href="#" class="nav-link" :class="{ active: activeTab === 'datasource' }" @click="setActiveTab('datasource')">
                   <i class="bi bi-database"></i>
-                  业务知识管理
-                </a>
-                <a href="#" class="nav-link" :class="{ active: activeTab === 'semantic-model' }" @click="setActiveTab('semantic-model')">
-                  <i class="bi bi-diagram-3"></i>
-                  语义模型配置
+                  数据源配置
                 </a>
               </div>
 
@@ -78,17 +68,17 @@
               </div>
 
               <div class="nav-section">
-                <div class="nav-section-title">审计</div>
-                <a href="#" class="nav-link" :class="{ active: activeTab === 'audit' }" @click="setActiveTab('audit')">
-                  <i class="bi bi-shield-check"></i>
-                  审计日志
-                </a>
-              </div>
-
-              <div class="nav-section">
                 <div class="nav-section-title">知识配置</div>
-                <a href="#" class="nav-link" :class="{ active: activeTab === 'knowledge' }" @click="setActiveTab('knowledge')">
+                <a href="#" class="nav-link" :class="{ active: activeTab === 'business-knowledge' }" @click="setActiveTab('business-knowledge')">
                   <i class="bi bi-lightbulb"></i>
+                  业务知识管理
+                </a>
+                <a href="#" class="nav-link" :class="{ active: activeTab === 'semantic-model' }" @click="setActiveTab('semantic-model')">
+                  <i class="bi bi-diagram-3"></i>
+                  语义模型配置
+                </a>
+                <a href="#" class="nav-link" :class="{ active: activeTab === 'knowledge' }" @click="setActiveTab('knowledge')">
+                  <i class="bi bi-file-text"></i>
                   知识库配置
                 </a>
               </div>
@@ -250,38 +240,48 @@
               </div>
             </div>
 
-            <!-- 审计日志 -->
-            <div v-if="activeTab === 'audit'" class="tab-content">
+            <!-- 数据源配置 -->
+            <div v-if="activeTab === 'datasource'" class="tab-content">
               <div class="content-header">
-                <h2>审计日志</h2>
-                <p class="content-subtitle">查看智能体的操作记录</p>
+                <h2>数据源配置</h2>
+                <p class="content-subtitle">配置智能体需要读取的数据源</p>
               </div>
-              <div class="audit-section">
-                <div class="audit-filters">
-                  <input type="date" v-model="auditFilters.startDate" class="form-control">
-                  <span>至</span>
-                  <input type="date" v-model="auditFilters.endDate" class="form-control">
-                  <button class="btn btn-outline" @click="loadAuditLogs">
-                    <i class="bi bi-search"></i>
-                    查询
+              <div class="datasource-section">
+                <div class="section-header">
+                  <h3>数据源列表</h3>
+                  <button class="btn btn-primary" @click="showAddDatasourceModal = true">
+                    <i class="bi bi-plus"></i>
+                    添加数据源
                   </button>
                 </div>
-                <div class="audit-table">
+                <div class="datasource-table">
                   <table class="table">
                     <thead>
                       <tr>
-                        <th>时间</th>
+                        <th>数据源名称</th>
+                        <th>数据源类型</th>
+                        <th>连接地址</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
                         <th>操作</th>
-                        <th>操作人</th>
-                        <th>详情</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="log in auditLogs" :key="log.id">
-                        <td>{{ log.timestamp }}</td>
-                        <td>{{ log.action }}</td>
-                        <td>{{ log.operator }}</td>
-                        <td>{{ log.details }}</td>
+                      <tr v-for="datasource in datasourceList" :key="datasource.id">
+                        <td>{{ datasource.name }}</td>
+                        <td>{{ datasource.type }}</td>
+                        <td>{{ datasource.connectionUrl }}</td>
+                        <td>
+                          <span class="status-badge" :class="datasource.status">{{ getStatusText(datasource.status) }}</span>
+                        </td>
+                        <td>{{ datasource.createdAt }}</td>
+                        <td>
+                          <div class="action-buttons">
+                            <button class="btn btn-sm btn-outline" @click="testConnection(datasource)">测试连接</button>
+                            <button class="btn btn-sm btn-outline" @click="editDatasource(datasource)">编辑</button>
+                            <button class="btn btn-sm btn-danger" @click="deleteDatasource(datasource.id)">删除</button>
+                          </div>
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -353,22 +353,18 @@ export default {
     
     const businessKnowledgeList = ref([])
     const semanticModelList = ref([])
-    const auditLogs = ref([])
     const knowledgeDocuments = ref([])
+    const datasourceList = ref([])
     
     const promptConfig = reactive({
       systemPrompt: '',
       userPrompt: ''
     })
     
-    const auditFilters = reactive({
-      startDate: '',
-      endDate: ''
-    })
-    
     const showCreateKnowledgeModal = ref(false)
     const showCreateModelModal = ref(false)
     const showUploadModal = ref(false)
+    const showAddDatasourceModal = ref(false)
     
     // 方法
     const setActiveTab = (tab) => {
@@ -398,8 +394,8 @@ export default {
         case 'semantic-model':
           await loadSemanticModels()
           break
-        case 'audit':
-          await loadAuditLogs()
+        case 'datasource':
+          await loadDatasources()
           break
         case 'knowledge':
           await loadKnowledgeDocuments()
@@ -425,27 +421,37 @@ export default {
       }
     }
     
-    const loadAuditLogs = async () => {
+    const loadDatasources = async () => {
       try {
-        // TODO: 实现审计日志API
-        auditLogs.value = [
+        // TODO: 实现数据源API
+        datasourceList.value = [
           {
             id: 1,
-            timestamp: '2024-01-15 10:30:00',
-            action: '创建智能体',
-            operator: '张三',
-            details: '创建了新的智能体'
+            name: 'MySQL主库',
+            type: 'MySQL',
+            connectionUrl: 'mysql://localhost:3306/main_db',
+            status: 'active',
+            createdAt: '2024-01-15 10:30:00'
           },
           {
             id: 2,
-            timestamp: '2024-01-15 11:00:00',
-            action: '更新配置',
-            operator: '李四',
-            details: '更新了Prompt配置'
+            name: 'PostgreSQL数据仓库',
+            type: 'PostgreSQL',
+            connectionUrl: 'postgresql://localhost:5432/warehouse',
+            status: 'active',
+            createdAt: '2024-01-16 14:20:00'
+          },
+          {
+            id: 3,
+            name: 'Redis缓存',
+            type: 'Redis',
+            connectionUrl: 'redis://localhost:6379',
+            status: 'inactive',
+            createdAt: '2024-01-17 09:15:00'
           }
         ]
       } catch (error) {
-        console.error('加载审计日志失败:', error)
+        console.error('加载数据源失败:', error)
       }
     }
     
@@ -531,6 +537,76 @@ export default {
       }
     }
     
+    const testConnection = (datasource) => {
+      // TODO: 实现测试连接功能
+      console.log('测试连接:', datasource)
+      alert('连接测试成功！')
+    }
+    
+    const editDatasource = (datasource) => {
+      // TODO: 实现编辑数据源功能
+      console.log('编辑数据源:', datasource)
+    }
+    
+    const deleteDatasource = async (id) => {
+      if (confirm('确定要删除这个数据源吗？')) {
+        try {
+          // TODO: 实现删除数据源API
+          await loadDatasources()
+        } catch (error) {
+          console.error('删除数据源失败:', error)
+        }
+      }
+    }
+    
+    // 生成随机颜色和图标的方法
+    const getRandomColor = (id) => {
+      const colors = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+        '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+        '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
+      ]
+      // 将ID转换为数字哈希值
+      let hash = 0
+      const str = String(id)
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash)
+        hash = hash & hash // 转换为32位整数
+      }
+      const index = Math.abs(hash) % colors.length
+      return colors[index]
+    }
+    
+    const getRandomIcon = (id) => {
+      const icons = [
+        'bi bi-robot', 'bi bi-cpu', 'bi bi-gear', 'bi bi-lightbulb',
+        'bi bi-graph-up', 'bi bi-pie-chart', 'bi bi-bar-chart',
+        'bi bi-diagram-3', 'bi bi-puzzle', 'bi bi-lightning',
+        'bi bi-star', 'bi bi-heart', 'bi bi-trophy', 'bi bi-gem',
+        'bi bi-brain'
+      ]
+      // 将ID转换为数字哈希值
+      let hash = 0
+      const str = String(id)
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash)
+        hash = hash & hash // 转换为32位整数
+      }
+      const index = Math.abs(hash) % icons.length
+      return icons[index]
+    }
+    
+    const getStatusText = (status) => {
+      const statusMap = {
+        'published': '已发布',
+        'draft': '草稿',
+        'offline': '已下线',
+        'active': '启用',
+        'inactive': '禁用'
+      }
+      return statusMap[status] || status
+    }
+    
     // 生命周期
     onMounted(() => {
       loadAgentDetail()
@@ -541,13 +617,13 @@ export default {
       agent,
       businessKnowledgeList,
       semanticModelList,
-      auditLogs,
       knowledgeDocuments,
+      datasourceList,
       promptConfig,
-      auditFilters,
       showCreateKnowledgeModal,
       showCreateModelModal,
       showUploadModal,
+      showAddDatasourceModal,
       setActiveTab,
       goBack,
       updateAgent,
@@ -555,10 +631,15 @@ export default {
       deleteKnowledge,
       editModel,
       deleteModel,
+      testConnection,
+      editDatasource,
+      deleteDatasource,
       savePromptConfig,
       viewDocument,
       deleteDocument,
-      loadAuditLogs
+      getRandomColor,
+      getRandomIcon,
+      getStatusText
     }
   }
 }
@@ -613,17 +694,6 @@ export default {
   background: white;
 }
 
-.user-menu {
-  display: flex;
-  gap: 12px;
-}
-
-.user-menu i {
-  font-size: 20px;
-  color: #666;
-  cursor: pointer;
-}
-
 /* 智能体头部样式 */
 .agent-header {
   background: white;
@@ -660,11 +730,16 @@ export default {
   flex: 1;
 }
 
-.agent-avatar img {
+.agent-avatar .avatar-icon {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
 }
 
 .agent-name {
@@ -691,9 +766,29 @@ export default {
   color: #666;
 }
 
-.header-actions {
-  display: flex;
-  gap: 12px;
+.status-tag.published {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.status-tag.draft {
+  background: #fff7e6;
+  color: #fa8c16;
+}
+
+.status-tag.offline {
+  background: #fff2f0;
+  color: #ff4d4f;
+}
+
+.status-tag.active {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.status-tag.inactive {
+  background: #fff2f0;
+  color: #ff4d4f;
 }
 
 /* 主要内容区域样式 */
@@ -947,22 +1042,30 @@ export default {
 }
 
 /* 审计日志样式 */
-.audit-section {
+/* 数据源配置样式 */
+.datasource-section {
   margin-top: 16px;
 }
 
-.audit-filters {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 16px;
-  padding: 16px;
-  background: #f9f9f9;
-  border-radius: 6px;
+.datasource-table {
+  margin-top: 16px;
 }
 
-.audit-filters .form-control {
-  width: auto;
+.datasource-table .status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.datasource-table .status-badge.active {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.datasource-table .status-badge.inactive {
+  background: #fff2f0;
+  color: #ff4d4f;
 }
 
 /* 知识库配置样式 */
