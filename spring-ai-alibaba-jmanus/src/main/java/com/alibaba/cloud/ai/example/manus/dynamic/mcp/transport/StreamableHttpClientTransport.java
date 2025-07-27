@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
@@ -81,6 +82,22 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 		logger.info("=== StreamableHttpClientTransport initialized with fullUrl: {} ===", this.fullUrl);
 	}
 
+	public StreamableHttpClientTransport(WebClient.Builder webClientBuilder, ObjectMapper objectMapper,
+			String streamEndpoint, ExchangeFilterFunction traceFilter) {
+		if (traceFilter != null) {
+			this.webClient = webClientBuilder
+				.filter(traceFilter)
+				.defaultHeader("Accept", "application/json, text/event-stream")
+				.build();
+		} else {
+			this.webClient = webClientBuilder.defaultHeader("Accept", "application/json, text/event-stream").build();
+		}
+		this.objectMapper = objectMapper;
+		this.fullUrl = streamEndpoint;
+		logger.info("=== StreamableHttpClientTransport initialized with fullUrl: {} and tracing: {} ===", 
+			this.fullUrl, traceFilter != null);
+	}
+
 	/**
 	 * Constructor with default stream endpoint.
 	 * @param webClientBuilder WebClient builder with base URL configured
@@ -88,6 +105,12 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 	 */
 	public StreamableHttpClientTransport(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
 		this(webClientBuilder, objectMapper, "/stream");
+	}
+
+	
+	public StreamableHttpClientTransport(WebClient.Builder webClientBuilder, ObjectMapper objectMapper, 
+			ExchangeFilterFunction traceFilter) {
+		this(webClientBuilder, objectMapper, "/stream", traceFilter);
 	}
 
 	@Override

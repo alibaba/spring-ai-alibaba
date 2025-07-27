@@ -36,6 +36,7 @@ import org.springframework.ai.mcp.client.autoconfigure.configurer.McpAsyncClient
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -77,6 +78,8 @@ public class LoadbalancedMcpAsyncClient {
 
 	private NacosMcpServerEndpoint serverEndpoint;
 
+	private final ExchangeFilterFunction traceFilter;
+
 	public LoadbalancedMcpAsyncClient(String serverName, String version,
 			NacosMcpOperationService nacosMcpOperationService, ApplicationContext applicationContext) {
 		Assert.notNull(serverName, "serviceName cannot be null");
@@ -106,6 +109,18 @@ public class LoadbalancedMcpAsyncClient {
 		objectMapper = this.applicationContext.getBean(ObjectMapper.class);
 		webClientBuilderTemplate = this.applicationContext.getBean(WebClient.Builder.class);
 		webFluxSseClientTransportBuilder = this.applicationContext.getBean(WebFluxSseClientTransportBuilder.class);
+
+		// 尝试获取链路追踪过滤器（可选）
+		ExchangeFilterFunction tempTraceFilter = null;
+		try {
+			tempTraceFilter = this.applicationContext.getBean("mcpTraceExchangeFilterFunction",
+					ExchangeFilterFunction.class);
+		}
+		catch (Exception e) {
+			// 链路追踪过滤器不存在，继续正常运行
+			logger.debug("MCP trace filter not found, continuing without tracing: {}", e.getMessage());
+		}
+		this.traceFilter = tempTraceFilter;
 	}
 
 	public void init() {
@@ -342,8 +357,16 @@ public class LoadbalancedMcpAsyncClient {
 
 		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
-		WebFluxSseClientTransport transport = webFluxSseClientTransportBuilder.build(webClientBuilder, objectMapper,
-				exportPath);
+
+		
+		WebFluxSseClientTransport transport;
+		if (traceFilter != null) {
+			transport = webFluxSseClientTransportBuilder.build(webClientBuilder, objectMapper, exportPath, traceFilter);
+		}
+		else {
+			transport = webFluxSseClientTransportBuilder.build(webClientBuilder, objectMapper, exportPath);
+		}
+
 		NamedClientMcpTransport namedTransport = new NamedClientMcpTransport(
 				serverName + "-" + NacosMcpClientUtils.getMcpEndpointInfoId(mcpEndpointInfo, exportPath), transport);
 		McpSchema.Implementation clientInfo = new McpSchema.Implementation(
