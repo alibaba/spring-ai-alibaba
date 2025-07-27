@@ -53,3 +53,13 @@ spring-ai-alibaba-jmanus/ui-vue3/pnpm-lock.yaml
 # checkstyle report files
 **/checkstyle-report.xml
 **/logs/*
+.specstory/.what-is-this.md
+.specstory/history/2025-07-21_05-27Z-implement-model-selection-feature.md
+.specstory/history/2025-07-21_09-55Z-如何增加lombok.md
+.specstory/history/2025-07-21_12-21Z-refactor-add-method-in-mcpcontroller.md
+.specstory/history/2025-07-22_02-58Z-回滚前面执行的操作.md
+.specstory/history/2025-07-22_03-06Z-页面内容缺失问题.md
+.specstory/history/2025-07-22_03-34Z-generate-a-name-for-the-chat.md
+.specstory/history/2025-07-22_03-41Z-恢复操作失误内容.md
+.specstory/history/2025-07-22_05-34Z-git-回滚操作指南.md
+.specstory/history/2025-07-22_05-37Z-implement-model-selection-feature.md

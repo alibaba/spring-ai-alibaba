@@ -1,0 +1,144 @@
+{
+  "mcpServers": {
+    "uKSH_6eLiSufmkgoVBTvv": {
+      "url": "https://mcp.higress.ai/mcp-ip-query/cmb6h8vpr00e08a01dx15ck8o",
+      "name": "mcp-ip-query"
+    },
+    "hfPmgghJYA01x2WSCbrgr": {
+      "url": "https://mcp.higress.ai/mcp-ip-query/cmb6h8vpr00e08a01dx15ck8o",
+      "name": "mcp-ip-query"
+    },
+    "ByVrtLPlydiRci_IvS81f": {
+      "name": "MCP 服务器",
+      "url": "",
+      "command": "",
+      "args": [],
+      "env": {}
+    },
+    "DhM7ExohNUfWZGU7FRYMv": {
+      "name": "MCP 服务器",
+      "url": "",
+      "command": "",
+      "args": [],
+      "env": {}
+    },
+    "2dBIJf0oYDu7Wo7OVcF5Y": {
+      "name": "excel",
+      "url": "",
+      "command": "uvx",
+      "args": [
+        "excel-mcp-server",
+        "stdio"
+      ],
+      "env": {
+        "EXCEL_FILES_PATH": "/Users/shenwujie/ai"
+      }
+    },
+    "YVMlffL7QzpZszQgpJmNl": {
+      "name": "mysql",
+      "url": "",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "mysql_mcp_server_pro",
+        "mysql_mcp_server_pro",
+        "--mode",
+        "stdio"
+      ],
+      "env": {
+        "MYSQL_HOST": "127.0.0.1",
+        "MYSQL_PORT": "3306",
+        "MYSQL_USER": "root",
+        "MYSQL_DATABASE": "amanus",
+        "MYSQL_ROLE": "admin"
+      }
+    },
+    "wNAqUzfRakpEt_vDsMI_c": {
+      "name": "MCP 服务器",
+      "url": "",
+      "command": "",
+      "args": [],
+      "env": {}
+    },
+    "ZsYfTPOAFXKZLog62Mx6l": {
+      "name": "powerpoint mcp",
+      "url": "http://127.0.0.1:8000/mcp"
+    },
+    "8RspjXBlN99_n7UtF0aC8": {
+      "name": "MCP 服务器",
+      "url": "http://127.0.0.1:8082/sse"
+    },
+    "_3dHELEhrE8OMK1NJc1Do": {
+      "name": "weather",
+      "url": "http://192.168.1.238:8082/sse",
+      "command": "",
+      "args": [],
+      "env": {}
+    },
+    "O_C57nI3Ii0fL_svQY3t5": {
+      "name": "MCP 服务器",
+      "url": "",
+      "command": "",
+      "args": [],
+      "env": {}
+    },
+    "jvwxrM2rDG9VOpqSCJqjW": {
+      "name": "sequential-thinking",
+      "url": "",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {}
+    },
+    "YF3YEjoKb7hcMTCeRGQPJ": {
+      "url": "https://mcp.higress.ai/mcp-time/cmb6h8vpr00e08a01dx15ck8o",
+      "name": "mcp-time"
+    },
+    "VLxOc33ZyMtEk6c0mU66m": {
+      "name": "amap-maps-streamableHTTP",
+      "url": "https://mcp.amap.com/mcp?key=8d48c9eff1c2f1ba5e364def048ea27e"
+    },
+    "-VTJnmThIp4k7kWOsDMuu": {
+      "name": "MCP 服务器",
+      "url": "",
+      "command": "",
+      "args": [],
+      "env": {}
+    },
+    "zH40EOSK3aCksutE2YNbI": {
+      "name": "streamable-mcp-server",
+      "url": "http://127.0.0.1:12306/mcp"
+    },
+    "8Cu81kW4S-wFgUvIEbowl": {
+      "name": "playwright",
+      "url": "",
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    },
+    "nZ0pgVNBb0nwhvJkyyrWM": {
+      "name": "Playwright",
+      "url": "",
+      "command": "npx.cmd",
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    },
+    "pJxCh6yN1s4gUo8HsVyvB": {
+      "name": " aone code",
+      "url": "https://mcp.alibaba-inc.com/code/sse?secretKey=E3UZBn2cJQm9UYBXMBsp"
+    },
+    "GZFT5i1unawxX40BzazHd": {
+      "name": "mcp-time",
+      "url": "https://mcp.higress.ai/mcp-time/cmb6h8vpr00e08a01dx15ck8o/sse"
+    },
+    "GFbZQWieO85iF3x10i2OS": {
+      "name": "sunfire",
+      "url": "https://pre-mw-mcp.alibaba-inc.com/sunfire-web-api/sse"
+    }
+  }
+} 
