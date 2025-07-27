@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.namespace.service;
 import com.alibaba.cloud.ai.example.manus.dynamic.namespace.entity.NamespaceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.namespace.namespace.vo.NamespaceConfig;
 import com.alibaba.cloud.ai.example.manus.dynamic.namespace.repository.NamespaceRepository;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptInitializationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,9 @@ public class NamespaceServiceImpl implements NamespaceService {
 	public NamespaceServiceImpl(NamespaceRepository repository) {
 		this.repository = repository;
 	}
+
+	@Autowired
+	private PromptInitializationService promptInitializationService;
 
 	@Override
 	public List<NamespaceConfig> getAllNamespaces() {
@@ -72,6 +76,17 @@ public class NamespaceServiceImpl implements NamespaceService {
 			NamespaceEntity entity = new NamespaceEntity();
 			updateEntityFromConfig(entity, config);
 			entity = repository.save(entity);
+
+			// initialize prompts for the namespace
+			try {
+				promptInitializationService.initializePromptsForNamespace(config.getCode());
+				log.info("Successfully initialized prompts for namespace: {}", config.getCode());
+			}
+			catch (Exception e) {
+				log.error("Failed to initialize prompts for namespace: {}", config.getCode(), e);
+				// 不抛出异常，因为即使提示初始化失败，命名空间创建本身是成功的
+			}
+
 			log.info("Successfully created new Namespace: {}", config.getName());
 			return entity.mapToNamespaceConfig();
 		}
@@ -109,6 +124,7 @@ public class NamespaceServiceImpl implements NamespaceService {
 		entity.setName(config.getName());
 		entity.setCode(config.getCode());
 		entity.setDescription(config.getDescription());
+		entity.setHost(config.getHost());
 	}
 
 }

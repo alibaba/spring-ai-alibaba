@@ -26,6 +26,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.AvailableModel;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ValidationResult;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
+import com.alibaba.cloud.ai.example.manus.event.JmanusEventPublisher;
+import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +51,9 @@ public class ModelServiceImpl implements ModelService {
 	private final DynamicModelRepository repository;
 
 	private final DynamicAgentRepository agentRepository;
+
+	@Autowired
+	private JmanusEventPublisher publisher;
 
 	@Autowired
 	public ModelServiceImpl(DynamicModelRepository repository, DynamicAgentRepository agentRepository) {
@@ -75,13 +80,14 @@ public class ModelServiceImpl implements ModelService {
 			DynamicModelEntity existingModel = repository.findByModelName(config.getModelName());
 			if (existingModel != null) {
 				log.info("Found Model with same name: {}, updating Model", config.getModelName());
-				config.setId(existingModel.getId());
-				return updateModel(config);
+				return updateModel(existingModel);
 			}
 
 			DynamicModelEntity entity = new DynamicModelEntity();
+			entity.setAllowChange(true);
 			updateEntityFromConfig(entity, config);
 			entity = repository.save(entity);
+			publisher.publish(new ModelChangeEvent(entity));
 			log.info("Successfully created new Model: {}", config.getModelName());
 			return entity.mapToModelConfig();
 		}
@@ -106,19 +112,36 @@ public class ModelServiceImpl implements ModelService {
 		DynamicModelEntity entity = repository.findById(config.getId())
 			.orElseThrow(() -> new IllegalArgumentException("Model not found: " + config.getId()));
 		updateEntityFromConfig(entity, config);
+		return updateModel(entity);
+	}
+
+	public ModelConfig updateModel(DynamicModelEntity entity) {
+		// 如果不允许修改，则返回原有数据
+		if (!entity.isAllowChange()) {
+			throw new UnsupportedOperationException("Not supported yet.");
+		}
 		entity = repository.save(entity);
+		publisher.publish(new ModelChangeEvent(entity));
 		return entity.mapToModelConfig();
 	}
 
 	@Override
 	public void deleteModel(String id) {
-		List<DynamicAgentEntity> allByModel = agentRepository
-			.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
-		if (allByModel != null && !allByModel.isEmpty()) {
-			allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
-			agentRepository.saveAll(allByModel);
+		DynamicModelEntity entity = repository.findById(Long.parseLong(id))
+			.orElseThrow(() -> new IllegalArgumentException("Model not found: " + id));
+		// 如果不允许修改，则返回原有数据
+		if (entity.isAllowChange()) {
+			List<DynamicAgentEntity> allByModel = agentRepository
+				.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
+			if (allByModel != null && !allByModel.isEmpty()) {
+				allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
+				agentRepository.saveAll(allByModel);
+			}
+			repository.deleteById(Long.parseLong(id));
 		}
-		repository.deleteById(Long.parseLong(id));
+		else {
+			throw new UnsupportedOperationException("Not supported yet.");
+		}
 	}
 
 	@Override
@@ -301,6 +324,7 @@ public class ModelServiceImpl implements ModelService {
 			entity.setApiKey(config.getApiKey());
 		}
 		entity.setBaseUrl(config.getBaseUrl());
+		entity.setHeaders(config.getHeaders());
 		entity.setModelName(config.getModelName());
 		entity.setModelDescription(config.getModelDescription());
 		entity.setType(config.getType());

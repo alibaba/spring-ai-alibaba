@@ -34,11 +34,6 @@ public class BusinessKnowledgeController {
 	@Autowired
 	private BusinessKnowledgeService businessKnowledgeService;
 
-	@GetMapping("/page")
-	public String page() {
-		return "business-knowledge";
-	}
-
 	@GetMapping
 	@ResponseBody
 	public ResponseEntity<List<BusinessKnowledge>> list(@RequestParam(required = false) String datasetId,

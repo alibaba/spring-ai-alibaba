@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.toolcalling.searches;
 
 import com.alibaba.cloud.ai.toolcalling.aliyunaisearch.AliyunAiSearchConstants;
 import com.alibaba.cloud.ai.toolcalling.baidusearch.BaiduSearchConstants;
+import com.alibaba.cloud.ai.toolcalling.metaso.MetasoConstants;
 import com.alibaba.cloud.ai.toolcalling.serpapi.SerpApiConstants;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -30,7 +31,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum SearchEnum {
 
 	TAVILY("tavily", TavilySearchConstants.TOOL_NAME), BAIDU("baidu", BaiduSearchConstants.TOOL_NAME),
-	SERPAPI("serpapi", SerpApiConstants.TOOL_NAME), ALIYUN("aliyun", AliyunAiSearchConstants.TOOL_NAME);
+	SERPAPI("serpapi", SerpApiConstants.TOOL_NAME), ALIYUN("aliyun", AliyunAiSearchConstants.TOOL_NAME),
+	METASO("metaso", MetasoConstants.TOOL_NAME);
 
 	private final String name;
 

@@ -137,13 +137,13 @@
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-nacos-mcp-client</artifactId>
+                <artifactId>spring-ai-alibaba-starter-nacos-mcp-discovery</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-nacos-mcp-discovery</artifactId>
+                <artifactId>spring-ai-alibaba-starter-nacos-mcp-register</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -312,6 +312,12 @@
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-tool-calling-googlescholar</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-tool-calling-jsonprocessor</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -331,6 +337,12 @@
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-tool-calling-microsofttranslate</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-tool-calling-metaso</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -415,6 +427,12 @@
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-tool-calling-ollamasearchmodel</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-tool-calling-minio</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -16,8 +16,11 @@
 
 // Plan-related API wrapper (TypeScript version for Vue projects)
 
+import type { CronConfig } from '@/types/cron-task'
+
 export class PlanActApiService {
   private static readonly PLAN_TEMPLATE_URL = '/api/plan-template'
+  private static readonly CRON_TASK_URL = '/api/cron-tasks'
 
   // Generate plan
   public static async generatePlan(query: string, existingJson?: string): Promise<any> {
@@ -138,6 +141,24 @@ export class PlanActApiService {
       body: JSON.stringify({ planId })
     })
     if (!response.ok) throw new Error(`Failed to delete plan template: ${response.status}`)
+    return await response.json()
+  }
+
+  // Create cron task
+  public static async createCronTask(cronConfig: CronConfig): Promise<CronConfig> {
+    const response = await fetch(this.CRON_TASK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cronConfig)
+    })
+    if (!response.ok) {
+      try {
+        const errorData = await response.json()
+        throw new Error(errorData.message || `Failed to create cron task: ${response.status}`)
+      } catch {
+        throw new Error(`Failed to create cron task: ${response.status}`)
+      }
+    }
     return await response.json()
   }
 

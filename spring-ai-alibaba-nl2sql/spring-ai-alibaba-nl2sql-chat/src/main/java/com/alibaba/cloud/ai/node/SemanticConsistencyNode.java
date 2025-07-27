@@ -17,18 +17,16 @@
 package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.constant.StreamResponseType;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
-import com.alibaba.cloud.ai.schema.ExecutionStep;
-import com.alibaba.cloud.ai.schema.SchemaDTO;
+import com.alibaba.cloud.ai.model.execution.ExecutionStep;
+import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import reactor.core.publisher.Flux;
 
@@ -52,8 +50,7 @@ public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 
 	private final BaseNl2SqlService baseNl2SqlService;
 
-	public SemanticConsistencyNode(ChatClient.Builder chatClientBuilder, BaseNl2SqlService baseNl2SqlService,
-			DbConfig dbConfig) {
+	public SemanticConsistencyNode(BaseNl2SqlService baseNl2SqlService) {
 		super();
 		this.baseNl2SqlService = baseNl2SqlService;
 	}
@@ -87,7 +84,7 @@ public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 					return result;
 				}, validationResultFlux, StreamResponseType.VALIDATION);
 
-		return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, generator);
+		return Map.of(SEMANTIC_CONSISTENCY_NODE_OUTPUT, generator);
 	}
 
 	/**
@@ -123,10 +120,10 @@ public class SemanticConsistencyNode extends AbstractPlanBasedNode {
 	 */
 	private Map<String, Object> buildValidationResult(boolean passed, String validationResult, Integer currentStep) {
 		if (passed) {
-			return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, true, PLAN_CURRENT_STEP, currentStep + 1);
+			return Map.of(SEMANTIC_CONSISTENCY_NODE_OUTPUT, true, PLAN_CURRENT_STEP, currentStep + 1);
 		}
 		else {
-			return Map.of(SEMANTIC_CONSISTENC_NODE_OUTPUT, false, SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT,
+			return Map.of(SEMANTIC_CONSISTENCY_NODE_OUTPUT, false, SEMANTIC_CONSISTENCY_NODE_RECOMMEND_OUTPUT,
 					validationResult);
 		}
 	}

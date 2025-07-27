@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-mcp-gateway-nacos</artifactId>
-
+    <name>Spring AI Alibaba MCP Gateway Nacos</name>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
@@ -23,11 +23,9 @@
             <artifactId>spring-ai-alibaba-mcp-gateway-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <!-- Nacos Common -->
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-mcp-nacos-common</artifactId>
+            <artifactId>spring-ai-alibaba-mcp-common</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -40,6 +38,27 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-mcp-server</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+            <version>${nacos3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-maintainer-client</artifactId>
+            <version>${nacos3.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba.nacos</groupId>
+                    <artifactId>nacos-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba.nacos</groupId>
+                    <artifactId>nacos-common</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
     </dependencies>

@@ -352,9 +352,17 @@ public class DashScopeChatModel implements ChatModel {
 	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata,
 			ChatCompletionRequest request) {
 		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
-				: choice.message()
-					.toolCalls()
-					.stream()
+				: choice.message().toolCalls().stream().filter(toolCall -> {
+					if (toolCall.function() == null) {
+						logger.warn("Filtering out toolCall with null function: {}", toolCall);
+						return false;
+					}
+					if (toolCall.function().name() == null) {
+						logger.warn("Filtering out toolCall with null function name: {}", toolCall);
+						return false;
+					}
+					return true;
+				})
 					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
@@ -519,35 +527,35 @@ public class DashScopeChatModel implements ChatModel {
 
 		List<MediaContent> contentList = new ArrayList<>();
 		if (format == MessageFormat.VIDEO) {
-			MediaContent mediaContent = new MediaContent(message.getText());
-			contentList.add(mediaContent);
-
 			List<String> mediaList = message.getMedia()
 				.stream()
 				.map(media -> this.fromMediaData(media.getMimeType(), media.getData()))
 				.toList();
 
 			contentList.add(new MediaContent("video", null, null, mediaList));
-		}
-		else if (format == MessageFormat.AUDIO) {
+
 			MediaContent mediaContent = new MediaContent(message.getText());
 			contentList.add(mediaContent);
-
+		}
+		else if (format == MessageFormat.AUDIO) {
 			contentList.addAll(message.getMedia()
 				.stream()
 				.map(media -> new MediaContent("audio", null, null, null,
 						this.fromMediaData(media.getMimeType(), media.getData())))
 				.toList());
-		}
-		else {
+
 			MediaContent mediaContent = new MediaContent(message.getText());
 			contentList.add(mediaContent);
-
+		}
+		else {
 			contentList.addAll(message.getMedia()
 				.stream()
 				.map(media -> new MediaContent("image", null, this.fromMediaData(media.getMimeType(), media.getData()),
 						null))
 				.toList());
+
+			MediaContent mediaContent = new MediaContent(message.getText());
+			contentList.add(mediaContent);
 		}
 
 		return contentList;

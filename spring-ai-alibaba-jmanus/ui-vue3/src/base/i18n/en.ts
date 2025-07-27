@@ -106,6 +106,7 @@ const words: I18nType = {
       model: 'Model Configuration',
       mcp: 'Tools/MCP Configuration',
       prompt: 'Dynamic Prompt Configuration',
+      namespace: 'Namespace Configuration',
     },
     subGroupDisplayNames: {
       agent: 'Agent',
@@ -116,7 +117,7 @@ const words: I18nType = {
       general: 'General',
       agents: 'Multi - Agent',
       infiniteContext: 'Infinite Context',
-      filesystem: 'File System'
+      filesystem: 'File System',
     },
     // Agent configuration page
     agentConfig: {
@@ -308,37 +309,40 @@ const words: I18nType = {
       title: 'Basic Configuration',
       browserSettings: {
         headless: 'Whether to use headless browser mode',
-        requestTimeout: 'Browser request timeout (seconds)'
+        requestTimeout: 'Browser request timeout (seconds)',
       },
       general: {
-        debugDetail: 'Debug mode: The model will output more content to facilitate problem - finding, but it will be slower',
-        baseDir: 'Manus root directory'
+        debugDetail:
+          'Debug mode: The model will output more content to facilitate problem - finding, but it will be slower',
+        baseDir: 'Manus root directory',
       },
       interactionSettings: {
-        openBrowser: 'Automatically open the browser on startup'
+        openBrowser: 'Automatically open the browser on startup',
       },
       agentSettings: {
         maxSteps: 'Max Steps',
         userInputTimeout: 'User input form waiting timeout (seconds)',
         maxMemory: 'Maximum number of messages that can be remembered',
-        parallelToolCalls: 'Parallel tool calls'
+        parallelToolCalls: 'Parallel tool calls',
       },
       agents: {
-        forceOverrideFromYaml: 'Force override of agents with the same name using the YAML configuration file'
+        forceOverrideFromYaml:
+          'Force override of agents with the same name using the YAML configuration file',
       },
       infiniteContext: {
         enabled: 'Whether to enable infinite context',
         parallelThreads: 'Number of parallel processing threads',
-        taskContextSize: 'Character count threshold for triggering infinite context (number of characters)'
+        taskContextSize:
+          'Character count threshold for triggering infinite context (number of characters)',
       },
       fileSystem: {
-        allowExternalAccess: 'Whether to allow file operations beyond the working directory'
+        allowExternalAccess: 'Whether to allow file operations beyond the working directory',
       },
       systemSettings: {
         systemName: 'System Name',
         language: 'Language',
         maxThreads: 'Max Threads',
-        timeoutSeconds: 'Request Timeout (seconds)'
+        timeoutSeconds: 'Request Timeout (seconds)',
       },
       totalConfigs: 'Total Configurations',
       modified: 'Modified',
@@ -346,11 +350,20 @@ const words: I18nType = {
       importConfigs: 'Import Configurations',
       search: 'Search',
       loading: 'Loading',
+      saveSuccess: 'Configuration saved successfully',
+      exportSuccess: 'Configuration exported successfully',
+      exportFailed: 'Failed to export configuration',
+      invalidFormat: 'Configuration file format is invalid',
+      importSuccess: 'Configuration imported successfully',
+      resetSuccess: 'Configuration reset successfully',
       notFound: 'No configuration items found',
+      noModified: 'No modified configurations',
       resetGroupConfirm: 'Reset all configurations in this group to default values',
+      isDefault: 'This group configuration is default',
       reset: 'Reset',
       requestTimeout: 'Request timeout (seconds)',
       browserTimeout: 'Browser request timeout (seconds)',
+      loadConfigSuccess: 'Configuration loaded successfully',
       loadConfigFailed: 'Failed to load configuration, please refresh and try again',
       saveFailed: 'Save failed, please try again',
       resetFailed: 'Reset failed, please try again',
@@ -392,20 +405,33 @@ const words: I18nType = {
       deleteConfirm: 'Delete Confirmation',
       deleteConfirmText: 'Are you sure you want to delete',
       deleteWarning: 'This action cannot be undone.',
+      exportSuccess: 'Configuration exported successfully',
+      exportFailed: 'Failed to export configuration',
+      importSuccess: 'Configuration imported successfully',
+      importFailed: 'Failed to import configuration',
     },
     namespaceConfig: {
       title: 'Namespace Configuration',
+      name: 'Namespace Name',
+      code: 'Namespace Code',
+      host: 'Host',
+      description: 'Namespace Description',
       loadDetailsFailed: 'Failed to load namespace details',
+      selectNameSpaceHint: 'Please select a namespace to configure',
       createNew: 'Create New Namespace',
       placeholder: 'Please enter',
       saveSuccess: 'Saved successfully',
-      saveFailed: 'Failed to save',
+      saveFailed: 'Save failed',
       deleteSuccess: 'Deleted successfully',
-      deleteFailed: 'Failed to delete',
+      deleteFailed: 'Delete failed',
       deleteConfirm: 'Delete Confirmation',
       deleteConfirmText: 'Are you sure you want to delete',
       deleteWarning: 'This action cannot be undone.',
       configured: 'Configured Namespaces',
+      namespace: {
+        selectNamespace: 'Please select a namespace',
+        namespace: 'Namespace',
+      },
     },
   },
 
@@ -755,6 +781,7 @@ const words: I18nType = {
       'Your Java AI intelligent assistant, helping you build and complete various tasks.',
     tagline: 'Java AI Agent',
     inputPlaceholder: 'Describe what you want to build or accomplish...',
+    directButton: 'Plan-Act Workbench',
     examples: {
       stockPrice: {
         title: 'Query Stock Price',
@@ -772,6 +799,11 @@ const words: I18nType = {
         title: 'Query Weather',
         description: "Get today's weather in Beijing (Agent can use MCP tool services)",
         prompt: "Use browser, based on Baidu, to query today's weather in Beijing",
+      },
+      queryplan: {
+        title: 'Query Person Info',
+        description: "Query Shenxun Ali's all info and optimize termination structure column",
+        prompt: 'Use browser, based on Baidu, to query person info',
       },
     },
   },
@@ -844,6 +876,48 @@ const words: I18nType = {
     configuration: 'Configuration',
     panelResizeHint: 'Drag to resize panel, double-click to reset',
     aboutExecutionDetails: 'About Integrated Execution Details',
+  },
+
+  // Cron Task
+  cronTask: {
+    title: 'Cron Task Management',
+    addTask: 'Cron Task',
+    noTasks: 'No cron tasks',
+    taskName: 'Task Name',
+    taskNamePlaceholder: 'Please enter task name',
+    cronExpression: 'Cron Expression',
+    cronExpressionPlaceholder: 'e.g: 0 0 12 * * ?',
+    cronExpressionHelp: 'Format: second minute hour day month week year',
+    taskDescription: 'Task Description',
+    taskDescriptionPlaceholder: 'Please enter task description',
+    taskStatus: 'Task Status',
+    taskDetail: 'Task Detail',
+    executeOnce: 'Execute Once',
+    edit: 'Edit',
+    operations: 'Operations',
+    enable: 'Enable',
+    disable: 'Disable',
+    delete: 'Delete',
+    deleteConfirm: 'Confirm Delete',
+    deleteConfirmMessage:
+      'Are you sure you want to delete task "{taskName}"? This action cannot be undone.',
+    nextExecution: 'Next Execution Time',
+    createTime: 'Create Time',
+    updateTime: 'Update Time',
+    active: 'Active',
+    inactive: 'Inactive',
+    template: 'Example: Help me collect today\'s AI news every day at 8 AM',
+    planTemplate: 'Plan Template',
+    linkTemplate: 'Link Template',
+    noTemplate: 'No Template',
+    selectTemplate: 'Select Template',
+    templateHelpText: 'After selection, the cron task will execute according to the defined plan',
+    createTask: 'Create Cron Task',
+    selectCreateMethod: 'Please select creation method',
+    createWithJmanus: 'Create with Jmanus',
+    createWithJmanusDesc: 'Create cron task with AI assistant guidance',
+    createManually: 'Create Manually',
+    createManuallyDesc: 'Fill in task information yourself',
   },
 }
 

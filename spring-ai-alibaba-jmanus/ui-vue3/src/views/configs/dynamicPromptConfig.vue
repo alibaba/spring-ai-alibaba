@@ -22,13 +22,19 @@
     - Validate promptName uniqueness
 
    TODO:
-    - add namespace for dynamic prompts
     - Allow editing of promptName during edit mode (originally was disabled)
 -->
 <template>
   <ConfigPanel>
     <template #title>
       <h2>{{ t('config.promptConfig.title') }}</h2>
+    </template>
+
+    <template #actions>
+      <button class="action-btn" @click="handleImport">
+        <Icon icon="carbon:upload" />
+        {{ t('config.agentConfig.import') }}
+      </button>
     </template>
 
     <div class="prompt-layout">
@@ -89,6 +95,10 @@
         <div class="detail-header">
           <h3>{{ selectedPrompt.promptName }}</h3>
           <div class="detail-actions">
+            <button class="action-btn" @click="handleExport">
+              <Icon icon="carbon:download" />
+              {{ t('config.agentConfig.export') }}
+            </button>
             <button class="action-btn primary" @click="handleSave">
               <Icon icon="carbon:save" />
               {{ t('common.save') }}
@@ -263,16 +273,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import { storeToRefs } from 'pinia'
 import Modal from '@/components/modal/index.vue'
 import { PromptApiService, type Prompt } from '@/api/prompt-api-service'
 import { useToast } from '@/plugins/useToast'
 import CustomSelect from './components/select.vue'
 import ConfigPanel from './components/configPanel.vue'
 import { usenameSpaceStore } from '@/stores/namespace'
-
+import { exportObjectAsFile, importFile } from '@/utils'
 
 type PromptField = string | null | undefined
 
@@ -280,6 +291,7 @@ const { t } = useI18n()
 const { success, error } = useToast()
 
 const namespaceStore = usenameSpaceStore()
+const { namespace } = storeToRefs(namespaceStore)
 
 // Reactive data properties
 const loading = ref(false)
@@ -320,7 +332,7 @@ const newPrompt = reactive<Omit<Prompt, 'id'>>({ ...defaultPromptValues } as Omi
 const loadData = async () => {
   loading.value = true
   try {
-    const loadedPrompts = (await PromptApiService.getAllPrompts(namespaceStore.namespace)) as Prompt[]
+    const loadedPrompts = (await PromptApiService.getAllPrompts(namespace.value)) as Prompt[]
 
     if (loadedPrompts.length > 0) {
       await selectPrompt(loadedPrompts[0])
@@ -331,39 +343,6 @@ const loadData = async () => {
     error(t('config.promptConfig.loadDataFailed') + ': ' + err.message)
   } finally {
     loading.value = false
-  }
-}
-// select prompt
-const selectPrompt = async (prompt: Prompt) => {
-  try {
-    const detailedPrompt = await PromptApiService.getPromptById(prompt.id)
-    selectedPrompt.value = {
-      ...detailedPrompt,
-    }
-  } catch (err: any) {
-    console.error('加载Prompt详情失败:', err)
-    error(t('config.promptConfig.loadDetailsFailed') + ': ' + err.message)
-    // base pormpt
-    selectedPrompt.value = {
-      ...prompt,
-    }
-  }
-}
-//
-const handleAddPrompt = async () => {
-  if (!validatePrompt(newPrompt)) return
-  try {
-    const promptData: Omit<Prompt, 'id'> = {
-      ...newPrompt,
-      builtIn: false,
-    }
-    const createdPrompt = await PromptApiService.createPrompt(promptData)
-    prompts.push(createdPrompt)
-    selectedPrompt.value = createdPrompt
-    showModal.value = false
-    success(t('config.promptConfig.createSuccess'))
-  } catch (err: any) {
-    error(t('config.promptConfig.createFailed') + ': ' + err.message)
   }
 }
 
@@ -409,6 +388,74 @@ const handleDelete = async () => {
     success(t('config.promptConfig.deleteSuccess'))
   } catch (err: any) {
     error(t('config.promptConfig.deleteFailed') + ': ' + err.message)
+  }
+}
+
+// select prompt
+const selectPrompt = async (prompt: Prompt) => {
+  try {
+    const detailedPrompt = await PromptApiService.getPromptById(prompt.id)
+    selectedPrompt.value = {
+      ...detailedPrompt,
+    }
+  } catch (err: any) {
+    console.error('加载Prompt详情失败:', err)
+    error(t('config.promptConfig.loadDetailsFailed') + ': ' + err.message)
+    // base pormpt
+    selectedPrompt.value = {
+      ...prompt,
+    }
+  }
+}
+//
+const handleAddPrompt = async () => {
+  if (!validatePrompt(newPrompt)) return
+  try {
+    const promptData: Omit<Prompt, 'id'> = {
+      ...newPrompt,
+      namespace: namespace.value,
+      builtIn: false,
+    }
+    const createdPrompt = await PromptApiService.createPrompt(promptData)
+    prompts.push(createdPrompt)
+    selectedPrompt.value = createdPrompt
+    showModal.value = false
+    success(t('config.promptConfig.createSuccess'))
+  } catch (err: any) {
+    error(t('config.promptConfig.createFailed') + ': ' + err.message)
+  }
+}
+
+// import Prompt
+const handleImport = async () => {
+  try {
+    const promptData = await importFile('json')
+    const { id:_, ...importData } = promptData
+    const createdPrompt = await PromptApiService.createPrompt({
+      ...importData,
+      namespace: namespace.value,
+      builtIn: false,
+    })
+    prompts.push(createdPrompt)
+    selectedPrompt.value = createdPrompt
+    showModal.value = false
+    success(t('config.promptConfig.importSuccess'))
+  } catch (err: any) {
+    error(t('config.promptConfig.importFailed') + ': ' + err.message)
+  }
+}
+
+// Export Prompt
+const handleExport = () => {
+  try {
+    const prompt = selectedPrompt.value as Prompt
+    exportObjectAsFile(
+      prompt,
+      `prompt-${prompt.promptName}-${new Date().toISOString().split('T')[0]}.json`
+    )
+    success(t('config.agentConfig.exportSuccess'))
+  } catch (err: any) {
+    error(t('config.agentConfig.exportFailed') + ': ' + err.message)
   }
 }
 
@@ -460,7 +507,7 @@ const showAddPromptModal = () => {
   newPrompt.promptName = ''
   newPrompt.promptDescription = ''
   newPrompt.promptContent = ''
-  // 初始化 newPrompt 数据
+  // Initialize newPrompt data
   Object.assign(newPrompt, defaultPromptValues)
   showModal.value = true
 }
@@ -472,10 +519,20 @@ const showDeleteConfirm = () => {
 onMounted(() => {
   loadData()
 })
+
+watch(
+  () => namespace.value,
+  (newNamespace, oldNamespace) => {
+    if (newNamespace !== oldNamespace) {
+      prompts.splice(0)
+      selectedPrompt.value = null
+      loadData()
+    }
+  }
+)
 </script>
 
 <style scoped>
-
 .prompt-layout {
   display: flex;
   gap: 12px;

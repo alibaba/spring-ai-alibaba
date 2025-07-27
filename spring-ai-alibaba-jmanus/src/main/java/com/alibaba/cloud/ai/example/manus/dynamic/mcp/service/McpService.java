@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.service;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -134,7 +136,6 @@ public class McpService implements IMcpService {
 
 		// 清除缓存以重新加载服务
 		cacheManager.invalidateAllCache();
-
 		return entityList;
 	}
 

@@ -46,64 +46,95 @@
               <span class="namespace-name">{{ namespace.name }}</span>
               <Icon icon="carbon:chevron-right" />
             </div>
+            <p v-if="namespace.description?.trim()" class="namespace-desc">
+              {{ namespace.description }}
+            </p>
           </div>
         </div>
+
+        <div v-if="loading" class="loading-state">
+          <Icon icon="carbon:loading" class="loading-icon" />
+          {{ t('common.loading') }}
+        </div>
+
+        <button class="add-btn" @click="showAddNamespaceModal">
+          <Icon icon="carbon:add" />
+          {{ t('config.namespaceConfig.createNew') }}
+        </button>
       </div>
 
-      <div v-if="loading" class="loading-state">
-        <Icon icon="carbon:loading" class="loading-icon" />
-        {{ t('common.loading') }}
-      </div>
+      <!-- detail -->
+      <div class="namespace-detail" v-if="selectedNamespace">
+        <div class="detail-header">
+          <h3>{{ currentSelectNamespace?.name ?? '' }}</h3>
+          <div class="detail-actions">
+            <button class="action-btn primary" @click="handleSave">
+              <Icon icon="carbon:save" />
+              {{ t('common.save') }}
+            </button>
+            <button
+              v-if="selectedNamespace.code !== 'default'"
+              class="action-btn danger"
+              @click="showDeleteConfirm"
+            >
+              <Icon icon="carbon:trash-can" />
+              {{ t('common.delete') }}
+            </button>
+          </div>
+        </div>
 
-      <div v-if="!loading && namespaces.length === 0" class="empty-state">
-        <Icon icon="carbon:bot" class="empty-icon" />
-        <p>{{ t('config.namespaceConfig.noPrompts') }}</p>
-      </div>
+        <div class="form-item">
+          <label>{{ t('config.namespaceConfig.name') }} <span class="required">*</span></label>
+          <input
+            type="text"
+            v-model="selectedNamespace.name"
+            :placeholder="t('config.namespaceConfig.placeholder')"
+            required
+          />
+        </div>
 
-      <button class="add-btn" @click="showAddNamespaceModal">
-        <Icon icon="carbon:add" />
-        {{ t('config.namespaceConfig.createNew') }}
-      </button>
-    </div>
+        <div class="form-item">
+          <label>{{ t('config.namespaceConfig.code') }} <span class="required">*</span></label>
+          <input
+            type="text"
+            v-model="selectedNamespace.code"
+            :disabled="true"
+            :placeholder="t('config.namespaceConfig.placeholder')"
+            required
+          />
+        </div>
 
-    <!-- prompt详情 -->
-    <div class="namespace-detail" v-if="selectedNamespace">
-      <div class="detail-header">
-        <h3>{{ selectedNamespace.name }}</h3>
-        <div class="detail-actions">
-          <button class="action-btn primary" @click="handleSave">
-            <Icon icon="carbon:save" />
-            {{ t('common.save') }}
-          </button>
-          <button class="action-btn danger" @click="showDeleteConfirm">
-            <Icon icon="carbon:trash-can" />
-            {{ t('common.delete') }}
-          </button>
+        <div class="form-item">
+          <label>{{ t('config.namespaceConfig.host') }}</label>
+          <input
+            type="text"
+            v-model="selectedNamespace.host"
+            :placeholder="t('config.namespaceConfig.placeholder')"
+            required
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.namespaceConfig.description') }}</label>
+          <input
+            type="text"
+            v-model="selectedNamespace.description"
+            :placeholder="t('config.namespaceConfig.placeholder')"
+          />
         </div>
       </div>
 
-      <div class="form-item">
-        <label>{{ t('config.namespaceConfig.name') }} <span class="required">*</span></label>
-        <input
-          :disabled="true"
-          type="text"
-          v-model="selectedNamespace.name"
-          :placeholder="t('config.namespaceConfig.placeholder')"
-          required
-        />
+      <!-- empty selection -->
+      <div v-else class="no-selection">
+        <Icon icon="carbon:bot" class="placeholder-icon" />
+        <p>{{ t('config.namespaceConfig.selectNameSpaceHint') }}</p>
       </div>
-    </div>
-
-    <!-- empty selection -->
-    <div v-else class="no-selection">
-      <Icon icon="carbon:bot" class="placeholder-icon" />
-      <p>{{ t('config.namespaceConfig.selectPromptHint') }}</p>
     </div>
 
     <!-- new namespace dialog -->
     <Modal
       v-model="showModal"
-      :title="t('config.namespaceConfig.newPrompt')"
+      :title="t('config.namespaceConfig.createNew')"
       @confirm="handleAddNamespace"
     >
       <div class="modal-form">
@@ -114,6 +145,35 @@
             v-model="newNamespace.name"
             :placeholder="t('config.namespaceConfig.placeholder')"
             required
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.namespaceConfig.code') }} <span class="required">*</span></label>
+          <input
+            type="text"
+            v-model="newNamespace.code"
+            :placeholder="t('config.namespaceConfig.placeholder')"
+            required
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.namespaceConfig.host') }}</label>
+          <input
+            type="text"
+            v-model="newNamespace.host"
+            :placeholder="t('config.namespaceConfig.placeholder')"
+            required
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.namespaceConfig.description') }} </label>
+          <input
+            type="text"
+            v-model="newNamespace.description"
+            :placeholder="t('config.namespaceConfig.placeholder')"
           />
         </div>
       </div>
@@ -147,16 +207,21 @@ import Modal from '@/components/modal/index.vue'
 import { NamespaceApiService, type Namespace } from '@/api/namespace-api-service'
 import { useToast } from '@/plugins/useToast'
 import ConfigPanel from './components/configPanel.vue'
+import { usenameSpaceStore } from '@/stores/namespace'
 
-type PromptField = string | null | undefined
+type NameSpaceField = string | null | undefined
 
 const { t } = useI18n()
 const { success, error } = useToast()
+
+const namespaceStore = usenameSpaceStore()
+const { setNamespaces } = namespaceStore
 
 // Reactive data properties
 const loading = ref(false)
 const namespaces = reactive<Namespace[]>([])
 const selectedNamespace = ref<Namespace | null>(null)
+const currentSelectNamespace = ref<Namespace | null>(null)
 const showModal = ref(false)
 const showDeleteModal = ref(false)
 
@@ -169,6 +234,7 @@ const newNamespace = reactive<Omit<Namespace, 'id'>>({ ...defaultNamespaceValues
   Namespace,
   'id'
 >)
+
 // Load namespace list data from API
 const loadData = async () => {
   loading.value = true
@@ -188,32 +254,35 @@ const loadData = async () => {
 }
 // select namespace
 const selectNamespace = async (namespace: Namespace) => {
-  try {
-    const detailedNamespace = await NamespaceApiService.getNamespaceById(namespace.id)
-    selectedNamespace.value = {
-      ...detailedNamespace,
-    }
-  } catch (err: any) {
-    console.error('加载Prompt详情失败:', err)
-    error(t('config.namespaceConfig.loadDetailsFailed') + ': ' + err.message)
-    // base pormpt
-    selectedNamespace.value = {
-      ...namespace,
-    }
+  selectedNamespace.value = {
+    ...namespace,
+  }
+  currentSelectNamespace.value = {
+    ...namespace,
   }
 }
 //
 const handleAddNamespace = async () => {
   if (!validateNamespace(newNamespace)) return
+
+  if (!validateHost(newNamespace.host)) return
+
   try {
     const namespaceData: Omit<Namespace, 'id'> = {
+      description: '',
       ...newNamespace,
     }
     const createdNamespace = await NamespaceApiService.createNamespace(namespaceData)
-    namespaces.push(createdNamespace)
+    namespaces.push({
+      ...createdNamespace,
+    })
     selectedNamespace.value = createdNamespace
+    currentSelectNamespace.value = {
+      ...createdNamespace,
+    }
     showModal.value = false
-    success(t('config.namespaceConfig.createSuccess'))
+    updateNamespace()
+    success(t('config.namespaceConfig.saveSuccess'))
   } catch (err: any) {
     error(t('config.namespaceConfig.createFailed') + ': ' + err.message)
   }
@@ -224,6 +293,8 @@ const handleSave = async () => {
   if (!selectedNamespace.value) return
 
   if (!validateNamespace(selectedNamespace.value)) return
+
+  if (!validateHost(selectedNamespace.value.host)) return
 
   try {
     const savedNamespace = await NamespaceApiService.updateNamespace(
@@ -238,6 +309,11 @@ const handleSave = async () => {
     selectedNamespace.value = {
       ...savedNamespace,
     }
+
+    currentSelectNamespace.value = {
+      ...savedNamespace,
+    }
+    updateNamespace()
     success(t('config.namespaceConfig.saveSuccess'))
   } catch (err: any) {
     error(t('config.namespaceConfig.saveFailed') + ': ' + err.message)
@@ -255,20 +331,30 @@ const handleDelete = async () => {
     if (index !== -1) {
       namespaces.splice(index, 1)
     }
-
     selectedNamespace.value = namespaces.length > 0 ? namespaces[0] : null
     showDeleteModal.value = false
+    updateNamespace()
     success(t('config.namespaceConfig.deleteSuccess'))
   } catch (err: any) {
     error(t('config.namespaceConfig.deleteFailed') + ': ' + err.message)
   }
 }
 
+const updateNamespace = async () => {
+  setNamespaces(
+    namespaces.map(each => ({
+      id: each.code,
+      name: each.name,
+      host: each.host,
+    }))
+  )
+}
+
 function validateNamespace(namespace: Omit<Namespace, 'id'> | Namespace): namespace is Namespace {
-  const requiredFields = ['name'] as const
+  const requiredFields = ['name', 'code'] as const
 
   for (const field of requiredFields) {
-    const value = namespace[field] as PromptField
+    const value = namespace[field] as NameSpaceField
     if (
       value === null ||
       value === undefined ||
@@ -279,33 +365,56 @@ function validateNamespace(namespace: Omit<Namespace, 'id'> | Namespace): namesp
     }
   }
 
-  const uniqueCheck = validatePromptNameUnique(namespaces, namespace)
-  if (!uniqueCheck) {
+  if (!validateNamespaceFieldsUnique(namespaces, namespace, ['name', 'code'])) {
     return false
+  }
+  return true
+}
+
+function validateNamespaceFieldsUnique(
+  namespaces: Namespace[],
+  namespace: Omit<Namespace, 'id'> | Namespace,
+  fieldsToCheck: (keyof Namespace)[] = ['name', 'code']
+): namespace is Namespace {
+  for (const field of fieldsToCheck) {
+    let value: string | undefined
+
+    // Check if the field exists in the namespace object
+    if (field in namespace) {
+      value = (namespace as any)[field] as string | undefined
+    } else {
+      continue
+    }
+
+    if (!value?.trim()) continue
+
+    const existing = namespaces.find(ns => ns[field] === value)
+
+    // Skip self when in edit mode
+    if (existing && 'id' in namespace && existing.id === namespace.id) {
+      continue
+    }
+
+    if (existing) {
+      error(`${field} "${value}" already exists. Please use a different value.`)
+      return false
+    }
   }
 
   return true
 }
 
-function validatePromptNameUnique(
-  namespaces: Namespace[],
-  namespace: Omit<Namespace, 'id'> | Namespace
-): namespace is Namespace {
-  const existing = namespaces.find(p => p.name === namespace.name)
+const validateHost = (host: NameSpaceField): boolean => {
+  if (!host) return true
+  const urlRegex = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
 
-  // If a namespace with the same name exists and it's not the current one (edit mode), return error
-  if (existing && (namespace as Namespace).id && existing.id !== (namespace as Namespace).id) {
-    error(`Name "${namespace.name}" already exists. Please use a different name.`)
-    return false
+  const isUrl = urlRegex.test(host)
+
+  if (!isUrl) {
+    error(`Please enter a valid URL format`)
   }
 
-  // If in create mode and a namespace with the same name already exists, return error
-  if (existing && !(namespace as Namespace).id) {
-    error(`Name "${namespace.name}" already exists. Please use a different name.`)
-    return false
-  }
-
-  return true
+  return isUrl
 }
 
 const showAddNamespaceModal = () => {

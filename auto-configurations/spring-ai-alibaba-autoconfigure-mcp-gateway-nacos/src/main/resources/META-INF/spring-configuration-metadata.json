@@ -7,8 +7,8 @@
       "description": "Configuration properties for Nacos MCP integration."
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.gateway",
-      "type": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
+      "name": "spring.ai.alibaba.mcp.gateway.nacos",
+      "type": "com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties",
       "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
       "description": "Configuration properties for Nacos MCP gateway service discovery."
     }
@@ -64,79 +64,10 @@
       "defaultValue": ""
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.gateway.enabled",
-      "type": "java.lang.Boolean",
-      "description": "Whether to enable gateway discovery of MCP server info from Nacos.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
-      "defaultValue": false
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.gateway.service-group",
-      "type": "java.lang.String",
-      "description": "Service group for gateway discovery of MCP servers.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
-      "defaultValue": "DEFAULT_GROUP"
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.gateway.service-names",
+      "name": "spring.ai.alibaba.mcp.gateway.nacos.service-names",
       "type": "java.util.List<java.lang.String>",
       "description": "Service names for gateway discovery of MCP servers.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties"
-    },
-    {
-      "name": "spring.ai.mcp.server.enabled",
-      "type": "java.lang.Boolean",
-      "description": "Whether to enable MCP server.",
-      "defaultValue": true
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.gateway.max-connections",
-      "type": "java.lang.Integer",
-      "description": "Maximum number of HTTP connections for the MCP server.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
-      "defaultValue": 50
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.gateway.acquire-timeout",
-      "type": "java.lang.Integer",
-      "description": "Timeout in milliseconds for acquiring a connection.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
-      "defaultValue": 30000
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.gateway.max-idle-time",
-      "type": "java.lang.Integer",
-      "description": "Maximum idle time in seconds for connections.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
-      "defaultValue": 30
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.gateway.max-life-time",
-      "type": "java.lang.Integer",
-      "description": "Maximum lifetime in seconds for connections.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
-      "defaultValue": 120
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.gateway.connection-timeout",
-      "type": "java.lang.Integer",
-      "description": "Connection timeout in milliseconds.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
-      "defaultValue": 3000
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.gateway.read-timeout",
-      "type": "java.lang.Integer",
-      "description": "Read timeout in milliseconds.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
-      "defaultValue": 5000
-    },
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.gateway.write-timeout",
-      "type": "java.lang.Integer",
-      "description": "Write timeout in milliseconds.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
-      "defaultValue": 5000
+      "sourceType": "com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties"
     }
   ],
   "hints": []

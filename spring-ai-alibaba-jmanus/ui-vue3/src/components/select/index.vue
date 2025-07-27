@@ -78,6 +78,7 @@ const props = defineProps<{
   icon?: string
   direction?: 'left' | 'right'
   dropStyles?: Record<string, string>
+  onChange?: (value: string, option: Record<string,any>) => void // add onChange prop
 }>()
 
 // Define emit
@@ -129,7 +130,12 @@ const calculateDropdownPosition = () => {
 
 // Triggered when an option is selected
 const selectOption = (option: { id: string }) => {
-  emit('update:modelValue', option.id)
+ // If onChange prop is provided, execute it instead of emitting update:modelValue
+ if (props.onChange) {
+    props.onChange(option.id, option)
+  } else {
+    emit('update:modelValue', option.id)
+  }
   showDropdown.value = false
 }
 </script>

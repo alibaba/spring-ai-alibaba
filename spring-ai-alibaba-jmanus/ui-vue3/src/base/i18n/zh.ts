@@ -107,6 +107,7 @@ const words: I18nType = {
       model: 'Model配置',
       mcp: 'Tools/MCP配置',
       prompt: '动态Prompt配置',
+      namespace: '命名空间配置',
     },
     subGroupDisplayNames: {
       agent: 'Agent',
@@ -117,7 +118,7 @@ const words: I18nType = {
       general: '通用',
       agents: '多智能体',
       infiniteContext: '无限上下文',
-      filesystem: '文件系统'
+      filesystem: '文件系统',
     },
     // Agent配置页面
     agentConfig: {
@@ -175,6 +176,8 @@ const words: I18nType = {
       typePlaceholder: '选择模型类型',
       baseUrl: 'Base Url',
       baseUrlPlaceholder: '输入 Base Url',
+      headers: '请求头信息',
+      headersPlaceholder: '输入 Headers 需满足JSON对象格式',
       apiKey: 'API密钥',
       apiKeyPlaceholder: '输入API密钥',
       modelName: '模型名称',
@@ -309,37 +312,37 @@ const words: I18nType = {
       title: '基础配置',
       browserSettings: {
         headless: '是否使用无头浏览器模式',
-        requestTimeout: '浏览器请求超时时间(秒)'
+        requestTimeout: '浏览器请求超时时间(秒)',
       },
       general: {
         debugDetail: 'debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢',
-        baseDir: 'manus根目录'
+        baseDir: 'manus根目录',
       },
       interactionSettings: {
-        openBrowser: '启动时自动打开浏览器'
+        openBrowser: '启动时自动打开浏览器',
       },
       agentSettings: {
         maxSteps: '智能体执行最大步数',
         userInputTimeout: '用户输入表单等待超时时间(秒)',
         maxMemory: '能记住的最大消息数',
-        parallelToolCalls: '并行工具调用'
+        parallelToolCalls: '并行工具调用',
       },
       agents: {
-        forceOverrideFromYaml: '强制使用YAML配置文件覆盖同名Agent'
+        forceOverrideFromYaml: '强制使用YAML配置文件覆盖同名Agent',
       },
       infiniteContext: {
         enabled: '是否开启无限上下文',
         parallelThreads: '并行处理线程数',
-        taskContextSize: '触发无限上下文的字符数阈值(字符数)'
+        taskContextSize: '触发无限上下文的字符数阈值(字符数)',
       },
       fileSystem: {
-        allowExternalAccess: '是否允许文件操作超出工作目录'
+        allowExternalAccess: '是否允许文件操作超出工作目录',
       },
       systemSettings: {
         systemName: '系统名称',
         language: '语言',
         maxThreads: '最大线程数',
-        timeoutSeconds: '请求超时时间(秒)'
+        timeoutSeconds: '请求超时时间(秒)',
       },
       totalConfigs: '总配置数',
       modified: '已修改',
@@ -347,8 +350,17 @@ const words: I18nType = {
       importConfigs: '导入配置',
       search: '搜索',
       loading: '加载中',
+      saveSuccess: '配置保存成功',
+      exportSuccess: '配置导出成功',
+      exportFailed: '导出配置失败',
+      invalidFormat: '配置文件格式不正确',
+      loadConfigSuccess: '配置加载成功',
+      resetSuccess: '配置重置成功',
+      importSuccess: '配置导入成功',
       notFound: '未找到配置项',
+      noModified: '没有需要保存的修改',
       resetGroupConfirm: '重置该组所有配置为默认值',
+      isDefault: '该组配置已是默认值',
       reset: '重置',
       requestTimeout: '请求超时时间(秒)',
       browserTimeout: '浏览器请求超时时间(秒)',
@@ -393,10 +405,19 @@ const words: I18nType = {
       deleteConfirm: '删除确认',
       deleteConfirmText: '确定要删除',
       deleteWarning: '此操作不可恢复。',
+      exportSuccess: '配置导出成功',
+      exportFailed: '导出配置失败',
+      importSuccess: '配置导入成功',
+      importFailed: '导入配置失败',
     },
     namespaceConfig: {
       title: '命名空间配置',
+      name: '命名空间名称',
+      code: '命名空间编码',
+      host:"域名",
+      description: '命名空间描述',
       loadDetailsFailed: '加载namespace详情失败',
+      selectNameSpaceHint: '请选择一个命名空间进行配置',
       createNew: '新建命名空间',
       placeholder: '请输入',
       saveSuccess: '保存成功',
@@ -407,6 +428,11 @@ const words: I18nType = {
       deleteConfirmText: '确定要删除',
       deleteWarning: '此操作不可恢复。',
       configured: '已配置的命名空间',
+
+      namespace: {
+        selectNamespace: '请选择命名空间',
+        namespace: '命名空间',
+      },
     },
   },
 
@@ -723,6 +749,7 @@ const words: I18nType = {
     welcomeSubtitle: '您的 Java AI 智能助手，帮助您构建和完成各种任务。',
     tagline: 'Java AI 智能体',
     inputPlaceholder: '描述您想构建或完成的内容...',
+    directButton: 'Plan-Act 工作台',
     examples: {
       stockPrice: {
         title: '查询股价',
@@ -739,6 +766,11 @@ const words: I18nType = {
         title: '查询天气',
         description: '获取北京今天的天气情况（Agent可以使用MCP工具服务）',
         prompt: '用浏览器，基于百度，查询北京今天的天气',
+      },
+      queryplan: {
+        title: '查询一个人的信息',
+        description: '查询沈询 阿里的所有信息并优化终止结构列',
+        prompt: '用浏览器，基于百度，查询计划',
       },
     },
   },
@@ -815,6 +847,47 @@ const words: I18nType = {
     configuration: '配置',
     panelResizeHint: '拖拽调整面板大小，双击重置',
     aboutExecutionDetails: '关于集成执行详情',
+  },
+
+  // 定时任务
+  cronTask: {
+    title: '定时任务管理',
+    addTask: '定时任务',
+    noTasks: '暂无定时任务',
+    taskName: '任务名称',
+    taskNamePlaceholder: '请输入任务名称',
+    cronExpression: 'Cron表达式',
+    cronExpressionPlaceholder: '例如: 0 0 12 * * ?',
+    cronExpressionHelp: '格式: 秒 分 时 日 月 周 年',
+    taskDescription: '任务描述',
+    taskDescriptionPlaceholder: '请输入任务描述',
+    taskStatus: '任务状态',
+    taskDetail: '任务详情',
+    executeOnce: '执行一次',
+    edit: '编辑',
+    operations: '操作',
+    enable: '启用',
+    disable: '禁用',
+    delete: '删除',
+    deleteConfirm: '确认删除',
+    deleteConfirmMessage: '确定要删除任务 "{taskName}" 吗？此操作不可撤销。',
+    nextExecution: '下次执行时间',
+    createTime: '创建时间',
+    updateTime: '更新时间',
+    active: '启用',
+    inactive: '禁用',
+    template: '示例：每天帮我早上8点，帮我收集当天的AI新闻吧',
+    planTemplate: '计划模板',
+    linkTemplate: '关联模板',
+    noTemplate: '不关联',
+    selectTemplate: '请选择模板',
+    templateHelpText: '选择后，定时任务将按照制定好的计划执行',
+    createTask: '创建定时任务',
+    selectCreateMethod: '请选择创建方式',
+    createWithJmanus: '让Jmanus帮忙创建',
+    createWithJmanusDesc: '通过AI助手引导创建定时任务',
+    createManually: '手动创建',
+    createManuallyDesc: '自己填写定时任务信息',
   },
 }
 

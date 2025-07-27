@@ -113,6 +113,15 @@
         </div>
 
         <div class="form-item">
+          <label>{{ t('config.modelConfig.headers') }} </label>
+          <input
+              type="text"
+              v-model="selectedHeadersJson"
+              :placeholder="t('config.modelConfig.headersPlaceholder')"
+          />
+        </div>
+
+        <div class="form-item">
           <label>{{ t('config.modelConfig.apiKey') }} <span class="required">*</span></label>
           <div class="api-key-container">
             <input
@@ -193,6 +202,14 @@
             v-model="newModel.baseUrl"
             :placeholder="t('config.modelConfig.baseUrlPlaceholder')"
             required
+          />
+        </div>
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.headers') }} </label>
+          <input
+              type="text"
+              v-model="newHeadersJson"
+              :placeholder="t('config.modelConfig.headersPlaceholder')"
           />
         </div>
         <div class="form-item">
@@ -281,7 +298,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted,computed } from 'vue'
+// 其余代码保持不变
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import ConfigPanel from './components/configPanel.vue'
@@ -309,13 +327,35 @@ const modelAvailableModels = ref<Map<string, Model[]>>(new Map())
 const newModelValidating = ref(false)
 const newModelAvailableModels = ref<Model[]>([])
 
+const selectedHeadersJson = computed({
+  get() {
+    if (!selectedModel.value?.headers) return ''
+    return JSON.stringify(selectedModel.value.headers, null, 2)
+  },
+  set(val) {
+      if (!selectedModel.value) return
+      // 空值处理
+      selectedModel.value.headers = val.trim() ? JSON.parse(val) : null
+    }
+})
+
+const newHeadersJson = computed({
+  get() {
+    return newModel.headers ? JSON.stringify(newModel.headers, null, 2) : ''
+  },
+  set(val) {
+      newModel.headers = val.trim() ? JSON.parse(val) : null
+    }
+})
+
 // New Model form data
 const newModel = reactive<Omit<Model, 'id'>>({
-  baseUrl: '',
-  apiKey: '',
-  modelName: '',
-  modelDescription: '',
-  type: '',
+  baseUrl:  '',
+  headers:  null,
+  apiKey:  '',
+  modelName:  '',
+  modelDescription:  '',
+  type:  '',
 })
 
 // Message toast
@@ -384,6 +424,7 @@ const selectModel = async (model: Model) => {
 // Show the new Model modal
 const showAddModelModal = () => {
   newModel.baseUrl = ''
+  newModel.headers = null
   newModel.apiKey = ''
   newModel.modelName = ''
   newModel.modelDescription = ''
@@ -529,6 +570,7 @@ const handleAddModel = async () => {
   try {
     const modelData: Omit<Model, 'id'> = {
       baseUrl: newModel.baseUrl.trim(),
+      headers: newModel.headers,
       apiKey: newModel.apiKey.trim(),
       modelName: newModel.modelName.trim(),
       modelDescription: newModel.modelDescription.trim(),
@@ -565,7 +607,6 @@ const handleSave = async () => {
     if (index !== -1) {
       models[index] = savedModel
     }
-
     selectedModel.value = savedModel
     showMessage(t('config.modelConfig.saveSuccess'), 'success')
   } catch (err: any) {

@@ -56,7 +56,13 @@ public enum NodeType {
 
 	TEMPLATE_TRANSFORM("template-transform", "template-transform"),
 
-	VARIABLE_AGGREGATOR("variable-aggregator", "variable-aggregator");
+	VARIABLE_AGGREGATOR("variable-aggregator", "variable-aggregator"),
+
+	ITERATION("iteration", "iteration"),
+
+	DIFY_ITERATION_START("__empty__", "iteration-start"),
+
+	ASSIGNER("assigner", "assigner");
 
 	private String value;
 

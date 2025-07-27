@@ -208,45 +208,141 @@ if (!current) {
 const [agent] = useXAgent({
   request: async ({ message }, { onSuccess, onUpdate, onError }) => {
     senderLoading.value = true
+
     if (!current.deepResearch) {
-      // todo 一般性请求
       senderLoading.value = false
       onSuccess(`暂未实现: ${message}`)
       return
     }
-    let content = ''
-    switch (current.aiType) {
-      case 'normal':
-        // todo 请求研究内容
 
-        const xStreamBody = new XStreamBody('/deep-research/chat/stream', {
+    let content = ''
+
+    switch (current.aiType) {
+      case 'normal': {
+        const xStreamBody = new XStreamBody('/chat/stream', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
           },
           body: {
             ...configStore.chatConfig,
             query: message,
           },
         })
+
         try {
           await xStreamBody.readStream((chunk: any) => {
             onUpdate(chunk)
           })
         } catch (e: any) {
-          console.log(e.statusText)
+          console.error(e.statusText)
           onError(e.statusText)
         }
+
         content = xStreamBody.content()
         break
-      case 'startDS':
+      }
+
+      case 'startDS': {
         current.deepResearchDetail = true
-        // todo 请求开始研究
+
+        if (current.autoAccepted) {
+          content = 'startDS阶段，已自动接受，跳过调用'
+          break
+        }
+
+        const xStreamBody = new XStreamBody('/chat/resume', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: {
+            ...configStore.chatConfig,
+            query: message,
+            feed_back: false, 
+          },
+        })
+
+        try {
+          await xStreamBody.readStream((chunk: any) => {
+            onUpdate(chunk)
+          })
+        } catch (e: any) {
+          console.error(e.statusText)
+          onError(e.statusText)
+        }
+
+        content = xStreamBody.content()
         break
+      }
+
+      case 'onDS': {
+        const xStreamBody = new XStreamBody('/chat/resume', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: {
+            ...configStore.chatConfig,
+            query: message,
+            feed_back: false,
+          },
+        })
+
+        try {
+          await xStreamBody.readStream((chunk: any) => {
+            onUpdate(chunk)
+          })
+        } catch (e: any) {
+          console.error(e.statusText)
+          onError(e.statusText)
+        }
+
+        content = xStreamBody.content()
+        break
+      }
+
+      case 'endDS': {
+        const xStreamBody = new XStreamBody('/chat/resume', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: {
+            ...configStore.chatConfig,
+            query: message,
+            feed_back: true,
+          },
+        })
+
+        try {
+          await xStreamBody.readStream((chunk: any) => {
+            onUpdate(chunk)
+          })
+        } catch (e: any) {
+          console.error(e.statusText)
+          onError(e.statusText)
+        }
+
+        content = xStreamBody.content()
+        break
+      }
+
+      default: {
+        onError(new Error(`未知的 aiType: ${current.aiType}`))
+        senderLoading.value = false
+        return
+      }
     }
+
     if (current.deepResearch) {
       messageStore.nextAIType()
     }
+
     onSuccess(content)
     senderLoading.value = false
   },

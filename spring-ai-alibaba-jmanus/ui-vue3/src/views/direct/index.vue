@@ -32,6 +32,9 @@
             <button class="config-button" @click="handleConfig" :title="$t('direct.configuration')">
               <Icon icon="carbon:settings-adjust" width="20" />
             </button>
+            <button class="cron-task-btn" @click="showCronTaskModal = true" :title="$t('cronTask.title')">
+              <Icon icon="carbon:alarm" width="20" />
+            </button>
           </div>
         </div>
 
@@ -52,6 +55,7 @@
           ref="inputRef"
           :disabled="isLoading"
           :placeholder="isLoading ? t('input.waiting') : t('input.placeholder')"
+          :initial-value="prompt"
           @send="handleSendMessage"
           @clear="handleInputClear"
           @focus="handleInputFocus"
@@ -73,11 +77,14 @@
       <!-- Right Panel - Preview -->
       <RightPanel ref="rightPanelRef" :style="{ width: 100 - leftPanelWidth + '%' }" />
     </div>
+
+    <!-- Cron Task Modal -->
+    <CronTaskModal v-model="showCronTaskModal" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
@@ -86,6 +93,7 @@ import RightPanel from '@/components/right-panel/index.vue'
 import ChatContainer from '@/components/chat/index.vue'
 import InputArea from '@/components/input/index.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
+import CronTaskModal from '@/components/cron-task-modal/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { useTaskStore } from '@/stores/task'
 import { sidebarStore } from '@/stores/sidebar'
@@ -97,12 +105,14 @@ const taskStore = useTaskStore()
 const { t } = useI18n()
 
 const prompt = ref<string>('')
+const inputOnlyContent = ref<string>('')
 const rightPanelRef = ref()
 const chatRef = ref()
 const inputRef = ref()
 const isExecutingPlan = ref(false)
 const isLoading = ref(false)
 const currentRootPlanId = ref<string | null>(null)
+const showCronTaskModal = ref(false)
 
 // Related to panel width
 const leftPanelWidth = ref(50) // Left panel width percentage
@@ -208,16 +218,34 @@ onMounted(() => {
 
   // Check if there is a task in the store
   if (taskStore.hasUnprocessedTask() && taskStore.currentTask) {
-    prompt.value = taskStore.currentTask.prompt
-    console.log('[Direct] Setting prompt from store:', prompt.value)
+    const taskContent = taskStore.currentTask.prompt
+    console.log('[Direct] Found unprocessed task from store:', taskContent)
     // Mark the task as processed to prevent duplicate responses
     taskStore.markTaskAsProcessed()
-    console.log('[Direct] Received task from store:', prompt.value)
+
+    // 直接执行任务，不在输入框显示内容
+    nextTick(() => {
+      if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
+        console.log('[Direct] Directly executing task via chatRef.handleSendMessage:', taskContent)
+        chatRef.value.handleSendMessage(taskContent)
+      } else {
+        console.warn('[Direct] chatRef.handleSendMessage method not available, falling back to prompt')
+        prompt.value = taskContent
+      }
+    })
   } else {
-    // Degrade to URL parameters (backward compatibility)
-    prompt.value = (route.query.prompt as string) || ''
-    console.log('[Direct] Received task from URL:', prompt.value)
-    console.log('[Direct] No unprocessed task in store')
+    // Check if there is a task to input (for pre-filling input without executing)
+    const taskToInput = taskStore.getAndClearTaskToInput()
+    if (taskToInput) {
+      inputOnlyContent.value = taskToInput
+      console.log('[Direct] Setting inputOnlyContent for input only:', inputOnlyContent.value)
+      // Don't set prompt.value since this is just for input pre-filling
+    } else {
+      // Degrade to URL parameters (backward compatibility)
+      prompt.value = (route.query.prompt as string) || ''
+      console.log('[Direct] Received task from URL:', prompt.value)
+      console.log('[Direct] No unprocessed task in store')
+    }
   }
 
   // Restore panel width from localStorage
@@ -227,6 +255,26 @@ onMounted(() => {
   }
 
   console.log('[Direct] Final prompt value:', prompt.value)
+
+  // Set input content if there's inputOnlyContent (after component is mounted)
+  if (inputOnlyContent.value) {
+    nextTick(() => {
+      if (inputRef.value && typeof inputRef.value.setInputValue === 'function') {
+        inputRef.value.setInputValue(inputOnlyContent.value)
+        console.log('[Direct] Set input value:', inputOnlyContent.value)
+        inputOnlyContent.value = '' // Clear after setting
+      }
+    })
+  }
+
+  // 监听window上的plan-execution-requested事件
+  window.addEventListener('plan-execution-requested', ((event: CustomEvent) => {
+    console.log('[DirectView] Received plan-execution-requested event:', event.detail)
+    handlePlanExecutionRequested(event.detail)
+  }) as EventListener)
+
+  // 不再需要检查sessionStorage中的待执行计划
+  // 因为task.ts中的emitPlanExecutionRequested已经直接发送事件
 })
 
 // Listen for changes in the store's task (only handle unprocessed tasks)
@@ -235,9 +283,19 @@ watch(
   newTask => {
     console.log('[Direct] Watch taskStore.currentTask triggered, newTask:', newTask)
     if (newTask && !newTask.processed) {
-      prompt.value = newTask.prompt
+      const taskContent = newTask.prompt
       taskStore.markTaskAsProcessed()
-      console.log('[Direct] Received new task from store:', prompt.value)
+      console.log('[Direct] Received new task from store:', taskContent)
+
+      // 直接执行任务，不在输入框显示内容
+      nextTick(() => {
+        if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
+          console.log('[Direct] Directly executing new task via chatRef.handleSendMessage:', taskContent)
+          chatRef.value.handleSendMessage(taskContent)
+        } else {
+          console.warn('[Direct] chatRef.handleSendMessage method not available for new task')
+        }
+      })
     } else {
       console.log('[Direct] Task is null or already processed, ignoring')
     }
@@ -250,7 +308,27 @@ watch(
   () => prompt.value,
   (newPrompt, oldPrompt) => {
     console.log('[Direct] prompt value changed from:', oldPrompt, 'to:', newPrompt)
-    // No longer manually call sendMessage. Let the PlanExecutionComponent handle it through the initialPrompt prop.
+    // Prompt is now only used for input field initial value, no automatic execution
+  },
+  { immediate: false }
+)
+
+// Listen for changes in taskToInput (for handling cron task template setting)
+watch(
+  () => taskStore.taskToInput,
+  (newTaskToInput) => {
+    console.log('[Direct] Watch taskStore.taskToInput triggered, newTaskToInput:', newTaskToInput)
+    if (newTaskToInput && newTaskToInput.trim()) {
+      console.log('[Direct] Setting input value from taskToInput:', newTaskToInput)
+      nextTick(() => {
+        if (inputRef.value && typeof inputRef.value.setInputValue === 'function') {
+          inputRef.value.setInputValue(newTaskToInput.trim())
+          console.log('[Direct] Input value set from taskToInput watch:', newTaskToInput.trim())
+          // Clear the taskToInput after setting
+          taskStore.getAndClearTaskToInput()
+        }
+      })
+    }
   },
   { immediate: false }
 )
@@ -267,6 +345,9 @@ onUnmounted(() => {
   // Remove event listeners
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mouseup', handleMouseUp)
+  window.removeEventListener('plan-execution-requested', ((event: CustomEvent) => {
+    handlePlanExecutionRequested(event.detail)
+  }) as EventListener)
 })
 
 // Methods related to panel size adjustment
@@ -433,16 +514,20 @@ const handlePlanExecutionRequested = async (payload: {
 
   isExecutingPlan.value = true
 
+  // 标记是否已经添加了用户消息
+  let userMessageAdded = false;
+
   // First call chat component's addMessage to update UI (avoid triggering user-message-send-requested event)
   if (chatRef.value && typeof chatRef.value.addMessage === 'function') {
     console.log('[DirectView] Calling chatRef.addMessage for plan execution:', payload.title)
     chatRef.value.addMessage('user', payload.title)
+    userMessageAdded = true;
   } else {
     console.warn('[DirectView] chatRef.addMessage method not available')
   }
   try {
     // Get the plan template ID
-    const planTemplateId = payload.planData.planTemplateId || payload.planData.planId
+    const planTemplateId = payload.planData?.planTemplateId || payload.planData?.id || payload.planData?.planId
 
     if (!planTemplateId) {
       throw new Error('没有找到计划模板ID')
@@ -493,8 +578,10 @@ const handlePlanExecutionRequested = async (payload: {
     // Get chat component reference to display error
     if (chatRef.value && typeof chatRef.value.addMessage === 'function') {
       console.log('[Direct] Adding error messages to chat')
-      // First add user message
-      chatRef.value.addMessage('user', payload.title)
+      // 只有在之前没有添加过用户消息的情况下才添加
+      if (!userMessageAdded) {
+        chatRef.value.addMessage('user', payload.title)
+      }
       // Then add error message
       chatRef.value.addMessage('assistant', `执行计划失败: ${error.message || '未知错误'}`, {
         thinking: undefined,
@@ -628,6 +715,25 @@ const handlePlanExecutionRequested = async (payload: {
 }
 
 .config-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.cron-task-btn {
   display: flex;
   align-items: center;
   justify-content: center;

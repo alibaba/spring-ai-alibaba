@@ -17,8 +17,10 @@
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
+import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentType;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
+import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentPromptTemplateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
 import org.springframework.ai.chat.client.ChatClient;
@@ -28,6 +30,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,6 +57,9 @@ public class AgentsConfiguration {
 
 	@Value("classpath:prompts/reporter.md")
 	private Resource reporterPrompt;
+
+	@Value("classpath:prompts/rag.md")
+	private Resource ragPrompt;
 
 	@Autowired
 	private ApplicationContext context;
@@ -96,6 +102,15 @@ public class AgentsConfiguration {
 
 		// 如果没有找到有效的工具回调提供者，返回空数组
 		return new ToolCallback[0];
+	}
+
+	/**
+	 * 提取MutiAgent配置
+	 */
+	private ChatClient.Builder configureAgentBuilder(ChatClient.Builder builder, String agentName,
+			AgentType agentType) {
+		return builder.defaultSystem(AgentPromptTemplateUtil.buildCompletePrompt(agentType))
+			.defaultToolCallbacks(getMcpToolCallbacks(agentName));
 	}
 
 	/**
@@ -159,6 +174,11 @@ public class AgentsConfiguration {
 	}
 
 	@Bean
+	public ChatClient rewriteAndMultiQueryAgent(ChatClient.Builder rewriteAndMultiQueryChatClientBuilder) {
+		return rewriteAndMultiQueryChatClientBuilder.build();
+	}
+
+	@Bean
 	public ChatClient infoCheckAgent(ChatClient.Builder infoCheckChatClientBuilder) {
 		return infoCheckChatClientBuilder.build();
 	}
@@ -166,6 +186,45 @@ public class AgentsConfiguration {
 	@Bean
 	public ChatClient reflectionAgent(ChatClient.Builder reflectionChatClientBuilder) {
 		return reflectionChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(reflectionPrompt)).build();
+	}
+
+	@Bean
+	@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+			matchIfMissing = false)
+	public ChatClient academicResearchAgent(ChatClient.Builder academicResearchChatClientBuilder) {
+		return configureAgentBuilder(academicResearchChatClientBuilder, "academicResearchAgent",
+				AgentType.ACADEMIC_RESEARCH)
+			.build();
+	}
+
+	@Bean
+	@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+			matchIfMissing = false)
+	public ChatClient lifestyleTravelAgent(ChatClient.Builder lifestyleTravelChatClientBuilder) {
+		return configureAgentBuilder(lifestyleTravelChatClientBuilder, "lifestyleTravelAgent",
+				AgentType.LIFESTYLE_TRAVEL)
+			.build();
+	}
+
+	@Bean
+	@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+			matchIfMissing = false)
+	public ChatClient encyclopediaAgent(ChatClient.Builder encyclopediaChatClientBuilder) {
+		return configureAgentBuilder(encyclopediaChatClientBuilder, "encyclopediaAgent", AgentType.ENCYCLOPEDIA)
+			.build();
+	}
+
+	@Bean
+	@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+			matchIfMissing = false)
+	public ChatClient dataAnalysisAgent(ChatClient.Builder dataAnalysisChatClientBuilder) {
+		return configureAgentBuilder(dataAnalysisChatClientBuilder, "dataAnalysisAgent", AgentType.DATA_ANALYSIS)
+			.build();
+	}
+
+	@Bean
+	public ChatClient ragAgent(ChatClient.Builder ragChatClientBuilder) {
+		return ragChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(ragPrompt)).build();
 	}
 
 }

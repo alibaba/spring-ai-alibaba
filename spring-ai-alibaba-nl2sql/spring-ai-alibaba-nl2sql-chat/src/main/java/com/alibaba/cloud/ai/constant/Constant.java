@@ -53,9 +53,9 @@ public class Constant {
 
 	public static final String SQL_VALIDATE_EXCEPTION_OUTPUT = "SQL_VALIDATE_EXCEPTION_OUTPUT";
 
-	public static final String SEMANTIC_CONSISTENC_NODE_OUTPUT = "SEMANTIC_CONSISTENC_NODE_OUTPUT";
+	public static final String SEMANTIC_CONSISTENCY_NODE_OUTPUT = "SEMANTIC_CONSISTENCY_NODE_OUTPUT";
 
-	public static final String SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT = "SEMANTIC_CONSISTENC_NODE_RECOMMEND_OUTPUT";
+	public static final String SEMANTIC_CONSISTENCY_NODE_RECOMMEND_OUTPUT = "SEMANTIC_CONSISTENCY_NODE_RECOMMEND_OUTPUT";
 
 	public static final String PLANNER_NODE_OUTPUT = "PLANNER_NODE_OUTPUT";
 
@@ -70,6 +70,13 @@ public class Constant {
 
 	// Plan下一个需要进入的节点
 	public static final String PLAN_NEXT_NODE = "PLAN_NEXT_NODE";
+
+	// Plan validation
+	public static final String PLAN_VALIDATION_STATUS = "PLAN_VALIDATION_STATUS";
+
+	public static final String PLAN_VALIDATION_ERROR = "PLAN_VALIDATION_ERROR";
+
+	public static final String PLAN_REPAIR_COUNT = "PLAN_REPAIR_COUNT";
 
 	// 节点KEY
 	public static final String PLANNER_NODE = "PLANNER_NODE";
@@ -94,7 +101,7 @@ public class Constant {
 
 	public static final String PYTHON_EXECUTE_NODE = "PYTHON_EXECUTE_NODE";
 
-	public static final String SEMANTIC_CONSISTENC_NODE = "SEMANTIC_CONSISTENC_NODE";
+	public static final String SEMANTIC_CONSISTENCY_NODE = "SEMANTIC_CONSISTENCY_NODE";
 
 	public static final String SMALL_TALK_REJECT = "闲聊拒识";
 
