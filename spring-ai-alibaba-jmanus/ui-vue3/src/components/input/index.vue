@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onUnmounted, computed } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 
@@ -55,6 +55,7 @@ const { t } = useI18n()
 interface Props {
   placeholder?: string
   disabled?: boolean
+  initialValue?: string
 }
 
 interface Emits {
@@ -67,6 +68,7 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   placeholder: '',
   disabled: false,
+  initialValue: '',
 })
 
 const emit = defineEmits<Emits>()
@@ -133,6 +135,14 @@ const updateState = (enabled: boolean, placeholder?: string) => {
   emit('update-state', enabled, placeholder)
 }
 
+/**
+ * Set the input value without triggering send
+ * @param {string} value - The value to set
+ */
+const setInputValue = (value: string) => {
+  currentInput.value = value
+  adjustInputHeight()
+}
 
 /**
  * Get the current value of the input box
@@ -142,10 +152,23 @@ const getQuery = () => {
   return currentInput.value.trim()
 }
 
+// Watch for initialValue changes
+watch(
+  () => props.initialValue,
+  (newValue) => {
+    if (newValue && newValue.trim()) {
+      currentInput.value = newValue
+      adjustInputHeight()
+    }
+  },
+  { immediate: true }
+)
+
 // Expose methods to the parent component
 defineExpose({
   clearInput,
   updateState,
+  setInputValue,
   getQuery,
   focus: () => inputRef.value?.focus()
 })
