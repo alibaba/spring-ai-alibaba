@@ -172,6 +172,61 @@ export const semanticModelApi = {
   }
 }
 
+/**
+ * 智能体知识相关 API
+ */
+export const agentKnowledgeApi = {
+  // 获取智能体知识列表
+  getByAgentId(agentId, params = {}) {
+    return get(`/agent-knowledge/agent/${agentId}`, params)
+  },
+
+  // 获取知识详情
+  getDetail(id) {
+    return get(`/agent-knowledge/${id}`)
+  },
+
+  // 创建知识
+  create(data) {
+    return post('/agent-knowledge', data)
+  },
+
+  // 更新知识
+  update(id, data) {
+    return put(`/agent-knowledge/${id}`, data)
+  },
+
+  // 删除知识
+  delete(id) {
+    return del(`/agent-knowledge/${id}`)
+  },
+
+  // 批量更新状态
+  batchUpdateStatus(data) {
+    return put('/agent-knowledge/batch/status', data)
+  },
+
+  // 获取统计信息
+  getStatistics(agentId) {
+    return get(`/agent-knowledge/statistics/${agentId}`)
+  },
+
+  // 搜索知识
+  search(agentId, keyword) {
+    return get(`/agent-knowledge/agent/${agentId}`, { keyword })
+  },
+
+  // 按类型筛选
+  getByType(agentId, type) {
+    return get(`/agent-knowledge/agent/${agentId}`, { type })
+  },
+
+  // 按状态筛选
+  getByStatus(agentId, status) {
+    return get(`/agent-knowledge/agent/${agentId}`, { status })
+  }
+}
+
 export default {
   get,
   post,
@@ -179,5 +234,6 @@ export default {
   del,
   agentApi,
   businessKnowledgeApi,
-  semanticModelApi
+  semanticModelApi,
+  agentKnowledgeApi
 }
