@@ -74,7 +74,8 @@ public class ResearchTeamNode implements NodeAction {
 		return plan.getSteps()
 			.stream()
 			.allMatch(step -> step.getExecutionStatus() != null
-					&& step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX));
+					&& (step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX)
+							|| step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_ERROR_PREFIX)));
 	}
 
 	/**

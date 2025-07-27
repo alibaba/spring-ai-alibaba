@@ -96,31 +96,32 @@ public class CoderNode implements NodeAction {
 		// Mark step as processing
 		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + nodeName);
 
-		List<Message> messages = new ArrayList<>();
-		// Build task message with reflection history
-		String taskContent = buildTaskMessageWithReflectionHistory(assignedStep, state.value("locale", "en-US"));
-		Message taskMessage = new UserMessage(taskContent);
-		messages.add(taskMessage);
-		logger.debug("{} Node message: {}", nodeName, messages);
+		try {
+			// Build task messages
+			List<Message> messages = List.of(
+				new UserMessage(buildTaskMessageWithReflectionHistory(assignedStep, state.value("locale", "en-US")))
+			);
+			logger.debug("{} Node message: {}", nodeName, messages);
 
-		// 调用agent
-		var requestSpec = coderAgent.prompt().messages(messages);
+			// 调用agent
+			var requestSpec = coderAgent.prompt().messages(messages);
 
-		// 使用MCP工厂创建MCP客户端
-		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null ? mcpFactory.createProvider(state, "coderAgent")
-				: null;
-		if (mcpProvider != null) {
-			requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
-		}
+			// 使用MCP工厂创建MCP客户端
+			AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null ? mcpFactory.createProvider(state, "coderAgent")
+					: null;
+			if (mcpProvider != null) {
+				requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
+			}
 
-		var streamResult = requestSpec.stream().chatResponse();
-		Plan.Step finalAssignedStep = assignedStep;
+			// Create stream with error handling
+			var streamResult = requestSpec.stream().chatResponse()
+					.doOnError(error -> StateUtil.handleStepError(assignedStep, nodeName, error, logger));
 
 		String prefix = StreamNodePrefixEnum.CODER_LLM_STREAM.getPrefix() + "_";
 		String stepTitleKey = prefix + executorNodeId + "_step_title";
 		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
 		Map<String, Object> inputMap = new HashMap<>();
-		inputMap.put(stepTitleKey, "[并行节点" + executorNodeId + "]" + finalAssignedStep.getTitle());
+		inputMap.put(stepTitleKey, "[并行节点" + executorNodeId + "]" + assignedStep.getTitle());
 		state.input(inputMap);
 
 		logger.info("CoderNode {} starting streaming with key: {}", executorNodeId, prefix + executorNodeId);
@@ -129,13 +130,11 @@ public class CoderNode implements NodeAction {
 			.startingNode(prefix + executorNodeId)
 			.startingState(state)
 			.mapResult(response -> {
-				// Set appropriate completion status using ReflectionUtil
-				finalAssignedStep
-					.setExecutionStatus(ReflectionUtil.getCompletionStatus(reflectionProcessor != null, nodeName));
-
+				// Only handle successful responses - errors are handled in doOnError
 				String coderContent = response.getResult().getOutput().getText();
-				finalAssignedStep.setExecutionRes(Objects.requireNonNull(coderContent));
-
+				assignedStep
+					.setExecutionStatus(ReflectionUtil.getCompletionStatus(reflectionProcessor != null, nodeName));
+				assignedStep.setExecutionRes(Objects.requireNonNull(coderContent));
 				logger.info("{} completed, content: {}", nodeName, coderContent);
 
 				updated.put("coder_content_" + executorNodeId, coderContent);
@@ -143,8 +142,13 @@ public class CoderNode implements NodeAction {
 			})
 			.build(streamResult);
 
-		updated.put("coder_content_" + executorNodeId, generator);
-		return updated;
+			updated.put("coder_content_" + executorNodeId, generator);
+			return updated;
+		} catch (Exception e) {
+			// Handle any exception that occurs before or during stream setup
+			StateUtil.handleStepError(assignedStep, nodeName, e, logger);
+			return updated;
+		}
 	}
 
 	/**
