@@ -7,12 +7,45 @@
         class="json-tab-panel"
       >
         <template #json-config>
-          <MonacoEditor
-            v-model="jsonContent"
-            language="json"
-            :height="600"
-            @change="validateJson"
-          />
+          <div class="json-config-container">
+            <MonacoEditor
+              v-model="jsonContent"
+              language="json"
+              :height="400"
+              @change="validateJson"
+            />
+            
+            <!-- 使用说明 -->
+            <div class="usage-instructions">
+              <div class="instructions-header">
+                <Icon icon="carbon:information" class="instructions-icon" />
+                <h4>使用说明</h4>
+              </div>
+              <div class="instructions-content">
+                <ol class="instructions-list">
+                  <li>
+                    <strong>获取MCP服务列表</strong>
+                    <ul>
+                      <li>可以在<code>mcp.higress.ai</code>上查找可用的MCP服务</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>配置MCP服务</strong>
+                    <ul>
+                      <li>把完整的JSON配置复制到上面的输入框，然后点击导入</li>
+                      <li>JSON格式可以参考配置示例</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>配置Agent使用</strong>
+                    <ul>
+                      <li>在Agent配置页面创建新的Agent，为Agent添加刚配置的MCP服务，这样可以减少工具冲突，提高Agent选择工具的准确性</li>
+                    </ul>
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </div>
         </template>
         
         <template #config-example>
@@ -47,6 +80,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Icon } from '@iconify/vue'
 import MonacoEditor from '@/components/MonacoEditor.vue'
 import TabPanel from '@/components/TabPanel.vue'
 import type { TabConfig, JsonValidationResult } from '@/types/mcp'
@@ -362,4 +396,119 @@ defineExpose({
 .example-json .boolean { color: #f87171; }
 .example-json .null { color: rgba(255, 255, 255, 0.6); }
 .example-json .key { color: #34d399; }
+
+/* JSON配置容器 */
+.json-config-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 使用说明样式 */
+.usage-instructions {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(102, 126, 234, 0.5);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.usage-instructions::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(102, 126, 234, 0.8);
+  border-radius: 8px 8px 0 0;
+}
+
+.instructions-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.instructions-icon {
+  font-size: 16px;
+  color: #667eea;
+}
+
+.instructions-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.instructions-content {
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.instructions-list {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.instructions-list > li {
+  margin-bottom: 12px;
+  position: relative;
+  padding-left: 4px;
+}
+
+.instructions-list > li::marker {
+  color: #667eea;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.instructions-list > li:last-child {
+  margin-bottom: 0;
+}
+
+.instructions-list strong {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.instructions-list ul {
+  margin: 6px 0 0 0;
+  padding-left: 16px;
+  list-style-type: disc;
+}
+
+.instructions-list ul li {
+  margin-bottom: 3px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.instructions-list ul li strong {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  display: inline;
+  margin-bottom: 0;
+}
+
+.instructions-list code {
+  background: rgba(102, 126, 234, 0.15);
+  color: #a8b3ff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
 </style> 
