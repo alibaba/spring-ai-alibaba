@@ -103,19 +103,28 @@
                   <textarea v-model="agent.description" class="form-control" rows="3"></textarea>
                 </div>
                 <div class="form-group">
+                  <label>分类</label>
+                  <input type="text" v-model="agent.category" class="form-control" placeholder="请输入智能体分类">
+                </div>
+                <div class="form-group">
+                  <label>标签</label>
+                  <input type="text" v-model="agent.tags" class="form-control" placeholder="多个标签用逗号分隔">
+                </div>
+                <div class="form-group">
                   <label>状态</label>
                   <select v-model="agent.status" class="form-control">
-                    <option value="active">启用</option>
-                    <option value="inactive">禁用</option>
+                    <option value="draft">待发布</option>
+                    <option value="published">已发布</option>
+                    <option value="offline">已下线</option>
                   </select>
                 </div>
                 <div class="form-group">
                   <label>创建时间</label>
-                  <input type="text" :value="agent.createdAt" class="form-control" readonly>
+                  <input type="text" :value="formatDateTime(agent.createTime)" class="form-control" readonly>
                 </div>
                 <div class="form-group">
                   <label>更新时间</label>
-                  <input type="text" :value="agent.updatedAt" class="form-control" readonly>
+                  <input type="text" :value="formatDateTime(agent.updateTime)" class="form-control" readonly>
                 </div>
                 <div class="form-actions">
                   <button class="btn btn-primary" @click="updateAgent">保存</button>
@@ -225,17 +234,12 @@
               </div>
               <div class="prompt-config-section">
                 <div class="form-group">
-                  <label>系统提示词</label>
-                  <textarea v-model="promptConfig.systemPrompt" class="form-control" rows="6" 
-                    placeholder="请输入系统提示词，定义智能体的基本行为和角色"></textarea>
-                </div>
-                <div class="form-group">
-                  <label>用户提示词模板</label>
-                  <textarea v-model="promptConfig.userPrompt" class="form-control" rows="4"
-                    placeholder="请输入用户提示词模板，支持变量替换"></textarea>
+                  <label>智能体Prompt</label>
+                  <textarea v-model="agent.prompt" class="form-control" rows="8" 
+                    placeholder="请输入智能体的提示词，定义智能体的基本行为和角色"></textarea>
                 </div>
                 <div class="form-actions">
-                  <button class="btn btn-primary" @click="savePromptConfig">保存配置</button>
+                  <button class="btn btn-primary" @click="updateAgent">保存配置</button>
                 </div>
               </div>
             </div>
@@ -579,21 +583,20 @@ export default {
       id: '',
       name: '',
       description: '',
-      status: 'active',
+      status: 'draft',
       createdAt: '',
       updatedAt: '',
-      avatar: ''
+      avatar: '',
+      prompt: '',
+      category: '',
+      adminId: '',
+      tags: ''
     })
     
     const businessKnowledgeList = ref([])
     const semanticModelList = ref([])
     const knowledgeDocuments = ref([])
     const datasourceList = ref([])
-    
-    const promptConfig = reactive({
-      systemPrompt: '',
-      userPrompt: ''
-    })
     
     const showCreateKnowledgeModal = ref(false)
     const showCreateModelModal = ref(false)
@@ -640,9 +643,24 @@ export default {
       try {
         const agentId = route.params.id
         const response = await agentApi.getDetail(agentId)
-        Object.assign(agent, response.data)
+        // 后端直接返回智能体对象，不是包装在data字段中
+        Object.assign(agent, {
+          id: response.id,
+          name: response.name || '',
+          description: response.description || '',
+          status: response.status || 'draft',
+          createTime: response.createTime || '',
+          updateTime: response.updateTime || '',
+          avatar: response.avatar || '',
+          prompt: response.prompt || '',
+          category: response.category || '',
+          adminId: response.adminId || '',
+          tags: response.tags || ''
+        })
+        console.log('智能体详情加载成功:', agent)
       } catch (error) {
         console.error('加载智能体详情失败:', error)
+        alert('加载智能体详情失败，请重试')
       }
     }
     
@@ -900,13 +918,41 @@ export default {
       return date.toLocaleString('zh-CN')
     }
     
+    const formatDateTime = (dateStr) => {
+      if (!dateStr) return '-'
+      const date = new Date(dateStr)
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+    }
+    
     const updateAgent = async () => {
       try {
-        await agentApi.update(agent.id, agent)
+        // 准备提交的数据，过滤掉只读字段
+        const updateData = {
+          name: agent.name,
+          description: agent.description,
+          status: agent.status,
+          category: agent.category,
+          tags: agent.tags,
+          prompt: agent.prompt || '',
+          adminId: agent.adminId || null
+        }
+        
+        const response = await agentApi.update(agent.id, updateData)
+        console.log('更新响应:', response)
         alert('更新成功')
+        
+        // 重新加载智能体详情以获取最新的更新时间
+        await loadAgentDetail()
       } catch (error) {
         console.error('更新智能体失败:', error)
-        alert('更新失败')
+        alert('更新失败：' + (error.message || '未知错误'))
       }
     }
     
@@ -940,12 +986,6 @@ export default {
           console.error('删除模型失败:', error)
         }
       }
-    }
-    
-    const savePromptConfig = () => {
-      // TODO: 实现保存Prompt配置功能
-      console.log('保存Prompt配置:', promptConfig)
-      alert('配置已保存')
     }
     
     const viewDocument = (doc) => {
@@ -1035,7 +1075,6 @@ export default {
       semanticModelList,
       knowledgeDocuments,
       datasourceList,
-      promptConfig,
       showCreateKnowledgeModal,
       showCreateModelModal,
       showUploadModal,
@@ -1060,7 +1099,6 @@ export default {
       testConnection,
       editDatasource,
       deleteDatasource,
-      savePromptConfig,
       viewDocument,
       deleteDocument,
       // 智能体知识方法
@@ -1079,6 +1117,7 @@ export default {
       getEmbeddingStatusText,
       getKnowledgeIcon,
       formatDate,
+      formatDateTime,
       getRandomColor,
       getRandomIcon
     }
