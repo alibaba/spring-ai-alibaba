@@ -37,7 +37,7 @@ public class DynamicModelEntity {
 	private String apiKey;
 
 	@Convert(converter = MapToStringConverter.class)
-	@Column(columnDefinition = "VARCHAR")
+	@Column(columnDefinition = "VARCHAR(2048)")
 	private Map<String, String> headers;
 
 	@Column(nullable = false)
