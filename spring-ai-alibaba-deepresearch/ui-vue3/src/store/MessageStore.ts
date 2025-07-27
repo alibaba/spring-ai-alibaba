@@ -35,7 +35,9 @@ type MsgType<Message> = {
     }
   }
   // 记录历史
-  history: { [key: string]: MessageInfo<any>[] }
+  history: { [key: string]: MessageInfo<any>[] },
+  htmlReport: { [key:string]: string[] },
+
 }
 export const useMessageStore = <Message extends SimpleType>() =>
   defineStore('messageStore', {
@@ -44,6 +46,7 @@ export const useMessageStore = <Message extends SimpleType>() =>
         convId: '',
         currentState: {},
         history: {},
+        htmlReport: {},
       })
     },
     getters: {
@@ -58,6 +61,12 @@ export const useMessageStore = <Message extends SimpleType>() =>
           return state.currentState[state.convId]
         }
       },
+      htmlReport: (state): any => {
+        if (state.convId) {
+          console.log('htmlReport', state.htmlReport)
+          return state.htmlReport[state.convId]
+        }
+      }
     },
     actions: {
       nextAIType() {

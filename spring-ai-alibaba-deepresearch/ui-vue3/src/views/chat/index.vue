@@ -118,13 +118,28 @@
         </div>
       </Flex>
       <Report :visible="current.deepResearchDetail" :convId="convId" @close="current.deepResearchDetail = false" />
-
+      <!-- HTML 渲染组件弹窗 -->
+      <a-modal
+        v-model:open="htmlModalVisible"
+        title="HTML 报告"
+        :width="1200"
+        :footer="null"
+        :destroyOnClose="true"
+        @cancel="closeHtmlModal"
+      >
+        <HtmlRenderer
+          ref="htmlRendererRef"
+          :htmlChunks="htmlChunks"
+          :loading="htmlLoading"
+          style="height: 600px;"
+        />
+      </a-modal>
     </Flex>
   </div>
 </template>
 
 <script setup lang="tsx">
-import { Button, Card, Flex, Spin, theme, Typography } from 'ant-design-vue'
+import { Button, Card, Flex, Modal, Spin, theme, Typography } from 'ant-design-vue'
 import {
   CheckCircleOutlined,
   CloseOutlined,
@@ -155,6 +170,7 @@ import { computed, h, onMounted, reactive, ref, watch } from 'vue'
 import MD from '@/components/md/index.vue'
 import Gap from '@/components/toolkit/Gap.vue'
 import Report from '@/components/report/index.vue'
+import HtmlRenderer from '@/components/html/index.vue'
 import { XStreamBody } from '@/utils/stream'
 import request from '@/utils/request'
 import { ScrollController } from '@/utils/scroll'
@@ -177,11 +193,11 @@ const username = useAuthStore().token
 const roles: BubbleListProps['roles'] = {
   ai: {
     placement: 'start',
-    // avatar: {
-    //   icon: <GlobalOutlined />,
-    //   shape: 'square',
-    //   style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
-    // },
+    avatar: {
+      icon: <GlobalOutlined />,
+      shape: 'square',
+      style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
+    },
     style: {
       maxWidth: '100%',
     },
@@ -190,10 +206,10 @@ const roles: BubbleListProps['roles'] = {
   local: {
     placement: 'end',
     shape: 'corner',
-    // avatar: {
-    //   icon: <UserOutlined />,
-    //   style: {},
-    // },
+    avatar: {
+      icon: <UserOutlined />,
+      style: {},
+    },
     rootClassName: 'local',
   },
 }
@@ -367,6 +383,12 @@ if (convId) {
 const content = ref('')
 const senderLoading = ref(false)
 
+// HTML 渲染组件相关状态
+const htmlModalVisible = ref(false)
+const htmlChunks = ref([])
+const htmlLoading = ref(false)
+const htmlRendererRef = ref(null)
+
 const submitHandle = (nextContent: any) => {
   current.aiType = 'normal'
   // 如果是深度研究，需要切换到下一个aiType
@@ -393,21 +415,45 @@ function startDeepResearch() {
 
 // 展示HTML报告
 async function htmlDeepResearch(){
-    console.log('后端接口未实现')
-    // const xStreamBody = new XStreamBody('/api/reports/build-html?threadId=' + convId, {
-    //     method: 'GET',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       Accept: 'text/event-stream',
-    //     }})
+    // 先打开弹窗
+    htmlModalVisible.value = true
+    htmlLoading.value = true
+    htmlChunks.value = []
+    
+    if(messageStore.htmlReport[convId]){
+      htmlChunks.value = messageStore.htmlReport[convId]
+      htmlLoading.value = false
+      return
+    }
 
-    // try {
-    //     await xStreamBody.readStream((chunk: any) => {
-    //     console.log(chunk)
-    // })
-    // } catch (e: any) {
-    //     console.error(e.statusText)
-    // }
+    const xStreamBody = new XStreamBody('/api/reports/build-html?threadId=' + convId, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        }})
+
+    try {
+        await xStreamBody.readStream((chunk: any) => {
+            // 将接收到的HTML片段添加到数组中
+            const chunkNode = JSON.parse(chunk)
+            htmlChunks.value.push(chunkNode.result.output.text)
+        })
+        htmlLoading.value = false
+    } catch (e: any) {
+        console.error(e.statusText)
+        htmlLoading.value = false
+        // 如果出错，可以显示错误信息
+        htmlChunks.value = [`<div style="color: red; padding: 20px;">加载HTML报告时出错: ${e.statusText}</div>`]
+    }
+    messageStore.htmlReport[convId] = htmlChunks.value
+}
+
+// 关闭HTML模态框
+function closeHtmlModal() {
+    htmlModalVisible.value = false
+    htmlChunks.value = []
+    htmlLoading.value = false
 }
 
 // 下载报告
@@ -649,7 +695,7 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
           }
           return buildStartDSThoughtChain(jsonArray)
         }
-        // 研究完成，TODO 这里应该流转未endDS状态
+        // 研究完成，TODO 这里应该流为endDS状态
         if (current.aiType === 'onDS') {
           return buildEndDSThoughtChain(jsonArray)
         }
@@ -679,7 +725,7 @@ function parseFooter(status: MessageStatus, isCurrent: boolean): any {
 const bubbleList = computed(() => {
   const len = messages.value.length
   messageStore.history[convId] = messages.value
-  // TODO 当状态是loading的时候，是每个chunk，然后succes，把之前所有的chunk 全部返回
+  //  当状态是loading的时候，是每个chunk，然后succes，把之前所有的chunk 全部返回
   return messages.value.map(({ id, message, status }, idx) => ({
     key: id,
     role: status === 'local' ? 'local' : 'ai',
