@@ -17,12 +17,22 @@ package com.alibaba.cloud.ai.example.manus.planning.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +56,15 @@ public class PlanTemplateService implements IPlanTemplateService {
 
 	@Autowired
 	private PlanTemplateVersionRepository versionRepository;
+
+	@Autowired
+	private PlanIdDispatcher planIdDispatcher;
+
+	@Autowired
+	@Lazy
+	private PlanningFactory planningFactory;
+
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
 	 * Save plan template and its first version
@@ -309,6 +328,95 @@ public class PlanTemplateService implements IPlanTemplateService {
 		catch (Exception e) {
 			logger.error("Failed to delete plan template {}", planTemplateId, e);
 			return false;
+		}
+	}
+
+	/**
+	 * Internal common method for executing plans (version with URL parameters)
+	 * @param planTemplateId Plan template ID
+	 * @param rawParam URL query parameters
+	 * @return Result status
+	 */
+	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam) {
+		try {
+			// Step 1: Get execution JSON from repository by planTemplateId
+			PlanTemplate template = getPlanTemplate(planTemplateId);
+			if (template == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			// Get the latest version of the plan JSON
+			List<String> versions = getPlanVersions(planTemplateId);
+			if (versions.isEmpty()) {
+				return ResponseEntity.internalServerError()
+					.body(Map.of("error", "Plan template has no executable version"));
+			}
+			String planJson = getPlanVersion(planTemplateId, versions.size() - 1);
+			if (planJson == null || planJson.trim().isEmpty()) {
+				return ResponseEntity.internalServerError().body(Map.of("error", "Cannot get plan JSON data"));
+			}
+
+			// Generate a new plan ID, not using the template ID
+			String newPlanId = planIdDispatcher.generatePlanId();
+
+			// Get planning flow, using the new plan ID
+			PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(newPlanId);
+			ExecutionContext context = new ExecutionContext();
+			context.setCurrentPlanId(newPlanId);
+			context.setRootPlanId(newPlanId);
+			context.setNeedSummary(true); // We need to generate a summary
+
+			try {
+				// 使用 Jackson 反序列化 JSON 为 PlanInterface 对象（支持多态）
+				PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
+
+				// 设置新的计划ID，覆盖JSON中的ID
+				plan.setCurrentPlanId(newPlanId);
+				plan.setRootPlanId(newPlanId);
+				// 设置URL参数到计划中
+				if (rawParam != null && !rawParam.isEmpty()) {
+					logger.info("Set execution parameters to plan: {}", rawParam);
+					plan.setExecutionParams(rawParam);
+				}
+
+				// Set plan to context
+				context.setPlan(plan);
+
+				// Get user request from recorder
+				context.setUserRequest(template.getTitle());
+			}
+			catch (Exception e) {
+				logger.error("Failed to parse plan JSON or get user request", e);
+				context.setUserRequest("Execute plan: " + newPlanId + "\nFrom template: " + planTemplateId);
+
+				// If parsing fails, record the error but continue with the flow
+				logger.warn("Using original JSON to continue execution", e);
+			}
+
+			// Execute the plan asynchronously
+			CompletableFuture.runAsync(() -> {
+				try {
+					// Execute the plan and summary steps, skipping the create plan step
+					planningCoordinator.executeExistingPlan(context);
+					logger.info("Plan execution successful: {}", newPlanId);
+				}
+				catch (Exception e) {
+					logger.error("Plan execution failed", e);
+				}
+			});
+
+			// Return task ID and initial status
+			Map<String, Object> response = new HashMap<>();
+			response.put("planId", newPlanId);
+			response.put("status", "processing");
+			response.put("message", "计划执行请求已提交，正在处理中");
+
+			return ResponseEntity.ok(response);
+		}
+		catch (Exception e) {
+			logger.error("Plan execution failed", e);
+			return ResponseEntity.internalServerError()
+				.body(Map.of("error", "Plan execution failed: " + e.getMessage()));
 		}
 	}
 

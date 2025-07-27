@@ -20,6 +20,10 @@ export interface CronConfig {
   cronTime: string // 对应API返回的cronTime字段（cron表达式）
   planDesc: string // 对应API返回的planDesc字段（任务描述）
   status: number // 0: 禁用, 1: 启用
+  linkTemplate?: boolean // 是否关联计划模板
+  templateId?: string // 关联的计划模板ID
+  planTemplateId?: string // 后台接口使用的计划模板ID字段
+  executionParams?: any // 执行参数
   createTime?: string
   updateTime?: string
 }
