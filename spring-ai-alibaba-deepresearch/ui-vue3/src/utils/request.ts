@@ -22,14 +22,18 @@ import type {
   InternalAxiosRequestConfig,
 } from 'axios'
 import axios from 'axios'
+import { message } from 'ant-design-vue';
 
 const service: AxiosInstance = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_BASE_URL || '',
   timeout: 30 * 1000,
+  withCredentials: false, // 跨域请求时是否需要使用凭证
+  headers: {
+    'Content-Type': 'application/json'
+  }
 })
 const request: AxiosInterceptorManager<InternalAxiosRequestConfig> = service.interceptors.request
 const response: AxiosInterceptorManager<AxiosResponse> = service.interceptors.response
-
 request.use(
   config => {
     config.data = JSON.stringify(config.data)
@@ -51,13 +55,14 @@ response.use(
     ) {
       return Promise.resolve(response.data)
     }
-    console.error(response.data)
+    message.error(response.data.message)
     return Promise.reject(response.data)
   },
   error => {
     if (error) {
-      console.error(error)
+      console.error('error', error)
     }
+    message.error(error.response.data.message)
     return Promise.reject(error.response.data)
   }
 )

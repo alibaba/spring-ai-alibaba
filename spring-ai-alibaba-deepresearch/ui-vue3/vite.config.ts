@@ -34,6 +34,7 @@ export default defineConfig({
       '/deep-research': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/deep-research/, '')
       },
       '/stream': {
         target: 'http://localhost:8081',
