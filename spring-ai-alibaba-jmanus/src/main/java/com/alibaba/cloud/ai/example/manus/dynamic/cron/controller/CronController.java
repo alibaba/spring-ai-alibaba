@@ -72,6 +72,17 @@ public class CronController {
 		return ResponseEntity.ok().build();
 	}
 
+	@PostMapping("/{id}/execute")
+	public ResponseEntity<Void> executeCronTask(@PathVariable("id") String id) {
+		try {
+			cronService.executeCronTask(id);
+			return ResponseEntity.ok().build();
+		}
+		catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().build();
+		}
+	}
+
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> deleteCronTask(@PathVariable("id") String id) {
 		try {

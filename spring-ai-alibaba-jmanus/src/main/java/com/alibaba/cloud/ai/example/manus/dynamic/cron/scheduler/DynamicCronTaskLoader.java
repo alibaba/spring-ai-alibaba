@@ -57,7 +57,6 @@ public class DynamicCronTaskLoader implements CommandLineRunner {
 			List<CronEntity> dbTasks = cronRepository.findAll();
 			Set<Long> runningTaskIds = taskScheduler.getRunningTaskIds();
 
-			// 检查需要添加的任务
 			for (CronEntity dbTask : dbTasks) {
 				boolean isRunning = runningTaskIds.contains(dbTask.getId());
 				boolean shouldRun = TaskStatus.ENABLED.getCode().equals(dbTask.getStatus());

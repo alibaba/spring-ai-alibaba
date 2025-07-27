@@ -20,9 +20,15 @@
         <div class="modal-container" @click.stop>
           <div class="modal-header">
             <h3>{{ $t('cronTask.title') }}</h3>
-            <button class="close-btn" @click="$emit('update:modelValue', false)">
-              <Icon icon="carbon:close" />
-            </button>
+            <div class="header-actions">
+              <button class="add-task-btn" @click="addNewTask" @click.stop>
+                <Icon icon="carbon:add" />
+                {{ $t('cronTask.addTask') }}
+              </button>
+              <button class="close-btn" @click="$emit('update:modelValue', false)">
+                <Icon icon="carbon:close" />
+              </button>
+            </div>
           </div>
           <div class="modal-content">
             <!-- Loading state -->
@@ -151,20 +157,63 @@
       </div>
     </Transition>
   </Teleport>
+
+  <!-- Create Options Modal -->
+  <Teleport to="body">
+    <Transition name="modal">
+      <div v-if="showCreateOptions" class="modal-overlay" @click="cancelCreateOptions">
+        <div class="confirm-modal create-options-modal" @click.stop>
+          <div class="confirm-header">
+            <Icon icon="carbon:time" class="create-icon" />
+            <h3>{{ $t('cronTask.createTask') }}</h3>
+          </div>
+          <div class="confirm-content">
+            <p>{{ $t('cronTask.selectCreateMethod') }}</p>
+
+            <div class="create-options">
+              <button class="create-option-btn jmanus-btn" @click="createWithJmanus">
+                <Icon icon="carbon:ai-status" />
+                <div class="option-content">
+                  <span class="option-title">{{ $t('cronTask.createWithJmanus') }}</span>
+                  <span class="option-desc">{{ $t('cronTask.createWithJmanusDesc') }}</span>
+                </div>
+              </button>
+
+              <button class="create-option-btn manual-btn" @click="createManually">
+                <Icon icon="carbon:edit" />
+                <div class="option-content">
+                  <span class="option-title">{{ $t('cronTask.createManually') }}</span>
+                  <span class="option-desc">{{ $t('cronTask.createManuallyDesc') }}</span>
+                </div>
+              </button>
+            </div>
+          </div>
+          <div class="confirm-actions">
+            <button class="confirm-btn cancel-btn" @click="cancelCreateOptions">
+              {{ $t('common.cancel') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { CronApiService } from '@/api/cron-api-service'
 import type { CronConfig } from '@/types/cron-task'
 import TaskDetailModal from './TaskDetailModal.vue'
 import { useTaskStore } from '@/stores/task'
 import { useToast } from '@/plugins/useToast'
+import { CronTaskUtils } from '@/utils/cron-task-utils'
 const router = useRouter()
 const taskStore = useTaskStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {
@@ -185,140 +234,255 @@ const showDetail = ref(false)
 const selectedTask = ref<CronConfig | null>(null)
 const showDeleteConfirm = ref(false)
 const taskToDelete = ref<CronConfig | null>(null)
+const showCreateOptions = ref(false)
 
 
 
+/**
+ * Handle click on modal overlay area
+ */
 const handleOverlayClick = (e: MouseEvent) => {
   if (e.target === e.currentTarget) {
     emit('update:modelValue', false)
   }
 }
 
+/**
+ * Load all scheduled tasks
+ */
 const loadCronTasks = async () => {
   loading.value = true
   try {
     cronTasks.value = await CronApiService.getAllCronTasks()
   } catch (error) {
     console.error('Failed to load cron tasks:', error)
+    toast.error(`Failed to load tasks: ${error instanceof Error ? error.message : String(error)}`)
   } finally {
     loading.value = false
   }
 }
 
+/**
+ * Execute scheduled task
+ * @param taskId Task ID
+ */
 const executeTask = async (taskId: string | number) => {
   executing.value = taskId
   try {
-    // Find the task by ID
+    // Find task
     const task = cronTasks.value.find(t => t.id === taskId)
     if (!task) {
       console.error('Task not found:', taskId)
       return
     }
 
-    // Use planDesc as the task content
-    const taskContent = task.planDesc || task.cronName || ''
+    // Close modal
+    emit('update:modelValue', false)
 
-    if (taskContent.trim()) {
-      taskStore.setTask(taskContent.trim())
-      emit('update:modelValue', false)
+    // Navigate to chat page
+    const chatId = Date.now().toString()
+    await router.push({
+      name: 'direct',
+      params: { id: chatId },
+    })
 
-      const chatId = Date.now().toString()
-      await router.push({
-        name: 'direct',
-        params: { id: chatId },
-      })
+    // Wait for page to load
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Prepare execution data
+    const executionData = CronTaskUtils.prepareTaskExecution(task)
+
+    // Execute task
+    if (executionData.useTemplate && executionData.planData) {
+      // Execute plan using template
+      taskStore.emitPlanExecutionRequested(executionData.planData)
+    } else if (executionData.taskContent) {
+      // Execute directly using task description as content
+      taskStore.setTask(executionData.taskContent)
     }
   } catch (error) {
     console.error('Failed to execute task:', error)
+    toast.error(`Execution failed: ${error instanceof Error ? error.message : String(error)}`)
   } finally {
     executing.value = null
   }
 }
 
+/**
+ * Show task details
+ * @param task Task object
+ */
 const showTaskDetail = (task: CronConfig) => {
   selectedTask.value = { ...task }
   showDetail.value = true
   activeDropdown.value = null
 }
 
+/**
+ * Handle task save
+ * @param updatedTask Updated task
+ */
 const handleSaveTask = async (updatedTask: CronConfig) => {
   try {
-    if (updatedTask.id) {
-      await CronApiService.updateCronTask(Number(updatedTask.id), updatedTask)
-      await loadCronTasks() // Reload the list
-    }
+    await CronTaskUtils.saveTask(updatedTask)
+    await loadCronTasks() // Reload task list
     showDetail.value = false
+    toast.success('Task saved successfully')
   } catch (error) {
     console.error('Failed to save task:', error)
+    toast.error(`Save failed: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
+/**
+ * Show delete confirmation dialog
+ * @param task Task to delete
+ */
 const showDeleteConfirmDialog = (task: CronConfig) => {
   taskToDelete.value = task
   showDeleteConfirm.value = true
 }
 
+/**
+ * Handle task deletion
+ */
 const handleDeleteTask = async () => {
   if (!taskToDelete.value?.id) return
 
   deleting.value = taskToDelete.value.id
   try {
-    await CronApiService.deleteCronTask(String(taskToDelete.value.id))
-    await loadCronTasks() // Reload the list
+    await CronTaskUtils.deleteTask(taskToDelete.value.id)
+    await loadCronTasks() // Reload task list
     showDeleteConfirm.value = false
     taskToDelete.value = null
+    toast.success('Task deleted successfully')
   } catch (error) {
     console.error('Failed to delete task:', error)
+    toast.error(`Delete failed: ${error instanceof Error ? error.message : String(error)}`)
   } finally {
     deleting.value = null
   }
 }
 
+/**
+ * Cancel delete operation
+ */
 const cancelDelete = () => {
   showDeleteConfirm.value = false
   taskToDelete.value = null
 }
 
+/**
+ * Toggle dropdown menu display state
+ * @param taskId Task ID
+ */
 const toggleDropdown = (taskId: string | number) => {
   activeDropdown.value = activeDropdown.value === taskId ? null : taskId
 }
 
+/**
+ * Toggle task status (enable/disable)
+ * @param task Task object
+ */
 const toggleTaskStatus = async (task: CronConfig) => {
   if (!task.id) return
 
   toggling.value = task.id
   try {
-    const newStatus = task.status === 0 ? 1 : 0
-    await CronApiService.updateCronTask(Number(task.id), { ...task, status: newStatus })
-    await loadCronTasks() // Reload the list
-    activeDropdown.value = null // Close dropdown
+    await CronTaskUtils.toggleTaskStatus(task)
+    await loadCronTasks() // Reload task list
+    activeDropdown.value = null // Close dropdown menu
+    toast.success(`Task ${task.status === 0 ? 'disabled' : 'enabled'} successfully`)
   } catch (error) {
     console.error('Failed to toggle task status:', error)
+    toast.error(`Status toggle failed: ${error instanceof Error ? error.message : String(error)}`)
   } finally {
     toggling.value = null
   }
 }
 
+/**
+ * Copy Cron expression
+ * @param cronTime Cron expression
+ */
 const copyCronTime = async (cronTime: string) => {
   try {
     await navigator.clipboard.writeText(cronTime)
-    toast.success('成功复制cron表达式')
+    toast.success('Cron expression copied successfully')
   } catch (e) {
-    toast.error(`复制失败: ${e instanceof Error ? e.message : String(e)}`)
+    toast.error(`Copy failed: ${e instanceof Error ? e.message : String(e)}`)
   }
 }
 
-// 点击外部关闭下拉框
+/**
+ * Add new task
+ */
+const addNewTask = () => {
+  showCreateOptions.value = true
+}
+
+/**
+ * Create task using AI assistant
+ */
+const createWithJmanus = () => {
+  showCreateOptions.value = false
+
+  try {
+    // Close modal
+    emit('update:modelValue', false)
+
+    // Get scheduled task template from i18n config, set to input box but don't execute
+    const templateContent = t('cronTask.template')
+    taskStore.setTaskToInput(templateContent)
+
+    // Navigate to chat page
+    const chatId = Date.now().toString()
+    router.push({
+      name: 'direct',
+      params: { id: chatId }
+    })
+  } catch (error) {
+    console.error('Error in createWithJmanus:', error)
+    toast.error(`Creation failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+/**
+ * Create task manually
+ */
+const createManually = () => {
+  showCreateOptions.value = false
+
+  // Create an empty task object
+  selectedTask.value = {
+    cronName: '',
+    cronTime: '',
+    planDesc: '',
+    status: 0,
+    planTemplateId: ''
+  }
+  showDetail.value = true
+}
+
+/**
+ * Cancel create options
+ */
+const cancelCreateOptions = () => {
+  showCreateOptions.value = false
+}
+
+/**
+ * Handle click outside to close dropdown
+ */
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement
-  // 检查点击的元素是否在下拉框内部
   if (!target.closest('.action-dropdown') && !target.closest('.dropdown-menu')) {
     activeDropdown.value = null
   }
 }
 
+// Lifecycle hooks
 onMounted(() => {
-  // 使用 capture 阶段监听，确保能够捕获到事件
   document.addEventListener('click', handleClickOutside, true)
 })
 
@@ -326,6 +490,7 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside, true)
 })
 
+// Watch modal display state, load task list
 watch(() => props.modelValue, (newValue) => {
   if (newValue) {
     loadCronTasks()
@@ -374,6 +539,33 @@ watch(() => props.modelValue, (newValue) => {
   font-size: 18px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.add-task-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+  color: #22c55e;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.add-task-btn:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.3);
+  transform: translateY(-1px);
 }
 
 .close-btn {
@@ -493,9 +685,9 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 .task-status-badge.active {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
 }
 
 .task-status-badge.inactive {
@@ -517,8 +709,7 @@ watch(() => props.modelValue, (newValue) => {
   -webkit-box-orient: vertical;
 }
 
-.task-time,
-.next-execution {
+.task-time {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -531,8 +722,7 @@ watch(() => props.modelValue, (newValue) => {
   transition: all 0.2s ease;
 }
 
-.task-time:hover,
-.next-execution:hover {
+.task-time:hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.1);
 }
@@ -569,14 +759,14 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 .execute-btn {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
 }
 
 .execute-btn:hover:not(:disabled) {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 .execute-btn:disabled {
@@ -663,8 +853,8 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 .dropdown-item.toggle-btn:hover:not(:disabled) {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
 }
 
 .dropdown-item.delete-btn:hover:not(:disabled) {
@@ -677,7 +867,7 @@ watch(() => props.modelValue, (newValue) => {
   cursor: not-allowed;
 }
 
-/* Transition animations */
+/* 过渡动画 */
 .modal-enter-active,
 .modal-leave-active {
   transition: opacity 0.3s ease;
@@ -688,7 +878,7 @@ watch(() => props.modelValue, (newValue) => {
   opacity: 0;
 }
 
-/* Confirm Modal Styles */
+/* 确认模态框样式 */
 .confirm-modal {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.15));
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -777,6 +967,87 @@ watch(() => props.modelValue, (newValue) => {
 .confirm-btn.delete-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Create Options Modal Styles */
+.create-options-modal {
+  max-width: 520px;
+}
+
+.create-icon {
+  font-size: 24px;
+  color: #3b82f6;
+}
+
+.create-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.create-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: left;
+}
+
+.create-option-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.create-option-btn .iconify {
+  font-size: 24px;
+}
+
+.jmanus-btn {
+  color: #3b82f6;
+}
+
+.jmanus-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.jmanus-btn .iconify {
+  color: #3b82f6;
+}
+
+.manual-btn {
+  color: #10b981;
+}
+
+.manual-btn:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.manual-btn .iconify {
+  color: #10b981;
+}
+
+.option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.option-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.option-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
 }
 </style>
 

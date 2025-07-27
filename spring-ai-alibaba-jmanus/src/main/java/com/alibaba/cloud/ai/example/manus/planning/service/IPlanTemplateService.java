@@ -16,8 +16,10 @@
 package com.alibaba.cloud.ai.example.manus.planning.service;
 
 import java.util.List;
+import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
+import org.springframework.http.ResponseEntity;
 
 /**
  * 计划模板服务接口，提供计划模板相关的业务逻辑
@@ -121,5 +123,12 @@ public interface IPlanTemplateService {
 	 * @return 是否删除成功
 	 */
 	boolean deletePlanTemplate(String planTemplateId);
+
+	/**
+	 * 按计划模板执行
+	 * @param planTemplateId 模板ID
+	 * @return 是否删除成功
+	 */
+	ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam);
 
 }

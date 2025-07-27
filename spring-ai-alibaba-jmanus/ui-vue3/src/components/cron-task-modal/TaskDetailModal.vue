@@ -20,13 +20,22 @@
         <div class="modal-container" @click.stop>
           <div class="modal-header">
             <h3>{{ $t('cronTask.taskDetail') }}</h3>
-            <button class="close-btn" @click="$emit('update:modelValue', false)">
-              <Icon icon="carbon:close" />
-            </button>
+            <div class="header-actions">
+              <div class="status-switch">
+                <span class="status-label">{{ $t('cronTask.taskStatus') }}</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" :checked="formData.status === 0" @change="formData.status = formData.status === 0 ? 1 : 0">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <button class="close-btn" @click="$emit('update:modelValue', false)">
+                <Icon icon="carbon:close" />
+              </button>
+            </div>
           </div>
           <div class="modal-content">
             <form @submit.prevent="handleSave" class="task-form">
-              <!-- Task Name -->
+              <!-- 任务名称 -->
               <div class="form-group">
                 <label class="form-label">{{ $t('cronTask.taskName') }}</label>
                 <input
@@ -38,7 +47,7 @@
                 />
               </div>
 
-              <!-- Cron Expression -->
+              <!-- Cron表达式 -->
               <div class="form-group">
                 <label class="form-label">{{ $t('cronTask.cronExpression') }}</label>
                 <input
@@ -53,7 +62,7 @@
                 </div>
               </div>
 
-              <!-- Task Description -->
+              <!-- 任务描述 -->
               <div class="form-group">
                 <label class="form-label">{{ $t('cronTask.taskDescription') }}</label>
                 <textarea
@@ -61,44 +70,61 @@
                   class="form-textarea"
                   :placeholder="$t('cronTask.taskDescriptionPlaceholder')"
                   rows="4"
+                  required
                 ></textarea>
               </div>
 
-              <!-- Task Status -->
+              <!-- 计划模板关联 -->
               <div class="form-group">
-                <label class="form-label">{{ $t('cronTask.taskStatus') }}</label>
-                <div class="status-toggle">
+                <label class="form-label">{{ $t('cronTask.planTemplate') }}</label>
+                <div class="template-toggle">
                   <button
                     type="button"
-                    :class="['status-btn', formData.status === 0 ? 'active' : '']"
-                    @click="formData.status = 0"
+                    :class="['template-btn', formData.linkTemplate ? 'active' : '']"
+                    @click="formData.linkTemplate = true"
                   >
                     <Icon icon="carbon:checkmark" />
-                    {{ $t('cronTask.active') }}
+                    {{ $t('cronTask.linkTemplate') }}
                   </button>
                   <button
                     type="button"
-                    :class="['status-btn', formData.status === 1 ? 'active' : '']"
-                    @click="formData.status = 1"
+                    :class="['template-btn', !formData.linkTemplate ? 'active' : '']"
+                    @click="handleDisableLinkTemplate"
                   >
                     <Icon icon="carbon:close" />
-                    {{ $t('cronTask.inactive') }}
+                    {{ $t('cronTask.noTemplate') }}
                   </button>
+                </div>
+                <div v-if="formData.linkTemplate" class="template-selector">
+                  <select
+                    v-model="formData.templateId"
+                    class="form-select"
+                  >
+                    <option value="">{{ $t('cronTask.selectTemplate') }}</option>
+                    <option v-for="template in templates" :key="template.id" :value="template.id">
+                      {{ template.name }}
+                    </option>
+                  </select>
+                  <div class="form-help">
+                    {{ $t('cronTask.templateHelpText') }}
+                  </div>
                 </div>
               </div>
 
-              <!-- Task Info (Read-only) -->
+              <!-- 任务信息（只读） -->
               <div v-if="task?.createTime" class="form-group">
-                <label class="form-label">{{ $t('cronTask.createTime') }}</label>
-                <div class="form-info">{{ formatTime(task.createTime) }}</div>
+                <div class="time-info">
+                  <span class="time-label">{{ $t('cronTask.createTime') }}:</span>
+                  <span class="time-value">{{ formatTime(task.createTime) }}</span>
+                </div>
               </div>
 
               <div v-if="task?.updateTime" class="form-group">
-                <label class="form-label">{{ $t('cronTask.updateTime') }}</label>
-                <div class="form-info">{{ formatTime(task.updateTime) }}</div>
+                <div class="time-info">
+                  <span class="time-label">{{ $t('cronTask.updateTime') }}:</span>
+                  <span class="time-value">{{ formatTime(task.updateTime) }}</span>
+                </div>
               </div>
-
-
             </form>
           </div>
           <div class="modal-footer">
@@ -107,7 +133,7 @@
             </button>
             <button type="button" class="save-btn" @click="handleSave" :disabled="saving">
               <Icon v-if="saving" icon="carbon:loading" class="loading-icon" />
-              {{ $t('common.save') }}
+              {{ props.task?.id ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>
@@ -117,9 +143,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import type { CronConfig } from '@/types/cron-task'
+import { PlanActApiService } from '@/api/plan-act-api-service'
+import type { PlanTemplate } from '@/types/plan-template'
+import { CronTaskUtils } from '@/utils/cron-task-utils'
 
 const props = defineProps<{
   modelValue: boolean
@@ -131,55 +160,153 @@ const emit = defineEmits<{
   'save': [task: CronConfig]
 }>()
 
+// 状态变量
 const saving = ref(false)
+const templates = ref<Array<{id: string, name: string}>>([])
+
+// 表单数据
 const formData = ref<CronConfig>({
   cronName: '',
   cronTime: '',
   planDesc: '',
   status: 1,
+  linkTemplate: false,
+  templateId: '',
+  planTemplateId: ''
 })
 
+/**
+ * Get template list from API
+ */
+const fetchTemplates = async () => {
+  try {
+    const response = await PlanActApiService.getAllPlanTemplates()
+    if (response && response.templates) {
+      templates.value = response.templates.map((template: PlanTemplate) => ({
+        id: template.id,
+        name: template.title || 'Unnamed Template'
+      }))
+    }
+  } catch (error) {
+    console.error('Failed to get template list:', error)
+  }
+}
+
+onMounted(fetchTemplates)
+
+/**
+ * Handle click on modal overlay area
+ */
 const handleOverlayClick = (e: MouseEvent) => {
   if (e.target === e.currentTarget) {
     emit('update:modelValue', false)
   }
 }
 
-const handleSave = async () => {
-  if (!formData.value.cronName.trim() || !formData.value.cronTime.trim()) {
-    return
+/**
+ * Disable template linking
+ */
+const handleDisableLinkTemplate = () => {
+  formData.value.linkTemplate = false
+  formData.value.templateId = ''
+  formData.value.planTemplateId = ''
+}
+
+/**
+ * Validate form data
+ */
+const validateForm = (): boolean => {
+  // Required field validation
+  if (!formData.value.cronName.trim()) {
+    alert('Task name cannot be empty')
+    return false
   }
+
+  if (!formData.value.cronTime.trim()) {
+    alert('Cron expression cannot be empty')
+    return false
+  }
+
+  // Validate Cron expression format
+  if (!CronTaskUtils.validateCronExpression(formData.value.cronTime)) {
+    alert('Invalid Cron expression format, should be 5-6 parts separated by spaces')
+    return false
+  }
+
+  if (!formData.value.planDesc.trim()) {
+    alert('Task description cannot be empty')
+    return false
+  }
+
+  // If template linking is selected, template ID cannot be empty
+  if (formData.value.linkTemplate && !formData.value.templateId) {
+    alert('Please select a plan template')
+    return false
+  }
+
+  return true
+}
+
+/**
+ * Format time
+ */
+const formatTime = (timeString: string) => {
+  return CronTaskUtils.formatTime(timeString)
+}
+
+/**
+ * Save task
+ */
+const handleSave = async () => {
+  if (!validateForm()) return
 
   saving.value = true
   try {
+    // Prepare data to save
     const taskToSave: CronConfig = {
       ...formData.value,
       ...(props.task?.id !== undefined && { id: props.task.id }),
       cronName: formData.value.cronName.trim(),
       cronTime: formData.value.cronTime.trim(),
-      planDesc: formData.value.planDesc.trim() || '',
-      status: formData.value.status
+      planDesc: formData.value.planDesc.trim(),
+      status: formData.value.status,
+      planTemplateId: formData.value.linkTemplate ? formData.value.templateId || '' : ''
     }
+
+    // Trigger save event
     emit('save', taskToSave)
   } finally {
     saving.value = false
   }
 }
 
-const formatTime = (timeString: string) => {
-  return new Date(timeString).toLocaleString()
-}
-
-// Watch for task changes to populate form
+// Watch for task changes, update form data
 watch(
   () => props.task,
   (newTask) => {
     if (newTask) {
+      // Unified handling of template ID field
+      const templateId = newTask.templateId || newTask.planTemplateId || ''
+
       formData.value = {
         cronName: newTask.cronName || '',
         cronTime: newTask.cronTime || '',
         planDesc: newTask.planDesc || '',
-        status: newTask.status || 1,
+        status: newTask.status ?? 1,
+        linkTemplate: !!templateId,
+        templateId: templateId,
+        planTemplateId: templateId
+      }
+    } else {
+      // Reset form
+      formData.value = {
+        cronName: '',
+        cronTime: '',
+        planDesc: '',
+        status: 1,
+        linkTemplate: false,
+        templateId: '',
+        planTemplateId: ''
       }
     }
   },
@@ -196,6 +323,9 @@ watch(
         cronTime: '',
         planDesc: '',
         status: 1,
+        linkTemplate: false,
+        templateId: '',
+        planTemplateId: ''
       }
     }
   }
@@ -243,6 +373,23 @@ watch(
   color: rgba(255, 255, 255, 0.9);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.status-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .close-btn {
   background: none;
   border: none;
@@ -282,7 +429,8 @@ watch(
 }
 
 .form-input,
-.form-textarea {
+.form-textarea,
+.form-select {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -293,7 +441,8 @@ watch(
 }
 
 .form-input:focus,
-.form-textarea:focus {
+.form-textarea:focus,
+.form-select:focus {
   outline: none;
   border-color: rgba(102, 126, 234, 0.5);
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
@@ -315,21 +464,30 @@ watch(
   margin-top: 4px;
 }
 
-.form-info {
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
+.time-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
 }
 
-.status-toggle {
+.time-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.time-value {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.template-toggle {
   display: flex;
   gap: 8px;
 }
 
-.status-btn {
+.template-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -343,18 +501,31 @@ watch(
   color: rgba(255, 255, 255, 0.7);
 }
 
-.status-btn.active {
+.template-btn.active {
   background: rgba(102, 126, 234, 0.2);
   border-color: rgba(102, 126, 234, 0.3);
   color: #667eea;
 }
 
-.status-btn:hover {
+.template-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.status-btn.active:hover {
+.template-btn.active:hover {
   background: rgba(102, 126, 234, 0.3);
+}
+
+.template-selector {
+  margin-top: 8px;
+}
+
+.form-select {
+  width: 100%;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255, 255, 255, 0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
 }
 
 .modal-footer {
@@ -422,6 +593,54 @@ watch(
   opacity: 0;
 }
 
+/* Toggle Switch Styles */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
 
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: rgba(102, 126, 234, 0.6);
+}
+
+input:focus + .toggle-slider {
+  box-shadow: 0 0 1px rgba(102, 126, 234, 0.6);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
 </style>
 

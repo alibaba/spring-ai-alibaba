@@ -34,6 +34,8 @@ public class CronConfig {
 
 	private String createTime;
 
+	private String planTemplateId;
+
 	private LocalDateTime lastExecutedTime; // 上次执行时间
 
 	public Long getId() {
@@ -90,6 +92,14 @@ public class CronConfig {
 
 	public void setLastExecutedTime(LocalDateTime lastExecutedTime) {
 		this.lastExecutedTime = lastExecutedTime;
+	}
+
+	public String getPlanTemplateId() {
+		return planTemplateId;
+	}
+
+	public void setPlanTemplateId(String planTemplateId) {
+		this.planTemplateId = planTemplateId;
 	}
 
 }

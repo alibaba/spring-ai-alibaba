@@ -780,6 +780,7 @@ const words: I18nType = {
   // 定时任务
   cronTask: {
     title: '定时任务管理',
+    addTask: '定时任务',
     noTasks: '暂无定时任务',
     taskName: '任务名称',
     taskNamePlaceholder: '请输入任务名称',
@@ -803,6 +804,18 @@ const words: I18nType = {
     updateTime: '更新时间',
     active: '启用',
     inactive: '禁用',
+    template: '示例：每天帮我早上8点，帮我收集当天的AI新闻吧',
+    planTemplate: '计划模板',
+    linkTemplate: '关联模板',
+    noTemplate: '不关联',
+    selectTemplate: '请选择模板',
+    templateHelpText: '选择后，定时任务将按照制定好的计划执行',
+    createTask: '创建定时任务',
+    selectCreateMethod: '请选择创建方式',
+    createWithJmanus: '让Jmanus帮忙创建',
+    createWithJmanusDesc: '通过AI助手引导创建定时任务',
+    createManually: '手动创建',
+    createManuallyDesc: '自己填写定时任务信息',
   },
 }
 

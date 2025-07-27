@@ -25,6 +25,7 @@ export interface TaskPayload {
 
 export const useTaskStore = defineStore('task', () => {
   const currentTask = ref<TaskPayload | null>(null)
+  const taskToInput = ref<string>('')
   const hasVisitedHome = ref(false)
 
   // Set new task
@@ -37,6 +38,21 @@ export const useTaskStore = defineStore('task', () => {
     }
     currentTask.value = newTask
     console.log('[TaskStore] Task set, currentTask.value:', currentTask.value)
+  }
+
+  // Set task to input (for pre-filling input without executing)
+  const setTaskToInput = (prompt: string) => {
+    console.log('[TaskStore] setTaskToInput called with prompt:', prompt)
+    taskToInput.value = prompt
+    console.log('[TaskStore] Task to input set:', taskToInput.value)
+  }
+
+  // Get and clear task to input
+  const getAndClearTaskToInput = () => {
+    const task = taskToInput.value
+    taskToInput.value = ''
+    console.log('[TaskStore] getAndClearTaskToInput returning:', task)
+    return task
   }
 
   // Mark task as processed
@@ -82,15 +98,27 @@ export const useTaskStore = defineStore('task', () => {
     localStorage.removeItem('hasVisitedHome')
   }
 
+  // Emit plan execution requested event
+  const emitPlanExecutionRequested = (payload: { title: string; planData: any; params?: string }) => {
+    console.log('[TaskStore] emitPlanExecutionRequested called with payload:', payload)
+
+    // 用户就在direct页面，直接发送事件
+    window.dispatchEvent(new CustomEvent('plan-execution-requested', { detail: payload }))
+  }
+
   return {
     currentTask,
+    taskToInput,
     hasVisitedHome,
     setTask,
+    setTaskToInput,
+    getAndClearTaskToInput,
     markTaskAsProcessed,
     clearTask,
     hasUnprocessedTask,
     markHomeVisited,
     checkHomeVisited,
-    resetHomeVisited
+    resetHomeVisited,
+    emitPlanExecutionRequested
   }
 })

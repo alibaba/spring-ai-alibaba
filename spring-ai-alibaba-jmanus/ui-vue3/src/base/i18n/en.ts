@@ -809,6 +809,7 @@ const words: I18nType = {
   // Cron Task
   cronTask: {
     title: 'Cron Task Management',
+    addTask: 'Cron Task',
     noTasks: 'No cron tasks',
     taskName: 'Task Name',
     taskNamePlaceholder: 'Please enter task name',
@@ -833,6 +834,18 @@ const words: I18nType = {
     updateTime: 'Update Time',
     active: 'Active',
     inactive: 'Inactive',
+    template: 'Example: Help me collect today\'s AI news every day at 8 AM',
+    planTemplate: 'Plan Template',
+    linkTemplate: 'Link Template',
+    noTemplate: 'No Template',
+    selectTemplate: 'Select Template',
+    templateHelpText: 'After selection, the cron task will execute according to the defined plan',
+    createTask: 'Create Cron Task',
+    selectCreateMethod: 'Please select creation method',
+    createWithJmanus: 'Create with Jmanus',
+    createWithJmanusDesc: 'Create cron task with AI assistant guidance',
+    createManually: 'Create Manually',
+    createManuallyDesc: 'Fill in task information yourself',
   },
 }
 

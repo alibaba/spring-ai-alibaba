@@ -52,6 +52,9 @@ public class CronEntity {
 	@Column
 	private LocalDateTime lastExecutedTime;
 
+	@Column
+	private String planTemplateId;
+
 	public CronEntity() {
 	}
 
@@ -116,6 +119,14 @@ public class CronEntity {
 		this.lastExecutedTime = lastExecutedTime;
 	}
 
+	public String getPlanTemplateId() {
+		return planTemplateId;
+	}
+
+	public void setPlanTemplateId(String planTemplateId) {
+		this.planTemplateId = planTemplateId;
+	}
+
 	public CronConfig mapToCronConfig() {
 		CronConfig config = new CronConfig();
 		config.setId(this.getId());
@@ -125,6 +136,7 @@ public class CronEntity {
 		config.setStatus(this.getStatus());
 		config.setCreateTime(this.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 		config.setLastExecutedTime(this.getLastExecutedTime());
+		config.setPlanTemplateId(this.getPlanTemplateId());
 		return config;
 	}
 
