@@ -93,10 +93,8 @@ public interface StreamingChatGenerator {
 		 */
 		public AsyncGenerator<? extends NodeOutput> build(Flux<ChatResponse> flux) {
 			return buildInternal(flux,
-					chatResponse -> new StreamingOutput(
-							chatResponse.getResult().getOutput().getText(), startingNode, startingState
-					)
-			);
+					chatResponse -> new StreamingOutput(chatResponse.getResult().getOutput().getText(), startingNode,
+							startingState));
 		}
 
 		/**
@@ -105,18 +103,15 @@ public interface StreamingChatGenerator {
 		 * downstream consumers to access the full ChatResponse (not just the text chunk)
 		 * for each streamed result, enabling richer output handling such as extracting
 		 * metadata, finishReason, or tool call information.
-		 *
 		 * @param flux a Flux stream of ChatResponse objects
-		 * @return an AsyncGenerator that produces StreamingOutput instances containing the full ChatResponse
+		 * @return an AsyncGenerator that produces StreamingOutput instances containing
+		 * the full ChatResponse
 		 */
 		public AsyncGenerator<? extends NodeOutput> buildWithChatResponse(Flux<ChatResponse> flux) {
-			return buildInternal(flux,
-					chatResponse -> new StreamingOutput(chatResponse, startingNode, startingState)
-			);
+			return buildInternal(flux, chatResponse -> new StreamingOutput(chatResponse, startingNode, startingState));
 		}
 
-		private AsyncGenerator<? extends NodeOutput> buildInternal(
-				Flux<ChatResponse> flux,
+		private AsyncGenerator<? extends NodeOutput> buildInternal(Flux<ChatResponse> flux,
 				Function<ChatResponse, StreamingOutput> outputMapper) {
 			Objects.requireNonNull(flux, "flux cannot be null");
 			Objects.requireNonNull(mapResult, "mapResult cannot be null");
@@ -151,8 +146,7 @@ public interface StreamingChatGenerator {
 				});
 			};
 
-			var processedFlux = flux.doOnNext(mergeMessage)
-					.map(outputMapper);
+			var processedFlux = flux.doOnNext(mergeMessage).map(outputMapper);
 
 			return FlowGenerator.fromPublisher(FlowAdapters.toFlowPublisher(processedFlux), () -> {
 				ChatResponse finalResult = result.get();
