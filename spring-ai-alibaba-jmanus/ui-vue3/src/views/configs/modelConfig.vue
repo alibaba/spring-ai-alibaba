@@ -141,7 +141,7 @@
             :options="getCurrentAvailableModels().map(model => ({
               id: model.modelName,
               name: model.modelName,
-              description: (model as any).description || getModelDescription(model.modelName),
+              description: getModelDescription(model.modelName),
               category: getModelCategory(model.modelName)
             }))"
             :placeholder="t('config.modelConfig.selectModel')"
@@ -223,7 +223,7 @@
             :options="newModelAvailableModels.map(model => ({
               id: model.modelName,
               name: model.modelName,
-              description: (model as any).description || getModelDescription(model.modelName),
+              description: getModelDescription(model.modelName),
               category: getModelCategory(model.modelName)
             }))"
             :placeholder="t('config.modelConfig.selectModel')"
@@ -417,7 +417,7 @@ const handleValidateConfig = async () => {
       // 如果有可用模型，自动选择第一个并填充描述
       if (result.availableModels && result.availableModels.length > 0) {
         selectedModel.value.modelName = result.availableModels[0].modelName
-        selectedModel.value.modelDescription = (result.availableModels[0] as any).description || getModelDescription(result.availableModels[0].modelName)
+        selectedModel.value.modelDescription =  getModelDescription(result.availableModels[0].modelName)
       }
     } else {
       showMessage(t('config.modelConfig.validationFailed') + ': ' + result.message, 'error')
@@ -445,13 +445,13 @@ const getModelCategory = (modelName: string): string => {
 // 获取模型描述
 const getModelDescription = (modelName: string): string => {
   const name = modelName.toLowerCase()
-  if (name.includes('turbo')) return '通义千问 Turbo 模型，快速响应'
-  if (name.includes('plus')) return '通义千问 Plus 模型，平衡性能'
-  if (name.includes('max')) return '通义千问 Max 模型，最强性能'
-  if (name.includes('coder') || name.includes('code')) return '代码生成专用模型'
-  if (name.includes('math')) return '数学计算专用模型'
-  if (name.includes('vision') || name.includes('vl')) return '视觉理解模型'
-  if (name.includes('tts')) return '文本转语音模型'
+  if (name.includes('turbo')) return 'Turbo 模型，快速响应'
+  if (name.includes('plus')) return 'Plus 模型，平衡性能'
+  if (name.includes('max')) return 'Max 模型，最强性能'
+  if (name.includes('coder') || name.includes('code')) return 'Coder 模型，代码生成专用'
+  if (name.includes('math')) return 'Math 模型，数学计算专用'
+  if (name.includes('vision') || name.includes('vl')) return 'Vision 模型，视觉理解专用'
+  if (name.includes('tts')) return 'TTS 模型，文本转语音专用'
   return '标准模型'
 }
 
@@ -470,7 +470,7 @@ const handleModelSelection = (selectedModelName: string) => {
     const availableModels = getCurrentAvailableModels()
     const selectedModelData = availableModels.find(model => model.modelName === selectedModelName)
     if (selectedModelData) {
-      selectedModel.value.modelDescription = (selectedModelData as any).description || getModelDescription(selectedModelName)
+      selectedModel.value.modelDescription =  getModelDescription(selectedModelName)
     }
   }
 }
@@ -496,7 +496,7 @@ const handleNewModelValidateConfig = async () => {
       // 如果有可用模型，自动选择第一个并填充描述
       if (result.availableModels && result.availableModels.length > 0) {
         newModel.modelName = result.availableModels[0].modelName
-        newModel.modelDescription = (result.availableModels[0] as any).description || getModelDescription(result.availableModels[0].modelName)
+        newModel.modelDescription =  getModelDescription(result.availableModels[0].modelName)
       }
     } else {
       showMessage(t('config.modelConfig.validationFailed') + ': ' + result.message, 'error')
@@ -514,7 +514,7 @@ const handleNewModelSelection = (selectedModelName: string) => {
     // 从可用模型列表中找到对应的模型，使用其description
     const selectedModelData = newModelAvailableModels.value.find(model => model.modelName === selectedModelName)
     if (selectedModelData) {
-      newModel.modelDescription = (selectedModelData as any).description || getModelDescription(selectedModelName)
+      newModel.modelDescription = getModelDescription(selectedModelName)
     }
   }
 }

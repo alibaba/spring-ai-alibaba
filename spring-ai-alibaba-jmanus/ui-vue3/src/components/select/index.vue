@@ -35,6 +35,7 @@
       <div
         v-show="showDropdown"
         class="select-dropdown"
+        :class="{ 'dropdown-top': dropdownPosition === 'top' }"
         :style="{ ...dropStyles, ...(props.direction === 'right' ? { right: 0 } : { left: 0 }) }"
         @click.stop
       >
@@ -87,6 +88,9 @@ const emit = defineEmits<{
 // Control the display and hiding of the dropdown
 const showDropdown = ref(false)
 
+// Dropdown positioning
+const dropdownPosition = ref('bottom')
+
 // Current selected option object
 const selectedOption = computed(() => {
   return props.options.find(opt => opt.id === props.modelValue)
@@ -99,7 +103,28 @@ const isSelected = (option: { id: string }) => {
 
 // Toggle the dropdown
 const toggleDropdown = () => {
+  if (!showDropdown.value) {
+    // Calculate position before showing dropdown
+    calculateDropdownPosition()
+  }
   showDropdown.value = !showDropdown.value
+}
+
+// Calculate dropdown position to avoid being cut off
+const calculateDropdownPosition = () => {
+  const selectElement = document.querySelector('.custom-select') as HTMLElement
+  if (!selectElement) return
+  
+  const rect = selectElement.getBoundingClientRect()
+  const windowHeight = window.innerHeight
+  const dropdownHeight = 200 // Estimated dropdown height
+  
+  // If there's not enough space below, show above
+  if (rect.bottom + dropdownHeight > windowHeight) {
+    dropdownPosition.value = 'top'
+  } else {
+    dropdownPosition.value = 'bottom'
+  }
 }
 
 // Triggered when an option is selected
@@ -149,7 +174,7 @@ const selectOption = (option: { id: string }) => {
   text-shadow: none;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0;
 }
 
 .current-option .option-icon {
@@ -177,6 +202,13 @@ const selectOption = (option: { id: string }) => {
     0 8px 32px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(102, 126, 234, 0.2);
   min-width: 300px;
+}
+
+.select-dropdown.dropdown-top {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 4px;
 }
 
 .dropdown-header {
@@ -213,7 +245,7 @@ const selectOption = (option: { id: string }) => {
 .select-option {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0;
   width: 100%;
   padding: 10px 16px;
   background: none;
@@ -252,7 +284,7 @@ const selectOption = (option: { id: string }) => {
 
 .option-icon {
   color: rgba(255, 255, 255, 0.6);
-  margin-right: 8px;
+  margin-right: 0;
 }
 
 .check-icon {
