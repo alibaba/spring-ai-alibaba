@@ -24,7 +24,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 
-
 @AutoConfiguration
 @ConditionalOnClass(ExchangeFilterFunction.class)
 public class McpTracingAutoConfiguration {
@@ -32,17 +31,16 @@ public class McpTracingAutoConfiguration {
 	@Autowired
 	private ApplicationContext applicationContext;
 
-	
 	@Bean(name = "mcpTraceExchangeFilterFunction")
 	@ConditionalOnClass(name = "io.micrometer.tracing.Tracer")
 	public McpTraceExchangeFilterFunction mcpTraceExchangeFilterFunction() {
 		try {
-			
+
 			Object tracer = applicationContext.getBean("tracer");
 			return new McpTraceExchangeFilterFunction(tracer);
 		}
 		catch (Exception e) {
-			
+
 			try {
 				Class<?> tracerClass = Class.forName("io.micrometer.tracing.Tracer");
 				Object tracer = applicationContext.getBean(tracerClass);
