@@ -58,3 +58,6 @@ spring-ai-alibaba-jmanus/ui-vue3/pnpm-lock.yaml
 .specstory/
 .specstory/.what-is-this.md
 .specstory/history/*
+
+# MCP configuration files
+modified_mcp_config.json
