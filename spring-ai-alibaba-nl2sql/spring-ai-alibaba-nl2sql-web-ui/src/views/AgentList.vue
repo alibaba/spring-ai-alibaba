@@ -40,10 +40,16 @@
             <input type="text" v-model="searchKeyword" placeholder="请输入智能体名称、ID" @input="searchAgents">
           </div>
         </div>
-        <button class="create-agent-btn" @click="createNewAgent">
-          <i class="bi bi-plus"></i>
-          创建智能体
-        </button>
+        <div class="action-buttons">
+          <button class="query-btn" @click="refreshAgentList">
+            <i class="bi bi-arrow-clockwise"></i>
+            查询
+          </button>
+          <button class="create-agent-btn" @click="createNewAgent">
+            <i class="bi bi-plus"></i>
+            创建智能体
+          </button>
+        </div>
       </div>
 
       <!-- 智能体网格 -->
@@ -162,7 +168,7 @@ export default {
     const agents = ref([])
 
     // 模拟数据配置
-    const useMockData = ref(true) // 设置为 true 使用模拟数据，false 使用真实 API
+    const useMockData = ref(false) // 设置为 true 使用模拟数据，false 使用真实 API
 
     // 模拟数据
     const mockAgents = [
@@ -254,6 +260,11 @@ export default {
       } finally {
         loading.value = false
       }
+    }
+
+    const refreshAgentList = async () => {
+      console.log('手动刷新智能体列表')
+      await loadAgents()
     }
 
     const setFilter = (filter) => {
@@ -422,7 +433,8 @@ export default {
       getStatusText,
       formatTime,
       getRandomColor,
-      getRandomIcon
+      getRandomIcon,
+      refreshAgentList
     }
   }
 }
@@ -568,6 +580,32 @@ export default {
 
 .create-agent-btn:hover {
   background: #40a9ff;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.query-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.query-btn:hover {
+  background: #e6f7ff;
+  border-color: #1890ff;
+  color: #1890ff;
 }
 
 .agents-grid {

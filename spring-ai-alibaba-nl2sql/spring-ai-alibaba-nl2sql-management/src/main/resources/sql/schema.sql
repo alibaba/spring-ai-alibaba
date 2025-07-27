@@ -56,3 +56,31 @@ CREATE TABLE IF NOT EXISTS agent (
   INDEX idx_category (category),
   INDEX idx_admin_id (admin_id)
 ) ENGINE = InnoDB COMMENT = '智能体表';
+
+-- 智能体知识表
+CREATE TABLE IF NOT EXISTS agent_knowledge (
+  id INT NOT NULL AUTO_INCREMENT,
+  agent_id INT NOT NULL COMMENT '智能体ID',
+  title VARCHAR(255) NOT NULL COMMENT '知识标题',
+  content TEXT COMMENT '知识内容',
+  type VARCHAR(50) DEFAULT 'document' COMMENT '知识类型：document-文档，qa-问答，faq-常见问题',
+  category VARCHAR(100) COMMENT '知识分类',
+  tags TEXT COMMENT '标签，逗号分隔',
+  status VARCHAR(50) DEFAULT 'active' COMMENT '状态：active-启用，inactive-禁用',
+  source_url VARCHAR(500) COMMENT '来源URL',
+  file_path VARCHAR(500) COMMENT '文件路径',
+  file_size BIGINT COMMENT '文件大小（字节）',
+  file_type VARCHAR(100) COMMENT '文件类型',
+  embedding_status VARCHAR(50) DEFAULT 'pending' COMMENT '向量化状态：pending-待处理，processing-处理中，completed-已完成，failed-失败',
+  creator_id BIGINT COMMENT '创建者ID',
+  create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  INDEX idx_agent_id (agent_id),
+  INDEX idx_title (title),
+  INDEX idx_type (type),
+  INDEX idx_status (status),
+  INDEX idx_category (category),
+  INDEX idx_embedding_status (embedding_status),
+  FOREIGN KEY (agent_id) REFERENCES agent(id) ON DELETE CASCADE
+) ENGINE = InnoDB COMMENT = '智能体知识表';

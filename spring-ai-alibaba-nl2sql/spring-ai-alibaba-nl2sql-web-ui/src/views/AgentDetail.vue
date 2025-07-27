@@ -1020,8 +1020,12 @@ export default {
     }
     
     // 生命周期
-    onMounted(() => {
-      loadAgentDetail()
+    onMounted(async () => {
+      await loadAgentDetail()
+      // 如果默认打开知识库配置tab，则加载知识数据
+      if (activeTab.value === 'knowledge') {
+        await loadAgentKnowledge()
+      }
     })
     
     return {
