@@ -2,6 +2,9 @@ import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 
+// 引入全局样式
+import './styles/global.css'
+
 // 引入页面组件
 import Home from './views/Home.vue'
 import HomeSimple from './views/HomeSimple.vue'

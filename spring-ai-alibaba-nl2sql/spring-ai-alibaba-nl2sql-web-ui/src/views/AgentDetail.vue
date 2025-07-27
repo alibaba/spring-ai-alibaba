@@ -329,13 +329,16 @@
               <!-- 搜索和筛选 -->
               <div class="knowledge-filters">
                 <div class="filter-group">
-                  <input 
-                    type="text" 
-                    v-model="knowledgeFilters.keyword" 
-                    placeholder="搜索知识..." 
-                    class="form-control"
-                    @input="searchKnowledge"
-                  >
+                  <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input 
+                      type="text" 
+                      v-model="knowledgeFilters.keyword" 
+                      placeholder="搜索知识..." 
+                      class="form-control"
+                      @input="searchKnowledge"
+                    >
+                  </div>
                 </div>
                 <div class="filter-group">
                   <select v-model="knowledgeFilters.type" @change="filterKnowledge" class="form-control">
@@ -642,14 +645,6 @@
                     <p>{{ getDatasourceTypeText(datasource.type) }} - {{ datasource.host }}:{{ datasource.port }}</p>
                     <p class="description">{{ datasource.description || '无描述' }}</p>
                   </div>
-                  <div class="datasource-status">
-                    <span class="test-status" :class="datasource.testStatus">
-                      {{ getTestStatusText(datasource.testStatus) }}
-                    </span>
-                    <span class="status-badge" :class="datasource.status">
-                      {{ getStatusText(datasource.status) }}
-                    </span>
-                  </div>
                 </div>
                 <div v-if="filteredDatasources.length === 0" class="empty-state">
                   <i class="bi bi-database"></i>
@@ -661,7 +656,8 @@
 
           <!-- 创建新数据源 -->
           <div v-if="datasourceTabMode === 'create'" class="tab-content">
-            <form @submit.prevent="saveDatasource">
+            <div class="datasource-form-container">
+              <form @submit.prevent="saveDatasource">
               <div class="form-row">
                 <div class="form-group">
                   <label for="datasourceName">数据源名称 *</label>
@@ -751,7 +747,8 @@
                   rows="3"
                 ></textarea>
               </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -1852,95 +1849,6 @@ export default {
   font-size: 14px;
 }
 
-/* 表单样式 */
-.basic-info-form {
-  max-width: 600px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #333;
-}
-
-.form-control {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: border-color 0.2s;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
-}
-
-.form-actions {
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid #e8e8e8;
-}
-
-/* 按钮样式 */
-.btn {
-  padding: 8px 16px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.btn-primary {
-  background: #1890ff;
-  color: white;
-  border-color: #1890ff;
-}
-
-.btn-primary:hover {
-  background: #40a9ff;
-  border-color: #40a9ff;
-}
-
-.btn-outline {
-  background: white;
-  color: #1890ff;
-  border-color: #1890ff;
-}
-
-.btn-outline:hover {
-  background: #f0f8ff;
-}
-
-.btn-danger {
-  background: #ff4d4f;
-  color: white;
-  border-color: #ff4d4f;
-}
-
-.btn-danger:hover {
-  background: #ff7875;
-  border-color: #ff7875;
-}
-
-.btn-sm {
-  padding: 4px 8px;
-  font-size: 12px;
-}
-
 /* 表格样式 */
 .table {
   width: 100%;
@@ -2003,8 +1911,9 @@ export default {
 }
 
 .status-badge.inactive {
-  background: #fff2f0;
-  color: #ff4d4f;
+  background: #f5f5f5;
+  color: #999;
+  border: 1px solid #d9d9d9;
 }
 
 /* Prompt配置样式 */
@@ -2091,174 +2000,550 @@ export default {
   color: #999;
   font-size: 12px;
 }
-/* 响应式设计补充 */
-@media (max-width: 768px) {
-  .knowledge-filters {
-    flex-direction: column;
-  }
-  
-  .filter-group {
-    min-width: auto;
-  }
-  
-  .knowledge-stats {
-    justify-content: center;
-  }
-  
-  .modal-dialog {
-    width: 95%;
-  }
-  
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
-/* 数据源模态框样式 */
-.modal-dialog.datasource-modal {
-  max-width: 900px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.datasource-tabs {
+/* 模态框基础样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  padding: 4px;
-  background: #f8f9fa;
-  border-radius: 6px;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
-.tab-btn {
-  flex: 1;
-  padding: 10px 16px;
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 500;
-}
-
-.tab-btn.active {
+.modal-dialog {
   background: white;
-  color: #007bff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: modalSlideIn 0.3s ease-out;
 }
 
-.datasource-list {
-  max-height: 400px;
+.modal-dialog.modal-lg {
+  max-width: 800px;
+}
+
+.modal-header {
+  padding: 24px 24px 16px 24px;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.modal-body {
+  padding: 24px;
+  max-height: 60vh;
   overflow-y: auto;
 }
 
-.datasource-items {
+.modal-footer {
+  padding: 16px 24px 24px 24px;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #f5f5f5;
+  color: #666;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 数据源模态框专用样式 */
+.modal-dialog.datasource-modal {
+  max-width: 900px;
+  max-height: 85vh;
+  height: auto;
+}
+
+/* 数据源模态框内的Tab切换 */
+.datasource-modal .datasource-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e6e6e6;
+}
+
+.datasource-modal .tab-btn {
+  flex: 1;
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  color: #666;
+  font-size: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.datasource-modal .tab-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s;
+}
+
+.datasource-modal .tab-btn:hover {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.datasource-modal .tab-btn:hover::before {
+  left: 100%;
+}
+
+.datasource-modal .tab-btn.active {
+  background: linear-gradient(135deg, white, #fafbfc);
+  color: #1890ff;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+  transform: translateY(-1px);
+}
+
+/* 数据源列表容器 */
+.datasource-modal .datasource-list {
+  background: linear-gradient(135deg, #fafcff, #f8fafc);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e8f0fe;
+  box-shadow: inset 0 1px 4px rgba(24, 144, 255, 0.03);
+  height: 100%;
+  max-height: 50vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 搜索框样式 - 仅限数据源模态框 */
+.datasource-modal .search-box {
+  position: relative;
+  margin-bottom: 12px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.datasource-modal .search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  font-size: 14px;
+  z-index: 2;
+  transition: color 0.3s ease;
+}
+
+.datasource-modal .search-box input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 2px solid #e8e8e8;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.datasource-modal .search-box input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1), 0 4px 12px rgba(24, 144, 255, 0.15);
+  background: #fafcff;
+  transform: translateY(-1px);
+}
+
+.datasource-modal .search-box input:focus + i,
+.datasource-modal .search-box:hover i {
+  color: #1890ff;
+}
+
+.datasource-modal .search-box input::placeholder {
+  color: #bbb;
+  transition: color 0.3s ease;
+}
+
+.datasource-modal .search-box input:focus::placeholder {
+  color: #999;
+}
+
+/* 数据源项目列表 */
+.datasource-modal .datasource-items {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 16px;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+  margin-right: -4px;
 }
 
-.datasource-item {
+/* 单个数据源项目卡片 */
+.datasource-modal .datasource-item {
   padding: 16px;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
+  border: 2px solid #e8e8e8;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: block;
+  background: linear-gradient(135deg, white, #fafbfc);
+  position: relative;
+  overflow: hidden;
+  min-height: 80px;
 }
 
-.datasource-item:hover {
-  border-color: #007bff;
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+.datasource-modal .datasource-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: transparent;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.datasource-item.selected {
-  border-color: #007bff;
-  background-color: #f8f9ff;
+.datasource-modal .datasource-item::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(24, 144, 255, 0.03) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
 }
 
-.datasource-info h4 {
-  margin: 0 0 4px 0;
-  color: #212529;
+.datasource-modal .datasource-item:hover {
+  border-color: #1890ff;
+  box-shadow: 0 12px 28px rgba(24, 144, 255, 0.12), 0 4px 8px rgba(0, 0, 0, 0.04);
+  transform: translateY(-3px);
+  background: linear-gradient(135deg, #fafcff, #f0f8ff);
+}
+
+.datasource-modal .datasource-item:hover::before {
+  background: linear-gradient(180deg, #1890ff, #40a9ff);
+  box-shadow: 2px 0 8px rgba(24, 144, 255, 0.3);
+}
+
+.datasource-modal .datasource-item:hover::after {
+  opacity: 1;
+}
+
+.datasource-modal .datasource-item.selected {
+  border-color: #1890ff;
+  background: linear-gradient(135deg, #f0f8ff, #e6f4ff);
+  box-shadow: 0 8px 24px rgba(24, 144, 255, 0.18), 0 4px 8px rgba(24, 144, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.datasource-modal .datasource-item.selected::before {
+  background: linear-gradient(180deg, #1890ff, #40a9ff);
+  box-shadow: 2px 0 12px rgba(24, 144, 255, 0.4);
+  width: 6px;
+}
+
+.datasource-modal .datasource-item.selected::after {
+  opacity: 1;
+}
+
+/* 数据源信息区域 */
+.datasource-modal .datasource-info {
+  width: 100%;
+}
+
+.datasource-modal .datasource-info h4 {
+  margin: 0 0 6px 0;
+  color: #1a1a1a;
   font-weight: 600;
+  font-size: 16px;
+  line-height: 1.4;
+  transition: color 0.3s ease;
 }
 
-.datasource-info p {
+.datasource-modal .datasource-item:hover .datasource-info h4 {
+  color: #1890ff;
+}
+
+.datasource-modal .datasource-info p {
   margin: 0 0 4px 0;
-  color: #6c757d;
-  font-size: 14px;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.5;
+  transition: color 0.3s ease;
 }
 
-.datasource-info .description {
+.datasource-modal .datasource-item:hover .datasource-info p {
+  color: #444;
+}
+
+.datasource-modal .datasource-info .description {
+  color: #999;
   font-style: italic;
+  font-size: 12px;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 6px;
+  border-left: 3px solid #e8e8e8;
+  transition: all 0.3s ease;
 }
 
-.datasource-status {
+.datasource-modal .datasource-item:hover .datasource-info .description {
+  background: rgba(24, 144, 255, 0.05);
+  border-left-color: #1890ff;
+  color: #666;
+}
+
+/* 数据源状态区域 */
+.datasource-modal .datasource-status {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   align-items: flex-end;
+  min-width: 85px;
 }
 
-.test-status {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+.datasource-modal .test-status,
+.datasource-modal .status-badge {
+  padding: 6px 10px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 70px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.datasource-modal .test-status.success {
+  background: linear-gradient(135deg, #f6ffed, #d9f7be);
+  color: #389e0d;
+  border: 1px solid #95de64;
+  box-shadow: 0 2px 4px rgba(56, 158, 13, 0.1);
+}
+
+.datasource-modal .test-status.failed {
+  background: linear-gradient(135deg, #fff2f0, #ffccc7);
+  color: #cf1322;
+  border: 1px solid #ff7875;
+  box-shadow: 0 2px 4px rgba(207, 19, 34, 0.1);
+}
+
+.datasource-modal .test-status.unknown {
+  background: linear-gradient(135deg, #f5f5f5, #e8e8e8);
+  color: #666;
+  border: 1px solid #d9d9d9;
+  box-shadow: 0 2px 4px rgba(102, 102, 102, 0.1);
+}
+
+.datasource-modal .status-badge.active {
+  background: linear-gradient(135deg, #e6f4ff, #bae7ff);
+  color: #0958d9;
+  border: 1px solid #69c0ff;
+  box-shadow: 0 2px 4px rgba(9, 88, 217, 0.1);
+}
+
+.datasource-modal .status-badge.inactive {
+  background: linear-gradient(135deg, #f5f5f5, #e8e8e8);
+  color: #666;
+  border: 1px solid #d9d9d9;
+  box-shadow: 0 2px 4px rgba(102, 102, 102, 0.1);
+}
+
+/* 自定义滚动条样式 - 仅限数据源模态框 */
+.datasource-modal .datasource-items::-webkit-scrollbar {
+  width: 8px;
+}
+
+.datasource-modal .datasource-items::-webkit-scrollbar-track {
+  background: #f0f4f8;
+  border-radius: 8px;
+  margin: 4px 0;
+}
+
+.datasource-modal .datasource-items::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c1d5e0, #a0b4c7);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: 2px solid #f0f4f8;
+}
+
+.datasource-modal .datasource-items::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #1890ff, #40a9ff);
+  border-color: #e6f4ff;
+}
+
+/* 空状态样式 - 仅限数据源模态框 */
+.datasource-modal .empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  background: linear-gradient(135deg, #fafcff, #f0f8ff);
+  border-radius: 12px;
+  border: 2px dashed #d0e4ff;
+}
+
+.datasource-modal .empty-state i {
+  font-size: 42px;
+  margin-bottom: 12px;
+  color: #bbb;
+  background: linear-gradient(135deg, #e6f4ff, #d0e4ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.datasource-modal .empty-state p {
+  margin: 0;
+  font-size: 15px;
   font-weight: 500;
+  color: #666;
 }
 
-.test-status.success {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.test-status.failed {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.test-status.unknown {
-  background-color: #e2e3e5;
-  color: #6c757d;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* 数据源表单样式 - 仅限数据源模态框内 */
+.datasource-modal .form-row {
+  display: flex;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
-.form-row:last-child {
-  margin-bottom: 0;
+.datasource-modal .form-row .form-group {
+  flex: 1;
 }
 
-.form-row .form-group:only-child {
-  grid-column: 1 / -1;
-
+.datasource-modal .form-group {
+  margin-bottom: 12px;
 }
 
-@media (max-width: 768px) {
-  .datasource-modal {
-    max-width: 95%;
-  }
-  
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-  
-  .datasource-item {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .datasource-status {
-    align-items: flex-start;
-    flex-direction: row;
-  }
+.datasource-modal .form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #333;
+  font-size: 13px;
+}
+
+.datasource-modal .form-group input,
+.datasource-modal .form-group select,
+.datasource-modal .form-group textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid #e8e8e8;
+  border-radius: 8px;
+  font-size: 13px;
+  background: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.datasource-modal .form-group input:focus,
+.datasource-modal .form-group select:focus,
+.datasource-modal .form-group textarea:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+  background: #fafcff;
+  transform: translateY(-1px);
+}
+
+.datasource-modal .form-group input::placeholder,
+.datasource-modal .form-group textarea::placeholder {
+  color: #bbb;
+}
+
+.datasource-modal .form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* 数据源表单容器 */
+.datasource-modal .datasource-form-container {
+  background: linear-gradient(135deg, #fafcff, #f8fafc);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e8f0fe;
+  box-shadow: inset 0 1px 4px rgba(24, 144, 255, 0.03);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+/* 数据源表单容器滚动条 */
+.datasource-modal .datasource-form-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.datasource-modal .datasource-form-container::-webkit-scrollbar-track {
+  background: #f0f4f8;
+  border-radius: 6px;
+  margin: 4px 0;
+}
+
+.datasource-modal .datasource-form-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c1d5e0, #a0b4c7);
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.datasource-modal .datasource-form-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #1890ff, #40a9ff);
 }
 </style>
