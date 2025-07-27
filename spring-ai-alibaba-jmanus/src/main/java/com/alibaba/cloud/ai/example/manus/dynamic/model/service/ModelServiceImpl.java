@@ -257,15 +257,10 @@ public class ModelServiceImpl implements ModelService {
 
 		try {
 			long startTime = System.currentTimeMillis();
-<<<<<<< HEAD
 			// 创建HttpEntity包装请求头
 			HttpEntity<String> entity = new HttpEntity<>(headers);
 			// 发送GET请求，使用HttpEntity包含请求头
 			ResponseEntity<Map> response = restTemplate.exchange(requestUrl, HttpMethod.GET, entity, Map.class);
-=======
-			// 发送GET请求
-			ResponseEntity<Map> response = restTemplate.getForEntity(requestUrl, Map.class);
->>>>>>> upstream/main
 			long endTime = System.currentTimeMillis();
 
 			log.info("HTTP请求完成 - 状态码: {}, 耗时: {}ms", response.getStatusCodeValue(), endTime - startTime);
