@@ -19,7 +19,6 @@
         :options="connectionTypes"
         :placeholder="t('config.mcpConfig.connectionTypePlaceholder')"
         :dropdown-title="t('config.mcpConfig.connectionTypePlaceholder')"
-        icon="carbon:connection"
       />
     </div>
 
@@ -103,9 +102,9 @@ const emit = defineEmits<{
 
 // 连接类型选项
 const connectionTypes = [
-  { id: 'STUDIO', name: 'STUDIO', icon: 'carbon:plug' },
-  { id: 'SSE', name: 'SSE', icon: 'carbon:plug' },
-  { id: 'STREAMING', name: 'STREAMING', icon: 'carbon:plug' }
+  { id: 'STUDIO', name: 'STUDIO' },
+  { id: 'SSE', name: 'SSE' },
+  { id: 'STREAMING', name: 'STREAMING' }
 ]
 
 // 处理输入事件
