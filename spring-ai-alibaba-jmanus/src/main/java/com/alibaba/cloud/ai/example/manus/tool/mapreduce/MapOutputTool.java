@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.mapreduce;
 
-import java.io.File;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -70,12 +69,23 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	 */
 	public static class MapOutputInput {
 
+		@com.fasterxml.jackson.annotation.JsonProperty("task_id")
+		private String taskId;
+
 		private List<List<Object>> data;
 
 		@com.fasterxml.jackson.annotation.JsonProperty("has_value")
 		private boolean hasValue;
 
 		public MapOutputInput() {
+		}
+
+		public String getTaskId() {
+			return taskId;
+		}
+
+		public void setTaskId(String taskId) {
+			this.taskId = taskId;
 		}
 
 		public List<List<Object>> getData() {
@@ -105,6 +115,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 				记录任务状态并管理结构化数据输出。
 
 				**重要参数说明：**
+				- task_id: 字符串，任务ID标识符，用于标识当前正在处理的Map任务（必需）
 				- has_value: 布尔值，表示是否有有效数据
 				  - 如果没有找到任何有效数据，设置为 false
 				  - 如果有数据需要输出，设置为 true
@@ -147,6 +158,10 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 				{
 				    "type": "object",
 				    "properties": {
+				        "task_id": {
+				            "type": "string",
+				            "description": "任务ID标识符，用于标识当前正在处理的Map任务"
+				        },
 				        "has_value": {
 				            "type": "boolean",
 				            "description": "是否有有效数据。如果没有找到任何有效数据设置为false，有数据时设置为true"
@@ -160,7 +175,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 				            "description": "%s（仅当has_value为true时需要提供）"
 				        }
 				    },
-				    "required": ["has_value"],
+				    "required": ["task_id", "has_value"],
 				    "additionalProperties": false
 				}
 				""".formatted(columnsDesc);
@@ -250,10 +265,16 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	 */
 	@Override
 	public ToolExecuteResult run(MapOutputInput input) {
-		log.info("MapOutputTool input: hasValue={}", input.isHasValue());
+		log.info("MapOutputTool input: taskId={}, hasValue={}", input.getTaskId(), input.isHasValue());
 		try {
+			String taskId = input.getTaskId();
 			List<List<Object>> data = input.getData();
 			boolean hasValue = input.isHasValue();
+
+			// Validate taskId
+			if (taskId == null || taskId.trim().isEmpty()) {
+				return new ToolExecuteResult("Error: task_id parameter is required");
+			}
 
 			// Use class-level terminateColumns
 			List<String> effectiveTerminateColumns = this.terminateColumns;
@@ -269,11 +290,11 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 				}
 				// Convert structured data to content string
 				String content = formatStructuredData(effectiveTerminateColumns, data);
-				return recordMapTaskOutput(content);
+				return recordMapTaskOutput(content, taskId);
 			}
 			else {
 				// When hasValue is false, create empty output
-				return recordMapTaskOutput("");
+				return recordMapTaskOutput("", taskId);
 			}
 
 		}
@@ -291,7 +312,6 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	 */
 	private String formatStructuredData(List<String> terminateColumns, List<List<Object>> data) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Structured Map output data:\n");
 		sb.append("Columns: ").append(terminateColumns).append("\n");
 		sb.append("Data:\n");
 		for (List<Object> row : data) {
@@ -301,10 +321,10 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	}
 
 	/**
-	 * Record Map task output result with completed status by default Task ID is obtained
-	 * from the current execution context
+	 * Record Map task output result with completed status by default Task ID is provided
+	 * as parameter instead of being obtained from the current execution context
 	 */
-	private ToolExecuteResult recordMapTaskOutput(String content) {
+	private ToolExecuteResult recordMapTaskOutput(String content, String taskId) {
 		try {
 			// Get timeout configuration for this operation
 			Integer timeout = getMapReduceTimeout();
@@ -314,13 +334,9 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 			if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
 				return new ToolExecuteResult("Error: currentPlanId not set, cannot record task status");
 			}
-
-			// Get current taskId by finding the most recent task directory without
-			// output.md
-			String taskId = findCurrentTaskId();
-
+			// Validate taskId parameter
 			if (taskId == null || taskId.trim().isEmpty()) {
-				return new ToolExecuteResult("Error: No current task ID available for recording output");
+				return new ToolExecuteResult("Error: taskId parameter is required for recording output");
 			}
 
 			// Locate task directory - use hierarchical structure:
@@ -418,73 +434,6 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	@Override
 	public ToolExecuteResult apply(MapOutputInput input, ToolContext toolContext) {
 		return run(input);
-	}
-
-	/**
-	 * Find the current task ID by looking for task directories without output.md file
-	 * This helps identify which task is currently being processed
-	 */
-	private String findCurrentTaskId() {
-		try {
-			// Get task directories path
-			Path rootPlanDir = getPlanDirectory(rootPlanId);
-			Path currentPlanDir = rootPlanDir.resolve(currentPlanId);
-			Path tasksDir = currentPlanDir.resolve(TASKS_DIRECTORY_NAME);
-
-			if (!Files.exists(tasksDir)) {
-				log.warn("Tasks directory does not exist: {}", tasksDir);
-				return null;
-			}
-
-			// Get all task directories using traditional File operations
-			File tasksDirFile = tasksDir.toFile();
-			File[] taskFiles = tasksDirFile.listFiles();
-			if (taskFiles == null || taskFiles.length == 0) {
-				log.warn("No task directories found in: {}", tasksDir);
-				return null;
-			}
-
-			// Find incomplete tasks (without output.md)
-			List<String> incompleteTaskIds = new ArrayList<>();
-			List<String> allTaskIds = new ArrayList<>();
-
-			for (File taskFile : taskFiles) {
-				if (taskFile.isDirectory()) {
-					String taskId = taskFile.getName();
-					allTaskIds.add(taskId);
-
-					// Check if output.md exists
-					File outputFile = new File(taskFile, TASK_OUTPUT_FILE_NAME);
-					if (!outputFile.exists()) {
-						incompleteTaskIds.add(taskId);
-					}
-				}
-			}
-
-			// If we have incomplete tasks, return the earliest one (sorted)
-			if (!incompleteTaskIds.isEmpty()) {
-				Collections.sort(incompleteTaskIds);
-				String incompleteTaskId = incompleteTaskIds.get(0);
-				log.debug("Found incomplete task: {}", incompleteTaskId);
-				return incompleteTaskId;
-			}
-
-			// If no incomplete tasks found, get the latest task (reverse sorted)
-			if (!allTaskIds.isEmpty()) {
-				Collections.sort(allTaskIds, Collections.reverseOrder());
-				String latestTaskId = allTaskIds.get(0);
-				log.debug("No incomplete tasks found, using latest task: {}", latestTaskId);
-				return latestTaskId;
-			}
-
-			log.warn("No task directories found");
-			return null;
-
-		}
-		catch (Exception e) {
-			log.error("Error finding current task ID", e);
-			return null;
-		}
 	}
 
 	/**

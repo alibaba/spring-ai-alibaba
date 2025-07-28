@@ -1,9 +1,5 @@
 /*
- * Copyright 2025 timport com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;riginal author or authors.
+ * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
