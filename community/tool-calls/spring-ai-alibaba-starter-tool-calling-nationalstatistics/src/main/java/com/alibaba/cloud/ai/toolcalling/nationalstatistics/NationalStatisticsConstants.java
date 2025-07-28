@@ -27,7 +27,8 @@ public final class NationalStatisticsConstants {
 	/**
 	 * 配置前缀
 	 */
-	public static final String CONFIG_PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".nationalstatistics";
+	public static final String CONFIG_PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX
+			+ ".nationalstatistics";
 
 	/**
 	 * 工具名称

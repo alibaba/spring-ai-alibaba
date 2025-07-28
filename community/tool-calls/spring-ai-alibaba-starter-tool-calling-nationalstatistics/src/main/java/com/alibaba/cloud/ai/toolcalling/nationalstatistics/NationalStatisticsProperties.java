@@ -43,4 +43,4 @@ public class NationalStatisticsProperties extends CommonToolCallProperties {
 		this.maxResults = maxResults;
 	}
 
-} 
+}

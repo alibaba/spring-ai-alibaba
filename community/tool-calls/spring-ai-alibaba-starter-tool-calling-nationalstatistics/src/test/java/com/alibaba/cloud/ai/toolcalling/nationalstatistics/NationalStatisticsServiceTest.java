@@ -71,7 +71,7 @@ public class NationalStatisticsServiceTest {
 		assert "GDP".equals(request.keyword());
 		assert "2023".equals(request.year());
 		assert "全国".equals(request.region());
-		
+
 		var simpleRequest = NationalStatisticsService.Request.simpleQuery("人口");
 		assert "人口".equals(simpleRequest.keyword());
 		assert simpleRequest.year() == null;
@@ -86,7 +86,7 @@ public class NationalStatisticsServiceTest {
 		assert successResponse.success();
 		assert "查询成功".equals(successResponse.message());
 		assert successResponse.data() != null;
-		
+
 		var errorResponse = NationalStatisticsService.Response.error("GDP", "查询失败");
 		assert "GDP".equals(errorResponse.query());
 		assert !errorResponse.success();
@@ -104,7 +104,7 @@ public class NationalStatisticsServiceTest {
 		data.setUnit("亿元");
 		data.setYear("2023");
 		data.setCode("A020101");
-		
+
 		assert "国内生产总值".equals(data.getName());
 		assert "1143670".equals(data.getValue());
 		assert "亿元".equals(data.getUnit());
@@ -121,4 +121,4 @@ public class NationalStatisticsServiceTest {
 		assert properties.isEnabled(); // from CommonToolCallProperties
 	}
 
-} 
+}

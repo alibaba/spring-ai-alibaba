@@ -35,10 +35,9 @@ import org.springframework.http.MediaType;
 @Configuration
 @EnableConfigurationProperties(NationalStatisticsProperties.class)
 @ConditionalOnClass(NationalStatisticsService.class)
-@ConditionalOnProperty(prefix = NationalStatisticsConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = NationalStatisticsConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class NationalStatisticsAutoConfiguration {
-
-
 
 	/**
 	 * 注册国家统计局服务Bean
@@ -46,14 +45,15 @@ public class NationalStatisticsAutoConfiguration {
 	@Bean(name = NationalStatisticsConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("查询中国国家统计局的各类统计数据，包括人口、经济、社会等统计指标")
-	public NationalStatisticsService nationalStatistics(NationalStatisticsProperties properties, JsonParseTool jsonParseTool) {
+	public NationalStatisticsService nationalStatistics(NationalStatisticsProperties properties,
+			JsonParseTool jsonParseTool) {
 		// 临时切换为HTTP方式避免SSL问题
 		NationalStatisticsProperties modifiedProperties = new NationalStatisticsProperties();
 		modifiedProperties.setBaseUrl("http://data.stats.gov.cn");
 		modifiedProperties.setEnabled(properties.isEnabled());
 		modifiedProperties.setMaxResults(properties.getMaxResults());
 		modifiedProperties.setNetworkTimeout(properties.getNetworkTimeout());
-		
+
 		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, modifiedProperties)
 			.httpHeadersConsumer(httpHeaders -> {
 				httpHeaders.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
@@ -64,4 +64,4 @@ public class NationalStatisticsAutoConfiguration {
 		return new NationalStatisticsService(jsonParseTool, webClientTool);
 	}
 
-} 
+}

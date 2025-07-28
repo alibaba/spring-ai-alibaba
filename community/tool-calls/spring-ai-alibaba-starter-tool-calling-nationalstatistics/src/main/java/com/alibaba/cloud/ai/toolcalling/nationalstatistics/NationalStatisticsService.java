@@ -37,7 +37,8 @@ import java.util.function.Function;
  *
  * @author Makoto
  */
-public class NationalStatisticsService implements SearchService, Function<NationalStatisticsService.Request, NationalStatisticsService.Response> {
+public class NationalStatisticsService
+		implements SearchService, Function<NationalStatisticsService.Request, NationalStatisticsService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(NationalStatisticsService.class);
 
@@ -69,7 +70,7 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 
 			// 发送HTTP请求
 			String responseData = webClientTool.post("easyquery.htm", params).block();
-			
+
 			if (!StringUtils.hasText(responseData)) {
 				return Response.error(request.keyword, "API返回空响应");
 			}
@@ -77,7 +78,7 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 			// 验证响应内容类型
 			if (responseData.trim().startsWith("<")) {
 				logger.error("API返回HTML内容而非JSON，可能是访问被重定向或API变更。响应内容前100字符：{}",
-					responseData.length() > 100 ? responseData.substring(0, 100) : responseData);
+						responseData.length() > 100 ? responseData.substring(0, 100) : responseData);
 				return Response.error(request.keyword, "API返回格式错误，可能是接口变更或访问限制");
 			}
 
@@ -89,7 +90,8 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 			// 解析响应
 			return parseResponse(responseData, request);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("查询国家统计局数据失败：{}", e.getMessage(), e);
 			return Response.error(request.keyword, "查询国家统计局数据失败：" + e.getMessage());
 		}
@@ -100,7 +102,7 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 	 */
 	private Map<String, Object> buildQueryParams(Request request) {
 		Map<String, Object> params = new HashMap<>();
-		
+
 		// 基础参数 - 使用国家统计局API的标准参数格式
 		params.put("m", "QueryData");
 		// 宏观数据库
@@ -123,7 +125,7 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 	 */
 	private String buildDfwds(Request request) {
 		List<Map<String, String>> dfwds = new ArrayList<>();
-		
+
 		// 指标条件
 		if (StringUtils.hasText(request.keyword)) {
 			Map<String, String> zbCondition = new HashMap<>();
@@ -131,13 +133,14 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 			zbCondition.put("valuecode", getIndicatorCode(request.keyword));
 			dfwds.add(zbCondition);
 		}
-		
+
 		// 时间条件 - 如果没有指定年份，查询最近几年的数据
 		Map<String, String> sjCondition = new HashMap<>();
 		sjCondition.put("wdcode", "sj");
 		if (StringUtils.hasText(request.year)) {
 			sjCondition.put("valuecode", request.year);
-		} else {
+		}
+		else {
 			// 默认查询2020-2023年的数据
 			sjCondition.put("valuecode", "2020,2021,2022,2023");
 		}
@@ -147,7 +150,8 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 			String result = jsonParseTool.objectToJson(dfwds);
 			logger.debug("构建的dfwds参数：{}", result);
 			return result;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.warn("构建dfwds参数失败：{}", e.getMessage());
 			return "[{\"wdcode\":\"zb\",\"valuecode\":\"A020101\"},{\"wdcode\":\"sj\",\"valuecode\":\"2023\"}]";
 		}
@@ -169,14 +173,14 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 		indicatorMap.put("农业", "A080101");
 		indicatorMap.put("服务业", "A020301");
 		indicatorMap.put("房地产", "A060201");
-		
+
 		// 模糊匹配
 		for (Map.Entry<String, String> entry : indicatorMap.entrySet()) {
 			if (keyword.contains(entry.getKey())) {
 				return entry.getValue();
 			}
 		}
-		
+
 		// 默认返回GDP指标
 		return "A020101";
 	}
@@ -186,7 +190,8 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 	 */
 	private Response parseResponse(String responseBody, Request request) {
 		try {
-			Map<String, Object> jsonResponse = jsonParseTool.jsonToObject(responseBody, new TypeReference<>() {});
+			Map<String, Object> jsonResponse = jsonParseTool.jsonToObject(responseBody, new TypeReference<>() {
+			});
 
 			// 检查返回码
 			if (jsonResponse.containsKey("returncode")) {
@@ -215,7 +220,8 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 			String message = String.format("成功查询到 %d 条统计数据", dataList.size());
 			return Response.success(request.keyword, message, dataList);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("解析统计局响应失败：{}", e.getMessage(), e);
 			return Response.error(request.keyword, "解析统计局响应失败：" + e.getMessage());
 		}
@@ -233,7 +239,8 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 			data.setYear((String) dataNode.getOrDefault("sj_name", ""));
 			data.setCode((String) dataNode.getOrDefault("zb_code", ""));
 			return data;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.warn("解析单条统计数据失败：{}", e.getMessage());
 			return null;
 		}
@@ -245,19 +252,15 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("国家统计局数据查询请求")
 	public record Request(
-			@JsonProperty(required = true)
-			@JsonPropertyDescription("查询关键词，如：GDP、人口、就业、消费、投资等")
-			String keyword,
+			@JsonProperty(required = true) @JsonPropertyDescription("查询关键词，如：GDP、人口、就业、消费、投资等") String keyword,
 
-			@JsonProperty
-			@JsonPropertyDescription("查询年份，格式：YYYY，如：2023")
-			String year,
+			@JsonProperty @JsonPropertyDescription("查询年份，格式：YYYY，如：2023") String year,
 
-			@JsonProperty
-			@JsonPropertyDescription("查询地区，如：全国、北京市等")
-			String region
-	) implements Serializable, SearchService.Request {
-		
+			@JsonProperty @JsonPropertyDescription("查询地区，如：全国、北京市等") String region)
+			implements
+				Serializable,
+				SearchService.Request {
+
 		public static Request simpleQuery(String keyword) {
 			return new Request(keyword, null, null);
 		}
@@ -272,12 +275,9 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 	 * 响应类
 	 */
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	public record Response(
-			@JsonProperty("query") String query,
-			@JsonProperty("success") boolean success,
+	public record Response(@JsonProperty("query") String query, @JsonProperty("success") boolean success,
 			@JsonProperty("message") String message,
-			@JsonProperty("data") List<StatisticsData> data
-	) implements SearchService.Response {
+			@JsonProperty("data") List<StatisticsData> data) implements SearchService.Response {
 
 		public static Response success(String query, String message, List<StatisticsData> data) {
 			return new Response(query, true, message, data);
@@ -291,8 +291,8 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 		public SearchService.SearchResult getSearchResult() {
 			return new SearchService.SearchResult(this.data()
 				.stream()
-				.map(item -> new SearchService.SearchContent(item.getName(), item.getValue() + item.getUnit(), 
-					NationalStatisticsConstants.BASE_URL, null))
+				.map(item -> new SearchService.SearchContent(item.getName(), item.getValue() + item.getUnit(),
+						NationalStatisticsConstants.BASE_URL, null))
 				.toList());
 		}
 	}
@@ -364,6 +364,7 @@ public class NationalStatisticsService implements SearchService, Function<Nation
 		public void setCode(String code) {
 			this.code = code;
 		}
+
 	}
 
 }
