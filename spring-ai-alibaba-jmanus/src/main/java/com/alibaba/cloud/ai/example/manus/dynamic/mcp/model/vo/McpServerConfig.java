@@ -31,7 +31,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class McpServerConfig {
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper;
+
+	public McpServerConfig(ObjectMapper objectMapper) {
+		this.env = new HashMap<>();
+		this.objectMapper = objectMapper;
+	}
 
 	private String url;
 
@@ -46,10 +51,6 @@ public class McpServerConfig {
 
 	@JsonProperty("status")
 	private McpConfigStatus status = McpConfigStatus.ENABLE; // 默认为启用状态
-
-	public McpServerConfig() {
-		this.env = new HashMap<>();
-	}
 
 	public String getUrl() {
 		return url;

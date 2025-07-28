@@ -99,13 +99,13 @@ public class McpConfigVO {
 			// 解析args
 			if (configNode.has("args")) {
 				this.args = objectMapper.readValue(configNode.get("args").toString(),
-						new ObjectMapper().getTypeFactory().constructCollectionType(List.class, String.class));
+						objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
 			}
 
 			// 解析env
 			if (configNode.has("env")) {
 				this.env = objectMapper.readValue(configNode.get("env").toString(),
-						new ObjectMapper().getTypeFactory().constructMapType(Map.class, String.class, String.class));
+						objectMapper.getTypeFactory().constructMapType(Map.class, String.class, String.class));
 			}
 
 		}
