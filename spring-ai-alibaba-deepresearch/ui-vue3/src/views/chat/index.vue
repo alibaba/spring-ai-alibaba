@@ -71,6 +71,17 @@
                     </a-button>
                   </a-upload>
 
+                  <a-button
+                    size="small"
+                    style="border-radius: 15px; margin-right: 8px"
+                    type="text"
+                    @click="deepResearch"
+                    :style="{ color: current.deepResearchDetail ? token.colorPrimary : '' }"
+                  >
+                    <BgColorsOutlined />
+                    Report
+                  </a-button>
+
                   <a-switch
                     un-checked-children="Deep Research"
                     checked-children="Deep Research"
@@ -106,25 +117,29 @@
           </sender>
         </div>
       </Flex>
-      <Flex class="aux" v-if="current.deepResearchDetail" style="width: 60%" vertical>
-        <a-card style="height: 100%">
-          <template #title>
-            <Flex justify="space-between">
-              研究细节
-              <Button type="text" @click="current.deepResearchDetail = false">
-                <CloseOutlined />
-              </Button>
-            </Flex>
-          </template>
-          细节
-        </a-card>
-      </Flex>
+      <Report :visible="current.deepResearchDetail" :convId="convId" @close="current.deepResearchDetail = false" />
+      <!-- HTML 渲染组件弹窗 -->
+      <a-modal
+        v-model:open="htmlModalVisible"
+        title="HTML 报告"
+        :width="1200"
+        :footer="null"
+        :destroyOnClose="true"
+        @cancel="closeHtmlModal"
+      >
+        <HtmlRenderer
+          ref="htmlRendererRef"
+          :htmlChunks="htmlChunks"
+          :loading="htmlLoading"
+          style="height: 600px;"
+        />
+      </a-modal>
     </Flex>
   </div>
 </template>
 
 <script setup lang="tsx">
-import { Button, Card, Flex, Spin, theme, Typography } from 'ant-design-vue'
+import { Button, Card, Flex, Modal, Spin, theme, Typography } from 'ant-design-vue'
 import {
   CheckCircleOutlined,
   CloseOutlined,
@@ -137,6 +152,7 @@ import {
   BgColorsOutlined,
   DotChartOutlined,
   ShareAltOutlined,
+  LoadingOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue'
 import {
@@ -153,13 +169,17 @@ import {
 import { computed, h, onMounted, reactive, ref, watch } from 'vue'
 import MD from '@/components/md/index.vue'
 import Gap from '@/components/toolkit/Gap.vue'
+import Report from '@/components/report/index.vue'
+import HtmlRenderer from '@/components/html/index.vue'
 import { XStreamBody } from '@/utils/stream'
+import request from '@/utils/request'
 import { ScrollController } from '@/utils/scroll'
 import { useAuthStore } from '@/store/AuthStore'
 import { useMessageStore } from '@/store/MessageStore'
 import { useConversationStore } from '@/store/ConversationStore'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfigStore } from '@/store/ConfigStore'
+import { parseJsonTextStrict } from '@/utils/jsonParser';
 
 const router = useRouter()
 const route = useRoute()
@@ -174,10 +194,10 @@ const roles: BubbleListProps['roles'] = {
   ai: {
     placement: 'start',
     avatar: {
-      icon: <GlobalOutlined />,
-      shape: 'square',
-      style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
-    },
+        icon: <GlobalOutlined />,
+        shape: 'square',
+        style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
+      },
     style: {
       maxWidth: '100%',
     },
@@ -187,11 +207,11 @@ const roles: BubbleListProps['roles'] = {
     placement: 'end',
     shape: 'corner',
     avatar: {
-      icon: <UserOutlined />,
-      style: {},
-    },
+        icon: <UserOutlined />,
+        style: {},
+      },
     rootClassName: 'local',
-  },
+  }
 }
 
 const conversationStore = useConversationStore()
@@ -205,6 +225,58 @@ if (!current) {
     messageStore.currentState[convId] = current
   }
 }
+
+const sendResumeStream  =  async(message: string | undefined, onUpdate: (content: any) => void, onError: (error: any) => void): Promise<string> => {
+    const xStreamBody = new XStreamBody('/chat/resume', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: {
+            feed_back_content: message,
+            feed_back: true,
+            thread_id: convId
+          },
+        })
+
+        try {
+          await xStreamBody.readStream((chunk: any) => {
+            onUpdate(chunk)
+          })
+        } catch (e: any) {
+          console.error(e.statusText)
+          onError(e.statusText)
+        }
+
+     return xStreamBody.content()
+}
+
+const sendChatStream = async (message: string | undefined, onUpdate: (content: any) => void, onError: (error: any) => void): Promise<string> => {
+  const xStreamBody = new XStreamBody('/chat/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: {
+            ...configStore.chatConfig,
+            query: message,
+            thread_id: convId
+          },
+        })
+
+        try {
+          await xStreamBody.readStream((chunk: any) => {
+            onUpdate(chunk)
+          })
+        } catch (e: any) {
+          console.error(e.statusText)
+          onError(e.statusText)
+        }
+  return xStreamBody.content()
+}
+
 const [agent] = useXAgent({
   request: async ({ message }, { onSuccess, onUpdate, onError }) => {
     senderLoading.value = true
@@ -218,63 +290,15 @@ const [agent] = useXAgent({
     let content = ''
 
     switch (current.aiType) {
-      case 'normal': {
-        const xStreamBody = new XStreamBody('/chat/stream', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-          },
-          body: {
-            ...configStore.chatConfig,
-            query: message,
-          },
-        })
-
-        try {
-          await xStreamBody.readStream((chunk: any) => {
-            onUpdate(chunk)
-          })
-        } catch (e: any) {
-          console.error(e.statusText)
-          onError(e.statusText)
-        }
-
-        content = xStreamBody.content()
+      case 'normal':
+      case 'startDS': {
+        content = await sendChatStream(message, onUpdate, onError)
         break
       }
 
-      case 'startDS': {
+      case 'onDS': {
         current.deepResearchDetail = true
-
-        if (current.autoAccepted) {
-          content = 'startDS阶段，已自动接受，跳过调用'
-          break
-        }
-
-        const xStreamBody = new XStreamBody('/chat/resume', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-          },
-          body: {
-            ...configStore.chatConfig,
-            query: message,
-            feed_back: false, 
-          },
-        })
-
-        try {
-          await xStreamBody.readStream((chunk: any) => {
-            onUpdate(chunk)
-          })
-        } catch (e: any) {
-          console.error(e.statusText)
-          onError(e.statusText)
-        }
-
-        content = xStreamBody.content()
+        content = await (configStore.chatConfig.auto_accepted_plan ? sendChatStream(message, onUpdate, onError) : sendResumeStream(message, onUpdate, onError))
         break
       }
 
@@ -339,10 +363,7 @@ const [agent] = useXAgent({
       }
     }
 
-    if (current.deepResearch) {
-      messageStore.nextAIType()
-    }
-
+    // 最后会返回本次stream的所有内容
     onSuccess(content)
     senderLoading.value = false
   },
@@ -362,8 +383,23 @@ if (convId) {
 const content = ref('')
 const senderLoading = ref(false)
 
+// HTML 渲染组件相关状态
+const htmlModalVisible = ref(false)
+const htmlChunks = ref([])
+const htmlLoading = ref(false)
+const htmlRendererRef = ref(null)
+
 const submitHandle = (nextContent: any) => {
   current.aiType = 'normal'
+  // 如果是深度研究，需要切换到下一个aiType
+  if (current.deepResearch) {
+      messageStore.nextAIType()
+      current.deepResearchDetail = true
+  }
+  // 自动接受，需要再转为下一个状态
+  if(configStore.chatConfig.auto_accepted_plan){
+    messageStore.nextAIType()
+  }
   onRequest(nextContent)
   content.value = ''
   if (!convId) {
@@ -372,108 +408,307 @@ const submitHandle = (nextContent: any) => {
   }
 }
 
+// 开始研究
 function startDeepResearch() {
-  // messageStore.startDeepResearch()
+  messageStore.nextAIType()
   onRequest('开始研究')
+}
+
+// 展示HTML报告
+async function htmlDeepResearch(){
+    // 先打开弹窗
+    htmlModalVisible.value = true
+    htmlLoading.value = true
+    htmlChunks.value = []
+    
+    
+    if(messageStore.htmlReport[convId]){
+      htmlChunks.value = messageStore.htmlReport[convId]
+      htmlLoading.value = false
+      return
+    }
+
+    const xStreamBody = new XStreamBody('/api/reports/build-html?threadId=' + convId, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        }})
+    let success = true
+    try {
+        await xStreamBody.readStream((chunk: any) => {
+            // 将接收到的HTML片段添加到数组中
+            const chunkNode = JSON.parse(chunk)
+            htmlChunks.value.push(chunkNode.result.output.text)
+        })
+        htmlLoading.value = false
+    } catch (e: any) {
+        console.error(e.statusText)
+        htmlLoading.value = false
+        // 如果出错，可以显示错误信息
+        htmlChunks.value = [`<div style="color: red; padding: 20px;">加载HTML报告时出错: ${e.statusText}</div>`]
+        success = false
+    }
+    // 缓存html报告
+    if(success) {
+        messageStore.htmlReport[convId] = htmlChunks.value
+    }
+    
+}
+
+// 关闭HTML模态框
+function closeHtmlModal() {
+    htmlModalVisible.value = false
+    htmlChunks.value = []
+    htmlLoading.value = false
+}
+
+// 下载报告
+function downDeepResearch(){
+  request({
+    url: '/api/reports/export',
+    method: 'POST',
+    data: {
+      thread_id: convId,
+      format: 'pdf'
+    }
+  }).then(response => {
+    if(response.status === 'success') {
+      window.open(import.meta.env.VITE_BASE_URL + response.report_information.download_url, '_blank')
+    }
+  })
 }
 
 function deepResearch() {
   current.deepResearchDetail = !current.deepResearchDetail
 }
 
+function buildPendingNodeThoughtChain() : any {
+    const items: ThoughtChainProps['items'] = [
+        {
+          title: '请稍后...',
+          icon: h(LoadingOutlined),
+          status: 'pending'
+        }
+      ]
+    return (
+          <>
+            <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
+              {/* <h2>{{ msg }}</h2> */}
+              <ThoughtChain items={items} />
+            </Card>
+          </>
+        )
+}
+
+let tempJsonArray = []
+function buildStartDSThoughtChain(jsonArray: any[]) : any {
+    // 重置数组
+    if(tempJsonArray.length > 0) {
+      tempJsonArray = []
+    }
+    const { Paragraph, Text } = Typography
+    // 获取背景调查节点
+    const backgroundInvestigatorNode = jsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
+    const results = backgroundInvestigatorNode.siteInformation
+    const markdownContent = results.map((result, index) => {
+        return `${index + 1}. [${result.title}](${result.url})\n\n`
+    }).join('\n')
+    const items: ThoughtChainProps['items'] = [
+      {
+        status: 'error',
+        title: '研究网站',
+        icon: <IeOutlined />,
+        key: 'backgroundInvestigator',
+        extra: '',
+        content: (
+          <Typography>
+            <Paragraph>
+              <MD content={markdownContent} />
+            </Paragraph>
+          </Typography>
+        ),
+      },
+      {
+        status: 'success',
+        title: '分析结果',
+        icon: <DotChartOutlined />,
+        extra: '',
+      },
+
+      {
+        status: 'success',
+        title: '生成报告',
+        icon: <BgColorsOutlined />,
+        description: <i>只需要几分钟就可以准备好</i>,
+        footer: (
+          <Flex style="margin-left: auto" gap="middle">
+            <Button type="primary">修改方案</Button>
+            <Button type="primary" onClick={startDeepResearch}>开始研究</Button>
+          </Flex>
+        ),
+        extra: '',
+      },
+    ]
+    tempJsonArray = jsonArray
+    return (
+      <>
+        这是该主题的研究方案。如果你需要进行更新，请告诉我。
+        <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
+          {/* <h2>{{ msg }}</h2> */}
+          <ThoughtChain items={items} collapsible={{ expandedKeys: ['backgroundInvestigator'] }} />
+        </Card>
+      </>
+    )
+}
+
+function buildOnDSThoughtChain() : any {
+    if(tempJsonArray.length === 0){
+      return
+    }
+    const { Paragraph, Text } = Typography
+    // 获取背景调查节点
+    const backgroundInvestigatorNode = tempJsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
+    const results = backgroundInvestigatorNode.siteInformation
+    const markdownContent = results.map((result, index) => {
+        return `${index + 1}. [${result.title}](${result.url})\n\n`
+    }).join('\n')
+    const items: ThoughtChainProps['items'] = [
+      {
+        status: 'error',
+        title: '研究网站',
+        icon: <IeOutlined />,
+        key: 'backgroundInvestigator',
+        extra: '',
+        content: (
+          <Typography>
+            <Paragraph>
+              <MD content={markdownContent} />
+            </Paragraph>
+          </Typography>
+        ),
+      },
+      {
+        status: 'pending',
+        title: '正在分析结果',
+        icon: <LoadingOutlined />,
+        extra: '',
+      }
+    ]
+
+    return (
+      <>
+        这是该主题的研究方案。正在分析结果中...
+        <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
+          {/* <h2>{{ msg }}</h2> */}
+          <ThoughtChain items={items} collapsible={{ expandedKeys: ['backgroundInvestigator'] }} />
+        </Card>
+      </>
+    )
+}
+
+function buildEndDSThoughtChain(jsonArray: any[]): any {
+  if(tempJsonArray.length === 0 && jsonArray.length === 0){
+    return
+  }
+  const curJsonArray = tempJsonArray.length > 0 ? tempJsonArray : jsonArray
+  const { Paragraph, Text } = Typography
+  const items: ThoughtChainProps['items'] = []
+  let collapsible = { }
+  // 获取背景调查节点
+  const backgroundInvestigatorNode = curJsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
+  if(backgroundInvestigatorNode && backgroundInvestigatorNode.siteInformation){
+      const results = backgroundInvestigatorNode.siteInformation
+      const markdownContent = results.map((result, index) => {
+          return `${index + 1}. [${result.title}](${result.url})\n\n`
+      }).join('\n')
+      const item: ThoughtChainItem = {
+          status: 'error',
+          title: '研究网站',
+          icon: <IeOutlined />,
+          key: 'backgroundInvestigator',
+          extra: '',
+          content: (
+            <Typography>
+              <Paragraph>
+                <MD content={markdownContent} />
+              </Paragraph>
+            </Typography>
+          ),
+      }
+      items.push(item)
+      collapsible = { expandedKeys: ['backgroundInvestigator'] }
+  }
+  const endItem: ThoughtChainItem = {
+      status: 'success',
+      title: '完成分析结果',
+      icon: <CheckCircleOutlined />,
+      footer: (
+          <Flex style="margin-left: auto" gap="middle">
+            <Button type="primary" onClick={downDeepResearch}>下载报告</Button>
+            <Button type="primary" onClick={htmlDeepResearch}>在线报告</Button>
+          </Flex>
+        ),
+    }
+  items.push(endItem)
+  return (
+    <>
+      这是该主题的研究方案已完成，可以点击下载报告
+      <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
+        {/* <h2>{{ msg }}</h2> */}
+        <ThoughtChain items={items} collapsible={collapsible} />
+      </Card>
+    </>
+  )
+}
+// 解析消息记录 
+// status === local 表示人类  loading表示stream流正在返回  success表示steram完成返回
+// msg  当status === loading的时候，返回stream流的chunk  当status === success的时候，返回所有chunk的拼接字符串
+// isCurrent  true表示当前消息是最新的，false表示历史消息
 function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any {
   switch (status) {
-    case 'success':
-      if (!isCurrent) {
-        // todo 历史数据渲染
-        return <MD content={msg} />
-      }
-      if (current.deepResearch) {
-        if (current.aiType === 'startDS') {
-          const { Paragraph, Text } = Typography
-
-          const customizationProps = (
-            title: any,
-            description: string,
-            para: string | null,
-            footer?: any
-          ): ThoughtChainItem => {
-            return {
-              title,
-              description,
-              icon: <CheckCircleOutlined />,
-              extra: '',
-              footer,
-              content: para ? (
-                <Typography>
-                  <Paragraph>
-                    <MD content={para} />
-                  </Paragraph>
-                </Typography>
-              ) : (
-                ''
-              ),
-            }
-          }
-
-          const items: ThoughtChainProps['items'] = [
-            {
-              status: 'error',
-              title: '研究网站',
-              icon: <IeOutlined />,
-              extra: '',
-              content: (
-                <Typography>
-                  <Paragraph>
-                    <MD content="(1) xxx" />
-                  </Paragraph>
-                </Typography>
-              ),
-            },
-            {
-              status: 'pending',
-              title: '分析结果',
-              icon: <DotChartOutlined />,
-              extra: '',
-            },
-
-            {
-              status: 'success',
-              title: '研究报告',
-              icon: <BgColorsOutlined />,
-              description: <i>只需要几分钟就可以准备好</i>,
-              footer: (
-                <Flex style="margin-left: auto" gap="middle">
-                  <Button type="primary">修改方案</Button>
-                  <Button type="primary">开始研究</Button>
-                </Flex>
-              ),
-              extra: '',
-            },
-          ]
-
-          return (
-            <>
-              这是该主题的研究方案。如果你需要进行更新，请告诉我。
-              <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
-                <h2>{{ msg }}</h2>
-                <ThoughtChain items={items} />
-              </Card>
-            </>
-          )
+    // 人类信息
+    case 'local':
+      return msg
+    case 'loading':
+      if(current.deepResearch){
+        // 准备开始研究
+        if(current.aiType === 'startDS') {
+          return buildPendingNodeThoughtChain()
         }
+        if(current.aiType === 'onDS' && configStore.chatConfig.auto_accepted_plan) {
+          return buildPendingNodeThoughtChain()
+        }
+        // 正在研究中
+        if(current.aiType === 'onDS') {
+          return  buildOnDSThoughtChain()
+        }
+      }
+      return buildPendingNodeThoughtChain()
+    case 'success':
+      // 解析完整数据
+      const jsonArray = parseJsonTextStrict(msg)
+      // 历史数据渲染
+      if (current.deepResearch && !isCurrent) {
+        // 研究网站、分析结果、生成报告
+        return <MD content={ '进行下一步处理' } />
+      }
+      
+      if (current.deepResearch && isCurrent) {
+        if (current.aiType === 'startDS') {
+          // 如果不包含背景调查，则提示用户重新输入
+          if(jsonArray.filter((item) => item.nodeName === 'background_investigator').length === 0) {
+            return <MD content={'未进行背景调查，请重新输入话题进行研究'} />
+          }
+          return buildStartDSThoughtChain(jsonArray)
+        }
+        // 研究完成，TODO 这里应该流为endDS状态
         if (current.aiType === 'onDS') {
-          return (
-            <div>
-              <Button type="primary" onClick={deepResearch}>
-                正在研究
-              </Button>
-            </div>
-          )
+          return buildEndDSThoughtChain(jsonArray)
         }
       }
     default:
-      return msg
+      return ''
   }
 }
 
@@ -497,12 +732,15 @@ function parseFooter(status: MessageStatus, isCurrent: boolean): any {
 const bubbleList = computed(() => {
   const len = messages.value.length
   messageStore.history[convId] = messages.value
-  return messages.value.map(({ id, message, status }, idx) => ({
+  //  当状态是loading的时候，是每个chunk，然后succes，把之前所有的chunk 全部返回
+  const list =  messages.value.map(({ id, message, status }, idx) => ({
     key: id,
     role: status === 'local' ? 'local' : 'ai',
     content: parseMessage(status, message, idx === len - 1),
     footer: parseFooter(status, idx === len - 1),
   }))
+  console.log(list)
+  return list;
 })
 
 const scrollContainer = ref<Element | any>(null)
@@ -531,11 +769,7 @@ watch(
     box-sizing: border-box;
   }
 
-  .aux {
-    padding-top: 20px;
-    height: 100%;
-    padding-bottom: 38px;
-  }
+
 
   .chat {
     padding-top: 20px;
@@ -628,7 +862,6 @@ watch(
     }
   }
 
-  .aux {
-  }
+
 }
 </style>
