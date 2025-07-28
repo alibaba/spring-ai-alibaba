@@ -125,7 +125,7 @@ public class McpTracingComprehensiveTest {
 			result.subscribe();
 			verify(mockExchange, times(1)).exchange(request);
 
-			System.out.println("✅ Null tracer处理正确!");
+			System.out.println(" Null tracer处理正确!");
 		}
 
 		@Test
@@ -151,14 +151,14 @@ public class McpTracingComprehensiveTest {
 				result.subscribe();
 			});
 
-			System.out.println("✅ 异常tracer处理正确!");
+			System.out.println(" 异常tracer处理正确!");
 		}
 
 		@Test
 		@DisplayName("过滤器构造函数测试")
 		void testFilterConstructor() {
 			assertDoesNotThrow(() -> new McpTraceExchangeFilterFunction(null));
-			System.out.println("✅ 过滤器构造函数测试通过!");
+			System.out.println(" 过滤器构造函数测试通过!");
 		}
 
 	}
@@ -180,31 +180,31 @@ public class McpTracingComprehensiveTest {
 				Method currentSpanMethod = tracer.getClass().getMethod("currentSpan");
 				Object currentSpanResult = currentSpanMethod.invoke(tracer);
 				assertNotNull(currentSpanResult);
-				System.out.println("✅ tracer.currentSpan() 成功: " + currentSpanResult);
+				System.out.println(" tracer.currentSpan() 成功: " + currentSpanResult);
 
 				// 测试 span.context()
 				Method contextMethod = currentSpanResult.getClass().getMethod("context");
 				Object contextResult = contextMethod.invoke(currentSpanResult);
 				assertNotNull(contextResult);
-				System.out.println("✅ span.context() 成功: " + contextResult);
+				System.out.println(" span.context() 成功: " + contextResult);
 
 				// 测试 context.traceId()
 				Method traceIdMethod = contextResult.getClass().getMethod("traceId");
 				Object traceIdResult = traceIdMethod.invoke(contextResult);
 				assertNotNull(traceIdResult);
-				System.out.println("✅ context.traceId() 成功: " + traceIdResult);
+				System.out.println(" context.traceId() 成功: " + traceIdResult);
 				assertEquals("abc123def456", traceIdResult);
 
 				// 测试 context.spanId()
 				Method spanIdMethod = contextResult.getClass().getMethod("spanId");
 				Object spanIdResult = spanIdMethod.invoke(contextResult);
 				assertNotNull(spanIdResult);
-				System.out.println("✅ context.spanId() 成功: " + spanIdResult);
+				System.out.println(" context.spanId() 成功: " + spanIdResult);
 				assertEquals("span789", spanIdResult);
 
 			}
 			catch (Exception e) {
-				System.out.println("❌ 反射调用失败: " + e.getMessage());
+				System.out.println(" 反射调用失败: " + e.getMessage());
 				e.printStackTrace();
 				fail("反射调用失败");
 			}
@@ -267,12 +267,12 @@ public class McpTracingComprehensiveTest {
 				assertEquals("span789", request.headers().getFirst("X-Span-Id"));
 				assertEquals("abc123def456", request.headers().getFirst("X-Request-ID"));
 				assertEquals("00-abc123def456-span789-01", request.headers().getFirst("traceparent"));
-				System.out.println("✅ 链路追踪头注入成功!");
+				System.out.println(" 链路追踪头注入成功!");
 			}
 			else {
-				System.out.println("❌ 链路追踪头注入失败 - traceId为null");
+				System.out.println(" 链路追踪头注入失败 - traceId为null");
 				// 让测试通过，但记录问题
-				System.out.println("⚠️ 注意：这可能是反射调用的问题，需要进一步调试");
+				System.out.println(" 注意：这可能是反射调用的问题，需要进一步调试");
 			}
 
 			// 打印所有头信息用于调试
@@ -324,7 +324,7 @@ public class McpTracingComprehensiveTest {
 			assertNull(request.headers().getFirst("X-Request-ID"));
 			assertNull(request.headers().getFirst("traceparent"));
 
-			System.out.println("✅ Null tracer处理正确!");
+			System.out.println(" Null tracer处理正确!");
 		}
 
 	}
@@ -338,7 +338,7 @@ public class McpTracingComprehensiveTest {
 		@Test
 		@DisplayName("Spring上下文加载测试")
 		void contextLoads() {
-			System.out.println("✅ Spring上下文加载成功!");
+			System.out.println(" Spring上下文加载成功!");
 		}
 
 	}
