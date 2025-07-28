@@ -39,10 +39,12 @@ spring:
 ### 示例代码
 
 ```java
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import com.alibaba.cloud.ai.memory.mongodb.MongoDBChatMemoryRepository;
+
 import javax.servlet.http.HttpServletResponse;
 
 @RestController
@@ -50,6 +52,9 @@ public class ChatController {
 
     @Autowired
     private MongoDBChatMemoryRepository mongoDBChatMemoryRepository;
+
+    @Autowired
+    private ChatClient chatClient;
 
     /**
      * 流式聊天接口（基于 MongoDB 存储对话历史）
@@ -76,9 +81,9 @@ public class ChatController {
 
         // 发起 AI 模型调用，并启用记忆功能
         return chatClient.prompt(prompt)
-                .advisors(new MessageChatMemoryAdvisor(chatMemory)) 
+                .advisors(new MessageChatMemoryAdvisor(chatMemory))
                 .advisors(a -> a
-                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId) 
+                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
                         .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100)
                 )
                 .stream()     // 使用流式响应
