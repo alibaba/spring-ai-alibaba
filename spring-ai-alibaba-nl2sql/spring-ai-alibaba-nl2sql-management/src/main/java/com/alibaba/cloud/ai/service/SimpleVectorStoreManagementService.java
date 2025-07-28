@@ -31,9 +31,9 @@ import com.google.gson.Gson;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import com.alibaba.cloud.ai.vectorstore.SimpleVectorStoreEnhanced;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 @Service
 public class SimpleVectorStoreManagementService implements VectorStoreManagementService {
 
-	private final SimpleVectorStore vectorStore;
+	private final SimpleVectorStoreEnhanced vectorStore;
 
 	private final Gson gson;
 
@@ -64,7 +64,7 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 				DashScopeEmbeddingOptions.builder()
 					.withModel(DashScopeApi.EmbeddingModel.EMBEDDING_V4.getValue())
 					.build());
-		this.vectorStore = SimpleVectorStore.builder(dashScopeEmbeddingModel).build();
+		this.vectorStore = SimpleVectorStoreEnhanced.builder(dashScopeEmbeddingModel);
 	}
 
 	/**
@@ -79,11 +79,7 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 			.setSchema(dbConfig.getSchema())
 			.setTables(schemaInitRequest.getTables());
 
-		DeleteRequest deleteRequest = new DeleteRequest();
-		deleteRequest.setVectorType("column");
-		deleteDocuments(deleteRequest);
-		deleteRequest.setVectorType("table");
-		deleteDocuments(deleteRequest);
+		deleteDocumentsByVectorTypes("column", "table");
 
 		List<ForeignKeyInfoBO> foreignKeyInfoBOS = dbAccessor.showForeignKeys(dbConfig, dqp);
 		Map<String, List<String>> foreignKeyMap = buildForeignKeyMap(foreignKeyInfoBOS);
@@ -204,14 +200,14 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 	public Boolean deleteDocuments(DeleteRequest deleteRequest) throws Exception {
 		try {
 			if (deleteRequest.getId() != null && !deleteRequest.getId().isEmpty()) {
+				// 按ID删除
 				vectorStore.delete(Arrays.asList(deleteRequest.getId()));
 			}
 			else if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
+				// 使用向量存储的doDelete方法，按vectorType删除
 				FilterExpressionBuilder b = new FilterExpressionBuilder();
-				Filter.Expression expression = b.eq("vectorType", "column").build();
-				List<Document> documents = vectorStore.similaritySearch(
-						SearchRequest.builder().topK(Integer.MAX_VALUE).filterExpression(expression).build());
-				vectorStore.delete(documents.stream().map(Document::getId).toList());
+				Filter.Expression expression = b.eq("vectorType", deleteRequest.getVectorType()).build();
+				vectorStore.doDelete(expression);
 			}
 			else {
 				throw new IllegalArgumentException("Either id or vectorType must be specified.");
@@ -239,6 +235,31 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 		catch (Exception e) {
 			throw new Exception("Failed to search vector store: " + e.getMessage(), e);
 		}
+	}
+
+	/**
+	 * 直接按 vectorType 删除文档
+	 * @param vectorType 要删除的向量类型
+	 * @return 删除是否成功
+	 * @throws Exception 删除失败时抛出异常
+	 */
+	public Boolean deleteDocumentsByVectorType(String vectorType) throws Exception {
+		DeleteRequest deleteRequest = new DeleteRequest();
+		deleteRequest.setVectorType(vectorType);
+		return deleteDocuments(deleteRequest);
+	}
+
+	/**
+	 * 批量删除多种 vectorType 的文档
+	 * @param vectorTypes 要删除的向量类型列表
+	 * @return 删除是否成功
+	 * @throws Exception 删除失败时抛出异常
+	 */
+	public Boolean deleteDocumentsByVectorTypes(String... vectorTypes) throws Exception {
+		for (String vectorType : vectorTypes) {
+			deleteDocumentsByVectorType(vectorType);
+		}
+		return true;
 	}
 
 }
