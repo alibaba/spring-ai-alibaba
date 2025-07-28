@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,6 +58,8 @@ import org.slf4j.LoggerFactory;
  * 负责执行 MapReduce 模式计划的执行器 支持并行执行 Map 阶段和串行执行 Reduce 阶段
  */
 public class MapReducePlanExecutor extends AbstractPlanExecutor {
+
+	private final ObjectMapper OBJECT_MAPPER;
 
 	private static final Logger logger = LoggerFactory.getLogger(MapReducePlanExecutor.class);
 
@@ -91,8 +94,10 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	private final ExecutorService executorService;
 
 	public MapReducePlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
-			AgentService agentService, ILlmService llmService, ManusProperties manusProperties) {
+			AgentService agentService, ILlmService llmService, ManusProperties manusProperties,
+			ObjectMapper objectMapper) {
 		super(agents, recorder, agentService, llmService, manusProperties);
+		OBJECT_MAPPER = objectMapper;
 
 		// Get thread pool size from configuration
 		int threadPoolSize = getMapTaskThreadPoolSize();
@@ -896,23 +901,29 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 				String statusContent = Files.readString(statusFile);
 				logger.debug("任务 {} 状态文件内容: {}", taskId, statusContent);
 
-				// 检查状态是否为completed
-				if (statusContent.contains("\"status\":\"completed\"")
-						|| statusContent.contains("\"status\": \"completed\"")) {
-
-					// 同时检查是否存在output.md文件
-					Path outputFile = taskPath.resolve("output.md");
-					if (Files.exists(outputFile)) {
-						logger.debug("任务 {} 已完成，存在状态文件和输出文件", taskId);
-						return true;
+				// 用ObjectMapper解析statusContent为Map后判断status字段
+				try {
+					Map<?, ?> statusMap = OBJECT_MAPPER.readValue(statusContent, Map.class);
+					Object statusValue = statusMap.get("status");
+					if ("completed".equals(statusValue)) {
+						// 同时检查是否存在output.md文件
+						Path outputFile = taskPath.resolve("output.md");
+						if (Files.exists(outputFile)) {
+							logger.debug("任务 {} 已完成，存在状态文件和输出文件", taskId);
+							return true;
+						}
+						else {
+							logger.warn("任务 {} 状态为completed但缺少output.md文件", taskId);
+							return false;
+						}
 					}
 					else {
-						logger.warn("任务 {} 状态为completed但缺少output.md文件", taskId);
+						logger.debug("任务 {} 状态不是completed", taskId);
 						return false;
 					}
 				}
-				else {
-					logger.debug("任务 {} 状态不是completed", taskId);
+				catch (Exception jsonEx) {
+					logger.error("解析status.json为Map失败", jsonEx);
 					return false;
 				}
 			}
