@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.tool;
 
-import com.alibaba.cloud.ai.service.executor.ContainerPoolExecutor;
+import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
@@ -29,10 +29,10 @@ public class PythonExecutorTool {
 
 	private static final Logger log = LoggerFactory.getLogger(PythonExecutorTool.class);
 
-	private final ContainerPoolExecutor containerPoolExecutor;
+	private final CodePoolExecutorService codePoolExecutorService;
 
-	public PythonExecutorTool(ContainerPoolExecutor containerPoolExecutor) {
-		this.containerPoolExecutor = containerPoolExecutor;
+	public PythonExecutorTool(CodePoolExecutorService codePoolExecutorService) {
+		this.codePoolExecutorService = codePoolExecutorService;
 	}
 
 	@Tool(description = "Execute Python code and return the result. You **need to provide** the correct Python code and its standard input."
@@ -45,7 +45,7 @@ public class PythonExecutorTool {
 		if (code == null || code.trim().isEmpty()) {
 			return "Error: Code must be a non-empty string.";
 		}
-		return this.containerPoolExecutor.runTask(new ContainerPoolExecutor.TaskRequest(code, data, requirements))
+		return this.codePoolExecutorService.runTask(new CodePoolExecutorService.TaskRequest(code, data, requirements))
 			.output();
 	}
 

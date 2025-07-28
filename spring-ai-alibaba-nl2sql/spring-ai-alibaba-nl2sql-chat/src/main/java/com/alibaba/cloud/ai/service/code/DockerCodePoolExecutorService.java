@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service.executor;
+package com.alibaba.cloud.ai.service.code;
 
 import com.alibaba.cloud.ai.config.ContainerProperties;
 import com.github.dockerjava.api.DockerClient;
@@ -58,15 +58,15 @@ import static com.github.dockerjava.api.model.HostConfig.newHostConfig;
  * @author vlsmb
  * @since 2025/7/12
  */
-public class DockerContainerPoolExecutor extends AbstractContainerPoolExecutor implements ContainerPoolExecutor {
+public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorService implements CodePoolExecutorService {
 
-	private static final Logger log = LoggerFactory.getLogger(DockerContainerPoolExecutor.class);
+	private static final Logger log = LoggerFactory.getLogger(DockerCodePoolExecutorService.class);
 
 	private final DockerClient dockerClient;
 
 	private final ConcurrentHashMap<String, Path> containerTempPath;
 
-	public DockerContainerPoolExecutor(ContainerProperties properties) {
+	public DockerCodePoolExecutorService(ContainerProperties properties) {
 		super(properties);
 		// 初始化DockerClient
 		String dockerHost = this.getDockerHostForCurrentOS(properties.getHost());

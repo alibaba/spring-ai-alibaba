@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service.executor;
+package com.alibaba.cloud.ai.service.code;
 
 import com.alibaba.cloud.ai.config.ContainerProperties;
 
@@ -23,13 +23,13 @@ import com.alibaba.cloud.ai.config.ContainerProperties;
  * @author vlsmb
  * @since 2025/7/12
  */
-public interface ContainerPoolExecutor {
+public interface CodePoolExecutorService {
 
 	TaskResponse runTask(TaskRequest request);
 
-	static ContainerPoolExecutor getInstance(ContainerProperties properties) {
+	static CodePoolExecutorService getInstance(ContainerProperties properties) {
 		if (properties.getContainerImpl().equals(ContainerProperties.ContainerImpl.DOCKER)) {
-			return new DockerContainerPoolExecutor(properties);
+			return new DockerCodePoolExecutorService(properties);
 		}
 		else {
 			throw new IllegalArgumentException("Unknown container impl: " + properties.getContainerImpl());

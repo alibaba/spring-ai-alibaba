@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service.executor;
+package com.alibaba.cloud.ai.service.code;
 
 import com.alibaba.cloud.ai.config.ContainerProperties;
 import org.jetbrains.annotations.NotNull;
@@ -43,21 +43,21 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author vlsmb
  * @since 2025/7/12
  */
-public abstract class AbstractContainerPoolExecutor implements ContainerPoolExecutor {
+public abstract class AbstractCodePoolExecutorService implements CodePoolExecutorService {
 
-	private static final Logger log = LoggerFactory.getLogger(AbstractContainerPoolExecutor.class);
+	private static final Logger log = LoggerFactory.getLogger(AbstractCodePoolExecutorService.class);
 
 	// 记录核心容器的状态
-	protected final ConcurrentHashMap<String, ContainerPoolExecutor.State> coreContainerState;
+	protected final ConcurrentHashMap<String, CodePoolExecutorService.State> coreContainerState;
 
 	// 记录临时容器的状态
-	protected final ConcurrentHashMap<String, ContainerPoolExecutor.State> tempContainerState;
+	protected final ConcurrentHashMap<String, CodePoolExecutorService.State> tempContainerState;
 
 	// 记录临时容器销毁的Future
 	protected final ConcurrentHashMap<String, Future<?>> tempContainerRemoveFuture;
 
 	// 任务队列（当容器满时临时存放任务）
-	protected final ArrayBlockingQueue<FutureTask<ContainerPoolExecutor.TaskResponse>> taskQueue;
+	protected final ArrayBlockingQueue<FutureTask<CodePoolExecutorService.TaskResponse>> taskQueue;
 
 	// 已经就绪的核心容器
 	protected final ArrayBlockingQueue<String> readyCoreContainer;
@@ -77,7 +77,7 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 	// 配置属性
 	protected final ContainerProperties properties;
 
-	public AbstractContainerPoolExecutor(ContainerProperties properties) {
+	public AbstractCodePoolExecutorService(ContainerProperties properties) {
 		this.properties = properties;
 		this.coreContainerState = new ConcurrentHashMap<>();
 		this.tempContainerState = new ConcurrentHashMap<>();
@@ -250,7 +250,7 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 	}
 
 	private TaskResponse pushTaskQueue(TaskRequest request) throws ExecutionException, InterruptedException {
-		FutureTask<ContainerPoolExecutor.TaskResponse> ft = new FutureTask<>(() -> {
+		FutureTask<CodePoolExecutorService.TaskResponse> ft = new FutureTask<>(() -> {
 			log.info("Execute tasks in the BlockingQueue {} ...", request.toString());
 			return this.runTask(request);
 		});
@@ -260,7 +260,7 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 
 	// 运行任务队列里的任务，如果有
 	private void popTaskQueue() {
-		FutureTask<ContainerPoolExecutor.TaskResponse> future = this.taskQueue.poll();
+		FutureTask<CodePoolExecutorService.TaskResponse> future = this.taskQueue.poll();
 		if (future == null) {
 			return;
 		}

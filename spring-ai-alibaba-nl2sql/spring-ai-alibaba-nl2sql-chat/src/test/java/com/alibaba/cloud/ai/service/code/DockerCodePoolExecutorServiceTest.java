@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.controller;
+package com.alibaba.cloud.ai.service.code;
 
 import com.alibaba.cloud.ai.config.ContainerConfiguration;
 import com.alibaba.cloud.ai.tool.PythonExecutorTool;
@@ -36,9 +36,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = { ContainerConfiguration.class })
 @DisplayName("Run Python Code in Docker Test Without Network")
 @ActiveProfiles("docker")
-public class DockerContainerPoolExecutorTest {
+public class DockerCodePoolExecutorServiceTest {
 
-	private static final Logger log = LoggerFactory.getLogger(DockerContainerPoolExecutorTest.class);
+	private static final Logger log = LoggerFactory.getLogger(DockerCodePoolExecutorServiceTest.class);
 
 	@Autowired
 	private PythonExecutorTool pythonExecutorTool;
