@@ -38,8 +38,12 @@ export class XStreamBody {
     if (config.body) {
       config.body = JSON.stringify(config.body)
     }
+    // 如果URL不是完整的HTTP URL，则添加BASE_URL前缀
+    const baseURL = import.meta.env.VITE_BASE_URL || ''
+    const fullUrl = url.startsWith('http') ? url : `${baseURL}${url.startsWith('/') ? url : '/' + url}`
+    
     this.requestInfo = {
-      url,
+      url: fullUrl,
       config,
     }
   }
@@ -67,7 +71,7 @@ export class XStreamBody {
       }
       this.lines.value = [...this.lines.value, newChunk]
       if (updateHandle) {
-        updateHandle((tmp += chunk.data))
+        updateHandle(chunk.data)
       }
     }
   }

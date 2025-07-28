@@ -45,11 +45,32 @@ export class SidebarStore {
   planVersions: string[] = []
   currentVersionIndex = -1
 
+  // Helper function to parse date from different formats
+  parseDateTime(dateValue: any): Date {
+    if (!dateValue) {
+      return new Date()
+    }
+    
+    // 如果是数组格式 [year, month, day, hour, minute, second, nanosecond]
+    if (Array.isArray(dateValue) && dateValue.length >= 6) {
+      // JavaScript Date 构造函数中月份是从0开始的，所以需要减1
+      return new Date(dateValue[0], dateValue[1] - 1, dateValue[2], dateValue[3], dateValue[4], dateValue[5], Math.floor(dateValue[6] / 1000000))
+    }
+    
+    // 如果是字符串格式，直接解析
+    if (typeof dateValue === 'string') {
+      return new Date(dateValue)
+    }
+    
+    // 其他情况返回当前时间
+    return new Date()
+  }
+
   // Computed properties
   get sortedTemplates(): PlanTemplate[] {
     return [...this.planTemplateList].sort((a, b) => {
-      const timeA = new Date(a.updateTime ?? a.createTime)
-      const timeB = new Date(b.updateTime ?? b.createTime)
+      const timeA = this.parseDateTime(a.updateTime ?? a.createTime)
+      const timeB = this.parseDateTime(b.updateTime ?? b.createTime)
       return timeB.getTime() - timeA.getTime()
     })
   }

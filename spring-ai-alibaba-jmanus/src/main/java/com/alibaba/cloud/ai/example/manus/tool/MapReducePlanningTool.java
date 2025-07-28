@@ -33,6 +33,8 @@ import java.util.function.Function;
 
 public class MapReducePlanningTool implements Function<String, ToolExecuteResult>, PlanningToolInterface {
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger log = LoggerFactory.getLogger(MapReducePlanningTool.class);
 
 	private MapReduceExecutionPlan currentPlan;
@@ -162,7 +164,9 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 			.build();
 	}
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	public MapReducePlanningTool(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
 
 	public ToolExecuteResult run(String toolInput) {
 		try {

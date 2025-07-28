@@ -123,9 +123,13 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 
 	private final SmartContentSavingService innerStorageService;
 
-	public TextFileOperator(TextFileService textFileService, SmartContentSavingService innerStorageService) {
+	private final ObjectMapper objectMapper;
+
+	public TextFileOperator(TextFileService textFileService, SmartContentSavingService innerStorageService,
+			ObjectMapper objectMapper) {
 		this.textFileService = textFileService;
 		this.innerStorageService = innerStorageService;
+		this.objectMapper = objectMapper;
 	}
 
 	private final String PARAMETERS = """
@@ -266,7 +270,7 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 	public ToolExecuteResult run(String toolInput) {
 		log.info("TextFileOperator toolInput:{}", toolInput);
 		try {
-			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput,
+			Map<String, Object> toolInputMap = objectMapper.readValue(toolInput,
 					new TypeReference<Map<String, Object>>() {
 					});
 			String planId = this.currentPlanId;
