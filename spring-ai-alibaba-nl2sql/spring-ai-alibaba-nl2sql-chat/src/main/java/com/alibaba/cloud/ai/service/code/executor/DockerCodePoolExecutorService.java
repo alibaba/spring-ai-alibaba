@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.service.code.executor;
 
-import com.alibaba.cloud.ai.config.ContainerProperties;
+import com.alibaba.cloud.ai.config.CodeExecutorProperties;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerResponse;
@@ -66,7 +67,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 
 	private final ConcurrentHashMap<String, Path> containerTempPath;
 
-	public DockerCodePoolExecutorService(ContainerProperties properties) {
+	public DockerCodePoolExecutorService(CodeExecutorProperties properties) {
 		super(properties);
 		// 初始化DockerClient
 		String dockerHost = this.getDockerHostForCurrentOS(properties.getHost());

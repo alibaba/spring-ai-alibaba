@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.tool;
 
 import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorService;
+import com.alibaba.cloud.ai.service.code.memory.SqlResultMemoryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
@@ -31,8 +32,12 @@ public class PythonExecutorTool {
 
 	private final CodePoolExecutorService codePoolExecutorService;
 
-	public PythonExecutorTool(CodePoolExecutorService codePoolExecutorService) {
+	private final SqlResultMemoryService sqlResultMemoryService;
+
+	public PythonExecutorTool(CodePoolExecutorService codePoolExecutorService,
+			SqlResultMemoryService sqlResultMemoryService) {
 		this.codePoolExecutorService = codePoolExecutorService;
+		this.sqlResultMemoryService = sqlResultMemoryService;
 	}
 
 	@Tool(description = "Execute Python code and return the result. You **need to provide** the correct Python code and its standard input."

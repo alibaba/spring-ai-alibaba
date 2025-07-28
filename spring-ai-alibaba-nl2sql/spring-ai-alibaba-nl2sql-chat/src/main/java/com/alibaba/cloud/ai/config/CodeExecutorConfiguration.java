@@ -17,6 +17,9 @@
 package com.alibaba.cloud.ai.config;
 
 import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorService;
+import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorServiceFactory;
+import com.alibaba.cloud.ai.service.code.memory.SqlResultMemoryService;
+import com.alibaba.cloud.ai.service.code.memory.SqlResultMemoryServiceFactory;
 import com.alibaba.cloud.ai.tool.PythonExecutorTool;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -28,19 +31,25 @@ import org.springframework.context.annotation.Configuration;
  * @since 2025/7/14
  */
 @Configuration
-@EnableConfigurationProperties(ContainerProperties.class)
-@ConditionalOnProperty(prefix = ContainerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+@EnableConfigurationProperties(CodeExecutorProperties.class)
+@ConditionalOnProperty(prefix = CodeExecutorProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-public class ContainerConfiguration {
+public class CodeExecutorConfiguration {
 
 	@Bean
-	public CodePoolExecutorService containerPoolExecutor(ContainerProperties properties) {
-		return CodePoolExecutorService.getInstance(properties);
+	public CodePoolExecutorService containerPoolExecutor(CodeExecutorProperties properties) {
+		return CodePoolExecutorServiceFactory.newInstance(properties);
 	}
 
 	@Bean
-	public PythonExecutorTool pythonExecutorTool(CodePoolExecutorService executor) {
-		return new PythonExecutorTool(executor);
+	public SqlResultMemoryService sqlResultMemoryService(CodeExecutorProperties properties) {
+		return SqlResultMemoryServiceFactory.newInstance(properties);
+	}
+
+	@Bean
+	public PythonExecutorTool pythonExecutorTool(CodePoolExecutorService executor,
+			SqlResultMemoryService sqlResultMemoryService) {
+		return new PythonExecutorTool(executor, sqlResultMemoryService);
 	}
 
 }

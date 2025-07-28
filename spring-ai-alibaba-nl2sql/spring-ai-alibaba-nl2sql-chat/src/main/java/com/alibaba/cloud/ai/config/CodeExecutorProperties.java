@@ -13,31 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.config;
 
+import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorEnum;
+import com.alibaba.cloud.ai.service.code.memory.SqlResultMemoryEnum;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author vlsmb
  * @since 2025/7/12
  */
-@ConfigurationProperties(prefix = ContainerProperties.CONFIG_PREFIX)
-public class ContainerProperties {
+@ConfigurationProperties(prefix = CodeExecutorProperties.CONFIG_PREFIX)
+public class CodeExecutorProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.nl2sql.container";
-
-	public enum ContainerImpl {
-
-		DOCKER, CONTAINERD, KATA;
-
-	}
 
 	Boolean enabled = true;
 
 	/**
-	 * 指定容器池的实现类
+	 * 指定代码容器池运行服务的实现类
 	 */
-	ContainerImpl containerImpl = ContainerImpl.DOCKER;
+	CodePoolExecutorEnum codePoolExecutor = CodePoolExecutorEnum.DOCKER;
+
+	/**
+	 * 代码获取SQL结果服务的实现类
+	 */
+	SqlResultMemoryEnum codeSqlResultMemory = SqlResultMemoryEnum.IN_MEMORY;
 
 	/**
 	 * 服务Host，为null则使用默认地址
@@ -127,12 +129,20 @@ public class ContainerProperties {
 		this.enabled = enabled;
 	}
 
-	public ContainerImpl getContainerImpl() {
-		return containerImpl;
+	public CodePoolExecutorEnum getCodePoolExecutor() {
+		return codePoolExecutor;
 	}
 
-	public void setContainerImpl(ContainerImpl containerImpl) {
-		this.containerImpl = containerImpl;
+	public void setCodePoolExecutor(CodePoolExecutorEnum codePoolExecutor) {
+		this.codePoolExecutor = codePoolExecutor;
+	}
+
+	public SqlResultMemoryEnum getCodeSqlResultMemory() {
+		return codeSqlResultMemory;
+	}
+
+	public void setCodeSqlResultMemory(SqlResultMemoryEnum codeSqlResultMemory) {
+		this.codeSqlResultMemory = codeSqlResultMemory;
 	}
 
 	public String getHost() {

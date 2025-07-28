@@ -16,30 +16,27 @@
 
 package com.alibaba.cloud.ai.service.code.executor;
 
+import com.alibaba.cloud.ai.config.CodeExecutorProperties;
+
 /**
- * 运行Python任务的容器池接口
+ * 运行Python任务的容器池（工厂）
  *
  * @author vlsmb
- * @since 2025/7/12
+ * @since 2025/7/28
  */
-public interface CodePoolExecutorService {
+public final class CodePoolExecutorServiceFactory {
 
-	TaskResponse runTask(TaskRequest request);
-
-	record TaskRequest(String code, String input, String requirement) {
+	private CodePoolExecutorServiceFactory() {
 
 	}
 
-	record TaskResponse(String output) {
-		public static TaskResponse error(String msg) {
-			return new TaskResponse("An exception occurred while executing the task: " + msg);
+	public static CodePoolExecutorService newInstance(CodeExecutorProperties properties) {
+		if (properties.getCodePoolExecutor().equals(CodePoolExecutorEnum.DOCKER)) {
+			return new DockerCodePoolExecutorService(properties);
 		}
-	}
-
-	enum State {
-
-		READY, RUNNING
-
+		else {
+			throw new IllegalArgumentException("Unknown container impl: " + properties.getCodePoolExecutor());
+		}
 	}
 
 }

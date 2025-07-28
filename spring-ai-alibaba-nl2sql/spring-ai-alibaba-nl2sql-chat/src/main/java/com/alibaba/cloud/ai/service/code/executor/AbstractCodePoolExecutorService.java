@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.service.code.executor;
 
-import com.alibaba.cloud.ai.config.ContainerProperties;
+import com.alibaba.cloud.ai.config.CodeExecutorProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -75,9 +76,9 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 	protected final ExecutorService consumerThreadPool;
 
 	// 配置属性
-	protected final ContainerProperties properties;
+	protected final CodeExecutorProperties properties;
 
-	public AbstractCodePoolExecutorService(ContainerProperties properties) {
+	public AbstractCodePoolExecutorService(CodeExecutorProperties properties) {
 		this.properties = properties;
 		this.coreContainerState = new ConcurrentHashMap<>();
 		this.tempContainerState = new ConcurrentHashMap<>();

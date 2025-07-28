@@ -3,6 +3,6 @@ spring:
     alibaba:
       nl2sql:
         container:
-          container-impl: docker
+          code-pool-executor: docker
           code-timeout: 1s
           enabled: true

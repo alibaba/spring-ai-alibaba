@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.service.code;
 
-import com.alibaba.cloud.ai.config.ContainerConfiguration;
+import com.alibaba.cloud.ai.config.CodeExecutorConfiguration;
 import com.alibaba.cloud.ai.tool.PythonExecutorTool;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = { ContainerConfiguration.class })
+@SpringBootTest(classes = { CodeExecutorConfiguration.class })
 @DisplayName("Run Python Code in Docker Test Without Network")
 @ActiveProfiles("docker")
 public class DockerCodePoolExecutorServiceTest {

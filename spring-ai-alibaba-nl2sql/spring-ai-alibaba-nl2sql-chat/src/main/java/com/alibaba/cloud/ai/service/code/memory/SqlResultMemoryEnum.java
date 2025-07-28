@@ -14,32 +14,14 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.service.code.executor;
+package com.alibaba.cloud.ai.service.code.memory;
 
 /**
- * 运行Python任务的容器池接口
- *
  * @author vlsmb
- * @since 2025/7/12
+ * @since 2025/7/29
  */
-public interface CodePoolExecutorService {
+public enum SqlResultMemoryEnum {
 
-	TaskResponse runTask(TaskRequest request);
-
-	record TaskRequest(String code, String input, String requirement) {
-
-	}
-
-	record TaskResponse(String output) {
-		public static TaskResponse error(String msg) {
-			return new TaskResponse("An exception occurred while executing the task: " + msg);
-		}
-	}
-
-	enum State {
-
-		READY, RUNNING
-
-	}
+	IN_MEMORY;
 
 }

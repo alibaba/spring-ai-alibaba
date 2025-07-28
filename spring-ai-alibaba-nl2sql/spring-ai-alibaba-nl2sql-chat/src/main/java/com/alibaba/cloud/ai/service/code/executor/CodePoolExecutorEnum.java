@@ -17,29 +17,13 @@
 package com.alibaba.cloud.ai.service.code.executor;
 
 /**
- * 运行Python任务的容器池接口
+ * 运行Python任务的容器池（实现枚举）
  *
  * @author vlsmb
- * @since 2025/7/12
+ * @since 2025/7/28
  */
-public interface CodePoolExecutorService {
+public enum CodePoolExecutorEnum {
 
-	TaskResponse runTask(TaskRequest request);
-
-	record TaskRequest(String code, String input, String requirement) {
-
-	}
-
-	record TaskResponse(String output) {
-		public static TaskResponse error(String msg) {
-			return new TaskResponse("An exception occurred while executing the task: " + msg);
-		}
-	}
-
-	enum State {
-
-		READY, RUNNING
-
-	}
+	DOCKER, CONTAINERD, KATA;
 
 }
