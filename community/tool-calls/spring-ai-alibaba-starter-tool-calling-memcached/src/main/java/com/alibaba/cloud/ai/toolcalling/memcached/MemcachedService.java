@@ -32,18 +32,23 @@ public class MemcachedService {
 
 	private final MemcachedClient memcachedClient;
 
-	private final MemcachedServiceSetter setter = new MemcachedServiceSetter();
+	private final MemcachedServiceSetter setter;
 
-	private final MemcachedServiceGetter getter = new MemcachedServiceGetter();
+	private final MemcachedServiceGetter getter;
 
-	private final MemcachedServiceDeleter deleter = new MemcachedServiceDeleter();
+	private final MemcachedServiceDeleter deleter;
 
-	private final MemcachedServiceReplacer replacer = new MemcachedServiceReplacer();
+	private final MemcachedServiceReplacer replacer;
 
-	private final MemcachedServiceAppender appender = new MemcachedServiceAppender();
+	private final MemcachedServiceAppender appender;
 
 	public MemcachedService(MemcachedClient memcachedClient) {
 		this.memcachedClient = memcachedClient;
+		setter = new MemcachedServiceSetter();
+		getter = new MemcachedServiceGetter();
+		deleter = new MemcachedServiceDeleter();
+		replacer = new MemcachedServiceReplacer();
+		appender = new MemcachedServiceAppender();
 	}
 
 	public class MemcachedServiceSetter implements Function<MemcachedServiceSetter.Request, Boolean> {
@@ -168,6 +173,12 @@ public class MemcachedService {
 
 	public MemcachedServiceAppender appender() {
 		return appender;
+	}
+
+	public void close() {
+		if (this.memcachedClient != null) {
+			this.memcachedClient.shutdown();
+		}
 	}
 
 }
