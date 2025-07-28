@@ -15,7 +15,8 @@
  */
 package com.alibaba.cloud.ai.service.analytic;
 
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.annotation.ConditionalOnADBEnabled;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.request.SearchRequest;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
@@ -23,7 +24,6 @@ import com.google.gson.Gson;
 import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,9 +32,9 @@ import java.util.Map;
 /**
  * Schema 构建服务，支持基于 RAG 的混合查询。
  */
-@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+
 @Service
+@ConditionalOnADBEnabled
 public class AnalyticSchemaService extends BaseSchemaService {
 
 	@Autowired
