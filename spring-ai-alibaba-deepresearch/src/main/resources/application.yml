@@ -2,8 +2,8 @@ server:
   port: 8080
 spring:
   profiles:
-    # LangFuse和可观测配置
-    include: observability
+    # LangFuse和可观测配置以及专业知识库配置
+    include: observability, kb
   application:
     name: spring-ai-alibaba-deepresearch
   # Redis 配置
@@ -59,13 +59,13 @@ spring:
           - aliyun
           - baidu
           - serpapi
-#         TODO: 搜索引擎配置
-#          - google_scholar  # 学术
-#          - xiaohongshu     # 生活
-#          - wikipedia       # 百科
-#          - national_statistics  # 数据分析
-#          - google_trends   # 趋势分析
-#          - baidu_index     # 中文趋势分析
+        # TODO: 搜索引擎配置
+        #  - google_scholar  # 学术
+        #  - xiaohongshu     # 生活
+        #  - wikipedia       # 百科
+        #  - national_statistics  # 数据分析
+        #  - google_trends   # 趋势分析
+        #  - baidu_index     # 中文趋势分析
         smart-agents:
           enabled: false
           # search-platform-mapping:

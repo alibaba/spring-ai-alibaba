@@ -27,18 +27,16 @@ public class StreamingOutput extends NodeOutput {
 
 	private final ChatResponse chatResponse;
 
-	public StreamingOutput(String chunk, String node, OverAllState state) {
+	public StreamingOutput(ChatResponse chatResponse, String node, OverAllState state) {
 		super(node, state);
-
-		this.chunk = chunk;
-		this.chatResponse = null;
+		this.chatResponse = chatResponse;
+		this.chunk = null;
 	}
 
-	public StreamingOutput(String chunk, String node, OverAllState state, ChatResponse chatResponse) {
+	public StreamingOutput(String chunk, String node, OverAllState state) {
 		super(node, state);
-
 		this.chunk = chunk;
-		this.chatResponse = chatResponse;
+		this.chatResponse = null;
 	}
 
 	public String chunk() {

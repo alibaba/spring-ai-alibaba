@@ -1,0 +1,54 @@
+spring:
+  ai:
+    alibaba:
+      deepresearch:
+        rag:
+          # 专业知识库配置
+          professional-knowledge-bases:
+            decision-enabled: true
+            knowledge-bases:
+              # DashScope专业知识库示例
+              - id: "medical_kb"
+                name: "医学专业知识库"
+                description: "包含医学、药学、生物医学工程等领域的专业知识，适合回答医疗健康、疾病诊断、药物治疗、医学研究等相关问题"
+                type: "api"
+                enabled: true
+                priority: 10
+                api:
+                  provider: "dashscope"
+                  url: "https://dashscope.aliyuncs.com/api/v1/services/knowledge-base/text-search"
+                  api-key: "${DASHSCOPE_API_KEY}"
+                  model: "text-embedding-v2"
+                  timeout-ms: 30000
+                  max-results: 5
+              # 法律知识库示例
+              - id: "legal_kb"
+                name: "法律专业知识库"
+                description: "涵盖法律法规、司法解释、案例分析等内容，适合回答法律咨询、合规问题、法律条文解读等相关问题"
+                type: "api"
+                enabled: true
+                priority: 20
+                api:
+                  provider: "custom"
+                  url: "https://api.legal-kb.example.com/search"
+                  api-key: "${LEGAL_KB_API_KEY}"
+                  timeout-ms: 25000
+                  max-results: 3
+              # 技术知识库示例
+              - id: "tech_kb"
+                name: "技术文档知识库"
+                description: "包含软件开发、系统架构、技术标准、编程语言等技术文档，适合回答编程问题、架构设计、技术选型等相关问题"
+                type: "elasticsearch"
+                enabled: true
+                priority: 30
+              # 金融知识库示例
+              - id: "finance_kb"
+                name: "金融专业知识库"
+                description: "涵盖金融市场、投资理财、风险管理、金融产品等专业知识，适合回答投资咨询、金融分析、市场趋势等相关问题"
+                type: "api"
+                enabled: false  # 暂时禁用
+                priority: 40
+                api:
+                  provider: "dashscope"
+                  api-key: "${FINANCE_KB_API_KEY}"
+                  max-results: 4

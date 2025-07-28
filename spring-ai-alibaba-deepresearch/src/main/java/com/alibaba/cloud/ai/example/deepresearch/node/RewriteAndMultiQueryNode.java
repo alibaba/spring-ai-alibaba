@@ -87,6 +87,9 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 		if (state.value("enable_background_investigation", true)) {
 			nextStep = "background_investigator";
 		}
+		else if (state.value("user_upload_file", false)) {
+			nextStep = "user_file_rag";
+		}
 		else {
 			nextStep = "planner";
 		}

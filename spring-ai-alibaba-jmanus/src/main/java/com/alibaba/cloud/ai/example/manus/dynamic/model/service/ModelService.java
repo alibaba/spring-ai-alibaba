@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ValidationResult;
 
 import java.util.List;
 
@@ -30,5 +31,7 @@ public interface ModelService {
 	ModelConfig updateModel(ModelConfig modelConfig);
 
 	void deleteModel(String id);
+
+	ValidationResult validateConfig(String baseUrl, String apiKey);
 
 }

@@ -118,7 +118,7 @@ public class CoderNode implements NodeAction {
 
 		boolean isReflectionNode = finalAssignedStep.getReflectionHistory() != null
 				&& !finalAssignedStep.getReflectionHistory().isEmpty();
-		String prefix = StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix();
+		String prefix = StreamNodePrefixEnum.CODER_LLM_STREAM.getPrefix();
 		String nodeNum = prefix + "_" + executorNodeId;
 		String nodeName;
 		String stepTitleKey;
@@ -141,7 +141,7 @@ public class CoderNode implements NodeAction {
 		logger.info("CoderNode {} starting streaming with key: {}", executorNodeId, prefix + executorNodeId);
 
 		var generator = StreamingChatGenerator.builder()
-			.startingNode(nodeName)
+			.startingNode(nodeNum)
 			.startingState(state)
 			.mapResult(response -> {
 				// Set appropriate completion status using ReflectionUtil

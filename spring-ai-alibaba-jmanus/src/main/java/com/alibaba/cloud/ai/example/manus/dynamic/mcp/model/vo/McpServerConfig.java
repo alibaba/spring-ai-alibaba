@@ -15,10 +15,12 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,6 +41,9 @@ public class McpServerConfig {
 
 	@JsonProperty("env")
 	private Map<String, String> env;
+
+	@JsonProperty("status")
+	private McpConfigStatus status = McpConfigStatus.ENABLE; // 默认为启用状态
 
 	public McpServerConfig() {
 		this.env = new HashMap<>();
@@ -74,6 +79,58 @@ public class McpServerConfig {
 
 	public void setEnv(Map<String, String> env) {
 		this.env = env;
+	}
+
+	public McpConfigStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(McpConfigStatus status) {
+		this.status = status;
+	}
+
+	/**
+	 * 获取连接类型 判断逻辑： 1. 如果有command字段 → STUDIO 2. 如果URL后缀是sse → SSE 3. 其他情况 → STREAMING
+	 * @return 连接类型
+	 */
+	public McpConfigType getConnectionType() {
+		// 1. 检查是否有command字段
+		if (command != null && !command.isEmpty()) {
+			return McpConfigType.STUDIO;
+		}
+
+		// 2. 检查URL后缀是否为sse
+		if (url != null && !url.isEmpty() && isSSEUrl(url)) {
+			return McpConfigType.SSE;
+		}
+
+		// 3. 其他情况默认为STREAMING
+		return McpConfigType.STREAMING;
+	}
+
+	/**
+	 * 判断URL是否为SSE连接
+	 * @param url 服务器URL
+	 * @return 是否为SSE URL
+	 */
+	private boolean isSSEUrl(String url) {
+		if (url == null || url.isEmpty()) {
+			return false;
+		}
+
+		try {
+			java.net.URL parsedUrl = new java.net.URL(url);
+			String path = parsedUrl.getPath();
+
+			// 检查路径是否包含sse
+			boolean pathContainsSse = path != null && path.toLowerCase().contains("sse");
+
+			return pathContainsSse;
+		}
+		catch (java.net.MalformedURLException e) {
+			// 如果URL格式无效，返回false
+			return false;
+		}
 	}
 
 	/**
@@ -130,6 +187,11 @@ public class McpServerConfig {
 				}
 				sb.append("}");
 			}
+
+			// Add status (always include)
+			if (sb.length() > 1)
+				sb.append(",");
+			sb.append("\"status\":\"").append(status.name()).append("\"");
 
 			sb.append("}");
 			return sb.toString();

@@ -91,6 +91,10 @@ public class ReporterNode implements NodeAction {
 			logger.info("researcherTeam_content: {}", content);
 			messages.add(new UserMessage(content));
 		}
+		// 1.5 添加专业知识库决策节点返回的信息
+		if (state.value("use_professional_kb", false) && StringUtils.hasText(StateUtil.getRagContent(state))) {
+			messages.add(new UserMessage(StateUtil.getRagContent(state)));
+		}
 
 		logger.debug("reporter node messages: {}", messages);
 
