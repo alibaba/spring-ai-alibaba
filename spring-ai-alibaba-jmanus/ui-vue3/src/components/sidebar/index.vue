@@ -93,7 +93,7 @@
               </div>
             </div>
             <div class="task-time">
-              {{ getRelativeTimeString(new Date(template.updateTime || template.createTime)) }}
+              {{ getRelativeTimeString(sidebarStore.parseDateTime(template.updateTime || template.createTime)) }}
             </div>
             <div class="task-actions">
               <button
@@ -397,6 +397,12 @@ const handleExecutePlan = async () => {
 
 // Utility functions
 const getRelativeTimeString = (date: Date): string => {
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date received:', date)
+    return t('time.unknown')
+  }
+
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffMinutes = Math.floor(diffMs / 60000)
