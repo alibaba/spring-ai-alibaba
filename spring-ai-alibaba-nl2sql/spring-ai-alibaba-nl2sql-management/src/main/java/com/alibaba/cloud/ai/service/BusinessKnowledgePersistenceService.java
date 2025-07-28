@@ -129,7 +129,7 @@ public class BusinessKnowledgePersistenceService {
 				agent_id,
 				created_time,
 				updated_time
-			FROM business_knowledge 
+			FROM business_knowledge
 			WHERE agent_id = ? AND (business_term LIKE ? OR description LIKE ? OR synonyms LIKE ?)
 			""";
 
@@ -147,8 +147,8 @@ public class BusinessKnowledgePersistenceService {
 		knowledge.setCreateTime(LocalDateTime.now());
 		knowledge.setUpdateTime(LocalDateTime.now());
 		jdbcTemplate.update(FIELD_ADD, knowledge.getBusinessTerm(), knowledge.getDescription(), knowledge.getSynonyms(),
-				knowledge.getDefaultRecall(), knowledge.getDatasetId(), knowledge.getAgentId(), knowledge.getCreateTime(),
-				knowledge.getUpdateTime());
+				knowledge.getDefaultRecall(), knowledge.getDatasetId(), knowledge.getAgentId(),
+				knowledge.getCreateTime(), knowledge.getUpdateTime());
 	}
 
 	// 批量新增智能体字段
@@ -193,8 +193,7 @@ public class BusinessKnowledgePersistenceService {
 					return new BusinessKnowledge(rs.getObject("id", Long.class), rs.getString("business_term"),
 							rs.getString("description"), rs.getString("synonyms"),
 							rs.getObject("is_recall", boolean.class), rs.getString("data_set_id"),
-							rs.getString("agent_id"),
-							rs.getTimestamp("created_time").toLocalDateTime(),
+							rs.getString("agent_id"), rs.getTimestamp("created_time").toLocalDateTime(),
 							rs.getTimestamp("updated_time").toLocalDateTime());
 				});
 	}
@@ -214,17 +213,11 @@ public class BusinessKnowledgePersistenceService {
 	// 根据智能体ID获取业务知识列表
 	public List<BusinessKnowledge> getKnowledgeByAgentId(String agentId) {
 		return jdbcTemplate.query(FIELD_GET_BY_AGENT_ID, new Object[] { agentId }, (rs, rowNum) -> {
-			return new BusinessKnowledge(
-					rs.getObject("id", Long.class),
-					rs.getString("business_term"),
-					rs.getString("description"),
-					rs.getString("synonyms"),
-					rs.getObject("is_recall", boolean.class),
-					rs.getString("data_set_id"),
-					rs.getString("agent_id"),
+			return new BusinessKnowledge(rs.getObject("id", Long.class), rs.getString("business_term"),
+					rs.getString("description"), rs.getString("synonyms"), rs.getObject("is_recall", boolean.class),
+					rs.getString("data_set_id"), rs.getString("agent_id"),
 					rs.getTimestamp("created_time").toLocalDateTime(),
-					rs.getTimestamp("updated_time").toLocalDateTime()
-			);
+					rs.getTimestamp("updated_time").toLocalDateTime());
 		});
 	}
 
@@ -238,18 +231,13 @@ public class BusinessKnowledgePersistenceService {
 		Objects.requireNonNull(agentId, "agentId cannot be null");
 		Objects.requireNonNull(keyword, "searchKeyword cannot be null");
 		return jdbcTemplate.query(FIELD_SEARCH_IN_AGENT,
-				new Object[] { agentId, "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" }, (rs, rowNum) -> {
-					return new BusinessKnowledge(
-							rs.getObject("id", Long.class),
-							rs.getString("business_term"),
-							rs.getString("description"),
-							rs.getString("synonyms"),
-							rs.getObject("is_recall", boolean.class),
-							rs.getString("data_set_id"),
-							rs.getString("agent_id"),
-							rs.getTimestamp("created_time").toLocalDateTime(),
-							rs.getTimestamp("updated_time").toLocalDateTime()
-					);
+				new Object[] { agentId, "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" },
+				(rs, rowNum) -> {
+					return new BusinessKnowledge(rs.getObject("id", Long.class), rs.getString("business_term"),
+							rs.getString("description"), rs.getString("synonyms"),
+							rs.getObject("is_recall", boolean.class), rs.getString("data_set_id"),
+							rs.getString("agent_id"), rs.getTimestamp("created_time").toLocalDateTime(),
+							rs.getTimestamp("updated_time").toLocalDateTime());
 				});
 	}
 

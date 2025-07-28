@@ -152,10 +152,10 @@ public class Agent {
 
 	@Override
 	public String toString() {
-		return "Agent{" + "id=" + id + ", name='" + name + '\'' + ", description='" + description + '\''
-				+ ", avatar='" + avatar + '\'' + ", status='" + status + '\'' + ", prompt='" + prompt + '\''
-				+ ", category='" + category + '\'' + ", adminId=" + adminId + ", tags='" + tags + '\''
-				+ ", createTime=" + createTime + ", updateTime=" + updateTime + '}';
+		return "Agent{" + "id=" + id + ", name='" + name + '\'' + ", description='" + description + '\'' + ", avatar='"
+				+ avatar + '\'' + ", status='" + status + '\'' + ", prompt='" + prompt + '\'' + ", category='"
+				+ category + '\'' + ", adminId=" + adminId + ", tags='" + tags + '\'' + ", createTime=" + createTime
+				+ ", updateTime=" + updateTime + '}';
 	}
 
 }

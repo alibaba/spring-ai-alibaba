@@ -86,7 +86,8 @@ public class BusinessKnowledgePersistenceController {
 
 	// 编辑更新
 	@PutMapping("/update/{id}")
-	public ResponseEntity<ApiResponse> updateField(@PathVariable long id, @RequestBody BusinessKnowledgeDTO knowledgeDTO) {
+	public ResponseEntity<ApiResponse> updateField(@PathVariable long id,
+			@RequestBody BusinessKnowledgeDTO knowledgeDTO) {
 		businessKnowledgePersistenceService.updateField(knowledgeDTO, id);
 		return ResponseEntity.ok(ApiResponse.success("业务知识更新成功"));
 	}
@@ -100,7 +101,8 @@ public class BusinessKnowledgePersistenceController {
 
 	// 为智能体添加业务知识
 	@PostMapping("/agent/{agentId}/add")
-	public ResponseEntity<ApiResponse> addKnowledgeForAgent(@PathVariable String agentId, @RequestBody BusinessKnowledgeDTO knowledgeDTO) {
+	public ResponseEntity<ApiResponse> addKnowledgeForAgent(@PathVariable String agentId,
+			@RequestBody BusinessKnowledgeDTO knowledgeDTO) {
 		knowledgeDTO.setAgentId(agentId);
 		businessKnowledgePersistenceService.addKnowledge(knowledgeDTO);
 		return ResponseEntity.ok(ApiResponse.success("业务知识添加成功"));
@@ -108,7 +110,8 @@ public class BusinessKnowledgePersistenceController {
 
 	// 批量为智能体添加业务知识
 	@PostMapping("/agent/{agentId}/addList")
-	public ResponseEntity<ApiResponse> addKnowledgeListForAgent(@PathVariable String agentId, @RequestBody List<BusinessKnowledgeDTO> knowledgeDTOs) {
+	public ResponseEntity<ApiResponse> addKnowledgeListForAgent(@PathVariable String agentId,
+			@RequestBody List<BusinessKnowledgeDTO> knowledgeDTOs) {
 		knowledgeDTOs.forEach(dto -> dto.setAgentId(agentId));
 		businessKnowledgePersistenceService.addKnowledgeList(knowledgeDTOs);
 		return ResponseEntity.ok(ApiResponse.success("批量业务知识添加成功"));
@@ -123,8 +126,10 @@ public class BusinessKnowledgePersistenceController {
 
 	// 在智能体范围内搜索业务知识
 	@GetMapping("/agent/{agentId}/search")
-	public ResponseEntity<List<BusinessKnowledge>> searchKnowledgeInAgent(@PathVariable String agentId, @RequestParam String content) {
-		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.searchKnowledgeInAgent(agentId, content);
+	public ResponseEntity<List<BusinessKnowledge>> searchKnowledgeInAgent(@PathVariable String agentId,
+			@RequestParam String content) {
+		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.searchKnowledgeInAgent(agentId,
+				content);
 		return ResponseEntity.ok(knowledge);
 	}
 

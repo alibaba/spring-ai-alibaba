@@ -50,8 +50,8 @@ public class AgentService {
 			""";
 
 	private static final String SEARCH_BY_KEYWORD = """
-			SELECT * FROM agent 
-			WHERE (name LIKE ? OR description LIKE ? OR tags LIKE ?) 
+			SELECT * FROM agent
+			WHERE (name LIKE ? OR description LIKE ? OR tags LIKE ?)
 			ORDER BY create_time DESC
 			""";
 
@@ -61,7 +61,7 @@ public class AgentService {
 			""";
 
 	private static final String UPDATE = """
-			UPDATE agent SET name = ?, description = ?, avatar = ?, status = ?, prompt = ?, 
+			UPDATE agent SET name = ?, description = ?, avatar = ?, status = ?, prompt = ?,
 			category = ?, admin_id = ?, tags = ?, update_time = ? WHERE id = ?
 			""";
 
@@ -120,9 +120,9 @@ public class AgentService {
 		else {
 			// 更新
 			agent.setUpdateTime(now);
-			jdbcTemplate.update(UPDATE, agent.getName(), agent.getDescription(), agent.getAvatar(),
-					agent.getStatus(), agent.getPrompt(), agent.getCategory(), agent.getAdminId(), agent.getTags(),
-					agent.getUpdateTime(), agent.getId());
+			jdbcTemplate.update(UPDATE, agent.getName(), agent.getDescription(), agent.getAvatar(), agent.getStatus(),
+					agent.getPrompt(), agent.getCategory(), agent.getAdminId(), agent.getTags(), agent.getUpdateTime(),
+					agent.getId());
 		}
 
 		return agent;

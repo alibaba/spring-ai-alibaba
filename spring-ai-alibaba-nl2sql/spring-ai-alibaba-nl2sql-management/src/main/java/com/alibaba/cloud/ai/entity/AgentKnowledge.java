@@ -8,202 +8,204 @@ import java.time.LocalDateTime;
  * 智能体知识实体类
  */
 public class AgentKnowledge {
-    
-    private Integer id;
-    private Integer agentId;
-    private String title;
-    private String content;
-    private String type; // document, qa, faq
-    private String category;
-    private String tags;
-    private String status; // active, inactive
-    private String sourceUrl;
-    private String filePath;
-    private Long fileSize;
-    private String fileType;
-    private String embeddingStatus; // pending, processing, completed, failed
-    private Long creatorId;
-    
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createTime;
-    
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updateTime;
 
-    // 默认构造函数
-    public AgentKnowledge() {}
+	private Integer id;
 
-    // 全参数构造函数
-    public AgentKnowledge(Integer id, Integer agentId, String title, String content, String type, 
-                         String category, String tags, String status, String sourceUrl, String filePath, 
-                         Long fileSize, String fileType, String embeddingStatus, Long creatorId, 
-                         LocalDateTime createTime, LocalDateTime updateTime) {
-        this.id = id;
-        this.agentId = agentId;
-        this.title = title;
-        this.content = content;
-        this.type = type;
-        this.category = category;
-        this.tags = tags;
-        this.status = status;
-        this.sourceUrl = sourceUrl;
-        this.filePath = filePath;
-        this.fileSize = fileSize;
-        this.fileType = fileType;
-        this.embeddingStatus = embeddingStatus;
-        this.creatorId = creatorId;
-        this.createTime = createTime;
-        this.updateTime = updateTime;
-    }
+	private Integer agentId;
 
-    // Getters and Setters
-    public Integer getId() {
-        return id;
-    }
+	private String title;
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
+	private String content;
 
-    public Integer getAgentId() {
-        return agentId;
-    }
+	private String type; // document, qa, faq
 
-    public void setAgentId(Integer agentId) {
-        this.agentId = agentId;
-    }
+	private String category;
 
-    public String getTitle() {
-        return title;
-    }
+	private String tags;
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+	private String status; // active, inactive
 
-    public String getContent() {
-        return content;
-    }
+	private String sourceUrl;
 
-    public void setContent(String content) {
-        this.content = content;
-    }
+	private String filePath;
 
-    public String getType() {
-        return type;
-    }
+	private Long fileSize;
 
-    public void setType(String type) {
-        this.type = type;
-    }
+	private String fileType;
 
-    public String getCategory() {
-        return category;
-    }
+	private String embeddingStatus; // pending, processing, completed, failed
 
-    public void setCategory(String category) {
-        this.category = category;
-    }
+	private Long creatorId;
 
-    public String getTags() {
-        return tags;
-    }
+	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+	private LocalDateTime createTime;
 
-    public void setTags(String tags) {
-        this.tags = tags;
-    }
+	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+	private LocalDateTime updateTime;
 
-    public String getStatus() {
-        return status;
-    }
+	// 默认构造函数
+	public AgentKnowledge() {
+	}
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
+	// 全参数构造函数
+	public AgentKnowledge(Integer id, Integer agentId, String title, String content, String type, String category,
+			String tags, String status, String sourceUrl, String filePath, Long fileSize, String fileType,
+			String embeddingStatus, Long creatorId, LocalDateTime createTime, LocalDateTime updateTime) {
+		this.id = id;
+		this.agentId = agentId;
+		this.title = title;
+		this.content = content;
+		this.type = type;
+		this.category = category;
+		this.tags = tags;
+		this.status = status;
+		this.sourceUrl = sourceUrl;
+		this.filePath = filePath;
+		this.fileSize = fileSize;
+		this.fileType = fileType;
+		this.embeddingStatus = embeddingStatus;
+		this.creatorId = creatorId;
+		this.createTime = createTime;
+		this.updateTime = updateTime;
+	}
 
-    public String getSourceUrl() {
-        return sourceUrl;
-    }
+	// Getters and Setters
+	public Integer getId() {
+		return id;
+	}
 
-    public void setSourceUrl(String sourceUrl) {
-        this.sourceUrl = sourceUrl;
-    }
+	public void setId(Integer id) {
+		this.id = id;
+	}
 
-    public String getFilePath() {
-        return filePath;
-    }
+	public Integer getAgentId() {
+		return agentId;
+	}
 
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
-    }
+	public void setAgentId(Integer agentId) {
+		this.agentId = agentId;
+	}
 
-    public Long getFileSize() {
-        return fileSize;
-    }
+	public String getTitle() {
+		return title;
+	}
 
-    public void setFileSize(Long fileSize) {
-        this.fileSize = fileSize;
-    }
+	public void setTitle(String title) {
+		this.title = title;
+	}
 
-    public String getFileType() {
-        return fileType;
-    }
+	public String getContent() {
+		return content;
+	}
 
-    public void setFileType(String fileType) {
-        this.fileType = fileType;
-    }
+	public void setContent(String content) {
+		this.content = content;
+	}
 
-    public String getEmbeddingStatus() {
-        return embeddingStatus;
-    }
+	public String getType() {
+		return type;
+	}
 
-    public void setEmbeddingStatus(String embeddingStatus) {
-        this.embeddingStatus = embeddingStatus;
-    }
+	public void setType(String type) {
+		this.type = type;
+	}
 
-    public Long getCreatorId() {
-        return creatorId;
-    }
+	public String getCategory() {
+		return category;
+	}
 
-    public void setCreatorId(Long creatorId) {
-        this.creatorId = creatorId;
-    }
+	public void setCategory(String category) {
+		this.category = category;
+	}
 
-    public LocalDateTime getCreateTime() {
-        return createTime;
-    }
+	public String getTags() {
+		return tags;
+	}
 
-    public void setCreateTime(LocalDateTime createTime) {
-        this.createTime = createTime;
-    }
+	public void setTags(String tags) {
+		this.tags = tags;
+	}
 
-    public LocalDateTime getUpdateTime() {
-        return updateTime;
-    }
+	public String getStatus() {
+		return status;
+	}
 
-    public void setUpdateTime(LocalDateTime updateTime) {
-        this.updateTime = updateTime;
-    }
+	public void setStatus(String status) {
+		this.status = status;
+	}
 
-    @Override
-    public String toString() {
-        return "AgentKnowledge{" +
-                "id=" + id +
-                ", agentId=" + agentId +
-                ", title='" + title + '\'' +
-                ", content='" + content + '\'' +
-                ", type='" + type + '\'' +
-                ", category='" + category + '\'' +
-                ", tags='" + tags + '\'' +
-                ", status='" + status + '\'' +
-                ", sourceUrl='" + sourceUrl + '\'' +
-                ", filePath='" + filePath + '\'' +
-                ", fileSize=" + fileSize +
-                ", fileType='" + fileType + '\'' +
-                ", embeddingStatus='" + embeddingStatus + '\'' +
-                ", creatorId=" + creatorId +
-                ", createTime=" + createTime +
-                ", updateTime=" + updateTime +
-                '}';
-    }
+	public String getSourceUrl() {
+		return sourceUrl;
+	}
+
+	public void setSourceUrl(String sourceUrl) {
+		this.sourceUrl = sourceUrl;
+	}
+
+	public String getFilePath() {
+		return filePath;
+	}
+
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
+	}
+
+	public Long getFileSize() {
+		return fileSize;
+	}
+
+	public void setFileSize(Long fileSize) {
+		this.fileSize = fileSize;
+	}
+
+	public String getFileType() {
+		return fileType;
+	}
+
+	public void setFileType(String fileType) {
+		this.fileType = fileType;
+	}
+
+	public String getEmbeddingStatus() {
+		return embeddingStatus;
+	}
+
+	public void setEmbeddingStatus(String embeddingStatus) {
+		this.embeddingStatus = embeddingStatus;
+	}
+
+	public Long getCreatorId() {
+		return creatorId;
+	}
+
+	public void setCreatorId(Long creatorId) {
+		this.creatorId = creatorId;
+	}
+
+	public LocalDateTime getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(LocalDateTime createTime) {
+		this.createTime = createTime;
+	}
+
+	public LocalDateTime getUpdateTime() {
+		return updateTime;
+	}
+
+	public void setUpdateTime(LocalDateTime updateTime) {
+		this.updateTime = updateTime;
+	}
+
+	@Override
+	public String toString() {
+		return "AgentKnowledge{" + "id=" + id + ", agentId=" + agentId + ", title='" + title + '\'' + ", content='"
+				+ content + '\'' + ", type='" + type + '\'' + ", category='" + category + '\'' + ", tags='" + tags
+				+ '\'' + ", status='" + status + '\'' + ", sourceUrl='" + sourceUrl + '\'' + ", filePath='" + filePath
+				+ '\'' + ", fileSize=" + fileSize + ", fileType='" + fileType + '\'' + ", embeddingStatus='"
+				+ embeddingStatus + '\'' + ", creatorId=" + creatorId + ", createTime=" + createTime + ", updateTime="
+				+ updateTime + '}';
+	}
+
 }
