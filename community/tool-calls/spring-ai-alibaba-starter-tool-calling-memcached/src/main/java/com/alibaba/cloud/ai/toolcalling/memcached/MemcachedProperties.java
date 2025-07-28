@@ -26,7 +26,7 @@ public class MemcachedProperties extends CommonToolCallProperties {
 
 	private String ip = "localhost";
 
-	private int port = 8211;
+	private int port = 11211;
 
 	public String getIp() {
 		return ip;
