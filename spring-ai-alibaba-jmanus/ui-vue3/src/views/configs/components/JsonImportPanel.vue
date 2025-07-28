@@ -26,14 +26,13 @@
                   <li>
                     <strong>获取MCP服务列表</strong>
                     <ul>
-                      <li>可以在<code>mcp.higress.ai</code>上查找可用的MCP服务</li>
+                      <li>可以在<code>mcp.higress.ai</code>，<code>mcp.so</code>,<code>modelscope.cn</code>上查找可用的MCP服务</li>
                     </ul>
                   </li>
                   <li>
                     <strong>配置MCP服务</strong>
                     <ul>
-                      <li>把完整的JSON配置复制到上面的输入框，然后点击导入</li>
-                      <li>JSON格式可以参考配置示例</li>
+                      <li>把完整的JSON配置复制到上面的输入框(可以参考配置示例)，然后点击导入</li>
                     </ul>
                   </li>
                   <li>

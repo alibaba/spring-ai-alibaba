@@ -81,7 +81,7 @@
           <li>
             <strong>获取MCP服务列表</strong>
             <ul>
-              <li>可以在<code>mcp.higress.ai</code>上查找可用的MCP服务</li>
+              <li>可以在<code>mcp.higress.ai</code>，<code>mcp.so</code>,<code>modelscope.cn</code>上查找可用的MCP服务</li>
               <li>如果需要批量配置MCP服务，可以使用右上角的全部导入功能</li>
             </ul>
           </li>
