@@ -45,7 +45,6 @@ import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.service.CronService;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpTool;
@@ -110,9 +109,6 @@ public class PlanningFactory implements IPlanningFactory {
 
 	private final static Logger log = LoggerFactory.getLogger(PlanningFactory.class);
 
-	@Autowired
-	private AgentService agentService;
-
 	private final McpService mcpService;
 
 	@Autowired
@@ -169,7 +165,7 @@ public class PlanningFactory implements IPlanningFactory {
 		// Add all dynamic agents from the database
 		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
 
-		PlanningToolInterface planningTool = new PlanningTool(objectMapper);
+		PlanningToolInterface planningTool = new PlanningTool();
 
 		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
 				manusProperties, streamingResponseHandler);

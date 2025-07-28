@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.example.manus.tool;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -31,12 +31,9 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 
 	private static final Logger log = LoggerFactory.getLogger(PlanningTool.class);
 
-	private final ObjectMapper objectMapper;
-
 	private ExecutionPlan currentPlan;
 
-	public PlanningTool(ObjectMapper objectMapper) {
-		this.objectMapper = objectMapper;
+	public PlanningTool() {
 	}
 
 	/**
@@ -280,16 +277,5 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 			.build();
 	}
 
-	@Override
-	public ToolExecuteResult apply(String input) {
-		try {
-			PlanningInput planningInput = objectMapper.readValue(input, PlanningInput.class);
-			return run(planningInput);
-		}
-		catch (Exception e) {
-			log.error("Failed to parse input JSON: {}", input, e);
-			return new ToolExecuteResult("Error parsing input: " + e.getMessage());
-		}
-	}
 
 }
