@@ -194,10 +194,10 @@ const roles: BubbleListProps['roles'] = {
   ai: {
     placement: 'start',
     avatar: {
-      icon: <GlobalOutlined />,
-      shape: 'square',
-      style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
-    },
+        icon: <GlobalOutlined />,
+        shape: 'square',
+        style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
+      },
     style: {
       maxWidth: '100%',
     },
@@ -207,11 +207,11 @@ const roles: BubbleListProps['roles'] = {
     placement: 'end',
     shape: 'corner',
     avatar: {
-      icon: <UserOutlined />,
-      style: {},
-    },
+        icon: <UserOutlined />,
+        style: {},
+      },
     rootClassName: 'local',
-  },
+  }
 }
 
 const conversationStore = useConversationStore()
@@ -420,6 +420,7 @@ async function htmlDeepResearch(){
     htmlLoading.value = true
     htmlChunks.value = []
     
+    
     if(messageStore.htmlReport[convId]){
       htmlChunks.value = messageStore.htmlReport[convId]
       htmlLoading.value = false
@@ -432,7 +433,7 @@ async function htmlDeepResearch(){
           'Content-Type': 'application/json',
           Accept: 'text/event-stream',
         }})
-
+    let success = true
     try {
         await xStreamBody.readStream((chunk: any) => {
             // 将接收到的HTML片段添加到数组中
@@ -445,8 +446,13 @@ async function htmlDeepResearch(){
         htmlLoading.value = false
         // 如果出错，可以显示错误信息
         htmlChunks.value = [`<div style="color: red; padding: 20px;">加载HTML报告时出错: ${e.statusText}</div>`]
+        success = false
     }
-    messageStore.htmlReport[convId] = htmlChunks.value
+    // 缓存html报告
+    if(success) {
+        messageStore.htmlReport[convId] = htmlChunks.value
+    }
+    
 }
 
 // 关闭HTML模态框
@@ -726,12 +732,14 @@ const bubbleList = computed(() => {
   const len = messages.value.length
   messageStore.history[convId] = messages.value
   //  当状态是loading的时候，是每个chunk，然后succes，把之前所有的chunk 全部返回
-  return messages.value.map(({ id, message, status }, idx) => ({
+  const list =  messages.value.map(({ id, message, status }, idx) => ({
     key: id,
     role: status === 'local' ? 'local' : 'ai',
     content: parseMessage(status, message, idx === len - 1),
     footer: parseFooter(status, idx === len - 1),
   }))
+  console.log(list)
+  return list;
 })
 
 const scrollContainer = ref<Element | any>(null)

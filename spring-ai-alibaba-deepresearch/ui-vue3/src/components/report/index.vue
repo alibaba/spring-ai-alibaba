@@ -97,8 +97,6 @@ const items = computed(() => {
 
 // 处理json节点
 const processJsonNodeLogic = (node: any) => {
-    // 普通节点：完成之前的流式节点，然后处理当前节点
-    finalizePreviousStreamNodes('')
     // 渲染普通节点
     processJsonNode(node)
     // 普通节点处理完后，添加pending节点
@@ -122,7 +120,6 @@ const processLlmStreamNodeLogic = (node: any) => {
   for (const key of llmStreamKeys) {
     // 流式节点：移除pending节点，完成之前的流式节点
     removeLastPendingNode()
-    finalizePreviousStreamNodes(key)
     item = processLlmStreamNode(node, key)
   }
   if(item) {
@@ -156,22 +153,7 @@ const appendPendingNode = () => {
     arrayTemp.push(pendingItem)
 }
 
-// 完成之前的流式节点，避免多个节点同时处于pending状态
-const finalizePreviousStreamNodes = (currentKey: string) => {
-  // 完成缓存中的流式节点
-  llmStreamCache.forEach((cached, key) => {
-    if (key !== currentKey && cached.item.status === 'pending') {
-      cached.item.status = 'success'
-      cached.item.icon = h(CheckCircleOutlined)
-      cached.item.description = '内容生成完成'
-    }
-  })
-}
-
 const processLlmStreamNode = (node: any, key: string): ThoughtChainItem => {
-  if(!node[key]) {
-    return
-  }
   // 检查缓存中是否已存在该节点
   if (llmStreamCache.has(key)) {
     const cached = llmStreamCache.get(key)!
@@ -179,13 +161,20 @@ const processLlmStreamNode = (node: any, key: string): ThoughtChainItem => {
     cached.content += node[key]
     // 更新MD组件的内容
     cached.item.content = h(MD, { content: cached.content })
+    // 结束组件
+    if(node.finishReason === 'STOP') {
+      cached.item.status = 'success'
+      cached.item.icon = h(CheckCircleOutlined)
+      cached.item.description = '内容生成完成'
+    }
+
     return cached.item
   } else {
     // 创建新的ThoughtChainItem
     const initialContent =  node[key]
     const item: ThoughtChainItem = {
       key: key,
-      title: node.step_title,
+      title: node.step_title ? node.step_title : key,
       description: '正在生成内容',
       icon: h(LoadingOutlined),
       status: 'pending',

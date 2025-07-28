@@ -60,12 +60,6 @@ export const useMessageStore = <Message extends SimpleType>() =>
         if (state.convId) {
           return state.currentState[state.convId]
         }
-      },
-      htmlReport: (state): any => {
-        if (state.convId) {
-          console.log('htmlReport', state.htmlReport)
-          return state.htmlReport[state.convId]
-        }
       }
     },
     actions: {
