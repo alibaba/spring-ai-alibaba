@@ -27,7 +27,6 @@ import BusinessKnowledge from './views/BusinessKnowledge.vue'
 import BusinessKnowledgeSimple from './views/BusinessKnowledgeSimple.vue'
 import SemanticModel from './views/SemanticModel.vue'
 import SemanticModelSimple from './views/SemanticModelSimple.vue'
-import TestPage from './views/TestPage.vue'
 import AgentList from './views/AgentList.vue'
 import AgentDetail from './views/AgentDetail.vue'
 import CreateAgent from './views/CreateAgent.vue'
@@ -43,11 +42,6 @@ const routes = [
     path: '/home-full',
     name: 'HomeFull',
     component: Home
-  },
-  {
-    path: '/test',
-    name: 'TestPage',
-    component: TestPage
   },
   {
     path: '/nl2sql',
