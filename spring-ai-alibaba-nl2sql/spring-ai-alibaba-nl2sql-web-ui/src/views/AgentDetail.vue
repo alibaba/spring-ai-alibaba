@@ -1531,10 +1531,9 @@ export default {
     // 获取状态文本
     const getStatusText = (status) => {
       const statusMap = {
-        'active': '启用',
-        'inactive': '禁用',
-        'enabled': '启用',
-        'disabled': '禁用'
+        'published': '已发布',
+        'draft': '待发布',
+        'offline': '已下线'
       }
       return statusMap[status] || status
     }
