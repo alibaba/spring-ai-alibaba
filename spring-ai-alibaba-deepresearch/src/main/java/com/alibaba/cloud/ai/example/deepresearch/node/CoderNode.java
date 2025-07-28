@@ -145,7 +145,7 @@ public class CoderNode implements NodeAction {
 					updated.put("coder_content_" + executorNodeId, coderContent);
 					return updated;
 				})
-				.build(streamResult);
+				.buildWithChatResponse(streamResult);
 
 			updated.put("coder_content_" + executorNodeId, generator);
 			return updated;

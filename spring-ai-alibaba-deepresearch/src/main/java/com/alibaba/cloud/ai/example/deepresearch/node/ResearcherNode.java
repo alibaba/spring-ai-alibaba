@@ -194,7 +194,7 @@ public class ResearcherNode implements NodeAction {
 					updated.put("researcher_content_" + executorNodeId, researchContent);
 					return updated;
 				})
-				.build(streamResult);
+				.buildWithChatResponse(streamResult);
 
 			updated.put("researcher_content_" + executorNodeId, generator);
 			return updated;
