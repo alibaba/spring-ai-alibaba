@@ -19,7 +19,7 @@ Spring AI Alibaba Elasticsearch Memory 模块是 Spring AI Alibaba 项目的核�
 
 ```xml
 <dependency>
-    <groupId>com.alibaba.spring.ai</groupId>
+    <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-starter-memory-elasticsearch</artifactId>
     <version>${latest.version}</version>
 </dependency>
@@ -42,12 +42,14 @@ elasticsearch:
 ### 示例代码
 
 ```java
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import com.alibaba.cloud.ai.memory.elasticsearch.ElasticsearchChatMemoryRepository;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+
 import javax.servlet.http.HttpServletResponse;
 
 @RestController
@@ -55,6 +57,9 @@ public class ChatController {
 
     @Autowired
     private ElasticsearchChatMemoryRepository elasticsearchChatMemoryRepository;
+
+    @Autowired
+    private ChatClient chatClient;
 
     /**
      * 流式聊天接口（基于 Elasticsearch 存储对话历史）
