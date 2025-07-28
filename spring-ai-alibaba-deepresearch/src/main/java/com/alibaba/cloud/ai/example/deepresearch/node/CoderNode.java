@@ -116,20 +116,20 @@ public class CoderNode implements NodeAction {
 				.chatResponse()
 				.doOnError(error -> StateUtil.handleStepError(assignedStep, nodeName, error, logger));
 
-            // 添加步骤标题
-            String prefix = StreamNodePrefixEnum.CODER_LLM_STREAM.getPrefix();
-            String nodeNum = prefix + "_" + executorNodeId;
-            String stepTitleKey = nodeNum + "_step_title";
-            boolean isReflectionNode = assignedStep.getReflectionHistory() != null
-                    && !assignedStep.getReflectionHistory().isEmpty();
-            String stepTitleValue = (isReflectionNode ? "[反思]" : "") + "[并行节点_Coder_" + executorNodeId + "]"
-                    + assignedStep.getTitle();
-            state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
-            Map<String, Object> inputMap = new HashMap<>();
-            inputMap.put(stepTitleKey, stepTitleValue);
-            state.input(inputMap);
+			// 添加步骤标题
+			String prefix = StreamNodePrefixEnum.CODER_LLM_STREAM.getPrefix();
+			String nodeNum = prefix + "_" + executorNodeId;
+			String stepTitleKey = nodeNum + "_step_title";
+			boolean isReflectionNode = assignedStep.getReflectionHistory() != null
+					&& !assignedStep.getReflectionHistory().isEmpty();
+			String stepTitleValue = (isReflectionNode ? "[反思]" : "") + "[并行节点_Coder_" + executorNodeId + "]"
+					+ assignedStep.getTitle();
+			state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
+			Map<String, Object> inputMap = new HashMap<>();
+			inputMap.put(stepTitleKey, stepTitleValue);
+			state.input(inputMap);
 
-		    logger.info("CoderNode {} starting streaming with key: {}", executorNodeId, nodeNum);
+			logger.info("CoderNode {} starting streaming with key: {}", executorNodeId, nodeNum);
 
 			var generator = StreamingChatGenerator.builder()
 				.startingNode(nodeNum)
