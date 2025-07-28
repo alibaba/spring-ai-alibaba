@@ -416,7 +416,7 @@ note right of sc : 语义一致性检查
 
 ```java
 
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
@@ -443,34 +443,34 @@ import static com.alibaba.cloud.ai.constant.Constant.RESULT;
 @RequestMapping("nl2sql")
 public class Nl2sqlController {
 
-	private static final Logger logger = LoggerFactory.getLogger(Nl2sqlController.class);
+    private static final Logger logger = LoggerFactory.getLogger(Nl2sqlController.class);
 
-	private final CompiledGraph compiledGraph;
+    private final CompiledGraph compiledGraph;
 
-	@Autowired
-	private SimpleVectorStoreService simpleVectorStoreService;
+    @Autowired
+    private SimpleVectorStoreService simpleVectorStoreService;
 
-	@Autowired
-	private DbConfig dbConfig;
+    @Autowired
+    private DbConfig dbConfig;
 
-	@Autowired
-	public Nl2sqlController(@Qualifier("nl2sqlGraph") StateGraph stateGraph) throws GraphStateException {
-		this.compiledGraph = stateGraph.compile();
-		this.compiledGraph.setMaxIterations(100);
-	}
+    @Autowired
+    public Nl2sqlController(@Qualifier("nl2sqlGraph") StateGraph stateGraph) throws GraphStateException {
+        this.compiledGraph = stateGraph.compile();
+        this.compiledGraph.setMaxIterations(100);
+    }
 
-	@GetMapping("/search")
-	public String search(@RequestParam String query) throws Exception {
-		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
-		schemaInitRequest.setDbConfig(dbConfig);
-		schemaInitRequest
-			.setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
-		simpleVectorStoreService.schema(schemaInitRequest);
+    @GetMapping("/search")
+    public String search(@RequestParam String query) throws Exception {
+        SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
+        schemaInitRequest.setDbConfig(dbConfig);
+        schemaInitRequest
+                .setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
+        simpleVectorStoreService.schema(schemaInitRequest);
 
-		Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query));
-		OverAllState overAllState = invoke.get();
-		return overAllState.value(RESULT).get().toString();
-	}
+        Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query));
+        OverAllState overAllState = invoke.get();
+        return overAllState.value(RESULT).get().toString();
+    }
 
 }
 ```

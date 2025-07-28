@@ -749,18 +749,12 @@ const words: I18nType = {
     welcomeSubtitle: '您的 Java AI 智能助手，帮助您构建和完成各种任务。',
     tagline: 'Java AI 智能体',
     inputPlaceholder: '描述您想构建或完成的内容...',
-    directButton: 'Plan-Act 工作台',
+    directButton: '直接进入工作台',
     examples: {
       stockPrice: {
         title: '查询股价',
         description: '获取今天阿里巴巴的最新股价（Agent可以使用浏览器工具）',
         prompt: '用浏览器基于百度，查询今天阿里巴巴的股价，并返回最新股价',
-      },
-      novel: {
-        title: '生成一个中篇小说',
-        description: '帮我生成一个中篇小说（Agent可以生成更长的内容）',
-        prompt:
-          '请帮我写一个关于机器人取代人类的小说。20000字。 使用TEXT_FILE_AGENT ，先生成提纲，然后，完善和丰满整个提纲的内容为一篇通顺的小说，最后再全局通顺一下语法',
       },
       weather: {
         title: '查询天气',
@@ -769,8 +763,13 @@ const words: I18nType = {
       },
       queryplan: {
         title: '查询一个人的信息',
-        description: '查询沈询 阿里的所有信息并优化终止结构列',
+        description: '查询 沈询 阿里的所有信息（用于展示无限上下文能力）',
         prompt: '用浏览器，基于百度，查询计划',
+      },
+      ainovel: {
+        title: 'AI小说创作',
+        description: '人工智能逐步击败人类主题小说（用于展示超长内容的输出）',
+        prompt: '创建一个关于人工智能逐步击败人类的小说，包含10个章节',
       },
     },
   },

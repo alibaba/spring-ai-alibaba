@@ -15,15 +15,15 @@
  */
 package com.alibaba.cloud.ai.service;
 
+import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions;
-import com.alibaba.cloud.ai.dbconnector.DbAccessor;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
-import com.alibaba.cloud.ai.dbconnector.bo.ColumnInfoBO;
-import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
-import com.alibaba.cloud.ai.dbconnector.bo.ForeignKeyInfoBO;
-import com.alibaba.cloud.ai.dbconnector.bo.TableInfoBO;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
+import com.alibaba.cloud.ai.connector.bo.ColumnInfoBO;
+import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
+import com.alibaba.cloud.ai.connector.bo.ForeignKeyInfoBO;
+import com.alibaba.cloud.ai.connector.bo.TableInfoBO;
 import com.alibaba.cloud.ai.request.DeleteRequest;
 import com.alibaba.cloud.ai.request.EvidenceRequest;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
@@ -35,6 +35,7 @@ import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -48,13 +49,13 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 
 	private final Gson gson;
 
-	private final DbAccessor dbAccessor;
+	private final Accessor dbAccessor;
 
 	private final DbConfig dbConfig;
 
 	@Autowired
 	public SimpleVectorStoreManagementService(@Value("${spring.ai.dashscope.api-key:default_api_key}") String apiKey,
-			Gson gson, DbAccessor dbAccessor, DbConfig dbConfig) {
+			Gson gson, @Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig) {
 		this.gson = gson;
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
