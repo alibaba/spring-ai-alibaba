@@ -31,6 +31,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class McpServerConfig {
 
+	private static final ObjectMapper objectMapper = new ObjectMapper();
+
 	private String url;
 
 	@JsonProperty("command")
@@ -139,7 +141,7 @@ public class McpServerConfig {
 	 */
 	public String toJson() {
 		try {
-			return new ObjectMapper().writeValueAsString(this);
+			return objectMapper.writeValueAsString(this);
 		}
 		catch (Exception e) {
 			// If serialization fails, manually build a simplified JSON

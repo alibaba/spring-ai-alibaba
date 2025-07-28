@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,8 @@ public class McpConfigVO {
 
 	private List<String> toolNames; // Add tool name list for frontend display
 
+	private final ObjectMapper objectMapper;
+
 	// 新增字段化属性
 	private String command;
 
@@ -52,15 +55,17 @@ public class McpConfigVO {
 
 	private McpConfigStatus status;
 
-	public McpConfigVO() {
+	public McpConfigVO(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
 	}
 
-	public McpConfigVO(McpConfigEntity entity) {
+	public McpConfigVO(McpConfigEntity entity, ObjectMapper objectMapper) {
 		this.id = entity.getId();
 		this.mcpServerName = entity.getMcpServerName();
 		this.connectionType = entity.getConnectionType();
 		this.connectionConfig = entity.getConnectionConfig();
 		this.status = entity.getStatus();
+		this.objectMapper = objectMapper;
 		this.toolNames = new ArrayList<>(); // Initialize as empty list, may need to get
 											// from other places in actual use
 
@@ -77,7 +82,8 @@ public class McpConfigVO {
 		}
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
+
+			objectMapper.registerModule(new JavaTimeModule());
 			JsonNode configNode = objectMapper.readTree(connectionConfig);
 
 			// 解析command
@@ -109,12 +115,12 @@ public class McpConfigVO {
 		}
 	}
 
-	// Static method to convert VO list to entity list
-	public static List<McpConfigVO> fromEntities(List<McpConfigEntity> entities) {
+	// Static method to convert VO list to entity list，增加 ObjectMapper 参数
+	public static List<McpConfigVO> fromEntities(List<McpConfigEntity> entities, ObjectMapper objectMapper) {
 		List<McpConfigVO> vos = new ArrayList<>();
 		if (entities != null) {
 			for (McpConfigEntity entity : entities) {
-				vos.add(new McpConfigVO(entity));
+				vos.add(new McpConfigVO(entity, objectMapper));
 			}
 		}
 		return vos;

@@ -432,7 +432,7 @@ defineExpose({
 <style scoped>
 .sidebar-wrapper {
   position: relative;
-  width: 500px;
+  width: 600px;
   height: 100vh;
   background: rgba(255, 255, 255, 0.05);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -633,14 +633,14 @@ defineExpose({
         }
 
         .json-editor {
-          min-height: 200px;
-          font-size: 11px;
-          line-height: 1.5;
-          white-space: pre;
-          overflow-wrap: normal;
-          word-break: normal;
-          tab-size: 2;
-          font-variant-ligatures: none;
+            min-height: 200px;
+            font-size: 11px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            tab-size: 2;
+            font-variant-ligatures: none;
         }
 
         .generator-content {

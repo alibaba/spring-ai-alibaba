@@ -178,15 +178,16 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	// Track if map output recording has completed, allowing termination
 	private volatile boolean mapOutputRecorded = false;
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper;
 
 	// Main constructor with List<String> terminateColumns
 	public MapOutputTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
-			UnifiedDirectoryManager unifiedDirectoryManager, List<String> terminateColumns) {
+			UnifiedDirectoryManager unifiedDirectoryManager, List<String> terminateColumns, ObjectMapper objectMapper) {
 		this.currentPlanId = planId;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
 		this.terminateColumns = terminateColumns;
+		this.objectMapper = objectMapper;
 	}
 
 	/**

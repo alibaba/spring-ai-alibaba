@@ -31,9 +31,13 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 
 	private static final Logger log = LoggerFactory.getLogger(PlanningTool.class);
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper;
 
 	private ExecutionPlan currentPlan;
+
+	public PlanningTool(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
 
 	/**
 	 * Internal input class for defining planning tool input parameters
