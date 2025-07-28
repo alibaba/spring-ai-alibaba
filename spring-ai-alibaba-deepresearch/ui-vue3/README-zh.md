@@ -1,7 +1,7 @@
-# JManus UI
+# DeepResearch UI
 
 <p align="center">
-  <img src="./public/logo.png" alt="JManus UI Logo" width="200"/>
+  <img src="./public/logo.png" alt="DeepResearch UI Logo" width="200"/>
 </p>
 
 <p align="center">
@@ -13,7 +13,7 @@
 
 [English](./README.md) | 中文
 
-[Spring AI Alibaba JManus](../README.md) 的现代化 Web 管理界面。
+[Spring AI Alibaba DeepResearch](../README.md) 的现代化 Web 管理界面。
 
 ## 🚀 快速开始
 
@@ -76,7 +76,7 @@ pnpm -v
 # git clone https://github.com/spring-ai-alibaba/spring-ai-alibaba.git
 
 # 进入 UI 目录
-# cd spring-ai-alibaba-jmanus/ui-vue3
+# cd spring-ai-alibaba-DeepResearch/ui-vue3
 
 # 使用 pnpm 安装依赖
 pnpm install
@@ -92,7 +92,7 @@ pnpm run dev
 pnpm run build
 
 然后复制build后的文件到 resources目录（有可能需要先删除老的所有文件）
-例如 mac下，在spring-ai-alibaba-jmanus 下运行：
+例如 mac下，在spring-ai-alibaba-DeepResearch 下运行：
 
 cp -r ui-vue3/ui src/main/resources/static/
 
@@ -105,7 +105,7 @@ cp -r ui-vue3/ui src/main/resources/static/
 
 详细文档请参考：
 
-- [JManus 文档](../README-zh.md)
+- [DeepResearch 文档](../README-zh.md)
 - [API 文档](./docs/api.md)
 - [配置指南](./docs/configuration.md)
 
