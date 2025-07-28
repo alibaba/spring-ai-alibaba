@@ -42,5 +42,4 @@ public interface PlanningToolInterface {
 	 */
 	FunctionToolCallback<?, ToolExecuteResult> getFunctionToolCallback();
 
-
 }

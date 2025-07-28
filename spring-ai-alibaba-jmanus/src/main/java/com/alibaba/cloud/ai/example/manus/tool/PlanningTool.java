@@ -19,7 +19,6 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
-
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -276,6 +275,5 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
 			.build();
 	}
-
 
 }
