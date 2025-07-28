@@ -89,10 +89,6 @@
                   <i class="bi bi-diagram-3"></i>
                   语义模型配置
                 </a>
-                <a href="#" class="nav-link" :class="{ active: activeTab === 'knowledge' }" @click="setActiveTab('knowledge')">
-                  <i class="bi bi-file-text"></i>
-                  知识库配置
-                </a>
               </div>
             </nav>
           </div>
@@ -273,7 +269,6 @@
                             :indeterminate="isPartialSelected">
                         </th>
                         <th>ID</th>
-                        <th>数据集ID</th>
                         <th>原始字段名</th>
                         <th>智能体字段名</th>
                         <th>字段同义词</th>
@@ -295,7 +290,6 @@
                           <input type="checkbox" v-model="selectedModels" :value="model.id">
                         </td>
                         <td>{{ model.id }}</td>
-                        <td>{{ model.datasetId }}</td>
                         <td><strong>{{ model.originalFieldName }}</strong></td>
                         <td>{{ model.agentFieldName || '-' }}</td>
                         <td>{{ model.fieldSynonyms || '-' }}</td>
@@ -408,276 +402,7 @@
               </div>
             </div>
 
-            <!-- 知识库配置 -->
-            <div v-if="activeTab === 'knowledge'" class="tab-content">
-              <div class="content-header">
-                <h2>知识库配置</h2>
-                <p class="content-subtitle">管理智能体的知识库和文档资源</p>
-              </div>
-              
-              <!-- 搜索和筛选 -->
-              <div class="knowledge-filters">
-                <div class="filter-group">
-                  <div class="search-box">
-                    <i class="bi bi-search"></i>
-                    <input 
-                      type="text" 
-                      v-model="knowledgeFilters.keyword" 
-                      placeholder="搜索知识..." 
-                      class="form-control"
-                      @input="searchKnowledge"
-                    >
-                  </div>
-                </div>
-                <div class="filter-group">
-                  <select v-model="knowledgeFilters.type" @change="filterKnowledge" class="form-control">
-                    <option value="">全部类型</option>
-                    <option value="document">文档</option>
-                    <option value="qa">问答</option>
-                    <option value="faq">常见问题</option>
-                  </select>
-                </div>
-                <div class="filter-group">
-                  <select v-model="knowledgeFilters.status" @change="filterKnowledge" class="form-control">
-                    <option value="">全部状态</option>
-                    <option value="active">启用</option>
-                    <option value="inactive">禁用</option>
-                  </select>
-                </div>
-                <div class="filter-group">
-                  <button class="btn btn-primary" @click="openCreateKnowledgeModal">
-                    <i class="bi bi-plus"></i>
-                    添加知识
-                  </button>
-                </div>
-              </div>
-
-              <!-- 知识统计 -->
-              <div class="knowledge-stats">
-                <div class="stat-card">
-                  <div class="stat-number">{{ knowledgeStats.totalCount }}</div>
-                  <div class="stat-label">总知识数</div>
-                </div>
-                <div class="stat-card" v-for="typeStat in knowledgeStats.typeStats" :key="typeStat.type">
-                  <div class="stat-number">{{ typeStat.count }}</div>
-                  <div class="stat-label">{{ getTypeText(typeStat.type) }}</div>
-                </div>
-              </div>
-
-              <!-- 知识列表 -->
-              <div class="knowledge-list">
-                <div v-if="knowledgeList.length === 0" class="empty-state">
-                  <i class="bi bi-inbox"></i>
-                  <p>暂无知识数据</p>
-                </div>
-                <div v-else class="knowledge-table">
-                  <table class="table">
-                    <thead>
-                      <tr>
-                        <th>标题</th>
-                        <th>类型</th>
-                        <th>分类</th>
-                        <th>状态</th>
-                        <th>向量化状态</th>
-                        <th>创建时间</th>
-                        <th>操作</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="knowledge in knowledgeList" :key="knowledge.id">
-                        <td>
-                          <div class="knowledge-title">
-                            <i :class="getKnowledgeIcon(knowledge.type)"></i>
-                            {{ knowledge.title }}
-                          </div>
-                        </td>
-                        <td>
-                          <span class="type-badge" :class="knowledge.type">
-                            {{ getTypeText(knowledge.type) }}
-                          </span>
-                        </td>
-                        <td>{{ knowledge.category || '-' }}</td>
-                        <td>
-                          <span class="status-badge" :class="knowledge.status">
-                            {{ getStatusText(knowledge.status) }}
-                          </span>
-                        </td>
-                        <td>
-                          <span class="embedding-badge" :class="knowledge.embeddingStatus">
-                            {{ getEmbeddingStatusText(knowledge.embeddingStatus) }}
-                          </span>
-                        </td>
-                        <td>{{ formatDate(knowledge.createTime) }}</td>
-                        <td>
-                          <div class="action-buttons">
-                            <button class="btn btn-sm btn-outline" @click="viewKnowledge(knowledge)">查看</button>
-                            <button class="btn btn-sm btn-outline" @click="editKnowledge(knowledge)">编辑</button>
-                            <button class="btn btn-sm btn-danger" @click="deleteKnowledge(knowledge.id)">删除</button>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 知识创建/编辑模态框 -->
-    <div v-if="showKnowledgeModal" class="modal-overlay" @click="closeKnowledgeModal">
-      <div class="modal-dialog" @click.stop>
-        <div class="modal-header">
-          <h3>{{ isEditingKnowledge ? '编辑知识' : '创建知识' }}</h3>
-          <button class="close-btn" @click="closeKnowledgeModal">
-            <i class="bi bi-x"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <form @submit.prevent="saveKnowledge">
-            <div class="form-group">
-              <label>知识标题 <span class="required">*</span></label>
-              <input 
-                type="text" 
-                v-model="knowledgeForm.title" 
-                class="form-control" 
-                placeholder="请输入知识标题"
-                required
-              >
-            </div>
-            <div class="form-group">
-              <label>知识类型</label>
-              <select v-model="knowledgeForm.type" class="form-control">
-                <option value="document">文档</option>
-                <option value="qa">问答</option>
-                <option value="faq">常见问题</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>知识分类</label>
-              <input 
-                type="text" 
-                v-model="knowledgeForm.category" 
-                class="form-control" 
-                placeholder="请输入知识分类"
-              >
-            </div>
-            <div class="form-group">
-              <label>知识内容 <span class="required">*</span></label>
-              <textarea 
-                v-model="knowledgeForm.content" 
-                class="form-control" 
-                rows="8"
-                placeholder="请输入知识内容"
-                required
-              ></textarea>
-            </div>
-            <div class="form-group">
-              <label>标签</label>
-              <input 
-                type="text" 
-                v-model="knowledgeForm.tags" 
-                class="form-control" 
-                placeholder="多个标签用逗号分隔"
-              >
-            </div>
-            <div class="form-group">
-              <label>来源URL</label>
-              <input 
-                type="url" 
-                v-model="knowledgeForm.sourceUrl" 
-                class="form-control" 
-                placeholder="请输入来源URL（可选）"
-              >
-            </div>
-            <div class="form-group">
-              <label>状态</label>
-              <select v-model="knowledgeForm.status" class="form-control">
-                <option value="active">启用</option>
-                <option value="inactive">禁用</option>
-              </select>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="closeKnowledgeModal">取消</button>
-          <button type="button" class="btn btn-primary" @click="saveKnowledge" :disabled="!knowledgeForm.title || !knowledgeForm.content">
-            {{ isEditingKnowledge ? '更新' : '创建' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 知识查看模态框 -->
-    <div v-if="showViewKnowledgeModal" class="modal-overlay" @click="closeViewKnowledgeModal">
-      <div class="modal-dialog modal-lg" @click.stop>
-        <div class="modal-header">
-          <h3>查看知识</h3>
-          <button class="close-btn" @click="closeViewKnowledgeModal">
-            <i class="bi bi-x"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div v-if="viewingKnowledge" class="knowledge-detail">
-            <div class="detail-section">
-              <h4>{{ viewingKnowledge.title }}</h4>
-              <div class="knowledge-meta">
-                <span class="type-badge" :class="viewingKnowledge.type">
-                  {{ getTypeText(viewingKnowledge.type) }}
-                </span>
-                <span class="status-badge" :class="viewingKnowledge.status">
-                  {{ getStatusText(viewingKnowledge.status) }}
-                </span>
-                <span v-if="viewingKnowledge.category" class="category-tag">
-                  {{ viewingKnowledge.category }}
-                </span>
-              </div>
-            </div>
-            <div v-if="viewingKnowledge.content" class="detail-section">
-              <h5>内容</h5>
-              <div class="knowledge-content">{{ viewingKnowledge.content }}</div>
-            </div>
-            <div v-if="viewingKnowledge.tags" class="detail-section">
-              <h5>标签</h5>
-              <div class="tags-list">
-                <span v-for="tag in viewingKnowledge.tags.split(',')" :key="tag" class="tag">
-                  {{ tag.trim() }}
-                </span>
-              </div>
-            </div>
-            <div v-if="viewingKnowledge.sourceUrl" class="detail-section">
-              <h5>来源</h5>
-              <a :href="viewingKnowledge.sourceUrl" target="_blank" class="source-link">
-                {{ viewingKnowledge.sourceUrl }}
-                <i class="bi bi-box-arrow-up-right"></i>
-              </a>
-            </div>
-            <div class="detail-section">
-              <h5>基本信息</h5>
-              <div class="info-grid">
-                <div class="info-item">
-                  <span class="label">创建时间：</span>
-                  <span>{{ formatDate(viewingKnowledge.createTime) }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="label">更新时间：</span>
-                  <span>{{ formatDate(viewingKnowledge.updateTime) }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="label">向量化状态：</span>
-                  <span class="embedding-badge" :class="viewingKnowledge.embeddingStatus">
-                    {{ getEmbeddingStatusText(viewingKnowledge.embeddingStatus) }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="closeViewKnowledgeModal">关闭</button>
-          <button type="button" class="btn btn-primary" @click="editKnowledge(viewingKnowledge)">编辑</button>
         </div>
       </div>
     </div>
@@ -693,22 +418,6 @@
         </div>
         <div class="modal-body">
           <form @submit.prevent="saveModel">
-            <div class="form-group">
-              <label class="form-label" for="datasetId">数据集ID *</label>
-              <input 
-                type="text" 
-                id="datasetId"
-                v-model="semanticModelForm.datasetId"
-                class="form-control" 
-                :class="{ 'is-invalid': formErrors.datasetId }"
-                required 
-                placeholder="如：dataset_001"
-                @input="clearFieldError('datasetId')"
-              >
-              <div v-if="formErrors.datasetId" class="invalid-feedback">
-                {{ formErrors.datasetId }}
-              </div>
-            </div>
             <div class="form-group">
               <label class="form-label" for="originalFieldName">原始字段名 *</label>
               <input 
@@ -1072,7 +781,7 @@
 <script>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { agentApi, businessKnowledgeApi, semanticModelApi, agentKnowledgeApi, datasourceApi } from '../utils/api.js'
+import { agentApi, businessKnowledgeApi, semanticModelApi, datasourceApi } from '../utils/api.js'
 
 export default {
   name: 'AgentDetail',
@@ -1128,7 +837,6 @@ export default {
     const isEditingModel = ref(false)
     const editingModelId = ref(null)
     const semanticModelForm = reactive({
-      datasetId: '',
       originalFieldName: '',
       agentFieldName: '',
       fieldSynonyms: '',
@@ -1151,7 +859,6 @@ export default {
     
     // 表单验证错误
     const formErrors = reactive({
-      datasetId: '',
       originalFieldName: '',
       agentFieldName: ''
     })
@@ -1178,32 +885,6 @@ export default {
     // 数据源测试相关
     const showTestResult = ref(false)
     const testResultMessage = ref('')
-    
-    // 智能体知识相关数据
-    const knowledgeList = ref([])
-    const knowledgeStats = reactive({
-      totalCount: 0,
-      typeStats: []
-    })
-    const knowledgeFilters = reactive({
-      keyword: '',
-      type: '',
-      status: ''
-    })
-    const showKnowledgeModal = ref(false)
-    const showViewKnowledgeModal = ref(false)
-    const isEditingKnowledge = ref(false)
-    const editingKnowledgeId = ref(null)
-    const viewingKnowledge = ref(null)
-    const knowledgeForm = reactive({
-      title: '',
-      content: '',
-      type: 'document',
-      category: '',
-      tags: '',
-      status: 'active',
-      sourceUrl: ''
-    })
     
     // 方法
     const setActiveTab = (tab) => {
@@ -1255,9 +936,6 @@ export default {
         case 'datasource':
           await loadDatasources()
           break
-        case 'knowledge':
-          await loadAgentKnowledge()
-          break
       }
     }
     
@@ -1300,8 +978,7 @@ export default {
         filtered = filtered.filter(model => 
           model.originalFieldName?.toLowerCase().includes(keyword) ||
           model.agentFieldName?.toLowerCase().includes(keyword) ||
-          model.fieldSynonyms?.toLowerCase().includes(keyword) ||
-          model.datasetId?.toLowerCase().includes(keyword)
+          model.fieldSynonyms?.toLowerCase().includes(keyword)
         )
       }
       
@@ -1593,204 +1270,6 @@ export default {
       return statusMap[testStatus] || testStatus
     }
     
-    const loadAgentKnowledge = async () => {
-      try {
-        const agentId = route.params.id
-        const response = await agentKnowledgeApi.getByAgentId(agentId, {
-          type: knowledgeFilters.type,
-          status: knowledgeFilters.status,
-          keyword: knowledgeFilters.keyword
-        })
-        if (response.success) {
-          knowledgeList.value = response.data || []
-        }
-        
-        // 加载统计信息
-        const statsResponse = await agentKnowledgeApi.getStatistics(agentId)
-        if (statsResponse.success) {
-          knowledgeStats.totalCount = statsResponse.data.totalCount || 0
-          knowledgeStats.typeStats = (statsResponse.data.typeStatistics || []).map(stat => ({
-            type: stat[0],
-            count: stat[1]
-          }))
-        }
-      } catch (error) {
-        console.error('加载智能体知识失败:', error)
-        knowledgeList.value = []
-      }
-    }
-
-    // 智能体知识管理方法
-    const openCreateKnowledgeModal = () => {
-      resetKnowledgeForm()
-      isEditingKnowledge.value = false
-      editingKnowledgeId.value = null
-      showKnowledgeModal.value = true
-    }
-
-    const closeKnowledgeModal = () => {
-      showKnowledgeModal.value = false
-      resetKnowledgeForm()
-    }
-
-    const resetKnowledgeForm = () => {
-      Object.assign(knowledgeForm, {
-        title: '',
-        content: '',
-        type: 'document',
-        category: '',
-        tags: '',
-        status: 'active',
-        sourceUrl: ''
-      })
-    }
-
-    const editKnowledge = (knowledge) => {
-      Object.assign(knowledgeForm, {
-        title: knowledge.title || '',
-        content: knowledge.content || '',
-        type: knowledge.type || 'document',
-        category: knowledge.category || '',
-        tags: knowledge.tags || '',
-        status: knowledge.status || 'active',
-        sourceUrl: knowledge.sourceUrl || ''
-      })
-      isEditingKnowledge.value = true
-      editingKnowledgeId.value = knowledge.id
-      showKnowledgeModal.value = true
-      if (showViewKnowledgeModal.value) {
-        showViewKnowledgeModal.value = false
-      }
-    }
-
-    const viewKnowledge = (knowledge) => {
-      viewingKnowledge.value = knowledge
-      showViewKnowledgeModal.value = true
-    }
-
-    const closeViewKnowledgeModal = () => {
-      showViewKnowledgeModal.value = false
-      viewingKnowledge.value = null
-    }
-
-    const saveKnowledge = async () => {
-      try {
-        const agentId = route.params.id
-        const knowledgeData = {
-          ...knowledgeForm,
-          agentId: parseInt(agentId),
-          creatorId: 2100246635 // 默认创建者ID
-        }
-
-        if (isEditingKnowledge.value) {
-          const response = await agentKnowledgeApi.update(editingKnowledgeId.value, knowledgeData)
-          if (response.success) {
-            alert('知识更新成功')
-            await loadAgentKnowledge()
-            closeKnowledgeModal()
-          } else {
-            alert('更新失败：' + (response.message || '未知错误'))
-          }
-        } else {
-          const response = await agentKnowledgeApi.create(knowledgeData)
-          if (response.success) {
-            alert('知识创建成功')
-            await loadAgentKnowledge()
-            closeKnowledgeModal()
-          } else {
-            alert('创建失败：' + (response.message || '未知错误'))
-          }
-        }
-      } catch (error) {
-        console.error('保存知识失败:', error)
-        alert('保存失败：' + error.message)
-      }
-    }
-
-    const deleteKnowledge = async (id) => {
-      if (confirm('确定要删除这条知识吗？')) {
-        try {
-          const response = await agentKnowledgeApi.delete(id)
-          if (response.success) {
-            alert('删除成功')
-            await loadAgentKnowledge()
-          } else {
-            alert('删除失败：' + (response.message || '未知错误'))
-          }
-        } catch (error) {
-          console.error('删除知识失败:', error)
-          alert('删除失败：' + error.message)
-        }
-      }
-    }
-
-    const searchKnowledge = async () => {
-      await loadAgentKnowledge()
-    }
-
-    const filterKnowledge = async () => {
-      await loadAgentKnowledge()
-    }
-
-    // 工具方法
-    const getTypeText = (type) => {
-      const typeMap = {
-        'document': '文档',
-        'qa': '问答',
-        'faq': '常见问题'
-      }
-      return typeMap[type] || type
-    }
-
-    const getStatusText = (status) => {
-      const statusMap = {
-        'active': '启用',
-        'inactive': '禁用',
-        'draft': '待发布',
-        'published': '已发布',
-        'offline': '已下线'
-      }
-      return statusMap[status] || status
-    }
-
-    const getEmbeddingStatusText = (status) => {
-      const statusMap = {
-        'pending': '待处理',
-        'processing': '处理中',
-        'completed': '已完成',
-        'failed': '失败'
-      }
-      return statusMap[status] || status
-    }
-
-    const getKnowledgeIcon = (type) => {
-      const iconMap = {
-        'document': 'bi-file-text',
-        'qa': 'bi-question-circle',
-        'faq': 'bi-chat-square-text'
-      }
-      return iconMap[type] || 'bi-file-text'
-    }
-
-    const formatDate = (dateStr) => {
-      if (!dateStr) return '-'
-      const date = new Date(dateStr)
-      return date.toLocaleString('zh-CN')
-    }
-    
-    const formatDateTime = (dateStr) => {
-      if (!dateStr) return '-'
-      const date = new Date(dateStr)
-      return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      })
-    }
-    
     const updateAgent = async () => {
       try {
         // 准备提交的数据，过滤掉只读字段
@@ -1891,7 +1370,6 @@ export default {
     const editModel = (model) => {
       isEditingModel.value = true
       editingModelId.value = model.id
-      semanticModelForm.datasetId = model.datasetId || ''
       semanticModelForm.originalFieldName = model.originalFieldName || ''
       semanticModelForm.agentFieldName = model.agentFieldName || ''
       semanticModelForm.fieldSynonyms = model.fieldSynonyms || ''
@@ -1911,7 +1389,6 @@ export default {
     }
     
     const resetModelForm = () => {
-      semanticModelForm.datasetId = ''
       semanticModelForm.originalFieldName = ''
       semanticModelForm.agentFieldName = ''
       semanticModelForm.fieldSynonyms = ''
@@ -1936,11 +1413,6 @@ export default {
       // 验证必填字段
       let hasError = false
       
-      if (!semanticModelForm.datasetId.trim()) {
-        formErrors.datasetId = '数据集ID不能为空'
-        hasError = true
-      }
-      
       if (!semanticModelForm.originalFieldName.trim()) {
         formErrors.originalFieldName = '原始字段名不能为空'
         hasError = true
@@ -1959,7 +1431,6 @@ export default {
       try {
         const modelData = {
           agentId: agent.id, // 关联当前智能体
-          datasetId: semanticModelForm.datasetId.trim(),
           originalFieldName: semanticModelForm.originalFieldName.trim(),
           agentFieldName: semanticModelForm.agentFieldName.trim(),
           fieldSynonyms: semanticModelForm.fieldSynonyms.trim() || null,
@@ -2057,13 +1528,45 @@ export default {
       return icons[index]
     }
     
+    // 获取状态文本
+    const getStatusText = (status) => {
+      const statusMap = {
+        'active': '启用',
+        'inactive': '禁用',
+        'enabled': '启用',
+        'disabled': '禁用'
+      }
+      return statusMap[status] || status
+    }
+    
+    // 格式化日期
+    const formatDate = (dateString) => {
+      if (!dateString) return '-'
+      const date = new Date(dateString)
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
+    }
+    
+    // 格式化日期时间
+    const formatDateTime = (dateString) => {
+      if (!dateString) return '-'
+      const date = new Date(dateString)
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+    }
+    
     // 生命周期
     onMounted(async () => {
       await loadAgentDetail()
-      // 如果默认打开知识库配置tab，则加载知识数据
-      if (activeTab.value === 'knowledge') {
-        await loadAgentKnowledge()
-      }
     })
     
     return {
@@ -2092,15 +1595,6 @@ export default {
       isAllSelected,
       isPartialSelected,
       formErrors,
-      // 智能体知识相关
-      knowledgeList,
-      knowledgeStats,
-      knowledgeFilters,
-      showKnowledgeModal,
-      showViewKnowledgeModal,
-      isEditingKnowledge,
-      viewingKnowledge,
-      knowledgeForm,
       // 数据源相关
       agentDatasourceList,
       allDatasourceList,
@@ -2135,16 +1629,6 @@ export default {
       batchToggleStatus,
       batchDeleteModels,
       clearFieldError,
-      // 智能体知识方法
-      openCreateKnowledgeModal,
-      closeKnowledgeModal,
-      editKnowledge,
-      viewKnowledge,
-      closeViewKnowledgeModal,
-      saveKnowledge,
-      deleteKnowledge,
-      searchKnowledge,
-      filterKnowledge,
       // 数据源方法
       openAddDatasourceModal,
       closeAddDatasourceModal,
@@ -2159,10 +1643,7 @@ export default {
       // 导航方法
       goToAgentList,
       // 工具方法
-      getTypeText,
       getStatusText,
-      getEmbeddingStatusText,
-      getKnowledgeIcon,
       formatDate,
       formatDateTime,
       getRandomColor,

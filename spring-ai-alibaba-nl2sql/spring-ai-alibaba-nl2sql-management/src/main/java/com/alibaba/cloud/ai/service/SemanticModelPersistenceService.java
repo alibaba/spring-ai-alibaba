@@ -45,10 +45,9 @@ public class SemanticModelPersistenceService {
 					type,
 					is_recall,
 					status,
-					data_set_id,
-			       	created_time,
-			        	updated_time
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+					created_time,
+					updated_time
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			""";
 
 	private static final String FIELD_UPDATE = """
@@ -62,7 +61,6 @@ public class SemanticModelPersistenceService {
 					type = ?,
 					is_recall = ?,
 					status = ?,
-					data_set_id = ?,
 					updated_time = ?
 				WHERE id = ?
 			""";
@@ -73,28 +71,6 @@ public class SemanticModelPersistenceService {
 
 	private static final String FIELD_DISABLE = """
 				UPDATE semantic_model SET status = 0 WHERE id = ?
-			""";
-
-	private static final String FIELD_GET_DATASET_IDS = """
-			SELECT data_set_id FROM semantic_model
-			""";
-
-	private static final String FIELD_GET_BY_DATASET_IDS = """
-			SELECT
-			    id,
-			    agent_id,
-				field_name,
-				synonyms,
-				origin_name,
-				description,
-				origin_description,
-				type,
-				is_recall,
-				status,
-				data_set_id,
-			          created_time,
-			             updated_time
-			FROM semantic_model WHERE data_set_id = ?
 			""";
 
 	private static final String FIELD_GET_BY_AGENT_ID = """
@@ -109,9 +85,8 @@ public class SemanticModelPersistenceService {
 				type,
 				is_recall,
 				status,
-				data_set_id,
-			          created_time,
-			             updated_time
+				created_time,
+				updated_time
 			FROM semantic_model WHERE agent_id = ?
 			""";
 
@@ -131,9 +106,8 @@ public class SemanticModelPersistenceService {
 				type,
 				is_recall,
 				status,
-				data_set_id,
-			          	created_time,
-			             updated_time
+				created_time,
+				updated_time
 			FROM semantic_model WHERE field_name LIKE ? OR origin_name LIKE ? OR synonyms LIKE ?
 			""";
 
@@ -154,7 +128,7 @@ public class SemanticModelPersistenceService {
 				semanticModel.getFieldSynonyms(), semanticModel.getOriginalFieldName(),
 				semanticModel.getFieldDescription(), semanticModel.getOriginalDescription(),
 				semanticModel.getFieldType(), semanticModel.getDefaultRecall(), semanticModel.getEnabled(),
-				semanticModel.getDatasetId(), semanticModel.getCreateTime(), semanticModel.getUpdateTime());
+				semanticModel.getCreateTime(), semanticModel.getUpdateTime());
 	}
 
 	// 批量新增智能体字段
@@ -199,18 +173,12 @@ public class SemanticModelPersistenceService {
 		});
 	}
 
-	// 获取数据集列表
-	public List<String> getDataSetIds() {
-		return this.jdbcTemplate.query(FIELD_GET_DATASET_IDS, (rs, rowNum) -> rs.getString("data_set_id"));
-	}
-
-	// 根据data_set_id获取智能体字段
-	public List<SemanticModel> getFieldByDataSetId(String dataSetId) {
-		return this.jdbcTemplate.query(FIELD_GET_BY_DATASET_IDS, new Object[] { dataSetId }, (rs, rowNum) -> {
+	// 根据智能体ID获取语义模型
+	public List<SemanticModel> getFieldByAgentId(Long agentId) {
+		return this.jdbcTemplate.query(FIELD_GET_BY_AGENT_ID, new Object[] { agentId }, (rs, rowNum) -> {
 			SemanticModel model = new SemanticModel();
 			model.setId(rs.getObject("id", Long.class));
-			model.setAgentId(rs.getObject("agent_id", Long.class)); // 添加agentId
-			model.setDatasetId(rs.getString("data_set_id"));
+			model.setAgentId(rs.getObject("agent_id", Long.class));
 			model.setOriginalFieldName(rs.getString("origin_name"));
 			model.setAgentFieldName(rs.getString("field_name"));
 			model.setFieldSynonyms(rs.getString("synonyms"));
@@ -233,7 +201,6 @@ public class SemanticModelPersistenceService {
 					SemanticModel model = new SemanticModel();
 					model.setId(rs.getObject("id", Long.class));
 					model.setAgentId(rs.getObject("agent_id", Long.class)); // 添加agentId
-					model.setDatasetId(rs.getString("data_set_id"));
 					model.setOriginalFieldName(rs.getString("origin_name"));
 					model.setAgentFieldName(rs.getString("field_name"));
 					model.setFieldSynonyms(rs.getString("synonyms"));
@@ -248,27 +215,6 @@ public class SemanticModelPersistenceService {
 				});
 	}
 
-	// 根据智能体ID获取语义模型
-	public List<SemanticModel> getFieldByAgentId(Long agentId) {
-		return this.jdbcTemplate.query(FIELD_GET_BY_AGENT_ID, new Object[] { agentId }, (rs, rowNum) -> {
-			SemanticModel model = new SemanticModel();
-			model.setId(rs.getObject("id", Long.class));
-			model.setAgentId(rs.getObject("agent_id", Long.class));
-			model.setDatasetId(rs.getString("data_set_id"));
-			model.setOriginalFieldName(rs.getString("origin_name"));
-			model.setAgentFieldName(rs.getString("field_name"));
-			model.setFieldSynonyms(rs.getString("synonyms"));
-			model.setFieldDescription(rs.getString("description"));
-			model.setDefaultRecall(rs.getObject("is_recall", Boolean.class));
-			model.setEnabled(rs.getObject("status", Boolean.class));
-			model.setFieldType(rs.getString("type"));
-			model.setOriginalDescription(rs.getString("origin_description"));
-			model.setCreateTime(rs.getTimestamp("created_time").toLocalDateTime());
-			model.setUpdateTime(rs.getTimestamp("updated_time").toLocalDateTime());
-			return model;
-		});
-	}
-
 	// 根据id删除智能体字段
 	public void deleteFieldById(long id) {
 		jdbcTemplate.update(FIELD_CLEAR, id);
@@ -279,7 +225,7 @@ public class SemanticModelPersistenceService {
 		jdbcTemplate.update(FIELD_UPDATE, semanticModelDTO.getAgentFieldName(), semanticModelDTO.getFieldSynonyms(),
 				semanticModelDTO.getOriginalFieldName(), semanticModelDTO.getFieldDescription(),
 				semanticModelDTO.getOriginalDescription(), semanticModelDTO.getFieldType(),
-				semanticModelDTO.getDefaultRecall(), semanticModelDTO.getEnabled(), semanticModelDTO.getDatasetId(),
+				semanticModelDTO.getDefaultRecall(), semanticModelDTO.getEnabled(),
 				Timestamp.valueOf(LocalDateTime.now()), id);
 	}
 
@@ -297,9 +243,8 @@ public class SemanticModelPersistenceService {
 			ps.setString(6, field.getFieldType()); // type
 			ps.setObject(7, field.getDefaultRecall()); // is_recall
 			ps.setObject(8, field.getEnabled()); // status
-			ps.setObject(9, field.getDatasetId()); // data_set_id
-			ps.setTimestamp(10, Timestamp.valueOf(field.getCreateTime())); // created_time
-			ps.setTimestamp(11, Timestamp.valueOf(field.getUpdateTime())); // updated_time
+			ps.setTimestamp(9, Timestamp.valueOf(field.getCreateTime())); // created_time
+			ps.setTimestamp(10, Timestamp.valueOf(field.getUpdateTime())); // updated_time
 		}
 
 		@Override

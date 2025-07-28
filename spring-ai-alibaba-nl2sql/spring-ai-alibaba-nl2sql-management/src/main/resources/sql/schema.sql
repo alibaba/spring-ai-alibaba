@@ -25,7 +25,6 @@ CREATE TABLE IF NOT EXISTS semantic_model (
   agent_id INT COMMENT '关联的智能体ID',
   field_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '智能体字段名称',
   synonyms TEXT COMMENT '字段名称同义词',
-  data_set_id VARCHAR(255) COMMENT '数据集id',
   origin_name VARCHAR(255) DEFAULT '' COMMENT '原始字段名',
   description TEXT COMMENT '字段描述',
   origin_description VARCHAR(255) COMMENT '原始字段描述',
@@ -37,7 +36,6 @@ CREATE TABLE IF NOT EXISTS semantic_model (
   PRIMARY KEY (id),
   INDEX idx_agent_id (agent_id),
   INDEX idx_field_name (field_name),
-  INDEX idx_data_set_id (data_set_id),
   INDEX idx_status (status),
   INDEX idx_is_recall (is_recall),
   FOREIGN KEY (agent_id) REFERENCES agent(id) ON DELETE SET NULL

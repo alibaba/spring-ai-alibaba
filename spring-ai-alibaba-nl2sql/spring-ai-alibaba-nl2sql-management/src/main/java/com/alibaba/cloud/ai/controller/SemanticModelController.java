@@ -37,14 +37,11 @@ public class SemanticModelController {
 
 	@GetMapping
 	@ResponseBody
-	public ResponseEntity<List<SemanticModel>> list(@RequestParam(required = false) String datasetId,
-			@RequestParam(required = false) String keyword, @RequestParam(required = false) Long agentId) {
+	public ResponseEntity<List<SemanticModel>> list(@RequestParam(required = false) String keyword,
+			@RequestParam(required = false) Long agentId) {
 		List<SemanticModel> result;
 		if (keyword != null && !keyword.trim().isEmpty()) {
 			result = semanticModelService.search(keyword);
-		}
-		else if (datasetId != null && !datasetId.trim().isEmpty()) {
-			result = semanticModelService.findByDatasetId(datasetId);
 		}
 		else if (agentId != null) {
 			result = semanticModelService.findByAgentId(agentId);
@@ -90,13 +87,6 @@ public class SemanticModelController {
 			return ResponseEntity.notFound().build();
 		}
 		semanticModelService.deleteById(id);
-		return ResponseEntity.ok().build();
-	}
-
-	@PostMapping("/batch-enable")
-	@ResponseBody
-	public ResponseEntity<Void> batchEnable(@RequestParam String datasetId, @RequestParam boolean enabled) {
-		semanticModelService.batchUpdateEnabled(datasetId, enabled);
 		return ResponseEntity.ok().build();
 	}
 

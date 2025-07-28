@@ -60,20 +60,6 @@ public class SemanticModelPersistenceController {
 		return ResponseEntity.ok().build();
 	}
 
-	// 获取数据集id列表
-	@GetMapping("/datasetIds")
-	public ResponseEntity<List<String>> getDataSetIds() {
-		List<String> datasetIds = semanticModelPersistenceService.getDataSetIds();
-		return ResponseEntity.ok(datasetIds);
-	}
-
-	// 根据datasetId获取数据
-	@GetMapping("/dataset/{datasetId}")
-	public ResponseEntity<List<SemanticModel>> getDataSetById(@PathVariable String datasetId) {
-		List<SemanticModel> fields = semanticModelPersistenceService.getFieldByDataSetId(datasetId);
-		return ResponseEntity.ok(fields);
-	}
-
 	// 根据agentId获取数据
 	@GetMapping("/agent/{agentId}")
 	public ResponseEntity<List<SemanticModel>> getFieldsByAgentId(@PathVariable Long agentId) {

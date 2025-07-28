@@ -43,7 +43,6 @@ public class SemanticModelService {
 		// 为智能体1创建示例数据
 		SemanticModel model1 = new SemanticModel();
 		model1.setAgentId(1L);
-		model1.setDatasetId("dataset_001");
 		model1.setOriginalFieldName("user_age");
 		model1.setAgentFieldName("用户年龄");
 		model1.setFieldSynonyms("年龄,岁数");
@@ -56,7 +55,6 @@ public class SemanticModelService {
 
 		SemanticModel model2 = new SemanticModel();
 		model2.setAgentId(1L);
-		model2.setDatasetId("dataset_001");
 		model2.setOriginalFieldName("product_name");
 		model2.setAgentFieldName("商品名称");
 		model2.setFieldSynonyms("产品名,商品");
@@ -70,7 +68,6 @@ public class SemanticModelService {
 		// 为智能体2创建示例数据
 		SemanticModel model3 = new SemanticModel();
 		model3.setAgentId(2L);
-		model3.setDatasetId("dataset_002");
 		model3.setOriginalFieldName("order_amount");
 		model3.setAgentFieldName("订单金额");
 		model3.setFieldSynonyms("金额,价格,费用");
@@ -84,13 +81,6 @@ public class SemanticModelService {
 
 	public List<SemanticModel> findAll() {
 		return new ArrayList<>(modelStore.values());
-	}
-
-	public List<SemanticModel> findByDatasetId(String datasetId) {
-		return modelStore.values()
-			.stream()
-			.filter(m -> Objects.equals(m.getDatasetId(), datasetId))
-			.collect(Collectors.toList());
 	}
 
 	public List<SemanticModel> findByAgentId(Long agentId) {
@@ -130,13 +120,6 @@ public class SemanticModelService {
 					|| (m.getAgentFieldName() != null && m.getAgentFieldName().toLowerCase().contains(lowerKeyword))
 					|| (m.getFieldSynonyms() != null && m.getFieldSynonyms().toLowerCase().contains(lowerKeyword)))
 			.collect(Collectors.toList());
-	}
-
-	public void batchUpdateEnabled(String datasetId, boolean enabled) {
-		modelStore.values().stream().filter(m -> Objects.equals(m.getDatasetId(), datasetId)).forEach(m -> {
-			m.setEnabled(enabled);
-			m.setUpdateTime(LocalDateTime.now());
-		});
 	}
 
 }
