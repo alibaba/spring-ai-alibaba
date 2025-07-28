@@ -26,12 +26,12 @@ import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
 import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
 import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.NodeStepTitleUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
@@ -165,19 +165,13 @@ public class ResearcherNode implements NodeAction {
 				.chatResponse()
 				.doOnError(error -> StateUtil.handleStepError(assignedStep, nodeName, error, logger));
 
-			// 添加步骤标题
+			// Add step title
 			boolean isReflectionNode = assignedStep.getReflectionHistory() != null
 					&& !assignedStep.getReflectionHistory().isEmpty();
 			String prefix = isReflectionNode ? StreamNodePrefixEnum.RESEARCHER_REFLECT_LLM_STREAM.getPrefix()
 					: StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix();
-			String nodeNum = prefix + "_" + executorNodeId;
-			String stepTitleKey = nodeNum + "_step_title";
-			String stepTitleValue = (isReflectionNode ? "[反思]" : "") + "[并行节点_Researcher_" + executorNodeId + "]"
-					+ assignedStep.getTitle();
-			state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
-			Map<String, Object> inputMap = new HashMap<>();
-			inputMap.put(stepTitleKey, stepTitleValue);
-			state.input(inputMap);
+			String nodeNum = NodeStepTitleUtil.registerStepTitle(state, isReflectionNode, executorNodeId, "Researcher",
+					assignedStep.getTitle(), prefix);
 
 			logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, nodeName);
 
