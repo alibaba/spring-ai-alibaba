@@ -112,11 +112,11 @@ const goToDirectPage = () => {
 
 const examples = computed(() => [
   { title: t('home.examples.stockPrice.title'), type: 'message', description: t('home.examples.stockPrice.description'), icon: 'carbon:chart-line-data', prompt: t('home.examples.stockPrice.prompt') },
-  { title: t('home.examples.novel.title'), type: 'message', description: t('home.examples.novel.description'), icon: 'carbon:book', prompt: t('home.examples.novel.prompt') },
   { title: t('home.examples.weather.title'), type: 'message', description: t('home.examples.weather.description'), icon: 'carbon:partly-cloudy', prompt: t('home.examples.weather.prompt') }
 ])
 const plans = computed(() => [
-  { title: t('home.examples.queryplan.title'), type: 'plan', description: t('home.examples.queryplan.description'), icon: 'carbon:plan', prompt: t('home.examples.queryplan.prompt'), planJson: { planType: 'simple', title: '查询沈询 阿里的所有信息并优化终止结构列', steps: [{ stepRequirement: '[BROWSER_AGENT] 通过 百度 查询 沈询 阿里 ， 获取第一页的html 百度数据，合并聚拢 到 html_data 的目录里', terminateColumns: '存放的目录路径' }, { stepRequirement: '[BROWSER_AGENT] 从 html_data 目录中找到所有的有效关于沈询 阿里 的网页链接，输出到 link.md里面', terminateColumns: 'url地址，说明' }], planId: 'planTemplate-1749200517403' } }
+  { title: t('home.examples.queryplan.title'), type: 'plan-act', description: t('home.examples.queryplan.description'), icon: 'carbon:plan', prompt: t('home.examples.queryplan.prompt'), planJson: { planType: 'simple', title: '查询 沈询 阿里的所有信息（用于展示无限上下文能力）', steps: [{ stepRequirement: '[BROWSER_AGENT] 通过 百度 查询 沈询 阿里 ， 获取第一页的html 百度数据，合并聚拢 到 html_data 的目录里', terminateColumns: '存放的目录路径' }, { stepRequirement: '[BROWSER_AGENT] 从 html_data 目录中找到所有的有效关于沈询 阿里 的网页链接，输出到 link.md里面', terminateColumns: 'url地址，说明' }], planId: 'planTemplate-1749200517403' } },
+  { title: t('home.examples.ainovel.title'), type: 'plan-act', description: t('home.examples.ainovel.description'), icon: 'carbon:document-tasks', prompt: t('home.examples.ainovel.prompt'), planJson: { planType: 'simple', title: '人工智能逐步击败人类小说创作计划', steps: [{ stepRequirement: '[TEXT_FILE_AGENT] 创建小说的大标题和子章节标题的文件,期望是一有10个子章节的的小说，提纲输出到novel.md里，每一个子章节用二级标题，在当前步骤只需要写章节的标题即可,小说的大标题是《人工智能逐步击败人类》', terminateColumns: '文件的名字' }, { stepRequirement: '[TEXT_FILE_AGENT] 从novel.md文件获取子标题信息，然后依次完善每一个章节的具体内容，每个轮次只完善一个子章节的内容，用replace来更新内容，每个章节要求有3000字的内容，不要每更新一个章节就查询一下文档的全部内容', terminateColumns: '文件的名字' }], planId: 'planTemplate-1753622676988' } }
 ])
 const allCards = computed(() => [...examples.value, ...plans.value])
 
