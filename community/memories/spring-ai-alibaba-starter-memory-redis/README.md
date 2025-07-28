@@ -17,8 +17,14 @@ Spring AI Alibaba Redis Memory 模块是Spring AI Alibaba项目的核心组件�
 
 ```xml
 <dependency>
+    <groupId>com.alibaba.cloud.ai</groupId>
+    <artifactId>spring-ai-alibaba-autoconfigure-memory</artifactId>
+    <version>${latest.version}</version>
+</dependency>
+
+<dependency>
     <groupId>com.alibaba.spring.ai</groupId>
-    <artifactId>spring-ai-alibaba-redis-memory</artifactId>
+    <artifactId>spring-ai-alibaba-starter-memory-redis</artifactId>
     <version>${latest.version}</version>
 </dependency>
 ```
