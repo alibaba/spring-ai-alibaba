@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.tool;
 
-import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
+import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;

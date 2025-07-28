@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.config;
 
-import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
+import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorService;
 import com.alibaba.cloud.ai.tool.PythonExecutorTool;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
