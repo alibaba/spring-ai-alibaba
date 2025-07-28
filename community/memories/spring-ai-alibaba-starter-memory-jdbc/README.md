@@ -19,7 +19,13 @@ Spring AI Alibaba JDBC Memory 模块是Spring AI Alibaba项目的一个组件，
 
 ```xml
 <dependency>
-    <groupId>com.alibaba.spring.ai</groupId>
+    <groupId>com.alibaba.cloud.ai</groupId>
+    <artifactId>spring-ai-alibaba-autoconfigure-memory</artifactId>
+    <version>${latest.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-starter-memory-jdbc</artifactId>
     <version>${latest.version}</version>
 </dependency>
@@ -45,6 +51,7 @@ spring:
 ### 示例代码
 
 ```java
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -55,6 +62,9 @@ public class ChatController {
 
     @Autowired
     private MysqlChatMemoryRepository mysqlChatMemoryRepository;
+
+    @Autowired
+    private ChatClient chatClient;
 
     /**
      * Redis 流式聊天接口（实际使用的是 MySQL Chat Memory）
@@ -81,10 +91,10 @@ public class ChatController {
 
         // 发起对话请求并流式返回结果
         return chatClient.prompt(prompt)
-                .advisors(new MessageChatMemoryAdvisor(chatMemory)) 
+                .advisors(new MessageChatMemoryAdvisor(chatMemory))
                 .advisors(a -> a
-                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId) 
-                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100)  
+                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100)
                 )
                 .stream()
                 .content(); // 获取内容流
