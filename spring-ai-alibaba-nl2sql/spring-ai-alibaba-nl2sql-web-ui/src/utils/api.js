@@ -23,22 +23,35 @@ async function request(url, options = {}) {
   try {
     const response = await fetch(`${API_BASE_URL}${url}`, config)
     
-    // 获取响应数据
-    const result = await response.json()
-    
     if (!response.ok) {
-      // 创建一个类似axios的错误对象结构
+      // 对于错误响应，尝试解析JSON错误信息
+      let errorData = null
+      try {
+        errorData = await response.json()
+      } catch (e) {
+        // 如果无法解析JSON，使用默认错误信息
+        errorData = { message: response.statusText }
+      }
+      
       const error = new Error(`HTTP ${response.status}: ${response.statusText}`)
       error.response = {
         status: response.status,
         statusText: response.statusText,
-        data: result
+        data: errorData
       }
       throw error
     }
 
-    // 直接返回数据，不需要检查success字段
-    return result
+    // 获取响应数据
+    const contentType = response.headers.get('content-type')
+    if (contentType && contentType.includes('application/json')) {
+      // 如果响应包含JSON数据，则解析
+      const text = await response.text()
+      return text ? JSON.parse(text) : null
+    } else {
+      // 对于非JSON响应或空响应，返回null
+      return null
+    }
   } catch (error) {
     console.error('API 请求失败:', error)
     throw error
@@ -127,27 +140,72 @@ export const agentApi = {
 export const businessKnowledgeApi = {
   // 获取业务知识列表
   getList(params) {
-    return get('/business-knowledge', params)
+    return get('/knowledge', params)
+  },
+
+  // 根据数据集ID获取业务知识
+  getByDatasetId(datasetId) {
+    return get(`/knowledge/dataset/${datasetId}`)
+  },
+
+  // 根据智能体ID获取业务知识
+  getByAgentId(agentId) {
+    return get(`/knowledge/agent/${agentId}`)
+  },
+
+  // 搜索业务知识
+  search(keyword) {
+    return get('/knowledge/search', { content: keyword })
+  },
+
+  // 在智能体范围内搜索业务知识
+  searchInAgent(agentId, keyword) {
+    return get(`/knowledge/agent/${agentId}/search`, { content: keyword })
   },
 
   // 创建业务知识
   create(data) {
-    return post('/business-knowledge', data)
+    return post('/knowledge/add', data)
+  },
+
+  // 批量创建业务知识
+  createList(dataList) {
+    return post('/knowledge/addList', dataList)
+  },
+
+  // 为智能体创建业务知识
+  createForAgent(agentId, data) {
+    return post(`/knowledge/agent/${agentId}/add`, data)
+  },
+
+  // 为智能体批量创建业务知识
+  createListForAgent(agentId, dataList) {
+    return post(`/knowledge/agent/${agentId}/addList`, dataList)
   },
 
   // 获取业务知识详情
   getDetail(id) {
-    return get(`/business-knowledge/${id}`)
+    return get(`/knowledge/${id}`)
   },
 
   // 更新业务知识
   update(id, data) {
-    return put(`/business-knowledge/${id}`, data)
+    return put(`/knowledge/update/${id}`, data)
   },
 
   // 删除业务知识
   delete(id) {
-    return del(`/business-knowledge/${id}`)
+    return del(`/knowledge/delete/${id}`)
+  },
+
+  // 删除智能体的所有业务知识
+  deleteByAgentId(agentId) {
+    return del(`/knowledge/agent/${agentId}`)
+  },
+
+  // 获取数据集ID列表
+  getDatasetIds() {
+    return get('/knowledge/datasetIds')
   }
 }
 

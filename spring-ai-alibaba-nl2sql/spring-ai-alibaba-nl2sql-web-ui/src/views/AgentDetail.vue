@@ -160,8 +160,10 @@
                     <thead>
                       <tr>
                         <th>ID</th>
-                        <th>知识名称</th>
-                        <th>知识内容</th>
+                        <th>业务名词</th>
+                        <th>描述</th>
+                        <th>同义词</th>
+                        <th>默认召回</th>
                         <th>创建时间</th>
                         <th>操作</th>
                       </tr>
@@ -169,15 +171,24 @@
                     <tbody>
                       <tr v-for="knowledge in businessKnowledgeList" :key="knowledge.id">
                         <td>{{ knowledge.id }}</td>
-                        <td>{{ knowledge.name }}</td>
-                        <td>{{ knowledge.content.substring(0, 50) }}...</td>
-                        <td>{{ knowledge.createdAt }}</td>
+                        <td>{{ knowledge.businessTerm }}</td>
+                        <td>{{ knowledge.description ? knowledge.description.substring(0, 50) + '...' : '-' }}</td>
+                        <td>{{ knowledge.synonyms || '-' }}</td>
+                        <td>
+                          <span class="status-badge" :class="knowledge.defaultRecall ? 'active' : 'inactive'">
+                            {{ knowledge.defaultRecall ? '是' : '否' }}
+                          </span>
+                        </td>
+                        <td>{{ formatDate(knowledge.createTime) }}</td>
                         <td>
                           <div class="action-buttons">
                             <button class="btn btn-sm btn-outline" @click="editBusinessKnowledge(knowledge)">编辑</button>
                             <button class="btn btn-sm btn-danger" @click="deleteBusinessKnowledge(knowledge.id)">删除</button>
                           </div>
                         </td>
+                      </tr>
+                      <tr v-if="businessKnowledgeList.length === 0">
+                        <td colspan="7" class="text-center">暂无业务知识数据</td>
                       </tr>
                     </tbody>
                   </table>
@@ -773,6 +784,75 @@
         </div>
       </div>
     </div>
+
+    <!-- 业务知识创建/编辑模态框 -->
+    <div v-if="showCreateKnowledgeModal" class="modal-overlay" @click="closeBusinessKnowledgeModal">
+      <div class="modal-dialog" @click.stop>
+        <div class="modal-header">
+          <h3>{{ isEditingBusinessKnowledge ? '编辑业务知识' : '创建业务知识' }}</h3>
+          <button class="close-btn" @click="closeBusinessKnowledgeModal">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="saveBusinessKnowledge">
+            <div class="form-group">
+              <label>业务名词 <span class="required">*</span></label>
+              <input 
+                type="text" 
+                v-model="businessKnowledgeForm.businessTerm" 
+                class="form-control" 
+                placeholder="请输入业务名词"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label>描述 <span class="required">*</span></label>
+              <textarea 
+                v-model="businessKnowledgeForm.description" 
+                class="form-control" 
+                rows="4"
+                placeholder="请输入业务知识描述"
+                required
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label>同义词</label>
+              <input 
+                type="text" 
+                v-model="businessKnowledgeForm.synonyms" 
+                class="form-control" 
+                placeholder="多个同义词用逗号分隔"
+              >
+            </div>
+            <div class="form-group">
+              <label>数据集ID</label>
+              <input 
+                type="text" 
+                v-model="businessKnowledgeForm.datasetId" 
+                class="form-control" 
+                placeholder="请输入数据集ID（可选）"
+              >
+            </div>
+            <div class="form-group">
+              <label>
+                <input 
+                  type="checkbox" 
+                  v-model="businessKnowledgeForm.defaultRecall"
+                >
+                默认召回
+              </label>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeBusinessKnowledgeModal">取消</button>
+          <button type="button" class="btn btn-primary" @click="saveBusinessKnowledge">
+            {{ isEditingBusinessKnowledge ? '更新' : '创建' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -819,6 +899,17 @@ export default {
     const showCreateModelModal = ref(false)
     const showUploadModal = ref(false)
     const showAddDatasourceModal = ref(false)
+    
+    // 业务知识相关数据
+    const isEditingBusinessKnowledge = ref(false)
+    const editingBusinessKnowledgeId = ref(null)
+    const businessKnowledgeForm = reactive({
+      businessTerm: '',
+      description: '',
+      synonyms: '',
+      datasetId: '',
+      defaultRecall: true
+    })
     
     // 数据源相关数据
     const agentDatasourceList = ref([])
@@ -923,10 +1014,13 @@ export default {
     
     const loadBusinessKnowledge = async () => {
       try {
-        const response = await businessKnowledgeApi.getList()
-        businessKnowledgeList.value = response.data
+        // 使用智能体ID获取对应的业务知识
+        const knowledgeList = await businessKnowledgeApi.getByAgentId(agent.id)
+        businessKnowledgeList.value = knowledgeList || []
+        console.log('业务知识加载成功:', knowledgeList)
       } catch (error) {
         console.error('加载业务知识失败:', error)
+        businessKnowledgeList.value = []
       }
     }
     
@@ -1360,8 +1454,15 @@ export default {
     }
     
     const editBusinessKnowledge = (knowledge) => {
-      // TODO: 实现编辑业务知识功能
-      console.log('编辑业务知识:', knowledge)
+      // 设置编辑模式并填充表单
+      isEditingBusinessKnowledge.value = true
+      editingBusinessKnowledgeId.value = knowledge.id
+      businessKnowledgeForm.businessTerm = knowledge.businessTerm || ''
+      businessKnowledgeForm.description = knowledge.description || ''
+      businessKnowledgeForm.synonyms = knowledge.synonyms || ''
+      businessKnowledgeForm.datasetId = knowledge.datasetId || ''
+      businessKnowledgeForm.defaultRecall = knowledge.defaultRecall !== false
+      showCreateKnowledgeModal.value = true
     }
     
     const deleteBusinessKnowledge = async (id) => {
@@ -1369,9 +1470,58 @@ export default {
         try {
           await businessKnowledgeApi.delete(id)
           await loadBusinessKnowledge()
+          showMessage('删除成功', 'success')
         } catch (error) {
           console.error('删除业务知识失败:', error)
+          showMessage('删除失败：' + (error.message || '未知错误'), 'error')
         }
+      }
+    }
+    
+    const closeBusinessKnowledgeModal = () => {
+      showCreateKnowledgeModal.value = false
+      isEditingBusinessKnowledge.value = false
+      editingBusinessKnowledgeId.value = null
+      // 重置表单
+      businessKnowledgeForm.businessTerm = ''
+      businessKnowledgeForm.description = ''
+      businessKnowledgeForm.synonyms = ''
+      businessKnowledgeForm.datasetId = ''
+      businessKnowledgeForm.defaultRecall = true
+    }
+    
+    const saveBusinessKnowledge = async () => {
+      try {
+        // 验证必填字段
+        if (!businessKnowledgeForm.businessTerm || !businessKnowledgeForm.description) {
+          showMessage('请填写必填字段', 'warning')
+          return
+        }
+        
+        const knowledgeData = {
+          businessTerm: businessKnowledgeForm.businessTerm,
+          description: businessKnowledgeForm.description,
+          synonyms: businessKnowledgeForm.synonyms,
+          datasetId: businessKnowledgeForm.datasetId,
+          defaultRecall: businessKnowledgeForm.defaultRecall,
+          agentId: agent.id
+        }
+        
+        if (isEditingBusinessKnowledge.value) {
+          // 更新业务知识
+          await businessKnowledgeApi.update(editingBusinessKnowledgeId.value, knowledgeData)
+          showMessage('更新成功', 'success')
+        } else {
+          // 创建业务知识
+          await businessKnowledgeApi.createForAgent(agent.id, knowledgeData)
+          showMessage('创建成功', 'success')
+        }
+        
+        closeBusinessKnowledgeModal()
+        await loadBusinessKnowledge()
+      } catch (error) {
+        console.error('保存业务知识失败:', error)
+        showMessage('保存失败：' + (error.message || '未知错误'), 'error')
       }
     }
     
@@ -1461,6 +1611,10 @@ export default {
       showCreateModelModal,
       showUploadModal,
       showAddDatasourceModal,
+      // 业务知识相关
+      businessKnowledgeForm,
+      isEditingBusinessKnowledge,
+      editingBusinessKnowledgeId,
       // 智能体知识相关
       knowledgeList,
       knowledgeStats,
@@ -1491,6 +1645,9 @@ export default {
       deleteModel,
       viewDocument,
       deleteDocument,
+      // 业务知识方法
+      saveBusinessKnowledge,
+      closeBusinessKnowledgeModal,
       // 智能体知识方法
       openCreateKnowledgeModal,
       closeKnowledgeModal,

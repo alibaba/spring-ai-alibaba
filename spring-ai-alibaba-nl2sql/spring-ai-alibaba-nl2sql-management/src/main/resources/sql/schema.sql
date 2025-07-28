@@ -8,12 +8,15 @@ CREATE TABLE IF NOT EXISTS business_knowledge (
   synonyms TEXT COMMENT '同义词',
   is_recall INT DEFAULT 1 COMMENT '是否召回',
   data_set_id VARCHAR(255) COMMENT '数据集id',
+  agent_id INT COMMENT '关联的智能体ID',
   created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
   INDEX idx_business_term (business_term),
   INDEX idx_data_set_id (data_set_id),
-  INDEX idx_is_recall (is_recall)
+  INDEX idx_agent_id (agent_id),
+  INDEX idx_is_recall (is_recall),
+  FOREIGN KEY (agent_id) REFERENCES agent(id) ON DELETE SET NULL
 ) ENGINE = InnoDB COMMENT = '业务知识表';
 
 -- 语义模型表

@@ -41,9 +41,10 @@ public class BusinessKnowledgePersistenceService {
 			        	synonyms,
 					is_recall,
 					data_set_id,
+					agent_id,
 			       	created_time,
 			        	updated_time
-				) VALUES (?, ?, ?, ?, ?, ?, ?)
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 			""";
 
 	private static final String FIELD_UPDATE = """
@@ -54,6 +55,7 @@ public class BusinessKnowledgePersistenceService {
 					synonyms = ?,
 					is_recall = ?,
 					data_set_id = ?,
+					agent_id = ?,
 					updated_time = ?
 				WHERE id = ?
 			""";
@@ -70,6 +72,7 @@ public class BusinessKnowledgePersistenceService {
 			       	synonyms,
 				is_recall,
 				data_set_id,
+				agent_id,
 			      	created_time,
 			       	updated_time
 			FROM business_knowledge WHERE data_set_id = ?
@@ -88,9 +91,46 @@ public class BusinessKnowledgePersistenceService {
 			       	synonyms,
 				is_recall,
 				data_set_id,
+				agent_id,
 			      	created_time,
 			       	updated_time
 			FROM business_knowledge WHERE business_term LIKE ? OR description LIKE ? OR synonyms LIKE ?
+			""";
+
+	// 根据智能体ID查询业务知识
+	private static final String FIELD_GET_BY_AGENT_ID = """
+			SELECT
+				id,
+				business_term,
+				description,
+				synonyms,
+				is_recall,
+				data_set_id,
+				agent_id,
+				created_time,
+				updated_time
+			FROM business_knowledge WHERE agent_id = ?
+			""";
+
+	// 根据智能体ID删除业务知识
+	private static final String FIELD_DELETE_BY_AGENT_ID = """
+			DELETE FROM business_knowledge WHERE agent_id = ?
+			""";
+
+	// 在智能体范围内搜索业务知识
+	private static final String FIELD_SEARCH_IN_AGENT = """
+			SELECT
+				id,
+				business_term,
+				description,
+				synonyms,
+				is_recall,
+				data_set_id,
+				agent_id,
+				created_time,
+				updated_time
+			FROM business_knowledge 
+			WHERE agent_id = ? AND (business_term LIKE ? OR description LIKE ? OR synonyms LIKE ?)
 			""";
 
 	private final JdbcTemplate jdbcTemplate;
@@ -107,7 +147,7 @@ public class BusinessKnowledgePersistenceService {
 		knowledge.setCreateTime(LocalDateTime.now());
 		knowledge.setUpdateTime(LocalDateTime.now());
 		jdbcTemplate.update(FIELD_ADD, knowledge.getBusinessTerm(), knowledge.getDescription(), knowledge.getSynonyms(),
-				knowledge.getDefaultRecall(), knowledge.getDatasetId(), knowledge.getCreateTime(),
+				knowledge.getDefaultRecall(), knowledge.getDatasetId(), knowledge.getAgentId(), knowledge.getCreateTime(),
 				knowledge.getUpdateTime());
 	}
 
@@ -138,6 +178,7 @@ public class BusinessKnowledgePersistenceService {
 					rs.getObject("is_recall", boolean.class), // defaultRecall (convert to
 																// Boolean)
 					rs.getString("data_set_id"), // datasetId
+					rs.getString("agent_id"), // agentId
 					rs.getTimestamp("created_time").toLocalDateTime(), // createTime
 					rs.getTimestamp("updated_time").toLocalDateTime() // updateTime
 			);
@@ -152,6 +193,7 @@ public class BusinessKnowledgePersistenceService {
 					return new BusinessKnowledge(rs.getObject("id", Long.class), rs.getString("business_term"),
 							rs.getString("description"), rs.getString("synonyms"),
 							rs.getObject("is_recall", boolean.class), rs.getString("data_set_id"),
+							rs.getString("agent_id"),
 							rs.getTimestamp("created_time").toLocalDateTime(),
 							rs.getTimestamp("updated_time").toLocalDateTime());
 				});
@@ -166,7 +208,49 @@ public class BusinessKnowledgePersistenceService {
 	public void updateField(BusinessKnowledgeDTO knowledgeDTO, long id) {
 		jdbcTemplate.update(FIELD_UPDATE, knowledgeDTO.getBusinessTerm(), knowledgeDTO.getDescription(),
 				knowledgeDTO.getSynonyms(), knowledgeDTO.getDefaultRecall(), knowledgeDTO.getDatasetId(),
-				Timestamp.valueOf(LocalDateTime.now()), id);
+				knowledgeDTO.getAgentId(), Timestamp.valueOf(LocalDateTime.now()), id);
+	}
+
+	// 根据智能体ID获取业务知识列表
+	public List<BusinessKnowledge> getKnowledgeByAgentId(String agentId) {
+		return jdbcTemplate.query(FIELD_GET_BY_AGENT_ID, new Object[] { agentId }, (rs, rowNum) -> {
+			return new BusinessKnowledge(
+					rs.getObject("id", Long.class),
+					rs.getString("business_term"),
+					rs.getString("description"),
+					rs.getString("synonyms"),
+					rs.getObject("is_recall", boolean.class),
+					rs.getString("data_set_id"),
+					rs.getString("agent_id"),
+					rs.getTimestamp("created_time").toLocalDateTime(),
+					rs.getTimestamp("updated_time").toLocalDateTime()
+			);
+		});
+	}
+
+	// 根据智能体ID删除所有业务知识
+	public void deleteKnowledgeByAgentId(String agentId) {
+		jdbcTemplate.update(FIELD_DELETE_BY_AGENT_ID, agentId);
+	}
+
+	// 在智能体范围内搜索业务知识
+	public List<BusinessKnowledge> searchKnowledgeInAgent(String agentId, String keyword) {
+		Objects.requireNonNull(agentId, "agentId cannot be null");
+		Objects.requireNonNull(keyword, "searchKeyword cannot be null");
+		return jdbcTemplate.query(FIELD_SEARCH_IN_AGENT,
+				new Object[] { agentId, "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" }, (rs, rowNum) -> {
+					return new BusinessKnowledge(
+							rs.getObject("id", Long.class),
+							rs.getString("business_term"),
+							rs.getString("description"),
+							rs.getString("synonyms"),
+							rs.getObject("is_recall", boolean.class),
+							rs.getString("data_set_id"),
+							rs.getString("agent_id"),
+							rs.getTimestamp("created_time").toLocalDateTime(),
+							rs.getTimestamp("updated_time").toLocalDateTime()
+					);
+				});
 	}
 
 	private record AddBatchPreparedStatement(
@@ -180,8 +264,9 @@ public class BusinessKnowledgePersistenceService {
 			ps.setString(3, field.getSynonyms()); // synonyms
 			ps.setObject(4, field.getDefaultRecall()); // is_recall
 			ps.setObject(5, field.getDatasetId()); // data_set_id
-			ps.setTimestamp(6, Timestamp.valueOf(field.getCreateTime())); // created_time
-			ps.setTimestamp(7, Timestamp.valueOf(field.getUpdateTime())); // updated_time
+			ps.setObject(6, field.getAgentId()); // agent_id
+			ps.setTimestamp(7, Timestamp.valueOf(field.getCreateTime())); // created_time
+			ps.setTimestamp(8, Timestamp.valueOf(field.getUpdateTime())); // updated_time
 		}
 
 		@Override

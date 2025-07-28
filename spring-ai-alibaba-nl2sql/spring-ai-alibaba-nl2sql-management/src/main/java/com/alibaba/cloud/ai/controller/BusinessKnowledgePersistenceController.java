@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.controller;
 
+import com.alibaba.cloud.ai.entity.ApiResponse;
 import com.alibaba.cloud.ai.entity.BusinessKnowledge;
 import com.alibaba.cloud.ai.entity.BusinessKnowledgeDTO;
 import com.alibaba.cloud.ai.service.BusinessKnowledgePersistenceService;
@@ -44,15 +45,15 @@ public class BusinessKnowledgePersistenceController {
 
 	// 新增
 	@PostMapping("/add")
-	public ResponseEntity<Void> addField(@RequestBody BusinessKnowledgeDTO knowledgeDTO) {
+	public ResponseEntity<ApiResponse> addField(@RequestBody BusinessKnowledgeDTO knowledgeDTO) {
 		businessKnowledgePersistenceService.addKnowledge(knowledgeDTO);
-		return ResponseEntity.ok().build();
+		return ResponseEntity.ok(ApiResponse.success("业务知识添加成功"));
 	}
 
 	@PostMapping("/addList")
-	public ResponseEntity<Void> addFields(@RequestBody List<BusinessKnowledgeDTO> knowledgeDTOs) {
+	public ResponseEntity<ApiResponse> addFields(@RequestBody List<BusinessKnowledgeDTO> knowledgeDTOs) {
 		businessKnowledgePersistenceService.addKnowledgeList(knowledgeDTOs);
-		return ResponseEntity.ok().build();
+		return ResponseEntity.ok(ApiResponse.success("批量业务知识添加成功"));
 	}
 
 	// 获取数据集id列表
@@ -77,17 +78,54 @@ public class BusinessKnowledgePersistenceController {
 	}
 
 	// 根据id删除
-	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteFieldById(@PathVariable long id) {
+	@DeleteMapping("/delete/{id}")
+	public ResponseEntity<ApiResponse> deleteFieldById(@PathVariable long id) {
 		businessKnowledgePersistenceService.deleteFieldById(id);
-		return ResponseEntity.ok().build();
+		return ResponseEntity.ok(ApiResponse.success("业务知识删除成功"));
 	}
 
 	// 编辑更新
-	@PutMapping("/{id}")
-	public ResponseEntity<Void> updateField(@PathVariable long id, @RequestBody BusinessKnowledgeDTO knowledgeDTO) {
+	@PutMapping("/update/{id}")
+	public ResponseEntity<ApiResponse> updateField(@PathVariable long id, @RequestBody BusinessKnowledgeDTO knowledgeDTO) {
 		businessKnowledgePersistenceService.updateField(knowledgeDTO, id);
-		return ResponseEntity.ok().build();
+		return ResponseEntity.ok(ApiResponse.success("业务知识更新成功"));
+	}
+
+	// 根据智能体ID获取业务知识列表
+	@GetMapping("/agent/{agentId}")
+	public ResponseEntity<List<BusinessKnowledge>> getKnowledgeByAgentId(@PathVariable String agentId) {
+		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.getKnowledgeByAgentId(agentId);
+		return ResponseEntity.ok(knowledge);
+	}
+
+	// 为智能体添加业务知识
+	@PostMapping("/agent/{agentId}/add")
+	public ResponseEntity<ApiResponse> addKnowledgeForAgent(@PathVariable String agentId, @RequestBody BusinessKnowledgeDTO knowledgeDTO) {
+		knowledgeDTO.setAgentId(agentId);
+		businessKnowledgePersistenceService.addKnowledge(knowledgeDTO);
+		return ResponseEntity.ok(ApiResponse.success("业务知识添加成功"));
+	}
+
+	// 批量为智能体添加业务知识
+	@PostMapping("/agent/{agentId}/addList")
+	public ResponseEntity<ApiResponse> addKnowledgeListForAgent(@PathVariable String agentId, @RequestBody List<BusinessKnowledgeDTO> knowledgeDTOs) {
+		knowledgeDTOs.forEach(dto -> dto.setAgentId(agentId));
+		businessKnowledgePersistenceService.addKnowledgeList(knowledgeDTOs);
+		return ResponseEntity.ok(ApiResponse.success("批量业务知识添加成功"));
+	}
+
+	// 根据智能体ID删除所有业务知识
+	@DeleteMapping("/agent/{agentId}")
+	public ResponseEntity<ApiResponse> deleteKnowledgeByAgentId(@PathVariable String agentId) {
+		businessKnowledgePersistenceService.deleteKnowledgeByAgentId(agentId);
+		return ResponseEntity.ok(ApiResponse.success("智能体业务知识删除成功"));
+	}
+
+	// 在智能体范围内搜索业务知识
+	@GetMapping("/agent/{agentId}/search")
+	public ResponseEntity<List<BusinessKnowledge>> searchKnowledgeInAgent(@PathVariable String agentId, @RequestParam String content) {
+		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.searchKnowledgeInAgent(agentId, content);
+		return ResponseEntity.ok(knowledge);
 	}
 
 }
