@@ -155,22 +155,22 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec() {
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.messages(messages)
-				.advisors(advisors)
-				.toolCallbacks(toolCallbacks);
-
-		if (StringUtils.hasLength(userPrompt)) {
-			if (!params.isEmpty()) {
-				userPrompt = renderPromptTemplate(userPrompt, params);
-			}
-			chatClientRequestSpec.user(userPrompt);
-		}
+			.messages(messages)
+			.advisors(advisors)
+			.toolCallbacks(toolCallbacks);
 
 		if (StringUtils.hasLength(systemPrompt)) {
 			if (!params.isEmpty()) {
 				systemPrompt = renderPromptTemplate(systemPrompt, params);
 			}
 			chatClientRequestSpec.system(systemPrompt);
+		}
+
+		if (StringUtils.hasLength(userPrompt)) {
+			if (!params.isEmpty()) {
+				userPrompt = renderPromptTemplate(userPrompt, params);
+			}
+			chatClientRequestSpec.user(userPrompt);
 		}
 
 		return chatClientRequestSpec;
