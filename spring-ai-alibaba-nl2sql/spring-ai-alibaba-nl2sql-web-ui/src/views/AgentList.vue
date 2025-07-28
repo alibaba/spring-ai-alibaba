@@ -3,8 +3,11 @@
     <!-- 头部导航 -->
     <div class="top-nav">
       <div class="nav-items">
-        <span class="nav-item">数据智能体</span>
-        <span class="nav-item active">智能体</span>
+        <span class="nav-item logo-item">
+          <i class="bi bi-robot"></i>
+          数据智能体
+        </span>
+        <span class="nav-item clickable active">智能体</span>
       </div>
       <div class="nav-right">
       </div>
@@ -462,16 +465,33 @@ export default {
 }
 
 .nav-item {
-  padding: 8px 0;
-  cursor: pointer;
+  padding: 8px 16px;
   color: #666;
-  border-bottom: 2px solid transparent;
-  transition: all 0.3s;
+  border-radius: 4px;
+  transition: all 0.2s;
 }
 
-.nav-item.active {
+.nav-item.logo-item {
+  cursor: default;
+  font-weight: 600;
   color: #1890ff;
-  border-bottom-color: #1890ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-item.logo-item i {
+  font-size: 18px;
+}
+
+.nav-item.clickable {
+  cursor: pointer;
+}
+
+.nav-item.active,
+.nav-item.clickable:hover {
+  color: #1890ff;
+  background: #f0f8ff;
 }
 
 .nav-right {

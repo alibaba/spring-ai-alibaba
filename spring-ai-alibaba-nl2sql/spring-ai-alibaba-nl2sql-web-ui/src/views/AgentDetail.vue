@@ -12,8 +12,11 @@
     <!-- 头部导航 -->
     <div class="top-nav">
       <div class="nav-items">
-        <span class="nav-item">数据智能体</span>
-        <span class="nav-item active">智能体</span>
+        <span class="nav-item logo-item">
+          <i class="bi bi-robot"></i>
+          数据智能体
+        </span>
+        <span class="nav-item clickable active" @click="goToAgentList">智能体</span>
       </div>
       <div class="nav-right">
       </div>
@@ -970,6 +973,10 @@ export default {
       router.push('/agents')
     }
     
+    const goToAgentList = () => {
+      router.push('/agent')
+    }
+    
     const loadAgentDetail = async () => {
       try {
         const agentId = route.params.id
@@ -1638,6 +1645,7 @@ export default {
       // 方法
       setActiveTab,
       goBack,
+      goToAgentList,
       updateAgent,
       editBusinessKnowledge,
       deleteBusinessKnowledge,
@@ -1669,6 +1677,8 @@ export default {
       toggleDatasourceStatus,
       getDatasourceTypeText,
       getTestStatusText,
+      // 导航方法
+      goToAgentList,
       // 工具方法
       getTypeText,
       getStatusText,
@@ -1795,13 +1805,29 @@ export default {
 .nav-item {
   padding: 8px 16px;
   color: #666;
-  cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s;
 }
 
+.nav-item.logo-item {
+  cursor: default;
+  font-weight: 600;
+  color: #1890ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-item.logo-item i {
+  font-size: 18px;
+}
+
+.nav-item.clickable {
+  cursor: pointer;
+}
+
 .nav-item.active,
-.nav-item:hover {
+.nav-item.clickable:hover {
   color: #1890ff;
   background: #f0f8ff;
 }
@@ -2306,7 +2332,7 @@ export default {
 }
 
 .datasource-modal .tab-btn.active {
-  background: linear-gradient(135deg, white, #fafbfc);
+  
   color: #1890ff;
   box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.08);
   font-weight: 600;
