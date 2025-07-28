@@ -394,6 +394,7 @@ const submitHandle = (nextContent: any) => {
   // 如果是深度研究，需要切换到下一个aiType
   if (current.deepResearch) {
       messageStore.nextAIType()
+      current.deepResearchDetail = true
   }
   // 自动接受，需要再转为下一个状态
   if(configStore.chatConfig.auto_accepted_plan){
