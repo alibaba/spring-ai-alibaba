@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.constant.Constant;
-import com.alibaba.cloud.ai.dto.KeywordExtractionResult;
 import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
