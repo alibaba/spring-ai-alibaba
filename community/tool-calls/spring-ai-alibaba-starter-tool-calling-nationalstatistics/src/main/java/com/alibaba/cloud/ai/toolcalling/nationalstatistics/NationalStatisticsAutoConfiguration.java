@@ -24,6 +24,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 /**
  * 国家统计局工具自动配置类
@@ -31,29 +33,35 @@ import org.springframework.context.annotation.Description;
  * @author Makoto
  */
 @Configuration
-@ConditionalOnClass(NationalStatisticsService.class)
 @EnableConfigurationProperties(NationalStatisticsProperties.class)
-@ConditionalOnProperty(prefix = NationalStatisticsConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnClass(NationalStatisticsService.class)
+@ConditionalOnProperty(prefix = NationalStatisticsConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 public class NationalStatisticsAutoConfiguration {
 
+
+
+	/**
+	 * 注册国家统计局服务Bean
+	 */
 	@Bean(name = NationalStatisticsConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
-	@Description("使用国家统计局官网获取统计数据信息")
-	public NationalStatisticsService getNationalStatisticsService(NationalStatisticsProperties properties,
-			JsonParseTool jsonParseTool) {
-
-		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(headers -> {
-			headers.add("User-Agent",
-					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
-			headers.add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-			headers.add("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
-			headers.add("Accept-Encoding", "gzip, deflate");
-			headers.add("Connection", "keep-alive");
-			headers.add("Upgrade-Insecure-Requests", "1");
-		}).build();
-
-		return new NationalStatisticsService(webClientTool, jsonParseTool, properties);
+	@Description("查询中国国家统计局的各类统计数据，包括人口、经济、社会等统计指标")
+	public NationalStatisticsService nationalStatistics(NationalStatisticsProperties properties, JsonParseTool jsonParseTool) {
+		// 临时切换为HTTP方式避免SSL问题
+		NationalStatisticsProperties modifiedProperties = new NationalStatisticsProperties();
+		modifiedProperties.setBaseUrl("http://data.stats.gov.cn");
+		modifiedProperties.setEnabled(properties.isEnabled());
+		modifiedProperties.setMaxResults(properties.getMaxResults());
+		modifiedProperties.setNetworkTimeout(properties.getNetworkTimeout());
+		
+		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, modifiedProperties)
+			.httpHeadersConsumer(httpHeaders -> {
+				httpHeaders.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
+				httpHeaders.add(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+				httpHeaders.add(HttpHeaders.REFERER, modifiedProperties.getBaseUrl());
+			})
+			.build();
+		return new NationalStatisticsService(jsonParseTool, webClientTool);
 	}
 
-}
+} 

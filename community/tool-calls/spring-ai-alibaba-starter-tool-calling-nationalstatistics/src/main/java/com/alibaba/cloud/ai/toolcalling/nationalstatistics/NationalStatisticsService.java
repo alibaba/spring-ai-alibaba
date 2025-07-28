@@ -19,285 +19,351 @@ import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
+import java.io.Serializable;
 import java.util.*;
 import java.util.function.Function;
 
 /**
  * 国家统计局数据查询服务
  *
- * @author makoto
+ * @author Makoto
  */
-public class NationalStatisticsService
-		implements SearchService, Function<NationalStatisticsService.Request, NationalStatisticsService.Response> {
+public class NationalStatisticsService implements SearchService, Function<NationalStatisticsService.Request, NationalStatisticsService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(NationalStatisticsService.class);
 
-	private final WebClientTool webClientTool;
-
 	private final JsonParseTool jsonParseTool;
 
-	private final NationalStatisticsProperties properties;
+	private final WebClientTool webClientTool;
 
-	public NationalStatisticsService(WebClientTool webClientTool, JsonParseTool jsonParseTool,
-			NationalStatisticsProperties properties) {
-		this.webClientTool = webClientTool;
+	public NationalStatisticsService(JsonParseTool jsonParseTool, WebClientTool webClientTool) {
 		this.jsonParseTool = jsonParseTool;
-		this.properties = properties;
+		this.webClientTool = webClientTool;
 	}
 
 	@Override
 	public SearchService.Response query(String query) {
-		return this.apply(new Request("zxfb", query, 10));
+		return this.apply(Request.simpleQuery(query));
 	}
 
 	@Override
 	public Response apply(Request request) {
-		if (request == null || !StringUtils.hasText(request.dataType())) {
-			logger.error("Invalid request: dataType is required.");
-			return Response.errorResponse("", "数据类型不能为空");
+		if (request == null || !StringUtils.hasText(request.keyword())) {
+			return Response.error(request != null ? request.keyword : "", "查询关键词不能为空");
 		}
 
 		try {
-			logger.info("Fetching national statistics data for type: {}, keyword: {}", request.dataType(),
-					request.keyword());
+			logger.info("调用国家统计局API查询数据，关键词：{}", request.keyword);
 
-			List<StatisticsItem> items = fetchStatisticsData(request.dataType(), request.keyword(), request.limit());
+			// 构建查询参数
+			Map<String, Object> params = buildQueryParams(request);
 
-			if (items.isEmpty()) {
-				return new Response("no_data", "未找到相关统计数据", items, LocalDateTime.now().toString());
+			// 发送HTTP请求
+			String responseData = webClientTool.post("easyquery.htm", params).block();
+			
+			if (!StringUtils.hasText(responseData)) {
+				return Response.error(request.keyword, "API返回空响应");
 			}
 
-			logger.info("Successfully fetched {} statistics items", items.size());
-			return new Response("success", "获取统计数据成功", items, LocalDateTime.now().toString());
+			// 验证响应内容类型
+			if (responseData.trim().startsWith("<")) {
+				logger.error("API返回HTML内容而非JSON，可能是访问被重定向或API变更。响应内容前100字符：{}",
+					responseData.length() > 100 ? responseData.substring(0, 100) : responseData);
+				return Response.error(request.keyword, "API返回格式错误，可能是接口变更或访问限制");
+			}
 
-		}
-		catch (Exception e) {
-			logger.error("Failed to fetch national statistics data: {}", e.getMessage(), e);
-			return Response.errorResponse(request.dataType(), "获取统计数据失败: " + e.getMessage());
+			// 记录响应内容用于调试
+			if (logger.isDebugEnabled()) {
+				logger.debug("API响应内容：{}", responseData);
+			}
+
+			// 解析响应
+			return parseResponse(responseData, request);
+
+		} catch (Exception e) {
+			logger.error("查询国家统计局数据失败：{}", e.getMessage(), e);
+			return Response.error(request.keyword, "查询国家统计局数据失败：" + e.getMessage());
 		}
 	}
 
 	/**
-	 * 获取统计数据
+	 * 构建查询参数
 	 */
-	private List<StatisticsItem> fetchStatisticsData(String dataType, String keyword, int limit) {
-		List<StatisticsItem> items = new ArrayList<>();
+	private Map<String, Object> buildQueryParams(Request request) {
+		Map<String, Object> params = new HashMap<>();
+		
+		// 基础参数 - 使用国家统计局API的标准参数格式
+		params.put("m", "QueryData");
+		// 宏观数据库
+		params.put("dbcode", "hgnd");
+		// 指标作为行
+		params.put("rowcode", "zb");
+		// 时间作为列
+		params.put("colcode", "sj");
+		// 无筛选条件
+		params.put("wds", "[]");
+		params.put("dfwds", buildDfwds(request));
+		// 添加时间戳避免缓存
+		params.put("k1", System.currentTimeMillis());
 
-		try {
-			String url = buildUrl(dataType);
-			String htmlContent = webClientTool.get(url, null).block();
-
-			if (!StringUtils.hasText(htmlContent)) {
-				logger.warn("Empty response from statistics website");
-				return items;
-			}
-
-			Document doc = Jsoup.parse(htmlContent);
-			items = parseStatisticsData(doc, keyword, limit);
-
-		}
-		catch (Exception e) {
-			logger.error("Error fetching statistics data from URL for dataType {}: {}", dataType, e.getMessage(), e);
-		}
-
-		return items;
+		return params;
 	}
 
 	/**
-	 * 构建请求URL
+	 * 构建dfwds参数
 	 */
-	private String buildUrl(String dataType) {
-		switch (dataType.toLowerCase()) {
-			case "zxfb":
-			case "latest":
-				return NationalStatisticsConstants.TJSJ_URL + "/zxfb/";
-			case "tjgb":
-			case "bulletin":
-				return NationalStatisticsConstants.TJSJ_URL + "/tjgb/";
-			case "ndsj":
-			case "annual":
-				return NationalStatisticsConstants.TJSJ_URL + "/ndsj/";
-			case "ydsj":
-			case "monthly":
-				return NationalStatisticsConstants.TJSJ_URL + "/ydsj/";
-			case "jdsj":
-			case "quarterly":
-				return NationalStatisticsConstants.TJSJ_URL + "/jdsj/";
-			default:
-				return NationalStatisticsConstants.TJSJ_URL + "/zxfb/";
+	private String buildDfwds(Request request) {
+		List<Map<String, String>> dfwds = new ArrayList<>();
+		
+		// 指标条件
+		if (StringUtils.hasText(request.keyword)) {
+			Map<String, String> zbCondition = new HashMap<>();
+			zbCondition.put("wdcode", "zb");
+			zbCondition.put("valuecode", getIndicatorCode(request.keyword));
+			dfwds.add(zbCondition);
+		}
+		
+		// 时间条件 - 如果没有指定年份，查询最近几年的数据
+		Map<String, String> sjCondition = new HashMap<>();
+		sjCondition.put("wdcode", "sj");
+		if (StringUtils.hasText(request.year)) {
+			sjCondition.put("valuecode", request.year);
+		} else {
+			// 默认查询2020-2023年的数据
+			sjCondition.put("valuecode", "2020,2021,2022,2023");
+		}
+		dfwds.add(sjCondition);
+
+		try {
+			String result = jsonParseTool.objectToJson(dfwds);
+			logger.debug("构建的dfwds参数：{}", result);
+			return result;
+		} catch (Exception e) {
+			logger.warn("构建dfwds参数失败：{}", e.getMessage());
+			return "[{\"wdcode\":\"zb\",\"valuecode\":\"A020101\"},{\"wdcode\":\"sj\",\"valuecode\":\"2023\"}]";
+		}
+	}
+
+	/**
+	 * 根据关键词获取指标代码
+	 */
+	private String getIndicatorCode(String keyword) {
+		// 常见统计指标映射
+		Map<String, String> indicatorMap = new HashMap<>();
+		indicatorMap.put("GDP", "A020101");
+		indicatorMap.put("人口", "A030101");
+		indicatorMap.put("就业", "A040101");
+		indicatorMap.put("消费", "A050101");
+		indicatorMap.put("投资", "A060101");
+		indicatorMap.put("进出口", "A070101");
+		indicatorMap.put("工业", "A020201");
+		indicatorMap.put("农业", "A080101");
+		indicatorMap.put("服务业", "A020301");
+		indicatorMap.put("房地产", "A060201");
+		
+		// 模糊匹配
+		for (Map.Entry<String, String> entry : indicatorMap.entrySet()) {
+			if (keyword.contains(entry.getKey())) {
+				return entry.getValue();
+			}
+		}
+		
+		// 默认返回GDP指标
+		return "A020101";
+	}
+
+	/**
+	 * 解析响应
+	 */
+	private Response parseResponse(String responseBody, Request request) {
+		try {
+			Map<String, Object> jsonResponse = jsonParseTool.jsonToObject(responseBody, new TypeReference<>() {});
+
+			// 检查返回码
+			if (jsonResponse.containsKey("returncode")) {
+				Integer returnCode = (Integer) jsonResponse.get("returncode");
+				if (returnCode == null || returnCode != 200) {
+					String returnMsg = (String) jsonResponse.getOrDefault("returnmsg", "未知错误");
+					return Response.error(request.keyword, "API返回错误：" + returnMsg);
+				}
+			}
+
+			// 解析数据
+			@SuppressWarnings("unchecked")
+			List<Map<String, Object>> dataNodes = (List<Map<String, Object>>) jsonResponse.get("returndata");
+			if (dataNodes == null || dataNodes.isEmpty()) {
+				return Response.success(request.keyword, "未找到相关统计数据", new ArrayList<>());
+			}
+
+			List<StatisticsData> dataList = new ArrayList<>();
+			for (Map<String, Object> dataNode : dataNodes) {
+				StatisticsData data = parseStatisticsData(dataNode);
+				if (data != null) {
+					dataList.add(data);
+				}
+			}
+
+			String message = String.format("成功查询到 %d 条统计数据", dataList.size());
+			return Response.success(request.keyword, message, dataList);
+
+		} catch (Exception e) {
+			logger.error("解析统计局响应失败：{}", e.getMessage(), e);
+			return Response.error(request.keyword, "解析统计局响应失败：" + e.getMessage());
 		}
 	}
 
 	/**
 	 * 解析统计数据
 	 */
-	private List<StatisticsItem> parseStatisticsData(Document doc, String keyword, int limit) {
-		List<StatisticsItem> items = new ArrayList<>();
-
+	private StatisticsData parseStatisticsData(Map<String, Object> dataNode) {
 		try {
-			// 查找统计数据列表
-			Elements dataElements = doc.select("ul.center_list_contlist li");
-
-			if (dataElements.isEmpty()) {
-				// 尝试其他可能的选择器
-				dataElements = doc.select(".news_list li, .list_item, .cont_list li");
-			}
-
-			if (dataElements.isEmpty()) {
-				dataElements = doc.select("li:has(a[href*=tjsj]), li:has(a[href*=html])");
-			}
-
-			int count = 0;
-			for (Element element : dataElements) {
-				if (count >= limit)
-					break;
-
-				StatisticsItem item = parseStatisticsItem(element);
-				if (item != null && isValidItem(item, keyword)) {
-					items.add(item);
-					count++;
-				}
-			}
-
+			StatisticsData data = new StatisticsData();
+			data.setName((String) dataNode.getOrDefault("zb_name", ""));
+			data.setValue((String) dataNode.getOrDefault("data_value", ""));
+			data.setUnit((String) dataNode.getOrDefault("unit_name", ""));
+			data.setYear((String) dataNode.getOrDefault("sj_name", ""));
+			data.setCode((String) dataNode.getOrDefault("zb_code", ""));
+			return data;
+		} catch (Exception e) {
+			logger.warn("解析单条统计数据失败：{}", e.getMessage());
+			return null;
 		}
-		catch (Exception e) {
-			logger.error("Error parsing statistics data: {}", e.getMessage(), e);
-		}
-
-		return items;
 	}
 
 	/**
-	 * 验证统计项目是否有效
+	 * 请求类
 	 */
-	private boolean isValidItem(StatisticsItem item, String keyword) {
-		if (!StringUtils.hasText(item.title())) {
-			return false;
-		}
-
-		if (keyword == null || keyword.trim().isEmpty()) {
-			return true;
-		}
-
-		String lowerKeyword = keyword.toLowerCase();
-		return item.title().toLowerCase().contains(lowerKeyword)
-				|| (item.summary() != null && item.summary().toLowerCase().contains(lowerKeyword));
-	}
-
-	/**
-	 * 解析单个统计项目
-	 */
-	private StatisticsItem parseStatisticsItem(Element element) {
-		try {
-			String title = "";
-			String url = "";
-			String publishDate = "";
-			String summary = "";
-
-			// 查找标题和链接
-			Element linkElement = element.select("a").first();
-			if (linkElement != null) {
-				title = linkElement.text().trim();
-				url = linkElement.attr("href");
-				if (StringUtils.hasText(url) && url.startsWith("/")) {
-					url = NationalStatisticsConstants.BASE_URL + url;
-				}
-			}
-
-			// 查找发布日期 - 尝试多种选择器
-			Element dateElement = element.select(".date, .time, span[class*=date], span[class*=time]").first();
-			if (dateElement == null) {
-				// 尝试查找包含日期模式的文本
-				Elements spans = element.select("span");
-				for (Element span : spans) {
-					String text = span.text().trim();
-					if (text.matches("\\d{4}-\\d{2}-\\d{2}") || text.matches("\\d{4}/\\d{2}/\\d{2}")) {
-						publishDate = text;
-						break;
-					}
-				}
-			}
-			else {
-				publishDate = dateElement.text().trim();
-			}
-
-			// 查找摘要
-			Element summaryElement = element.select(".summary, .desc, .content").first();
-			if (summaryElement != null) {
-				summary = summaryElement.text().trim();
-			}
-
-			if (StringUtils.hasText(title)) {
-				return new StatisticsItem(title, url, publishDate, summary);
-			}
-
-		}
-		catch (Exception e) {
-			logger.debug("Error parsing statistics item: {}", e.getMessage());
-		}
-
-		return null;
-	}
-
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	@JsonClassDescription("National Statistics Service API request")
-	public record Request(@JsonProperty(required = true,
-			value = "dataType") @JsonPropertyDescription("统计数据类型: zxfb(最新发布), tjgb(统计公报), ndsj(年度数据), ydsj(月度数据), jdsj(季度数据)") String dataType,
+	@JsonClassDescription("国家统计局数据查询请求")
+	public record Request(
+			@JsonProperty(required = true)
+			@JsonPropertyDescription("查询关键词，如：GDP、人口、就业、消费、投资等")
+			String keyword,
 
-			@JsonProperty(required = false,
-					value = "keyword") @JsonPropertyDescription("搜索关键词，用于过滤统计数据") String keyword,
+			@JsonProperty
+			@JsonPropertyDescription("查询年份，格式：YYYY，如：2023")
+			String year,
 
-			@JsonProperty(required = false, value = "limit") @JsonPropertyDescription("返回结果数量限制，默认10条") int limit)
-			implements
-				SearchService.Request {
-		public Request {
-			if (limit <= 0) {
-				limit = 10;
-			}
+			@JsonProperty
+			@JsonPropertyDescription("查询地区，如：全国、北京市等")
+			String region
+	) implements Serializable, SearchService.Request {
+		
+		public static Request simpleQuery(String keyword) {
+			return new Request(keyword, null, null);
 		}
 
 		@Override
 		public String getQuery() {
-			return keyword != null ? keyword : "";
+			return this.keyword();
 		}
 	}
 
-	@JsonClassDescription("National Statistics Service API response")
-	public record Response(String status, String message, List<StatisticsItem> data,
-			String timestamp) implements SearchService.Response {
+	/**
+	 * 响应类
+	 */
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record Response(
+			@JsonProperty("query") String query,
+			@JsonProperty("success") boolean success,
+			@JsonProperty("message") String message,
+			@JsonProperty("data") List<StatisticsData> data
+	) implements SearchService.Response {
 
-		public static Response errorResponse(String dataType, String errorMsg) {
-			return new Response("error", errorMsg, null, LocalDateTime.now().toString());
+		public static Response success(String query, String message, List<StatisticsData> data) {
+			return new Response(query, true, message, data);
+		}
+
+		public static Response error(String query, String message) {
+			return new Response(query, false, message, new ArrayList<>());
 		}
 
 		@Override
-		public SearchResult getSearchResult() {
-			if (data == null || data.isEmpty()) {
-				return new SearchResult(List.of());
-			}
-
-			return new SearchResult(data.stream()
-				.map(item -> new SearchService.SearchContent(item.title(),
-						item.summary() != null ? item.summary() : item.title(), item.url(), null // 国家统计局没有特定的图标
-				))
+		public SearchService.SearchResult getSearchResult() {
+			return new SearchService.SearchResult(this.data()
+				.stream()
+				.map(item -> new SearchService.SearchContent(item.getName(), item.getValue() + item.getUnit(), 
+					NationalStatisticsConstants.BASE_URL, null))
 				.toList());
 		}
 	}
 
-	@JsonClassDescription("Statistics item")
-	public record StatisticsItem(String title, String url, String publishDate, String summary) {
+	/**
+	 * 统计数据类
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class StatisticsData {
+
+		@JsonProperty
+		@JsonPropertyDescription("指标名称")
+		private String name;
+
+		@JsonProperty
+		@JsonPropertyDescription("数据值")
+		private String value;
+
+		@JsonProperty
+		@JsonPropertyDescription("计量单位")
+		private String unit;
+
+		@JsonProperty
+		@JsonPropertyDescription("统计年份")
+		private String year;
+
+		@JsonProperty
+		@JsonPropertyDescription("指标代码")
+		private String code;
+
+		// Getters and Setters
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getValue() {
+			return value;
+		}
+
+		public void setValue(String value) {
+			this.value = value;
+		}
+
+		public String getUnit() {
+			return unit;
+		}
+
+		public void setUnit(String unit) {
+			this.unit = unit;
+		}
+
+		public String getYear() {
+			return year;
+		}
+
+		public void setYear(String year) {
+			this.year = year;
+		}
+
+		public String getCode() {
+			return code;
+		}
+
+		public void setCode(String code) {
+			this.code = code;
+		}
 	}
 
 }

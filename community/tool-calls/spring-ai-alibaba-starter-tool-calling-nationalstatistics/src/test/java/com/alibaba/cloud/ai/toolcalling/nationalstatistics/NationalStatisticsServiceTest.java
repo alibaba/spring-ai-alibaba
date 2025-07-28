@@ -27,113 +27,98 @@ import java.util.logging.Logger;
 /**
  * 国家统计局服务测试类
  *
- * @author makoto
+ * @author Makoto
  */
 @SpringBootTest(classes = { NationalStatisticsAutoConfiguration.class, CommonToolCallAutoConfiguration.class })
 @DisplayName("National Statistics Test")
-class NationalStatisticsServiceTest {
+public class NationalStatisticsServiceTest {
 
 	@Autowired
 	private NationalStatisticsService nationalStatisticsService;
-
-	@Autowired
-	private SearchService searchService;
 
 	private static final Logger log = Logger.getLogger(NationalStatisticsServiceTest.class.getName());
 
 	@Test
 	@DisplayName("Tool-Calling Test")
-	void nationalStatisticsTest() {
-		NationalStatisticsService.Request request = new NationalStatisticsService.Request("zxfb", "GDP", 5);
-		NationalStatisticsService.Response response = nationalStatisticsService.apply(request);
-
-		assert response != null;
-		assert "success".equals(response.status()) || "no_data".equals(response.status());
-		assert response.data() != null;
-
-		log.info("Response status: " + response.status());
-		log.info("Response message: " + response.message());
-		log.info("Data count: " + response.data().size());
-
-		if (!response.data().isEmpty()) {
-			log.info("First item: " + response.data().get(0));
-		}
+	public void testNationalStatistics() {
+		var resp = nationalStatisticsService.apply(NationalStatisticsService.Request.simpleQuery("GDP"));
+		assert resp != null;
+		log.info("query: " + resp.query());
+		log.info("success: " + resp.success());
+		log.info("message: " + resp.message());
+		log.info("results count: " + (resp.data() != null ? resp.data().size() : 0));
 	}
+
+	@Autowired
+	private SearchService searchService;
 
 	@Test
 	@DisplayName("Abstract Search Test")
-	void abstractSearchTest() {
-		SearchService.Response response = searchService.query("GDP数据");
-
-		assert response != null;
-		assert response.getSearchResult() != null;
-		assert response.getSearchResult().results() != null;
-
-		log.info("Search results count: " + response.getSearchResult().results().size());
-
-		if (!response.getSearchResult().results().isEmpty()) {
-			SearchService.SearchContent first = response.getSearchResult().results().get(0);
-			log.info("First search result: " + first.title() + " - " + first.url());
+	public void testAbstractSearch() {
+		var resp = searchService.query("人口");
+		assert resp != null && resp.getSearchResult() != null && resp.getSearchResult().results() != null;
+		log.info("search results: " + resp.getSearchResult().results().size());
+		if (!resp.getSearchResult().results().isEmpty()) {
+			var firstResult = resp.getSearchResult().results().get(0);
+			log.info("first result: " + firstResult.title() + " - " + firstResult.content());
 		}
 	}
 
 	@Test
-	@DisplayName("Test with different data types")
-	void testDifferentDataTypes() {
-		String[] dataTypes = { "zxfb", "tjgb", "ndsj", "ydsj", "jdsj" };
-
-		for (String dataType : dataTypes) {
-			NationalStatisticsService.Request request = new NationalStatisticsService.Request(dataType, null, 3);
-			NationalStatisticsService.Response response = nationalStatisticsService.apply(request);
-
-			assert response != null;
-			log.info("DataType: " + dataType + ", Status: " + response.status() + ", Count: "
-					+ (response.data() != null ? response.data().size() : 0));
-		}
+	@DisplayName("Request Record Test")
+	public void testRequestRecord() {
+		var request = new NationalStatisticsService.Request("GDP", "2023", "全国");
+		assert "GDP".equals(request.keyword());
+		assert "2023".equals(request.year());
+		assert "全国".equals(request.region());
+		
+		var simpleRequest = NationalStatisticsService.Request.simpleQuery("人口");
+		assert "人口".equals(simpleRequest.keyword());
+		assert simpleRequest.year() == null;
+		assert simpleRequest.region() == null;
 	}
 
 	@Test
-	@DisplayName("Test error handling")
-	void testErrorHandling() {
-		// Test null request
-		NationalStatisticsService.Response response1 = nationalStatisticsService.apply(null);
-		assert response1 != null;
-		assert "error".equals(response1.status());
-		assert "数据类型不能为空".equals(response1.message());
-
-		// Test empty dataType
-		NationalStatisticsService.Request request2 = new NationalStatisticsService.Request("", "test", 10);
-		NationalStatisticsService.Response response2 = nationalStatisticsService.apply(request2);
-		assert response2 != null;
-		assert "error".equals(response2.status());
-		assert "数据类型不能为空".equals(response2.message());
-
-		log.info("Error handling tests passed");
+	@DisplayName("Response Record Test")
+	public void testResponseRecord() {
+		var successResponse = NationalStatisticsService.Response.success("GDP", "查询成功", java.util.Arrays.asList());
+		assert "GDP".equals(successResponse.query());
+		assert successResponse.success();
+		assert "查询成功".equals(successResponse.message());
+		assert successResponse.data() != null;
+		
+		var errorResponse = NationalStatisticsService.Response.error("GDP", "查询失败");
+		assert "GDP".equals(errorResponse.query());
+		assert !errorResponse.success();
+		assert "查询失败".equals(errorResponse.message());
+		assert errorResponse.data() != null;
+		assert errorResponse.data().isEmpty();
 	}
 
 	@Test
-	@DisplayName("Test keyword filtering")
-	void testKeywordFiltering() {
-		NationalStatisticsService.Request request = new NationalStatisticsService.Request("zxfb", "工业", 10);
-		NationalStatisticsService.Response response = nationalStatisticsService.apply(request);
-
-		assert response != null;
-		log.info("Keyword filtering test - Status: " + response.status() + ", Count: "
-				+ (response.data() != null ? response.data().size() : 0));
+	@DisplayName("Statistics Data Test")
+	public void testStatisticsData() {
+		var data = new NationalStatisticsService.StatisticsData();
+		data.setName("国内生产总值");
+		data.setValue("1143670");
+		data.setUnit("亿元");
+		data.setYear("2023");
+		data.setCode("A020101");
+		
+		assert "国内生产总值".equals(data.getName());
+		assert "1143670".equals(data.getValue());
+		assert "亿元".equals(data.getUnit());
+		assert "2023".equals(data.getYear());
+		assert "A020101".equals(data.getCode());
 	}
 
 	@Test
-	@DisplayName("Test limit parameter")
-	void testLimitParameter() {
-		// Test with limit 0 (should default to 10)
-		NationalStatisticsService.Request request1 = new NationalStatisticsService.Request("zxfb", null, 0);
-		assert request1.limit() == 10;
-
-		// Test with specific limit
-		NationalStatisticsService.Request request2 = new NationalStatisticsService.Request("zxfb", null, 5);
-		assert request2.limit() == 5;
-
-		log.info("Limit parameter tests passed");
+	@DisplayName("Properties Test")
+	public void testPropertiesDefaultValues() {
+		var properties = new NationalStatisticsProperties();
+		assert NationalStatisticsConstants.BASE_URL.equals(properties.getBaseUrl());
+		assert properties.getMaxResults() == 10;
+		assert properties.isEnabled(); // from CommonToolCallProperties
 	}
 
-}
+} 

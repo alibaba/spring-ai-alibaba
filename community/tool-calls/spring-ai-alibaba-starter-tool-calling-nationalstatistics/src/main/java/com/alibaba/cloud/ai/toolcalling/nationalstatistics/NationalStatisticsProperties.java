@@ -27,33 +27,20 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class NationalStatisticsProperties extends CommonToolCallProperties {
 
 	/**
-	 * 请求超时时间（毫秒）
+	 * 最大返回结果数
 	 */
-	private int timeout = 10000;
-
-	/**
-	 * 最大重试次数
-	 */
-	private int maxRetries = 3;
+	private Integer maxResults = 10;
 
 	public NationalStatisticsProperties() {
 		super(NationalStatisticsConstants.BASE_URL);
 	}
 
-	public int getTimeout() {
-		return timeout;
+	public Integer getMaxResults() {
+		return maxResults;
 	}
 
-	public void setTimeout(int timeout) {
-		this.timeout = timeout;
+	public void setMaxResults(Integer maxResults) {
+		this.maxResults = maxResults;
 	}
 
-	public int getMaxRetries() {
-		return maxRetries;
-	}
-
-	public void setMaxRetries(int maxRetries) {
-		this.maxRetries = maxRetries;
-	}
-
-}
+} 

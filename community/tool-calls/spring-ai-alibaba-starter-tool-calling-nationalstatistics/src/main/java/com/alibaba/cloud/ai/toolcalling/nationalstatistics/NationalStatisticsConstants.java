@@ -24,26 +24,19 @@ import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
  */
 public final class NationalStatisticsConstants {
 
-	public static final String CONFIG_PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX
-			+ ".nationalstatistics";
+	/**
+	 * 配置前缀
+	 */
+	public static final String CONFIG_PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".nationalstatistics";
 
-	public static final String TOOL_NAME = "getNationalStatisticsService";
+	/**
+	 * 工具名称
+	 */
+	public static final String TOOL_NAME = "nationalStatistics";
 
-	public static final String BASE_URL = "https://www.stats.gov.cn";
-
-	public static final String DATA_API_URL = "https://data.stats.gov.cn";
-
-	public static final String TJSJ_URL = BASE_URL + "/tjsj";
-
-	// 统计数据类型
-	public static final String ZXFB = "zxfb"; // 最新发布
-
-	public static final String TJGB = "tjgb"; // 统计公报
-
-	public static final String NDSJ = "ndsj"; // 年度数据
-
-	public static final String YDSJ = "ydsj"; // 月度数据
-
-	public static final String JDSJ = "jdsj"; // 季度数据
+	/**
+	 * 国家统计局API基础URL（使用HTTP避免SSL证书问题）
+	 */
+	public static final String BASE_URL = "http://data.stats.gov.cn";
 
 }
