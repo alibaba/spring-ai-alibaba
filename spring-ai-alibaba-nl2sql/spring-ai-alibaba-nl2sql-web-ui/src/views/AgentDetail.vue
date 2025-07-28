@@ -114,6 +114,14 @@
                   智能体调试
                 </a>
               </div>
+
+              <div class="nav-section">
+                <div class="nav-section-title">正式使用</div>
+                <a href="#" class="nav-link" @click="goToWorkspace">
+                  <i class="bi bi-chat-dots"></i>
+                  智能体工作台
+                </a>
+              </div>
             </nav>
           </div>
 
@@ -932,6 +940,10 @@ export default {
     const goToAgentList = () => {
       router.push('/agent')
     }
+
+    const goToWorkspace = () => {
+      router.push('/workspace')
+    }
     
     const loadAgentDetail = async () => {
       try {
@@ -1674,6 +1686,7 @@ export default {
       getTestStatusText,
       // 导航方法
       goToAgentList,
+      goToWorkspace,
       // 工具方法
       getStatusText,
       formatDate,
