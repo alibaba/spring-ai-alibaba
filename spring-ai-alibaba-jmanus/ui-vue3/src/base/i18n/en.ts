@@ -781,19 +781,13 @@ const words: I18nType = {
       'Your Java AI intelligent assistant, helping you build and complete various tasks.',
     tagline: 'Java AI Agent',
     inputPlaceholder: 'Describe what you want to build or accomplish...',
-    directButton: 'Plan-Act Workbench',
+    directButton: 'Enter Workbench Directly',
     examples: {
       stockPrice: {
         title: 'Query Stock Price',
         description: "Get today's latest stock price for Alibaba (Agent can use browser tools)",
         prompt:
           "Use browser based on Baidu to query today's Alibaba stock price and return the latest stock price",
-      },
-      novel: {
-        title: 'Generate a Novella',
-        description: 'Help me generate a novella (Agent can generate longer content)',
-        prompt:
-          'Please help me write a novel about robots replacing humans. 20,000 words. Use TEXT_FILE_AGENT, first generate an outline, then improve and enrich the entire outline content into a coherent novel, and finally smooth out the grammar globally',
       },
       weather: {
         title: 'Query Weather',
@@ -802,8 +796,13 @@ const words: I18nType = {
       },
       queryplan: {
         title: 'Query Person Info',
-        description: "Query Shenxun Ali's all info and optimize termination structure column",
+        description: "Query all information about Shenxun Ali (to demonstrate infinite context capability)",
         prompt: 'Use browser, based on Baidu, to query person info',
+      },
+      ainovel: {
+        title: 'AI Novel Creation',
+        description: 'AI gradually defeats humanity themed novel (to demonstrate long-form content output)',
+        prompt: 'Create a novel about artificial intelligence gradually defeating humanity, including 10 chapters',
       },
     },
   },
