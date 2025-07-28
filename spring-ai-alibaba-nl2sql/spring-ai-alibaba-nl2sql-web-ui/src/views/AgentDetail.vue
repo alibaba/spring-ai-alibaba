@@ -205,37 +205,112 @@
                 <h2>语义模型配置</h2>
                 <p class="content-subtitle">配置智能体的语义模型</p>
               </div>
+              
+              <!-- 搜索和筛选 -->
+              <div class="model-filters">
+                <div class="filter-group">
+                  <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input 
+                      type="text" 
+                      v-model="modelFilters.keyword" 
+                      placeholder="搜索字段名..." 
+                      class="form-control"
+                      @input="filterSemanticModels"
+                    >
+                  </div>
+                </div>
+                <div class="filter-group">
+                  <select v-model="modelFilters.fieldType" @change="filterSemanticModels" class="form-control">
+                    <option value="">全部类型</option>
+                    <option value="VARCHAR">VARCHAR</option>
+                    <option value="INTEGER">INTEGER</option>
+                    <option value="DECIMAL">DECIMAL</option>
+                    <option value="DATE">DATE</option>
+                    <option value="DATETIME">DATETIME</option>
+                    <option value="TEXT">TEXT</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <select v-model="modelFilters.enabled" @change="filterSemanticModels" class="form-control">
+                    <option value="">全部状态</option>
+                    <option value="true">启用</option>
+                    <option value="false">禁用</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <select v-model="modelFilters.defaultRecall" @change="filterSemanticModels" class="form-control">
+                    <option value="">全部召回状态</option>
+                    <option value="true">默认召回</option>
+                    <option value="false">非默认召回</option>
+                  </select>
+                </div>
+              </div>
+              
               <div class="semantic-model-section">
                 <div class="section-header">
                   <h3>语义模型列表</h3>
-                  <button class="btn btn-primary" @click="showCreateModelModal = true">
-                    <i class="bi bi-plus"></i>
-                    添加模型
-                  </button>
+                  <div class="header-actions">
+                    <div class="batch-actions" v-if="selectedModels.length > 0">
+                      <span class="selected-count">已选择 {{ selectedModels.length }} 项</span>
+                      <button class="btn btn-sm btn-outline" @click="batchToggleStatus(true)">批量启用</button>
+                      <button class="btn btn-sm btn-outline" @click="batchToggleStatus(false)">批量禁用</button>
+                      <button class="btn btn-sm btn-danger" @click="batchDeleteModels">批量删除</button>
+                    </div>
+                    <button class="btn btn-primary" @click="showCreateModelModal = true">
+                      <i class="bi bi-plus"></i>
+                      添加模型
+                    </button>
+                  </div>
                 </div>
                 <div class="semantic-model-table">
                   <table class="table">
                     <thead>
                       <tr>
+                        <th>
+                          <input type="checkbox" @change="toggleSelectAll" 
+                            :checked="isAllSelected" 
+                            :indeterminate="isPartialSelected">
+                        </th>
                         <th>ID</th>
-                        <th>模型名称</th>
-                        <th>模型类型</th>
-                        <th>配置</th>
-                        <th>状态</th>
+                        <th>数据集ID</th>
+                        <th>原始字段名</th>
+                        <th>智能体字段名</th>
+                        <th>字段同义词</th>
+                        <th>字段类型</th>
+                        <th>默认召回</th>
+                        <th>启用状态</th>
                         <th>创建时间</th>
                         <th>操作</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="model in semanticModelList" :key="model.id">
-                        <td>{{ model.id }}</td>
-                        <td>{{ model.name }}</td>
-                        <td>{{ model.type }}</td>
-                        <td>{{ model.config }}</td>
-                        <td>
-                          <span class="status-badge" :class="model.status">{{ model.status }}</span>
+                      <tr v-if="filteredSemanticModels.length === 0">
+                        <td colspan="11" class="text-center text-muted">
+                          {{ semanticModelList.length === 0 ? '暂无数据' : '无符合条件的数据' }}
                         </td>
-                        <td>{{ model.createdAt }}</td>
+                      </tr>
+                      <tr v-else v-for="model in filteredSemanticModels" :key="model.id">
+                        <td>
+                          <input type="checkbox" v-model="selectedModels" :value="model.id">
+                        </td>
+                        <td>{{ model.id }}</td>
+                        <td>{{ model.datasetId }}</td>
+                        <td><strong>{{ model.originalFieldName }}</strong></td>
+                        <td>{{ model.agentFieldName || '-' }}</td>
+                        <td>{{ model.fieldSynonyms || '-' }}</td>
+                        <td><span class="badge badge-secondary">{{ model.fieldType || '-' }}</span></td>
+                        <td>
+                          <span class="badge" :class="model.defaultRecall ? 'badge-success' : 'badge-secondary'">
+                            {{ model.defaultRecall ? '是' : '否' }}
+                          </span>
+                        </td>
+                        <td>
+                          <span class="badge" :class="model.enabled ? 'badge-success' : 'badge-secondary'">
+                            {{ model.enabled ? '启用' : '禁用' }}
+                          </span>
+                        </td>
+                        <td>{{ formatDateTime(model.createTime) }}</td>
                         <td>
                           <div class="action-buttons">
                             <button class="btn btn-sm btn-outline" @click="editModel(model)">编辑</button>
@@ -607,6 +682,141 @@
       </div>
     </div>
 
+    <!-- 语义模型模态框 -->
+    <div v-if="showCreateModelModal" class="modal-overlay" @click="closeModelModal">
+      <div class="modal-dialog" @click.stop>
+        <div class="modal-header">
+          <h3>{{ isEditingModel ? '编辑语义模型' : '新增语义模型' }}</h3>
+          <button class="close-btn" @click="closeModelModal">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="saveModel">
+            <div class="form-group">
+              <label class="form-label" for="datasetId">数据集ID *</label>
+              <input 
+                type="text" 
+                id="datasetId"
+                v-model="semanticModelForm.datasetId"
+                class="form-control" 
+                :class="{ 'is-invalid': formErrors.datasetId }"
+                required 
+                placeholder="如：dataset_001"
+                @input="clearFieldError('datasetId')"
+              >
+              <div v-if="formErrors.datasetId" class="invalid-feedback">
+                {{ formErrors.datasetId }}
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="originalFieldName">原始字段名 *</label>
+              <input 
+                type="text" 
+                id="originalFieldName"
+                v-model="semanticModelForm.originalFieldName"
+                class="form-control" 
+                :class="{ 'is-invalid': formErrors.originalFieldName }"
+                required
+                placeholder="如：user_age"
+                @input="clearFieldError('originalFieldName')"
+              >
+              <div v-if="formErrors.originalFieldName" class="invalid-feedback">
+                {{ formErrors.originalFieldName }}
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="agentFieldName">智能体字段名称 *</label>
+              <input 
+                type="text" 
+                id="agentFieldName"
+                v-model="semanticModelForm.agentFieldName"
+                class="form-control" 
+                :class="{ 'is-invalid': formErrors.agentFieldName }"
+                required
+                placeholder="如：用户年龄"
+                @input="clearFieldError('agentFieldName')"
+              >
+              <div v-if="formErrors.agentFieldName" class="invalid-feedback">
+                {{ formErrors.agentFieldName }}
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fieldSynonyms">字段名称同义词</label>
+              <input 
+                type="text" 
+                id="fieldSynonyms"
+                v-model="semanticModelForm.fieldSynonyms"
+                class="form-control" 
+                placeholder="多个同义词用逗号分隔，如：年龄,岁数"
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fieldDescription">字段描述</label>
+              <textarea 
+                id="fieldDescription"
+                v-model="semanticModelForm.fieldDescription"
+                class="form-control" 
+                rows="3"
+                placeholder="用于帮助对字段的理解（为空时与原始字段描述保持一致）"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fieldType">字段类型</label>
+              <select id="fieldType" v-model="semanticModelForm.fieldType" class="form-control">
+                <option value="VARCHAR">VARCHAR</option>
+                <option value="INTEGER">INTEGER</option>
+                <option value="DECIMAL">DECIMAL</option>
+                <option value="DATE">DATE</option>
+                <option value="DATETIME">DATETIME</option>
+                <option value="TEXT">TEXT</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="originalDescription">原始字段描述</label>
+              <textarea 
+                id="originalDescription"
+                v-model="semanticModelForm.originalDescription"
+                class="form-control" 
+                rows="2"
+                placeholder="数据集中原始字段的描述"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <div class="checkbox-group">
+                <input 
+                  type="checkbox" 
+                  id="defaultRecall"
+                  v-model="semanticModelForm.defaultRecall"
+                  class="form-checkbox"
+                >
+                <label class="checkbox-label" for="defaultRecall">默认召回</label>
+              </div>
+              <small class="form-text">勾选后，该字段每次提问时都会作为提示词传输给大模型</small>
+            </div>
+            <div class="form-group">
+              <div class="checkbox-group">
+                <input 
+                  type="checkbox" 
+                  id="enabled"
+                  v-model="semanticModelForm.enabled"
+                  class="form-checkbox"
+                >
+                <label class="checkbox-label" for="enabled">启用状态</label>
+              </div>
+              <small class="form-text">勾选后，该语义模型配置将生效</small>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeModelModal">取消</button>
+          <button type="button" class="btn btn-primary" @click="saveModel">
+            {{ isEditingModel ? '更新' : '创建' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 添加数据源模态框 -->
     <div v-if="showAddDatasourceModal" class="modal-overlay" @click="closeAddDatasourceModal">
       <div class="modal-dialog datasource-modal" @click.stop>
@@ -860,7 +1070,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { agentApi, businessKnowledgeApi, semanticModelApi, agentKnowledgeApi, datasourceApi } from '../utils/api.js'
 
@@ -912,6 +1122,38 @@ export default {
       synonyms: '',
       datasetId: '',
       defaultRecall: true
+    })
+    
+    // 语义模型相关数据
+    const isEditingModel = ref(false)
+    const editingModelId = ref(null)
+    const semanticModelForm = reactive({
+      datasetId: '',
+      originalFieldName: '',
+      agentFieldName: '',
+      fieldSynonyms: '',
+      fieldDescription: '',
+      fieldType: 'VARCHAR',
+      originalDescription: '',
+      defaultRecall: false,
+      enabled: true
+    })
+    
+    // 语义模型筛选和批量操作
+    const filteredSemanticModels = ref([])
+    const selectedModels = ref([])
+    const modelFilters = reactive({
+      keyword: '',
+      fieldType: '',
+      enabled: '',
+      defaultRecall: ''
+    })
+    
+    // 表单验证错误
+    const formErrors = reactive({
+      datasetId: '',
+      originalFieldName: '',
+      agentFieldName: ''
     })
     
     // 数据源相关数据
@@ -1033,10 +1275,124 @@ export default {
     
     const loadSemanticModels = async () => {
       try {
-        const response = await semanticModelApi.getList()
-        semanticModelList.value = response.data
+        // 按智能体ID筛选语义模型
+        const params = { agentId: agent.id }
+        const response = await semanticModelApi.getList(params)
+        semanticModelList.value = response || []
+        // 初始化筛选结果
+        filteredSemanticModels.value = semanticModelList.value
+        console.log('语义模型加载成功:', semanticModelList.value)
       } catch (error) {
         console.error('加载语义模型失败:', error)
+        semanticModelList.value = []
+        filteredSemanticModels.value = []
+        showMessage('加载语义模型失败：' + (error.message || '未知错误'), 'error')
+      }
+    }
+    
+    // 语义模型筛选功能
+    const filterSemanticModels = () => {
+      let filtered = semanticModelList.value
+      
+      // 关键字搜索
+      if (modelFilters.keyword) {
+        const keyword = modelFilters.keyword.toLowerCase()
+        filtered = filtered.filter(model => 
+          model.originalFieldName?.toLowerCase().includes(keyword) ||
+          model.agentFieldName?.toLowerCase().includes(keyword) ||
+          model.fieldSynonyms?.toLowerCase().includes(keyword) ||
+          model.datasetId?.toLowerCase().includes(keyword)
+        )
+      }
+      
+      // 字段类型筛选
+      if (modelFilters.fieldType) {
+        filtered = filtered.filter(model => model.fieldType === modelFilters.fieldType)
+      }
+      
+      // 启用状态筛选
+      if (modelFilters.enabled !== '') {
+        const isEnabled = modelFilters.enabled === 'true'
+        filtered = filtered.filter(model => model.enabled === isEnabled)
+      }
+      
+      // 默认召回筛选
+      if (modelFilters.defaultRecall !== '') {
+        const isDefaultRecall = modelFilters.defaultRecall === 'true'
+        filtered = filtered.filter(model => model.defaultRecall === isDefaultRecall)
+      }
+      
+      filteredSemanticModels.value = filtered
+      // 清空选中状态
+      selectedModels.value = []
+    }
+    
+    // 计算选中状态
+    const isAllSelected = computed(() => {
+      return filteredSemanticModels.value.length > 0 && 
+        selectedModels.value.length === filteredSemanticModels.value.length
+    })
+    
+    const isPartialSelected = computed(() => {
+      return selectedModels.value.length > 0 && 
+        selectedModels.value.length < filteredSemanticModels.value.length
+    })
+    
+    // 全选/反选功能
+    const toggleSelectAll = () => {
+      if (isAllSelected.value) {
+        selectedModels.value = []
+      } else {
+        selectedModels.value = filteredSemanticModels.value.map(model => model.id)
+      }
+    }
+    
+    // 批量切换状态
+    const batchToggleStatus = async (enabled) => {
+      if (selectedModels.value.length === 0) {
+        showMessage('请选择要操作的语义模型', 'warning')
+        return
+      }
+      
+      try {
+        // 批量更新选中的语义模型状态
+        const promises = selectedModels.value.map(id => {
+          const model = semanticModelList.value.find(m => m.id === id)
+          if (model) {
+            return semanticModelApi.update(id, { ...model, enabled })
+          }
+        }).filter(Boolean)
+        
+        await Promise.all(promises)
+        showMessage(`批量${enabled ? '启用' : '禁用'}成功`, 'success')
+        selectedModels.value = []
+        await loadSemanticModels()
+      } catch (error) {
+        console.error('批量操作失败:', error)
+        showMessage('批量操作失败：' + (error.message || '未知错误'), 'error')
+      }
+    }
+    
+    // 批量删除
+    const batchDeleteModels = async () => {
+      if (selectedModels.value.length === 0) {
+        showMessage('请选择要删除的语义模型', 'warning')
+        return
+      }
+      
+      if (!confirm(`确定要删除选中的 ${selectedModels.value.length} 个语义模型吗？`)) {
+        return
+      }
+      
+      try {
+        const promises = selectedModels.value.map(id => semanticModelApi.delete(id))
+        await Promise.all(promises)
+        showMessage('批量删除成功', 'success')
+        selectedModels.value = []
+        await loadSemanticModels()
+      } catch (error) {
+        console.error('批量删除失败:', error)
+        showMessage('批量删除失败：' + (error.message || '未知错误'), 'error')
       }
     }
     
@@ -1533,17 +1889,121 @@ export default {
     }
     
     const editModel = (model) => {
-      // TODO: 实现编辑语义模型功能
-      console.log('编辑模型:', model)
+      isEditingModel.value = true
+      editingModelId.value = model.id
+      semanticModelForm.datasetId = model.datasetId || ''
+      semanticModelForm.originalFieldName = model.originalFieldName || ''
+      semanticModelForm.agentFieldName = model.agentFieldName || ''
+      semanticModelForm.fieldSynonyms = model.fieldSynonyms || ''
+      semanticModelForm.fieldDescription = model.fieldDescription || ''
+      semanticModelForm.fieldType = model.fieldType || 'VARCHAR'
+      semanticModelForm.originalDescription = model.originalDescription || ''
+      semanticModelForm.defaultRecall = model.defaultRecall || false
+      semanticModelForm.enabled = model.enabled !== undefined ? model.enabled : true
+      showCreateModelModal.value = true
+    }
+    
+    const closeModelModal = () => {
+      showCreateModelModal.value = false
+      isEditingModel.value = false
+      editingModelId.value = null
+      resetModelForm()
+    }
+    
+    const resetModelForm = () => {
+      semanticModelForm.datasetId = ''
+      semanticModelForm.originalFieldName = ''
+      semanticModelForm.agentFieldName = ''
+      semanticModelForm.fieldSynonyms = ''
+      semanticModelForm.fieldDescription = ''
+      semanticModelForm.fieldType = 'VARCHAR'
+      semanticModelForm.originalDescription = ''
+      semanticModelForm.defaultRecall = false
+      semanticModelForm.enabled = true
+      
+      // 重置表单错误
+      formErrors.datasetId = ''
+      formErrors.originalFieldName = ''
+      formErrors.agentFieldName = ''
+    }
+    
+    const saveModel = async () => {
+      // 重置表单错误
+      formErrors.datasetId = ''
+      formErrors.originalFieldName = ''
+      formErrors.agentFieldName = ''
+      
+      // 验证必填字段
+      let hasError = false
+      
+      if (!semanticModelForm.datasetId.trim()) {
+        formErrors.datasetId = '数据集ID不能为空'
+        hasError = true
+      }
+      
+      if (!semanticModelForm.originalFieldName.trim()) {
+        formErrors.originalFieldName = '原始字段名不能为空'
+        hasError = true
+      }
+      
+      if (!semanticModelForm.agentFieldName.trim()) {
+        formErrors.agentFieldName = '智能体字段名称不能为空'
+        hasError = true
+      }
+      
+      if (hasError) {
+        showMessage('请修正表单错误后重试', 'warning')
+        return
+      }
+
+      try {
+        const modelData = {
+          agentId: agent.id, // 关联当前智能体
+          datasetId: semanticModelForm.datasetId.trim(),
+          originalFieldName: semanticModelForm.originalFieldName.trim(),
+          agentFieldName: semanticModelForm.agentFieldName.trim(),
+          fieldSynonyms: semanticModelForm.fieldSynonyms.trim() || null,
+          fieldDescription: semanticModelForm.fieldDescription.trim() || null,
+          fieldType: semanticModelForm.fieldType,
+          originalDescription: semanticModelForm.originalDescription.trim() || null,
+          defaultRecall: semanticModelForm.defaultRecall,
+          enabled: semanticModelForm.enabled
+        }
+
+        if (isEditingModel.value) {
+          // 更新语义模型
+          await semanticModelApi.update(editingModelId.value, modelData)
+          showMessage('更新成功', 'success')
+        } else {
+          // 创建语义模型
+          await semanticModelApi.create(modelData)
+          showMessage('创建成功', 'success')
+        }
+        
+        closeModelModal()
+        await loadSemanticModels()
+      } catch (error) {
+        console.error('保存语义模型失败:', error)
+        showMessage('保存失败：' + (error.message || '未知错误'), 'error')
+      }
+    }
+    
+    // 清除字段错误
+    const clearFieldError = (fieldName) => {
+      if (formErrors[fieldName]) {
+        formErrors[fieldName] = ''
+      }
     }
     
     const deleteModel = async (id) => {
-      if (confirm('确定要删除这个模型吗？')) {
+      if (confirm('确定要删除这个语义模型吗？')) {
         try {
           await semanticModelApi.delete(id)
+          showMessage('删除成功', 'success')
           await loadSemanticModels()
         } catch (error) {
-          console.error('删除模型失败:', error)
+          console.error('删除语义模型失败:', error)
+          showMessage('删除失败：' + (error.message || '未知错误'), 'error')
         }
       }
     }
@@ -1622,6 +2082,16 @@ export default {
       businessKnowledgeForm,
       isEditingBusinessKnowledge,
       editingBusinessKnowledgeId,
+      // 语义模型相关
+      semanticModelForm,
+      isEditingModel,
+      editingModelId,
+      filteredSemanticModels,
+      selectedModels,
+      modelFilters,
+      isAllSelected,
+      isPartialSelected,
+      formErrors,
       // 智能体知识相关
       knowledgeList,
       knowledgeStats,
@@ -1656,6 +2126,15 @@ export default {
       // 业务知识方法
       saveBusinessKnowledge,
       closeBusinessKnowledgeModal,
+      // 语义模型方法
+      saveModel,
+      closeModelModal,
+      resetModelForm,
+      filterSemanticModels,
+      toggleSelectAll,
+      batchToggleStatus,
+      batchDeleteModels,
+      clearFieldError,
       // 智能体知识方法
       openCreateKnowledgeModal,
       closeKnowledgeModal,
@@ -2728,5 +3207,151 @@ export default {
 
 .datasource-modal .datasource-form-container::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #1890ff, #40a9ff);
+}
+
+/* 语义模型筛选样式 */
+.model-filters {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.model-filters .filter-group {
+  flex: 1;
+}
+
+.model-filters .search-box {
+  position: relative;
+  flex: 2;
+}
+
+.model-filters .search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  z-index: 1;
+}
+
+.model-filters .search-box input {
+  padding-left: 36px;
+}
+
+/* 批量操作样式 */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f0f7ff;
+  border: 1px solid #d6e4ff;
+  border-radius: 6px;
+  margin-right: 12px;
+}
+
+.selected-count {
+  color: #1890ff;
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.batch-actions .btn {
+  margin: 0 2px;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+/* 复选框样式增强 */
+.semantic-model-table th input[type="checkbox"],
+.semantic-model-table td input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.semantic-model-table th:first-child,
+.semantic-model-table td:first-child {
+  width: 40px;
+  text-align: center;
+}
+
+/* 表格行hover效果 */
+.semantic-model-table tbody tr:hover {
+  background-color: #fafafa;
+}
+
+/* 选中行样式 */
+.semantic-model-table tbody tr:has(input[type="checkbox"]:checked) {
+  background-color: #e6f7ff;
+}
+
+/* 表单验证样式 */
+.form-control.is-invalid {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+.invalid-feedback {
+  display: block;
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* 复选框样式 */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-checkbox {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #1890ff;
+}
+
+.checkbox-label {
+  font-weight: 500;
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.form-text {
+  color: #666;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
 }
 </style>

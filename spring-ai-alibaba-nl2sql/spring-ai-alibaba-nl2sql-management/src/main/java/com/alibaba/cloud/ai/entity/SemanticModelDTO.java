@@ -20,6 +20,8 @@ package com.alibaba.cloud.ai.entity;
  */
 public class SemanticModelDTO {
 
+	private Long agentId; // 智能体ID
+
 	private String datasetId; // 数据集ID
 
 	private String originalFieldName; // 原始字段名
@@ -56,6 +58,14 @@ public class SemanticModelDTO {
 	}
 
 	// Getters and Setters
+	public Long getAgentId() {
+		return agentId;
+	}
+
+	public void setAgentId(Long agentId) {
+		this.agentId = agentId;
+	}
+
 	public String getDatasetId() {
 		return datasetId;
 	}

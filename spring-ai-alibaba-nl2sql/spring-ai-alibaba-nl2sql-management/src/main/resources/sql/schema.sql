@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS business_knowledge (
 -- 语义模型表
 CREATE TABLE IF NOT EXISTS semantic_model (
   id INT NOT NULL AUTO_INCREMENT,
+  agent_id INT COMMENT '关联的智能体ID',
   field_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '智能体字段名称',
   synonyms TEXT COMMENT '字段名称同义词',
   data_set_id VARCHAR(255) COMMENT '数据集id',
@@ -34,10 +35,12 @@ CREATE TABLE IF NOT EXISTS semantic_model (
   is_recall TINYINT DEFAULT 1 COMMENT '0 停用 1 启用',
   status TINYINT DEFAULT 1 COMMENT '0 停用 1 启用',
   PRIMARY KEY (id),
+  INDEX idx_agent_id (agent_id),
   INDEX idx_field_name (field_name),
   INDEX idx_data_set_id (data_set_id),
   INDEX idx_status (status),
-  INDEX idx_is_recall (is_recall)
+  INDEX idx_is_recall (is_recall),
+  FOREIGN KEY (agent_id) REFERENCES agent(id) ON DELETE SET NULL
 ) ENGINE = InnoDB COMMENT = '语义模型表';
 
 -- 智能体表

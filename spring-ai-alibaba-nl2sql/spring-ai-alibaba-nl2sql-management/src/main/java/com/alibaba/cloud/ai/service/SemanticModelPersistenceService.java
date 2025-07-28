@@ -36,6 +36,7 @@ public class SemanticModelPersistenceService {
 
 	private static final String FIELD_ADD = """
 				INSERT INTO semantic_model (
+					agent_id,
 					field_name,
 					synonyms,
 					origin_name,
@@ -47,7 +48,7 @@ public class SemanticModelPersistenceService {
 					data_set_id,
 			       	created_time,
 			        	updated_time
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			""";
 
 	private static final String FIELD_UPDATE = """
@@ -81,6 +82,7 @@ public class SemanticModelPersistenceService {
 	private static final String FIELD_GET_BY_DATASET_IDS = """
 			SELECT
 			    id,
+			    agent_id,
 				field_name,
 				synonyms,
 				origin_name,
@@ -93,6 +95,24 @@ public class SemanticModelPersistenceService {
 			          created_time,
 			             updated_time
 			FROM semantic_model WHERE data_set_id = ?
+			""";
+
+	private static final String FIELD_GET_BY_AGENT_ID = """
+			SELECT
+			    id,
+			    agent_id,
+				field_name,
+				synonyms,
+				origin_name,
+				description,
+				origin_description,
+				type,
+				is_recall,
+				status,
+				data_set_id,
+			          created_time,
+			             updated_time
+			FROM semantic_model WHERE agent_id = ?
 			""";
 
 	private static final String FIELD_CLEAR = """
@@ -130,11 +150,11 @@ public class SemanticModelPersistenceService {
 		BeanUtils.copyProperties(semanticModelDTO, semanticModel);
 		semanticModel.setCreateTime(LocalDateTime.now());
 		semanticModel.setUpdateTime(LocalDateTime.now());
-		jdbcTemplate.update(FIELD_ADD, semanticModel.getAgentFieldName(), semanticModel.getFieldSynonyms(),
-				semanticModel.getOriginalFieldName(), semanticModel.getFieldDescription(),
-				semanticModel.getOriginalDescription(), semanticModel.getFieldType(), semanticModel.getDefaultRecall(),
-				semanticModel.getEnabled(), semanticModel.getDatasetId(), semanticModel.getCreateTime(),
-				semanticModel.getUpdateTime());
+		jdbcTemplate.update(FIELD_ADD, semanticModel.getAgentId(), semanticModel.getAgentFieldName(),
+				semanticModel.getFieldSynonyms(), semanticModel.getOriginalFieldName(),
+				semanticModel.getFieldDescription(), semanticModel.getOriginalDescription(),
+				semanticModel.getFieldType(), semanticModel.getDefaultRecall(), semanticModel.getEnabled(),
+				semanticModel.getDatasetId(), semanticModel.getCreateTime(), semanticModel.getUpdateTime());
 	}
 
 	// 批量新增智能体字段
@@ -187,12 +207,21 @@ public class SemanticModelPersistenceService {
 	// 根据data_set_id获取智能体字段
 	public List<SemanticModel> getFieldByDataSetId(String dataSetId) {
 		return this.jdbcTemplate.query(FIELD_GET_BY_DATASET_IDS, new Object[] { dataSetId }, (rs, rowNum) -> {
-			return new SemanticModel(rs.getObject("id", Long.class), rs.getString("data_set_id"),
-					rs.getString("origin_name"), rs.getString("field_name"), rs.getString("synonyms"),
-					rs.getString("description"), rs.getObject("is_recall", boolean.class),
-					rs.getObject("status", boolean.class), rs.getString("type"), rs.getString("origin_description"),
-					rs.getTimestamp("created_time").toLocalDateTime(),
-					rs.getTimestamp("updated_time").toLocalDateTime());
+			SemanticModel model = new SemanticModel();
+			model.setId(rs.getObject("id", Long.class));
+			model.setAgentId(rs.getObject("agent_id", Long.class)); // 添加agentId
+			model.setDatasetId(rs.getString("data_set_id"));
+			model.setOriginalFieldName(rs.getString("origin_name"));
+			model.setAgentFieldName(rs.getString("field_name"));
+			model.setFieldSynonyms(rs.getString("synonyms"));
+			model.setFieldDescription(rs.getString("description"));
+			model.setDefaultRecall(rs.getObject("is_recall", Boolean.class));
+			model.setEnabled(rs.getObject("status", Boolean.class));
+			model.setFieldType(rs.getString("type"));
+			model.setOriginalDescription(rs.getString("origin_description"));
+			model.setCreateTime(rs.getTimestamp("created_time").toLocalDateTime());
+			model.setUpdateTime(rs.getTimestamp("updated_time").toLocalDateTime());
+			return model;
 		});
 	}
 
@@ -201,13 +230,43 @@ public class SemanticModelPersistenceService {
 		Objects.requireNonNull(keyword, "searchKeyword cannot be null");
 		return jdbcTemplate.query(FIELD_SEARCH,
 				new Object[] { "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" }, (rs, rowNum) -> {
-					return new SemanticModel(rs.getObject("id", Long.class), rs.getString("data_set_id"),
-							rs.getString("origin_name"), rs.getString("field_name"), rs.getString("synonyms"),
-							rs.getString("description"), rs.getObject("is_recall", boolean.class),
-							rs.getObject("status", boolean.class), rs.getString("type"),
-							rs.getString("origin_description"), rs.getTimestamp("created_time").toLocalDateTime(),
-							rs.getTimestamp("updated_time").toLocalDateTime());
+					SemanticModel model = new SemanticModel();
+					model.setId(rs.getObject("id", Long.class));
+					model.setAgentId(rs.getObject("agent_id", Long.class)); // 添加agentId
+					model.setDatasetId(rs.getString("data_set_id"));
+					model.setOriginalFieldName(rs.getString("origin_name"));
+					model.setAgentFieldName(rs.getString("field_name"));
+					model.setFieldSynonyms(rs.getString("synonyms"));
+					model.setFieldDescription(rs.getString("description"));
+					model.setDefaultRecall(rs.getObject("is_recall", Boolean.class));
+					model.setEnabled(rs.getObject("status", Boolean.class));
+					model.setFieldType(rs.getString("type"));
+					model.setOriginalDescription(rs.getString("origin_description"));
+					model.setCreateTime(rs.getTimestamp("created_time").toLocalDateTime());
+					model.setUpdateTime(rs.getTimestamp("updated_time").toLocalDateTime());
+					return model;
 				});
+	}
+
+	// 根据智能体ID获取语义模型
+	public List<SemanticModel> getFieldByAgentId(Long agentId) {
+		return this.jdbcTemplate.query(FIELD_GET_BY_AGENT_ID, new Object[] { agentId }, (rs, rowNum) -> {
+			SemanticModel model = new SemanticModel();
+			model.setId(rs.getObject("id", Long.class));
+			model.setAgentId(rs.getObject("agent_id", Long.class));
+			model.setDatasetId(rs.getString("data_set_id"));
+			model.setOriginalFieldName(rs.getString("origin_name"));
+			model.setAgentFieldName(rs.getString("field_name"));
+			model.setFieldSynonyms(rs.getString("synonyms"));
+			model.setFieldDescription(rs.getString("description"));
+			model.setDefaultRecall(rs.getObject("is_recall", Boolean.class));
+			model.setEnabled(rs.getObject("status", Boolean.class));
+			model.setFieldType(rs.getString("type"));
+			model.setOriginalDescription(rs.getString("origin_description"));
+			model.setCreateTime(rs.getTimestamp("created_time").toLocalDateTime());
+			model.setUpdateTime(rs.getTimestamp("updated_time").toLocalDateTime());
+			return model;
+		});
 	}
 
 	// 根据id删除智能体字段

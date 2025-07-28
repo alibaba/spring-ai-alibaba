@@ -24,6 +24,8 @@ public class SemanticModel {
 
 	private Long id;
 
+	private Long agentId; // 智能体ID
+
 	private String datasetId; // 数据集ID
 
 	private String originalFieldName; // 原始字段名
@@ -49,9 +51,10 @@ public class SemanticModel {
 	public SemanticModel() {
 	}
 
-	public SemanticModel(String datasetId, String originalFieldName, String agentFieldName, String fieldSynonyms,
-			String fieldDescription, Boolean defaultRecall, Boolean enabled, String fieldType,
+	public SemanticModel(Long agentId, String datasetId, String originalFieldName, String agentFieldName,
+			String fieldSynonyms, String fieldDescription, Boolean defaultRecall, Boolean enabled, String fieldType,
 			String originalDescription) {
+		this.agentId = agentId;
 		this.datasetId = datasetId;
 		this.originalFieldName = originalFieldName;
 		this.agentFieldName = agentFieldName;
@@ -65,10 +68,11 @@ public class SemanticModel {
 		this.updateTime = LocalDateTime.now();
 	}
 
-	public SemanticModel(Long id, String datasetId, String originalFieldName, String agentFieldName,
+	public SemanticModel(Long id, Long agentId, String datasetId, String originalFieldName, String agentFieldName,
 			String fieldSynonyms, String fieldDescription, Boolean defaultRecall, Boolean enabled, String fieldType,
 			String originalDescription, LocalDateTime createTime, LocalDateTime updateTime) {
 		this.id = id;
+		this.agentId = agentId;
 		this.datasetId = datasetId;
 		this.originalFieldName = originalFieldName;
 		this.agentFieldName = agentFieldName;
@@ -89,6 +93,14 @@ public class SemanticModel {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public Long getAgentId() {
+		return agentId;
+	}
+
+	public void setAgentId(Long agentId) {
+		this.agentId = agentId;
 	}
 
 	public String getDatasetId() {

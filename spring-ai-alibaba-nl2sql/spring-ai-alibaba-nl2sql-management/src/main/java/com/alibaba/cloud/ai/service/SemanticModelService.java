@@ -40,11 +40,46 @@ public class SemanticModelService {
 	}
 
 	private void initSampleData() {
-		save(new SemanticModel("dataset_001", "user_age", "用户年龄", "年龄,岁数", "用户的实际年龄", true, true, "INTEGER", "用户年龄字段"));
-		save(new SemanticModel("dataset_001", "product_name", "商品名称", "产品名,商品", "商品的名称信息", false, true, "VARCHAR",
-				"商品名称字段"));
-		save(new SemanticModel("dataset_002", "order_amount", "订单金额", "金额,价格,费用", "订单的总金额", true, true, "DECIMAL",
-				"订单金额字段"));
+		// 为智能体1创建示例数据
+		SemanticModel model1 = new SemanticModel();
+		model1.setAgentId(1L);
+		model1.setDatasetId("dataset_001");
+		model1.setOriginalFieldName("user_age");
+		model1.setAgentFieldName("用户年龄");
+		model1.setFieldSynonyms("年龄,岁数");
+		model1.setFieldDescription("用户的实际年龄");
+		model1.setDefaultRecall(true);
+		model1.setEnabled(true);
+		model1.setFieldType("INTEGER");
+		model1.setOriginalDescription("用户年龄字段");
+		save(model1);
+
+		SemanticModel model2 = new SemanticModel();
+		model2.setAgentId(1L);
+		model2.setDatasetId("dataset_001");
+		model2.setOriginalFieldName("product_name");
+		model2.setAgentFieldName("商品名称");
+		model2.setFieldSynonyms("产品名,商品");
+		model2.setFieldDescription("商品的名称信息");
+		model2.setDefaultRecall(false);
+		model2.setEnabled(true);
+		model2.setFieldType("VARCHAR");
+		model2.setOriginalDescription("商品名称字段");
+		save(model2);
+
+		// 为智能体2创建示例数据
+		SemanticModel model3 = new SemanticModel();
+		model3.setAgentId(2L);
+		model3.setDatasetId("dataset_002");
+		model3.setOriginalFieldName("order_amount");
+		model3.setAgentFieldName("订单金额");
+		model3.setFieldSynonyms("金额,价格,费用");
+		model3.setFieldDescription("订单的总金额");
+		model3.setDefaultRecall(true);
+		model3.setEnabled(true);
+		model3.setFieldType("DECIMAL");
+		model3.setOriginalDescription("订单金额字段");
+		save(model3);
 	}
 
 	public List<SemanticModel> findAll() {
@@ -55,6 +90,13 @@ public class SemanticModelService {
 		return modelStore.values()
 			.stream()
 			.filter(m -> Objects.equals(m.getDatasetId(), datasetId))
+			.collect(Collectors.toList());
+	}
+
+	public List<SemanticModel> findByAgentId(Long agentId) {
+		return modelStore.values()
+			.stream()
+			.filter(m -> Objects.equals(m.getAgentId(), agentId))
 			.collect(Collectors.toList());
 	}
 

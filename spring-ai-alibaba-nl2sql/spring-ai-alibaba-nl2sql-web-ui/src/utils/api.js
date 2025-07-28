@@ -215,27 +215,98 @@ export const businessKnowledgeApi = {
 export const semanticModelApi = {
   // 获取语义模型列表
   getList(params) {
-    return get('/semantic-model', params)
+    if (params && params.agentId) {
+      // 如果有agentId参数，使用agent端点
+      return get(`/fields/agent/${params.agentId}`)
+    } else if (params && params.datasetId) {
+      // 如果有datasetId参数，使用dataset端点
+      return get(`/fields/dataset/${params.datasetId}`)
+    } else if (params && params.keyword) {
+      // 如果有keyword参数，使用搜索端点
+      return get('/fields/search', { content: params.keyword })
+    } else {
+      // 默认获取所有数据集ID，然后获取第一个数据集的数据（这里需要根据实际需求调整）
+      return get('/fields/datasetIds').then(response => {
+        if (response && response.length > 0) {
+          return get(`/fields/dataset/${response[0]}`)
+        }
+        return []
+      })
+    }
+  },
+
+  // 搜索语义模型
+  search(keyword) {
+    return get('/fields/search', { content: keyword })
+  },
+
+  // 根据数据集ID获取语义模型
+  getByDatasetId(datasetId) {
+    return get(`/fields/dataset/${datasetId}`)
+  },
+
+  // 根据智能体ID获取语义模型
+  getByAgentId(agentId) {
+    return get(`/fields/agent/${agentId}`)
   },
 
   // 创建语义模型
   create(data) {
-    return post('/semantic-model', data)
+    // 转换数据格式以匹配SemanticModelDTO
+    const dto = {
+      agentId: data.agentId,
+      datasetId: data.datasetId,
+      originalFieldName: data.originalFieldName,
+      agentFieldName: data.agentFieldName,
+      fieldSynonyms: data.fieldSynonyms,
+      fieldDescription: data.fieldDescription,
+      originalDescription: data.originalDescription,
+      fieldType: data.fieldType,
+      defaultRecall: data.defaultRecall,
+      enabled: data.enabled
+    }
+    return post('/fields/add', dto)
   },
 
   // 获取语义模型详情
   getDetail(id) {
-    return get(`/semantic-model/${id}`)
+    // 注意：SemanticModelPersistenceController没有单独的详情接口
+    // 可能需要通过搜索或其他方式获取
+    return Promise.resolve(null)
   },
 
   // 更新语义模型
   update(id, data) {
-    return put(`/semantic-model/${id}`, data)
+    // 转换数据格式以匹配SemanticModelDTO
+    const dto = {
+      agentId: data.agentId,
+      datasetId: data.datasetId,
+      originalFieldName: data.originalFieldName,
+      agentFieldName: data.agentFieldName,
+      fieldSynonyms: data.fieldSynonyms,
+      fieldDescription: data.fieldDescription,
+      originalDescription: data.originalDescription,
+      fieldType: data.fieldType,
+      defaultRecall: data.defaultRecall,
+      enabled: data.enabled
+    }
+    return put(`/fields/${id}`, dto)
   },
 
   // 删除语义模型
   delete(id) {
-    return del(`/semantic-model/${id}`)
+    return del(`/fields/${id}`)
+  },
+
+  // 按数据集批量启用/禁用
+  batchEnable(datasetId, enabled) {
+    if (enabled) {
+      // 这里需要获取datasetId下的所有字段ID，然后批量启用
+      // 由于接口限制，暂时返回一个简单的实现
+      return Promise.resolve()
+    } else {
+      return Promise.resolve()
+    }
   }
 }
 

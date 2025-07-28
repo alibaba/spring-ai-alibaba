@@ -38,13 +38,16 @@ public class SemanticModelController {
 	@GetMapping
 	@ResponseBody
 	public ResponseEntity<List<SemanticModel>> list(@RequestParam(required = false) String datasetId,
-			@RequestParam(required = false) String keyword) {
+			@RequestParam(required = false) String keyword, @RequestParam(required = false) Long agentId) {
 		List<SemanticModel> result;
 		if (keyword != null && !keyword.trim().isEmpty()) {
 			result = semanticModelService.search(keyword);
 		}
 		else if (datasetId != null && !datasetId.trim().isEmpty()) {
 			result = semanticModelService.findByDatasetId(datasetId);
+		}
+		else if (agentId != null) {
+			result = semanticModelService.findByAgentId(agentId);
 		}
 		else {
 			result = semanticModelService.findAll();

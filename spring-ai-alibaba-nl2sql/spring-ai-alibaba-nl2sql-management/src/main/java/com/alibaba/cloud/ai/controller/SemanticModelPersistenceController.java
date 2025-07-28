@@ -74,6 +74,13 @@ public class SemanticModelPersistenceController {
 		return ResponseEntity.ok(fields);
 	}
 
+	// 根据agentId获取数据
+	@GetMapping("/agent/{agentId}")
+	public ResponseEntity<List<SemanticModel>> getFieldsByAgentId(@PathVariable Long agentId) {
+		List<SemanticModel> fields = semanticModelPersistenceService.getFieldByAgentId(agentId);
+		return ResponseEntity.ok(fields);
+	}
+
 	// 搜索
 	@GetMapping("/search")
 	public ResponseEntity<List<SemanticModel>> searchFields(@RequestParam String content) {
