@@ -585,6 +585,11 @@ export default {
       // 处理有序列表
       html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>')
       
+      // 处理Markdown表格
+      html = html.replace(/(\|[^|\n]*\|[^|\n]*\|[^\n]*\n\|[-:\s|]*\|[^\n]*\n(?:\|[^|\n]*\|[^\n]*\n?)*)/gm, (match) => {
+        return convertMarkdownTableToHTML(match)
+      })
+      
       // 处理链接
       html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
       
@@ -621,6 +626,33 @@ export default {
       } catch (e) {
         return `<pre>${jsonString}</pre>`
       }
+    }
+
+    // 转换Markdown表格为HTML表格
+    const convertMarkdownTableToHTML = (markdownTable) => {
+      if (!markdownTable) return ''
+      const lines = markdownTable.trim().split('\n')
+      if (lines.length < 2 || !lines[1].includes('---')) return markdownTable
+
+      const headers = lines[0].split('|').map(h => h.trim()).filter(Boolean)
+      let html = '<table class="table"><thead><tr>'
+      headers.forEach(header => { 
+        html += `<th>${header}</th>` 
+      })
+      html += '</tr></thead><tbody>'
+
+      for (let i = 2; i < lines.length; i++) {
+        const rowCells = lines[i].split('|').map(c => c.trim()).filter(Boolean)
+        if (rowCells.length > 0) {
+          html += '<tr>'
+          for (let j = 0; j < headers.length; j++) {
+            html += `<td>${rowCells[j] || ''}</td>`
+          }
+          html += '</tr>'
+        }
+      }
+      html += '</tbody></table>'
+      return html
     }
 
     // 获取初始化按钮文本
