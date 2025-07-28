@@ -19,7 +19,7 @@ Spring AI Alibaba Elasticsearch Memory 模块是 Spring AI Alibaba 项目的核�
 
 ```xml
 <dependency>
-    <groupId>com.alibaba.spring.ai</groupId>
+    <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-starter-memory-elasticsearch</artifactId>
     <version>${latest.version}</version>
 </dependency>
