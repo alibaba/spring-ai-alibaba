@@ -276,12 +276,47 @@ export default {
 
         eventSource.onmessage = (event) => {
           try {
-            const chunk = JSON.parse(event.data)
-            const { type, data } = chunk
+            console.log('收到流式数据:', event.data) // 调试日志
+            
+            let chunk
+            let actualType
+            let actualData
+            
+            // 解析JSON数据
+            let parsedData = JSON.parse(event.data)
+            
+            if (typeof parsedData === 'string') {
+              try {
+                chunk = JSON.parse(parsedData)
+              } catch (e) {
+                // 如果不是JSON字符串，直接作为数据处理
+                chunk = { type: 'text', data: parsedData }
+              }
+            } else {
+              chunk = parsedData
+            }
 
-            if (type && data !== undefined && data !== null) {
+            actualType = chunk.type
+            actualData = chunk.data
+
+            // 处理嵌套JSON的情况
+            if (typeof actualData === 'string') {
+              try {
+                const innerChunk = JSON.parse(actualData)
+                if (innerChunk.type && innerChunk.data !== undefined) {
+                  actualType = innerChunk.type
+                  actualData = innerChunk.data
+                }
+              } catch (e) {
+                // 保持原来的值
+              }
+            }
+
+            console.log('处理后的数据:', { type: actualType, data: actualData }) // 调试日志
+
+            if (actualType && actualData !== undefined && actualData !== null && actualData !== '') {
               // 处理不同类型的数据
-              let processedData = processStreamData(type, data)
+              let processedData = processStreamData(actualType, actualData)
               if (processedData) {
                 accumulatedContent += processedData + '\n\n'
                 chatMessages.value[agentMessageIndex].content = formatMessageContent(accumulatedContent)
@@ -289,7 +324,11 @@ export default {
               }
             }
           } catch (error) {
-            console.error('解析流式数据失败:', error)
+            console.error('解析流式数据失败:', error, '原始数据:', event.data)
+            // 即使解析失败，也尝试显示原始数据
+            accumulatedContent += event.data + '\n\n'
+            chatMessages.value[agentMessageIndex].content = formatMessageContent(accumulatedContent)
+            scrollToBottom()
           }
         }
 
@@ -324,17 +363,43 @@ export default {
 
     // 处理流式数据
     const processStreamData = (type, data) => {
-      // 数据预处理
+      // 数据预处理 - 参考AgentDebugPanel的逻辑
       let processedData = data
       
       if (typeof data === 'string') {
-        try {
-          const jsonData = JSON.parse(data)
-          if (jsonData && typeof jsonData === 'object' && jsonData.data) {
-            processedData = jsonData.data
+        // 先尝试按JSON对象分割
+        const jsonPattern = /\{"[^"]+":"[^"]*"[^}]*\}/g
+        const jsonMatches = data.match(jsonPattern)
+        
+        if (jsonMatches && jsonMatches.length > 1) {
+          // 多个JSON对象，分别解析并提取data字段
+          let extractedContent = []
+          jsonMatches.forEach(jsonStr => {
+            try {
+              const jsonObj = JSON.parse(jsonStr)
+              if (jsonObj.data) {
+                extractedContent.push(jsonObj.data.replace(/\\n/g, '\n'))
+              }
+            } catch (e) {
+              extractedContent.push(jsonStr)
+            }
+          })
+          processedData = extractedContent.join('')
+        } else {
+          // 单个JSON对象或普通文本
+          try {
+            const jsonData = JSON.parse(data)
+            if (jsonData && typeof jsonData === 'object') {
+              if (jsonData.data) {
+                processedData = jsonData.data
+              } else {
+                processedData = JSON.stringify(jsonData, null, 2)
+              }
+            }
+          } catch (e) {
+            // 不是JSON，保持原始数据
+            processedData = data
           }
-        } catch (e) {
-          // 不是JSON，保持原始数据
         }
       }
 
@@ -496,15 +561,15 @@ export default {
 
 /* 主要内容区域 */
 .main-content {
-  padding: 2rem;
+  padding: 1rem;
 }
 
 .workspace-layout {
   display: flex;
-  gap: 2rem;
-  height: calc(100vh - 140px);
-  max-width: 1400px;
-  margin: 0 auto;
+  gap: 1rem;
+  height: calc(100vh - 100px);
+  max-width: 100%;
+  margin: 0;
 }
 
 /* 左侧智能体列表 */

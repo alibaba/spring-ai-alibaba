@@ -1859,7 +1859,7 @@ export default {
 
 .container {
   width: 100%;
-  padding: 0 24px;
+  padding: 0 1rem;
 }
 
 .header-content {
@@ -1949,7 +1949,7 @@ export default {
 
 /* 主要内容区域样式 */
 .main-content {
-  padding: 24px 0;
+  padding: 1rem 0;
 }
 
 .content-layout {
@@ -2017,7 +2017,7 @@ export default {
 }
 
 .tab-content {
-  padding: 24px;
+  padding: 1rem;
 }
 
 .content-header {

@@ -165,10 +165,18 @@ export default {
       streamState.typeCounters = {}
       streamState.sectionCounter = 0
       
+      console.log('重置调试状态，清空所有计数器和状态') // 调试日志
+      console.log('当前状态:', {
+        currentType: streamState.currentType,
+        typeCounters: streamState.typeCounters,
+        sectionCounter: streamState.sectionCounter
+      })
+      
       // 清空结果容器
       const container = document.getElementById('debug-results-container')
       if (container) {
         container.innerHTML = ''
+        console.log('已清空结果容器')
       }
     }
 
@@ -217,75 +225,109 @@ export default {
       try {
         debugStatus.value = ''
         
+        console.log('收到流式数据:', event.data) // 调试日志
+        
         let chunk
         let actualType
         let actualData
         
-        // 解析JSON数据
-        let parsedData = JSON.parse(event.data)
-        
-        if (typeof parsedData === 'string') {
-          chunk = JSON.parse(parsedData)
-        } else {
-          chunk = parsedData
-        }
-
-        actualType = chunk.type
-        actualData = chunk.data
-
-        // 处理嵌套JSON的情况
-        if (actualType === 'explanation' && typeof actualData === 'string') {
-          try {
-            const innerChunk = JSON.parse(actualData)
-            if (innerChunk.type && innerChunk.data !== undefined) {
-              actualType = innerChunk.type
-              actualData = innerChunk.data
-            }
-          } catch (e) {
-            // 保持原来的值
+        try {
+          // 尝试解析JSON
+          let parsedData = JSON.parse(event.data)
+          
+          // 如果第一次解析结果还是字符串，再解析一次
+          if (typeof parsedData === 'string') {
+            chunk = JSON.parse(parsedData)
+          } else {
+            chunk = parsedData
           }
+
+          // 直接提取type和data，使用方括号语法
+          actualType = chunk['type']
+          actualData = chunk['data']
+
+          // 处理嵌套JSON的情况
+          if (actualType === 'explanation' && typeof actualData === 'string') {
+            try {
+              const innerChunk = JSON.parse(actualData)
+              if (innerChunk.type && innerChunk.data !== undefined) {
+                actualType = innerChunk.type
+                actualData = innerChunk.data
+              }
+            } catch (e) {
+              // 如果内层解析失败，保持原来的值
+            }
+          }
+
+        } catch (e) {
+          return
         }
 
+        console.log('解析后的数据:', { type: actualType, data: actualData }) // 调试日志
+
+        // 修改过滤条件，允许空字符串通过
         if (actualType && actualData !== undefined && actualData !== null) {
           processStreamData(actualType, actualData)
+        } else {
+          console.log('数据被过滤:', { type: actualType, data: actualData })
         }
 
       } catch (error) {
-        console.error('解析流式数据失败:', error)
+        console.error('解析流式数据失败:', error, '原始数据:', event.data)
       }
     }
 
-    // 处理流式数据
+    // 处理流式数据 - 参考nl2sql.html的实现
     const processStreamData = (type, data) => {
-      // 数据预处理
+      console.log(`Processing stream data - Type: ${type}, Current Type: ${streamState.currentType}`) // 调试日志
+      
+      // 对数据进行预处理
       let processedData = data
       
-      // 对SQL类型进行特殊处理
+      // 只对SQL类型进行Markdown代码块标记的预清理
       if (type === 'sql' && typeof data === 'string') {
         processedData = data.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
       }
-
+      
       // 检查是否需要创建新的section
       if (streamState.currentType !== type) {
+        // type切换了，创建新的section
+        console.log(`Type changed from ${streamState.currentType} to ${type}, creating new section`)
         streamState.currentType = type
+
+        // 先增加类型计数器
+        if (!streamState.typeCounters[type]) {
+          streamState.typeCounters[type] = 0
+        }
+        streamState.typeCounters[type]++
+
+        // 创建新的section
         createResultSection(type, processedData)
         
-        // 保存数据到streamState
+        // 同时将第一条数据添加到streamState中
         const currentCount = streamState.typeCounters[type]
         const currentSectionKey = `${type}_${currentCount}`
         streamState.streamData[currentSectionKey] = processedData
+        console.log(`Created new section for ${type}, count: ${currentCount}`)
       } else {
-        // 累积数据到现有section
+        // 同一个type，继续累积数据到当前section
+        console.log(`Same type ${type}, appending data`)
         const currentCount = streamState.typeCounters[type]
         const currentSectionKey = `${type}_${currentCount}`
 
+        // 累积数据
         if (!streamState.streamData[currentSectionKey]) {
           streamState.streamData[currentSectionKey] = ''
         }
         streamState.streamData[currentSectionKey] += processedData
+        
+        console.log(`Appending data to ${currentSectionKey}:`, processedData)
+        console.log(`Total accumulated data for ${currentSectionKey}:`, streamState.streamData[currentSectionKey])
 
-        // 更新现有section
+        // 更新当前section的内容
         updateResultSection(type, currentCount, streamState.streamData[currentSectionKey])
+
+        console.log(`Updated section ${type}-${currentCount}-section with accumulated data`)
       }
 
       // 自动滚动到底部
@@ -300,14 +342,10 @@ export default {
     const createResultSection = (type, data) => {
       streamState.sectionCounter++
 
-      // 增加类型计数器
-      if (!streamState.typeCounters[type]) {
-        streamState.typeCounters[type] = 0
-      }
-      streamState.typeCounters[type]++
-
-      const sectionId = `${type}-${streamState.typeCounters[type]}-section`
-      const contentId = `${type}-${streamState.typeCounters[type]}-content`
+      // 注意：类型计数器已经在processStreamData中增加了，这里不需要再增加
+      const currentCount = streamState.typeCounters[type]
+      const sectionId = `${type}-${currentCount}-section`
+      const contentId = `${type}-${currentCount}-content`
 
       // 获取类型信息
       const typeInfo = getTypeInfo(type)
@@ -316,7 +354,7 @@ export default {
       const sectionHTML = `
         <div id="${sectionId}" class="result-section">
           <div class="section-title">
-            <i class="${typeInfo.icon}"></i> ${typeInfo.title} (${streamState.typeCounters[type]})
+            <i class="${typeInfo.icon}"></i> ${typeInfo.title} (${currentCount})
             ${type === 'sql' ? `<button class="copy-button" id="copy-${sectionId}-button" style="display: none;"><i class="bi bi-clipboard"></i></button>` : ''}
           </div>
           <div class="section-content" id="${contentId}"></div>
@@ -329,7 +367,7 @@ export default {
         container.insertAdjacentHTML('beforeend', sectionHTML)
         
         // 立即更新内容
-        updateResultSection(type, streamState.typeCounters[type], data)
+        updateResultSection(type, currentCount, data)
       }
     }
 
@@ -790,13 +828,14 @@ export default {
 <style scoped>
 .agent-debug-panel {
   padding: 0;
-  min-height: 500px;
+  height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
 }
 
 .debug-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .debug-header h2 {
@@ -965,9 +1004,8 @@ export default {
 }
 
 .result-content {
-  padding: 1.5rem;
-  min-height: 300px;
-  max-height: 600px;
+  padding: 1rem;
+  flex: 1;
   overflow-y: auto;
   line-height: 1.7;
 }
