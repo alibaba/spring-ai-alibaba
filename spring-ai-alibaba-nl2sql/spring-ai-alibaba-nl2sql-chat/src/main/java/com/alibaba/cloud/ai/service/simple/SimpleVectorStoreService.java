@@ -89,7 +89,6 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			.setSchema(dbConfig.getSchema())
 			.setTables(schemaInitRequest.getTables());
 
-
 		deleteDocumentsByVectorTypes("column", "table");
 
 		log.debug("Fetching foreign keys from database");
