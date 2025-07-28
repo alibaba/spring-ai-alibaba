@@ -54,7 +54,7 @@ class MemcachedTest {
 	@EnabledIfEnvironmentVariable(named = MemcachedConstants.PORT, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	void testMemcachedGetter() {
 		Object apply = memcachedService.getter()
-			.apply(new MemcachedService.MemcachedServiceGetter.Request("memcachedKey"));
+			.apply(new MemcachedService.MemcachedServiceGetter.Request("spring_ai_alibaba_chat_memory:memcachedId"));
 		logger.info("get result: {}", apply);
 	}
 
