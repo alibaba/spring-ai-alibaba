@@ -15,13 +15,13 @@
  */
 package com.alibaba.cloud.ai.service.base;
 
-import com.alibaba.cloud.ai.dbconnector.DbAccessor;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
-import com.alibaba.cloud.ai.dbconnector.MdTableGenerator;
-import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
-import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
-import com.alibaba.cloud.ai.prompt.PromptHelper;
+import com.alibaba.cloud.ai.connector.MdTableGenerator;
+import com.alibaba.cloud.ai.connector.accessor.Accessor;
+import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
+import com.alibaba.cloud.ai.connector.bo.ResultSetBO;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
+import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.service.LlmService;
 import com.alibaba.cloud.ai.util.DateTimeUtil;
 import com.alibaba.cloud.ai.util.MarkdownParser;
@@ -45,9 +45,9 @@ import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.constant.Constant.INTENT_UNCLEAR;
 import static com.alibaba.cloud.ai.constant.Constant.SMALL_TALK_REJECT;
+import static com.alibaba.cloud.ai.prompt.PromptConstant.getQuestionExpansionPromptTemplate;
 import static com.alibaba.cloud.ai.prompt.PromptHelper.buildMixMacSqlDbPrompt;
 import static com.alibaba.cloud.ai.prompt.PromptHelper.buildMixSelectorPrompt;
-import static com.alibaba.cloud.ai.prompt.PromptConstant.getQuestionExpansionPromptTemplate;
 
 public class BaseNl2SqlService {
 
@@ -59,12 +59,12 @@ public class BaseNl2SqlService {
 
 	public final LlmService aiService;
 
-	protected final DbAccessor dbAccessor;
+	protected final Accessor dbAccessor;
 
 	protected final DbConfig dbConfig;
 
 	public BaseNl2SqlService(BaseVectorStoreService vectorStoreService, BaseSchemaService schemaService,
-			LlmService aiService, DbAccessor dbAccessor, DbConfig dbConfig) {
+			LlmService aiService, Accessor dbAccessor, DbConfig dbConfig) {
 		logger.info(
 				"Initializing BaseNl2SqlService with components: vectorStoreService={}, schemaService={}, aiService={}, dbAccessor={}, dbConfig={}",
 				vectorStoreService.getClass().getSimpleName(), schemaService.getClass().getSimpleName(),
