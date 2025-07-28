@@ -39,19 +39,6 @@ class MemcachedTest {
 	private MemcachedService memcachedService;
 
 	@Test
-	@DisplayName("Tool-Calling Test Memcached")
-	void testMemcached() {
-		testMemcachedSetter();
-		testMemcachedGetter();
-		testMemcachedReplacer();
-		testMemcachedGetter();
-		testMemcachedAppender();
-		testMemcachedGetter();
-		testMemcachedDeleter();
-		testMemcachedGetter();
-	}
-
-	@Test
 	@DisplayName("Tool-Calling Test Memcached Setter")
 	@EnabledIfEnvironmentVariable(named = MemcachedConstants.IP, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	@EnabledIfEnvironmentVariable(named = MemcachedConstants.PORT, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
