@@ -72,7 +72,7 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 		Query rewriteQuery = queryTransformer.transform(query);
 
 		// 查询拓展
-		int optimizeQueryNum = state.value("optimize_query_num", 2);
+		int optimizeQueryNum = state.value("optimize_query_num", 3);
 		optimizeQueryNum = Math.max(MinOptimizeQueryNum, Math.min(MaxOptimizeQueryNum, optimizeQueryNum));
 		QueryExpander queryExpander = MultiQueryExpander.builder()
 			.chatClientBuilder(rewriteAndMultiQueryAgentBuilder)

@@ -98,8 +98,8 @@ public class ReporterNode implements NodeAction {
 
 		logger.debug("reporter node messages: {}", messages);
 
-		String nodeName = StreamNodePrefixEnum.REPORTER_LLM_STREAM.getPrefix();
-		String stepTitleKey = nodeName + "_step_title";
+		String prefix = StreamNodePrefixEnum.REPORTER_LLM_STREAM.getPrefix();
+		String stepTitleKey = prefix + "_step_title";
 		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
 		Map<String, Object> inputMap = new HashMap<>();
 		inputMap.put(stepTitleKey, "[报告生成]");
@@ -108,7 +108,7 @@ public class ReporterNode implements NodeAction {
 		var streamResult = reporterAgent.prompt().messages(messages).stream().chatResponse();
 
 		var generator = StreamingChatGenerator.builder()
-			.startingNode(nodeName)
+			.startingNode(prefix)
 			.startingState(state)
 			.mapResult(response -> {
 				String finalReport = Objects.requireNonNull(response.getResult().getOutput().getText());
@@ -121,7 +121,7 @@ public class ReporterNode implements NodeAction {
 				}
 				return Map.of("final_report", finalReport, "thread_id", threadId);
 			})
-			.build(streamResult);
+			.buildWithChatResponse(streamResult);
 		Map<String, Object> resultMap = new HashMap<>();
 		resultMap.put("final_report", generator);
 		resultMap.put("thread_id", threadId);
