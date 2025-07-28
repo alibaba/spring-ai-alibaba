@@ -181,7 +181,7 @@ public class ResearcherNode implements NodeAction {
 			logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, nodeName);
 
 			var generator = StreamingChatGenerator.builder()
-				.startingNode(prefix + executorNodeId)
+				.startingNode(nodeNum)
 				.startingState(state)
 				.mapResult(response -> {
 					// Only handle successful responses - errors are handled in doOnError
