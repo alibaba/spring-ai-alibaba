@@ -106,6 +106,14 @@
                   语义模型配置
                 </a>
               </div>
+
+              <div class="nav-section">
+                <div class="nav-section-title">调试工具</div>
+                <a href="#" class="nav-link" :class="{ active: activeTab === 'debug' }" @click="setActiveTab('debug')">
+                  <i class="bi bi-bug"></i>
+                  智能体调试
+                </a>
+              </div>
             </nav>
           </div>
 
@@ -416,6 +424,11 @@
                   </table>
                 </div>
               </div>
+            </div>
+
+            <!-- 智能体调试 -->
+            <div v-if="activeTab === 'debug'" class="tab-content">
+              <AgentDebugPanel :agent-id="agent.id" />
             </div>
 
           </div>
@@ -798,9 +811,13 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { agentApi, businessKnowledgeApi, semanticModelApi, datasourceApi } from '../utils/api.js'
+import AgentDebugPanel from '../components/AgentDebugPanel.vue'
 
 export default {
   name: 'AgentDetail',
+  components: {
+    AgentDebugPanel
+  },
   setup() {
     const router = useRouter()
     const route = useRoute()
@@ -1925,7 +1942,8 @@ export default {
 .content-layout {
   display: flex;
   gap: 24px;
-  align-items: flex-start;
+  align-items: stretch;
+  min-height: 600px;
 }
 
 /* 左侧导航样式 */

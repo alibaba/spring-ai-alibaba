@@ -440,6 +440,37 @@ export const datasourceApi = {
   }
 }
 
+/**
+ * 智能体调试相关 API
+ */
+export const agentDebugApi = {
+  // 创建流式调试连接
+  createDebugStream(agentId, query) {
+    const encodedQuery = encodeURIComponent(query)
+    return new EventSource(`${API_BASE_URL}/agent/${agentId}/debug/stream?query=${encodedQuery}`)
+  },
+
+  // 获取调试历史记录
+  getDebugHistory(agentId, params = {}) {
+    return get(`/agent/${agentId}/debug/history`, params)
+  },
+
+  // 清除调试历史记录
+  clearDebugHistory(agentId) {
+    return del(`/agent/${agentId}/debug/history`)
+  },
+
+  // 获取调试统计信息
+  getDebugStatistics(agentId) {
+    return get(`/agent/${agentId}/debug/statistics`)
+  },
+
+  // 保存调试会话
+  saveDebugSession(agentId, sessionData) {
+    return post(`/agent/${agentId}/debug/session`, sessionData)
+  }
+}
+
 export default {
   get,
   post,
@@ -449,5 +480,6 @@ export default {
   businessKnowledgeApi,
   semanticModelApi,
   agentKnowledgeApi,
-  datasourceApi
+  datasourceApi,
+  agentDebugApi
 }
