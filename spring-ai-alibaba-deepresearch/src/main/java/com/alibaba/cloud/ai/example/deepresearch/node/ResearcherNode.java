@@ -168,7 +168,8 @@ public class ResearcherNode implements NodeAction {
 			// 添加步骤标题
 			boolean isReflectionNode = assignedStep.getReflectionHistory() != null
 					&& !assignedStep.getReflectionHistory().isEmpty();
-			String prefix = StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix();
+			String prefix = isReflectionNode ? StreamNodePrefixEnum.RESEARCHER_REFLECT_LLM_STREAM.getPrefix()
+					: StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix();
 			String nodeNum = prefix + "_" + executorNodeId;
 			String stepTitleKey = nodeNum + "_step_title";
 			String stepTitleValue = (isReflectionNode ? "[反思]" : "") + "[并行节点_Researcher_" + executorNodeId + "]"

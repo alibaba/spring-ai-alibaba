@@ -117,11 +117,12 @@ public class CoderNode implements NodeAction {
 				.doOnError(error -> StateUtil.handleStepError(assignedStep, nodeName, error, logger));
 
 			// 添加步骤标题
-			String prefix = StreamNodePrefixEnum.CODER_LLM_STREAM.getPrefix();
-			String nodeNum = prefix + "_" + executorNodeId;
-			String stepTitleKey = nodeNum + "_step_title";
 			boolean isReflectionNode = assignedStep.getReflectionHistory() != null
 					&& !assignedStep.getReflectionHistory().isEmpty();
+			String prefix = isReflectionNode ? StreamNodePrefixEnum.CODER_REFLECT_LLM_STREAM.getPrefix()
+					: StreamNodePrefixEnum.CODER_LLM_STREAM.getPrefix();
+			String nodeNum = prefix + "_" + executorNodeId;
+			String stepTitleKey = nodeNum + "_step_title";
 			String stepTitleValue = (isReflectionNode ? "[反思]" : "") + "[并行节点_Coder_" + executorNodeId + "]"
 					+ assignedStep.getTitle();
 			state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());

@@ -22,7 +22,9 @@ package com.alibaba.cloud.ai.example.deepresearch.enums;
 public enum StreamNodePrefixEnum {
 
 	PLANNER_LLM_STREAM("planner_llm_stream", false), RESEARCHER_LLM_STREAM("researcher_llm_stream", true),
-	CODER_LLM_STREAM("coder_llm_stream", true), REPORTER_LLM_STREAM("reporter_llm_stream", true);
+	RESEARCHER_REFLECT_LLM_STREAM("researcher_reflect_llm_stream", true),
+	CODER_REFLECT_LLM_STREAM("coder_reflect_llm_stream", true), CODER_LLM_STREAM("coder_llm_stream", true),
+	REPORTER_LLM_STREAM("reporter_llm_stream", true);
 
 	/** 节点前缀字符串 */
 	private final String prefix;
