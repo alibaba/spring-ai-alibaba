@@ -55,8 +55,7 @@ public class ChromeDriverService implements IChromeDriverService {
 
 	private UnifiedDirectoryManager unifiedDirectoryManager;
 
-	// Initialize ObjectMapper instance
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper;
 
 	/**
 	 * Shared directory for storing cookies
@@ -122,10 +121,11 @@ public class ChromeDriverService implements IChromeDriverService {
 	}
 
 	public ChromeDriverService(ManusProperties manusProperties, SmartContentSavingService innerStorageService,
-			UnifiedDirectoryManager unifiedDirectoryManager) {
+			UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper) {
 		this.manusProperties = manusProperties;
 		this.innerStorageService = innerStorageService;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
+		this.objectMapper = objectMapper;
 		// Use UnifiedDirectoryManager to get the shared directory for playwright
 		try {
 			java.nio.file.Path playwrightDir = unifiedDirectoryManager.getWorkingDirectory().resolve("playwright");
@@ -226,7 +226,7 @@ public class ChromeDriverService implements IChromeDriverService {
 			Browser browser = playwright.chromium().launch(options);
 			log.info("Created new Playwright Browser instance with anti-detection");
 			// Pass the sharedDir to the DriverWrapper constructor
-			return new DriverWrapper(playwright, browser, browser.newPage(), this.sharedDir);
+			return new DriverWrapper(playwright, browser, browser.newPage(), this.sharedDir, objectMapper);
 		}
 		catch (Exception e) {
 			if (playwright != null) {

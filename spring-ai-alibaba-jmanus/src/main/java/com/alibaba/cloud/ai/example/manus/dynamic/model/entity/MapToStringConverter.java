@@ -30,7 +30,11 @@ import java.util.Map;
 @Converter
 public class MapToStringConverter implements AttributeConverter<Map<String, String>, String> {
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper;
+
+	public MapToStringConverter(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
 
 	@Override
 	public String convertToDatabaseColumn(Map<String, String> attribute) {

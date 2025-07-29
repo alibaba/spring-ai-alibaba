@@ -85,7 +85,8 @@ class BrowserUseToolSpringTest {
 	@Autowired
 	private PromptService promptService;
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	@BeforeEach
 	void setUp() {
@@ -93,7 +94,7 @@ class BrowserUseToolSpringTest {
 		manusProperties.setBrowserHeadless(false);
 		manusProperties.setDebugDetail(true);
 		chromeDriverService.setManusProperties(manusProperties);
-		browserUseTool = new BrowserUseTool(chromeDriverService, innerStorageService);
+		browserUseTool = new BrowserUseTool(chromeDriverService, innerStorageService, objectMapper);
 		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties, promptService);
 		agent.setCurrentPlanId("plan_123123124124124");
 		browserUseTool.setCurrentPlanId(agent.getCurrentPlanId());
@@ -289,7 +290,8 @@ class BrowserUseToolSpringTest {
 			log.info("Step 5: Use GetElementPositionByNameAction to find '百度一下' button");
 			BrowserRequestVO positionRequest = new BrowserRequestVO();
 			positionRequest.setElementName("百度一下");
-			GetElementPositionByNameAction positionAction = new GetElementPositionByNameAction(browserUseTool);
+			GetElementPositionByNameAction positionAction = new GetElementPositionByNameAction(browserUseTool,
+					objectMapper);
 			ToolExecuteResult positionResult = positionAction.execute(positionRequest);
 			log.info("Retrieved '百度一下' button position info: {}", positionResult.getOutput());
 
@@ -327,7 +329,8 @@ class BrowserUseToolSpringTest {
 			log.info("Step 8: Use GetElementPositionByNameAction to find '百度百科' link");
 			BrowserRequestVO baikePositionRequest = new BrowserRequestVO();
 			baikePositionRequest.setElementName("百度百科");
-			GetElementPositionByNameAction baikePositionAction = new GetElementPositionByNameAction(browserUseTool);
+			GetElementPositionByNameAction baikePositionAction = new GetElementPositionByNameAction(browserUseTool,
+					objectMapper);
 			ToolExecuteResult baikePositionResult = baikePositionAction.execute(baikePositionRequest);
 			log.info("Retrieved '百度百科' link position info: {}", baikePositionResult.getOutput());
 
@@ -548,7 +551,8 @@ class BrowserUseToolSpringTest {
 			positionRequest.setElementName("验证码登录");
 
 			// 执行GetElementPositionByNameAction获取元素位置
-			GetElementPositionByNameAction positionAction = new GetElementPositionByNameAction(browserUseTool);
+			GetElementPositionByNameAction positionAction = new GetElementPositionByNameAction(browserUseTool,
+					objectMapper);
 			ToolExecuteResult positionResult = positionAction.execute(positionRequest);
 			log.info("获取到'验证码登录'元素位置信息: {}", positionResult.getOutput());
 

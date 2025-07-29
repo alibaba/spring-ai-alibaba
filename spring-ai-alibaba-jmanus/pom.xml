@@ -121,6 +121,12 @@
             <artifactId>gson</artifactId>
         </dependency>
 
+        <!-- Jackson JSR310 support for Java 8 date/time APIs -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>

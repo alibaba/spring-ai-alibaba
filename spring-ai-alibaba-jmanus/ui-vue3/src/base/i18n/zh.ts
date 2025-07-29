@@ -706,6 +706,7 @@ const words: I18nType = {
   // 时间相关
   time: {
     now: '刚刚',
+    unknown: '未知时间',
     minuteAgo: '{count} 分钟前',
     hourAgo: '{count} 小时前',
     dayAgo: '{count} 天前',
