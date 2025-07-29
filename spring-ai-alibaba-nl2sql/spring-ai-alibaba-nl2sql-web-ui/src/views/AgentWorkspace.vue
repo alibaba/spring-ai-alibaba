@@ -191,278 +191,438 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import { agentApi } from '../utils/api.js'
+import { ref, onMounted, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
+import { agentApi } from '../utils/api.js';
 
 export default {
   name: 'AgentWorkspace',
   setup() {
-    const router = useRouter()
+    const router = useRouter();
     
-    // 响应式数据
-    const publishedAgents = ref([])
-    const selectedAgent = ref(null)
-    const chatMessages = ref([])
-    const currentMessage = ref('')
-    const isTyping = ref(false)
-    const chatContainer = ref(null)
-    const chatInput = ref(null)
+    const publishedAgents = ref([]);
+    const selectedAgent = ref(null);
+    const chatMessages = ref([]);
+    const currentMessage = ref('');
+    const isTyping = ref(false);
+    const chatContainer = ref(null);
+    const chatInput = ref(null);
 
-    // 示例问题
     const exampleQueries = ref([
       '查询销售额最高的5个产品',
       '分析最近一个月的销售趋势',
       '统计各个分类的商品数量',
       '查询用户购买行为分析'
-    ])
+    ]);
 
-    // 获取已发布的智能体列表
     const loadPublishedAgents = async () => {
       try {
-        const response = await agentApi.getList({ status: 'published' })
-        publishedAgents.value = response || []
+        const response = await agentApi.getList({ status: 'published' });
+        publishedAgents.value = response || [];
       } catch (error) {
-        console.error('获取智能体列表失败:', error)
-        publishedAgents.value = []
+        console.error('获取智能体列表失败:', error);
+        publishedAgents.value = [];
       }
-    }
+    };
 
-    // 选择智能体
     const selectAgent = (agent) => {
-      selectedAgent.value = agent
-      chatMessages.value = []
-      currentMessage.value = ''
-      
+      selectedAgent.value = agent;
+      chatMessages.value = [];
+      currentMessage.value = '';
       nextTick(() => {
         if (chatInput.value) {
-          chatInput.value.focus()
+          chatInput.value.focus();
         }
-      })
-    }
+      });
+    };
 
-    // 发送消息
     const sendMessage = async (message = null) => {
-      const messageText = message || currentMessage.value.trim()
-      if (!messageText || isTyping.value || !selectedAgent.value) return
+      const messageText = message || currentMessage.value.trim();
+      if (!messageText || isTyping.value || !selectedAgent.value) return;
 
-      // 添加用户消息
       chatMessages.value.push({
         type: 'user',
         content: messageText,
         timestamp: new Date()
-      })
+      });
 
-      // 清空输入框
-      currentMessage.value = ''
-      isTyping.value = true
-
-      // 滚动到底部
-      scrollToBottom()
+      currentMessage.value = '';
+      isTyping.value = true;
+      scrollToBottom();
 
       try {
-        // 创建流式响应
-        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(messageText)}`)
+        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(messageText)}`);
         
-        // 创建智能体回复消息
-        const agentMessageIndex = chatMessages.value.length
-        chatMessages.value.push({
-          type: 'agent',
-          content: '',
-          timestamp: new Date()
-        })
+        const agentMessageIndex = chatMessages.value.length;
+        chatMessages.value.push({ type: 'agent', content: '', timestamp: new Date() });
 
-        let accumulatedContent = ''
+        const streamState = {
+            contentByType: {},
+            typeOrder: [],
+        };
+
+        const typeMapping = {
+          'status': { title: '当前状态', icon: 'bi bi-activity' },
+          'rewrite': { title: '需求理解', icon: 'bi bi-pencil-square' },
+          'keyword_extract': { title: '关键词提取', icon: 'bi bi-key' },
+          'plan_generation': { title: '计划生成', icon: 'bi bi-diagram-3' },
+          'schema_recall': { title: 'Schema初步召回', icon: 'bi bi-database-gear' },
+          'schema_deep_recall': { title: 'Schema深度召回', icon: 'bi bi-database-fill-gear' },
+          'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
+          'execute_sql': { title: '执行SQL', icon: 'bi bi-play-circle' },
+          'python_analysis': { title: 'Python分析执行', icon: 'bi bi-code-slash' },
+          'validation': { title: '校验', icon: 'bi bi-check-circle' },
+          'output_report': { title: '输出报告', icon: 'bi bi-file-earmark-text' },
+          'explanation': { title: '解释说明', icon: 'bi bi-info-circle' },
+          'result': { title: '查询结果', icon: 'bi bi-table' },
+          'error': { title: '解析错误', icon: 'bi bi-exclamation-triangle' }
+        };
+
+        const updateDisplay = () => {
+            let fullContent = '';
+            for (const type of streamState.typeOrder) {
+                const typeInfo = typeMapping[type] || { title: type, icon: 'bi bi-file-text' };
+                const content = streamState.contentByType[type] || '';
+                const formattedSubContent = formatContentByType(type, content);
+                fullContent += `<div class="agent-response-block">
+                                  <div class="agent-response-title">
+                                    <i class="${typeInfo.icon}"></i> ${typeInfo.title}
+                                  </div>
+                                  <div class="agent-response-content">${formattedSubContent}</div>
+                                </div>`;
+            }
+            chatMessages.value[agentMessageIndex].content = fullContent;
+            scrollToBottom();
+        };
 
         eventSource.onmessage = (event) => {
-          try {
-            console.log('收到流式数据:', event.data) // 调试日志
+            let chunk;
+            let actualType;
+            let actualData;
             
-            let chunk
-            let actualType
-            let actualData
-            
-            // 解析JSON数据
-            let parsedData = JSON.parse(event.data)
-            
-            if (typeof parsedData === 'string') {
-              try {
-                chunk = JSON.parse(parsedData)
-              } catch (e) {
-                // 如果不是JSON字符串，直接作为数据处理
-                chunk = { type: 'text', data: parsedData }
-              }
-            } else {
-              chunk = parsedData
-            }
-
-            actualType = chunk.type
-            actualData = chunk.data
-
-            // 处理嵌套JSON的情况
-            if (typeof actualData === 'string') {
-              try {
-                const innerChunk = JSON.parse(actualData)
-                if (innerChunk.type && innerChunk.data !== undefined) {
-                  actualType = innerChunk.type
-                  actualData = innerChunk.data
+            try {
+                // 尝试解析JSON
+                let parsedData = JSON.parse(event.data);
+                
+                // 如果第一次解析结果还是字符串，再解析一次
+                if (typeof parsedData === 'string') {
+                    chunk = JSON.parse(parsedData);
+                } else {
+                    chunk = parsedData;
                 }
-              } catch (e) {
-                // 保持原来的值
-              }
+
+                // 直接提取type和data，使用方括号语法
+                actualType = chunk['type'];
+                actualData = chunk['data'];
+
+                // 处理嵌套JSON的情况
+                if (actualType === 'explanation' && typeof actualData === 'string') {
+                    try {
+                        const innerChunk = JSON.parse(actualData);
+                        if (innerChunk.type && innerChunk.data !== undefined) {
+                            actualType = innerChunk.type;
+                            actualData = innerChunk.data;
+                        }
+                    } catch (e) {
+                        // 如果内层解析失败，保持原来的值
+                    }
+                }
+
+            } catch (e) {
+                console.error('JSON解析失败:', e, event.data);
+                return;
             }
 
-            console.log('处理后的数据:', { type: actualType, data: actualData }) // 调试日志
-
-            if (actualType && actualData !== undefined && actualData !== null && actualData !== '') {
-              // 处理不同类型的数据
-              let processedData = processStreamData(actualType, actualData)
-              if (processedData) {
-                accumulatedContent += processedData + '\n\n'
-                chatMessages.value[agentMessageIndex].content = formatMessageContent(accumulatedContent)
-                scrollToBottom()
-              }
+            if (actualType && actualData !== undefined && actualData !== null) {
+                // 对数据进行预处理
+                let processedData = actualData;
+                
+                // 只对SQL类型进行Markdown代码块标记的预清理
+                if (actualType === 'sql' && typeof actualData === 'string') {
+                    processedData = actualData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
+                }
+                
+                // 累积数据到对应的类型
+                if (!streamState.contentByType.hasOwnProperty(actualType)) {
+                    streamState.typeOrder.push(actualType);
+                    streamState.contentByType[actualType] = '';
+                }
+                
+                if (processedData) {
+                    streamState.contentByType[actualType] += processedData;
+                }
+                
+                updateDisplay();
+            } else {
+                console.warn('Missing type or data:', {
+                    type: actualType,
+                    data: actualData,
+                    originalChunk: chunk
+                });
             }
-          } catch (error) {
-            console.error('解析流式数据失败:', error, '原始数据:', event.data)
-            // 即使解析失败，也尝试显示原始数据
-            accumulatedContent += event.data + '\n\n'
-            chatMessages.value[agentMessageIndex].content = formatMessageContent(accumulatedContent)
-            scrollToBottom()
-          }
-        }
+        };
 
         eventSource.addEventListener('complete', () => {
-          isTyping.value = false
-          eventSource.close()
-        })
+          isTyping.value = false;
+          eventSource.close();
+        });
 
         eventSource.onerror = (error) => {
-          console.error('流式连接错误:', error)
-          isTyping.value = false
-          eventSource.close()
-          
-          // 显示错误消息
+          console.error('流式连接错误:', error);
+          isTyping.value = false;
+          eventSource.close();
           if (chatMessages.value[agentMessageIndex]) {
-            chatMessages.value[agentMessageIndex].content = '抱歉，处理您的请求时出现了错误，请稍后重试。'
+            chatMessages.value[agentMessageIndex].content = '抱歉，处理您的请求时出现了错误，请稍后重试。';
           }
-        }
+        };
 
       } catch (error) {
-        console.error('发送消息失败:', error)
-        isTyping.value = false
-        
-        // 显示错误消息
+        console.error('发送消息失败:', error);
+        isTyping.value = false;
         chatMessages.value.push({
           type: 'agent',
           content: '抱歉，处理您的请求时出现了错误，请稍后重试。',
           timestamp: new Date()
-        })
+        });
       }
-    }
+    };
 
-    // 处理流式数据
-    const processStreamData = (type, data) => {
-      // 数据预处理 - 参考AgentDebugPanel的逻辑
-      let processedData = data
-      
-      if (typeof data === 'string') {
-        // 先尝试按JSON对象分割
-        const jsonPattern = /\{"[^"]+":"[^"]*"[^}]*\}/g
-        const jsonMatches = data.match(jsonPattern)
+    const formatContentByType = (type, data) => {
+        if (data === null || data === undefined) return '';
+
+        if (type === 'sql') {
+            let cleanedData = data.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
+            return `<pre><code class="language-sql">${cleanedData}</code></pre>`;
+        } 
         
-        if (jsonMatches && jsonMatches.length > 1) {
-          // 多个JSON对象，分别解析并提取data字段
-          let extractedContent = []
-          jsonMatches.forEach(jsonStr => {
-            try {
-              const jsonObj = JSON.parse(jsonStr)
-              if (jsonObj.data) {
-                extractedContent.push(jsonObj.data.replace(/\\n/g, '\n'))
-              }
-            } catch (e) {
-              extractedContent.push(jsonStr)
-            }
-          })
-          processedData = extractedContent.join('')
-        } else {
-          // 单个JSON对象或普通文本
-          try {
-            const jsonData = JSON.parse(data)
-            if (jsonData && typeof jsonData === 'object') {
-              if (jsonData.data) {
-                processedData = jsonData.data
-              } else {
-                processedData = JSON.stringify(jsonData, null, 2)
-              }
-            }
-          } catch (e) {
-            // 不是JSON，保持原始数据
-            processedData = data
-          }
+        if (type === 'result') {
+            return convertJsonToHTMLTable(data);
         }
+
+        // 处理其他类型的数据
+        let processedData = data;
+        if (typeof data === 'string') {
+            // 检查数据是否包含多个JSON对象连接在一起
+            const jsonPattern = /\{"[^"]+":"[^"]*"[^}]*\}/g;
+            const jsonMatches = data.match(jsonPattern);
+            
+            if (jsonMatches && jsonMatches.length > 1) {
+                // 多个JSON对象，分别解析并提取data字段
+                let extractedContent = [];
+                jsonMatches.forEach(jsonStr => {
+                    try {
+                        const jsonObj = JSON.parse(jsonStr);
+                        if (jsonObj.data) {
+                            extractedContent.push(jsonObj.data.replace(/\\n/g, '\n'));
+                        }
+                    } catch (e) {
+                        extractedContent.push(jsonStr);
+                    }
+                });
+                processedData = extractedContent.join('');
+            } else {
+                // 单个JSON对象或普通文本
+                try {
+                    const jsonData = JSON.parse(data);
+                    if (jsonData && typeof jsonData === 'object') {
+                        if (jsonData.data) {
+                            processedData = jsonData.data;
+                        } else {
+                            processedData = JSON.stringify(jsonData, null, 2);
+                        }
+                    }
+                } catch (e) {
+                    // 不是JSON，保持原始数据
+                    processedData = data;
+                }
+            }
+        }
+
+        // 检查是否是Markdown格式
+        if (isMarkdown(processedData)) {
+            return renderMarkdown(processedData);
+        } else {
+            // 检查内容是否包含SQL代码块
+            const sqlCodeBlockRegex = /```\s*sql?\s*([\s\S]*?)```/gi;
+            const sqlMatches = processedData.match(sqlCodeBlockRegex);
+            
+            if (sqlMatches && sqlMatches.length > 0) {
+                // 包含SQL代码块，进行特殊处理
+                let htmlContent = processedData;
+                
+                // 替换每个SQL代码块为高亮显示
+                htmlContent = htmlContent.replace(sqlCodeBlockRegex, (match, sqlContent) => {
+                    let cleanedSQL = sqlContent.trim();
+                    return `<pre><code class="language-sql">${cleanedSQL}</code></pre>`;
+                });
+                
+                // 处理剩余的文本（将换行转换为<br>）
+                return htmlContent.replace(/\n/g, '<br>');
+            } else {
+                return processedData.toString().replace(/\n/g, '<br>');
+            }
+        }
+    };
+
+    // 检测Markdown格式的辅助函数
+    const isMarkdown = (text) => {
+        if (!text || typeof text !== 'string') return false;
+        
+        // 检测常见的Markdown语法
+        const markdownPatterns = [
+            /^#{1,6}\s+.+/m,           // 标题 # ## ###
+            /\*\*[^*]+\*\*/,           // 粗体 **text**
+            /\*[^*]+\*/,               // 斜体 *text*
+            /`[^`]+`/,                 // 行内代码 `code`
+            /```[\s\S]*?```/,          // 代码块 ```code```
+            /^\s*[-*+]\s+/m,           // 无序列表 - * +
+            /^\s*\d+\.\s+/m,           // 有序列表 1. 2.
+            /^\s*>\s+/m,               // 引用 >
+            /\[.+\]\(.+\)/,            // 链接 [text](url)
+            /^\s*\|.+\|/m,             // 表格 |col1|col2|
+            /^---+$/m                  // 分隔线 ---
+        ];
+        
+        return markdownPatterns.some(pattern => pattern.test(text));
+    };
+
+    // 渲染Markdown的辅助函数
+    const renderMarkdown = (text) => {
+        if (!text || typeof text !== 'string') return '';
+        
+        let html = text;
+        
+        // 首先处理代码块（三个反引号），避免被行内代码处理干扰
+        html = html.replace(/```(\w+)?\s*([\s\S]*?)```/g, (match, lang, code) => {
+            const language = lang || 'text';
+            let highlightedCode = code.trim();
+            
+            // 如果是SQL代码，进行语法高亮
+            if (language.toLowerCase() === 'sql') {
+                // 这里可以添加SQL语法高亮逻辑
+                highlightedCode = code.trim();
+            }
+            
+            return `<pre><code class="language-${language}">${highlightedCode}</code></pre>`;
+        });
+        
+        // 处理标题
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+        
+        // 处理粗体和斜体
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // 处理行内代码（单个反引号）- 在代码块处理之后
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // 处理无序列表
+        html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
+        html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+        
+        // 处理有序列表
+        html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
+        
+        // 处理Markdown表格
+        html = html.replace(/(\|[^|\n]*\|[^|\n]*\|[^\n]*\n\|[-:\s|]*\|[^\n]*\n(?:\|[^|\n]*\|[^\n]*\n?)*)/gm, (match) => {
+            return convertMarkdownTableToHTML(match);
+        });
+        
+        // 处理链接
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        
+        // 处理换行
+        html = html.replace(/\n/g, '<br>');
+        
+        return `<div class="markdown-content">${html}</div>`;
+    };
+
+    // 转换Markdown表格为HTML表格
+    const convertMarkdownTableToHTML = (markdownTable) => {
+        if (!markdownTable) return '';
+        const lines = markdownTable.trim().split('\n');
+        if (lines.length < 2 || !lines[1].includes('---')) return markdownTable;
+
+        const headers = lines[0].split('|').map(h => h.trim()).filter(Boolean);
+        let html = '<table class="dynamic-table"><thead><tr>';
+        headers.forEach(header => { 
+            html += `<th>${header}</th>` 
+        });
+        html += '</tr></thead><tbody>';
+
+        for (let i = 2; i < lines.length; i++) {
+            const rowCells = lines[i].split('|').map(c => c.trim()).filter(Boolean);
+            if (rowCells.length > 0) {
+                html += '<tr>';
+                for (let j = 0; j < headers.length; j++) {
+                    html += `<td>${rowCells[j] || ''}</td>`;
+                }
+                html += '</tr>';
+            }
+        }
+        html += '</tbody></table>';
+        return html;
+    };
+    
+    const convertJsonToHTMLTable = (jsonString) => {
+      try {
+        const data = JSON.parse(jsonString);
+        if (!data || !Array.isArray(data.columns) || !Array.isArray(data.data)) {
+          return `<pre><code>${JSON.stringify(data, null, 2)}</code></pre>`;
+        }
+
+        let html = '<table class="dynamic-table"><thead><tr>';
+        data.columns.forEach(header => {
+          html += `<th>${header}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+
+        data.data.forEach(row => {
+          html += '<tr>';
+          data.columns.forEach((col, i) => {
+            html += `<td>${row[i] || ''}</td>`;
+          });
+          html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        return html;
+      } catch (e) {
+        return `<pre><code>${jsonString}</code></pre>`;
       }
+    };
 
-      // 根据类型添加标题
-      const typeMapping = {
-        'rewrite': '💭 需求理解',
-        'keyword_extract': '🔍 关键词提取', 
-        'schema_recall': '📊 数据召回',
-        'sql': '⚡ SQL查询',
-        'result': '📋 查询结果',
-        'explanation': '💡 结果解释'
-      }
-
-      const title = typeMapping[type] || type
-      return `**${title}**\n\n${processedData}`
-    }
-
-    // 格式化消息内容
-    const formatMessageContent = (content) => {
-      // 简单的Markdown渲染
-      return content
-        .replace(/\*\*(.*?)\*\*/g, function(match, p1) { return '<strong>' + p1 + '</strong>' })
-        .replace(/\*(.*?)\*/g, function(match, p1) { return '<em>' + p1 + '</em>' })
-        .replace(/`([^`]+)`/g, function(match, p1) { return '<code>' + p1 + '</code>' })
-        .replace(/```(\w+)?\s*([\s\S]*?)```/g, function(match, p1, p2) { return '<pre><code>' + p2 + '</code></pre>' })
-        .replace(/\n/g, '<br>')
-    }
-
-    // 清空对话
     const clearChat = () => {
-      chatMessages.value = []
-    }
+      chatMessages.value = [];
+    };
 
-    // 滚动到底部
     const scrollToBottom = () => {
       nextTick(() => {
         if (chatContainer.value) {
-          chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+          chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
         }
-      })
-    }
+      });
+    };
 
-    // 跳转到智能体管理页面
     const goToAgentList = () => {
-      router.push('/agents')
-    }
+      router.push('/agents');
+    };
 
-    // 获取随机颜色
     const getRandomColor = (id) => {
-      const colors = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2', '#eb2f96']
-      return colors[id % colors.length]
-    }
+      const colors = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2', '#eb2f96'];
+      return colors[id % colors.length];
+    };
 
-    // 获取随机图标
     const getRandomIcon = (id) => {
-      const icons = ['bi-robot', 'bi-cpu', 'bi-gear', 'bi-lightning', 'bi-star', 'bi-heart', 'bi-diamond']
-      return icons[id % icons.length]
-    }
+      const icons = ['bi-robot', 'bi-cpu', 'bi-gear', 'bi-lightning', 'bi-star', 'bi-heart', 'bi-diamond'];
+      return icons[id % icons.length];
+    };
 
-    // 组件挂载时加载数据
     onMounted(() => {
-      loadPublishedAgents()
-    })
+      loadPublishedAgents();
+    });
 
     return {
       publishedAgents,
@@ -479,9 +639,9 @@ export default {
       goToAgentList,
       getRandomColor,
       getRandomIcon
-    }
+    };
   }
-}
+};
 </script>
 
 <style scoped>
@@ -721,6 +881,7 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* 关键修复：确保flex子元素可以正确收缩和滚动 */
 }
 
 .chat-header {
@@ -972,6 +1133,189 @@ export default {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Styles for dynamically generated content */
+:deep(.agent-response-block) {
+  margin-bottom: 1rem;
+}
+:deep(.agent-response-block:last-child) {
+  margin-bottom: 0;
+}
+
+:deep(.agent-response-title) {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+:deep(.agent-response-content) {
+  border-radius: 8px;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border: 1px solid #e8e8e8;
+}
+
+:deep(pre) {
+  background-color: #282c34;
+  color: #abb2bf;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+:deep(code) {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+}
+
+:deep(.dynamic-table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  background-color: #fff;
+}
+
+:deep(.dynamic-table th),
+:deep(.dynamic-table td) {
+  padding: 0.75rem;
+  border: 1px solid #e8e8e8;
+  text-align: left;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 200px;
+}
+
+:deep(.dynamic-table th) {
+  background-color: #fafafa;
+  font-weight: 500;
+}
+
+:deep(.dynamic-table tr:nth-child(even)) {
+  background-color: #f9f9f9;
+}
+
+/* Markdown 内容样式 */
+:deep(.markdown-content) {
+  line-height: 1.6;
+  color: #333;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+:deep(.markdown-content h1),
+:deep(.markdown-content h2),
+:deep(.markdown-content h3),
+:deep(.markdown-content h4),
+:deep(.markdown-content h5),
+:deep(.markdown-content h6) {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #2c3e50;
+}
+
+:deep(.markdown-content h1) {
+  font-size: 1.8rem;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+:deep(.markdown-content h2) {
+  font-size: 1.5rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.3rem;
+}
+
+:deep(.markdown-content h3) {
+  font-size: 1.3rem;
+}
+
+:deep(.markdown-content h4) {
+  font-size: 1.1rem;
+}
+
+:deep(.markdown-content p) {
+  margin-bottom: 1rem;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+:deep(.markdown-content ul),
+:deep(.markdown-content ol) {
+  margin-bottom: 1rem;
+  padding-left: 2rem;
+}
+
+:deep(.markdown-content li) {
+  margin-bottom: 0.25rem;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+:deep(.markdown-content blockquote) {
+  margin: 1rem 0;
+  padding: 0.5rem 1rem;
+  border-left: 4px solid #1890ff;
+  background-color: #f8f9fa;
+  font-style: italic;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+:deep(.markdown-content code) {
+  background-color: #f1f3f4;
+  border-radius: 3px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+}
+
+:deep(.markdown-content pre) {
+  background-color: #282c34;
+  color: #abb2bf;
+  border-radius: 6px;
+  overflow-x: auto;
+  padding: 1rem;
+  margin: 1rem 0;
+  border: 1px solid #444;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+:deep(.markdown-content pre code) {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+:deep(.markdown-content strong) {
+  font-weight: 600;
+}
+
+:deep(.markdown-content em) {
+  font-style: italic;
 }
 
 /* 响应式设计 */
