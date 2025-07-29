@@ -542,7 +542,6 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 					return null;
 				}
 			}
-
 			// 尝试解析JSON以验证格式
 			Object parsed = objectMapper.readValue(jsonResponse, Object.class);
 			logger.info("=== JSON格式验证成功，解析结果类型: {} ===", parsed.getClass().getSimpleName());
