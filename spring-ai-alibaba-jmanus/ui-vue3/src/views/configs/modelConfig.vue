@@ -167,11 +167,12 @@
 
         <div class="form-item">
           <label>{{ t('config.modelConfig.description') }} <span class="required">*</span></label>
-          <div
-            class="readonly-field description-field"
-          >
-            {{ selectedModel.modelDescription || t('config.modelConfig.descriptionPlaceholder') }}
-          </div>
+          <textarea
+            v-model="selectedModel.modelDescription"
+            :placeholder="t('config.modelConfig.descriptionPlaceholder')"
+            class="description-field"
+            rows="3"
+          />
         </div>
       </div>
 
@@ -256,11 +257,12 @@
         </div>
         <div class="form-item">
           <label>{{ t('config.modelConfig.description') }} <span class="required">*</span></label>
-          <div
-            class="readonly-field description-field"
-          >
-            {{ newModel.modelDescription || t('config.modelConfig.descriptionPlaceholder') }}
-          </div>
+          <textarea
+            v-model="newModel.modelDescription"
+            :placeholder="t('config.modelConfig.descriptionPlaceholder')"
+            class="description-field"
+            rows="3"
+          />
         </div>
       </div>
     </Modal>
@@ -1144,5 +1146,29 @@ onMounted(() => {
   padding-top: 12px;
   line-height: 1.5;
   white-space: pre-wrap;
+}
+
+.description-field {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  min-height: 80px;
+  resize: vertical;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.description-field:focus {
+  outline: none;
+  border-color: rgba(102, 126, 234, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.description-field::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 </style>
