@@ -115,7 +115,7 @@
               </div>
 
               <div class="nav-section">
-                <div class="nav-section-title">正式使用</div>
+                <div class="nav-section-title">应用入口</div>
                 <a href="#" class="nav-link" @click="goToWorkspace">
                   <i class="bi bi-chat-dots"></i>
                   智能体工作台

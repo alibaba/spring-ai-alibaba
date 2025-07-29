@@ -20,15 +20,12 @@
       <div class="nav-items">
         <span class="nav-item logo-item">
           <i class="bi bi-robot"></i>
-          智能体工作台
+          数据智能体
         </span>
-        <span class="nav-item clickable active">对话交互</span>
+        <span class="nav-item clickable" @click="goToAgentList">智能体</span>
+        <span class="nav-item clickable active">智能体工作台</span>
       </div>
       <div class="nav-right">
-        <button class="btn btn-outline" @click="goToAgentList">
-          <i class="bi bi-gear"></i>
-          管理智能体
-        </button>
       </div>
     </div>
 
@@ -650,44 +647,57 @@ export default {
 
 /* 头部导航样式 */
 .top-nav {
-  background-color: #ffffff;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 0 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 60px;
 }
 
 .nav-items {
   display: flex;
-  align-items: center;
-  gap: 2rem;
+  gap: 32px;
 }
 
 .nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1rem;
-  color: #333;
+  padding: 8px 16px;
+  color: #666;
+  border-radius: 4px;
+  transition: all 0.2s;
 }
 
-.logo-item {
-  font-size: 1.2rem;
+.nav-item.logo-item {
+  cursor: default;
   font-weight: 600;
   color: #1890ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-item.logo-item i {
+  font-size: 18px;
 }
 
 .nav-item.clickable {
   cursor: pointer;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  transition: all 0.2s;
 }
 
+.nav-item.active,
 .nav-item.clickable:hover {
-  background-color: #f0f5ff;
+  color: #1890ff;
+  background: #f0f8ff;
 }
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+
 
 .nav-item.active {
   background-color: #e6f7ff;
