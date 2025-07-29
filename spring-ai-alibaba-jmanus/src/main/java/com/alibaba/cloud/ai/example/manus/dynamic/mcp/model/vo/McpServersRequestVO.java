@@ -24,6 +24,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class McpServersRequestVO {
 
+	private final ObjectMapper objectMapper;
+
+	/**
+	 * Default constructor for Jackson deserialization
+	 */
+	public McpServersRequestVO() {
+		this.objectMapper = new ObjectMapper();
+	}
+
+	public McpServersRequestVO(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
+
 	/**
 	 * 完整的JSON配置 格式：{"mcpServers": {"server-name": {"command": "...", "args": [...],
 	 * "env": {...}}}}
@@ -64,7 +77,6 @@ public class McpServersRequestVO {
 		}
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(configJson);
 
 			// 检查是否包含mcpServers字段
@@ -100,7 +112,6 @@ public class McpServersRequestVO {
 		}
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(configJson);
 			JsonNode mcpServersNode = jsonNode.get("mcpServers");
 			return mcpServersNode.size();
@@ -120,7 +131,6 @@ public class McpServersRequestVO {
 		}
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(configJson);
 			JsonNode mcpServersNode = jsonNode.get("mcpServers");
 
@@ -147,7 +157,6 @@ public class McpServersRequestVO {
 		}
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(configJson);
 
 			// 如果已经包含mcpServers字段，直接返回

@@ -15,17 +15,26 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.converter;
 
+import com.alibaba.cloud.ai.example.manus.recorder.JManusSpringEnvironmentHolder;
+import com.alibaba.cloud.ai.example.manus.recorder.SerializeType;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
+import com.alibaba.fastjson2.JSON;
 import jakarta.persistence.AttributeConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.util.json.JsonParser;
 
 public class StringAttributeConverter implements AttributeConverter<PlanExecutionRecord, String> {
 
+	private final static String SERIALIZE_TYPE_KEY = "agent.serialize";
+
 	@Override
 	public String convertToDatabaseColumn(PlanExecutionRecord attribute) {
 		if (attribute == null) {
 			return null;
+		}
+		if (SerializeType.FASTJSON
+			.equalsIgnoreCase(JManusSpringEnvironmentHolder.getEnvironment().getProperty(SERIALIZE_TYPE_KEY))) {
+			return JSON.toJSONString(attribute);
 		}
 		return JsonParser.toJson(attribute);
 	}
@@ -34,6 +43,10 @@ public class StringAttributeConverter implements AttributeConverter<PlanExecutio
 	public PlanExecutionRecord convertToEntityAttribute(String json) {
 		if (StringUtils.isBlank(json)) {
 			return null;
+		}
+		if (SerializeType.FASTJSON
+			.equalsIgnoreCase(JManusSpringEnvironmentHolder.getEnvironment().getProperty(SERIALIZE_TYPE_KEY))) {
+			return JSON.parseObject(json, PlanExecutionRecord.class);
 		}
 		return JsonParser.fromJson(json, PlanExecutionRecord.class);
 	}

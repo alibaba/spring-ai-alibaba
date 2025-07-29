@@ -737,6 +737,7 @@ const words: I18nType = {
   // Time related
   time: {
     now: 'Just now',
+    unknown: 'Unknown time',
     minuteAgo: '{count} minutes ago',
     hourAgo: '{count} hours ago',
     dayAgo: '{count} days ago',

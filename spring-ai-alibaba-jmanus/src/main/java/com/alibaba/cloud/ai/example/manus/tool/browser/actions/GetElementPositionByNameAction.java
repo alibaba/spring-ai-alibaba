@@ -29,10 +29,13 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class GetElementPositionByNameAction extends BrowserAction {
 
+	private final ObjectMapper objectMapper;
+
 	private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GetElementPositionByNameAction.class);
 
-	public GetElementPositionByNameAction(BrowserUseTool browserUseTool) {
+	public GetElementPositionByNameAction(BrowserUseTool browserUseTool, ObjectMapper objectMapper) {
 		super(browserUseTool);
+		this.objectMapper = objectMapper;
 	}
 
 	/**
@@ -105,7 +108,7 @@ public class GetElementPositionByNameAction extends BrowserAction {
 		}
 		// Add exception handling for JSON serialization
 		try {
-			String resultJson = new ObjectMapper().writeValueAsString(positionResults);
+			String resultJson = objectMapper.writeValueAsString(positionResults);
 			return new ToolExecuteResult(resultJson);
 		}
 		catch (Exception e) {
