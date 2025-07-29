@@ -26,12 +26,15 @@ import org.springframework.ai.openai.api.OpenAiApi;
 
 public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger log = LoggerFactory.getLogger(CronTool.class);
 
 	private final CronService cronService;
 
-	public CronTool(CronService cronService) {
+	public CronTool(CronService cronService, ObjectMapper objectMapper) {
 		this.cronService = cronService;
+		this.objectMapper = objectMapper;
 	}
 
 	public static class CronToolInput {
@@ -109,8 +112,6 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
 		return functionTool;
 	}
-
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	@Override
 	public ToolExecuteResult run(CronToolInput input) {

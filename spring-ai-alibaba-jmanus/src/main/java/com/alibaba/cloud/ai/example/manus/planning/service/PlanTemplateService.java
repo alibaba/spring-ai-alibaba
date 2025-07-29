@@ -64,7 +64,8 @@ public class PlanTemplateService implements IPlanTemplateService {
 	@Lazy
 	private PlanningFactory planningFactory;
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	/**
 	 * Save plan template and its first version
@@ -269,9 +270,8 @@ public class PlanTemplateService implements IPlanTemplateService {
 		}
 
 		try {
-			ObjectMapper mapper = new ObjectMapper();
-			JsonNode node1 = mapper.readTree(json1);
-			JsonNode node2 = mapper.readTree(json2);
+			JsonNode node1 = objectMapper.readTree(json1);
+			JsonNode node2 = objectMapper.readTree(json2);
 			return node1.equals(node2);
 		}
 		catch (Exception e) {
@@ -288,8 +288,7 @@ public class PlanTemplateService implements IPlanTemplateService {
 	 */
 	public String extractTitleFromPlan(String planJson) {
 		try {
-			ObjectMapper mapper = new ObjectMapper();
-			JsonNode rootNode = mapper.readTree(planJson);
+			JsonNode rootNode = objectMapper.readTree(planJson);
 			if (rootNode.has("title")) {
 				return rootNode.get("title").asText("Untitled Plan");
 			}

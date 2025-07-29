@@ -152,14 +152,15 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	// Track if split operation has completed, allowing termination
 	private volatile boolean splitCompleted = false;
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper;
 
 	public DataSplitTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
-			UnifiedDirectoryManager unifiedDirectoryManager) {
+			UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper) {
 		this.currentPlanId = planId;
 		this.manusProperties = manusProperties;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
+		this.objectMapper = objectMapper;
 	}
 
 	/**

@@ -44,7 +44,8 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 	@Autowired
 	private PlanIdDispatcher planIdDispatcher;
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	/**
 	 * 内容总结执行计划模板

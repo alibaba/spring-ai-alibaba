@@ -35,6 +35,8 @@ public class GoogleSearch extends AbstractBaseTool<GoogleSearch.GoogleSearchInpu
 
 	private SerpApiService service;
 
+	private final ObjectMapper objectMapper;
+
 	private static String PARAMETERS = """
 			{
 			    "type": "object",
@@ -75,7 +77,8 @@ public class GoogleSearch extends AbstractBaseTool<GoogleSearch.GoogleSearchInpu
 
 	private Integer lastNumResults = 0;
 
-	public GoogleSearch() {
+	public GoogleSearch(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
 		service = new SerpApiService(new SerpApiProperties(SERP_API_KEY, "google"));
 	}
 
@@ -84,7 +87,7 @@ public class GoogleSearch extends AbstractBaseTool<GoogleSearch.GoogleSearchInpu
 
 		// Add exception handling for JSON deserialization
 		try {
-			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput,
+			Map<String, Object> toolInputMap = objectMapper.readValue(toolInput,
 					new TypeReference<Map<String, Object>>() {
 					});
 			String query = (String) toolInputMap.get("query");
