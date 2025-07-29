@@ -30,9 +30,15 @@ public interface CodePoolExecutorService {
 
 	}
 
-	record TaskResponse(String output) {
+	record TaskResponse(boolean isSuccess, String stdOut, String stdErr, String exceptionMsg) {
 		public static TaskResponse error(String msg) {
-			return new TaskResponse("An exception occurred while executing the task: " + msg);
+			return new TaskResponse(false, null, null, "An exception occurred while executing the task: " + msg);
+		}
+
+		@Override
+		public String toString() {
+			return "TaskResponse{" + "isSuccess=" + isSuccess + ", stdOut='" + stdOut + '\'' + ", stdErr='" + stdErr
+					+ '\'' + ", exceptionMsg='" + exceptionMsg + '\'' + '}';
 		}
 	}
 

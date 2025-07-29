@@ -313,7 +313,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 				log.error("Error executing Docker container {}: {}", containerId, errorMessage);
 				return TaskResponse.error(errorMessage);
 			}
-			return new TaskResponse(stdout);
+			return new TaskResponse(true, stdout, stderr, null);
 		}
 		catch (Exception e) {
 			log.error("Error when creating container in docker: {}", e.getMessage());
