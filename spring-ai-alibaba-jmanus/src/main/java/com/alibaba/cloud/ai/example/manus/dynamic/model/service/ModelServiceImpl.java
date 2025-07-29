@@ -15,7 +15,23 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
 
-import cn.hutool.core.util.StrUtil;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
@@ -28,20 +44,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ValidationResul
 import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
 import com.alibaba.cloud.ai.example.manus.event.JmanusEventPublisher;
 import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import cn.hutool.core.util.StrUtil;
 
 @Service
 public class ModelServiceImpl implements ModelService {
@@ -253,8 +257,10 @@ public class ModelServiceImpl implements ModelService {
 
 		try {
 			long startTime = System.currentTimeMillis();
-			// 发送GET请求
-			ResponseEntity<Map> response = restTemplate.getForEntity(requestUrl, Map.class);
+			// 创建HttpEntity包装请求头
+			HttpEntity<String> entity = new HttpEntity<>(headers);
+			// 发送GET请求，使用HttpEntity包含请求头
+			ResponseEntity<Map> response = restTemplate.exchange(requestUrl, HttpMethod.GET, entity, Map.class);
 			long endTime = System.currentTimeMillis();
 
 			log.info("HTTP请求完成 - 状态码: {}, 耗时: {}ms", response.getStatusCodeValue(), endTime - startTime);

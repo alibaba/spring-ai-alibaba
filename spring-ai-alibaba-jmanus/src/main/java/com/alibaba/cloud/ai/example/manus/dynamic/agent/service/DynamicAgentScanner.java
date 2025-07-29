@@ -52,6 +52,9 @@ public class DynamicAgentScanner implements IDynamicAgentScanner {
 	@Value("${namespace.value}")
 	private String namespace;
 
+	@Value("${agent.init}")
+	private Boolean agentInit = true;
+
 	@Autowired
 	public DynamicAgentScanner(DynamicAgentRepository repository) {
 		this.repository = repository;
@@ -195,7 +198,9 @@ public class DynamicAgentScanner implements IDynamicAgentScanner {
 						createdCount++;
 					}
 
-					saveStartupAgent(agentConfig);
+					if (agentInit) {
+						saveStartupAgent(agentConfig);
+					}
 					processedCount++;
 				}
 			}

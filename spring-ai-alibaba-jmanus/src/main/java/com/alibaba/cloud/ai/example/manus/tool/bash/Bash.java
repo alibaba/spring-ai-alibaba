@@ -29,6 +29,8 @@ import org.springframework.ai.openai.api.OpenAiApi;
 
 public class Bash extends AbstractBaseTool<Bash.BashInput> {
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger log = LoggerFactory.getLogger(Bash.class);
 
 	/**
@@ -94,15 +96,14 @@ public class Bash extends AbstractBaseTool<Bash.BashInput> {
 		return functionTool;
 	}
 
-	public Bash(UnifiedDirectoryManager unifiedDirectoryManager) {
+	public Bash(UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper) {
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
+		this.objectMapper = objectMapper;
 	}
 
 	private String lastCommand = "";
 
 	private String lastResult = "";
-
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	@Override
 	public ToolExecuteResult run(BashInput input) {

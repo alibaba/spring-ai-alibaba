@@ -36,7 +36,13 @@ import java.util.*;
 
 public class GetTableMetaAction extends AbstractDatabaseAction {
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger log = LoggerFactory.getLogger(GetTableMetaAction.class);
+
+	public GetTableMetaAction(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
 
 	@Override
 	public ToolExecuteResult execute(DatabaseRequest request, DataSourceService dataSourceService) {
@@ -177,7 +183,6 @@ public class GetTableMetaAction extends AbstractDatabaseAction {
 		}
 		tableMetaList.addAll(tableMetaMap.values());
 		// 4. 返回结构化对象
-		ObjectMapper objectMapper = new ObjectMapper();
 		try {
 			String json = objectMapper.writeValueAsString(tableMetaList);
 			log.info("GetTableMetaAction completed successfully, datasourceName={}, found {} tables", datasourceName,

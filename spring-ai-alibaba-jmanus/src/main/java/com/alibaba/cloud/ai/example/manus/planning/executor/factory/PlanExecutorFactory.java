@@ -25,6 +25,8 @@ import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -51,13 +53,17 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 
 	private final ManusProperties manusProperties;
 
+	private final ObjectMapper objectMapper;
+
 	public PlanExecutorFactory(IDynamicAgentLoader dynamicAgentLoader, ILlmService llmService,
-			AgentService agentService, PlanExecutionRecorder recorder, ManusProperties manusProperties) {
+			AgentService agentService, PlanExecutionRecorder recorder, ManusProperties manusProperties,
+			ObjectMapper objectMapper) {
 		this.dynamicAgentLoader = dynamicAgentLoader;
 		this.llmService = llmService;
 		this.agentService = agentService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
+		this.objectMapper = objectMapper;
 	}
 
 	/**
@@ -106,7 +112,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	private PlanExecutorInterface createAdvancedExecutor() {
 		log.debug("Creating advanced MapReduce plan executor");
 		List<DynamicAgentEntity> agents = dynamicAgentLoader.getAllAgents();
-		return new MapReducePlanExecutor(agents, recorder, agentService, llmService, manusProperties);
+		return new MapReducePlanExecutor(agents, recorder, agentService, llmService, manusProperties, objectMapper);
 	}
 
 	/**

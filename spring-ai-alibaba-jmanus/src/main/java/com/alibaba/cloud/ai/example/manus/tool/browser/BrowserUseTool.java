@@ -35,6 +35,7 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositio
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +54,13 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 
 	private final SmartContentSavingService innerStorageService;
 
-	public BrowserUseTool(ChromeDriverService chromeDriverService, SmartContentSavingService innerStorageService) {
+	private final ObjectMapper objectMapper;
+
+	public BrowserUseTool(ChromeDriverService chromeDriverService, SmartContentSavingService innerStorageService,
+			ObjectMapper objectMapper) {
 		this.chromeDriverService = chromeDriverService;
 		this.innerStorageService = innerStorageService;
+		this.objectMapper = objectMapper;
 	}
 
 	public DriverWrapper getDriver() {
@@ -304,8 +309,8 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 	}
 
 	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService,
-			SmartContentSavingService innerStorageService) {
-		BrowserUseTool instance = new BrowserUseTool(chromeDriverService, innerStorageService);
+			SmartContentSavingService innerStorageService, ObjectMapper objectMapper) {
+		BrowserUseTool instance = new BrowserUseTool(chromeDriverService, innerStorageService, objectMapper);
 		return instance;
 	}
 
@@ -383,7 +388,7 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 					break;
 				}
 				case "get_element_position": {
-					result = new GetElementPositionByNameAction(this).execute(requestVO);
+					result = new GetElementPositionByNameAction(this, objectMapper).execute(requestVO);
 					break;
 				}
 				case "move_to_and_click": {

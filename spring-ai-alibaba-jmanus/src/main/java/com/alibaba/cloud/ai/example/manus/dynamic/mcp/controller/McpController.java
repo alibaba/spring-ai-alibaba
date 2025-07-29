@@ -45,7 +45,8 @@ public class McpController {
 	@Autowired
 	private McpService mcpService;
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	/**
 	 * List All MCP Server
@@ -54,7 +55,7 @@ public class McpController {
 	@GetMapping("/list")
 	public ResponseEntity<List<McpConfigVO>> list() {
 		List<McpConfigEntity> entities = mcpService.getMcpServers();
-		List<McpConfigVO> vos = McpConfigVO.fromEntities(entities);
+		List<McpConfigVO> vos = McpConfigVO.fromEntities(entities, objectMapper);
 		return ResponseEntity.ok(vos);
 	}
 
