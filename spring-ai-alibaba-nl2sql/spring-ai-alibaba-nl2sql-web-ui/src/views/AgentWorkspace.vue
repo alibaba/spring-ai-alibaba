@@ -144,21 +144,7 @@
                 </div>
               </div>
 
-              <!-- 正在输入指示器 -->
-              <div v-if="isTyping" class="message agent-message typing-message">
-                <div class="message-avatar">
-                  <div class="avatar-icon" :style="{ backgroundColor: getRandomColor(selectedAgent.id) }">
-                    <i :class="getRandomIcon(selectedAgent.id)"></i>
-                  </div>
-                </div>
-                <div class="message-content">
-                  <div class="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              </div>
+
             </div>
 
             <!-- 输入区域 -->
@@ -254,7 +240,11 @@ export default {
         const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(messageText)}`);
         
         const agentMessageIndex = chatMessages.value.length;
-        chatMessages.value.push({ type: 'agent', content: '', timestamp: new Date() });
+        chatMessages.value.push({ 
+          type: 'agent', 
+          content: '<div class="typing-indicator"><span></span><span></span><span></span></div>', 
+          timestamp: new Date() 
+        });
 
         const streamState = {
             contentByType: {},
