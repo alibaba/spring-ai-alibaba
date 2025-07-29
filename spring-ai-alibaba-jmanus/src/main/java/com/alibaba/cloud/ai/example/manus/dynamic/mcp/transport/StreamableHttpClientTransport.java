@@ -433,7 +433,7 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 
 		// 标准化换行符，处理\r\n和\n的情况
 		String normalizedResponse = response.replace("\r\n", "\n");
-		
+
 		// SSE格式特征：包含event:和data:字段，或者以event:开头
 		boolean startsWithEvent = normalizedResponse.startsWith("event:");
 		boolean containsEvent = normalizedResponse.contains("event:");
@@ -462,7 +462,7 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 		try {
 			// 标准化换行符，处理\r\n和\n的情况
 			String normalizedResponse = sseResponse.replace("\r\n", "\n");
-			
+
 			// 按行分割
 			String[] lines = normalizedResponse.split("\n");
 			logger.info("=== SSE行数: {} ===", lines.length);
