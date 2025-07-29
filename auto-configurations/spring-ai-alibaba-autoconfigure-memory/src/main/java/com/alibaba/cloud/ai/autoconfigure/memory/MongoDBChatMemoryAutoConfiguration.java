@@ -38,7 +38,7 @@ public class MongoDBChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	MongoDBChatMemoryRepository redisChatMemoryRepository(MongoDBChatMemoryProperties properties) {
+	MongoDBChatMemoryRepository mongoChatMemoryRepository(MongoDBChatMemoryProperties properties) {
 		logger.info("Configuring MongoDB chat memory repository");
 		return MongoDBChatMemoryRepository.builder()
 			.host(properties.getHost())

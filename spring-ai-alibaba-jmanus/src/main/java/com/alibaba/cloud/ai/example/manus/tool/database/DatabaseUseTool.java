@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.database.action.ExecuteSqlAction;
 import com.alibaba.cloud.ai.example.manus.tool.database.action.GetTableNameAction;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alibaba.cloud.ai.example.manus.tool.database.action.GetTableIndexAction;
 import com.alibaba.cloud.ai.example.manus.tool.database.action.GetTableMetaAction;
 import com.alibaba.cloud.ai.example.manus.tool.database.action.GetDatasourceInfoAction;
@@ -38,9 +39,13 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 
 	private final DataSourceService dataSourceService;
 
-	public DatabaseUseTool(ManusProperties manusProperties, DataSourceService dataSourceService) {
+	private final ObjectMapper objectMapper;
+
+	public DatabaseUseTool(ManusProperties manusProperties, DataSourceService dataSourceService,
+			ObjectMapper objectMapper) {
 		this.manusProperties = manusProperties;
 		this.dataSourceService = dataSourceService;
+		this.objectMapper = objectMapper;
 	}
 
 	public DataSourceService getDataSourceService() {
@@ -157,12 +162,12 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 				case "execute_sql":
 					return new ExecuteSqlAction().execute(request, dataSourceService);
 				case "get_table_name":
-					return new GetTableNameAction().execute(request, dataSourceService);
+					return new GetTableNameAction(objectMapper).execute(request, dataSourceService);
 				case "get_table_index":
-					return new GetTableIndexAction().execute(request, dataSourceService);
+					return new GetTableIndexAction(objectMapper).execute(request, dataSourceService);
 				case "get_table_meta": {
 					// 先用text查，如果没查到再查全部
-					GetTableMetaAction metaAction = new GetTableMetaAction();
+					GetTableMetaAction metaAction = new GetTableMetaAction(objectMapper);
 					ToolExecuteResult result = metaAction.execute(request, dataSourceService);
 					if (result == null || result.getOutput() == null || result.getOutput().trim().isEmpty()
 							|| result.getOutput().equals("[]") || result.getOutput().contains("未找到符合条件的表")) {
@@ -174,7 +179,7 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 					return result;
 				}
 				case "get_datasource_info":
-					return new GetDatasourceInfoAction().execute(request, dataSourceService);
+					return new GetDatasourceInfoAction(objectMapper).execute(request, dataSourceService);
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
@@ -254,8 +259,8 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 		}
 	}
 
-	public static DatabaseUseTool getInstance(DataSourceService dataSourceService) {
-		return new DatabaseUseTool(null, dataSourceService);
+	public static DatabaseUseTool getInstance(DataSourceService dataSourceService, ObjectMapper objectMapper) {
+		return new DatabaseUseTool(null, dataSourceService, objectMapper);
 	}
 
 }

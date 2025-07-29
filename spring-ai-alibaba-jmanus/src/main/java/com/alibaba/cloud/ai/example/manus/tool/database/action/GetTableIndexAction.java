@@ -31,7 +31,13 @@ import org.slf4j.LoggerFactory;
 
 public class GetTableIndexAction extends AbstractDatabaseAction {
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger log = LoggerFactory.getLogger(GetTableIndexAction.class);
+
+	public GetTableIndexAction(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
 
 	@Override
 	public ToolExecuteResult execute(DatabaseRequest request, DataSourceService dataSourceService) {
@@ -88,7 +94,6 @@ public class GetTableIndexAction extends AbstractDatabaseAction {
 				for (java.util.Map<String, IndexMeta> indexMap : tableIndexMap.values()) {
 					allIndexes.addAll(indexMap.values());
 				}
-				ObjectMapper objectMapper = new ObjectMapper();
 				String json = objectMapper.writeValueAsString(allIndexes);
 				log.info("GetTableIndexAction completed successfully, datasourceName={}, found {} indexes",
 						datasourceName, allIndexes.size());
