@@ -153,7 +153,7 @@ public class McpService implements IMcpService {
 		}
 
 		// 构建服务器配置
-		McpServerConfig serverConfig = new McpServerConfig();
+		McpServerConfig serverConfig = new McpServerConfig(objectMapper);
 		serverConfig.setCommand(requestVO.getCommand());
 		serverConfig.setUrl(requestVO.getUrl());
 		serverConfig.setArgs(requestVO.getArgs());

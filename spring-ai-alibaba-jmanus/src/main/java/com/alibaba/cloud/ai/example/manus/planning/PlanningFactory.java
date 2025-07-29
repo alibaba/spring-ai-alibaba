@@ -45,7 +45,6 @@ import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.service.CronService;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpTool;
@@ -84,6 +83,7 @@ import com.alibaba.cloud.ai.example.manus.tool.mapreduce.ReduceOperationTool;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author yuluo
@@ -109,10 +109,10 @@ public class PlanningFactory implements IPlanningFactory {
 
 	private final static Logger log = LoggerFactory.getLogger(PlanningFactory.class);
 
-	@Autowired
-	private AgentService agentService;
-
 	private final McpService mcpService;
+
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	@Autowired
 	@Lazy
@@ -214,25 +214,26 @@ public class PlanningFactory implements IPlanningFactory {
 			return toolCallbackMap;
 		}
 		// Add all tool definitions
-		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService));
-		toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService));
+		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService, objectMapper));
+		toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService, objectMapper));
 		toolDefinitions.add(new TerminateTool(planId, terminateColumns));
-		toolDefinitions.add(new Bash(unifiedDirectoryManager));
+		toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper));
 		toolDefinitions.add(new DocLoaderTool());
-		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService));
+		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
 		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
 		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
 		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
 		// toolDefinitions.add(new GoogleSearch());
 		// toolDefinitions.add(new PythonExecute());
-		toolDefinitions.add(new FormInputTool());
-		toolDefinitions.add(new DataSplitTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
+		toolDefinitions.add(new FormInputTool(objectMapper));
+		toolDefinitions
+			.add(new DataSplitTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager, objectMapper));
 		toolDefinitions.add(new MapOutputTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
-				terminateColumns));
+				terminateColumns, objectMapper));
 		toolDefinitions.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager,
 				unifiedDirectoryManager, terminateColumns));
 		toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
-		toolDefinitions.add(new CronTool(cronService));
+		toolDefinitions.add(new CronTool(cronService, objectMapper));
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
@@ -240,8 +241,8 @@ public class PlanningFactory implements IPlanningFactory {
 			ToolCallback[] tCallbacks = toolCallback.getAsyncMcpToolCallbackProvider().getToolCallbacks();
 			for (ToolCallback tCallback : tCallbacks) {
 				// The serviceGroup is the name of the tool
-				toolDefinitions.add(
-						new McpTool(tCallback, serviceGroup, planId, new McpStateHolderService(), innerStorageService));
+				toolDefinitions.add(new McpTool(tCallback, serviceGroup, planId, new McpStateHolderService(),
+						innerStorageService, objectMapper));
 			}
 		}
 

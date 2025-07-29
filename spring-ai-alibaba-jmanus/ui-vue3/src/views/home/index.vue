@@ -123,7 +123,7 @@ const allCards = computed(() => [...examples.value, ...plans.value])
 const handleCardClick = (item: any) => {
   if (item.type === 'message') {
     selectExample(item)
-  } else if (item.type === 'plan') {
+  } else if (item.type === 'plan-act') {
     selectPlan(item)
   }
 }

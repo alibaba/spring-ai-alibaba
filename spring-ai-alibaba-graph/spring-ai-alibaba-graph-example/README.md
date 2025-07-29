@@ -14,7 +14,7 @@ export AI_DASHSCOPE_API_KEY=xxx
 export SERP_API_KEY=xxx
 ```
 
-> 尽在您想体验 OpenManus 示例时，才需要配置这个选项。
+> 仅在您想体验 OpenManus 示例时，才需要配置这个选项。
 
 ### 启动应用
 
