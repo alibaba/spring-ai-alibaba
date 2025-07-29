@@ -29,9 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DirectResponseExecutor - Specialized executor for handling direct response plans
- * This executor records the plan execution start and marks the execution as successful,
- * but delegates the actual direct response generation to the PlanningCoordinator.
+ * DirectResponseExecutor - Specialized executor for handling direct response plans This
+ * executor records the plan execution start and marks the execution as successful, but
+ * delegates the actual direct response generation to the PlanningCoordinator.
  */
 public class DirectResponseExecutor extends AbstractPlanExecutor {
 
@@ -58,13 +58,13 @@ public class DirectResponseExecutor extends AbstractPlanExecutor {
 	@Override
 	public void executeAllSteps(ExecutionContext context) {
 		log.info("Executing direct response plan for planId: {}", context.getCurrentPlanId());
-		
+
 		BaseAgent lastExecutor = null;
-		
+
 		try {
 			// Record plan execution start
 			recorder.recordPlanExecutionStart(context);
-			
+
 			log.info("Direct response executor completed successfully for planId: {}", context.getCurrentPlanId());
 			context.setSuccess(true);
 		}

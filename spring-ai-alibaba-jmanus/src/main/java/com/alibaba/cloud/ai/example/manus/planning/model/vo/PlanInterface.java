@@ -167,8 +167,7 @@ public interface PlanInterface {
 	public String getPlanId();
 
 	/**
-	 * 是否为直接反馈模式
-	 * 当为true时，跳过复杂的计划执行，直接使用LLM给出响应
+	 * 是否为直接反馈模式 当为true时，跳过复杂的计划执行，直接使用LLM给出响应
 	 * @return 如果是直接反馈模式则返回true
 	 */
 	boolean isDirectResponse();

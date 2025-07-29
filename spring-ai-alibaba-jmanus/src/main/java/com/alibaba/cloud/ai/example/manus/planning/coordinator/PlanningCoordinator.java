@@ -77,8 +77,6 @@ public class PlanningCoordinator {
 		// 1. Create a plan (normal flow)
 		planCreator.createPlan(context);
 
-
-
 		// 2. Select appropriate executor based on plan type and execute
 		PlanInterface plan = context.getPlan();
 
@@ -86,12 +84,13 @@ public class PlanningCoordinator {
 			// Check if this is a direct response plan
 			boolean isDirectResponse = plan.isDirectResponse();
 			if (isDirectResponse) {
-				// For direct response plans, use DirectResponseExecutor but handle generation in coordinator
+				// For direct response plans, use DirectResponseExecutor but handle
+				// generation in coordinator
 				PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
-				log.info("Selected executor: {} for direct response plan (planId: {})", 
+				log.info("Selected executor: {} for direct response plan (planId: {})",
 						executor.getClass().getSimpleName(), context.getCurrentPlanId());
 				executor.executeAllSteps(context);
-				
+
 				// Generate direct response using PlanFinalizer
 				planFinalizer.generateDirectResponse(context);
 				log.info("Direct response completed successfully for planId: {}", context.getCurrentPlanId());

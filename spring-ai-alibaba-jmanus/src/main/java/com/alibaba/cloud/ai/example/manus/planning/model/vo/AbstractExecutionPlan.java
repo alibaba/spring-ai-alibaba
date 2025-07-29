@@ -55,9 +55,8 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	/**
 	 * 带参数的构造函数
-	 * 
 	 * @param planId 计划ID
-	 * @param title  计划标题
+	 * @param title 计划标题
 	 */
 	public AbstractExecutionPlan(String currentPlanId, String rootPlanId, String title) {
 		this();
@@ -130,7 +129,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	/**
 	 * 获取所有执行步骤的扁平列表
-	 * 
 	 * @return 所有执行步骤
 	 */
 	@Override
@@ -138,7 +136,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	/**
 	 * 获取总步骤数量
-	 * 
 	 * @return 总步骤数
 	 */
 	@Override
@@ -146,7 +143,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	/**
 	 * 添加执行步骤
-	 * 
 	 * @param step 执行步骤
 	 */
 	@Override
@@ -154,7 +150,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	/**
 	 * 移除执行步骤
-	 * 
 	 * @param step 执行步骤
 	 */
 	@Override
@@ -162,7 +157,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	/**
 	 * 检查计划是否为空
-	 * 
 	 * @return 如果计划为空则返回true
 	 */
 	@Override
@@ -170,7 +164,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	/**
 	 * 获取计划执行状态的字符串格式
-	 * 
 	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
 	 * @return 计划状态字符串
 	 */
@@ -188,7 +181,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	/**
 	 * 获取用户请求
-	 * 
 	 * @return 用户请求字符串
 	 */
 	public String getUserRequest() {
@@ -197,7 +189,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	/**
 	 * 设置用户请求
-	 * 
 	 * @param userRequest 用户请求字符串
 	 */
 	public void setUserRequest(String userRequest) {

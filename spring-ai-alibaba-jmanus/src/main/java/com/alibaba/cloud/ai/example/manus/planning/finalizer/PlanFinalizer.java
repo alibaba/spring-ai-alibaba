@@ -147,10 +147,8 @@ public class PlanFinalizer {
 
 		try {
 			// Create a simple prompt for direct response
-			Message directMessage = promptService.createUserMessage(
-					PromptEnum.DIRECT_RESPONSE.getPromptName(),
-					Map.of("userRequest", userRequest)
-			);
+			Message directMessage = promptService.createUserMessage(PromptEnum.DIRECT_RESPONSE.getPromptName(),
+					Map.of("userRequest", userRequest));
 
 			Prompt prompt = new Prompt(List.of(directMessage));
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
@@ -164,13 +162,15 @@ public class PlanFinalizer {
 
 			// Use streaming response handler for direct response generation
 			Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
-			String directResponse = streamingResponseHandler.processStreamingTextResponse(responseFlux, "Direct response");
+			String directResponse = streamingResponseHandler.processStreamingTextResponse(responseFlux,
+					"Direct response");
 			context.setResultSummary(directResponse);
 
 			recordPlanCompletion(context, directResponse);
 			log.info("Generated direct response: {}", directResponse);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Error generating direct response for request: {}", userRequest, e);
 			throw new RuntimeException("Failed to generate direct response", e);
 		}
