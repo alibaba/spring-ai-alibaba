@@ -110,14 +110,14 @@ public class LoadbalancedMcpAsyncClient {
 		webClientBuilderTemplate = this.applicationContext.getBean(WebClient.Builder.class);
 		webFluxSseClientTransportBuilder = this.applicationContext.getBean(WebFluxSseClientTransportBuilder.class);
 
-		// 尝试获取链路追踪过滤器（可选）
+		// Try to get the link tracking filter
 		ExchangeFilterFunction tempTraceFilter = null;
 		try {
 			tempTraceFilter = this.applicationContext.getBean("mcpTraceExchangeFilterFunction",
 					ExchangeFilterFunction.class);
 		}
 		catch (Exception e) {
-			// 链路追踪过滤器不存在，继续正常运行
+			// The link tracking filter does not exist, continue normal operation
 			logger.debug("MCP trace filter not found, continuing without tracing: {}", e.getMessage());
 		}
 		this.traceFilter = tempTraceFilter;

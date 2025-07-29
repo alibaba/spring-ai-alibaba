@@ -477,7 +477,7 @@
 
                     <!-- Output test execution times in the logs -->
                     <redirectTestOutputToFile>false</redirectTestOutputToFile>
-                    
+
                     <!-- Ignore missing test patterns -->
                     <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
                 </configuration>

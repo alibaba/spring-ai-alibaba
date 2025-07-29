@@ -35,7 +35,7 @@ public class McpTraceExchangeFilterFunction implements ExchangeFilterFunction {
 
 	@Override
 	public Mono<ClientResponse> filter(ClientRequest request, ExchangeFunction next) {
-		// 如果没有tracer，直接执行请求
+		// If there is no tracer, execute the request directly
 		if (tracer == null) {
 			return next.exchange(request);
 		}

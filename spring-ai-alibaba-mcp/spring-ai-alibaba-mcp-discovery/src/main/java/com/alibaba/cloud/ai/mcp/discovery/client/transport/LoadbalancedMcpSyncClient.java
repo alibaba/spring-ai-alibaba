@@ -76,7 +76,7 @@ public class LoadbalancedMcpSyncClient {
 
 	private NacosMcpServerEndpoint serverEndpoint;
 
-	// 链路追踪过滤器，可选
+	// Link Tracking Filters
 	private final ExchangeFilterFunction traceFilter;
 
 	public LoadbalancedMcpSyncClient(String serverName, String version,
@@ -109,14 +109,14 @@ public class LoadbalancedMcpSyncClient {
 		webClientBuilderTemplate = this.applicationContext.getBean(WebClient.Builder.class);
 		webFluxSseClientTransportBuilder = this.applicationContext.getBean(WebFluxSseClientTransportBuilder.class);
 
-		// 尝试获取链路追踪过滤器（可选）
+		// Try to get the link tracking filter
 		ExchangeFilterFunction tempTraceFilter = null;
 		try {
 			tempTraceFilter = this.applicationContext.getBean("mcpTraceExchangeFilterFunction",
 					ExchangeFilterFunction.class);
 		}
 		catch (Exception e) {
-			// 链路追踪过滤器不存在，继续正常运行
+			// The link tracking filter does not exist, continue normal operation
 			logger.debug("MCP trace filter not found, continuing without tracing: {}", e.getMessage());
 		}
 		this.traceFilter = tempTraceFilter;
@@ -292,14 +292,12 @@ public class LoadbalancedMcpSyncClient {
 		}
 	}
 
-	// ------------------------------------------------------------------------------------------------------------------------------------------------
-
 	private McpSyncClient clientByEndpoint(McpEndpointInfo mcpEndpointInfo, String exportPath) {
 		McpSyncClient syncClient;
 		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
 
-		// 使用带链路追踪的构建方法
+		// Using the build method with link tracking
 		WebFluxSseClientTransport transport;
 		if (traceFilter != null) {
 			transport = webFluxSseClientTransportBuilder.build(webClientBuilder, objectMapper, exportPath, traceFilter);
