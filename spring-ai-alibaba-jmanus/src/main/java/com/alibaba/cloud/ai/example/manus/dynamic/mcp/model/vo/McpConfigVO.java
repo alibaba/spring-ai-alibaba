@@ -55,8 +55,17 @@ public class McpConfigVO {
 
 	private McpConfigStatus status;
 
+	/**
+	 * Default constructor for Jackson deserialization
+	 */
+	public McpConfigVO() {
+		this.objectMapper = new ObjectMapper();
+		this.toolNames = new ArrayList<>();
+	}
+
 	public McpConfigVO(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
+		this.toolNames = new ArrayList<>();
 	}
 
 	public McpConfigVO(McpConfigEntity entity, ObjectMapper objectMapper) {
