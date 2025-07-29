@@ -27,7 +27,8 @@ import java.util.Collections;
 public class NodeStepTitleUtil {
 
 	/**
-	 * Registers the step title into the state and returns the nodeNum (i.e., prefix + "_" + executorNodeId).
+	 * Registers the step title into the state and returns the nodeNum (i.e., prefix + "_"
+	 * + executorNodeId).
 	 * @param state The global state
 	 * @param isReflectionNode Whether this is a reflection node
 	 * @param executorNodeId The node ID
