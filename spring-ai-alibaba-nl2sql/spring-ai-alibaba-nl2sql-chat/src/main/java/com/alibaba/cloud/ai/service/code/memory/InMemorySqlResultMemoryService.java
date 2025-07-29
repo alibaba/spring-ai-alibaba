@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.service.code.memory;
 
-import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,15 +57,30 @@ public class InMemorySqlResultMemoryService implements SqlResultMemoryService {
 	}
 
 	@Override
-	public SchemaDTO getSchemaByKey(Key key) {
+	public Description getDescriptionByKey(Key key) {
 		Value value = this.memory.get(key);
-		return value != null ? value.schemaDTO() : null;
+		return value != null ? value.description() : null;
 	}
 
 	@Override
-	public List<Map<String, Object>> getAllSqlResult(Key key) {
+	public List<Map<String, Object>> getSqlResult(Key key) {
 		Value value = this.memory.get(key);
 		return value != null ? value.results() : null;
+	}
+
+	@Override
+	public List<Value> getAllValues() {
+		return List.copyOf(this.memory.values());
+	}
+
+	@Override
+	public void removeValue(Key key) {
+		this.memory.remove(key);
+	}
+
+	@Override
+	public void removeAllValues() {
+		this.memory.clear();
 	}
 
 }

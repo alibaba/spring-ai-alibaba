@@ -49,7 +49,7 @@ public class CodeExecutorProperties {
 	/**
 	 * 镜像名称，可以自定义带有常用第三方依赖的镜像来替换此配置
 	 */
-	String imageName = "python:3-slim";
+	String imageName = "continuumio/anaconda3:latest";
 
 	/**
 	 * 容器名称前缀

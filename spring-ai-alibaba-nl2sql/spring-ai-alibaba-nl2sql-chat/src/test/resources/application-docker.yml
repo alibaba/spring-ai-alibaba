@@ -4,5 +4,5 @@ spring:
       nl2sql:
         container:
           code-pool-executor: docker
-          code-timeout: 1s
+          code-timeout: 5s
           enabled: true

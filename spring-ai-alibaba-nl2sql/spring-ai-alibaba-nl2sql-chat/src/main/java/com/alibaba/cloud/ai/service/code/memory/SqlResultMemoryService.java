@@ -35,13 +35,17 @@ public interface SqlResultMemoryService {
 		}
 	}
 
-	record Value(Key key, SchemaDTO schemaDTO, List<Map<String, Object>> results) {
+	record Description(SchemaDTO schemaDTO, String natural, String sql) {
+
+	}
+
+	record Value(Key key, Description description, List<Map<String, Object>> results) {
 		public Value setNewKey(Key key) {
-			return new Value(key, this.schemaDTO(), this.results());
+			return new Value(key, this.description(), this.results());
 		}
 
-		public static Value createValue(SchemaDTO schemaDTO, List<Map<String, Object>> results) {
-			return new Value(null, schemaDTO, results);
+		public static Value createValue(Description description, List<Map<String, Object>> results) {
+			return new Value(null, description, results);
 		}
 	}
 
@@ -53,18 +57,24 @@ public interface SqlResultMemoryService {
 	Key saveSqlResult(Value value);
 
 	/**
-	 * 根据key获取SchemaDTO对象
+	 * 根据key获取描述对象
 	 * @param key key
-	 * @return SchemaDTO，失败返回null
+	 * @return Description，失败返回null
 	 */
-	SchemaDTO getSchemaByKey(Key key);
+	Description getDescriptionByKey(Key key);
 
 	/**
 	 * 获取运行结果的所有值（传递给代码）
 	 * @param key key
 	 * @return 存储的SQL结果，失败返回null
 	 */
-	List<Map<String, Object>> getAllSqlResult(Key key);
+	List<Map<String, Object>> getSqlResult(Key key);
+
+	List<Value> getAllValues();
+
+	void removeValue(Key key);
+
+	void removeAllValues();
 
 	/**
 	 * 获取前几个运行结果（传递给AI模型，作为输入示例）
@@ -73,7 +83,7 @@ public interface SqlResultMemoryService {
 	 * @return 存储的SQL结果，失败返回null
 	 */
 	default List<Map<String, Object>> getSqlResult(Key key, Long limit) {
-		List<Map<String, Object>> result = this.getAllSqlResult(key);
+		List<Map<String, Object>> result = this.getSqlResult(key);
 		if (result == null) {
 			return null;
 		}
@@ -85,7 +95,7 @@ public interface SqlResultMemoryService {
 	 * @param key key
 	 * @return 存储的SQL结果，失败返回null
 	 */
-	default List<Map<String, Object>> getSqlResult(Key key) {
+	default List<Map<String, Object>> getSampleSqlResult(Key key) {
 		return this.getSqlResult(key, 5L);
 	}
 

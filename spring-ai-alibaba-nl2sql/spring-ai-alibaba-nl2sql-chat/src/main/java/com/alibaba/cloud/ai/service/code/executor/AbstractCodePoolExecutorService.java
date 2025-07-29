@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -356,6 +357,28 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		}
 		catch (Exception e) {
 			log.warn("Exception in clean temp directory: {}", e.getMessage());
+		}
+	}
+
+	/**
+	 * 创建可写的临时文件
+	 * @param tempDir 临时目录
+	 * @param fileName 文件名
+	 * @throws IOException IO异常
+	 */
+	protected void createWritableFile(Path tempDir, String fileName) throws IOException {
+		File file = new File(tempDir.resolve(fileName).toUri());
+		if (file.exists()) {
+			if (!file.setWritable(true, false)) {
+				throw new IOException("Cannot write to existing file: " + file.getAbsolutePath());
+			}
+			return;
+		}
+		if (!file.createNewFile()) {
+			throw new IOException("Failed to create file: " + file.getAbsolutePath());
+		}
+		if (!file.setWritable(true, false)) {
+			throw new IOException("Cannot write to existing file: " + file.getAbsolutePath());
 		}
 	}
 
