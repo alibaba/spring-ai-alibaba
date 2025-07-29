@@ -363,6 +363,7 @@ export default {
         };
 
         eventSource.addEventListener('complete', () => {
+          console.log('流式输出完成');
           isTyping.value = false;
           eventSource.close();
         });
@@ -370,10 +371,18 @@ export default {
         eventSource.onerror = (error) => {
           console.error('流式连接错误:', error);
           isTyping.value = false;
-          eventSource.close();
-          if (chatMessages.value[agentMessageIndex]) {
-            chatMessages.value[agentMessageIndex].content = '抱歉，处理您的请求时出现了错误，请稍后重试。';
+          
+          // 检查连接状态，如果是正常结束（readyState = 2），不显示错误
+          if (eventSource.readyState === EventSource.CLOSED) {
+            console.log('EventSource 连接已正常关闭');
+          } else {
+            // 只有在真正的错误情况下才显示错误信息
+            if (chatMessages.value[agentMessageIndex]) {
+              chatMessages.value[agentMessageIndex].content = '抱歉，处理您的请求时出现了错误，请稍后重试。';
+            }
           }
+          
+          eventSource.close();
         };
 
       } catch (error) {
