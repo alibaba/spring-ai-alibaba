@@ -431,10 +431,13 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 		logger.debug("=== 开始检测SSE格式 ===");
 		logger.debug("=== 检测内容: {} ===", response);
 
+		// 标准化换行符，处理\r\n和\n的情况
+		String normalizedResponse = response.replace("\r\n", "\n");
+		
 		// SSE格式特征：包含event:和data:字段，或者以event:开头
-		boolean startsWithEvent = response.startsWith("event:");
-		boolean containsEvent = response.contains("event:");
-		boolean containsData = response.contains("data:");
+		boolean startsWithEvent = normalizedResponse.startsWith("event:");
+		boolean containsEvent = normalizedResponse.contains("event:");
+		boolean containsData = normalizedResponse.contains("data:");
 
 		logger.debug("=== SSE格式检测结果 ===");
 		logger.debug("=== 以event:开头: {} ===", startsWithEvent);
@@ -457,8 +460,11 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 		logger.info("=== SSE原始内容: {} ===", sseResponse);
 
 		try {
+			// 标准化换行符，处理\r\n和\n的情况
+			String normalizedResponse = sseResponse.replace("\r\n", "\n");
+			
 			// 按行分割
-			String[] lines = sseResponse.split("\n");
+			String[] lines = normalizedResponse.split("\n");
 			logger.info("=== SSE行数: {} ===", lines.length);
 
 			StringBuilder jsonContent = new StringBuilder();
@@ -523,6 +529,20 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 		logger.info("=== JSON原始内容: {} ===", jsonResponse);
 
 		try {
+			// 检查是否包含SSE格式的前缀，如果是则先尝试解析SSE格式
+			if (jsonResponse.contains("event:") || jsonResponse.contains("data:")) {
+				logger.warn("=== 检测到SSE格式前缀，但被误判为JSON格式，尝试解析SSE ===");
+				String sseResult = parseSseFormat(jsonResponse);
+				if (sseResult != null) {
+					logger.info("=== SSE解析成功，返回结果: {} ===", sseResult);
+					return sseResult;
+				}
+				else {
+					logger.error("=== SSE解析失败，原始内容可能格式错误 ===");
+					return null;
+				}
+			}
+
 			// 尝试解析JSON以验证格式
 			Object parsed = objectMapper.readValue(jsonResponse, Object.class);
 			logger.info("=== JSON格式验证成功，解析结果类型: {} ===", parsed.getClass().getSimpleName());
