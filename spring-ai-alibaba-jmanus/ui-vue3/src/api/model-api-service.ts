@@ -23,6 +23,7 @@ export interface Model {
     modelName: string
     modelDescription: string
     type: string
+    isDefault?: boolean
 }
 
 export interface Headers {
@@ -194,6 +195,25 @@ export class ModelApiService {
             throw error
         }
     }
+
+    /**
+     * Set model as default
+     */
+    static async setDefaultModel(id: string): Promise<{success: boolean, message: string}> {
+        try {
+            const response = await fetch(`${this.BASE_URL}/${id}/set-default`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            const result = await this.handleResponse(response)
+            return await result.json()
+        } catch (error) {
+            console.error(`Failed to set model[${id}] as default:`, error)
+            throw error
+        }
+    }
 }
 
 /**
@@ -311,6 +331,28 @@ export class ModelConfigModel {
         } catch (error) {
             console.error('Failed to parse Model JSON:', error)
             throw new Error('Model configuration format is incorrect')
+        }
+    }
+
+    /**
+     * Set model as default
+     */
+    async setDefaultModel(id: string): Promise<void> {
+        try {
+            await ModelApiService.setDefaultModel(id)
+            
+            // Update local state: clear other models' default status and set current model as default
+            this.models.forEach(model => {
+                model.isDefault = model.id === id
+            })
+            
+            // Update current model if it's the one being set as default
+            if (this.currentModel && this.currentModel.id === id) {
+                this.currentModel.isDefault = true
+            }
+        } catch (error) {
+            console.error('Failed to set default model:', error)
+            throw error
         }
     }
 }
