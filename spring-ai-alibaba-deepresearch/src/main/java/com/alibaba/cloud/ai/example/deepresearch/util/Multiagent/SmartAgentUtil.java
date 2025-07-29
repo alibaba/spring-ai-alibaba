@@ -16,8 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.util.Multiagent;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentType;
-import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.SearchPlatform;
+import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
+import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.SearchPlatform;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import org.slf4j.Logger;
