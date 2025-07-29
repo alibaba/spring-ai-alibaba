@@ -52,6 +52,9 @@ public class DynamicModelEntity {
 	@Column(nullable = false, columnDefinition = "boolean default false")
 	private boolean allowChange;
 
+	@Column(nullable = false, columnDefinition = "boolean default false")
+	private boolean isDefault;
+
 	@OneToMany(mappedBy = "model")
 	private List<DynamicAgentEntity> agents;
 
@@ -135,6 +138,14 @@ public class DynamicModelEntity {
 		this.allowChange = allowChange;
 	}
 
+	public Boolean getIsDefault() {
+		return isDefault;
+	}
+
+	public void setIsDefault(Boolean isDefault) {
+		this.isDefault = isDefault;
+	}
+
 	public ModelConfig mapToModelConfig() {
 		ModelConfig config = new ModelConfig();
 		config.setId(this.getId());
@@ -144,6 +155,7 @@ public class DynamicModelEntity {
 		config.setModelName(this.getModelName());
 		config.setModelDescription(this.getModelDescription());
 		config.setType(this.getType());
+		config.setIsDefault(this.getIsDefault());
 		return config;
 	}
 

@@ -37,6 +37,8 @@ public class ModelConfig {
 
 	private String type;
 
+	private Boolean isDefault;
+
 	public Long getId() {
 		return id;
 	}
@@ -91,6 +93,14 @@ public class ModelConfig {
 
 	public void setHeaders(Map<String, String> headers) {
 		this.headers = headers;
+	}
+
+	public Boolean getIsDefault() {
+		return isDefault;
+	}
+
+	public void setIsDefault(Boolean isDefault) {
+		this.isDefault = isDefault;
 	}
 
 }
