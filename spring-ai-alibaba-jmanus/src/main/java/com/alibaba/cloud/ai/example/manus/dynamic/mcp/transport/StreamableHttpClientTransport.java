@@ -66,9 +66,10 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 
 	// 用于跟踪请求-响应映射
 	private final Map<String, Sinks.One<String>> pendingRequests = new ConcurrentHashMap<>();
-	
+
 	// 添加Session ID支持
 	private volatile String sessionId = null;
+
 	private final Object sessionIdLock = new Object();
 
 	/**
@@ -81,16 +82,16 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 			String streamEndpoint) {
 		logger.info("=== 开始初始化 StreamableHttpClientTransport ===");
 		logger.info("=== 传入的 streamEndpoint: {} ===", streamEndpoint);
-		
+
 		this.webClient = webClientBuilder.defaultHeader("Accept", "application/json, text/event-stream").build();
 		logger.info("=== WebClient 已构建，默认 Accept 头: application/json, text/event-stream ===");
-		
+
 		this.objectMapper = objectMapper;
 		logger.info("=== ObjectMapper 已设置 ===");
-		
+
 		this.fullUrl = streamEndpoint;
 		logger.info("=== 完整URL已设置: {} ===", this.fullUrl);
-		
+
 		logger.info("=== StreamableHttpClientTransport 初始化完成 ===");
 		logger.info("=== 最终配置: fullUrl={} ===", this.fullUrl);
 	}
@@ -172,7 +173,7 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 			Map<String, Object> jsonRpc = new HashMap<>();
 			jsonRpc.put("jsonrpc", "2.0");
 			final String[] messageIdHolder = { null };
-			
+
 			logger.info("=== 开始序列化消息字段 ===");
 			for (String field : new String[] { "id", "method", "params", "result", "error" }) {
 				try {
@@ -185,7 +186,8 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 							messageIdHolder[0] = String.valueOf(v);
 							logger.info("=== 消息ID: {} ===", messageIdHolder[0]);
 						}
-					} else {
+					}
+					else {
 						logger.debug("=== 字段 {}: null ===", field);
 					}
 				}
@@ -193,7 +195,7 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 					logger.debug("=== 字段 {} 不存在 ===", field);
 				}
 			}
-			
+
 			String jsonMessage = objectMapper.writeValueAsString(jsonRpc);
 			logger.info("=== 序列化后的JSON消息: {} ===", jsonMessage);
 			logger.info("=== JSON消息长度: {} 字节 ===", jsonMessage.getBytes().length);
@@ -211,7 +213,8 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 				result = responseSink.asMono()
 					.doOnNext(response -> logger.info("=== 收到请求 {} 的响应: {} ===", messageId, response))
 					.then();
-			} else {
+			}
+			else {
 				logger.info("=== 这是通知消息（无ID），不需要等待响应 ===");
 			}
 
@@ -234,74 +237,65 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 		logger.info("=== 请求URL: {} ===", fullUrl);
 		logger.info("=== 请求方法: POST ===");
 		logger.info("=== 当前Session ID: {} ===", sessionId);
-		
+
 		// 构建请求头
 		String acceptHeader = "application/json, text/event-stream";
 		logger.info("=== 请求头: Content-Type=application/json, Accept={} ===", acceptHeader);
 		logger.info("=== 请求体: {} ===", jsonMessage);
 		logger.info("=== 请求体长度: {} 字节 ===", jsonMessage.getBytes().length);
-		
+
 		// 构建WebClient请求
 		WebClient.RequestBodySpec requestSpec = webClient.post()
 			.uri(fullUrl)
 			.contentType(MediaType.APPLICATION_JSON)
 			.header("Accept", acceptHeader);
-		
+
 		// 如果有Session ID，添加到请求头
 		if (sessionId != null) {
 			requestSpec.header("MCP-Session-ID", sessionId);
 			logger.info("=== 添加Session ID到请求头: {} ===", sessionId);
-		} else {
+		}
+		else {
 			logger.info("=== 当前没有Session ID，跳过Session ID头 ===");
 		}
-		
-		return requestSpec
-			.bodyValue(jsonMessage)
-			.exchangeToMono(clientResponse -> {
-				logger.info("=== 收到HTTP响应 ===");
-				logger.info("=== 响应状态: {} ===", clientResponse.statusCode());
-				logger.info("=== 响应头: {} ===", clientResponse.headers().asHttpHeaders());
-				
-				// 从响应头中提取Session ID
-				extractSessionIdFromHeaders(clientResponse.headers().asHttpHeaders());
-				
-				if (clientResponse.statusCode().is2xxSuccessful()) {
-					logger.info("=== HTTP请求成功 ===");
-					return clientResponse.bodyToMono(String.class)
-						.doOnNext(response -> {
-							logger.info("=== 响应体: {} ===", response);
-							logger.info("=== 响应体长度: {} 字节 ===", response != null ? response.getBytes().length : 0);
-						});
-				} else {
-					logger.error("=== HTTP请求失败，状态码: {} ===", clientResponse.statusCode());
-					return clientResponse.bodyToMono(String.class)
-						.flatMap(errorBody -> {
-							logger.error("=== 错误响应体: {} ===", errorBody);
-							return Mono.error(new org.springframework.web.reactive.function.client.WebClientResponseException(
-								clientResponse.statusCode().value(),
-								clientResponse.statusCode().toString(),
-								clientResponse.headers().asHttpHeaders(),
-								errorBody.getBytes(),
-								null
-							));
-						});
-				}
-			})
-			.timeout(Duration.ofSeconds(30))
-			.doOnError(error -> {
-				logger.error("=== HTTP请求失败 ===");
-				logger.error("=== 错误类型: {} ===", error.getClass().getSimpleName());
-				logger.error("=== 错误消息: {} ===", error.getMessage());
-				
-				if (error instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
-					org.springframework.web.reactive.function.client.WebClientResponseException wcre = 
-						(org.springframework.web.reactive.function.client.WebClientResponseException) error;
-					logger.error("=== HTTP状态码: {} ===", wcre.getStatusCode());
-					logger.error("=== HTTP状态文本: {} ===", wcre.getStatusText());
-					logger.error("=== 响应头: {} ===", wcre.getHeaders());
-					logger.error("=== 响应体: {} ===", wcre.getResponseBodyAsString());
-				}
-			});
+
+		return requestSpec.bodyValue(jsonMessage).exchangeToMono(clientResponse -> {
+			logger.info("=== 收到HTTP响应 ===");
+			logger.info("=== 响应状态: {} ===", clientResponse.statusCode());
+			logger.info("=== 响应头: {} ===", clientResponse.headers().asHttpHeaders());
+
+			// 从响应头中提取Session ID
+			extractSessionIdFromHeaders(clientResponse.headers().asHttpHeaders());
+
+			if (clientResponse.statusCode().is2xxSuccessful()) {
+				logger.info("=== HTTP请求成功 ===");
+				return clientResponse.bodyToMono(String.class).doOnNext(response -> {
+					logger.info("=== 响应体: {} ===", response);
+					logger.info("=== 响应体长度: {} 字节 ===", response != null ? response.getBytes().length : 0);
+				});
+			}
+			else {
+				logger.error("=== HTTP请求失败，状态码: {} ===", clientResponse.statusCode());
+				return clientResponse.bodyToMono(String.class).flatMap(errorBody -> {
+					logger.error("=== 错误响应体: {} ===", errorBody);
+					return Mono.error(new org.springframework.web.reactive.function.client.WebClientResponseException(
+							clientResponse.statusCode().value(), clientResponse.statusCode().toString(),
+							clientResponse.headers().asHttpHeaders(), errorBody.getBytes(), null));
+				});
+			}
+		}).timeout(Duration.ofSeconds(30)).doOnError(error -> {
+			logger.error("=== HTTP请求失败 ===");
+			logger.error("=== 错误类型: {} ===", error.getClass().getSimpleName());
+			logger.error("=== 错误消息: {} ===", error.getMessage());
+
+			if (error instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
+				org.springframework.web.reactive.function.client.WebClientResponseException wcre = (org.springframework.web.reactive.function.client.WebClientResponseException) error;
+				logger.error("=== HTTP状态码: {} ===", wcre.getStatusCode());
+				logger.error("=== HTTP状态文本: {} ===", wcre.getStatusText());
+				logger.error("=== 响应头: {} ===", wcre.getHeaders());
+				logger.error("=== 响应体: {} ===", wcre.getResponseBodyAsString());
+			}
+		});
 	}
 
 	private void handleIncomingMessage(String responseJson) {
@@ -309,23 +303,23 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 			logger.info("=== 开始处理输入消息 ===");
 			logger.info("=== 原始响应内容: {} ===", responseJson);
 			logger.info("=== 原始响应长度: {} 字节 ===", responseJson != null ? responseJson.getBytes().length : 0);
-			
+
 			// 自动检测格式并解析
 			String jsonContent = parseResponseFormat(responseJson);
 			if (jsonContent == null) {
 				logger.error("=== 无法解析响应格式，原始内容: {} ===", responseJson);
 				return;
 			}
-			
+
 			logger.info("=== 解析后的JSON内容: {} ===", jsonContent);
 			logger.info("=== 解析后的JSON长度: {} 字节 ===", jsonContent.getBytes().length);
-			
+
 			// 解析响应
 			Map<String, Object> data = objectMapper.readValue(jsonContent, Map.class);
 			String responseId = (String) data.get("id");
 			String method = (String) data.get("method");
 			String jsonrpc = (String) data.get("jsonrpc");
-			
+
 			logger.info("=== 解析的响应字段 ===");
 			logger.info("=== jsonrpc: {} ===", jsonrpc);
 			logger.info("=== method: {} ===", method);
@@ -383,7 +377,7 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 					logger.warn("=== 反序列化为 JSONRPCMessage 失败，跳过 requestHandler 处理 ===");
 				}
 			}
-			
+
 			logger.info("=== 输入消息处理完成 ===");
 		}
 		catch (Exception e) {
@@ -400,26 +394,27 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 	private String parseResponseFormat(String rawResponse) {
 		logger.info("=== 开始解析响应格式 ===");
 		logger.info("=== 原始响应: {} ===", rawResponse);
-		
+
 		if (rawResponse == null || rawResponse.trim().isEmpty()) {
 			logger.warn("=== 原始响应为空或null ===");
 			return null;
 		}
-		
+
 		String trimmedResponse = rawResponse.trim();
 		logger.info("=== 去除首尾空格后的响应: {} ===", trimmedResponse);
 		logger.info("=== 响应长度: {} 字符 ===", trimmedResponse.length());
-		
+
 		// 检测是否为SSE格式
 		boolean isSse = isSseFormat(trimmedResponse);
 		logger.info("=== 格式检测结果: {} ===", isSse ? "SSE格式" : "JSON格式");
-		
+
 		if (isSse) {
 			logger.info("=== 检测到SSE格式，开始解析 ===");
 			String result = parseSseFormat(trimmedResponse);
 			logger.info("=== SSE解析结果: {} ===", result);
 			return result;
-		} else {
+		}
+		else {
 			logger.info("=== 检测到JSON格式，直接使用 ===");
 			String result = parseJsonFormat(trimmedResponse);
 			logger.info("=== JSON解析结果: {} ===", result);
@@ -435,20 +430,20 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 	private boolean isSseFormat(String response) {
 		logger.debug("=== 开始检测SSE格式 ===");
 		logger.debug("=== 检测内容: {} ===", response);
-		
+
 		// SSE格式特征：包含event:和data:字段，或者以event:开头
 		boolean startsWithEvent = response.startsWith("event:");
 		boolean containsEvent = response.contains("event:");
 		boolean containsData = response.contains("data:");
-		
+
 		logger.debug("=== SSE格式检测结果 ===");
 		logger.debug("=== 以event:开头: {} ===", startsWithEvent);
 		logger.debug("=== 包含event:: {} ===", containsEvent);
 		logger.debug("=== 包含data:: {} ===", containsData);
-		
+
 		boolean isSse = startsWithEvent || (containsEvent && containsData);
 		logger.debug("=== 最终SSE格式判断: {} ===", isSse);
-		
+
 		return isSse;
 	}
 
@@ -460,24 +455,24 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 	private String parseSseFormat(String sseResponse) {
 		logger.info("=== 开始解析SSE格式 ===");
 		logger.info("=== SSE原始内容: {} ===", sseResponse);
-		
+
 		try {
 			// 按行分割
 			String[] lines = sseResponse.split("\n");
 			logger.info("=== SSE行数: {} ===", lines.length);
-			
+
 			StringBuilder jsonContent = new StringBuilder();
 			boolean inDataSection = false;
-			
+
 			for (int i = 0; i < lines.length; i++) {
 				String line = lines[i].trim();
 				logger.debug("=== 处理第{}行: {} ===", i + 1, line);
-				
+
 				if (line.isEmpty()) {
 					logger.debug("=== 跳过空行 ===");
 					continue;
 				}
-				
+
 				if (line.startsWith("data:")) {
 					// 提取data:后面的内容
 					String data = line.substring(5).trim();
@@ -487,27 +482,31 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 						inDataSection = true;
 						logger.info("=== 已添加到JSON内容 ===");
 					}
-				} else if (inDataSection && !line.startsWith("event:") && !line.startsWith("id:") && !line.startsWith("retry:")) {
+				}
+				else if (inDataSection && !line.startsWith("event:") && !line.startsWith("id:")
+						&& !line.startsWith("retry:")) {
 					// 如果已经在data部分，且不是SSE控制字段，则可能是多行JSON的一部分
 					logger.info("=== 添加多行JSON内容: {} ===", line);
 					jsonContent.append(line);
-				} else {
+				}
+				else {
 					logger.debug("=== 跳过SSE控制字段: {} ===", line);
 				}
 			}
-			
+
 			String result = jsonContent.toString().trim();
 			logger.info("=== SSE解析完成，结果: {} ===", result);
-			
+
 			if (result.isEmpty()) {
 				logger.warn("=== SSE格式解析失败，未找到data内容 ===");
 				return null;
 			}
-			
+
 			logger.info("=== SSE格式解析成功 ===");
 			return result;
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			logger.error("=== SSE格式解析异常: {} ===", e.getMessage(), e);
 			logger.error("=== 解析失败的SSE内容: {} ===", sseResponse);
 			return null;
@@ -522,13 +521,14 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 	private String parseJsonFormat(String jsonResponse) {
 		logger.info("=== 开始解析JSON格式 ===");
 		logger.info("=== JSON原始内容: {} ===", jsonResponse);
-		
+
 		try {
 			// 尝试解析JSON以验证格式
 			Object parsed = objectMapper.readValue(jsonResponse, Object.class);
 			logger.info("=== JSON格式验证成功，解析结果类型: {} ===", parsed.getClass().getSimpleName());
 			return jsonResponse;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("=== JSON格式验证失败: {} ===", e.getMessage(), e);
 			logger.error("=== 验证失败的JSON内容: {} ===", jsonResponse);
 			return null;
@@ -612,7 +612,7 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 	private void extractSessionIdFromHeaders(org.springframework.http.HttpHeaders headers) {
 		logger.info("=== 开始从响应头提取Session ID ===");
 		logger.info("=== 响应头: {} ===", headers);
-		
+
 		// 尝试从不同的头字段中获取Session ID
 		String newSessionId = headers.getFirst("mcp-session-id");
 		if (newSessionId == null) {
@@ -624,13 +624,14 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 		if (newSessionId == null) {
 			newSessionId = headers.getFirst("Session-ID");
 		}
-		
+
 		if (newSessionId != null && !newSessionId.trim().isEmpty()) {
 			synchronized (sessionIdLock) {
 				this.sessionId = newSessionId.trim();
 				logger.info("=== 成功提取Session ID: {} ===", this.sessionId);
 			}
-		} else {
+		}
+		else {
 			logger.warn("=== 响应头中未找到Session ID ===");
 		}
 	}
@@ -653,4 +654,5 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 			logger.info("=== 手动设置Session ID: {} ===", this.sessionId);
 		}
 	}
+
 }
