@@ -98,6 +98,7 @@ public class NamespaceEntity {
 		config.setCode(this.getCode());
 		config.setHost(this.getHost());
 		config.setDescription(this.getDescription());
+		config.setHost(this.getHost());
 		return config;
 	}
 

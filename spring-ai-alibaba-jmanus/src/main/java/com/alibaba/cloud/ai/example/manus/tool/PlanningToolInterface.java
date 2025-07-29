@@ -42,11 +42,4 @@ public interface PlanningToolInterface {
 	 */
 	FunctionToolCallback<?, ToolExecuteResult> getFunctionToolCallback();
 
-	/**
-	 * 执行工具输入并返回结果
-	 * @param input 工具输入字符串
-	 * @return 工具执行结果
-	 */
-	ToolExecuteResult apply(String input);
-
 }

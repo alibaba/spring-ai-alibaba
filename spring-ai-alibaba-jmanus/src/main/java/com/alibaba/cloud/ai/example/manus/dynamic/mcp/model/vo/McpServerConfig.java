@@ -31,6 +31,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class McpServerConfig {
 
+	private final ObjectMapper objectMapper;
+
+	/**
+	 * Default constructor for Jackson deserialization
+	 */
+	public McpServerConfig() {
+		this.env = new HashMap<>();
+		this.objectMapper = new ObjectMapper();
+	}
+
+	public McpServerConfig(ObjectMapper objectMapper) {
+		this.env = new HashMap<>();
+		this.objectMapper = objectMapper;
+	}
+
 	private String url;
 
 	@JsonProperty("command")
@@ -44,10 +59,6 @@ public class McpServerConfig {
 
 	@JsonProperty("status")
 	private McpConfigStatus status = McpConfigStatus.ENABLE; // 默认为启用状态
-
-	public McpServerConfig() {
-		this.env = new HashMap<>();
-	}
 
 	public String getUrl() {
 		return url;
@@ -139,7 +150,7 @@ public class McpServerConfig {
 	 */
 	public String toJson() {
 		try {
-			return new ObjectMapper().writeValueAsString(this);
+			return objectMapper.writeValueAsString(this);
 		}
 		catch (Exception e) {
 			// If serialization fails, manually build a simplified JSON
