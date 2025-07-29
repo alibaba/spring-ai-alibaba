@@ -108,7 +108,7 @@
                 <div class="welcome-text">
                   <h4>Hi~ 我是{{ selectedAgent.name }}</h4>
                   <p>{{ selectedAgent.description || '我是您的智能助手，有什么可以帮助您的吗？' }}</p>
-                  <div class="example-queries">
+                  <div class="example-queries" v-if="exampleQueries.length > 0">
                     <div 
                       class="example-query" 
                       v-for="example in exampleQueries" 
@@ -175,7 +175,7 @@
 <script>
 import { ref, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { agentApi } from '../utils/api.js';
+import { agentApi, presetQuestionApi } from '../utils/api.js';
 
 export default {
   name: 'AgentWorkspace',
@@ -190,12 +190,7 @@ export default {
     const chatContainer = ref(null);
     const chatInput = ref(null);
 
-    const exampleQueries = ref([
-      '查询销售额最高的5个产品',
-      '分析最近一个月的销售趋势',
-      '统计各个分类的商品数量',
-      '查询用户购买行为分析'
-    ]);
+    const exampleQueries = ref([]);
 
     const loadPublishedAgents = async () => {
       try {
@@ -207,10 +202,24 @@ export default {
       }
     };
 
-    const selectAgent = (agent) => {
+    // 加载智能体的预设问题
+    const loadAgentPresetQuestions = async (agentId) => {
+      try {
+        const questions = await presetQuestionApi.getByAgentId(agentId);
+        exampleQueries.value = questions.map(q => q.question);
+        console.log('加载预设问题成功:', questions);
+      } catch (error) {
+        console.error('加载预设问题失败:', error);
+        exampleQueries.value = []; // 如果加载失败，不显示预设问题
+      }
+    };
+
+    const selectAgent = async (agent) => {
       selectedAgent.value = agent;
       chatMessages.value = [];
       currentMessage.value = '';
+      // 加载该智能体的预设问题
+      await loadAgentPresetQuestions(agent.id);
       nextTick(() => {
         if (chatInput.value) {
           chatInput.value.focus();
@@ -1069,6 +1078,8 @@ export default {
   0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
   40% { transform: scale(1); opacity: 1; }
 }
+
+
 
 /* 输入区域 */
 .chat-input-area {
