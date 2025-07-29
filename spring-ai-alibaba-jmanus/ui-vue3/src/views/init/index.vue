@@ -21,12 +21,73 @@
         <div class="logo">
           <h1>🤖 JManus</h1>
         </div>
-        <h2>{{ $t('init.welcome') }}</h2>
-        <p class="description">{{ $t('init.description') }}</p>
+        <h2>{{ currentStep === 1 ? $t('init.welcomeStep') : $t('init.welcome') }}</h2>
+        <p class="description">{{ currentStep === 1 ? $t('init.languageStepDescription') : $t('init.description') }}</p>
       </div>
 
-      <!-- Form -->
-      <div class="init-form">
+      <!-- Step Indicator -->
+      <div class="step-indicator">
+        <div class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
+          <span class="step-number">1</span>
+          <span class="step-label">{{ $t('init.stepLanguage') }}</span>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
+          <span class="step-number">2</span>
+          <span class="step-label">{{ $t('init.stepModel') }}</span>
+        </div>
+      </div>
+
+      <!-- Step 1: Language Selection -->
+      <div v-if="currentStep === 1" class="init-form language-selection">
+        <div class="form-group">
+          <label class="form-label">{{ $t('init.selectLanguageLabel') }}</label>
+          <div class="language-options">
+            <label class="language-option" :class="{ active: selectedLanguage === 'zh' }">
+              <input
+                type="radio"
+                v-model="selectedLanguage"
+                value="zh"
+              />
+              <span class="language-content">
+                <span class="language-flag">🇨🇳</span>
+                <span class="language-text">
+                  <strong>中文</strong>
+                  <small>简体中文</small>
+                </span>
+              </span>
+            </label>
+            <label class="language-option" :class="{ active: selectedLanguage === 'en' }">
+              <input
+                type="radio"
+                v-model="selectedLanguage"
+                value="en"
+              />
+              <span class="language-content">
+                <span class="language-flag">🇺🇸</span>
+                <span class="language-text">
+                  <strong>English</strong>
+                  <small>English (US)</small>
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions single">
+          <button 
+            type="button" 
+            class="submit-btn" 
+            :disabled="!selectedLanguage"
+            @click="goToNextStep"
+          >
+            {{ $t('init.continueToModel') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Model Configuration -->
+      <div v-if="currentStep === 2" class="init-form">
         <form @submit.prevent="handleSubmit">
           <!-- Configuration Mode Selection -->
           <div class="form-group">
@@ -153,6 +214,14 @@
 
           <div class="form-actions">
             <button
+              type="button"
+              class="back-btn"
+              @click="goToPreviousStep"
+              :disabled="loading"
+            >
+              {{ $t('init.back') }}
+            </button>
+            <button
               type="submit"
               class="submit-btn"
               :disabled="loading || !isFormValid"
@@ -199,8 +268,12 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { LlmCheckService } from '@/utils/llm-check'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const router = useRouter()
+
+// Step management
+const currentStep = ref(1)
+const selectedLanguage = ref(locale.value || 'en')
 
 // Form state
 const form = ref({
@@ -229,6 +302,21 @@ const isFormValid = computed(() => {
 })
 
 // Methods
+const goToNextStep = () => {
+  if (selectedLanguage.value) {
+    // Apply language change
+    locale.value = selectedLanguage.value
+    localStorage.setItem('preferredLanguage', selectedLanguage.value)
+    
+    // Move to next step
+    currentStep.value = 2
+  }
+}
+
+const goToPreviousStep = () => {
+  currentStep.value = 1
+}
+
 const onConfigModeChange = () => {
   // Clear related fields when configuration mode changes
   form.value.apiKey = ''
@@ -343,6 +431,13 @@ const checkInitStatus = async () => {
 }
 
 onMounted(() => {
+  // Check for saved language preference
+  const savedLanguage = localStorage.getItem('preferredLanguage')
+  if (savedLanguage && (savedLanguage === 'zh' || savedLanguage === 'en')) {
+    selectedLanguage.value = savedLanguage
+    locale.value = savedLanguage
+  }
+  
   checkInitStatus()
 })
 </script>
@@ -403,6 +498,150 @@ onMounted(() => {
 
 .init-form {
   margin-bottom: 24px;
+}
+
+/* Step Indicator Styles */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 32px 0;
+  padding: 0 20px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+}
+
+.step.active {
+  opacity: 1;
+}
+
+.step.completed {
+  opacity: 1;
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-number {
+  background: #667eea;
+  border-color: #667eea;
+  color: #ffffff;
+}
+
+.step.completed .step-number {
+  background: #4ade80;
+  border-color: #4ade80;
+  color: #ffffff;
+}
+
+.step-label {
+  font-size: 14px;
+  color: #888888;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-label {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.step.completed .step-label {
+  color: #4ade80;
+}
+
+.step-divider {
+  width: 60px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 20px;
+}
+
+/* Language Selection Styles */
+.language-selection {
+  margin-bottom: 0;
+}
+
+.language-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.language-option:hover {
+  border-color: rgba(102, 126, 234, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.language-option.active {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.language-option input[type="radio"] {
+  margin: 0 16px 0 0;
+  width: 20px;
+  height: 20px;
+  accent-color: #667eea;
+}
+
+.language-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.language-flag {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.language-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.language-text strong {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.language-text small {
+  color: #888888;
+  font-size: 14px;
 }
 
 .form-group {
@@ -530,7 +769,38 @@ onMounted(() => {
 }
 
 .form-actions {
-  text-align: center;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+}
+
+.form-actions.single {
+  justify-content: center;
+}
+
+.back-btn {
+  padding: 12px 32px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.back-btn:hover:not(:disabled) {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.back-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .submit-btn {
@@ -795,6 +1065,34 @@ onMounted(() => {
   .description {
     font-size: 15px;
   }
+
+  .step-indicator {
+    margin: 24px 0;
+    padding: 0 10px;
+  }
+
+  .step-divider {
+    width: 40px;
+    margin: 0 15px;
+  }
+
+  .language-flag {
+    font-size: 28px;
+  }
+
+  .language-text strong {
+    font-size: 16px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .back-btn,
+  .submit-btn {
+    width: 100%;
+    min-width: auto;
+  }
 }
 
 @media (max-width: 640px) {
@@ -818,6 +1116,42 @@ onMounted(() => {
 
   .description {
     font-size: 14px;
+  }
+
+  .step-indicator {
+    margin: 20px 0;
+    padding: 0 5px;
+  }
+
+  .step-number {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .step-label {
+    font-size: 12px;
+  }
+
+  .step-divider {
+    width: 30px;
+    margin: 0 10px;
+  }
+
+  .language-option {
+    padding: 16px;
+  }
+
+  .language-flag {
+    font-size: 24px;
+  }
+
+  .language-text strong {
+    font-size: 16px;
+  }
+
+  .language-text small {
+    font-size: 13px;
   }
 }
 </style>

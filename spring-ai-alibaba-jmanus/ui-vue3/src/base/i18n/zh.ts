@@ -25,7 +25,14 @@ const words: I18nType = {
   // 初始化页面
   init: {
     welcome: '欢迎使用 JManus',
+    welcomeStep: '欢迎使用 JManus',
     description: '首次使用需要配置 LLM 服务来启用 AI 功能。您可以选择使用阿里云百炼服务或自定义 OpenAI 兼容的 API 服务。',
+    languageStepDescription: '请选择您的语言偏好，这将作为默认界面语言。',
+    stepLanguage: '语言选择',
+    stepModel: '模型配置',
+    selectLanguageLabel: '选择语言',
+    continueToModel: '继续配置模型',
+    back: '返回',
     configModeLabel: '配置模式',
     dashscopeMode: '阿里云百炼（推荐）',
     dashscopeModeDesc: '使用阿里云百炼服务，只需提供 API 密钥即可快速开始',

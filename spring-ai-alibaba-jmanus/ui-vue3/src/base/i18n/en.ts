@@ -25,7 +25,14 @@ const words: I18nType = {
   // Initialization page
   init: {
     welcome: 'Welcome to JManus',
+    welcomeStep: 'Welcome to JManus',
     description: 'To get started, you need to configure an LLM service to enable AI features. You can choose Alibaba Cloud DashScope or configure any OpenAI-compatible API service.',
+    languageStepDescription: 'Please select your language preference, which will be used as the default interface language.',
+    stepLanguage: 'Language',
+    stepModel: 'Model Setup',
+    selectLanguageLabel: 'Select Language',
+    continueToModel: 'Continue to Model Setup',
+    back: 'Back',
     configModeLabel: 'Configuration Mode',
     dashscopeMode: 'Alibaba Cloud DashScope (Recommended)',
     dashscopeModeDesc: 'Use Alibaba Cloud DashScope service, just provide API key to get started quickly',
