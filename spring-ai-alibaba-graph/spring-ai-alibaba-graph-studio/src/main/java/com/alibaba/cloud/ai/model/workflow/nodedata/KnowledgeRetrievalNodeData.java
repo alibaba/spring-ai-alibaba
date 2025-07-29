@@ -70,6 +70,18 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 
 	private String outputKey;
 
+	private String retrievalMode;
+
+	private String embeddingModelName;
+
+	private String embeddingProviderName;
+
+	private Double vectorWeight;
+
+	private String inputId;
+
+	private String inputField;
+
 	public KnowledgeRetrievalNodeData() {
 		super(Collections.emptyList(), DEFAULT_OUTPUT_SCHEMA);
 	}
@@ -212,6 +224,54 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 
 	public void setVectorStore(VectorStore vectorStore) {
 		this.vectorStore = vectorStore;
+	}
+
+	public String getEmbeddingProviderName() {
+		return embeddingProviderName;
+	}
+
+	public void setEmbeddingProviderName(String embeddingProviderName) {
+		this.embeddingProviderName = embeddingProviderName;
+	}
+
+	public String getRetrievalMode() {
+		return retrievalMode;
+	}
+
+	public void setRetrievalMode(String retrievalMode) {
+		this.retrievalMode = retrievalMode;
+	}
+
+	public String getEmbeddingModelName() {
+		return embeddingModelName;
+	}
+
+	public void setEmbeddingModelName(String embeddingModelName) {
+		this.embeddingModelName = embeddingModelName;
+	}
+
+	public Double getVectorWeight() {
+		return vectorWeight;
+	}
+
+	public void setVectorWeight(Double vectorWeight) {
+		this.vectorWeight = vectorWeight;
+	}
+
+	public String getInputId() {
+		return inputId;
+	}
+
+	public void setInputId(String inputId) {
+		this.inputId = inputId;
+	}
+
+	public String getInputField() {
+		return inputField;
+	}
+
+	public void setInputField(String inputField) {
+		this.inputField = inputField;
 	}
 
 }
