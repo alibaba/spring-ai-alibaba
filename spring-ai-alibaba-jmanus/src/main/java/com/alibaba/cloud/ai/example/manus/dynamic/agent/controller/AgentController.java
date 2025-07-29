@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -41,9 +42,12 @@ public class AgentController {
 	@Autowired
 	private AgentService agentService;
 
+	@Value("${namespace.value}")
+	private String namespace;
+
 	@GetMapping
 	public ResponseEntity<List<AgentConfig>> getAllAgents() {
-		return ResponseEntity.ok(agentService.getAllAgents());
+		return ResponseEntity.ok(agentService.getAllAgentsByNamespace(namespace));
 	}
 
 	@GetMapping("/namespace/{namespace}")

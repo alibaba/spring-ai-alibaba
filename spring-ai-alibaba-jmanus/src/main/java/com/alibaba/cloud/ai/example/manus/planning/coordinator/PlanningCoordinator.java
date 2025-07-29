@@ -36,7 +36,7 @@ public class PlanningCoordinator {
 
 	private final PlanExecutorFactory planExecutorFactory;
 
-	private final PlanFinalizer planFinalizer;
+	private PlanFinalizer planFinalizer;
 
 	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
 			PlanFinalizer planFinalizer) {
@@ -170,6 +170,10 @@ public class PlanningCoordinator {
 	 */
 	public boolean isPlanTypeSupported(String planType) {
 		return planExecutorFactory.isPlanTypeSupported(planType);
+	}
+
+	public void setPlanFinalizer(PlanFinalizer planFinalizer) {
+		this.planFinalizer = planFinalizer;
 	}
 
 }
