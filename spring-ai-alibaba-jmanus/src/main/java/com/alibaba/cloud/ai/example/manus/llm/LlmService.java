@@ -155,7 +155,9 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 
 	@Override
 	public void clearAgentMemory(String planId) {
-		this.agentMemory.clear(planId);
+		if (this.agentMemory != null) {
+			this.agentMemory.clear(planId);
+		}
 	}
 
 	@Override

@@ -87,6 +87,7 @@ public class ManusController {
 		context.setCurrentPlanId(planId);
 		context.setRootPlanId(planId);
 		context.setNeedSummary(true);
+		
 		// Get or create planning flow
 		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(planId);
 

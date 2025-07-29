@@ -167,6 +167,19 @@ public interface PlanInterface {
 	public String getPlanId();
 
 	/**
+	 * 是否为直接反馈模式
+	 * 当为true时，跳过复杂的计划执行，直接使用LLM给出响应
+	 * @return 如果是直接反馈模式则返回true
+	 */
+	boolean isDirectResponse();
+
+	/**
+	 * 设置是否为直接反馈模式
+	 * @param directResponse 直接反馈模式标志
+	 */
+	void setDirectResponse(boolean directResponse);
+
+	/**
 	 * 更新所有步骤的索引，从0开始递增。 Update the indices of all steps, starting from 0.
 	 */
 	default void updateStepIndices() {

@@ -38,70 +38,81 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 	/**
 	 * Internal input class for defining planning tool input parameters
 	 */
-	public static class PlanningInput {
+       public static class PlanningInput {
 
-		private String command;
+	       private String command;
 
-		private String planId;
+	       private String planId;
 
-		private String title;
+	       private String title;
 
-		private List<String> steps;
+	       private List<String> steps;
 
-		private String terminateColumns;
+	       private String terminateColumns;
 
-		public PlanningInput() {
-		}
+	       private boolean directResponse = false;
 
-		public PlanningInput(String command, String planId, String title, List<String> steps) {
-			this.command = command;
-			this.planId = planId;
-			this.title = title;
-			this.steps = steps;
-			this.terminateColumns = null;
-		}
+	       public PlanningInput() {
+	       }
 
-		public String getCommand() {
-			return command;
-		}
+	       public PlanningInput(String command, String planId, String title, List<String> steps, boolean directResponse) {
+		       this.command = command;
+		       this.planId = planId;
+		       this.title = title;
+		       this.steps = steps;
+		       this.terminateColumns = null;
+		       this.directResponse = directResponse;
+	       }
 
-		public void setCommand(String command) {
-			this.command = command;
-		}
+	       public String getCommand() {
+		       return command;
+	       }
 
-		public String getPlanId() {
-			return planId;
-		}
+	       public void setCommand(String command) {
+		       this.command = command;
+	       }
 
-		public void setPlanId(String planId) {
-			this.planId = planId;
-		}
+	       public String getPlanId() {
+		       return planId;
+	       }
 
-		public String getTitle() {
-			return title;
-		}
+	       public void setPlanId(String planId) {
+		       this.planId = planId;
+	       }
 
-		public void setTitle(String title) {
-			this.title = title;
-		}
+	       public String getTitle() {
+		       return title;
+	       }
 
-		public List<String> getSteps() {
-			return steps;
-		}
+	       public void setTitle(String title) {
+		       this.title = title;
+	       }
 
-		public void setSteps(List<String> steps) {
-			this.steps = steps;
-		}
+	       public List<String> getSteps() {
+		       return steps;
+	       }
 
-		public String getTerminateColumns() {
-			return terminateColumns;
-		}
+	       public void setSteps(List<String> steps) {
+		       this.steps = steps;
+	       }
 
-		public void setTerminateColumns(String terminateColumns) {
-			this.terminateColumns = terminateColumns;
-		}
+	       public String getTerminateColumns() {
+		       return terminateColumns;
+	       }
 
-	}
+	       public void setTerminateColumns(String terminateColumns) {
+		       this.terminateColumns = terminateColumns;
+	       }
+
+	       public boolean isDirectResponse() {
+		       return directResponse;
+	       }
+
+	       public void setDirectResponse(boolean directResponse) {
+		       this.directResponse = directResponse;
+	       }
+
+       }
 
 	public String getCurrentPlanId() {
 		return currentPlan != null ? currentPlan.getCurrentPlanId() : null;
@@ -111,41 +122,44 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 		return currentPlan;
 	}
 
-	private static final String PARAMETERS = """
-			{
-			    "type": "object",
-			    "properties": {
-			        "command": {
-			            "description": "create a execution plan , Available commands: create",
-			            "enum": [
-			                "create"
-			            ],
-			            "type": "string"
-			        },
-			        "title": {
-			            "description": "Title for the plan",
-			            "type": "string"
-			        },
-			        "steps": {
-			            "description": "List of plan steps",
-			            "type": "array",
-			            "items": {
-			                "type": "string"
-			            }
-			        }
-			        ,
-					"terminateColumns": {
-						"description": "Terminate structure output columns for all steps (optional, will be applied to every step)",
-						"type": "string"
-					}
-			    },
-			    "required": [
-			    	"command",
-			    	"title",
-			    	"steps"
-			    ]
-			}
-			""";
+	   private static final String PARAMETERS = """
+					   {
+						   "type": "object",
+						   "properties": {
+							   "command": {
+								   "description": "create a execution plan , Available commands: create",
+								   "enum": [
+									   "create"
+								   ],
+								   "type": "string"
+							   },
+							   "title": {
+								   "description": "Title for the plan",
+								   "type": "string"
+							   },
+							   "steps": {
+								   "description": "List of plan steps",
+								   "type": "array",
+								   "items": {
+									   "type": "string"
+								   }
+							   },
+							   "terminateColumns": {
+									   "description": "Terminate structure output columns for all steps (optional, will be applied to every step)",
+									   "type": "string"
+							   },
+							   "directResponse": {
+									   "description": "Whether to use direct response mode (skip planning and respond directly)",
+									   "type": "boolean"
+							   }
+						   },
+						   "required": [
+								"command",
+								"title",
+								"steps"
+						   ]
+					   }
+					   """;
 
 	private static final String name = "planning";
 
@@ -166,25 +180,36 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 			.build();
 	}
 
-	@Override
-	public ToolExecuteResult run(PlanningInput input) {
-		String command = input.getCommand();
-		String planId = input.getPlanId();
-		String title = input.getTitle();
-		List<String> steps = input.getSteps();
+       @Override
+       public ToolExecuteResult run(PlanningInput input) {
+	       String command = input.getCommand();
+	       String planId = input.getPlanId();
+	       String title = input.getTitle();
+	       List<String> steps = input.getSteps();
+		   boolean directResponse = input.isDirectResponse();
+			
+	       // 支持directResponse模式
+	       if (directResponse) {
+		       log.info("Direct response mode enabled for planId: {}", planId);
+		       ExecutionPlan plan = new ExecutionPlan(planId, planId, title);
+		       plan.setDirectResponse(true);
+		       plan.setUserRequest(title); // 这里title即为用户请求内容
+		       this.currentPlan = plan;
+		       return new ToolExecuteResult("Direct response mode: plan created for " + planId);
+	       }
 
-		return switch (command) {
-			case "create" -> createPlan(planId, title, steps, input.getTerminateColumns());
-			// case "update" -> updatePlan(planId, title, steps);
-			// case "get" -> getPlan(planId);
-			// case "mark_step" -> markStep(planId, stepIndex, stepStatus, stepNotes);
-			// case "delete" -> deletePlan(planId);
-			default -> {
-				log.info("Received invalid command: {}", command);
-				throw new IllegalArgumentException("Invalid command: " + command);
-			}
-		};
-	}
+	       return switch (command) {
+		       case "create" -> createPlan(planId, title, steps, input.getTerminateColumns());
+		       // case "update" -> updatePlan(planId, title, steps);
+		       // case "get" -> getPlan(planId);
+		       // case "mark_step" -> markStep(planId, stepIndex, stepStatus, stepNotes);
+		       // case "delete" -> deletePlan(planId);
+		       default -> {
+			       log.info("Received invalid command: {}", command);
+			       throw new IllegalArgumentException("Invalid command: " + command);
+		       }
+	       };
+       }
 
 	/**
 	 * Create a single execution step
