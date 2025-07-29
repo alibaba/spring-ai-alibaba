@@ -24,4 +24,6 @@ public interface DynamicModelRepository extends JpaRepository<DynamicModelEntity
 
 	DynamicModelEntity findByModelName(String modelName);
 
+	DynamicModelEntity findByIsDefaultTrue();
+
 }

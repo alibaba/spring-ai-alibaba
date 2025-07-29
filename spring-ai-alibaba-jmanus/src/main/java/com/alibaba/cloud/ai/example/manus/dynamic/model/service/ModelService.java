@@ -34,4 +34,6 @@ public interface ModelService {
 
 	ValidationResult validateConfig(String baseUrl, String apiKey);
 
+	void setDefaultModel(Long modelId);
+
 }
