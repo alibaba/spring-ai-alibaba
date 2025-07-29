@@ -32,6 +32,7 @@
           数据智能体
         </span>
         <span class="nav-item clickable active" @click="goToAgentList">智能体</span>
+        <span class="nav-item clickable" @click="goToWorkspace">智能体工作台</span>
       </div>
       <div class="nav-right">
       </div>
@@ -937,7 +938,7 @@ export default {
     }
     
     const goToAgentList = () => {
-      router.push('/agent')
+      router.push('/agents')
     }
 
     const goToWorkspace = () => {
@@ -1793,12 +1794,12 @@ export default {
 /* 头部导航样式 */
 .top-nav {
   background: white;
+  border-bottom: 1px solid #e5e5e5;
   padding: 0 24px;
-  height: 56px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #e8e8e8;
+  align-items: center;
+  height: 60px;
 }
 
 .nav-items {
