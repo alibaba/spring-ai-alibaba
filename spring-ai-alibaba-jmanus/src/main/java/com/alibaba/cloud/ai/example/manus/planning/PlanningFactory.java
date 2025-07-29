@@ -143,6 +143,7 @@ public class PlanningFactory implements IPlanningFactory {
 	private StreamingResponseHandler streamingResponseHandler;
 
 	@Autowired
+	@Lazy
 	private CronService cronService;
 
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
