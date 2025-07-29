@@ -115,23 +115,16 @@ const examples = computed(() => [
   { title: t('home.examples.weather.title'), type: 'message', description: t('home.examples.weather.description'), icon: 'carbon:partly-cloudy', prompt: t('home.examples.weather.prompt') }
 ])
 const plans = computed(() => [
-  { title: t('home.examples.queryplan.title'), type: 'plan-act', description: t('home.examples.queryplan.description'), icon: 'carbon:plan', prompt: t('home.examples.queryplan.prompt'), planJson: { planType: 'simple', title: '查询 沈询 阿里的所有信息（用于展示无限上下文能力，html页面是个超长文件，可以通过无限上下文解析）', steps: [{ stepRequirement: '[BROWSER_AGENT] 通过 百度 查询 沈询 阿里 ， 获取第一页的html 百度数据，合并聚拢 到 html_data 的目录里', terminateColumns: '存放的目录路径' }, { stepRequirement: '[BROWSER_AGENT] 从 html_data 目录中找到所有的有效关于沈询 阿里 的网页链接，输出到 link.md里面', terminateColumns: 'url地址，说明' }], planId: 'planTemplate-1749200517403' } },
-  { title: t('home.examples.ainovel.title'), type: 'plan-act', description: t('home.examples.ainovel.description'), icon: 'carbon:document-tasks', prompt: t('home.examples.ainovel.prompt'), planJson: { planType: 'simple', title: '人工智能逐步击败人类小说创作计划（用于展示超长内容输出，可以输出远超单次llmcall的内容）', steps: [{ stepRequirement: '[TEXT_FILE_AGENT] 创建小说的大标题和子章节标题的文件,期望是一有10个子章节的的小说，提纲输出到novel.md里，每一个子章节用二级标题，在当前步骤只需要写章节的标题即可,小说的大标题是《人工智能逐步击败人类》', terminateColumns: '文件的名字' }, { stepRequirement: '[TEXT_FILE_AGENT] 从novel.md文件获取子标题信息，然后依次完善每一个章节的具体内容，每个轮次只完善一个子章节的内容，用replace来更新内容，每个章节要求有3000字的内容，不要每更新一个章节就查询一下文档的全部内容', terminateColumns: '文件的名字' }], planId: 'planTemplate-1753622676988' } }
+  { title: t('home.examples.queryplan.title'), type: 'plan-act', description: t('home.examples.queryplan.description'), icon: 'carbon:plan', prompt: t('home.examples.queryplan.prompt'), planJson: { planType: 'simple', title: '查询 沈询 阿里的所有信息（用于展示无限上下文能力）', steps: [{ stepRequirement: '[BROWSER_AGENT] 通过 百度 查询 沈询 阿里 ， 获取第一页的html 百度数据，合并聚拢 到 html_data 的目录里', terminateColumns: '存放的目录路径' }, { stepRequirement: '[BROWSER_AGENT] 从 html_data 目录中找到所有的有效关于沈询 阿里 的网页链接，输出到 link.md里面', terminateColumns: 'url地址，说明' }], planId: 'planTemplate-1749200517403' } },
+  { title: t('home.examples.ainovel.title'), type: 'plan-act', description: t('home.examples.ainovel.description'), icon: 'carbon:document-tasks', prompt: t('home.examples.ainovel.prompt'), planJson: { planType: 'simple', title: '人工智能逐步击败人类小说创作计划', steps: [{ stepRequirement: '[TEXT_FILE_AGENT] 创建小说的大标题和子章节标题的文件,期望是一有10个子章节的的小说，提纲输出到novel.md里，每一个子章节用二级标题，在当前步骤只需要写章节的标题即可,小说的大标题是《人工智能逐步击败人类》', terminateColumns: '文件的名字' }, { stepRequirement: '[TEXT_FILE_AGENT] 从novel.md文件获取子标题信息，然后依次完善每一个章节的具体内容，每个轮次只完善一个子章节的内容，用replace来更新内容，每个章节要求有3000字的内容，不要每更新一个章节就查询一下文档的全部内容', terminateColumns: '文件的名字' }], planId: 'planTemplate-1753622676988' } }
 ])
 const allCards = computed(() => [...examples.value, ...plans.value])
 
 const handleCardClick = (item: any) => {
-  console.log('[Home] handleCardClick called with item:', item)
-  console.log('[Home] Item type:', item.type)
-  
   if (item.type === 'message') {
-    console.log('[Home] Calling selectExample for message type')
     selectExample(item)
   } else if (item.type === 'plan-act') {
-    console.log('[Home] Calling selectPlan for plan-act type')
     selectPlan(item)
-  } else {
-    console.warn('[Home] Unknown item type:', item.type)
   }
 }
 
@@ -149,22 +142,9 @@ import { sidebarStore } from '@/stores/sidebar'
 
 const saveJsonPlanToTemplate = async (jsonPlan: any) => {
   try {
-    // 使用 planJson 中预定义的 planId，而不是创建新的临时 ID
-    const planId = jsonPlan.planId || `planTemplate-${Date.now()}`
-    
-    // 创建模板但使用预定义的 ID
-    const template = {
-      id: planId,
-      title: jsonPlan.title || t('sidebar.newTemplateName'),
-      description: t('sidebar.newTemplateDescription'),
-      createTime: new Date().toISOString(),
-      updateTime: new Date().toISOString(),
-    }
-    sidebarStore.selectedTemplate = template
-    sidebarStore.currentPlanTemplateId = planId
-    sidebarStore.jsonContent = JSON.stringify(jsonPlan)
-    
-    const saveResult = await sidebarStore.saveTemplate()
+    sidebarStore.createNewTemplate();
+    sidebarStore.jsonContent = JSON.stringify(jsonPlan);
+    const saveResult = await sidebarStore.saveTemplate();
     if (saveResult?.duplicate) {
       console.log('[Sidebar] ' + t('sidebar.saveCompleted', { message: saveResult.message, versionCount: saveResult.versionCount }));
     } else if (saveResult?.saved) {
@@ -277,14 +257,11 @@ const selectPlan = async (plan: any) => {
       // Load the template list
       await sidebarStore.loadPlanTemplateList()
       console.log('[Sidebar] Template list loaded')
-      console.log('[Sidebar] Available templates:', sidebarStore.planTemplateList.map(t => ({ id: t.id, title: t.title })))
-      console.log('[Sidebar] Looking for template with id:', plan.planJson.planId)
       
       // Find and select the template 
       const template = sidebarStore.planTemplateList.find(t => t.id === plan.planJson.planId)
       if (!template) {
-        console.error('[Sidebar] Template not found with id:', plan.planJson.planId)
-        console.error('[Sidebar] Available template IDs:', sidebarStore.planTemplateList.map(t => t.id))
+        console.error('[Sidebar] Template not found')
         return
       }
       

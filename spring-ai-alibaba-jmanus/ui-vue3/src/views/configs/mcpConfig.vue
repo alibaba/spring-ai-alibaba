@@ -752,6 +752,11 @@ const loadMcpServers = async () => {
   try {
     loading.value = true
     servers.value = await McpApiService.getAllMcpServers()
+    
+    // 如果有服务器列表且当前没有选中的服务器，自动选择第一个
+    if (servers.value.length > 0 && !selectedServer.value && !showAddForm.value && !showJsonImport.value) {
+      selectServer(servers.value[0])
+    }
   } catch (error) {
     console.error('加载MCP服务器列表失败:', error)
     showMessage(t('config.basicConfig.loadConfigFailed'), 'error')
