@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.config;
 import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.dispatcher.PlanExecutorDispatcher;
+import com.alibaba.cloud.ai.dispatcher.PythonExecutorDispatcher;
 import com.alibaba.cloud.ai.dispatcher.QueryRewriteDispatcher;
 import com.alibaba.cloud.ai.dispatcher.SQLExecutorDispatcher;
 import com.alibaba.cloud.ai.dispatcher.SemanticConsistenceDispatcher;
@@ -185,7 +186,10 @@ public class Nl2sqlConfiguration {
 			// The edge from PlannerNode now goes to PlanExecutorNode for validation and
 			// execution
 			.addEdge(PLANNER_NODE, PLAN_EXECUTOR_NODE)
-			.addEdge(PYTHON_EXECUTE_NODE, PLAN_EXECUTOR_NODE)
+			.addConditionalEdges(PYTHON_EXECUTE_NODE, edge_async(new PythonExecutorDispatcher()), Map.of(
+					PLAN_EXECUTOR_NODE, PLAN_EXECUTOR_NODE,
+					END, PLAN_EXECUTOR_NODE
+			))
 			// The dispatcher at PlanExecutorNode will decide the next step
 			.addConditionalEdges(PLAN_EXECUTOR_NODE, edge_async(new PlanExecutorDispatcher()), Map.of(
 					// If validation fails, go back to PlannerNode to repair

@@ -51,7 +51,7 @@ public class PythonExecutorTool {
 			return "Error: Code must be a non-empty string.";
 		}
 		return this.codePoolExecutorService.runTask(new CodePoolExecutorService.TaskRequest(code, data, requirements))
-			.output();
+			.stdOut();
 	}
 
 }

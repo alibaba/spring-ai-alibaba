@@ -63,8 +63,6 @@ public class Constant {
 
 	public static final String SQL_EXECUTE_NODE_EXCEPTION_OUTPUT = "SQL_EXECUTE_NODE_EXCEPTION_OUTPUT";
 
-	public static final String PYTHON_EXECUTE_NODE_OUTPUT = "PYTHON_EXECUTE_NODE_OUTPUT";
-
 	// Plan当前需要执行的步骤编号
 	public static final String PLAN_CURRENT_STEP = "PLAN_CURRENT_STEP";
 
@@ -106,5 +104,12 @@ public class Constant {
 	public static final String SMALL_TALK_REJECT = "闲聊拒识";
 
 	public static final String INTENT_UNCLEAR = "意图模糊需要澄清";
+
+	// 有关Python代码执行的键
+	public static final String SQL_RESULT_CODE_MEMORY_KEY = "SQL_RESULT_CODE_MEMORY_KEY";
+
+	public static final String PYTHON_EXECUTE_NODE_OUTPUT = "PYTHON_EXECUTE_NODE_OUTPUT";
+
+	public static final String PYTHON_IS_SUCCESS = "PYTHON_IS_SUCCESS";
 
 }
