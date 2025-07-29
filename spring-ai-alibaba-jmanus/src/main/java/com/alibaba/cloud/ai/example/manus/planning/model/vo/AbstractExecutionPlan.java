@@ -196,6 +196,21 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	}
 
 	/**
+	 * 是否为直接反馈模式
+	 */
+	protected boolean directResponse = false;
+
+	@Override
+	public boolean isDirectResponse() {
+		return directResponse;
+	}
+
+	@Override
+	public void setDirectResponse(boolean directResponse) {
+		this.directResponse = directResponse;
+	}
+
+	/**
 	 * 清空步骤的抽象方法 子类需要实现具体的步骤清空逻辑
 	 */
 	protected abstract void clearSteps();
