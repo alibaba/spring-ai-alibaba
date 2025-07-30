@@ -115,8 +115,11 @@ public class McpCacheManager {
 	 * 双缓存包装器 - 实现无闪断更新
 	 */
 	private static class DoubleCacheWrapper {
+
 		private volatile Map<String, McpServiceEntity> activeCache = new ConcurrentHashMap<>();
+
 		private volatile Map<String, McpServiceEntity> backgroundCache = new ConcurrentHashMap<>();
+
 		private final Object switchLock = new Object();
 
 		/**
@@ -150,6 +153,7 @@ public class McpCacheManager {
 		public void updateBackgroundCache(Map<String, McpServiceEntity> newCache) {
 			backgroundCache = new ConcurrentHashMap<>(newCache);
 		}
+
 	}
 
 	private final McpConnectionFactory connectionFactory;
@@ -197,23 +201,23 @@ public class McpCacheManager {
 	@PostConstruct
 	public void initializeCache() {
 		logger.info("Initializing MCP cache manager with double buffer mechanism");
-		
+
 		try {
 			// 启动时加载初始缓存
 			Map<String, McpServiceEntity> initialCache = loadMcpServices(
-				mcpConfigRepository.findByStatus(McpConfigStatus.ENABLE)
-			);
-			
+					mcpConfigRepository.findByStatus(McpConfigStatus.ENABLE));
+
 			// 同时设置活跃缓存和后台缓存
 			doubleCache.updateBackgroundCache(initialCache);
 			doubleCache.switchCache(); // 切换到初始缓存
-			
+
 			logger.info("Initial cache loaded successfully with {} services", initialCache.size());
-			
+
 			// 启动定时更新任务
 			startScheduledUpdate();
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			logger.error("Failed to initialize cache", e);
 		}
 	}
@@ -226,12 +230,8 @@ public class McpCacheManager {
 			updateTask.cancel(false);
 		}
 
-		updateTask = scheduledExecutor.scheduleAtFixedRate(
-			this::updateCacheTask,
-			CACHE_UPDATE_INTERVAL_MINUTES,
-			CACHE_UPDATE_INTERVAL_MINUTES,
-			TimeUnit.MINUTES
-		);
+		updateTask = scheduledExecutor.scheduleAtFixedRate(this::updateCacheTask, CACHE_UPDATE_INTERVAL_MINUTES,
+				CACHE_UPDATE_INTERVAL_MINUTES, TimeUnit.MINUTES);
 
 		logger.info("Scheduled cache update task started, interval: {} minutes", CACHE_UPDATE_INTERVAL_MINUTES);
 	}
@@ -242,22 +242,23 @@ public class McpCacheManager {
 	private void updateCacheTask() {
 		try {
 			logger.debug("Starting scheduled cache update task");
-			
+
 			// 查询所有enable的配置
 			List<McpConfigEntity> configs = mcpConfigRepository.findByStatus(McpConfigStatus.ENABLE);
-			
+
 			// 在后台缓存中构建新数据
 			Map<String, McpServiceEntity> newCache = loadMcpServices(configs);
-			
+
 			// 更新后台缓存
 			doubleCache.updateBackgroundCache(newCache);
-			
+
 			// 原子性切换缓存
 			doubleCache.switchCache();
-			
+
 			logger.info("Cache updated successfully via scheduled task, services count: {}", newCache.size());
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			logger.error("Failed to update cache via scheduled task", e);
 		}
 	}
@@ -490,10 +491,10 @@ public class McpCacheManager {
 	 */
 	public Map<String, McpServiceEntity> getOrLoadServices(String planId) {
 		try {
-			//planId不使用。
+			// planId不使用。
 			// 直接读取活跃缓存，无需加锁，保证无闪断
 			Map<String, McpServiceEntity> activeCache = doubleCache.getActiveCache();
-			
+
 			return new ConcurrentHashMap<>(activeCache);
 		}
 		catch (Exception e) {
@@ -523,22 +524,23 @@ public class McpCacheManager {
 	public void triggerCacheReload() {
 		try {
 			logger.info("Manually triggering cache reload");
-			
+
 			// 查询所有enable的配置
 			List<McpConfigEntity> configs = mcpConfigRepository.findByStatus(McpConfigStatus.ENABLE);
-			
+
 			// 在后台缓存中构建新数据
 			Map<String, McpServiceEntity> newCache = loadMcpServices(configs);
-			
+
 			// 更新后台缓存
 			doubleCache.updateBackgroundCache(newCache);
-			
+
 			// 原子性切换缓存
 			doubleCache.switchCache();
-			
+
 			logger.info("Manual cache reload completed, services count: {}", newCache.size());
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			logger.error("Failed to manually reload cache", e);
 		}
 	}
@@ -548,7 +550,8 @@ public class McpCacheManager {
 	 * @param planId 计划ID
 	 */
 	public void invalidateCache(String planId) {
-		logger.info("Cache invalidation requested for plan: {}, but using double buffer mechanism - no action needed", planId);
+		logger.info("Cache invalidation requested for plan: {}, but using double buffer mechanism - no action needed",
+				planId);
 		// 双缓存机制下，不需要手动清除缓存，会自动更新
 	}
 
@@ -576,8 +579,8 @@ public class McpCacheManager {
 	 */
 	public String getCacheStats() {
 		Map<String, McpServiceEntity> activeCache = doubleCache.getActiveCache();
-		return String.format("Double Buffer Cache Stats - Active Services: %d, Last Update: %s", 
-			activeCache.size(), formatTime(System.currentTimeMillis()));
+		return String.format("Double Buffer Cache Stats - Active Services: %d, Last Update: %s", activeCache.size(),
+				formatTime(System.currentTimeMillis()));
 	}
 
 	/**
@@ -603,8 +606,8 @@ public class McpCacheManager {
 	 * @return 缓存更新配置信息
 	 */
 	public String getCacheUpdateConfigurationInfo() {
-		return String.format("Cache Update Config - Interval: %d minutes, Double Buffer: enabled", 
-			CACHE_UPDATE_INTERVAL_MINUTES);
+		return String.format("Cache Update Config - Interval: %d minutes, Double Buffer: enabled",
+				CACHE_UPDATE_INTERVAL_MINUTES);
 	}
 
 	/**
@@ -613,12 +616,12 @@ public class McpCacheManager {
 	@PreDestroy
 	public void shutdown() {
 		logger.info("Shutting down MCP cache manager");
-		
+
 		// 停止定时任务
 		if (updateTask != null && !updateTask.isCancelled()) {
 			updateTask.cancel(false);
 		}
-		
+
 		// 关闭定时执行器
 		if (scheduledExecutor != null && !scheduledExecutor.isShutdown()) {
 			scheduledExecutor.shutdown();
@@ -626,28 +629,30 @@ public class McpCacheManager {
 				if (!scheduledExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
 					scheduledExecutor.shutdownNow();
 				}
-			} catch (InterruptedException e) {
+			}
+			catch (InterruptedException e) {
 				scheduledExecutor.shutdownNow();
 				Thread.currentThread().interrupt();
 			}
 		}
-		
+
 		// 关闭连接线程池
 		ExecutorService executor = connectionExecutorRef.get();
 		if (executor != null) {
 			shutdownExecutor(executor);
 		}
-		
+
 		// 关闭所有MCP客户端连接
 		Map<String, McpServiceEntity> activeCache = doubleCache.getActiveCache();
 		for (McpServiceEntity serviceEntity : activeCache.values()) {
 			try {
 				serviceEntity.getMcpAsyncClient().close();
-			} catch (Throwable t) {
+			}
+			catch (Throwable t) {
 				logger.error("Failed to close MCP client", t);
 			}
 		}
-		
+
 		logger.info("MCP cache manager shutdown completed");
 	}
 
