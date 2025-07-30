@@ -340,7 +340,7 @@ public class ManusProperties implements IManusProperties {
 	// Begin--------------------------------------------------------------------------------------------
 
 	@ConfigProperty(group = "manus", subGroup = "mcpServiceLoader", key = "connectionTimeoutSeconds",
-			path = "manus.mcpServiceLoader.connectionTimeoutSeconds", description = "MCP连接超时时间(秒)", defaultValue = "3",
+			path = "manus.mcpServiceLoader.connectionTimeoutSeconds", description = "MCP连接超时时间(秒)", defaultValue = "20",
 			inputType = ConfigInputType.NUMBER)
 	private volatile Integer mcpConnectionTimeoutSeconds;
 
@@ -362,7 +362,7 @@ public class ManusProperties implements IManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "mcpServiceLoader", key = "maxRetryCount",
-			path = "manus.mcpServiceLoader.maxRetryCount", description = "MCP连接最大重试次数", defaultValue = "1",
+			path = "manus.mcpServiceLoader.maxRetryCount", description = "MCP连接最大重试次数", defaultValue = "3",
 			inputType = ConfigInputType.NUMBER)
 	private volatile Integer mcpMaxRetryCount;
 
