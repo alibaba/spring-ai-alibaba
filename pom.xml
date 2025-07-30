@@ -95,7 +95,9 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tushare</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-ollamasearchmodel</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-minio</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-memcached</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-metaso</module>
+
 
         <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
@@ -145,6 +147,7 @@
         <module>community/memories/spring-ai-alibaba-starter-memory-elasticsearch</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-mongodb</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-tablestore</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-memcached</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 

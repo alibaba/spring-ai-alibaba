@@ -117,6 +117,13 @@
             <version>${revision}</version>
             <optional>true</optional>
         </dependency>
+  
+          <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-memory-memcached</artifactId>
+            <version>${revision}</version>
+            <optional>true</optional>
+        </dependency>
 
         <dependency>
             <groupId>co.elastic.clients</groupId>
