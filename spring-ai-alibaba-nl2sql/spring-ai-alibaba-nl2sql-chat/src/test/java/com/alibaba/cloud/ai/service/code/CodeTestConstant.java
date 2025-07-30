@@ -22,9 +22,9 @@ package com.alibaba.cloud.ai.service.code;
  * @author vlsmb
  * @since 2025/7/29
  */
-public final class CodeConstant {
+public final class CodeTestConstant {
 
-	private CodeConstant() {
+	private CodeTestConstant() {
 
 	}
 

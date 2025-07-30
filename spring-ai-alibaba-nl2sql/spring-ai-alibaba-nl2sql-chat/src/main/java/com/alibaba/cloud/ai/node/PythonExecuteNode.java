@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.node;
 import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorService;
+import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;

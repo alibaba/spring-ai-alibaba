@@ -16,11 +16,8 @@
 
 package com.alibaba.cloud.ai.config;
 
-import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorService;
-import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorServiceFactory;
-import com.alibaba.cloud.ai.service.code.memory.SqlResultMemoryService;
-import com.alibaba.cloud.ai.service.code.memory.SqlResultMemoryServiceFactory;
-import com.alibaba.cloud.ai.tool.PythonExecutorTool;
+import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
+import com.alibaba.cloud.ai.service.code.CodePoolExecutorServiceFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -41,17 +38,6 @@ public class CodeExecutorConfiguration {
 	public CodePoolExecutorService containerPoolExecutor(CodeExecutorProperties properties,
 			ChatClient.Builder chatClientBuilder) {
 		return CodePoolExecutorServiceFactory.newInstance(properties, chatClientBuilder);
-	}
-
-	@Bean
-	public SqlResultMemoryService sqlResultMemoryService(CodeExecutorProperties properties) {
-		return SqlResultMemoryServiceFactory.newInstance(properties);
-	}
-
-	@Bean
-	public PythonExecutorTool pythonExecutorTool(CodePoolExecutorService executor,
-			SqlResultMemoryService sqlResultMemoryService) {
-		return new PythonExecutorTool(executor, sqlResultMemoryService);
 	}
 
 }

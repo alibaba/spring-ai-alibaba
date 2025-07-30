@@ -45,7 +45,7 @@ import com.alibaba.cloud.ai.node.SqlGenerateNode;
 import com.alibaba.cloud.ai.node.TableRelationNode;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
-import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorService;
+import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;

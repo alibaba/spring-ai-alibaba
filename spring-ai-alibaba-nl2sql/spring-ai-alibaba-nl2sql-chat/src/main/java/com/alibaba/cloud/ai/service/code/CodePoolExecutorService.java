@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.service.code.executor;
+package com.alibaba.cloud.ai.service.code;
 
 /**
  * 运行Python任务的容器池接口

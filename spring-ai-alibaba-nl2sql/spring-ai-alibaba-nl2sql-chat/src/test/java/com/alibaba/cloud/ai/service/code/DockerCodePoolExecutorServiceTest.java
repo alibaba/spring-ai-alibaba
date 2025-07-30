@@ -16,9 +16,10 @@
 
 package com.alibaba.cloud.ai.service.code;
 
-import com.alibaba.cloud.ai.config.CodeExecutorConfiguration;
-import com.alibaba.cloud.ai.tool.PythonExecutorTool;
+import com.alibaba.cloud.ai.config.CodeExecutorProperties;
+import com.alibaba.cloud.ai.service.code.impl.DockerCodePoolExecutorService;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-@SpringBootTest(classes = { CodeExecutorConfiguration.class })
+@SpringBootTest(classes = { CodeExecutorProperties.class })
 @DisplayName("Run Python Code in Docker Test Without Network")
 @ActiveProfiles("docker")
 public class DockerCodePoolExecutorServiceTest {
@@ -43,77 +44,90 @@ public class DockerCodePoolExecutorServiceTest {
 	private static final Logger log = LoggerFactory.getLogger(DockerCodePoolExecutorServiceTest.class);
 
 	@Autowired
-	private PythonExecutorTool pythonExecutorTool;
+	private CodeExecutorProperties properties;
+
+	private CodePoolExecutorService codePoolExecutorService = null;
+
+	@BeforeEach
+	public void init() {
+		this.codePoolExecutorService = new DockerCodePoolExecutorService(properties);
+	}
 
 	private void testNormalCode() {
 		log.info("Run Normal Code");
-		String response = pythonExecutorTool.executePythonCode(CodeConstant.NORMAL_CODE, null, "DataFrame Data");
+		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
+			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.NORMAL_CODE, "", null));
 		System.out.println(response);
 		log.info("Run Normal Code Finished");
-		if (!response.contains("3628800")) {
+		if (!response.isSuccess() || !response.stdOut().contains("3628800")) {
 			throw new RuntimeException("Test Failed");
 		}
 	}
 
 	private void testPipInstall() {
 		log.info("Run Code with Third-parties Installed");
-		String response = pythonExecutorTool.executePythonCode(CodeConstant.CODE_WITH_DEPENDENCY, "numpy==2.2.6",
-				"DataFrame Data");
+		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
+			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.CODE_WITH_DEPENDENCY, "", null));
 		System.out.println(response);
 		log.info("Run Code with Third-parties Installed Finished");
-		if (response.contains("ModuleNotFoundError")) {
+		if (!response.isSuccess() || response.toString().contains("ModuleNotFoundError")) {
 			throw new RuntimeException("Test Failed");
 		}
 	}
 
 	private void testTimeoutCode() {
 		log.info("Run Code with Endless Loop");
-		String response = pythonExecutorTool.executePythonCode(CodeConstant.TIMEOUT_CODE, null, "DataFrame Data");
+		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
+			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.TIMEOUT_CODE, "", null));
 		System.out.println(response);
 		log.info("Run Code with Endless Loop Finished");
-		if (!response.contains("Killed")) {
+		if (response.isSuccess() || !response.toString().contains("Killed")) {
 			throw new RuntimeException("Test Failed");
 		}
 	}
 
 	private void testErrorCode() {
 		log.info("Run Code with Syntax Error");
-		String response = pythonExecutorTool.executePythonCode(CodeConstant.ERROR_CODE, null, "DataFrame Data");
+		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
+			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.ERROR_CODE, "", null));
 		System.out.println(response);
 		log.info("Run Code with Syntax Error Finished");
-		if (!response.contains("SyntaxError")) {
+		if (response.isSuccess() || !response.toString().contains("SyntaxError")) {
 			throw new RuntimeException("Test Failed");
 		}
 	}
 
 	private void testNeedInput() {
 		log.info("Check Need Input");
-		String response = pythonExecutorTool.executePythonCode(CodeConstant.NEED_INPUT, null, "DataFrame Data");
+		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
+			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.NEED_INPUT, "DataFrame Data", null));
 		System.out.println(response);
 		log.info("Run Need Input Finished");
-		if (!response.contains("DataFrame Data")) {
+		if (!response.isSuccess() || !response.stdOut().contains("DataFrame Data")) {
 			throw new RuntimeException("Test Failed");
 		}
 	}
 
 	private void testStudentScoreAnalysis() {
 		log.info("Run Student Score Analysis");
-		String response = pythonExecutorTool.executePythonCode(CodeConstant.STUDENT_SCORE_ANALYSIS, null,
-				CodeConstant.STUDENT_SCORE_ANALYSIS_INPUT);
+		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
+			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.STUDENT_SCORE_ANALYSIS,
+					CodeTestConstant.STUDENT_SCORE_ANALYSIS_INPUT, null));
 		System.out.println(response);
 		log.info("Run Student Score Analysis Finished");
-		if (!StringUtils.hasText(response)) {
+		if (!response.isSuccess() || !StringUtils.hasText(response.stdOut())) {
 			throw new RuntimeException("Test Failed");
 		}
 	}
 
 	private void testPandasCode() {
 		log.info("Run Pandas Code");
-		String response = pythonExecutorTool.executePythonCode(CodeConstant.ECOMMERCE_SALES_PANDAS_CODE, null,
-				CodeConstant.ECOMMERCE_SALES_PANDAS_INPUT);
+		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
+			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.ECOMMERCE_SALES_PANDAS_CODE,
+					CodeTestConstant.ECOMMERCE_SALES_PANDAS_INPUT, null));
 		System.out.println(response);
 		log.info("Run Pandas Code Finished");
-		if (response.contains("ModuleNotFoundError")) {
+		if (!response.isSuccess() || response.toString().contains("ModuleNotFoundError")) {
 			throw new RuntimeException("Test Failed");
 		}
 	}

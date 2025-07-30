@@ -53,8 +53,9 @@ spring:
 
     alibaba:
       nl2sql:
-        container:
+        code-executor:
           enabled: true
+          code-pool-executor: ai_simulation
 
 chatBi:
   dbConfig:

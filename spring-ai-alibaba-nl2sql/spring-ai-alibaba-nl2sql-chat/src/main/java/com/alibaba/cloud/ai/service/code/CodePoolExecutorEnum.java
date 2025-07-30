@@ -14,27 +14,16 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.service.code.memory;
-
-import com.alibaba.cloud.ai.config.CodeExecutorProperties;
+package com.alibaba.cloud.ai.service.code;
 
 /**
+ * 运行Python任务的容器池（实现枚举）
+ *
  * @author vlsmb
- * @since 2025/7/29
+ * @since 2025/7/28
  */
-public final class SqlResultMemoryServiceFactory {
+public enum CodePoolExecutorEnum {
 
-	private SqlResultMemoryServiceFactory() {
-
-	}
-
-	public static SqlResultMemoryService newInstance(CodeExecutorProperties properties) {
-		if (properties.getCodeSqlResultMemory().equals(SqlResultMemoryEnum.IN_MEMORY)) {
-			return new InMemorySqlResultMemoryService();
-		}
-		else {
-			throw new IllegalArgumentException("Unknown sql memory impl: " + properties.getCodeSqlResultMemory());
-		}
-	}
+	DOCKER, CONTAINERD, KATA, AI_SIMULATION;
 
 }
