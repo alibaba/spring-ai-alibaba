@@ -37,6 +37,12 @@ public class ModelConfig {
 
 	private String type;
 
+	private Boolean isDefault;
+
+	private Double temperature;
+
+	private Double topP;
+
 	public Long getId() {
 		return id;
 	}
@@ -91,6 +97,30 @@ public class ModelConfig {
 
 	public void setHeaders(Map<String, String> headers) {
 		this.headers = headers;
+	}
+
+	public Boolean getIsDefault() {
+		return isDefault;
+	}
+
+	public void setIsDefault(Boolean isDefault) {
+		this.isDefault = isDefault;
+	}
+
+	public Double getTemperature() {
+		return temperature;
+	}
+
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
+	}
+
+	public Double getTopP() {
+		return topP;
+	}
+
+	public void setTopP(Double topP) {
+		this.topP = topP;
 	}
 
 }

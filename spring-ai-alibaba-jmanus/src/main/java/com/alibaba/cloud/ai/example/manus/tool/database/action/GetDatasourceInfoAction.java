@@ -31,7 +31,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class GetDatasourceInfoAction extends AbstractDatabaseAction {
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger log = LoggerFactory.getLogger(GetDatasourceInfoAction.class);
+
+	public GetDatasourceInfoAction(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
 
 	@Override
 	public ToolExecuteResult execute(DatabaseRequest request, DataSourceService dataSourceService) {
@@ -80,7 +86,6 @@ public class GetDatasourceInfoAction extends AbstractDatabaseAction {
 				}
 			}
 
-			ObjectMapper objectMapper = new ObjectMapper();
 			String json = objectMapper.writeValueAsString(result);
 			String resultContent = "Datasource: " + (datasourceName != null ? datasourceName : "default") + "\n" + json;
 			return new ToolExecuteResult(resultContent);

@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.graph.checkpoint.savers;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
@@ -30,10 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,7 +46,7 @@ import static java.lang.String.format;
  * </p>
  *
  */
-public class FileSystemSaver implements BaseCheckpointSaver {
+public class FileSystemSaver extends MemorySaver {
 
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FileSystemSaver.class);
 
@@ -59,10 +56,9 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 
 	private final Serializer<Checkpoint> serializer;
 
-	private final MemorySaver memorySaver = new MemorySaver();
-
 	@SuppressWarnings("unchecked")
 	public FileSystemSaver(Path targetFolder, StateSerializer stateSerializer) {
+
 		Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
 		this.targetFolder = Objects.requireNonNull(targetFolder, "targetFolder cannot be null");
 		this.serializer = new CheckPointSerializer(stateSerializer);
@@ -128,56 +124,51 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 		}
 	}
 
-	protected LinkedList<Checkpoint> getCheckpoints(RunnableConfig config) {
-		LinkedList<Checkpoint> result = memorySaver.getCheckpoints(config);
+	@Override
+	protected LinkedList<Checkpoint> loadedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints)
+			throws Exception {
 
 		File targetFile = getFile(config);
-		if (targetFile.exists() && result.isEmpty()) {
-			try {
-				deserialize(targetFile, result);
-			}
-			catch (IOException | ClassNotFoundException e) {
-				throw new RuntimeException(e);
-			}
+		if (targetFile.exists() && checkpoints.isEmpty()) {
+			deserialize(targetFile, checkpoints);
 		}
-		return result;
+		return checkpoints;
+
+	}
+
+	@Override
+	protected void insertedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
+			throws Exception {
+		File targetFile = getFile(config);
+		serialize(checkpoints, targetFile);
+	}
+
+	@Override
+	protected void updatedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
+			throws Exception {
+		insertedCheckpoint(config, checkpoints, checkpoint);
 	}
 
 	/**
-	 * Clears the checkpoint file associated with the given RunnableConfig.
-	 * @param config the RunnableConfig for which the checkpoint file should be cleared
-	 * @return true if the file existed and was successfully deleted, false otherwise
+	 * Releases the checkpoints associated with the given configuration. This involves
+	 * copying the current checkpoint file (e.g., "thread-123.saver") to a versioned
+	 * backup file (e.g., "thread-123-v1.saver", "thread-123-v2.saver", etc.) based on
+	 * existing versioned files, deleting the original unversioned file, and then clearing
+	 * the in-memory checkpoints.
+	 * @param config The configuration for which to release checkpoints.
+	 * @param checkpoints released checkpoints
+	 * @param releaseTag released Tag
+	 * @throws Exception If an error occurs during file operations or releasing from
+	 * memory.
 	 */
-	public boolean clear(RunnableConfig config) {
-		File targetFile = getFile(config);
-		return targetFile.exists() && targetFile.delete();
-	}
-
 	@Override
-	public Collection<Checkpoint> list(RunnableConfig config) {
-		return memorySaver.list(config);
-	}
-
-	@Override
-	public Optional<Checkpoint> get(RunnableConfig config) {
-		return memorySaver.get(config);
-	}
-
-	@Override
-	public RunnableConfig put(RunnableConfig config, Checkpoint checkpoint) throws Exception {
-		RunnableConfig result = memorySaver.put(config, checkpoint);
-
-		File targetFile = getFile(config);
-		serialize(memorySaver.getCheckpoints(config), targetFile);
-		return result;
-	}
-
-	private boolean createVersionedBackup(RunnableConfig config) throws IOException {
-		Path currentPath = getPath(config);
+	protected void releasedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Tag releaseTag)
+			throws Exception {
+		var currentPath = getPath(config);
 
 		if (!Files.exists(currentPath)) {
 			log.warn("file {} doesn't exist. Skipping file operations.", currentPath);
-			return false;
+			return;
 		}
 
 		var versionPattern = Pattern.compile(format("%s-v(\\d+)\\%s$", getBaseName(config), EXTENSION));
@@ -195,7 +186,7 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 			log.error(
 					"Failed to list directory {} to determine next version number for backup. Skipping file operations.",
 					targetFolder, e);
-			return false;
+			return;
 		}
 
 		int nextVersion = maxVersion + 1;
@@ -206,27 +197,16 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 
 		Files.delete(currentPath);
 
-		return true;
-
 	}
 
 	/**
-	 * Releases the checkpoints associated with the given configuration. This involves
-	 * copying the current checkpoint file (e.g., "thread-123.saver") to a versioned
-	 * backup file (e.g., "thread-123-v1.saver", "thread-123-v2.saver", etc.) based on
-	 * existing versioned files, deleting the original unversioned file, and then clearing
-	 * the in-memory checkpoints.
-	 * @param config The configuration for which to release checkpoints.
-	 * @return The Tag representing the released checkpoint state in memory.
-	 * @throws Exception If an error occurs during file operations or releasing from
-	 * memory.
+	 * delete the checkpoint file associated with the given RunnableConfig.
+	 * @param config the RunnableConfig for which the checkpoint file should be cleared
+	 * @return true if the file existed and was successfully deleted, false otherwise
 	 */
-	@Override
-	public Tag release(RunnableConfig config) throws Exception {
-
-		createVersionedBackup(config);
-
-		return memorySaver.release(config);
+	public boolean deleteFile(RunnableConfig config) {
+		File targetFile = getFile(config);
+		return targetFile.exists() && targetFile.delete();
 	}
 
 }

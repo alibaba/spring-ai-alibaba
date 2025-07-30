@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.MergeStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+
 import java.util.function.BiFunction;
 
 /**
@@ -28,5 +32,11 @@ import java.util.function.BiFunction;
  * @since 1.0.0.1
  */
 public interface KeyStrategy extends BiFunction<Object, Object, Object> {
+
+	KeyStrategy REPLACE = new ReplaceStrategy();
+
+	KeyStrategy APPEND = new AppendStrategy();
+
+	KeyStrategy MERGE = new MergeStrategy();
 
 }

@@ -65,7 +65,8 @@ public class PlanTemplateController {
 	@Autowired
 	private PlanIdDispatcher planIdDispatcher;
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	/**
 	 * 将计划对象序列化为JSON字符串
@@ -203,8 +204,7 @@ public class PlanTemplateController {
 	private PlanTemplateService.VersionSaveResult saveToVersionHistory(String planJson) {
 		try {
 			// Parse JSON to extract planTemplateId and title
-			ObjectMapper mapper = new ObjectMapper();
-			PlanInterface planData = mapper.readValue(planJson, PlanInterface.class);
+			PlanInterface planData = objectMapper.readValue(planJson, PlanInterface.class);
 
 			String planTemplateId = planData.getRootPlanId();
 			if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
@@ -280,8 +280,7 @@ public class PlanTemplateController {
 
 		try {
 			// Parse JSON to get planId
-			ObjectMapper mapper = new ObjectMapper();
-			PlanInterface planData = mapper.readValue(planJson, PlanInterface.class);
+			PlanInterface planData = objectMapper.readValue(planJson, PlanInterface.class);
 			String planId = planData.getCurrentPlanId();
 			if (planId == null) {
 				planId = planData.getRootPlanId();

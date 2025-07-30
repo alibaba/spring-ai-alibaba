@@ -33,7 +33,13 @@ import org.slf4j.LoggerFactory;
 
 public class GetTableNameAction extends AbstractDatabaseAction {
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger log = LoggerFactory.getLogger(GetTableNameAction.class);
+
+	public GetTableNameAction(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
 
 	@Override
 	public ToolExecuteResult execute(DatabaseRequest request, DataSourceService dataSourceService) {
@@ -89,7 +95,6 @@ public class GetTableNameAction extends AbstractDatabaseAction {
 					}
 				}
 
-				ObjectMapper objectMapper = new ObjectMapper();
 				String json = objectMapper.writeValueAsString(tableMetaList);
 				log.info("GetTableNameAction completed successfully, datasourceName={}, found {} tables",
 						datasourceName, tableMetaList.size());
