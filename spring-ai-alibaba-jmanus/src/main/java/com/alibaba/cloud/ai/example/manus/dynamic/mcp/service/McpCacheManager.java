@@ -54,15 +54,22 @@ public class McpCacheManager {
 	 * MCP连接结果封装类
 	 */
 	private static class McpConnectionResult {
+
 		private final boolean success;
+
 		private final McpServiceEntity serviceEntity;
+
 		private final String serverName;
+
 		private final String errorMessage;
+
 		private final long connectionTime;
+
 		private final int retryCount;
+
 		private final String connectionType;
 
-		public McpConnectionResult(boolean success, McpServiceEntity serviceEntity, String serverName, 
+		public McpConnectionResult(boolean success, McpServiceEntity serviceEntity, String serverName,
 				String errorMessage, long connectionTime, int retryCount, String connectionType) {
 			this.success = success;
 			this.serviceEntity = serviceEntity;
@@ -100,6 +107,7 @@ public class McpCacheManager {
 		public String getConnectionType() {
 			return connectionType;
 		}
+
 	}
 
 	private final McpConnectionFactory connectionFactory;
@@ -114,6 +122,7 @@ public class McpCacheManager {
 
 	// 线程池管理
 	private final AtomicReference<ExecutorService> connectionExecutorRef = new AtomicReference<>();
+
 	private volatile int lastConfigHash = 0;
 
 	public McpCacheManager(McpConnectionFactory connectionFactory, McpConfigRepository mcpConfigRepository,
@@ -162,24 +171,25 @@ public class McpCacheManager {
 	 */
 	private void updateConnectionExecutor() {
 		int currentConfigHash = calculateConfigHash();
-		
+
 		// 检查配置是否发生变化
 		if (currentConfigHash != lastConfigHash) {
 			logger.info("MCP service loader configuration changed, updating thread pool");
-			
+
 			// 关闭旧的线程池
 			ExecutorService oldExecutor = connectionExecutorRef.get();
 			if (oldExecutor != null && !oldExecutor.isShutdown()) {
 				shutdownExecutor(oldExecutor);
 			}
-			
+
 			// 创建新的线程池
 			int maxConcurrentConnections = manusProperties.getMcpMaxConcurrentConnections();
 			ExecutorService newExecutor = Executors.newFixedThreadPool(maxConcurrentConnections);
 			connectionExecutorRef.set(newExecutor);
-			
+
 			lastConfigHash = currentConfigHash;
-			logger.info("Updated MCP service loader thread pool with max {} concurrent connections", maxConcurrentConnections);
+			logger.info("Updated MCP service loader thread pool with max {} concurrent connections",
+					maxConcurrentConnections);
 		}
 	}
 
@@ -207,7 +217,8 @@ public class McpCacheManager {
 						logger.warn("Thread pool did not terminate");
 					}
 				}
-			} catch (InterruptedException e) {
+			}
+			catch (InterruptedException e) {
 				executor.shutdownNow();
 				Thread.currentThread().interrupt();
 			}
@@ -243,21 +254,19 @@ public class McpCacheManager {
 
 		// 获取当前配置的线程池
 		ExecutorService executor = getConnectionExecutor();
-		
+
 		// 并行创建连接
 		List<CompletableFuture<McpConnectionResult>> futures = mcpConfigEntities.stream()
-			.map(config -> CompletableFuture.supplyAsync(
-				() -> createConnectionWithRetry(config), executor))
+			.map(config -> CompletableFuture.supplyAsync(() -> createConnectionWithRetry(config), executor))
 			.collect(Collectors.toList());
 
 		// 等待所有任务完成，设置超时
-		CompletableFuture<Void> allFutures = CompletableFuture.allOf(
-			futures.toArray(new CompletableFuture[0]));
+		CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
 		try {
 			// 设置整体超时（使用当前配置）
 			allFutures.get(manusProperties.getMcpConnectionTimeoutSeconds(), TimeUnit.SECONDS);
-			
+
 			// 收集结果
 			for (int i = 0; i < mcpConfigEntities.size(); i++) {
 				try {
@@ -265,12 +274,14 @@ public class McpCacheManager {
 					if (result.isSuccess()) {
 						toolCallbackMap.put(result.getServerName(), result.getServiceEntity());
 					}
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					String serverName = mcpConfigEntities.get(i).getMcpServerName();
 					logger.error("Failed to get result for MCP server: {}", serverName, e);
 				}
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Timeout or error occurred during parallel MCP connection creation", e);
 			// 尝试获取已完成的结果
 			for (int i = 0; i < futures.size(); i++) {
@@ -280,7 +291,8 @@ public class McpCacheManager {
 						if (result.isSuccess()) {
 							toolCallbackMap.put(result.getServerName(), result.getServiceEntity());
 						}
-					} catch (Exception ex) {
+					}
+					catch (Exception ex) {
 						logger.debug("Failed to get completed result for index: {}", i, ex);
 					}
 				}
@@ -290,7 +302,7 @@ public class McpCacheManager {
 		// 计算主线程总耗时
 		long mainEndTime = System.currentTimeMillis();
 		long mainTotalTime = mainEndTime - mainStartTime;
-		
+
 		// 收集所有结果用于详细日志输出
 		List<McpConnectionResult> allResults = new ArrayList<>();
 		for (int i = 0; i < mcpConfigEntities.size(); i++) {
@@ -298,36 +310,31 @@ public class McpCacheManager {
 				if (futures.get(i).isDone()) {
 					allResults.add(futures.get(i).get());
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				// 如果获取结果失败，创建一个失败的结果记录
 				String serverName = mcpConfigEntities.get(i).getMcpServerName();
 				allResults.add(new McpConnectionResult(false, null, serverName, "Failed to get result", 0, 0, "N/A"));
 			}
 		}
-		
+
 		// 输出详细的执行日志
-		logger.info("\n" +
-			"╔══════════════════════════════════════════════════════════════════════════════════════════════════════╗\n" +
-			"║                                    MCP Service Loader Execution Report                                ║\n" +
-			"╠══════════════════════════════════════════════════════════════════════════════════════════════════════╣\n" +
-			"║  Main Thread: Started at {}, Completed at {}, Total Time: {}ms                                      ║\n" +
-			"║  Configuration: Timeout={}s, MaxRetry={}, MaxConcurrent={}                                           ║\n" +
-			"║  Summary: {}/{} servers loaded successfully                                                         ║\n" +
-			"╠══════════════════════════════════════════════════════════════════════════════════════════════════════╣\n" +
-			"║  Individual Server Results:                                                                          ║\n" +
-			"{}" +
-			"╚══════════════════════════════════════════════════════════════════════════════════════════════════════╝",
-			formatTime(mainStartTime),
-			formatTime(mainEndTime),
-			mainTotalTime,
-			manusProperties.getMcpConnectionTimeoutSeconds(),
-			manusProperties.getMcpMaxRetryCount(),
-			manusProperties.getMcpMaxConcurrentConnections(),
-			toolCallbackMap.size(),
-			mcpConfigEntities.size(),
-			formatIndividualResults(allResults)
-		);
-		
+		logger.info("\n"
+				+ "╔══════════════════════════════════════════════════════════════════════════════════════════════════════╗\n"
+				+ "║                                    MCP Service Loader Execution Report                                ║\n"
+				+ "╠══════════════════════════════════════════════════════════════════════════════════════════════════════╣\n"
+				+ "║  Main Thread: Started at {}, Completed at {}, Total Time: {}ms                                      ║\n"
+				+ "║  Configuration: Timeout={}s, MaxRetry={}, MaxConcurrent={}                                           ║\n"
+				+ "║  Summary: {}/{} servers loaded successfully                                                         ║\n"
+				+ "╠══════════════════════════════════════════════════════════════════════════════════════════════════════╣\n"
+				+ "║  Individual Server Results:                                                                          ║\n"
+				+ "{}"
+				+ "╚══════════════════════════════════════════════════════════════════════════════════════════════════════╝",
+				formatTime(mainStartTime), formatTime(mainEndTime), mainTotalTime,
+				manusProperties.getMcpConnectionTimeoutSeconds(), manusProperties.getMcpMaxRetryCount(),
+				manusProperties.getMcpMaxConcurrentConnections(), toolCallbackMap.size(), mcpConfigEntities.size(),
+				formatIndividualResults(allResults));
+
 		return toolCallbackMap;
 	}
 
@@ -341,38 +348,43 @@ public class McpCacheManager {
 		String connectionType = config.getConnectionType().toString();
 		long startTime = System.currentTimeMillis();
 		int retryCount = 0;
-		
+
 		// 尝试连接，最多重试MAX_RETRY_COUNT次
 		for (int attempt = 0; attempt <= manusProperties.getMcpMaxRetryCount(); attempt++) {
 			try {
 				McpServiceEntity serviceEntity = connectionFactory.createConnection(config);
-				
+
 				if (serviceEntity != null) {
 					long connectionTime = System.currentTimeMillis() - startTime;
-					return new McpConnectionResult(true, serviceEntity, serverName, null, connectionTime, retryCount, connectionType);
-				} else {
+					return new McpConnectionResult(true, serviceEntity, serverName, null, connectionTime, retryCount,
+							connectionType);
+				}
+				else {
 					if (attempt == manusProperties.getMcpMaxRetryCount()) {
 						long connectionTime = System.currentTimeMillis() - startTime;
-						return new McpConnectionResult(false, null, serverName, 
-							"Service entity is null", connectionTime, retryCount, connectionType);
+						return new McpConnectionResult(false, null, serverName, "Service entity is null",
+								connectionTime, retryCount, connectionType);
 					}
 					logger.debug("Attempt {} failed for server: {}, retrying...", attempt + 1, serverName);
 					retryCount++;
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				if (attempt == manusProperties.getMcpMaxRetryCount()) {
 					long connectionTime = System.currentTimeMillis() - startTime;
-					return new McpConnectionResult(false, null, serverName, e.getMessage(), connectionTime, retryCount, connectionType);
+					return new McpConnectionResult(false, null, serverName, e.getMessage(), connectionTime, retryCount,
+							connectionType);
 				}
-				logger.debug("Attempt {} failed for server: {}, error: {}, retrying...", 
-					attempt + 1, serverName, e.getMessage());
+				logger.debug("Attempt {} failed for server: {}, error: {}, retrying...", attempt + 1, serverName,
+						e.getMessage());
 				retryCount++;
 			}
 		}
-		
+
 		// 这行代码理论上不会执行到，但为了编译安全
 		long connectionTime = System.currentTimeMillis() - startTime;
-		return new McpConnectionResult(false, null, serverName, "Max retry attempts exceeded", connectionTime, retryCount, connectionType);
+		return new McpConnectionResult(false, null, serverName, "Max retry attempts exceeded", connectionTime,
+				retryCount, connectionType);
 	}
 
 	/**
@@ -452,10 +464,9 @@ public class McpCacheManager {
 	 * @return 配置信息字符串
 	 */
 	public String getConnectionConfigurationInfo() {
-		return String.format("MCP Service Loader Config - Timeout: %ds, MaxRetry: %d, MaxConcurrent: %d", 
-			manusProperties.getMcpConnectionTimeoutSeconds(),
-			manusProperties.getMcpMaxRetryCount(),
-			manusProperties.getMcpMaxConcurrentConnections());
+		return String.format("MCP Service Loader Config - Timeout: %ds, MaxRetry: %d, MaxConcurrent: %d",
+				manusProperties.getMcpConnectionTimeoutSeconds(), manusProperties.getMcpMaxRetryCount(),
+				manusProperties.getMcpMaxConcurrentConnections());
 	}
 
 	/**
@@ -477,20 +488,14 @@ public class McpCacheManager {
 		StringBuilder sb = new StringBuilder();
 		for (McpConnectionResult result : results) {
 			String status = result.isSuccess() ? "✅ Success" : "❌ Failed";
-			String errorInfo = result.getErrorMessage() != null ? 
-				(result.getErrorMessage().length() > 15 ? 
-					result.getErrorMessage().substring(0, 12) + "..." : 
-					result.getErrorMessage()) : "N/A";
-			
+			String errorInfo = result.getErrorMessage() != null ? (result.getErrorMessage().length() > 15
+					? result.getErrorMessage().substring(0, 12) + "..." : result.getErrorMessage()) : "N/A";
+
 			sb.append(String.format("║  %-20s | %-12s | Type: %-8s | Time: %-6dms | Retry: %-2d | Error: %-15s ║\n",
-				result.getServerName(),
-				status,
-				result.getConnectionType(),
-				result.getConnectionTime(),
-				result.getRetryCount(),
-				errorInfo
-			));
+					result.getServerName(), status, result.getConnectionType(), result.getConnectionTime(),
+					result.getRetryCount(), errorInfo));
 		}
 		return sb.toString();
 	}
+
 }
