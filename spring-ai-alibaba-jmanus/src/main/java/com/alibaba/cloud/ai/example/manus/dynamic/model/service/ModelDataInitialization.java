@@ -127,7 +127,6 @@ public class ModelDataInitialization implements IModelDataInitialization {
 	 */
 	private void createDashScopeModelFromEnv(String apiKey) {
 		try {
-			// 额外的安全检查：确保不会覆盖已存在的默认模型
 			DynamicModelEntity existingDefaultModel = repository.findByIsDefaultTrue();
 			if (existingDefaultModel != null) {
 				log.info("Default model already exists: {}, skipping DashScope model creation",
@@ -164,7 +163,6 @@ public class ModelDataInitialization implements IModelDataInitialization {
 	 */
 	private void createOpenAICompatibleModelFromEnv(String apiKey, String baseUrl, String modelName) {
 		try {
-			// 额外的安全检查：确保不会覆盖已存在的默认模型
 			DynamicModelEntity existingDefaultModel = repository.findByIsDefaultTrue();
 			if (existingDefaultModel != null) {
 				log.info("Default model already exists: {}, skipping OpenAI compatible model creation",
@@ -201,7 +199,6 @@ public class ModelDataInitialization implements IModelDataInitialization {
 	 */
 	private void createModelFromConfigIfNeeded(String apiKey) {
 		try {
-			// 检查是否已存在默认模型，如果存在则跳过创建
 			DynamicModelEntity existingDefaultModel = repository.findByIsDefaultTrue();
 			if (existingDefaultModel != null) {
 				log.info("Default model already exists: {}, skipping config system model creation",
