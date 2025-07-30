@@ -19,12 +19,12 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
-import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.NodeStepTitleUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,17 +116,18 @@ public class CoderNode implements NodeAction {
 				.chatResponse()
 				.doOnError(error -> StateUtil.handleStepError(assignedStep, nodeName, error, logger));
 
-			String prefix = StreamNodePrefixEnum.CODER_LLM_STREAM.getPrefix() + "_";
-			String stepTitleKey = prefix + executorNodeId + "_step_title";
-			state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
-			Map<String, Object> inputMap = new HashMap<>();
-			inputMap.put(stepTitleKey, "[并行节点" + executorNodeId + "]" + assignedStep.getTitle());
-			state.input(inputMap);
+			// Add step title
+			boolean isReflectionNode = assignedStep.getReflectionHistory() != null
+					&& !assignedStep.getReflectionHistory().isEmpty();
+			String prefix = isReflectionNode ? StreamNodePrefixEnum.CODER_REFLECT_LLM_STREAM.getPrefix()
+					: StreamNodePrefixEnum.CODER_LLM_STREAM.getPrefix();
+			String nodeNum = NodeStepTitleUtil.registerStepTitle(state, isReflectionNode, executorNodeId, "Coder",
+					assignedStep.getTitle(), prefix);
 
-			logger.info("CoderNode {} starting streaming with key: {}", executorNodeId, prefix + executorNodeId);
+			logger.info("CoderNode {} starting streaming with key: {}", executorNodeId, nodeNum);
 
 			var generator = StreamingChatGenerator.builder()
-				.startingNode(prefix + executorNodeId)
+				.startingNode(nodeNum)
 				.startingState(state)
 				.mapResult(response -> {
 					// Only handle successful responses - errors are handled in doOnError
@@ -139,7 +140,7 @@ public class CoderNode implements NodeAction {
 					updated.put("coder_content_" + executorNodeId, coderContent);
 					return updated;
 				})
-				.build(streamResult);
+				.buildWithChatResponse(streamResult);
 
 			updated.put("coder_content_" + executorNodeId, generator);
 			return updated;

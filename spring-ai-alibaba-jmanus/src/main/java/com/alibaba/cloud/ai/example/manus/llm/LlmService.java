@@ -124,7 +124,17 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	}
 
 	private void initializeChatClientsWithModel(DynamicModelEntity model) {
-		OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder().build();
+		OpenAiChatOptions.Builder optionsBuilder = OpenAiChatOptions.builder();
+
+		if (model.getTemperature() != null) {
+			optionsBuilder.temperature(model.getTemperature());
+		}
+
+		if (model.getTopP() != null) {
+			optionsBuilder.topP(model.getTopP());
+		}
+
+		OpenAiChatOptions defaultOptions = optionsBuilder.build();
 
 		if (this.planningChatClient == null) {
 			this.planningChatClient = buildPlanningChatClient(model, defaultOptions);
@@ -197,7 +207,17 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 		Map<String, String> headers = model.getHeaders();
 		OpenAiApi openAiApi = OpenAiApi.builder().baseUrl(host).apiKey(apiKey).build();
 
-		OpenAiChatOptions chatOptions = OpenAiChatOptions.builder().model(modelName).build();
+		OpenAiChatOptions.Builder chatOptionsBuilder = OpenAiChatOptions.builder().model(modelName);
+
+		if (model.getTemperature() != null) {
+			chatOptionsBuilder.temperature(model.getTemperature());
+		}
+
+		if (model.getTopP() != null) {
+			chatOptionsBuilder.topP(model.getTopP());
+		}
+
+		OpenAiChatOptions chatOptions = chatOptionsBuilder.build();
 		if (headers != null) {
 			chatOptions.setHttpHeaders(headers);
 		}
@@ -225,7 +245,9 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 
 	@Override
 	public void clearAgentMemory(String planId) {
-		this.agentMemory.clear(planId);
+		if (this.agentMemory != null) {
+			this.agentMemory.clear(planId);
+		}
 	}
 
 	@Override
@@ -319,6 +341,12 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 
 	public OpenAiChatModel openAiChatModel(DynamicModelEntity dynamicModelEntity, OpenAiChatOptions defaultOptions) {
 		defaultOptions.setModel(dynamicModelEntity.getModelName());
+		if (defaultOptions.getTemperature() == null && dynamicModelEntity.getTemperature() != null) {
+			defaultOptions.setTemperature(dynamicModelEntity.getTemperature());
+		}
+		if (defaultOptions.getTopP() == null && dynamicModelEntity.getTopP() != null) {
+			defaultOptions.setTopP(dynamicModelEntity.getTopP());
+		}
 		Map<String, String> headers = dynamicModelEntity.getHeaders();
 		if (headers != null) {
 			defaultOptions.setHttpHeaders(headers);

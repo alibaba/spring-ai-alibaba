@@ -121,7 +121,7 @@ public class ReporterNode implements NodeAction {
 				}
 				return Map.of("final_report", finalReport, "thread_id", threadId);
 			})
-			.build(streamResult);
+			.buildWithChatResponse(streamResult);
 		Map<String, Object> resultMap = new HashMap<>();
 		resultMap.put("final_report", generator);
 		resultMap.put("thread_id", threadId);

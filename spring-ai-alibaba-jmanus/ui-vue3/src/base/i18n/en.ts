@@ -254,6 +254,14 @@ const words: I18nType = {
       currentDefault: 'Current Default',
       setDefaultSuccess: 'Model set as default successfully',
       setDefaultFailed: 'Failed to set model as default',
+      validatingBeforeSave: 'Validating API key before saving...',
+      validationFailedCannotSave: 'API key validation failed, cannot save',
+      temperature: 'Temperature',
+      temperaturePlaceholder: 'Leave empty to use model default',
+      topP: 'Top P',
+      topPPlaceholder: 'Leave empty to use model default',
+      headers: 'Headers',
+      headersPlaceholder: 'Request headers (JSON format)',
     },
     // MCP configuration page
     mcpConfig: {

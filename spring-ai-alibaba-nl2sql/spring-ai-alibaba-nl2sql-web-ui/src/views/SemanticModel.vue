@@ -42,6 +42,22 @@
               {{ dataset }}
             </option>
           </select>
+          <button 
+            class="btn btn-info" 
+            @click="batchEnableByDataset(true)"
+            :disabled="!selectedDataset"
+            title="按数据集批量启用"
+          >
+            <i class="bi bi-database-check"></i> 数据集启用
+          </button>
+          <button 
+            class="btn btn-warning" 
+            @click="batchEnableByDataset(false)"
+            :disabled="!selectedDataset"
+            title="按数据集批量禁用"
+          >
+            <i class="bi bi-database-x"></i> 数据集禁用
+          </button>
           <button class="btn btn-success" @click="batchUpdateSelectedItems(true)">
             <i class="bi bi-check-circle"></i> 批量启用
           </button>
@@ -259,6 +275,7 @@
 <script>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import HeaderComponent from '../components/HeaderComponent.vue'
+import { semanticModelApi } from '../utils/api.js'
 
 export default {
   name: 'SemanticModel',
@@ -279,10 +296,11 @@ export default {
         fieldSynonyms: '营收,收入,销售金额',
         fieldDescription: '某个时间段内的总销售金额',
         fieldType: 'DECIMAL',
-        isPrimaryKey: false,
-        tableDescription: '销售订单表',
-        createTime: '2024-01-15 10:30:00',
-        updateTime: '2024-01-15 10:30:00'
+        originalDescription: '销售订单表中的销售金额字段',
+        defaultRecall: true,
+        enabled: true,
+        createTime: '2024-01-15T10:30:00',
+        updateTime: '2024-01-15T10:30:00'
       },
       {
         id: 2,
@@ -292,10 +310,11 @@ export default {
         fieldSynonyms: '用户ID,顾客编号',
         fieldDescription: '客户的唯一标识符',
         fieldType: 'VARCHAR',
-        isPrimaryKey: true,
-        tableDescription: '客户信息表',
-        createTime: '2024-01-16 14:20:00',
-        updateTime: '2024-01-16 14:20:00'
+        originalDescription: '客户信息表中的主键字段',
+        defaultRecall: false,
+        enabled: true,
+        createTime: '2024-01-16T14:20:00',
+        updateTime: '2024-01-16T14:20:00'
       },
       {
         id: 3,
@@ -305,10 +324,11 @@ export default {
         fieldSynonyms: '下单时间,购买日期',
         fieldDescription: '订单创建的日期',
         fieldType: 'DATE',
-        isPrimaryKey: false,
-        tableDescription: '订单表',
-        createTime: '2024-01-17 09:15:00',
-        updateTime: '2024-01-17 09:15:00'
+        originalDescription: '订单表中的日期字段',
+        defaultRecall: false,
+        enabled: false,
+        createTime: '2024-01-17T09:15:00',
+        updateTime: '2024-01-17T09:15:00'
       }
     ]
 
@@ -380,10 +400,10 @@ export default {
           modelList.value = filteredData
         } else {
           // 使用真实 API
-          const url = keyword ? `/api/semantic-model?keyword=${encodeURIComponent(keyword)}` : '/api/semantic-model'
-          const response = await fetch(url)
-          const data = await response.json()
-          modelList.value = data
+          const data = keyword ? 
+            await semanticModelApi.search(keyword) : 
+            await semanticModelApi.getList()
+          modelList.value = data || []
         }
       } catch (error) {
         console.error('加载数据失败:', error)
@@ -391,6 +411,7 @@ export default {
           modelList.value = mockSemanticModelList // 回退到模拟数据
         } else {
           alert('加载数据失败，请刷新页面重试')
+          modelList.value = []
         }
       } finally {
         loading.value = false
@@ -437,8 +458,8 @@ export default {
       formData.fieldDescription = item.fieldDescription || ''
       formData.fieldType = item.fieldType || 'VARCHAR'
       formData.originalDescription = item.originalDescription || ''
-      formData.defaultRecall = item.defaultRecall
-      formData.enabled = item.enabled
+      formData.defaultRecall = item.defaultRecall || false
+      formData.enabled = item.enabled !== undefined ? item.enabled : true
       modalVisible.value = true
     }
 
@@ -495,8 +516,10 @@ export default {
                 fieldSynonyms: data.fieldSynonyms || '',
                 fieldDescription: data.fieldDescription || '',
                 fieldType: data.fieldType,
-                isPrimaryKey: data.defaultRecall,
-                updateTime: new Date().toLocaleString()
+                originalDescription: data.originalDescription || '',
+                defaultRecall: data.defaultRecall,
+                enabled: data.enabled,
+                updateTime: new Date().toISOString()
               }
             }
           } else {
@@ -509,10 +532,11 @@ export default {
               fieldSynonyms: data.fieldSynonyms || '',
               fieldDescription: data.fieldDescription || '',
               fieldType: data.fieldType,
-              isPrimaryKey: data.defaultRecall,
-              tableDescription: '',
-              createTime: new Date().toLocaleString(),
-              updateTime: new Date().toLocaleString()
+              originalDescription: data.originalDescription || '',
+              defaultRecall: data.defaultRecall,
+              enabled: data.enabled,
+              createTime: new Date().toISOString(),
+              updateTime: new Date().toISOString()
             }
             mockSemanticModelList.push(newItem)
           }
@@ -521,23 +545,12 @@ export default {
           loadModelList()
         } else {
           // 使用真实 API
-          const url = currentEditId.value ? `/api/semantic-model/${currentEditId.value}` : '/api/semantic-model'
-          const method = currentEditId.value ? 'PUT' : 'POST'
-
-          const response = await fetch(url, {
-            method: method,
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-          })
-
-          if (response.ok) {
-            closeModal()
-            loadModelList()
-          } else {
-            throw new Error('保存失败')
-          }
+          const savedData = currentEditId.value ? 
+            await semanticModelApi.update(currentEditId.value, data) :
+            await semanticModelApi.create(data)
+          
+          closeModal()
+          loadModelList()
         }
       } catch (error) {
         console.error('保存失败:', error)
@@ -561,19 +574,48 @@ export default {
           loadModelList()
         } else {
           // 使用真实 API
-          const response = await fetch(`/api/semantic-model/${id}`, {
-            method: 'DELETE'
-          })
-
-          if (response.ok) {
-            loadModelList()
-          } else {
-            throw new Error('删除失败')
-          }
+          await semanticModelApi.delete(id)
+          loadModelList()
         }
       } catch (error) {
         console.error('删除失败:', error)
         alert('删除失败，请重试')
+      }
+    }
+
+    const batchEnableByDataset = async (enabled) => {
+      if (!selectedDataset.value) {
+        alert('请先选择数据集')
+        return
+      }
+      
+      const action = enabled ? '启用' : '禁用'
+      
+      if (!confirm(`确定要${action}数据集 "${selectedDataset.value}" 的所有配置吗？`)) {
+        return
+      }
+      
+      try {
+        if (useMockData.value) {
+          // 使用模拟数据
+          await new Promise(resolve => setTimeout(resolve, 500)) // 模拟网络延迟
+          mockSemanticModelList.forEach(item => {
+            if (item.datasetId === selectedDataset.value) {
+              item.enabled = enabled
+              item.updateTime = new Date().toISOString()
+            }
+          })
+          loadModelList()
+          alert(`数据集批量${action}操作成功`)
+        } else {
+          // 使用真实 API
+          await semanticModelApi.batchEnable(selectedDataset.value, enabled)
+          loadModelList()
+          alert(`数据集批量${action}操作成功`)
+        }
+      } catch (error) {
+        console.error('数据集批量操作失败:', error)
+        alert('数据集批量操作失败，请重试')
       }
     }
 
@@ -597,7 +639,7 @@ export default {
             const index = mockSemanticModelList.findIndex(item => item.id === id)
             if (index !== -1) {
               mockSemanticModelList[index].enabled = enabled
-              mockSemanticModelList[index].updateTime = new Date().toLocaleString()
+              mockSemanticModelList[index].updateTime = new Date().toISOString()
             }
           })
           loadModelList()
@@ -605,31 +647,25 @@ export default {
           selectAll.value = false
           alert(`批量${action}操作成功`)
         } else {
-          // 使用真实 API
-          const promises = selectedItems.value.map(id => {
-            const item = modelList.value.find(m => m.id == id)
-            if (!item) return Promise.resolve()
-            
-            const data = {
-              datasetId: item.datasetId,
-              originalFieldName: item.originalFieldName,
-              agentFieldName: item.agentFieldName,
-              fieldSynonyms: item.fieldSynonyms,
-              fieldDescription: item.fieldDescription,
-              fieldType: item.fieldType,
-              originalDescription: item.originalDescription,
-              defaultRecall: item.defaultRecall,
-              enabled: enabled
-            }
-            
-            return fetch(`/api/semantic-model/${id}`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(data)
+          // 使用真实 API - 通过逐个更新实现批量操作
+          const promises = selectedItems.value.map(async (id) => {
+              const item = modelList.value.find(m => m.id == id)
+              if (!item) return Promise.resolve()
+              
+              const data = {
+                datasetId: item.datasetId,
+                originalFieldName: item.originalFieldName,
+                agentFieldName: item.agentFieldName,
+                fieldSynonyms: item.fieldSynonyms,
+                fieldDescription: item.fieldDescription,
+                fieldType: item.fieldType,
+                originalDescription: item.originalDescription,
+                defaultRecall: item.defaultRecall,
+                enabled: enabled
+              }
+              
+              return await semanticModelApi.update(id, data)
             })
-          })
           
           await Promise.all(promises)
           loadModelList()
@@ -674,6 +710,7 @@ export default {
       closeModal,
       saveModel,
       deleteModel,
+      batchEnableByDataset,
       batchUpdateSelectedItems,
       formatDateTime
     }
@@ -717,6 +754,28 @@ export default {
 .search-input:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.batch-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dataset-filter {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background-color: var(--card-bg);
+  min-width: 150px;
+}
+
+.dataset-filter:disabled {
+  background-color: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
 }
 
 .btn {
@@ -833,6 +892,22 @@ export default {
 
 .table tr:hover {
   background-color: #f9f9f9;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-info {
+  background-color: #17a2b8;
+  color: white;
+  border: 1px solid #17a2b8;
+}
+
+.btn-info:hover:not(:disabled) {
+  background-color: #138496;
+  border-color: #117a8b;
 }
 
 .synonyms-cell,

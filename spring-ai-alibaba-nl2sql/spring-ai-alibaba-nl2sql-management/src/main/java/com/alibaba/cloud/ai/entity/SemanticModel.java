@@ -24,7 +24,7 @@ public class SemanticModel {
 
 	private Long id;
 
-	private String datasetId; // 数据集ID
+	private Long agentId; // 智能体ID
 
 	private String originalFieldName; // 原始字段名
 
@@ -34,13 +34,13 @@ public class SemanticModel {
 
 	private String fieldDescription; // 字段描述
 
-	private Boolean defaultRecall; // 默认召回
-
-	private Boolean enabled; // 是否启用
-
 	private String fieldType; // 字段类型
 
 	private String originalDescription; // 原始字段描述
+
+	private Boolean defaultRecall; // 默认召回
+
+	private Boolean enabled; // 是否启用
 
 	private LocalDateTime createTime;
 
@@ -49,10 +49,27 @@ public class SemanticModel {
 	public SemanticModel() {
 	}
 
-	public SemanticModel(String datasetId, String originalFieldName, String agentFieldName, String fieldSynonyms,
-			String fieldDescription, Boolean defaultRecall, Boolean enabled, String fieldType,
-			String originalDescription) {
-		this.datasetId = datasetId;
+	public SemanticModel(Long agentId, String originalFieldName, String agentFieldName, String fieldSynonyms,
+			String fieldDescription, String fieldType, String originalDescription, Boolean defaultRecall,
+			Boolean enabled) {
+		this.agentId = agentId;
+		this.originalFieldName = originalFieldName;
+		this.agentFieldName = agentFieldName;
+		this.fieldSynonyms = fieldSynonyms;
+		this.fieldDescription = fieldDescription;
+		this.fieldType = fieldType;
+		this.originalDescription = originalDescription;
+		this.defaultRecall = defaultRecall;
+		this.enabled = enabled;
+		this.createTime = LocalDateTime.now();
+		this.updateTime = LocalDateTime.now();
+	}
+
+	public SemanticModel(Long id, Long agentId, String originalFieldName, String agentFieldName, String fieldSynonyms,
+			String fieldDescription, String fieldType, String originalDescription, Boolean defaultRecall,
+			Boolean enabled) {
+		this.id = id;
+		this.agentId = agentId;
 		this.originalFieldName = originalFieldName;
 		this.agentFieldName = agentFieldName;
 		this.fieldSynonyms = fieldSynonyms;
@@ -65,23 +82,6 @@ public class SemanticModel {
 		this.updateTime = LocalDateTime.now();
 	}
 
-	public SemanticModel(Long id, String datasetId, String originalFieldName, String agentFieldName,
-			String fieldSynonyms, String fieldDescription, Boolean defaultRecall, Boolean enabled, String fieldType,
-			String originalDescription, LocalDateTime createTime, LocalDateTime updateTime) {
-		this.id = id;
-		this.datasetId = datasetId;
-		this.originalFieldName = originalFieldName;
-		this.agentFieldName = agentFieldName;
-		this.fieldSynonyms = fieldSynonyms;
-		this.fieldDescription = fieldDescription;
-		this.defaultRecall = defaultRecall;
-		this.enabled = enabled;
-		this.fieldType = fieldType;
-		this.originalDescription = originalDescription;
-		this.createTime = createTime;
-		this.updateTime = updateTime;
-	}
-
 	// Getters and Setters
 	public Long getId() {
 		return id;
@@ -91,12 +91,12 @@ public class SemanticModel {
 		this.id = id;
 	}
 
-	public String getDatasetId() {
-		return datasetId;
+	public Long getAgentId() {
+		return agentId;
 	}
 
-	public void setDatasetId(String datasetId) {
-		this.datasetId = datasetId;
+	public void setAgentId(Long agentId) {
+		this.agentId = agentId;
 	}
 
 	public String getOriginalFieldName() {

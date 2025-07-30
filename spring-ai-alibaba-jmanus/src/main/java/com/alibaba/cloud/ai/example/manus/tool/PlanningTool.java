@@ -50,15 +50,18 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 
 		private String terminateColumns;
 
+		private boolean directResponse = false;
+
 		public PlanningInput() {
 		}
 
-		public PlanningInput(String command, String planId, String title, List<String> steps) {
+		public PlanningInput(String command, String planId, String title, List<String> steps, boolean directResponse) {
 			this.command = command;
 			this.planId = planId;
 			this.title = title;
 			this.steps = steps;
 			this.terminateColumns = null;
+			this.directResponse = directResponse;
 		}
 
 		public String getCommand() {
@@ -101,6 +104,14 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 			this.terminateColumns = terminateColumns;
 		}
 
+		public boolean isDirectResponse() {
+			return directResponse;
+		}
+
+		public void setDirectResponse(boolean directResponse) {
+			this.directResponse = directResponse;
+		}
+
 	}
 
 	public String getCurrentPlanId() {
@@ -113,37 +124,40 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 
 	private static final String PARAMETERS = """
 			{
-			    "type": "object",
-			    "properties": {
-			        "command": {
-			            "description": "create a execution plan , Available commands: create",
-			            "enum": [
-			                "create"
-			            ],
-			            "type": "string"
-			        },
-			        "title": {
-			            "description": "Title for the plan",
-			            "type": "string"
-			        },
-			        "steps": {
-			            "description": "List of plan steps",
-			            "type": "array",
-			            "items": {
-			                "type": "string"
-			            }
-			        }
-			        ,
-					"terminateColumns": {
-						"description": "Terminate structure output columns for all steps (optional, will be applied to every step)",
-						"type": "string"
-					}
-			    },
-			    "required": [
-			    	"command",
-			    	"title",
-			    	"steps"
-			    ]
+			 "type": "object",
+			 "properties": {
+			  "command": {
+			   "description": "create a execution plan , Available commands: create",
+			   "enum": [
+				   "create"
+			   ],
+			   "type": "string"
+			  },
+			  "title": {
+			   "description": "Title for the plan",
+			   "type": "string"
+			  },
+			  "steps": {
+			   "description": "List of plan steps",
+			   "type": "array",
+			   "items": {
+				   "type": "string"
+			   }
+			  },
+			  "terminateColumns": {
+				   "description": "Terminate structure output columns for all steps (optional, will be applied to every step)",
+				   "type": "string"
+			  },
+			  "directResponse": {
+				   "description": "Whether to use direct response mode (skip planning and respond directly)",
+				   "type": "boolean"
+			  }
+			 },
+			 "required": [
+			"command",
+			"title",
+			"steps"
+			 ]
 			}
 			""";
 
@@ -172,6 +186,17 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 		String planId = input.getPlanId();
 		String title = input.getTitle();
 		List<String> steps = input.getSteps();
+		boolean directResponse = input.isDirectResponse();
+
+		// 支持directResponse模式
+		if (directResponse) {
+			log.info("Direct response mode enabled for planId: {}", planId);
+			ExecutionPlan plan = new ExecutionPlan(planId, planId, title);
+			plan.setDirectResponse(true);
+			plan.setUserRequest(title); // 这里title即为用户请求内容
+			this.currentPlan = plan;
+			return new ToolExecuteResult("Direct response mode: plan created for " + planId);
+		}
 
 		return switch (command) {
 			case "create" -> createPlan(planId, title, steps, input.getTerminateColumns());

@@ -24,6 +24,8 @@ export interface Model {
     modelDescription: string
     type: string
     isDefault?: boolean
+    temperature?: number
+    topP?: number
 }
 
 export interface Headers {
@@ -117,12 +119,21 @@ export class ModelApiService {
      */
     static async createModel(modelConfig: Omit<Model, 'id'>): Promise<Model> {
         try {
+            // 确保null值被包含在JSON中
+            const requestBody = JSON.stringify(modelConfig, (key, value) => {
+                // 对于temperature和topP，明确包含null值
+                if (key === 'temperature' || key === 'topP') {
+                    return value === undefined ? null : value;
+                }
+                return value;
+            });
+            
             const response = await fetch(this.BASE_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(modelConfig)
+                body: requestBody
             })
             const result = await this.handleResponse(response)
             return await result.json()
@@ -137,12 +148,21 @@ export class ModelApiService {
      */
     static async updateModel(id: string, modelConfig: Model): Promise<Model> {
         try {
+            // 确保null值被包含在JSON中
+            const requestBody = JSON.stringify(modelConfig, (key, value) => {
+                // 对于temperature和topP，明确包含null值
+                if (key === 'temperature' || key === 'topP') {
+                    return value === undefined ? null : value;
+                }
+                return value;
+            });
+            
             const response = await fetch(`${this.BASE_URL}/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(modelConfig)
+                body: requestBody
             })
             if (response.status === 499) {
                 throw new Error('Request rejected, please modify the model configuration in the configuration file')
