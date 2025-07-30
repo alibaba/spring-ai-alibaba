@@ -67,7 +67,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	private Map<Long, ChatClient> clients = new ConcurrentHashMap<>();
 
 	/*
-	 * 创建自定义chatModel所需
+	 * Required for creating custom chatModel
 	 */
 	@Autowired
 	private ObjectProvider<RestClient.Builder> restClientBuilderProvider;
@@ -141,19 +141,19 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			log.debug("Planning ChatClient init finish");
 		}
 
-		// 初始化agentExecutionClient
+		// Initialize agentExecutionClient
 		if (this.agentExecutionClient == null) {
 			this.agentExecutionClient = buildAgentExecutionClient(model, defaultOptions);
 			log.debug("Agent Execution Client init finish");
 		}
 
-		// 初始化finalizeChatClient
+		// Initialize finalizeChatClient
 		if (this.finalizeChatClient == null) {
 			this.finalizeChatClient = buildFinalizeChatClient(model, defaultOptions);
 			log.debug("Finalize ChatClient init finish");
 		}
 
-		// 确保动态ChatClient也被创建
+		// Ensure dynamic ChatClient is also created
 		buildOrUpdateDynamicChatClient(model);
 	}
 
@@ -253,7 +253,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	@Override
 	public ChatClient getPlanningChatClient() {
 		if (planningChatClient == null) {
-			// 尝试lazy initialization
+			// Try lazy initialization
 			log.warn("Agent ChatClient not initialized...");
 			tryLazyInitialization();
 
@@ -276,7 +276,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	@Override
 	public ChatClient getFinalizeChatClient() {
 		if (finalizeChatClient == null) {
-			// 尝试lazy initialization
+			// Try lazy initialization
 			log.warn("Agent ChatClient not initialized...");
 			tryLazyInitialization();
 
