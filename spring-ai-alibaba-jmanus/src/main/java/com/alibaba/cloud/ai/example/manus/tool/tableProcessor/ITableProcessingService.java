@@ -109,6 +109,16 @@ public interface ITableProcessingService {
 	void writeDataToTable(String planId, String filePath, List<String> data) throws IOException;
 
 	/**
+	 * Write multiple rows of data to table, ensuring data matches header size
+	 * 
+	 * @param planId   plan ID
+	 * @param filePath file path (relative or absolute)
+	 * @param data     list of data rows to write (each row must match header size)
+	 * @throws IOException if file operation fails or data size mismatch
+	 */
+	void writeMultipleRowsToTable(String planId, String filePath, List<List<String>> data) throws IOException;
+
+	/**
 	 * Search for rows matching keywords
 	 * 
 	 * @param planId   plan ID

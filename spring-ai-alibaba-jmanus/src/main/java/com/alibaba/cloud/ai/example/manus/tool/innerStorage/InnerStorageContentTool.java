@@ -157,7 +157,7 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 							"action": {
 								"type": "string",
 								"const": "extract_relevant_content",
-								"description": "从单个文件提取相关内容"
+								"description": "从单个文件提取相关内容，注意！只有系统提示文件内容过长时才会使用此操作"
 							},
 							"file_name": {
 								"type": "string",

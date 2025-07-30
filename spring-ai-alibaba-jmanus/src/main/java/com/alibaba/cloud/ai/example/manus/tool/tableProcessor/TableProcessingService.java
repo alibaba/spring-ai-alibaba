@@ -425,6 +425,81 @@ public class TableProcessingService implements ITableProcessingService {
 	}
 
 	/**
+	 * Write multiple rows of data to table, ensuring data matches header size
+	 * @param planId plan ID
+	 * @param filePath file path (relative or absolute)
+	 * @param data list of data rows to write (each row must match header size)
+	 * @throws IOException if file operation fails or data size mismatch
+	 */
+	public void writeMultipleRowsToTable(String planId, String filePath, List<List<String>> data) throws IOException {
+		log.info("Writing multiple rows to table for planId={}, filePath={}", planId, filePath);
+		Path absolutePath = validateFilePath(planId, filePath);
+
+		// Check file type
+		if (!isSupportedFileType(filePath)) {
+			updateFileState(planId, filePath, "Error: Unsupported file type");
+			throw new IOException("不支持的文件类型。仅支持Excel(.xlsx,.xls)和CSV(.csv)文件。");
+		}
+
+		// Get headers to validate data size
+		List<String> headers = getTableStructure(planId, filePath);
+		if (headers.isEmpty()) {
+			updateFileState(planId, filePath, "Error: Empty table or failed to read headers");
+			throw new IOException("表格为空或无法读取表头信息");
+		}
+
+		// Check if table has auto-generated ID column
+		boolean hasIdColumn = !headers.isEmpty() && "ID".equals(headers.get(0));
+		int expectedDataSize = hasIdColumn ? headers.size() - 1 : headers.size();
+
+		// Validate all data rows
+		for (int i = 0; i < data.size(); i++) {
+			List<String> row = data.get(i);
+			if (row.size() != expectedDataSize) {
+				String errorMsg = String.format(
+						"数据列数不匹配。期望: %d列(不包括ID列), 实际: %d列。表头: %s, 第%d行数据: %s",
+						expectedDataSize, row.size(), headers, i + 1, row);
+				updateFileState(planId, filePath, "Error: Data size mismatch");
+				throw new IOException(errorMsg);
+			}
+		}
+
+		// Read existing data
+		List<List<String>> existingData = readAllData(planId, filePath);
+
+		// Add new data rows
+		for (List<String> row : data) {
+			List<String> dataToWrite;
+			if (hasIdColumn) {
+				// Auto-generate ID as the first column
+				String nextId = String.valueOf(existingData.size());
+				dataToWrite = new ArrayList<>();
+				dataToWrite.add(nextId);
+				dataToWrite.addAll(row);
+			} else {
+				// No ID column, use data as is
+				dataToWrite = new ArrayList<>(row);
+			}
+			existingData.add(dataToWrite);
+		}
+
+		// Write all data back
+		String sheetName = getSheetName(absolutePath);
+		log.debug("Writing multiple rows to file: {}, sheetName: {}, dataSize: {}", absolutePath, sheetName,
+				existingData.size());
+		if (!existingData.isEmpty()) {
+			log.debug("First row (headers): {}", existingData.get(0));
+			if (existingData.size() > 1) {
+				log.debug("Second row (first data): {}", existingData.get(1));
+			}
+		}
+		EasyExcel.write(absolutePath.toFile()).sheet(sheetName).doWrite(existingData);
+		log.debug("Successfully wrote multiple rows to file: {}", absolutePath);
+		updateFileState(planId, filePath, "Success: Multiple rows written to table");
+		log.info("Written multiple rows to table for planId={}, filePath={}", planId, filePath);
+	}
+
+	/**
 	 * Search for rows matching keywords
 	 * @param planId plan ID
 	 * @param filePath file path (relative or absolute)

@@ -126,115 +126,140 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 
 	private final String PARAMETERS = """
 			{
-			    "oneOf": [
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "create_table"
-			                },
-			                "file_path": {
-			                    "type": "string",
-			                    "description": "要创建的表格文件路径（相对路径）"
-			                },
-			                "table_name": {
-			                    "type": "string",
-			                    "description": "表格名称（工作表名称）"
-			                },
-			                "headers": {
-			                    "type": "array",
-			                    "items": {
-			                        "type": "string"
-			                    },
-			                    "description": "表头列表"
-			                }
-			            },
-			            "required": ["action", "file_path", "table_name", "headers"],
-			            "additionalProperties": false
-			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "get_structure"
-			                },
-			                "file_path": {
-			                    "type": "string",
-			                    "description": "要获取结构的表格文件路径"
-			                }
-			            },
-			            "required": ["action", "file_path"],
-			            "additionalProperties": false
-			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "write_data"
-			                },
-			                "file_path": {
-			                    "type": "string",
-			                    "description": "要写入数据的表格文件路径"
-			                },
-			                "data": {
-			                    "type": "array",
-			                    "items": {
-			                        "type": "string"
-			                    },
-			                    "description": "要写入的数据列表，必须与表头数量一致"
-			                }
-			            },
-			            "required": ["action", "file_path", "data"],
-			            "additionalProperties": false
-			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "search_rows"
-			                },
-			                "file_path": {
-			                    "type": "string",
-			                    "description": "要搜索的表格文件路径"
-			                },
-			                "keywords": {
-			                    "type": "array",
-			                    "items": {
-			                        "type": "string"
-			                    },
-			                    "description": "搜索关键词列表"
-			                }
-			            },
-			            "required": ["action", "file_path", "keywords"],
-			            "additionalProperties": false
-			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "delete_rows"
-			                },
-			                "file_path": {
-			                    "type": "string",
-			                    "description": "要删除行的表格文件路径"
-			                },
-			                "row_indices": {
-			                    "type": "array",
-			                    "items": {
-			                        "type": "integer"
-			                    },
-			                    "description": "要删除的行索引列表（从0开始）"
-			                }
-			            },
-			            "required": ["action", "file_path", "row_indices"],
-			            "additionalProperties": false
-			        }
-			    ]
+			  "oneOf": [
+				{
+				  "type": "object",
+				  "properties": {
+					"action": {
+					  "type": "string",
+					  "const": "create_table"
+					},
+					"file_path": {
+					  "type": "string",
+					  "description": "要创建的表格文件路径（相对路径）"
+					},
+					"sheet_name": {
+					  "type": "string",
+					  "description": "工作表名称"
+					},
+					"headers": {
+					  "type": "array",
+					  "items": {
+						"type": "string"
+					  },
+					  "description": "表头列表（不包括ID列，ID列会自动添加）"
+					}
+				  },
+				  "required": ["action", "file_path", "headers"],
+				  "additionalProperties": false
+				},
+				{
+				  "type": "object",
+				  "properties": {
+					"action": {
+					  "type": "string",
+					  "const": "get_structure"
+					},
+					"file_path": {
+					  "type": "string",
+					  "description": "表格文件路径"
+					}
+				  },
+				  "required": ["action", "file_path"],
+				  "additionalProperties": false
+				},
+				{
+				  "type": "object",
+				  "properties": {
+					"action": {
+					  "type": "string",
+					  "const": "write_data"
+					},
+					"file_path": {
+					  "type": "string",
+					  "description": "表格文件路径"
+					},
+					"data": {
+					  "type": "array",
+					  "items": {
+						"type": "string"
+					  },
+					  "description": "要写入的数据列表，必须与表头数量一致"
+					}
+				  },
+				  "required": ["action", "file_path", "data"],
+				  "additionalProperties": false
+				},
+				{
+				  "type": "object",
+				  "properties": {
+					"action": {
+					  "type": "string",
+					  "const": "write_multiple_rows"
+					},
+					"file_path": {
+					  "type": "string",
+					  "description": "表格文件路径"
+					},
+					"data": {
+					  "type": "array",
+					  "items": {
+						"type": "array",
+						"items": {
+						  "type": "string"
+						}
+					  },
+					  "description": "要写入的多行数据列表，每行数据必须与表头数量一致"
+					}
+				  },
+				  "required": ["action", "file_path", "data"],
+				  "additionalProperties": false
+				},
+				{
+				  "type": "object",
+				  "properties": {
+					"action": {
+					  "type": "string",
+					  "const": "search_rows"
+					},
+					"file_path": {
+					  "type": "string",
+					  "description": "表格文件路径"
+					},
+					"keywords": {
+					  "type": "array",
+					  "items": {
+						"type": "string"
+					  },
+					  "description": "搜索关键词列表"
+					}
+				  },
+				  "required": ["action", "file_path", "keywords"],
+				  "additionalProperties": false
+				},
+				{
+				  "type": "object",
+				  "properties": {
+					"action": {
+					  "type": "string",
+					  "const": "delete_rows"
+					},
+					"file_path": {
+					  "type": "string",
+					  "description": "要删除行的表格文件路径"
+					},
+					"row_indices": {
+					  "type": "array",
+					  "items": {
+						"type": "integer"
+					  },
+					  "description": "要删除的行索引列表（从0开始）"
+					}
+				  },
+				  "required": ["action", "file_path", "row_indices"],
+				  "additionalProperties": false
+				}
+			  ]
 			}
 			""";
 
@@ -245,7 +270,8 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 			支持的操作：
 			- create_table: 创建新表格，接受文件路径、工作表名和表头列表作为参数，自动添加ID列为第一列
 			- get_structure: 获取表格结构（表头信息）
-			- write_data: 将数据写入表格，要求数据列数与表头一致
+			- write_data: 将单行数据写入表格，要求数据列数与表头一致
+			- write_multiple_rows: 将多行数据写入表格，要求每行数据列数与表头一致
 			- search_rows: 根据关键词组在表格中查找匹配行
 			- delete_rows: 根据行索引列表删除指定行
 
@@ -302,6 +328,15 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					}
 
 					yield writeDataToTable(planId, filePath, data);
+				}
+				case "write_multiple_rows" -> {
+					List<List<String>> data = (List<List<String>>) toolInputMap.get("data");
+
+					if (data == null) {
+						yield new ToolExecuteResult("错误：write_multiple_rows操作需要data参数");
+					}
+
+					yield writeMultipleRowsToTable(planId, filePath, data);
 				}
 				case "search_rows" -> {
 					List<String> keywords = (List<String>) toolInputMap.get("keywords");
@@ -446,6 +481,17 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 		catch (IOException e) {
 			tableProcessingService.updateFileState(planId, filePath, "Error: " + e.getMessage());
 			return new ToolExecuteResult("写入数据失败: " + e.getMessage());
+		}
+	}
+
+	private ToolExecuteResult writeMultipleRowsToTable(String planId, String filePath, List<List<String>> data) {
+		try {
+			tableProcessingService.writeMultipleRowsToTable(planId, filePath, data);
+			return new ToolExecuteResult("多行数据写入成功");
+		}
+		catch (IOException e) {
+			tableProcessingService.updateFileState(planId, filePath, "Error: " + e.getMessage());
+			return new ToolExecuteResult("写入多行数据失败: " + e.getMessage());
 		}
 	}
 
