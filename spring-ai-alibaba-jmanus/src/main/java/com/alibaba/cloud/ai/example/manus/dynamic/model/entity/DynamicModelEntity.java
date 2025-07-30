@@ -15,11 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.model.entity;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
 import jakarta.persistence.*;
 
-import java.util.List;
 import java.util.Map;
 
 @Entity
@@ -50,13 +48,13 @@ public class DynamicModelEntity {
 	private String type;
 
 	@Column(nullable = false, columnDefinition = "boolean default false")
-	private boolean allowChange;
-
-	@Column(nullable = false, columnDefinition = "boolean default false")
 	private boolean isDefault;
 
-	@OneToMany(mappedBy = "model")
-	private List<DynamicAgentEntity> agents;
+	@Column(nullable = true, columnDefinition = "DOUBLE DEFAULT 0.7")
+	private Double temperature;
+
+	@Column(nullable = true, columnDefinition = "DOUBLE DEFAULT NULL")
+	private Double topP;
 
 	public DynamicModelEntity() {
 	}
@@ -114,14 +112,6 @@ public class DynamicModelEntity {
 		this.type = type;
 	}
 
-	public List<DynamicAgentEntity> getAgents() {
-		return agents;
-	}
-
-	public void setAgents(List<DynamicAgentEntity> agents) {
-		this.agents = agents;
-	}
-
 	public Map<String, String> getHeaders() {
 		return headers;
 	}
@@ -130,20 +120,28 @@ public class DynamicModelEntity {
 		this.headers = headers;
 	}
 
-	public Boolean isAllowChange() {
-		return allowChange;
-	}
-
-	public void setAllowChange(Boolean allowChange) {
-		this.allowChange = allowChange;
-	}
-
 	public Boolean getIsDefault() {
 		return isDefault;
 	}
 
 	public void setIsDefault(Boolean isDefault) {
 		this.isDefault = isDefault;
+	}
+
+	public Double getTemperature() {
+		return temperature;
+	}
+
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
+	}
+
+	public Double getTopP() {
+		return topP;
+	}
+
+	public void setTopP(Double topP) {
+		this.topP = topP;
 	}
 
 	public ModelConfig mapToModelConfig() {
@@ -156,6 +154,8 @@ public class DynamicModelEntity {
 		config.setModelDescription(this.getModelDescription());
 		config.setType(this.getType());
 		config.setIsDefault(this.getIsDefault());
+		config.setTemperature(this.getTemperature());
+		config.setTopP(this.getTopP());
 		return config;
 	}
 

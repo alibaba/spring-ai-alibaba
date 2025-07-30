@@ -193,6 +193,30 @@
             rows="3"
           />
         </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.temperature') }}</label>
+          <input
+            type="number"
+            v-model.number="selectedModel.temperature"
+            :placeholder="t('config.modelConfig.temperaturePlaceholder')"
+            step="0.1"
+            min="0"
+            max="2"
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.topP') }}</label>
+          <input
+            type="number"
+            v-model.number="selectedModel.topP"
+            :placeholder="t('config.modelConfig.topPPlaceholder')"
+            step="0.1"
+            min="0"
+            max="1"
+          />
+        </div>
       </div>
 
       <!-- Empty state -->
@@ -281,6 +305,30 @@
             :placeholder="t('config.modelConfig.descriptionPlaceholder')"
             class="description-field"
             rows="3"
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.temperature') }}</label>
+          <input
+            type="number"
+            v-model.number="newModel.temperature"
+            :placeholder="t('config.modelConfig.temperaturePlaceholder')"
+            step="0.1"
+            min="0"
+            max="2"
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.topP') }}</label>
+          <input
+            type="number"
+            v-model.number="newModel.topP"
+            :placeholder="t('config.modelConfig.topPPlaceholder')"
+            step="0.1"
+            min="0"
+            max="1"
           />
         </div>
       </div>
@@ -381,17 +429,23 @@ const newModel = reactive<Omit<Model, 'id'>>({
 })
 
 // Message toast
-const showMessage = (msg: string, type: 'success' | 'error') => {
+const showMessage = (msg: string, type: 'success' | 'error' | 'info') => {
   if (type === 'success') {
     success.value = msg
     setTimeout(() => {
       success.value = ''
     }, 3000)
-  } else {
+  } else if (type === 'error') {
     error.value = msg
     setTimeout(() => {
       error.value = ''
     }, 5000)
+  } else if (type === 'info') {
+    // 显示信息消息，使用success样式但时间短一些
+    success.value = msg
+    setTimeout(() => {
+      success.value = ''
+    }, 2000)
   }
 }
 
@@ -451,6 +505,8 @@ const showAddModelModal = () => {
   newModel.modelName = ''
   newModel.modelDescription = ''
   newModel.type = ''
+  delete newModel.temperature
+  delete newModel.topP
   // 清除新建Model弹窗的状态
   newModelValidating.value = false
   newModelAvailableModels.value = []
@@ -589,15 +645,41 @@ const handleAddModel = async () => {
     return
   }
 
+  // 强制校验API Key可用性
+  if (!newModel.baseUrl.trim() || !newModel.apiKey.trim()) {
+    showMessage(t('config.modelConfig.pleaseEnterBaseUrlAndApiKey'), 'error')
+    return
+  }
+
+  // 在创建前必须先校验API Key可用性
+  showMessage(t('config.modelConfig.validatingBeforeSave'), 'info')
+  
   try {
-    const modelData: Omit<Model, 'id'> = {
+    const validationResult = await ModelApiService.validateConfig({
+      baseUrl: newModel.baseUrl.trim(),
+      apiKey: newModel.apiKey.trim()
+    })
+
+    if (!validationResult.valid) {
+      showMessage(t('config.modelConfig.validationFailedCannotSave') + ': ' + validationResult.message, 'error')
+      return
+    }
+  } catch (err: any) {
+    showMessage(t('config.modelConfig.validationFailedCannotSave') + ': ' + err.message, 'error')
+    return
+  }
+
+  try {
+    const modelData = {
       baseUrl: newModel.baseUrl.trim(),
       headers: newModel.headers,
       apiKey: newModel.apiKey.trim(),
       modelName: newModel.modelName.trim(),
       modelDescription: newModel.modelDescription.trim(),
       type: newModel.type.trim(),
-    }
+      temperature: isNaN(newModel.temperature!) ? null : newModel.temperature,
+      topP: isNaN(newModel.topP!) ? null : newModel.topP,
+    } as Omit<Model, 'id'>
 
     const createdModel = await ModelApiService.createModel(modelData)
     models.push(createdModel)
@@ -618,10 +700,49 @@ const handleSave = async () => {
     return
   }
 
+  // 强制校验API Key可用性
+  if (!selectedModel.value.baseUrl || !selectedModel.value.apiKey) {
+    showMessage(t('config.modelConfig.pleaseEnterBaseUrlAndApiKey'), 'error')
+    return
+  }
+
+  // 如果API Key被修改了（不包含*），需要重新校验
+  const needsValidation = !selectedModel.value.apiKey.includes('*') || 
+    !modelAvailableModels.value.has(selectedModel.value.id)
+
+  if (needsValidation) {
+    showMessage(t('config.modelConfig.validatingBeforeSave'), 'info')
+    
+    try {
+      const validationResult = await ModelApiService.validateConfig({
+        baseUrl: selectedModel.value.baseUrl,
+        apiKey: selectedModel.value.apiKey
+      })
+
+      if (!validationResult.valid) {
+        showMessage(t('config.modelConfig.validationFailedCannotSave') + ': ' + validationResult.message, 'error')
+        return
+      }
+
+      // 校验成功，更新可用模型列表
+      modelAvailableModels.value.set(selectedModel.value.id, validationResult.availableModels || [])
+    } catch (err: any) {
+      showMessage(t('config.modelConfig.validationFailedCannotSave') + ': ' + err.message, 'error')
+      return
+    }
+  }
+
   try {
+    // 处理NaN值，转换为null以便正确序列化和传输
+    const modelToSave = {
+      ...selectedModel.value,
+      temperature: isNaN(selectedModel.value.temperature!) ? null : selectedModel.value.temperature,
+      topP: isNaN(selectedModel.value.topP!) ? null : selectedModel.value.topP,
+    }
+    
     const savedModel = await ModelApiService.updateModel(
       selectedModel.value.id,
-      selectedModel.value
+      modelToSave as Model
     )
 
     // Update the data in the local list

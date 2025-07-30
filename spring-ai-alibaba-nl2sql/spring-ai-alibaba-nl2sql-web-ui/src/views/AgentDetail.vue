@@ -32,6 +32,7 @@
           数据智能体
         </span>
         <span class="nav-item clickable active" @click="goToAgentList">智能体</span>
+        <span class="nav-item clickable" @click="goToWorkspace">智能体工作台</span>
       </div>
       <div class="nav-right">
       </div>
@@ -107,6 +108,14 @@
               </div>
 
               <div class="nav-section">
+                <div class="nav-section-title">预设问题配置</div>
+                <a href="#" class="nav-link" :class="{ active: activeTab === 'preset-questions' }" @click="setActiveTab('preset-questions')">
+                  <i class="bi bi-question-circle"></i>
+                  预设问题管理
+                </a>
+              </div>
+
+              <div class="nav-section">
                 <div class="nav-section-title">调试工具</div>
                 <a href="#" class="nav-link" :class="{ active: activeTab === 'debug' }" @click="setActiveTab('debug')">
                   <i class="bi bi-bug"></i>
@@ -115,7 +124,7 @@
               </div>
 
               <div class="nav-section">
-                <div class="nav-section-title">正式使用</div>
+                <div class="nav-section-title">应用入口</div>
                 <a href="#" class="nav-link" @click="goToWorkspace">
                   <i class="bi bi-chat-dots"></i>
                   智能体工作台
@@ -429,6 +438,61 @@
                       </tr>
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- 预设问题管理 -->
+            <div v-if="activeTab === 'preset-questions'" class="tab-content">
+              <div class="content-header">
+                <h2>预设问题管理</h2>
+                <p class="content-subtitle">配置智能体工作台显示的预设问题</p>
+              </div>
+              <div class="preset-questions-section">
+                <div class="section-header">
+                  <h3>预设问题列表</h3>
+                  <button class="btn btn-primary" @click="addPresetQuestion">
+                    <i class="bi bi-plus"></i>
+                    添加问题
+                  </button>
+                </div>
+                <div class="questions-list">
+                  <div v-if="presetQuestions.length === 0" class="empty-questions">
+                    <i class="bi bi-question-circle"></i>
+                    <p>暂无预设问题，点击"添加问题"开始配置</p>
+                  </div>
+                  <div v-else>
+                    <div 
+                      v-for="(question, index) in presetQuestions" 
+                      :key="index"
+                      class="question-item"
+                    >
+                      <div class="question-content">
+                        <div class="question-number">{{ index + 1 }}</div>
+                        <input 
+                          type="text" 
+                          v-model="question.question" 
+                          class="question-input"
+                          placeholder="请输入预设问题..."
+                        >
+                      </div>
+                      <div class="question-actions">
+                        <button class="btn btn-sm btn-outline" @click="moveQuestionUp(index)" :disabled="index === 0">
+                          <i class="bi bi-arrow-up"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline" @click="moveQuestionDown(index)" :disabled="index === presetQuestions.length - 1">
+                          <i class="bi bi-arrow-down"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" @click="removePresetQuestion(index)">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions" v-if="presetQuestions.length > 0">
+                  <button class="btn btn-primary" @click="savePresetQuestions">保存配置</button>
+                  <button class="btn btn-secondary" @click="loadPresetQuestions">重置</button>
                 </div>
               </div>
             </div>
@@ -817,7 +881,7 @@
 <script>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { agentApi, businessKnowledgeApi, semanticModelApi, datasourceApi } from '../utils/api.js'
+import { agentApi, businessKnowledgeApi, semanticModelApi, datasourceApi, presetQuestionApi } from '../utils/api.js'
 import AgentDebugPanel from '../components/AgentDebugPanel.vue'
 
 export default {
@@ -861,6 +925,9 @@ export default {
     const showCreateModelModal = ref(false)
     const showUploadModal = ref(false)
     const showAddDatasourceModal = ref(false)
+    
+    // 预设问题相关数据
+    const presetQuestions = ref([])
     
     // 业务知识相关数据
     const isEditingBusinessKnowledge = ref(false)
@@ -937,7 +1004,7 @@ export default {
     }
     
     const goToAgentList = () => {
-      router.push('/agent')
+      router.push('/agents')
     }
 
     const goToWorkspace = () => {
@@ -979,6 +1046,9 @@ export default {
           break
         case 'datasource':
           await loadDatasources()
+          break
+        case 'preset-questions':
+          await loadPresetQuestions()
           break
       }
     }
@@ -1267,6 +1337,59 @@ export default {
         }
         
         showMessage(errorMessage, 'error')
+      }
+    }
+    
+    // 预设问题相关方法
+    const loadPresetQuestions = async () => {
+      try {
+        const questions = await presetQuestionApi.getByAgentId(agent.id)
+        presetQuestions.value = questions.map(q => ({ question: q.question }))
+        console.log('预设问题加载成功:', questions)
+      } catch (error) {
+        console.error('加载预设问题失败:', error)
+        presetQuestions.value = []
+      }
+    }
+
+    // 添加预设问题
+    const addPresetQuestion = () => {
+      presetQuestions.value.push({ question: '' })
+    }
+
+    // 移除预设问题
+    const removePresetQuestion = (index) => {
+      presetQuestions.value.splice(index, 1)
+    }
+
+    // 上移问题
+    const moveQuestionUp = (index) => {
+      if (index > 0) {
+        const temp = presetQuestions.value[index]
+        presetQuestions.value[index] = presetQuestions.value[index - 1]
+        presetQuestions.value[index - 1] = temp
+      }
+    }
+
+    // 下移问题
+    const moveQuestionDown = (index) => {
+      if (index < presetQuestions.value.length - 1) {
+        const temp = presetQuestions.value[index]
+        presetQuestions.value[index] = presetQuestions.value[index + 1]
+        presetQuestions.value[index + 1] = temp
+      }
+    }
+
+    // 保存预设问题
+    const savePresetQuestions = async () => {
+      try {
+        // 过滤掉空问题
+        const validQuestions = presetQuestions.value.filter(q => q.question.trim())
+        await presetQuestionApi.batchSave(agent.id, validQuestions)
+        showMessage('预设问题保存成功', 'success')
+      } catch (error) {
+        console.error('保存预设问题失败:', error)
+        showMessage('保存预设问题失败：' + (error.message || '未知错误'), 'error')
       }
     }
     
@@ -1695,7 +1818,15 @@ export default {
       // 消息提示方法
       showMessage,
       hideMessage,
-      getMessageIcon
+      getMessageIcon,
+      // 预设问题方法
+      presetQuestions,
+      addPresetQuestion,
+      removePresetQuestion,
+      moveQuestionUp,
+      moveQuestionDown,
+      savePresetQuestions,
+      loadPresetQuestions
     }
   }
 }
@@ -1793,12 +1924,12 @@ export default {
 /* 头部导航样式 */
 .top-nav {
   background: white;
+  border-bottom: 1px solid #e5e5e5;
   padding: 0 24px;
-  height: 56px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #e8e8e8;
+  align-items: center;
+  height: 60px;
 }
 
 .nav-items {
@@ -2879,5 +3010,84 @@ export default {
   font-size: 12px;
   margin-top: 4px;
   display: block;
+}
+
+/* 预设问题配置样式 */
+.preset-questions-section {
+  margin-top: 16px;
+}
+
+.questions-list {
+  margin-top: 16px;
+}
+
+.empty-questions {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #999;
+}
+
+.empty-questions i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #ccc;
+}
+
+.question-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  border: 1px solid #e8e8e8;
+}
+
+.question-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.question-number {
+  width: 24px;
+  height: 24px;
+  background: #1890ff;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.question-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.question-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.question-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.question-actions .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
 }
 </style>

@@ -129,3 +129,19 @@ CREATE TABLE IF NOT EXISTS agent_datasource (
   FOREIGN KEY (agent_id) REFERENCES agent(id) ON DELETE CASCADE,
   FOREIGN KEY (datasource_id) REFERENCES datasource(id) ON DELETE CASCADE
 ) ENGINE = InnoDB COMMENT = '智能体数据源关联表';
+
+-- 智能体预设问题表
+CREATE TABLE IF NOT EXISTS agent_preset_question (
+  id INT NOT NULL AUTO_INCREMENT,
+  agent_id INT NOT NULL COMMENT '智能体ID',
+  question TEXT NOT NULL COMMENT '预设问题内容',
+  sort_order INT DEFAULT 0 COMMENT '排序顺序',
+  is_active TINYINT DEFAULT 1 COMMENT '是否启用：0-禁用，1-启用',
+  create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  INDEX idx_agent_id (agent_id),
+  INDEX idx_sort_order (sort_order),
+  INDEX idx_is_active (is_active),
+  FOREIGN KEY (agent_id) REFERENCES agent(id) ON DELETE CASCADE
+) ENGINE = InnoDB COMMENT = '智能体预设问题表';
