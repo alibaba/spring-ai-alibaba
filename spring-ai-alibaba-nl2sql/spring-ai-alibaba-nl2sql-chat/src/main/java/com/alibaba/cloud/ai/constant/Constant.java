@@ -23,6 +23,8 @@ public class Constant {
 
 	public static final String INPUT_KEY = "input";
 
+	public static final String DATA_SET_ID = "dataSetId";
+
 	public static final String RESULT = "result";
 
 	public static final String NL2SQL_GRAPH_NAME = "nl2sqlGraph";
@@ -40,6 +42,10 @@ public class Constant {
 	public static final String COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT = "COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT";
 
 	public static final String TABLE_RELATION_OUTPUT = "TABLE_RELATION_OUTPUT";
+
+	public static final String BUSINESS_KNOWLEDGE = "BUSINESS_KNOWLEDGE";
+
+	public static final String SEMANTIC_MODEL = "SEMANTIC_MODEL";
 
 	public static final String SQL_GENERATE_OUTPUT = "SQL_GENERATE_OUTPUT";
 

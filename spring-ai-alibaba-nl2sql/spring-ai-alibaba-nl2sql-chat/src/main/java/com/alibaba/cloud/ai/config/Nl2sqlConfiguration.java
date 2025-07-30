@@ -42,6 +42,8 @@ import com.alibaba.cloud.ai.node.SqlGenerateNode;
 import com.alibaba.cloud.ai.node.TableRelationNode;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
+import com.alibaba.cloud.ai.service.business.BusinessKnowledgeRecallService;
+import com.alibaba.cloud.ai.service.semantic.SemanticModelRecallService;
 import com.alibaba.cloud.ai.tool.PythonExecutorTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +56,9 @@ import org.springframework.context.annotation.Configuration;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
 import static com.alibaba.cloud.ai.constant.Constant.COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.DATA_SET_ID;
 import static com.alibaba.cloud.ai.constant.Constant.EVIDENCES;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.KEYWORD_EXTRACT_NODE;
@@ -77,6 +81,7 @@ import static com.alibaba.cloud.ai.constant.Constant.SCHEMA_RECALL_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_CONSISTENCY_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_CONSISTENCY_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_CONSISTENCY_NODE_RECOMMEND_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_MODEL;
 import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE_EXCEPTION_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE_OUTPUT;
@@ -120,6 +125,12 @@ public class Nl2sqlConfiguration {
 	@Autowired(required = false)
 	private PythonExecutorTool pythonExecutorTool;
 
+	@Autowired
+	private SemanticModelRecallService semanticModelRecallService;
+
+	@Autowired
+	private BusinessKnowledgeRecallService businessKnowledgeRecallService;
+
 	@Bean
 	public StateGraph nl2sqlGraph(ChatClient.Builder chatClientBuilder) throws GraphStateException {
 
@@ -127,6 +138,12 @@ public class Nl2sqlConfiguration {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			// 用户输入
 			keyStrategyHashMap.put(INPUT_KEY, new ReplaceStrategy());
+			// 数据集ID
+			keyStrategyHashMap.put(DATA_SET_ID, new ReplaceStrategy());
+			// 业务知识
+			keyStrategyHashMap.put(BUSINESS_KNOWLEDGE, new ReplaceStrategy());
+			// 语义模型
+			keyStrategyHashMap.put(SEMANTIC_MODEL, new ReplaceStrategy());
 			// queryWrite节点输出
 			keyStrategyHashMap.put(QUERY_REWRITE_NODE_OUTPUT, new ReplaceStrategy());
 			// keyword extract节点输出
@@ -167,7 +184,9 @@ public class Nl2sqlConfiguration {
 			.addNode(QUERY_REWRITE_NODE, node_async(new QueryRewriteNode(nl2SqlService)))
 			.addNode(KEYWORD_EXTRACT_NODE, node_async(new KeywordExtractNode(nl2SqlService)))
 			.addNode(SCHEMA_RECALL_NODE, node_async(new SchemaRecallNode(schemaService)))
-			.addNode(TABLE_RELATION_NODE, node_async(new TableRelationNode(schemaService, nl2SqlService)))
+			.addNode(TABLE_RELATION_NODE,
+					node_async(new TableRelationNode(schemaService, nl2SqlService, businessKnowledgeRecallService,
+							semanticModelRecallService)))
 			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder, nl2SqlService)))
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
