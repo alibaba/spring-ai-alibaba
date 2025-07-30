@@ -39,17 +39,6 @@ public class ChatResponseUtil {
 	}
 
 	/**
-	 * 部分响应返回一个JSON对象，用String方法会导致JSON字符串再次序列化
-	 * @param data Map对象
-	 * @return ChatResponse 状态响应对象
-	 */
-	public static ChatResponse createObjectStatusResponse(Map<String, Object> data) {
-		AssistantMessage assistantMessage = new AssistantMessage(JsonUtils.toJson(StreamResponseType.STATUS, data));
-		Generation generation = new Generation(assistantMessage);
-		return new ChatResponse(List.of(generation));
-	}
-
-	/**
 	 * 创建自定义状态响应
 	 * @param statusMessage 状态消息
 	 * @return ChatResponse 状态响应对象

@@ -29,8 +29,4 @@ public class JsonUtils {
 		return gson.toJson(Map.of("type", type.getValue(), "data", data));
 	}
 
-	public static String toJson(StreamResponseType type, Map<String, Object> data) {
-		return gson.toJson(Map.of("type", type.getValue(), "data", data));
-	}
-
 }
