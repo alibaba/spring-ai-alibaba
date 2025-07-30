@@ -28,9 +28,9 @@
     <header class="page-header">
       <div class="header-content">
         <div class="brand-section">
-          <div class="brand-logo">
+          <div class="brand-logo" @click="goToHome">
             <i class="bi bi-robot"></i>
-            <span class="brand-text">智能体管理</span>
+            <span class="brand-text">数据智能体</span>
           </div>
           <nav class="header-nav">
             <div class="nav-item" @click="goToAgentList">
@@ -39,16 +39,12 @@
             </div>
             <div class="nav-item" @click="goToWorkspace">
               <i class="bi bi-chat-square-dots"></i>
-              <span>工作台</span>
-            </div>
-            <div class="nav-item">
-              <i class="bi bi-graph-up-arrow"></i>
-              <span>分析报告</span>
+              <span>智能体工作台</span>
             </div>
           </nav>
         </div>
         <div class="header-actions">
-          <button class="btn btn-outline">
+          <button class="btn btn-outline" @click="openHelp">
             <i class="bi bi-question-circle"></i>
             帮助
           </button>
@@ -1036,6 +1032,14 @@ export default {
     const createNewAgent = () => {
       router.push('/agent/create')
     }
+
+    const openHelp = () => {
+      window.open('https://github.com/alibaba/spring-ai-alibaba/blob/main/spring-ai-alibaba-nl2sql/README.md', '_blank')
+    }
+
+    const goToHome = () => {
+      router.push('/')
+    }
     
     const loadAgentDetail = async () => {
       try {
@@ -1836,6 +1840,8 @@ export default {
       goToAgentList,
       goToWorkspace,
       createNewAgent,
+      openHelp,
+      goToHome,
       // 工具方法
       getStatusText,
       formatDate,
@@ -1899,6 +1905,11 @@ export default {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   color: var(--primary-color);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .brand-logo i {
