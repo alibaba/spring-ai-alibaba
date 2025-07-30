@@ -220,8 +220,9 @@ onMounted(() => {
     },
 
     onPlanError: (message: string) => {
-      showMessage(`${t('planTemplate.executionFailed')}: ${message}`, 'error')
-      return
+      // 无需右侧提示，如需提示则解开
+      // showMessage(`${t('planTemplate.executionFailed')}: ${message}`, 'error')
+      chatRef.value.handlePlanError(message)
     },
   })
 
