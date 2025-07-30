@@ -20,15 +20,12 @@
       <div class="nav-items">
         <span class="nav-item logo-item">
           <i class="bi bi-robot"></i>
-          智能体工作台
+          数据智能体
         </span>
-        <span class="nav-item clickable active">对话交互</span>
+        <span class="nav-item clickable" @click="goToAgentList">智能体</span>
+        <span class="nav-item clickable active">智能体工作台</span>
       </div>
       <div class="nav-right">
-        <button class="btn btn-outline" @click="goToAgentList">
-          <i class="bi bi-gear"></i>
-          管理智能体
-        </button>
       </div>
     </div>
 
@@ -111,7 +108,7 @@
                 <div class="welcome-text">
                   <h4>Hi~ 我是{{ selectedAgent.name }}</h4>
                   <p>{{ selectedAgent.description || '我是您的智能助手，有什么可以帮助您的吗？' }}</p>
-                  <div class="example-queries">
+                  <div class="example-queries" v-if="exampleQueries.length > 0">
                     <div 
                       class="example-query" 
                       v-for="example in exampleQueries" 
@@ -178,7 +175,7 @@
 <script>
 import { ref, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { agentApi } from '../utils/api.js';
+import { agentApi, presetQuestionApi } from '../utils/api.js';
 
 export default {
   name: 'AgentWorkspace',
@@ -193,12 +190,7 @@ export default {
     const chatContainer = ref(null);
     const chatInput = ref(null);
 
-    const exampleQueries = ref([
-      '查询销售额最高的5个产品',
-      '分析最近一个月的销售趋势',
-      '统计各个分类的商品数量',
-      '查询用户购买行为分析'
-    ]);
+    const exampleQueries = ref([]);
 
     const loadPublishedAgents = async () => {
       try {
@@ -210,10 +202,24 @@ export default {
       }
     };
 
-    const selectAgent = (agent) => {
+    // 加载智能体的预设问题
+    const loadAgentPresetQuestions = async (agentId) => {
+      try {
+        const questions = await presetQuestionApi.getByAgentId(agentId);
+        exampleQueries.value = questions.map(q => q.question);
+        console.log('加载预设问题成功:', questions);
+      } catch (error) {
+        console.error('加载预设问题失败:', error);
+        exampleQueries.value = []; // 如果加载失败，不显示预设问题
+      }
+    };
+
+    const selectAgent = async (agent) => {
       selectedAgent.value = agent;
       chatMessages.value = [];
       currentMessage.value = '';
+      // 加载该智能体的预设问题
+      await loadAgentPresetQuestions(agent.id);
       nextTick(() => {
         if (chatInput.value) {
           chatInput.value.focus();
@@ -650,44 +656,57 @@ export default {
 
 /* 头部导航样式 */
 .top-nav {
-  background-color: #ffffff;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 0 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 60px;
 }
 
 .nav-items {
   display: flex;
-  align-items: center;
-  gap: 2rem;
+  gap: 32px;
 }
 
 .nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1rem;
-  color: #333;
+  padding: 8px 16px;
+  color: #666;
+  border-radius: 4px;
+  transition: all 0.2s;
 }
 
-.logo-item {
-  font-size: 1.2rem;
+.nav-item.logo-item {
+  cursor: default;
   font-weight: 600;
   color: #1890ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-item.logo-item i {
+  font-size: 18px;
 }
 
 .nav-item.clickable {
   cursor: pointer;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  transition: all 0.2s;
 }
 
+.nav-item.active,
 .nav-item.clickable:hover {
-  background-color: #f0f5ff;
+  color: #1890ff;
+  background: #f0f8ff;
 }
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+
 
 .nav-item.active {
   background-color: #e6f7ff;
@@ -1059,6 +1078,8 @@ export default {
   0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
   40% { transform: scale(1); opacity: 1; }
 }
+
+
 
 /* 输入区域 */
 .chat-input-area {

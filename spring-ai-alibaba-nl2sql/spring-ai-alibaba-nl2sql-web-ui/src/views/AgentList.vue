@@ -23,6 +23,7 @@
           数据智能体
         </span>
         <span class="nav-item clickable active">智能体</span>
+        <span class="nav-item clickable" @click="goToWorkspace">智能体工作台</span>
       </div>
       <div class="nav-right">
       </div>
@@ -427,6 +428,10 @@ export default {
       return icons[index]
     }
 
+    const goToWorkspace = () => {
+      router.push('/workspace')
+    }
+
     // 生命周期
     onMounted(() => {
       loadAgents()
@@ -452,7 +457,8 @@ export default {
       formatTime,
       getRandomColor,
       getRandomIcon,
-      refreshAgentList
+      refreshAgentList,
+      goToWorkspace
     }
   }
 }
