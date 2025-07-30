@@ -1,9 +1,5 @@
 package com.alibaba.cloud.ai.memory.redis;
 
-import com.alibaba.cloud.ai.memory.redis.serializer.MessageDeserializer;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.jetbrains.annotations.NotNull;
 import org.redisson.Redisson;
 import org.redisson.api.RKeys;
@@ -16,9 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -30,28 +25,16 @@ import java.util.stream.StreamSupport;
  * @author benym
  * @date 2025/7/30 18:47
  */
-public class RedissonRedisChatMemoryRepository implements ChatMemoryRepository, AutoCloseable {
+public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryRepository implements ChatMemoryRepository, AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(RedissonRedisChatMemoryRepository.class);
 
-    private static final String DEFAULT_KEY_PREFIX = "spring_ai_alibaba_chat_memory:";
-
     private final RedissonClient redissonClient;
 
-    private final ObjectMapper objectMapper;
-
     private RedissonRedisChatMemoryRepository(RedissonClient redissonClient) {
+        super();
         Assert.notNull(redissonClient, "redissonClient cannot be null");
         this.redissonClient = redissonClient;
-        this.objectMapper = createObjectMapper();
-    }
-
-    private ObjectMapper createObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        SimpleModule module = new SimpleModule();
-        module.addDeserializer(Message.class, new MessageDeserializer());
-        mapper.registerModule(module);
-        return mapper;
     }
 
     public static RedissonBuilder builder() {
@@ -62,7 +45,15 @@ public class RedissonRedisChatMemoryRepository implements ChatMemoryRepository, 
 
         private String host = "127.0.0.1";
 
+        /**
+         * example
+         * redis://127.0.0.1:6379,redis://127.0.0.1:6380,redis://127.0.0.1:6381
+         */
+        private List<String> nodes;
+
         private int port = 6379;
+
+        private String username;
 
         private String password;
 
@@ -70,9 +61,15 @@ public class RedissonRedisChatMemoryRepository implements ChatMemoryRepository, 
 
         private int poolSize = 32;
 
-        private RedisClusterConfig clusterConfig;
+        private Config redissonConfig;
 
         private boolean useCluster = false;
+
+        public RedissonBuilder nods(List<String> nodes) {
+            this.nodes = nodes;
+            this.useCluster = true;
+            return this;
+        }
 
         public RedissonBuilder host(String host) {
             this.host = host;
@@ -81,6 +78,11 @@ public class RedissonRedisChatMemoryRepository implements ChatMemoryRepository, 
 
         public RedissonBuilder port(int port) {
             this.port = port;
+            return this;
+        }
+
+        public RedissonBuilder username(String username) {
+            this.username = username;
             return this;
         }
 
@@ -99,43 +101,42 @@ public class RedissonRedisChatMemoryRepository implements ChatMemoryRepository, 
             return this;
         }
 
-        public RedissonBuilder useCluster(RedisClusterConfig clusterConfig) {
-            this.clusterConfig = clusterConfig;
-            this.useCluster = true;
+        public RedissonBuilder redissonConfig(Config redissonConfig) {
+            this.redissonConfig = redissonConfig;
             return this;
         }
 
         public RedissonRedisChatMemoryRepository build() {
+            if (redissonConfig != null) {
+                return new RedissonRedisChatMemoryRepository(Redisson.create(redissonConfig));
+            }
             Config config = new Config();
             if (useCluster) {
                 config.useClusterServers()
-                        .addNodeAddress(clusterConfig.getNodeAddresses().toArray(new String[0]))
-                        .setPassword(password)
+                        .addNodeAddress(nodes.toArray(new String[0]))
                         .setConnectTimeout(timeout)
                         .setSlaveConnectionPoolSize(poolSize)
                         .setMasterConnectionPoolSize(poolSize);
+                if (StringUtils.hasLength(username)) {
+                    config.useClusterServers().setUsername(username);
+                }
+                if (StringUtils.hasLength(password)) {
+                    config.useClusterServers().setPassword(password);
+                }
             } else {
                 config.useSingleServer()
                         .setAddress("redis://" + host + ":" + port)
-                        .setPassword(password)
                         .setConnectionPoolSize(poolSize)
                         .setConnectTimeout(timeout);
+                if (StringUtils.hasLength(username)) {
+                    config.useSingleServer().setUsername(username);
+                }
+                if (StringUtils.hasLength(password)) {
+                    config.useSingleServer().setPassword(password);
+                }
             }
             return new RedissonRedisChatMemoryRepository(Redisson.create(config));
-        }
-    }
 
-    public static class RedisClusterConfig {
-
-        private final List<String> nodeAddresses;
-
-        public RedisClusterConfig(List<String> nodeAddresses) {
-            Assert.notEmpty(nodeAddresses, "Cluster nodes cannot be empty");
-            this.nodeAddresses = new ArrayList<>(nodeAddresses);
-        }
-
-        public List<String> getNodeAddresses() {
-            return Collections.unmodifiableList(nodeAddresses);
         }
     }
 
@@ -165,15 +166,6 @@ public class RedissonRedisChatMemoryRepository implements ChatMemoryRepository, 
                 .collect(Collectors.toList());
     }
 
-    private Message deserializeMessage(String messageStr) {
-        try {
-            return objectMapper.readValue(messageStr, Message.class);
-        } catch (JsonProcessingException e) {
-            logger.error("Deserialization error for message: {}", messageStr, e);
-            return null;
-        }
-    }
-
     @Override
     public void saveAll(@NotNull String conversationId, @NotNull List<Message> messages) {
         Assert.hasText(conversationId, "conversationId cannot be null or empty");
@@ -187,14 +179,6 @@ public class RedissonRedisChatMemoryRepository implements ChatMemoryRepository, 
                 .map(this::serializeMessage)
                 .toList();
         redisList.addAll(serializedMessages);
-    }
-
-    private String serializeMessage(Message message) {
-        try {
-            return objectMapper.writeValueAsString(message);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Serialization error for message: " + message, e);
-        }
     }
 
     @Override

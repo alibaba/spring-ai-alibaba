@@ -30,14 +30,20 @@ import redis.clients.jedis.Jedis;
 
 /**
  * Auto-configuration for Redis Chat Memory using Jedis.
+ * @author Jast
+ * @author benym
  */
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ JedisRedisChatMemoryRepository.class, Jedis.class })
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
 @ConditionalOnProperty(name = "spring.ai.memory.redis.client-type", havingValue = "jedis", matchIfMissing = true)
-public class JedisRedisChatMemoryAutoConfiguration {
+public class JedisRedisChatMemoryConnectionConfiguration extends RedisMemoryConnectionConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(JedisRedisChatMemoryAutoConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(JedisRedisChatMemoryConnectionConfiguration.class);
+
+	public JedisRedisChatMemoryConnectionConfiguration(RedisChatMemoryProperties properties, RedisChatMemoryConnectionDetails connectionDetails) {
+		super(properties, connectionDetails);
+	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -46,6 +52,7 @@ public class JedisRedisChatMemoryAutoConfiguration {
 		return JedisRedisChatMemoryRepository.builder()
 			.host(properties.getHost())
 			.port(properties.getPort())
+			.username(properties.getUsername())
 			.password(properties.getPassword())
 			.timeout(properties.getTimeout())
 			.build();

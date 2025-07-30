@@ -15,12 +15,9 @@
  */
 package com.alibaba.cloud.ai.memory.redis;
 
-import com.alibaba.cloud.ai.memory.redis.serializer.MessageDeserializer;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -34,24 +31,19 @@ import java.util.List;
 
 /**
  * Redis implementation of ChatMemoryRepository using Jedis
+ * @author Jast
+ * @author benym
  */
-public class JedisRedisChatMemoryRepository implements ChatMemoryRepository, AutoCloseable {
+public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepository implements ChatMemoryRepository, AutoCloseable {
 
 	private static final Logger logger = LoggerFactory.getLogger(JedisRedisChatMemoryRepository.class);
 
-	private static final String DEFAULT_KEY_PREFIX = "spring_ai_alibaba_chat_memory:";
-
 	private final JedisPool jedisPool;
 
-	private final ObjectMapper objectMapper;
-
 	private JedisRedisChatMemoryRepository(JedisPool jedisPool) {
-		Assert.notNull(jedisPool, "jedisPool cannot be null");
+		super();
+        Assert.notNull(jedisPool, "jedisPool cannot be null");
 		this.jedisPool = jedisPool;
-		this.objectMapper = new ObjectMapper();
-		SimpleModule module = new SimpleModule();
-		module.addDeserializer(Message.class, new MessageDeserializer());
-		this.objectMapper.registerModule(module);
 	}
 
 	public static RedisBuilder builder() {
@@ -63,6 +55,8 @@ public class JedisRedisChatMemoryRepository implements ChatMemoryRepository, Aut
 		private String host = "127.0.0.1";
 
 		private int port = 6379;
+
+		private String username;
 
 		private String password;
 
@@ -77,6 +71,11 @@ public class JedisRedisChatMemoryRepository implements ChatMemoryRepository, Aut
 
 		public RedisBuilder port(int port) {
 			this.port = port;
+			return this;
+		}
+
+		public RedisBuilder username(String username) {
+			this.username = username;
 			return this;
 		}
 
@@ -99,7 +98,20 @@ public class JedisRedisChatMemoryRepository implements ChatMemoryRepository, Aut
 			if (poolConfig == null) {
 				poolConfig = new JedisPoolConfig();
 			}
-			JedisPool jedisPool = new JedisPool(poolConfig, host, port, timeout, password);
+			JedisPool jedisPool;
+			if (StringUtils.hasLength(username) && StringUtils.hasLength(password)) {
+				jedisPool = new JedisPool(poolConfig, host, port, timeout, username, password);
+				return new JedisRedisChatMemoryRepository(jedisPool);
+			}
+			if (StringUtils.hasLength(username)) {
+				jedisPool = new JedisPool(poolConfig, host, port, timeout, username);
+				return new JedisRedisChatMemoryRepository(jedisPool);
+			}
+			if (StringUtils.hasLength(password)) {
+				jedisPool = new JedisPool(poolConfig, host, port, timeout, password);
+				return new JedisRedisChatMemoryRepository(jedisPool);
+			}
+			jedisPool = new JedisPool(poolConfig, host, port, timeout);
 			return new JedisRedisChatMemoryRepository(jedisPool);
 		}
 
@@ -122,13 +134,8 @@ public class JedisRedisChatMemoryRepository implements ChatMemoryRepository, Aut
 			List<Message> messages = new ArrayList<>();
 
 			for (String messageString : messageStrings) {
-				try {
-					Message message = objectMapper.readValue(messageString, Message.class);
-					messages.add(message);
-				}
-				catch (JsonProcessingException e) {
-					throw new RuntimeException("Error deserializing message", e);
-				}
+				Message message = deserializeMessage(messageString);
+				messages.add(message);
 			}
 			return messages;
 		}
@@ -147,13 +154,8 @@ public class JedisRedisChatMemoryRepository implements ChatMemoryRepository, Aut
 
 			// Add all messages in order
 			for (Message message : messages) {
-				try {
-					String messageJson = objectMapper.writeValueAsString(message);
-					jedis.rpush(key, messageJson);
-				}
-				catch (JsonProcessingException e) {
-					throw new RuntimeException("Error serializing message", e);
-				}
+				String messageJson = serializeMessage(message);
+				jedis.rpush(key, messageJson);
 			}
 		}
 	}
