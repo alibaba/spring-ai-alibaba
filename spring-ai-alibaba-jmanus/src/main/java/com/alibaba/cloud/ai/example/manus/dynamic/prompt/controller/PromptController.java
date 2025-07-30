@@ -69,4 +69,21 @@ public class PromptController {
 		}
 	}
 
+	@GetMapping("/languages")
+	public ResponseEntity<String[]> getSupportedLanguages() {
+		return ResponseEntity.ok(promptService.getSupportedLanguages());
+	}
+
+	@PostMapping("/import/{promptName}/language/{language}")
+	public ResponseEntity<Void> importSpecificPromptFromLanguage(@PathVariable("promptName") String promptName,
+			@PathVariable("language") String language) {
+		try {
+			promptService.importSpecificPromptFromLanguage(promptName, language);
+			return ResponseEntity.ok().build();
+		}
+		catch (RuntimeException e) {
+			return ResponseEntity.badRequest().build();
+		}
+	}
+
 }

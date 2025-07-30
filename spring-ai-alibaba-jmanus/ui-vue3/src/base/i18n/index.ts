@@ -22,7 +22,7 @@ import zh from './zh'
 export const LOCAL_STORAGE_LOCALE = 'LOCAL_STORAGE_LOCALE'
 
 export const localeConfig = reactive({
-  locale: localStorage.getItem(LOCAL_STORAGE_LOCALE) ?? 'zh',
+  locale: localStorage.getItem(LOCAL_STORAGE_LOCALE) ?? 'en',
   opts: [
     {
       value: 'en',
@@ -38,15 +38,25 @@ export const localeConfig = reactive({
 export const i18n = createI18n({
   legacy: false,
   locale: localeConfig.locale,
-  fallbackLocale: 'zh',
+  fallbackLocale: 'en',
   messages: {
     en: en,
     zh: zh,
   },
 })
 
-export const changeLanguage = (locale: string) => {
+export const changeLanguage = async (locale: string) => {
   localStorage.setItem(LOCAL_STORAGE_LOCALE, locale)
   i18n.global.locale.value = locale as 'zh' | 'en'
   localeConfig.locale = locale
+
+  // 同时切换后端PromptService的语言配置
+  try {
+    const { PromptApiService } = await import('@/api/prompt-api-service')
+    await PromptApiService.importAllPromptsFromLanguage(locale)
+    console.log(`Successfully switched PromptService to language: ${locale}`)
+  } catch (error) {
+    console.warn(`Failed to switch PromptService language to ${locale}:`, error)
+    // 不阻断前端语言切换，只记录警告
+  }
 }

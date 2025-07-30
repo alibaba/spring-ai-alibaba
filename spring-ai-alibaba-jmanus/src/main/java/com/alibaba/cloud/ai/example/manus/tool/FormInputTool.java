@@ -16,11 +16,14 @@
 package com.alibaba.cloud.ai.example.manus.tool;
 
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,31 +32,55 @@ import java.util.Map;
 /**
  * LLM form input tool: supports multiple input items with labels and descriptions.
  */
+@Component
 public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput> {
 
 	private final ObjectMapper objectMapper;
 
+	@Autowired
+	private PromptService promptService;
+
 	private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
 
-	private static final String PARAMETERS = """
+	private String getToolParameters() {
+		try {
+			return promptService.getPromptByName("FORM_INPUT_TOOL_PARAMETERS").getPromptContent();
+		}
+		catch (Exception e) {
+			log.warn("Failed to load prompt-based tool parameters, using legacy configuration", e);
+			return LEGACY_PARAMETERS;
+		}
+	}
+
+	private String getToolDescription() {
+		try {
+			return promptService.getPromptByName("FORM_INPUT_TOOL_DESCRIPTION").getPromptContent();
+		}
+		catch (Exception e) {
+			log.warn("Failed to load prompt-based tool description, using legacy configuration", e);
+			return LEGACY_DESCRIPTION;
+		}
+	}
+
+	private static final String LEGACY_PARAMETERS = """
 			{
 			  "type": "object",
 			  "properties": {
 			    "inputs": {
 			      "type": "array",
-			      "description": "输入项列表，每项包含 label 和 value 字段",
+			      "description": "List of input items, each containing label and value fields",
 			      "items": {
 			        "type": "object",
 			        "properties": {
-			          "label": { "type": "string", "description": "输入项标签" },
-			          "value": { "type": "string", "description": "输入内容" }
+			          "label": { "type": "string", "description": "Input item label" },
+			          "value": { "type": "string", "description": "Input content" }
 			        },
 			        "required": ["label"]
 			      }
 			    },
 			    "description": {
 			      "type": "string",
-			      "description": "如何填写这些输入项的说明"
+			      "description": "Instructions on how to fill these input items"
 			    }
 			  },
 			  "required": [ "description"]
@@ -62,17 +89,26 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	public static final String name = "form_input";
 
-	private static final String description = """
-			提供一个带标签的多输入项表单工具。
+	private static final String LEGACY_DESCRIPTION = """
+			Provides a labeled multi-input form tool.
 
-			LLM可通过本工具 让用户 提交0个或多个输入项（每项有label和内容），并附带填写说明。
-			允许用户提交0个输入项。
-			适用于需要结构化输入的场景也可以用于模型需要等待用户输入然后再继续的场景.
+			LLM can use this tool to let users submit 0 or more input items (each with label and content), along with filling instructions.
+			Allows users to submit 0 input items.
+			Suitable for scenarios requiring structured input and can also be used when the model needs to wait for user input before continuing.
 			""";
 
-	public static OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
-		return new OpenAiApi.FunctionTool(function);
+	public OpenAiApi.FunctionTool getToolDefinition() {
+		try {
+			OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(getToolDescription(), name,
+					getToolParameters());
+			return new OpenAiApi.FunctionTool(function);
+		}
+		catch (Exception e) {
+			log.warn("Failed to load prompt-based tool definition, using legacy configuration", e);
+			OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(LEGACY_DESCRIPTION, name,
+					LEGACY_PARAMETERS);
+			return new OpenAiApi.FunctionTool(function);
+		}
 	}
 
 	// Data structures:
@@ -255,12 +291,12 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	@Override
 	public String getDescription() {
-		return description;
+		return getToolDescription();
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return getToolParameters();
 	}
 
 	@Override
@@ -290,18 +326,21 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 	@Override
 	public String getCurrentToolStateString() {
 		if (currentFormDefinition == null) {
-			return String.format("FormInputTool 状态：未定义表单。当前输入状态: %s", inputState.toString());
+			return String.format("FormInputTool Status: No form defined. Current input state: %s",
+					inputState.toString());
 		}
 		try {
-			StringBuilder stateBuilder = new StringBuilder("FormInputTool 状态：\n");
-			stateBuilder.append(String.format("说明：%s\n输入项：%s\n", currentFormDefinition.getDescription(),
-					objectMapper.writeValueAsString(currentFormDefinition.getInputs())));
-			stateBuilder.append(String.format("当前输入状态: %s\n", inputState.toString()));
+			StringBuilder stateBuilder = new StringBuilder("FormInputTool Status:\n");
+			stateBuilder
+				.append(String.format("Description: %s\nInput Items: %s\n", currentFormDefinition.getDescription(),
+						objectMapper.writeValueAsString(currentFormDefinition.getInputs())));
+			stateBuilder.append(String.format("Current input state: %s\n", inputState.toString()));
 			return stateBuilder.toString();
 		}
 		catch (JsonProcessingException e) {
 			log.error("Error serializing currentFormDefinition for state string", e);
-			return String.format("FormInputTool 状态：序列化输入项时出错。当前输入状态: %s", inputState.toString());
+			return String.format("FormInputTool Status: Error serializing input items. Current input state: %s",
+					inputState.toString());
 		}
 	}
 
