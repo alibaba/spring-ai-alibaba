@@ -38,7 +38,6 @@ logging:
     name: ./logs/info.log
   level:
     root: INFO
-    com.alibaba.cloud.ai.example.manus.tool.tableProcessor: DEBUG
 
 namespace:
   value: default

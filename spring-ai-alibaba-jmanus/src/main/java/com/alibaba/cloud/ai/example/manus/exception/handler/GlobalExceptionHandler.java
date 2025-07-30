@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.example.manus.exception.handler;
 
 import com.alibaba.cloud.ai.example.manus.exception.PlanException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,20 +29,24 @@ import org.springframework.web.reactive.result.method.annotation.ResponseEntityE
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-	/**
-	 * 处理计划异常
-	 */
-	@ExceptionHandler(PlanException.class)
-	public ResponseEntity handlePlanException(PlanException ex) {
-		return ResponseEntity.internalServerError().body(ex.getMessage());
-	}
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-	/**
-	 * 处理所有未捕获的异常
-	 */
-	@ExceptionHandler(Exception.class)
-	public ResponseEntity handleGlobalException(Exception ex) {
-		return ResponseEntity.internalServerError().body(ex.getMessage());
-	}
+    /**
+     * 处理计划异常
+     */
+    @ExceptionHandler(PlanException.class)
+    public ResponseEntity<String> handlePlanException(PlanException ex) {
+        logger.error("Plan exception occurred: {}", ex.getMessage(), ex);
+        return ResponseEntity.internalServerError().body(ex.getMessage());
+    }
+
+    /**
+     * 处理所有未捕获的异常
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleGlobalException(Exception ex) {
+        logger.error("Unhandled exception occurred: {}", ex.getMessage(), ex);
+        return ResponseEntity.internalServerError().body(ex.getMessage());
+    }
 
 }
