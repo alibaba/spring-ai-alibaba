@@ -62,7 +62,24 @@ public enum PromptEnum {
 
 	MAPREDUCE_TOOL_PARAMETERS("MAPREDUCE_TOOL_PARAMETERS", MessageType.SYSTEM, PromptType.AGENT, true,
 			"MapReduce计划工具的参数定义JSON", "Parameter definition JSON for MapReduce planning tool",
-			"tool/mapreduce-tool-parameters.txt");
+			"tool/mapreduce-tool-parameters.txt"),
+
+	// BaseAgent中的硬编码prompt
+	AGENT_DEBUG_DETAIL_OUTPUT("AGENT_DEBUG_DETAIL_OUTPUT", MessageType.SYSTEM, PromptType.AGENT, true,
+			"Agent调试模式下的详细输出要求", "Detailed output requirements for agent debug mode", "agent/debug-detail-output.txt"),
+
+	AGENT_NORMAL_OUTPUT("AGENT_NORMAL_OUTPUT", MessageType.SYSTEM, PromptType.AGENT, true, "Agent正常模式下的输出要求",
+			"Output requirements for agent normal mode", "agent/normal-output.txt"),
+
+	AGENT_PARALLEL_TOOL_CALLS_RESPONSE("AGENT_PARALLEL_TOOL_CALLS_RESPONSE", MessageType.SYSTEM, PromptType.AGENT, true,
+			"Agent并行工具调用的响应规则", "Response rules for agent parallel tool calls",
+			"agent/parallel-tool-calls-response.txt"),
+
+	FORM_INPUT_TOOL_DESCRIPTION("FORM_INPUT_TOOL_DESCRIPTION", MessageType.SYSTEM, PromptType.AGENT, true,
+			"表单输入工具的描述信息", "Description for form input tool", "tool/form-input-tool-description.txt"),
+
+	FORM_INPUT_TOOL_PARAMETERS("FORM_INPUT_TOOL_PARAMETERS", MessageType.SYSTEM, PromptType.AGENT, true,
+			"表单输入工具的参数定义JSON", "Parameter definition JSON for form input tool", "tool/form-input-tool-parameters.txt");
 
 	private String promptName;
 

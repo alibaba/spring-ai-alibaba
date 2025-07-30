@@ -1,23 +1,32 @@
 {
   "planType": "advanced",
-  "planId": "{planId}",
+  "planId": "%s",
   "title": "Intelligent content summarization for large files, with final merged file name output in summary",
   "steps": [
     {
       "type": "mapreduce",
       "dataPreparedSteps": [
         {
-          "stepRequirement": "[File Processing Agent] Split file {fileName} according to {terminateColumns}, ensuring each chunk contains complete data structure"
+          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] Use map_reduce_tool to split content of %s",
+          "terminateColumns": "%s"
         }
       ],
       "mapSteps": [
         {
-          "stepRequirement": "[Content Analysis Agent] Perform deep analysis on file chunks, extract key information: {queryKey}, and generate structured summaries, ensuring inclusion of {terminateColumns} related content"
+          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] Analyze file, find key information related to %s, information should be comprehensive, including all data, facts and opinions, comprehensive information without omission",
+          "terminateColumns": "%s"
         }
       ],
       "reduceSteps": [
         {
-          "stepRequirement": "[Aggregation Agent] Intelligently merge all chunk analysis results, generate comprehensive summary report, focusing on overall trends and key findings of {terminateColumns}, and clearly output the final merged file name in the summary"
+          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] Merge the information from this chunk into file, while maintaining information integrity, merge all content and remove results with no content found",
+          "terminateColumns": "%s"
+        }
+      ],
+      "postProcessSteps": [
+        {
+          "stepRequirement": "[MAPREDUCE_FIN_AGENT] After export completion, read the exported results and output all exported content completely",
+          "terminateColumns": "file_path"
         }
       ]
     }

@@ -77,6 +77,15 @@ public class PromptServiceImpl implements PromptService {
 	}
 
 	@Override
+	public PromptVO getPromptByName(String promptName) {
+		PromptEntity entity = promptRepository.findByNamespaceAndPromptName(namespace, promptName);
+		if (entity == null) {
+			throw new IllegalArgumentException("Prompt not found: " + promptName);
+		}
+		return mapToPromptVO(entity);
+	}
+
+	@Override
 	public PromptVO create(PromptVO promptVO) {
 		if (promptVO.invalid()) {
 			throw new IllegalArgumentException("PromptVO filed is invalid");

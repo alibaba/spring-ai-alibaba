@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "inputs": {
+      "type": "array",
+      "description": "List of input items, each containing label and value fields",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string", "description": "Input item label" },
+          "value": { "type": "string", "description": "Input content" }
+        },
+        "required": ["label"]
+      }
+    },
+    "description": {
+      "type": "string",
+      "description": "Instructions on how to fill these input items"
+    }
+  },
+  "required": [ "description"]
+}

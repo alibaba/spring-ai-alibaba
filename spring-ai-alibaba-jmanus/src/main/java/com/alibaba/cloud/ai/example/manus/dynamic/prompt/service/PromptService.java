@@ -29,6 +29,8 @@ public interface PromptService {
 
 	PromptVO getById(Long id);
 
+	PromptVO getPromptByName(String promptName);
+
 	PromptVO create(PromptVO promptVO);
 
 	PromptVO update(PromptVO promptVO);
