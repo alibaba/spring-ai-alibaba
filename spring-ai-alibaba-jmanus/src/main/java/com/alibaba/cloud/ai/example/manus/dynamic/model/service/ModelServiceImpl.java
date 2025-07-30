@@ -15,7 +15,25 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
 
-import cn.hutool.core.util.StrUtil;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
@@ -28,20 +46,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ValidationResul
 import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
 import com.alibaba.cloud.ai.example.manus.event.JmanusEventPublisher;
 import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import cn.hutool.core.util.StrUtil;
 
 @Service
 public class ModelServiceImpl implements ModelService {
@@ -84,8 +90,12 @@ public class ModelServiceImpl implements ModelService {
 			}
 
 			DynamicModelEntity entity = new DynamicModelEntity();
-			entity.setAllowChange(true);
 			updateEntityFromConfig(entity, config);
+
+			if (config.getIsDefault() != null && config.getIsDefault()) {
+				clearOtherDefaultModels();
+			}
+
 			entity = repository.save(entity);
 			publisher.publish(new ModelChangeEvent(entity));
 			log.info("Successfully created new Model: {}", config.getModelName());
@@ -111,15 +121,16 @@ public class ModelServiceImpl implements ModelService {
 	public ModelConfig updateModel(ModelConfig config) {
 		DynamicModelEntity entity = repository.findById(config.getId())
 			.orElseThrow(() -> new IllegalArgumentException("Model not found: " + config.getId()));
+
+		if (config.getIsDefault() != null && config.getIsDefault()) {
+			clearOtherDefaultModels();
+		}
+
 		updateEntityFromConfig(entity, config);
 		return updateModel(entity);
 	}
 
 	public ModelConfig updateModel(DynamicModelEntity entity) {
-		// 如果不允许修改，则返回原有数据
-		if (!entity.isAllowChange()) {
-			throw new UnsupportedOperationException("Not supported yet.");
-		}
 		entity = repository.save(entity);
 		publisher.publish(new ModelChangeEvent(entity));
 		return entity.mapToModelConfig();
@@ -127,21 +138,16 @@ public class ModelServiceImpl implements ModelService {
 
 	@Override
 	public void deleteModel(String id) {
-		DynamicModelEntity entity = repository.findById(Long.parseLong(id))
-			.orElseThrow(() -> new IllegalArgumentException("Model not found: " + id));
-		// 如果不允许修改，则返回原有数据
-		if (entity.isAllowChange()) {
-			List<DynamicAgentEntity> allByModel = agentRepository
-				.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
-			if (allByModel != null && !allByModel.isEmpty()) {
-				allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
-				agentRepository.saveAll(allByModel);
-			}
-			repository.deleteById(Long.parseLong(id));
+		if (agentRepository.count() == 1) {
+			throw new IllegalArgumentException("Cannot clear all models");
 		}
-		else {
-			throw new UnsupportedOperationException("Not supported yet.");
+		List<DynamicAgentEntity> allByModel = agentRepository
+			.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
+		if (allByModel != null && !allByModel.isEmpty()) {
+			allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
+			agentRepository.saveAll(allByModel);
 		}
+		repository.deleteById(Long.parseLong(id));
 	}
 
 	@Override
@@ -253,8 +259,10 @@ public class ModelServiceImpl implements ModelService {
 
 		try {
 			long startTime = System.currentTimeMillis();
-			// 发送GET请求
-			ResponseEntity<Map> response = restTemplate.getForEntity(requestUrl, Map.class);
+			// 创建HttpEntity包装请求头
+			HttpEntity<String> entity = new HttpEntity<>(headers);
+			// 发送GET请求，使用HttpEntity包含请求头
+			ResponseEntity<Map> response = restTemplate.exchange(requestUrl, HttpMethod.GET, entity, Map.class);
 			long endTime = System.currentTimeMillis();
 
 			log.info("HTTP请求完成 - 状态码: {}, 耗时: {}ms", response.getStatusCodeValue(), endTime - startTime);
@@ -328,6 +336,50 @@ public class ModelServiceImpl implements ModelService {
 		entity.setModelName(config.getModelName());
 		entity.setModelDescription(config.getModelDescription());
 		entity.setType(config.getType());
+		if (config.getIsDefault() != null) {
+			entity.setIsDefault(config.getIsDefault());
+		}
+		entity.setTemperature(config.getTemperature());
+		entity.setTopP(config.getTopP());
+	}
+
+	@Override
+	@Transactional
+	public void setDefaultModel(Long modelId) {
+		log.info("Set model: {} as default", modelId);
+
+		List<DynamicModelEntity> allModels = repository.findAll();
+		for (DynamicModelEntity model : allModels) {
+			if (model.getIsDefault()) {
+				model.setIsDefault(false);
+				repository.save(model);
+				log.info("Cancel {} model as default", model.getId());
+			}
+		}
+
+		Optional<DynamicModelEntity> targetModel = repository.findById(modelId);
+		if (targetModel.isPresent()) {
+			DynamicModelEntity model = targetModel.get();
+			model.setIsDefault(true);
+			repository.save(model);
+			log.info("Set {} as default", modelId);
+			publisher.publish(new ModelChangeEvent(model));
+		}
+		else {
+			log.error("Cannot find {} model", modelId);
+			throw new RuntimeException("Model not present");
+		}
+	}
+
+	private void clearOtherDefaultModels() {
+		List<DynamicModelEntity> allModels = repository.findAll();
+		for (DynamicModelEntity model : allModels) {
+			if (model.getIsDefault()) {
+				model.setIsDefault(false);
+				repository.save(model);
+				log.info("Cancel {} model as default", model.getId());
+			}
+		}
 	}
 
 }

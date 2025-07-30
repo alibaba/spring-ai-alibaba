@@ -20,9 +20,6 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.Sequential
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceNode;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -31,9 +28,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Function;
 
-public class MapReducePlanningTool implements Function<String, ToolExecuteResult>, PlanningToolInterface {
-
-	private final ObjectMapper objectMapper;
+public class MapReducePlanningTool
+		implements Function<MapReducePlanningTool.MapReducePlanningInput, ToolExecuteResult>, PlanningToolInterface {
 
 	private static final Logger log = LoggerFactory.getLogger(MapReducePlanningTool.class);
 
@@ -155,42 +151,32 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 		return new FunctionTool(new FunctionTool.Function(description, name, PARAMETERS));
 	}
 
-	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback() {
+	public FunctionToolCallback<MapReducePlanningInput, ToolExecuteResult> getFunctionToolCallback() {
 		return FunctionToolCallback.builder(name, this)
 			.description(description)
 			.inputSchema(PARAMETERS)
-			.inputType(String.class)
+			.inputType(MapReducePlanningInput.class)
 			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
 			.build();
 	}
 
-	public MapReducePlanningTool(ObjectMapper objectMapper) {
-		this.objectMapper = objectMapper;
+	public MapReducePlanningTool() {
 	}
 
-	public ToolExecuteResult run(String toolInput) {
-		try {
-			Map<String, Object> input = objectMapper.readValue(toolInput, new TypeReference<Map<String, Object>>() {
-			});
-			String command = (String) input.get("command");
-			String planId = (String) input.get("planId");
-			String title = (String) input.get("title");
-			List<Map<String, Object>> steps = objectMapper.convertValue(input.get("steps"),
-					new TypeReference<List<Map<String, Object>>>() {
-					});
+	public ToolExecuteResult run(MapReducePlanningInput toolInput) {
 
-			return switch (command) {
-				case "create" -> createMapReducePlan(planId, title, steps);
-				default -> {
-					log.info("收到无效的命令: {}", command);
-					throw new IllegalArgumentException("Invalid command: " + command);
-				}
-			};
-		}
-		catch (JsonProcessingException e) {
-			log.info("执行MapReduce计划工具时发生错误", e);
-			return new ToolExecuteResult("Error executing mapreduce planning tool: " + e.getMessage());
-		}
+		String command = toolInput.getCommand();
+		String planId = toolInput.getPlanId();
+		String title = toolInput.getTitle();
+		List<Map<String, Object>> steps = toolInput.getSteps();
+
+		return switch (command) {
+			case "create" -> createMapReducePlan(planId, title, steps);
+			default -> {
+				log.info("收到无效的命令: {}", command);
+				throw new IllegalArgumentException("Invalid command: " + command);
+			}
+		};
 	}
 
 	/**
@@ -312,8 +298,63 @@ public class MapReducePlanningTool implements Function<String, ToolExecuteResult
 	}
 
 	@Override
-	public ToolExecuteResult apply(String input) {
+	public ToolExecuteResult apply(MapReducePlanningInput input) {
 		return run(input);
+	}
+
+	public static class MapReducePlanningInput {
+
+		private String command;
+
+		private String planId;
+
+		private String title;
+
+		private List<Map<String, Object>> steps;
+
+		public MapReducePlanningInput() {
+		}
+
+		public MapReducePlanningInput(String command, String planId, String title, List<Map<String, Object>> steps) {
+			this.command = command;
+			this.planId = planId;
+			this.title = title;
+			this.steps = steps;
+		}
+
+		// Getters and Setters
+		public String getCommand() {
+			return command;
+		}
+
+		public void setCommand(String command) {
+			this.command = command;
+		}
+
+		public String getPlanId() {
+			return planId;
+		}
+
+		public void setPlanId(String planId) {
+			this.planId = planId;
+		}
+
+		public String getTitle() {
+			return title;
+		}
+
+		public void setTitle(String title) {
+			this.title = title;
+		}
+
+		public List<Map<String, Object>> getSteps() {
+			return steps;
+		}
+
+		public void setSteps(List<Map<String, Object>> steps) {
+			this.steps = steps;
+		}
+
 	}
 
 }

@@ -50,7 +50,13 @@ public class DynamicModelEntity {
 	private String type;
 
 	@Column(nullable = false, columnDefinition = "boolean default false")
-	private boolean allowChange;
+	private boolean isDefault;
+
+	@Column(nullable = true, columnDefinition = "DOUBLE DEFAULT 0.7")
+	private Double temperature;
+
+	@Column(nullable = true, columnDefinition = "DOUBLE DEFAULT NULL")
+	private Double topP;
 
 	@OneToMany(mappedBy = "model")
 	private List<DynamicAgentEntity> agents;
@@ -127,12 +133,28 @@ public class DynamicModelEntity {
 		this.headers = headers;
 	}
 
-	public Boolean isAllowChange() {
-		return allowChange;
+	public Boolean getIsDefault() {
+		return isDefault;
 	}
 
-	public void setAllowChange(Boolean allowChange) {
-		this.allowChange = allowChange;
+	public void setIsDefault(Boolean isDefault) {
+		this.isDefault = isDefault;
+	}
+
+	public Double getTemperature() {
+		return temperature;
+	}
+
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
+	}
+
+	public Double getTopP() {
+		return topP;
+	}
+
+	public void setTopP(Double topP) {
+		this.topP = topP;
 	}
 
 	public ModelConfig mapToModelConfig() {
@@ -144,6 +166,9 @@ public class DynamicModelEntity {
 		config.setModelName(this.getModelName());
 		config.setModelDescription(this.getModelDescription());
 		config.setType(this.getType());
+		config.setIsDefault(this.getIsDefault());
+		config.setTemperature(this.getTemperature());
+		config.setTopP(this.getTopP());
 		return config;
 	}
 

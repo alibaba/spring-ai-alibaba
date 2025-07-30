@@ -37,7 +37,11 @@ public enum PromptEnum {
 
 	PLANNING_PLAN_FINALIZER("PLANNING_PLAN_FINALIZER", MessageType.USER, PromptType.PLANNING, true,
 			"用来做最终总结的prompt，对应任务结束以后告知用户的那个动作，已合并用户请求信息 / Prompt for final summary, corresponds to the action of informing users after task completion, merged with user request information",
-			"planning/plan-finalizer.txt"),;
+			"planning/plan-finalizer.txt"),
+
+	DIRECT_RESPONSE("DIRECT_RESPONSE", MessageType.USER, PromptType.PLANNING, true,
+			"用于直接反馈模式的prompt，当用户请求无需复杂规划时直接返回结果 / Prompt for direct response mode, directly returns results when user requests don't need complex planning",
+			"planning/direct-response.txt");
 
 	private String promptName;
 

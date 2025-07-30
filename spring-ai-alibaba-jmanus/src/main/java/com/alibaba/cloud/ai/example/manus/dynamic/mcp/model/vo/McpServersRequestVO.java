@@ -26,6 +26,13 @@ public class McpServersRequestVO {
 
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * Default constructor for Jackson deserialization
+	 */
+	public McpServersRequestVO() {
+		this.objectMapper = new ObjectMapper();
+	}
+
 	public McpServersRequestVO(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
 	}

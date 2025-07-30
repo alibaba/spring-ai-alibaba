@@ -33,6 +33,14 @@ public class McpServerConfig {
 
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * Default constructor for Jackson deserialization
+	 */
+	public McpServerConfig() {
+		this.env = new HashMap<>();
+		this.objectMapper = new ObjectMapper();
+	}
+
 	public McpServerConfig(ObjectMapper objectMapper) {
 		this.env = new HashMap<>();
 		this.objectMapper = objectMapper;

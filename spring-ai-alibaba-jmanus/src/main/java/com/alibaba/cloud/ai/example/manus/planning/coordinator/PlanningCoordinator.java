@@ -36,7 +36,7 @@ public class PlanningCoordinator {
 
 	private final PlanExecutorFactory planExecutorFactory;
 
-	private final PlanFinalizer planFinalizer;
+	private PlanFinalizer planFinalizer;
 
 	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
 			PlanFinalizer planFinalizer) {
@@ -74,16 +74,35 @@ public class PlanningCoordinator {
 		log.info("Executing complete plan process for planId: {}", context.getCurrentPlanId());
 		context.setUseMemory(true);
 
-		// 1. Create a plan
+		// 1. Create a plan (normal flow)
 		planCreator.createPlan(context);
 
 		// 2. Select appropriate executor based on plan type and execute
 		PlanInterface plan = context.getPlan();
+
 		if (plan != null) {
-			PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
-			log.info("Selected executor: {} for plan type: {} (planId: {})", executor.getClass().getSimpleName(),
-					plan.getPlanType(), context.getCurrentPlanId());
-			executor.executeAllSteps(context);
+			// Check if this is a direct response plan
+			boolean isDirectResponse = plan.isDirectResponse();
+			if (isDirectResponse) {
+				// For direct response plans, use DirectResponseExecutor but handle
+				// generation in coordinator
+				PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
+				log.info("Selected executor: {} for direct response plan (planId: {})",
+						executor.getClass().getSimpleName(), context.getCurrentPlanId());
+				executor.executeAllSteps(context);
+
+				// Generate direct response using PlanFinalizer
+				planFinalizer.generateDirectResponse(context);
+				log.info("Direct response completed successfully for planId: {}", context.getCurrentPlanId());
+				return context;
+			}
+			else {
+				// Normal plan execution
+				PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
+				log.info("Selected executor: {} for plan type: {} (planId: {})", executor.getClass().getSimpleName(),
+						plan.getPlanType(), context.getCurrentPlanId());
+				executor.executeAllSteps(context);
+			}
 		}
 		else {
 			log.error("No plan found in context for planId: {}", context.getCurrentPlanId());
@@ -170,6 +189,10 @@ public class PlanningCoordinator {
 	 */
 	public boolean isPlanTypeSupported(String planType) {
 		return planExecutorFactory.isPlanTypeSupported(planType);
+	}
+
+	public void setPlanFinalizer(PlanFinalizer planFinalizer) {
+		this.planFinalizer = planFinalizer;
 	}
 
 }
