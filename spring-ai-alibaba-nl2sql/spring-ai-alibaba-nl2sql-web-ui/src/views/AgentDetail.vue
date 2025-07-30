@@ -33,7 +33,7 @@
             <span class="brand-text">智能体管理</span>
           </div>
           <nav class="header-nav">
-            <div class="nav-item active" @click="goToAgentList">
+            <div class="nav-item" @click="goToAgentList">
               <i class="bi bi-grid-3x3-gap"></i>
               <span>智能体列表</span>
             </div>
@@ -52,7 +52,7 @@
             <i class="bi bi-question-circle"></i>
             帮助
           </button>
-          <button class="btn btn-primary" @click="goToAgentList">
+          <button class="btn btn-primary" @click="createNewAgent">
             <i class="bi bi-plus-lg"></i>
             创建智能体
           </button>
@@ -1032,6 +1032,10 @@ export default {
     const goToWorkspace = () => {
       router.push('/workspace')
     }
+
+    const createNewAgent = () => {
+      router.push('/agent/create')
+    }
     
     const loadAgentDetail = async () => {
       try {
@@ -1831,6 +1835,7 @@ export default {
       // 导航方法
       goToAgentList,
       goToWorkspace,
+      createNewAgent,
       // 工具方法
       getStatusText,
       formatDate,
@@ -1857,8 +1862,96 @@ export default {
 <style scoped>
 .agent-detail-page {
   min-height: 100vh;
-  background: #f5f5f5;
-  position: relative;
+  background: var(--bg-layout);
+  font-family: var(--font-family);
+}
+
+/* 现代化头部导航 */
+.page-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-xs);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+.header-content {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xl);
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--primary-color);
+}
+
+.brand-logo i {
+  font-size: var(--font-size-xl);
+  color: var(--accent-color);
+}
+
+.brand-text {
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-nav {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.header-nav .nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-base);
+  border: 1px solid transparent;
+}
+
+.header-nav .nav-item:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+.header-nav .nav-item.active {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.header-nav .nav-item i {
+  font-size: var(--font-size-base);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
 }
 
 /* 消息提示样式 */
