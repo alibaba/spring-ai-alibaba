@@ -159,6 +159,7 @@ const words: I18nType = {
       agents: 'Multi - Agent',
       infiniteContext: 'Infinite Context',
       filesystem: 'File System',
+      mcpServiceLoader: 'MCP Service Loader',
     },
     // Agent configuration page
     agentConfig: {
@@ -383,6 +384,11 @@ const words: I18nType = {
       },
       fileSystem: {
         allowExternalAccess: 'Whether to allow file operations beyond the working directory',
+      },
+      mcpServiceLoader: {
+        connectionTimeoutSeconds: 'MCP connection timeout (seconds)',
+        maxRetryCount: 'MCP connection max retry count',
+        maxConcurrentConnections: 'MCP max concurrent connections',
       },
       systemSettings: {
         systemName: 'System Name',

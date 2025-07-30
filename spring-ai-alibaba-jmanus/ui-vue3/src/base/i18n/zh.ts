@@ -160,6 +160,7 @@ const words: I18nType = {
       agents: '多智能体',
       infiniteContext: '无限上下文',
       filesystem: '文件系统',
+      mcpServiceLoader: 'MCP服务加载器',
     },
     // Agent配置页面
     agentConfig: {
@@ -383,6 +384,11 @@ const words: I18nType = {
       },
       fileSystem: {
         allowExternalAccess: '是否允许文件操作超出工作目录',
+      },
+      mcpServiceLoader: {
+        connectionTimeoutSeconds: 'MCP连接超时时间(秒)',
+        maxRetryCount: 'MCP连接最大重试次数',
+        maxConcurrentConnections: 'MCP最大并发连接数',
       },
       systemSettings: {
         systemName: '系统名称',

@@ -378,6 +378,11 @@ const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   // File System
   'allowExternalAccess': ('config.basicConfig.fileSystem.allowExternalAccess'), 
 
+  // MCP Service Loader
+  'connectionTimeoutSeconds': ('config.basicConfig.mcpServiceLoader.connectionTimeoutSeconds'), 
+  'maxRetryCount': ('config.basicConfig.mcpServiceLoader.maxRetryCount'), 
+  'maxConcurrentConnections': ('config.basicConfig.mcpServiceLoader.maxConcurrentConnections'), 
+
   // System Settings (not used)
   // 'systemName': t('config.basicConfig.systemSettings.systemName'),
   // 'language': t('config.basicConfig.systemSettings.language'),
