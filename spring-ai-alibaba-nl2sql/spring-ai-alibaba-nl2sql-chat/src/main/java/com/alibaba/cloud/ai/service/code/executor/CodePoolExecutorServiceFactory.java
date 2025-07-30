@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.service.code.executor;
 
 import com.alibaba.cloud.ai.config.CodeExecutorProperties;
+import org.springframework.ai.chat.client.ChatClient;
 
 /**
  * 运行Python任务的容器池（工厂）
@@ -30,9 +31,13 @@ public final class CodePoolExecutorServiceFactory {
 
 	}
 
-	public static CodePoolExecutorService newInstance(CodeExecutorProperties properties) {
+	public static CodePoolExecutorService newInstance(CodeExecutorProperties properties,
+			ChatClient.Builder chatClientBuilder) {
 		if (properties.getCodePoolExecutor().equals(CodePoolExecutorEnum.DOCKER)) {
 			return new DockerCodePoolExecutorService(properties);
+		}
+		else if (properties.getCodePoolExecutor().equals(CodePoolExecutorEnum.AI_SIMULATION)) {
+			return new AiSimulationCodeExecutorService(chatClientBuilder);
 		}
 		else {
 			throw new IllegalArgumentException("Unknown container impl: " + properties.getCodePoolExecutor());

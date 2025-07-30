@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorServiceFactory
 import com.alibaba.cloud.ai.service.code.memory.SqlResultMemoryService;
 import com.alibaba.cloud.ai.service.code.memory.SqlResultMemoryServiceFactory;
 import com.alibaba.cloud.ai.tool.PythonExecutorTool;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -37,8 +38,9 @@ import org.springframework.context.annotation.Configuration;
 public class CodeExecutorConfiguration {
 
 	@Bean
-	public CodePoolExecutorService containerPoolExecutor(CodeExecutorProperties properties) {
-		return CodePoolExecutorServiceFactory.newInstance(properties);
+	public CodePoolExecutorService containerPoolExecutor(CodeExecutorProperties properties,
+			ChatClient.Builder chatClientBuilder) {
+		return CodePoolExecutorServiceFactory.newInstance(properties, chatClientBuilder);
 	}
 
 	@Bean

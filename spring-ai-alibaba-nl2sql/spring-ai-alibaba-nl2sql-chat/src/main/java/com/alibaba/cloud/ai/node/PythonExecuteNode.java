@@ -18,91 +18,105 @@ package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.model.execution.ExecutionStep;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorService;
+import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
-import com.alibaba.cloud.ai.util.StepResultUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import reactor.core.publisher.Flux;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
 import static com.alibaba.cloud.ai.constant.Constant.PYTHON_EXECUTE_NODE_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.PYTHON_GENERATE_NODE_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.PYTHON_IS_SUCCESS;
+import static com.alibaba.cloud.ai.constant.Constant.SQL_RESULT_LIST_MEMORY;
 
 /**
- * Python execution simulation node - currently simulates execution, needs integration
- * with Python tools.
+ * 根据SQL查询结果生成Python代码，并运行Python代码获取运行结果。
  *
- * This node is responsible for: - Simulating Python data analysis execution - Processing
- * SQL execution results through AI analysis - Updating step results with analysis
- * outcomes - Providing streaming feedback during analysis process
- *
- * TODO: Replace simulation with actual Python tool integration
- *
- * @author zhangshenghang
+ * @author vlsmb
+ * @since 2025/7/29
  */
-public class PythonExecuteNode extends AbstractPlanBasedNode {
+public class PythonExecuteNode extends AbstractPlanBasedNode implements NodeAction {
 
-	private static final Logger logger = LoggerFactory.getLogger(PythonExecuteNode.class);
+	private static final Logger log = LoggerFactory.getLogger(PythonExecuteNode.class);
 
-	private static final String SYSTEM_PROMPT = """
-			你将模拟Python的执行，根据我提供的需求和数据进行详细分析，并给出最终的数据结果。
-			在进行分析时，请按照以下要求操作：
-			1. 仔细理解需求和数据的内容。
-			2. 运用类似于Python的逻辑和方法进行分析。
-			3. 给出详细的分析过程和推理依据。
-			4. 输出详细、全面的数据结果。
-			""";
+	private final CodePoolExecutorService codePoolExecutor;
 
-	private final ChatClient chatClient;
+	private final ObjectMapper objectMapper;
 
-	public PythonExecuteNode(ChatClient.Builder chatClientBuilder) {
+	public PythonExecuteNode(CodePoolExecutorService codePoolExecutor) {
 		super();
-		this.chatClient = chatClientBuilder.build();
+		this.codePoolExecutor = codePoolExecutor;
+		this.objectMapper = new ObjectMapper();
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logNodeEntry();
+		this.logNodeEntry();
 
-		ExecutionStep executionStep = getCurrentExecutionStep(state);
-		Integer currentStep = getCurrentStepNumber(state);
+		try {
+			// 获取上下文
+			String pythonCode = StateUtils.getStringValue(state, PYTHON_GENERATE_NODE_OUTPUT);
+			List<Map<String, String>> sqlResults = StateUtils.getListValue(state, SQL_RESULT_LIST_MEMORY);
+			CodePoolExecutorService.TaskRequest taskRequest = new CodePoolExecutorService.TaskRequest(pythonCode,
+					objectMapper.writeValueAsString(sqlResults), null);
 
-		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
-		String instruction = toolParameters.getInstruction();
-		String description = toolParameters.getDescription();
+			// 运行Python代码
+			CodePoolExecutorService.TaskResponse taskResponse = this.codePoolExecutor.runTask(taskRequest);
+			if (!taskResponse.isSuccess()) {
+				String errorMsg = "Python Execute Failed!\nStdOut: " + taskResponse.stdOut() + "\nStdErr: "
+						+ taskResponse.stdErr() + "\nExceptionMsg: " + taskResponse.exceptionMsg();
+				log.error(errorMsg);
+				throw new RuntimeException(errorMsg);
+			}
+			log.info("Python Execute Success! StdOut: {}", taskResponse.stdOut());
 
-		@SuppressWarnings("unchecked")
-		Map<String, String> sqlExecuteResult = StateUtils.getObjectValue(state, SQL_EXECUTE_NODE_OUTPUT, Map.class,
-				new HashMap());
+			// Create display flux for user experience only
+			Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始执行Python代码..."));
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("标准输出：\n```"));
+				emitter.next(ChatResponseUtil.createCustomStatusResponse(taskResponse.stdOut()));
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("\n```"));
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("Python代码执行成功！"));
+				emitter.complete();
+			});
 
-		// Create streaming output
-		String prompt = String.format(
-				"## 整体执行计划（仅当无法理解需求时参考整体执行计划）：%s## instruction：%s\n## description：%s\n## 数据：%s\n请给出结果。",
-				getPlan(state).toJsonStr(), instruction, description, sqlExecuteResult);
+			// Create generator using utility class, returning pre-computed business logic
+			// result
+			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+					v -> Map.of(PYTHON_EXECUTE_NODE_OUTPUT, taskResponse.stdOut(), PYTHON_IS_SUCCESS, true),
+					displayFlux, StreamResponseType.PYTHON_EXECUTE);
 
-		Flux<ChatResponse> pythonExecutionFlux = chatClient.prompt()
-			.system(SYSTEM_PROMPT)
-			.user(prompt)
-			.stream()
-			.chatResponse();
+			return Map.of(PYTHON_EXECUTE_NODE_OUTPUT, generator);
+		}
+		catch (Exception e) {
+			String errorMessage = e.getMessage();
+			log.error("Python Execute Exception: {}", errorMessage, e);
 
-		// Use utility class to create generator for streaming content collection
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-				"开始执行Python分析", "Python分析执行完成", aiResponse -> {
-					Map<String, String> updatedSqlResult = StepResultUtils.addStepResult(sqlExecuteResult, currentStep,
-							aiResponse);
-					logNodeOutput("analysis_result", aiResponse);
-					return Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedSqlResult, PLAN_CURRENT_STEP, currentStep + 1);
-				}, pythonExecutionFlux, StreamResponseType.PYTHON_ANALYSIS);
+			// Prepare error result
+			Map<String, Object> errorResult = Map.of(PYTHON_EXECUTE_NODE_OUTPUT, errorMessage, PYTHON_IS_SUCCESS,
+					false);
 
-		return Map.of(PYTHON_EXECUTE_NODE_OUTPUT, generator);
+			// Create error display flux
+			Flux<ChatResponse> errorDisplayFlux = Flux.create(emitter -> {
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始执行Python代码..."));
+				emitter.next(ChatResponseUtil.createCustomStatusResponse("Python代码执行失败: " + errorMessage));
+				emitter.complete();
+			});
+
+			// Create error generator using utility class
+			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+					v -> errorResult, errorDisplayFlux, StreamResponseType.PYTHON_EXECUTE);
+
+			return Map.of(PYTHON_EXECUTE_NODE_OUTPUT, generator);
+		}
 	}
 
 }
