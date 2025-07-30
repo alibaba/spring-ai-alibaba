@@ -39,6 +39,10 @@ public class ModelConfig {
 
 	private Boolean isDefault;
 
+	private Double temperature;
+
+	private Double topP;
+
 	public Long getId() {
 		return id;
 	}
@@ -101,6 +105,22 @@ public class ModelConfig {
 
 	public void setIsDefault(Boolean isDefault) {
 		this.isDefault = isDefault;
+	}
+
+	public Double getTemperature() {
+		return temperature;
+	}
+
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
+	}
+
+	public Double getTopP() {
+		return topP;
+	}
+
+	public void setTopP(Double topP) {
+		this.topP = topP;
 	}
 
 }

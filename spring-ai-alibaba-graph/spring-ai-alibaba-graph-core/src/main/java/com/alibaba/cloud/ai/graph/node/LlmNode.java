@@ -146,102 +146,34 @@ public class LlmNode implements NodeAction {
 	}
 
 	public Flux<ChatResponse> stream() {
-
-		if (StringUtils.hasLength(userPrompt) && !params.isEmpty()) {
-			userPrompt = renderPromptTemplate(userPrompt, params);
-		}
-
-		if (StringUtils.hasLength(systemPrompt) && !params.isEmpty()) {
-			systemPrompt = renderPromptTemplate(systemPrompt, params);
-		}
-
-		if (StringUtils.hasLength(systemPrompt) && StringUtils.hasLength(userPrompt)) {
-			return chatClient.prompt()
-				.system(systemPrompt)
-				.user(userPrompt)
-				.messages(messages)
-				.advisors(advisors)
-				.toolCallbacks(toolCallbacks)
-				.stream()
-				.chatResponse();
-		}
-		else {
-			if (StringUtils.hasLength(systemPrompt)) {
-				return chatClient.prompt()
-					.system(systemPrompt)
-					.messages(messages)
-					.advisors(advisors)
-					.toolCallbacks(toolCallbacks)
-					.stream()
-					.chatResponse();
-			}
-			else if (StringUtils.hasLength(userPrompt)) {
-				return chatClient.prompt()
-					.user(userPrompt)
-					.messages(messages)
-					.advisors(advisors)
-					.toolCallbacks(toolCallbacks)
-					.stream()
-					.chatResponse();
-			}
-			else {
-				return chatClient.prompt()
-					.messages(messages)
-					.advisors(advisors)
-					.toolCallbacks(toolCallbacks)
-					.stream()
-					.chatResponse();
-			}
-		}
+		return buildChatClientRequestSpec().stream().chatResponse();
 	}
 
 	public ChatResponse call() {
-		if (StringUtils.hasLength(userPrompt) && !params.isEmpty()) {
-			userPrompt = renderPromptTemplate(userPrompt, params);
+		return buildChatClientRequestSpec().call().chatResponse();
+	}
+
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec() {
+		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
+			.messages(messages)
+			.advisors(advisors)
+			.toolCallbacks(toolCallbacks);
+
+		if (StringUtils.hasLength(systemPrompt)) {
+			if (!params.isEmpty()) {
+				systemPrompt = renderPromptTemplate(systemPrompt, params);
+			}
+			chatClientRequestSpec.system(systemPrompt);
 		}
 
-		if (StringUtils.hasLength(systemPrompt) && !params.isEmpty()) {
-			systemPrompt = renderPromptTemplate(systemPrompt, params);
+		if (StringUtils.hasLength(userPrompt)) {
+			if (!params.isEmpty()) {
+				userPrompt = renderPromptTemplate(userPrompt, params);
+			}
+			chatClientRequestSpec.user(userPrompt);
 		}
 
-		if (StringUtils.hasLength(systemPrompt) && StringUtils.hasLength(userPrompt)) {
-			return chatClient.prompt()
-				.system(systemPrompt)
-				.user(userPrompt)
-				.messages(messages)
-				.advisors(advisors)
-				.toolCallbacks(toolCallbacks)
-				.call()
-				.chatResponse();
-		}
-		else {
-			if (StringUtils.hasLength(systemPrompt)) {
-				return chatClient.prompt()
-					.system(systemPrompt)
-					.messages(messages)
-					.advisors(advisors)
-					.toolCallbacks(toolCallbacks)
-					.call()
-					.chatResponse();
-			}
-			else if (StringUtils.hasLength(userPrompt)) {
-				return chatClient.prompt()
-					.user(userPrompt)
-					.messages(messages)
-					.advisors(advisors)
-					.toolCallbacks(toolCallbacks)
-					.call()
-					.chatResponse();
-			}
-			else {
-				return chatClient.prompt()
-					.messages(messages)
-					.advisors(advisors)
-					.toolCallbacks(toolCallbacks)
-					.call()
-					.chatResponse();
-			}
-		}
+		return chatClientRequestSpec;
 	}
 
 	public static Builder builder() {
