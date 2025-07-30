@@ -31,6 +31,8 @@ import java.util.Map;
  */
 public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput> {
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
 
 	private static final String PARAMETERS = """
@@ -144,7 +146,9 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	}
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	public FormInputTool(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
 
 	public enum InputState {
 

@@ -58,6 +58,10 @@ public enum NodeType {
 
 	VARIABLE_AGGREGATOR("variable-aggregator", "variable-aggregator"),
 
+	ITERATION("iteration", "iteration"),
+
+	DIFY_ITERATION_START("__empty__", "iteration-start"),
+
 	ASSIGNER("assigner", "assigner");
 
 	private String value;

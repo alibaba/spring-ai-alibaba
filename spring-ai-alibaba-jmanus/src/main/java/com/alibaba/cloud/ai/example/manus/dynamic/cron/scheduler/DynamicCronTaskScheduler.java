@@ -22,9 +22,13 @@ import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
@@ -53,7 +57,14 @@ public class DynamicCronTaskScheduler {
 	private PlanIdDispatcher planIdDispatcher;
 
 	@Autowired
+	@Lazy
 	private PlanningFactory planningFactory;
+
+	@Autowired
+	private PlanTemplateService planTemplateService;
+
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	// 存储正在运行的任务
 	private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
@@ -68,7 +79,32 @@ public class DynamicCronTaskScheduler {
 	 * 执行定时任务
 	 * @param cronEntity 任务实体
 	 */
-	private void executeCronTask(CronEntity cronEntity) {
+	private void executeTask(CronEntity cronEntity) {
+		try {
+			// 更新任务执行时间
+			cronEntity.setLastExecutedTime(LocalDateTime.now());
+			cronRepository.save(cronEntity);
+
+			String planTemplateId = cronEntity.getPlanTemplateId();
+
+			if (planTemplateId != null && !planTemplateId.trim().isEmpty()) {
+				// 如果存在计划模板ID，则按计划模板执行
+				executePlanTemplate(planTemplateId);
+			}
+			else {
+				executePlan(cronEntity);
+			}
+		}
+		catch (Exception e) {
+			log.error("任务执行失败: {} - {}", cronEntity.getCronName(), e.getMessage());
+		}
+	}
+
+	/**
+	 * 生成计划并执行
+	 * @param cronEntity 任务实体
+	 */
+	private void executePlan(CronEntity cronEntity) {
 		String planDesc = cronEntity.getPlanDesc();
 		log.info("执行定时任务: {} - {}", cronEntity.getCronName(), planDesc);
 
@@ -92,6 +128,37 @@ public class DynamicCronTaskScheduler {
 				throw new RuntimeException("计划执行失败: " + e.getMessage(), e);
 			}
 		});
+	}
+
+	/**
+	 * 执行计划模板
+	 * @param planTemplateId 计划模板ID
+	 */
+	private void executePlanTemplate(String planTemplateId) {
+		try {
+			log.info("使用PlanTemplateController执行计划模板: {}", planTemplateId);
+
+			// 调用PlanTemplateController的公共方法executePlanByTemplateId
+			ResponseEntity<Map<String, Object>> response = planTemplateService
+				.executePlanByTemplateIdInternal(planTemplateId, null);
+
+			if (response.getStatusCode().is2xxSuccessful()) {
+				Map<String, Object> responseBody = response.getBody();
+				if (responseBody != null) {
+					String planId = (String) responseBody.get("planId");
+					log.info("计划模板执行成功，新计划ID: {}", planId);
+				}
+				else {
+					log.warn("计划模板执行成功，但响应体为空");
+				}
+			}
+			else {
+				log.error("计划模板执行失败，状态码: {}", response.getStatusCode());
+			}
+		}
+		catch (Exception e) {
+			log.error("执行计划模板失败: {}", planTemplateId, e);
+		}
 	}
 
 	/**
@@ -139,21 +206,14 @@ public class DynamicCronTaskScheduler {
 	}
 
 	/**
-	 * 执行任务
+	 * 根据任务ID立即执行任务
 	 */
-	private void executeTask(CronEntity cronEntity) {
-		try {
-			// 更新任务执行时间
-			cronEntity.setLastExecutedTime(LocalDateTime.now());
-			cronRepository.save(cronEntity);
+	public void executeTaskById(Long taskId) {
+		CronEntity cronEntity = cronRepository.findById(taskId)
+			.orElseThrow(() -> new IllegalArgumentException("Cron task not found: " + taskId));
 
-			// 执行具体任务
-			executeCronTask(cronEntity);
-
-		}
-		catch (Exception e) {
-			log.error("任务执行失败: {} - {}", cronEntity.getCronName(), e.getMessage());
-		}
+		log.info("手动执行定时任务: {} - {}", cronEntity.getCronName(), cronEntity.getPlanDesc());
+		executeTask(cronEntity);
 	}
 
 	/**

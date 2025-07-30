@@ -15,7 +15,10 @@
  */
 package com.alibaba.cloud.ai.example.manus.config;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +30,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
 
 @RestController
 @RequestMapping("/api/config")
@@ -34,6 +39,9 @@ public class ConfigController {
 
 	@Autowired
 	private IConfigService configService;
+
+	@Autowired
+	private DynamicModelRepository dynamicModelRepository;
 
 	@GetMapping("/group/{groupName}")
 	public ResponseEntity<List<ConfigEntity>> getConfigsByGroup(@PathVariable("groupName") String groupName) {
@@ -44,6 +52,24 @@ public class ConfigController {
 	public ResponseEntity<Void> batchUpdateConfigs(@RequestBody List<ConfigEntity> configs) {
 		configService.batchUpdateConfigs(configs);
 		return ResponseEntity.ok().build();
+	}
+
+	@GetMapping("/available-models")
+	public ResponseEntity<Map<String, Object>> getAvailableModels() {
+		List<DynamicModelEntity> models = dynamicModelRepository.findAll();
+
+		List<Map<String, Object>> modelOptions = models.stream().map(model -> {
+			Map<String, Object> option = new HashMap<>();
+			option.put("value", model.getId().toString());
+			option.put("label", model.getModelName() + " (" + model.getModelDescription() + ")");
+			return option;
+		}).collect(Collectors.toList());
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("options", modelOptions);
+		response.put("total", modelOptions.size());
+
+		return ResponseEntity.ok(response);
 	}
 
 }

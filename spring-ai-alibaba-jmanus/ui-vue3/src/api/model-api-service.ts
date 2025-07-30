@@ -23,6 +23,9 @@ export interface Model {
     modelName: string
     modelDescription: string
     type: string
+    isDefault?: boolean
+    temperature?: number
+    topP?: number
 }
 
 export interface Headers {
@@ -34,6 +37,17 @@ export interface ApiResponse<T> {
     success: boolean
     data?: T
     message?: string
+}
+
+export interface ValidationRequest {
+    baseUrl: string
+    apiKey: string
+}
+
+export interface ValidationResult {
+    valid: boolean
+    message?: string
+    availableModels?: Model[]
 }
 
 /**
@@ -105,12 +119,21 @@ export class ModelApiService {
      */
     static async createModel(modelConfig: Omit<Model, 'id'>): Promise<Model> {
         try {
+            // 确保null值被包含在JSON中
+            const requestBody = JSON.stringify(modelConfig, (key, value) => {
+                // 对于temperature和topP，明确包含null值
+                if (key === 'temperature' || key === 'topP') {
+                    return value === undefined ? null : value;
+                }
+                return value;
+            });
+            
             const response = await fetch(this.BASE_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(modelConfig)
+                body: requestBody
             })
             const result = await this.handleResponse(response)
             return await result.json()
@@ -125,12 +148,21 @@ export class ModelApiService {
      */
     static async updateModel(id: string, modelConfig: Model): Promise<Model> {
         try {
+            // 确保null值被包含在JSON中
+            const requestBody = JSON.stringify(modelConfig, (key, value) => {
+                // 对于temperature和topP，明确包含null值
+                if (key === 'temperature' || key === 'topP') {
+                    return value === undefined ? null : value;
+                }
+                return value;
+            });
+            
             const response = await fetch(`${this.BASE_URL}/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(modelConfig)
+                body: requestBody
             })
             if (response.status === 499) {
                 throw new Error('Request rejected, please modify the model configuration in the configuration file')
@@ -164,6 +196,44 @@ export class ModelApiService {
         }
     }
 
+    /**
+     * Validate model configuration
+     */
+    static async validateConfig(request: ValidationRequest): Promise<ValidationResult> {
+        try {
+            const response = await fetch(`${this.BASE_URL}/validate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(request)
+            })
+            const result = await this.handleResponse(response)
+            return await result.json()
+        } catch (error) {
+            console.error('Failed to validate model configuration:', error)
+            throw error
+        }
+    }
+
+    /**
+     * Set model as default
+     */
+    static async setDefaultModel(id: string): Promise<{success: boolean, message: string}> {
+        try {
+            const response = await fetch(`${this.BASE_URL}/${id}/set-default`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            const result = await this.handleResponse(response)
+            return await result.json()
+        } catch (error) {
+            console.error(`Failed to set model[${id}] as default:`, error)
+            throw error
+        }
+    }
 }
 
 /**
@@ -281,6 +351,28 @@ export class ModelConfigModel {
         } catch (error) {
             console.error('Failed to parse Model JSON:', error)
             throw new Error('Model configuration format is incorrect')
+        }
+    }
+
+    /**
+     * Set model as default
+     */
+    async setDefaultModel(id: string): Promise<void> {
+        try {
+            await ModelApiService.setDefaultModel(id)
+            
+            // Update local state: clear other models' default status and set current model as default
+            this.models.forEach(model => {
+                model.isDefault = model.id === id
+            })
+            
+            // Update current model if it's the one being set as default
+            if (this.currentModel && this.currentModel.id === id) {
+                this.currentModel.isDefault = true
+            }
+        } catch (error) {
+            console.error('Failed to set default model:', error)
+            throw error
         }
     }
 }

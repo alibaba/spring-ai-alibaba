@@ -44,6 +44,16 @@ public class RagProperties {
 	private String vectorStoreType = "simple";
 
 	/**
+	 * 请求超时时间，单位为秒，默认为60秒。
+	 */
+	private Integer timeoutSeconds = 60;
+
+	/**
+	 * 重试次数，默认为2次。
+	 */
+	private Integer retryTimes = 2;
+
+	/**
 	 * 简单向量存储配置。
 	 */
 	private final Simple simple = new Simple();
@@ -62,6 +72,16 @@ public class RagProperties {
 	 * Elasticsearch配置属性
 	 */
 	private final Elasticsearch elasticsearch = new Elasticsearch();
+
+	/**
+	 * 专业知识库配置
+	 */
+	private final ProfessionalKnowledgeBases professionalKnowledgeBases = new ProfessionalKnowledgeBases();
+
+	/**
+	 * 文本分割配置
+	 */
+	private final TextSplitter textSplitter = new TextSplitter();
 
 	// Getters
 	public Data getData() {
@@ -94,6 +114,30 @@ public class RagProperties {
 
 	public Elasticsearch getElasticsearch() {
 		return elasticsearch;
+	}
+
+	public ProfessionalKnowledgeBases getProfessionalKnowledgeBases() {
+		return professionalKnowledgeBases;
+	}
+
+	public void setTimeoutSeconds(Integer timeoutSeconds) {
+		this.timeoutSeconds = timeoutSeconds;
+	}
+
+	public Integer getTimeoutSeconds() {
+		return timeoutSeconds;
+	}
+
+	public void setRetryTimes(Integer retryTimes) {
+		this.retryTimes = retryTimes;
+	}
+
+	public Integer getRetryTimes() {
+		return retryTimes;
+	}
+
+	public TextSplitter getTextSplitter() {
+		return textSplitter;
 	}
 
 	/**
@@ -141,6 +185,24 @@ public class RagProperties {
 		 */
 		private boolean postProcessingSelectFirstEnabled = false;
 
+		/**
+		 * 搜索配置
+		 */
+		private int topK = 5;
+
+		private double similarityThreshold = 0.7;
+
+		private boolean deduplicationEnabled = true;
+
+		/**
+		 * 后处理配置
+		 */
+		private boolean rerankEnabled = true;
+
+		private int rerankTopK = 10;
+
+		private double rerankThreshold = 0.5;
+
 		// Getters and Setters for Pipeline properties...
 		public boolean isQueryExpansionEnabled() {
 			return queryExpansionEnabled;
@@ -172,6 +234,54 @@ public class RagProperties {
 
 		public void setPostProcessingSelectFirstEnabled(boolean postProcessingSelectFirstEnabled) {
 			this.postProcessingSelectFirstEnabled = postProcessingSelectFirstEnabled;
+		}
+
+		public int getTopK() {
+			return topK;
+		}
+
+		public void setTopK(int topK) {
+			this.topK = topK;
+		}
+
+		public double getSimilarityThreshold() {
+			return similarityThreshold;
+		}
+
+		public void setSimilarityThreshold(double similarityThreshold) {
+			this.similarityThreshold = similarityThreshold;
+		}
+
+		public boolean isDeduplicationEnabled() {
+			return deduplicationEnabled;
+		}
+
+		public void setDeduplicationEnabled(boolean deduplicationEnabled) {
+			this.deduplicationEnabled = deduplicationEnabled;
+		}
+
+		public boolean isRerankEnabled() {
+			return rerankEnabled;
+		}
+
+		public void setRerankEnabled(boolean rerankEnabled) {
+			this.rerankEnabled = rerankEnabled;
+		}
+
+		public int getRerankTopK() {
+			return rerankTopK;
+		}
+
+		public void setRerankTopK(int rerankTopK) {
+			this.rerankTopK = rerankTopK;
+		}
+
+		public double getRerankThreshold() {
+			return rerankThreshold;
+		}
+
+		public void setRerankThreshold(double rerankThreshold) {
+			this.rerankThreshold = rerankThreshold;
 		}
 
 	}
@@ -292,7 +402,7 @@ public class RagProperties {
 			/**
 			 * RRF算法中的窗口大小。
 			 */
-			private int rrfWindowSize = 100;
+			private int rrfWindowSize = 10;
 
 			/**
 			 * RRF算法中的排名常数。
@@ -426,6 +536,303 @@ public class RagProperties {
 				this.archiveDirectory = archiveDirectory;
 			}
 
+		}
+
+	}
+
+	/**
+	 * 专业知识库配置
+	 */
+	public static class ProfessionalKnowledgeBases {
+
+		/**
+		 * 是否启用专业知识库决策，默认为true
+		 */
+		private boolean decisionEnabled = true;
+
+		/**
+		 * 专业知识库列表
+		 */
+		private List<KnowledgeBase> knowledgeBases = new ArrayList<>();
+
+		public boolean isDecisionEnabled() {
+			return decisionEnabled;
+		}
+
+		public void setDecisionEnabled(boolean decisionEnabled) {
+			this.decisionEnabled = decisionEnabled;
+		}
+
+		public List<KnowledgeBase> getKnowledgeBases() {
+			return knowledgeBases;
+		}
+
+		public void setKnowledgeBases(List<KnowledgeBase> knowledgeBases) {
+			this.knowledgeBases = knowledgeBases;
+		}
+
+		/**
+		 * 单个专业知识库配置
+		 */
+		public static class KnowledgeBase {
+
+			/**
+			 * 知识库ID
+			 */
+			private String id;
+
+			/**
+			 * 知识库名称
+			 */
+			private String name;
+
+			/**
+			 * 知识库描述，用于大模型判断是否需要查询
+			 */
+			private String description;
+
+			/**
+			 * 知识库类型：api, elasticsearch
+			 */
+			private String type = "api";
+
+			/**
+			 * API配置
+			 */
+			private final Api api = new Api();
+
+			/**
+			 * 是否启用
+			 */
+			private boolean enabled = true;
+
+			/**
+			 * 优先级，数字越小优先级越高
+			 */
+			private int priority = 100;
+
+			public String getId() {
+				return id;
+			}
+
+			public void setId(String id) {
+				this.id = id;
+			}
+
+			public String getName() {
+				return name;
+			}
+
+			public void setName(String name) {
+				this.name = name;
+			}
+
+			public String getDescription() {
+				return description;
+			}
+
+			public void setDescription(String description) {
+				this.description = description;
+			}
+
+			public String getType() {
+				return type;
+			}
+
+			public void setType(String type) {
+				this.type = type;
+			}
+
+			public Api getApi() {
+				return api;
+			}
+
+			public boolean isEnabled() {
+				return enabled;
+			}
+
+			public void setEnabled(boolean enabled) {
+				this.enabled = enabled;
+			}
+
+			public int getPriority() {
+				return priority;
+			}
+
+			public void setPriority(int priority) {
+				this.priority = priority;
+			}
+
+			/**
+			 * API配置
+			 */
+			public static class Api {
+
+				/**
+				 * API类型：dashscope, custom
+				 */
+				private String provider = "dashscope";
+
+				/**
+				 * API URL
+				 */
+				private String url;
+
+				/**
+				 * API Key
+				 */
+				private String apiKey;
+
+				/**
+				 * 模型名称（适用于dashscope等）
+				 */
+				private String model;
+
+				/**
+				 * 请求超时时间（毫秒）
+				 */
+				private int timeoutMs = 30000;
+
+				/**
+				 * 最大返回结果数
+				 */
+				private int maxResults = 5;
+
+				public String getProvider() {
+					return provider;
+				}
+
+				public void setProvider(String provider) {
+					this.provider = provider;
+				}
+
+				public String getUrl() {
+					return url;
+				}
+
+				public void setUrl(String url) {
+					this.url = url;
+				}
+
+				public String getApiKey() {
+					return apiKey;
+				}
+
+				public void setApiKey(String apiKey) {
+					this.apiKey = apiKey;
+				}
+
+				public String getModel() {
+					return model;
+				}
+
+				public void setModel(String model) {
+					this.model = model;
+				}
+
+				public int getTimeoutMs() {
+					return timeoutMs;
+				}
+
+				public void setTimeoutMs(int timeoutMs) {
+					this.timeoutMs = timeoutMs;
+				}
+
+				public int getMaxResults() {
+					return maxResults;
+				}
+
+				public void setMaxResults(int maxResults) {
+					this.maxResults = maxResults;
+				}
+
+			}
+
+		}
+
+	}
+
+	/**
+	 * 文本分割配置
+	 */
+	public static class TextSplitter {
+
+		/**
+		 * 默认分块大小（token数量），默认800
+		 */
+		private int defaultChunkSize = 800;
+
+		/**
+		 * 分块重叠大小（token数量），默认100
+		 */
+		private int overlap = 100;
+
+		/**
+		 * 最小分块大小（token数量），默认5
+		 */
+		private int minChunkSizeToSplit = 5;
+
+		/**
+		 * 最大分块大小（token数量），默认10000
+		 */
+		private int maxChunkSize = 10000;
+
+		/**
+		 * 是否保持分隔符，默认true
+		 */
+		private boolean keepSeparator = true;
+
+		/**
+		 * 是否启用调试模式，默认false
+		 */
+		private boolean debugMode = false;
+
+		public int getDefaultChunkSize() {
+			return defaultChunkSize;
+		}
+
+		public void setDefaultChunkSize(int defaultChunkSize) {
+			this.defaultChunkSize = defaultChunkSize;
+		}
+
+		public int getOverlap() {
+			return overlap;
+		}
+
+		public void setOverlap(int overlap) {
+			this.overlap = overlap;
+		}
+
+		public int getMinChunkSizeToSplit() {
+			return minChunkSizeToSplit;
+		}
+
+		public void setMinChunkSizeToSplit(int minChunkSizeToSplit) {
+			this.minChunkSizeToSplit = minChunkSizeToSplit;
+		}
+
+		public int getMaxChunkSize() {
+			return maxChunkSize;
+		}
+
+		public void setMaxChunkSize(int maxChunkSize) {
+			this.maxChunkSize = maxChunkSize;
+		}
+
+		public boolean isKeepSeparator() {
+			return keepSeparator;
+		}
+
+		public void setKeepSeparator(boolean keepSeparator) {
+			this.keepSeparator = keepSeparator;
+		}
+
+		public boolean isDebugMode() {
+			return debugMode;
+		}
+
+		public void setDebugMode(boolean debugMode) {
+			this.debugMode = debugMode;
 		}
 
 	}

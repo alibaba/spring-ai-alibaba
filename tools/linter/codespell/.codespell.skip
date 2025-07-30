@@ -2,3 +2,12 @@
 .idea
 ./spring-ai-alibaba-jmanus/src/main/resources/static
 ./spring-ai-alibaba-jmanus/src/main/resources/static_legacy
+**/node_modules/**
+**/target/**
+**/build/**
+**/dist/**
+**/ui-vue3/ui/assets/**
+**/ui/assets/**
+**/src/test/resources/*.pdf
+**/src/main/resources/static/**
+**/pnpm-lock.yaml

@@ -20,6 +20,9 @@ import com.alibaba.cloud.ai.example.deepresearch.service.VectorStoreDataIngestio
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -52,6 +55,141 @@ public class RagDataController {
 		catch (Exception e) {
 			String message = "Failed to upload and ingest '" + file.getOriginalFilename() + "'.";
 			return ResponseEntity.internalServerError().body(Map.of("message", message, "error", e.getMessage()));
+		}
+	}
+
+	@PostMapping(value = "/upload", consumes = "multipart/form-data")
+	public ResponseEntity<Map<String, Object>> handleFileUpload(@RequestParam("file") MultipartFile file,
+			@RequestParam("session_id") String sessionId,
+			@RequestParam(value = "user_id", required = false) String userId) {
+
+		if (file.isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "File cannot be empty."));
+		}
+
+		try {
+			ingestionService.processAndStore(file, sessionId, userId);
+			Map<String, Object> response = new HashMap<>();
+			response.put("message", "File processed successfully for session: " + sessionId);
+			response.put("filename", file.getOriginalFilename());
+			response.put("session_id", sessionId);
+			response.put("user_id", userId);
+			return ResponseEntity.ok(response);
+		}
+		catch (Exception e) {
+			Map<String, Object> errorResponse = new HashMap<>();
+			errorResponse.put("error", "Failed to process file: " + file.getOriginalFilename());
+			errorResponse.put("message", e.getMessage());
+			return ResponseEntity.internalServerError().body(errorResponse);
+		}
+	}
+
+	/**
+	 * 批量上传用户文件接口
+	 */
+	@PostMapping(value = "/user/batch-upload", consumes = "multipart/form-data")
+	public ResponseEntity<Map<String, Object>> handleBatchUserFileUpload(
+			@RequestParam("files") List<MultipartFile> files, @RequestParam("session_id") String sessionId,
+			@RequestParam(value = "user_id", required = false) String userId) {
+
+		if (files == null || files.isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "No files provided"));
+		}
+
+		try {
+			int totalChunks = ingestionService.batchProcessAndStore(files, sessionId, userId);
+
+			Map<String, Object> response = new HashMap<>();
+			response.put("message", "Batch upload completed successfully");
+			response.put("session_id", sessionId);
+			response.put("user_id", userId);
+			response.put("file_count", files.size());
+			response.put("total_chunks", totalChunks);
+			response.put("filenames", files.stream().map(MultipartFile::getOriginalFilename).toList());
+
+			return ResponseEntity.ok(response);
+		}
+		catch (Exception e) {
+			Map<String, Object> errorResponse = new HashMap<>();
+			errorResponse.put("error", "Failed to process batch upload");
+			errorResponse.put("message", e.getMessage());
+			errorResponse.put("file_count", files.size());
+			return ResponseEntity.internalServerError().body(errorResponse);
+		}
+	}
+
+	/**
+	 * 上传文件到专业知识库ES接口
+	 */
+	@PostMapping(value = "/professional-kb/upload", consumes = "multipart/form-data")
+	public ResponseEntity<Map<String, Object>> handleProfessionalKbUpload(@RequestParam("file") MultipartFile file,
+			@RequestParam("kb_id") String kbId, @RequestParam("kb_name") String kbName,
+			@RequestParam("kb_description") String kbDescription,
+			@RequestParam(value = "category", required = false) String category) {
+
+		if (file.isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "File cannot be empty"));
+		}
+
+		try {
+			int chunks = ingestionService.uploadToProfessionalKbEs(file, kbId, kbName, kbDescription, category);
+
+			Map<String, Object> response = new HashMap<>();
+			response.put("message", "Professional KB file uploaded successfully");
+			response.put("kb_id", kbId);
+			response.put("kb_name", kbName);
+			response.put("filename", file.getOriginalFilename());
+			response.put("chunks_created", chunks);
+			response.put("category", category);
+
+			return ResponseEntity.ok(response);
+		}
+		catch (Exception e) {
+			Map<String, Object> errorResponse = new HashMap<>();
+			errorResponse.put("error", "Failed to upload file to professional KB");
+			errorResponse.put("message", e.getMessage());
+			errorResponse.put("kb_id", kbId);
+			errorResponse.put("filename", file.getOriginalFilename());
+			return ResponseEntity.internalServerError().body(errorResponse);
+		}
+	}
+
+	/**
+	 * 批量上传文件到专业知识库ES接口
+	 */
+	@PostMapping(value = "/professional-kb/batch-upload", consumes = "multipart/form-data")
+	public ResponseEntity<Map<String, Object>> handleBatchProfessionalKbUpload(
+			@RequestParam("files") List<MultipartFile> files, @RequestParam("kb_id") String kbId,
+			@RequestParam("kb_name") String kbName, @RequestParam("kb_description") String kbDescription,
+			@RequestParam(value = "category", required = false) String category) {
+
+		if (files == null || files.isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "No files provided"));
+		}
+
+		try {
+			int totalChunks = ingestionService.batchUploadToProfessionalKbEs(files, kbId, kbName, kbDescription,
+					category);
+
+			Map<String, Object> response = new HashMap<>();
+			response.put("message", "Professional KB batch upload completed successfully");
+			response.put("kb_id", kbId);
+			response.put("kb_name", kbName);
+			response.put("kb_description", kbDescription);
+			response.put("category", category);
+			response.put("file_count", files.size());
+			response.put("total_chunks", totalChunks);
+			response.put("filenames", files.stream().map(MultipartFile::getOriginalFilename).toList());
+
+			return ResponseEntity.ok(response);
+		}
+		catch (Exception e) {
+			Map<String, Object> errorResponse = new HashMap<>();
+			errorResponse.put("error", "Failed to process professional KB batch upload");
+			errorResponse.put("message", e.getMessage());
+			errorResponse.put("kb_id", kbId);
+			errorResponse.put("file_count", files.size());
+			return ResponseEntity.internalServerError().body(errorResponse);
 		}
 	}
 

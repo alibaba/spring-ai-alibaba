@@ -84,11 +84,6 @@ public class AgentServiceImpl implements AgentService {
 	}
 
 	@Override
-	public List<AgentConfig> getAllAgents() {
-		return repository.findAll().stream().map(this::mapToAgentConfig).collect(Collectors.toList());
-	}
-
-	@Override
 	public List<AgentConfig> getAllAgentsByNamespace(String namespace) {
 		List<DynamicAgentEntity> entities;
 		if (namespace == null || namespace.trim().isEmpty()) {
@@ -96,12 +91,7 @@ public class AgentServiceImpl implements AgentService {
 			namespace = "default";
 			log.info("Namespace not specified, using default namespace: {}", namespace);
 		}
-		if ("default".equalsIgnoreCase(namespace)) {
-			entities = repository.findByNamespaceWithDefault(namespace);
-		}
-		else {
-			entities = repository.findAllByNamespace(namespace);
-		}
+		entities = repository.findAllByNamespace(namespace);
 		return entities.stream().map(this::mapToAgentConfig).collect(Collectors.toList());
 	}
 

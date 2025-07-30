@@ -16,10 +16,11 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.controller;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigRequestVO;
+
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigVO;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerRequestVO;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServersRequestVO;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,9 @@ public class McpController {
 	@Autowired
 	private McpService mcpService;
 
+	@Autowired
+	private ObjectMapper objectMapper;
+
 	/**
 	 * List All MCP Server
 	 * @return All MCP Server as VO objects
@@ -51,55 +55,71 @@ public class McpController {
 	@GetMapping("/list")
 	public ResponseEntity<List<McpConfigVO>> list() {
 		List<McpConfigEntity> entities = mcpService.getMcpServers();
-		List<McpConfigVO> vos = McpConfigVO.fromEntities(entities);
+		List<McpConfigVO> vos = McpConfigVO.fromEntities(entities, objectMapper);
 		return ResponseEntity.ok(vos);
 	}
 
 	/**
-	 * Add MCP Server
-	 * @param requestVO MCP Server Configuration Request VO
+	 * 批量导入MCP服务器（JSON方式）
+	 * @param requestVO 批量导入请求VO
 	 */
-	@PostMapping("/add")
-	public ResponseEntity<String> add(@RequestBody McpConfigRequestVO requestVO) throws IOException {
-		String configJson = requestVO.getConfigJson();
+	@PostMapping("/batch-import")
+	public ResponseEntity<String> batchImportMcpServers(@RequestBody McpServersRequestVO requestVO) throws IOException {
+		// 验证请求数据
+		if (!requestVO.isValid()) {
+			return ResponseEntity.badRequest().body("Invalid JSON format");
+		}
 
-		// Check if it's short format JSON (without mcpServers wrapper)
+		// 标准化JSON格式
+		String configJson = requestVO.getNormalizedConfigJson();
+		logger.info("Batch importing {} MCP servers", requestVO.getServerCount());
+
+		// 直接使用新的推荐方法
+		mcpService.saveMcpServers(configJson);
+		return ResponseEntity.ok("Successfully imported " + requestVO.getServerCount() + " MCP servers");
+	}
+
+	/**
+	 * 单个MCP服务器操作（新增/更新）
+	 * @param requestVO 单个MCP服务器请求VO
+	 */
+	@PostMapping("/server")
+	public ResponseEntity<String> saveMcpServer(@RequestBody McpServerRequestVO requestVO) throws IOException {
+		logger.info("Processing {} operation for server: {}", requestVO.isUpdate() ? "update" : "add",
+				requestVO.getMcpServerName());
+
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-			JsonNode jsonNode = objectMapper.readTree(configJson);
-
-			// If mcpServers field is not included, need to convert to full format
-			if (!jsonNode.has("mcpServers")) {
-				logger.info("Detected short format JSON, converting to full format");
-
-				// Check if it's simple key-value pair format (without outer braces)
-				if (configJson.trim().startsWith("\"") && configJson.contains(":")) {
-					// Simple key-value pair format, need to add outer braces
-					configJson = "{" + configJson + "}";
-				}
-
-				// Create complete configuration format
-				StringBuilder fullJsonBuilder = new StringBuilder();
-				fullJsonBuilder.append("{\n  \"mcpServers\": ");
-				fullJsonBuilder.append(configJson);
-				fullJsonBuilder.append("\n}");
-
-				// Update configJson in requestVO
-				configJson = fullJsonBuilder.toString();
-				requestVO.setConfigJson(configJson);
-				logger.info("Converted to full format: {}", configJson);
+			// 直接使用新的推荐方法
+			mcpService.saveMcpServer(requestVO);
+			return ResponseEntity.ok("MCP server " + (requestVO.isUpdate() ? "updated" : "added") + " successfully");
+		}
+		catch (IllegalArgumentException e) {
+			// 检查是否是重复名称错误
+			if (e.getMessage().contains("already exists")) {
+				logger.warn("MCP server with name '{}' already exists", requestVO.getMcpServerName());
+				return ResponseEntity.badRequest()
+					.body("MCP server with name '" + requestVO.getMcpServerName() + "' already exists");
 			}
+			// 检查是否是未找到错误
+			if (e.getMessage().contains("not found")) {
+				logger.error("MCP server not found with id: {}", requestVO.getId(), e);
+				return ResponseEntity.notFound().build();
+			}
+			// 检查是否是验证错误
+			if (e.getMessage().contains("MCP服务器配置验证失败")) {
+				logger.warn("Validation failed for MCP server '{}': {}", requestVO.getMcpServerName(), e.getMessage());
+				return ResponseEntity.badRequest().body(e.getMessage());
+			}
+			// 其他参数错误
+			logger.error("Invalid argument for MCP server operation: {}", e.getMessage(), e);
+			return ResponseEntity.badRequest().body("Invalid argument: " + e.getMessage());
 		}
 		catch (Exception e) {
-			logger.warn("Error checking JSON format, proceeding with original format", e);
+			String errorMessage = "Failed to " + (requestVO.isUpdate() ? "update" : "add") + " MCP server: "
+					+ e.getMessage();
+			logger.error(errorMessage, e);
+			return ResponseEntity.badRequest().body(errorMessage);
 		}
-		try {
-			mcpService.addMcpServer(requestVO);
-		}
-		catch (Exception e) {
-			return ResponseEntity.internalServerError().body(e.getMessage());
-		}
-		return ResponseEntity.ok("success");
 	}
 
 	/**
@@ -119,6 +139,58 @@ public class McpController {
 	public ResponseEntity<String> removeByName(@PathVariable("name") String mcpServerName) throws IOException {
 		mcpService.removeMcpServer(mcpServerName);
 		return ResponseEntity.ok("Success");
+	}
+
+	/**
+	 * Enable MCP Server
+	 * @param id MCP Server ID
+	 */
+	@PostMapping("/enable/{id}")
+	public ResponseEntity<String> enableMcpServer(@PathVariable("id") Long id) {
+		try {
+			boolean success = mcpService.enableMcpServer(id);
+			if (success) {
+				return ResponseEntity.ok("MCP server enabled successfully");
+			}
+			else {
+				return ResponseEntity.badRequest().body("Failed to enable MCP server");
+			}
+		}
+		catch (IllegalArgumentException e) {
+			logger.error("MCP server not found with id: {}", id, e);
+			return ResponseEntity.notFound().build();
+		}
+		catch (Exception e) {
+			String errorMessage = "Failed to enable MCP server: " + e.getMessage();
+			logger.error(errorMessage, e);
+			return ResponseEntity.badRequest().body(errorMessage);
+		}
+	}
+
+	/**
+	 * Disable MCP Server
+	 * @param id MCP Server ID
+	 */
+	@PostMapping("/disable/{id}")
+	public ResponseEntity<String> disableMcpServer(@PathVariable("id") Long id) {
+		try {
+			boolean success = mcpService.disableMcpServer(id);
+			if (success) {
+				return ResponseEntity.ok("MCP server disabled successfully");
+			}
+			else {
+				return ResponseEntity.badRequest().body("Failed to disable MCP server");
+			}
+		}
+		catch (IllegalArgumentException e) {
+			logger.error("MCP server not found with id: {}", id, e);
+			return ResponseEntity.notFound().build();
+		}
+		catch (Exception e) {
+			String errorMessage = "Failed to disable MCP server: " + e.getMessage();
+			logger.error(errorMessage, e);
+			return ResponseEntity.badRequest().body(errorMessage);
+		}
 	}
 
 }

@@ -50,6 +50,22 @@ public class StateUtil {
 
 	public static final String EXECUTION_STATUS_WAITING_PROCESSING = "waiting_processing_";
 
+	public static final String EXECUTION_STATUS_ERROR_PREFIX = "error_";
+
+	/**
+	 * Handle step execution error by setting error status and logging
+	 * @param step the plan step that failed
+	 * @param nodeName the name of the node
+	 * @param error the exception that occurred
+	 * @param logger the logger to use
+	 */
+	public static void handleStepError(Plan.Step step, String nodeName, Throwable error, org.slf4j.Logger logger) {
+		String errorMessage = "ERROR: " + error.getMessage();
+		step.setExecutionStatus(EXECUTION_STATUS_ERROR_PREFIX + nodeName);
+		step.setExecutionRes(errorMessage);
+		logger.error("{} failed: {}", nodeName, error.getMessage(), error);
+	}
+
 	public static List<String> getMessagesByType(OverAllState state, String name) {
 		return state.value(name, List.class).map(obj -> new ArrayList<>((List<String>) obj)).orElseGet(ArrayList::new);
 	}
@@ -102,6 +118,10 @@ public class StateUtil {
 
 	public static boolean getAutoAcceptedPlan(OverAllState state) {
 		return state.value("auto_accepted_plan", true);
+	}
+
+	public static String getRagContent(OverAllState state) {
+		return state.value("rag_content", "");
 	}
 
 	/**

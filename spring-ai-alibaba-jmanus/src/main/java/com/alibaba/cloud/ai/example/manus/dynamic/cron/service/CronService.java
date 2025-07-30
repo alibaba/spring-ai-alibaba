@@ -31,6 +31,8 @@ public interface CronService {
 
 	void updateTaskStatus(String id, Integer status);
 
+	void executeCronTask(String id);
+
 	void deleteCronTask(String id);
 
 }

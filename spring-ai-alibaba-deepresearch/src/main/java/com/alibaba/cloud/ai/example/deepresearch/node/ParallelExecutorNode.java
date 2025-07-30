@@ -94,7 +94,8 @@ public class ParallelExecutorNode implements NodeAction {
 		return plan.getSteps()
 			.stream()
 			.filter(step -> step.getStepType() == Plan.StepType.RESEARCH)
-			.allMatch(step -> step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX));
+			.allMatch(step -> step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX)
+					|| step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_ERROR_PREFIX));
 	}
 
 }

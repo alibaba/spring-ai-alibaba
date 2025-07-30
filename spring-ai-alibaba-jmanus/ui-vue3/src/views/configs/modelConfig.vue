@@ -48,7 +48,13 @@
           >
             <div class="model-card-header">
               <span class="model-name">{{ model.modelName }}</span>
-              <Icon icon="carbon:chevron-right" />
+              <div class="model-status">
+                <span v-if="model.isDefault" class="default-badge">
+                  <Icon icon="carbon:star-filled" />
+                  {{ t('config.modelConfig.default') }}
+                </span>
+                <Icon icon="carbon:chevron-right" />
+              </div>
             </div>
             <p class="model-desc">{{ model.modelDescription }}</p>
             <div class="model-type" v-if="model.type">
@@ -80,6 +86,19 @@
         <div class="detail-header">
           <h3>{{ selectedModel.modelName }}</h3>
           <div class="detail-actions">
+            <button
+              v-if="!selectedModel.isDefault"
+              class="action-btn default"
+              @click="handleSetDefault"
+              :disabled="settingDefault"
+            >
+              <Icon icon="carbon:star" />
+              {{ t('config.modelConfig.setAsDefault') }}
+            </button>
+            <span v-else class="current-default">
+              <Icon icon="carbon:star-filled" />
+              {{ t('config.modelConfig.currentDefault') }}
+            </span>
             <button class="action-btn primary" @click="handleSave">
               <Icon icon="carbon:save" />
               {{ t('common.save') }}
@@ -123,32 +142,80 @@
 
         <div class="form-item">
           <label>{{ t('config.modelConfig.apiKey') }} <span class="required">*</span></label>
-          <input
-            type="text"
-            v-model="selectedModel.apiKey"
-            :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
-            required
-          />
+          <div class="api-key-container">
+            <input
+              type="text"
+              v-model="selectedModel.apiKey"
+              :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
+              required
+            />
+            <button
+              class="check-btn"
+              @click="handleValidateConfig"
+              :disabled="validating || !selectedModel.baseUrl || !selectedModel.apiKey"
+              :title="t('config.modelConfig.validateConfig')"
+            >
+              <Icon icon="carbon:checkmark" v-if="!validating" />
+              <Icon icon="carbon:loading" v-else class="loading-icon" />
+            </button>
+          </div>
         </div>
 
-        <div class="form-item">
+                <div class="form-item">
           <label>{{ t('config.modelConfig.modelName') }} <span class="required">*</span></label>
-          <input
-            type="text"
+          <GroupedSelect
+            v-if="getCurrentAvailableModels().length > 0"
             v-model="selectedModel.modelName"
-            :placeholder="t('config.modelConfig.modelNamePlaceholder')"
-            required
+            :options="getCurrentAvailableModels().map(model => ({
+              id: model.modelName,
+              name: model.modelName,
+              description: getModelDescription(model.modelName),
+              category: getModelCategory(model.modelName)
+            }))"
+            :placeholder="t('config.modelConfig.selectModel')"
+            :dropdown-title="t('config.modelConfig.availableModels')"
+            @update:modelValue="handleModelSelection"
           />
+          <div
+            v-else
+            class="readonly-field"
+          >
+            {{ selectedModel.modelName || t('config.modelConfig.modelNamePlaceholder') }}
+          </div>
         </div>
 
         <div class="form-item">
           <label>{{ t('config.modelConfig.description') }} <span class="required">*</span></label>
           <textarea
             v-model="selectedModel.modelDescription"
-            rows="3"
             :placeholder="t('config.modelConfig.descriptionPlaceholder')"
-            required
-          ></textarea>
+            class="description-field"
+            rows="3"
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.temperature') }}</label>
+          <input
+            type="number"
+            v-model.number="selectedModel.temperature"
+            :placeholder="t('config.modelConfig.temperaturePlaceholder')"
+            step="0.1"
+            min="0"
+            max="2"
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.topP') }}</label>
+          <input
+            type="number"
+            v-model.number="selectedModel.topP"
+            :placeholder="t('config.modelConfig.topPPlaceholder')"
+            step="0.1"
+            min="0"
+            max="1"
+          />
         </div>
       </div>
 
@@ -191,30 +258,78 @@
         </div>
         <div class="form-item">
           <label>{{ t('config.modelConfig.apiKey') }} <span class="required">*</span></label>
-          <input
-            type="text"
-            v-model="newModel.apiKey"
-            :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
-            required
-          />
+          <div class="api-key-container">
+            <input
+              type="text"
+              v-model="newModel.apiKey"
+              :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
+              required
+            />
+            <button
+              class="check-btn"
+              @click="handleNewModelValidateConfig"
+              :disabled="newModelValidating || !newModel.baseUrl || !newModel.apiKey"
+              :title="t('config.modelConfig.validateConfig')"
+            >
+              <Icon icon="carbon:checkmark" v-if="!newModelValidating" />
+              <Icon icon="carbon:loading" v-else class="loading-icon" />
+            </button>
+          </div>
         </div>
         <div class="form-item">
           <label>{{ t('config.modelConfig.modelName') }} <span class="required">*</span></label>
-          <input
-            type="text"
+          <GroupedSelect
+            v-if="newModelAvailableModels.length > 0"
             v-model="newModel.modelName"
-            :placeholder="t('config.modelConfig.modelNamePlaceholder')"
-            required
+            :options="newModelAvailableModels.map(model => ({
+              id: model.modelName,
+              name: model.modelName,
+              description: getModelDescription(model.modelName),
+              category: getModelCategory(model.modelName)
+            }))"
+            :placeholder="t('config.modelConfig.selectModel')"
+            :dropdown-title="t('config.modelConfig.availableModels')"
+            @update:modelValue="handleNewModelSelection"
           />
+          <div
+            v-else
+            class="readonly-field"
+          >
+            {{ newModel.modelName || t('config.modelConfig.modelNamePlaceholder') }}
+          </div>
         </div>
         <div class="form-item">
           <label>{{ t('config.modelConfig.description') }} <span class="required">*</span></label>
           <textarea
             v-model="newModel.modelDescription"
-            rows="3"
             :placeholder="t('config.modelConfig.descriptionPlaceholder')"
-            required
-          ></textarea>
+            class="description-field"
+            rows="3"
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.temperature') }}</label>
+          <input
+            type="number"
+            v-model.number="newModel.temperature"
+            :placeholder="t('config.modelConfig.temperaturePlaceholder')"
+            step="0.1"
+            min="0"
+            max="2"
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.topP') }}</label>
+          <input
+            type="number"
+            v-model.number="newModel.topP"
+            :placeholder="t('config.modelConfig.topPPlaceholder')"
+            step="0.1"
+            min="0"
+            max="1"
+          />
         </div>
       </div>
     </Modal>
@@ -259,6 +374,7 @@ import { useI18n } from 'vue-i18n'
 import ConfigPanel from './components/configPanel.vue'
 import Modal from '@/components/modal/index.vue'
 import CustomSelect from '@/components/select/index.vue'
+import GroupedSelect from '@/components/GroupedSelect.vue'
 import { ModelApiService, type Model } from '@/api/model-api-service'
 
 // Internationalization
@@ -273,6 +389,13 @@ const modelTypes = reactive<string[]>([])
 const selectedModel = ref<Model | null>(null)
 const showModal = ref(false)
 const showDeleteModal = ref(false)
+const validating = ref(false)
+const settingDefault = ref(false)
+// 为每个模型存储独立的可用模型列表
+const modelAvailableModels = ref<Map<string, Model[]>>(new Map())
+// 新建Model弹窗的验证状态和可用模型列表
+const newModelValidating = ref(false)
+const newModelAvailableModels = ref<Model[]>([])
 
 const selectedHeadersJson = computed({
   get() {
@@ -306,17 +429,23 @@ const newModel = reactive<Omit<Model, 'id'>>({
 })
 
 // Message toast
-const showMessage = (msg: string, type: 'success' | 'error') => {
+const showMessage = (msg: string, type: 'success' | 'error' | 'info') => {
   if (type === 'success') {
     success.value = msg
     setTimeout(() => {
       success.value = ''
     }, 3000)
-  } else {
+  } else if (type === 'error') {
     error.value = msg
     setTimeout(() => {
       error.value = ''
     }, 5000)
+  } else if (type === 'info') {
+    // 显示信息消息，使用success样式但时间短一些
+    success.value = msg
+    setTimeout(() => {
+      success.value = ''
+    }, 2000)
   }
 }
 
@@ -356,6 +485,8 @@ const selectModel = async (model: Model) => {
     selectedModel.value = {
       ...detailedModel,
     }
+    // 切换模型时，清除验证状态，但保留该模型的可用模型列表
+    validating.value = false
   } catch (err: any) {
     console.error('加载Model详情失败:', err)
     showMessage(t('config.modelConfig.loadDetailsFailed') + ': ' + err.message, 'error')
@@ -374,7 +505,137 @@ const showAddModelModal = () => {
   newModel.modelName = ''
   newModel.modelDescription = ''
   newModel.type = ''
+  delete newModel.temperature
+  delete newModel.topP
+  // 清除新建Model弹窗的状态
+  newModelValidating.value = false
+  newModelAvailableModels.value = []
   showModal.value = true
+}
+
+// 验证配置
+const handleValidateConfig = async () => {
+  if (!selectedModel.value?.baseUrl || !selectedModel.value?.apiKey) {
+    showMessage(t('config.modelConfig.pleaseEnterBaseUrlAndApiKey'), 'error')
+    return
+  }
+
+  validating.value = true
+  try {
+    const result = await ModelApiService.validateConfig({
+      baseUrl: selectedModel.value.baseUrl,
+      apiKey: selectedModel.value.apiKey
+    })
+
+    if (result.valid) {
+      showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length || 0 })}`, 'success')
+      // 为当前选中的模型保存独立的可用模型列表
+      if (selectedModel.value?.id) {
+        modelAvailableModels.value.set(selectedModel.value.id, result.availableModels || [])
+      }
+      // 如果有可用模型，自动选择第一个并填充描述
+      if (result.availableModels && result.availableModels.length > 0) {
+        selectedModel.value.modelName = result.availableModels[0].modelName
+        selectedModel.value.modelDescription =  getModelDescription(result.availableModels[0].modelName)
+      }
+    } else {
+      showMessage(t('config.modelConfig.validationFailed') + ': ' + result.message, 'error')
+    }
+  } catch (err: any) {
+    showMessage(t('config.modelConfig.validationFailed') + ': ' + err.message, 'error')
+  } finally {
+    validating.value = false
+  }
+}
+
+// 获取模型分类
+const getModelCategory = (modelName: string): string => {
+  const name = modelName.toLowerCase()
+  if (name.includes('turbo')) return 'Turbo'
+  if (name.includes('plus')) return 'Plus'
+  if (name.includes('max')) return 'Max'
+  if (name.includes('coder') || name.includes('code')) return 'Coder'
+  if (name.includes('math')) return 'Math'
+  if (name.includes('vision') || name.includes('vl')) return 'Vision'
+  if (name.includes('tts')) return 'TTS'
+  return 'Standard'
+}
+
+// 获取模型描述
+const getModelDescription = (modelName: string): string => {
+  const name = modelName.toLowerCase()
+  if (name.includes('turbo')) return 'Turbo 模型，快速响应'
+  if (name.includes('plus')) return 'Plus 模型，平衡性能'
+  if (name.includes('max')) return 'Max 模型，最强性能'
+  if (name.includes('coder') || name.includes('code')) return 'Coder 模型，代码生成专用'
+  if (name.includes('math')) return 'Math 模型，数学计算专用'
+  if (name.includes('vision') || name.includes('vl')) return 'Vision 模型，视觉理解专用'
+  if (name.includes('tts')) return 'TTS 模型，文本转语音专用'
+  return '标准模型'
+}
+
+// 获取当前选中模型的可用模型列表
+const getCurrentAvailableModels = (): Model[] => {
+  if (!selectedModel.value?.id) {
+    return []
+  }
+  return modelAvailableModels.value.get(selectedModel.value.id) || []
+}
+
+// 处理模型选择
+const handleModelSelection = (selectedModelName: string) => {
+  if (selectedModel.value && selectedModelName) {
+    // 从可用模型列表中找到对应的模型，使用其description
+    const availableModels = getCurrentAvailableModels()
+    const selectedModelData = availableModels.find(model => model.modelName === selectedModelName)
+    if (selectedModelData) {
+      selectedModel.value.modelDescription =  getModelDescription(selectedModelName)
+    }
+  }
+}
+
+// 新建Model弹窗的验证配置
+const handleNewModelValidateConfig = async () => {
+  if (!newModel.baseUrl || !newModel.apiKey) {
+    showMessage(t('config.modelConfig.pleaseEnterBaseUrlAndApiKey'), 'error')
+    return
+  }
+
+  newModelValidating.value = true
+  try {
+    const result = await ModelApiService.validateConfig({
+      baseUrl: newModel.baseUrl,
+      apiKey: newModel.apiKey
+    })
+
+    if (result.valid) {
+      showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length || 0 })}`, 'success')
+      // 保存可用模型列表
+      newModelAvailableModels.value = result.availableModels || []
+      // 如果有可用模型，自动选择第一个并填充描述
+      if (result.availableModels && result.availableModels.length > 0) {
+        newModel.modelName = result.availableModels[0].modelName
+        newModel.modelDescription =  getModelDescription(result.availableModels[0].modelName)
+      }
+    } else {
+      showMessage(t('config.modelConfig.validationFailed') + ': ' + result.message, 'error')
+    }
+  } catch (err: any) {
+    showMessage(t('config.modelConfig.validationFailed') + ': ' + err.message, 'error')
+  } finally {
+    newModelValidating.value = false
+  }
+}
+
+// 处理新建Model的模型选择
+const handleNewModelSelection = (selectedModelName: string) => {
+  if (selectedModelName) {
+    // 从可用模型列表中找到对应的模型，使用其description
+    const selectedModelData = newModelAvailableModels.value.find(model => model.modelName === selectedModelName)
+    if (selectedModelData) {
+      newModel.modelDescription = getModelDescription(selectedModelName)
+    }
+  }
 }
 
 // Create new Model
@@ -384,15 +645,41 @@ const handleAddModel = async () => {
     return
   }
 
+  // 强制校验API Key可用性
+  if (!newModel.baseUrl.trim() || !newModel.apiKey.trim()) {
+    showMessage(t('config.modelConfig.pleaseEnterBaseUrlAndApiKey'), 'error')
+    return
+  }
+
+  // 在创建前必须先校验API Key可用性
+  showMessage(t('config.modelConfig.validatingBeforeSave'), 'info')
+  
   try {
-    const modelData: Omit<Model, 'id'> = {
+    const validationResult = await ModelApiService.validateConfig({
+      baseUrl: newModel.baseUrl.trim(),
+      apiKey: newModel.apiKey.trim()
+    })
+
+    if (!validationResult.valid) {
+      showMessage(t('config.modelConfig.validationFailedCannotSave') + ': ' + validationResult.message, 'error')
+      return
+    }
+  } catch (err: any) {
+    showMessage(t('config.modelConfig.validationFailedCannotSave') + ': ' + err.message, 'error')
+    return
+  }
+
+  try {
+    const modelData = {
       baseUrl: newModel.baseUrl.trim(),
       headers: newModel.headers,
       apiKey: newModel.apiKey.trim(),
       modelName: newModel.modelName.trim(),
       modelDescription: newModel.modelDescription.trim(),
       type: newModel.type.trim(),
-    }
+      temperature: isNaN(newModel.temperature!) ? null : newModel.temperature,
+      topP: isNaN(newModel.topP!) ? null : newModel.topP,
+    } as Omit<Model, 'id'>
 
     const createdModel = await ModelApiService.createModel(modelData)
     models.push(createdModel)
@@ -413,10 +700,49 @@ const handleSave = async () => {
     return
   }
 
+  // 强制校验API Key可用性
+  if (!selectedModel.value.baseUrl || !selectedModel.value.apiKey) {
+    showMessage(t('config.modelConfig.pleaseEnterBaseUrlAndApiKey'), 'error')
+    return
+  }
+
+  // 如果API Key被修改了（不包含*），需要重新校验
+  const needsValidation = !selectedModel.value.apiKey.includes('*') || 
+    !modelAvailableModels.value.has(selectedModel.value.id)
+
+  if (needsValidation) {
+    showMessage(t('config.modelConfig.validatingBeforeSave'), 'info')
+    
+    try {
+      const validationResult = await ModelApiService.validateConfig({
+        baseUrl: selectedModel.value.baseUrl,
+        apiKey: selectedModel.value.apiKey
+      })
+
+      if (!validationResult.valid) {
+        showMessage(t('config.modelConfig.validationFailedCannotSave') + ': ' + validationResult.message, 'error')
+        return
+      }
+
+      // 校验成功，更新可用模型列表
+      modelAvailableModels.value.set(selectedModel.value.id, validationResult.availableModels || [])
+    } catch (err: any) {
+      showMessage(t('config.modelConfig.validationFailedCannotSave') + ': ' + err.message, 'error')
+      return
+    }
+  }
+
   try {
+    // 处理NaN值，转换为null以便正确序列化和传输
+    const modelToSave = {
+      ...selectedModel.value,
+      temperature: isNaN(selectedModel.value.temperature!) ? null : selectedModel.value.temperature,
+      topP: isNaN(selectedModel.value.topP!) ? null : selectedModel.value.topP,
+    }
+    
     const savedModel = await ModelApiService.updateModel(
       selectedModel.value.id,
-      selectedModel.value
+      modelToSave as Model
     )
 
     // Update the data in the local list
@@ -434,6 +760,30 @@ const handleSave = async () => {
 // Show the delete confirmation modal
 const showDeleteConfirm = () => {
   showDeleteModal.value = true
+}
+
+// Set model as default
+const handleSetDefault = async () => {
+  if (!selectedModel.value) return
+
+  settingDefault.value = true
+  try {
+    await ModelApiService.setDefaultModel(selectedModel.value.id)
+
+    // Update local state: clear other models' default status and set current model as default
+    models.forEach(model => {
+      model.isDefault = model.id === selectedModel.value!.id
+    })
+
+    // Update current selected model
+    selectedModel.value.isDefault = true
+
+    showMessage(t('config.modelConfig.setDefaultSuccess'), 'success')
+  } catch (err: any) {
+    showMessage(t('config.modelConfig.setDefaultFailed') + ': ' + err.message, 'error')
+  } finally {
+    settingDefault.value = false
+  }
 }
 
 // Delete Model
@@ -855,6 +1205,101 @@ onMounted(() => {
   color: #a8b3ff;
 }
 
+.model-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.default-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: rgba(255, 193, 7, 0.2);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 12px;
+  font-size: 11px;
+  color: #ffc107;
+  font-weight: 500;
+}
+
+.current-default {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(255, 193, 7, 0.2);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #ffc107;
+  font-weight: 500;
+}
+
+.action-btn.default {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  color: #ffc107;
+}
+
+.action-btn.default:hover:not(:disabled) {
+  background: rgba(255, 193, 7, 0.2);
+  border-color: rgba(255, 193, 7, 0.5);
+}
+
+.action-btn.default:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.api-key-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.api-key-container input {
+  flex: 1;
+}
+
+.check-btn {
+  padding: 12px 16px;
+  background: rgba(168, 179, 255, 0.1);
+  border: 1px solid rgba(168, 179, 255, 0.3);
+  border-radius: 8px;
+  color: #a8b3ff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+}
+
+.check-btn:hover:not(:disabled) {
+  background: rgba(168, 179, 255, 0.2);
+  border-color: rgba(168, 179, 255, 0.5);
+}
+
+.check-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* 提示消息 */
 .error-toast,
 .success-toast {
@@ -891,5 +1336,52 @@ onMounted(() => {
     transform: translateX(0);
     opacity: 1;
   }
+}
+
+.readonly-field {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  cursor: default;
+  user-select: none;
+}
+
+.readonly-field.description-field {
+  min-height: 80px;
+  align-items: flex-start;
+  padding-top: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.description-field {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  min-height: 80px;
+  resize: vertical;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.description-field:focus {
+  outline: none;
+  border-color: rgba(102, 126, 234, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.description-field::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 </style>
