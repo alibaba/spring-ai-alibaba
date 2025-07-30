@@ -45,4 +45,10 @@ public interface PromptService {
 
 	void reinitializePrompts();
 
+	void importSpecificPromptFromLanguage(String promptName, String language);
+
+	void importAllPromptsFromLanguage(String language);
+
+	String[] getSupportedLanguages();
+
 }

@@ -1,0 +1,25 @@
+{
+  "planType": "advanced",
+  "planId": "{planId}",
+  "title": "内容智能的对大文件进行汇总，最后总结时需要把合并后的文件名在总结时输出出来",
+  "steps": [
+    {
+      "type": "mapreduce",
+      "dataPreparedSteps": [
+        {
+          "stepRequirement": "[文件处理代理] 将文件 {fileName} 按照 {terminateColumns} 进行分割处理，确保每个分片都包含完整的数据结构"
+        }
+      ],
+      "mapSteps": [
+        {
+          "stepRequirement": "[内容分析代理] 对分片文件进行深度分析，提取关键信息：{queryKey}，并生成结构化摘要，确保包含 {terminateColumns} 相关内容"
+        }
+      ],
+      "reduceSteps": [
+        {
+          "stepRequirement": "[汇总代理] 将所有分片的分析结果进行智能合并，生成综合性总结报告，重点关注 {terminateColumns} 的整体趋势和关键发现，并在总结中明确输出最终合并文件的名称"
+        }
+      ]
+    }
+  ]
+}

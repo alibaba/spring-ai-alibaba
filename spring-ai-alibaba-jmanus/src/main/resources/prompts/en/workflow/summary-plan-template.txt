@@ -1,0 +1,25 @@
+{
+  "planType": "advanced",
+  "planId": "{planId}",
+  "title": "Intelligent content summarization for large files, with final merged file name output in summary",
+  "steps": [
+    {
+      "type": "mapreduce",
+      "dataPreparedSteps": [
+        {
+          "stepRequirement": "[File Processing Agent] Split file {fileName} according to {terminateColumns}, ensuring each chunk contains complete data structure"
+        }
+      ],
+      "mapSteps": [
+        {
+          "stepRequirement": "[Content Analysis Agent] Perform deep analysis on file chunks, extract key information: {queryKey}, and generate structured summaries, ensuring inclusion of {terminateColumns} related content"
+        }
+      ],
+      "reduceSteps": [
+        {
+          "stepRequirement": "[Aggregation Agent] Intelligently merge all chunk analysis results, generate comprehensive summary report, focusing on overall trends and key findings of {terminateColumns}, and clearly output the final merged file name in the summary"
+        }
+      ]
+    }
+  ]
+}
