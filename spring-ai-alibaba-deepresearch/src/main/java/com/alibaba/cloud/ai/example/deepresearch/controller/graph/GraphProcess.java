@@ -33,6 +33,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.http.codec.ServerSentEvent;
 import reactor.core.publisher.Sinks;
 
@@ -41,6 +44,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.Optional;
 
 /**
  * @author yingzi
@@ -80,7 +84,8 @@ public class GraphProcess {
 					String nodeName = output.node();
 					String content;
 					if (output instanceof StreamingOutput streamingOutput) {
-						logger.debug("Streaming output from node {}: {}", nodeName, streamingOutput.chunk());
+						logger.debug("Streaming output from node {}: {}", nodeName,
+								streamingOutput.chatResponse().getResult().getOutput().getText());
 						content = buildLLMNodeContent(nodeName, streamingOutput, output);
 					}
 					else {
@@ -113,8 +118,13 @@ public class GraphProcess {
 			return "";
 		}
 		String stepTitle = (String) output.state().value(nodeName + "_step_title").orElse("");
-		return JSON.toJSONString(
-				Map.of(nodeName, streamingOutput.chunk(), "step_title", stepTitle, "visible", prefixEnum.isVisible()));
+		String finishReason = Optional.ofNullable(streamingOutput.chatResponse())
+			.map(ChatResponse::getResult)
+			.map(Generation::getMetadata)
+			.map(ChatGenerationMetadata::getFinishReason)
+			.orElse("");
+		return JSON.toJSONString(Map.of(nodeName, streamingOutput.chatResponse().getResult().getOutput().getText(),
+				"step_title", stepTitle, "visible", prefixEnum.isVisible(), "finishReason", finishReason));
 	}
 
 	private record NodeResponse(String nodeName, String displayTitle, Object content, Object siteInformation) {

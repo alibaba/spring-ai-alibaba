@@ -25,7 +25,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -92,6 +94,30 @@ public class ModelController {
 			errorResult.setValid(false);
 			errorResult.setMessage("验证失败: " + e.getMessage());
 			return ResponseEntity.ok(errorResult);
+		}
+	}
+
+	/**
+	 * Set model as default
+	 */
+	@PostMapping("/{id}/set-default")
+	public ResponseEntity<Map<String, Object>> setDefaultModel(@PathVariable("id") Long modelId) {
+		Map<String, Object> response = new HashMap<>();
+		try {
+			modelService.setDefaultModel(modelId);
+			response.put("success", true);
+			response.put("message", "Model has set to default");
+			return ResponseEntity.ok(response);
+		}
+		catch (RuntimeException e) {
+			response.put("success", false);
+			response.put("message", "Set failed: " + e.getMessage());
+			return ResponseEntity.badRequest().body(response);
+		}
+		catch (Exception e) {
+			response.put("success", false);
+			response.put("message", "Set failed: " + e.getMessage());
+			return ResponseEntity.status(500).body(response);
 		}
 	}
 

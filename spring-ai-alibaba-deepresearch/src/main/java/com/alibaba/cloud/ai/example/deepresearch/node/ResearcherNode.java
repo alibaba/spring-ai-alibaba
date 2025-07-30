@@ -16,25 +16,25 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
-import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
-import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SmartAgentDispatcherService;
+import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
-import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
-import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
-import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SmartAgentSelectionHelperService;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentSelectionResult;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
-import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
+import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.NodeStepTitleUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
+import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
+import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -165,17 +165,18 @@ public class ResearcherNode implements NodeAction {
 				.chatResponse()
 				.doOnError(error -> StateUtil.handleStepError(assignedStep, nodeName, error, logger));
 
-			String prefix = StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix() + "_";
-			String stepTitleKey = prefix + executorNodeId + "_step_title";
-			state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
-			Map<String, Object> inputMap = new HashMap<>();
-			inputMap.put(stepTitleKey, "[并行节点" + executorNodeId + "]" + assignedStep.getTitle());
-			state.input(inputMap);
+			// Add step title
+			boolean isReflectionNode = assignedStep.getReflectionHistory() != null
+					&& !assignedStep.getReflectionHistory().isEmpty();
+			String prefix = isReflectionNode ? StreamNodePrefixEnum.RESEARCHER_REFLECT_LLM_STREAM.getPrefix()
+					: StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix();
+			String nodeNum = NodeStepTitleUtil.registerStepTitle(state, isReflectionNode, executorNodeId, "Researcher",
+					assignedStep.getTitle(), prefix);
 
-			logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, prefix + executorNodeId);
+			logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, nodeName);
 
 			var generator = StreamingChatGenerator.builder()
-				.startingNode(prefix + executorNodeId)
+				.startingNode(nodeNum)
 				.startingState(state)
 				.mapResult(response -> {
 					// Only handle successful responses - errors are handled in doOnError
@@ -188,7 +189,7 @@ public class ResearcherNode implements NodeAction {
 					updated.put("researcher_content_" + executorNodeId, researchContent);
 					return updated;
 				})
-				.build(streamResult);
+				.buildWithChatResponse(streamResult);
 
 			updated.put("researcher_content_" + executorNodeId, generator);
 			return updated;

@@ -28,6 +28,8 @@ import org.springframework.ai.openai.api.OpenAiApi;
 
 public class PythonExecute extends AbstractBaseTool<PythonExecute.PythonInput> {
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger log = LoggerFactory.getLogger(PythonExecute.class);
 
 	/**
@@ -101,6 +103,10 @@ public class PythonExecute extends AbstractBaseTool<PythonExecute.PythonInput> {
 
 	private boolean hasError = false;
 
+	public PythonExecute(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
+
 	@Override
 	public String getCurrentToolStateString() {
 		return String.format("""
@@ -133,7 +139,7 @@ public class PythonExecute extends AbstractBaseTool<PythonExecute.PythonInput> {
 		log.info("PythonExecute toolInput:{}", toolInput);
 		try {
 			// Add exception handling for JSON deserialization
-			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput,
+			Map<String, Object> toolInputMap = objectMapper.readValue(toolInput,
 					new TypeReference<Map<String, Object>>() {
 					});
 			String code = (String) toolInputMap.get("code");
