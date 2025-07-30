@@ -22,7 +22,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author zhangshenghang
