@@ -650,7 +650,7 @@ const words: I18nType = {
 
   // Input component
   input: {
-    placeholder: 'Send a message to JTaskPilot',
+    placeholder: 'Send a message to JManus',
     send: 'Send',
     planMode: 'PLAN-ACT Template Mode',
     waiting: 'Waiting for task completion...',
@@ -840,7 +840,7 @@ const words: I18nType = {
 
   // Home page
   home: {
-    welcomeTitle: 'Welcome to JTaskPilot!',
+    welcomeTitle: 'Welcome to JManus!',
     welcomeSubtitle:
       'Your Java AI intelligent assistant, helping you build and complete various tasks.',
     tagline: 'Java AI Agent',

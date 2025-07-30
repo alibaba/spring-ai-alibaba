@@ -618,7 +618,7 @@ const words: I18nType = {
 
   // 输入组件
   input: {
-    placeholder: '向 JTaskPilot 发送消息',
+    placeholder: '向 JManus 发送消息',
     send: '发送',
     planMode: 'PLAN-ACT计划模式',
     waiting: '等待任务完成...',
@@ -807,7 +807,7 @@ const words: I18nType = {
 
   // 首页
   home: {
-    welcomeTitle: '欢迎使用 JTaskPilot！',
+    welcomeTitle: '欢迎使用 JManus！',
     welcomeSubtitle: '您的 Java AI 智能助手，帮助您构建和完成各种任务。',
     tagline: 'Java AI 智能体',
     inputPlaceholder: '描述您想构建或完成的内容...',
