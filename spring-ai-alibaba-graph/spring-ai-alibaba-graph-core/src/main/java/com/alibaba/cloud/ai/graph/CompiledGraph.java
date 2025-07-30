@@ -907,8 +907,10 @@ public class CompiledGraph {
 				}
 
 				// GUARD: CHECK IF IT IS END
-				if (nextNodeId == null && currentNodeId == null) {
-					return releaseThread().map(Data::<Output>done).orElseGet(() -> Data.done(currentState));
+				if( nextNodeId == null &&  currentNodeId == null  ) {
+					return releaseThread()
+							.map(Data::<Output>done)
+							.orElseGet( () -> Data.done(currentState) );
 				}
 
 				// IS IT A RESUME FROM EMBED ?
@@ -940,6 +942,8 @@ public class CompiledGraph {
 					doListeners(END, null);
 					return Data.of(buildNodeOutput(END));
 				}
+
+
 
 				// check on previous node
 				if (shouldInterruptAfter(currentNodeId, nextNodeId)) {
