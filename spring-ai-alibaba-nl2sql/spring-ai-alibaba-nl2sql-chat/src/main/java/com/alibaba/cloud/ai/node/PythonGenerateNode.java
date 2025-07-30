@@ -118,9 +118,20 @@ public class PythonGenerateNode extends AbstractPlanBasedNode implements NodeAct
 			.chatResponse();
 
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-				"正在生成Python代码...\n```python\n", "\n```\nPython代码生成完成。",
-				aiResponse -> Map.of(PYTHON_GENERATE_NODE_OUTPUT, aiResponse, PYTHON_TRIES_COUNT, triesCount - 1),
-				pythonGenerateFlux, StreamResponseType.PYTHON_GENERATE);
+				"正在生成Python代码...", "Python代码生成完成。", aiResponse -> {
+					// 部分AI模型仍然输出Markdown标记（即使Prompt已经强调了这一点）
+					aiResponse = aiResponse.trim();
+					if (aiResponse.startsWith("```") && aiResponse.endsWith("```")) {
+						if (aiResponse.startsWith("```python")) {
+							aiResponse = aiResponse.substring(9, aiResponse.length() - 3);
+						}
+						else {
+							aiResponse = aiResponse.substring(3, aiResponse.length() - 3);
+						}
+					}
+					log.info("Python Generate Code: {}", aiResponse);
+					return Map.of(PYTHON_GENERATE_NODE_OUTPUT, aiResponse, PYTHON_TRIES_COUNT, triesCount - 1);
+				}, pythonGenerateFlux, StreamResponseType.PYTHON_GENERATE);
 
 		return Map.of(PYTHON_GENERATE_NODE_OUTPUT, generator);
 	}

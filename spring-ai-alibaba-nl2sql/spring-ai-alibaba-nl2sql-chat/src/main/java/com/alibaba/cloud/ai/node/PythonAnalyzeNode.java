@@ -68,7 +68,7 @@ public class PythonAnalyzeNode extends AbstractPlanBasedNode implements NodeActi
 				new HashMap());
 
 		// 加载Python代码生成模板
-		String systemPrompt = PromptConstant.getPythonGeneratorPromptTemplate()
+		String systemPrompt = PromptConstant.getPythonAnalyzePromptTemplate()
 			.render(Map.of("python_output", pythonOutput, "user_query", userQuery));
 
 		Flux<ChatResponse> pythonAnalyzeFlux = chatClient.prompt().system(systemPrompt).stream().chatResponse();

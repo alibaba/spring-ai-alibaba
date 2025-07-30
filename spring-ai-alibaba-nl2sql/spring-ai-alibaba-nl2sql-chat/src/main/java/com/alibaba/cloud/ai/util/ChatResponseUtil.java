@@ -22,6 +22,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author zhangshenghang
@@ -35,6 +36,17 @@ public class ChatResponseUtil {
 	 */
 	public static ChatResponse createCustomStatusResponse(String statusMessage) {
 		return createCustomStatusResponse(statusMessage, StreamResponseType.STATUS);
+	}
+
+	/**
+	 * 部分响应返回一个JSON对象，用String方法会导致JSON字符串再次序列化
+	 * @param data Map对象
+	 * @return ChatResponse 状态响应对象
+	 */
+	public static ChatResponse createObjectStatusResponse(Map<String, Object> data) {
+		AssistantMessage assistantMessage = new AssistantMessage(JsonUtils.toJson(StreamResponseType.STATUS, data));
+		Generation generation = new Generation(assistantMessage);
+		return new ChatResponse(List.of(generation));
 	}
 
 	/**

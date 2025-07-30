@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.service.code.executor.CodePoolExecutorService;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,11 +79,22 @@ public class PythonExecuteNode extends AbstractPlanBasedNode implements NodeActi
 			}
 			log.info("Python Execute Success! StdOut: {}", taskResponse.stdOut());
 
+			// Python代码的输出可能为一个JSON对象，需要将其反序列化，方便前端查看
+			Map<String, Object> stdout;
+			try {
+				stdout = objectMapper.readValue(taskResponse.stdOut(), new TypeReference<Map<String, Object>>() {
+				});
+			}
+			catch (Exception e) {
+				stdout = Map.of("output", taskResponse.stdOut());
+			}
+
 			// Create display flux for user experience only
+			Map<String, Object> finalStdout = stdout;
 			Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
 				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始执行Python代码..."));
 				emitter.next(ChatResponseUtil.createCustomStatusResponse("标准输出：\n```"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse(taskResponse.stdOut()));
+				emitter.next(ChatResponseUtil.createObjectStatusResponse(finalStdout));
 				emitter.next(ChatResponseUtil.createCustomStatusResponse("\n```"));
 				emitter.next(ChatResponseUtil.createCustomStatusResponse("Python代码执行成功！"));
 				emitter.complete();
