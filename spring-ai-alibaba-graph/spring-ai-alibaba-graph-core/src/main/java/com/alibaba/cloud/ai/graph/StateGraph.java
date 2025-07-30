@@ -49,6 +49,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.LinkedHashSet;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+
 /**
  * Represents a state graph with nodes and edges.
  */
@@ -271,21 +273,6 @@ public class StateGraph {
 	}
 
 	/**
-	 * Adds a commandNode to the graph.
-	 * @param id the identifier of the node
-	 * @param action AsyncCommandAction action
-	 * @param mappings the mappings to be used for conditional edges
-	 * @return this state graph instance
-	 * @throws GraphStateException if the node identifier is invalid or the node already
-	 * exists
-	 */
-	public StateGraph addNode(String id, AsyncCommandAction action, Map<String, String> mappings)
-			throws GraphStateException {
-
-		return addNode(id, new CommandNode(id, action, mappings));
-	}
-
-	/**
 	 * Adds a node to the graph.
 	 * @param id the identifier of the node
 	 * @param action the asynchronous node action to be performed by the node
@@ -332,6 +319,20 @@ public class StateGraph {
 
 		nodes.elements.add(node);
 		return this;
+	}
+
+	/**
+	 * Adds node that behave as conditional edges.
+	 * @param id the identifier of the node
+	 * @param action node action to determine the next target node
+	 * @param mappings the mappings of conditions to target nodes
+	 * @throws GraphStateException if the node identifier is invalid, the mappings are
+	 * empty, or the node already exists
+	 */
+	public StateGraph addNode(String id, AsyncCommandAction action, Map<String, String> mappings)
+			throws GraphStateException {
+		// SIMPLER IMPLEMENTATION
+		return addNode(id, (state, config) -> completedFuture(Map.of())).addConditionalEdges(id, action, mappings);
 	}
 
 	/**

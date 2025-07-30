@@ -30,11 +30,11 @@ public interface Serializer<T> {
 
 	T read(ObjectInput in) throws IOException, ClassNotFoundException;
 
-	default String mimeType() {
+	default String contentType() {
 		return "application/octet-stream";
 	}
 
-	default byte[] writeObject(T object) throws IOException {
+	default byte[] objectToBytes(T object) throws IOException {
 		Objects.requireNonNull(object, "object cannot be null");
 		try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
 			ObjectOutputStream oas = new ObjectOutputStream(stream);
@@ -44,7 +44,7 @@ public interface Serializer<T> {
 		}
 	}
 
-	default T readObject(byte[] bytes) throws IOException, ClassNotFoundException {
+	default T bytesToObject(byte[] bytes) throws IOException, ClassNotFoundException {
 		Objects.requireNonNull(bytes, "bytes cannot be null");
 		if (bytes.length == 0) {
 			throw new IllegalArgumentException("bytes cannot be empty");
@@ -53,6 +53,16 @@ public interface Serializer<T> {
 			ObjectInputStream ois = new ObjectInputStream(stream);
 			return read(ois);
 		}
+	}
+
+	@Deprecated(forRemoval = true)
+	default byte[] writeObject(T object) throws IOException {
+		return objectToBytes(object);
+	}
+
+	@Deprecated(forRemoval = true)
+	default T readObject(byte[] bytes) throws IOException, ClassNotFoundException {
+		return bytesToObject(bytes);
 	}
 
 	default T cloneObject(T object) throws IOException, ClassNotFoundException {

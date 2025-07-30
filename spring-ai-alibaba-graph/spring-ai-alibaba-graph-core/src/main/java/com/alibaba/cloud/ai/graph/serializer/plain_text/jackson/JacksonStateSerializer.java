@@ -48,7 +48,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 	}
 
 	@Override
-	public String mimeType() {
+	public String contentType() {
 		return "application/json";
 	}
 
