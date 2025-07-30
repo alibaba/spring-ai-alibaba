@@ -24,19 +24,41 @@
       <button class="message-close" @click="hideMessage">×</button>
     </div>
 
-    <!-- 头部导航 -->
-    <div class="top-nav">
-      <div class="nav-items">
-        <span class="nav-item logo-item">
-          <i class="bi bi-robot"></i>
-          数据智能体
-        </span>
-        <span class="nav-item clickable active" @click="goToAgentList">智能体</span>
-        <span class="nav-item clickable" @click="goToWorkspace">智能体工作台</span>
+    <!-- 现代化头部导航 -->
+    <header class="page-header">
+      <div class="header-content">
+        <div class="brand-section">
+          <div class="brand-logo">
+            <i class="bi bi-robot"></i>
+            <span class="brand-text">智能体管理</span>
+          </div>
+          <nav class="header-nav">
+            <div class="nav-item active" @click="goToAgentList">
+              <i class="bi bi-grid-3x3-gap"></i>
+              <span>智能体列表</span>
+            </div>
+            <div class="nav-item" @click="goToWorkspace">
+              <i class="bi bi-chat-square-dots"></i>
+              <span>工作台</span>
+            </div>
+            <div class="nav-item">
+              <i class="bi bi-graph-up-arrow"></i>
+              <span>分析报告</span>
+            </div>
+          </nav>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline btn-sm">
+            <i class="bi bi-question-circle"></i>
+            帮助
+          </button>
+          <button class="btn btn-primary" @click="goToAgentList">
+            <i class="bi bi-plus-lg"></i>
+            创建智能体
+          </button>
+        </div>
       </div>
-      <div class="nav-right">
-      </div>
-    </div>
+    </header>
 
     <!-- 智能体信息头部 -->
     <div class="agent-header">
@@ -1930,6 +1952,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   height: 60px;
+  max-width: 100%;
 }
 
 .nav-items {
@@ -1990,6 +2013,7 @@ export default {
 .container {
   width: 100%;
   padding: 0 1rem;
+  max-width: 100%;
 }
 
 .header-content {
@@ -2080,6 +2104,7 @@ export default {
 /* 主要内容区域样式 */
 .main-content {
   padding: 1rem 0;
+  max-width: 100%;
 }
 
 .content-layout {
