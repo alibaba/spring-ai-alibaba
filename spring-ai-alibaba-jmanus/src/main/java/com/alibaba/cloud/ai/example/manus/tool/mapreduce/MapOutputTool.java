@@ -186,22 +186,17 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	// 共享状态管理器，用于管理多个Agent实例间的共享状态
 	private MapReduceSharedStateManager sharedStateManager;
 
-	// Class-level terminate columns configuration - takes precedence over input
-	// parameters
-	private List<String> terminateColumns;
 
 	// Track if map output recording has completed, allowing termination
 	private volatile boolean mapOutputRecorded = false;
 
 	private final ObjectMapper objectMapper;
 
-	// Main constructor with List<String> terminateColumns
 	public MapOutputTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
-			UnifiedDirectoryManager unifiedDirectoryManager, List<String> terminateColumns, ObjectMapper objectMapper) {
+			UnifiedDirectoryManager unifiedDirectoryManager,  ObjectMapper objectMapper) {
 		this.currentPlanId = planId;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
-		this.terminateColumns = terminateColumns;
 		this.objectMapper = objectMapper;
 	}
 

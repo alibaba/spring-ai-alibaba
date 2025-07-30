@@ -22,8 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,13 +30,10 @@ import java.util.Map;
 /**
  * LLM form input tool: supports multiple input items with labels and descriptions.
  */
-@Component
 public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput> {
 
 	private final ObjectMapper objectMapper;
-
-	@Autowired
-	private PromptService promptService;
+	private final PromptService promptService;
 
 	private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
 
@@ -182,8 +177,9 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	}
 
-	public FormInputTool(ObjectMapper objectMapper) {
+	public FormInputTool(ObjectMapper objectMapper, PromptService promptService) {
 		this.objectMapper = objectMapper;
+		this.promptService = promptService;
 	}
 
 	public enum InputState {
