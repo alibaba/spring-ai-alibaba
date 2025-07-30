@@ -418,6 +418,7 @@ const SUB_GROUP_DISPLAY_NAMES: Record<string, string> = {
   'infiniteContext': ('config.subGroupDisplayNames.infiniteContext'), 
   'general': ('config.subGroupDisplayNames.general'), 
   'filesystem': ('config.subGroupDisplayNames.filesystem'), 
+  'mcpServiceLoader': ('config.subGroupDisplayNames.mcpServiceLoader'), 
 }
 
 // Computed property: Whether there are changes
