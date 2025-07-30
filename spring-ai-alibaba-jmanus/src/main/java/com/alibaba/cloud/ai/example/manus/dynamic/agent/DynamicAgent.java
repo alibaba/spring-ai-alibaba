@@ -53,12 +53,7 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -199,7 +194,7 @@ public class DynamicAgent extends ReActAgent {
 				.stream()
 				.chatResponse();
 			streamResult = streamingResponseHandler.processStreamingResponse(responseFlux,
-					"Agent " + getName() + " thinking");
+					"Agent " + getName() + " thinking", getCurrentPlanId());
 
 			response = streamResult.getLastResponse();
 			String modelName = response.getMetadata().getModel();
