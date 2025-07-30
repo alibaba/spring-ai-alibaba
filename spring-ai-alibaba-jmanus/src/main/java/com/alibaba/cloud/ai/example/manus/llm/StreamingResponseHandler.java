@@ -15,28 +15,22 @@
  */
 package com.alibaba.cloud.ai.example.manus.llm;
 
+import com.alibaba.cloud.ai.example.manus.event.JmanusEventPublisher;
+import com.alibaba.cloud.ai.example.manus.event.PlanExceptionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.EmptyRateLimit;
-import org.springframework.ai.chat.metadata.PromptMetadata;
-import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.metadata.*;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -50,6 +44,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public class StreamingResponseHandler {
 
 	private static final Logger log = LoggerFactory.getLogger(StreamingResponseHandler.class);
+
+	@Autowired
+	private JmanusEventPublisher jmanusEventPublisher;
 
 	/**
 	 * Result container for streaming response processing
@@ -95,7 +92,8 @@ public class StreamingResponseHandler {
 	 * "Plan creation")
 	 * @return StreamingResult containing merged content and the last response
 	 */
-	public StreamingResult processStreamingResponse(Flux<ChatResponse> responseFlux, String contextName) {
+	public StreamingResult processStreamingResponse(Flux<ChatResponse> responseFlux, String contextName,
+			String planId) {
 		AtomicReference<Long> lastLogTime = new AtomicReference<>(System.currentTimeMillis());
 
 		// Assistant Message
@@ -213,7 +211,10 @@ public class StreamingResponseHandler {
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
-		}).doOnError(e -> log.error("Aggregation Error", e)).blockLast();
+		}).doOnError(e -> {
+			// log.error("Aggregation Error", e);
+			jmanusEventPublisher.publish(new PlanExceptionEvent(planId, e));
+		}).blockLast();
 
 		return new StreamingResult(finalChatResponseRef.get());
 	}
@@ -224,8 +225,8 @@ public class StreamingResponseHandler {
 	 * @param contextName A descriptive name for logging context
 	 * @return The merged text content
 	 */
-	public String processStreamingTextResponse(Flux<ChatResponse> responseFlux, String contextName) {
-		StreamingResult result = processStreamingResponse(responseFlux, contextName);
+	public String processStreamingTextResponse(Flux<ChatResponse> responseFlux, String contextName, String planId) {
+		StreamingResult result = processStreamingResponse(responseFlux, contextName, planId);
 		return result.getEffectiveText();
 	}
 

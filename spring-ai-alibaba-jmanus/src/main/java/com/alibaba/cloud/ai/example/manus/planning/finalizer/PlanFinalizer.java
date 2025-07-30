@@ -100,7 +100,8 @@ public class PlanFinalizer {
 
 			// Use streaming response handler for summary generation
 			Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
-			String summary = streamingResponseHandler.processStreamingTextResponse(responseFlux, "Summary generation");
+			String summary = streamingResponseHandler.processStreamingTextResponse(responseFlux, "Summary generation",
+					context.getCurrentPlanId());
 			context.setResultSummary(summary);
 
 			recordPlanCompletion(context, summary);
@@ -163,7 +164,7 @@ public class PlanFinalizer {
 			// Use streaming response handler for direct response generation
 			Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
 			String directResponse = streamingResponseHandler.processStreamingTextResponse(responseFlux,
-					"Direct response");
+					"Direct response", context.getCurrentPlanId());
 			context.setResultSummary(directResponse);
 
 			recordPlanCompletion(context, directResponse);
