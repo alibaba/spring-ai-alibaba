@@ -39,7 +39,7 @@
           </nav>
         </div>
         <div class="header-actions">
-          <button class="btn btn-outline btn-sm">
+          <button class="btn btn-outline">
             <i class="bi bi-question-circle"></i>
             帮助
           </button>
@@ -765,28 +765,7 @@ export default {
   gap: var(--space-md);
 }
 
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-}
 
-.btn-outline {
-  background-color: transparent;
-  border: 1px solid #d9d9d9;
-  color: #666;
-}
-
-.btn-outline:hover {
-  border-color: #1890ff;
-  color: #1890ff;
-}
 
 /* 主要内容区域 */
 .main-content {

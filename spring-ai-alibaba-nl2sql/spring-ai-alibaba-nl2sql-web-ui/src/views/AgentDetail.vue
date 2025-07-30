@@ -48,7 +48,7 @@
           </nav>
         </div>
         <div class="header-actions">
-          <button class="btn btn-outline btn-sm">
+          <button class="btn btn-outline">
             <i class="bi bi-question-circle"></i>
             帮助
           </button>
@@ -2234,22 +2234,43 @@ export default {
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  color: #333;
+  gap: var(--space-base);
+  padding: var(--space-base) var(--space-md);
+  color: var(--text-primary);
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
+  border-radius: var(--radius-base);
+  margin: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  position: relative;
+  border: 1px solid transparent;
 }
 
 .nav-link:hover {
-  background: #f5f5f5;
-  color: #1890ff;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+  transform: translateX(2px);
 }
 
 .nav-link.active {
-  background: #e6f7ff;
-  color: #1890ff;
-  border-right: 3px solid #1890ff;
+  background: linear-gradient(135deg, var(--primary-light), var(--accent-light));
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .nav-link i {
@@ -3023,12 +3044,6 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .batch-actions {

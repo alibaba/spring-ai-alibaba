@@ -39,7 +39,7 @@
           </nav>
         </div>
         <div class="header-actions">
-          <button class="btn btn-outline btn-sm">
+          <button class="btn btn-outline">
             <i class="bi bi-question-circle"></i>
             帮助
           </button>
