@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "inputs": {
+      "type": "array",
+      "description": "输入项列表，每项包含 label 和 value 字段",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string", "description": "输入项标签" },
+          "value": { "type": "string", "description": "输入内容" }
+        },
+        "required": ["label"]
+      }
+    },
+    "description": {
+      "type": "string",
+      "description": "如何填写这些输入项的说明"
+    }
+  },
+  "required": [ "description"]
+}

@@ -16,26 +16,22 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.prompt.controller;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptDataInitializer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/admin/prompts")
-@Profile("dev")
 public class PromptAdminController {
 
 	@Autowired
 	private PromptService promptService;
-
-	@Autowired
-	private PromptDataInitializer promptDataInitializer;
 
 	@PostMapping("/reinitialize")
 	@GetMapping
@@ -47,6 +43,44 @@ public class PromptAdminController {
 		catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body("Error reinitializing prompts: " + e.getMessage());
+		}
+	}
+
+	@PostMapping("/switch-language")
+	public ResponseEntity<String> switchLanguage(@RequestParam String language) {
+		try {
+			String[] supportedLanguages = promptService.getSupportedLanguages();
+			boolean isSupported = false;
+			for (String supportedLang : supportedLanguages) {
+				if (supportedLang.equals(language)) {
+					isSupported = true;
+					break;
+				}
+			}
+
+			if (!isSupported) {
+				return ResponseEntity.badRequest()
+					.body("Unsupported language: " + language + ". Supported languages: "
+							+ String.join(", ", supportedLanguages));
+			}
+
+			promptService.importAllPromptsFromLanguage(language);
+			return ResponseEntity.ok("All prompts switched to language: " + language + " successfully.");
+		}
+		catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body("Error switching language: " + e.getMessage());
+		}
+	}
+
+	@GetMapping("/supported-languages")
+	public ResponseEntity<String[]> getSupportedLanguages() {
+		try {
+			String[] languages = promptService.getSupportedLanguages();
+			return ResponseEntity.ok(languages);
+		}
+		catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 	}
 

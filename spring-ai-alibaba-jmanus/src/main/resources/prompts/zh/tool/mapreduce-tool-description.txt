@@ -1,0 +1,1 @@
+MapReduce计划工具，用于管理支持顺序和MapReduce模式的复杂任务执行计划，MapReduce模式包含数据准备（DataPrepared）、Map和Reduce三个阶段
