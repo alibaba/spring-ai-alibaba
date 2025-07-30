@@ -22,6 +22,8 @@ import java.util.List;
 
 /**
  * Configuration properties for Redis chat memory.
+ * @author Jast
+ * @author benym
  */
 @ConfigurationProperties(prefix = "spring.ai.memory.redis")
 public class RedisChatMemoryProperties {
@@ -35,6 +37,11 @@ public class RedisChatMemoryProperties {
 	 * Redis server port.
 	 */
 	private int port = 6379;
+
+	/**
+	 * Redis server username.
+	 */
+	private String username;
 
 	/**
 	 * Redis server password.
@@ -70,6 +77,14 @@ public class RedisChatMemoryProperties {
 
 	public void setPort(int port) {
 		this.port = port;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
 	}
 
 	public String getPassword() {
@@ -129,11 +144,20 @@ public class RedisChatMemoryProperties {
 	 * Cluster properties
 	 */
 	public static class Cluster {
+
 		/**
 		 * List of "host:port" pairs to bootstrap from. This represents an "initial" list
 		 * of cluster nodes and is required to have at least one entry.
 		 */
 		private List<String> nodes;
+
+		public List<String> getNodes() {
+			return nodes;
+		}
+
+		public void setNodes(List<String> nodes) {
+			this.nodes = nodes;
+		}
 	}
 
 }
