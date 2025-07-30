@@ -18,6 +18,7 @@
 import { defineStore } from 'pinia'
 import { type MessageInfo, type SimpleType } from 'ant-design-x-vue'
 import { reactive } from 'vue'
+import { initial } from 'lodash'
 type MsgType<Message> = {
   convId: string
   currentState: {

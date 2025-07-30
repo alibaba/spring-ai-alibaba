@@ -34,15 +34,22 @@ export const useConversationStore = () =>
       curConvKey: state => state.conversations[state.current]?.key,
     },
     actions: {
-      newOne() {
+      newOne(firstMessage: any) {
         const newVar = {
           key: v4(),
-          title: 'Unnamed conversation',
+          title: firstMessage || 'Unnamed conversation',
           messages: null,
         }
         this.conversations = [...this.conversations, newVar]
         this.current++
         return newVar
+      },
+      updateTitle(key: any, title: any) {
+        this.conversations.map((item: any) => {
+          if (item.key === key && item.title === 'Unnamed conversation') {
+            item.title = title
+          }
+        })
       },
       delete(key: any) {
         this.conversations = this.conversations.filter((item: any) => {
