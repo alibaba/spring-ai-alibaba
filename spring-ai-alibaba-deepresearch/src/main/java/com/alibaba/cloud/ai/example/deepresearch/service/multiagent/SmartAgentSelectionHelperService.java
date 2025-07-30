@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.service.mutiagent;
+package com.alibaba.cloud.ai.example.deepresearch.service.multiagent;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
-import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentDispatchResult;
-import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentSelectionResult;
-import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentType;
+import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentDispatchResult;
+import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentSelectionResult;
+import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
 import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;

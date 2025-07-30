@@ -28,6 +28,7 @@ interface EventCallbacks {
   onDialogRoundStart?: (rootPlanId: string) => void
   onChatInputUpdateState?: (rootPlanId: string) => void
   onChatInputClear?: () => void
+  onPlanError?: (message: string) => void
 }
 
 interface ExecutionState {
@@ -316,6 +317,28 @@ export class PlanExecutionManager {
     }
   }
 
+  private handlePlanError(details: PlanExecutionRecord): void {
+    this.emitPlanError(details.message ?? "");
+    this.state.lastSequenceSize = 0
+    this.stopPolling()
+
+    // Delay deletion of plan execution record
+    try {
+      setTimeout(async () => {
+        if (this.state.activePlanId) {
+          try {
+            await PlanActApiService.deletePlanTemplate(this.state.activePlanId)
+            console.log(`[PlanExecutionManager] Plan template ${this.state.activePlanId} deleted successfully`)
+          } catch (error: any) {
+            console.log(`Delete plan execution record failed: ${error.message}`)
+          }
+        }
+      }, 5000)
+    } catch (error: any) {
+      console.log(`Delete plan execution record failed: ${error.message}`)
+    }
+  }
+
   /**
    * Poll plan execution status
    */
@@ -338,6 +361,11 @@ export class PlanExecutionManager {
       if (!details) {
         console.warn('[PlanExecutionManager] No details received from API')
         return
+      }
+
+      if(details.status && details.status === 'failed'){
+        this.handlePlanError(details)
+        return;
       }
 
       // Update cache with latest plan details if rootPlanId exists
@@ -382,7 +410,11 @@ export class PlanExecutionManager {
       return details
     } catch (error: any) {
       console.error('[PlanExecutionManager] Failed to get plan details:', error)
-      return null
+      return {
+        currentPlanId: planId,
+        status: 'failed',
+        message: error instanceof Error ? error.message : 'Failed to get plan'
+      }
     }
   }
 
@@ -461,6 +493,12 @@ export class PlanExecutionManager {
   private emitPlanCompleted(rootPlanId: string): void {
     if (this.callbacks.onPlanCompleted) {
       this.callbacks.onPlanCompleted(rootPlanId)
+    }
+  }
+
+  private emitPlanError(message: string): void {
+    if (this.callbacks.onPlanError) {
+      this.callbacks.onPlanError(message)
     }
   }
 }

@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.graph.async.internal.UnmodifiableDeque;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -42,6 +42,20 @@ public interface AsyncGenerator<E> extends Iterable<E>, AsyncGeneratorOperators<
 
 		Optional<Object> resultValue();
 
+	}
+
+	static Optional<Object> resultValue(AsyncGenerator<?> generator) {
+		if (generator instanceof HasResultValue withResult) {
+			return withResult.resultValue();
+		}
+		return Optional.empty();
+	}
+
+	static Optional<Object> resultValue(Iterator<?> iterator) {
+		if (iterator instanceof HasResultValue withResult) {
+			return withResult.resultValue();
+		}
+		return Optional.empty();
 	}
 
 	/**
@@ -389,55 +403,44 @@ public interface AsyncGenerator<E> extends Iterable<E>, AsyncGeneratorOperators<
 
 }
 
-class InternalIterator<E> implements Iterator<E> {
+class InternalIterator<E> implements Iterator<E>, AsyncGenerator.HasResultValue {
 
 	private final AsyncGenerator<E> delegate;
 
-	private AsyncGenerator.Data<E> currentFetchedData;
-
-	private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
-
-	private final ReentrantReadWriteLock.ReadLock r = rwl.readLock();
-
-	private final ReentrantReadWriteLock.WriteLock w = rwl.writeLock();
+	final AtomicReference<AsyncGenerator.Data<E>> currentFetchedData;
 
 	public InternalIterator(AsyncGenerator<E> delegate) {
 		this.delegate = delegate;
-		currentFetchedData = delegate.next();
+		currentFetchedData = new AtomicReference<>(delegate.next());
 	}
 
 	@Override
 	public boolean hasNext() {
-		try {
-			r.lock();
-			final AsyncGenerator.Data<E> value = currentFetchedData;
-			return value != null && !value.isDone();
-		}
-		finally {
-			r.unlock();
-		}
+		final var value = currentFetchedData.get();
+		return value != null && !value.isDone();
 	}
 
 	@Override
 	public E next() {
-		try {
-			w.lock();
+		var next = currentFetchedData.get();
 
-			AsyncGenerator.Data<E> next = currentFetchedData;
-
-			if (next == null || next.isDone()) {
-				throw new IllegalStateException("no more elements into iterator");
-			}
-
-			if (!next.isError()) {
-				currentFetchedData = delegate.next();
-			}
-
-			return next.data.join();
+		if (next == null || next.isDone()) {
+			throw new IllegalStateException("no more elements into iterator");
 		}
-		finally {
-			w.unlock();
+
+		if (!next.isError()) {
+			currentFetchedData.set(delegate.next());
 		}
+
+		return next.data.join();
+	}
+
+	@Override
+	public Optional<Object> resultValue() {
+		if (delegate instanceof AsyncGenerator.HasResultValue withResult) {
+			return withResult.resultValue();
+		}
+		return Optional.empty();
 	}
 
 };

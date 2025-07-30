@@ -15,14 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.utils;
 
-import java.util.AbstractMap;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -34,6 +27,27 @@ import static java.util.Collections.unmodifiableMap;
  * Utility class for creating collections.
  */
 public final class CollectionsUtils {
+
+	public static String toString(Collection<?> collection) {
+		if (collection.isEmpty()) {
+			return "[]";
+		}
+		return collection.stream().map(Objects::toString).collect(Collectors.joining("\n\t", "[\n\t", "\n\t]"));
+
+	}
+
+	public static String toString(Map<?, ?> map) {
+		if (map.isEmpty()) {
+			return "{}";
+		}
+		return map.entrySet().stream().map(entry -> {
+			if (entry.getValue() instanceof Collection<?> elements) {
+				return String.format("%s=%s", entry.getKey(), toString(elements));
+			}
+			return Objects.toString(entry);
+		}).collect(Collectors.joining("\n\t", "{\n\t", "\n\t}"));
+
+	}
 
 	/**
 	 * Returns the last value in the list, if present.

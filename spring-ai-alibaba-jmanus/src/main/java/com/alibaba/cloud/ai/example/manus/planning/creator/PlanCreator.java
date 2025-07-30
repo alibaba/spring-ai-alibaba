@@ -117,7 +117,7 @@ public class PlanCreator {
 					// Use streaming response handler for plan creation
 					Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
 					String planCreationText = streamingResponseHandler.processStreamingTextResponse(responseFlux,
-							"Plan creation");
+							"Plan creation", context.getCurrentPlanId());
 					outputText = planCreationText;
 
 					executionPlan = planningTool.getCurrentPlan();
