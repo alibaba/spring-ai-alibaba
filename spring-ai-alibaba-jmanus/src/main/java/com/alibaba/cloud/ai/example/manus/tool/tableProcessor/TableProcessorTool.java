@@ -18,12 +18,9 @@ package com.alibaba.cloud.ai.example.manus.tool.tableProcessor;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +45,8 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 
 		private List<String> headers;
 
-		private List<String> data;
+		@com.fasterxml.jackson.annotation.JsonProperty("multiple_rows_data")
+		private List<List<String>> multipleRowsData;
 
 		private List<String> keywords;
 
@@ -90,12 +88,12 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 			this.headers = headers;
 		}
 
-		public List<String> getData() {
-			return data;
+		public List<List<String>> getMultipleRowsData() {
+			return multipleRowsData;
 		}
 
-		public void setData(List<String> data) {
-			this.data = data;
+		public void setMultipleRowsData(List<List<String>> multipleRowsData) {
+			this.multipleRowsData = multipleRowsData;
 		}
 
 		public List<String> getKeywords() {
@@ -117,11 +115,8 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 
 	private final TableProcessingService tableProcessingService;
 
-	private final ObjectMapper objectMapper;
-
-	public TableProcessorTool(TableProcessingService tableProcessingService, ObjectMapper objectMapper) {
+	public TableProcessorTool(TableProcessingService tableProcessingService) {
 		this.tableProcessingService = tableProcessingService;
-		this.objectMapper = objectMapper;
 	}
 
 	private final String PARAMETERS = """
@@ -173,35 +168,13 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 				  "properties": {
 					"action": {
 					  "type": "string",
-					  "const": "write_data"
-					},
-					"file_path": {
-					  "type": "string",
-					  "description": "表格文件路径"
-					},
-					"data": {
-					  "type": "array",
-					  "items": {
-						"type": "string"
-					  },
-					  "description": "要写入的数据列表，必须与表头数量一致"
-					}
-				  },
-				  "required": ["action", "file_path", "data"],
-				  "additionalProperties": false
-				},
-				{
-				  "type": "object",
-				  "properties": {
-					"action": {
-					  "type": "string",
 					  "const": "write_multiple_rows"
 					},
 					"file_path": {
 					  "type": "string",
 					  "description": "表格文件路径"
 					},
-					"data": {
+					"multiple_rows_data": {
 					  "type": "array",
 					  "items": {
 						"type": "array",
@@ -212,7 +185,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					  "description": "要写入的多行数据列表，每行数据必须与表头数量一致"
 					}
 				  },
-				  "required": ["action", "file_path", "data"],
+				  "required": ["action", "file_path", "multiple_rows_data"],
 				  "additionalProperties": false
 				},
 				{
@@ -270,7 +243,6 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 			支持的操作：
 			- create_table: 创建新表格，接受文件路径、工作表名和表头列表作为参数，自动添加ID列为第一列
 			- get_structure: 获取表格结构（表头信息）
-			- write_data: 将单行数据写入表格，要求数据列数与表头一致
 			- write_multiple_rows: 将多行数据写入表格，要求每行数据列数与表头一致
 			- search_rows: 根据关键词组在表格中查找匹配行
 			- delete_rows: 根据行索引列表删除指定行
@@ -289,87 +261,6 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 		return functionTool;
 	}
 
-	public ToolExecuteResult run(String toolInput) {
-		log.info("TableProcessorTool toolInput:{}", toolInput);
-		try {
-			Map<String, Object> toolInputMap = objectMapper.readValue(toolInput,
-					new TypeReference<Map<String, Object>>() {
-					});
-			String planId = this.currentPlanId;
-
-			String action = (String) toolInputMap.get("action");
-			String filePath = (String) toolInputMap.get("file_path");
-
-			// Basic parameter validation
-			if (action == null) {
-				return new ToolExecuteResult("错误：action参数是必需的");
-			}
-			if (filePath == null) {
-				return new ToolExecuteResult("错误：file_path参数是必需的");
-			}
-
-			return switch (action) {
-				case "create_table" -> {
-					List<String> headers = (List<String>) toolInputMap.get("headers");
-					String tableName = (String) toolInputMap.get("table_name");
-
-					if (headers == null) {
-						yield new ToolExecuteResult("错误：create_table操作需要headers参数");
-					}
-
-					yield createTable(planId, filePath, tableName, headers);
-				}
-				case "get_structure" -> getTableStructure(planId, filePath);
-				case "write_data" -> {
-					List<String> data = (List<String>) toolInputMap.get("data");
-
-					if (data == null) {
-						yield new ToolExecuteResult("错误：write_data操作需要data参数");
-					}
-
-					yield writeDataToTable(planId, filePath, data);
-				}
-				case "write_multiple_rows" -> {
-					List<List<String>> data = (List<List<String>>) toolInputMap.get("data");
-
-					if (data == null) {
-						yield new ToolExecuteResult("错误：write_multiple_rows操作需要data参数");
-					}
-
-					yield writeMultipleRowsToTable(planId, filePath, data);
-				}
-				case "search_rows" -> {
-					List<String> keywords = (List<String>) toolInputMap.get("keywords");
-
-					if (keywords == null) {
-						yield new ToolExecuteResult("错误：search_rows操作需要keywords参数");
-					}
-
-					yield searchRows(planId, filePath, keywords);
-				}
-				case "delete_rows" -> {
-					List<Integer> rowIndices = (List<Integer>) toolInputMap.get("row_indices");
-
-					if (rowIndices == null) {
-						yield new ToolExecuteResult("错误：delete_rows操作需要row_indices参数");
-					}
-
-					yield deleteRowsByList(planId, filePath, rowIndices);
-				}
-				default -> {
-					tableProcessingService.updateFileState(planId, filePath, "Error: Unknown action");
-					yield new ToolExecuteResult(
-							"未知操作: " + action + "。支持的操作: create_table, get_structure, write_data, search_rows, delete_rows");
-				}
-			};
-		}
-		catch (Exception e) {
-			String planId = this.currentPlanId;
-			tableProcessingService.updateFileState(planId, tableProcessingService.getCurrentFilePath(planId),
-					"Error: " + e.getMessage());
-			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
-		}
-	}
 
 	/**
 	 * 执行表格处理操作，接受强类型输入对象
@@ -402,14 +293,14 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					yield createTable(planId, filePath, tableName, headers);
 				}
 				case "get_structure" -> getTableStructure(planId, filePath);
-				case "write_data" -> {
-					List<String> data = input.getData();
-
-					if (data == null) {
-						yield new ToolExecuteResult("错误：write_data操作需要data参数");
+				case "write_multiple_rows" -> {
+					// Get data as 2D array
+					List<List<String>> multipleRows = input.getMultipleRowsData();
+					if (multipleRows == null) {
+						yield new ToolExecuteResult("错误：write_multiple_rows操作需要multiple_rows_data参数（二维数组格式）");
 					}
 
-					yield writeDataToTable(planId, filePath, data);
+					yield writeMultipleRowsToTable(planId, filePath, multipleRows);
 				}
 				case "search_rows" -> {
 					List<String> keywords = input.getKeywords();
@@ -432,7 +323,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 				default -> {
 					tableProcessingService.updateFileState(planId, filePath, "Error: Unknown action");
 					yield new ToolExecuteResult(
-							"未知操作: " + action + "。支持的操作: create_table, get_structure, write_data, search_rows, delete_rows");
+							"未知操作: " + action + "。支持的操作: create_table, get_structure, write_multiple_rows, search_rows, delete_rows");
 				}
 			};
 		}
@@ -470,17 +361,6 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 		catch (IOException e) {
 			tableProcessingService.updateFileState(planId, filePath, "Error: " + e.getMessage());
 			return new ToolExecuteResult("获取表结构失败: " + e.getMessage());
-		}
-	}
-
-	private ToolExecuteResult writeDataToTable(String planId, String filePath, List<String> data) {
-		try {
-			tableProcessingService.writeDataToTable(planId, filePath, data);
-			return new ToolExecuteResult("数据写入成功");
-		}
-		catch (IOException e) {
-			tableProcessingService.updateFileState(planId, filePath, "Error: " + e.getMessage());
-			return new ToolExecuteResult("写入数据失败: " + e.getMessage());
 		}
 	}
 

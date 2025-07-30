@@ -6,6 +6,7 @@ availableToolKeys:
   - terminate
   - inner_storage_content_tool
   - file_merge_tool
+  - text_file_operator
 
 # 下一步提示配置
 nextStepPrompt: |
