@@ -72,52 +72,48 @@
 
       <!-- 过滤和搜索区域 -->
       <div class="filter-section">
-        <div class="filter-tabs">
-          <button class="filter-tab" :class="{ active: activeFilter === 'all' }" @click="setFilter('all')">
-            <i class="bi bi-grid-3x3-gap"></i>
-            <span>全部智能体</span>
-            <span class="tab-count">{{ agents.length }}</span>
-          </button>
-          <button class="filter-tab" :class="{ active: activeFilter === 'published' }" @click="setFilter('published')">
-            <i class="bi bi-check-circle"></i>
-            <span>已发布</span>
-            <span class="tab-count">{{ agents.filter(a => a.status === 'published').length }}</span>
-          </button>
-          <button class="filter-tab" :class="{ active: activeFilter === 'draft' }" @click="setFilter('draft')">
-            <i class="bi bi-pencil-square"></i>
-            <span>草稿</span>
-            <span class="tab-count">{{ agents.filter(a => a.status === 'draft').length }}</span>
-          </button>
-          <button class="filter-tab" :class="{ active: activeFilter === 'offline' }" @click="setFilter('offline')">
-            <i class="bi bi-pause-circle"></i>
-            <span>已下线</span>
-            <span class="tab-count">{{ agents.filter(a => a.status === 'offline').length }}</span>
-          </button>
-        </div>
-
-        <div class="search-and-actions">
-          <div class="search-box">
-            <i class="search-icon bi bi-search"></i>
-            <input 
-              type="text" 
-              v-model="searchKeyword" 
-              class="form-control"
-              placeholder="搜索智能体名称、ID或描述..." 
-              @input="searchAgents"
-            >
-            <button 
-              v-if="searchKeyword"
-              class="clear-btn"
-              @click="searchKeyword = ''"
-            >
-              <i class="bi bi-x"></i>
+        <div class="filter-tabs-row">
+          <div class="filter-tabs">
+            <button class="filter-tab" :class="{ active: activeFilter === 'all' }" @click="setFilter('all')">
+              <i class="bi bi-grid-3x3-gap"></i>
+              <span>全部智能体</span>
+              <span class="tab-count">{{ agents.length }}</span>
+            </button>
+            <button class="filter-tab" :class="{ active: activeFilter === 'published' }" @click="setFilter('published')">
+              <i class="bi bi-check-circle"></i>
+              <span>已发布</span>
+              <span class="tab-count">{{ agents.filter(a => a.status === 'published').length }}</span>
+            </button>
+            <button class="filter-tab" :class="{ active: activeFilter === 'draft' }" @click="setFilter('draft')">
+              <i class="bi bi-pencil-square"></i>
+              <span>草稿</span>
+              <span class="tab-count">{{ agents.filter(a => a.status === 'draft').length }}</span>
+            </button>
+            <button class="filter-tab" :class="{ active: activeFilter === 'offline' }" @click="setFilter('offline')">
+              <i class="bi bi-pause-circle"></i>
+              <span>已下线</span>
+              <span class="tab-count">{{ agents.filter(a => a.status === 'offline').length }}</span>
             </button>
           </div>
-          <div class="action-buttons">
-            <button class="btn btn-outline" @click="refreshAgentList">
-              <i class="bi bi-arrow-clockwise"></i>
-              刷新
-            </button>
+
+          <div class="search-and-actions">
+            <div class="search-box">
+              <i class="search-icon bi bi-search"></i>
+              <input 
+                type="text" 
+                v-model="searchKeyword" 
+                class="form-control"
+                placeholder="搜索智能体名称、ID或描述..." 
+                @input="searchAgents"
+                @keyup.enter="refreshAgentList"
+              >
+            </div>
+            <div class="action-buttons">
+              <button class="btn btn-outline" @click="refreshAgentList">
+                <i class="bi bi-search"></i>
+                搜索
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -705,13 +701,20 @@ export default {
   border: 1px solid var(--border-secondary);
 }
 
+.filter-tabs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
 .filter-tabs {
   display: flex;
   gap: var(--space-xs);
-  margin-bottom: var(--space-md);
   background: var(--bg-secondary);
   padding: var(--space-xs);
   border-radius: var(--radius-md);
+  flex-shrink: 0;
 }
 
 .filter-tab {
@@ -762,20 +765,20 @@ export default {
 
 .search-and-actions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: var(--space-lg);
+  gap: var(--space-md);
+  flex-shrink: 0;
 }
 
 .search-box {
   position: relative;
-  flex: 1;
-  max-width: 400px;
+  width: 300px;
 }
 
 .action-buttons {
   display: flex;
   gap: var(--space-md);
+  flex-shrink: 0;
 }
 
 /* 智能体网格 */
