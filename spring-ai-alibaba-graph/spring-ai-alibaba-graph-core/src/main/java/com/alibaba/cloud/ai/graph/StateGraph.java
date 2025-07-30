@@ -320,19 +320,21 @@ public class StateGraph {
 		nodes.elements.add(node);
 		return this;
 	}
+
 	/**
 	 * Adds node that behave as conditional edges.
-	 *
-	 * @param id  the identifier of the  node
+	 * @param id the identifier of the node
 	 * @param action node action to determine the next target node
-	 * @param mappings  the mappings of conditions to target nodes
-	 * @throws GraphStateException if the node identifier is invalid, the mappings are empty, or the node already exists
+	 * @param mappings the mappings of conditions to target nodes
+	 * @throws GraphStateException if the node identifier is invalid, the mappings are
+	 * empty, or the node already exists
 	 */
-	public StateGraph addNode(String id, AsyncCommandAction action, Map<String, String> mappings) throws GraphStateException {
+	public StateGraph addNode(String id, AsyncCommandAction action, Map<String, String> mappings)
+			throws GraphStateException {
 		// SIMPLER IMPLEMENTATION
-		return addNode( id, ( state, config ) -> completedFuture(Map.of()) )
-				.addConditionalEdges( id, action, mappings );
+		return addNode(id, (state, config) -> completedFuture(Map.of())).addConditionalEdges(id, action, mappings);
 	}
+
 	/**
 	 * Adds a subgraph to the state graph by creating a node with the specified
 	 * identifier. This implies that the subgraph shares the same state with the parent

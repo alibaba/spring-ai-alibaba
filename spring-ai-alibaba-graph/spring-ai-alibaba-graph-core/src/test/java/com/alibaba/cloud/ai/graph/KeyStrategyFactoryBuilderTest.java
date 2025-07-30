@@ -13,29 +13,28 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static org.junit.jupiter.api.Assertions.*;
 
 class KeyStrategyFactoryBuilderTest {
-    private static final Logger log = LoggerFactory.getLogger(KeyStrategyFactoryBuilderTest.class);
 
-    @Test
-    void buildTest() throws Exception {
-        KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
-                .defaultStrategy(KeyStrategy.REPLACE)
-                .addStrategy("prop1")
-                .build();
-        StateGraph workflow = new StateGraph(keyStrategyFactory)
-                .addEdge(START, "agent_1")
-                .addNode("agent_1", node_async(state -> {
-                    log.info("agent_1\n{}", state);
-                    return Map.of("prop1", "test");
-                }))
-                .addEdge("agent_1", END);
+	private static final Logger log = LoggerFactory.getLogger(KeyStrategyFactoryBuilderTest.class);
 
-        CompiledGraph app = workflow.compile();
+	@Test
+	void buildTest() throws Exception {
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().defaultStrategy(KeyStrategy.REPLACE)
+			.addStrategy("prop1")
+			.build();
+		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
+			.addNode("agent_1", node_async(state -> {
+				log.info("agent_1\n{}", state);
+				return Map.of("prop1", "test");
+			}))
+			.addEdge("agent_1", END);
 
-        Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
-        System.out.println("result = " + result);
-        assertTrue(result.isPresent());
+		CompiledGraph app = workflow.compile();
 
-        Map<String, String> expected = Map.of("input", "test1", "prop1", "test");
-    }
+		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		System.out.println("result = " + result);
+		assertTrue(result.isPresent());
+
+		Map<String, String> expected = Map.of("input", "test1", "prop1", "test");
+	}
 
 }

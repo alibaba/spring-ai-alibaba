@@ -852,41 +852,28 @@ public class StateGraphTest {
 		assertEquals(List.of("go to command node", "node1", "node2"), state.value("messages", List.class).get());
 	}
 
-
-
-
 	@Test
 	void testCommandNode() throws Exception {
 
+		AsyncCommandAction commandAction = (state,
+				config) -> completedFuture(new Command("C2", Map.of("messages", "B", "next_node", "C2")));
 
-		AsyncCommandAction commandAction = (state, config) ->
-				completedFuture( new Command("C2",
-						Map.of( "messages", "B",
-								"next_node", "C2")) );
+		var graph = new StateGraph().addNode("A", makeNode("A"))
+			.addNode("B", commandAction, EdgeMappings.builder().toEND().to("C1").to("C2").build())
+			.addNode("C1", makeNode("C1"))
+			.addNode("C2", makeNode("C2"))
+			.addEdge(START, "A")
+			.addEdge("A", "B")
+			.addEdge("C1", END)
+			.addEdge("C2", END)
+			.compile();
 
-
-		var graph = new StateGraph()
-				.addNode("A", makeNode("A"))
-				.addNode("B", commandAction, EdgeMappings.builder()
-						.toEND()
-						.to("C1")
-						.to("C2")
-						.build())
-				.addNode("C1", makeNode("C1"))
-				.addNode("C2", makeNode("C2"))
-				.addEdge(START, "A")
-				.addEdge("A", "B")
-				.addEdge( "C1", END )
-				.addEdge( "C2", END )
-				.compile();
-
-		var steps = graph.stream(Map.of()).stream()
-				.peek(System.out::println)
-				.toList();
+		var steps = graph.stream(Map.of()).stream().peek(System.out::println).toList();
 
 		assertEquals(5, steps.size());
-		assertEquals( "B", steps.get(2).node());
-		assertEquals( "C2", steps.get(2).state().value("next_node").orElse(null));
+		assertEquals("B", steps.get(2).node());
+		assertEquals("C2", steps.get(2).state().value("next_node").orElse(null));
 
 	}
+
 }

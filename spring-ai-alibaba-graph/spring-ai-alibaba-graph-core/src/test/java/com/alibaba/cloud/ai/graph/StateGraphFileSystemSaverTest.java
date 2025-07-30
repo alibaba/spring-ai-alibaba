@@ -40,322 +40,290 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit test for simple App.
  */
-public class StateGraphFileSystemSaverTest
-{
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StateGraphFileSystemSaverTest.class);
+public class StateGraphFileSystemSaverTest {
 
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StateGraphFileSystemSaverTest.class);
 
-    final String rootPath = Paths.get( "target", "checkpoint" ).toString();
+	final String rootPath = Paths.get("target", "checkpoint").toString();
 
-    @Test
-    public void testCheckpointSaverResubmit() throws Exception {
-        int expectedSteps = 5;
-        KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
-                .addStrategy("steps")
-                .addStrategy("messages",KeyStrategy.APPEND)
-                .build();
-        StateGraph workflow = new StateGraph(keyStrategyFactory)
-                .addEdge(START, "agent_1")
-                .addNode("agent_1", node_async( state -> {
-                    int defaultSteps = (int) state.value("steps").orElse(0);
-                    int steps = defaultSteps+ 1;
-                    log.info( "agent_1: step: {}", steps );
-                    return Map.of("steps", steps, "messages", format( "agent_1:step %d", steps ));
-                }))
-                .addConditionalEdges( "agent_1", edge_async( state -> {
-                    int steps = (int) state.data().get("steps");
-                    if( steps >= expectedSteps) {
-                        return "exit";
-                    }
-                    return "next";
-                }), Map.of( "next", "agent_1", "exit", END) );
-
-        var saver = new FileSystemSaver( Paths.get( rootPath, "testCheckpointSaverResubmit" ),
-                workflow.getStateSerializer() );
-
-        CompileConfig compileConfig = CompileConfig.builder()
-                .saverConfig(SaverConfig.builder()
-                        .type(SaverConstant.FILE)
-                        .register(SaverConstant.FILE, saver)
-                        .build())
-                .build();
-
-        CompiledGraph app = workflow.compile( compileConfig );
-
-        RunnableConfig runnableConfig_1 = RunnableConfig.builder()
-                .threadId("thread_1")
-                .build();
-
-        RunnableConfig runnableConfig_2 = RunnableConfig.builder()
-                .threadId("thread_2")
-                .build();
-
-        try {
-
-            for (int execution = 0; execution < 2; execution++) {
-
-                Optional<OverAllState> state = app.invoke( Map.of(), runnableConfig_1);
-
-                assertTrue(state.isPresent());
-                assertEquals(expectedSteps + (execution * 2), (int) state.get().data().get("steps"));
-
-                List<String> messages = (List<String>) state.get().data().get("messages");
-                assertFalse(messages.isEmpty());
-
-                log.info("thread_1: execution: {} messages:\n{}\n", execution, messages);
-
-                assertEquals(expectedSteps + execution * 2, messages.size());
-                for (int i = 0; i < messages.size(); i++) {
-                    assertEquals(format("agent_1:step %d", (i + 1)), messages.get(i));
-                }
+	@Test
+	public void testCheckpointSaverResubmit() throws Exception {
+		int expectedSteps = 5;
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("steps")
+			.addStrategy("messages", KeyStrategy.APPEND)
+			.build();
+		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
+			.addNode("agent_1", node_async(state -> {
+				int defaultSteps = (int) state.value("steps").orElse(0);
+				int steps = defaultSteps + 1;
+				log.info("agent_1: step: {}", steps);
+				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
+			}))
+			.addConditionalEdges("agent_1", edge_async(state -> {
+				int steps = (int) state.data().get("steps");
+				if (steps >= expectedSteps) {
+					return "exit";
+				}
+				return "next";
+			}), Map.of("next", "agent_1", "exit", END));
 
-                StateSnapshot snapshot = app.getState(runnableConfig_1);
-
-                assertNotNull(snapshot);
-                log.info("SNAPSHOT:\n{}\n", snapshot);
-
-                // SUBMIT NEW THREAD 2
+		var saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverResubmit"),
+				workflow.getStateSerializer());
 
-                state = app.invoke(emptyMap(), runnableConfig_2);
+		CompileConfig compileConfig = CompileConfig.builder()
+			.saverConfig(SaverConfig.builder().type(SaverConstant.FILE).register(SaverConstant.FILE, saver).build())
+			.build();
 
-                assertTrue(state.isPresent());
-                assertEquals(expectedSteps + execution, (int) state.get().data().get("steps"));
-                messages = (List<String>) state.get().data().get("messages");
+		CompiledGraph app = workflow.compile(compileConfig);
 
-                log.info("thread_2: execution: {} messages:\n{}\n", execution, messages);
+		RunnableConfig runnableConfig_1 = RunnableConfig.builder().threadId("thread_1").build();
 
-                assertEquals(expectedSteps + execution, messages.size());
+		RunnableConfig runnableConfig_2 = RunnableConfig.builder().threadId("thread_2").build();
 
-                // RE-SUBMIT THREAD 1
-                state = app.invoke(Map.of(), runnableConfig_1);
+		try {
 
-                assertTrue(state.isPresent());
-                assertEquals(expectedSteps + 1 + execution * 2, (int) state.get().data().get("steps"));
-                messages = (List<String>) state.get().data().get("messages");
+			for (int execution = 0; execution < 2; execution++) {
 
-                log.info("thread_1: execution: {} messages:\n{}\n", execution, messages);
+				Optional<OverAllState> state = app.invoke(Map.of(), runnableConfig_1);
 
-                assertEquals(expectedSteps + 1 +  execution * 2, messages.size());
+				assertTrue(state.isPresent());
+				assertEquals(expectedSteps + (execution * 2), (int) state.get().data().get("steps"));
 
-            }
-        }
-        finally {
+				List<String> messages = (List<String>) state.get().data().get("messages");
+				assertFalse(messages.isEmpty());
 
-//            saver.clear(runnableConfig_1);
-//            saver.clear(runnableConfig_2);
-        }
-    }
+				log.info("thread_1: execution: {} messages:\n{}\n", execution, messages);
 
-    @Test
-    public void testCheckpointSaverWithManualRelease() throws Exception {
-        int expectedSteps = 5;
-        KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
-                .addStrategy("steps")
-                .addStrategy("messages",KeyStrategy.APPEND)
-                .build();
-        StateGraph workflow = new StateGraph(keyStrategyFactory)
-                .addEdge(START, "agent_1")
-                .addNode("agent_1", node_async( state -> {
-                    int defaultSteps = (int) state.value("steps").orElse(0);
-                    int steps = defaultSteps+ 1;
-                    log.info( "agent_1: step: {}", steps );
-                    return Map.of("steps", steps, "messages", format( "agent_1:step %d", steps ));
-                }))
-                .addConditionalEdges( "agent_1", edge_async( state -> {
-                    int steps = (int) state.data().get("steps");
-                    if( steps >= expectedSteps) {
-                        return "exit";
-                    }
-                    return "next";
-                }), Map.of( "next", "agent_1", "exit", END) );
-
-        var saver = new FileSystemSaver( Paths.get( rootPath, "testCheckpointSaverWithManualRelease" ),
-                workflow.getStateSerializer() );
-
-        CompileConfig compileConfig = CompileConfig.builder()
-                .saverConfig(SaverConfig.builder()
-                        .type(SaverConstant.FILE)
-                        .register(SaverConstant.FILE, saver)
-                        .build())
-                .build();
-
-        CompiledGraph app = workflow.compile( compileConfig );
-
-        RunnableConfig runnableConfig_1 = RunnableConfig.builder()
-                .threadId("thread_1")
-                .build();
-
-        RunnableConfig runnableConfig_2 = RunnableConfig.builder()
-                .threadId("thread_2")
-                .build();
-
-        var state = app.invoke( Map.of(), runnableConfig_1);
-
-        assertTrue(state.isPresent());
-        assertEquals(expectedSteps, (int) state.get().data().get("steps"));
-
-        var tag = saver.release(runnableConfig_1);
-        assertNotNull( tag );
-        assertEquals( "thread_1", tag.threadId());
-
-        var tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
-        assertTrue( tagState.isPresent() );
-
-        assertIterableEquals( state.get().data().entrySet(), tagState.get().entrySet() );
-
-        var messages = (List<String>) state.get().data().get("messages");
-
-        assertEquals(expectedSteps, messages.size());
-
-        for (int i = 0; i < messages.size(); i++) {
-            assertEquals(format("agent_1:step %d", (i + 1)), messages.get(i));
-        }
-
-        var ex = assertThrowsExactly( IllegalStateException.class, () -> app.getState(runnableConfig_1));
-        assertEquals( "Missing Checkpoint!", ex.getMessage() );
-
-        // SUBMIT NEW THREAD 2
-
-        state = app.invoke(emptyMap(), runnableConfig_2);
-
-        assertTrue(state.isPresent());
-        assertEquals(expectedSteps, (int) state.get().data().get("steps"));
-        messages = (List<String>) state.get().data().get("messages");
+				assertEquals(expectedSteps + execution * 2, messages.size());
+				for (int i = 0; i < messages.size(); i++) {
+					assertEquals(format("agent_1:step %d", (i + 1)), messages.get(i));
+				}
 
-        tag = saver.release(runnableConfig_2);
-        assertNotNull( tag );
-        assertEquals( "thread_2", tag.threadId());
+				StateSnapshot snapshot = app.getState(runnableConfig_1);
 
-        tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
-        assertTrue( tagState.isPresent() );
+				assertNotNull(snapshot);
+				log.info("SNAPSHOT:\n{}\n", snapshot);
 
-        assertIterableEquals( state.get().data().entrySet(), tagState.get().entrySet() );
+				// SUBMIT NEW THREAD 2
 
-        assertEquals(expectedSteps, messages.size());
+				state = app.invoke(emptyMap(), runnableConfig_2);
 
-        // RE-SUBMIT THREAD 1
-        state = app.invoke(Map.of(), runnableConfig_1);
+				assertTrue(state.isPresent());
+				assertEquals(expectedSteps + execution, (int) state.get().data().get("steps"));
+				messages = (List<String>) state.get().data().get("messages");
 
-        assertTrue(state.isPresent());
-        assertEquals(expectedSteps, (int) state.get().data().get("steps"));
+				log.info("thread_2: execution: {} messages:\n{}\n", execution, messages);
 
-        tag = saver.release(runnableConfig_1);
-        assertNotNull( tag );
-        assertEquals( "thread_1", tag.threadId());
+				assertEquals(expectedSteps + execution, messages.size());
 
-        tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
-        assertTrue( tagState.isPresent() );
+				// RE-SUBMIT THREAD 1
+				state = app.invoke(Map.of(), runnableConfig_1);
 
-        assertIterableEquals( state.get().data().entrySet(), tagState.get().entrySet() );
+				assertTrue(state.isPresent());
+				assertEquals(expectedSteps + 1 + execution * 2, (int) state.get().data().get("steps"));
+				messages = (List<String>) state.get().data().get("messages");
 
-    }
+				log.info("thread_1: execution: {} messages:\n{}\n", execution, messages);
 
-    @Test
-    public void testCheckpointSaverWithAutoRelease() throws Exception {
-        int expectedSteps = 5;
-        KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
-                .addStrategy("steps")
-                .addStrategy("messages",KeyStrategy.APPEND)
-                .build();
-        StateGraph workflow = new StateGraph(keyStrategyFactory)
-                .addEdge(START, "agent_1")
-                .addNode("agent_1", node_async( state -> {
-                    int defaultSteps = (int) state.value("steps").orElse(0);
-                    int steps = defaultSteps+ 1;
-                    log.info( "agent_1: step: {}", steps );
-                    return Map.of("steps", steps, "messages", format( "agent_1:step %d", steps ));
-                }))
-                .addConditionalEdges( "agent_1", edge_async( state -> {
-                    int steps = (int) state.data().get("steps");
-                    if( steps >= expectedSteps) {
-                        return "exit";
-                    }
-                    return "next";
-                }), Map.of( "next", "agent_1", "exit", END) );
+				assertEquals(expectedSteps + 1 + execution * 2, messages.size());
 
-        var saver = new FileSystemSaver( Paths.get( rootPath, "testCheckpointSaverWithAutoRelease" ),
-                workflow.getStateSerializer() );
+			}
+		}
+		finally {
 
-        CompileConfig compileConfig = CompileConfig.builder()
-                .saverConfig(SaverConfig.builder()
-                        .type(SaverConstant.FILE)
-                        .register(SaverConstant.FILE, saver)
-                        .build())
-                .releaseThread(true)
-                .build();
+			// saver.clear(runnableConfig_1);
+			// saver.clear(runnableConfig_2);
+		}
+	}
 
-        var app = workflow.compile( compileConfig );
+	@Test
+	public void testCheckpointSaverWithManualRelease() throws Exception {
+		int expectedSteps = 5;
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("steps")
+			.addStrategy("messages", KeyStrategy.APPEND)
+			.build();
+		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
+			.addNode("agent_1", node_async(state -> {
+				int defaultSteps = (int) state.value("steps").orElse(0);
+				int steps = defaultSteps + 1;
+				log.info("agent_1: step: {}", steps);
+				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
+			}))
+			.addConditionalEdges("agent_1", edge_async(state -> {
+				int steps = (int) state.data().get("steps");
+				if (steps >= expectedSteps) {
+					return "exit";
+				}
+				return "next";
+			}), Map.of("next", "agent_1", "exit", END));
 
-        var runnableConfig_1 = RunnableConfig.builder()
-                .threadId("thread_1")
-                .build();
+		var saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverWithManualRelease"),
+				workflow.getStateSerializer());
 
-        var runnableConfig_2 = RunnableConfig.builder()
-                .threadId("thread_2")
-                .build();
+		CompileConfig compileConfig = CompileConfig.builder()
+			.saverConfig(SaverConfig.builder().type(SaverConstant.FILE).register(SaverConstant.FILE, saver).build())
+			.build();
 
-        var state_1 = app.invoke( Map.of(), runnableConfig_1);
+		CompiledGraph app = workflow.compile(compileConfig);
 
-        assertTrue(state_1.isPresent());
-        assertEquals(expectedSteps, (int) state_1.get().data().get("steps"));
+		RunnableConfig runnableConfig_1 = RunnableConfig.builder().threadId("thread_1").build();
 
-        var tag = saver.release(runnableConfig_1);
-        assertNotNull( tag );
-        assertEquals( "thread_1", tag.threadId());
+		RunnableConfig runnableConfig_2 = RunnableConfig.builder().threadId("thread_2").build();
 
-        var tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
-        assertTrue( tagState.isEmpty() );
+		var state = app.invoke(Map.of(), runnableConfig_1);
 
-        var messages = (List<String>) state_1.get().data().get("messages");
+		assertTrue(state.isPresent());
+		assertEquals(expectedSteps, (int) state.get().data().get("steps"));
 
-        assertEquals(expectedSteps, messages.size());
+		var tag = saver.release(runnableConfig_1);
+		assertNotNull(tag);
+		assertEquals("thread_1", tag.threadId());
 
-        for (int i = 0; i < messages.size(); i++) {
-            assertEquals(format("agent_1:step %d", (i + 1)), messages.get(i));
-        }
+		var tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
+		assertTrue(tagState.isPresent());
 
-        var ex = assertThrowsExactly( IllegalStateException.class, () -> app.getState(runnableConfig_1));
-        assertEquals( "Missing Checkpoint!", ex.getMessage() );
+		assertIterableEquals(state.get().data().entrySet(), tagState.get().entrySet());
 
-        // SUBMIT NEW THREAD 2
+		var messages = (List<String>) state.get().data().get("messages");
 
-        var state_2 = app.invoke(emptyMap(), runnableConfig_2);
+		assertEquals(expectedSteps, messages.size());
 
-        assertTrue(state_2.isPresent());
-        assertEquals(expectedSteps, (int) state_2.get().data().get("steps"));
-        messages = (List<String>) state_2.get().data().get("messages");
+		for (int i = 0; i < messages.size(); i++) {
+			assertEquals(format("agent_1:step %d", (i + 1)), messages.get(i));
+		}
 
-        tag = saver.release(runnableConfig_2);
-        assertEquals( "thread_2", tag.threadId());
-        assertNotNull( tag );
+		var ex = assertThrowsExactly(IllegalStateException.class, () -> app.getState(runnableConfig_1));
+		assertEquals("Missing Checkpoint!", ex.getMessage());
 
-        tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
+		// SUBMIT NEW THREAD 2
 
-        assertTrue( tagState.isEmpty() );
-        assertEquals(expectedSteps, messages.size());
+		state = app.invoke(emptyMap(), runnableConfig_2);
 
-        // RE-SUBMIT THREAD 1
-        var iterator = app.stream(Map.of(), runnableConfig_1);
+		assertTrue(state.isPresent());
+		assertEquals(expectedSteps, (int) state.get().data().get("steps"));
+		messages = (List<String>) state.get().data().get("messages");
 
-        state_1 = iterator.stream()
-                .reduce((a, b) -> b)
-                .map( NodeOutput::state);
-        assertTrue( state_1.isPresent() );
-        assertInstanceOf(AsyncGenerator.HasResultValue.class, iterator );
+		tag = saver.release(runnableConfig_2);
+		assertNotNull(tag);
+		assertEquals("thread_2", tag.threadId());
 
-        var result = ((AsyncGenerator.HasResultValue) iterator).resultValue();
+		tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
+		assertTrue(tagState.isPresent());
 
-        assertTrue( result.isPresent() );
-        assertInstanceOf(BaseCheckpointSaver.Tag.class, result.get() );
+		assertIterableEquals(state.get().data().entrySet(), tagState.get().entrySet());
 
-        tag = result.map( BaseCheckpointSaver.Tag.class::cast ).orElseThrow();
-        tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
+		assertEquals(expectedSteps, messages.size());
 
-        assertTrue( tagState.isPresent() );
-        assertIterableEquals( state_1.get().data().entrySet(), tagState.get().entrySet() );
+		// RE-SUBMIT THREAD 1
+		state = app.invoke(Map.of(), runnableConfig_1);
 
+		assertTrue(state.isPresent());
+		assertEquals(expectedSteps, (int) state.get().data().get("steps"));
 
-    }
+		tag = saver.release(runnableConfig_1);
+		assertNotNull(tag);
+		assertEquals("thread_1", tag.threadId());
+
+		tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
+		assertTrue(tagState.isPresent());
+
+		assertIterableEquals(state.get().data().entrySet(), tagState.get().entrySet());
+
+	}
+
+	@Test
+	public void testCheckpointSaverWithAutoRelease() throws Exception {
+		int expectedSteps = 5;
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("steps")
+			.addStrategy("messages", KeyStrategy.APPEND)
+			.build();
+		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
+			.addNode("agent_1", node_async(state -> {
+				int defaultSteps = (int) state.value("steps").orElse(0);
+				int steps = defaultSteps + 1;
+				log.info("agent_1: step: {}", steps);
+				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
+			}))
+			.addConditionalEdges("agent_1", edge_async(state -> {
+				int steps = (int) state.data().get("steps");
+				if (steps >= expectedSteps) {
+					return "exit";
+				}
+				return "next";
+			}), Map.of("next", "agent_1", "exit", END));
+
+		var saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverWithAutoRelease"),
+				workflow.getStateSerializer());
+
+		CompileConfig compileConfig = CompileConfig.builder()
+			.saverConfig(SaverConfig.builder().type(SaverConstant.FILE).register(SaverConstant.FILE, saver).build())
+			.releaseThread(true)
+			.build();
+
+		var app = workflow.compile(compileConfig);
+
+		var runnableConfig_1 = RunnableConfig.builder().threadId("thread_1").build();
+
+		var runnableConfig_2 = RunnableConfig.builder().threadId("thread_2").build();
+
+		var state_1 = app.invoke(Map.of(), runnableConfig_1);
+
+		assertTrue(state_1.isPresent());
+		assertEquals(expectedSteps, (int) state_1.get().data().get("steps"));
+
+		var tag = saver.release(runnableConfig_1);
+		assertNotNull(tag);
+		assertEquals("thread_1", tag.threadId());
+
+		var tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
+		assertTrue(tagState.isEmpty());
+
+		var messages = (List<String>) state_1.get().data().get("messages");
+
+		assertEquals(expectedSteps, messages.size());
+
+		for (int i = 0; i < messages.size(); i++) {
+			assertEquals(format("agent_1:step %d", (i + 1)), messages.get(i));
+		}
+
+		var ex = assertThrowsExactly(IllegalStateException.class, () -> app.getState(runnableConfig_1));
+		assertEquals("Missing Checkpoint!", ex.getMessage());
+
+		// SUBMIT NEW THREAD 2
+
+		var state_2 = app.invoke(emptyMap(), runnableConfig_2);
+
+		assertTrue(state_2.isPresent());
+		assertEquals(expectedSteps, (int) state_2.get().data().get("steps"));
+		messages = (List<String>) state_2.get().data().get("messages");
+
+		tag = saver.release(runnableConfig_2);
+		assertEquals("thread_2", tag.threadId());
+		assertNotNull(tag);
+
+		tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
+
+		assertTrue(tagState.isEmpty());
+		assertEquals(expectedSteps, messages.size());
+
+		// RE-SUBMIT THREAD 1
+		var iterator = app.stream(Map.of(), runnableConfig_1);
+
+		state_1 = iterator.stream().reduce((a, b) -> b).map(NodeOutput::state);
+		assertTrue(state_1.isPresent());
+		assertInstanceOf(AsyncGenerator.HasResultValue.class, iterator);
+
+		var result = ((AsyncGenerator.HasResultValue) iterator).resultValue();
+
+		assertTrue(result.isPresent());
+		assertInstanceOf(BaseCheckpointSaver.Tag.class, result.get());
+
+		tag = result.map(BaseCheckpointSaver.Tag.class::cast).orElseThrow();
+		tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
+
+		assertTrue(tagState.isPresent());
+		assertIterableEquals(state_1.get().data().entrySet(), tagState.get().entrySet());
+
+	}
 
 }
-

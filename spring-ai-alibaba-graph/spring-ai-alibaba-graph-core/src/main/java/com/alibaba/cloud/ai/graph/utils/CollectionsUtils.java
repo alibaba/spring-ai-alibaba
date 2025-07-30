@@ -28,28 +28,24 @@ import static java.util.Collections.unmodifiableMap;
  */
 public final class CollectionsUtils {
 
-	public static String toString( Collection<?> collection ) {
-		if(collection.isEmpty()) {
+	public static String toString(Collection<?> collection) {
+		if (collection.isEmpty()) {
 			return "[]";
 		}
-		return collection.stream()
-				.map(Objects::toString)
-				.collect(Collectors.joining("\n\t", "[\n\t", "\n\t]"));
+		return collection.stream().map(Objects::toString).collect(Collectors.joining("\n\t", "[\n\t", "\n\t]"));
 
 	}
 
-	public static String toString( Map<?,?> map ) {
-		if(map.isEmpty()) {
+	public static String toString(Map<?, ?> map) {
+		if (map.isEmpty()) {
 			return "{}";
 		}
-		return map.entrySet().stream()
-				.map( entry -> {
-					if( entry.getValue() instanceof Collection<?> elements ) {
-						return String.format("%s=%s", entry.getKey(), toString(elements));
-					}
-					return Objects.toString(entry);
-				})
-				.collect(Collectors.joining("\n\t", "{\n\t", "\n\t}") );
+		return map.entrySet().stream().map(entry -> {
+			if (entry.getValue() instanceof Collection<?> elements) {
+				return String.format("%s=%s", entry.getKey(), toString(elements));
+			}
+			return Objects.toString(entry);
+		}).collect(Collectors.joining("\n\t", "{\n\t", "\n\t}"));
 
 	}
 

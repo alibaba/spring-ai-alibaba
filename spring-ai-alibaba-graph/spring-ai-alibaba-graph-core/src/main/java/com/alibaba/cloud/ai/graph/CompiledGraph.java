@@ -33,7 +33,7 @@ import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
 import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
-import com.alibaba.cloud.ai.graph.utils.SystemClock;
+
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +54,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -807,17 +806,19 @@ public class CompiledGraph {
 
 		private CompletableFuture<Data<Output>> evaluateAction(AsyncNodeActionWithConfig action,
 				OverAllState withState) {
-			if (action instanceof ParallelNode.AsyncParallelNodeAction){
-				return getDataCompletableFuture(action, withState,true);
-			}else{
+			if (action instanceof ParallelNode.AsyncParallelNodeAction) {
+				return getDataCompletableFuture(action, withState, true);
+			}
+			else {
 				doListeners(NODE_BEFORE, null);
-				return getDataCompletableFuture(action, withState,false);
+				return getDataCompletableFuture(action, withState, false);
 			}
 
 		}
 
 		@NotNull
-		private CompletableFuture<Data<Output>> getDataCompletableFuture(AsyncNodeActionWithConfig action, OverAllState withState,Boolean isParallel) {
+		private CompletableFuture<Data<Output>> getDataCompletableFuture(AsyncNodeActionWithConfig action,
+				OverAllState withState, Boolean isParallel) {
 			return action.apply(withState, config).thenApply(updateState -> {
 				try {
 					if (action instanceof CommandNode.AsyncCommandNodeActionWithConfig) {
@@ -847,8 +848,9 @@ public class CompiledGraph {
 					throw new CompletionException(e);
 				}
 			}).whenComplete((outputData, throwable) -> {
-                if (!isParallel) doListeners(NODE_AFTER, null);
-            });
+				if (!isParallel)
+					doListeners(NODE_AFTER, null);
+			});
 		}
 
 		private Command nextNodeId(String nodeId, OverAllState overAllState, Map<String, Object> state,
@@ -922,10 +924,8 @@ public class CompiledGraph {
 				}
 
 				// GUARD: CHECK IF IT IS END
-				if( nextNodeId == null &&  currentNodeId == null  ) {
-					return releaseThread()
-							.map(Data::<Output>done)
-							.orElseGet( () -> Data.done(currentState) );
+				if (nextNodeId == null && currentNodeId == null) {
+					return releaseThread().map(Data::<Output>done).orElseGet(() -> Data.done(currentState));
 				}
 
 				// IS IT A RESUME FROM EMBED ?
@@ -958,8 +958,6 @@ public class CompiledGraph {
 					return Data.of(buildNodeOutput(END));
 				}
 
-
-
 				// check on previous node
 				if (shouldInterruptAfter(currentNodeId, nextNodeId)) {
 					return Data.done(currentNodeId);
@@ -987,7 +985,8 @@ public class CompiledGraph {
 
 		private void doListeners(String scene, Exception e) {
 			Deque<GraphLifecycleListener> listeners = new LinkedBlockingDeque<>(compileConfig.lifecycleListeners());
-			LifeListenerUtil.processListenersLIFO(this.currentNodeId, listeners, this.currentState, this.config, scene, e);
+			LifeListenerUtil.processListenersLIFO(this.currentNodeId, listeners, this.currentState, this.config, scene,
+					e);
 		}
 
 	}

@@ -21,7 +21,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -45,15 +44,15 @@ public interface AsyncGenerator<E> extends Iterable<E>, AsyncGeneratorOperators<
 
 	}
 
-	static Optional<Object> resultValue( AsyncGenerator<?> generator ) {
-		if( generator instanceof HasResultValue withResult ) {
+	static Optional<Object> resultValue(AsyncGenerator<?> generator) {
+		if (generator instanceof HasResultValue withResult) {
 			return withResult.resultValue();
 		}
 		return Optional.empty();
 	}
 
-	static Optional<Object> resultValue( Iterator<?> iterator ) {
-		if( iterator instanceof HasResultValue withResult ) {
+	static Optional<Object> resultValue(Iterator<?> iterator) {
+		if (iterator instanceof HasResultValue withResult) {
 			return withResult.resultValue();
 		}
 		return Optional.empty();
@@ -404,7 +403,7 @@ public interface AsyncGenerator<E> extends Iterable<E>, AsyncGeneratorOperators<
 
 }
 
-class InternalIterator<E> implements Iterator<E>, AsyncGenerator.HasResultValue  {
+class InternalIterator<E> implements Iterator<E>, AsyncGenerator.HasResultValue {
 
 	private final AsyncGenerator<E> delegate;
 
@@ -414,6 +413,7 @@ class InternalIterator<E> implements Iterator<E>, AsyncGenerator.HasResultValue 
 		this.delegate = delegate;
 		currentFetchedData = new AtomicReference<>(delegate.next());
 	}
+
 	@Override
 	public boolean hasNext() {
 		final var value = currentFetchedData.get();
@@ -424,12 +424,12 @@ class InternalIterator<E> implements Iterator<E>, AsyncGenerator.HasResultValue 
 	public E next() {
 		var next = currentFetchedData.get();
 
-		if( next==null || next.isDone() ) {
+		if (next == null || next.isDone()) {
 			throw new IllegalStateException("no more elements into iterator");
 		}
 
-		if( !next.isError() ) {
-			currentFetchedData.set( delegate.next() );
+		if (!next.isError()) {
+			currentFetchedData.set(delegate.next());
 		}
 
 		return next.data.join();
@@ -437,9 +437,10 @@ class InternalIterator<E> implements Iterator<E>, AsyncGenerator.HasResultValue 
 
 	@Override
 	public Optional<Object> resultValue() {
-		if( delegate instanceof AsyncGenerator.HasResultValue withResult ) {
+		if (delegate instanceof AsyncGenerator.HasResultValue withResult) {
 			return withResult.resultValue();
 		}
 		return Optional.empty();
 	}
+
 };

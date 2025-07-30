@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 public class Checkpoint implements Serializable {

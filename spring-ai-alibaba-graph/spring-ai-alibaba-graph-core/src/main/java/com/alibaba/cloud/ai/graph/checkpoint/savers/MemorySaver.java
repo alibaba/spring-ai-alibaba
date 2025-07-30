@@ -21,41 +21,47 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.utils.TryFunction;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
-import static java.util.Collections.unmodifiableCollection;
-import static java.util.Optional.ofNullable;
 
 public class MemorySaver implements BaseCheckpointSaver {
 
-	 final Map<String, LinkedList<Checkpoint>> _checkpointsByThread = new HashMap<>();
+	final Map<String, LinkedList<Checkpoint>> _checkpointsByThread = new HashMap<>();
+
 	private final ReentrantLock _lock = new ReentrantLock();
 
-	public MemorySaver( ) {
+	public MemorySaver() {
 	}
 
-	protected LinkedList<Checkpoint> loadedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints) throws Exception {
+	protected LinkedList<Checkpoint> loadedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints)
+			throws Exception {
 		return checkpoints;
 	}
-	protected void insertedCheckpoint( RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint) throws Exception {
+
+	protected void insertedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
+			throws Exception {
 	}
-	protected void updatedCheckpoint( RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint) throws Exception {
+
+	protected void updatedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
+			throws Exception {
 	}
-	protected void releasedCheckpoints( RunnableConfig config, LinkedList<Checkpoint> checkpoints, Tag releaseTag) throws Exception {
+
+	protected void releasedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Tag releaseTag)
+			throws Exception {
 	}
 
 	protected final <T> T loadOrInitCheckpoints(RunnableConfig config,
-												TryFunction<LinkedList<Checkpoint>, T, Exception> transformer) throws Exception {
+			TryFunction<LinkedList<Checkpoint>, T, Exception> transformer) throws Exception {
 		_lock.lock();
 		try {
 			var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
-			return transformer.tryApply( loadedCheckpoints( config, _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>()) ) );
+			return transformer.tryApply(
+					loadedCheckpoints(config, _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>())));
 
-		} finally {
+		}
+		finally {
 			_lock.unlock();
 		}
 	}
@@ -81,15 +87,16 @@ public class MemorySaver implements BaseCheckpointSaver {
 		}
 	}
 
-	protected final Collection<Checkpoint> remove( String threadId ) {
-		return _checkpointsByThread.remove( Objects.requireNonNull(threadId) );
+	protected final Collection<Checkpoint> remove(String threadId) {
+		return _checkpointsByThread.remove(Objects.requireNonNull(threadId));
 	}
 
 	@Override
-	public final Collection<Checkpoint> list( RunnableConfig config ) {
+	public final Collection<Checkpoint> list(RunnableConfig config) {
 		try {
-			return loadOrInitCheckpoints( config, Collections::unmodifiableCollection);
-		} catch (Exception e) {
+			return loadOrInitCheckpoints(config, Collections::unmodifiableCollection);
+		}
+		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -98,17 +105,18 @@ public class MemorySaver implements BaseCheckpointSaver {
 	public final Optional<Checkpoint> get(RunnableConfig config) {
 
 		try {
-			return loadOrInitCheckpoints( config, checkpoints -> {
-				if( config.checkPointId().isPresent() ) {
+			return loadOrInitCheckpoints(config, checkpoints -> {
+				if (config.checkPointId().isPresent()) {
 					return config.checkPointId()
-							.flatMap( id -> checkpoints.stream()
-									.filter( checkpoint -> checkpoint.getId().equals(id) )
-									.findFirst());
+						.flatMap(id -> checkpoints.stream()
+							.filter(checkpoint -> checkpoint.getId().equals(id))
+							.findFirst());
 				}
-				return getLast(checkpoints,config);
+				return getLast(checkpoints, config);
 
 			});
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -116,25 +124,24 @@ public class MemorySaver implements BaseCheckpointSaver {
 	@Override
 	public final RunnableConfig put(RunnableConfig config, Checkpoint checkpoint) throws Exception {
 
-		return loadOrInitCheckpoints( config, checkpoints -> {
+		return loadOrInitCheckpoints(config, checkpoints -> {
 
 			if (config.checkPointId().isPresent()) { // Replace Checkpoint
 				String checkPointId = config.checkPointId().get();
 				int index = IntStream.range(0, checkpoints.size())
-						.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
-						.findFirst()
-						.orElseThrow(() -> (new NoSuchElementException(format("Checkpoint with id %s not found!", checkPointId))));
-				checkpoints.set(index, checkpoint );
-				updatedCheckpoint( config, checkpoints, checkpoint);
+					.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
+					.findFirst()
+					.orElseThrow(() -> (new NoSuchElementException(
+							format("Checkpoint with id %s not found!", checkPointId))));
+				checkpoints.set(index, checkpoint);
+				updatedCheckpoint(config, checkpoints, checkpoint);
 				return config;
 			}
 
-			checkpoints.push( checkpoint ); // Add Checkpoint
-			insertedCheckpoint( config, checkpoints, checkpoint);
+			checkpoints.push(checkpoint); // Add Checkpoint
+			insertedCheckpoint(config, checkpoints, checkpoint);
 
-			return RunnableConfig.builder(config)
-					.checkPointId(checkpoint.getId())
-					.build();
+			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 
 		});
 	}
@@ -142,13 +149,13 @@ public class MemorySaver implements BaseCheckpointSaver {
 	@Override
 	public final Tag release(RunnableConfig config) throws Exception {
 
-		return loadOrInitCheckpoints( config, checkpoints -> {
+		return loadOrInitCheckpoints(config, checkpoints -> {
 
 			var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
 
-			var tag =  new Tag( threadId, remove(threadId) );
+			var tag = new Tag(threadId, remove(threadId));
 
-			releasedCheckpoints( config, checkpoints, tag );
+			releasedCheckpoints(config, checkpoints, tag);
 
 			return tag;
 		});

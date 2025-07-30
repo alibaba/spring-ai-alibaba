@@ -26,44 +26,46 @@ import java.util.Optional;
  */
 public class MergeStrategy implements KeyStrategy {
 
-    @Override
-    public Object apply(Object oldValue, Object newValue) {
-        if (newValue == null) {
-            return oldValue;
-        }
+	@Override
+	public Object apply(Object oldValue, Object newValue) {
+		if (newValue == null) {
+			return oldValue;
+		}
 
-        if (oldValue instanceof Optional<?> oldValueOptional) {
-            oldValue = oldValueOptional.orElse(null);
-        }
+		if (oldValue instanceof Optional<?> oldValueOptional) {
+			oldValue = oldValueOptional.orElse(null);
+		}
 
-        // If both values are maps, merge them
-        if (oldValue instanceof Map && newValue instanceof Map) {
-            Map<Object, Object> mergedMap = new HashMap<>((Map<?, ?>) oldValue);
-            mergedMap.putAll((Map<?, ?>) newValue);
-            return mergedMap;
-        }
+		// If both values are maps, merge them
+		if (oldValue instanceof Map && newValue instanceof Map) {
+			Map<Object, Object> mergedMap = new HashMap<>((Map<?, ?>) oldValue);
+			mergedMap.putAll((Map<?, ?>) newValue);
+			return mergedMap;
+		}
 
-        // If old value is null, return new value
-        if (oldValue == null) {
-            return newValue;
-        }
+		// If old value is null, return new value
+		if (oldValue == null) {
+			return newValue;
+		}
 
-        // If new value is a map but old value is not, create a new map with old value as a key
-        if (newValue instanceof Map && !(oldValue instanceof Map)) {
-            Map<Object, Object> mergedMap = new HashMap<>();
-            mergedMap.put("original", oldValue);
-            mergedMap.putAll((Map<?, ?>) newValue);
-            return mergedMap;
-        }
+		// If new value is a map but old value is not, create a new map with old value as
+		// a key
+		if (newValue instanceof Map && !(oldValue instanceof Map)) {
+			Map<Object, Object> mergedMap = new HashMap<>();
+			mergedMap.put("original", oldValue);
+			mergedMap.putAll((Map<?, ?>) newValue);
+			return mergedMap;
+		}
 
-        // If old value is a map but new value is not, add new value to the map
-        if (oldValue instanceof Map && !(newValue instanceof Map)) {
-            Map<Object, Object> mergedMap = new HashMap<>((Map<?, ?>) oldValue);
-            mergedMap.put("additional", newValue);
-            return mergedMap;
-        }
+		// If old value is a map but new value is not, add new value to the map
+		if (oldValue instanceof Map && !(newValue instanceof Map)) {
+			Map<Object, Object> mergedMap = new HashMap<>((Map<?, ?>) oldValue);
+			mergedMap.put("additional", newValue);
+			return mergedMap;
+		}
 
-        // For other cases, return new value (similar to replace strategy)
-        return newValue;
-    }
-} 
+		// For other cases, return new value (similar to replace strategy)
+		return newValue;
+	}
+
+}
