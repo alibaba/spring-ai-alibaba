@@ -48,7 +48,13 @@
           >
             <div class="model-card-header">
               <span class="model-name">{{ model.modelName }}</span>
-              <Icon icon="carbon:chevron-right" />
+              <div class="model-status">
+                <span v-if="model.isDefault" class="default-badge">
+                  <Icon icon="carbon:star-filled" />
+                  {{ t('config.modelConfig.default') }}
+                </span>
+                <Icon icon="carbon:chevron-right" />
+              </div>
             </div>
             <p class="model-desc">{{ model.modelDescription }}</p>
             <div class="model-type" v-if="model.type">
@@ -80,6 +86,19 @@
         <div class="detail-header">
           <h3>{{ selectedModel.modelName }}</h3>
           <div class="detail-actions">
+            <button
+              v-if="!selectedModel.isDefault"
+              class="action-btn default"
+              @click="handleSetDefault"
+              :disabled="settingDefault"
+            >
+              <Icon icon="carbon:star" />
+              {{ t('config.modelConfig.setAsDefault') }}
+            </button>
+            <span v-else class="current-default">
+              <Icon icon="carbon:star-filled" />
+              {{ t('config.modelConfig.currentDefault') }}
+            </span>
             <button class="action-btn primary" @click="handleSave">
               <Icon icon="carbon:save" />
               {{ t('common.save') }}
@@ -130,8 +149,8 @@
               :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
               required
             />
-            <button 
-              class="check-btn" 
+            <button
+              class="check-btn"
               @click="handleValidateConfig"
               :disabled="validating || !selectedModel.baseUrl || !selectedModel.apiKey"
               :title="t('config.modelConfig.validateConfig')"
@@ -167,11 +186,12 @@
 
         <div class="form-item">
           <label>{{ t('config.modelConfig.description') }} <span class="required">*</span></label>
-          <div
-            class="readonly-field description-field"
-          >
-            {{ selectedModel.modelDescription || t('config.modelConfig.descriptionPlaceholder') }}
-          </div>
+          <textarea
+            v-model="selectedModel.modelDescription"
+            :placeholder="t('config.modelConfig.descriptionPlaceholder')"
+            class="description-field"
+            rows="3"
+          />
         </div>
       </div>
 
@@ -221,8 +241,8 @@
               :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
               required
             />
-            <button 
-              class="check-btn" 
+            <button
+              class="check-btn"
               @click="handleNewModelValidateConfig"
               :disabled="newModelValidating || !newModel.baseUrl || !newModel.apiKey"
               :title="t('config.modelConfig.validateConfig')"
@@ -256,11 +276,12 @@
         </div>
         <div class="form-item">
           <label>{{ t('config.modelConfig.description') }} <span class="required">*</span></label>
-          <div
-            class="readonly-field description-field"
-          >
-            {{ newModel.modelDescription || t('config.modelConfig.descriptionPlaceholder') }}
-          </div>
+          <textarea
+            v-model="newModel.modelDescription"
+            :placeholder="t('config.modelConfig.descriptionPlaceholder')"
+            class="description-field"
+            rows="3"
+          />
         </div>
       </div>
     </Modal>
@@ -321,6 +342,7 @@ const selectedModel = ref<Model | null>(null)
 const showModal = ref(false)
 const showDeleteModal = ref(false)
 const validating = ref(false)
+const settingDefault = ref(false)
 // 为每个模型存储独立的可用模型列表
 const modelAvailableModels = ref<Map<string, Model[]>>(new Map())
 // 新建Model弹窗的验证状态和可用模型列表
@@ -617,6 +639,30 @@ const handleSave = async () => {
 // Show the delete confirmation modal
 const showDeleteConfirm = () => {
   showDeleteModal.value = true
+}
+
+// Set model as default
+const handleSetDefault = async () => {
+  if (!selectedModel.value) return
+
+  settingDefault.value = true
+  try {
+    await ModelApiService.setDefaultModel(selectedModel.value.id)
+
+    // Update local state: clear other models' default status and set current model as default
+    models.forEach(model => {
+      model.isDefault = model.id === selectedModel.value!.id
+    })
+
+    // Update current selected model
+    selectedModel.value.isDefault = true
+
+    showMessage(t('config.modelConfig.setDefaultSuccess'), 'success')
+  } catch (err: any) {
+    showMessage(t('config.modelConfig.setDefaultFailed') + ': ' + err.message, 'error')
+  } finally {
+    settingDefault.value = false
+  }
 }
 
 // Delete Model
@@ -1038,6 +1084,54 @@ onMounted(() => {
   color: #a8b3ff;
 }
 
+.model-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.default-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: rgba(255, 193, 7, 0.2);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 12px;
+  font-size: 11px;
+  color: #ffc107;
+  font-weight: 500;
+}
+
+.current-default {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(255, 193, 7, 0.2);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #ffc107;
+  font-weight: 500;
+}
+
+.action-btn.default {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  color: #ffc107;
+}
+
+.action-btn.default:hover:not(:disabled) {
+  background: rgba(255, 193, 7, 0.2);
+  border-color: rgba(255, 193, 7, 0.5);
+}
+
+.action-btn.default:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .api-key-container {
   display: flex;
   gap: 8px;
@@ -1144,5 +1238,29 @@ onMounted(() => {
   padding-top: 12px;
   line-height: 1.5;
   white-space: pre-wrap;
+}
+
+.description-field {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  min-height: 80px;
+  resize: vertical;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.description-field:focus {
+  outline: none;
+  border-color: rgba(102, 126, 234, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.description-field::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 </style>

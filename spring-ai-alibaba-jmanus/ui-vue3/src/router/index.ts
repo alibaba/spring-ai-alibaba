@@ -23,4 +23,39 @@ const options = {
 }
 const router = createRouter(options)
 
+// Global route guard for initialization check
+router.beforeEach(async (to, _from, next) => {
+  // Skip initialization check for the init page itself
+  if (to.path === '/init') {
+    next()
+    return
+  }
+
+  try {
+    // Check initialization status from server
+    const response = await fetch('/api/init/status')
+    const result = await response.json()
+    
+    if (result.success && !result.initialized) {
+      // System not initialized, redirect to init page
+      localStorage.removeItem('hasInitialized')
+      next('/init')
+      return
+    } else if (result.success && result.initialized) {
+      // System is initialized, save to localStorage
+      localStorage.setItem('hasInitialized', 'true')
+    }
+  } catch (error) {
+    console.warn('Failed to check initialization status:', error)
+    // If check fails, rely on localStorage
+    const hasInitialized = localStorage.getItem('hasInitialized') === 'true'
+    if (!hasInitialized) {
+      next('/init')
+      return
+    }
+  }
+
+  next()
+})
+
 export default router

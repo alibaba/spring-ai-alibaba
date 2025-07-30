@@ -126,7 +126,11 @@ public class Nl2sqlForGraphController {
 					e.printStackTrace();
 					throw new CompletionException(e);
 				}
-			}).thenAccept(v -> sink.tryEmitComplete()).exceptionally(e -> {
+			}).thenAccept(v -> {
+				// 发送完成事件
+				sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());
+				sink.tryEmitComplete();
+			}).exceptionally(e -> {
 				logger.error("Error in stream processing", e);
 				sink.tryEmitError(e);
 				return null;

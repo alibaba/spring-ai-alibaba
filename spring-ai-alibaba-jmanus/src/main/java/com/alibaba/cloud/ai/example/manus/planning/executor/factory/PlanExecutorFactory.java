@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntit
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.planning.executor.DirectResponseExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.MapReducePlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
@@ -77,6 +78,12 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 			throw new IllegalArgumentException("Plan cannot be null");
 		}
 
+		// Check if this is a direct response plan first
+		if (plan.isDirectResponse()) {
+			log.info("Creating direct response executor for plan: {}", plan.getCurrentPlanId());
+			return createDirectResponseExecutor();
+		}
+
 		String planType = plan.getPlanType();
 		if (planType == null || planType.trim().isEmpty()) {
 			log.warn("Plan type is null or empty, defaulting to simple executor for plan: {}", plan.getCurrentPlanId());
@@ -106,6 +113,16 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	}
 
 	/**
+	 * Create a direct response executor for handling direct response plans
+	 * @return DirectResponseExecutor instance for direct response plans
+	 */
+	private PlanExecutorInterface createDirectResponseExecutor() {
+		log.debug("Creating direct response executor");
+		List<DynamicAgentEntity> agents = dynamicAgentLoader.getAllAgents();
+		return new DirectResponseExecutor(agents, recorder, agentService, llmService, manusProperties);
+	}
+
+	/**
 	 * Create an advanced plan executor for MapReduce execution
 	 * @return MapReducePlanExecutor instance for advanced plans
 	 */
@@ -120,7 +137,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	 * @return Array of supported plan type strings
 	 */
 	public String[] getSupportedPlanTypes() {
-		return new String[] { "simple", "advanced" };
+		return new String[] { "simple", "advanced", "direct" };
 	}
 
 	/**
@@ -133,7 +150,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 			return false;
 		}
 		String normalizedType = planType.toLowerCase();
-		return "simple".equals(normalizedType) || "advanced".equals(normalizedType);
+		return "simple".equals(normalizedType) || "advanced".equals(normalizedType) || "direct".equals(normalizedType);
 	}
 
 	/**
@@ -152,6 +169,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 		return switch (planType.toLowerCase()) {
 			case "simple" -> createSimpleExecutor();
 			case "advanced" -> createAdvancedExecutor();
+			case "direct" -> createDirectResponseExecutor();
 			default -> {
 				log.warn("Unknown explicit plan type: {}, defaulting to simple executor", planType);
 				yield createSimpleExecutor();
