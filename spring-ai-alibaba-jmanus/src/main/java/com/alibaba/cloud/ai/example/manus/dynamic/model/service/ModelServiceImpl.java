@@ -90,7 +90,6 @@ public class ModelServiceImpl implements ModelService {
 			}
 
 			DynamicModelEntity entity = new DynamicModelEntity();
-			entity.setAllowChange(true);
 			updateEntityFromConfig(entity, config);
 
 			if (config.getIsDefault() != null && config.getIsDefault()) {
@@ -122,15 +121,16 @@ public class ModelServiceImpl implements ModelService {
 	public ModelConfig updateModel(ModelConfig config) {
 		DynamicModelEntity entity = repository.findById(config.getId())
 			.orElseThrow(() -> new IllegalArgumentException("Model not found: " + config.getId()));
+
+		if (config.getIsDefault() != null && config.getIsDefault()) {
+			clearOtherDefaultModels();
+		}
+
 		updateEntityFromConfig(entity, config);
 		return updateModel(entity);
 	}
 
 	public ModelConfig updateModel(DynamicModelEntity entity) {
-		// 如果不允许修改，则返回原有数据
-		if (!entity.isAllowChange()) {
-			throw new UnsupportedOperationException("Not supported yet.");
-		}
 		entity = repository.save(entity);
 		publisher.publish(new ModelChangeEvent(entity));
 		return entity.mapToModelConfig();
@@ -138,21 +138,16 @@ public class ModelServiceImpl implements ModelService {
 
 	@Override
 	public void deleteModel(String id) {
-		DynamicModelEntity entity = repository.findById(Long.parseLong(id))
-			.orElseThrow(() -> new IllegalArgumentException("Model not found: " + id));
-		// 如果不允许修改，则返回原有数据
-		if (entity.isAllowChange()) {
-			List<DynamicAgentEntity> allByModel = agentRepository
-				.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
-			if (allByModel != null && !allByModel.isEmpty()) {
-				allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
-				agentRepository.saveAll(allByModel);
-			}
-			repository.deleteById(Long.parseLong(id));
+		if (agentRepository.count() == 1) {
+			throw new IllegalArgumentException("Cannot clear all models");
 		}
-		else {
-			throw new UnsupportedOperationException("Not supported yet.");
+		List<DynamicAgentEntity> allByModel = agentRepository
+			.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
+		if (allByModel != null && !allByModel.isEmpty()) {
+			allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
+			agentRepository.saveAll(allByModel);
 		}
+		repository.deleteById(Long.parseLong(id));
 	}
 
 	@Override
@@ -344,6 +339,8 @@ public class ModelServiceImpl implements ModelService {
 		if (config.getIsDefault() != null) {
 			entity.setIsDefault(config.getIsDefault());
 		}
+		entity.setTemperature(config.getTemperature());
+		entity.setTopP(config.getTopP());
 	}
 
 	@Override
