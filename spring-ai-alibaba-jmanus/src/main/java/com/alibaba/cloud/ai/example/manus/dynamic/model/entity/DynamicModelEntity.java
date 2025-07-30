@@ -15,11 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.model.entity;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
 import jakarta.persistence.*;
 
-import java.util.List;
 import java.util.Map;
 
 @Entity
@@ -57,9 +55,6 @@ public class DynamicModelEntity {
 
 	@Column(nullable = true, columnDefinition = "DOUBLE DEFAULT NULL")
 	private Double topP;
-
-	@OneToMany(mappedBy = "model")
-	private List<DynamicAgentEntity> agents;
 
 	public DynamicModelEntity() {
 	}
@@ -115,14 +110,6 @@ public class DynamicModelEntity {
 
 	public void setType(String type) {
 		this.type = type;
-	}
-
-	public List<DynamicAgentEntity> getAgents() {
-		return agents;
-	}
-
-	public void setAgents(List<DynamicAgentEntity> agents) {
-		this.agents = agents;
 	}
 
 	public Map<String, String> getHeaders() {
