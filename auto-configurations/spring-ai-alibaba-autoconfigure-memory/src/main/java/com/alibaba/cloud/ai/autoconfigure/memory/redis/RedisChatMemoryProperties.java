@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.memory;
+package com.alibaba.cloud.ai.autoconfigure.memory.redis;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.List;
 
 /**
  * Configuration properties for Redis chat memory.
@@ -43,6 +45,16 @@ public class RedisChatMemoryProperties {
 	 * Connection timeout in milliseconds.
 	 */
 	private int timeout = 2000;
+
+	/**
+	 * Type of client to use. By default, auto-detected according to the classpath.
+	 */
+	private ClientType clientType;
+
+	/**
+	 * Redis cluster properties.
+	 */
+	private Cluster cluster;
 
 	public String getHost() {
 		return host;
@@ -74,6 +86,54 @@ public class RedisChatMemoryProperties {
 
 	public void setTimeout(int timeout) {
 		this.timeout = timeout;
+	}
+
+	public Cluster getCluster() {
+		return cluster;
+	}
+
+	public void setCluster(Cluster cluster) {
+		this.cluster = cluster;
+	}
+
+	public ClientType getClientType() {
+		return clientType;
+	}
+
+	public void setClientType(ClientType clientType) {
+		this.clientType = clientType;
+	}
+
+	/**
+	 * Type of Redis client to use.
+	 */
+	public enum ClientType {
+
+		/**
+		 * Use the Lettuce redis client.
+		 */
+		LETTUCE,
+
+		/**
+		 * Use the Jedis redis client.
+		 */
+		JEDIS,
+
+		/**
+		 * Use the Redisson redis client.
+		 */
+		REDISSON
+	}
+
+	/**
+	 * Cluster properties
+	 */
+	public static class Cluster {
+		/**
+		 * List of "host:port" pairs to bootstrap from. This represents an "initial" list
+		 * of cluster nodes and is required to have at least one entry.
+		 */
+		private List<String> nodes;
 	}
 
 }

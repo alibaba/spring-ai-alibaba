@@ -14,33 +14,36 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.memory;
+package com.alibaba.cloud.ai.autoconfigure.memory.redis;
 
-import com.alibaba.cloud.ai.memory.redis.RedisChatMemoryRepository;
+import com.alibaba.cloud.ai.autoconfigure.memory.ChatMemoryAutoConfiguration;
+import com.alibaba.cloud.ai.memory.redis.JedisRedisChatMemoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import redis.clients.jedis.Jedis;
 
 /**
- * Auto-configuration for Redis chat memory repository.
+ * Auto-configuration for Redis Chat Memory using Jedis.
  */
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
-@ConditionalOnClass({ RedisChatMemoryRepository.class, Jedis.class })
+@ConditionalOnClass({ JedisRedisChatMemoryRepository.class, Jedis.class })
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
-public class RedisChatMemoryAutoConfiguration {
+@ConditionalOnProperty(name = "spring.ai.memory.redis.client-type", havingValue = "jedis", matchIfMissing = true)
+public class JedisRedisChatMemoryAutoConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(RedisChatMemoryAutoConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(JedisRedisChatMemoryAutoConfiguration.class);
 
 	@Bean
 	@ConditionalOnMissingBean
-	RedisChatMemoryRepository redisChatMemoryRepository(RedisChatMemoryProperties properties) {
-		logger.info("Configuring Redis chat memory repository");
-		return RedisChatMemoryRepository.builder()
+	JedisRedisChatMemoryRepository redisChatMemoryRepository(RedisChatMemoryProperties properties) {
+		logger.info("Configuring Redis chat memory repository using Jedis");
+		return JedisRedisChatMemoryRepository.builder()
 			.host(properties.getHost())
 			.port(properties.getPort())
 			.password(properties.getPassword())
