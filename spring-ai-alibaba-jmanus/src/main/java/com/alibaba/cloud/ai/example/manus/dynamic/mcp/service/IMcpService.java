@@ -17,60 +17,78 @@ package com.alibaba.cloud.ai.example.manus.dynamic.mcp.service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigRequestVO;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigStatus;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerRequestVO;
 
 /**
- * MCP service interface, providing MCP service management functionality
+ * MCP服务接口（重构后） 定义了MCP服务的核心业务方法
  */
 public interface IMcpService {
 
 	/**
-	 * Add MCP server
-	 * @param mcpConfig MCP configuration
-	 * @throws IOException IO exception
+	 * 批量保存MCP服务器配置
+	 * @param configJson MCP配置JSON字符串
+	 * @return 配置实体列表
+	 * @throws IOException IO异常
 	 */
-	void addMcpServer(McpConfigRequestVO mcpConfig) throws IOException;
+	List<McpConfigEntity> saveMcpServers(String configJson) throws IOException;
 
 	/**
-	 * Insert or update MCP repository
-	 * @param mcpConfigVO MCP configuration VO
-	 * @return MCP configuration entity list
-	 * @throws IOException IO exception
+	 * 保存单个MCP服务器配置
+	 * @param requestVO MCP服务器表单请求
+	 * @return 配置实体
+	 * @throws IOException IO异常
 	 */
-	List<McpConfigEntity> insertOrUpdateMcpRepo(McpConfigRequestVO mcpConfigVO) throws IOException;
+	McpConfigEntity saveMcpServer(McpServerRequestVO requestVO) throws IOException;
 
 	/**
-	 * Remove MCP server
-	 * @param id server ID
+	 * 删除MCP服务器
+	 * @param id MCP服务器ID
 	 */
 	void removeMcpServer(long id);
 
 	/**
-	 * Remove MCP server
-	 * @param mcpServerName server name
+	 * 删除MCP服务器
+	 * @param mcpServerName MCP服务器名称
 	 */
 	void removeMcpServer(String mcpServerName);
 
 	/**
-	 * Get MCP server list
-	 * @return MCP configuration entity list
+	 * 获取所有MCP服务器配置
+	 * @return MCP配置实体列表
 	 */
 	List<McpConfigEntity> getMcpServers();
 
 	/**
-	 * Get function callbacks
-	 * @param planId plan ID
-	 * @return MCP service entity list
+	 * 根据ID查找MCP配置
+	 * @param id MCP配置ID
+	 * @return 可选的MCP配置实体
+	 */
+	Optional<McpConfigEntity> findById(Long id);
+
+	/**
+	 * 获取MCP服务实体列表
+	 * @param planId 计划ID
+	 * @return MCP服务实体列表
 	 */
 	List<McpServiceEntity> getFunctionCallbacks(String planId);
 
 	/**
-	 * Close MCP service for the specified plan
-	 * @param planId plan ID
+	 * 关闭指定计划的MCP服务
+	 * @param planId 计划ID
 	 */
 	void close(String planId);
+
+	/**
+	 * 更新MCP服务器状态
+	 * @param id MCP服务器ID
+	 * @param status 目标状态
+	 * @return true if updated successfully, false otherwise
+	 */
+	boolean updateMcpServerStatus(Long id, McpConfigStatus status);
 
 }

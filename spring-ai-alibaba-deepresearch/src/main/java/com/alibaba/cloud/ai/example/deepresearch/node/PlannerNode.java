@@ -104,7 +104,7 @@ public class PlannerNode implements NodeAction {
 			.startingState(state)
 			.mapResult(response -> Map.of("planner_content",
 					Objects.requireNonNull(response.getResult().getOutput().getText())))
-			.build(streamResult);
+			.buildWithChatResponse(streamResult);
 
 		return Map.of("planner_content", generator);
 	}

@@ -20,8 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import lombok.Data;
-
 public class ExecutionStep {
 
 	@JsonProperty("step")
@@ -33,7 +31,6 @@ public class ExecutionStep {
 	@JsonProperty("tool_parameters")
 	private ToolParameters toolParameters;
 
-	@Data
 	public static class ToolParameters {
 
 		private String description;

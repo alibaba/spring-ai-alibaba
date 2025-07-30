@@ -24,7 +24,6 @@ import org.springframework.ai.tool.annotation.ToolParam;
 
 /**
  * @author vlsmb
- * @since 2025/7/14
  */
 public class PythonExecutorTool {
 

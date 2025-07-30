@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.manus.config;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -44,6 +45,12 @@ public class McpServerConfigurationLoader implements EnvironmentPostProcessor {
 
 	private static final String TEMP_DIR_PREFIX = "mcp-config";
 
+	private final ObjectMapper objectMapper;
+
+	public McpServerConfigurationLoader(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
+
 	@Override
 	public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
 		logger.info("Starting to process MCP server configuration...");
@@ -59,8 +66,6 @@ public class McpServerConfigurationLoader implements EnvironmentPostProcessor {
 			// Read the original configuration file
 			Resource resource = new ClassPathResource(CONFIG_FILE);
 			logger.info("Loading configuration file: {}", resource.getURL());
-			ObjectMapper objectMapper = new ObjectMapper();
-
 			// Create a temporary directory to store the processed configuration
 			Path tempDir = Files.createTempDirectory(TEMP_DIR_PREFIX);
 			tempDir.toFile().deleteOnExit();

@@ -28,8 +28,11 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Entity
 @Table(name = "system_config")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ConfigEntity {
 
 	@Id

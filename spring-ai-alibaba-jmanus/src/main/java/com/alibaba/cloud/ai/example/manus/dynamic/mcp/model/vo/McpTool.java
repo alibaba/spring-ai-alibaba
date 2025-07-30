@@ -30,6 +30,8 @@ public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 
 	private final ToolCallback toolCallback;
 
+	private final ObjectMapper objectMapper;
+
 	private String serviceNameString;
 
 	private McpStateHolderService mcpStateHolderService;
@@ -37,8 +39,10 @@ public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 	private ISmartContentSavingService smartContentSavingService;
 
 	public McpTool(ToolCallback toolCallback, String serviceNameString, String planId,
-			McpStateHolderService mcpStateHolderService, ISmartContentSavingService smartContentSavingService) {
+			McpStateHolderService mcpStateHolderService, ISmartContentSavingService smartContentSavingService,
+			ObjectMapper objectMapper) {
 		this.toolCallback = toolCallback;
+		this.objectMapper = objectMapper;
 		this.serviceNameString = serviceNameString;
 		this.currentPlanId = planId;
 		this.mcpStateHolderService = mcpStateHolderService;
@@ -77,7 +81,6 @@ public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 	@Override
 	public ToolExecuteResult run(Map<String, Object> inputMap) {
 		// Convert Map to JSON string, as ToolCallback expects string input
-		ObjectMapper objectMapper = new ObjectMapper();
 		String jsonInput;
 		try {
 			jsonInput = objectMapper.writeValueAsString(inputMap);

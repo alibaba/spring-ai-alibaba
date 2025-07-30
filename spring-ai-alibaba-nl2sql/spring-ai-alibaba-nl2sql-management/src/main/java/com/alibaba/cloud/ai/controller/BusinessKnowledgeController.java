@@ -29,6 +29,7 @@ import java.util.List;
  */
 @Controller
 @RequestMapping("/api/business-knowledge")
+@CrossOrigin(origins = "*")
 public class BusinessKnowledgeController {
 
 	@Autowired

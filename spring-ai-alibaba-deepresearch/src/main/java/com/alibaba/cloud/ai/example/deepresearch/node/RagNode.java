@@ -126,7 +126,7 @@ public class RagNode implements NodeAction {
 			.startingState(state)
 			.mapResult(response -> Map.of("rag_content",
 					Objects.requireNonNull(response.getResult().getOutput().getText())))
-			.build(streamResult);
+			.buildWithChatResponse(streamResult);
 
 		logger.info("RAG node produced a streaming result.");
 

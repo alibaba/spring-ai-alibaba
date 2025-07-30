@@ -16,11 +16,11 @@
 
 package com.alibaba.cloud.ai.node;
 
-import com.alibaba.cloud.ai.constant.StreamResponseType;
-import com.alibaba.cloud.ai.dbconnector.DbAccessor;
-import com.alibaba.cloud.ai.dbconnector.DbConfig;
-import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
-import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
+import com.alibaba.cloud.ai.connector.accessor.Accessor;
+import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
+import com.alibaba.cloud.ai.connector.bo.ResultSetBO;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
+import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
@@ -35,7 +35,8 @@ import reactor.core.publisher.Flux;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.alibaba.cloud.ai.constant.Constant.*;
+import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE_EXCEPTION_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE_OUTPUT;
 
 /**
  * SQL execution node that executes SQL queries against the database.
@@ -52,9 +53,9 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 	private final DbConfig dbConfig;
 
-	private final DbAccessor dbAccessor;
+	private final Accessor dbAccessor;
 
-	public SqlExecuteNode(DbAccessor dbAccessor, DbConfig dbConfig) {
+	public SqlExecuteNode(Accessor dbAccessor, DbConfig dbConfig) {
 		super();
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;

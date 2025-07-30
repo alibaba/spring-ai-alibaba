@@ -16,25 +16,25 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
-import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
+import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
-import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
-import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
 import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentSelectionResult;
 import com.alibaba.cloud.ai.example.deepresearch.service.McpProviderFactory;
-import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
+import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
+import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.NodeStepTitleUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
+import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
+import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -113,84 +113,92 @@ public class ResearcherNode implements NodeAction {
 		// Mark step as processing
 		assignedStep.setExecutionStatus(StateUtil.EXECUTION_STATUS_PROCESSING_PREFIX + nodeName);
 
-		// Build task messages
-		List<Message> messages = new ArrayList<>();
+		try {
+			// Build task messages
+			List<Message> messages = new ArrayList<>();
 
-		// Build task message with reflection history
-		String originTaskContent = buildTaskMessage(assignedStep);
-		String taskContent = buildTaskMessageWithReflectionHistory(assignedStep);
-		Message taskMessage = new UserMessage(taskContent);
-		messages.add(taskMessage);
+			// Build task message with reflection history
+			String originTaskContent = buildTaskMessage(assignedStep);
+			String taskContent = buildTaskMessageWithReflectionHistory(assignedStep);
+			Message taskMessage = new UserMessage(taskContent);
+			messages.add(taskMessage);
 
-		// Add researcher-specific citation reminder
-		Message citationMessage = new UserMessage(
-				"IMPORTANT: DO NOT include inline citations in the text. Instead, track all sources and include a References section at the end using link reference format. Include an empty line between each citation for better readability. Use this format for each reference:\n- [Source Title](URL)\n\n- [Another Source](URL)");
-		messages.add(citationMessage);
+			// Add researcher-specific citation reminder
+			Message citationMessage = new UserMessage(
+					"IMPORTANT: DO NOT include inline citations in the text. Instead, track all sources and include a References section at the end using link reference format. Include an empty line between each citation for better readability. Use this format for each reference:\n- [Source Title](URL)\n\n- [Another Source](URL)");
+			messages.add(citationMessage);
 
-		logger.debug("{} Node messages: {}", nodeName, messages);
+			logger.debug("{} Node messages: {}", nodeName, messages);
 
-		// Get search tool
-		SearchEnum searchEnum = state.value("search_engine", SearchEnum.class).orElse(null);
+			// Get search tool
+			SearchEnum searchEnum = state.value("search_engine", SearchEnum.class).orElse(null);
 
-		ChatClient selectedAgent = selectSmartAgent(assignedStep, taskContent, state);
+			ChatClient selectedAgent = selectSmartAgent(assignedStep, taskContent, state);
 
-		// Call agent
-		var requestSpec = researchAgent.prompt();
+			// Call agent
+			var requestSpec = researchAgent.prompt();
 
-		// 使用MCP工厂创建MCP提供者
-		AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null
-				? mcpFactory.createProvider(state, "researchAgent") : null;
-		if (mcpProvider != null) {
-			requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
+			// 使用MCP工厂创建MCP提供者
+			AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null
+					? mcpFactory.createProvider(state, "researchAgent") : null;
+			if (mcpProvider != null) {
+				requestSpec = requestSpec.toolCallbacks(mcpProvider.getToolCallbacks());
+			}
+
+			List<Map<String, String>> siteInformation = new ArrayList<>();
+			Object obj = state.value("site_information", new ArrayList<Map<String, String>>());
+			if (obj instanceof List<?>) {
+				siteInformation = (List<Map<String, String>>) obj;
+			}
+
+			List<Map<String, String>> searchResults = searchInfoService
+				.searchInfo(state.value("enable_search_filter", true), searchEnum, originTaskContent);
+			siteInformation.addAll(searchResults);
+			updated.put("site_information", siteInformation);
+
+			messages.add(new UserMessage("以下是搜索结果：\n\n" + searchResults.stream().map(r -> {
+				return String.format("标题: %s\n权重: %s\n内容: %s\n", r.get("title"), r.get("weight"), r.get("content"));
+			}).collect(Collectors.joining("\n\n"))));
+
+			var streamResult = requestSpec.messages(messages)
+				.stream()
+				.chatResponse()
+				.doOnError(error -> StateUtil.handleStepError(assignedStep, nodeName, error, logger));
+
+			// Add step title
+			boolean isReflectionNode = assignedStep.getReflectionHistory() != null
+					&& !assignedStep.getReflectionHistory().isEmpty();
+			String prefix = isReflectionNode ? StreamNodePrefixEnum.RESEARCHER_REFLECT_LLM_STREAM.getPrefix()
+					: StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix();
+			String nodeNum = NodeStepTitleUtil.registerStepTitle(state, isReflectionNode, executorNodeId, "Researcher",
+					assignedStep.getTitle(), prefix);
+
+			logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, nodeName);
+
+			var generator = StreamingChatGenerator.builder()
+				.startingNode(nodeNum)
+				.startingState(state)
+				.mapResult(response -> {
+					// Only handle successful responses - errors are handled in doOnError
+					String researchContent = response.getResult().getOutput().getText();
+					assignedStep
+						.setExecutionStatus(ReflectionUtil.getCompletionStatus(reflectionProcessor != null, nodeName));
+					assignedStep.setExecutionRes(Objects.requireNonNull(researchContent));
+					logger.info("{} completed, content: {}", nodeName, researchContent);
+
+					updated.put("researcher_content_" + executorNodeId, researchContent);
+					return updated;
+				})
+				.buildWithChatResponse(streamResult);
+
+			updated.put("researcher_content_" + executorNodeId, generator);
+			return updated;
 		}
-
-		List<Map<String, String>> siteInformation = new ArrayList<>();
-		Object obj = state.value("site_information", new ArrayList<Map<String, String>>());
-		if (obj instanceof List<?>) {
-			siteInformation = (List<Map<String, String>>) obj;
+		catch (Exception e) {
+			// Handle any exception that occurs before or during stream setup
+			StateUtil.handleStepError(assignedStep, nodeName, e, logger);
+			return updated;
 		}
-
-		List<Map<String, String>> searchResults = searchInfoService
-			.searchInfo(state.value("enable_search_filter", true), searchEnum, originTaskContent);
-		siteInformation.addAll(searchResults);
-		updated.put("site_information", siteInformation);
-
-		messages.add(new UserMessage("以下是搜索结果：\n\n" + searchResults.stream().map(r -> {
-			return String.format("标题: %s\n权重: %s\n内容: %s\n", r.get("title"), r.get("weight"), r.get("content"));
-		}).collect(Collectors.joining("\n\n"))));
-
-		var streamResult = requestSpec.messages(messages).stream().chatResponse();
-
-		Plan.Step finalAssignedStep = assignedStep;
-
-		String prefix = StreamNodePrefixEnum.RESEARCHER_LLM_STREAM.getPrefix() + "_";
-		String stepTitleKey = prefix + executorNodeId + "_step_title";
-		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());
-		Map<String, Object> inputMap = new HashMap<>();
-		inputMap.put(stepTitleKey, "[并行节点" + executorNodeId + "]" + finalAssignedStep.getTitle());
-		state.input(inputMap);
-
-		logger.info("ResearcherNode {} starting streaming with key: {}", executorNodeId, prefix + executorNodeId);
-
-		var generator = StreamingChatGenerator.builder()
-			.startingNode(prefix + executorNodeId)
-			.startingState(state)
-			.mapResult(response -> {
-				// Set appropriate completion status using ReflectionUtil
-				finalAssignedStep
-					.setExecutionStatus(ReflectionUtil.getCompletionStatus(reflectionProcessor != null, nodeName));
-
-				String researchContent = response.getResult().getOutput().getText();
-				finalAssignedStep.setExecutionRes(Objects.requireNonNull(researchContent));
-				logger.info("{} completed, content: {}", nodeName, researchContent);
-
-				updated.put("researcher_content_" + executorNodeId, researchContent);
-				return updated;
-			})
-			.build(streamResult);
-
-		updated.put("researcher_content_" + executorNodeId, generator);
-		return updated;
 	}
 
 	/**

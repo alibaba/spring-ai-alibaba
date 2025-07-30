@@ -93,7 +93,7 @@
               </div>
             </div>
             <div class="task-time">
-              {{ getRelativeTimeString(new Date(template.updateTime || template.createTime)) }}
+              {{ getRelativeTimeString(sidebarStore.parseDateTime(template.updateTime || template.createTime)) }}
             </div>
             <div class="task-actions">
               <button
@@ -397,6 +397,12 @@ const handleExecutePlan = async () => {
 
 // Utility functions
 const getRelativeTimeString = (date: Date): string => {
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date received:', date)
+    return t('time.unknown')
+  }
+
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffMinutes = Math.floor(diffMs / 60000)
@@ -432,7 +438,7 @@ defineExpose({
 <style scoped>
 .sidebar-wrapper {
   position: relative;
-  width: 500px;
+  width: 600px;
   height: 100vh;
   background: rgba(255, 255, 255, 0.05);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -633,14 +639,14 @@ defineExpose({
         }
 
         .json-editor {
-          min-height: 200px;
-          font-size: 11px;
-          line-height: 1.5;
-          white-space: pre;
-          overflow-wrap: normal;
-          word-break: normal;
-          tab-size: 2;
-          font-variant-ligatures: none;
+            min-height: 200px;
+            font-size: 11px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            tab-size: 2;
+            font-variant-ligatures: none;
         }
 
         .generator-content {

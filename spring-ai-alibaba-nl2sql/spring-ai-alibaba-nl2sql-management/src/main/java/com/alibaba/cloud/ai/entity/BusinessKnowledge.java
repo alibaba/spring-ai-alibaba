@@ -34,6 +34,8 @@ public class BusinessKnowledge {
 
 	private String datasetId; // 关联的数据集ID
 
+	private String agentId; // 关联的智能体ID
+
 	private LocalDateTime createTime;
 
 	private LocalDateTime updateTime;
@@ -48,18 +50,32 @@ public class BusinessKnowledge {
 		this.synonyms = synonyms;
 		this.defaultRecall = defaultRecall;
 		this.datasetId = datasetId;
+		this.agentId = null; // 默认为null，保持向后兼容
+		this.createTime = LocalDateTime.now();
+		this.updateTime = LocalDateTime.now();
+	}
+
+	public BusinessKnowledge(String businessTerm, String description, String synonyms, Boolean defaultRecall,
+			String datasetId, String agentId) {
+		this.businessTerm = businessTerm;
+		this.description = description;
+		this.synonyms = synonyms;
+		this.defaultRecall = defaultRecall;
+		this.datasetId = datasetId;
+		this.agentId = agentId;
 		this.createTime = LocalDateTime.now();
 		this.updateTime = LocalDateTime.now();
 	}
 
 	public BusinessKnowledge(Long id, String businessTerm, String description, String synonyms, Boolean defaultRecall,
-			String datasetId, LocalDateTime createTime, LocalDateTime updateTime) {
+			String datasetId, String agentId, LocalDateTime createTime, LocalDateTime updateTime) {
 		this.id = id;
 		this.businessTerm = businessTerm;
 		this.description = description;
 		this.synonyms = synonyms;
 		this.defaultRecall = defaultRecall;
 		this.datasetId = datasetId;
+		this.agentId = agentId;
 		this.createTime = createTime;
 		this.updateTime = updateTime;
 	}
@@ -111,6 +127,14 @@ public class BusinessKnowledge {
 
 	public void setDatasetId(String datasetId) {
 		this.datasetId = datasetId;
+	}
+
+	public String getAgentId() {
+		return agentId;
+	}
+
+	public void setAgentId(String agentId) {
+		this.agentId = agentId;
 	}
 
 	public LocalDateTime getCreateTime() {

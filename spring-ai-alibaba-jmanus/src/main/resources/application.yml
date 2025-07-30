@@ -12,16 +12,6 @@ spring:
     lazy-initialization: false
   aop:
     proxy-target-class: true
-  ai:
-    openai:
-      base-url: https://dashscope.aliyuncs.com/compatible-mode
-      api-key: ${DASHSCOPE_API_KEY}
-      chat:
-        options:
-          model: qwen-plus
-    mcp:
-      client:
-        enabled: false
   # Hikari Configuration
   datasource:
     hikari:
@@ -51,3 +41,9 @@ logging:
 
 namespace:
   value: default
+
+agent:
+  # Initialize save agent on startup
+  init: true
+  # Serialize: fastjson | jackson
+  serialize: jackson

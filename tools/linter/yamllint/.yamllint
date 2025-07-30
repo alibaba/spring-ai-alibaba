@@ -21,6 +21,10 @@ ignore: |
   # are templated. Instead, we run the linter
   # after running `make generate-manifests` which creates
   # the Install YAML in bin/
+  **/node_modules/**
+  **/target/**
+  **/build/**
+  **/dist/**
 
 rules:
   braces:

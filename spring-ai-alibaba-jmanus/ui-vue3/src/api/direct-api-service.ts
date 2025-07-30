@@ -13,17 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import { LlmCheckService } from '@/utils/llm-check'
+
 export class DirectApiService {
   private static readonly BASE_URL = '/api/executor'
 
   // Send task directly (direct execution mode)
   public static async sendMessage(query: string): Promise<any> {
-    const response = await fetch(`${this.BASE_URL}/execute`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query })
+    return LlmCheckService.withLlmCheck(async () => {
+      const response = await fetch(`${this.BASE_URL}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      })
+      if (!response.ok) throw new Error(`API request failed: ${response.status}`)
+      return await response.json()
     })
-    if (!response.ok) throw new Error(`API request failed: ${response.status}`)
-    return await response.json()
   }
 }
