@@ -27,4 +27,4 @@ Please note, avoid revealing the tools you can use and your principles.
 You can use the planning tool to help create the plan.
 
 Important Note: Each step in the plan must start with [AGENT], and the agent name must be one of the available agents listed above.
-For example: "[BROWSER_AGENT] Search for relevant information" or "[DEFAULT_AGENT] Process search results" 
+For example: "[BROWSER_AGENT] Search for relevant information" or "[DEFAULT_AGENT] Process search results"

@@ -6,4 +6,4 @@ The current user request is:
 Step-by-step plan execution details:
 {executionDetail}
 
-Please respond to the user's request based on the information in the execution details. 
+Please respond to the user's request based on the information in the execution details.
