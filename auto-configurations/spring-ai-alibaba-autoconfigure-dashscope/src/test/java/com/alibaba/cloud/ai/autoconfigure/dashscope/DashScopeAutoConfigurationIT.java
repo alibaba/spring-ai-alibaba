@@ -127,7 +127,7 @@ public class DashScopeAutoConfigurationIT {
 	@Test
 	void streamingWithTokenUsage() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
-			.withPropertyValues("spring.ai.dashScope.chat")
+			.withPropertyValues("spring.ai.dashscope.chat")
 			.run(context -> {
 				DashScopeChatModel chatModel = context.getBean(DashScopeChatModel.class);
 
@@ -194,7 +194,7 @@ public class DashScopeAutoConfigurationIT {
 	@Test
 	void generateImage() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeImageAutoConfiguration.class))
-			.withPropertyValues("spring.ai.dashScope.image.options.size=1024x1024")
+			.withPropertyValues("spring.ai.dashscope.image.options.size=1024x1024")
 			.run(context -> {
 				DashScopeImageModel imageModel = context.getBean(DashScopeImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("tree"));
@@ -209,8 +209,8 @@ public class DashScopeAutoConfigurationIT {
 	void generateImageWithModel() {
 		// The 256x256 size is supported by dall-e-2, but not by dall-e-3.
 		this.contextRunner.withConfiguration(AutoConfigurations.of(DashScopeImageAutoConfiguration.class))
-			.withPropertyValues("spring.ai.dashScope.image.options.model=wanx-v1",
-					"spring.ai.dashScope.image.options.size=256x256")
+			.withPropertyValues("spring.ai.dashscope.image.options.model=wanx-v1",
+					"spring.ai.dashscope.image.options.size=256x256")
 			.run(context -> {
 				DashScopeImageModel imageModel = context.getBean(DashScopeImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("tree"));
