@@ -424,7 +424,17 @@ public class StateGraphTest {
 			.addEdge(START, "A")
 			.addEdge("C", END);
 
-		var app = workflow.compile();
+		var app = workflow.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+			@Override
+			public void before(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
+				log.info("node before ,node = {},state = {}", nodeId, state);
+			}
+
+			@Override
+			public void after(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
+				log.info("node after ,node = {},state = {}", nodeId, state);
+			}
+		}).build());
 
 		var result = app.stream(Map.of()).stream().peek(System.out::println).reduce((a, b) -> b).map(NodeOutput::state);
 		assertTrue(result.isPresent());
