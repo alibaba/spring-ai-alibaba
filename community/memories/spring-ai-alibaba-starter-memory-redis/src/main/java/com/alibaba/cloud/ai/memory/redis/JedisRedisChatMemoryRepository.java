@@ -33,11 +33,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Redis implementation of ChatMemoryRepository
+ * Redis implementation of ChatMemoryRepository using Jedis
  */
-public class RedisChatMemoryRepository implements ChatMemoryRepository, AutoCloseable {
+public class JedisRedisChatMemoryRepository implements ChatMemoryRepository, AutoCloseable {
 
-	private static final Logger logger = LoggerFactory.getLogger(RedisChatMemoryRepository.class);
+	private static final Logger logger = LoggerFactory.getLogger(JedisRedisChatMemoryRepository.class);
 
 	private static final String DEFAULT_KEY_PREFIX = "spring_ai_alibaba_chat_memory:";
 
@@ -45,7 +45,7 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository, AutoClos
 
 	private final ObjectMapper objectMapper;
 
-	private RedisChatMemoryRepository(JedisPool jedisPool) {
+	private JedisRedisChatMemoryRepository(JedisPool jedisPool) {
 		Assert.notNull(jedisPool, "jedisPool cannot be null");
 		this.jedisPool = jedisPool;
 		this.objectMapper = new ObjectMapper();
@@ -95,12 +95,12 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository, AutoClos
 			return this;
 		}
 
-		public RedisChatMemoryRepository build() {
+		public JedisRedisChatMemoryRepository build() {
 			if (poolConfig == null) {
 				poolConfig = new JedisPoolConfig();
 			}
 			JedisPool jedisPool = new JedisPool(poolConfig, host, port, timeout, password);
-			return new RedisChatMemoryRepository(jedisPool);
+			return new JedisRedisChatMemoryRepository(jedisPool);
 		}
 
 	}

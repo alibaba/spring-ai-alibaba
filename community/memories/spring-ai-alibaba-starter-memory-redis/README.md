@@ -45,11 +45,12 @@ spring:
 ### 示例代码
 
 ```java
+import com.alibaba.cloud.ai.memory.redis.JedisRedisChatMemoryRepository;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
-import com.alibaba.cloud.ai.memory.redis.RedisChatMemoryRepository;
+import com.alibaba.cloud.ai.memory.redis.JedisRedisChatMemoryRepository;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -57,7 +58,7 @@ import javax.servlet.http.HttpServletResponse;
 public class ChatController {
 
     @Autowired
-    private RedisChatMemoryRepository redisChatMemoryRepository; // 使用 Redis 作为记忆存储
+    private JedisRedisChatMemoryRepository jedisRedisChatMemoryRepository; // 使用 Redis 作为记忆存储
 
     @Autowired
     private ChatClient chatClient;
