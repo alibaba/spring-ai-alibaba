@@ -95,6 +95,14 @@ public class ModelDataInitialization implements IModelDataInitialization {
 	 * configuration
 	 */
 	private void createModelFromEnvironmentVariablesIfNeeded() {
+		// 首先检查数据库中是否已经存在默认模型
+		DynamicModelEntity existingDefaultModel = repository.findByIsDefaultTrue();
+		if (existingDefaultModel != null) {
+			log.info("Default model already exists: {}, skipping environment variable model creation",
+					existingDefaultModel.getModelName());
+			return;
+		}
+
 		// Check DashScope environment variables first
 		String dashscopeApiKey = environment.getProperty("DASHSCOPE_API_KEY");
 		if (dashscopeApiKey != null && !dashscopeApiKey.trim().isEmpty()) {
@@ -119,6 +127,14 @@ public class ModelDataInitialization implements IModelDataInitialization {
 	 */
 	private void createDashScopeModelFromEnv(String apiKey) {
 		try {
+			// 额外的安全检查：确保不会覆盖已存在的默认模型
+			DynamicModelEntity existingDefaultModel = repository.findByIsDefaultTrue();
+			if (existingDefaultModel != null) {
+				log.info("Default model already exists: {}, skipping DashScope model creation",
+						existingDefaultModel.getModelName());
+				return;
+			}
+
 			String modelName = defaultLlmConfig.getDefaultModelName();
 			DynamicModelEntity existingModel = repository.findByModelName(modelName);
 			if (existingModel == null) {
@@ -148,6 +164,14 @@ public class ModelDataInitialization implements IModelDataInitialization {
 	 */
 	private void createOpenAICompatibleModelFromEnv(String apiKey, String baseUrl, String modelName) {
 		try {
+			// 额外的安全检查：确保不会覆盖已存在的默认模型
+			DynamicModelEntity existingDefaultModel = repository.findByIsDefaultTrue();
+			if (existingDefaultModel != null) {
+				log.info("Default model already exists: {}, skipping OpenAI compatible model creation",
+						existingDefaultModel.getModelName());
+				return;
+			}
+
 			DynamicModelEntity existingModel = repository.findByModelName(modelName);
 			if (existingModel == null) {
 				DynamicModelEntity dynamicModelEntity = new DynamicModelEntity();
@@ -177,6 +201,14 @@ public class ModelDataInitialization implements IModelDataInitialization {
 	 */
 	private void createModelFromConfigIfNeeded(String apiKey) {
 		try {
+			// 检查是否已存在默认模型，如果存在则跳过创建
+			DynamicModelEntity existingDefaultModel = repository.findByIsDefaultTrue();
+			if (existingDefaultModel != null) {
+				log.info("Default model already exists: {}, skipping config system model creation",
+						existingDefaultModel.getModelName());
+				return;
+			}
+
 			String modelName = defaultLlmConfig.getDefaultModelName();
 			DynamicModelEntity existingModel = repository.findByModelName(modelName);
 			if (existingModel == null) {
@@ -193,6 +225,7 @@ public class ModelDataInitialization implements IModelDataInitialization {
 
 				DynamicModelEntity save = repository.save(dynamicModelEntity);
 				jmanusEventPublisher.publish(new ModelChangeEvent(save));
+				log.info("Auto-created model from config system: {}", modelName);
 			}
 		}
 		catch (Exception e) {

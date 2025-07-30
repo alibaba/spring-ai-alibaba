@@ -255,6 +255,12 @@ const words: I18nType = {
       currentDefault: '当前默认',
       setDefaultSuccess: '已成功设置为默认模型',
       setDefaultFailed: '设置默认模型失败',
+      validatingBeforeSave: '保存前正在校验API密钥...',
+      validationFailedCannotSave: 'API密钥校验失败，无法保存',
+      temperature: '温度',
+      temperaturePlaceholder: '留空使用模型默认值',
+      topP: 'Top P',
+      topPPlaceholder: '留空使用模型默认值',
     },
     // MCP配置页面
     mcpConfig: {
