@@ -75,7 +75,7 @@ public class Nl2sqlForGraphController {
 	}
 
 	@GetMapping("/search")
-	public String search(@RequestParam String query, @RequestParam String dataSetId) throws Exception {
+	public String search(@RequestParam String query, @RequestParam String agentId) throws Exception {
 		// 初始化向量
 		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
 		schemaInitRequest.setDbConfig(dbConfig);
@@ -83,7 +83,7 @@ public class Nl2sqlForGraphController {
 			.setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
 		simpleVectorStoreService.schema(schemaInitRequest);
 
-		Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query, DATA_SET_ID, dataSetId));
+		Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query, DATA_SET_ID, agentId));
 		OverAllState overAllState = invoke.get();
 		return overAllState.value(RESULT).get().toString();
 	}
