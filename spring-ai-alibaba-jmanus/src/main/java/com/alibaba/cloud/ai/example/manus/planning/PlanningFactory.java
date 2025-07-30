@@ -80,6 +80,8 @@ import com.alibaba.cloud.ai.example.manus.tool.mapreduce.FinalizeTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapOutputTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapReduceSharedStateManager;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.ReduceOperationTool;
+import com.alibaba.cloud.ai.example.manus.tool.tableProcessor.TableProcessingService;
+import com.alibaba.cloud.ai.example.manus.tool.tableProcessor.TableProcessorTool;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
@@ -106,6 +108,8 @@ public class PlanningFactory implements IPlanningFactory {
 	private final UnifiedDirectoryManager unifiedDirectoryManager;
 
 	private final DataSourceService dataSourceService;
+
+	private final TableProcessingService tableProcessingService;
 
 	private final static Logger log = LoggerFactory.getLogger(PlanningFactory.class);
 
@@ -149,7 +153,7 @@ public class PlanningFactory implements IPlanningFactory {
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
 			SmartContentSavingService innerStorageService, UnifiedDirectoryManager unifiedDirectoryManager,
-			DataSourceService dataSourceService) {
+			DataSourceService dataSourceService, TableProcessingService tableProcessingService) {
 		this.chromeDriverService = chromeDriverService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
@@ -158,6 +162,7 @@ public class PlanningFactory implements IPlanningFactory {
 		this.innerStorageService = innerStorageService;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.dataSourceService = dataSourceService;
+		this.tableProcessingService = tableProcessingService;
 	}
 
 	// Use the enhanced PlanningCoordinator with dynamic executor selection
@@ -220,6 +225,7 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper));
 		toolDefinitions.add(new DocLoaderTool());
 		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
+		toolDefinitions.add(new TableProcessorTool(tableProcessingService, objectMapper));
 		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
 		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
 		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
@@ -234,7 +240,7 @@ public class PlanningFactory implements IPlanningFactory {
 				unifiedDirectoryManager, terminateColumns));
 		toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 		toolDefinitions.add(new CronTool(cronService, objectMapper));
-
+		
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
 			String serviceGroup = toolCallback.getServiceGroup();

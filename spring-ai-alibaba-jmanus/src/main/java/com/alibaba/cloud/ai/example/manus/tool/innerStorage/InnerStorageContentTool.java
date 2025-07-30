@@ -141,8 +141,10 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			内部存储内容获取工具，专门用于智能内容提取和结构化输出。
 			智能内容提取模式：根据文件名获取详细内容，**必须提供** query_key 和 columns 参数进行智能提取和结构化输出
 
+			重要提示：此工具不能获取文件的全量内容。如果您需要获取文件的完整内容，请使用 text_file_operator 工具的 get_all_text 方法。
+
 			支持两种操作模式：
-			1. get_content: 从单个文件获取内容（精确文件名匹配或相对路径）
+			1. extract_relevant_content: 从单个文件提取相关内容（基于query_key关键词搜索）
 			2. get_folder_content: 从指定文件夹下的所有文件获取内容
 			""";
 
@@ -154,8 +156,8 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 						"properties": {
 							"action": {
 								"type": "string",
-								"const": "get_content",
-								"description": "从单个文件获取内容"
+								"const": "extract_relevant_content",
+								"description": "从单个文件提取相关内容"
 							},
 							"file_name": {
 								"type": "string",
@@ -252,10 +254,10 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			}
 
 			return switch (action) {
-				case "get_content" -> getStoredContent(input.getFileName(), input.getQueryKey(), input.getColumns());
+				case "extract_relevant_content" -> getStoredContent(input.getFileName(), input.getQueryKey(), input.getColumns());
 				case "get_folder_content" ->
 					getFolderContent(input.getFolderName(), input.getQueryKey(), input.getColumns());
-				default -> new ToolExecuteResult("错误：不支持的操作类型 '" + action + "'。支持的操作：get_content, get_folder_content");
+				default -> new ToolExecuteResult("错误：不支持的操作类型 '" + action + "'。支持的操作：extract_relevant_content, get_folder_content");
 			};
 		}
 		catch (Exception e) {

@@ -177,7 +177,7 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 				### 操作1 ： 使用 inner_storage_content_tool 工具获取具体内容
 				```json
 				{
-				  "action": "get_content",
+				  "action": "extract_relevant_content",
 				  "file_name": "%s",
 				  "query_key": "你要查询的关键词或问题，查询要具体，不要丢掉任何一个用户请求中的需求"
 				}
