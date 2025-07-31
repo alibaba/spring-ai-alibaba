@@ -30,7 +30,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	public static final String name = "terminate";
 
-	private final List<String> columns;
+	private final String columns;
 
 	private String lastTerminationMessage = "";
 
@@ -48,7 +48,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 	private static String getDescriptions(List<String> columns) {
 		// Simple description to avoid generating overly long content
 		return "Terminate the current execution step with structured data. "
-				+ "Provide data in JSON format with 'columns' array and 'data' array containing rows of values.";
+				+ "Provide data in JSON format with 'message' field and optional 'fileList' array containing file information.";
 	}
 
 	private static String generateParametersJson(List<String> columns) {
@@ -56,21 +56,30 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 				{
 				  "type": "object",
 				  "properties": {
-				    "columns": {
-				      "type": "array",
-				      "items": {"type": "string"},
-				      "description": "Column names"
+				    "message": {
+				      "type": "string",
+				      "description": "Comprehensive termination message that should include all relevant facts, viewpoints, details, and conclusions from the execution step. This message should provide a complete summary of what was accomplished, any important observations, key findings, and final outcomes."
 				    },
-				    "data": {
+				    "fileList": {
 				      "type": "array",
 				      "items": {
-				        "type": "array",
-				        "items": {"type": "string"}
+				        "type": "object",
+				        "properties": {
+				          "fileName": {
+				            "type": "string",
+				            "description": "Name of the file"
+				          },
+				          "fileDescription": {
+				            "type": "string",
+				            "description": "Detailed description of what the file contains. This should include a comprehensive summary of all content generated during this agent execution cycle. Every file created during this execution must be listed here with complete and accurate information about its contents."
+				          }
+				        },
+				        "required": ["fileName", "fileDescription"]
 				      },
-				      "description": "Data rows"
+				      "description": "Complete list of all files generated during this agent execution cycle. Every file created must be included with its name and a detailed description of its contents. This is mandatory for full transparency and auditing purposes."
 				    }
 				  },
-				  "required": ["columns", "data"]
+				  "required": ["message"]
 				}
 				""";
 
@@ -91,13 +100,13 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 				isTerminated ? "Process was terminated" : "No termination recorded",
 				lastTerminationMessage.isEmpty() ? "N/A" : lastTerminationMessage,
 				terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp,
-				currentPlanId != null ? currentPlanId : "N/A", columns != null ? String.join(", ", columns) : "N/A");
+				currentPlanId != null ? currentPlanId : "N/A", columns != null ? columns : "N/A");
 	}
 
-	public TerminateTool(String planId, List<String> columns) {
+	public TerminateTool(String planId, String columns) {
 		this.currentPlanId = planId;
 		// If columns is null or empty, use "message" as default column
-		this.columns = (columns == null || columns.isEmpty()) ? List.of("message") : columns;
+		this.columns = (columns == null || columns.isEmpty()) ? "message" : columns;
 	}
 
 	@Override
@@ -115,21 +124,24 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	private String formatStructuredData(Map<String, Object> input) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Structured termination data:\n");
-
-		if (input.containsKey("columns") && input.containsKey("data")) {
+		
+		// Handle new format with message and fileList
+		if (input.containsKey("message")) {
+			sb.append("Message: ").append(input.get("message")).append("\n");
+		}
+		
+		if (input.containsKey("fileList")) {
 			@SuppressWarnings("unchecked")
-			List<String> inputColumns = (List<String>) input.get("columns");
-			@SuppressWarnings("unchecked")
-			List<List<Object>> inputData = (List<List<Object>>) input.get("data");
-
-			sb.append("Columns: ").append(inputColumns).append("\n");
-			sb.append("Data:\n");
-			for (List<Object> row : inputData) {
-				sb.append("  ").append(row).append("\n");
+			List<Map<String, String>> fileList = (List<Map<String, String>>) input.get("fileList");
+			sb.append("Files:\n");
+			for (Map<String, String> file : fileList) {
+				sb.append("  - Name: ").append(file.get("fileName"))
+				  .append("\n    Description: ").append(file.get("fileDescription")).append("\n");
 			}
 		}
-		else {
+		
+		// If no recognized keys, just output the whole map
+		if (!input.containsKey("message") && !input.containsKey("fileList")) {
 			sb.append(input.toString());
 		}
 
@@ -143,12 +155,12 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	@Override
 	public String getDescription() {
-		return getDescriptions(this.columns);
+		return getDescriptions(null);
 	}
 
 	@Override
 	public String getParameters() {
-		return generateParametersJson(this.columns);
+		return generateParametersJson(null);
 	}
 
 	@Override
