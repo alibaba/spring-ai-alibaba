@@ -54,14 +54,11 @@ spring-ai-alibaba-deepresearch/
 cd ui-vue3
 
 # 安装依赖
-npm install
-# 或
-yarn install
+pnpm install
 
 # 启动开发服务器
 npm run dev
-# 或
-yarn dev
+
 ```
 
 前端将在 http://localhost:5173/ui 启动

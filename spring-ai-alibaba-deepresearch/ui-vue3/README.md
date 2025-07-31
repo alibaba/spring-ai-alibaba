@@ -59,14 +59,11 @@ spring-ai-alibaba-deepresearch/
 cd ui-vue3
 
 # Install dependencies
-npm install
-# or
-yarn install
+pnpm install
 
 # Start development server
 npm run dev
-# or
-yarn dev
+
 ```
 
 The frontend will be available at http://localhost:5173/ui
