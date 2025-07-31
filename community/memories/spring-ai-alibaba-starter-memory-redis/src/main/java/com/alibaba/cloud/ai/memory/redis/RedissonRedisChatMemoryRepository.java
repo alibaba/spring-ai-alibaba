@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.memory.redis;
 
-import org.jetbrains.annotations.NotNull;
 import org.redisson.Redisson;
 import org.redisson.api.RKeys;
 import org.redisson.api.RList;
@@ -158,7 +157,6 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 
 	}
 
-	@NotNull
 	@Override
 	public List<String> findConversationIds() {
 		RKeys keys = redissonClient.getKeys();
@@ -169,9 +167,8 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 			.collect(Collectors.toList());
 	}
 
-	@NotNull
 	@Override
-	public List<Message> findByConversationId(@NotNull String conversationId) {
+	public List<Message> findByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		RList<String> redisList = redissonClient.getList(DEFAULT_KEY_PREFIX + conversationId);
 		return redisList.readAll()
@@ -182,7 +179,7 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 	}
 
 	@Override
-	public void saveAll(@NotNull String conversationId, @NotNull List<Message> messages) {
+	public void saveAll(String conversationId, List<Message> messages) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
@@ -193,7 +190,7 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 	}
 
 	@Override
-	public void deleteByConversationId(@NotNull String conversationId) {
+	public void deleteByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		RList<String> redisList = redissonClient.getList(DEFAULT_KEY_PREFIX + conversationId);
 		redisList.delete();
