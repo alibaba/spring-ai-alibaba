@@ -32,8 +32,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 
-import com.alibaba.cloud.ai.advisor.DocumentRetrievalAdvisor.CompositeDocumentRetriever;
-
 class CompositeDocumentRetrieverTests {
 
 	private DocumentRetriever retriever1;
