@@ -17,9 +17,12 @@ package com.alibaba.cloud.ai.example.manus.dynamic.cron.vo;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
  * Cron task configuration VO class
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CronConfig {
 
 	private Long id;
