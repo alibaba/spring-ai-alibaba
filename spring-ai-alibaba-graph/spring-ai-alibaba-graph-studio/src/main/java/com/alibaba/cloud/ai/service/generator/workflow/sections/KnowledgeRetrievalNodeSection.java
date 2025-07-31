@@ -39,6 +39,11 @@ public class KnowledgeRetrievalNodeSection implements NodeSection {
 		sb.append(String.format("// —— KnowledgeRetrievalNode [%s] ——%n", id));
 		sb.append(String.format("KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()%n", varName));
 
+		if (d.getInputId() != null && d.getInputField() != null) {
+			sb.append(String.format(".inputId(\"%s\")%n", escape(d.getInputId())));
+			sb.append(String.format(".inputField(\"%s\")%n", escape(d.getInputField())));
+		}
+
 		if (d.getUserPromptKey() != null) {
 			sb.append(String.format(".userPromptKey(\"%s\")%n", escape(d.getUserPromptKey())));
 		}
@@ -83,6 +88,19 @@ public class KnowledgeRetrievalNodeSection implements NodeSection {
 		}
 		if (d.getVectorStoreKey() != null) {
 			sb.append(String.format(".vectorStoreKey(\"%s\")%n", escape(d.getVectorStoreKey())));
+		}
+
+		if (d.getRetrievalMode() != null) {
+			sb.append(String.format(".retrievalMode(\"%s\")%n", escape(d.getRetrievalMode())));
+		}
+		if (d.getEmbeddingModelName() != null) {
+			sb.append(String.format(".embeddingModelName(\"%s\")%n", escape(d.getEmbeddingModelName())));
+		}
+		if (d.getEmbeddingProviderName() != null) {
+			sb.append(String.format(".embeddingProviderName(\"%s\")%n", escape(d.getEmbeddingProviderName())));
+		}
+		if (d.getVectorWeight() != null) {
+			sb.append(String.format(".vectorWeight(%s)%n", d.getVectorWeight()));
 		}
 		if (d.getOutputKey() != null) {
 			sb.append(String.format(".outputKey(\"%s\")%n", escape(d.getOutputKey())));
