@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.manus.config.startUp;
+package com.alibaba.cloud.ai.example.manus.config.startup;
 
 import java.awt.Desktop;
 import java.net.URI;

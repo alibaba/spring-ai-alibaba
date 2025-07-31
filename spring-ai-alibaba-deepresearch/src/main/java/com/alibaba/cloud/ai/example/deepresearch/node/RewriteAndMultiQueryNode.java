@@ -61,7 +61,7 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("rewrite_multiquery node is running.");
+		logger.info("rewrite_multi_query node is running.");
 		Map<String, Object> updated = new HashMap<>();
 		String nextStep = END;
 
