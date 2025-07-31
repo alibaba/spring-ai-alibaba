@@ -1,3 +1,16 @@
+# Copyright 2024-2026 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 name: Check Chinese Content in Jmanus
 
 on:
@@ -11,127 +24,127 @@ jobs:
     name: Check for Chinese content in Java files
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-    - name: Check Chinese content in Jmanus Java files
-      id: check-chinese
-      run: |
-        cd spring-ai-alibaba-jmanus
-        python scripts/check-chinese-content.py --dir src/main/java --fail-on-found
-      continue-on-error: true
+      - name: Check Chinese content in Jmanus Java files
+        id: check-chinese
+        run: |
+          cd spring-ai-alibaba-jmanus
+          python scripts/check-chinese-content.py --dir src/main/java --fail-on-found
+        continue-on-error: true
 
-    - name: Comment on PR if Chinese content found
-      if: steps.check-chinese.outcome == 'failure'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          const path = require('path');
-          
-          // 运行检查脚本获取详细信息
-          const { exec } = require('child_process');
-          const util = require('util');
-          const execPromise = util.promisify(exec);
-          
-          try {
-            // 重新运行检查脚本获取详细输出（不使用 --fail-on-found 以获取完整输出）
-            const { stdout, stderr } = await execPromise('cd spring-ai-alibaba-jmanus && python scripts/check-chinese-content.py --dir src/main/java');
-            
-            const comment = `## 🚨 Chinese Content Detected
+      - name: Comment on PR if Chinese content found
+        if: steps.check-chinese.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
 
-Chinese content has been detected in Java files under \`spring-ai-alibaba-jmanus/src/main/java\` directory.
+            // 运行检查脚本获取详细信息
+            const { exec } = require('child_process');
+            const util = require('util');
+            const execPromise = util.promisify(exec);
 
-### Check Results:
-\`\`\`
-${stdout}
-${stderr}
-\`\`\`
+            try {
+              // 重新运行检查脚本获取详细输出（不使用 --fail-on-found 以获取完整输出）
+              const { stdout, stderr } = await execPromise('cd spring-ai-alibaba-jmanus && python scripts/check-chinese-content.py --dir src/main/java');
 
-### Modification Suggestions:
+              const comment = `## 🚨 Chinese Content Detected
 
-1. **Chinese Comments** → Change to English Comments
-   \`\`\`java
-   // ❌ Incorrect Example
-   // 这是一个用户服务类
-   public class UserService {
+              Chinese content has been detected in Java files under \`spring-ai-alibaba-jmanus/src/main/java\` directory.
 
-   // ✅ Correct Example
-   // This is a user service class
-   public class UserService {
-   \`\`\`
+              ### Check Results:
+              \`\`\`
+              ${stdout}
+              ${stderr}
+              \`\`\`
 
-2. **Chinese Strings** → Extract to resource files or use English
-   \`\`\`java
-   // ❌ Incorrect Example
-   throw new RuntimeException("用户不存在");
+              ### Modification Suggestions:
 
-   // ✅ Correct Example
-   throw new RuntimeException("User not found");
-   // Or use resource files
-   throw new RuntimeException(messageSource.getMessage("user.not.found", null, locale));
-   \`\`\`
+              1. **Chinese Comments** → Change to English Comments
+                 \`\`\`java
+                 // ❌ Incorrect Example
+                 // 这是一个用户服务类
+                 public class UserService {
 
-3. **Chinese Identifiers** → Change to English Identifiers
-   \`\`\`java
-   // ❌ Incorrect Example
-   String 用户名 = "admin";
+                 // ✅ Correct Example
+                 // This is a user service class
+                 public class UserService {
+                 \`\`\`
 
-   // ✅ Correct Example
-   String username = "admin";
-   \`\`\`
+              2. **Chinese Strings** → Extract to resource files or use English
+                 \`\`\`java
+                 // ❌ Incorrect Example
+                 throw new RuntimeException("用户不存在");
 
-### Why Avoid Chinese Content?
+                 // ✅ Correct Example
+                 throw new RuntimeException("User not found");
+                 // Or use resource files
+                 throw new RuntimeException(messageSource.getMessage("user.not.found", null, locale));
+                 \`\`\`
 
-- 🌍 **Internationalization Friendly**: Facilitates project internationalization and localization
-- 🔧 **Development Environment Compatibility**: Avoids encoding issues across different operating systems and IDEs
-- 👥 **Team Collaboration**: Enables international team members to understand and maintain code
-- 📚 **Code Standards**: Follows open source project best practices
+              3. **Chinese Identifiers** → Change to English Identifiers
+                 \`\`\`java
+                 // ❌ Incorrect Example
+                 String 用户名 = "admin";
 
-Please modify the relevant files and resubmit. If you have questions, please contact the maintainers.`;
+                 // ✅ Correct Example
+                 String username = "admin";
+                 \`\`\`
 
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
-          } catch (error) {
-            console.error('Error running check script:', error);
-            
-            const fallbackComment = `## 🚨 Chinese Content Detected
+              ### Why Avoid Chinese Content?
 
-Chinese content has been detected in Java files under \`spring-ai-alibaba-jmanus/src/main/java\` directory.
+              - 🌍 **Internationalization Friendly**: Facilitates project internationalization and localization
+              - 🔧 **Development Environment Compatibility**: Avoids encoding issues across different operating systems and IDEs
+              - 👥 **Team Collaboration**: Enables international team members to understand and maintain code
+              - 📚 **Code Standards**: Follows open source project best practices
 
-Please check the following content and modify to English:
-- Chinese comments → English comments
-- Chinese strings → English strings or extract to resource files
-- Chinese identifiers → English identifiers
+              Please modify the relevant files and resubmit. If you have questions, please contact the maintainers.`;
 
-Please resubmit after modifications are complete.`;
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.error('Error running check script:', error);
 
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: fallbackComment
-            });
-          }
+              const fallbackComment = `## 🚨 Chinese Content Detected
 
-    - name: Fail the workflow if Chinese content found
-      if: steps.check-chinese.outcome == 'failure'
-      run: |
-        echo "❌ Chinese content found, please check the results above and modify the relevant files"
-        exit 1
+              Chinese content has been detected in Java files under \`spring-ai-alibaba-jmanus/src/main/java\` directory.
 
-    - name: Success message
-      if: steps.check-chinese.outcome == 'success'
-      run: |
-        echo "✅ No Chinese content found, check passed!"
+              Please check the following content and modify to English:
+              - Chinese comments → English comments
+              - Chinese strings → English strings or extract to resource files
+              - Chinese identifiers → English identifiers
+
+              Please resubmit after modifications are complete.`;
+
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: fallbackComment
+              });
+            }
+
+      - name: Fail the workflow if Chinese content found
+        if: steps.check-chinese.outcome == 'failure'
+        run: |
+          echo "❌ Chinese content found, please check the results above and modify the relevant files"
+          exit 1
+
+      - name: Success message
+        if: steps.check-chinese.outcome == 'success'
+        run: |
+          echo "✅ No Chinese content found, check passed!"

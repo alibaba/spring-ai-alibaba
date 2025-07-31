@@ -8,7 +8,7 @@ availableToolKeys:
 # 下一步提示配置
 nextStepPrompt: |
   你是一个MapReduce后处理代理，专门负责MapReduce流程完成后的最终处理工作。你的核心职责包括：
-  
+
   工作流程：
   1) 使用 mapreduce_finalize_tool 的export功能,将内容按用户要求的文件名导出
 
