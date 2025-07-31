@@ -336,4 +336,76 @@ public class ManusProperties implements IManusProperties {
 		this.allowExternalAccess = allowExternalAccess;
 	}
 
+	// MCP Service Loader Settings
+	// Begin--------------------------------------------------------------------------------------------
+
+	@ConfigProperty(group = "manus", subGroup = "mcpServiceLoader", key = "connectionTimeoutSeconds",
+			path = "manus.mcpServiceLoader.connectionTimeoutSeconds", description = "MCP连接超时时间(秒)", defaultValue = "20",
+			inputType = ConfigInputType.NUMBER)
+	private volatile Integer mcpConnectionTimeoutSeconds;
+
+	public Integer getMcpConnectionTimeoutSeconds() {
+		String configPath = "manus.mcpServiceLoader.connectionTimeoutSeconds";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			mcpConnectionTimeoutSeconds = Integer.valueOf(value);
+		}
+		// Ensure a default value if not configured and not set
+		if (mcpConnectionTimeoutSeconds == null) {
+			mcpConnectionTimeoutSeconds = 3;
+		}
+		return mcpConnectionTimeoutSeconds;
+	}
+
+	public void setMcpConnectionTimeoutSeconds(Integer mcpConnectionTimeoutSeconds) {
+		this.mcpConnectionTimeoutSeconds = mcpConnectionTimeoutSeconds;
+	}
+
+	@ConfigProperty(group = "manus", subGroup = "mcpServiceLoader", key = "maxRetryCount",
+			path = "manus.mcpServiceLoader.maxRetryCount", description = "MCP连接最大重试次数", defaultValue = "3",
+			inputType = ConfigInputType.NUMBER)
+	private volatile Integer mcpMaxRetryCount;
+
+	public Integer getMcpMaxRetryCount() {
+		String configPath = "manus.mcpServiceLoader.maxRetryCount";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			mcpMaxRetryCount = Integer.valueOf(value);
+		}
+		// Ensure a default value if not configured and not set
+		if (mcpMaxRetryCount == null) {
+			mcpMaxRetryCount = 1;
+		}
+		return mcpMaxRetryCount;
+	}
+
+	public void setMcpMaxRetryCount(Integer mcpMaxRetryCount) {
+		this.mcpMaxRetryCount = mcpMaxRetryCount;
+	}
+
+	@ConfigProperty(group = "manus", subGroup = "mcpServiceLoader", key = "maxConcurrentConnections",
+			path = "manus.mcpServiceLoader.maxConcurrentConnections", description = "MCP最大并发连接数", defaultValue = "10",
+			inputType = ConfigInputType.NUMBER)
+	private volatile Integer mcpMaxConcurrentConnections;
+
+	public Integer getMcpMaxConcurrentConnections() {
+		String configPath = "manus.mcpServiceLoader.maxConcurrentConnections";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			mcpMaxConcurrentConnections = Integer.valueOf(value);
+		}
+		// Ensure a default value if not configured and not set
+		if (mcpMaxConcurrentConnections == null) {
+			mcpMaxConcurrentConnections = 10;
+		}
+		return mcpMaxConcurrentConnections;
+	}
+
+	public void setMcpMaxConcurrentConnections(Integer mcpMaxConcurrentConnections) {
+		this.mcpMaxConcurrentConnections = mcpMaxConcurrentConnections;
+	}
+
+	// MCP Service Loader Settings
+	// End----------------------------------------------------------------------------------------------
+
 }

@@ -15,14 +15,13 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -37,8 +36,7 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	private final ObjectMapper objectMapper;
 
-	@Autowired
-	private PromptService promptService;
+	private final PromptService promptService;
 
 	private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
 
@@ -182,8 +180,9 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	}
 
-	public FormInputTool(ObjectMapper objectMapper) {
+	public FormInputTool(ObjectMapper objectMapper, PromptService promptService) {
 		this.objectMapper = objectMapper;
+		this.promptService = promptService;
 	}
 
 	public enum InputState {
