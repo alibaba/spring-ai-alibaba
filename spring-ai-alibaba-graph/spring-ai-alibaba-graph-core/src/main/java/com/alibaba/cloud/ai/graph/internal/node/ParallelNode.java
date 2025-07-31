@@ -30,10 +30,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Function;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -53,44 +56,58 @@ public class ParallelNode extends Node {
 			// 使用线程安全的ConcurrentHashMap来避免并发问题
 			Map<String, Object> partialMergedStates = new java.util.concurrent.ConcurrentHashMap<>();
 			Map<String, Object> asyncGenerators = new java.util.concurrent.ConcurrentHashMap<>();
-			var futures = actions.stream().map((Function<AsyncNodeActionWithConfig, Object>) action -> {
-				LifeListenerUtil.processListenersLIFO(this.nodeId,
-						new LinkedBlockingDeque<>(this.compileConfig.lifecycleListeners()), state.data(), config,
-						NODE_AFTER, null);
-				return action.apply(state, config).thenApply(partialState -> {
-					partialState.forEach((key, value) -> {
-						if (value instanceof AsyncGenerator<?> || value instanceof GeneratorSubscriber) {
-							((List) asyncGenerators.computeIfAbsent(key, k -> new ArrayList<>())).add(value);
-						}
-						else {
-							// 修复：使用KeyStrategy正确合并状态，而不是直接覆盖
-							KeyStrategy strategy = channels.get(key);
-							if (strategy != null) {
-								// 使用原子操作来确保线程安全
-								partialMergedStates.compute(key,
-										(k, existingValue) -> strategy.apply(existingValue, value));
-							}
-							else {
-								// 如果没有配置KeyStrategy，使用默认的替换策略
-								partialMergedStates.put(key, value);
-							}
-						}
-					});
-					// 移除这行：不在每个并行节点完成后立即更新状态
-					// state.updateState(partialMergedStates);
-					return action;
+
+			// 获取配置中的自定义执行器，如果没有则使用默认的ForkJoinPool.commonPool()
+			Executor executor = config.metadata(this.nodeId)
+				.filter(obj -> obj instanceof Executor)
+				.map(obj -> (Executor) obj)
+				.orElse(ForkJoinPool.commonPool());
+
+			CompletableFuture<?>[] futures = actions.stream()
+				.map((Function<AsyncNodeActionWithConfig, CompletableFuture<?>>) action -> {
+					LifeListenerUtil.processListenersLIFO(this.nodeId,
+							new LinkedBlockingDeque<>(this.compileConfig.lifecycleListeners()), state.data(), config,
+							NODE_BEFORE, null);
+
+					// 使用线程池异步执行每个action
+					return CompletableFuture.supplyAsync(() -> action.apply(state, config), executor)
+						.thenCompose(Function.identity())
+						.thenApply(partialState -> {
+							partialState.forEach((key, value) -> {
+								if (value instanceof AsyncGenerator<?> || value instanceof GeneratorSubscriber) {
+									((List) asyncGenerators.computeIfAbsent(key, k -> new ArrayList<>())).add(value);
+								}
+								else {
+									// 修复：使用KeyStrategy正确合并状态，而不是直接覆盖
+									KeyStrategy strategy = channels.get(key);
+									if (strategy != null) {
+										// 使用原子操作来确保线程安全
+										partialMergedStates.compute(key,
+												(k, existingValue) -> strategy.apply(existingValue, value));
+									}
+									else {
+										// 如果没有配置KeyStrategy，使用默认的替换策略
+										partialMergedStates.put(key, value);
+									}
+								}
+							});
+							return action;
+						})
+						.whenCompleteAsync(
+								(asyncNodeActionWithConfig, throwable) -> LifeListenerUtil.processListenersLIFO(
+										this.nodeId, new LinkedBlockingDeque<>(this.compileConfig.lifecycleListeners()),
+										state.data(), config, NODE_AFTER, throwable),
+								executor);
 				})
-					.whenComplete((asyncNodeActionWithConfig, throwable) -> LifeListenerUtil.processListenersLIFO(
-							this.nodeId, new LinkedBlockingDeque<>(this.compileConfig.lifecycleListeners()),
-							state.data(), config, NODE_AFTER, throwable));
-			}).toList().toArray(new CompletableFuture[0]);
-			return CompletableFuture.allOf(futures).thenApply((p) -> {
+				.toArray(CompletableFuture[]::new);
+
+			return CompletableFuture.allOf(futures).thenApplyAsync((p) -> {
 				// 在所有并行节点完成后，统一更新状态
 				if (!CollectionUtils.isEmpty(partialMergedStates)) {
 					state.updateState(partialMergedStates);
 				}
 				return CollectionUtils.isEmpty(asyncGenerators) ? state.data() : asyncGenerators;
-			});
+			}, executor);
 		}
 
 	}
