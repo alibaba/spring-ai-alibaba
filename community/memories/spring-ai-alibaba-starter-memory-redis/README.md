@@ -70,6 +70,130 @@ spring:
           nodes: localhost:6379,localhost:6380,localhost:6381
 ```
 
+### 完全配置-单机
+```yaml
+spring:
+  ai:
+    memory:
+      redis:
+        # Supports jedis, lettuce, and redisson
+        client-type: jedis
+        host: localhost
+        port: 6379
+        username: yourUsername
+        password: yourPassword
+        timeout: 2000
+```
+
+### 完全配置-集群
+```yaml
+spring:
+  ai:
+    memory:
+      redis:
+        username: yourUsername
+        password: yourPassword
+        timeout: 2000
+        # Supports jedis, lettuce, and redisson
+        client-type: jedis
+        cluster:
+          nodes: localhost:6379,localhost:6380,localhost:6381
+```
+
+### (可选)使用JedisPoolConfig覆盖默认的JedisRedisChatMemoryRepository
+
+```java
+@Bean
+JedisRedisChatMemoryRepository redisChatMemoryRepository() {
+	if (getClusterConfiguration() != null) {
+		logger.info("Configuring Redis Cluster chat memory repository using Jedis");
+		RedisMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
+		return JedisRedisChatMemoryRepository.builder()
+			.nodes(clusterConfiguration.nodeAddresses())
+			.username(clusterConfiguration.username())
+			.password(clusterConfiguration.password())
+			.timeout(clusterConfiguration.timeout())
+			// using your JedisPoolConfig here	
+			.poolConfig(new JedisPoolConfig())
+			.build();
+	}
+	logger.info("Configuring Redis Standalone chat memory repository using Jedis");
+	RedisMemoryStandaloneConfiguration standaloneConfiguration = getStandaloneConfiguration();
+	return JedisRedisChatMemoryRepository.builder()
+		.host(standaloneConfiguration.hostName())
+		.port(standaloneConfiguration.port())
+		.username(standaloneConfiguration.username())
+		.password(standaloneConfiguration.password())
+		.timeout(standaloneConfiguration.timeout())
+		// using your JedisPoolConfig here	
+		.poolConfig(new JedisPoolConfig())
+		.build();
+}
+```
+
+### (可选)使用GenericObjectPoolConfig覆盖默认的LettuceRedisChatMemoryRepository
+
+```java
+@Bean
+LettuceRedisChatMemoryRepository redisChatMemoryRepository() {
+	if (getClusterConfiguration() != null) {
+		logger.info("Configuring Redis Cluster chat memory repository using Lettuce");
+		RedisMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
+		return LettuceRedisChatMemoryRepository.builder()
+			.nodes(clusterConfiguration.nodeAddresses())
+			.username(clusterConfiguration.username())
+			.password(clusterConfiguration.password())
+			.timeout(clusterConfiguration.timeout())
+			// using your GenericObjectPoolConfig here
+			.poolConfig(new GenericObjectPoolConfig<>())
+			.build();
+	}
+	logger.info("Configuring Redis Standalone chat memory repository using Lettuce");
+	RedisMemoryStandaloneConfiguration standaloneConfiguration = getStandaloneConfiguration();
+	return LettuceRedisChatMemoryRepository.builder()
+		.host(standaloneConfiguration.hostName())
+		.port(standaloneConfiguration.port())
+		.username(standaloneConfiguration.username())
+		.password(standaloneConfiguration.password())
+		.timeout(standaloneConfiguration.timeout())
+		// using your GenericObjectPoolConfig here
+		.poolConfig(new GenericObjectPoolConfig<>())
+		.build();
+}
+```
+
+### (可选)使用Config覆盖默认的RedissonRedisChatMemoryRepository
+
+```java
+@Bean
+@ConditionalOnMissingBean
+RedissonRedisChatMemoryRepository redisChatMemoryRepository() {
+	if (getClusterConfiguration() != null) {
+		logger.info("Configuring Redis Cluster chat memory repository using Redisson");
+		RedisMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
+		return RedissonRedisChatMemoryRepository.builder()
+			.nods(clusterConfiguration.nodeAddresses())
+			.username(clusterConfiguration.username())
+			.password(clusterConfiguration.password())
+			.timeout(clusterConfiguration.timeout())
+			// using your Config here
+			.redissonConfig(new Config())
+			.build();
+	}
+	logger.info("Configuring Redis Standalone chat memory repository using Redisson");
+	RedisMemoryStandaloneConfiguration standaloneConfiguration = getStandaloneConfiguration();
+	return RedissonRedisChatMemoryRepository.builder()
+		.host(standaloneConfiguration.hostName())
+		.port(standaloneConfiguration.port())
+		.username(standaloneConfiguration.username())
+		.password(standaloneConfiguration.password())
+		.timeout(standaloneConfiguration.timeout())
+		// using your Config here
+		.redissonConfig(new Config())
+		.build();
+}
+```
+
 ### 示例代码
 
 ```java
