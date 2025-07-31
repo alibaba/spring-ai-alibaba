@@ -33,43 +33,42 @@ class TerminateToolTest {
 
 	@BeforeEach
 	void setUp() {
-		// 使用测试列名初始化
-		String testColumns = "name, age, city";
-		terminateTool = new TerminateTool("test-plan-123", testColumns);
+		// 使用测试预期返回信息初始化
+		terminateTool = new TerminateTool("test-plan-123", "test expected return info");
 	}
 
 	@Test
 	@DisplayName("测试 generateParametersJson 方法返回的 JSON 结构")
 	void testGenerateParametersJson() {
-		// 测试不同的列配置
-		String columns1 = "name, age";
-		String columns2 = "id, title, description, status";
-		String emptyColumns = "";
-		String nullColumns = null;
+		// 测试不同的预期返回信息
+		String expectedReturnInfo1 = "result data";
+		String expectedReturnInfo2 = "task completion status";
+		String expectedReturnInfo3 = "";
+		String expectedReturnInfo4 = null;
 
 		System.out.println("=== generateParametersJson 测试结果 ===");
 
-		// 测试1: 普通列
-		String json1 = getParametersJsonViaReflection(columns1);
-		System.out.println("测试1 - 普通列 [name, age]:");
+		// 测试1: 普通预期返回信息
+		String json1 = getParametersJsonViaReflection(expectedReturnInfo1);
+		System.out.println("测试1 - 普通预期返回信息 \"result data\":");
 		System.out.println(json1);
 		System.out.println();
 
-		// 测试2: 多列
-		String json2 = getParametersJsonViaReflection(columns2);
-		System.out.println("测试2 - 多列 [id, title, description, status]:");
+		// 测试2: 复杂预期返回信息
+		String json2 = getParametersJsonViaReflection(expectedReturnInfo2);
+		System.out.println("测试2 - 复杂预期返回信息 \"task completion status\":");
 		System.out.println(json2);
 		System.out.println();
 
-		// 测试3: 空列表
-		String json3 = getParametersJsonViaReflection(emptyColumns);
-		System.out.println("测试3 - 空列表 []:");
+		// 测试3: 空字符串
+		String json3 = getParametersJsonViaReflection(expectedReturnInfo3);
+		System.out.println("测试3 - 空字符串:");
 		System.out.println(json3);
 		System.out.println();
 
-		// 测试4: null列表
-		String json4 = getParametersJsonViaReflection(nullColumns);
-		System.out.println("测试4 - null列表:");
+		// 测试4: null
+		String json4 = getParametersJsonViaReflection(expectedReturnInfo4);
+		System.out.println("测试4 - null:");
 		System.out.println(json4);
 		System.out.println();
 
@@ -77,6 +76,8 @@ class TerminateToolTest {
 		assertTrue(json1.contains("\"type\": \"object\""));
 		assertTrue(json1.contains("\"properties\""));
 		assertTrue(json1.contains("\"message\""));
+		assertTrue(json1.contains("\"fileList\""));
+		assertTrue(json1.contains("\"folderList\""));
 		assertTrue(json1.contains("\"required\": [\"message\"]"));
 	}
 
@@ -93,7 +94,21 @@ class TerminateToolTest {
 
 		// 测试2: 执行终止操作后的状态
 		Map<String, Object> terminateInput = new HashMap<>();
-		terminateInput.put("message", "测试终止消息");
+		terminateInput.put("message", "Task completed successfully");
+		
+		// 添加文件列表
+		List<Map<String, String>> fileList = Arrays.asList(
+			Map.of("fileName", "result.txt", "fileDescription", "Task execution result"),
+			Map.of("fileName", "log.txt", "fileDescription", "Execution log")
+		);
+		terminateInput.put("fileList", fileList);
+		
+		// 添加文件夹列表
+		List<Map<String, String>> folderList = Arrays.asList(
+			Map.of("folderName", "output", "folderDescription", "Output files folder"),
+			Map.of("folderName", "temp", "folderDescription", "Temporary files folder")
+		);
+		terminateInput.put("folderList", folderList);
 
 		terminateTool.run(terminateInput);
 		String terminatedState = terminateTool.getCurrentToolStateString();
@@ -111,35 +126,35 @@ class TerminateToolTest {
 	}
 
 	@Test
-	@DisplayName("测试不同列配置下的 TerminateTool 行为")
-	void testDifferentColumnConfigurations() {
-		System.out.println("=== 不同列配置测试 ===");
+	@DisplayName("测试不同预期返回信息配置下的 TerminateTool 行为")
+	void testDifferentExpectedReturnInfoConfigurations() {
+		System.out.println("=== 不同预期返回信息配置测试 ===");
 
-		// 测试1: 默认列（空列表）
+		// 测试1: 默认预期返回信息（空字符串）
 		TerminateTool tool1 = new TerminateTool("plan-1", "");
 		String state1 = tool1.getCurrentToolStateString();
-		System.out.println("测试1 - 默认列配置 (空列表):");
+		System.out.println("测试1 - 默认预期返回信息 (空字符串):");
 		System.out.println(state1);
 		System.out.println();
 
-		// 测试2: null列
+		// 测试2: null预期返回信息
 		TerminateTool tool2 = new TerminateTool("plan-2", null);
 		String state2 = tool2.getCurrentToolStateString();
-		System.out.println("测试2 - null列配置:");
+		System.out.println("测试2 - null预期返回信息:");
 		System.out.println(state2);
 		System.out.println();
 
-		// 测试3: 单列
-		TerminateTool tool3 = new TerminateTool("plan-3", "result");
+		// 测试3: 具体预期返回信息
+		TerminateTool tool3 = new TerminateTool("plan-3", "task result");
 		String state3 = tool3.getCurrentToolStateString();
-		System.out.println("测试3 - 单列配置 [result]:");
+		System.out.println("测试3 - 具体预期返回信息 \"task result\":");
 		System.out.println(state3);
 		System.out.println();
 
 		// 验证默认行为
-		assertTrue(state1.contains("message")); // 默认列应该是 "message"
-		assertTrue(state2.contains("message")); // null时也应该使用默认列
-		assertTrue(state3.contains("result"));
+		assertTrue(state1.contains("N/A")); // 空字符串时应该显示 N/A
+		assertTrue(state2.contains("N/A")); // null时也应该显示 N/A
+		assertTrue(state3.contains("task result"));
 	}
 
 	@Test
@@ -147,8 +162,8 @@ class TerminateToolTest {
 	void testToolDefinition() {
 		System.out.println("=== 工具定义测试 ===");
 
-		String testColumns = "task_id, result, timestamp";
-		var toolDefinition = TerminateTool.getToolDefinition(testColumns);
+		String expectedReturnInfo = "task_id, result, timestamp";
+		var toolDefinition = TerminateTool.getToolDefinition(expectedReturnInfo);
 
 		// FunctionTool 是一个简单的包装类，我们通过反射来获取内部的 function 对象
 		try {
@@ -190,40 +205,40 @@ class TerminateToolTest {
 	void testJsonOutputCharacteristics() {
 		System.out.println("=== JSON 输出特征测试 ===");
 
-		// 测试不同规模的列配置
-		String smallColumns = "id";
-		String mediumColumns = "id, name, status, created_at";
-		String largeColumns = "id, name, email, phone, address, city, state, zip, country, notes";
+		// 测试不同规模的预期返回信息
+		String smallExpectedInfo = "id";
+		String mediumExpectedInfo = "id, name, status, created_at";
+		String largeExpectedInfo = "id, name, email, phone, address, city, state, zip, country, notes";
 
-		String smallJson = getParametersJsonViaReflection(smallColumns);
-		String mediumJson = getParametersJsonViaReflection(mediumColumns);
-		String largeJson = getParametersJsonViaReflection(largeColumns);
+		String smallJson = getParametersJsonViaReflection(smallExpectedInfo);
+		String mediumJson = getParametersJsonViaReflection(mediumExpectedInfo);
+		String largeJson = getParametersJsonViaReflection(largeExpectedInfo);
 
-		System.out.println("小规模列 (1列) JSON长度: " + smallJson.length() + " 字符");
-		System.out.println("中等规模列 (4列) JSON长度: " + mediumJson.length() + " 字符");
-		System.out.println("大规模列 (10列) JSON长度: " + largeJson.length() + " 字符");
+		System.out.println("小规模预期返回信息 (1项) JSON长度: " + smallJson.length() + " 字符");
+		System.out.println("中等规模预期返回信息 (4项) JSON长度: " + mediumJson.length() + " 字符");
+		System.out.println("大规模预期返回信息 (10项) JSON长度: " + largeJson.length() + " 字符");
 		System.out.println();
 
 		// 验证JSON格式正确性（简单验证）
 		assertTrue(smallJson.startsWith("{"));
 		assertTrue(smallJson.endsWith("}"));
 		assertTrue(mediumJson.contains("\"type\": \"object\""));
-		assertTrue(largeJson.contains("\"type\": \"string\""));
+		assertTrue(largeJson.contains("\"items\": {\"type\": \"object\"}"));
 
 		// 确保长度在合理范围内（避免过长导致解析问题）
-		assertTrue(smallJson.length() < 1000, "小规模JSON应该小于1000字符");
-		assertTrue(mediumJson.length() < 1000, "中等规模JSON应该小于1000字符");
-		assertTrue(largeJson.length() < 1000, "大规模JSON应该小于1000字符");
+		assertTrue(smallJson.length() < 2000, "小规模JSON应该小于2000字符");
+		assertTrue(mediumJson.length() < 2000, "中等规模JSON应该小于2000字符");
+		assertTrue(largeJson.length() < 2000, "大规模JSON应该小于2000字符");
 	}
 
 	/**
 	 * 通过反射调用私有静态方法 generateParametersJson
 	 */
-	private String getParametersJsonViaReflection(String columns) {
+	private String getParametersJsonViaReflection(String expectedReturnInfo) {
 		try {
 			var method = TerminateTool.class.getDeclaredMethod("generateParametersJson", String.class);
 			method.setAccessible(true);
-			return (String) method.invoke(null, columns);
+			return (String) method.invoke(null, expectedReturnInfo);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to invoke generateParametersJson", e);

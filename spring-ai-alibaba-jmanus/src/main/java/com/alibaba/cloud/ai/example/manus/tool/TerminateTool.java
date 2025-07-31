@@ -77,6 +77,24 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 				        "required": ["fileName", "fileDescription"]
 				      },
 				      "description": "Complete list of all files generated during this agent execution cycle. Every file created must be included with its name and a detailed description of its contents. This is mandatory for full transparency and auditing purposes."
+				    },
+				    "folderList": {
+				      "type": "array",
+				      "items": {
+				        "type": "object",
+				        "properties": {
+				          "folderName": {
+				            "type": "string",
+				            "description": "Name of the folder"
+				          },
+				          "folderDescription": {
+				            "type": "string",
+				            "description": "Detailed description of what the folder contains. This should include a comprehensive summary of all content within this folder generated during this agent execution cycle."
+				          }
+				        },
+				        "required": ["folderName", "folderDescription"]
+				      },
+				      "description": "Complete list of all folders generated during this agent execution cycle. Every folder created must be included with its name and a detailed description of its contents."
 				    }
 				  },
 				  "required": ["message"]
@@ -140,8 +158,18 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 			}
 		}
 		
+		if (input.containsKey("folderList")) {
+			@SuppressWarnings("unchecked")
+			List<Map<String, String>> folderList = (List<Map<String, String>>) input.get("folderList");
+			sb.append("Folders:\n");
+			for (Map<String, String> folder : folderList) {
+				sb.append("  - Name: ").append(folder.get("folderName"))
+				  .append("\n    Description: ").append(folder.get("folderDescription")).append("\n");
+			}
+		}
+		
 		// If no recognized keys, just output the whole map
-		if (!input.containsKey("message") && !input.containsKey("fileList")) {
+		if (!input.containsKey("message") && !input.containsKey("fileList") && !input.containsKey("folderList")) {
 			sb.append(input.toString());
 		}
 
