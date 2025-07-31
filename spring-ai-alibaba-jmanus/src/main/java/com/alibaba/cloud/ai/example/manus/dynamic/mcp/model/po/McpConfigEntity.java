@@ -44,7 +44,7 @@ public class McpConfigEntity {
 
 	@Column(nullable = false, columnDefinition = "VARCHAR(10) DEFAULT 'ENABLE'")
 	@Enumerated(EnumType.STRING)
-	private McpConfigStatus status = McpConfigStatus.ENABLE; // 默认为启用状态
+	private McpConfigStatus status = McpConfigStatus.ENABLE; // Default to enabled status
 
 	// Getters and Setters
 	public Long getId() {

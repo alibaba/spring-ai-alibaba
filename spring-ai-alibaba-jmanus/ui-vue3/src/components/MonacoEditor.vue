@@ -31,11 +31,11 @@ const emit = defineEmits<Emits>()
 const editorContainer = ref<HTMLElement>()
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
 
-// 创建编辑器实例
+// Create editor instance
 const createEditor = () => {
   if (!editorContainer.value) return
 
-  // 配置Monaco编辑器
+  // Configure Monaco editor
   editor = monaco.editor.create(editorContainer.value, {
     value: props.modelValue,
     language: props.language,
@@ -64,14 +64,14 @@ const createEditor = () => {
     readOnly: props.readonly
   })
 
-  // 监听内容变化
+  // Listen for content changes
   editor.onDidChangeModelContent(() => {
     const value = editor?.getValue() || ''
     emit('update:modelValue', value)
     emit('change', value)
   })
 
-  // 自定义主题
+  // Custom theme
   monaco.editor.defineTheme('custom-dark', {
     base: 'vs-dark',
     inherit: true,
@@ -102,7 +102,7 @@ const createEditor = () => {
   editor.updateOptions({ theme: 'custom-dark' })
 }
 
-// 更新编辑器内容
+// Update editor content
 const updateContent = (content: string) => {
   if (editor) {
     const currentContent = editor.getValue()
@@ -112,14 +112,14 @@ const updateContent = (content: string) => {
   }
 }
 
-// 监听modelValue变化
+// Watch for modelValue changes
 watch(() => props.modelValue, (newValue) => {
   if (editor) {
     updateContent(newValue)
   }
 })
 
-// 监听readonly变化
+// Watch for readonly changes
 watch(() => props.readonly, (readonly) => {
   if (editor) {
     editor.updateOptions({ readOnly: readonly })
@@ -188,4 +188,4 @@ onUnmounted(() => {
 :deep(.monaco-editor .scrollbar .slider.active) {
   background-color: rgba(156, 163, 175, 0.7) !important;
 }
-</style> 
+</style>

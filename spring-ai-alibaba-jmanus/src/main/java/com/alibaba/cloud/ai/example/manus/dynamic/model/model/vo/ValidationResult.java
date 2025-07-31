@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo;
 import java.util.List;
 
 /**
- * 验证结果数据传输对象
+ * Validation result data transfer object
  */
 public class ValidationResult {
 

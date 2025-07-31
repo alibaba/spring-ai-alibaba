@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.example.manus.exception;
 /**
  * @author dahua
  * @time 2025/7/30
- * @desc jmanus执行事件异常 runtime
+ * @desc jmanus execution event exception runtime
  */
 public class PlanException extends RuntimeException {
 
