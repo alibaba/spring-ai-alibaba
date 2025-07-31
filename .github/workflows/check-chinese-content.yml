@@ -49,18 +49,21 @@ jobs:
             const fs = require('fs');
             const path = require('path');
 
-            // 运行检查脚本获取详细信息
-            const { exec } = require('child_process');
+            // Run check script to get detailed information
+            const { exec: execCallback } = require('child_process');
             const util = require('util');
-            const execPromise = util.promisify(exec);
+            const execPromise = util.promisify(execCallback);
 
             try {
-              // 重新运行检查脚本获取详细输出（不使用 --fail-on-found 以获取完整输出）
-              const { stdout, stderr } = await execPromise('cd spring-ai-alibaba-jmanus && python scripts/check-chinese-content.py --dir src/main/java');
+              // Re-run check script to get detailed output (without --fail-on-found)
+              const { stdout, stderr } = await execPromise(
+                'cd spring-ai-alibaba-jmanus && python scripts/check-chinese-content.py --dir src/main/java'
+              );
 
               const comment = `## 🚨 Chinese Content Detected
 
-              Chinese content has been detected in Java files under \`spring-ai-alibaba-jmanus/src/main/java\` directory.
+              Chinese content has been detected in Java files under
+              \`spring-ai-alibaba-jmanus/src/main/java\` directory.
 
               ### Check Results:
               \`\`\`
