@@ -34,7 +34,7 @@ export const useConversationStore = () =>
       curConvKey: state => state.conversations[state.current]?.key,
     },
     actions: {
-      newOne(firstMessage: any) {
+      newOne(firstMessage: any | null = null) {
         const newVar = {
           key: v4(),
           title: firstMessage || 'Unnamed conversation',

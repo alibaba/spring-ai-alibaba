@@ -183,8 +183,13 @@ import { parseJsonTextStrict } from '@/utils/jsonParser';
 
 const router = useRouter()
 const route = useRoute()
+const conversationStore = useConversationStore()
 // 会话ID
 let convId = route.params.convId as string
+if (!convId) {
+  const { key } = conversationStore.newOne()
+  router.push(`/chat/${key}`) 
+}
 const uploadFileList = ref([])
 const { useToken } = theme
 const { token } = useToken()
@@ -213,7 +218,7 @@ const roles: BubbleListProps['roles'] = {
   }
 }
 
-const conversationStore = useConversationStore()
+
 const messageStore = useMessageStore()
 const configStore = useConfigStore()
 messageStore.convId = convId
@@ -296,7 +301,6 @@ const [agent] = useXAgent({
       }
 
       case 'onDS': {
-        current.deepResearchDetail = true
         content = await (configStore.chatConfig.auto_accepted_plan ? sendChatStream(message, onUpdate, onError) : sendResumeStream(message, onUpdate, onError))
         break
       }
@@ -390,14 +394,6 @@ const htmlRendererRef = ref(null)
 
 
 const submitHandle = (nextContent: any) => {  
-  if (!convId) {
-    console.log('new conv')
-    const { key } = conversationStore.newOne(nextContent)
-    convId = key
-    messageStore.convId = convId
-    messageStore.currentState[convId] = current
-    router.replace(`/chat/${key}`)
-  }
   current.aiType = 'normal'
   // 如果是深度研究，需要切换到下一个aiType
   if (current.deepResearch) {
