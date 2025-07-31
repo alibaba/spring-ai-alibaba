@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequestPara
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.FunctionTool;
 import com.alibaba.cloud.ai.dashscope.chat.observation.DashScopeChatModelObservationConvention;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
+import com.alibaba.cloud.ai.tool.observation.inner.ToolCallReactiveContextHolder;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -260,22 +261,25 @@ public class DashScopeChatModel implements ChatModel {
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 					if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
-						return Flux.defer(
-								() -> {
-									var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-									if (toolExecutionResult.returnDirect()) {
-										// Return tool execution result directly to the client.
-										return Flux.just(ChatResponse.builder().from(response)
-												.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-												.build());
-									} else {
-										// Send the tool execution result back to the model.
-										return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-												response);
-									}
-								}
-						).subscribeOn(Schedulers.boundedElastic());
-
+						return Flux.deferContextual((ctx) -> {
+							ToolExecutionResult toolExecutionResult;
+							try {
+								ToolCallReactiveContextHolder.setContext(ctx);
+								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+							} finally {
+								ToolCallReactiveContextHolder.clearContext();
+							}
+							if (toolExecutionResult.returnDirect()) {
+								// Return tool execution result directly to the client.
+								return Flux.just(ChatResponse.builder().from(response)
+										.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+										.build());
+							} else {
+								// Send the tool execution result back to the model.
+								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+										response);
+							}
+						}).subscribeOn(Schedulers.boundedElastic());
 					}
 					else {
 						return Flux.just(response);
