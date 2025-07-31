@@ -82,6 +82,14 @@ public class PromptConstant {
 		return new PromptTemplate(PromptLoader.loadPrompt("question-expansion"));
 	}
 
+	public static PromptTemplate getBusinessKnowledgePromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("business-knowledge"));
+	}
+
+	public static PromptTemplate getSemanticModelPromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("semantic-model"));
+	}
+
 	// 兼容性方法，保持向后兼容
 	@Deprecated
 	public static final PromptTemplate INIT_REWRITE_PROMPT_TEMPLATE = getInitRewritePromptTemplate();
