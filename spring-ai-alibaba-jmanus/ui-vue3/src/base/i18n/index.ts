@@ -50,13 +50,13 @@ export const changeLanguage = async (locale: string) => {
   i18n.global.locale.value = locale as 'zh' | 'en'
   localeConfig.locale = locale
 
-  // 同时切换后端PromptService的语言配置
+  // Also switch the backend PromptService language configuration
   try {
     const { PromptApiService } = await import('@/api/prompt-api-service')
     await PromptApiService.importAllPromptsFromLanguage(locale)
     console.log(`Successfully switched PromptService to language: ${locale}`)
   } catch (error) {
     console.warn(`Failed to switch PromptService language to ${locale}:`, error)
-    // 不阻断前端语言切换，只记录警告
+    // Don't block frontend language switching, only log warning
   }
 }

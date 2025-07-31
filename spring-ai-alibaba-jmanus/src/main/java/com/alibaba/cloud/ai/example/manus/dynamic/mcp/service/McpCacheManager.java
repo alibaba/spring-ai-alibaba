@@ -36,7 +36,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
 
 /**
- * MCP缓存管理器
+ * MCP cache manager
  */
 @Component
 public class McpCacheManager {
@@ -61,8 +61,8 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 构建缓存
-	 * @return 加载缓存
+	 * Build cache
+	 * @return Load cache
 	 */
 	private LoadingCache<String, Map<String, McpServiceEntity>> buildCache() {
 		return CacheBuilder.newBuilder()
@@ -90,10 +90,10 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 加载MCP服务
-	 * @param mcpConfigEntities MCP配置实体列表
-	 * @return MCP服务实体映射
-	 * @throws IOException 加载失败时抛出异常
+	 * Load MCP services
+	 * @param mcpConfigEntities MCP configuration entity list
+	 * @return MCP service entity mapping
+	 * @throws IOException Thrown when loading fails
 	 */
 	private Map<String, McpServiceEntity> loadMcpServices(List<McpConfigEntity> mcpConfigEntities) throws IOException {
 		Map<String, McpServiceEntity> toolCallbackMap = new ConcurrentHashMap<>();
@@ -131,9 +131,9 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 获取或加载MCP服务
-	 * @param planId 计划ID
-	 * @return MCP服务实体映射
+	 * Get or load MCP services
+	 * @param planId Plan ID
+	 * @return MCP service entity mapping
 	 */
 	public Map<String, McpServiceEntity> getOrLoadServices(String planId) {
 		try {
@@ -146,9 +146,9 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 获取MCP服务实体列表
-	 * @param planId 计划ID
-	 * @return MCP服务实体列表
+	 * Get MCP service entity list
+	 * @param planId Plan ID
+	 * @return MCP service entity list
 	 */
 	public List<McpServiceEntity> getServiceEntities(String planId) {
 		try {
@@ -161,8 +161,8 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 清除缓存
-	 * @param planId 计划ID
+	 * Clear cache
+	 * @param planId Plan ID
 	 */
 	public void invalidateCache(String planId) {
 		toolCallbackMapCache.invalidate(planId != null ? planId : "DEFAULT");
@@ -170,7 +170,7 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 清除所有缓存
+	 * Clear all cache
 	 */
 	public void invalidateAllCache() {
 		toolCallbackMapCache.invalidateAll();
@@ -178,8 +178,8 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 刷新缓存
-	 * @param planId 计划ID
+	 * Refresh cache
+	 * @param planId Plan ID
 	 */
 	public void refreshCache(String planId) {
 		toolCallbackMapCache.refresh(planId != null ? planId : "DEFAULT");
@@ -187,8 +187,8 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 获取缓存统计信息
-	 * @return 缓存统计信息
+	 * Get cache statistics
+	 * @return Cache statistics
 	 */
 	public String getCacheStats() {
 		return toolCallbackMapCache.stats().toString();

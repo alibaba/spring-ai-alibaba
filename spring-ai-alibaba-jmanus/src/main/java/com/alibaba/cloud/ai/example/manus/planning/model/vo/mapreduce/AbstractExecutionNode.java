@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 /**
- * 执行节点抽象基类，提供公共的默认实现
+ * Abstract execution node base class providing common default implementations
  */
 public abstract class AbstractExecutionNode implements ExecutionNode {
 

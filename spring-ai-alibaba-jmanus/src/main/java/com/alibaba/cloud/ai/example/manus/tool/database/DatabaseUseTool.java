@@ -59,8 +59,8 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 			            "type": "object",
 			            "properties": {
 			                "action": { "type": "string", "const": "execute_sql" },
-			                "query": { "type": "string", "description": "要执行的SQL语句" },
-			                "datasourceName": { "type": "string", "description": "数据源名称，可选" }
+			                "query": { "type": "string", "description": "SQL statement to execute" },
+			                "datasourceName": { "type": "string", "description": "Data source name, optional" }
 			            },
 			            "required": ["action", "query"],
 			            "additionalProperties": false
@@ -69,8 +69,8 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 			            "type": "object",
 			            "properties": {
 			                "action": { "type": "string", "const": "get_table_name" },
-			                "text": { "type": "string", "description": "要搜索的表中文名、表描述，仅支持单个查询" },
-			                "datasourceName": { "type": "string", "description": "数据源名称，可选" }
+			                "text": { "type": "string", "description": "Chinese table name or table description to search, supports single query only" },
+			                "datasourceName": { "type": "string", "description": "Data source name, optional" }
 			            },
 			            "required": ["action", "text"],
 			            "additionalProperties": false
@@ -79,8 +79,8 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 			            "type": "object",
 			            "properties": {
 			                "action": { "type": "string", "const": "get_table_index" },
-			                "text": { "type": "string", "description": "要搜索的表名" },
-			                "datasourceName": { "type": "string", "description": "数据源名称，可选" }
+			                "text": { "type": "string", "description": "Table name to search" },
+			                "datasourceName": { "type": "string", "description": "Data source name, optional" }
 			            },
 			            "required": ["action", "text"],
 			            "additionalProperties": false
@@ -89,8 +89,8 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 			            "type": "object",
 			            "properties": {
 			                "action": { "type": "string", "const": "get_table_meta" },
-			                "text": { "type": "string", "description": "模糊搜索表描述，留空则获取所有表" },
-			                "datasourceName": { "type": "string", "description": "数据源名称，可选" }
+			                "text": { "type": "string", "description": "Fuzzy search table description, leave empty to get all tables" },
+			                "datasourceName": { "type": "string", "description": "Data source name, optional" }
 			            },
 			            "required": ["action"],
 			            "additionalProperties": false
@@ -99,7 +99,7 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 			            "type": "object",
 			            "properties": {
 			                "action": { "type": "string", "const": "get_datasource_info" },
-			                "datasourceName": { "type": "string", "description": "数据源名称，留空则获取所有可用数据源" }
+			                "datasourceName": { "type": "string", "description": "Data source name, leave empty to get all available data sources" }
 			            },
 			            "required": ["action"],
 			            "additionalProperties": false
@@ -111,12 +111,12 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 	private final String name = "database_use";
 
 	private final String description = """
-			与数据库交互，执行SQL、表结构、索引、健康状态等操作。支持的操作包括：
-			- 'execute_sql'：执行SQL语句
-			- 'get_table_name'：根据表注释查找表名
-			- 'get_table_index'：获取表索引信息
-			- 'get_table_meta'：获取表结构、字段、索引的完整元信息
-			- 'get_datasource_info'：获取数据源信息
+			Interact with database, execute SQL, table structure, index, health status and other operations. Supported operations include:
+			- 'execute_sql': Execute SQL statements
+			- 'get_table_name': Find table names based on table comments
+			- 'get_table_index': Get table index information
+			- 'get_table_meta': Get complete metadata of table structure, fields, indexes
+			- 'get_datasource_info': Get data source information
 			""";
 
 	public OpenAiApi.FunctionTool getToolDefinition() {
@@ -166,11 +166,12 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 				case "get_table_index":
 					return new GetTableIndexAction(objectMapper).execute(request, dataSourceService);
 				case "get_table_meta": {
-					// 先用text查，如果没查到再查全部
+					// First search with text, if not found then search all
 					GetTableMetaAction metaAction = new GetTableMetaAction(objectMapper);
 					ToolExecuteResult result = metaAction.execute(request, dataSourceService);
 					if (result == null || result.getOutput() == null || result.getOutput().trim().isEmpty()
-							|| result.getOutput().equals("[]") || result.getOutput().contains("未找到符合条件的表")) {
+							|| result.getOutput().equals("[]")
+							|| result.getOutput().contains("No matching tables found")) {
 						DatabaseRequest allReq = new DatabaseRequest();
 						allReq.setAction("get_table_meta");
 						allReq.setText(null);
@@ -195,7 +196,7 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 		if (planId != null) {
 			log.info("Cleaning up database resources for plan: {}", planId);
 			try {
-				// 关闭所有数据源的连接
+				// Close all data source connections
 				dataSourceService.closeAllConnections();
 				log.info("Successfully cleaned up database connections for plan: {}", planId);
 			}
@@ -208,10 +209,10 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 	@Override
 	public String getCurrentToolStateString() {
 		try {
-			// 获取所有数据源信息
+			// Get all data source information
 			Map<String, String> datasourceInfo = dataSourceService.getAllDatasourceInfo();
 
-			// 构建数据源状态信息
+			// Build data source status information
 			StringBuilder stateBuilder = new StringBuilder();
 			stateBuilder.append("\n=== Database Tool Current State ===\n");
 
@@ -226,7 +227,7 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 					stateBuilder.append(String.format("  - %s (%s)\n", datasourceName, datasourceType));
 				}
 
-				// 获取默认数据源信息
+				// Get default data source information
 				try {
 					String defaultType = dataSourceService.getDataSourceType();
 					stateBuilder.append(String.format("\nDefault datasource type: %s\n", defaultType));
@@ -235,7 +236,7 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 					stateBuilder.append("\nDefault datasource: Not available\n");
 				}
 
-				// 测试连接状态
+				// Test connection status
 				stateBuilder.append("\nConnection status:\n");
 				for (String datasourceName : datasourceInfo.keySet()) {
 					try {

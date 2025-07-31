@@ -51,7 +51,7 @@ public class GetTableMetaAction extends AbstractDatabaseAction {
 
 		List<TableMeta> tableMetaList = new ArrayList<>();
 		Map<String, TableMeta> tableMetaMap = new LinkedHashMap<>();
-		// 1. 获取表信息
+		// 1. Get table information
 		String databaseType = datasourceName != null && !datasourceName.trim().isEmpty()
 				? dataSourceService.getDataSourceType(datasourceName) : dataSourceService.getDataSourceType();
 
@@ -81,14 +81,14 @@ public class GetTableMetaAction extends AbstractDatabaseAction {
 			log.error("GetTableMetaAction failed to fetch table info, datasourceName={}, error={}", datasourceName,
 					e.getMessage(), e);
 			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
-					+ "\n获取表信息出错: " + e.getMessage());
+					+ "\nError getting table information: " + e.getMessage());
 		}
 		if (tableMetaMap.isEmpty()) {
 			log.warn("GetTableMetaAction found no tables, datasourceName={}, fuzzy={}", datasourceName, fuzzy);
-			return new ToolExecuteResult(
-					"Datasource: " + (datasourceName != null ? datasourceName : "default") + "\n未找到符合条件的表");
+			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
+					+ "\nNo matching tables found");
 		}
-		// 2. 获取字段信息
+		// 2. Get field information
 		StringBuilder inClause = new StringBuilder();
 		for (int i = 0; i < tableMetaMap.size(); i++) {
 			inClause.append("?");
@@ -126,9 +126,9 @@ public class GetTableMetaAction extends AbstractDatabaseAction {
 			log.error("GetTableMetaAction failed to fetch column info, datasourceName={}, error={}", datasourceName,
 					e.getMessage(), e);
 			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
-					+ "\n获取字段信息出错: " + e.getMessage());
+					+ "\nError getting field information: " + e.getMessage());
 		}
-		// 3. 获取索引信息
+		// 3. Get index information
 		String indexSql = DatabaseSqlGenerator.generateIndexInfoSql(databaseType, inClause.toString());
 		try (Connection conn = datasourceName != null && !datasourceName.trim().isEmpty()
 				? dataSourceService.getConnection(datasourceName) : dataSourceService.getConnection();
@@ -179,10 +179,10 @@ public class GetTableMetaAction extends AbstractDatabaseAction {
 			log.error("GetTableMetaAction failed to fetch index info, datasourceName={}, error={}", datasourceName,
 					e.getMessage(), e);
 			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
-					+ "\n获取索引信息出错: " + e.getMessage());
+					+ "\nError getting index information: " + e.getMessage());
 		}
 		tableMetaList.addAll(tableMetaMap.values());
-		// 4. 返回结构化对象
+		// 4. Return structured object
 		try {
 			String json = objectMapper.writeValueAsString(tableMetaList);
 			log.info("GetTableMetaAction completed successfully, datasourceName={}, found {} tables", datasourceName,
@@ -194,7 +194,7 @@ public class GetTableMetaAction extends AbstractDatabaseAction {
 			log.error("GetTableMetaAction failed to serialize result, datasourceName={}, error={}", datasourceName,
 					e.getMessage(), e);
 			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
-					+ "\n结果序列化出错: " + e.getMessage());
+					+ "\nResult serialization error: " + e.getMessage());
 		}
 	}
 

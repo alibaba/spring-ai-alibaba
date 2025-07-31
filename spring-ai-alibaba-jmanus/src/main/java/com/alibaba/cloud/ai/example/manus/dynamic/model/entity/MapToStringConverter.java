@@ -48,9 +48,9 @@ public class MapToStringConverter implements AttributeConverter<Map<String, Stri
 
 	@Override
 	public Map<String, String> convertToEntityAttribute(String dbData) {
-		// 增加一个 null 或空字符串的检查
+		// Add null or empty string check
 		if (dbData == null || dbData.isEmpty()) {
-			// 返回一个空的 Map 或者 null，根据业务逻辑决定
+			// Return empty Map or null, depending on business logic
 			return new HashMap<>();
 		}
 		try {

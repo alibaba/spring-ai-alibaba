@@ -19,124 +19,125 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * MapReduce工具共享状态管理器接口，用于管理不同Agent实例之间的共享状态信息
+ * MapReduce tool shared state manager interface for managing shared state information
+ * between different Agent instances
  */
 public interface IMapReduceSharedStateManager {
 
 	/**
-	 * 获取或创建计划状态
-	 * @param planId 计划ID
-	 * @return 计划状态
+	 * Get or create plan state
+	 * @param planId Plan ID
+	 * @return Plan state
 	 */
 	MapReduceSharedStateManager.PlanState getOrCreatePlanState(String planId);
 
 	/**
-	 * 获取计划状态
-	 * @param planId 计划ID
-	 * @return 计划状态
+	 * Get plan state
+	 * @param planId Plan ID
+	 * @return Plan state
 	 */
 	MapReduceSharedStateManager.PlanState getPlanState(String planId);
 
 	/**
-	 * 清理计划状态
-	 * @param planId 计划ID
+	 * Clean up plan state
+	 * @param planId Plan ID
 	 */
 	void cleanupPlanState(String planId);
 
 	/**
-	 * 获取下一个任务ID
-	 * @param planId 计划ID
-	 * @return 下一个任务ID
+	 * Get next task ID
+	 * @param planId Plan ID
+	 * @return Next task ID
 	 */
 	String getNextTaskId(String planId);
 
 	/**
-	 * 添加分割结果
-	 * @param planId 计划ID
-	 * @param taskDirectory 任务目录
+	 * Add split result
+	 * @param planId Plan ID
+	 * @param taskDirectory Task directory
 	 */
 	void addSplitResult(String planId, String taskDirectory);
 
 	/**
-	 * 获取分割结果
-	 * @param planId 计划ID
-	 * @return 分割结果列表
+	 * Get split results
+	 * @param planId Plan ID
+	 * @return Split results list
 	 */
 	List<String> getSplitResults(String planId);
 
 	/**
-	 * 设置分割结果
-	 * @param planId 计划ID
-	 * @param splitResults 分割结果列表
+	 * Set split results
+	 * @param planId Plan ID
+	 * @param splitResults Split results list
 	 */
 	void setSplitResults(String planId, List<String> splitResults);
 
 	/**
-	 * 记录Map任务状态
-	 * @param planId 计划ID
-	 * @param taskId 任务ID
-	 * @param taskStatus 任务状态
+	 * Record Map task status
+	 * @param planId Plan ID
+	 * @param taskId Task ID
+	 * @param taskStatus Task status
 	 */
 	void recordMapTaskStatus(String planId, String taskId, MapReduceSharedStateManager.TaskStatus taskStatus);
 
 	/**
-	 * 获取Map任务状态
-	 * @param planId 计划ID
-	 * @param taskId 任务ID
-	 * @return 任务状态
+	 * Get Map task status
+	 * @param planId Plan ID
+	 * @param taskId Task ID
+	 * @return Task status
 	 */
 	MapReduceSharedStateManager.TaskStatus getMapTaskStatus(String planId, String taskId);
 
 	/**
-	 * 获取所有Map任务状态
-	 * @param planId 计划ID
-	 * @return 所有任务状态
+	 * Get all Map task statuses
+	 * @param planId Plan ID
+	 * @return All task statuses
 	 */
 	Map<String, MapReduceSharedStateManager.TaskStatus> getAllMapTaskStatuses(String planId);
 
 	/**
-	 * 设置最后操作结果
-	 * @param planId 计划ID
-	 * @param result 操作结果
+	 * Set last operation result
+	 * @param planId Plan ID
+	 * @param result Operation result
 	 */
 	void setLastOperationResult(String planId, String result);
 
 	/**
-	 * 获取最后操作结果
-	 * @param planId 计划ID
-	 * @return 最后操作结果
+	 * Get last operation result
+	 * @param planId Plan ID
+	 * @return Last operation result
 	 */
 	String getLastOperationResult(String planId);
 
 	/**
-	 * 设置最后处理的文件
-	 * @param planId 计划ID
-	 * @param filePath 文件路径
+	 * Set last processed file
+	 * @param planId Plan ID
+	 * @param filePath File path
 	 */
 	void setLastProcessedFile(String planId, String filePath);
 
 	/**
-	 * 获取最后处理的文件
-	 * @param planId 计划ID
-	 * @return 最后处理的文件路径
+	 * Get last processed file
+	 * @param planId Plan ID
+	 * @return Last processed file path
 	 */
 	String getLastProcessedFile(String planId);
 
 	/**
-	 * 获取当前工具状态字符串
-	 * @param planId 计划ID
-	 * @return 当前工具状态字符串
+	 * Get current tool status string
+	 * @param planId Plan ID
+	 * @return Current tool status string
 	 */
 	String getCurrentToolStateString(String planId);
 
 	/**
-	 * 获取所有计划概览
-	 * @return 所有计划概览字符串
+	 * Get all plan overview
+	 * @return All plan overview string
 	 */
 	String getAllPlansOverview();
 
 	/**
-	 * 清理所有计划状态
+	 * Clean up all plan states
 	 */
 	void cleanupAllPlanStates();
 

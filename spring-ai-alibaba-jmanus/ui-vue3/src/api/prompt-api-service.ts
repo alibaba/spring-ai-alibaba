@@ -29,7 +29,7 @@ export class PromptApiService {
   private static readonly BASE_URL = '/api/prompt'
 
   /**
-   * 获取所有prompt
+   * Get all prompts
    */
   static async getAll(): Promise<Prompt[]> {
     const response = await fetch(this.BASE_URL)
@@ -40,7 +40,7 @@ export class PromptApiService {
   }
 
   /**
-   * 根据命名空间获取prompt
+   * Get prompts by namespace
    */
   static async getAllByNamespace(namespace: string): Promise<Prompt[]> {
     const response = await fetch(`${this.BASE_URL}/namespace/${namespace}`)
@@ -53,7 +53,7 @@ export class PromptApiService {
 
 
   /**
-   * 根据ID获取prompt
+   * Get prompt by ID
    */
   static async getById(id: string): Promise<Prompt> {
     const response = await fetch(`${this.BASE_URL}/${id}`)
@@ -64,7 +64,7 @@ export class PromptApiService {
   }
 
   /**
-   * 创建prompt
+   * Create prompt
    */
   static async create(prompt: Omit<Prompt, 'id'>): Promise<Prompt> {
     const response = await fetch(this.BASE_URL, {
@@ -81,7 +81,7 @@ export class PromptApiService {
   }
 
   /**
-   * 更新prompt
+   * Update prompt
    */
   static async update(id: string, prompt: Prompt): Promise<Prompt> {
     const response = await fetch(`${this.BASE_URL}/${id}`, {
@@ -98,7 +98,7 @@ export class PromptApiService {
   }
 
   /**
-   * 删除prompt
+   * Delete prompt
    */
   static async delete(id: string): Promise<void> {
     const response = await fetch(`${this.BASE_URL}/${id}`, {
@@ -110,7 +110,7 @@ export class PromptApiService {
   }
 
   /**
-   * 获取支持的语言列表
+   * Get supported language list
    */
   static async getSupportedLanguages(): Promise<string[]> {
     const response = await fetch(`${this.BASE_URL}/languages`)
@@ -121,7 +121,7 @@ export class PromptApiService {
   }
 
   /**
-   * 针对特定prompt从resource覆盖指定语言的内容到数据库
+   * Import content for a specific prompt from resources for a given language to the database
    */
   static async importSpecificPromptFromLanguage(promptName: string, language: string): Promise<void> {
     const response = await fetch(`${this.BASE_URL}/import/${promptName}/language/${language}`, {
@@ -133,7 +133,7 @@ export class PromptApiService {
   }
 
   /**
-   * 批量重置所有prompt为指定语言的默认值
+   * Batch reset all prompts to default values for a specified language
    */
   static async importAllPromptsFromLanguage(language: string): Promise<void> {
     const response = await fetch(`/admin/prompts/switch-language?language=${language}`, {
