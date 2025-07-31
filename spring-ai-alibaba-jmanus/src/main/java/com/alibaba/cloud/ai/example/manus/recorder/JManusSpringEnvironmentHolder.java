@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class JManusSpringEnvironmentHolder implements EnvironmentAware {
-
+//中文测试
 	private static Environment environment;
 
 	public void setEnvironment(Environment environment) {
