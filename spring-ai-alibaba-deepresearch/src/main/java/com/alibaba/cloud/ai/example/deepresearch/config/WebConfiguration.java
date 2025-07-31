@@ -28,7 +28,7 @@ public class WebConfiguration {
 
 	@Bean
 	public FilterRegistrationBean<CorsFilter> corsFilter() {
-		CorsConfiguration configuration  = new CorsConfiguration();
+		CorsConfiguration configuration = new CorsConfiguration();
 		configuration.setAllowCredentials(false);
 		configuration.addAllowedOrigin("*");
 		configuration.addAllowedHeader("*");
