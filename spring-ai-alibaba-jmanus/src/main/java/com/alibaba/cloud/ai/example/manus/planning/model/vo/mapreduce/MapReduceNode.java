@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * MapReduce执行节点
+ * MapReduce execution node
  */
 public class MapReduceNode extends AbstractExecutionNode {
 
@@ -62,8 +62,8 @@ public class MapReduceNode extends AbstractExecutionNode {
 	}
 
 	/**
-	 * 获取节点类型的字符串表示，用于 Jackson 序列化/反序列化
-	 * @return 类型字符串
+	 * Get string representation of node type for Jackson serialization/deserialization
+	 * @return Type string
 	 */
 	@JsonProperty("type")
 	public String getTypeString() {
@@ -71,12 +71,12 @@ public class MapReduceNode extends AbstractExecutionNode {
 	}
 
 	/**
-	 * 设置节点类型，用于 Jackson 反序列化，实际不执行任何操作
-	 * @param typeString 类型字符串
+	 * Set node type for Jackson deserialization, actually performs no operation
+	 * @param typeString Type string
 	 */
 	@JsonProperty("type")
 	public void setTypeString(String typeString) {
-		// 反序列化时忽略此字段，类型已在构造函数中设置
+		// Ignore this field during deserialization, type is already set in constructor
 	}
 
 	public List<ExecutionStep> getDataPreparedSteps() {
@@ -196,8 +196,8 @@ public class MapReduceNode extends AbstractExecutionNode {
 	}
 
 	/**
-	 * 获取所有步骤（Data Prepared + Map + Reduce + Post Process）
-	 * @return 所有步骤的列表
+	 * Get all steps (Data Prepared + Map + Reduce + Post Process)
+	 * @return List of all steps
 	 */
 	@JsonIgnore
 	public List<ExecutionStep> getAllSteps() {
@@ -218,21 +218,21 @@ public class MapReduceNode extends AbstractExecutionNode {
 	}
 
 	/**
-	 * 获取节点的字符串表示
-	 * @return 节点字符串
+	 * Get string representation of the node
+	 * @return Node string
 	 */
 	@JsonIgnore
 	public String getNodeInStr() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("=== MapReduce执行节点 ===\n");
-		sb.append("Data Prepared步骤数量: ").append(getDataPreparedStepCount()).append("\n");
-		sb.append("Map步骤数量: ").append(getMapStepCount()).append("\n");
-		sb.append("Reduce步骤数量: ").append(getReduceStepCount()).append("\n");
-		sb.append("Post Process步骤数量: ").append(getPostProcessStepCount()).append("\n");
-		sb.append("总步骤数量: ").append(getTotalStepCount()).append("\n");
+		sb.append("=== MapReduce Execution Node ===\n");
+		sb.append("Data Prepared Step Count: ").append(getDataPreparedStepCount()).append("\n");
+		sb.append("Map Step Count: ").append(getMapStepCount()).append("\n");
+		sb.append("Reduce Step Count: ").append(getReduceStepCount()).append("\n");
+		sb.append("Post Process Step Count: ").append(getPostProcessStepCount()).append("\n");
+		sb.append("Total Step Count: ").append(getTotalStepCount()).append("\n");
 
 		if (dataPreparedSteps != null && !dataPreparedSteps.isEmpty()) {
-			sb.append("\n--- Data Prepared阶段 ---\n");
+			sb.append("\n--- Data Prepared Phase ---\n");
 			for (int i = 0; i < dataPreparedSteps.size(); i++) {
 				ExecutionStep step = dataPreparedSteps.get(i);
 				sb.append("  DataPrepared-").append(i + 1).append(". ").append(step.getStepRequirement()).append("\n");
@@ -240,7 +240,7 @@ public class MapReduceNode extends AbstractExecutionNode {
 		}
 
 		if (mapSteps != null && !mapSteps.isEmpty()) {
-			sb.append("\n--- Map阶段 ---\n");
+			sb.append("\n--- Map Phase ---\n");
 			for (int i = 0; i < mapSteps.size(); i++) {
 				ExecutionStep step = mapSteps.get(i);
 				sb.append("  Map-").append(i + 1).append(". ").append(step.getStepRequirement()).append("\n");
@@ -248,7 +248,7 @@ public class MapReduceNode extends AbstractExecutionNode {
 		}
 
 		if (reduceSteps != null && !reduceSteps.isEmpty()) {
-			sb.append("\n--- Reduce阶段 ---\n");
+			sb.append("\n--- Reduce Phase ---\n");
 			for (int i = 0; i < reduceSteps.size(); i++) {
 				ExecutionStep step = reduceSteps.get(i);
 				sb.append("  Reduce-").append(i + 1).append(". ").append(step.getStepRequirement()).append("\n");
@@ -256,7 +256,7 @@ public class MapReduceNode extends AbstractExecutionNode {
 		}
 
 		if (postProcessSteps != null && !postProcessSteps.isEmpty()) {
-			sb.append("\n--- Post Process阶段 ---\n");
+			sb.append("\n--- Post Process Phase ---\n");
 			for (int i = 0; i < postProcessSteps.size(); i++) {
 				ExecutionStep step = postProcessSteps.get(i);
 				sb.append("  PostProcess-").append(i + 1).append(". ").append(step.getStepRequirement()).append("\n");

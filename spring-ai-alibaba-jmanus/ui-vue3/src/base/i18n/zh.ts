@@ -115,6 +115,8 @@ const words: I18nType = {
     thinking: '思考',
     input: '输入',
     actions: '操作',
+    total: '总计',
+    loadFailed: '加载失败',
   },
 
   // 配置相关
@@ -160,6 +162,7 @@ const words: I18nType = {
       agents: '多智能体',
       infiniteContext: '无限上下文',
       filesystem: '文件系统',
+      mcpServiceLoader: 'MCP服务加载器',
     },
     // Agent配置页面
     agentConfig: {
@@ -390,6 +393,11 @@ const words: I18nType = {
       fileSystem: {
         allowExternalAccess: '是否允许文件操作超出工作目录',
       },
+      mcpServiceLoader: {
+        connectionTimeoutSeconds: 'MCP连接超时时间(秒)',
+        maxRetryCount: 'MCP连接最大重试次数',
+        maxConcurrentConnections: 'MCP最大并发连接数',
+      },
       systemSettings: {
         systemName: '系统名称',
         language: '语言',
@@ -461,6 +469,15 @@ const words: I18nType = {
       exportFailed: '导出配置失败',
       importSuccess: '配置导入成功',
       importFailed: '导入配置失败',
+      resetToLanguageDefault: '重置为语言默认值',
+      selectLanguage: '选择语言',
+      resetToLanguageDefaultSuccess: '重置为语言默认值成功',
+      resetToLanguageDefaultFailed: '重置为语言默认值失败',
+      resetLanguageWarning: '此操作将覆盖当前内容为所选语言的默认版本',
+      batchSwitchLanguage: '批量切换语言',
+      batchSwitchLanguageSuccess: '批量切换语言成功',
+      batchSwitchLanguageFailed: '批量切换语言失败',
+      batchSwitchLanguageWarning: '此操作将覆盖所有Prompt的内容和描述为所选语言的默认版本',
     },
     namespaceConfig: {
       title: '命名空间配置',
@@ -512,6 +529,21 @@ const words: I18nType = {
     saveFailed: 'Agent保存失败',
     deleteSuccess: 'Agent删除成功',
     deleteFailed: 'Agent删除失败',
+    // 多语言支持
+    multiLanguage: {
+      title: 'Agent多语言管理',
+      resetAll: '重置所有Agent',
+      resetAllConfirm: '重置所有Agent确认',
+      resetAllWarning: '此操作将删除所有现有Agent配置并重新加载指定语言版本。此操作不可恢复！',
+      selectLanguage: '选择语言',
+      resetSuccess: '所有Agent已重置为指定语言版本',
+      resetFailed: '重置Agent失败',
+      currentLanguage: '当前语言',
+      supportedLanguages: '支持的语言',
+      resetInProgress: '正在重置Agent...',
+      confirmReset: '确认重置',
+      cancel: '取消',
+    },
   },
 
   // Model 配置
@@ -609,7 +641,7 @@ const words: I18nType = {
 
   // 输入组件
   input: {
-    placeholder: '向 JTaskPilot 发送消息',
+    placeholder: '向 JManus 发送消息',
     send: '发送',
     planMode: 'PLAN-ACT计划模式',
     waiting: '等待任务完成...',
@@ -798,7 +830,7 @@ const words: I18nType = {
 
   // 首页
   home: {
-    welcomeTitle: '欢迎使用 JTaskPilot！',
+    welcomeTitle: '欢迎使用 JManus！',
     welcomeSubtitle: '您的 Java AI 智能助手，帮助您构建和完成各种任务。',
     tagline: 'Java AI 智能体',
     inputPlaceholder: '描述您想构建或完成的内容...',

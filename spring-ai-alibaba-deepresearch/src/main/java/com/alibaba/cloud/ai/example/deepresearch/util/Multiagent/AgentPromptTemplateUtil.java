@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.util.Multiagent;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.mutiagent.AgentType;
+import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.StreamUtils;
 
@@ -34,11 +34,11 @@ import java.util.Map;
 public class AgentPromptTemplateUtil {
 
 	private static final Map<AgentType, String> PROMPT_FILE_PATHS = Map.of(AgentType.ACADEMIC_RESEARCH,
-			"prompts/mutiagent/academic-researcher.md", AgentType.LIFESTYLE_TRAVEL,
-			"prompts/mutiagent/lifestyle-travel.md", AgentType.ENCYCLOPEDIA, "prompts/mutiagent/encyclopedia.md",
-			AgentType.DATA_ANALYSIS, "prompts/mutiagent/data-analysis.md");
+			"prompts/multiagent/academic-researcher.md", AgentType.LIFESTYLE_TRAVEL,
+			"prompts/multiagent/lifestyle-travel.md", AgentType.ENCYCLOPEDIA, "prompts/multiagent/encyclopedia.md",
+			AgentType.DATA_ANALYSIS, "prompts/multiagent/data-analysis.md");
 
-	private static final String CLASSIFIER_PROMPT_PATH = "prompts/mutiagent/classifier.md";
+	private static final String CLASSIFIER_PROMPT_PATH = "prompts/multiagent/classifier.md";
 
 	/**
 	 * 引用指导模板

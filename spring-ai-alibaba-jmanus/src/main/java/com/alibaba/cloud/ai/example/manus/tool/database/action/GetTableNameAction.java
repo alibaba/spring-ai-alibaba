@@ -48,14 +48,14 @@ public class GetTableNameAction extends AbstractDatabaseAction {
 
 		if (text == null || text.trim().isEmpty()) {
 			log.warn("GetTableNameAction failed: missing text parameter, datasourceName={}", datasourceName);
-			return new ToolExecuteResult(
-					"Datasource: " + (datasourceName != null ? datasourceName : "default") + "\n缺少查询语句");
+			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
+					+ "\nMissing query statement");
 		}
-		// 获取数据库类型
+		// Get database type
 		String databaseType = datasourceName != null && !datasourceName.trim().isEmpty()
 				? dataSourceService.getDataSourceType(datasourceName) : dataSourceService.getDataSourceType();
 
-		// 根据数据库类型生成SQL
+		// Generate SQL based on database type
 		String sql = DatabaseSqlGenerator.generateTableInfoSql(databaseType, true, text);
 
 		try (Connection conn = datasourceName != null && !datasourceName.trim().isEmpty()
@@ -73,7 +73,7 @@ public class GetTableNameAction extends AbstractDatabaseAction {
 					tableMetaList.add(meta);
 				}
 
-				// 获取每个表的列信息
+				// Get column information for each table
 				for (TableMeta tableMeta : tableMetaList) {
 					String columnSql = DatabaseSqlGenerator.generateColumnInfoSql(databaseType, "?");
 					try (PreparedStatement columnPs = conn.prepareStatement(columnSql)) {
@@ -107,7 +107,7 @@ public class GetTableNameAction extends AbstractDatabaseAction {
 			log.error("GetTableNameAction failed with exception, datasourceName={}, error={}", datasourceName,
 					e.getMessage(), e);
 			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
-					+ "\n执行查询时出错: " + e.getMessage());
+					+ "\nError executing query: " + e.getMessage());
 		}
 	}
 

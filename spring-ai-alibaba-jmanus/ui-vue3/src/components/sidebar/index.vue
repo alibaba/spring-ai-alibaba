@@ -1,4 +1,4 @@
-<!-- 
+<!--
  * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -274,15 +274,15 @@ const formattedJsonContent = computed({
   get() {
     try {
       if (!sidebarStore.jsonContent) return ''
-      
+
       const parsed = JSON.parse(sidebarStore.jsonContent)
-      
+
       // Remove hidden fields for display
       const filtered = { ...parsed }
       hiddenFields.forEach(field => {
         delete filtered[field]
       })
-      
+
       // Return formatted JSON
       return JSON.stringify(filtered, null, 2)
     } catch {
@@ -296,9 +296,9 @@ const formattedJsonContent = computed({
         sidebarStore.jsonContent = ''
         return
       }
-      
+
       const parsed = JSON.parse(value)
-      
+
       // Get original data to preserve hidden fields
       let originalData: any = {}
       try {
@@ -306,7 +306,7 @@ const formattedJsonContent = computed({
       } catch {
         // If original is not valid JSON, start fresh
       }
-      
+
       // Merge user input with preserved hidden fields
       const merged: any = { ...parsed }
       hiddenFields.forEach(field => {
@@ -314,7 +314,7 @@ const formattedJsonContent = computed({
           merged[field] = originalData[field]
         }
       })
-      
+
       sidebarStore.jsonContent = JSON.stringify(merged)
     } catch {
       // If parsing fails, store as-is
@@ -344,7 +344,7 @@ const handleSaveTemplate = async () => {
       alert(t('sidebar.saveStatus', { message: saveResult.message }))
     }
   } catch (error: any) {
-    console.error('保存计划修改失败:', error)
+    console.error('Failed to save plan modifications:', error)
     alert(error.message || t('sidebar.saveFailed'))
   }
 }
@@ -354,7 +354,7 @@ const handleGeneratePlan = async () => {
     await sidebarStore.generatePlan()
     alert(t('sidebar.generateSuccess', { templateId: sidebarStore.selectedTemplate?.id ?? t('sidebar.unknown') }))
   } catch (error: any) {
-    console.error('生成计划失败:', error)
+    console.error('Failed to generate plan:', error)
     alert(t('sidebar.generateFailed') + ': ' + error.message)
   }
 }
@@ -364,7 +364,7 @@ const handleUpdatePlan = async () => {
     await sidebarStore.updatePlan()
     alert(t('sidebar.updateSuccess'))
   } catch (error: any) {
-    console.error('更新计划失败:', error)
+    console.error('Failed to update plan:', error)
     alert(t('sidebar.updateFailed') + ': ' + error.message)
   }
 }
@@ -380,15 +380,15 @@ const handleExecutePlan = async () => {
       return
     }
 
-    console.log('[Sidebar] 触发计划执行请求:', planData)
+    console.log('[Sidebar] Triggering plan execution request:', planData)
 
-    // 发送计划执行事件给聊天组件
+    // Send plan execution event to chat component
     console.log('[Sidebar] Emitting planExecutionRequested event')
     emit('planExecutionRequested', planData)
 
     console.log('[Sidebar] Event emitted')
   } catch (error: any) {
-    console.error('执行计划出错:', error)
+    console.error('Error executing plan:', error)
     alert(t('sidebar.executeFailed') + ': ' + error.message)
   } finally {
     sidebarStore.finishPlanExecution()

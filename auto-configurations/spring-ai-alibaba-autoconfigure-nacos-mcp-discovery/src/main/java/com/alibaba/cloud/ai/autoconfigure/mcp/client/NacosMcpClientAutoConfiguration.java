@@ -53,9 +53,9 @@ public class NacosMcpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "SYNC",
 			matchIfMissing = true)
 	public List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClientList(
-			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvicer,
+			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvider,
 			NacosMcpSseClientProperties nacosMcpSseClientProperties, ApplicationContext applicationContext) {
-		NacosMcpOperationService nacosMcpOperationService = nacosMcpOperationServiceProvicer.getObject();
+		NacosMcpOperationService nacosMcpOperationService = nacosMcpOperationServiceProvider.getObject();
 
 		List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClients = new ArrayList<>();
 		for (NacosMcpSseClientProperties.NacosSseParameters nacosSseParameters : nacosMcpSseClientProperties
@@ -78,9 +78,9 @@ public class NacosMcpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "ASYNC")
 	public List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClientList(
-			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvicer,
+			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvider,
 			NacosMcpSseClientProperties nacosMcpSseClientProperties, ApplicationContext applicationContext) {
-		NacosMcpOperationService nacosMcpOperationService = nacosMcpOperationServiceProvicer.getObject();
+		NacosMcpOperationService nacosMcpOperationService = nacosMcpOperationServiceProvider.getObject();
 
 		List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClients = new ArrayList<>();
 		for (NacosMcpSseClientProperties.NacosSseParameters nacosSseParameters : nacosMcpSseClientProperties

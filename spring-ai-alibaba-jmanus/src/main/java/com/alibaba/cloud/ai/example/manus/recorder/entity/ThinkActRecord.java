@@ -45,7 +45,7 @@ public class ThinkActRecord {
 	// Unique identifier of the record
 	private Long id;
 
-	// 生成唯一ID的方法
+	// Method to generate unique ID
 	private Long generateId() {
 		if (this.id == null) {
 			long timestamp = System.currentTimeMillis();

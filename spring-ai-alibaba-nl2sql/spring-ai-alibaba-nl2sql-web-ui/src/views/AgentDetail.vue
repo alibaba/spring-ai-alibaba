@@ -24,19 +24,37 @@
       <button class="message-close" @click="hideMessage">×</button>
     </div>
 
-    <!-- 头部导航 -->
-    <div class="top-nav">
-      <div class="nav-items">
-        <span class="nav-item logo-item">
-          <i class="bi bi-robot"></i>
-          数据智能体
-        </span>
-        <span class="nav-item clickable active" @click="goToAgentList">智能体</span>
-        <span class="nav-item clickable" @click="goToWorkspace">智能体工作台</span>
+    <!-- 现代化头部导航 -->
+    <header class="page-header">
+      <div class="header-content">
+        <div class="brand-section">
+          <div class="brand-logo" @click="goToHome">
+            <i class="bi bi-robot"></i>
+            <span class="brand-text">数据智能体</span>
+          </div>
+          <nav class="header-nav">
+            <div class="nav-item" @click="goToAgentList">
+              <i class="bi bi-grid-3x3-gap"></i>
+              <span>智能体列表</span>
+            </div>
+            <div class="nav-item" @click="goToWorkspace">
+              <i class="bi bi-chat-square-dots"></i>
+              <span>智能体工作台</span>
+            </div>
+          </nav>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline" @click="openHelp">
+            <i class="bi bi-question-circle"></i>
+            帮助
+          </button>
+          <button class="btn btn-primary" @click="createNewAgent">
+            <i class="bi bi-plus-lg"></i>
+            创建智能体
+          </button>
+        </div>
       </div>
-      <div class="nav-right">
-      </div>
-    </div>
+    </header>
 
     <!-- 智能体信息头部 -->
     <div class="agent-header">
@@ -1010,6 +1028,18 @@ export default {
     const goToWorkspace = () => {
       router.push('/workspace')
     }
+
+    const createNewAgent = () => {
+      router.push('/agent/create')
+    }
+
+    const openHelp = () => {
+      window.open('https://github.com/alibaba/spring-ai-alibaba/blob/main/spring-ai-alibaba-nl2sql/README.md', '_blank')
+    }
+
+    const goToHome = () => {
+      router.push('/')
+    }
     
     const loadAgentDetail = async () => {
       try {
@@ -1809,6 +1839,9 @@ export default {
       // 导航方法
       goToAgentList,
       goToWorkspace,
+      createNewAgent,
+      openHelp,
+      goToHome,
       // 工具方法
       getStatusText,
       formatDate,
@@ -1835,8 +1868,101 @@ export default {
 <style scoped>
 .agent-detail-page {
   min-height: 100vh;
-  background: #f5f5f5;
-  position: relative;
+  background: var(--bg-layout);
+  font-family: var(--font-family);
+}
+
+/* 现代化头部导航 */
+.page-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-xs);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+.header-content {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xl);
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--primary-color);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.brand-logo i {
+  font-size: var(--font-size-xl);
+  color: var(--accent-color);
+}
+
+.brand-text {
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-nav {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.header-nav .nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-base);
+  border: 1px solid transparent;
+}
+
+.header-nav .nav-item:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+.header-nav .nav-item.active {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.header-nav .nav-item i {
+  font-size: var(--font-size-base);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
 }
 
 /* 消息提示样式 */
@@ -1930,6 +2056,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   height: 60px;
+  max-width: 100%;
 }
 
 .nav-items {
@@ -1990,6 +2117,7 @@ export default {
 .container {
   width: 100%;
   padding: 0 1rem;
+  max-width: 100%;
 }
 
 .header-content {
@@ -2080,6 +2208,7 @@ export default {
 /* 主要内容区域样式 */
 .main-content {
   padding: 1rem 0;
+  max-width: 100%;
 }
 
 .content-layout {
@@ -2116,22 +2245,43 @@ export default {
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  color: #333;
+  gap: var(--space-base);
+  padding: var(--space-base) var(--space-md);
+  color: var(--text-primary);
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
+  border-radius: var(--radius-base);
+  margin: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  position: relative;
+  border: 1px solid transparent;
 }
 
 .nav-link:hover {
-  background: #f5f5f5;
-  color: #1890ff;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+  transform: translateX(2px);
 }
 
 .nav-link.active {
-  background: #e6f7ff;
-  color: #1890ff;
-  border-right: 3px solid #1890ff;
+  background: linear-gradient(135deg, var(--primary-light), var(--accent-light));
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .nav-link i {
@@ -2905,12 +3055,6 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .batch-actions {

@@ -71,7 +71,7 @@ class DashScopeChatModelObservationConventionTests {
 		assertThat(result).isEqualTo(keyValues);
 	}
 
-	// 添加一个简单的 ChatOptions 实现类用于测试
+	// Add a simple ChatOptions implementation class for testing
 	private static class TestChatOptions implements ChatOptions {
 
 		@Override

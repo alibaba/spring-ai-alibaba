@@ -19,6 +19,7 @@
 - Schema 召回
 - SQL 生成
 - SQL 执行
+- Python 代码生成与执行
 
 本模块提供一个轻量级的**自然语言查询转 SQL 语句**服务，具有以下特点：
 
@@ -26,6 +27,7 @@
 - 📊 结合数据库 Schema 和业务逻辑解释（evidence）
 - 🤖 通过大模型推理生成精准的 SQL 查询
 - 📈 支持执行 SQL 并返回格式化结果
+- 💻 根据用户问题和 SQL 查询结果，生成 Python 数据分析代码，加强数据分析的能力
 
 > 💡 该模块被设计为可复用的 Service 层组件，**仅提供核心功能实现，不包含 RESTful 接口及独立启动能力**。适用于集成到其他 Spring Boot 项目中使用。
 
@@ -53,6 +55,11 @@
 - 自动格式化查询结果为 Markdown 表格
 - 提供友好的错误提示和执行状态反馈
 
+### 💻 Python 数据分析代码生成与执行
+- 根据用户的问题以及 SQL 查询结果生成更符合用户预期目标的 Python 数据分析代码
+- Python 代码支持在 Docker 容器内运行，提高安全性
+- Python 代码生成错误可根据错误信息多次尝试
+
 ---
 
 ## 🛠 技术栈
@@ -65,6 +72,7 @@
 ### 存储与连接
 - 📊 **数据库支持**: MySQL / PostgreSQL
 - 🔍 **向量存储**: AnalyticDB / SimpleVector
+- 💻 **Python代码执行**: Docker
 
 ### 工具支持
 - 🛠 **JSON 处理**: Gson、Jackson
@@ -327,6 +335,41 @@ openai:
 > ⚠️ **注意**：
 > - 首次使用时需要初始化向量库，可能需要较长时间
 > - 不同的 EmbeddingModel 生成的向量不兼容，切换模型需要重新初始化
+
+</details>
+
+<details>
+<summary>📌 Python代码运行配置</summary>
+
+配置所有字段都有默认值，以下是配置默认值：
+
+```yaml
+spring:
+  ai:
+    alibaba:
+      nl2sql:
+        code-executor:
+          code-pool-executor: docker    # 运行Python代码的容器，目前仅支持docker，其他容器的适配仍在开发中。
+                                        # 如果运行环境没有docker且仅想查看项目效果，可以用AI模拟（ai_simulation）
+          host: "tcp://localhost:2375"  # 容器服务的地址，若不填写则使用默认值
+          image-name: "continuumio/anaconda3:latest"  # 镜像名称，默认为anaconda3
+          container-name-prefix: "nl2sql-python-exec-" # 容器名称前缀
+          limit-memory: 500             # 容器最大运行内存，单位MB
+          cpu-core: 1                   # 容器CPU核心数
+          code-timeout: 60s             # Python代码最大运行时间
+          container-timeout: 3000       # 容器最大运行时间，单位秒
+          network-mode: bridge          # 容器网络模式
+
+          core-container-num: 2         # 核心容器数量。项目运行时这些容器就存在，只有程序退出前才销毁这些容器
+          temp-container-num: 2         # 临时容器数量，定期销毁。与上一项加起来的值就是程序可以同时运行Python代码的最大数量
+          temp-container-alive-time: 5  # 临时容器存活时间，单位分钟
+          
+          # 线程池相关配置（内部运行Python代码、销毁临时容器使用）
+          core-thread-size: 5           # 线程池核心线程数量
+          max-thread-size: 5            # 线程池最大线程数量
+          keep-thread-alive-time: 60    # 线程池的任务存活时间，单位秒
+          thread-queue-size: 10         # 线程池的任务阻塞队列大小
+```
 
 </details>
 
@@ -673,6 +716,7 @@ JOIN
 3. 结合数据库 Schema 和 evidence 进行表结构筛选
 4. 生成对应的 SQL 查询语句
 5. 执行 SQL 并返回 Markdown 格式的表格结果
+6. 根据 SQL 返回结果以及用户的问题，生成 Python 数据分析代码，并根据 Python 运行结果给出更精确的报告
 
 ---
 

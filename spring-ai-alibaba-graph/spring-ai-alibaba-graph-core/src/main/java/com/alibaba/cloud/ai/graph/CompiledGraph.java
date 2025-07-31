@@ -142,7 +142,7 @@ public class CompiledGraph {
 				throw Errors.interruptionNodeNotExist.exception(interruption);
 			}
 		}
-		for (String interruption : processedData.interruptsBefore()) {
+		for (String interruption : processedData.interruptsAfter()) {
 			if (!processedData.nodes().anyMatchById(interruption)) {
 				throw Errors.interruptionNodeNotExist.exception(interruption);
 			}

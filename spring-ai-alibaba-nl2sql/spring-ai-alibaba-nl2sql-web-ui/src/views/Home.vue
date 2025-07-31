@@ -15,11 +15,41 @@
 -->
 <template>
   <div>
-    <HeaderComponent 
-      title="NL2SQL 自然语言转SQL演示"
-      subtitle="输入自然语言问题，系统将自动转换为SQL查询语句"
-      icon="bi bi-database"
-    />
+    <!-- 现代化头部导航 -->
+    <header class="page-header">
+      <div class="header-content">
+        <div class="brand-section">
+          <div class="brand-logo">
+            <i class="bi bi-robot"></i>
+            <span class="brand-text">智能体管理</span>
+          </div>
+          <nav class="header-nav">
+            <div class="nav-item" @click="goToAgentList">
+              <i class="bi bi-grid-3x3-gap"></i>
+              <span>智能体列表</span>
+            </div>
+            <div class="nav-item" @click="goToWorkspace">
+              <i class="bi bi-chat-square-dots"></i>
+              <span>工作台</span>
+            </div>
+            <div class="nav-item active">
+              <i class="bi bi-graph-up-arrow"></i>
+              <span>分析报告</span>
+            </div>
+          </nav>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline btn-sm">
+            <i class="bi bi-question-circle"></i>
+            帮助
+          </button>
+          <button class="btn btn-primary" @click="goToAgentList">
+            <i class="bi bi-plus-lg"></i>
+            创建智能体
+          </button>
+        </div>
+      </div>
+    </header>
 
     <div class="container">
       <div class="search-container">

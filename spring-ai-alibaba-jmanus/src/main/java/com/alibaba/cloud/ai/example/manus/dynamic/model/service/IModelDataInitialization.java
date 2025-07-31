@@ -16,12 +16,12 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
 
 /**
- * 模型数据初始化接口，提供模型数据初始化功能
+ * Model data initialization interface providing model data initialization functionality
  */
 public interface IModelDataInitialization {
 
 	/**
-	 * 初始化模型数据
+	 * Initialize model data
 	 */
 	void init();
 

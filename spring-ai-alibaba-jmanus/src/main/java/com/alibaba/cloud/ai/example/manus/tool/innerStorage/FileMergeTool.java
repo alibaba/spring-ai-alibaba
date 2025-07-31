@@ -30,14 +30,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * 文件合并工具，用于将单个文件合并到指定的目标文件夹中 每次调用合并一个文件到目标文件夹
+ * File merge tool for merging single files into specified target folders, merging one
+ * file per call
  */
 public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(FileMergeTool.class);
 
 	/**
-	 * 文件合并输入类
+	 * File merge input class
 	 */
 	public static class FileMergeInput {
 
@@ -87,8 +88,8 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 	private static final String TOOL_NAME = "file_merge_tool";
 
 	private static final String TOOL_DESCRIPTION = """
-			文件合并工具，用于将单个文件合并到指定的目标文件夹中。
-			每次调用合并一个文件到目标文件夹，支持文件名模糊匹配。
+			File merge tool for merging single files into specified target folders.
+			Each call merges one file to the target folder, supports fuzzy filename matching.
 			""";
 
 	private static final String PARAMETERS = """
@@ -98,15 +99,15 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 					"action": {
 						"type": "string",
 						"enum": ["merge_file"],
-						"description": "操作类型，目前支持 merge_file"
+						"description": "Operation type, currently supports merge_file"
 					},
 					"file_name": {
 						"type": "string",
-						"description": "要合并的文件名（支持模糊匹配）"
+						"description": "Filename to merge (supports fuzzy matching)"
 					},
 					"target_folder": {
 						"type": "string",
-						"description": "目标文件夹路径，文件将被复制到此文件夹中"
+						"description": "Target folder path where the file will be copied"
 					}
 				},
 				"required": ["action", "file_name", "target_folder"],
@@ -146,7 +147,7 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 	}
 
 	/**
-	 * 执行文件合并操作
+	 * Execute file merge operation
 	 */
 	@Override
 	public ToolExecuteResult run(FileMergeInput input) {
@@ -156,30 +157,30 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 			return mergeFile(input.getFileName(), input.getTargetFolder());
 		}
 		catch (Exception e) {
-			log.error("FileMergeTool执行失败", e);
-			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
+			log.error("FileMergeTool execution failed", e);
+			return new ToolExecuteResult("Tool execution failed: " + e.getMessage());
 		}
 	}
 
 	/**
-	 * 合并单个文件到指定文件夹
+	 * Merge single file to specified folder
 	 */
 	private ToolExecuteResult mergeFile(String fileName, String targetFolder) {
 		if (fileName == null || fileName.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：file_name参数是必需的");
+			return new ToolExecuteResult("Error: file_name parameter is required");
 		}
 		if (targetFolder == null || targetFolder.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：target_folder参数是必需的");
+			return new ToolExecuteResult("Error: target_folder parameter is required");
 		}
 
 		try {
 			Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
 			Path targetDir = planDir.resolve(targetFolder);
 
-			// 确保目标文件夹存在
+			// Ensure target folder exists
 			Files.createDirectories(targetDir);
 
-			// 查找匹配的文件
+			// Find matching files
 			String actualFileName = null;
 			Path sourceFile = null;
 			List<Path> files = Files.list(planDir).filter(Files::isRegularFile).toList();
@@ -193,31 +194,32 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 			}
 
 			if (sourceFile == null) {
-				return new ToolExecuteResult("未找到文件名为 '" + fileName + "' 的文件。请使用文件名的一部分来查找文件。");
+				return new ToolExecuteResult("File with name '" + fileName
+						+ "' not found. Please use part of the filename to search for files.");
 			}
 
-			// 复制文件到目标文件夹
+			// Copy file to target folder
 			Path targetFile = targetDir.resolve(actualFileName);
 			Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
 
-			log.info("文件合并完成：{} -> {}", actualFileName, targetFolder);
+			log.info("File merge completed: {} -> {}", actualFileName, targetFolder);
 
 			StringBuilder result = new StringBuilder();
-			result.append("文件合并成功\n");
-			result.append("源文件：").append(actualFileName).append("\n");
-			result.append("目标文件夹：").append(targetFolder).append("\n");
-			result.append("目标文件路径：").append(targetFile.toString()).append("\n");
+			result.append("File merge successful\n");
+			result.append("Source file: ").append(actualFileName).append("\n");
+			result.append("Target folder: ").append(targetFolder).append("\n");
+			result.append("Target file path: ").append(targetFile.toString()).append("\n");
 
 			return new ToolExecuteResult(result.toString());
 
 		}
 		catch (IOException e) {
-			log.error("文件合并失败", e);
-			return new ToolExecuteResult("文件合并失败: " + e.getMessage());
+			log.error("File merge failed", e);
+			return new ToolExecuteResult("File merge failed: " + e.getMessage());
 		}
 		catch (Exception e) {
-			log.error("文件合并操作失败", e);
-			return new ToolExecuteResult("文件合并操作失败: " + e.getMessage());
+			log.error("File merge operation failed", e);
+			return new ToolExecuteResult("File merge operation failed: " + e.getMessage());
 		}
 	}
 
@@ -225,16 +227,18 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 	public String getCurrentToolStateString() {
 		try {
 			StringBuilder sb = new StringBuilder();
-			sb.append("FileMerge 当前状态:\n");
-			sb.append("- 存储根目录: ").append(directoryManager.getRootPlanDirectory(rootPlanId)).append("\n");
+			sb.append("FileMerge current status:\n");
+			sb.append("- Storage root directory: ")
+				.append(directoryManager.getRootPlanDirectory(rootPlanId))
+				.append("\n");
 			Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
 			List<Path> files = Files.exists(planDir) ? Files.list(planDir).filter(Files::isRegularFile).toList()
 					: List.of();
 			if (files.isEmpty()) {
-				sb.append("- 可用文件: 无\n");
+				sb.append("- Available files: None\n");
 			}
 			else {
-				sb.append("- 可用文件 (").append(files.size()).append("个): ");
+				sb.append("- Available files (").append(files.size()).append(" files): ");
 				for (int i = 0; i < Math.min(files.size(), 5); i++) {
 					sb.append(files.get(i).getFileName().toString());
 					if (i < Math.min(files.size(), 5) - 1) {
@@ -249,14 +253,14 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 			return sb.toString();
 		}
 		catch (Exception e) {
-			log.error("获取工具状态失败", e);
-			return "FileMerge 状态获取失败: " + e.getMessage();
+			log.error("Failed to get tool status", e);
+			return "FileMerge status retrieval failed: " + e.getMessage();
 		}
 	}
 
 	@Override
 	public void cleanup(String planId) {
-		// 文件合并工具不需要执行清理操作
+		// File merge tool does not need to perform cleanup operations
 		log.info("FileMergeTool cleanup for plan: {}", planId);
 	}
 

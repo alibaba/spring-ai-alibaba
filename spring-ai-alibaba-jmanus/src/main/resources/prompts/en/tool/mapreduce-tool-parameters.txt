@@ -1,0 +1,97 @@
+{
+    "type": "object",
+    "properties": {
+        "command": {
+            "description": "MapReducePlanningTool accepts JSON format input to create execution plans. Required parameters include command (fixed as 'create'), planId as unique identifier, title as plan title, steps array containing execution nodes. Each node has a type field specifying either sequential (sequential execution) or mapreduce (distributed processing). Sequential nodes contain steps array, mapreduce nodes contain dataPreparedSteps (data preparation phase, serial execution), mapSteps (Map phase, parallel execution) and reduceSteps (Reduce phase, serial execution) arrays. Each step object contains stepRequirement describing specific task content, suggest using square brackets to indicate agent type. The tool automatically adds type prefixes to steps, supports combining multiple node types in the same plan to form complex workflows. All JSON keys must be in proper English format.",
+            "enum": [
+                "create"
+            ],
+            "type": "string"
+        },
+        "planId": {
+            "description": "Unique identifier for the plan",
+            "type": "string"
+        },
+        "title": {
+            "description": "Title of the plan",
+            "type": "string"
+        },
+        "steps": {
+            "description": "List of plan steps, supporting both sequential and MapReduce node types",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "description": "Node type: sequential (sequential) or mapreduce (MapReduce)",
+                        "enum": ["sequential", "mapreduce"],
+                        "type": "string"
+                    },
+                    "steps": {
+                        "description": "Step list for sequential nodes",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "stepRequirement": {
+                                    "description": "Step requirement description",
+                                    "type": "string"
+                                }
+                            },
+                            "required": ["stepRequirement"]
+                        }
+                    },
+                    "dataPreparedSteps": {
+                        "description": "Data preparation phase step list for MapReduce nodes, executed serially before Map phase, used for data preprocessing, splitting, cleaning and other preparation work",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "stepRequirement": {
+                                    "description": "Data preparation step requirement description",
+                                    "type": "string"
+                                }
+                            },
+                            "required": ["stepRequirement"]
+                        }
+                    },
+                    "mapSteps": {
+                        "description": "Map phase step list for MapReduce nodes, executed in parallel after data preparation phase",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "stepRequirement": {
+                                    "description": "Map step requirement description",
+                                    "type": "string"
+                                }
+                            },
+                            "required": ["stepRequirement"]
+                        }
+                    },
+                    "reduceSteps": {
+                        "description": "Reduce phase step list for MapReduce nodes",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "stepRequirement": {
+                                    "description": "Reduce step requirement description",
+                                    "type": "string"
+                                }
+                            },
+                            "required": ["stepRequirement"]
+                        }
+                    }
+                },
+                "required": ["type"]
+            }
+        }
+    },
+    "required": [
+        "command",
+        "planId",
+        "title",
+        "steps"
+    ]
+}

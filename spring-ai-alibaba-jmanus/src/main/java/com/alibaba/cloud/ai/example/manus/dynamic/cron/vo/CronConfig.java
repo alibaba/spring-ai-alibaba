@@ -17,18 +17,21 @@ package com.alibaba.cloud.ai.example.manus.dynamic.cron.vo;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
- * Cron任务配置VO类
+ * Cron task configuration VO class
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CronConfig {
 
 	private Long id;
 
 	private String cronName;
 
-	private String cronTime; // 定时任务的时间，cron表达式
+	private String cronTime; // Scheduled task time, cron expression
 
-	private String planDesc; // 要执行的计划
+	private String planDesc; // Plan to execute
 
 	private Integer status;
 
@@ -36,7 +39,7 @@ public class CronConfig {
 
 	private String planTemplateId;
 
-	private LocalDateTime lastExecutedTime; // 上次执行时间
+	private LocalDateTime lastExecutedTime; // Last execution time
 
 	public Long getId() {
 		return id;

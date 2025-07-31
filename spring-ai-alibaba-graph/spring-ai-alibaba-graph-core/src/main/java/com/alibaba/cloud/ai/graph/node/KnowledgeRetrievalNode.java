@@ -79,6 +79,18 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 	private String outputKey;
 
+	private String retrievalMode;
+
+	private String embeddingModelName;
+
+	private String embeddingProviderName;
+
+	private Double vectorWeight;
+
+	private String inputId;
+
+	private String inputField;
+
 	private static final Logger logger = LoggerFactory.getLogger(KnowledgeRetrievalNode.class);
 
 	public KnowledgeRetrievalNode() {
@@ -260,6 +272,18 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 		private String outputKey;
 
+		private String retrievalMode;
+
+		private String embeddingModelName;
+
+		private String embeddingProviderName;
+
+		private Double vectorWeight;
+
+		private String inputId;
+
+		private String inputField;
+
 		public Builder userPromptKey(String userPromptKey) {
 			this.userPromptKey = userPromptKey;
 			return this;
@@ -345,6 +369,36 @@ public class KnowledgeRetrievalNode implements NodeAction {
 			return this;
 		}
 
+		public Builder retrievalMode(String retrievalMode) {
+			this.retrievalMode = retrievalMode;
+			return this;
+		}
+
+		public Builder embeddingModelName(String val) {
+			this.embeddingModelName = val;
+			return this;
+		}
+
+		public Builder embeddingProviderName(String val) {
+			this.embeddingProviderName = val;
+			return this;
+		}
+
+		public Builder vectorWeight(Double val) {
+			this.vectorWeight = val;
+			return this;
+		}
+
+		public Builder inputId(String inputId) {
+			this.inputId = inputId;
+			return this;
+		}
+
+		public Builder inputField(String inputField) {
+			this.inputField = inputField;
+			return this;
+		}
+
 		public KnowledgeRetrievalNode build() {
 			KnowledgeRetrievalNode knowledgeRetrievalNode = new KnowledgeRetrievalNode();
 			knowledgeRetrievalNode.userPromptKey = this.userPromptKey;
@@ -364,6 +418,12 @@ public class KnowledgeRetrievalNode implements NodeAction {
 			knowledgeRetrievalNode.vectorStoreKey = this.vectorStoreKey;
 			knowledgeRetrievalNode.vectorStore = this.vectorStore;
 			knowledgeRetrievalNode.outputKey = this.outputKey;
+			knowledgeRetrievalNode.retrievalMode = this.retrievalMode;
+			knowledgeRetrievalNode.embeddingModelName = this.embeddingModelName;
+			knowledgeRetrievalNode.embeddingProviderName = this.embeddingProviderName;
+			knowledgeRetrievalNode.vectorWeight = this.vectorWeight;
+			knowledgeRetrievalNode.inputId = this.inputId;
+			knowledgeRetrievalNode.inputField = this.inputField;
 			return knowledgeRetrievalNode;
 		}
 

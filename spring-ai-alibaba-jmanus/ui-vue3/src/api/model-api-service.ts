@@ -119,15 +119,15 @@ export class ModelApiService {
      */
     static async createModel(modelConfig: Omit<Model, 'id'>): Promise<Model> {
         try {
-            // 确保null值被包含在JSON中
+            // Ensure null values are included in the JSON
             const requestBody = JSON.stringify(modelConfig, (key, value) => {
-                // 对于temperature和topP，明确包含null值
+                // For temperature and topP, explicitly include null values
                 if (key === 'temperature' || key === 'topP') {
                     return value === undefined ? null : value;
                 }
                 return value;
             });
-            
+
             const response = await fetch(this.BASE_URL, {
                 method: 'POST',
                 headers: {
@@ -148,15 +148,15 @@ export class ModelApiService {
      */
     static async updateModel(id: string, modelConfig: Model): Promise<Model> {
         try {
-            // 确保null值被包含在JSON中
+            // Ensure null values are included in the JSON
             const requestBody = JSON.stringify(modelConfig, (key, value) => {
-                // 对于temperature和topP，明确包含null值
+                // For temperature and topP, explicitly include null values
                 if (key === 'temperature' || key === 'topP') {
                     return value === undefined ? null : value;
                 }
                 return value;
             });
-            
+
             const response = await fetch(`${this.BASE_URL}/${id}`, {
                 method: 'PUT',
                 headers: {
@@ -360,12 +360,12 @@ export class ModelConfigModel {
     async setDefaultModel(id: string): Promise<void> {
         try {
             await ModelApiService.setDefaultModel(id)
-            
+
             // Update local state: clear other models' default status and set current model as default
             this.models.forEach(model => {
                 model.isDefault = model.id === id
             })
-            
+
             // Update current model if it's the one being set as default
             if (this.currentModel && this.currentModel.id === id) {
                 this.currentModel.isDefault = true

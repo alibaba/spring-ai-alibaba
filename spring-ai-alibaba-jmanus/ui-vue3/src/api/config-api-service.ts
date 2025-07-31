@@ -13,7 +13,7 @@ export interface AvailableModelsResponse {
 
 export class ConfigApiService {
   /**
-   * 获取可用的模型列表
+   * Get available model list
    */
   public static async getAvailableModels(): Promise<AvailableModelsResponse> {
     try {
