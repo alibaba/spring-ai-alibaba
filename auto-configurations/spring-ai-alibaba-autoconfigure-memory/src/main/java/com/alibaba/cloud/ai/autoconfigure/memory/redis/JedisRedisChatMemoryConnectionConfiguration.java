@@ -30,6 +30,7 @@ import redis.clients.jedis.Jedis;
 
 /**
  * Auto-configuration for Redis Chat Memory using Jedis.
+ *
  * @author Jast
  * @author benym
  */
@@ -41,20 +42,32 @@ public class JedisRedisChatMemoryConnectionConfiguration extends RedisMemoryConn
 
 	private static final Logger logger = LoggerFactory.getLogger(JedisRedisChatMemoryConnectionConfiguration.class);
 
-	public JedisRedisChatMemoryConnectionConfiguration(RedisChatMemoryProperties properties, RedisChatMemoryConnectionDetails connectionDetails) {
+	public JedisRedisChatMemoryConnectionConfiguration(RedisChatMemoryProperties properties,
+			RedisChatMemoryConnectionDetails connectionDetails) {
 		super(properties, connectionDetails);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	JedisRedisChatMemoryRepository redisChatMemoryRepository(RedisChatMemoryProperties properties) {
-		logger.info("Configuring Redis chat memory repository using Jedis");
+	JedisRedisChatMemoryRepository redisChatMemoryRepository() {
+		if (getClusterConfiguration() != null) {
+			logger.info("Configuring Redis Cluster chat memory repository using Jedis");
+			RedisMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
+			return JedisRedisChatMemoryRepository.builder()
+				.nodes(clusterConfiguration.nodeAddresses())
+				.username(clusterConfiguration.username())
+				.password(clusterConfiguration.password())
+				.timeout(clusterConfiguration.timeout())
+				.build();
+		}
+		logger.info("Configuring Redis Standalone chat memory repository using Jedis");
+		RedisMemoryStandaloneConfiguration standaloneConfiguration = getStandaloneConfiguration();
 		return JedisRedisChatMemoryRepository.builder()
-			.host(properties.getHost())
-			.port(properties.getPort())
-			.username(properties.getUsername())
-			.password(properties.getPassword())
-			.timeout(properties.getTimeout())
+			.host(standaloneConfiguration.hostName())
+			.port(standaloneConfiguration.port())
+			.username(standaloneConfiguration.username())
+			.password(standaloneConfiguration.password())
+			.timeout(standaloneConfiguration.timeout())
 			.build();
 	}
 

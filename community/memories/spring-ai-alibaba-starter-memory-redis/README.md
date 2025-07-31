@@ -29,7 +29,7 @@ Spring AI Alibaba Redis Memory 模块是Spring AI Alibaba项目的核心组件�
 </dependency>
 ```
 
-### 基本配置
+### 基本配置-单机
 
 在`application.properties`或`application.yml`中添加Redis配置：
 
@@ -42,15 +42,44 @@ spring:
         port: 6379
 ```
 
+### 基本配置-集群
+
+在`application.properties`或`application.yml`中添加Redis配置：
+
+```yaml
+spring:
+  ai:
+    memory:
+      redis:
+        cluster:
+          nodes: localhost:6379,localhost:6380,localhost:6381
+```
+
+### 切换redis client客户端
+
+在`application.properties`或`application.yml`中添加Redis配置：
+
+```yaml
+spring:
+  ai:
+    memory:
+      redis:
+        # 支持jedis、lettuce、redisson
+        client-type: jedis
+        cluster:
+          nodes: localhost:6379,localhost:6380,localhost:6381
+```
+
 ### 示例代码
 
 ```java
 import com.alibaba.cloud.ai.memory.redis.JedisRedisChatMemoryRepository;
+import com.alibaba.cloud.ai.memory.redis.LettuceRedisChatMemoryRepository;
+import com.alibaba.cloud.ai.memory.redis.RedissonRedisChatMemoryRepository;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
-import com.alibaba.cloud.ai.memory.redis.JedisRedisChatMemoryRepository;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -58,7 +87,13 @@ import javax.servlet.http.HttpServletResponse;
 public class ChatController {
 
     @Autowired
-    private JedisRedisChatMemoryRepository jedisRedisChatMemoryRepository; // 使用 Redis 作为记忆存储
+    private JedisRedisChatMemoryRepository jedisRedisChatMemoryRepository; // 使用 Redis Jedis作为记忆存储
+
+    @Autowired
+    private LettuceRedisChatMemoryRepository lettuceRedisChatMemoryRepository; // 使用 Redis Lettuce作为记忆存储
+
+    @Autowired
+    private RedissonRedisChatMemoryRepository redissonRedisChatMemoryRepository; // 使用 Redis Redisson作为记忆存储
 
     @Autowired
     private ChatClient chatClient;

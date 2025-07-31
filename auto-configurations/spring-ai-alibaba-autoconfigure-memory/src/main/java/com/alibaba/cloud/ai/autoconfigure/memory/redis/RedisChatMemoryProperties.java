@@ -22,6 +22,7 @@ import java.util.List;
 
 /**
  * Configuration properties for Redis chat memory.
+ *
  * @author Jast
  * @author benym
  */
@@ -138,6 +139,7 @@ public class RedisChatMemoryProperties {
 		 * Use the Redisson redis client.
 		 */
 		REDISSON
+
 	}
 
 	/**
@@ -158,6 +160,7 @@ public class RedisChatMemoryProperties {
 		public void setNodes(List<String> nodes) {
 			this.nodes = nodes;
 		}
+
 	}
 
 }

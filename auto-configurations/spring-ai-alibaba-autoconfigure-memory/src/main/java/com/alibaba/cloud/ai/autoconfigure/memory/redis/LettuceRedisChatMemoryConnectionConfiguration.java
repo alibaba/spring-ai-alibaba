@@ -16,8 +16,8 @@
 package com.alibaba.cloud.ai.autoconfigure.memory.redis;
 
 import com.alibaba.cloud.ai.autoconfigure.memory.ChatMemoryAutoConfiguration;
-import com.alibaba.cloud.ai.memory.redis.RedissonRedisChatMemoryRepository;
-import org.redisson.api.RedissonClient;
+import com.alibaba.cloud.ai.memory.redis.LettuceRedisChatMemoryRepository;
+import io.lettuce.core.RedisClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -28,40 +28,40 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
- * Auto-configuration for Redis Chat Memory using Redisson.
+ * Auto-configuration for Redis Chat Memory using Lettuce.
  *
  * @author benym
- * @date 2025/7/30 19:01
+ * @date 2025/7/31 16:23
  */
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
-@ConditionalOnClass({ RedissonRedisChatMemoryRepository.class, RedissonClient.class })
+@ConditionalOnClass({ LettuceRedisChatMemoryRepository.class, RedisClient.class })
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
-@ConditionalOnProperty(name = "spring.ai.memory.redis.client-type", havingValue = "redisson", matchIfMissing = true)
-public class RedissonRedisChatMemoryConnectionConfiguration extends RedisMemoryConnectionConfiguration {
+@ConditionalOnProperty(name = "spring.ai.memory.redis.client-type", havingValue = "lettuce", matchIfMissing = true)
+public class LettuceRedisChatMemoryConnectionConfiguration extends RedisMemoryConnectionConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(RedissonRedisChatMemoryConnectionConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(LettuceRedisChatMemoryConnectionConfiguration.class);
 
-	public RedissonRedisChatMemoryConnectionConfiguration(RedisChatMemoryProperties properties,
+	public LettuceRedisChatMemoryConnectionConfiguration(RedisChatMemoryProperties properties,
 			RedisChatMemoryConnectionDetails connectionDetails) {
 		super(properties, connectionDetails);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	RedissonRedisChatMemoryRepository redisChatMemoryRepository() {
+	LettuceRedisChatMemoryRepository redisChatMemoryRepository() {
 		if (getClusterConfiguration() != null) {
-			logger.info("Configuring Redis Cluster chat memory repository using Redisson");
+			logger.info("Configuring Redis Cluster chat memory repository using Lettuce");
 			RedisMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
-			return RedissonRedisChatMemoryRepository.builder()
-				.nods(clusterConfiguration.nodeAddresses())
+			return LettuceRedisChatMemoryRepository.builder()
+				.nodes(clusterConfiguration.nodeAddresses())
 				.username(clusterConfiguration.username())
 				.password(clusterConfiguration.password())
 				.timeout(clusterConfiguration.timeout())
 				.build();
 		}
-		logger.info("Configuring Redis Standalone chat memory repository using Redisson");
+		logger.info("Configuring Redis Standalone chat memory repository using Lettuce");
 		RedisMemoryStandaloneConfiguration standaloneConfiguration = getStandaloneConfiguration();
-		return RedissonRedisChatMemoryRepository.builder()
+		return LettuceRedisChatMemoryRepository.builder()
 			.host(standaloneConfiguration.hostName())
 			.port(standaloneConfiguration.port())
 			.username(standaloneConfiguration.username())

@@ -15,44 +15,46 @@
  */
 package com.alibaba.cloud.ai.memory.redis;
 
+import io.lettuce.core.ClientOptions;
+import io.lettuce.core.SocketOptions;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.data.redis.connection.*;
-import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import redis.clients.jedis.JedisPoolConfig;
-
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.util.Assert;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Redis implementation of ChatMemoryRepository using Jedis
+ * Redis implementation of ChatMemoryRepository using Lettuce
  *
- * @author Jast
  * @author benym
+ * @date 2025/7/31 14:40
  */
-public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepository
+public class LettuceRedisChatMemoryRepository extends BaseRedisChatMemoryRepository
 		implements ChatMemoryRepository, AutoCloseable {
 
-	private static final Logger logger = LoggerFactory.getLogger(JedisRedisChatMemoryRepository.class);
+	private static final Logger logger = LoggerFactory.getLogger(LettuceRedisChatMemoryRepository.class);
 
 	private final RedisConnectionFactory connectionFactory;
 
 	private final RedisTemplate<String, String> redisTemplate;
 
-	private JedisRedisChatMemoryRepository(RedisConnectionFactory connectionFactory) {
+	private LettuceRedisChatMemoryRepository(RedisConnectionFactory connectionFactory) {
 		super();
 		Assert.notNull(connectionFactory, "ConnectionFactory cannot be null");
 		this.connectionFactory = connectionFactory;
@@ -78,7 +80,7 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 		/**
 		 * example 127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381
 		 */
-		private List<String> nodes;
+		private List<String> nodes = new ArrayList<>();
 
 		private int port = 6379;
 
@@ -88,7 +90,7 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 
 		private int timeout = 2000;
 
-		private JedisPoolConfig poolConfig;
+		private GenericObjectPoolConfig<?> poolConfig;
 
 		private boolean useCluster = false;
 
@@ -123,13 +125,13 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 			return this;
 		}
 
-		public RedisBuilder poolConfig(JedisPoolConfig poolConfig) {
+		public RedisBuilder poolConfig(GenericObjectPoolConfig<?> poolConfig) {
 			this.poolConfig = poolConfig;
 			return this;
 		}
 
-		public JedisRedisChatMemoryRepository build() {
-			JedisConnectionFactory jedisConnectionFactory;
+		public LettuceRedisChatMemoryRepository build() {
+			LettuceConnectionFactory lettuceConnectionFactory;
 			if (useCluster) {
 				RedisClusterConfiguration clusterConfig = new RedisClusterConfiguration(Set.copyOf(nodes));
 				if (StringUtils.hasText(username)) {
@@ -138,14 +140,12 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 				if (StringUtils.hasText(password)) {
 					clusterConfig.setPassword(password);
 				}
-				JedisClientConfiguration.JedisPoolingClientConfigurationBuilder poolBuilder = JedisClientConfiguration
+				LettucePoolingClientConfiguration.LettucePoolingClientConfigurationBuilder clientBuilder = LettucePoolingClientConfiguration
 					.builder()
-					.readTimeout(Duration.ofMillis(timeout))
-					.connectTimeout(Duration.ofMillis(timeout))
-					.usePooling();
-				JedisClientConfiguration jedisClientConfiguration = poolBuilder.poolConfig(getPoolConfigWithDefault())
-					.build();
-				jedisConnectionFactory = new JedisConnectionFactory(clusterConfig, jedisClientConfiguration);
+					.commandTimeout(Duration.ofMillis(timeout))
+					.poolConfig(poolConfig != null ? poolConfig : createDefaultPoolConfig())
+					.clientOptions(createClientOptions());
+				lettuceConnectionFactory = new LettuceConnectionFactory(clusterConfig, clientBuilder.build());
 			}
 			else {
 				RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration(host, port);
@@ -155,21 +155,33 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 				if (StringUtils.hasText(password)) {
 					standaloneConfig.setPassword(password);
 				}
-				JedisClientConfiguration.JedisPoolingClientConfigurationBuilder poolBuilder = JedisClientConfiguration
+				LettucePoolingClientConfiguration.LettucePoolingClientConfigurationBuilder clientBuilder = LettucePoolingClientConfiguration
 					.builder()
-					.readTimeout(Duration.ofMillis(timeout))
-					.connectTimeout(Duration.ofMillis(timeout))
-					.usePooling();
-				JedisClientConfiguration jedisClientConfiguration = poolBuilder.poolConfig(getPoolConfigWithDefault())
-					.build();
-				jedisConnectionFactory = new JedisConnectionFactory(standaloneConfig, jedisClientConfiguration);
+					.commandTimeout(Duration.ofMillis(timeout))
+					.poolConfig(poolConfig != null ? poolConfig : createDefaultPoolConfig())
+					.clientOptions(createClientOptions());
+				lettuceConnectionFactory = new LettuceConnectionFactory(standaloneConfig, clientBuilder.build());
 			}
-			jedisConnectionFactory.afterPropertiesSet();
-			return new JedisRedisChatMemoryRepository(jedisConnectionFactory);
+			lettuceConnectionFactory.setShareNativeConnection(false);
+			lettuceConnectionFactory.afterPropertiesSet();
+			return new LettuceRedisChatMemoryRepository(lettuceConnectionFactory);
 		}
 
-		private JedisPoolConfig getPoolConfigWithDefault() {
-			return poolConfig != null ? poolConfig : new JedisPoolConfig();
+		private GenericObjectPoolConfig<?> createDefaultPoolConfig() {
+			GenericObjectPoolConfig<?> config = new GenericObjectPoolConfig<>();
+			config.setMaxTotal(8);
+			config.setMaxIdle(8);
+			config.setMinIdle(2);
+			return config;
+		}
+
+		private ClientOptions createClientOptions() {
+			return ClientOptions.builder()
+				.socketOptions(
+						SocketOptions.builder().connectTimeout(Duration.ofMillis(timeout)).keepAlive(true).build())
+				.autoReconnect(true)
+				.disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
+				.build();
 		}
 
 	}
@@ -234,9 +246,9 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 
 	@Override
 	public void close() {
-		if (connectionFactory instanceof JedisConnectionFactory) {
-			((JedisConnectionFactory) connectionFactory).destroy();
-			logger.info("Jedis Redis connection pool closed");
+		if (connectionFactory instanceof LettuceConnectionFactory) {
+			((LettuceConnectionFactory) connectionFactory).destroy();
+			logger.info("Lettuce Redis connection pool closed");
 		}
 	}
 
