@@ -1221,7 +1221,7 @@ const handlePlanError = (message: string) => {
   isLoading.value = false
   messages.value[messages.value.length -1] = {
     id: Date.now().toString(),
-    type: 'error',
+    type: 'assistant',
     content: message,
     timestamp: new Date(),
   }
