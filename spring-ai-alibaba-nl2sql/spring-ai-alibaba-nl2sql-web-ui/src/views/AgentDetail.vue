@@ -1011,6 +1011,17 @@ export default {
     const showTestResult = ref(false)
     const testResultMessage = ref('')
     
+    // 初始化信息源相关数据
+    const schemaInitForm = reactive({
+      selectedDatasource: null,
+      schema: ''
+    })
+    const availableTables = ref([])
+    const selectedTables = ref([])
+    const tableSearchKeyword = ref('')
+    const schemaInitializing = ref(false)
+    const schemaStatistics = ref(null)
+    
     // 方法
     const setActiveTab = (tab) => {
       activeTab.value = tab
@@ -1367,6 +1378,154 @@ export default {
         }
         
         showMessage(errorMessage, 'error')
+      }
+    }
+    
+    // 初始化信息源相关方法
+    const onDatasourceChange = () => {
+      if (schemaInitForm.selectedDatasource) {
+        // 自动填充schema名称
+        const url = schemaInitForm.selectedDatasource.connectionUrl
+        const match = url.match(/\/([^?]+)/)
+        if (match) {
+          schemaInitForm.schema = match[1]
+        }
+        // 清空之前的表选择
+        availableTables.value = []
+        selectedTables.value = []
+        // 自动加载表列表
+        loadTables()
+      }
+    }
+    
+    const loadTables = async () => {
+      if (!schemaInitForm.selectedDatasource || !schemaInitForm.schema) {
+        showMessage('请先选择数据源和Schema', 'warning')
+        return
+      }
+      
+      try {
+        // 这里需要调用后端API获取表列表
+        // 暂时使用模拟数据
+        const response = await fetch(`/api/datasource/${schemaInitForm.selectedDatasource.id}/tables?schema=${schemaInitForm.schema}`)
+        if (response.ok) {
+          const tables = await response.json()
+          availableTables.value = tables || []
+        } else {
+          throw new Error('获取表列表失败')
+        }
+      } catch (error) {
+        console.error('加载表列表失败:', error)
+        showMessage('加载表列表失败: ' + error.message, 'error')
+        availableTables.value = []
+      }
+    }
+    
+    const filteredTables = computed(() => {
+      if (!tableSearchKeyword.value) {
+        return availableTables.value
+      }
+      const keyword = tableSearchKeyword.value.toLowerCase()
+      return availableTables.value.filter(table => 
+        table.toLowerCase().includes(keyword)
+      )
+    })
+    
+    const selectAllTables = () => {
+      selectedTables.value = [...filteredTables.value]
+    }
+    
+    const clearAllTables = () => {
+      selectedTables.value = []
+    }
+    
+    const canInitialize = computed(() => {
+      return schemaInitForm.selectedDatasource && 
+             schemaInitForm.schema && 
+             selectedTables.value.length > 0 && 
+             !schemaInitializing.value
+    })
+    
+    const initializeSchema = async () => {
+      if (!canInitialize.value) {
+        showMessage('请完成所有必填项', 'warning')
+        return
+      }
+      
+      try {
+        schemaInitializing.value = true
+        
+        const initRequest = {
+          dbConfig: {
+            url: schemaInitForm.selectedDatasource.connectionUrl,
+            username: schemaInitForm.selectedDatasource.username,
+            password: schemaInitForm.selectedDatasource.password,
+            schema: schemaInitForm.schema
+          },
+          tables: selectedTables.value
+        }
+        
+        const response = await fetch(`/api/agent/${agent.id}/schema/init`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(initRequest)
+        })
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          showMessage(`信息源初始化成功！已处理 ${result.tablesCount} 个表`, 'success')
+          // 自动获取统计信息
+          await getSchemaStatistics()
+        } else {
+          throw new Error(result.message || '初始化失败')
+        }
+      } catch (error) {
+        console.error('初始化信息源失败:', error)
+        showMessage('初始化失败: ' + error.message, 'error')
+      } finally {
+        schemaInitializing.value = false
+      }
+    }
+    
+    const getSchemaStatistics = async () => {
+      try {
+        const response = await fetch(`/api/agent/${agent.id}/schema/statistics`)
+        const result = await response.json()
+        
+        if (result.success) {
+          schemaStatistics.value = result.data
+        } else {
+          throw new Error(result.message || '获取统计信息失败')
+        }
+      } catch (error) {
+        console.error('获取统计信息失败:', error)
+        showMessage('获取统计信息失败: ' + error.message, 'error')
+      }
+    }
+    
+    const clearSchemaData = async () => {
+      if (!confirm('确定要清空所有向量数据吗？此操作不可恢复。')) {
+        return
+      }
+      
+      try {
+        const response = await fetch(`/api/agent/${agent.id}/schema/clear`, {
+          method: 'DELETE'
+        })
+        const result = await response.json()
+        
+        if (result.success) {
+          showMessage('向量数据清空成功', 'success')
+          schemaStatistics.value = null
+        } else {
+          throw new Error(result.message || '清空失败')
+        }
+      } catch (error) {
+        console.error('清空向量数据失败:', error)
+        showMessage('清空失败: ' + error.message, 'error')
       }
     }
     
@@ -1802,6 +1961,15 @@ export default {
       datasourceForm,
       showTestResult,
       testResultMessage,
+      // 初始化信息源相关
+      schemaInitForm,
+      availableTables,
+      selectedTables,
+      tableSearchKeyword,
+      schemaInitializing,
+      schemaStatistics,
+      filteredTables,
+      canInitialize,
       // 方法
       setActiveTab,
       goBack,
@@ -1859,7 +2027,15 @@ export default {
       moveQuestionUp,
       moveQuestionDown,
       savePresetQuestions,
-      loadPresetQuestions
+      loadPresetQuestions,
+      // 初始化信息源方法
+      onDatasourceChange,
+      loadTables,
+      selectAllTables,
+      clearAllTables,
+      initializeSchema,
+      getSchemaStatistics,
+      clearSchemaData
     }
   }
 }
@@ -2391,6 +2567,159 @@ export default {
 }
 
 /* 审计日志样式 */
+/* 初始化信息源样式 */
+.schema-init-section {
+  margin-bottom: 32px;
+}
+
+.schema-init-card {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.init-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.table-selection {
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  background: white;
+}
+
+.table-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #f9f9f9;
+}
+
+.table-search .form-control {
+  flex: 1;
+  margin: 0;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.table-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.table-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.table-checkbox:hover {
+  border-color: #1890ff;
+  background: #f0f8ff;
+}
+
+.table-checkbox input[type="checkbox"] {
+  margin: 0;
+}
+
+.table-name {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.empty-tables {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-tables i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.init-status {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.init-status h4 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.stat-value.text-success {
+  color: #52c41a;
+}
+
+.stat-value.text-muted {
+  color: #999;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* 数据源配置样式 */
 .datasource-section {
   margin-top: 16px;
