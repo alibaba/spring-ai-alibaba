@@ -29,102 +29,119 @@ export class PromptApiService {
   private static readonly BASE_URL = '/api/prompt'
 
   /**
-   * Handle HTTP response
+   * 获取所有prompt
    */
-  private static async handleResponse(response: Response) {
+  static async getAll(): Promise<Prompt[]> {
+    const response = await fetch(this.BASE_URL)
     if (!response.ok) {
-      try {
-        const errorData = await response.json()
-        throw new Error(errorData.message || `API request failed: ${response.status}`)
-      } catch {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`)
-      }
+      throw new Error(`Failed to fetch prompts: ${response.statusText}`)
     }
-    return response
+    return response.json()
   }
 
   /**
-   * Get all Prompt list
+   * 根据命名空间获取prompt
    */
-  static async getAllPrompts(namespace: string): Promise<Prompt[]> {
-    try {
-      const response = await fetch(`${this.BASE_URL}/namespace/${namespace}`)
-      const result = await this.handleResponse(response)
-      return await result.json()
-    } catch (error) {
-      console.error('Failed to get Prompt list:', error)
-      throw error
+  static async getAllByNamespace(namespace: string): Promise<Prompt[]> {
+    const response = await fetch(`${this.BASE_URL}/namespace/${namespace}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch prompts for namespace ${namespace}: ${response.statusText}`)
+    }
+    return response.json()
+  }
+
+
+
+  /**
+   * 根据ID获取prompt
+   */
+  static async getById(id: string): Promise<Prompt> {
+    const response = await fetch(`${this.BASE_URL}/${id}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch prompt ${id}: ${response.statusText}`)
+    }
+    return response.json()
+  }
+
+  /**
+   * 创建prompt
+   */
+  static async create(prompt: Omit<Prompt, 'id'>): Promise<Prompt> {
+    const response = await fetch(this.BASE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(prompt),
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to create prompt: ${response.statusText}`)
+    }
+    return response.json()
+  }
+
+  /**
+   * 更新prompt
+   */
+  static async update(id: string, prompt: Prompt): Promise<Prompt> {
+    const response = await fetch(`${this.BASE_URL}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(prompt),
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to update prompt ${id}: ${response.statusText}`)
+    }
+    return response.json()
+  }
+
+  /**
+   * 删除prompt
+   */
+  static async delete(id: string): Promise<void> {
+    const response = await fetch(`${this.BASE_URL}/${id}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to delete prompt ${id}: ${response.statusText}`)
     }
   }
 
   /**
-   * Get Prompt details by ID
+   * 获取支持的语言列表
    */
-  static async getPromptById(id: string): Promise<Prompt> {
-    try {
-      const response = await fetch(`${this.BASE_URL}/${id}`)
-      const result = await this.handleResponse(response)
-      return await result.json()
-    } catch (error) {
-      console.error(`Failed to get Pr'o'm'p't[${id}] details:`, error)
-      throw error
+  static async getSupportedLanguages(): Promise<string[]> {
+    const response = await fetch(`${this.BASE_URL}/languages`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch supported languages: ${response.statusText}`)
+    }
+    return response.json()
+  }
+
+  /**
+   * 针对特定prompt从resource覆盖指定语言的内容到数据库
+   */
+  static async importSpecificPromptFromLanguage(promptName: string, language: string): Promise<void> {
+    const response = await fetch(`${this.BASE_URL}/import/${promptName}/language/${language}`, {
+      method: 'POST',
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to import specific prompt ${promptName} for language ${language}: ${response.statusText}`)
     }
   }
 
   /**
-   * Create new Prompt
+   * 批量重置所有prompt为指定语言的默认值
    */
-  static async createPrompt(promptConfig: Omit<Prompt, 'id'>): Promise<Prompt> {
-    try {
-      const response = await fetch(this.BASE_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(promptConfig),
-      })
-      const result = await this.handleResponse(response)
-      return await result.json()
-    } catch (error) {
-      console.error('Failed to create Prompt:', error)
-      throw error
-    }
-  }
-  /**
-   * Update Prompt configuration
-   */
-  static async updatePrompt(id: string, PromptConfig: Prompt): Promise<Prompt> {
-    try {
-      const response = await fetch(`${this.BASE_URL}/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(PromptConfig),
-      })
-      const result = await this.handleResponse(response)
-      return await result.json()
-    } catch (error) {
-      console.error(`Failed to update Prompt[${id}]:`, error)
-      throw error
+  static async importAllPromptsFromLanguage(language: string): Promise<void> {
+    const response = await fetch(`/admin/prompts/switch-language?language=${language}`, {
+      method: 'POST',
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to switch all prompts to language ${language}: ${response.statusText}`)
     }
   }
 
-  /**
-   * Delete Prompt
-   */
-  static async deletePrompt(id: string): Promise<void> {
-    try {
-      const response = await fetch(`${this.BASE_URL}/${id}`, {
-        method: 'DELETE',
-      })
-      if (response.status === 400) {
-        throw new Error('Cannot delete default Prompt')
-      }
-      await this.handleResponse(response)
-    } catch (error) {
-      console.error(`Failed to delete Prompt[${id}]:`, error)
-      throw error
-    }
-  }
 }

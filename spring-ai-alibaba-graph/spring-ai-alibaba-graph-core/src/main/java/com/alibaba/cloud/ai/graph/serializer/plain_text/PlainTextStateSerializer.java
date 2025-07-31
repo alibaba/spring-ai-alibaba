@@ -35,7 +35,7 @@ public abstract class PlainTextStateSerializer extends StateSerializer<OverAllSt
 	}
 
 	@Override
-	public String mimeType() {
+	public String contentType() {
 		return "plain/text";
 	}
 

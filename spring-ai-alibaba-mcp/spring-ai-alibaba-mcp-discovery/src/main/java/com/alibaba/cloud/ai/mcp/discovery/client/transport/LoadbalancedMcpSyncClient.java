@@ -36,6 +36,7 @@ import org.springframework.ai.mcp.client.autoconfigure.configurer.McpSyncClientC
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
@@ -75,6 +76,9 @@ public class LoadbalancedMcpSyncClient {
 
 	private NacosMcpServerEndpoint serverEndpoint;
 
+	// Link Tracking Filters
+	private final ExchangeFilterFunction traceFilter;
+
 	public LoadbalancedMcpSyncClient(String serverName, String version,
 			NacosMcpOperationService nacosMcpOperationService, ApplicationContext applicationContext) {
 		Assert.notNull(serverName, "serviceName cannot be null");
@@ -104,6 +108,18 @@ public class LoadbalancedMcpSyncClient {
 		objectMapper = this.applicationContext.getBean(ObjectMapper.class);
 		webClientBuilderTemplate = this.applicationContext.getBean(WebClient.Builder.class);
 		webFluxSseClientTransportBuilder = this.applicationContext.getBean(WebFluxSseClientTransportBuilder.class);
+
+		// Try to get the link tracking filter
+		ExchangeFilterFunction tempTraceFilter = null;
+		try {
+			tempTraceFilter = this.applicationContext.getBean("mcpTraceExchangeFilterFunction",
+					ExchangeFilterFunction.class);
+		}
+		catch (Exception e) {
+			// The link tracking filter does not exist, continue normal operation
+			logger.debug("MCP trace filter not found, continuing without tracing: {}", e.getMessage());
+		}
+		this.traceFilter = tempTraceFilter;
 	}
 
 	public void init() {
@@ -276,14 +292,20 @@ public class LoadbalancedMcpSyncClient {
 		}
 	}
 
-	// ------------------------------------------------------------------------------------------------------------------------------------------------
-
 	private McpSyncClient clientByEndpoint(McpEndpointInfo mcpEndpointInfo, String exportPath) {
 		McpSyncClient syncClient;
 		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
-		WebFluxSseClientTransport transport = webFluxSseClientTransportBuilder.build(webClientBuilder, objectMapper,
-				exportPath);
+
+		// Using the build method with link tracking
+		WebFluxSseClientTransport transport;
+		if (traceFilter != null) {
+			transport = webFluxSseClientTransportBuilder.build(webClientBuilder, objectMapper, exportPath, traceFilter);
+		}
+		else {
+			transport = webFluxSseClientTransportBuilder.build(webClientBuilder, objectMapper, exportPath);
+		}
+
 		NamedClientMcpTransport namedTransport = new NamedClientMcpTransport(
 				serverName + "-" + NacosMcpClientUtils.getMcpEndpointInfoId(mcpEndpointInfo, exportPath), transport);
 		McpSchema.Implementation clientInfo = new McpSchema.Implementation(

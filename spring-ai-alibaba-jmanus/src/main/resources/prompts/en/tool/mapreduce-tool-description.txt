@@ -1,0 +1,1 @@
+MapReduce planning tool for managing complex task execution plans supporting both sequential and MapReduce modes, with MapReduce mode including three phases: Data Preparation, Map, and Reduce

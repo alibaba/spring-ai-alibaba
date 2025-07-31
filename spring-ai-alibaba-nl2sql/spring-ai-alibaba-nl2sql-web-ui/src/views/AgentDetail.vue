@@ -24,18 +24,37 @@
       <button class="message-close" @click="hideMessage">×</button>
     </div>
 
-    <!-- 头部导航 -->
-    <div class="top-nav">
-      <div class="nav-items">
-        <span class="nav-item logo-item">
-          <i class="bi bi-robot"></i>
-          数据智能体
-        </span>
-        <span class="nav-item clickable active" @click="goToAgentList">智能体</span>
+    <!-- 现代化头部导航 -->
+    <header class="page-header">
+      <div class="header-content">
+        <div class="brand-section">
+          <div class="brand-logo" @click="goToHome">
+            <i class="bi bi-robot"></i>
+            <span class="brand-text">数据智能体</span>
+          </div>
+          <nav class="header-nav">
+            <div class="nav-item" @click="goToAgentList">
+              <i class="bi bi-grid-3x3-gap"></i>
+              <span>智能体列表</span>
+            </div>
+            <div class="nav-item" @click="goToWorkspace">
+              <i class="bi bi-chat-square-dots"></i>
+              <span>智能体工作台</span>
+            </div>
+          </nav>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline" @click="openHelp">
+            <i class="bi bi-question-circle"></i>
+            帮助
+          </button>
+          <button class="btn btn-primary" @click="createNewAgent">
+            <i class="bi bi-plus-lg"></i>
+            创建智能体
+          </button>
+        </div>
       </div>
-      <div class="nav-right">
-      </div>
-    </div>
+    </header>
 
     <!-- 智能体信息头部 -->
     <div class="agent-header">
@@ -107,6 +126,14 @@
               </div>
 
               <div class="nav-section">
+                <div class="nav-section-title">预设问题配置</div>
+                <a href="#" class="nav-link" :class="{ active: activeTab === 'preset-questions' }" @click="setActiveTab('preset-questions')">
+                  <i class="bi bi-question-circle"></i>
+                  预设问题管理
+                </a>
+              </div>
+
+              <div class="nav-section">
                 <div class="nav-section-title">调试工具</div>
                 <a href="#" class="nav-link" :class="{ active: activeTab === 'debug' }" @click="setActiveTab('debug')">
                   <i class="bi bi-bug"></i>
@@ -115,7 +142,7 @@
               </div>
 
               <div class="nav-section">
-                <div class="nav-section-title">正式使用</div>
+                <div class="nav-section-title">应用入口</div>
                 <a href="#" class="nav-link" @click="goToWorkspace">
                   <i class="bi bi-chat-dots"></i>
                   智能体工作台
@@ -429,6 +456,61 @@
                       </tr>
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- 预设问题管理 -->
+            <div v-if="activeTab === 'preset-questions'" class="tab-content">
+              <div class="content-header">
+                <h2>预设问题管理</h2>
+                <p class="content-subtitle">配置智能体工作台显示的预设问题</p>
+              </div>
+              <div class="preset-questions-section">
+                <div class="section-header">
+                  <h3>预设问题列表</h3>
+                  <button class="btn btn-primary" @click="addPresetQuestion">
+                    <i class="bi bi-plus"></i>
+                    添加问题
+                  </button>
+                </div>
+                <div class="questions-list">
+                  <div v-if="presetQuestions.length === 0" class="empty-questions">
+                    <i class="bi bi-question-circle"></i>
+                    <p>暂无预设问题，点击"添加问题"开始配置</p>
+                  </div>
+                  <div v-else>
+                    <div 
+                      v-for="(question, index) in presetQuestions" 
+                      :key="index"
+                      class="question-item"
+                    >
+                      <div class="question-content">
+                        <div class="question-number">{{ index + 1 }}</div>
+                        <input 
+                          type="text" 
+                          v-model="question.question" 
+                          class="question-input"
+                          placeholder="请输入预设问题..."
+                        >
+                      </div>
+                      <div class="question-actions">
+                        <button class="btn btn-sm btn-outline" @click="moveQuestionUp(index)" :disabled="index === 0">
+                          <i class="bi bi-arrow-up"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline" @click="moveQuestionDown(index)" :disabled="index === presetQuestions.length - 1">
+                          <i class="bi bi-arrow-down"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" @click="removePresetQuestion(index)">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions" v-if="presetQuestions.length > 0">
+                  <button class="btn btn-primary" @click="savePresetQuestions">保存配置</button>
+                  <button class="btn btn-secondary" @click="loadPresetQuestions">重置</button>
                 </div>
               </div>
             </div>
@@ -817,7 +899,7 @@
 <script>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { agentApi, businessKnowledgeApi, semanticModelApi, datasourceApi } from '../utils/api.js'
+import { agentApi, businessKnowledgeApi, semanticModelApi, datasourceApi, presetQuestionApi } from '../utils/api.js'
 import AgentDebugPanel from '../components/AgentDebugPanel.vue'
 
 export default {
@@ -861,6 +943,9 @@ export default {
     const showCreateModelModal = ref(false)
     const showUploadModal = ref(false)
     const showAddDatasourceModal = ref(false)
+    
+    // 预设问题相关数据
+    const presetQuestions = ref([])
     
     // 业务知识相关数据
     const isEditingBusinessKnowledge = ref(false)
@@ -937,11 +1022,23 @@ export default {
     }
     
     const goToAgentList = () => {
-      router.push('/agent')
+      router.push('/agents')
     }
 
     const goToWorkspace = () => {
       router.push('/workspace')
+    }
+
+    const createNewAgent = () => {
+      router.push('/agent/create')
+    }
+
+    const openHelp = () => {
+      window.open('https://github.com/alibaba/spring-ai-alibaba/blob/main/spring-ai-alibaba-nl2sql/README.md', '_blank')
+    }
+
+    const goToHome = () => {
+      router.push('/')
     }
     
     const loadAgentDetail = async () => {
@@ -979,6 +1076,9 @@ export default {
           break
         case 'datasource':
           await loadDatasources()
+          break
+        case 'preset-questions':
+          await loadPresetQuestions()
           break
       }
     }
@@ -1267,6 +1367,59 @@ export default {
         }
         
         showMessage(errorMessage, 'error')
+      }
+    }
+    
+    // 预设问题相关方法
+    const loadPresetQuestions = async () => {
+      try {
+        const questions = await presetQuestionApi.getByAgentId(agent.id)
+        presetQuestions.value = questions.map(q => ({ question: q.question }))
+        console.log('预设问题加载成功:', questions)
+      } catch (error) {
+        console.error('加载预设问题失败:', error)
+        presetQuestions.value = []
+      }
+    }
+
+    // 添加预设问题
+    const addPresetQuestion = () => {
+      presetQuestions.value.push({ question: '' })
+    }
+
+    // 移除预设问题
+    const removePresetQuestion = (index) => {
+      presetQuestions.value.splice(index, 1)
+    }
+
+    // 上移问题
+    const moveQuestionUp = (index) => {
+      if (index > 0) {
+        const temp = presetQuestions.value[index]
+        presetQuestions.value[index] = presetQuestions.value[index - 1]
+        presetQuestions.value[index - 1] = temp
+      }
+    }
+
+    // 下移问题
+    const moveQuestionDown = (index) => {
+      if (index < presetQuestions.value.length - 1) {
+        const temp = presetQuestions.value[index]
+        presetQuestions.value[index] = presetQuestions.value[index + 1]
+        presetQuestions.value[index + 1] = temp
+      }
+    }
+
+    // 保存预设问题
+    const savePresetQuestions = async () => {
+      try {
+        // 过滤掉空问题
+        const validQuestions = presetQuestions.value.filter(q => q.question.trim())
+        await presetQuestionApi.batchSave(agent.id, validQuestions)
+        showMessage('预设问题保存成功', 'success')
+      } catch (error) {
+        console.error('保存预设问题失败:', error)
+        showMessage('保存预设问题失败：' + (error.message || '未知错误'), 'error')
       }
     }
     
@@ -1686,6 +1839,9 @@ export default {
       // 导航方法
       goToAgentList,
       goToWorkspace,
+      createNewAgent,
+      openHelp,
+      goToHome,
       // 工具方法
       getStatusText,
       formatDate,
@@ -1695,7 +1851,15 @@ export default {
       // 消息提示方法
       showMessage,
       hideMessage,
-      getMessageIcon
+      getMessageIcon,
+      // 预设问题方法
+      presetQuestions,
+      addPresetQuestion,
+      removePresetQuestion,
+      moveQuestionUp,
+      moveQuestionDown,
+      savePresetQuestions,
+      loadPresetQuestions
     }
   }
 }
@@ -1704,8 +1868,101 @@ export default {
 <style scoped>
 .agent-detail-page {
   min-height: 100vh;
-  background: #f5f5f5;
-  position: relative;
+  background: var(--bg-layout);
+  font-family: var(--font-family);
+}
+
+/* 现代化头部导航 */
+.page-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-xs);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+.header-content {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xl);
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--primary-color);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.brand-logo i {
+  font-size: var(--font-size-xl);
+  color: var(--accent-color);
+}
+
+.brand-text {
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-nav {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.header-nav .nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-base);
+  border: 1px solid transparent;
+}
+
+.header-nav .nav-item:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+.header-nav .nav-item.active {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.header-nav .nav-item i {
+  font-size: var(--font-size-base);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
 }
 
 /* 消息提示样式 */
@@ -1793,12 +2050,13 @@ export default {
 /* 头部导航样式 */
 .top-nav {
   background: white;
+  border-bottom: 1px solid #e5e5e5;
   padding: 0 24px;
-  height: 56px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #e8e8e8;
+  align-items: center;
+  height: 60px;
+  max-width: 100%;
 }
 
 .nav-items {
@@ -1859,6 +2117,7 @@ export default {
 .container {
   width: 100%;
   padding: 0 1rem;
+  max-width: 100%;
 }
 
 .header-content {
@@ -1949,6 +2208,7 @@ export default {
 /* 主要内容区域样式 */
 .main-content {
   padding: 1rem 0;
+  max-width: 100%;
 }
 
 .content-layout {
@@ -1985,22 +2245,43 @@ export default {
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  color: #333;
+  gap: var(--space-base);
+  padding: var(--space-base) var(--space-md);
+  color: var(--text-primary);
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
+  border-radius: var(--radius-base);
+  margin: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  position: relative;
+  border: 1px solid transparent;
 }
 
 .nav-link:hover {
-  background: #f5f5f5;
-  color: #1890ff;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+  transform: translateX(2px);
 }
 
 .nav-link.active {
-  background: #e6f7ff;
-  color: #1890ff;
-  border-right: 3px solid #1890ff;
+  background: linear-gradient(135deg, var(--primary-light), var(--accent-light));
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .nav-link i {
@@ -2776,12 +3057,6 @@ export default {
   margin-bottom: 16px;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .batch-actions {
   display: flex;
   align-items: center;
@@ -2879,5 +3154,84 @@ export default {
   font-size: 12px;
   margin-top: 4px;
   display: block;
+}
+
+/* 预设问题配置样式 */
+.preset-questions-section {
+  margin-top: 16px;
+}
+
+.questions-list {
+  margin-top: 16px;
+}
+
+.empty-questions {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #999;
+}
+
+.empty-questions i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #ccc;
+}
+
+.question-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  border: 1px solid #e8e8e8;
+}
+
+.question-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.question-number {
+  width: 24px;
+  height: 24px;
+  background: #1890ff;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.question-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.question-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.question-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.question-actions .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
 }
 </style>

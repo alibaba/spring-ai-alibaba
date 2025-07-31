@@ -80,6 +80,13 @@
 
     <!-- Cron Task Modal -->
     <CronTaskModal v-model="showCronTaskModal" />
+
+    <!-- 消息提示组件 -->
+    <div v-if="message.show" class="message-toast" :class="message.type">
+      <div class="message-content">
+        <span>{{ message.text }}</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -98,11 +105,13 @@ import { PlanActApiService } from '@/api/plan-act-api-service'
 import { useTaskStore } from '@/stores/task'
 import { sidebarStore } from '@/stores/sidebar'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
+import { useMessage } from '@/composables/useMessage'
 
 const route = useRoute()
 const router = useRouter()
 const taskStore = useTaskStore()
 const { t } = useI18n()
+const { message,showMessage } = useMessage()
 
 const prompt = ref<string>('')
 const inputOnlyContent = ref<string>('')
@@ -208,7 +217,13 @@ onMounted(() => {
       if (uiState) {
         handleInputUpdateState(uiState.enabled, uiState.placeholder)
       }
-    }
+    },
+
+    onPlanError: (message: string) => {
+      // 无需右侧提示，如需提示则解开
+      // showMessage(`${t('planTemplate.executionFailed')}: ${message}`, 'error')
+      chatRef.value.handlePlanError(message)
+    },
   })
 
   console.log('[Direct] Event callbacks registered to planExecutionManager')
@@ -761,4 +776,41 @@ const handlePlanExecutionRequested = async (payload: {
   font-size: 16px;
   padding: 50px;
 }
+
+/* 消息提示样式 */
+.message-toast {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  z-index: 9999;
+  min-width: 320px;
+  max-width: 480px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: slideInRight 0.3s ease-out;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.message-toast.error {
+  color: #fff2f0;
+  background-color: #ff4d4f;
+}
+
+.message-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  word-break: break-all;
+}
+
+.message-content i {
+  font-size: 16px;
+}
+
 </style>

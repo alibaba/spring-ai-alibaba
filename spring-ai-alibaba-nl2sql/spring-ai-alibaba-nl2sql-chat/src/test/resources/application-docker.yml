@@ -1,0 +1,8 @@
+spring:
+  ai:
+    alibaba:
+      nl2sql:
+        code-executor:
+          code-pool-executor: docker
+          code-timeout: 5s
+          enabled: true

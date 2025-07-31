@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinat
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 基于MapReduce的内容总结工作流 用于对大量内容进行智能提取和结构化总结
+ * MapReduce-based content summarization workflow for intelligent extraction and
+ * structured summarization of large amounts of content
  */
 @Component
 public class SummaryWorkflow implements ISummaryWorkflow {
@@ -47,46 +49,15 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 	@Autowired
 	private ObjectMapper objectMapper;
 
-	/**
-	 * 内容总结执行计划模板
-	 */
-	private static final String SUMMARY_PLAN_TEMPLATE = """
-			{
-			  "planType": "advanced",
-			  "planId": "%s",
-			  "title": "内容智能的对大文件进行汇总，最后总结时需要把合并后的文件名在总结时输出出来",
-			  "steps": [
-			    {
-			      "type": "mapreduce",
-			      "dataPreparedSteps": [
-			        {
-			          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] 使用map_reduce_tool，对 %s 进行内容分割",
-			          "terminateColumns": "%s"
-			        }
-			      ],
-			      "mapSteps": [
-			        {
-			          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] 分析文件，找到与 %s 相关的关键信息，信息要全面，包含所有数据，事实和观点等，全面的信息，不要遗漏",
-			          "terminateColumns": "%s"
-			        }
-			      ],
-			      "reduceSteps": [
-			        {
-			          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] 合并该分片的信息到文件中，在保持信息完整性的前提下，合并所有内容，同时也要去掉未找到内容的那些结果",
-			          "terminateColumns": "%s"
-			        }
-			      ],
-				  "postProcessSteps": [
-					{
-					  "stepRequirement": "[MAPREDUCE_FIN_AGENT] 当导出完成后，读取导出的结果后，完整输出所有导出的内容",
-					  "terminateColumns": "file_path"
-					}
-				  ]
+	@Autowired
+	private PromptService promptService;
 
-			    }
-			  ]
-			}
-			""";
+	/**
+	 * Get summary plan template from PromptService
+	 */
+	private String getSummaryPlanTemplate() {
+		return promptService.getPromptByName("SUMMARY_PLAN_TEMPLATE").getPromptContent();
+	}
 
 	/**
 	 * 执行内容总结工作流
@@ -122,15 +93,16 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 			// 使用调用者提供的planId，而不是生成新的
 			logger.info("Building summary execution plan with provided planId: {}", parentPlanId);
 
-			// 生成计划JSON，使用传入的planId
-			String planJson = String.format(SUMMARY_PLAN_TEMPLATE, parentPlanId, // 计划ID
-					fileName, // dataPreparedSteps 文件名
+			// Generate plan JSON using template from PromptService
+			String planJson = String.format(getSummaryPlanTemplate(), parentPlanId, // Plan
+																					// ID
+					fileName, // dataPreparedSteps file name
 					terminateColumnsString, // dataPreparedSteps terminateColumns
-					queryKey, // mapSteps 查询关键词
+					queryKey, // mapSteps query key
 					terminateColumnsString, // mapSteps terminateColumns
 					terminateColumnsString, // reduceSteps terminateColumns
-					terminateColumnsString // postProcessSteps terminateColumns（会自动加上 ,
-											// fileURL）
+					terminateColumnsString // postProcessSteps terminateColumns (will auto
+											// add fileURL)
 			);
 
 			// 解析JSON为MapReduceExecutionPlan对象

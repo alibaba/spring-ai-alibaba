@@ -1,4 +1,4 @@
-<!-- 
+<!--
  * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,7 @@
         <div class="gradient-orb orb-2"></div>
         <div class="gradient-orb orb-3"></div>
       </div>
-      
+
       <!-- Header -->
       <header class="header">
         <div class="header-top">
@@ -31,8 +31,8 @@
         </div>
         <div class="logo-container">
           <div class="logo">
-            <img src="/Java-AI.svg" alt="JTaskPoilot" class="java-logo" />
-            <h1>JTaskPoilot</h1>
+            <img src="/Java-AI.svg" alt="JManus" class="java-logo" />
+            <h1>JManus</h1>
           </div>
                       <span class="tagline">{{ $t('home.tagline') }}</span>
         </div>
@@ -132,7 +132,7 @@ onMounted(() => {
   console.log('[Home] onMounted called')
   console.log('[Home] taskStore:', taskStore)
   console.log('[Home] examples:', examples)
-  
+
   // Mark that the home page has been visited
   taskStore.markHomeVisited()
   console.log('[Home] Home visited marked')
@@ -185,15 +185,15 @@ const handleSend = () => {
 
   const taskContent = userInput.value.trim()
   console.log('[Home] Setting task to store:', taskContent)
-  
+
   // Use the store to pass task data
   taskStore.setTask(taskContent)
   console.log('[Home] Task set to store, current task:', taskStore.currentTask)
-  
+
   // Navigate to direct page
   const chatId = Date.now().toString()
   console.log('[Home] Navigating to direct page with chatId:', chatId)
-  
+
   router.push({
     name: 'direct',
     params: { id: chatId },
@@ -207,15 +207,15 @@ const handleSend = () => {
 const selectExample = (example: any) => {
   console.log('[Home] selectExample called with example:', example)
   console.log('[Home] Example prompt:', example.prompt)
-  
+
   // Send the task directly using the example's prompt
   taskStore.setTask(example.prompt)
   console.log('[Home] Task set to store from example, current task:', taskStore.currentTask)
-  
+
   // Navigate to direct page
   const chatId = Date.now().toString()
   console.log('[Home] Navigating to direct page with chatId:', chatId)
-  
+
   router.push({
     name: 'direct',
     params: { id: chatId },
@@ -228,24 +228,24 @@ const selectExample = (example: any) => {
 
 const selectPlan = async (plan: any) => {
   console.log('[Home] selectPlan called with plan:', plan)
-  
+
   try {
     // 1. First, save the plan to the template library
     await saveJsonPlanToTemplate(plan.planJson)
     console.log('[Home] Plan saved to templates')
-    
+
     // 2. Navigate to the direct page
     const chatId = Date.now().toString()
     await router.push({
       name: 'direct',
       params: { id: chatId },
     })
-    
+
     // 3. Navigate to the direct page after loading
     nextTick(async () => {
       // Ensure the page is fully loaded
       await new Promise(resolve => setTimeout(resolve, 300))
-      
+
       // Toggle the sidebar
       if (sidebarStore.isCollapsed) {
         await sidebarStore.toggleSidebar()
@@ -253,21 +253,21 @@ const selectPlan = async (plan: any) => {
       } else {
         console.log('[Sidebar] Sidebar is already open')
       }
-      
+
       // Load the template list
       await sidebarStore.loadPlanTemplateList()
       console.log('[Sidebar] Template list loaded')
-      
-      // Find and select the template 
+
+      // Find and select the template
       const template = sidebarStore.planTemplateList.find(t => t.id === plan.planJson.planId)
       if (!template) {
         console.error('[Sidebar] Template not found')
         return
       }
-      
+
       await sidebarStore.selectTemplate(template)
       console.log('[Sidebar] Template selected:', template.title)
-      
+
       // Call the execute logic directly
       const executeBtn = document.querySelector('.execute-btn') as HTMLButtonElement
       if (!executeBtn.disabled) {
@@ -516,17 +516,17 @@ const selectPlan = async (plan: any) => {
 
   .examples-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px;
-    
+
     .card-with-type {
       width: 100%;
-      min-width: 300px; 
+      min-width: 300px;
 
       &:hover {
         .card-type {
-          transform: translateY(-1px); 
-          box-shadow: 0 8px 25px rgba(130, 151, 246, 0.4); 
+          transform: translateY(-1px);
+          box-shadow: 0 8px 25px rgba(130, 151, 246, 0.4);
         }
       }
 

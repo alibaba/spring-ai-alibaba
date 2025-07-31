@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.config;
 import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.dispatcher.PlanExecutorDispatcher;
+import com.alibaba.cloud.ai.dispatcher.PythonExecutorDispatcher;
 import com.alibaba.cloud.ai.dispatcher.QueryRewriteDispatcher;
 import com.alibaba.cloud.ai.dispatcher.SQLExecutorDispatcher;
 import com.alibaba.cloud.ai.dispatcher.SemanticConsistenceDispatcher;
@@ -32,7 +33,9 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.node.KeywordExtractNode;
 import com.alibaba.cloud.ai.node.PlanExecutorNode;
 import com.alibaba.cloud.ai.node.PlannerNode;
+import com.alibaba.cloud.ai.node.PythonAnalyzeNode;
 import com.alibaba.cloud.ai.node.PythonExecuteNode;
+import com.alibaba.cloud.ai.node.PythonGenerateNode;
 import com.alibaba.cloud.ai.node.QueryRewriteNode;
 import com.alibaba.cloud.ai.node.ReportGeneratorNode;
 import com.alibaba.cloud.ai.node.SchemaRecallNode;
@@ -44,7 +47,7 @@ import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.service.business.BusinessKnowledgeRecallService;
 import com.alibaba.cloud.ai.service.semantic.SemanticModelRecallService;
-import com.alibaba.cloud.ai.tool.PythonExecutorTool;
+import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -72,7 +75,14 @@ import static com.alibaba.cloud.ai.constant.Constant.PLAN_NEXT_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_REPAIR_COUNT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_ERROR;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_STATUS;
+import static com.alibaba.cloud.ai.constant.Constant.PYTHON_ANALYSIS_NODE_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.PYTHON_ANALYZE_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.PYTHON_EXECUTE_NODE;
+import static com.alibaba.cloud.ai.constant.Constant.PYTHON_EXECUTE_NODE_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.PYTHON_GENERATE_NODE;
+import static com.alibaba.cloud.ai.constant.Constant.PYTHON_GENERATE_NODE_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.PYTHON_IS_SUCCESS;
+import static com.alibaba.cloud.ai.constant.Constant.PYTHON_TRIES_COUNT;
 import static com.alibaba.cloud.ai.constant.Constant.QUERY_REWRITE_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.QUERY_REWRITE_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.REPORT_GENERATOR_NODE;
@@ -89,6 +99,7 @@ import static com.alibaba.cloud.ai.constant.Constant.SQL_GENERATE_COUNT;
 import static com.alibaba.cloud.ai.constant.Constant.SQL_GENERATE_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.SQL_GENERATE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.SQL_GENERATE_SCHEMA_MISSING_ADVICE;
+import static com.alibaba.cloud.ai.constant.Constant.SQL_RESULT_LIST_MEMORY;
 import static com.alibaba.cloud.ai.constant.Constant.SQL_VALIDATE_EXCEPTION_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.SQL_VALIDATE_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT;
@@ -122,8 +133,11 @@ public class Nl2sqlConfiguration {
 	@Autowired
 	private DbConfig dbConfig;
 
-	@Autowired(required = false)
-	private PythonExecutorTool pythonExecutorTool;
+	@Autowired
+	private CodeExecutorProperties codeExecutorProperties;
+
+	@Autowired
+	private CodePoolExecutorService codePoolExecutor;
 
 	@Autowired
 	private SemanticModelRecallService semanticModelRecallService;
@@ -175,6 +189,13 @@ public class Nl2sqlConfiguration {
 			// SQL Execute 节点输出
 			keyStrategyHashMap.put(SQL_EXECUTE_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, new ReplaceStrategy());
+			// Python代码运行相关
+			keyStrategyHashMap.put(SQL_RESULT_LIST_MEMORY, new ReplaceStrategy());
+			keyStrategyHashMap.put(PYTHON_IS_SUCCESS, new ReplaceStrategy());
+			keyStrategyHashMap.put(PYTHON_TRIES_COUNT, new ReplaceStrategy());
+			keyStrategyHashMap.put(PYTHON_EXECUTE_NODE_OUTPUT, new ReplaceStrategy());
+			keyStrategyHashMap.put(PYTHON_GENERATE_NODE_OUTPUT, new ReplaceStrategy());
+			keyStrategyHashMap.put(PYTHON_ANALYSIS_NODE_OUTPUT, new ReplaceStrategy());
 			// 最终结果
 			keyStrategyHashMap.put(RESULT, new ReplaceStrategy());
 			return keyStrategyHashMap;
@@ -191,7 +212,10 @@ public class Nl2sqlConfiguration {
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
 			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(dbAccessor, dbConfig)))
-			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(chatClientBuilder)))
+			.addNode(PYTHON_GENERATE_NODE,
+					node_async(new PythonGenerateNode(codeExecutorProperties, chatClientBuilder)))
+			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(codePoolExecutor)))
+			.addNode(PYTHON_ANALYZE_NODE, node_async(new PythonAnalyzeNode(chatClientBuilder)))
 			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
 			.addNode(SEMANTIC_CONSISTENCY_NODE, node_async(new SemanticConsistencyNode(nl2SqlService)));
 
@@ -204,14 +228,19 @@ public class Nl2sqlConfiguration {
 			// The edge from PlannerNode now goes to PlanExecutorNode for validation and
 			// execution
 			.addEdge(PLANNER_NODE, PLAN_EXECUTOR_NODE)
-			.addEdge(PYTHON_EXECUTE_NODE, PLAN_EXECUTOR_NODE)
+			// python nodes
+			.addEdge(PYTHON_GENERATE_NODE, PYTHON_EXECUTE_NODE)
+			.addConditionalEdges(PYTHON_EXECUTE_NODE, edge_async(new PythonExecutorDispatcher()),
+					Map.of(PYTHON_ANALYZE_NODE, PYTHON_ANALYZE_NODE, END, END, PYTHON_GENERATE_NODE,
+							PYTHON_GENERATE_NODE))
+			.addEdge(PYTHON_ANALYZE_NODE, PLAN_EXECUTOR_NODE)
 			// The dispatcher at PlanExecutorNode will decide the next step
 			.addConditionalEdges(PLAN_EXECUTOR_NODE, edge_async(new PlanExecutorDispatcher()), Map.of(
 					// If validation fails, go back to PlannerNode to repair
 					PLANNER_NODE, PLANNER_NODE,
 					// If validation passes, proceed to the correct execution node
-					SQL_EXECUTE_NODE, SQL_EXECUTE_NODE, PYTHON_EXECUTE_NODE, PYTHON_EXECUTE_NODE, REPORT_GENERATOR_NODE,
-					REPORT_GENERATOR_NODE,
+					SQL_EXECUTE_NODE, SQL_EXECUTE_NODE, PYTHON_GENERATE_NODE, PYTHON_GENERATE_NODE,
+					REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE,
 					// If max repair attempts are reached, end the process
 					END, END))
 			.addEdge(REPORT_GENERATOR_NODE, END)

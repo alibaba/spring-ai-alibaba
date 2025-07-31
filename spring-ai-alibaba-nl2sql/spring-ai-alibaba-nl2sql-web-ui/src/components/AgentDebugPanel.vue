@@ -41,7 +41,7 @@
           <div class="empty-text">
             输入测试问题，查看智能体的响应结果
           </div>
-          <div class="example-queries">
+          <div class="example-queries" v-if="exampleQueries.length > 0">
             <div 
               class="example-query" 
               v-for="example in exampleQueries" 
@@ -99,7 +99,7 @@
 
 <script>
 import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
-import { agentDebugApi } from '../utils/api.js'
+import { agentDebugApi, presetQuestionApi } from '../utils/api.js'
 
 export default {
   name: 'AgentDebugPanel',
@@ -130,12 +130,7 @@ export default {
     })
 
     // 示例问题
-    const exampleQueries = ref([
-      '查询销售额最高的5个产品',
-      '分析2024年的销售趋势',
-      '统计各个分类的商品数量',
-      '查询最近一个月的订单情况'
-    ])
+    const exampleQueries = ref([])
 
     // 获取状态样式类
     const getStatusClass = () => {
@@ -797,6 +792,23 @@ export default {
       }
     }
 
+    // 加载智能体的预设问题
+    const loadAgentPresetQuestions = async () => {
+      try {
+        const questions = await presetQuestionApi.getByAgentId(props.agentId)
+        exampleQueries.value = questions.map(q => q.question)
+        console.log('调试面板加载预设问题成功:', questions)
+      } catch (error) {
+        console.error('调试面板加载预设问题失败:', error)
+        exampleQueries.value = [] // 如果加载失败，不显示预设问题
+      }
+    }
+
+    // 在组件挂载时加载预设问题
+    onMounted(async () => {
+      await loadAgentPresetQuestions()
+    })
+
     // 组件卸载时清理资源
     onUnmounted(() => {
       if (streamState.eventSource) {
@@ -1413,4 +1425,6 @@ export default {
     text-align: center;
   }
 }
+
+
 </style>

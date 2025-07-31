@@ -37,13 +37,23 @@
           v-for="option in languageOptions"
           :key="option.value"
           class="language-option"
-          :class="{ active: currentLocale === option.value }"
+          :class="{
+            active: currentLocale === option.value,
+            loading: isChangingLanguage && currentLocale !== option.value
+          }"
+          :disabled="isChangingLanguage"
           @click="selectLanguage(option.value)"
         >
           <span class="lang-code">{{ option.value.toUpperCase() }}</span>
           <span class="lang-name">{{ option.title }}</span>
           <Icon
-            v-if="currentLocale === option.value"
+            v-if="isChangingLanguage && currentLocale !== option.value"
+            icon="carbon:circle-dash"
+            width="16"
+            class="loading-icon"
+          />
+          <Icon
+            v-else-if="currentLocale === option.value"
             icon="carbon:checkmark"
             width="16"
             class="check-icon"
@@ -84,9 +94,22 @@ const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
 }
 
-const selectLanguage = (lang: string) => {
-  changeLanguage(lang)
-  showDropdown.value = false
+const isChangingLanguage = ref(false)
+
+const selectLanguage = async (lang: string) => {
+  if (isChangingLanguage.value || currentLocale.value === lang) return
+
+  try {
+    isChangingLanguage.value = true
+    await changeLanguage(lang)
+    showDropdown.value = false
+  } catch (error) {
+    console.error('Failed to change language:', error)
+    // 即使失败也关闭下拉菜单
+    showDropdown.value = false
+  } finally {
+    isChangingLanguage.value = false
+  }
 }
 
 // Close dropdown when clicking outside
@@ -234,6 +257,16 @@ onUnmounted(() => {
   padding-left: 13px;
 }
 
+.language-option.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.language-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .lang-code {
   display: inline-block;
   min-width: 24px;
@@ -252,6 +285,21 @@ onUnmounted(() => {
 .check-icon {
   color: #667eea;
   opacity: 0.8;
+}
+
+.loading-icon {
+  color: #667eea;
+  opacity: 0.8;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .backdrop {

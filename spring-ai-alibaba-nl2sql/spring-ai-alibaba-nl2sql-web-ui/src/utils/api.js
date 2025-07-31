@@ -109,6 +109,16 @@ export function del(url) {
   return request(url, { method: 'DELETE' })
 }
 
+// 预设问题相关API
+export const presetQuestionApi = {
+  // 获取智能体的预设问题
+  getByAgentId: (agentId) => get(`/agent/${agentId}/preset-questions`),
+  // 批量保存预设问题
+  batchSave: (agentId, questions) => post(`/agent/${agentId}/preset-questions`, questions),
+  // 删除预设问题
+  delete: (agentId, questionId) => del(`/agent/${agentId}/preset-questions/${questionId}`)
+}
+
 /**
  * 智能体相关 API
  */

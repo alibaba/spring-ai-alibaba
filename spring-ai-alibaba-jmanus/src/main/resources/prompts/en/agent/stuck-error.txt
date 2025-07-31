@@ -1,0 +1,4 @@
+Agent response detected missing required tool calls.
+Please ensure each response includes at least one tool call to progress the task.
+Current step: {currentStep}
+Execution status: Force terminated
