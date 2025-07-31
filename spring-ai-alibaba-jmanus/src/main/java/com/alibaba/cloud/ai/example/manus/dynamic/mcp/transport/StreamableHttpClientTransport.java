@@ -360,7 +360,9 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 			// Use officially recommended deserialization method
 			McpSchema.JSONRPCMessage messageObj = null;
 			try {
-				messageObj = McpSchema.deserializeJsonRpcMessage(objectMapper, jsonContent);
+				// Pre-process JSON to handle type conversion issues
+				String processedJsonContent = preprocessJsonForDeserialization(jsonContent);
+				messageObj = McpSchema.deserializeJsonRpcMessage(objectMapper, processedJsonContent);
 				logger.info("=== Successfully deserialized to JSONRPCMessage ===");
 			}
 			catch (Exception e) {
@@ -705,6 +707,53 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 		synchronized (sessionIdLock) {
 			this.sessionId = sessionId;
 			logger.info("=== Manually set Session ID: {} ===", this.sessionId);
+		}
+	}
+
+	/**
+	 * Pre-process JSON content to handle type conversion issues before deserialization
+	 * @param jsonContent Original JSON content
+	 * @return Processed JSON content with proper type handling
+	 */
+	private String preprocessJsonForDeserialization(String jsonContent) {
+		try {
+			logger.debug("=== Pre-processing JSON for deserialization ===");
+			logger.debug("=== Original JSON: {} ===", jsonContent);
+
+			// Parse the JSON to a Map
+			Map<String, Object> data = objectMapper.readValue(jsonContent, Map.class);
+
+			// Handle id field - convert Integer to String if needed
+			Object idObj = data.get("id");
+			if (idObj instanceof Integer) {
+				data.put("id", String.valueOf(idObj));
+				logger.debug("=== Converted id from Integer to String: {} ===", idObj);
+			}
+
+			// Handle method field - ensure it's a String
+			Object methodObj = data.get("method");
+			if (methodObj != null && !(methodObj instanceof String)) {
+				data.put("method", String.valueOf(methodObj));
+				logger.debug("=== Converted method to String: {} ===", methodObj);
+			}
+
+			// Handle jsonrpc field - ensure it's a String
+			Object jsonrpcObj = data.get("jsonrpc");
+			if (jsonrpcObj != null && !(jsonrpcObj instanceof String)) {
+				data.put("jsonrpc", String.valueOf(jsonrpcObj));
+				logger.debug("=== Converted jsonrpc to String: {} ===", jsonrpcObj);
+			}
+
+			// Convert back to JSON string
+			String processedJson = objectMapper.writeValueAsString(data);
+			logger.debug("=== Processed JSON: {} ===", processedJson);
+
+			return processedJson;
+		}
+		catch (Exception e) {
+			logger.warn("=== Failed to pre-process JSON: {} ===", e.getMessage());
+			logger.warn("=== Returning original JSON content ===");
+			return jsonContent;
 		}
 	}
 
