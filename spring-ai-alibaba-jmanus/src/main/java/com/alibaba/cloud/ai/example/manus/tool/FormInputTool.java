@@ -37,8 +37,7 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	private final ObjectMapper objectMapper;
 
-	@Autowired
-	private PromptService promptService;
+	private final PromptService promptService;
 
 	private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
 
@@ -182,8 +181,9 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	}
 
-	public FormInputTool(ObjectMapper objectMapper) {
+	public FormInputTool(ObjectMapper objectMapper, PromptService promptService) {
 		this.objectMapper = objectMapper;
+		this.promptService = promptService;
 	}
 
 	public enum InputState {
