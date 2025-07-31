@@ -28,8 +28,6 @@ public class CodeExecutorProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.nl2sql.code-executor";
 
-	Boolean enabled = true;
-
 	/**
 	 * 指定代码容器池运行服务的实现类
 	 */
@@ -114,14 +112,6 @@ public class CodeExecutorProperties {
 	 * 容器网络模式
 	 */
 	String networkMode = "bridge";
-
-	public Boolean getEnabled() {
-		return enabled;
-	}
-
-	public void setEnabled(Boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public CodePoolExecutorEnum getCodePoolExecutor() {
 		return codePoolExecutor;
