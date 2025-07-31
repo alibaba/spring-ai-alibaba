@@ -32,9 +32,9 @@ public interface McpConfigRepository extends JpaRepository<McpConfigEntity, Long
 	McpConfigEntity findByMcpServerName(String mcpServerName);
 
 	/**
-	 * 根据状态查询MCP配置列表
-	 * @param status MCP配置状态
-	 * @return 符合条件的MCP配置列表
+	 * Query MCP configuration list by status
+	 * @param status MCP configuration status
+	 * @return List of MCP configurations that meet the criteria
 	 */
 	List<McpConfigEntity> findByStatus(McpConfigStatus status);
 

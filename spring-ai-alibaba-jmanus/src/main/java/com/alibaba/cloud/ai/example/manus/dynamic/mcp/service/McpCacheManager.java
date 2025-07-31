@@ -44,7 +44,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 /**
- * MCP缓存管理器 - 支持无闪断缓存更新
+ * MCP Cache Manager - supports seamless cache updates
  */
 @Component
 public class McpCacheManager {
@@ -52,7 +52,7 @@ public class McpCacheManager {
 	private static final Logger logger = LoggerFactory.getLogger(McpCacheManager.class);
 
 	/**
-	 * MCP连接结果封装类
+	 * MCP connection result wrapper class
 	 */
 	private static class McpConnectionResult {
 
@@ -112,7 +112,7 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 双缓存包装器 - 实现无闪断更新
+	 * Double cache wrapper - implements seamless updates
 	 */
 	private static class DoubleCacheWrapper {
 
@@ -123,7 +123,7 @@ public class McpCacheManager {
 		private final Object switchLock = new Object();
 
 		/**
-		 * 原子性切换缓存
+		 * Atomically switch cache
 		 */
 		public void switchCache() {
 			synchronized (switchLock) {
@@ -134,21 +134,21 @@ public class McpCacheManager {
 		}
 
 		/**
-		 * 获取当前活跃缓存
+		 * Get current active cache
 		 */
 		public Map<String, McpServiceEntity> getActiveCache() {
 			return activeCache;
 		}
 
 		/**
-		 * 获取后台缓存（用于构建新数据）
+		 * Get background cache (for building new data)
 		 */
 		public Map<String, McpServiceEntity> getBackgroundCache() {
 			return backgroundCache;
 		}
 
 		/**
-		 * 更新后台缓存
+		 * Update background cache
 		 */
 		public void updateBackgroundCache(Map<String, McpServiceEntity> newCache) {
 			backgroundCache = new ConcurrentHashMap<>(newCache);
@@ -164,13 +164,13 @@ public class McpCacheManager {
 
 	private final ManusProperties manusProperties;
 
-	// 双缓存包装器
+	// Double cache wrapper
 	private final DoubleCacheWrapper doubleCache = new DoubleCacheWrapper();
 
-	// 线程池管理
+	// Thread pool management
 	private final AtomicReference<ExecutorService> connectionExecutorRef = new AtomicReference<>();
 
-	// 定时任务执行器
+	// Scheduled task executor
 	private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
 		Thread t = new Thread(r, "McpCacheUpdateTask");
 		t.setDaemon(true);
@@ -181,7 +181,7 @@ public class McpCacheManager {
 
 	private volatile int lastConfigHash = 0;
 
-	// 缓存更新间隔（10分钟）
+	// Cache update interval (10 minutes)
 	private static final long CACHE_UPDATE_INTERVAL_MINUTES = 10;
 
 	public McpCacheManager(McpConnectionFactory connectionFactory, McpConfigRepository mcpConfigRepository,
@@ -191,29 +191,29 @@ public class McpCacheManager {
 		this.mcpProperties = mcpProperties;
 		this.manusProperties = manusProperties;
 
-		// 初始化线程池
+		// Initialize thread pool
 		updateConnectionExecutor();
 	}
 
 	/**
-	 * 启动时自动加载缓存
+	 * Automatically load cache on startup
 	 */
 	@PostConstruct
 	public void initializeCache() {
 		logger.info("Initializing MCP cache manager with double buffer mechanism");
 
 		try {
-			// 启动时加载初始缓存
+			// Load initial cache on startup
 			Map<String, McpServiceEntity> initialCache = loadMcpServices(
 					mcpConfigRepository.findByStatus(McpConfigStatus.ENABLE));
 
-			// 同时设置活跃缓存和后台缓存
+			// Set both active cache and background cache
 			doubleCache.updateBackgroundCache(initialCache);
-			doubleCache.switchCache(); // 切换到初始缓存
+			doubleCache.switchCache(); // Switch to initial cache
 
 			logger.info("Initial cache loaded successfully with {} services", initialCache.size());
 
-			// 启动定时更新任务
+			// Start scheduled update task
 			startScheduledUpdate();
 
 		}
@@ -223,7 +223,7 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 启动定时更新任务
+	 * Start scheduled update task
 	 */
 	private void startScheduledUpdate() {
 		if (updateTask != null && !updateTask.isCancelled()) {
@@ -237,22 +237,22 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 定时更新缓存任务
+	 * Scheduled cache update task
 	 */
 	private void updateCacheTask() {
 		try {
 			logger.debug("Starting scheduled cache update task");
 
-			// 查询所有enable的配置
+			// Query all enabled configurations
 			List<McpConfigEntity> configs = mcpConfigRepository.findByStatus(McpConfigStatus.ENABLE);
 
-			// 在后台缓存中构建新数据
+			// Build new data in background cache
 			Map<String, McpServiceEntity> newCache = loadMcpServices(configs);
 
-			// 更新后台缓存
+			// Update background cache
 			doubleCache.updateBackgroundCache(newCache);
 
-			// 原子性切换缓存
+			// Atomically switch cache
 			doubleCache.switchCache();
 
 			logger.info("Cache updated successfully via scheduled task, services count: {}", newCache.size());
@@ -264,22 +264,22 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 更新连接线程池（支持配置动态调整）
+	 * Update connection thread pool (supports dynamic configuration adjustment)
 	 */
 	private void updateConnectionExecutor() {
 		int currentConfigHash = calculateConfigHash();
 
-		// 检查配置是否发生变化
+		// Check if configuration has changed
 		if (currentConfigHash != lastConfigHash) {
 			logger.info("MCP service loader configuration changed, updating thread pool");
 
-			// 关闭旧的线程池
+			// Close old thread pool
 			ExecutorService oldExecutor = connectionExecutorRef.get();
 			if (oldExecutor != null && !oldExecutor.isShutdown()) {
 				shutdownExecutor(oldExecutor);
 			}
 
-			// 创建新的线程池
+			// Create new thread pool
 			int maxConcurrentConnections = manusProperties.getMcpMaxConcurrentConnections();
 			ExecutorService newExecutor = Executors.newFixedThreadPool(maxConcurrentConnections);
 			connectionExecutorRef.set(newExecutor);
@@ -291,7 +291,7 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 计算配置哈希值，用于检测配置变更
+	 * Calculate configuration hash value for detecting configuration changes
 	 */
 	private int calculateConfigHash() {
 		int hash = 17;
@@ -302,7 +302,7 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 安全关闭线程池
+	 * Safely shutdown thread pool
 	 */
 	private void shutdownExecutor(ExecutorService executor) {
 		if (executor != null && !executor.isShutdown()) {
@@ -323,19 +323,19 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 获取当前连接线程池
+	 * Get current connection thread pool
 	 */
 	private ExecutorService getConnectionExecutor() {
-		// 检查配置是否需要更新
+		// Check if configuration needs to be updated
 		updateConnectionExecutor();
 		return connectionExecutorRef.get();
 	}
 
 	/**
-	 * 加载MCP服务（并行处理版本）
-	 * @param mcpConfigEntities MCP配置实体列表
-	 * @return MCP服务实体映射
-	 * @throws IOException 加载失败时抛出异常
+	 * Load MCP services (parallel processing version)
+	 * @param mcpConfigEntities MCP configuration entity list
+	 * @return MCP service entity mapping
+	 * @throws IOException Thrown when loading fails
 	 */
 	private Map<String, McpServiceEntity> loadMcpServices(List<McpConfigEntity> mcpConfigEntities) throws IOException {
 		Map<String, McpServiceEntity> toolCallbackMap = new ConcurrentHashMap<>();
@@ -345,26 +345,26 @@ public class McpCacheManager {
 			return toolCallbackMap;
 		}
 
-		// 记录主线程开始时间
+		// Record main thread start time
 		long mainStartTime = System.currentTimeMillis();
 		logger.info("Loading {} MCP server configurations in parallel", mcpConfigEntities.size());
 
-		// 获取当前配置的线程池
+		// Get current configured thread pool
 		ExecutorService executor = getConnectionExecutor();
 
-		// 并行创建连接
+		// Create connections in parallel
 		List<CompletableFuture<McpConnectionResult>> futures = mcpConfigEntities.stream()
 			.map(config -> CompletableFuture.supplyAsync(() -> createConnectionWithRetry(config), executor))
 			.collect(Collectors.toList());
 
-		// 等待所有任务完成，设置超时
+		// Wait for all tasks to complete, set timeout
 		CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
 		try {
-			// 设置整体超时（使用当前配置）
+			// Set overall timeout (using current configuration)
 			allFutures.get(manusProperties.getMcpConnectionTimeoutSeconds(), TimeUnit.SECONDS);
 
-			// 收集结果
+			// Collect results
 			for (int i = 0; i < mcpConfigEntities.size(); i++) {
 				try {
 					McpConnectionResult result = futures.get(i).get();
@@ -380,7 +380,7 @@ public class McpCacheManager {
 		}
 		catch (Exception e) {
 			logger.error("Timeout or error occurred during parallel MCP connection creation", e);
-			// 尝试获取已完成的结果
+			// Try to get completed results
 			for (int i = 0; i < futures.size(); i++) {
 				if (futures.get(i).isDone()) {
 					try {
@@ -396,11 +396,11 @@ public class McpCacheManager {
 			}
 		}
 
-		// 计算主线程总耗时
+		// Calculate main thread total time
 		long mainEndTime = System.currentTimeMillis();
 		long mainTotalTime = mainEndTime - mainStartTime;
 
-		// 收集所有结果用于详细日志输出
+		// Collect all results for detailed log output
 		List<McpConnectionResult> allResults = new ArrayList<>();
 		for (int i = 0; i < mcpConfigEntities.size(); i++) {
 			try {
@@ -409,13 +409,13 @@ public class McpCacheManager {
 				}
 			}
 			catch (Exception e) {
-				// 如果获取结果失败，创建一个失败的结果记录
+				// If getting result fails, create a failed result record
 				String serverName = mcpConfigEntities.get(i).getMcpServerName();
 				allResults.add(new McpConnectionResult(false, null, serverName, "Failed to get result", 0, 0, "N/A"));
 			}
 		}
 
-		// 输出详细的执行日志
+		// Output detailed execution log
 		logger.info("\n"
 				+ "╔══════════════════════════════════════════════════════════════════════════════════════════════════════╗\n"
 				+ "║                                    MCP Service Loader Execution Report                                ║\n"
@@ -436,9 +436,9 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 带重试的连接创建方法
-	 * @param config MCP配置实体
-	 * @return 连接结果
+	 * Connection creation method with retry
+	 * @param config MCP configuration entity
+	 * @return Connection result
 	 */
 	private McpConnectionResult createConnectionWithRetry(McpConfigEntity config) {
 		String serverName = config.getMcpServerName();
@@ -446,7 +446,7 @@ public class McpCacheManager {
 		long startTime = System.currentTimeMillis();
 		int retryCount = 0;
 
-		// 尝试连接，最多重试MAX_RETRY_COUNT次
+		// Try to connect, retry at most MAX_RETRY_COUNT times
 		for (int attempt = 0; attempt <= manusProperties.getMcpMaxRetryCount(); attempt++) {
 			try {
 				McpServiceEntity serviceEntity = connectionFactory.createConnection(config);
@@ -478,21 +478,21 @@ public class McpCacheManager {
 			}
 		}
 
-		// 这行代码理论上不会执行到，但为了编译安全
+		// This line should theoretically never be reached, but for compilation safety
 		long connectionTime = System.currentTimeMillis() - startTime;
 		return new McpConnectionResult(false, null, serverName, "Max retry attempts exceeded", connectionTime,
 				retryCount, connectionType);
 	}
 
 	/**
-	 * 获取MCP服务（统一使用default缓存）
-	 * @param planId 计划ID（如果为null则使用default）
-	 * @return MCP服务实体映射
+	 * Get MCP services (uniformly use default cache)
+	 * @param planId Plan ID (use default if null)
+	 * @return MCP service entity mapping
 	 */
 	public Map<String, McpServiceEntity> getOrLoadServices(String planId) {
 		try {
-			// planId不使用。
-			// 直接读取活跃缓存，无需加锁，保证无闪断
+			// planId is not used.
+			// Directly read active cache, no locking needed, ensures seamless operation
 			Map<String, McpServiceEntity> activeCache = doubleCache.getActiveCache();
 
 			return new ConcurrentHashMap<>(activeCache);
@@ -519,22 +519,22 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 手动触发缓存重新加载
+	 * Manually trigger cache reload
 	 */
 	public void triggerCacheReload() {
 		try {
 			logger.info("Manually triggering cache reload");
 
-			// 查询所有enable的配置
+			// Query all enabled configurations
 			List<McpConfigEntity> configs = mcpConfigRepository.findByStatus(McpConfigStatus.ENABLE);
 
-			// 在后台缓存中构建新数据
+			// Build new data in background cache
 			Map<String, McpServiceEntity> newCache = loadMcpServices(configs);
 
-			// 更新后台缓存
+			// Update background cache
 			doubleCache.updateBackgroundCache(newCache);
 
-			// 原子性切换缓存
+			// Atomically switch cache
 			doubleCache.switchCache();
 
 			logger.info("Manual cache reload completed, services count: {}", newCache.size());
@@ -546,27 +546,27 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 清除缓存（兼容性方法，实际使用双缓存机制）
-	 * @param planId 计划ID
+	 * Clear cache (compatibility method, actually uses double cache mechanism)
+	 * @param planId Plan ID
 	 */
 	public void invalidateCache(String planId) {
 		logger.info("Cache invalidation requested for plan: {}, but using double buffer mechanism - no action needed",
 				planId);
-		// 双缓存机制下，不需要手动清除缓存，会自动更新
+		// Under double cache mechanism, no need to manually clear cache, will auto-update
 	}
 
 	/**
-	 * 清除所有缓存（兼容性方法，实际使用双缓存机制）
+	 * Clear all cache (compatibility method, actually uses double cache mechanism)
 	 */
 	public void invalidateAllCache() {
 		logger.info("All cache invalidation requested, but using double buffer mechanism - triggering reload instead");
-		// 触发重新加载而不是清除
+		// Trigger reload instead of clearing
 		triggerCacheReload();
 	}
 
 	/**
-	 * 刷新缓存（兼容性方法，实际使用双缓存机制）
-	 * @param planId 计划ID
+	 * Refresh cache (compatibility method, actually uses double cache mechanism)
+	 * @param planId Plan ID
 	 */
 	public void refreshCache(String planId) {
 		logger.info("Cache refresh requested for plan: {}, triggering reload", planId);
@@ -584,7 +584,7 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 手动更新连接配置（支持运行时动态调整）
+	 * Manually update connection configuration (supports runtime dynamic adjustment)
 	 */
 	public void updateConnectionConfiguration() {
 		logger.info("Manually updating MCP service loader configuration");
@@ -592,8 +592,8 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 获取当前连接配置信息
-	 * @return 配置信息字符串
+	 * Get current connection configuration information
+	 * @return Configuration information string
 	 */
 	public String getConnectionConfigurationInfo() {
 		return String.format("MCP Service Loader Config - Timeout: %ds, MaxRetry: %d, MaxConcurrent: %d",
@@ -602,8 +602,8 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 获取缓存更新配置信息
-	 * @return 缓存更新配置信息
+	 * Get cache update configuration information
+	 * @return Cache update configuration information
 	 */
 	public String getCacheUpdateConfigurationInfo() {
 		return String.format("Cache Update Config - Interval: %d minutes, Double Buffer: enabled",
@@ -611,18 +611,18 @@ public class McpCacheManager {
 	}
 
 	/**
-	 * 关闭资源（在应用关闭时调用）
+	 * Close resources (called when application shuts down)
 	 */
 	@PreDestroy
 	public void shutdown() {
 		logger.info("Shutting down MCP cache manager");
 
-		// 停止定时任务
+		// Stop scheduled task
 		if (updateTask != null && !updateTask.isCancelled()) {
 			updateTask.cancel(false);
 		}
 
-		// 关闭定时执行器
+		// Close scheduled executor
 		if (scheduledExecutor != null && !scheduledExecutor.isShutdown()) {
 			scheduledExecutor.shutdown();
 			try {
@@ -636,13 +636,13 @@ public class McpCacheManager {
 			}
 		}
 
-		// 关闭连接线程池
+		// Close connection thread pool
 		ExecutorService executor = connectionExecutorRef.get();
 		if (executor != null) {
 			shutdownExecutor(executor);
 		}
 
-		// 关闭所有MCP客户端连接
+		// Close all MCP client connections
 		Map<String, McpServiceEntity> activeCache = doubleCache.getActiveCache();
 		for (McpServiceEntity serviceEntity : activeCache.values()) {
 			try {

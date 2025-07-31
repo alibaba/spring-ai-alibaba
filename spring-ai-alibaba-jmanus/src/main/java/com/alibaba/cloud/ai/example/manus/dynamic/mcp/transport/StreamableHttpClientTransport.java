@@ -341,13 +341,13 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 
 			// Parse response
 			Map<String, Object> data = objectMapper.readValue(jsonContent, Map.class);
-			// 安全地处理id字段，可能是String或Integer
+			// Safely handle id field, which could be String or Integer
 			Object idObj = data.get("id");
 			String responseId = idObj != null ? String.valueOf(idObj) : null;
-			// 安全地处理method字段
+			// Safely handle method field
 			Object methodObj = data.get("method");
 			String method = methodObj != null ? String.valueOf(methodObj) : null;
-			// 安全地处理jsonrpc字段
+			// Safely handle jsonrpc field
 			Object jsonrpcObj = data.get("jsonrpc");
 			String jsonrpc = jsonrpcObj != null ? String.valueOf(jsonrpcObj) : null;
 

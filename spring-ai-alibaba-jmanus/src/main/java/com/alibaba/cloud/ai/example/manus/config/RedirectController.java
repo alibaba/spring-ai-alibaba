@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 /**
  * @author dahua
  * @time 2025/7/31
- * @desc jmanus首页重定向跳转
+ * @desc jmanus homepage redirect controller
  */
 @Controller
 public class RedirectController {
