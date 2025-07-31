@@ -196,6 +196,23 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 		redisList.delete();
 	}
 
+	/**
+	 * Clear messages over the limit for a conversation
+	 * @param conversationId the conversation ID
+	 * @param maxLimit maximum number of messages to keep
+	 * @param deleteSize number of messages to delete when over limit
+	 */
+	public void clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
+		Assert.hasText(conversationId, "conversationId cannot be null or empty");
+		String key = DEFAULT_KEY_PREFIX + conversationId;
+		RList<Object> list = redissonClient.getList(key);
+		int size = list.size();
+		if (size < maxLimit) {
+			return;
+		}
+		list.trim(deleteSize, -1);
+	}
+
 	@Override
 	public void close() {
 		if (redissonClient != null && !redissonClient.isShutdown()) {

@@ -67,7 +67,7 @@ public class LettuceRedisChatMemoryRepositoryIT {
 
 	@Test
 	void correctChatMemoryRepositoryInstance() {
-		assertThat(chatMemoryRepository).isInstanceOf(JedisRedisChatMemoryRepository.class);
+		assertThat(chatMemoryRepository).isInstanceOf(LettuceRedisChatMemoryRepository.class);
 	}
 
 	@ParameterizedTest
@@ -167,7 +167,7 @@ public class LettuceRedisChatMemoryRepositoryIT {
 		assertThat(savedMessages.size()).isEqualTo(messages.size());
 
 		// 执行清理操作，设置最大限制为3，删除数量为2
-		JedisRedisChatMemoryRepository redisRepository = (JedisRedisChatMemoryRepository) chatMemoryRepository;
+		LettuceRedisChatMemoryRepository redisRepository = (LettuceRedisChatMemoryRepository) chatMemoryRepository;
 		redisRepository.clearOverLimit(conversationId, 3, 2);
 
 		// 验证只保留了后3个消息
