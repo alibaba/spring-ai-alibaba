@@ -51,11 +51,11 @@ spring:
       embedding:
         model: text-embedding-v4
 
-    # 关闭 container 的初始化
     alibaba:
       nl2sql:
-        container:
-          enabled: false
+        code-executor:
+          enabled: true
+          code-pool-executor: ai_simulation
 
 chatBi:
   dbConfig:

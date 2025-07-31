@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service.executor;
 
-import com.alibaba.cloud.ai.config.ContainerProperties;
+package com.alibaba.cloud.ai.service.code.impl;
+
+import com.alibaba.cloud.ai.config.CodeExecutorProperties;
+import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -43,21 +46,21 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author vlsmb
  * @since 2025/7/12
  */
-public abstract class AbstractContainerPoolExecutor implements ContainerPoolExecutor {
+public abstract class AbstractCodePoolExecutorService implements CodePoolExecutorService {
 
-	private static final Logger log = LoggerFactory.getLogger(AbstractContainerPoolExecutor.class);
+	private static final Logger log = LoggerFactory.getLogger(AbstractCodePoolExecutorService.class);
 
 	// 记录核心容器的状态
-	protected final ConcurrentHashMap<String, ContainerPoolExecutor.State> coreContainerState;
+	protected final ConcurrentHashMap<String, CodePoolExecutorService.State> coreContainerState;
 
 	// 记录临时容器的状态
-	protected final ConcurrentHashMap<String, ContainerPoolExecutor.State> tempContainerState;
+	protected final ConcurrentHashMap<String, CodePoolExecutorService.State> tempContainerState;
 
 	// 记录临时容器销毁的Future
 	protected final ConcurrentHashMap<String, Future<?>> tempContainerRemoveFuture;
 
 	// 任务队列（当容器满时临时存放任务）
-	protected final ArrayBlockingQueue<FutureTask<ContainerPoolExecutor.TaskResponse>> taskQueue;
+	protected final ArrayBlockingQueue<FutureTask<CodePoolExecutorService.TaskResponse>> taskQueue;
 
 	// 已经就绪的核心容器
 	protected final ArrayBlockingQueue<String> readyCoreContainer;
@@ -75,9 +78,9 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 	protected final ExecutorService consumerThreadPool;
 
 	// 配置属性
-	protected final ContainerProperties properties;
+	protected final CodeExecutorProperties properties;
 
-	public AbstractContainerPoolExecutor(ContainerProperties properties) {
+	public AbstractCodePoolExecutorService(CodeExecutorProperties properties) {
 		this.properties = properties;
 		this.coreContainerState = new ConcurrentHashMap<>();
 		this.tempContainerState = new ConcurrentHashMap<>();
@@ -250,7 +253,7 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 	}
 
 	private TaskResponse pushTaskQueue(TaskRequest request) throws ExecutionException, InterruptedException {
-		FutureTask<ContainerPoolExecutor.TaskResponse> ft = new FutureTask<>(() -> {
+		FutureTask<CodePoolExecutorService.TaskResponse> ft = new FutureTask<>(() -> {
 			log.info("Execute tasks in the BlockingQueue {} ...", request.toString());
 			return this.runTask(request);
 		});
@@ -260,7 +263,7 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 
 	// 运行任务队列里的任务，如果有
 	private void popTaskQueue() {
-		FutureTask<ContainerPoolExecutor.TaskResponse> future = this.taskQueue.poll();
+		FutureTask<CodePoolExecutorService.TaskResponse> future = this.taskQueue.poll();
 		if (future == null) {
 			return;
 		}
@@ -355,6 +358,28 @@ public abstract class AbstractContainerPoolExecutor implements ContainerPoolExec
 		}
 		catch (Exception e) {
 			log.warn("Exception in clean temp directory: {}", e.getMessage());
+		}
+	}
+
+	/**
+	 * 创建可写的临时文件
+	 * @param tempDir 临时目录
+	 * @param fileName 文件名
+	 * @throws IOException IO异常
+	 */
+	protected void createWritableFile(Path tempDir, String fileName) throws IOException {
+		File file = new File(tempDir.resolve(fileName).toUri());
+		if (file.exists()) {
+			if (!file.setWritable(true, false)) {
+				throw new IOException("Cannot write to existing file: " + file.getAbsolutePath());
+			}
+			return;
+		}
+		if (!file.createNewFile()) {
+			throw new IOException("Failed to create file: " + file.getAbsolutePath());
+		}
+		if (!file.setWritable(true, false)) {
+			throw new IOException("Cannot write to existing file: " + file.getAbsolutePath());
 		}
 	}
 

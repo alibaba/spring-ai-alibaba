@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service.executor;
 
-import com.alibaba.cloud.ai.config.ContainerProperties;
+package com.alibaba.cloud.ai.service.code;
 
 /**
  * 运行Python任务的容器池接口
@@ -23,26 +22,23 @@ import com.alibaba.cloud.ai.config.ContainerProperties;
  * @author vlsmb
  * @since 2025/7/12
  */
-public interface ContainerPoolExecutor {
+public interface CodePoolExecutorService {
 
 	TaskResponse runTask(TaskRequest request);
-
-	static ContainerPoolExecutor getInstance(ContainerProperties properties) {
-		if (properties.getContainerImpl().equals(ContainerProperties.ContainerImpl.DOCKER)) {
-			return new DockerContainerPoolExecutor(properties);
-		}
-		else {
-			throw new IllegalArgumentException("Unknown container impl: " + properties.getContainerImpl());
-		}
-	}
 
 	record TaskRequest(String code, String input, String requirement) {
 
 	}
 
-	record TaskResponse(String output) {
+	record TaskResponse(boolean isSuccess, String stdOut, String stdErr, String exceptionMsg) {
 		public static TaskResponse error(String msg) {
-			return new TaskResponse("An exception occurred while executing the task: " + msg);
+			return new TaskResponse(false, null, null, "An exception occurred while executing the task: " + msg);
+		}
+
+		@Override
+		public String toString() {
+			return "TaskResponse{" + "isSuccess=" + isSuccess + ", stdOut='" + stdOut + '\'' + ", stdErr='" + stdErr
+					+ '\'' + ", exceptionMsg='" + exceptionMsg + '\'' + '}';
 		}
 	}
 

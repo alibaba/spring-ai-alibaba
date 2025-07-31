@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service.executor;
 
-import com.alibaba.cloud.ai.config.ContainerProperties;
+package com.alibaba.cloud.ai.service.code.impl;
+
+import com.alibaba.cloud.ai.config.CodeExecutorProperties;
+import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
-import com.github.dockerjava.api.command.LogContainerCmd;
 import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.AccessMode;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Capability;
-import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.StreamType;
 import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientConfig;
@@ -37,9 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -58,15 +54,15 @@ import static com.github.dockerjava.api.model.HostConfig.newHostConfig;
  * @author vlsmb
  * @since 2025/7/12
  */
-public class DockerContainerPoolExecutor extends AbstractContainerPoolExecutor implements ContainerPoolExecutor {
+public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorService implements CodePoolExecutorService {
 
-	private static final Logger log = LoggerFactory.getLogger(DockerContainerPoolExecutor.class);
+	private static final Logger log = LoggerFactory.getLogger(DockerCodePoolExecutorService.class);
 
 	private final DockerClient dockerClient;
 
 	private final ConcurrentHashMap<String, Path> containerTempPath;
 
-	public DockerContainerPoolExecutor(ContainerProperties properties) {
+	public DockerCodePoolExecutorService(CodeExecutorProperties properties) {
 		super(properties);
 		// 初始化DockerClient
 		String dockerHost = this.getDockerHostForCurrentOS(properties.getHost());
@@ -216,6 +212,10 @@ public class DockerContainerPoolExecutor extends AbstractContainerPoolExecutor i
 				new Volume("/app/requirements.txt"), AccessMode.ro));
 		binds.add(new Bind(tempDir.resolve("input_data.txt").toAbsolutePath().toString(),
 				new Volume("/app/input_data.txt"), AccessMode.ro));
+		binds.add(new Bind(tempDir.resolve("stdout.txt").toAbsolutePath().toString(), new Volume("/app/stdout.txt"),
+				AccessMode.rw));
+		binds.add(new Bind(tempDir.resolve("stderr.txt").toAbsolutePath().toString(), new Volume("/app/stderr.txt"),
+				AccessMode.rw));
 
 		return newHostConfig().withMemory(this.properties.getLimitMemory() * 1024L * 1024L)
 			.withCpuCount(this.properties.getCpuCore())
@@ -252,6 +252,9 @@ public class DockerContainerPoolExecutor extends AbstractContainerPoolExecutor i
 		Files.createFile(tempDir.resolve("script.py"));
 		Files.createFile(tempDir.resolve("input_data.txt"));
 
+		this.createWritableFile(tempDir, "stdout.txt");
+		this.createWritableFile(tempDir, "stderr.txt");
+
 		// 创建容器
 		HostConfig hostConfig = this.createHostConfig(tempDir);
 		CreateContainerResponse container = dockerClient.createContainerCmd(properties.getImageName())
@@ -259,7 +262,7 @@ public class DockerContainerPoolExecutor extends AbstractContainerPoolExecutor i
 			.withWorkingDir("/app")
 			.withHostConfig(hostConfig)
 			.withCmd("sh", "-c", String.format(
-					"if [ -s requirements.txt ]; then pip install --no-cache-dir -r requirements.txt > /dev/null; fi && timeout -s SIGKILL %s python3 script.py < input_data.txt",
+					"if [ -s requirements.txt ]; then pip3 install --no-cache-dir -r requirements.txt > /dev/null 2> stderr.txt; fi && { timeout -s SIGKILL %s python3 -u script.py < input_data.txt; } > stdout.txt 2>> stderr.txt",
 					properties.getCodeTimeout()))
 			.exec();
 		String containerId = container.getId();
@@ -282,56 +285,34 @@ public class DockerContainerPoolExecutor extends AbstractContainerPoolExecutor i
 				StringUtils.hasText(request.requirement()) ? request.requirement().getBytes() : "".getBytes());
 		Files.write(tempDir.resolve("input_data.txt"),
 				StringUtils.hasText(request.input()) ? request.input().getBytes() : "".getBytes());
-
-		// catch stdout and stderr
-		ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-		ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+		Files.write(tempDir.resolve("stdout.txt"), "".getBytes());
+		Files.write(tempDir.resolve("stderr.txt"), "".getBytes());
 
 		try {
 			// start docker
 			dockerClient.startContainerCmd(containerId).exec();
-			LogContainerCmd logContainerCmd = dockerClient.logContainerCmd(containerId)
-				.withStdOut(true)
-				.withStdErr(true)
-				.withFollowStream(true)
-				.withTailAll();
 			dockerClient.waitContainerCmd(containerId)
 				.start()
 				.awaitCompletion(this.properties.getContainerTimeout(), TimeUnit.SECONDS);
 
 			// get stdout and stderr
-			logContainerCmd.exec(new ResultCallback.Adapter<Frame>() {
-				@Override
-				public void onNext(Frame frame) {
-					try {
-						if (frame.getStreamType() == StreamType.STDOUT) {
-							stdout.write(frame.getPayload());
-						}
-						else if (frame.getStreamType() == StreamType.STDERR) {
-							stderr.write(frame.getPayload());
-						}
-					}
-					catch (Exception ignore) {
-					}
-				}
-			}).awaitCompletion();
+			String stdout = Files.readString(tempDir.resolve("stdout.txt"));
+			String stderr = Files.readString(tempDir.resolve("stderr.txt"));
 
 			// get exit code
 			InspectContainerResponse inspectResponse = dockerClient.inspectContainerCmd(containerId).exec();
 			int exitCode = Objects.requireNonNull(inspectResponse.getState().getExitCodeLong()).intValue();
 			if (exitCode != 0) {
-				String errorMessage = "Docker exit code " + exitCode + ". Stderr: "
-						+ stderr.toString(Charset.defaultCharset()) + ". Stdout: "
-						+ stdout.toString(Charset.defaultCharset());
+				String errorMessage = "Docker exit code " + exitCode + ". Stderr: " + stderr + ". Stdout: " + stdout;
 				log.error("Error executing Docker container {}: {}", containerId, errorMessage);
 				return TaskResponse.error(errorMessage);
 			}
+			return new TaskResponse(true, stdout, stderr, null);
 		}
 		catch (Exception e) {
 			log.error("Error when creating container in docker: {}", e.getMessage());
 			return TaskResponse.error(e.getMessage());
 		}
-		return new TaskResponse(stdout.toString(Charset.defaultCharset()));
 	}
 
 	@Override
