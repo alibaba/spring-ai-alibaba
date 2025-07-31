@@ -35,119 +35,46 @@ jobs:
           python-version: '3.9'
 
       - name: Check Chinese content in Jmanus Java files
-        id: check-chinese
         run: |
           cd spring-ai-alibaba-jmanus
-          python scripts/check-chinese-content.py --dir src/main/java --fail-on-found
-        continue-on-error: true
+          echo "🔍 Checking for Chinese content in Java files..."
+          echo ""
 
-      - name: Comment on PR if Chinese content found
-        if: steps.check-chinese.outcome == 'failure'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-
-            // Run check script to get detailed information
-            const { exec: execCallback } = require('child_process');
-            const util = require('util');
-            const execPromise = util.promisify(execCallback);
-
-            try {
-              // Re-run check script to get detailed output (without --fail-on-found)
-              const { stdout, stderr } = await execPromise(
-                'cd spring-ai-alibaba-jmanus && python scripts/check-chinese-content.py --dir src/main/java'
-              );
-
-              const comment = `## 🚨 Chinese Content Detected
-
-              Chinese content has been detected in Java files under
-              \`spring-ai-alibaba-jmanus/src/main/java\` directory.
-
-              ### Check Results:
-              \`\`\`
-              ${stdout}
-              ${stderr}
-              \`\`\`
-
-              ### Modification Suggestions:
-
-              1. **Chinese Comments** → Change to English Comments
-                 \`\`\`java
-                 // ❌ Incorrect Example
-                 // 这是一个用户服务类
-                 public class UserService {
-
-                 // ✅ Correct Example
-                 // This is a user service class
-                 public class UserService {
-                 \`\`\`
-
-              2. **Chinese Strings** → Extract to resource files or use English
-                 \`\`\`java
-                 // ❌ Incorrect Example
-                 throw new RuntimeException("用户不存在");
-
-                 // ✅ Correct Example
-                 throw new RuntimeException("User not found");
-                 // Or use resource files
-                 throw new RuntimeException(messageSource.getMessage("user.not.found", null, locale));
-                 \`\`\`
-
-              3. **Chinese Identifiers** → Change to English Identifiers
-                 \`\`\`java
-                 // ❌ Incorrect Example
-                 String 用户名 = "admin";
-
-                 // ✅ Correct Example
-                 String username = "admin";
-                 \`\`\`
-
-              ### Why Avoid Chinese Content?
-
-              - 🌍 **Internationalization Friendly**: Facilitates project internationalization and localization
-              - 🔧 **Development Environment Compatibility**: Avoids encoding issues across different operating systems and IDEs
-              - 👥 **Team Collaboration**: Enables international team members to understand and maintain code
-              - 📚 **Code Standards**: Follows open source project best practices
-
-              Please modify the relevant files and resubmit. If you have questions, please contact the maintainers.`;
-
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment
-              });
-            } catch (error) {
-              console.error('Error running check script:', error);
-
-              const fallbackComment = `## 🚨 Chinese Content Detected
-
-              Chinese content has been detected in Java files under \`spring-ai-alibaba-jmanus/src/main/java\` directory.
-
-              Please check the following content and modify to English:
-              - Chinese comments → English comments
-              - Chinese strings → English strings or extract to resource files
-              - Chinese identifiers → English identifiers
-
-              Please resubmit after modifications are complete.`;
-
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: fallbackComment
-              });
-            }
-
-      - name: Fail the workflow if Chinese content found
-        if: steps.check-chinese.outcome == 'failure'
-        run: |
-          echo "❌ Chinese content found, please check the results above and modify the relevant files"
-          exit 1
-
-      - name: Success message
-        if: steps.check-chinese.outcome == 'success'
-        run: |
-          echo "✅ No Chinese content found, check passed!"
+          if python scripts/check-chinese-content.py --dir src/main/java --fail-on-found; then
+            echo "✅ No Chinese content found - Check passed!"
+          else
+            echo ""
+            echo "## 🚨 Chinese Content Detected"
+            echo ""
+            echo "Chinese content has been detected in Java files under spring-ai-alibaba-jmanus/src/main/java directory."
+            echo ""
+            echo "### Detailed Check Results:"
+            python scripts/check-chinese-content.py --dir src/main/java
+            echo ""
+            echo "### Modification Suggestions:"
+            echo ""
+            echo "1. **Chinese Comments** → Change to English Comments"
+            echo "   Example:"
+            echo "   // ❌ Incorrect: // 这是一个用户服务类"
+            echo "   // ✅ Correct:   // This is a user service class"
+            echo ""
+            echo "2. **Chinese Strings** → Extract to resource files or use English"
+            echo "   Example:"
+            echo "   // ❌ Incorrect: throw new RuntimeException(\"用户不存在\");"
+            echo "   // ✅ Correct:   throw new RuntimeException(\"User not found\");"
+            echo ""
+            echo "3. **Chinese Identifiers** → Change to English Identifiers"
+            echo "   Example:"
+            echo "   // ❌ Incorrect: String 用户名 = \"admin\";"
+            echo "   // ✅ Correct:   String username = \"admin\";"
+            echo ""
+            echo "### Why Avoid Chinese Content?"
+            echo ""
+            echo "- 🌍 Internationalization Friendly: Facilitates project internationalization"
+            echo "- 🔧 Development Environment Compatibility: Avoids encoding issues"
+            echo "- 👥 Team Collaboration: Enables international team members to understand code"
+            echo "- 📚 Code Standards: Follows open source project best practices"
+            echo ""
+            echo "❌ Please modify the relevant files and resubmit."
+            exit 1
+          fi
