@@ -1,122 +1,96 @@
-# DeepResearch UI
+# Spring AI Alibaba DeepResearch Web UI Startup Guide
 
-<p align="center">
-  <img src="./public/logo.png" alt="DeepResearch UI Logo" width="200"/>
-</p>
+### 概述
 
-<p align="center">
-  <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/vue-3.x-brightgreen.svg" alt="Vue 3"></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/typescript-5.x-blue.svg" alt="TypeScript"></a>
-  <a href="https://ant.design/"><img src="https://img.shields.io/badge/UI-Ant%20Design%20Vue-blue" alt="Ant Design Vue"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
-</p>
+这是一个基于 Vue 3 + Vite 构建的 Spring AI Alibaba DeepResearch 管理界面，提供 AI 驱动的任务自动化和研究能力。项目包含后端服务和现代化的 Web UI，用于深度研究任务。
 
-[English](./README.md) | 中文
+**主要特性：**
+- 🤖 **AI 驱动研究**: 智能任务规划的自动化研究
+- 💬 **交互式聊天界面**: 与 AI 智能体的实时对话
+- 📊 **任务管理**: 分步执行和进度跟踪
+- 🔍 **多源搜索**: 集成 Tavily、Jina 等搜索 API
+- 📝 **报告生成**: 自动化研究报告创建和导出
+- 🌐 **国际化**: 支持多语言
 
-[Spring AI Alibaba DeepResearch](../README.md) 的现代化 Web 管理界面。
+### 架构图
 
-## 🚀 快速开始
+![架构图](../../docs/imgs/deepresearch-workflow.png)
+
+> 上图展示了 deepresearch 的核心模块分层与主要调用关系。
+
+### 主要流程图
+
+![主要流程图](../../docs/imgs/202506302113562.png)
+
+> 上图展示了用户请求在 deepresearch 系统中的主要流转流程。
+
+### 项目结构
+
+```
+spring-ai-alibaba-deepresearch/
+├── ui-vue3/                      # 前端 Vue 3 应用
+│   ├── src/
+│   │   ├── components/           # 可复用组件
+│   │   ├── views/               # 页面组件
+│   │   ├── router/              # Vue Router 配置
+│   │   ├── base/                # 基础工具
+│   │   └── utils/               # 工具函数
+│   ├── public/
+│   ├── package.json
+│   └── vite.config.js
+```
 
 ### 环境要求
+- **前端**: Node.js >= 16.0.0, npm >= 8.0.0 或 yarn >= 1.22.0
+- **可选**: Docker, Redis, Elasticsearch
 
-- Node.js >= 16 (自带 npm)
-- pnpm
+### 快速开始
 
-**对于 Java 开发者：**
 
-#### 1. 安装 Node.js 和 npm
-
-Node.js 是一个 JavaScript 运行环境，它包含了 npm (Node Package Manager)，一个 JavaScript 包管理器。
-
-- **Windows/macOS**:
-  请访问 [Node.js 官方网站](https://nodejs.org/) 下载并安装适合您操作系统的 LTS (长期支持) 版本。安装程序会自动安装 Node.js 和 npm。
-- **Linux**:
-  您可以使用包管理器进行安装。例如，在 Ubuntu/Debian 上：
-
-  ```bash
-  sudo apt update
-  sudo apt install nodejs npm
-  ```
-
-  对于其他发行版，请参考 Node.js 官方文档的[安装指南](https://nodejs.org/en/download/package-manager)。
-
-安装完成后，您可以通过以下命令验证安装：
+#### 启动
 
 ```bash
-node -v
-npm -v
-```
-
-#### 2. 安装 pnpm (推荐)
-
-pnpm 是一个快速、节省磁盘空间的包管理器。我们推荐使用 pnpm 来管理本项目的依赖。
-
-使用 npm全局安装 pnpm：
-
-```bash
-npm install -g pnpm
-```
-
-验证 pnpm 安装：
-
-```bash
-pnpm -v
-```
-
-为什么使用 pnpm？
-
-- **速度快**：pnpm 在安装依赖时比 npm 和 yarn 更快。
-- **磁盘空间效率高**：pnpm 使用内容可寻址存储来存储所有模块，这意味着项目之间共享相同的依赖版本，而不是在每个项目中都复制一份。
-- **严格的依赖管理**：pnpm 创建一个非扁平化的 `node_modules` 目录，这有助于避免一些潜在的依赖问题。
-
-### 安装
-
-```bash
-# 克隆仓库 (如果尚未克隆)
-# git clone https://github.com/spring-ai-alibaba/spring-ai-alibaba.git
-
 # 进入 UI 目录
-# cd spring-ai-alibaba-deepresearch/ui-vue3
+cd ui-vue3
 
-# 使用 pnpm 安装依赖
-pnpm install
+# 安装依赖
+npm install
+# 或
+yarn install
 
 # 启动开发服务器
-pnpm run dev
+npm run dev
+# 或
+yarn dev
 ```
 
-### 构建
+前端将在 http://localhost:5173/ui 启动
+
+#### 生产环境构建
 
 ```bash
-# 使用 pnpm 构建生产版本
-pnpm run build
+# 构建前端
+cd ui-vue3
+npm run build
 
-然后复制build后的文件到 resources目录（有可能需要先删除老的所有文件）
-例如 mac下，在spring-ai-alibaba-DeepResearch 下运行：
-
-cp -r ui-vue3/ui src/main/resources/static/
-
-然后java spring boot 启动就行了 , java会自动开启对应的页面。
-
+# 复制构建文件到后端资源目录
+cp -r dist/* ../src/main/resources/static/
 ```
 
+### 技术栈
 
-## 📖 文档
+- Vue 3 (Composition API)
+- Vite
+- Ant Design Vue
+- TypeScript
+- Ant Design X Vue
+- Vue Router 4
 
-详细文档请参考：
 
-- [DeepResearch 文档](../README-zh.md)
-- [API 文档](./docs/api.md)
-- [配置指南](./docs/configuration.md)
+### 许可证
 
-## 🤝 贡献指南
+本项目遵循 Apache License 2.0 许可证。
 
-我们欢迎各种形式的贡献！提交 Pull Request 前请阅读我们的[贡献指南](../../CONTRIBUTING.md)。
+### 联系方式
 
-### 开发设置
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m '添加一些很棒的特性'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 提交 Pull Request
+如有问题或建议，请提交 Issue 或联系开发团队。
