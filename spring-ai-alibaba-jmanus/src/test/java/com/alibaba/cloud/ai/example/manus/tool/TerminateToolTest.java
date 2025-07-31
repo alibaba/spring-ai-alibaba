@@ -34,7 +34,7 @@ class TerminateToolTest {
 	@BeforeEach
 	void setUp() {
 		// 使用测试列名初始化
-		List<String> testColumns = Arrays.asList("name", "age", "city");
+		String testColumns = "name, age, city";
 		terminateTool = new TerminateTool("test-plan-123", testColumns);
 	}
 
@@ -42,10 +42,10 @@ class TerminateToolTest {
 	@DisplayName("测试 generateParametersJson 方法返回的 JSON 结构")
 	void testGenerateParametersJson() {
 		// 测试不同的列配置
-		List<String> columns1 = Arrays.asList("name", "age");
-		List<String> columns2 = Arrays.asList("id", "title", "description", "status");
-		List<String> emptyColumns = Arrays.asList();
-		List<String> nullColumns = null;
+		String columns1 = "name, age";
+		String columns2 = "id, title, description, status";
+		String emptyColumns = "";
+		String nullColumns = null;
 
 		System.out.println("=== generateParametersJson 测试结果 ===");
 
@@ -76,9 +76,8 @@ class TerminateToolTest {
 		// 验证JSON包含必要的结构
 		assertTrue(json1.contains("\"type\": \"object\""));
 		assertTrue(json1.contains("\"properties\""));
-		assertTrue(json1.contains("\"columns\""));
-		assertTrue(json1.contains("\"data\""));
-		assertTrue(json1.contains("\"required\": [\"columns\", \"data\"]"));
+		assertTrue(json1.contains("\"message\""));
+		assertTrue(json1.contains("\"required\": [\"message\"]"));
 	}
 
 	@Test
@@ -94,8 +93,7 @@ class TerminateToolTest {
 
 		// 测试2: 执行终止操作后的状态
 		Map<String, Object> terminateInput = new HashMap<>();
-		terminateInput.put("columns", Arrays.asList("name", "status"));
-		terminateInput.put("data", Arrays.asList(Arrays.asList("Alice", "completed"), Arrays.asList("Bob", "pending")));
+		terminateInput.put("message", "测试终止消息");
 
 		terminateTool.run(terminateInput);
 		String terminatedState = terminateTool.getCurrentToolStateString();
@@ -118,7 +116,7 @@ class TerminateToolTest {
 		System.out.println("=== 不同列配置测试 ===");
 
 		// 测试1: 默认列（空列表）
-		TerminateTool tool1 = new TerminateTool("plan-1", Arrays.asList());
+		TerminateTool tool1 = new TerminateTool("plan-1", "");
 		String state1 = tool1.getCurrentToolStateString();
 		System.out.println("测试1 - 默认列配置 (空列表):");
 		System.out.println(state1);
@@ -132,7 +130,7 @@ class TerminateToolTest {
 		System.out.println();
 
 		// 测试3: 单列
-		TerminateTool tool3 = new TerminateTool("plan-3", Arrays.asList("result"));
+		TerminateTool tool3 = new TerminateTool("plan-3", "result");
 		String state3 = tool3.getCurrentToolStateString();
 		System.out.println("测试3 - 单列配置 [result]:");
 		System.out.println(state3);
@@ -149,7 +147,7 @@ class TerminateToolTest {
 	void testToolDefinition() {
 		System.out.println("=== 工具定义测试 ===");
 
-		List<String> testColumns = Arrays.asList("task_id", "result", "timestamp");
+		String testColumns = "task_id, result, timestamp";
 		var toolDefinition = TerminateTool.getToolDefinition(testColumns);
 
 		// FunctionTool 是一个简单的包装类，我们通过反射来获取内部的 function 对象
@@ -193,10 +191,9 @@ class TerminateToolTest {
 		System.out.println("=== JSON 输出特征测试 ===");
 
 		// 测试不同规模的列配置
-		List<String> smallColumns = Arrays.asList("id");
-		List<String> mediumColumns = Arrays.asList("id", "name", "status", "created_at");
-		List<String> largeColumns = Arrays.asList("id", "name", "email", "phone", "address", "city", "state", "zip",
-				"country", "notes");
+		String smallColumns = "id";
+		String mediumColumns = "id, name, status, created_at";
+		String largeColumns = "id, name, email, phone, address, city, state, zip, country, notes";
 
 		String smallJson = getParametersJsonViaReflection(smallColumns);
 		String mediumJson = getParametersJsonViaReflection(mediumColumns);
@@ -211,7 +208,7 @@ class TerminateToolTest {
 		assertTrue(smallJson.startsWith("{"));
 		assertTrue(smallJson.endsWith("}"));
 		assertTrue(mediumJson.contains("\"type\": \"object\""));
-		assertTrue(largeJson.contains("\"items\": {\"type\": \"string\"}"));
+		assertTrue(largeJson.contains("\"type\": \"string\""));
 
 		// 确保长度在合理范围内（避免过长导致解析问题）
 		assertTrue(smallJson.length() < 1000, "小规模JSON应该小于1000字符");
@@ -222,9 +219,9 @@ class TerminateToolTest {
 	/**
 	 * 通过反射调用私有静态方法 generateParametersJson
 	 */
-	private String getParametersJsonViaReflection(List<String> columns) {
+	private String getParametersJsonViaReflection(String columns) {
 		try {
-			var method = TerminateTool.class.getDeclaredMethod("generateParametersJson", List.class);
+			var method = TerminateTool.class.getDeclaredMethod("generateParametersJson", String.class);
 			method.setAccessible(true);
 			return (String) method.invoke(null, columns);
 		}

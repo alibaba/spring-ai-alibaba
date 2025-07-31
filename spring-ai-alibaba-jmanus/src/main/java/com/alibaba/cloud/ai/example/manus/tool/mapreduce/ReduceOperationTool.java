@@ -79,8 +79,8 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 
 	private static final String TOOL_NAME = "reduce_operation_tool";
 
-	private static String getToolDescription(List<String> terminateColumns) {
-		String baseDescription = """
+	private static String getToolDescription() {
+		return """
 				Reduce operation tool for MapReduce workflow file manipulation.
 				Aggregates and merges data from multiple Map tasks and generates final consolidated output.
 
@@ -93,39 +93,13 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 				**IMPORTANT**: 操作完成后工具将自动终止。
 				请在单次调用中完成所有内容输出。
 				""";
-
-		if (terminateColumns != null && !terminateColumns.isEmpty()) {
-			String columnsFormat = String.join(", ", terminateColumns);
-			baseDescription += String.format("""
-
-					**数据格式要求（当 has_value=true 时）：**
-					您必须按照以下固定格式提供数据，每行数据包含：[%s]
-
-					示例格式：
-					[
-					  ["%s示例1", "%s示例1"],
-					  ["%s示例2", "%s示例2"]
-					]
-					""", columnsFormat, terminateColumns.get(0),
-					terminateColumns.size() > 1 ? terminateColumns.get(1) : "数据", terminateColumns.get(0),
-					terminateColumns.size() > 1 ? terminateColumns.get(1) : "数据");
-		}
-
-		return baseDescription;
 	}
 
 	/**
 	 * Generate parameters JSON for ReduceOperationTool with predefined columns format
-	 * @param terminateColumns the columns specification (e.g., "url,说明")
 	 * @return JSON string for parameters schema
 	 */
-	private static String generateParametersJson(List<String> terminateColumns) {
-		// Generate columns description from terminateColumns
-		String columnsDesc = "数据行列表";
-		if (terminateColumns != null && !terminateColumns.isEmpty()) {
-			columnsDesc = "数据行列表，每行按照以下格式：[" + String.join(", ", terminateColumns) + "]";
-		}
-
+	private static String generateParametersJson() {
 		return """
 				{
 				    "type": "object",
@@ -140,23 +114,19 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 				                "type": "array",
 				                "items": {"type": "string"}
 				            },
-				            "description": "%s（仅当has_value为true时需要提供）"
+				            "description": "数据行列表"
 				        }
 				    },
 				    "required": ["has_value"],
 				    "additionalProperties": false
 				}
-				""".formatted(columnsDesc);
+				""";
 	}
 
 	private UnifiedDirectoryManager unifiedDirectoryManager;
 
 	// 共享状态管理器，用于管理多个Agent实例间的共享状态
-	private MapReduceSharedStateManager sharedStateManager;
-
-	// Class-level terminate columns configuration - takes precedence over input
-	// parameters
-	private final List<String> terminateColumns;
+	private final MapReduceSharedStateManager sharedStateManager;
 
 	// ==================== TerminableTool 相关字段 ====================
 
@@ -171,18 +141,9 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	private String terminationTimestamp = "";
 
 	public ReduceOperationTool(String planId, ManusProperties manusProperties,
-			MapReduceSharedStateManager sharedStateManager, UnifiedDirectoryManager unifiedDirectoryManager,
-			List<String> terminateColumns) {
+			MapReduceSharedStateManager sharedStateManager, UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.currentPlanId = planId;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
-		this.sharedStateManager = sharedStateManager;
-		this.terminateColumns = terminateColumns;
-	}
-
-	/**
-	 * 设置共享状态管理器
-	 */
-	public void setSharedStateManager(MapReduceSharedStateManager sharedStateManager) {
 		this.sharedStateManager = sharedStateManager;
 	}
 
@@ -200,15 +161,14 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 		}
 		return new ArrayList<>();
 	}
-
 	@Override
 	public String getDescription() {
-		return getToolDescription(terminateColumns);
+		return getToolDescription();
 	}
 
 	@Override
 	public String getParameters() {
-		return generateParametersJson(terminateColumns);
+		return generateParametersJson();
 	}
 
 	@Override
@@ -222,13 +182,8 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	}
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
-		// Use default terminate columns for static tool definition
-		return getToolDefinition(null);
-	}
-
-	public static OpenAiApi.FunctionTool getToolDefinition(List<String> terminateColumns) {
-		String parameters = generateParametersJson(terminateColumns);
-		String description = getToolDescription(terminateColumns);
+		String parameters = generateParametersJson();
+		String description = getToolDescription();
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, TOOL_NAME,
 				parameters);
 		return new OpenAiApi.FunctionTool(function);
@@ -244,12 +199,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 			List<List<Object>> data = input.getData();
 			boolean hasValue = input.isHasValue();
 
-			// Use class-level terminateColumns
-			List<String> effectiveTerminateColumns = this.terminateColumns;
-			if (effectiveTerminateColumns == null || effectiveTerminateColumns.isEmpty()) {
-				return new ToolExecuteResult("Error: terminate columns not configured for this tool");
-			}
-
 			// Check hasValue logic
 			if (hasValue) {
 				// When hasValue is true, data must be provided
@@ -258,13 +207,13 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 				}
 
 				// Validate data structure
-				ToolExecuteResult validationResult = validateDataStructure(data, effectiveTerminateColumns);
+				ToolExecuteResult validationResult = validateDataStructure(data);
 				if (validationResult != null) {
 					return validationResult; // Return validation error
 				}
 
 				// Convert structured data to JSON format and append
-				String jsonContent = formatStructuredDataAsJson(effectiveTerminateColumns, data);
+				String jsonContent = formatStructuredDataAsJson(data);
 				return appendToFile(REDUCE_FILE_NAME, jsonContent);
 			}
 			else {
@@ -289,63 +238,68 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	}
 
 	/**
-	 * Validate data structure against expected terminate columns
+	 * Validate data structure
 	 * @param data the input data
-	 * @param terminateColumns expected column structure
 	 * @return ToolExecuteResult with error message if validation fails, null if valid
 	 */
-	private ToolExecuteResult validateDataStructure(List<List<Object>> data, List<String> terminateColumns) {
-		int expectedColumnCount = terminateColumns.size();
-
+	private ToolExecuteResult validateDataStructure(List<List<Object>> data) {
+		// Perform basic validation to ensure data is not empty
+		if (data == null || data.isEmpty()) {
+			return new ToolExecuteResult("Error: data parameter is required when has_value is true");
+		}
+		
+		// Validate each row
 		for (int i = 0; i < data.size(); i++) {
 			List<Object> row = data.get(i);
-			if (row.size() != expectedColumnCount) {
+			if (row == null || row.isEmpty()) {
 				String error = String.format("""
 						数据结构不一致！
-						期望的列数: %d
-						实际第%d行的列数: %d
-
-						**要求的数据结构：**
-						每行数据必须包含：[%s]
-
-						示例格式：
-						[
-						  ["%s示例1", "%s示例1"],
-						  ["%s示例2", "%s示例2"]
-						]
-						""", expectedColumnCount, i + 1, row.size(), String.join(", ", terminateColumns),
-						terminateColumns.get(0), terminateColumns.size() > 1 ? terminateColumns.get(1) : "数据",
-						terminateColumns.get(0), terminateColumns.size() > 1 ? terminateColumns.get(1) : "数据");
+						第%d行数据为空或无效
+						""", i + 1);
 				return new ToolExecuteResult(error);
 			}
 		}
+		
 		return null; // Validation passed
 	}
 
 	/**
-	 * Format structured data as JSON list format
-	 * @param terminateColumns the column names
-	 * @param data the data rows
-	 * @return JSON formatted string representation of the structured data
+	 * Format structured data as JSON
+	 * @param data the input data
+	 * @return formatted JSON string
 	 */
-	private String formatStructuredDataAsJson(List<String> terminateColumns, List<List<Object>> data) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("{\n");
-		sb.append("  \"columns\": ").append(java.util.Arrays.toString(terminateColumns.toArray())).append(",\n");
-		sb.append("  \"data\": [\n");
+	private String formatStructuredDataAsJson(List<List<Object>> data) {
+		StringBuilder jsonBuilder = new StringBuilder();
+		jsonBuilder.append("{\n");
+		jsonBuilder.append("  \"data\": [\n");
 
 		for (int i = 0; i < data.size(); i++) {
 			List<Object> row = data.get(i);
-			sb.append("    ").append(java.util.Arrays.toString(row.toArray()));
-			if (i < data.size() - 1) {
-				sb.append(",");
+			jsonBuilder.append("    [");
+			for (int j = 0; j < row.size(); j++) {
+				Object value = row.get(j);
+				// JSON escape string values
+				if (value instanceof String) {
+					jsonBuilder.append("\"").append(((String) value).replace("\"", "\\\"")).append("\"");
+				}
+				else {
+					jsonBuilder.append(value);
+				}
+				if (j < row.size() - 1) {
+					jsonBuilder.append(", ");
+				}
 			}
-			sb.append("\n");
+			jsonBuilder.append("]");
+			if (i < data.size() - 1) {
+				jsonBuilder.append(",");
+			}
+			jsonBuilder.append("\n");
 		}
 
-		sb.append("  ]\n");
-		sb.append("}");
-		return sb.toString();
+		jsonBuilder.append("  ]\n");
+		jsonBuilder.append("}\n");
+
+		return jsonBuilder.toString();
 	}
 
 	/**
@@ -458,22 +412,19 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	}
 
 	/**
-	 * Get class-level terminate columns configuration
-	 * @return terminate columns as comma-separated string
+	 * Get class-level expected return info configuration
+	 * @return expected return info (always null as it's no longer used)
 	 */
 	public String getTerminateColumns() {
-		if (this.terminateColumns == null || this.terminateColumns.isEmpty()) {
-			return null;
-		}
-		return String.join(",", this.terminateColumns);
+		return null;
 	}
 
 	/**
-	 * Get class-level terminate columns configuration as List
-	 * @return terminate columns as List<String>
+	 * Get class-level expected return info configuration
+	 * @return expected return info (always null as it's no longer used)
 	 */
-	public List<String> getTerminateColumnsList() {
-		return this.terminateColumns == null ? null : new ArrayList<>(this.terminateColumns);
+	public String getTerminateColumnsList() {
+		return null;
 	}
 
 	// ==================== TerminableTool interface implementation

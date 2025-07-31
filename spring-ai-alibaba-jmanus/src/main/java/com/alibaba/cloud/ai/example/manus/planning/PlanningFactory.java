@@ -207,7 +207,7 @@ public class PlanningFactory implements IPlanningFactory {
 	}
 
 	public Map<String, ToolCallBackContext> toolCallbackMap(String planId, String rootPlanId,
-			List<String> terminateColumns) {
+			String expectedReturnInfo) {
 		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
 		List<ToolCallBiFunctionDef<?>> toolDefinitions = new ArrayList<>();
 		if (chromeDriverService == null) {
@@ -221,7 +221,7 @@ public class PlanningFactory implements IPlanningFactory {
 		// Add all tool definitions
 		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService, objectMapper));
 		toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService, objectMapper));
-		toolDefinitions.add(new TerminateTool(planId, terminateColumns));
+		toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
 		toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper));
 		toolDefinitions.add(new DocLoaderTool());
 		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
@@ -237,7 +237,7 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new MapOutputTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
 				objectMapper));
 		toolDefinitions.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager,
-				unifiedDirectoryManager, terminateColumns));
+				unifiedDirectoryManager));
 		toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 		toolDefinitions.add(new CronTool(cronService, objectMapper));
 		

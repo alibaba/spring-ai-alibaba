@@ -38,11 +38,11 @@ public interface IPlanningFactory {
 	 * Create tool callback mapping
 	 * @param planId Plan ID
 	 * @param rootPlanId Root plan ID
-	 * @param terminateColumns Terminate columns
+	 * @param expectedReturnInfo Expected return information
 	 * @return Tool callback mapping
 	 */
 	Map<String, PlanningFactory.ToolCallBackContext> toolCallbackMap(String planId, String rootPlanId,
-			java.util.List<String> terminateColumns);
+			String expectedReturnInfo);
 
 	/**
 	 * Create RestClient

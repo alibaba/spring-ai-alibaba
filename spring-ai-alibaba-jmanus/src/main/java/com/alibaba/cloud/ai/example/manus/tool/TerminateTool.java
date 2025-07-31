@@ -30,7 +30,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	public static final String name = "terminate";
 
-	private final String columns;
+	private final String expectedReturnInfo;
 
 	private String lastTerminationMessage = "";
 
@@ -38,27 +38,27 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	private String terminationTimestamp = "";
 
-	public static OpenAiApi.FunctionTool getToolDefinition(List<String> columns) {
-		String parameters = generateParametersJson(columns);
-		String description = getDescriptions(columns);
+	public static OpenAiApi.FunctionTool getToolDefinition(String expectedReturnInfo) {
+		String parameters = generateParametersJson(expectedReturnInfo);
+		String description = getDescriptions(expectedReturnInfo);
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, parameters);
 		return new OpenAiApi.FunctionTool(function);
 	}
 
-	private static String getDescriptions(List<String> columns) {
+	private static String getDescriptions(String expectedReturnInfo) {
 		// Simple description to avoid generating overly long content
 		return "Terminate the current execution step with structured data. "
 				+ "Provide data in JSON format with 'message' field and optional 'fileList' array containing file information.";
 	}
 
-	private static String generateParametersJson(List<String> columns) {
+	private static String generateParametersJson(String expectedReturnInfo) {
 		String template = """
 				{
 				  "type": "object",
 				  "properties": {
 				    "message": {
 				      "type": "string",
-				      "description": "Comprehensive termination message that should include all relevant facts, viewpoints, details, and conclusions from the execution step. This message should provide a complete summary of what was accomplished, any important observations, key findings, and final outcomes."
+				      "description": "Comprehensive termination message that should include all relevant facts, viewpoints, details, and conclusions from the execution step. This message should provide a complete summary of what was accomplished, any important observations, key findings, and final outcomes. The message must explicitly mention and describe the data corresponding to the expected return information: %s"
 				    },
 				    "fileList": {
 				      "type": "array",
@@ -83,7 +83,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 				}
 				""";
 
-		return template;
+		return String.format(template, expectedReturnInfo != null ? expectedReturnInfo : "N/A");
 	}
 
 	@Override
@@ -95,18 +95,18 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 				- Termination Message: %s
 				- Timestamp: %s
 				- Plan ID: %s
-				- Columns: %s
+				- Expected Return Info: %s
 				""", isTerminated ? "🛑 Terminated" : "⚡ Active",
 				isTerminated ? "Process was terminated" : "No termination recorded",
 				lastTerminationMessage.isEmpty() ? "N/A" : lastTerminationMessage,
 				terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp,
-				currentPlanId != null ? currentPlanId : "N/A", columns != null ? columns : "N/A");
+				currentPlanId != null ? currentPlanId : "N/A", expectedReturnInfo != null ? expectedReturnInfo : "N/A");
 	}
 
-	public TerminateTool(String planId, String columns) {
+	public TerminateTool(String planId, String expectedReturnInfo) {
 		this.currentPlanId = planId;
-		// If columns is null or empty, use "message" as default column
-		this.columns = (columns == null || columns.isEmpty()) ? "message" : columns;
+		// If expectedReturnInfo is null or empty, use "message" as default
+		this.expectedReturnInfo = (expectedReturnInfo == null || expectedReturnInfo.isEmpty()) ? "message" : expectedReturnInfo;
 	}
 
 	@Override
@@ -155,12 +155,12 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	@Override
 	public String getDescription() {
-		return getDescriptions(null);
+		return getDescriptions(this.expectedReturnInfo);
 	}
 
 	@Override
 	public String getParameters() {
-		return generateParametersJson(null);
+		return generateParametersJson(this.expectedReturnInfo);
 	}
 
 	@Override

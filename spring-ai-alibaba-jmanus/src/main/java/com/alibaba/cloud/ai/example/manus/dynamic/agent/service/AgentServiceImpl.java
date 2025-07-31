@@ -174,9 +174,9 @@ public class AgentServiceImpl implements AgentService {
 	public List<Tool> getAvailableTools() {
 
 		String uuid = UUID.randomUUID().toString();
-		List<String> columns = Arrays.asList("dummyColumn1", "dummyColumn2");
+		String expectedReturnInfo = "dummyColumn1, dummyColumn2";
 		try {
-			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid, uuid, columns);
+			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid, uuid, expectedReturnInfo);
 			return toolcallContext.entrySet().stream().map(entry -> {
 				Tool tool = new Tool();
 				tool.setKey(entry.getKey());
@@ -300,7 +300,7 @@ public class AgentServiceImpl implements AgentService {
 
 	@Override
 	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
-			Map<String, Object> initialAgentSetting, List<String> columns) {
+			Map<String, Object> initialAgentSetting, String expectedReturnInfo) {
 
 		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
 
@@ -313,24 +313,18 @@ public class AgentServiceImpl implements AgentService {
 			agent.setRootPlanId(rootPlanId);
 			// Set tool callback mapping
 			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, rootPlanId,
-					columns);
+					expectedReturnInfo);
 			agent.setToolCallbackProvider(new ToolCallbackProvider() {
 
 				@Override
 				public Map<String, ToolCallBackContext> getToolCallBackContext() {
 					return toolCallbackMap;
 				}
-
 			});
-
-			log.info("Successfully loaded BaseAgent: {}, available tools count: {}", name,
-					agent.getToolCallList().size());
-
 			return agent;
 		}
 		catch (Exception e) {
-			log.error("Exception occurred during BaseAgent loading: {}, error message: {}", name, e.getMessage(), e);
-			throw new RuntimeException("Failed to load BaseAgent: " + e.getMessage(), e);
+			throw new RuntimeException("Failed to create dynamic base agent: " + name, e);
 		}
 	}
 
