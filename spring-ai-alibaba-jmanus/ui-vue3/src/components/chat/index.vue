@@ -1216,6 +1216,17 @@ const handlePlanCompleted = (rootPlanId: string) => {
   }
 };
 
+// Handle the plan error event
+const handlePlanError = (message: string) => {
+  isLoading.value = false
+  messages.value[messages.value.length -1] = {
+    id: Date.now().toString(),
+    type: 'error',
+    content: message,
+    timestamp: new Date(),
+  }
+}
+
 // Format the response text to make it more like a natural conversation
 const formatResponseText = (text: string): string => {
   if (!text) return ''
@@ -1308,7 +1319,8 @@ onMounted(() => {
     },
     onChatInputClear: () => {
       console.log('[ChatComponent] Chat input clear requested')
-    }
+    },
+    onPlanError: handlePlanError
   })
 
   nextTick(() => {
@@ -1348,6 +1360,7 @@ defineExpose({
   handlePlanCompleted,
   handleDialogRoundStart,
   addMessage,
+  handlePlanError
 })
 </script>
 
@@ -1576,6 +1589,7 @@ defineExpose({
 
       .final-response {
         .response-text {
+          word-break: break-all;
           line-height: 1.8;
           color: #ffffff;
           font-size: 15px;

@@ -15,11 +15,15 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -100,6 +104,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 			return this;
 		}
 		return RunnableConfig.builder(this).checkPointId(checkPointId).build();
+
 	}
 
 	/**
@@ -108,7 +113,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 * @return metadata value for key if any
 	 */
 	@Override
-	public Optional<Object> getMetadata(String key) {
+	public Optional<Object> metadata(String key) {
 		if (key == null) {
 			return Optional.empty();
 		}
@@ -161,12 +166,11 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 * @param config The configuration to be used for initialization.
 		 */
 		Builder(RunnableConfig config) {
-			Objects.requireNonNull(config, "config cannot be null!");
+			super(requireNonNull(config, "config cannot be null!").metadata);
 			this.threadId = config.threadId;
 			this.checkPointId = config.checkPointId;
 			this.nextNode = config.nextNode;
 			this.streamMode = config.streamMode;
-			this.metadata = config.metadata;
 		}
 
 		/**
@@ -182,7 +186,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 		/**
 		 * Sets the checkpoint ID for the configuration.
-		 * @param checkPointId - the ID of the checkpoint to be set
+		 * @param {@code checkPointId} - the ID of the checkpoint to be set
 		 * @return {@literal this} - a reference to the current `Builder` instance
 		 */
 		public Builder checkPointId(String checkPointId) {
@@ -212,6 +216,21 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		}
 
 		/**
+		 * Adds a custom {@link Executor} for a specific parallel node.
+		 * <p>
+		 * This allows you to control the execution of branches within a parallel node.
+		 * When a parallel node is executed, it will look for an executor in the
+		 * {@link RunnableConfig} metadata. If found, it will be used to run the parallel
+		 * branches concurrently.
+		 * @param nodeId the ID of the parallel node.
+		 * @param executor the {@link Executor} to use for the parallel node.
+		 * @return this {@code Builder} instance for method chaining.
+		 */
+		public Builder addParallelNodeExecutor(String nodeId, Executor executor) {
+			return addMetadata(ParallelNode.formatNodeId(nodeId), requireNonNull(executor, "executor cannot be null!"));
+		}
+
+		/**
 		 * Constructs and returns the configured {@code RunnableConfig} object.
 		 * @return the configured {@code RunnableConfig} object
 		 */
@@ -231,7 +250,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		this.checkPointId = builder.checkPointId;
 		this.nextNode = builder.nextNode;
 		this.streamMode = builder.streamMode;
-		this.metadata = ofNullable(builder.metadata).map(Map::copyOf).orElse(null);
+		this.metadata = ofNullable(builder.metadata()).map(Map::copyOf).orElse(null);
 	}
 
 	@Override

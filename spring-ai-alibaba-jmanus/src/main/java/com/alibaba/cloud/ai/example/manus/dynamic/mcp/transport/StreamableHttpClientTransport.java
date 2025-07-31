@@ -338,9 +338,15 @@ public class StreamableHttpClientTransport implements McpClientTransport {
 
 			// 解析响应
 			Map<String, Object> data = objectMapper.readValue(jsonContent, Map.class);
-			String responseId = (String) data.get("id");
-			String method = (String) data.get("method");
-			String jsonrpc = (String) data.get("jsonrpc");
+			// 安全地处理id字段，可能是String或Integer
+			Object idObj = data.get("id");
+			String responseId = idObj != null ? String.valueOf(idObj) : null;
+			// 安全地处理method字段
+			Object methodObj = data.get("method");
+			String method = methodObj != null ? String.valueOf(methodObj) : null;
+			// 安全地处理jsonrpc字段
+			Object jsonrpcObj = data.get("jsonrpc");
+			String jsonrpc = jsonrpcObj != null ? String.valueOf(jsonrpcObj) : null;
 
 			logger.info("=== 解析的响应字段 ===");
 			logger.info("=== jsonrpc: {} ===", jsonrpc);

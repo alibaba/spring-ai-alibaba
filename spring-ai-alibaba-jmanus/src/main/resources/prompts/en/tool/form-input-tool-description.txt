@@ -1,0 +1,5 @@
+Provides a labeled multi-input form tool.
+
+LLM can use this tool to let users submit 0 or more input items (each with label and content), along with filling instructions.
+Allows users to submit 0 input items.
+Suitable for scenarios requiring structured input and can also be used when the model needs to wait for user input before continuing.

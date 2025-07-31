@@ -25,8 +25,6 @@ public class NodeJsTemplateTransformer extends TemplateTransformer {
 
 	@Override
 	public String getRunnerScript() {
-		// Java does not have a direct equivalent of Python's textwrap.dedent,
-		// so we use a multi-line string with careful indentation.
 		return """
 				// declare main function
 				%s

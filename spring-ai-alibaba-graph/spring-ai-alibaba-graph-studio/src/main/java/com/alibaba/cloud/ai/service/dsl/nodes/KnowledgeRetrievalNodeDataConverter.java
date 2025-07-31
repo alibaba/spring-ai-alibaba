@@ -28,8 +28,6 @@ import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,13 +63,53 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 			@Override
 			public KnowledgeRetrievalNodeData parse(Map<String, Object> data) {
 				KnowledgeRetrievalNodeData nd = new KnowledgeRetrievalNodeData();
-				// inputs
-				List<String> sel = (List<String>) data.get("variable_selector");
-				if (sel != null && sel.size() == 2) {
-					nd.setInputs(Collections.singletonList(new VariableSelector(sel.get(0), sel.get(1))));
+				// selector
+				if (data.get("variable_selector") != null) {
+					List<String> sel = (List<String>) data.get("variable_selector");
+					if (sel.size() == 2) {
+						nd.setInputId(sel.get(0));
+						nd.setInputField(sel.get(1));
+					}
 				}
-				// userPromptKey & userPrompt
-				nd.setUserPromptKey((String) data.get("user_prompt_key"));
+				else if (data.get("query_variable_selector") != null) {
+					List<String> sel = (List<String>) data.get("query_variable_selector");
+					if (sel.size() == 2) {
+						nd.setInputId(sel.get(0));
+						nd.setInputField(sel.get(1));
+					}
+				}
+				// dataset_ids
+				if (data.get("dataset_ids") != null) {
+					List<String> ds = (List<String>) data.get("dataset_ids");
+					nd.setVectorStoreKey(ds.size() == 1 ? ds.get(0) : ds.toString());
+				}
+				// multiple_retrieval_config
+				Map<String, Object> mrc = (Map<String, Object>) data.get("multiple_retrieval_config");
+				if (mrc != null) {
+					if (mrc.get("top_k") != null)
+						nd.setTopK(((Number) mrc.get("top_k")).intValue());
+					if (mrc.get("reranking_enable") != null)
+						nd.setEnableRanker((Boolean) mrc.get("reranking_enable"));
+					if (mrc.get("reranking_mode") != null)
+						nd.setRerankModelKey(String.valueOf(mrc.get("reranking_mode")));
+					if (mrc.get("weights") instanceof Map) {
+						Map<String, Object> weights = (Map<String, Object>) mrc.get("weights");
+						if (weights.get("vector_setting") instanceof Map) {
+							Map<String, Object> vs = (Map<String, Object>) weights.get("vector_setting");
+							if (vs.get("embedding_model_name") != null)
+								nd.setEmbeddingModelName((String) vs.get("embedding_model_name"));
+							if (vs.get("embedding_provider_name") != null)
+								nd.setEmbeddingProviderName((String) vs.get("embedding_provider_name"));
+							if (vs.get("vector_weight") != null)
+								nd.setVectorWeight(((Number) vs.get("vector_weight")).doubleValue());
+						}
+					}
+				}
+				// retrieval_mode
+				if (data.get("retrieval_mode") != null) {
+					nd.setRetrievalMode(String.valueOf(data.get("retrieval_mode")));
+				}
+
 				nd.setUserPrompt((String) data.get("user_prompt"));
 				// topKKey & topK
 				nd.setTopKKey((String) data.get("top_k_key"));

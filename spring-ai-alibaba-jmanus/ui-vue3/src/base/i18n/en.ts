@@ -469,6 +469,15 @@ const words: I18nType = {
       exportFailed: 'Failed to export configuration',
       importSuccess: 'Configuration imported successfully',
       importFailed: 'Failed to import configuration',
+      resetToLanguageDefault: 'Reset to Language Default',
+      selectLanguage: 'Select Language',
+      resetToLanguageDefaultSuccess: 'Reset to language default successfully',
+      resetToLanguageDefaultFailed: 'Failed to reset to language default',
+      resetLanguageWarning: 'This will overwrite current content with the default version of selected language',
+      batchSwitchLanguage: 'Batch Switch Language',
+      batchSwitchLanguageSuccess: 'Batch language switch successful',
+      batchSwitchLanguageFailed: 'Failed to batch switch language',
+      batchSwitchLanguageWarning: 'This will overwrite all prompt content and descriptions with the default version of selected language',
     },
     namespaceConfig: {
       title: 'Namespace Configuration',
@@ -647,7 +656,7 @@ const words: I18nType = {
 
   // Input component
   input: {
-    placeholder: 'Send a message to JTaskPilot',
+    placeholder: 'Send a message to JManus',
     send: 'Send',
     planMode: 'PLAN-ACT Template Mode',
     waiting: 'Waiting for task completion...',
@@ -837,7 +846,7 @@ const words: I18nType = {
 
   // Home page
   home: {
-    welcomeTitle: 'Welcome to JTaskPilot!',
+    welcomeTitle: 'Welcome to JManus!',
     welcomeSubtitle:
       'Your Java AI intelligent assistant, helping you build and complete various tasks.',
     tagline: 'Java AI Agent',

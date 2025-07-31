@@ -29,7 +29,10 @@ export class CommonApiService {
         // 404 returns null
         return null
       }
-      if (!response.ok) throw new Error(`Failed to get detailed information: ${response.status}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to get detailed information: ${response.status} - ${errorText}`)
+      }
       const rawText = await response.text()
       const data = JSON.parse(rawText)
 
@@ -43,7 +46,11 @@ export class CommonApiService {
     } catch (error: any) {
       // Log error but don't throw exception
       console.error('[CommonApiService] Failed to get plan details:', error)
-      return null
+      return {
+        currentPlanId: planId,
+        status: 'failed',
+        message: error instanceof Error ? error.message : 'Failed to save, please retry'
+      }
     }
   }
 

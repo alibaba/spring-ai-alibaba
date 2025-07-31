@@ -29,6 +29,8 @@ public interface PromptService {
 
 	PromptVO getById(Long id);
 
+	PromptVO getPromptByName(String promptName);
+
 	PromptVO create(PromptVO promptVO);
 
 	PromptVO update(PromptVO promptVO);
@@ -44,5 +46,11 @@ public interface PromptService {
 	String renderPrompt(String promptName, Map<String, Object> variables);
 
 	void reinitializePrompts();
+
+	void importSpecificPromptFromLanguage(String promptName, String language);
+
+	void importAllPromptsFromLanguage(String language);
+
+	String[] getSupportedLanguages();
 
 }

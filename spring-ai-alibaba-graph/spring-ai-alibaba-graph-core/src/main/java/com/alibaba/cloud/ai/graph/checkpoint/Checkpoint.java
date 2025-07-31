@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 public class Checkpoint implements Serializable {
@@ -119,12 +118,7 @@ public class Checkpoint implements Serializable {
 		}
 
 		public Checkpoint build() {
-			Objects.requireNonNull(result.id, "Checkpoint.id cannot be null");
-			Objects.requireNonNull(result.state, "Checkpoint.state cannot be null");
-			Objects.requireNonNull(result.nodeId, "Checkpoint.nodeId cannot be null");
-			Objects.requireNonNull(result.nextNodeId, "Checkpoint.nextNodeId cannot be null");
-
-			return result;
+			return new Checkpoint(result);
 
 		}
 
