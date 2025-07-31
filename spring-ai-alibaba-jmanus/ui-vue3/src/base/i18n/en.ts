@@ -114,6 +114,8 @@ const words: I18nType = {
     parameters: 'Parameters',
     thinking: 'Thinking',
     input: 'Input',
+    total: 'Total',
+    loadFailed: 'Load Failed',
   },
 
   // Configuration related
@@ -528,6 +530,21 @@ const words: I18nType = {
     saveFailed: 'Failed to save agent',
     deleteSuccess: 'Agent deleted successfully',
     deleteFailed: 'Failed to delete agent',
+    // Multi-language support
+    multiLanguage: {
+      title: 'Agent Multi-Language Management',
+      resetAll: 'Reset All Agents',
+      resetAllConfirm: 'Reset All Agents Confirmation',
+      resetAllWarning: 'This operation will delete all existing agent configurations and reload the specified language version. This action cannot be undone!',
+      selectLanguage: 'Select Language',
+      resetSuccess: 'All agents have been reset to the specified language version',
+      resetFailed: 'Failed to reset agents',
+      currentLanguage: 'Current Language',
+      supportedLanguages: 'Supported Languages',
+      resetInProgress: 'Resetting agents...',
+      confirmReset: 'Confirm Reset',
+      cancel: 'Cancel',
+    },
   },
   // Model Configuration
   model: {

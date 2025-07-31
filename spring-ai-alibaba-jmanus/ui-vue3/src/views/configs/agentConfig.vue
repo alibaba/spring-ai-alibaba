@@ -20,6 +20,10 @@
     </template>
 
     <template #actions>
+      <button class="action-btn" @click="showMultiLanguageDialog">
+        <Icon icon="carbon:language" />
+        {{ t('agent.multiLanguage.title') }}
+      </button>
       <button class="action-btn" @click="handleImport">
         <Icon icon="carbon:upload" />
         {{ t('config.agentConfig.import') }}
@@ -311,6 +315,45 @@
       <Icon icon="carbon:checkmark" />
       {{ success }}
     </div>
+
+    <!-- Multi-language Management Modal -->
+    <Modal v-model="showMultiLanguageModal" :title="t('agent.multiLanguage.title')" @confirm="confirmResetAgents">
+      <template #title>
+        {{ t('agent.multiLanguage.title') }}
+      </template>
+
+      <div class="multi-language-content">
+        <div class="stats-section">
+          <div class="stat-item">
+            <span class="stat-label">{{ t('agent.multiLanguage.currentLanguage') }}:</span>
+            <span class="stat-value">{{ getLanguageLabel($i18n.locale) }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">{{ t('common.total') }}:</span>
+            <span class="stat-value">{{ agentStats.total }}</span>
+          </div>
+        </div>
+
+        <div class="language-selection">
+          <label class="selection-label">{{ t('agent.multiLanguage.selectLanguage') }}:</label>
+          <select v-model="selectedLanguage" class="language-select">
+            <option value="">{{ t('agent.multiLanguage.selectLanguage') }}</option>
+            <option v-for="lang in supportedLanguages" :key="lang" :value="lang">
+              {{ getLanguageLabel(lang) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="warning-section">
+          <div class="warning-box">
+            <Icon icon="carbon:warning" class="warning-icon" />
+            <div class="warning-text">
+              <p>{{ t('agent.multiLanguage.resetAllWarning') }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Modal>
   </ConfigPanel>
 </template>
 
@@ -325,6 +368,7 @@ import ToolSelectionModal from '@/components/tool-selection-modal/index.vue'
 import { AgentApiService, type Agent, type Tool } from '@/api/agent-api-service'
 import { type Model, ModelApiService } from '@/api/model-api-service'
 import { usenameSpaceStore } from '@/stores/namespace'
+import { getSupportedLanguages, resetAllAgents, getAgentStats, type AgentStats } from '@/api/agent'
 
 // Internationalization
 const { t } = useI18n()
@@ -345,6 +389,17 @@ const showToolModal = ref(false)
 const showDropdown = ref(false)
 const chooseModel = ref<Model | null>(null)
 const modelOptions = reactive<Model[]>([])
+
+// Multi-language management
+const showMultiLanguageModal = ref(false)
+const supportedLanguages = ref<string[]>([])
+const selectedLanguage = ref<string>('')
+const resetting = ref(false)
+const agentStats = ref<AgentStats>({
+  total: 0,
+  namespace: '',
+  supportedLanguages: []
+})
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
@@ -707,6 +762,70 @@ const handleExport = () => {
     showMessage(t('config.agentConfig.exportSuccess'), 'success')
   } catch (err: any) {
     showMessage(t('config.agentConfig.exportFailed') + ': ' + err.message, 'error')
+  }
+}
+
+// Multi-language management methods
+const getLanguageLabel = (lang: string): string => {
+  const labels: Record<string, string> = {
+    'zh': '中文',
+    'en': 'English'
+  }
+  return labels[lang] || lang
+}
+
+const loadSupportedLanguages = async () => {
+  try {
+    const response = await getSupportedLanguages()
+    supportedLanguages.value = response.languages
+    if (!selectedLanguage.value && response.default) {
+      selectedLanguage.value = response.default
+    }
+  } catch (error) {
+    console.error('Failed to load supported languages:', error)
+    showMessage(t('common.loadFailed'), 'error')
+  }
+}
+
+const loadAgentStats = async () => {
+  try {
+    const response = await getAgentStats()
+    agentStats.value = response
+  } catch (error) {
+    console.error('Failed to load agent stats:', error)
+  }
+}
+
+const showMultiLanguageDialog = async () => {
+  await Promise.all([
+    loadSupportedLanguages(),
+    loadAgentStats()
+  ])
+  showMultiLanguageModal.value = true
+}
+
+const confirmResetAgents = async () => {
+  if (!selectedLanguage.value) {
+    showMessage(t('agent.multiLanguage.selectLanguage'), 'error')
+    return
+  }
+
+  resetting.value = true
+  try {
+    await resetAllAgents({ language: selectedLanguage.value })
+    showMessage(t('agent.multiLanguage.resetSuccess'), 'success')
+    showMultiLanguageModal.value = false
+
+    // Reload agents and stats
+    await Promise.all([
+      loadData(),
+      loadAgentStats()
+    ])
+  } catch (error: any) {
+    console.error('Failed to reset agents:', error)
+    showMessage(error.message || t('agent.multiLanguage.resetFailed'), 'error')
+  } finally {
+    resetting.value = false
   }
 }
 
@@ -1379,6 +1498,120 @@ watch(
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+/* Multi-language management styles */
+.multi-language-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 0;
+}
+
+.stats-section {
+  display: flex;
+  gap: 20px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.language-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.selection-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.language-select {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.language-select:focus {
+  border-color: #007acc;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.language-select option {
+  background: #2d2d2d;
+  color: #ffffff;
+}
+
+.warning-section {
+  margin: 10px 0;
+}
+
+.warning-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+}
+
+.warning-icon {
+  color: #ffc107;
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.warning-text {
+  flex: 1;
+}
+
+.warning-text p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

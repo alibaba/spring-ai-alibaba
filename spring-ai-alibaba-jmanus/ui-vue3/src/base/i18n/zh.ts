@@ -115,6 +115,8 @@ const words: I18nType = {
     thinking: '思考',
     input: '输入',
     actions: '操作',
+    total: '总计',
+    loadFailed: '加载失败',
   },
 
   // 配置相关
@@ -527,6 +529,21 @@ const words: I18nType = {
     saveFailed: 'Agent保存失败',
     deleteSuccess: 'Agent删除成功',
     deleteFailed: 'Agent删除失败',
+    // 多语言支持
+    multiLanguage: {
+      title: 'Agent多语言管理',
+      resetAll: '重置所有Agent',
+      resetAllConfirm: '重置所有Agent确认',
+      resetAllWarning: '此操作将删除所有现有Agent配置并重新加载指定语言版本。此操作不可恢复！',
+      selectLanguage: '选择语言',
+      resetSuccess: '所有Agent已重置为指定语言版本',
+      resetFailed: '重置Agent失败',
+      currentLanguage: '当前语言',
+      supportedLanguages: '支持的语言',
+      resetInProgress: '正在重置Agent...',
+      confirmReset: '确认重置',
+      cancel: '取消',
+    },
   },
 
   // Model 配置
