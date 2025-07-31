@@ -106,7 +106,7 @@ class DocumentRetrievalAdvisorTests {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("finishReason", "stop");
 
-		// 创建 Generation 和 ChatResponse
+		// Create Generation and ChatResponse
 		Generation generation = new Generation(new AssistantMessage(TEST_DOCUMENT_TEXT));
 		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 		testResponse = ChatClientResponse.builder().chatResponse(chatResponse).build();
@@ -139,17 +139,17 @@ class DocumentRetrievalAdvisorTests {
 	 */
 	@Test
 	void testAroundCallWithDocuments() {
-		// 准备测试数据
+		// Prepare test data
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("id", "test-id");
 		metadata.put("model", "test-model");
 		metadata.put("finishReason", "stop");
 
-		// 创建 Generation 和 ChatResponse
+		// Create Generation and ChatResponse
 		Generation generation = new Generation(new AssistantMessage(TEST_DOCUMENT_TEXT));
 		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 
-		// 创建包含检索文档的 adviseContext
+		// Create adviseContext with retrieved documents
 		Map<String, Object> adviseContext = new HashMap<>();
 		adviseContext.put(DocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, List.of(testDocument));
 		ChatClientResponse advisedResponse = ChatClientResponse.builder()
@@ -207,17 +207,17 @@ class DocumentRetrievalAdvisorTests {
 	 */
 	@Test
 	void testAroundStream() {
-		// 准备测试数据
+		// Prepare test data
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("id", "test-id");
 		metadata.put("model", "test-model");
 		metadata.put("finishReason", "stop");
 
-		// 创建 Generation 和 ChatResponse
+		// Create Generation and ChatResponse
 		Generation generation = new Generation(new AssistantMessage(TEST_DOCUMENT_TEXT));
 		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 
-		// 创建包含检索文档的 adviseContext
+		// Create adviseContext with retrieved documents
 		Map<String, Object> adviseContext = new HashMap<>();
 		adviseContext.put(DocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, List.of(testDocument));
 		ChatClientResponse advisedResponse = ChatClientResponse.builder()
@@ -251,21 +251,21 @@ class DocumentRetrievalAdvisorTests {
 	 */
 	@Test
 	void testMetadataHandling() {
-		// 准备测试数据
+		// Prepare test data
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("id", "test-id");
 		metadata.put("model", "test-model");
 		metadata.put("custom-key", "custom-value");
 		metadata.put("finishReason", "stop");
 
-		// 创建带有元数据的 Generation 和 ChatResponse
+		// Create Generation and ChatResponse with metadata
 		Generation generation = new Generation(new AssistantMessage(TEST_DOCUMENT_TEXT));
 		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 
-		// 创建包含检索文档的 adviseContext
+		// Create adviseContext with retrieved documents
 		Map<String, Object> adviseContext = new HashMap<>();
 		adviseContext.put(DocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, List.of(testDocument));
-		adviseContext.putAll(metadata); // 将元数据添加到 adviseContext 中
+		adviseContext.putAll(metadata); // Add metadata to adviseContext
 		ChatClientResponse advisedResponse = ChatClientResponse.builder()
 			.chatResponse(chatResponse)
 			.context(adviseContext)
