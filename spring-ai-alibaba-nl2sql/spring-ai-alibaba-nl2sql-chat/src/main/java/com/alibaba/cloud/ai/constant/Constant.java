@@ -63,8 +63,6 @@ public class Constant {
 
 	public static final String SQL_EXECUTE_NODE_EXCEPTION_OUTPUT = "SQL_EXECUTE_NODE_EXCEPTION_OUTPUT";
 
-	public static final String PYTHON_EXECUTE_NODE_OUTPUT = "PYTHON_EXECUTE_NODE_OUTPUT";
-
 	// Plan当前需要执行的步骤编号
 	public static final String PLAN_CURRENT_STEP = "PLAN_CURRENT_STEP";
 
@@ -99,12 +97,30 @@ public class Constant {
 
 	public static final String SQL_EXECUTE_NODE = "SQL_EXECUTE_NODE";
 
-	public static final String PYTHON_EXECUTE_NODE = "PYTHON_EXECUTE_NODE";
-
 	public static final String SEMANTIC_CONSISTENCY_NODE = "SEMANTIC_CONSISTENCY_NODE";
 
 	public static final String SMALL_TALK_REJECT = "闲聊拒识";
 
 	public static final String INTENT_UNCLEAR = "意图模糊需要澄清";
+
+	// 有关Python代码执行的键
+	public static final String PYTHON_GENERATE_NODE = "PYTHON_GENERATE_NODE";
+
+	public static final String PYTHON_EXECUTE_NODE = "PYTHON_EXECUTE_NODE";
+
+	public static final String PYTHON_ANALYZE_NODE = "PYTHON_ANALYZE_NODE";
+
+	public static final String SQL_RESULT_LIST_MEMORY = "SQL_RESULT_LIST_MEMORY";
+
+	public static final String PYTHON_IS_SUCCESS = "PYTHON_IS_SUCCESS";
+
+	public static final String PYTHON_TRIES_COUNT = "PYTHON_TRIES_COUNT";
+
+	// 代码执行成功则输出代码运行结果，执行失败则输出错误信息
+	public static final String PYTHON_EXECUTE_NODE_OUTPUT = "PYTHON_EXECUTE_NODE_OUTPUT";
+
+	public static final String PYTHON_GENERATE_NODE_OUTPUT = "PYTHON_GENERATE_NODE_OUTPUT";
+
+	public static final String PYTHON_ANALYSIS_NODE_OUTPUT = "PYTHON_ANALYSIS_NODE_OUTPUT";
 
 }

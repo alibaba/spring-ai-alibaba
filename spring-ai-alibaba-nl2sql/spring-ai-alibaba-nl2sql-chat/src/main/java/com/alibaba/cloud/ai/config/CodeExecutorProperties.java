@@ -13,31 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.config;
 
+import com.alibaba.cloud.ai.service.code.CodePoolExecutorEnum;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author vlsmb
  * @since 2025/7/12
  */
-@ConfigurationProperties(prefix = ContainerProperties.CONFIG_PREFIX)
-public class ContainerProperties {
+@ConfigurationProperties(prefix = CodeExecutorProperties.CONFIG_PREFIX)
+public class CodeExecutorProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.alibaba.nl2sql.container";
-
-	public enum ContainerImpl {
-
-		DOCKER, CONTAINERD, KATA;
-
-	}
+	public static final String CONFIG_PREFIX = "spring.ai.alibaba.nl2sql.code-executor";
 
 	Boolean enabled = true;
 
 	/**
-	 * 指定容器池的实现类
+	 * 指定代码容器池运行服务的实现类
 	 */
-	ContainerImpl containerImpl = ContainerImpl.DOCKER;
+	CodePoolExecutorEnum codePoolExecutor = CodePoolExecutorEnum.DOCKER;
 
 	/**
 	 * 服务Host，为null则使用默认地址
@@ -47,7 +43,7 @@ public class ContainerProperties {
 	/**
 	 * 镜像名称，可以自定义带有常用第三方依赖的镜像来替换此配置
 	 */
-	String imageName = "python:3-slim";
+	String imageName = "continuumio/anaconda3:latest";
 
 	/**
 	 * 容器名称前缀
@@ -127,12 +123,12 @@ public class ContainerProperties {
 		this.enabled = enabled;
 	}
 
-	public ContainerImpl getContainerImpl() {
-		return containerImpl;
+	public CodePoolExecutorEnum getCodePoolExecutor() {
+		return codePoolExecutor;
 	}
 
-	public void setContainerImpl(ContainerImpl containerImpl) {
-		this.containerImpl = containerImpl;
+	public void setCodePoolExecutor(CodePoolExecutorEnum codePoolExecutor) {
+		this.codePoolExecutor = codePoolExecutor;
 	}
 
 	public String getHost() {

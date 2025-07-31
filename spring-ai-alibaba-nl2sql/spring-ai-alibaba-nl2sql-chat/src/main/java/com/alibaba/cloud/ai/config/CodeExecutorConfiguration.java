@@ -16,8 +16,9 @@
 
 package com.alibaba.cloud.ai.config;
 
-import com.alibaba.cloud.ai.service.executor.ContainerPoolExecutor;
-import com.alibaba.cloud.ai.tool.PythonExecutorTool;
+import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
+import com.alibaba.cloud.ai.service.code.CodePoolExecutorServiceFactory;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -28,19 +29,15 @@ import org.springframework.context.annotation.Configuration;
  * @since 2025/7/14
  */
 @Configuration
-@EnableConfigurationProperties(ContainerProperties.class)
-@ConditionalOnProperty(prefix = ContainerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+@EnableConfigurationProperties(CodeExecutorProperties.class)
+@ConditionalOnProperty(prefix = CodeExecutorProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-public class ContainerConfiguration {
+public class CodeExecutorConfiguration {
 
 	@Bean
-	public ContainerPoolExecutor containerPoolExecutor(ContainerProperties properties) {
-		return ContainerPoolExecutor.getInstance(properties);
-	}
-
-	@Bean
-	public PythonExecutorTool pythonExecutorTool(ContainerPoolExecutor executor) {
-		return new PythonExecutorTool(executor);
+	public CodePoolExecutorService containerPoolExecutor(CodeExecutorProperties properties,
+			ChatClient.Builder chatClientBuilder) {
+		return CodePoolExecutorServiceFactory.newInstance(properties, chatClientBuilder);
 	}
 
 }
