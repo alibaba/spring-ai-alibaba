@@ -111,7 +111,7 @@ const route = useRoute()
 const router = useRouter()
 const taskStore = useTaskStore()
 const { t } = useI18n()
-const { message,showMessage } = useMessage()
+const { message } = useMessage()
 
 const prompt = ref<string>('')
 const inputOnlyContent = ref<string>('')

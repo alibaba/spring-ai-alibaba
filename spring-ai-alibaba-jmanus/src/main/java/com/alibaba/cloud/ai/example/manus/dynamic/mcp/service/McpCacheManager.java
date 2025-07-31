@@ -182,7 +182,7 @@ public class McpCacheManager {
 	private volatile int lastConfigHash = 0;
 
 	// 缓存更新间隔（10分钟）
-	private static final long CACHE_UPDATE_INTERVAL_MINUTES = 1;
+	private static final long CACHE_UPDATE_INTERVAL_MINUTES = 10;
 
 	public McpCacheManager(McpConnectionFactory connectionFactory, McpConfigRepository mcpConfigRepository,
 			McpProperties mcpProperties, ManusProperties manusProperties) {
