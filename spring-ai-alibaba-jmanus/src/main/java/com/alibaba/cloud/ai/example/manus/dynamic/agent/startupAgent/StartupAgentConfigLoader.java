@@ -93,7 +93,26 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 	 * @return agent configuration
 	 */
 	public AgentConfig loadAgentConfig(String agentName) {
-		String configPath = CONFIG_BASE_PATH + agentName.toLowerCase() + "/agent-config.yml";
+		return loadAgentConfig(agentName, null);
+	}
+
+	/**
+	 * Load agent configuration information with language support
+	 * @param agentName agent name
+	 * @param language language code (optional, if null uses default path)
+	 * @return agent configuration
+	 */
+	public AgentConfig loadAgentConfig(String agentName, String language) {
+		String configPath;
+		if (language != null && !language.trim().isEmpty()) {
+			// Multi-language path: prompts/startup-agents/zh/agent_name/agent-config.yml
+			configPath = CONFIG_BASE_PATH + language + "/" + agentName.toLowerCase() + "/agent-config.yml";
+		}
+		else {
+			// Default path: prompts/startup-agents/agent_name/agent-config.yml
+			configPath = CONFIG_BASE_PATH + agentName.toLowerCase() + "/agent-config.yml";
+		}
+
 		String configContent = loadConfigContent(configPath);
 
 		if (configContent.isEmpty()) {

@@ -267,7 +267,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { LlmCheckService } from '@/utils/llm-check'
-import { changeLanguage, LOCAL_STORAGE_LOCALE } from '@/base/i18n'
+import { changeLanguageWithAgentReset, LOCAL_STORAGE_LOCALE } from '@/base/i18n'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -308,8 +308,8 @@ const goToNextStep = async () => {
     try {
       loading.value = true
 
-      // 使用统一的changeLanguage函数来切换语言，这会同时更新前端和后端
-      await changeLanguage(selectedLanguage.value)
+      // 使用changeLanguageWithAgentReset函数来切换语言并重置agents
+      await changeLanguageWithAgentReset(selectedLanguage.value)
 
       // Move to next step
       currentStep.value = 2
