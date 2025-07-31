@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.example.manus.event;
 /**
  * @author dahua
  * @time 2025/7/30
- * @desc jmanus计划执行异常事件
+ * @desc jmanus plan execution exception event
  */
 public class PlanExceptionEvent implements JmanusEvent {
 
