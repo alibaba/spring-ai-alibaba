@@ -16,9 +16,7 @@
 
 package com.alibaba.cloud.ai.example.manus.config.startUp;
 
-import java.awt.Desktop;
-import java.net.URI;
-
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,12 +25,15 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import java.awt.*;
+import java.net.URI;
 
 @Component
 public class AppStartupListener implements ApplicationListener<ApplicationReadyEvent> {
 
 	private static final Logger logger = LoggerFactory.getLogger(AppStartupListener.class);
+
+	public static final String INIT_WEB_PATH = "/ui/index.html";
 
 	@Value("${server.port:18080}")
 	// Using Spring's original here to keep consistent with configuration file.
@@ -49,7 +50,7 @@ public class AppStartupListener implements ApplicationListener<ApplicationReadyE
 			return;
 		}
 
-		String url = "http://localhost:" + serverPort + "/ui/index.html";
+		String url = "http://localhost:" + serverPort + INIT_WEB_PATH;
 		logger.info("Application started, attempting to open browser to access: {}", url);
 
 		// First try using Desktop API
