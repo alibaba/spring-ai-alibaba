@@ -235,7 +235,7 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions
 			.add(new DataSplitTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager, objectMapper));
 		toolDefinitions.add(new MapOutputTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
-				terminateColumns, objectMapper));
+				objectMapper));
 		toolDefinitions.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager,
 				unifiedDirectoryManager, terminateColumns));
 		toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));

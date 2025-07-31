@@ -108,7 +108,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 	private static final String TOOL_NAME = "map_output_tool";
 
-	private static String getToolDescription(List<String> terminateColumns) {
+	private static String getToolDescription() {
 		String baseDescription = """
 				Map output recording tool for MapReduce workflow.
 				接受 Map 阶段处理完成后的内容，自动生成文件名并创建输出文件。
@@ -122,37 +122,15 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 				- data: 当 has_value 为 true 时必须提供数据
 				""";
 
-		if (terminateColumns != null && !terminateColumns.isEmpty()) {
-			String columnsFormat = String.join(", ", terminateColumns);
-			baseDescription += String.format("""
-
-					**数据格式要求（当 has_value=true 时）：**
-					您必须按照以下固定格式提供数据，每行数据包含：[%s]
-
-					示例格式：
-					[
-					  ["%s示例1", "%s示例1"],
-					  ["%s示例2", "%s示例2"]
-					]
-					""", columnsFormat, terminateColumns.get(0),
-					terminateColumns.size() > 1 ? terminateColumns.get(1) : "数据", terminateColumns.get(0),
-					terminateColumns.size() > 1 ? terminateColumns.get(1) : "数据");
-		}
-
 		return baseDescription;
 	}
 
 	/**
 	 * Generate parameters JSON for MapOutputTool with predefined columns format
-	 * @param terminateColumns the columns specification (e.g., "url,说明")
 	 * @return JSON string for parameters schema
 	 */
-	private static String generateParametersJson(List<String> terminateColumns) {
-		// Generate columns description from terminateColumns
+	private static String generateParametersJson() {
 		String columnsDesc = "数据行列表";
-		if (terminateColumns != null && !terminateColumns.isEmpty()) {
-			columnsDesc = "数据行列表，每行按照以下格式：[" + String.join(", ", terminateColumns) + "]";
-		}
 
 		return """
 				{
@@ -186,22 +164,19 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	// 共享状态管理器，用于管理多个Agent实例间的共享状态
 	private MapReduceSharedStateManager sharedStateManager;
 
-	// Class-level terminate columns configuration - takes precedence over input
-	// parameters
-	private List<String> terminateColumns;
+	
 
 	// Track if map output recording has completed, allowing termination
 	private volatile boolean mapOutputRecorded = false;
 
 	private final ObjectMapper objectMapper;
 
-	// Main constructor with List<String> terminateColumns
+	// Main constructor
 	public MapOutputTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
-			UnifiedDirectoryManager unifiedDirectoryManager, List<String> terminateColumns, ObjectMapper objectMapper) {
+			UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper) {
 		this.currentPlanId = planId;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
-		this.terminateColumns = terminateColumns;
 		this.objectMapper = objectMapper;
 	}
 
@@ -229,12 +204,12 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 	@Override
 	public String getDescription() {
-		return getToolDescription(terminateColumns);
+		return getToolDescription();
 	}
 
 	@Override
 	public String getParameters() {
-		return generateParametersJson(terminateColumns);
+		return generateParametersJson();
 	}
 
 	@Override
@@ -248,13 +223,8 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	}
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
-		// Use default terminate columns for static tool definition
-		return getToolDefinition(null);
-	}
-
-	public static OpenAiApi.FunctionTool getToolDefinition(List<String> terminateColumns) {
-		String parameters = generateParametersJson(terminateColumns);
-		String description = getToolDescription(terminateColumns);
+		String parameters = generateParametersJson();
+		String description = getToolDescription();
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, TOOL_NAME,
 				parameters);
 		return new OpenAiApi.FunctionTool(function);
@@ -276,11 +246,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 				return new ToolExecuteResult("Error: task_id parameter is required");
 			}
 
-			// Use class-level terminateColumns
-			List<String> effectiveTerminateColumns = this.terminateColumns;
-			if (effectiveTerminateColumns == null || effectiveTerminateColumns.isEmpty()) {
-				return new ToolExecuteResult("Error: terminate columns not configured for this tool");
-			}
+			
 
 			// Check hasValue logic
 			if (hasValue) {
@@ -289,7 +255,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 					return new ToolExecuteResult("Error: data parameter is required when has_value is true");
 				}
 				// Convert structured data to content string
-				String content = formatStructuredData(effectiveTerminateColumns, data);
+				String content = formatStructuredData(data);
 				return recordMapTaskOutput(content, taskId);
 			}
 			else {
@@ -306,13 +272,11 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 	/**
 	 * Format structured data similar to TerminateTool
-	 * @param terminateColumns the column names
 	 * @param data the data rows
 	 * @return formatted string representation of the structured data
 	 */
-	private String formatStructuredData(List<String> terminateColumns, List<List<Object>> data) {
+	private String formatStructuredData(List<List<Object>> data) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Columns: ").append(terminateColumns).append("\n");
 		sb.append("Data:\n");
 		for (List<Object> row : data) {
 			sb.append("  ").append(row).append("\n");
@@ -455,10 +419,8 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	 * @return terminate columns as comma-separated string
 	 */
 	public String getTerminateColumns() {
-		if (this.terminateColumns == null || this.terminateColumns.isEmpty()) {
-			return null;
-		}
-		return String.join(",", this.terminateColumns);
+		// Since terminateColumns is removed, always return null
+		return null;
 	}
 
 	/**
@@ -466,7 +428,8 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	 * @return terminate columns as List<String>
 	 */
 	public List<String> getTerminateColumnsList() {
-		return this.terminateColumns == null ? null : new ArrayList<>(this.terminateColumns);
+		// Since terminateColumns is removed, always return null
+		return null;
 	}
 
 	/**
