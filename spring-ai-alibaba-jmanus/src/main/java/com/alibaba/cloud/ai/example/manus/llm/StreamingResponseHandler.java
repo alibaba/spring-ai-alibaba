@@ -192,7 +192,6 @@ public class StreamingResponseHandler {
 				.usage(usage)
 				.promptMetadata(metadataPromptMetadataRef.get())
 				.build();
-
 			finalChatResponseRef.set(new ChatResponse(
 					List.of(new Generation(new AssistantMessage(messageTextContentRef.get().toString(),
 							messageMetadataMapRef.get(), messageToolCallRef.get()), generationMetadataRef.get())),

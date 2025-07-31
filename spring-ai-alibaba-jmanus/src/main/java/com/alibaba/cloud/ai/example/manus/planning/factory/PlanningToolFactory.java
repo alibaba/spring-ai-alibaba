@@ -22,7 +22,7 @@
 // import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 
 // /**
-// * 计划工具工厂类
+// * Planning tool factory class
 // */
 // public class PlanningToolFactory {
 
@@ -32,9 +32,9 @@
 // MapReducePlanningTool();
 
 // /**
-// * 根据计划类型获取相应的计划工具
-// * @param planType 计划类型
-// * @return 对应的计划工具
+// * Get corresponding planning tool based on plan type
+// * @param planType Plan type
+// * @return Corresponding planning tool
 // */
 // public static Object getPlanningTool(PlanType planType) {
 // return switch (planType) {
@@ -44,9 +44,9 @@
 // }
 
 // /**
-// * 根据计划类型获取相应的功能工具定义
-// * @param planType 计划类型
-// * @return 对应的功能工具定义
+// * Get corresponding function tool definition based on plan type
+// * @param planType Plan type
+// * @return Corresponding function tool definition
 // */
 // public static FunctionTool getFunctionToolDefinition(PlanType planType) {
 // return switch (planType) {
@@ -56,9 +56,9 @@
 // }
 
 // /**
-// * 根据计划类型获取相应的功能工具回调
-// * @param planType 计划类型
-// * @return 对应的功能工具回调
+// * Get corresponding function tool callback based on plan type
+// * @param planType Plan type
+// * @return Corresponding function tool callback
 // */
 // @SuppressWarnings("rawtypes")
 // public static FunctionToolCallback getFunctionToolCallback(PlanType planType) {
@@ -69,33 +69,33 @@
 // }
 
 // /**
-// * 获取简单计划工具实例
-// * @return 简单计划工具
+// * Get simple plan tool instance
+// * @return Simple plan tool
 // */
 // public static PlanningTool getSimplePlanningTool() {
 // return simplePlanningTool;
 // }
 
 // /**
-// * 获取MapReduce计划工具实例
-// * @return MapReduce计划工具
+// * Get MapReduce plan tool instance
+// * @return MapReduce plan tool
 // */
 // public static MapReducePlanningTool getMapReducePlanningTool() {
 // return mapReducePlanningTool;
 // }
 
 // /**
-// * 获取所有支持的计划类型
-// * @return 计划类型数组
+// * Get all supported plan types
+// * @return Plan type array
 // */
 // public static PlanType[] getSupportedPlanTypes() {
 // return PlanType.values();
 // }
 
 // /**
-// * 检查指定类型是否有活跃的计划
-// * @param planType 计划类型
-// * @return 如果有活跃计划则返回true
+// * Check if specified type has active plans
+// * @param planType Plan type
+// * @return Return true if there are active plans
 // */
 // public static boolean hasActivePlan(PlanType planType) {
 // return switch (planType) {
@@ -105,9 +105,9 @@
 // }
 
 // /**
-// * 获取计划类型的详细信息字符串
-// * @param planType 计划类型
-// * @return 详细信息字符串
+// * Get detailed information string for plan type
+// * @param planType Plan type
+// * @return Detailed information string
 // */
 // public static String getPlanTypeInfo(PlanType planType) {
 // return planType.getDisplayName() + ": " + planType.getDescription();

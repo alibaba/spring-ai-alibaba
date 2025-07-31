@@ -23,36 +23,36 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 
 /**
- * 规划工厂接口，提供规划相关的对象创建功能
+ * Planning factory interface, providing planning-related object creation functionality
  */
 public interface IPlanningFactory {
 
 	/**
-	 * 创建规划协调器
-	 * @param planId 计划ID
-	 * @return 规划协调器
+	 * Create planning coordinator
+	 * @param planId Plan ID
+	 * @return Planning coordinator
 	 */
 	PlanningCoordinator createPlanningCoordinator(String planId);
 
 	/**
-	 * 创建工具回调映射
-	 * @param planId 计划ID
-	 * @param rootPlanId 根计划ID
-	 * @param terminateColumns 终止列
-	 * @return 工具回调映射
+	 * Create tool callback mapping
+	 * @param planId Plan ID
+	 * @param rootPlanId Root plan ID
+	 * @param terminateColumns Terminate columns
+	 * @return Tool callback mapping
 	 */
 	Map<String, PlanningFactory.ToolCallBackContext> toolCallbackMap(String planId, String rootPlanId,
 			java.util.List<String> terminateColumns);
 
 	/**
-	 * 创建RestClient
-	 * @return RestClient构建器
+	 * Create RestClient
+	 * @return RestClient builder
 	 */
 	RestClient.Builder createRestClient();
 
 	/**
-	 * 创建空的工具回调提供者
-	 * @return 工具回调提供者函数式接口
+	 * Create empty tool callback provider
+	 * @return Tool callback provider functional interface
 	 */
 	ToolCallbackProvider emptyToolCallbackProvider();
 

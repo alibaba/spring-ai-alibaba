@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.model.exception;
 
 /**
- * 认证异常
+ * Authentication exception
  */
 public class AuthenticationException extends RuntimeException {
 

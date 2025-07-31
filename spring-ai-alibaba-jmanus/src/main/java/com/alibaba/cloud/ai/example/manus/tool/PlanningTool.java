@@ -188,12 +188,12 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 		List<String> steps = input.getSteps();
 		boolean directResponse = input.isDirectResponse();
 
-		// 支持directResponse模式
+		// Support directResponse mode
 		if (directResponse) {
 			log.info("Direct response mode enabled for planId: {}", planId);
 			ExecutionPlan plan = new ExecutionPlan(planId, planId, title);
 			plan.setDirectResponse(true);
-			plan.setUserRequest(title); // 这里title即为用户请求内容
+			plan.setUserRequest(title); // Here title is the user request content
 			this.currentPlan = plan;
 			return new ToolExecuteResult("Direct response mode: plan created for " + planId);
 		}

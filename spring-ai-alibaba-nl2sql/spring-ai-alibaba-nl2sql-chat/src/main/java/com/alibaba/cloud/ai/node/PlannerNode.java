@@ -32,9 +32,11 @@ import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_ERROR;
+import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_MODEL;
 import static com.alibaba.cloud.ai.constant.Constant.TABLE_RELATION_OUTPUT;
 
 /**
@@ -54,6 +56,10 @@ public class PlannerNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("Entering {} node", this.getClass().getSimpleName());
 		String input = (String) state.value(INPUT_KEY).orElseThrow();
+		// load prompt template
+		String businessKnowledgePrompt = (String) state.value(BUSINESS_KNOWLEDGE).orElse("");
+		String semanticModelPrompt = (String) state.value(SEMANTIC_MODEL).orElse("");
+
 		SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
 		String schemaStr = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
 
@@ -71,7 +77,8 @@ public class PlannerNode implements NodeAction {
 			userPrompt = input;
 		}
 
-		Map<String, Object> params = Map.of("user_question", userPrompt, "schema", schemaStr);
+		Map<String, Object> params = Map.of("user_question", userPrompt, "schema", schemaStr, "business_knowledge",
+				businessKnowledgePrompt, "semantic_model", semanticModelPrompt);
 		String plannerPrompt = PromptConstant.getPlannerPromptTemplate().render(params);
 		Flux<ChatResponse> chatResponseFlux = chatClient.prompt().user(plannerPrompt).stream().chatResponse();
 

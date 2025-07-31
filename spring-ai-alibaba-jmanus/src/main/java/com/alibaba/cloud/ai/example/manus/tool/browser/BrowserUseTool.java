@@ -284,22 +284,22 @@ public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 	private final String name = "browser_use";
 
 	private final String description = """
-			与网页浏览器交互，执行各种操作，如导航、元素交互、内容提取和标签页管理。搜索类优先考虑此工具。
-			支持的操作包括：
-			- 'navigate'：访问特定URL
-			- 'click'：按索引点击元素
-			- 'input_text'：在元素中输入文本
-			- 'key_enter'：按回车键
-			- 'screenshot'：捕获屏幕截图
-			- 'get_html'：获取当前页面的HTML内容
-			- 'get_text'：获取当前页面文本内容
-			- 'execute_js'：执行JavaScript代码
-			- 'switch_tab'：切换到特定标签页
-			- 'new_tab'：打开新标签页
-			- 'close_tab'：关闭当前标签页
-			- 'refresh'：刷新当前页面
-			- 'get_element_position'：通过关键词获取元素的位置坐标(x,y)
-			- 'move_to_and_click'：移动到指定的绝对位置(x,y)并点击
+			Interact with web browser to perform various operations such as navigation, element interaction, content extraction and tab management. Prioritize this tool for search-related tasks.
+			Supported operations include:
+			- 'navigate': Visit specific URL
+			- 'click': Click element by index
+			- 'input_text': Input text in element
+			- 'key_enter': Press Enter key
+			- 'screenshot': Capture screenshot
+			- 'get_html': Get HTML content of current page
+			- 'get_text': Get text content of current page
+			- 'execute_js': Execute JavaScript code
+			- 'switch_tab': Switch to specific tab
+			- 'new_tab': Open new tab
+			- 'close_tab': Close current tab
+			- 'refresh': Refresh current page
+			- 'get_element_position': Get element position coordinates (x,y) by keyword
+			- 'move_to_and_click': Move to specified absolute position (x,y) and click
 			""";
 
 	public OpenAiApi.FunctionTool getToolDefinition() {

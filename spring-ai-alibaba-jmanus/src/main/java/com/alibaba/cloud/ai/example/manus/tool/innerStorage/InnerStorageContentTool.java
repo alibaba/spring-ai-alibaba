@@ -31,14 +31,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * 内部存储内容获取工具，专门用于智能内容提取和结构化输出 支持AI智能分析和数据提取功能
+ * Internal storage content retrieval tool specialized for intelligent content extraction
+ * and structured output, supporting AI intelligent analysis and data extraction functions
  */
 public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageContentTool.InnerStorageContentInput> {
 
 	private static final Logger log = LoggerFactory.getLogger(InnerStorageContentTool.class);
 
 	/**
-	 * 内部存储内容获取输入类
+	 * Internal storage content retrieval input class
 	 */
 	public static class InnerStorageContentInput {
 
@@ -138,12 +139,12 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 	private static final String TOOL_NAME = "inner_storage_content_tool";
 
 	private static final String TOOL_DESCRIPTION = """
-			内部存储内容获取工具，专门用于智能内容提取和结构化输出。
-			智能内容提取模式：根据文件名获取详细内容，**必须提供** query_key 和 columns 参数进行智能提取和结构化输出
+			Internal storage content retrieval tool specialized for intelligent content extraction and structured output.
+			Intelligent content extraction mode: Get detailed content based on file name, **must provide** query_key and columns parameters for intelligent extraction and structured output
 
-			支持两种操作模式：
-			1. get_content: 从单个文件获取内容（精确文件名匹配或相对路径）
-			2. get_folder_content: 从指定文件夹下的所有文件获取内容
+			Supports two operation modes:
+			1. get_content: Get content from single file (exact filename match or relative path)
+			2. get_folder_content: Get content from all files in specified folder
 			""";
 
 	private static final String PARAMETERS = """
@@ -155,22 +156,22 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 							"action": {
 								"type": "string",
 								"const": "get_content",
-								"description": "从单个文件获取内容"
+								"description": "Get content from single file"
 							},
 							"file_name": {
 								"type": "string",
-								"description": "文件名（带扩展名）或相对路径，支持精确匹配"
+								"description": "Filename (with extension) or relative path, supports exact matching"
 							},
 							"query_key": {
 								"type": "string",
-								"description": "相关问题或希望提取的内容关键词，必须提供"
+								"description": "Related questions or content keywords to extract, must be provided"
 							},
 							"columns": {
 								"type": "array",
 								"items": {
 									"type": "string"
 								},
-								"description": "返回结果的列名，用于结构化输出，必须提供。返回的结果可以是一个列表"
+								"description": "Column names for return results, used for structured output, must be provided. The returned result can be a list"
 							}
 						},
 						"required": ["action", "file_name", "query_key", "columns"],
@@ -182,22 +183,22 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 							"action": {
 								"type": "string",
 								"const": "get_folder_content",
-								"description": "从指定文件夹下的所有文件获取内容"
+								"description": "Get content from all files in specified folder"
 							},
 							"folder_name": {
 								"type": "string",
-								"description": "文件夹名称或相对路径"
+								"description": "Folder name or relative path"
 							},
 							"query_key": {
 								"type": "string",
-								"description": "相关问题或希望提取的内容关键词，必须提供"
+								"description": "Related questions or content keywords to extract, must be provided"
 							},
 							"columns": {
 								"type": "array",
 								"items": {
 									"type": "string"
 								},
-								"description": "返回结果的列名，用于结构化输出，必须提供。返回的结果可以是一个列表"
+								"description": "Column names for return results, used for structured output, must be provided. The returned result can be a list"
 							}
 						},
 						"required": ["action", "folder_name", "query_key", "columns"],
@@ -239,7 +240,7 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 	}
 
 	/**
-	 * 执行内部存储内容获取操作
+	 * Execute internal storage content retrieval operation
 	 */
 	@Override
 	public ToolExecuteResult run(InnerStorageContentInput input) {
@@ -248,40 +249,44 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 		try {
 			String action = input.getAction();
 			if (action == null) {
-				return new ToolExecuteResult("错误：action参数是必需的");
+				return new ToolExecuteResult("Error: action parameter is required");
 			}
 
 			return switch (action) {
 				case "get_content" -> getStoredContent(input.getFileName(), input.getQueryKey(), input.getColumns());
 				case "get_folder_content" ->
 					getFolderContent(input.getFolderName(), input.getQueryKey(), input.getColumns());
-				default -> new ToolExecuteResult("错误：不支持的操作类型 '" + action + "'。支持的操作：get_content, get_folder_content");
+				default -> new ToolExecuteResult("Error: Unsupported operation type '" + action
+						+ "'. Supported operations: get_content, get_folder_content");
 			};
 		}
 		catch (Exception e) {
-			log.error("InnerStorageContentTool执行失败", e);
-			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
+			log.error("InnerStorageContentTool execution failed", e);
+			return new ToolExecuteResult("Tool execution failed: " + e.getMessage());
 		}
 	}
 
 	/**
-	 * 根据文件名获取存储的内容，支持AI智能提取和结构化输出
+	 * Get stored content by filename, supports AI intelligent extraction and structured
+	 * output
 	 */
 	private ToolExecuteResult getStoredContent(String fileName, String queryKey, List<String> columns) {
 		if (fileName == null || fileName.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：file_name参数是必需的");
+			return new ToolExecuteResult("Error: file_name parameter is required");
 		}
 		if (queryKey == null || queryKey.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：query_key参数是必需的，用于指定要提取的内容关键词");
+			return new ToolExecuteResult(
+					"Error: query_key parameter is required to specify content keywords to extract");
 		}
 		if (columns == null || columns.isEmpty()) {
-			return new ToolExecuteResult("错误：columns参数是必需的，用于指定返回结果的结构化列名");
+			return new ToolExecuteResult(
+					"Error: columns parameter is required to specify structured column names for return results");
 		}
 		try {
 			Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
 			Path targetFile = null;
 
-			// 首先尝试精确的相对路径匹配
+			// First try exact relative path matching
 			if (fileName.contains("/")) {
 				Path exactPath = planDir.resolve(fileName);
 				if (Files.exists(exactPath) && Files.isRegularFile(exactPath)) {
@@ -289,7 +294,7 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 				}
 			}
 			else {
-				// 如果没有路径分隔符，则在根目录下精确匹配文件名
+				// If no path separator, exact match filename in root directory
 				List<Path> files = Files.list(planDir).filter(Files::isRegularFile).toList();
 				for (Path filePath : files) {
 					if (filePath.getFileName().toString().equals(fileName)) {
@@ -300,13 +305,15 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			}
 
 			if (targetFile == null) {
-				return new ToolExecuteResult("未找到文件 '" + fileName + "'。请提供精确的文件名或相对路径。");
+				return new ToolExecuteResult(
+						"File '" + fileName + "' not found. Please provide exact filename or relative path.");
 			}
 
 			String fileContent = Files.readString(targetFile);
 			String actualFileName = planDir.relativize(targetFile).toString();
 
-			log.info("委托给 SummaryWorkflow 处理文件内容提取：文件={}, 查询关键词={}", actualFileName, queryKey);
+			log.info("Delegating to SummaryWorkflow for file content extraction: file={}, query keywords={}",
+					actualFileName, queryKey);
 			Long thinkActRecordId = getCurrentThinkActRecordId();
 			String terminateColumnsString = String.join(",", columns);
 			String result = summaryWorkflow
@@ -316,57 +323,61 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			return new ToolExecuteResult(result);
 		}
 		catch (IOException e) {
-			log.error("获取存储内容失败", e);
-			return new ToolExecuteResult("获取内容失败: " + e.getMessage());
+			log.error("Failed to get storage content", e);
+			return new ToolExecuteResult("Failed to get content: " + e.getMessage());
 		}
 		catch (Exception e) {
-			log.error("SummaryWorkflow 执行失败", e);
-			return new ToolExecuteResult("内容处理失败: " + e.getMessage());
+			log.error("SummaryWorkflow execution failed", e);
+			return new ToolExecuteResult("Content processing failed: " + e.getMessage());
 		}
 	}
 
 	/**
-	 * 从指定文件夹下的所有文件中获取信息
+	 * Get information from all files in specified folder
 	 */
 	private ToolExecuteResult getFolderContent(String folderName, String queryKey, List<String> columns) {
 		if (folderName == null || folderName.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：folder_name参数是必需的");
+			return new ToolExecuteResult("Error: folder_name parameter is required");
 		}
 		if (queryKey == null || queryKey.trim().isEmpty()) {
-			return new ToolExecuteResult("错误：query_key参数是必需的，用于指定要提取的内容关键词");
+			return new ToolExecuteResult(
+					"Error: query_key parameter is required to specify content keywords to extract");
 		}
 		if (columns == null || columns.isEmpty()) {
-			return new ToolExecuteResult("错误：columns参数是必需的，用于指定返回结果的结构化列名");
+			return new ToolExecuteResult(
+					"Error: columns parameter is required to specify structured column names for return results");
 		}
 		try {
 			Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
 			Path targetFolder = planDir.resolve(folderName);
 
 			if (!Files.exists(targetFolder)) {
-				return new ToolExecuteResult("文件夹 '" + folderName + "' 不存在。");
+				return new ToolExecuteResult("Folder '" + folderName + "' does not exist.");
 			}
 
 			if (!Files.isDirectory(targetFolder)) {
-				return new ToolExecuteResult("'" + folderName + "' 不是一个文件夹。");
+				return new ToolExecuteResult("'" + folderName + "' is not a folder.");
 			}
 
-			// 获取文件夹下的所有文件
+			// Get all files in the folder
 			List<Path> files = Files.list(targetFolder).filter(Files::isRegularFile).toList();
 
 			if (files.isEmpty()) {
-				return new ToolExecuteResult("文件夹 '" + folderName + "' 中没有文件。");
+				return new ToolExecuteResult("No files in folder '" + folderName + "'.");
 			}
 
-			// 合并所有文件内容
+			// Combine all file contents
 			StringBuilder combinedContent = new StringBuilder();
 			for (Path file : files) {
 				String relativePath = planDir.relativize(file).toString();
-				combinedContent.append("=== 文件: ").append(relativePath).append(" ===\n");
+				combinedContent.append("=== File: ").append(relativePath).append(" ===\n");
 				combinedContent.append(Files.readString(file));
 				combinedContent.append("\n\n");
 			}
 
-			log.info("委托给 SummaryWorkflow 处理文件夹内容提取：文件夹={}, 文件数量={}, 查询关键词={}", folderName, files.size(), queryKey);
+			log.info(
+					"Delegating to SummaryWorkflow for folder content extraction: folder={}, file count={}, query keywords={}",
+					folderName, files.size(), queryKey);
 
 			Long thinkActRecordId = getCurrentThinkActRecordId();
 			String terminateColumnsString = String.join(",", columns);
@@ -378,28 +389,28 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 		}
 		catch (IOException e) {
-			log.error("获取文件夹内容失败", e);
-			return new ToolExecuteResult("获取文件夹内容失败: " + e.getMessage());
+			log.error("Failed to get folder content", e);
+			return new ToolExecuteResult("Failed to get folder content: " + e.getMessage());
 		}
 		catch (Exception e) {
-			log.error("SummaryWorkflow 执行失败", e);
-			return new ToolExecuteResult("内容处理失败: " + e.getMessage());
+			log.error("SummaryWorkflow execution failed", e);
+			return new ToolExecuteResult("Content processing failed: " + e.getMessage());
 		}
 	}
 
 	/**
-	 * 获取当前的 think-act 记录ID
-	 * @return 当前 think-act 记录ID，如果没有则返回 null
+	 * Get current think-act record ID
+	 * @return Current think-act record ID, return null if none
 	 */
 	private Long getCurrentThinkActRecordId() {
 		try {
 			Long thinkActRecordId = planExecutionRecorder.getCurrentThinkActRecordId(currentPlanId, rootPlanId);
 			if (thinkActRecordId != null) {
-				log.info("当前 think-act 记录ID: {}", thinkActRecordId);
+				log.info("Current think-act record ID: {}", thinkActRecordId);
 				return thinkActRecordId;
 			}
 			else {
-				log.warn("当前没有 think-act 记录ID");
+				log.warn("No current think-act record ID");
 			}
 		}
 		catch (Exception e) {
@@ -413,28 +424,30 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 	public String getCurrentToolStateString() {
 		try {
 			StringBuilder sb = new StringBuilder();
-			sb.append("InnerStorageContent 当前状态:\n");
-			sb.append("- 存储根目录: ").append(directoryManager.getRootPlanDirectory(rootPlanId)).append("\n");
+			sb.append("InnerStorageContent current status:\n");
+			sb.append("- Storage root directory: ")
+				.append(directoryManager.getRootPlanDirectory(rootPlanId))
+				.append("\n");
 			Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
 			List<Path> files = Files.exists(planDir) ? Files.list(planDir).filter(Files::isRegularFile).toList()
 					: List.of();
 			if (files.isEmpty()) {
-				sb.append("- 内部文件: 无\n");
+				sb.append("- Internal files: None\n");
 			}
 			else {
-				sb.append("- 内部文件 (").append(files.size()).append("个)\n");
+				sb.append("- Internal files (").append(files.size()).append(" files)\n");
 			}
 			return sb.toString();
 		}
 		catch (Exception e) {
-			log.error("获取工具状态失败", e);
-			return "InnerStorageContent 状态获取失败: " + e.getMessage();
+			log.error("Failed to get tool status", e);
+			return "InnerStorageContent status retrieval failed: " + e.getMessage();
 		}
 	}
 
 	@Override
 	public void cleanup(String planId) {
-		// 内容获取工具不需要执行清理操作
+		// Content retrieval tool does not need to perform cleanup operations
 		log.info("InnerStorageContentTool cleanup for plan: {}", planId);
 	}
 

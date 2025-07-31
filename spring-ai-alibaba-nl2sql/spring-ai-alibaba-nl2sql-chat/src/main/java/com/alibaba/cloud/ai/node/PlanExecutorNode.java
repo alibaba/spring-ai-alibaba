@@ -29,7 +29,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.alibaba.cloud.ai.constant.Constant.*;
+import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
+import static com.alibaba.cloud.ai.constant.Constant.PLAN_NEXT_NODE;
+import static com.alibaba.cloud.ai.constant.Constant.PLAN_REPAIR_COUNT;
+import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_ERROR;
+import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_STATUS;
+import static com.alibaba.cloud.ai.constant.Constant.PYTHON_GENERATE_NODE;
+import static com.alibaba.cloud.ai.constant.Constant.REPORT_GENERATOR_NODE;
+import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE;
 
 /**
  * 计划执行与验证节点，根据计划决定下一个执行的节点，并在执行前进行验证。
@@ -41,7 +49,7 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 	private static final Logger logger = LoggerFactory.getLogger(PlanExecutorNode.class);
 
 	// Supported node types
-	private static final Set<String> SUPPORTED_NODES = Set.of(SQL_EXECUTE_NODE, PYTHON_EXECUTE_NODE,
+	private static final Set<String> SUPPORTED_NODES = Set.of(SQL_EXECUTE_NODE, PYTHON_GENERATE_NODE,
 			REPORT_GENERATOR_NODE);
 
 	private final BeanOutputConverter<Plan> converter;

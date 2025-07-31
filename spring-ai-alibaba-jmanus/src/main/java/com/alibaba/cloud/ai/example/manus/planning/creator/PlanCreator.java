@@ -146,7 +146,7 @@ public class PlanCreator {
 			}
 
 			PlanInterface currentPlan;
-			// 检查计划是否创建成功
+			// Check if plan was created successfully
 			if (executionPlan != null) {
 				currentPlan = planningTool.getCurrentPlan();
 				currentPlan.setCurrentPlanId(planId);

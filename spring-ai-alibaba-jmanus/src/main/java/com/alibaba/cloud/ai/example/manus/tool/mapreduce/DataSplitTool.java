@@ -41,7 +41,7 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 
 	private static final Logger log = LoggerFactory.getLogger(DataSplitTool.class);
 
-	// ==================== 配置常量 ====================
+	// ==================== Configuration Constants ====================
 
 	/**
 	 * Default plan ID prefix When planId is empty, use this prefix + timestamp to
@@ -127,14 +127,14 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			    "properties": {
 			        "file_path": {
 			            "type": "string",
-			            "description": "要处理的文件或文件夹路径"
+			            "description": "File or folder path to process"
 			        },
 			        "terminate_columns": {
 			            "type": "array",
 			            "items": {
 			                "type": "string"
 			            },
-			            "description": "终止结果的列名，用于结构化输出"
+			            "description": "Column names for termination results, used for structured output"
 			        }
 			    },
 			    "required": ["file_path"],
@@ -146,7 +146,7 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 
 	private ManusProperties manusProperties;
 
-	// 共享状态管理器，用于管理多个Agent实例间的共享状态
+	// Shared state manager for managing shared state between multiple Agent instances
 	private MapReduceSharedStateManager sharedStateManager;
 
 	// Track if split operation has completed, allowing termination
@@ -164,7 +164,7 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	}
 
 	/**
-	 * 设置共享状态管理器
+	 * Set shared state manager
 	 */
 	public void setSharedStateManager(MapReduceSharedStateManager sharedStateManager) {
 		this.sharedStateManager = sharedStateManager;
