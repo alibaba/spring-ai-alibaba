@@ -160,15 +160,15 @@ class MongoDBChatMemoryRepositoryIT {
 
 		chatMemoryRepository.saveAll(conversationId, messages);
 
-		// 验证所有消息都已保存
+		// Verify all messages have been saved
 		var savedMessages = chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(savedMessages.size()).isEqualTo(messages.size());
 
-		// 执行清理操作，设置最大限制为3，删除数量为2
+		// Perform cleanup operation, set max limit to 3, delete count to 2
 		MongoDBChatMemoryRepository mongoDBChatMemoryRepository = (MongoDBChatMemoryRepository) chatMemoryRepository;
 		mongoDBChatMemoryRepository.clearOverLimit(conversationId, 3, 2);
 
-		// 验证只保留了后3个消息
+		// Verify only the last 3 messages are retained
 		savedMessages = chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(savedMessages.size()).isEqualTo(3);
 		assertThat(savedMessages.get(0).getText()).isEqualTo(messages.get(2).getText());
