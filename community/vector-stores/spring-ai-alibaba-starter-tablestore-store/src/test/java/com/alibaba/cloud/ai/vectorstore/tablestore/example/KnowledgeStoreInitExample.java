@@ -40,7 +40,8 @@ public class KnowledgeStoreInitExample {
 		 * Initialize KnowledgeStore
 		 */
 
-		// Define which additional meta fields to define in the secondary index, so that the secondary index can search these fields.
+		// Define which additional meta fields to define in the secondary index, so that
+		// the secondary index can search these fields.
 		List<FieldSchema> extraMetaDataIndexSchema = Arrays.asList(
 				new FieldSchema("meta_example_string", FieldType.KEYWORD),
 				new FieldSchema("meta_example_text_1", FieldType.TEXT).setAnalyzer(FieldSchema.Analyzer.MaxWord),
@@ -60,13 +61,20 @@ public class KnowledgeStoreInitExample {
 		 */
 		boolean enableMultiTenant = true;
 
-		// If you need to customize other parameters, you can choose what you need through builder.
+		// If you need to customize other parameters, you can choose what you need through
+		// builder.
 		KnowledgeStoreImpl store = KnowledgeStoreImpl.builder()
 			.client(client)
 			.metadataSchema(extraMetaDataIndexSchema)
 			.embeddingDimension(512) // Vector dimension must be set.
-										// Typically choose Embedding model dimensions between 512~1024. Higher dimensions will increase retrieval time with diminishing marginal returns.
-			.embeddingMetricType(VectorMetricType.DOT_PRODUCT) // Vector retrieval scoring formula, here using inner product as example.
+										// Typically choose Embedding model dimensions
+										// between 512~1024. Higher dimensions will
+										// increase retrieval time with diminishing
+										// marginal returns.
+			.embeddingMetricType(VectorMetricType.DOT_PRODUCT) // Vector retrieval scoring
+																// formula, here using
+																// inner product as
+																// example.
 			.enableMultiTenant(enableMultiTenant) // This parameter must be set.
 			.build();
 

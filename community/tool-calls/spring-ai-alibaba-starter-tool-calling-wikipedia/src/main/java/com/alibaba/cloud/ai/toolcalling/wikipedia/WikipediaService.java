@@ -92,7 +92,7 @@ public class WikipediaService implements SearchService, Function<WikipediaServic
 			// Get content for the top results
 			if (request.includeContent()) {
 				// Only get detailed content of the first 3 pages
-				enrichPagesWithContent(pages.subList(0, Math.min(3, pages.size()))); 
+				enrichPagesWithContent(pages.subList(0, Math.min(3, pages.size())));
 			}
 
 			String summary = String.format("找到 %d 个相关页面", pages.size());

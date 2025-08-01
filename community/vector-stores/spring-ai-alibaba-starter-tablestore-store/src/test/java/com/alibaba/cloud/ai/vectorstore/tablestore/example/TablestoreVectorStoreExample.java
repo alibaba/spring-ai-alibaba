@@ -27,7 +27,8 @@ import java.util.Map;
 public class TablestoreVectorStoreExample {
 
 	/**
-	 * Because Spring AI Vector Store compatibility version is based on `Knowledge Store`, we need to initialize KnowledgeStore first
+	 * Because Spring AI Vector Store compatibility version is based on `Knowledge Store`,
+	 * we need to initialize KnowledgeStore first
 	 * @param knowledgeStoreImpl How to initialize KnowledgeStore please refer to
 	 * {@link KnowledgeStoreInitExample}
 	 */
@@ -39,11 +40,13 @@ public class TablestoreVectorStoreExample {
 		FakedEmbeddingService embeddingService = new FakedEmbeddingService(768);
 
 		TablestoreVectorStore store = TablestoreVectorStore.builder(knowledgeStoreImpl, embeddingService)
-			.initializeTable(true) // For first use, set this parameter to true to initialize table. Not needed afterwards.
+			.initializeTable(true) // For first use, set this parameter to true to
+									// initialize table. Not needed afterwards.
 			.build();
 
 		/*
-		 * Initialize table. Spring will automatically initialize table internally. For non-spring scenarios, can call manually. Or directly use
+		 * Initialize table. Spring will automatically initialize table internally. For
+		 * non-spring scenarios, can call manually. Or directly use
 		 * knowledgeStoreImpl.initTable() to complete initialization.
 		 */
 		store.afterPropertiesSet();
@@ -54,7 +57,8 @@ public class TablestoreVectorStoreExample {
 		Map<String, Object> metadata = new HashMap();
 		metadata.put("city", "hangzhou");
 		metadata.put("year", 2005);
-		// Since KnowledgeStoreImpl has multi-tenant optimization internally, but spring doesn't support multi-tenant optimization, we set multi-tenant in metadata here
+		// Since KnowledgeStoreImpl has multi-tenant optimization internally, but spring
+		// doesn't support multi-tenant optimization, we set multi-tenant in metadata here
 		metadata.put(com.aliyun.openservices.tablestore.agent.model.Document.DOCUMENT_TENANT_ID, "租户id_user小明");
 		Document document = new Document("文档id_001", "The World is Big and Salvation Lurks Around the Corner",
 				metadata);

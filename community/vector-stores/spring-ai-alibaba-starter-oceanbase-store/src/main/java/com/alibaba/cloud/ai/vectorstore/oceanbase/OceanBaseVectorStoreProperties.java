@@ -19,8 +19,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 /**
- * Configuration properties for OceanBase Vector Store. Natural language related properties for configuring
- * OceanBaseVecotrStore to ensure proper initialization and operation.
+ * Configuration properties for OceanBase Vector Store. Natural language related
+ * properties for configuring OceanBaseVecotrStore to ensure proper initialization and
+ * operation.
  *
  * @author xxsc0529
  */

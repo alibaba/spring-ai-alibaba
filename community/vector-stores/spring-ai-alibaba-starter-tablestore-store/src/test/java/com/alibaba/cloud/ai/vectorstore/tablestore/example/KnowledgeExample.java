@@ -43,7 +43,12 @@ public class KnowledgeExample {
 		FakedEmbeddingService fakedEmbeddingService = new FakedEmbeddingService(768);
 
 		// Create a document
-		String tenantId = "user_小明"; // If not involving multi-tenant scenarios, don't pass tenantId related parameters in other places. If involving multi-tenant, what value to fill for tenantId is decided by each business itself, typically using user ID or knowledge base ID as tenant ID has generality.
+		String tenantId = "user_小明"; // If not involving multi-tenant scenarios, don't
+										// pass tenantId related parameters in other
+										// places. If involving multi-tenant, what value
+										// to fill for tenantId is decided by each
+										// business itself, typically using user ID or
+										// knowledge base ID as tenant ID has generality.
 		Document document = new Document("文档id_a", tenantId);
 		document.setText("你好，世界");
 		float[] embedding = fakedEmbeddingService.embed(document.getText());
@@ -71,16 +76,19 @@ public class KnowledgeExample {
 		store.deleteDocument("文档id_a", tenantId);
 		// Delete all documents under a tenant
 		store.deleteDocumentByTenant(tenantId);
-		// Delete documents under a tenant that meet conditions: city=="shanghai" && year >= 2005
+		// Delete documents under a tenant that meet conditions: city=="shanghai" && year
+		// >= 2005
 		store.deleteDocument(new HashSet<>(Collections.singletonList(tenantId)),
 				Filters.and(Filters.eq("city", "shanghai"), Filters.gte("year", 2005)));
 
 		// Query: documents related to "你好"
 		String queryText = "你好";
-		// Tenant ID in multi-tenant scenarios. If not involving multi-tenant scenarios, pass null or empty collection.
-		Set<String> tenantIds = new HashSet<>(Collections.singletonList(tenantId)); 
+		// Tenant ID in multi-tenant scenarios. If not involving multi-tenant scenarios,
+		// pass null or empty collection.
+		Set<String> tenantIds = new HashSet<>(Collections.singletonList(tenantId));
 		Filter metadataFilter1 = null; // Filter condition.
-		Filter metadataFilter2 = Filters.and(Filters.eq("city", "shanghai"), Filters.gte("year", 2005)); // Filter condition.
+		Filter metadataFilter2 = Filters.and(Filters.eq("city", "shanghai"), Filters.gte("year", 2005)); // Filter
+																											// condition.
 																											// city=="shanghai"
 																											// &&
 																											// year
@@ -93,8 +101,10 @@ public class KnowledgeExample {
 				int topK = 20;
 				Float minScore = 0.0f; // 0.0f or null indicates no limit
 
-				// If this parameter is null or empty collection, it will return all non-vector fields defined in KnowledgeStore initialization parameters by default.
-				List<String> columnsToGet = new ArrayList<>(); 
+				// If this parameter is null or empty collection, it will return all
+				// non-vector fields defined in KnowledgeStore initialization parameters
+				// by default.
+				List<String> columnsToGet = new ArrayList<>();
 				Response<DocumentHit> response = store.vectorSearch(queryVector, topK, minScore, tenantIds,
 						metadataFilter1, columnsToGet);
 				List<DocumentHit> hits = response.getHits();
@@ -105,10 +115,12 @@ public class KnowledgeExample {
 					Double score = hit.getScore();
 				}
 			}
-			// 2. Using full-text retrieval (For details on other parameters, please refer to the documentation example of vector retrieval above)
+			// 2. Using full-text retrieval (For details on other parameters, please refer
+			// to the documentation example of vector retrieval above)
 			{
 				int limit = 50;
-				// Here shows traversing all documents, if only need first few, just perform first query.
+				// Here shows traversing all documents, if only need first few, just
+				// perform first query.
 				String nextToken = null;
 				do {
 					Response<DocumentHit> response = store.fullTextSearch(queryText, tenantIds, limit, metadataFilter1,
@@ -125,32 +137,46 @@ public class KnowledgeExample {
 				while (nextToken != null);
 
 			}
-			// 3. Relatively flexible custom queries: below is an example of filtering data based on meta information only.
+			// 3. Relatively flexible custom queries: below is an example of filtering
+			// data based on meta information only.
 			{
-				// Query text field of document. Can also query other text fields in metaData.
-				Filter textQuery = Filters.textMatch(store.getTextField(), queryText); 
-				// Perform full-text search while needing to meet metadataFilter2, can freely combine with any other conditions here.
+				// Query text field of document. Can also query other text fields in
+				// metaData.
+				Filter textQuery = Filters.textMatch(store.getTextField(), queryText);
+				// Perform full-text search while needing to meet metadataFilter2, can
+				// freely combine with any other conditions here.
 				Filter finalFilter = Filters.and(textQuery, metadataFilter2);
 
-				// Here shows traversing all documents, if only need first few, just perform first query.
+				// Here shows traversing all documents, if only need first few, just
+				// perform first query.
 				String nextToken = null;
 				do {
 					KnowledgeSearchRequest searchRequest = KnowledgeSearchRequest.builder()
-						// Setting tenant ID in multi-tenant scenarios can improve performance. If not involving multi-tenant scenarios, pass null or empty collection.
-						.tenantIds(tenantIds) 
+						// Setting tenant ID in multi-tenant scenarios can improve
+						// performance. If not involving multi-tenant scenarios, pass null
+						// or empty collection.
+						.tenantIds(tenantIds)
 						.limit(10)
-						.metadataFilter(finalFilter) // No need to add extra multi-tenant conditions. Already added in constructor above.
-														// Extra addition has no impact on functionality, very small impact on performance.
+						.metadataFilter(finalFilter) // No need to add extra multi-tenant
+														// conditions. Already added in
+														// constructor above.
+														// Extra addition has no impact on
+														// functionality, very small
+														// impact on performance.
 						.nextToken(nextToken)
-						.sort(new FieldSort("city", Order.ASC)) // Sort by city field ascending.
-																// Not setting sorting usually has faster performance.
+						.sort(new FieldSort("city", Order.ASC)) // Sort by city field
+																// ascending.
+																// Not setting sorting
+																// usually has faster
+																// performance.
 						.build();
 					Response<DocumentHit> response = store.searchDocuments(searchRequest);
 					List<DocumentHit> hits = response.getHits();
 					for (DocumentHit hit : hits) {
 						// Get document
 						Document doc = hit.getDocument();
-						// Get score(When querying metaData only, the score is not meaningful.)
+						// Get score(When querying metaData only, the score is not
+						// meaningful.)
 						Double score = hit.getScore();
 					}
 					nextToken = response.getNextToken();
