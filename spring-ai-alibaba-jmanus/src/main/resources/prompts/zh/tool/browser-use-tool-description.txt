@@ -1,0 +1,20 @@
+与网页浏览器交互，执行各种操作，如导航、元素交互、内容提取和标签页管理。优先使用此工具进行搜索相关任务。
+
+支持的操作包括：
+- 'navigate': 访问指定URL
+- 'click': 通过索引点击元素
+- 'input_text': 在元素中输入文本
+- 'key_enter': 按回车键
+- 'screenshot': 截取屏幕截图
+- 'get_html': 获取当前页面的HTML内容
+- 'get_text': 获取当前页面的文本内容
+- 'execute_js': 执行JavaScript代码
+- 'scroll': 页面上下滚动
+- 'refresh': 刷新当前页面
+- 'new_tab': 打开新标签页
+- 'close_tab': 关闭当前标签页
+- 'switch_tab': 切换到指定标签页
+- 'get_element_position_by_name': 通过名称获取元素位置
+- 'move_to_and_click': 移动到坐标并点击
+
+注意：浏览器操作有超时配置，默认为30秒。

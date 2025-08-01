@@ -30,7 +30,7 @@
 
           <!-- Three-part structure of assistant message -->
           <div v-else class="assistant-message">
-            <!-- 1. TaskPilot Thinking/Processing Section - Only displayed when there is processing content -->
+            <!-- 1. JManus Thinking/Processing Section - Only displayed when there is processing content -->
             <div
               class="thinking-section"
               v-if="
@@ -70,7 +70,7 @@
                 <div class="steps-container" v-if="(message.planExecution?.steps?.length ?? 0) > 0">
                   <h4 class="steps-title">{{ $t('chat.stepExecutionDetails') }}</h4>
 
-                  <!-- 遍历所有步骤 -->
+                  <!-- Iterate through all steps -->
                   <div
                     v-for="(step, index) in message.planExecution?.steps"
                     :key="index"
@@ -155,7 +155,7 @@
                     <div v-if="getSubPlanSteps(message, index)?.length > 0" class="sub-plan-steps">
                       <div class="sub-plan-header">
                         <Icon icon="carbon:tree-view" class="sub-plan-icon" />
-                        <span class="sub-plan-title">子执行计划</span>
+                        <span class="sub-plan-title">{{ $t('rightPanel.subPlan') }}</span>
                       </div>
                       <div class="sub-plan-step-list">
                         <div
@@ -186,7 +186,7 @@
                           </div>
                           <div class="sub-step-content">
                             <span class="sub-step-title">{{ subStep }}</span>
-                            <span class="sub-step-badge">子步骤</span>
+                            <span class="sub-step-badge">{{ $t('rightPanel.subStep') }}</span>
                           </div>
                         </div>
                       </div>
@@ -285,7 +285,7 @@
               </div>
             </div>
 
-            <!-- 2. TaskPilot Final Response Section - Independent humanized dialogue unit -->
+            <!-- 2. JManus Final Response Section - Independent humanized dialogue unit -->
             <div class="response-section">
               <div class="response-header">
                 <div class="response-avatar">
@@ -496,7 +496,7 @@ const handleDirectMode = async (query: string) => {
 
     // Add a thinking state message
     const assistantMessage = addMessage('assistant', '', {
-      thinking: '正在理解您的请求并准备回复...',
+      thinking: t('chat.thinkingProcessing'),
     })
 
     // Execute directly
@@ -539,23 +539,23 @@ const generateDirectModeResponse = (response: any, _originalQuery: string): stri
 
 // Generate an error response
 const generateErrorResponse = (error: any): string => {
-  const errorMsg = error?.message ?? error?.toString() ?? '未知错误'
+  const errorMsg = error?.message ?? error?.toString() ?? t('chat.unknownError')
 
   // Common error types with friendly prompts
-  if (errorMsg.includes('网络') || errorMsg.includes('network') || errorMsg.includes('timeout')) {
-    return `抱歉，似乎网络连接有些问题。请检查您的网络连接后再试一次，或者稍等几分钟再重新提问。`
+  if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
+    return t('chat.networkError')
   }
 
-  if (errorMsg.includes('认证') || errorMsg.includes('权限') || errorMsg.includes('auth')) {
-    return `抱歉，访问权限出现了问题。这可能是系统配置的问题，请联系管理员或稍后再试。`
+  if (errorMsg.includes('auth') || errorMsg.includes('unauthorized')) {
+    return t('chat.authError')
   }
 
-  if (errorMsg.includes('格式') || errorMsg.includes('参数') || errorMsg.includes('invalid')) {
-    return `抱歉，您的请求格式可能有些问题。能否请您重新表述一下您的需求？我会尽力理解并帮助您。`
+  if (errorMsg.includes('invalid') || errorMsg.includes('format') || errorMsg.includes('parameter')) {
+    return t('chat.formatError')
   }
 
   // Generic error response
-  return `抱歉，处理您的请求时遇到了一些问题（${errorMsg}）。请稍后再试，或者换个方式表达您的需求，我会尽力帮助您的。`
+  return `${t('chat.unknownError')} (${errorMsg})`
 }
 
 const scrollToBottom = (force = false) => {
@@ -627,7 +627,7 @@ const handleSendMessage = (message: string) => {
 // Get agent execution status based on index
 const getAgentExecutionStatus = (message: Message, index: number): string => {
   const agentExecutionSequence = message.planExecution?.agentExecutionSequence ?? []
-  // 使用安全的索引检查来避免越界访问
+  // Use safe index checking to avoid out-of-bounds access
   if (index < 0 || index >= agentExecutionSequence.length) {
     return 'IDLE'
   }
@@ -687,9 +687,9 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
           if (typeof step === 'string') {
             return step
           } else if (typeof step === 'object' && step !== null) {
-            return step.title || step.description || `子步骤`
+            return step.title || step.description || t('rightPanel.subStep')
           }
-          return `子步骤`
+          return t('rightPanel.subStep')
         })
       }
     }
@@ -851,8 +851,8 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
           )
         } else {
           lastStepActions[index] = {
-            actionDescription: '思考中',
-            toolParameters: '等待决策',
+            actionDescription: t('chat.thinking'),
+            toolParameters: t('chat.waitingDecision'),
             thinkInput: latestThinkAct.thinkInput ?? '',
             thinkOutput: latestThinkAct.thinkOutput ?? '',
             status: planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex ? 'current' : 'pending',
@@ -862,26 +862,26 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
         }
       } else {
         lastStepActions[index] = {
-          actionDescription: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? '已完成' : '等待中',
-          toolParameters: '无工具参数',
+          actionDescription: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? t('chat.status.completed') : t('chat.status.pending'),
+          toolParameters: t('chat.noToolParameters'),
           thinkInput: '',
           thinkOutput: '',
           status: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? 'completed' : 'pending',
         }
 
         console.log(
-          `[ChatComponent] 步骤 ${index} 无执行细节, 状态设为: ${lastStepActions[index].status}`
+          `[ChatComponent] Step ${index} has no execution details, status set to: ${lastStepActions[index].status}`
         )
       }
     }
   } else {
-    console.log('[ChatComponent] 没有执行序列数据')
+    console.log('[ChatComponent] No execution sequence data')
   }
 
   message.stepActions = [...lastStepActions]
 
   console.log(
-    '[ChatComponent] 步骤动作更新完成:',
+    '[ChatComponent] Step actions update completed:',
     JSON.stringify(lastStepActions.map(a => a?.actionDescription))
   )
 
@@ -904,7 +904,7 @@ const handleDialogRoundStart = (planId: string) => {
     if (existingAssistantMsg === -1) {
       addMessage('assistant', '', {
         planExecution: { currentPlanId: planId } as PlanExecutionRecord,
-        thinking: '正在准备执行计划...',
+        thinking: t('chat.preparingExecution'),
       })
       console.log('[ChatComponent] Created new assistant message for planId:', planId)
     } else {
@@ -975,7 +975,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
 
     if (lastAssistantIndex !== -1) {
       message = messages.value[lastAssistantIndex]
-      // 更新 planExecution 以确保后续更新能找到它
+      // Update planExecution to ensure subsequent updates can find it
       if (!message.planExecution) {
         message.planExecution = {} as PlanExecutionRecord
       }
@@ -1003,11 +1003,11 @@ const handlePlanUpdate = (rootPlanId: string) => {
     console.log('[ChatComponent] Handling simple response without steps')
 
     if (planDetails.completed) {
-      // 直接设置最终回复，清除所有处理状态
+      // Directly set the final response, clear all processing states
       delete message.thinking
 
       const finalResponse =
-        planDetails.summary ?? planDetails.result ?? planDetails.message ?? '处理完成'
+        planDetails.summary ?? planDetails.result ?? planDetails.message ?? t('chat.executionCompleted')
       // Ensure the response is natural
       message.content = generateNaturalResponse(finalResponse)
 
@@ -1015,7 +1015,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
     } else {
       // If there is a title or status information, update the thinking state
       if (planDetails.title) {
-        message.thinking = `正在执行: ${planDetails.title}`
+        message.thinking = `${t('chat.thinkingExecuting', { title: planDetails.title })}`
       }
     }
 
@@ -1037,9 +1037,9 @@ const handlePlanUpdate = (rootPlanId: string) => {
     }
     // If it's an object, extract the title for display
     else if (typeof step === 'object' && step !== null) {
-      return step.title || step.description || `步骤`
+      return step.title || step.description || t('chat.step')
     }
-    return `步骤`
+    return t('chat.step')
   })
 
   // Update the step information in planExecution
@@ -1050,7 +1050,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
   // Process the execution sequence and step actions - Refer to the logic in chat-handler.js
   if (planDetails.agentExecutionSequence && planDetails.agentExecutionSequence.length > 0) {
     console.log(
-      '[ChatComponent] 发现执行序列数据，数量:',
+      '[ChatComponent] Found execution sequence data, count:',
       planDetails.agentExecutionSequence.length
     )
 
@@ -1072,7 +1072,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
               ? latestThinkAct.thinkOutput.substring(0, maxLength) + '...'
               : latestThinkAct.thinkOutput
 
-          message.thinking = `正在思考: ${displayOutput}`
+          message.thinking = `${t('chat.thinking')}: ${displayOutput}`
         }
       }
     }
@@ -1082,13 +1082,13 @@ const handlePlanUpdate = (rootPlanId: string) => {
       const currentStepIndex = message.planExecution.currentStepIndex ?? 0
       const currentStep = message.planExecution.steps?.[currentStepIndex]
       const stepTitle = typeof currentStep === 'string' ? currentStep : ''
-      message.thinking = `正在执行: ${stepTitle}`
+      message.thinking = `${t('chat.thinkingExecuting', { title: stepTitle })}`
     }
   }
 
   // Handle the user input waiting state
   if (planDetails.userInputWaitState && message.planExecution) {
-    console.log('[ChatComponent] 需要用户输入:', planDetails.userInputWaitState)
+    console.log('[ChatComponent] User input required:', planDetails.userInputWaitState)
 
     // Attach the user input waiting state to planExecution
     if (!message.planExecution.userInputWaitState) {
@@ -1106,7 +1106,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
 
     formInputsStore[message.id] ??= {}
     // Clear the thinking state and display the message waiting for user input
-    message.thinking = '等待用户输入...'
+    message.thinking = t('input.waiting')
   } else {
     // If there is no user input waiting state, clear the previous state
     if (message.planExecution?.userInputWaitState) {
@@ -1127,7 +1127,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
     } else if (planDetails.result) {
       finalResponse = planDetails.result
     } else {
-      finalResponse = '任务已完成'
+      finalResponse = t('chat.executionCompleted')
     }
 
     // Generate natural, human-like responses
@@ -1148,31 +1148,34 @@ const handlePlanUpdate = (rootPlanId: string) => {
 
 // Helper function to generate natural responses
 const generateNaturalResponse = (text: string): string => {
-  if (!text) return '我明白了，还有什么我可以帮您的吗？'
+  if (!text) return t('chat.defaultResponse')
 
   // If it's already in a natural conversation format, return it directly
   if (
-    text.includes('我') ||
-    text.includes('您') ||
-    text.includes('您好') ||
-    text.includes('可以')
+    text.includes('I ') ||
+    text.includes('you') ||
+    text.includes('hello') ||
+    text.includes('can') ||
+    text.includes('I') ||
+    text.includes('you') ||
+    text.includes('can')
   ) {
     return text
   }
 
   // Generate a more natural response based on the text content
   if (text.length < 10) {
-    return `${text}！还有什么需要我帮助的吗？`
+    return `${text}! ${t('chat.anythingElse')}`
   } else if (text.length < 50) {
-    return `好的，${text}。如果您还有其他问题，请随时告诉我。`
+    return `${t('chat.okayDone', { text })}. ${t('chat.ifOtherQuestions')}`
   } else {
-    return `${text}\n\n希望这个回答对您有帮助！还有什么我可以为您做的吗？`
+    return `${text}\n\n${t('chat.hopeHelpful')} ${t('chat.anythingElse')}`
   }
 }
 
 // Generate a natural response for a completed plan
 const generateCompletedPlanResponse = (text: string): string => {
-  if (!text) return '任务已完成！还有什么我可以帮您的吗？'
+  if (!text) return `${t('chat.executionCompleted')}! ${t('chat.anythingElse')}`
   else{
     return `${text}`;
   }
@@ -1198,13 +1201,13 @@ const handlePlanCompleted = (rootPlanId: string) => {
       const message = messages.value[messageIndex];
       delete message.thinking;
 
-      const summary = details.summary ?? details.result ?? '任务已完成';
+      const summary = details.summary ?? details.result ?? t('chat.executionCompleted');
       let finalResponse = summary;
-      if (!finalResponse.includes('我') && !finalResponse.includes('您')) {
-        if (finalResponse.includes('成功') || finalResponse.includes('完成')) {
-          finalResponse = `很好！${finalResponse}。如果您还有其他需要帮助的地方，请随时告诉我。`;
+      if (!finalResponse.includes('I') && !finalResponse.includes('you')) {
+        if (finalResponse.includes('success') || finalResponse.includes('complete') || finalResponse.includes('finished')) {
+          finalResponse = `${t('chat.great')}${finalResponse}. ${t('chat.ifOtherHelp')}`;
         } else {
-          finalResponse = `我已经完成了您的请求：${finalResponse}`;
+          finalResponse = `${t('chat.completedRequest', { result: finalResponse })}`;
         }
       }
 
@@ -1248,7 +1251,7 @@ const formatResponseText = (text: string): string => {
 // Handle user input form submission
 const handleUserInputSubmit = async (message: Message) => {
   if (!message.planExecution?.currentPlanId || !message.planExecution.userInputWaitState) {
-    console.error('[ChatComponent] 缺少planExecution.currentPlanId或userInputWaitState')
+    console.error('[ChatComponent] Missing planExecution.currentPlanId or userInputWaitState')
     return
   }
 
@@ -1269,7 +1272,7 @@ const handleUserInputSubmit = async (message: Message) => {
       inputData.genericInput = message.genericInput ?? ''
     }
 
-    console.log('[ChatComponent] 提交用户输入:', inputData)
+    console.log('[ChatComponent] Submitting user input:', inputData)
 
     // Submit user input via API
     const response = await CommonApiService.submitFormInput(
@@ -1285,11 +1288,11 @@ const handleUserInputSubmit = async (message: Message) => {
     // Continue polling for plan updates (should resume automatically after submission)
     planExecution.startPolling()
 
-    console.log('[ChatComponent] 用户输入提交成功:', response)
+    console.log('[ChatComponent] User input submitted successfully:', response)
   } catch (error: any) {
-    console.error('[ChatComponent] 用户输入提交失败:', error)
-    // 可以在UI中显示错误消息
-    alert(`提交失败: ${error?.message || '未知错误'}`)
+    console.error('[ChatComponent] User input submission failed:', error)
+    // Can display error message in UI
+    alert(`${t('common.submitFailed')}: ${error?.message || t('common.unknownError')}`)
   }
 }
 
@@ -1443,7 +1446,7 @@ defineExpose({
 }
 
 .assistant-message {
-  /* 1. TaskPilot Thinking/Processing Section Style */
+  /* 1. JManus Thinking/Processing Section Style */
   .thinking-section {
     margin-bottom: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1519,7 +1522,7 @@ defineExpose({
     }
   }
 
-  /* 2. TaskPilot Final Response Section Style - Simulate Human Conversation Unit */
+  /* 2. JManus Final Response Section Style - Simulate Human Conversation Unit */
   .response-section {
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 18px;
@@ -1921,7 +1924,7 @@ defineExpose({
           border-radius: 4px;
           cursor: pointer;
           transition: all 0.2s ease;
-          margin-left: 20px; /* 缩进显示父子关系 */
+          margin-left: 20px; /* Indent to show parent-child relationship */
 
           &:hover {
             background: rgba(255, 255, 255, 0.05);

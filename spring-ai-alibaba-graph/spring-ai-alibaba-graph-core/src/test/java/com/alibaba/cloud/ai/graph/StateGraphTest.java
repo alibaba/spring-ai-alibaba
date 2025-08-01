@@ -39,6 +39,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
@@ -386,6 +388,10 @@ public class StateGraphTest {
 	private AsyncNodeAction makeNode(String id) {
 		return node_async(state -> {
 			log.info("call node {}", id);
+			if (id.equalsIgnoreCase("A2")) {
+				log.info("sleep A2");
+				Thread.sleep(2000);
+			}
 			return Map.of("messages", id);
 		});
 	}
@@ -436,7 +442,12 @@ public class StateGraphTest {
 			}
 		}).build());
 
-		var result = app.stream(Map.of()).stream().peek(System.out::println).reduce((a, b) -> b).map(NodeOutput::state);
+		var result = app
+			.stream(Map.of(), RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
+			.stream()
+			.peek(System.out::println)
+			.reduce((a, b) -> b)
+			.map(NodeOutput::state);
 		assertTrue(result.isPresent());
 		List<String> messages = (List<String>) result.get().value("messages").get();
 		log.info("messages: {}", messages);
@@ -471,7 +482,12 @@ public class StateGraphTest {
 
 		app = workflow.compile();
 
-		result = app.stream(Map.of()).stream().peek(System.out::println).reduce((a, b) -> b).map(NodeOutput::state);
+		result = app.stream(Map.of(),
+				RunnableConfig.builder().addParallelNodeExecutor(START, Executors.newSingleThreadExecutor()).build())
+			.stream()
+			.peek(System.out::println)
+			.reduce((a, b) -> b)
+			.map(NodeOutput::state);
 
 		assertTrue(result.isPresent());
 		List<String> messages2 = (List<String>) result.get().value("messages").get();

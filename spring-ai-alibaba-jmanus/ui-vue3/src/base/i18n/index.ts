@@ -50,13 +50,54 @@ export const changeLanguage = async (locale: string) => {
   i18n.global.locale.value = locale as 'zh' | 'en'
   localeConfig.locale = locale
 
-  // Also switch the backend PromptService language configuration
+  // Only switch frontend language, do not reset backend prompt language
+  console.log(`Successfully switched frontend language to: ${locale}`)
+}
+
+/**
+ * Change language during initialization and reset all agents and prompts
+ * This function is used during the initial setup process
+ */
+export const changeLanguageWithAgentReset = async (locale: string) => {
+  // First change the frontend language
+  await changeLanguage(locale)
+
   try {
-    const { PromptApiService } = await import('@/api/prompt-api-service')
-    await PromptApiService.importAllPromptsFromLanguage(locale)
-    console.log(`Successfully switched PromptService to language: ${locale}`)
+    // Reset prompts to the new language
+    const promptResponse = await fetch(`/admin/prompts/switch-language?language=${locale}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (promptResponse.ok) {
+      console.log(`Successfully reset prompts to language: ${locale}`)
+    } else {
+      const promptError = await promptResponse.text()
+      console.error(`Failed to reset prompts to language: ${locale}`, promptError)
+      // Continue with agent initialization even if prompt reset fails
+    }
+
+    // Initialize agents with the new language (used during initial setup)
+    const agentResponse = await fetch('/api/agent-management/initialize', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ language: locale }),
+    })
+
+    if (agentResponse.ok) {
+      const result = await agentResponse.json()
+      console.log(`Successfully initialized agents with language: ${locale}`, result)
+    } else {
+      const error = await agentResponse.json()
+      console.error(`Failed to initialize agents with language: ${locale}`, error)
+      throw new Error(error.error || 'Failed to initialize agents')
+    }
   } catch (error) {
-    console.warn(`Failed to switch PromptService language to ${locale}:`, error)
-    // Don't block frontend language switching, only log warning
+    console.error('Error initializing agents and prompts during language change:', error)
+    throw error
   }
 }

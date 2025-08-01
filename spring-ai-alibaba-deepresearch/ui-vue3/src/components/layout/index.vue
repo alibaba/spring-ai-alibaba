@@ -180,7 +180,7 @@ const menuConfig: ConversationsProps['menu'] = conversation => ({
 })
 
 function createNewConversation() {
-  const { key } = conversationStore.newOne()
+  const { key } = conversationStore.newOne('Unnamed conversation')
   changeConv(key)
 }
 

@@ -1,0 +1,20 @@
+Interact with web browser to perform various operations such as navigation, element interaction, content extraction and tab management. Prioritize this tool for search-related tasks.
+
+Supported operations include:
+- 'navigate': Visit specific URL
+- 'click': Click element by index
+- 'input_text': Input text in element
+- 'key_enter': Press Enter key
+- 'screenshot': Capture screenshot
+- 'get_html': Get HTML content of current page
+- 'get_text': Get text content of current page
+- 'execute_js': Execute JavaScript code
+- 'scroll': Scroll page up/down
+- 'refresh': Refresh current page
+- 'new_tab': Open new tab
+- 'close_tab': Close current tab
+- 'switch_tab': Switch to specific tab
+- 'get_element_position_by_name': Get element position by name
+- 'move_to_and_click': Move to coordinates and click
+
+Note: Browser operations have timeout configuration, default is 30 seconds.

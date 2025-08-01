@@ -1,0 +1,4 @@
+Execute bash commands in terminal (current OS: %s).
+* Long-running commands: For commands that may run indefinitely, they should be run in background with output redirected to file, e.g.: command = `python3 app.py > server.log 2>&1 &`.
+* Interactive commands: If bash command returns exit code `-1`, this means the process is not yet complete. Assistant must send a second terminal call with empty `command` (this will retrieve any additional logs), or can send additional text (set `command` to text) to the running process's STDIN, or can send command=`ctrl+c` to interrupt the process.
+* Timeout handling: If command execution result shows "Command timed out. Sending SIGINT to the process", assistant should try to re-run the command in background.
