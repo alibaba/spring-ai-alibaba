@@ -38,10 +38,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration test using Testcontainers to automatically manage Redis test environment
+ *
+ * @author benym
+ * @date 2025/7/31 16:47
  */
-@SpringBootTest(classes = RedisChatMemoryRepositoryIT.TestConfiguration.class)
+@SpringBootTest(classes = RedissonRedisChatMemoryRepositoryIT.TestConfiguration.class)
 @Testcontainers
-class RedisChatMemoryRepositoryIT {
+public class RedissonRedisChatMemoryRepositoryIT {
 
 	private static final int REDIS_PORT = 6379;
 
@@ -64,7 +67,7 @@ class RedisChatMemoryRepositoryIT {
 
 	@Test
 	void correctChatMemoryRepositoryInstance() {
-		assertThat(chatMemoryRepository).isInstanceOf(RedisChatMemoryRepository.class);
+		assertThat(chatMemoryRepository).isInstanceOf(RedissonRedisChatMemoryRepository.class);
 	}
 
 	@ParameterizedTest
@@ -164,7 +167,7 @@ class RedisChatMemoryRepositoryIT {
 		assertThat(savedMessages.size()).isEqualTo(messages.size());
 
 		// 执行清理操作，设置最大限制为3，删除数量为2
-		RedisChatMemoryRepository redisRepository = (RedisChatMemoryRepository) chatMemoryRepository;
+		RedissonRedisChatMemoryRepository redisRepository = (RedissonRedisChatMemoryRepository) chatMemoryRepository;
 		redisRepository.clearOverLimit(conversationId, 3, 2);
 
 		// 验证只保留了后3个消息
@@ -181,7 +184,7 @@ class RedisChatMemoryRepositoryIT {
 		@Bean
 		ChatMemoryRepository chatMemoryRepository() {
 			// 使用容器中的Redis连接信息创建Redis存储库
-			return RedisChatMemoryRepository.builder()
+			return RedissonRedisChatMemoryRepository.builder()
 				.host(redisContainer.getHost())
 				.port(redisContainer.getMappedPort(REDIS_PORT))
 				.build();
