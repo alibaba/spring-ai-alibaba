@@ -189,7 +189,7 @@ public class McpTransportBuilder {
 		}
 
 		logger.info("Building Streamable HTTP transport for server: {} with Url: {} and Endpoint: {}", serverName,
-				baseUrl,streamEndpoint);
+				baseUrl, streamEndpoint);
 
 		// 使用 WebClient.Builder 创建 transport，保持与 buildSseTransport 一致的风格
 		WebClient.Builder webClientBuilder = createWebClientBuilder(baseUrl);
@@ -199,11 +199,11 @@ public class McpTransportBuilder {
 		logger.debug("Using WebClientStreamableHttpTransport with endpoint: {} for STREAMING mode", streamEndpoint);
 		return WebClientStreamableHttpTransport.builder(webClientBuilder)
 			.objectMapper(objectMapper)
-			 .endpoint(streamEndpoint)
+			.endpoint(streamEndpoint)
 			.resumableStreams(true)
 			.openConnectionOnStartup(false)
 			.build();
-		
+
 	}
 
 	/**
