@@ -52,7 +52,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -397,15 +396,15 @@ public class CompiledGraph {
 	 * @return the over all state
 	 */
 	OverAllState cloneState(Map<String, Object> data) {
-		ConcurrentHashMap<String, Object> clonedData = new ConcurrentHashMap<>();
-		// Filter out null values since ConcurrentHashMap doesn't allow them
+		// Simple approach: filter out null values for ConcurrentHashMap compatibility
+		Map<String, Object> filteredData = new HashMap<>();
 		if (data != null) {
 			data.entrySet()
 				.stream()
 				.filter(entry -> entry.getValue() != null)
-				.forEach(entry -> clonedData.put(entry.getKey(), entry.getValue()));
+				.forEach(entry -> filteredData.put(entry.getKey(), entry.getValue()));
 		}
-		return new OverAllState(clonedData, new ConcurrentHashMap<>(keyStrategyMap), false);
+		return new OverAllState(filteredData, keyStrategyMap, false);
 	}
 
 	/**
@@ -684,8 +683,15 @@ public class CompiledGraph {
 		 * @return the over all state
 		 */
 		OverAllState cloneState(Map<String, Object> data) {
-			return new OverAllState(new ConcurrentHashMap<>(data), new ConcurrentHashMap<>(keyStrategyMap),
-					overAllState.isResume());
+			// Simple approach: filter out null values for ConcurrentHashMap compatibility
+			Map<String, Object> filteredData = new HashMap<>();
+			if (data != null) {
+				data.entrySet()
+					.stream()
+					.filter(entry -> entry.getValue() != null)
+					.forEach(entry -> filteredData.put(entry.getKey(), entry.getValue()));
+			}
+			return new OverAllState(filteredData, keyStrategyMap, overAllState.isResume());
 		}
 
 		/**
