@@ -623,8 +623,8 @@ const words: I18nType = {
 
   // 聊天组件
   chat: {
-    botName: 'TaskPilot:',
-    thinkingLabel: 'TaskPilot 思考/处理',
+    botName: 'JManus:',
+    thinkingLabel: 'JManus 思考/处理',
     processing: '处理中...',
     step: '步骤',
     stepNumber: '步骤 {number}',
