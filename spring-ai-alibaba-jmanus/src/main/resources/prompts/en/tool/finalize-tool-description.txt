@@ -1,0 +1,9 @@
+Finalize tool for MapReduce workflow output processing.
+Supports copying the reduce output file to a new file with user-specified name.
+Supported operations:
+- export: Copy the reduce output file to a new file with the specified name in the same directory.
+
+This tool is specifically designed for finalizing MapReduce workflow results by:
+- Creating a final output file with a meaningful name
+- Preserving the original reduce output file
+- Ensuring the final result is properly named and accessible

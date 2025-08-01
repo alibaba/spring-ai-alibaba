@@ -1,0 +1,218 @@
+{
+    "oneOf": [
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "navigate"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "要导航到的URL"
+                }
+            },
+            "required": ["action", "url"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "click"
+                },
+                "index": {
+                    "type": "integer",
+                    "description": "要点击的元素索引"
+                }
+            },
+            "required": ["action", "index"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "input_text"
+                },
+                "index": {
+                    "type": "integer",
+                    "description": "要输入文本的元素索引"
+                },
+                "text": {
+                    "type": "string",
+                    "description": "要输入的文本"
+                }
+            },
+            "required": ["action", "index", "text"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "key_enter"
+                },
+                "index": {
+                    "type": "integer",
+                    "description": "要按回车键的元素索引"
+                }
+            },
+            "required": ["action", "index"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "screenshot"
+                }
+            },
+            "required": ["action"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "get_html"
+                }
+            },
+            "required": ["action"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "get_text"
+                }
+            },
+            "required": ["action"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "execute_js"
+                },
+                "script": {
+                    "type": "string",
+                    "description": "要执行的JavaScript代码"
+                }
+            },
+            "required": ["action", "script"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "scroll"
+                },
+                "direction": {
+                    "type": "string",
+                    "enum": ["up", "down"],
+                    "description": "滚动方向"
+                }
+            },
+            "required": ["action", "direction"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "switch_tab"
+                },
+                "tab_id": {
+                    "type": "integer",
+                    "description": "要切换到的标签页ID"
+                }
+            },
+            "required": ["action", "tab_id"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "new_tab"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "在新标签页中打开的URL"
+                }
+            },
+            "required": ["action", "url"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "close_tab"
+                }
+            },
+            "required": ["action"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "refresh"
+                }
+            },
+            "required": ["action"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "get_element_position"
+                },
+                "element_name": {
+                    "type": "string",
+                    "description": "要获取位置的元素名称"
+                }
+            },
+            "required": ["action", "element_name"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "move_to_and_click"
+                },
+                "position_x": {
+                    "type": "integer",
+                    "description": "要移动并点击的X坐标"
+                },
+                "position_y": {
+                    "type": "integer",
+                    "description": "要移动并点击的Y坐标"
+                }
+            },
+            "required": ["action", "position_x", "position_y"],
+            "additionalProperties": false
+        }
+    ]
+}

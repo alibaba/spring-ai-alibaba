@@ -1,0 +1,14 @@
+{
+    "type": "object",
+    "properties": {
+        "file_type": {
+            "type": "string",
+            "description": "(required) File type, only support pdf file."
+        },
+        "file_path": {
+            "type": "string",
+            "description": "(required) Get the absolute path of the file from the user request."
+        }
+    },
+    "required": ["file_type", "file_path"]
+}

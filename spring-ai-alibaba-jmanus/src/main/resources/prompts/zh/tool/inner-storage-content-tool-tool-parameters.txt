@@ -1,0 +1,58 @@
+{
+    "oneOf": [
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "get_content",
+                    "description": "从单个文件获取内容"
+                },
+                "file_name": {
+                    "type": "string",
+                    "description": "文件名（带扩展名）或相对路径，支持精确匹配"
+                },
+                "query_key": {
+                    "type": "string",
+                    "description": "要提取的相关问题或内容关键词，必须提供"
+                },
+                "columns": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "返回结果的列名，用于结构化输出，必须提供。返回结果可以是列表"
+                }
+            },
+            "required": ["action", "file_name", "query_key", "columns"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "get_folder_content",
+                    "description": "从指定文件夹中的所有文件获取内容"
+                },
+                "folder_name": {
+                    "type": "string",
+                    "description": "文件夹名称或相对路径"
+                },
+                "query_key": {
+                    "type": "string",
+                    "description": "要提取的相关问题或内容关键词，必须提供"
+                },
+                "columns": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "返回结果的列名，用于结构化输出，必须提供。返回结果可以是列表"
+                }
+            },
+            "required": ["action", "folder_name", "query_key", "columns"],
+            "additionalProperties": false
+        }
+    ]
+}

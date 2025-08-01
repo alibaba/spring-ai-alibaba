@@ -4,7 +4,6 @@ agentDescription: A versatile default agent that can handle various user request
 availableToolKeys:
   - text_file_operator
   - terminate
-  - bash
 
 # Next Step Prompt Configuration
 nextStepPrompt: |
@@ -27,7 +26,6 @@ nextStepPrompt: |
   Please remember:
   1. Validate all inputs and paths before operations
   2. Choose the most appropriate tool for each task:
-     - Use bash for system operations
      - Use text_file_operator for file operations
      - Use terminate when task is complete
   3. Handle errors gracefully
