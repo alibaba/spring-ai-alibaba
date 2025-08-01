@@ -91,6 +91,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tavilysearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-searches</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-worldbankdata</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tencentmap</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tushare</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-ollamasearchmodel</module>
