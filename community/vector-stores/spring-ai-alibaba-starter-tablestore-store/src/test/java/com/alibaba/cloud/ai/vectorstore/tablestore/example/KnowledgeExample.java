@@ -77,7 +77,8 @@ public class KnowledgeExample {
 
 		// Query: documents related to "你好"
 		String queryText = "你好";
-		Set<String> tenantIds = new HashSet<>(Collections.singletonList(tenantId)); // Tenant ID in multi-tenant scenarios. If not involving multi-tenant scenarios, pass null or empty collection.
+		// Tenant ID in multi-tenant scenarios. If not involving multi-tenant scenarios, pass null or empty collection.
+		Set<String> tenantIds = new HashSet<>(Collections.singletonList(tenantId)); 
 		Filter metadataFilter1 = null; // Filter condition.
 		Filter metadataFilter2 = Filters.and(Filters.eq("city", "shanghai"), Filters.gte("year", 2005)); // Filter condition.
 																											// city=="shanghai"
@@ -92,7 +93,8 @@ public class KnowledgeExample {
 				int topK = 20;
 				Float minScore = 0.0f; // 0.0f or null indicates no limit
 
-				List<String> columnsToGet = new ArrayList<>(); // If this parameter is null or empty collection, it will return all non-vector fields defined in KnowledgeStore initialization parameters by default.
+				// If this parameter is null or empty collection, it will return all non-vector fields defined in KnowledgeStore initialization parameters by default.
+				List<String> columnsToGet = new ArrayList<>(); 
 				Response<DocumentHit> response = store.vectorSearch(queryVector, topK, minScore, tenantIds,
 						metadataFilter1, columnsToGet);
 				List<DocumentHit> hits = response.getHits();
@@ -125,7 +127,8 @@ public class KnowledgeExample {
 			}
 			// 3. Relatively flexible custom queries: below is an example of filtering data based on meta information only.
 			{
-				Filter textQuery = Filters.textMatch(store.getTextField(), queryText); // Query text field of document. Can also query other text fields in metaData.
+				// Query text field of document. Can also query other text fields in metaData.
+				Filter textQuery = Filters.textMatch(store.getTextField(), queryText); 
 				// Perform full-text search while needing to meet metadataFilter2, can freely combine with any other conditions here.
 				Filter finalFilter = Filters.and(textQuery, metadataFilter2);
 
@@ -133,7 +136,8 @@ public class KnowledgeExample {
 				String nextToken = null;
 				do {
 					KnowledgeSearchRequest searchRequest = KnowledgeSearchRequest.builder()
-						.tenantIds(tenantIds) // Setting tenant ID in multi-tenant scenarios can improve performance. If not involving multi-tenant scenarios, pass null or empty collection.
+						// Setting tenant ID in multi-tenant scenarios can improve performance. If not involving multi-tenant scenarios, pass null or empty collection.
+						.tenantIds(tenantIds) 
 						.limit(10)
 						.metadataFilter(finalFilter) // No need to add extra multi-tenant conditions. Already added in constructor above.
 														// Extra addition has no impact on functionality, very small impact on performance.
