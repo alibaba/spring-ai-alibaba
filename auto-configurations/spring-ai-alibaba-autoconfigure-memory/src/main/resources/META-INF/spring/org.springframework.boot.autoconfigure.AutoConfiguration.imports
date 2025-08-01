@@ -23,3 +23,5 @@ com.alibaba.cloud.ai.autoconfigure.memory.RedisChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.MongoDBChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.TablestoreChatMemoryAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.MemcachedChatMemoryAutoConfiguration
+

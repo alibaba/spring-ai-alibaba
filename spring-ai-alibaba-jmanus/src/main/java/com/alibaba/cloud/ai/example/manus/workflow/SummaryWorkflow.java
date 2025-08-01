@@ -60,37 +60,40 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 	}
 
 	/**
-	 * 执行内容总结工作流
-	 * @param planId 调用者的计划ID，确保子进程能找到对应的目录
-	 * @param fileName 文件名
-	 * @param content 文件内容
-	 * @param queryKey 查询关键词
-	 * @param thinkActRecordId Think-act记录ID，用于子计划执行追踪
-	 * @return 总结结果的Future
+	 * Execute content summarization workflow
+	 * @param planId Caller's plan ID to ensure subprocess can find corresponding
+	 * directory
+	 * @param fileName File name
+	 * @param content File content
+	 * @param queryKey Query keywords
+	 * @param thinkActRecordId Think-act record ID for sub-plan execution tracking
+	 * @return Future of summarization result
 	 */
 	public CompletableFuture<String> executeSummaryWorkflow(String parentPlanId, String fileName, String content,
 			String queryKey, Long thinkActRecordId, String terminateColumnsString) {
 
-		// 1. 构建MapReduce执行计划，使用调用者的planId
+		// 1. Build MapReduce execution plan using caller's planId
 		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(parentPlanId, fileName, content, queryKey,
 				terminateColumnsString);
 
-		// 2. 直接执行计划，传递thinkActRecordId
+		// 2. Execute plan directly, passing thinkActRecordId
 		return executeMapReducePlanWithContext(parentPlanId, executionPlan, thinkActRecordId);
 	}
 
 	/**
-	 * 构建基于MapReduce的总结执行计划
-	 * @param planId 使用调用者提供的计划ID，确保子进程能找到对应的目录
-	 * @param fileName 文件名
-	 * @param content 文件内容（暂未直接使用，但保留为扩展参数）
-	 * @param queryKey 查询关键词
+	 * Build MapReduce-based summarization execution plan
+	 * @param planId Use caller-provided plan ID to ensure subprocess can find
+	 * corresponding directory
+	 * @param fileName File name
+	 * @param content File content (not directly used yet, but kept as extension
+	 * parameter)
+	 * @param queryKey Query keywords
 	 */
 	private MapReduceExecutionPlan buildSummaryExecutionPlan(String parentPlanId, String fileName, String content,
 			String queryKey, String terminateColumnsString) {
 
 		try {
-			// 使用调用者提供的planId，而不是生成新的
+			// Use caller-provided planId instead of generating a new one
 			logger.info("Building summary execution plan with provided planId: {}", parentPlanId);
 
 			// Generate plan JSON using template from PromptService
@@ -105,21 +108,22 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 											// add fileURL)
 			);
 
-			// 解析JSON为MapReduceExecutionPlan对象
+			// Parse JSON to MapReduceExecutionPlan object
 			MapReduceExecutionPlan plan = objectMapper.readValue(planJson, MapReduceExecutionPlan.class);
-			// terminateColumns 直接在 JSON 模板中配置，无需在此处设置
+			// terminateColumns are configured directly in JSON template, no need to set
+			// here
 
 			return plan;
 
 		}
 		catch (Exception e) {
-			logger.error("构建总结执行计划失败，planId: {}", parentPlanId, e);
-			throw new RuntimeException("构建MapReduce总结执行计划失败: " + e.getMessage(), e);
+			logger.error("Failed to build summary execution plan, planId: {}", parentPlanId, e);
+			throw new RuntimeException("Failed to build MapReduce summary execution plan: " + e.getMessage(), e);
 		}
 	}
 
 	/**
-	 * 执行MapReduce计划 - 支持子计划上下文
+	 * Execute MapReduce plan - supports sub-plan context
 	 */
 	private CompletableFuture<String> executeMapReducePlanWithContext(String rootPlanId,
 			MapReduceExecutionPlan executionPlan, Long thinkActRecordId) {
@@ -133,39 +137,40 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 				logger.info("Generated sub-plan ID: {} for parent plan: {}, think-act record: {}", subPlanId,
 						rootPlanId, thinkActRecordId);
 
-				// 获取规划协调器，使用生成的子计划ID
+				// Get planning coordinator using generated sub-plan ID
 				PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(subPlanId);
 
-				// 创建执行上下文
+				// Create execution context
 				ExecutionContext context = new ExecutionContext();
 				context.setCurrentPlanId(subPlanId);
 				context.setRootPlanId(rootPlanId);
 				context.setThinkActRecordId(thinkActRecordId);
 
-				// 更新执行计划的ID为子计划ID
+				// Update execution plan ID to sub-plan ID
 				executionPlan.setCurrentPlanId(subPlanId);
 				executionPlan.setRootPlanId(rootPlanId);
 				context.setPlan(executionPlan);
 				context.setNeedSummary(false);
-				context.setUserRequest("执行基于MapReduce的内容智能总结");
+				context.setUserRequest("Execute MapReduce-based intelligent content summarization");
 
-				// 设置think-act记录ID以支持子计划执行
+				// Set think-act record ID to support sub-plan execution
 				if (thinkActRecordId != null) {
 					context.setThinkActRecordId(thinkActRecordId);
 				}
 
-				// 执行计划（跳过创建计划步骤，直接执行）
+				// Execute plan (skip plan creation step, execute directly)
 				planningCoordinator.executeExistingPlan(context);
 
-				logger.info("MapReduce总结计划执行成功，子计划ID: {}, 父计划ID: {}", subPlanId, rootPlanId);
+				logger.info("MapReduce summary plan executed successfully, sub-plan ID: {}, parent plan ID: {}",
+						subPlanId, rootPlanId);
 
 				List<ExecutionStep> allSteps = context.getPlan().getAllSteps();
 				ExecutionStep lastStep = allSteps.get(allSteps.size() - 1);
-				return "getContent 执行成功 ， 执行的结果日志： " + lastStep.getResult();
+				return "getContent executed successfully, execution result log: " + lastStep.getResult();
 			}
 			catch (Exception e) {
-				logger.error("MapReduce总结计划执行失败", e);
-				return "❌ MapReduce内容总结执行失败: " + e.getMessage();
+				logger.error("MapReduce summary plan execution failed", e);
+				return "❌ MapReduce content summarization execution failed: " + e.getMessage();
 			}
 		});
 	}

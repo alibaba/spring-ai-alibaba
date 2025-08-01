@@ -144,7 +144,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			else {
 				// create and add new AgentExecutionRecord
 				agentExecutionRecord = new AgentExecutionRecord(recordToUpdate.getCurrentPlanId(), null, null);
-				// 补齐到 currentStepIndex
+				// Fill up to currentStepIndex
 				while (agentExecutionSequence.size() < currentStepIndex) {
 					agentExecutionSequence.add(new AgentExecutionRecord());
 				}
@@ -277,7 +277,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * 接口1: 记录思考和执行动作 Record thinking and action execution process. This method handles
+	 * Interface 1: Record thinking and action execution process. This method handles
 	 * ThinkActRecord creation and thinking process without exposing internal record
 	 * objects.
 	 */
@@ -354,7 +354,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * 接口2: 记录执行结果 Record action execution result. This method updates the ThinkActRecord
+	 * Interface 2: Record action execution result. This method updates the ThinkActRecord
 	 * with action results without exposing internal record objects.
 	 */
 	@Override
@@ -433,7 +433,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * 接口3: 记录计划完成 Record plan completion. This method handles plan completion recording
+	 * Interface 3: Record plan completion. This method handles plan completion recording
 	 * logic without exposing internal record objects.
 	 */
 	@Override
@@ -631,7 +631,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			agentRecord.addThinkActStep(thinkActRecord);
 			return;
 		}
-		// 会多次调用，因此需要根据id修改
+		// Will be called multiple times, so need to modify based on id
 		ThinkActRecord exist = agentRecord.getThinkActSteps()
 			.stream()
 			.filter(r -> r.getId().equals(thinkActRecord.getId()))
@@ -671,9 +671,9 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * get current think-act record ID
-	 * @param currentPlanId 当前计划ID
-	 * @param rootPlanId 根计划ID
-	 * @return 当前 think-act 记录ID，如果没有则返回 null
+	 * @param currentPlanId Current plan ID
+	 * @param rootPlanId Root plan ID
+	 * @return Current think-act record ID, returns null if none exists
 	 */
 	public Long getCurrentThinkActRecordId(String currentPlanId, String rootPlanId) {
 		try {

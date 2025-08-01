@@ -378,6 +378,11 @@ const CONFIG_DISPLAY_NAMES: Record<string, string> = {
   // File System
   'allowExternalAccess': ('config.basicConfig.fileSystem.allowExternalAccess'),
 
+  // MCP Service Loader
+  'connectionTimeoutSeconds': ('config.basicConfig.mcpServiceLoader.connectionTimeoutSeconds'),
+  'maxRetryCount': ('config.basicConfig.mcpServiceLoader.maxRetryCount'),
+  'maxConcurrentConnections': ('config.basicConfig.mcpServiceLoader.maxConcurrentConnections'),
+
   // System Settings (not used)
   // 'systemName': t('config.basicConfig.systemSettings.systemName'),
   // 'language': t('config.basicConfig.systemSettings.language'),
@@ -413,6 +418,7 @@ const SUB_GROUP_DISPLAY_NAMES: Record<string, string> = {
   'infiniteContext': ('config.subGroupDisplayNames.infiniteContext'),
   'general': ('config.subGroupDisplayNames.general'),
   'filesystem': ('config.subGroupDisplayNames.filesystem'),
+  'mcpServiceLoader': ('config.subGroupDisplayNames.mcpServiceLoader'),
 }
 
 // Computed property: Whether there are changes
@@ -479,7 +485,7 @@ const handleBooleanUpdate = (item: ExtendedConfigItem, newValue: string | boolea
 
   // If it's a string (from a select box)
   if (typeof newValue === 'string') {
-    // Handle possible option mappings (e.g., "是" -> "true", "否" -> "false")
+    // Handle possible option mappings (e.g., "Yes" -> "true", "No" -> "false")
     if (item.options && item.options.length > 0) {
       // Find the matching option
       const matchedOption = item.options.find(option =>
@@ -596,7 +602,7 @@ const loadAllConfigs = async () => {
           subGroups
         }
       } catch (error) {
-        console.warn(`加载配置组 ${groupName} 失败，跳过:`, error)
+        console.warn(`Failed to load config group ${groupName}, skipping:`, error)
         return null
       }
     })
@@ -1126,7 +1132,7 @@ onMounted(() => {
 /* Adjust the style of input controls in vertical layout */
 .vertical-layout .config-control {
   min-width: auto;
-  max-width: 400px; /* 限制最大宽度，避免输入框过宽 */
+  max-width: 400px; /* Limit max width to prevent input boxes from being too wide */
 }
 
 /* Enhance the input box style */

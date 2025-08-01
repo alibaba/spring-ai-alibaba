@@ -21,7 +21,9 @@
     "refactor:check": "pnpm run type-check && pnpm run lint:check",
     "refactor:fix": "pnpm run lint && pnpm run format",
     "check:all": "pnpm run type-check && pnpm run lint:check && pnpm run test:unit",
-    "dev:strict": "vite --mode development"
+    "dev:strict": "vite --mode development",
+    "check:chinese": "python3 scripts/check-chinese-content.py --dir src",
+    "check:chinese:fail": "python3 scripts/check-chinese-content.py --dir src --fail-on-found"
   },
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.1",

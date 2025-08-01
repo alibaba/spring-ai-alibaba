@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 
 /**
- * 数据库配置解析工具类
+ * Database configuration parsing utility class
  */
 public class DatabaseConfigParser {
 
@@ -39,17 +39,17 @@ public class DatabaseConfigParser {
 	}
 
 	/**
-	 * 发现所有数据源名称
+	 * Discover all data source names
 	 */
 	public Set<String> discoverDatasourceNames() {
 		Set<String> names = new HashSet<>();
 
 		try {
-			// 通过扫描所有配置键来发现数据源
+			// Discover data sources by scanning all configuration keys
 			Set<String> allKeys = getAllPropertyKeys();
 
 			for (String key : allKeys) {
-				// 匹配模式：database.tool.datasource.{datasourceName}.type
+				// Match pattern: database.tool.datasource.{datasourceName}.type
 				if (isDatasourceTypeProperty(key)) {
 					String datasourceName = extractDatasourceName(key);
 					if (datasourceName != null) {
@@ -62,14 +62,14 @@ public class DatabaseConfigParser {
 		}
 		catch (Exception e) {
 			log.error("Failed to discover datasource names dynamically", e);
-			// 不抛出异常，而是返回空集合，让调用方处理
+			// Don't throw exception, return empty set and let caller handle
 		}
 
 		return names;
 	}
 
 	/**
-	 * 获取所有配置键
+	 * Get all configuration keys
 	 */
 	private Set<String> getAllPropertyKeys() {
 		Set<String> keys = new HashSet<>();
@@ -99,7 +99,7 @@ public class DatabaseConfigParser {
 	}
 
 	/**
-	 * 判断是否为数据源类型属性
+	 * Determine if it's a data source type property
 	 */
 	private boolean isDatasourceTypeProperty(String key) {
 		return key.startsWith(DatabaseConfigConstants.CONFIG_PREFIX)
@@ -107,17 +107,17 @@ public class DatabaseConfigParser {
 	}
 
 	/**
-	 * 从配置键中提取数据源名称
+	 * Extract data source name from configuration key
 	 */
 	private String extractDatasourceName(String key) {
 		try {
-			// 移除前缀和后缀，提取中间的数据源名称
+			// Remove prefix and suffix, extract middle data source name
 			String prefix = DatabaseConfigConstants.CONFIG_PREFIX;
 			String suffix = "." + DatabaseConfigConstants.PROP_TYPE;
 
 			if (key.startsWith(prefix) && key.endsWith(suffix)) {
 				String middle = key.substring(prefix.length(), key.length() - suffix.length());
-				// 确保中间部分不为空且不包含额外的点号
+				// Ensure middle part is not empty and doesn't contain extra dots
 				if (!middle.isEmpty() && !middle.contains(".")) {
 					return middle;
 				}
@@ -131,7 +131,7 @@ public class DatabaseConfigParser {
 	}
 
 	/**
-	 * 解析数据源配置
+	 * Parse data source configuration
 	 */
 	public Map<String, Map<String, String>> parseDatasourceConfigs() {
 		Map<String, Map<String, String>> configs = new HashMap<>();
@@ -167,7 +167,7 @@ public class DatabaseConfigParser {
 	}
 
 	/**
-	 * 获取单个数据源配置
+	 * Get single data source configuration
 	 */
 	public Map<String, String> getDatasourceConfig(String datasourceName) {
 		String prefix = DatabaseConfigConstants.CONFIG_PREFIX + datasourceName;

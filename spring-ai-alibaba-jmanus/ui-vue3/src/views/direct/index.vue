@@ -81,7 +81,7 @@
     <!-- Cron Task Modal -->
     <CronTaskModal v-model="showCronTaskModal" />
 
-    <!-- 消息提示组件 -->
+    <!-- Message toast component -->
     <div v-if="message.show" class="message-toast" :class="message.type">
       <div class="message-content">
         <span>{{ message.text }}</span>
@@ -111,7 +111,7 @@ const route = useRoute()
 const router = useRouter()
 const taskStore = useTaskStore()
 const { t } = useI18n()
-const { message,showMessage } = useMessage()
+const { message } = useMessage()
 
 const prompt = ref<string>('')
 const inputOnlyContent = ref<string>('')
@@ -220,7 +220,7 @@ onMounted(() => {
     },
 
     onPlanError: (message: string) => {
-      // 无需右侧提示，如需提示则解开
+      // No right panel notification needed, uncomment if needed
       // showMessage(`${t('planTemplate.executionFailed')}: ${message}`, 'error')
       chatRef.value.handlePlanError(message)
     },
@@ -238,7 +238,7 @@ onMounted(() => {
     // Mark the task as processed to prevent duplicate responses
     taskStore.markTaskAsProcessed()
 
-    // 直接执行任务，不在输入框显示内容
+    // Execute task directly without showing content in input box
     nextTick(() => {
       if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
         console.log('[Direct] Directly executing task via chatRef.handleSendMessage:', taskContent)
@@ -282,14 +282,14 @@ onMounted(() => {
     })
   }
 
-  // 监听window上的plan-execution-requested事件
+  // Listen for plan-execution-requested events on window
   window.addEventListener('plan-execution-requested', ((event: CustomEvent) => {
     console.log('[DirectView] Received plan-execution-requested event:', event.detail)
     handlePlanExecutionRequested(event.detail)
   }) as EventListener)
 
-  // 不再需要检查sessionStorage中的待执行计划
-  // 因为task.ts中的emitPlanExecutionRequested已经直接发送事件
+  // No longer need to check pending plans in sessionStorage
+  // Because emitPlanExecutionRequested in task.ts already sends events directly
 })
 
 // Listen for changes in the store's task (only handle unprocessed tasks)
@@ -302,7 +302,7 @@ watch(
       taskStore.markTaskAsProcessed()
       console.log('[Direct] Received new task from store:', taskContent)
 
-      // 直接执行任务，不在输入框显示内容
+      // Execute task directly without showing content in input box
       nextTick(() => {
         if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
           console.log('[Direct] Directly executing new task via chatRef.handleSendMessage:', taskContent)
@@ -529,7 +529,7 @@ const handlePlanExecutionRequested = async (payload: {
 
   isExecutingPlan.value = true
 
-  // 标记是否已经添加了用户消息
+  // Mark whether user message has been added
   let userMessageAdded = false;
 
   // First call chat component's addMessage to update UI (avoid triggering user-message-send-requested event)
@@ -545,7 +545,7 @@ const handlePlanExecutionRequested = async (payload: {
     const planTemplateId = payload.planData?.planTemplateId || payload.planData?.id || payload.planData?.planId
 
     if (!planTemplateId) {
-      throw new Error('没有找到计划模板ID')
+      throw new Error(t('direct.planTemplateIdNotFound'))
     }
 
     console.log(
@@ -581,7 +581,7 @@ const handlePlanExecutionRequested = async (payload: {
       planExecutionManager.handlePlanExecutionRequested(response.planId, payload.title)
     } else {
       console.error('[Direct] No planId in response:', response)
-      throw new Error('执行计划失败：未返回有效的计划ID')
+      throw new Error(t('direct.executionFailedNoPlanId'))
     }
   } catch (error: any) {
     console.error('[Direct] Plan execution failed:', error)
@@ -593,17 +593,17 @@ const handlePlanExecutionRequested = async (payload: {
     // Get chat component reference to display error
     if (chatRef.value && typeof chatRef.value.addMessage === 'function') {
       console.log('[Direct] Adding error messages to chat')
-      // 只有在之前没有添加过用户消息的情况下才添加
+      // Only add user message if it hasn't been added before
       if (!userMessageAdded) {
         chatRef.value.addMessage('user', payload.title)
       }
       // Then add error message
-      chatRef.value.addMessage('assistant', `执行计划失败: ${error.message || '未知错误'}`, {
+      chatRef.value.addMessage('assistant', `${t('direct.executionFailed')}: ${error.message || t('common.unknownError')}`, {
         thinking: undefined,
       })
     } else {
       console.error('[Direct] Chat ref not available, showing alert')
-      alert(`执行计划失败: ${error.message || '未知错误'}`)
+      alert(`${t('direct.executionFailed')}: ${error.message || t('common.unknownError')}`)
     }
   } finally {
     console.log('[Direct] Plan execution finished, resetting isExecutingPlan flag')
@@ -670,7 +670,7 @@ const handlePlanExecutionRequested = async (payload: {
   transition: all 0.2s ease;
 }
 
-/* 调整右面板样式 */
+/* Adjust right panel styles */
 :deep(.right-panel) {
   transition: width 0.1s ease;
 }
@@ -777,7 +777,7 @@ const handlePlanExecutionRequested = async (payload: {
   padding: 50px;
 }
 
-/* 消息提示样式 */
+/* Message toast styles */
 .message-toast {
   position: fixed;
   top: 80px;

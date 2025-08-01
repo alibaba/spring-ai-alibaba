@@ -24,17 +24,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * MapReduce模式的执行计划
+ * MapReduce mode execution plan
  */
 public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 
-	private List<ExecutionNode> steps; // 存储 SequentialNode 或 MapReduceNode
+	private List<ExecutionNode> steps; // Store SequentialNode or MapReduceNode
 
 	@JsonIgnore
 	private long createdTime;
 
 	/**
-	 * 计划类型，用于 Jackson 多态反序列化
+	 * Plan type for Jackson polymorphic deserialization
 	 */
 	private String planType = "advanced";
 
@@ -59,16 +59,16 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 获取步骤节点列表（更语义化的方法名）
-	 * @return 步骤节点列表
+	 * Get step node list (more semantic method name)
+	 * @return Step node list
 	 */
 	public List<ExecutionNode> getSteps() {
 		return steps;
 	}
 
 	/**
-	 * 设置步骤节点列表（更语义化的方法名）
-	 * @param steps 步骤节点列表
+	 * Set step node list (more semantic method name)
+	 * @param steps Step node list
 	 */
 	public void setSteps(List<ExecutionNode> steps) {
 		this.steps = steps;
@@ -82,7 +82,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		this.createdTime = createdTime;
 	}
 
-	// AbstractExecutionPlan 抽象方法的实现
+	// Implementation of AbstractExecutionPlan abstract method
 
 	@Override
 	protected void clearSteps() {
@@ -90,24 +90,24 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 添加顺序执行节点
-	 * @param node 顺序执行节点
+	 * Add sequential execution node
+	 * @param node Sequential execution node
 	 */
 	public void addSequentialNode(SequentialNode node) {
 		steps.add(node);
 	}
 
 	/**
-	 * 添加MapReduce执行节点
-	 * @param node MapReduce执行节点
+	 * Add MapReduce execution node
+	 * @param node MapReduce execution node
 	 */
 	public void addMapReduceNode(MapReduceNode node) {
 		steps.add(node);
 	}
 
 	/**
-	 * 获取节点数量
-	 * @return 节点总数
+	 * Get node count
+	 * @return Total node count
 	 */
 	@JsonIgnore
 	public int getNodeCount() {
@@ -115,9 +115,9 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 根据索引获取节点
-	 * @param index 节点索引
-	 * @return 节点对象，如果索引无效则返回null
+	 * Get node by index
+	 * @param index Node index
+	 * @return Node object, return null if index is invalid
 	 */
 	public ExecutionNode getNode(int index) {
 		if (index >= 0 && index < steps.size()) {
@@ -127,17 +127,18 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 获取所有执行步骤（展平所有节点中的步骤） 按照执行顺序返回：数据准备 → Map → Reduce
-	 * @return 所有执行步骤的列表
+	 * Get all execution steps (flatten steps from all nodes). Return in execution order:
+	 * Data Preparation → Map → Reduce
+	 * @return List of all execution steps
 	 */
 	@Override
 	@JsonIgnore
 	public List<ExecutionStep> getAllSteps() {
-		// 预估总步骤数以优化性能
+		// Estimate total step count to optimize performance
 
 		List<ExecutionStep> allSteps = new ArrayList<>();
 
-		// 使用接口方法直接获取每个节点的所有步骤
+		// Use interface method to directly get all steps from each node
 		for (ExecutionNode node : steps) {
 			List<ExecutionStep> nodeSteps = node.getAllSteps();
 			if (nodeSteps != null && !nodeSteps.isEmpty()) {
@@ -149,8 +150,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 获取总步骤数量
-	 * @return 总步骤数
+	 * Get total step count
+	 * @return Total step count
 	 */
 	@Override
 	@JsonIgnore
@@ -159,8 +160,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 获取顺序节点列表
-	 * @return 顺序节点列表
+	 * Get sequential node list
+	 * @return Sequential node list
 	 */
 	@JsonIgnore
 	public List<SequentialNode> getSequentialNodes() {
@@ -174,8 +175,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 获取MapReduce节点列表
-	 * @return MapReduce节点列表
+	 * Get MapReduce node list
+	 * @return MapReduce node list
 	 */
 	@JsonIgnore
 	public List<MapReduceNode> getMapReduceNodes() {
@@ -189,80 +190,82 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 获取计划执行状态的字符串格式
-	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
-	 * @return 计划状态字符串
+	 * Get plan execution status in string format
+	 * @param onlyCompletedAndFirstInProgress When true, only output all completed steps
+	 * and first in-progress step
+	 * @return Plan status string
 	 */
 	@Override
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("=== MapReduce执行计划 ===\n");
-		sb.append("计划ID: ").append(currentPlanId).append("\n");
-		sb.append("root计划ID: ").append(rootPlanId).append("\n");
-		sb.append("标题: ").append(title).append("\n");
-		sb.append("创建时间: ").append(new java.util.Date(createdTime)).append("\n");
-		sb.append("节点数量: ").append(steps.size()).append("\n");
-		sb.append("总步骤数: ").append(getTotalStepCount()).append("\n");
+		sb.append("=== MapReduce Execution Plan ===\n");
+		sb.append("Plan ID: ").append(currentPlanId).append("\n");
+		sb.append("Root Plan ID: ").append(rootPlanId).append("\n");
+		sb.append("Title: ").append(title).append("\n");
+		sb.append("Created Time: ").append(new java.util.Date(createdTime)).append("\n");
+		sb.append("Node Count: ").append(steps.size()).append("\n");
+		sb.append("Total Step Count: ").append(getTotalStepCount()).append("\n");
 		sb.append("\n");
 
 		for (int i = 0; i < steps.size(); i++) {
 			ExecutionNode node = steps.get(i);
-			sb.append("--- 节点 ").append(i + 1).append(" ---\n");
+			sb.append("--- Node ").append(i + 1).append(" ---\n");
 
 			if (node instanceof SequentialNode) {
 				SequentialNode seqNode = (SequentialNode) node;
-				sb.append("类型: 顺序执行\n");
-				sb.append("步骤数: ").append(seqNode.getStepCount()).append("\n");
+				sb.append("Type: Sequential Execution\n");
+				sb.append("Step Count: ").append(seqNode.getStepCount()).append("\n");
 
 				if (seqNode.getSteps() != null) {
 					for (ExecutionStep step : seqNode.getSteps()) {
 						sb.append("  ").append(step.getStepInStr()).append("\n");
 						if (!onlyCompletedAndFirstInProgress && step.getResult() != null) {
-							sb.append("    结果: ").append(step.getResult()).append("\n");
+							sb.append("    Result: ").append(step.getResult()).append("\n");
 						}
 					}
 				}
 			}
 			else if (node instanceof MapReduceNode) {
 				MapReduceNode mrNode = (MapReduceNode) node;
-				sb.append("类型: MapReduce\n");
-				sb.append("数据准备步骤数: ").append(mrNode.getDataPreparedStepCount()).append("\n");
-				sb.append("Map步骤数: ").append(mrNode.getMapStepCount()).append("\n");
-				sb.append("Reduce步骤数: ").append(mrNode.getReduceStepCount()).append("\n");
-				sb.append("后处理步骤数: ").append(mrNode.getPostProcessStepCount()).append("\n");
+				sb.append("Type: MapReduce\n");
+				sb.append("Data Preparation Step Count: ").append(mrNode.getDataPreparedStepCount()).append("\n");
+				sb.append("Map Step Count: ").append(mrNode.getMapStepCount()).append("\n");
+				sb.append("Reduce Step Count: ").append(mrNode.getReduceStepCount()).append("\n");
+				sb.append("Post Process Step Count: ").append(mrNode.getPostProcessStepCount()).append("\n");
 
-				// 当 onlyCompletedAndFirstInProgress = true 时，需要判断当前执行阶段
+				// When onlyCompletedAndFirstInProgress = true, need to determine current
+				// execution phase
 				boolean showReduceAndPostProcess = true;
 				if (onlyCompletedAndFirstInProgress) {
-					// 检查是否正在执行 Map 阶段的第一个步骤
+					// Check if currently executing first step of Map phase
 					boolean isMapPhaseFirstStep = isExecutingMapPhaseFirstStep(mrNode);
 					if (isMapPhaseFirstStep) {
 						showReduceAndPostProcess = false;
 					}
 				}
 
-				// 数据准备阶段
+				// Data preparation phase
 				if (mrNode.getDataPreparedSteps() != null && !mrNode.getDataPreparedSteps().isEmpty()) {
-					sb.append("  数据准备阶段:\n");
+					sb.append("  Data Preparation Phase:\n");
 					appendFilteredSteps(sb, mrNode.getDataPreparedSteps(), onlyCompletedAndFirstInProgress);
 				}
 
-				// Map阶段
+				// Map phase
 				if (mrNode.getMapSteps() != null && !mrNode.getMapSteps().isEmpty()) {
-					sb.append("  Map阶段:\n");
+					sb.append("  Map Phase:\n");
 					appendFilteredSteps(sb, mrNode.getMapSteps(), onlyCompletedAndFirstInProgress);
 				}
 
-				// Reduce阶段 - 根据条件决定是否显示
+				// Reduce phase - decide whether to show based on conditions
 				if (showReduceAndPostProcess && mrNode.getReduceSteps() != null && !mrNode.getReduceSteps().isEmpty()) {
-					sb.append("  Reduce阶段:\n");
+					sb.append("  Reduce Phase:\n");
 					appendFilteredSteps(sb, mrNode.getReduceSteps(), onlyCompletedAndFirstInProgress);
 				}
 
-				// 后处理阶段 - 根据条件决定是否显示
+				// Post process phase - decide whether to show based on conditions
 				if (showReduceAndPostProcess && mrNode.getPostProcessSteps() != null
 						&& !mrNode.getPostProcessSteps().isEmpty()) {
-					sb.append("  后处理阶段:\n");
+					sb.append("  Post Process Phase:\n");
 					appendFilteredSteps(sb, mrNode.getPostProcessSteps(), onlyCompletedAndFirstInProgress);
 				}
 			}
@@ -273,15 +276,15 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 清空所有节点
+	 * Clear all nodes
 	 */
 	public void clearNodes() {
 		steps.clear();
 	}
 
 	/**
-	 * 检查计划是否为空
-	 * @return 如果没有节点则返回true
+	 * Check if plan is empty
+	 * @return Returns true if no nodes exist
 	 */
 	@Override
 	@JsonIgnore
@@ -289,11 +292,11 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		return steps.isEmpty();
 	}
 
-	// PlanInterface 实现方法
+	// PlanInterface implementation methods
 
 	@Override
 	public void addStep(ExecutionStep step) {
-		// 对于MapReduce计划，默认添加到新的顺序节点中
+		// For MapReduce plan, add to new sequential node by default
 		SequentialNode newNode = new SequentialNode();
 		newNode.addStep(step);
 		addSequentialNode(newNode);
@@ -301,7 +304,7 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 
 	@Override
 	public void removeStep(ExecutionStep step) {
-		// 从所有节点中查找并移除指定步骤
+		// Find and remove specified step from all nodes
 		for (ExecutionNode node : steps) {
 			if (node instanceof SequentialNode) {
 				SequentialNode seqNode = (SequentialNode) node;
@@ -325,7 +328,8 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 更新所有步骤的索引，从0开始递增 为MapReduce计划中的所有步骤（包括数据准备、Map和Reduce阶段）设置连续的索引
+	 * Update indices of all steps, incrementing from 0 Set consecutive indices for all
+	 * steps in MapReduce plan (including data preparation, Map and Reduce phases)
 	 */
 	@Override
 	public void updateStepIndices() {
@@ -341,25 +345,25 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 			}
 			else if (node instanceof MapReduceNode) {
 				MapReduceNode mrNode = (MapReduceNode) node;
-				// 先设置数据准备步骤的索引
+				// First set data preparation step indices
 				if (mrNode.getDataPreparedSteps() != null) {
 					for (ExecutionStep step : mrNode.getDataPreparedSteps()) {
 						step.setStepIndex(index++);
 					}
 				}
-				// 再设置Map步骤的索引
+				// Then set Map step indices
 				if (mrNode.getMapSteps() != null) {
 					for (ExecutionStep step : mrNode.getMapSteps()) {
 						step.setStepIndex(index++);
 					}
 				}
-				// 然后设置Reduce步骤的索引
+				// Then set Reduce step indices
 				if (mrNode.getReduceSteps() != null) {
 					for (ExecutionStep step : mrNode.getReduceSteps()) {
 						step.setStepIndex(index++);
 					}
 				}
-				// 最后设置后处理步骤的索引
+				// Finally set post process step indices
 				if (mrNode.getPostProcessSteps() != null) {
 					for (ExecutionStep step : mrNode.getPostProcessSteps()) {
 						step.setStepIndex(index++);
@@ -375,10 +379,11 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 	}
 
 	/**
-	 * 根据过滤条件添加步骤到字符串构建器
-	 * @param sb 字符串构建器
-	 * @param steps 步骤列表
-	 * @param onlyCompletedAndFirstNotStarted 是否只显示已完成的步骤和第一个未开始的步骤
+	 * Add steps to string builder based on filter conditions
+	 * @param sb String builder
+	 * @param steps Step list
+	 * @param onlyCompletedAndFirstNotStarted Whether to only show completed steps and
+	 * first not started step
 	 */
 	private void appendFilteredSteps(StringBuilder sb, List<ExecutionStep> steps,
 			boolean onlyCompletedAndFirstNotStarted) {
@@ -386,39 +391,40 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 
 		for (ExecutionStep step : steps) {
 			if (onlyCompletedAndFirstNotStarted) {
-				// 如果是COMPLETED状态，始终显示
+				// If COMPLETED status, always show
 				if (step.getStatus() == AgentState.COMPLETED) {
 					sb.append("    ").append(step.getStepInStr()).append("\n");
 					if (step.getResult() != null) {
-						sb.append("      结果: ").append(step.getResult()).append("\n");
+						sb.append("      Result: ").append(step.getResult()).append("\n");
 					}
 				}
-				// 如果是NOT_STARTED状态，且还没找到其他NOT_STARTED的步骤
+				// If NOT_STARTED status and haven't found other NOT_STARTED steps yet
 				else if (step.getStatus() == AgentState.NOT_STARTED && !foundNotStarted) {
-					foundNotStarted = true; // 标记已找到NOT_STARTED步骤
+					foundNotStarted = true; // Mark that NOT_STARTED step has been found
 					sb.append("    ").append(step.getStepInStr()).append("\n");
-					// NOT_STARTED状态的步骤通常没有结果，所以不显示结果
+					// NOT_STARTED status steps usually have no results, so don't show
+					// results
 				}
-				// 其他所有情况（不是COMPLETED且不是第一个NOT_STARTED）
-				// 跳过不符合条件的步骤
+				// All other cases (not COMPLETED and not first NOT_STARTED)
+				// Skip steps that don't meet conditions
 			}
 			else {
-				// 显示所有步骤
+				// Show all steps
 				sb.append("    ").append(step.getStepInStr()).append("\n");
 				if (step.getResult() != null) {
-					sb.append("      结果: ").append(step.getResult()).append("\n");
+					sb.append("      Result: ").append(step.getResult()).append("\n");
 				}
 			}
 		}
 	}
 
 	/**
-	 * 判断是否正在执行Map阶段的第一个步骤
-	 * @param mrNode MapReduce节点
-	 * @return 如果正在执行Map阶段的第一个步骤则返回true
+	 * Determine if currently executing first step of Map phase
+	 * @param mrNode MapReduce node
+	 * @return Returns true if currently executing first step of Map phase
 	 */
 	private boolean isExecutingMapPhaseFirstStep(MapReduceNode mrNode) {
-		// 检查数据准备阶段是否全部完成
+		// Check if data preparation phase is fully completed
 		boolean dataPreparedCompleted = true;
 		if (mrNode.getDataPreparedSteps() != null && !mrNode.getDataPreparedSteps().isEmpty()) {
 			for (ExecutionStep step : mrNode.getDataPreparedSteps()) {
@@ -429,17 +435,18 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 			}
 		}
 
-		// 检查Map阶段是否有第一个步骤正在执行或即将执行
+		// Check if Map phase has first step in progress or about to execute
 		boolean mapFirstStepInProgress = false;
 		if (mrNode.getMapSteps() != null && !mrNode.getMapSteps().isEmpty()) {
 			ExecutionStep firstMapStep = mrNode.getMapSteps().get(0);
-			// 如果第一个Map步骤是NOT_STARTED状态，说明即将执行
+			// If first Map step is NOT_STARTED status, it means about to execute
 			if (firstMapStep.getStatus() == AgentState.NOT_STARTED) {
 				mapFirstStepInProgress = true;
 			}
 		}
 
-		// 只有当数据准备阶段全部完成，且Map阶段的第一个步骤即将执行时，才返回true
+		// Only return true when data preparation phase is fully completed and first step
+		// of Map phase is about to execute
 		return dataPreparedCompleted && mapFirstStepInProgress;
 	}
 

@@ -29,24 +29,20 @@ import org.springframework.web.reactive.result.method.annotation.ResponseEntityE
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+	/**
+	 * Handle plan exceptions
+	 */
+	@ExceptionHandler(PlanException.class)
+	public ResponseEntity handlePlanException(PlanException ex) {
+		return ResponseEntity.internalServerError().body(ex.getMessage());
+	}
 
-    /**
-     * 处理计划异常
-     */
-    @ExceptionHandler(PlanException.class)
-    public ResponseEntity<String> handlePlanException(PlanException ex) {
-        logger.error("Plan exception occurred: {}", ex.getMessage(), ex);
-        return ResponseEntity.internalServerError().body(ex.getMessage());
-    }
-
-    /**
-     * 处理所有未捕获的异常
-     */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleGlobalException(Exception ex) {
-        logger.error("Unhandled exception occurred: {}", ex.getMessage(), ex);
-        return ResponseEntity.internalServerError().body(ex.getMessage());
-    }
+	/**
+	 * Handle all uncaught exceptions
+	 */
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity handleGlobalException(Exception ex) {
+		return ResponseEntity.internalServerError().body(ex.getMessage());
+	}
 
 }

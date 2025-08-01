@@ -91,8 +91,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: '请选择模型',
-  dropdownTitle: '可用模型'
+  placeholder: 'Please select a model',
+  dropdownTitle: 'Available Models'
 })
 
 const emit = defineEmits<{
@@ -104,18 +104,18 @@ const { t } = useI18n()
 const isOpen = ref(false)
 const searchText = ref('')
 
-// 按类别分组模型
+// Group models by category
 const groupedOptions = computed(() => {
   const groups: { [key: string]: ModelOption[] } = {}
-  
+
   props.options.forEach(option => {
     if (!groups[option.category]) {
       groups[option.category] = []
     }
     groups[option.category].push(option)
   })
-  
-  // 按优先级排序分组
+
+  // Sort groups by priority
   const priorityOrder = ['Turbo', 'Plus', 'Max', 'Coder', 'Math', 'Vision', 'TTS', 'Standard']
   return priorityOrder
     .filter(category => groups[category])
@@ -125,12 +125,12 @@ const groupedOptions = computed(() => {
     }))
 })
 
-// 过滤搜索结果
+// Filter search results
 const filteredGroups = computed(() => {
   if (!searchText.value) {
     return groupedOptions.value
   }
-  
+
   return groupedOptions.value.map(group => ({
     ...group,
     models: group.models.filter(model =>
@@ -141,7 +141,7 @@ const filteredGroups = computed(() => {
   })).filter(group => group.models.length > 0)
 })
 
-// 当前选中的选项
+// Currently selected option
 const selectedOption = computed(() => {
   return props.options.find(option => option.id === props.modelValue)
 })
@@ -163,7 +163,7 @@ const selectModel = (model: ModelOption) => {
   closeDropdown()
 }
 
-// 点击外部关闭下拉框
+// Close dropdown when clicking outside
 const handleClickOutside = (event: Event) => {
   const target = event.target as HTMLElement
   if (!target.closest('.grouped-select')) {
@@ -411,7 +411,7 @@ onUnmounted(() => {
   margin-top: 4px;
 }
 
-/* 响应式设计 */
+/* Responsive design */
 @media (max-width: 768px) {
   .models-grid {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -423,4 +423,4 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
 }
-</style> 
+</style>

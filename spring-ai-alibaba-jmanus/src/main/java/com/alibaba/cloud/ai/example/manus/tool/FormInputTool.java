@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;

@@ -21,39 +21,39 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * MCP服务配置属性
+ * MCP service configuration properties
  */
 @Component
 @ConfigurationProperties("mcp")
 public class McpProperties {
 
 	/**
-	 * 最大重试次数
+	 * Maximum retry count
 	 */
 	private int maxRetries = 3;
 
 	/**
-	 * 连接超时时间
+	 * Connection timeout duration
 	 */
 	private Duration timeout = Duration.ofSeconds(60);
 
 	/**
-	 * 缓存访问后过期时间
+	 * Cache expiration time after access
 	 */
 	private Duration cacheExpireAfterAccess = Duration.ofMinutes(10);
 
 	/**
-	 * 重试等待时间倍数（秒）
+	 * Retry wait time multiplier (seconds)
 	 */
 	private int retryWaitMultiplier = 1;
 
 	/**
-	 * SSE URL路径后缀
+	 * SSE URL path suffix
 	 */
 	private String ssePathSuffix = "/sse";
 
 	/**
-	 * 用户代理
+	 * User agent
 	 */
 	private String userAgent = "MCP-Client/1.0.0";
 

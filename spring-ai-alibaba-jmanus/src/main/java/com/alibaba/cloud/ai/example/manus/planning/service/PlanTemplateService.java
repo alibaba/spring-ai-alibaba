@@ -366,13 +366,14 @@ public class PlanTemplateService implements IPlanTemplateService {
 			context.setNeedSummary(true); // We need to generate a summary
 
 			try {
-				// 使用 Jackson 反序列化 JSON 为 PlanInterface 对象（支持多态）
+				// Use Jackson to deserialize JSON to PlanInterface object (supports
+				// polymorphism)
 				PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
 
-				// 设置新的计划ID，覆盖JSON中的ID
+				// Set new plan ID, overriding ID in JSON
 				plan.setCurrentPlanId(newPlanId);
 				plan.setRootPlanId(newPlanId);
-				// 设置URL参数到计划中
+				// Set URL parameters to plan
 				if (rawParam != null && !rawParam.isEmpty()) {
 					logger.info("Set execution parameters to plan: {}", rawParam);
 					plan.setExecutionParams(rawParam);
@@ -406,7 +407,7 @@ public class PlanTemplateService implements IPlanTemplateService {
 			Map<String, Object> response = new HashMap<>();
 			response.put("planId", newPlanId);
 			response.put("status", "processing");
-			response.put("message", "计划执行请求已提交，正在处理中");
+			response.put("message", "Plan execution request submitted, processing");
 
 			return ResponseEntity.ok(response);
 		}

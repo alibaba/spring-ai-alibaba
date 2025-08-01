@@ -22,112 +22,112 @@ import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 import org.springframework.http.ResponseEntity;
 
 /**
- * 计划模板服务接口，提供计划模板相关的业务逻辑
+ * Plan template service interface providing business logic related to plan templates
  */
 public interface IPlanTemplateService {
 
 	/**
-	 * 保存计划模板
-	 * @param planTemplateId 模板ID
-	 * @param title 标题
-	 * @param userRequest 用户请求
-	 * @param planJson 计划JSON
+	 * Save plan template
+	 * @param planTemplateId Template ID
+	 * @param title Title
+	 * @param userRequest User request
+	 * @param planJson Plan JSON
 	 */
 	void savePlanTemplate(String planTemplateId, String title, String userRequest, String planJson);
 
 	/**
-	 * 更新计划模板
-	 * @param planTemplateId 模板ID
-	 * @param title 标题
-	 * @param planJson 计划JSON
-	 * @return 是否更新成功
+	 * Update plan template
+	 * @param planTemplateId Template ID
+	 * @param title Title
+	 * @param planJson Plan JSON
+	 * @return Whether update was successful
 	 */
 	boolean updatePlanTemplate(String planTemplateId, String title, String planJson);
 
 	/**
-	 * 保存到版本历史
-	 * @param planTemplateId 模板ID
-	 * @param planJson 计划JSON
-	 * @return 版本保存结果
+	 * Save to version history
+	 * @param planTemplateId Template ID
+	 * @param planJson Plan JSON
+	 * @return Version save result
 	 */
 	PlanTemplateService.VersionSaveResult saveToVersionHistory(String planTemplateId, String planJson);
 
 	/**
-	 * 保存版本到历史
-	 * @param planTemplateId 模板ID
-	 * @param planJson 计划JSON
+	 * Save version to history
+	 * @param planTemplateId Template ID
+	 * @param planJson Plan JSON
 	 */
 	void saveVersionToHistory(String planTemplateId, String planJson);
 
 	/**
-	 * 获取计划模板
-	 * @param planTemplateId 模板ID
-	 * @return 计划模板
+	 * Get plan template
+	 * @param planTemplateId Template ID
+	 * @return Plan template
 	 */
 	PlanTemplate getPlanTemplate(String planTemplateId);
 
 	/**
-	 * 获取计划版本列表
-	 * @param planTemplateId 模板ID
-	 * @return 版本列表
+	 * Get plan version list
+	 * @param planTemplateId Template ID
+	 * @return Version list
 	 */
 	List<String> getPlanVersions(String planTemplateId);
 
 	/**
-	 * 获取指定版本的计划
-	 * @param planTemplateId 模板ID
-	 * @param versionIndex 版本索引
-	 * @return 计划JSON
+	 * Get plan of specified version
+	 * @param planTemplateId Template ID
+	 * @param versionIndex Version index
+	 * @return Plan JSON
 	 */
 	String getPlanVersion(String planTemplateId, int versionIndex);
 
 	/**
-	 * 获取最新版本的计划
-	 * @param planTemplateId 模板ID
-	 * @return 计划JSON
+	 * Get latest version plan
+	 * @param planTemplateId Template ID
+	 * @return Plan JSON
 	 */
 	String getLatestPlanVersion(String planTemplateId);
 
 	/**
-	 * 检查内容是否与最新版本相同
-	 * @param planTemplateId 模板ID
-	 * @param planJson 计划JSON
-	 * @return 是否相同
+	 * Check if content is same as latest version
+	 * @param planTemplateId Template ID
+	 * @param planJson Plan JSON
+	 * @return Whether same
 	 */
 	boolean isContentSameAsLatestVersion(String planTemplateId, String planJson);
 
 	/**
-	 * 检查JSON内容是否等价
+	 * Check if JSON content is equivalent
 	 * @param json1 JSON1
 	 * @param json2 JSON2
-	 * @return 是否等价
+	 * @return Whether equivalent
 	 */
 	boolean isJsonContentEquivalent(String json1, String json2);
 
 	/**
-	 * 从计划中提取标题
-	 * @param planJson 计划JSON
-	 * @return 标题
+	 * Extract title from plan
+	 * @param planJson Plan JSON
+	 * @return Title
 	 */
 	String extractTitleFromPlan(String planJson);
 
 	/**
-	 * 获取所有计划模板
-	 * @return 计划模板列表
+	 * Get all plan templates
+	 * @return Plan template list
 	 */
 	List<PlanTemplate> getAllPlanTemplates();
 
 	/**
-	 * 删除计划模板
-	 * @param planTemplateId 模板ID
-	 * @return 是否删除成功
+	 * Delete plan template
+	 * @param planTemplateId Template ID
+	 * @return Whether deletion was successful
 	 */
 	boolean deletePlanTemplate(String planTemplateId);
 
 	/**
-	 * 按计划模板执行
-	 * @param planTemplateId 模板ID
-	 * @return 是否删除成功
+	 * Execute by plan template
+	 * @param planTemplateId Template ID
+	 * @return Whether execution was successful
 	 */
 	ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam);
 
