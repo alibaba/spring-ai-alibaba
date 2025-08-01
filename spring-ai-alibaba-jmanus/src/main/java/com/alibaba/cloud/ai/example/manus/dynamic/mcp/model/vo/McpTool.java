@@ -38,6 +38,8 @@ public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 
 	private ISmartContentSavingService smartContentSavingService;
 
+	private final String prefixedToolName;
+
 	public McpTool(ToolCallback toolCallback, String serviceNameString, String planId,
 			McpStateHolderService mcpStateHolderService, ISmartContentSavingService smartContentSavingService,
 			ObjectMapper objectMapper) {
@@ -47,11 +49,20 @@ public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 		this.currentPlanId = planId;
 		this.mcpStateHolderService = mcpStateHolderService;
 		this.smartContentSavingService = smartContentSavingService;
+		this.prefixedToolName = generatePrefixedToolName(serviceNameString, toolCallback.getToolDefinition().name());
+	}
+
+	private String generatePrefixedToolName(String serverName, String toolName) {
+		if (serverName == null || serverName.trim().isEmpty()) {
+			return toolName;
+		}
+		// Use the same format as other MCP components: serverName_tools_toolName
+		return serverName + "_tools_" + toolName;
 	}
 
 	@Override
 	public String getName() {
-		return toolCallback.getToolDefinition().name();
+		return prefixedToolName;
 	}
 
 	@Override
